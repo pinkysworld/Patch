@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.3 development**
+Status: **0.2.0-beta.4 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -71,6 +71,8 @@ reward(player)
 
 Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively.
 
+Beta 4 adds a separate Lean formal core where static signature inference is machine-checked against runtime semantic-effect traces for sequencing, branch choice and bounded repetition. That theorem validates the formal model, not yet every production JavaScript analyzer path.
+
 ## Change Capabilities
 
 A recipe can optionally state what semantic changes it may produce.
@@ -90,9 +92,20 @@ Current operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clea
 
 A protected recipe is rejected if its inferred committed changes are not covered by its rules.
 
+For the structured Lean core, beta 4 machine-checks the end-to-end relation:
+
+```text
+RuntimeChanges(stmt) subset-of Signature(stmt)
+Signature(stmt) admitted-by Capability(stmt)
+---------------------------------------------
+RuntimeChanges(stmt) admitted-by Capability(stmt)
+```
+
+Production compiler/formal correspondence remains an explicit research obligation.
+
 ## Ranged recipe parameters
 
-Beta 3 introduces bounded numeric parameters:
+Patch supports bounded numeric parameters:
 
 ```patch
 make reward(player, bonus number 0..10):
@@ -117,7 +130,7 @@ make reward(player, bonus number 0..5):
 
 The current interval analyzer supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
 
-Calls to ranged recipes are also guarded at runtime. For example, a recipe declaring `bonus number 0..10` rejects a call with `11`. This guard is part of the assumptions behind signature soundness until a stronger static call proof is mechanized.
+Calls to ranged recipes are also guarded at runtime. For example, a recipe declaring `bonus number 0..10` rejects a call with `11`. Production interval-analysis soundness and static call correspondence are not yet mechanized.
 
 ## Causal provenance and `why`
 

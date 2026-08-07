@@ -38,6 +38,15 @@
 - [x] machine-checked Semantic Change Contract composition theorem
 - [x] dedicated formal CI rejecting `sorry`/`admit`
 
+### beta.4 formal soundness additions
+
+- [x] structured Lean control-flow core with `seq`, branch choice and bounded `repeat`
+- [x] executable formal `inferSignature` function
+- [x] machine-checked **Change Signature Soundness** for the formal core
+- [x] machine-checked **end-to-end Change Capability Soundness** for the formal core
+- [x] explicit separation between formal-core soundness and production-compiler correspondence
+- [x] beta.4 website/paper/docs synchronization
+
 Still open in the 0.2/0.3 line:
 
 - [ ] typed AST
@@ -51,16 +60,18 @@ Still open in the 0.2/0.3 line:
 
 ## 0.3 research hardening
 
+- [ ] define a correspondence relation between production Change IR effects and Lean `Effect`
+- [ ] emit a machine-readable compiler/formal conformance corpus
 - [ ] formalize the ranged expression language in Lean
-- [ ] prove executable interval-analysis soundness for that fragment
-- [ ] formalize recipes/calls and simple substitution
-- [ ] prove Change Signature soundness for a useful non-recursive core
-- [ ] derive end-to-end Change Capability soundness
-- [ ] establish compiler/analyzer-to-formal correspondence or a verified-checker boundary
+- [ ] prove interval-analysis soundness for that fragment
+- [ ] formalize non-recursive recipes/calls and parameter substitution
+- [ ] prove analyzer-to-formal correspondence for a useful executable subset
+- [ ] extend end-to-end Change Capability Soundness across that compiler boundary
 - [ ] richer path-sensitive and call-graph analysis
 - [ ] recursive fixed-point analysis where it can be made sound
 - [ ] richer `why` provenance graph and source navigation
 - [ ] distinguish historical provenance from counterfactual explanation in tooling
+- [ ] two or three security/engineering case studies centered on semantic authority
 
 ## 0.4 direct portable execution backend
 
@@ -109,11 +120,13 @@ Still open in the 0.2/0.3 line:
 
 Before a high-venue submission:
 
-- [ ] systematic related-work review across Plaid, Worlds, effect/capability systems, behavioral permissions, provenance/why debugging, update calculi and reversible systems
+- [ ] systematic related-work review across Plaid, Worlds, effect/capability systems, graded/refinement effects, behavioral permissions, provenance/why debugging, update calculi and reversible systems
 - [x] formal State-Change Factorization core
-- [x] initial machine-checked factorization and contract-composition results
-- [ ] machine-checked executable Change Signature soundness
-- [ ] compiler/formal correspondence
+- [x] machine-checked factorization and Mutation Transparency
+- [x] machine-checked Change Signature Soundness for a structured formal core
+- [x] machine-checked end-to-end capability containment for that formal core
+- [ ] production compiler/formal correspondence or verified-checker boundary
+- [ ] interval-analyzer soundness proof if magnitude-aware contracts remain central
 - [ ] direct compiled execution
 - [ ] benchmark suite and semantic-security case studies
 - [ ] novice study with ethics/consent if retained
@@ -129,3 +142,4 @@ Before a high-venue submission:
 6. Bootstrap Wasm must not be described as direct Wasm lowering.
 7. Semantic capability/range analysis must fail conservatively when it cannot prove safety.
 8. `why` must distinguish recorded provenance from stronger causal claims.
+9. Formal-core theorems must not be presented as production-compiler verification until a correspondence boundary is proved.
