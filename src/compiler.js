@@ -22,8 +22,6 @@ export function compile(source, options = {}) {
 }
 
 function inferKind(ast) {
-  // Window syntax is planned for the next parser increment. Until then all
-  // current programs are console programs unless Studio explicitly selects a target.
   return ast.some(node => node.kind === 'window') ? 'window' : 'console';
 }
 
@@ -40,6 +38,12 @@ function lowerNode(node) {
         name: node.name,
         fields: node.fields.map(field => ({ name: field.name, expr: field.expr, line: field.line }))
       });
+    case 'window':
+      return op('WINDOW', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body) });
+    case 'uiControl':
+      return op('UI_CONTROL', node, { control: node.control, id: node.id, textExpr: node.textExpr });
+    case 'event':
+      return op('EVENT', node, { control: node.control, event: node.event, body: lowerBlock(node.body) });
     case 'show':
       return op('SHOW', node, { expr: node.expr });
     case 'watch':
@@ -90,6 +94,7 @@ function inferCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
+    if (node.kind === 'window' || node.kind === 'uiControl' || node.kind === 'event') caps.add('ui.window');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo') caps.add('change.history');
   });
   return [...caps].sort();
