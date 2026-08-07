@@ -1,4 +1,4 @@
-const CACHE = 'patch-studio-0.2-beta.4-formal-bridge';
+const CACHE = 'patch-studio-0.2-beta.5';
 const CORE = [
   './',
   './index.html',
