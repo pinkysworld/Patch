@@ -14,14 +14,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - name: Build Lean formalization
+      - name: Install Lean toolchain
         uses: leanprover/lean-action@v1
         with:
           lake-package-directory: formal
-          build: true
+          auto-config: false
+          build: false
           test: false
           lint: false
+          use-github-cache: false
           use-mathlib-cache: false
+      - name: Build Lean formalization
+        working-directory: formal
+        run: |
+          lake update
+          lake build
       - name: Reject unfinished proofs
         shell: bash
         run: |
