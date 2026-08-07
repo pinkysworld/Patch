@@ -1,6 +1,8 @@
 import { PatchInterpreter } from '../src/interpreter.js';
 import { compile } from '../src/compiler.js';
 import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
+import { compileToWasm } from '../src/wasm.js';
+import { addDesignerControl } from '../src/designer.js';
 
 const samples = {
   counterWindow: `create number count = 0
@@ -74,11 +76,15 @@ const code = document.querySelector('#code');
 const output = document.querySelector('#output');
 const irView = document.querySelector('#ir');
 const appView = document.querySelector('#app');
+const designerView = document.querySelector('#designer');
+const designerCanvas = document.querySelector('#designerCanvas');
 const sample = document.querySelector('#sample');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
+const buildTarget = document.querySelector('#buildTarget');
 const saveState = document.querySelector('#saveState');
 let runtime = null;
+let designerTimer = null;
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -89,22 +95,34 @@ sample.addEventListener('change', () => {
   code.value = samples[sample.value];
   projectKind.value = sample.value === 'counterWindow' ? 'window' : 'console';
   saveProject();
+  refreshDesigner();
+  showTab(projectKind.value === 'window' ? 'designer' : 'output');
 });
 
 for (const input of [code, projectName, projectKind]) {
-  input.addEventListener('input', saveProject);
-  input.addEventListener('change', saveProject);
+  input.addEventListener('input', () => { saveProject(); scheduleDesigner(); });
+  input.addEventListener('change', () => { saveProject(); refreshDesigner(); });
 }
 
 document.querySelector('#run').addEventListener('click', runProject);
+document.querySelector('#addText').addEventListener('click', () => addControl('text'));
+document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
+document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
 
 document.querySelector('#build').addEventListener('click', () => {
   try {
-    const bundle = buildPatchApp(code.value, { ...projectOptions(), targets: ['portable'] });
-    const text = serializePatchApp(bundle);
-    download(`${safeName(projectName.value)}.patchapp`, text, 'application/json');
-    irView.textContent = JSON.stringify(bundle.ir, null, 2);
-    output.textContent = `Built ${safeName(projectName.value)}.patchapp\n\nThis is Patch's portable application bundle. Native Windows/macOS/Linux/BSD and WebAssembly packagers are the next compiler backend milestone.`;
+    const name = safeName(projectName.value);
+    if (buildTarget.value === 'wasm') {
+      const built = compileToWasm(code.value, projectOptions());
+      download(`${name}.wasm`, built.module, 'application/wasm');
+      irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
+      output.textContent = `Built ${name}.wasm\n\nThis is Patch's 0.2 bootstrap WebAssembly backend. The module is valid Wasm and embeds Patch source + Change IR for a Patch host. Direct Change IR-to-Wasm execution is the next compiler-backend stage.`;
+    } else {
+      const bundle = buildPatchApp(code.value, { ...projectOptions(), targets: ['portable'] });
+      download(`${name}.patchapp`, serializePatchApp(bundle), 'application/json');
+      irView.textContent = JSON.stringify(bundle.ir, null, 2);
+      output.textContent = `Built ${name}.patchapp\n\nThis portable Patch application contains the manifest, source and Change IR. Native Windows/macOS/Linux/BSD hosts remain a later packaging milestone.`;
+    }
     showTab('output');
   } catch (err) {
     output.textContent = `Build stopped:\n${err.message}`;
@@ -116,6 +134,20 @@ for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => showTab(tab.dataset.tab));
 }
 
+function addControl(type) {
+  try {
+    code.value = addDesignerControl(code.value, type);
+    projectKind.value = 'window';
+    saveProject();
+    refreshDesigner();
+    showTab('designer');
+    code.focus();
+  } catch (err) {
+    output.textContent = `Designer stopped:\n${err.message}`;
+    showTab('output');
+  }
+}
+
 function runProject() {
   try {
     const compiled = compile(code.value, projectOptions());
@@ -123,7 +155,7 @@ function runProject() {
     const result = runtime.run(code.value);
     output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no console output)';
     irView.textContent = JSON.stringify(compiled.ir, null, 2);
-    renderApp(result.ui);
+    renderWindows(appView, result.ui, true);
     showTab(result.ui.length ? 'app' : 'output');
   } catch (err) {
     output.textContent = `Patch stopped:\n${err.message}`;
@@ -132,10 +164,26 @@ function runProject() {
   }
 }
 
-function renderApp(windows) {
-  appView.innerHTML = '';
+function refreshDesigner() {
+  clearTimeout(designerTimer);
+  try {
+    const preview = new PatchInterpreter().run(code.value);
+    renderWindows(designerCanvas, preview.ui, false);
+    if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';
+  } catch (err) {
+    designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function scheduleDesigner() {
+  clearTimeout(designerTimer);
+  designerTimer = setTimeout(refreshDesigner, 220);
+}
+
+function renderWindows(container, windows, interactive) {
+  container.innerHTML = '';
   if (!windows?.length) {
-    appView.innerHTML = '<p class="empty-preview">This is a console project. Its output is in the Output tab.</p>';
+    container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
     return;
   }
   for (const model of windows) {
@@ -154,20 +202,22 @@ function renderApp(windows) {
         body.appendChild(el);
       } else if (control.type === 'button') {
         const el = document.createElement('button');
-        el.className = 'patch-button';
+        el.className = `patch-button${interactive ? '' : ' designer-control'}`;
         el.textContent = control.text;
-        el.addEventListener('click', () => trigger(control.id, 'clicked'));
+        if (interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
+        else el.type = 'button';
         body.appendChild(el);
       } else if (control.type === 'input') {
         const el = document.createElement('input');
         el.className = 'patch-input';
         el.value = control.value ?? '';
         el.placeholder = control.id ?? '';
+        if (!interactive) el.readOnly = true;
         body.appendChild(el);
       }
     }
     shell.append(title, body);
-    appView.appendChild(shell);
+    container.appendChild(shell);
   }
 }
 
@@ -176,7 +226,7 @@ function trigger(control, event) {
   try {
     const result = runtime.trigger(control, event);
     output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
-    renderApp(result.ui);
+    renderWindows(appView, result.ui, true);
   } catch (err) {
     output.textContent = `Patch stopped:\n${err.message}`;
     showTab('output');
@@ -185,6 +235,7 @@ function trigger(control, event) {
 
 function showTab(name) {
   for (const tab of document.querySelectorAll('.tab')) tab.classList.toggle('active', tab.dataset.tab === name);
+  designerView.hidden = name !== 'designer';
   appView.hidden = name !== 'app';
   output.hidden = name !== 'output';
   irView.hidden = name !== 'ir';
@@ -212,8 +263,8 @@ function loadProject() {
   catch { return null; }
 }
 
-function download(filename, text, type) {
-  const blob = new Blob([text], { type });
+function download(filename, data, type) {
+  const blob = new Blob([data], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -221,6 +272,13 @@ function download(filename, text, type) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
+}
+
+refreshDesigner();
+showTab(projectKind.value === 'window' ? 'designer' : 'output');
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
