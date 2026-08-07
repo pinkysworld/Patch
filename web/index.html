@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Patch Play</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div><h1>Patch Play <span>beta</span></h1><p>Programming as small, visible changes.</p></div>
+      <select id="sample" aria-label="Example">
+        <option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option>
+      </select>
+    </header>
+    <section class="workspace">
+      <div class="pane"><div class="pane-title">Code</div><textarea id="code" spellcheck="false" aria-label="Patch code"></textarea><div class="buttons"><button id="run">▶ Run</button><button id="clear" class="secondary">Clear output</button></div></div>
+      <div class="pane"><div class="pane-title">Output</div><pre id="output">Press Run.</pre></div>
+    </section>
+    <section class="help"><strong>Core words:</strong> create · change · set · add · remove · show · if · repeat · preview · undo · history · watch</section>
+  </main>
+  <script type="module" src="./playground.js"></script>
+</body>
+</html>
