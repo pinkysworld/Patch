@@ -20,6 +20,7 @@
       </div>
       <div class="toolbar">
         <select id="sample" aria-label="Example">
+          <option value="counterWindow">Window app</option>
           <option value="score">Score</option>
           <option value="fruits">Fruit list</option>
           <option value="player">Player</option>
@@ -46,16 +47,18 @@
       </div>
       <div class="pane result-pane">
         <div class="tabs" role="tablist">
-          <button class="tab active" data-tab="output">Output</button>
+          <button class="tab active" data-tab="app">App</button>
+          <button class="tab" data-tab="output">Output</button>
           <button class="tab" data-tab="ir">Change IR</button>
         </div>
-        <pre id="output">Press Run.</pre>
+        <div id="app" class="app-preview"><p class="empty-preview">Press Run to preview a window application.</p></div>
+        <pre id="output" hidden>Press Run.</pre>
         <pre id="ir" hidden>Build or Run to inspect the compiler IR.</pre>
       </div>
     </section>
 
     <section class="statusbar">
-      <span><strong>Patch core:</strong> create · change · show · if · repeat · preview · undo</span>
+      <span><strong>Patch core:</strong> create · change · window · when · show · if · repeat · preview · undo</span>
       <span>Projects are autosaved in this browser.</span>
     </section>
   </main>
