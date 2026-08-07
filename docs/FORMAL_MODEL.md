@@ -1,422 +1,201 @@
 # Patch Core Formal Model
 
-Status: design-stage formalization for the 0.2 research artifact.
+Status: **beta 3 mechanized core plus open implementation-correspondence work**.
 
-This document defines the smallest semantic core needed to state Patch's main research properties precisely. It is intentionally smaller than the full surface language. The goal is to mechanize this core before expanding the proof to lists, records, GUI events and I/O.
+The executable Patch language is larger than this model. The `formal/` directory intentionally starts with the smallest semantics needed to make the central research claims precise, then expands only after each layer is proved.
 
-## 1. Core idea
+## 1. State-Change Factorization
 
-Patch does not merely *record* that a variable changed. Existing persistent state is changed by constructing and applying a semantic delta.
+Patch does not merely record that persistent state changed. Existing persistent state is changed by constructing and applying a semantic delta.
 
-The intended invariant is:
+> **State-Change Factorization.** Every transition that mutates an existing persistent binding factors through a semantic change `delta`; there is no alternative persistent-write rule in the formal machine.
 
-> **State-Change Factorization.** Every transition that mutates an existing persistent binding factors through a semantic change `delta`; there is no alternative persistent-write rule.
-
-This is the property that distinguishes the research claim from ordinary assignment plus logging.
-
-Patch 0.2 beta.2 adds a second layer:
-
-> **Semantic Change Contract.** The compiler may infer the set of semantic changes a recipe can produce and verify that this set is contained in a declared set of allowed semantic changes.
-
-The intended proof shape is:
-
-```text
-ProducedChanges(f) subset-of AllowedChanges(f)
-```
-
-for each capability-protected recipe `f` that the compiler accepts.
-
-## 2. Core domains
-
-Let persistent names be `x ∈ Name` and integer values be `n ∈ Int`.
-
-A persistent store is a finite map:
-
-```text
-sigma : Name -> Value
-```
-
-For the initial mechanized core:
-
-```text
-Value ::= Int | Bool | Text
-```
-
-A history is an ordered sequence of committed changes:
-
-```text
-H ::= [] | H · delta
-```
-
-A target version map is:
-
-```text
-nu : Name -> Nat
-```
-
-## 3. Semantic operations
-
-The first proof should use a deliberately small set of semantic operations:
-
-```text
-op ::= Set(v)
-     | AddInt(n)
-     | RemoveInt(n)
-     | AppendText(t)
-     | Clear
-```
-
-A change is:
+For a change
 
 ```text
 delta = <target, baseVersion, newVersion, before, ops, after>
 ```
 
-with the well-formedness condition:
+well-formedness requires:
 
 ```text
 applyOps(ops, before) = after
 newVersion = baseVersion + 1
 ```
 
-The full implementation additionally carries ids, optional names and inverse operations.
+and commit is the sole modeled persistent-write operation.
 
-## 4. Applying operations
+## 2. Lean 4 implementation
 
-Representative definitions:
+`formal/PatchFormal.lean` is pinned to Lean 4.30.0 and currently defines:
 
-```text
-applyOp(AddInt(n), Int(m))       = Int(m + n)
-applyOp(RemoveInt(n), Int(m))    = Int(m - n)
-applyOp(Set(v), _)               = v
-applyOp(AppendText(t), Text(s))  = Text(s ++ t)
-```
+- scalar values `Int`, `Bool`, and `Text`;
+- semantic operations `Set`, `AddInt`, and `RemoveInt`;
+- `applyOp` / `applyOps`;
+- well-formed semantic changes;
+- persistent store, target versions, and history;
+- one semantic `Step.change` rule;
+- intervals and interval containment;
+- semantic effects and capability rules;
+- signature coverage and policy-admission relations.
 
-`applyOps` is left-to-right composition:
+The repository rejects `sorry` and `admit` in this Lean source.
 
-```text
-applyOps([], v) = v
-applyOps(op :: ops, v) = applyOps(ops, applyOp(op, v))
-```
+## 3. Mechanized theorems
 
-Ill-typed operation/value pairs are rejected before commit.
+### State-Change Factorization
 
-## 5. Surface core
-
-The smallest source language required for the factorization proof is:
+For every formal machine step:
 
 ```text
-s ::= create x = e
-    | change x { c* }
-    | s ; s
-    | if e then s else s
-    | repeat n s
-    | skip
-
-c ::= set e
-    | add e
-    | remove e
-    | clear
+m -> m'
 ```
 
-`create` introduces a fresh persistent binding. It is explicitly excluded from the post-creation mutation theorem because it extends the domain rather than mutating an existing binding.
-
-There is deliberately **no source form**:
+Lean proves that there exists a well-formed change `delta` such that:
 
 ```text
-x = e
+m' = commit(delta, m)
 ```
 
-for reassignment of an existing persistent binding.
-
-## 6. Lowering
-
-A `change` block is evaluated against a snapshot of its target value. Each friendly surface operation lowers to one or more semantic operations.
-
-Write:
+the target contains `delta.after`, and resulting history is:
 
 ```text
-lowerChanges(c*, sigma, x) = ops
+m.history ++ [delta]
 ```
 
-and:
+### Mutation Transparency
+
+As a corollary, every formal machine step has a well-formed change witness present in resulting history.
+
+### Interval containment transitivity
+
+For intervals:
 
 ```text
-before = sigma(x)
-after  = applyOps(ops, before)
+A within B
+B within C
+-------------
+A within C
 ```
 
-The runtime/compiler constructs:
+This is the small formal property underlying composition of bounded range evidence.
+
+### Semantic Change Contract composition
+
+Define:
 
 ```text
-delta = <x, nu(x), nu(x)+1, before, ops, after>
+RuntimeChanges(f) subset-of Signature(f)
+Signature(f) admitted-by Capability(f)
 ```
 
-before the committed store is updated.
-
-## 7. Commit function
-
-Define a single store-mutating commit operation:
+The Lean theorem proves the composition step:
 
 ```text
-commit(delta, sigma, nu, H)
-  = < sigma[target := delta.after],
-      nu[target := delta.newVersion],
-      H · delta >
+RuntimeChanges(f) admitted-by Capability(f)
 ```
 
-subject to:
+This is important but deliberately narrower than claiming the production compiler itself is already verified.
 
-```text
-sigma(target) = delta.before
-nu(target)    = delta.baseVersion
-applyOps(delta.ops, delta.before) = delta.after
-```
+## 4. What is not proved yet
 
-No other semantic rule is permitted to update an existing name in `sigma`.
+The current Lean model does **not yet prove**:
 
-## 8. State-Change Factorization theorem target
+- that the JavaScript parser/compiler implements the Lean semantics exactly;
+- executable Change Signature soundness for all Patch programs;
+- capability soundness of the production analyzer without assumptions;
+- the interval analyzer's implementation correctness;
+- inverse correctness for the production change algebra;
+- preview equivalence;
+- replay consistency;
+- commutation soundness;
+- GUI/event semantics;
+- I/O or external-effect properties.
 
-Let:
+These are explicit future proof obligations, not implicit claims.
 
-```text
-< s, sigma, nu, H > ->* < skip, sigma', nu', H' >
-```
+## 5. Semantic Change Signatures
 
-be a well-typed execution.
-
-For every existing persistent target `x` for which:
-
-```text
-x ∈ dom(sigma)
-sigma'(x) != sigma(x)
-```
-
-there exists at least one committed change `delta` appended during the derivation such that:
-
-```text
-delta.target = x
-applyOps(delta.ops, delta.before) = delta.after
-```
-
-and the corresponding store transition occurs through `commit(delta, ...)`.
-
-A stronger step-local lemma is preferable:
-
-> If one operational step changes the value of an already-existing persistent binding, that step is the `CHANGE-COMMIT` rule and appends exactly one well-formed change describing the transition.
-
-The global theorem then follows by induction over the execution derivation.
-
-## 9. Mutation Transparency corollary
-
-From the factorization theorem:
-
-> Every committed post-creation persistent mutation has an inspectable change record whose `before` and `after` values match the store transition.
-
-This is a corollary, not the deepest theorem.
-
-## 10. Inverse fragment
-
-Define partial `inverseOp`:
-
-```text
-inverseOp(AddInt(n), before)      = AddInt(-n)
-inverseOp(RemoveInt(n), before)   = AddInt(n)
-inverseOp(Set(v), before)         = Set(before)
-inverseOp(AppendText(t), before)  = Set(before)
-inverseOp(Clear, before)          = Set(before)
-```
-
-For an operation sequence, inverses are generated in reverse order using the intermediate states required for state-dependent inverses.
-
-The target theorem is:
-
-> For every change in the supported invertible fragment, applying its generated inverse to its `after` state recovers its `before` state.
-
-```text
-applyOps(inverse(delta), delta.after) = delta.before
-```
-
-## 11. Preview non-interference
-
-`preview s` evaluates against cloned `(sigma, nu, H)` and returns proposed changes/output while discarding the cloned committed state.
-
-Two properties should be separated:
-
-### Preview non-interference
-
-```text
-committedStateAfter(preview s) = committedStateBefore(preview s)
-```
-
-### Preview/commit agreement
-
-For deterministic `s` under the same initial state and inputs, the proposed changes produced by preview equal the changes produced by subsequent commit execution.
-
-This property must be restricted when time, randomness, nondeterministic I/O or concurrency are introduced.
-
-## 12. Replay consistency
-
-For deterministic histories:
-
-```text
-replay(sigma0, [delta1, ..., deltan]) = sigman
-```
-
-when every `delta_i` is version-consistent and applicable to the state produced by the previous delta.
-
-## 13. Commutation relation
-
-The initial relation should be conservative.
-
-Two changes commute when Patch can prove:
-
-```text
-apply(delta2, apply(delta1, sigma))
-=
-apply(delta1, apply(delta2, sigma))
-```
-
-Initial decidable cases:
-
-- different persistent targets;
-- different independent record paths;
-- additive integer changes on the same numeric path.
-
-Competing `Set` operations on the same path are conflicts.
-
-The proof obligation is **soundness**, not completeness.
-
-## 14. GUI semantics
-
-Patch UI should not need a separate mutation model. A button event handler executes ordinary Patch statements. If it changes bound application state, the same factorization theorem applies.
-
-GUI rendering is a projection:
-
-```text
-render : Store x UIModel -> View
-```
-
-and is not itself allowed to mutate persistent state behind the Change IR.
-
-## 15. External effects
-
-Files, networking, clocks and operating-system calls are intentionally outside the first theorem.
-
-A later effect model must distinguish:
-
-```text
-persistent Patch state changes
-external irreversible effects
-external reversible/compensatable effects
-```
-
-## 16. Semantic Change Signatures
-
-For a recipe `f`, define an inferred signature:
+For a recipe `f`, Patch's intended semantic signature is:
 
 ```text
 Sig(f) = { effect_1, ..., effect_n }
 ```
 
-where an effect is initially:
+with effects conceptually containing:
 
 ```text
-effect = <target, path, operation, amount?>
+<target, path, operation, amount-or-range?>
 ```
 
-and:
+The desired executable soundness theorem is:
 
 ```text
-operation ::= increase | decrease | add | remove | set | clear
+RuntimeChanges(f) subset-of Sig(f)
 ```
 
-`amount` is present only when the compiler can prove a concrete numeric magnitude.
+The current Lean contract theorem takes this signature-coverage relation as a premise. Proving that the compiler-generated signature satisfies it is the next major formal step.
 
-For the first formal core, inference can be syntax-directed:
+## 6. Change Capabilities
+
+A policy contains rules such as:
 
 ```text
-change x { add 5 }      => <x, x, increase, 5>
-change x { remove 2 }   => <x, x, decrease, 2>
-change x { set e }      => <x, x, set, none>
+player.score may increase up to 10
 ```
 
-Record paths and transitive recipe calls can be added after the base proof.
-
-A **signature soundness** theorem should state:
-
-> Every committed semantic change that can arise from executing a well-typed recipe is represented by an effect admitted by its inferred signature.
-
-The signature may over-approximate behavior; soundness is more important than minimality.
-
-## 17. Change Capabilities
-
-A declared policy is a set of allowed effects:
+The static checker aims to establish:
 
 ```text
-Cap(f) = { rule_1, ..., rule_m }
+Sig(f) subset-of Cap(f)
 ```
 
-A rule is:
+where containment is semantic: an `increase` can be permitted while a `set` to the same storage path remains forbidden.
+
+When combined with Signature Soundness, the desired end-to-end theorem is:
 
 ```text
-rule = <target, path, operation, maxAmount?>
+RuntimeChanges(f) subset-of Sig(f) subset-of Cap(f)
 ```
 
-The acceptance judgment is:
+therefore:
 
 ```text
-Sig(f) <= Cap(f)
+RuntimeChanges(f) subset-of Cap(f)
 ```
 
-where `<=` means every inferred committed effect is covered by at least one policy rule and every statically known amount respects the rule's bound.
+## 7. Numeric range reasoning
 
-For bounded rules, an unknown/dynamic amount is **not** accepted until the compiler has a proof that it respects the bound.
+Beta 3 allows ranged recipe parameters:
 
-The key theorem target is:
-
-> **Capability Soundness.** If a capability-protected recipe type-checks/compiles under policy `Cap(f)`, then every committed persistent change produced by that recipe during a supported execution satisfies `Cap(f)`.
-
-The planned proof decomposes into:
-
-1. Change Signature soundness: runtime committed changes are covered by `Sig(f)`;
-2. static policy validation: `Sig(f) <= Cap(f)`;
-3. therefore runtime committed changes satisfy `Cap(f)`.
-
-For calls, the first mechanized version should require an explicit compositional substitution rule for simple identifier arguments. Recursive/dynamic cases may be rejected conservatively until a sound fixed-point/range analysis is added.
-
-This is deliberately more semantic than a binary write capability. Two operations that write the same location may have different authority:
-
-```text
-increase score by <= 10     allowed
-set score = 999             forbidden
+```patch
+make reward(player, bonus number 0..10):
 ```
 
-## 18. Mechanization plan
+The executable compiler performs interval analysis over a small arithmetic fragment. The formal model currently proves only the general transitivity of interval containment. A future mechanization should define the expression language and prove:
 
-Preferred initial target: Lean 4.
+> If the range analyzer returns interval `I` for expression `e` under environment `Gamma`, every evaluation of `e` satisfying `Gamma` lies inside `I`.
 
-Suggested order:
+That theorem would bridge the current compiler's range evidence to Change Capability bounds.
 
-1. define values, stores and semantic operations;
-2. define `applyOp` / `applyOps`;
-3. define well-formed deltas and commit;
-4. define the tiny source syntax and small-step semantics;
-5. prove type preservation for the core;
-6. prove the step-local factorization lemma;
-7. derive State-Change Factorization / Mutation Transparency;
-8. prove inverse correctness for the primitive fragment;
-9. prove preview non-interference;
-10. prove commutation soundness for the initial relation;
-11. define semantic effects and `Sig(f)`;
-12. prove Change Signature soundness;
-13. define capability policies and the coverage relation;
-14. prove Capability Soundness for the first non-recursive core.
+## 8. Causal provenance
 
-Only then expand to lists, records, nested paths, richer call graphs and GUI events.
+The production runtime now records source, recipe-call, and GUI-event context with committed changes. The `why` command consumes this history.
 
-## 19. Research boundary
+This is not yet part of the Lean model. A future provenance semantics can define a causal/provenance trace as metadata attached to a factorized state transition without changing the core commit theorem.
 
-This model does not claim that state transitions, first-class state, effect systems, capabilities, typestate, undo, edit algebras or patches are novel. Plaid, Worlds, XMF, effect systems, capability systems, edit lenses, patch theory, event sourcing, change structures and live programming all cover important neighboring ideas.
+## 9. Next mechanization order
 
-The proposed contribution is the **combination and factorization discipline**: ordinary persistent mutation is executed through a structured semantic delta; the compiler can derive semantic Change Signatures from those same operations; optional Change Capabilities constrain the *kind* and magnitude of changes rather than merely granting generic write permission; and all of this is exposed through a deliberately low-complexity language surface.
+1. make the executable semantic-operation vocabulary and Lean `Op` vocabulary correspond more closely;
+2. formalize the ranged expression fragment and prove interval-analysis soundness;
+3. formalize recipes and calls;
+4. prove Change Signature soundness for the first non-recursive recipe core;
+5. derive end-to-end Change Capability soundness;
+6. prove inverse correctness for the supported operation fragment;
+7. prove preview non-interference and deterministic replay consistency;
+8. extend to records, nested paths, and GUI events;
+9. define a compiler/IR correspondence theorem or verified checker boundary.
+
+## 10. Research boundary
+
+State transitions, effects, capabilities, range analysis, provenance, undo, edit algebras, and patches all have substantial prior art. The candidate contribution is the **factorization discipline and reuse**: ordinary persistent mutation executes through a structured semantic delta, and the same mandatory representation is used to derive signatures, constrain semantic authority, record provenance, and support multiple runtime tools while the surface language remains deliberately small.
