@@ -1,8 +1,8 @@
 # Patch
 
-> **A tiny change-oriented programming language.**
+> **A tiny change-oriented programming language with one IDE for everywhere.**
 >
-> You create things, change them, and see what happened.
+> You create things, change them, run them, and build applications.
 
 Patch is an experimental general-purpose language built around one deliberately simple idea:
 
@@ -17,31 +17,114 @@ change score:
 show score
 ```
 
-The source language stays small enough for a beginner, while the runtime records a structured change for every mutation. That one design choice gives Patch automatic history, undo/redo, preview, deterministic replay foundations, and conflict analysis without exposing those mechanisms to beginners.
+The language is intended to stay easy enough for a beginner while the compiler/runtime derives history, undo/redo, preview, replay foundations, and conflict analysis from the same semantic change representation.
 
-## Beta status
+## Development status
 
-Current version: **0.1.0-beta.1**
+Current stable beta on `main`: **0.1.0-beta.1**
 
-The beta is a real interpreter, not a syntax mock-up. It currently supports:
+Current development line: **0.2 compiler + Patch Studio**
 
-- `create` for numbers, text, booleans, lists, and simple things/records;
-- `change` with `set`, `add`, `remove`, and `clear`;
-- semantic change records with before/after state and structural inverse operations;
-- named changes;
-- `undo` and `redo`;
-- `preview` without committing state;
-- `history` and `watch`;
-- `if` / `else`;
-- `repeat`;
-- tiny reusable recipes with `make` and `do`;
-- browser playground;
-- command-line runner;
-- automated tests on Windows, macOS, and Linux through CI.
+Patch 0.2 introduces a real compiler front end alongside the interpreter:
 
-## Try it
+```text
+Patch source
+   -> AST
+   -> Change IR
+   -> portable .patchapp       [implemented in 0.2 dev]
+   -> WebAssembly              [next backend]
+   -> Windows/macOS/Linux/BSD  [native packaging roadmap]
+```
 
-### Browser playground
+`change` is preserved explicitly in the compiler IR. It is not merely ordinary assignment plus logging.
+
+## Patch Studio
+
+Patch Studio is the universal IDE for Patch. It is browser-first and installable as a Progressive Web App.
+
+That means the same development environment is designed to work on:
+
+- Windows
+- macOS
+- Linux
+- iPhone and iPad
+- Android
+- ChromeOS
+- FreeBSD/OpenBSD/NetBSD and other Unix-like systems with a modern browser
+
+### Developing from iPhone
+
+Yes. The 0.2 Studio development version is responsive for iPhone/iPad, autosaves the current project in the browser, runs Patch programs locally, exposes the compiler Change IR, and can build the current portable `.patchapp` format locally.
+
+Native `.exe` and `.app` generation will use remote platform build runners because iOS cannot host Windows/macOS desktop compiler and signing toolchains. The intended flow is:
+
+```text
+iPhone Patch Studio
+    |
+    +-- edit
+    +-- run locally
+    +-- inspect Change IR
+    +-- build .patchapp locally
+    `-- Build for…
+           |
+           +-- Windows runner -> .exe
+           +-- macOS runner   -> .app / CLI
+           +-- Linux runner   -> executable
+           `-- Web/Wasm       -> web package
+```
+
+See `docs/PATCH_STUDIO.md`.
+
+## Application types
+
+Patch uses one language for console and GUI/window applications.
+
+### Console
+
+```patch
+show "Hello world"
+```
+
+Long-term build targets:
+
+- Windows `.exe`
+- macOS command-line executable
+- Linux command-line executable
+- BSD/Unix command-line executable
+- WebAssembly/WASI
+- portable `.patchapp`
+
+### Window application
+
+Planned Patch UI syntax:
+
+```patch
+create number count = 0
+
+window "Counter":
+  text "Count: {count}"
+  button "Add" as add_button
+
+when add_button clicked:
+  change count:
+    add 1
+```
+
+The visual Patch Studio form designer will generate/edit the same readable Patch source rather than hiding a second UI language.
+
+Planned native outputs:
+
+- Windows GUI-subsystem `.exe`
+- macOS `.app`
+- Linux/BSD graphical executable
+- browser/WebAssembly application
+- portable `.patchapp`
+
+Patch UI will abstract the host platform. Native Windows and macOS backends are planned, with SDL3 as the broad portable GUI fallback for Linux/BSD/other supported Unix systems.
+
+## Try the current beta
+
+### Patch Studio / browser
 
 ```bash
 npm run serve
@@ -49,21 +132,32 @@ npm run serve
 
 Then open `http://localhost:4173`.
 
-The `web/` directory is also static-hosting friendly and intended for GitHub Pages.
+The `web/` directory is static-hosting friendly and intended for GitHub Pages.
 
 ### Command line
 
-Node.js 20+ is currently the only requirement for the beta runtime.
+Node.js 20+ is currently the only requirement for the JavaScript beta toolchain.
 
-```bash
-node src/cli.js examples/score.patch
-```
-
-or after `npm link`:
+Run:
 
 ```bash
 patch examples/score.patch
+patch run examples/score.patch
 ```
+
+Check/compile to Change IR:
+
+```bash
+patch check examples/score.patch
+```
+
+Build a portable application bundle:
+
+```bash
+patch build examples/score.patch --kind console --target portable
+```
+
+This produces a `.patchapp` file containing the manifest, Patch source, and compiler IR. Native `.exe`, `.app`, ELF and Wasm backends are roadmap items, not yet implemented.
 
 ## Language tour
 
@@ -123,8 +217,6 @@ preview:
 show score
 ```
 
-The preview reports the proposed state transition and leaves the real state untouched.
-
 ### Conditions
 
 ```patch
@@ -151,73 +243,39 @@ make greet(name):
 do greet("Ada")
 ```
 
-## What makes Patch a research language?
+## Research identity
 
-Patch does **not** claim that patches, undo, change propagation, lenses, or event logs are new. They are not.
+Patch does **not** claim that patches, undo, event logs, reversible computation, lenses, CRDTs, or change propagation are new.
 
 The research hypothesis is narrower:
 
-> **What happens if explicit semantic change is the exclusive primitive for ordinary mutable state in a deliberately low-complexity general-purpose language?**
+> **What happens if explicit semantic change is the exclusive primitive for ordinary mutable application state in a deliberately low-complexity general-purpose language?**
 
-Patch explores whether one simple mutation model can simultaneously provide:
+Patch explores whether one mutation model can simultaneously provide:
 
-1. **Mutation transparency**: every post-creation state mutation corresponds to an inspectable change record.
+1. **Mutation transparency**: every post-creation state mutation corresponds to an inspectable semantic change.
 2. **Uniform reversibility**: invertible primitive changes generate inverse changes automatically.
 3. **Replayability**: state evolution is represented as an ordered semantic history.
-4. **Conflict reasoning**: concurrent changes can be compared at the semantic operation/path level instead of only as snapshots.
-5. **Low conceptual distance**: the source says `create`, `change`, `add`, and `remove` rather than exposing logs, commands, inverse functions, or synchronization machinery.
+4. **Conflict reasoning**: changes can be compared at semantic operation/path level instead of only as snapshots.
+5. **Low conceptual distance**: beginners see `create`, `change`, `add`, and `remove`, not command logs or inverse functions.
+6. **Tool unification**: execution, GUI state, history, preview, debugging, and eventually synchronization use the same Change IR.
 
 See `docs/NOVELTY.md` and `paper/main.tex`.
-
-## Current semantic model
-
-Each committed change contains at least:
-
-```text
-id
-name (optional)
-target
-base version
-new version
-semantic operations
-inverse operations
-before state
-after state
-```
-
-For example:
-
-```patch
-change score:
-  add 5
-```
-
-is represented internally as an operation equivalent to:
-
-```text
-AddNumber(target=score, value=5)
-```
-
-with an automatically derived inverse:
-
-```text
-AddNumber(target=score, value=-5)
-```
-
-The beginner never has to manipulate those structures directly.
 
 ## Repository map
 
 ```text
-src/                    parser, expression evaluator, interpreter, change algebra
-web/                    Patch Play browser playground
+src/                    parser, interpreter, change algebra, compiler, .patchapp bundler
+web/                    Patch Studio PWA
+tests/                  language + compiler tests
 examples/               runnable .patch programs
-tests/                  beta conformance and semantic-change tests
-docs/SPEC.md             beta language specification
+docs/SPEC.md             language specification
 docs/SEMANTICS.md        formal core and research properties
 docs/NOVELTY.md          prior-art boundary and novelty claim
 docs/RESEARCH_PLAN.md    evaluation and publication plan
-docs/ROADMAP.md          beta -> compiler/Wasm roadmap
+docs/COMPILER.md         compiler / Change IR / native target architecture
+docs/PATCH_STUDIO.md     universal IDE and iPhone development design
+docs/ROADMAP.md          implementation milestones
 paper/                   manuscript draft and references
 .github/workflows/       cross-platform CI and Pages workflow
 ```
@@ -229,30 +287,33 @@ npm test
 npm run check
 ```
 
-The beta test suite covers language execution plus change composition, inversion, mutation transparency, and conflict detection.
+CI runs the JavaScript beta toolchain on Windows, macOS, and Linux.
 
-## Portability
+## Long-term portability
 
-The beta uses standards-based JavaScript so that the same interpreter runs in browsers and Node.js on Windows, macOS, and Linux. CI tests all three desktop OS families.
-
-The planned compiler path is:
+The target architecture is:
 
 ```text
-Patch source
-   -> parser / typed AST
-   -> Change IR
-   -> WebAssembly Component / WASI
+                    Patch source
+                         |
+                     Change IR
+                    /    |     \
+                   /     |      \
+                Wasm   native    C99 fallback
+                  |      host       |
+               browser  Win/Mac/   unusual Unix
+                        Linux/BSD
 ```
 
-The interpreter is intentional for beta: it lets the language semantics stabilize before compiler infrastructure hardens the wrong design.
+The canonical portable application format is `.patchapp`. Native packages should embed or accompany the Patch runtime so end users do not need to install Patch separately.
 
 ## Research paper
 
-The repository includes a substantial draft:
+The repository includes the manuscript draft:
 
 **Patch: Change-Oriented Programming with Transparent State Evolution**
 
-The current paper is a design/artifact manuscript. It deliberately does **not** fabricate user-study results. The next publication milestone is to add a controlled novice study and benchmark evaluation described in `docs/RESEARCH_PLAN.md`.
+The paper remains an artifact/design manuscript until the planned benchmark and novice-study results exist. Results will not be invented or backfilled.
 
 ## License
 
