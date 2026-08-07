@@ -2,152 +2,130 @@
 
 ## 0.1 beta: language feel
 
-- [x] `create`
-- [x] `change`
-- [x] `set` / `add` / `remove` / `clear`
-- [x] `show`
-- [x] `if` / `else`
-- [x] `repeat`
-- [x] simple things
-- [x] recipes (`make` / `do`)
-- [x] change history
-- [x] inverse generation
-- [x] undo / redo
-- [x] preview
-- [x] watch
+- [x] `create`, `change`, `set`, `add`, `remove`, `clear`
+- [x] `show`, conditions, repeat, things, recipes
+- [x] semantic history, inverse generation, undo/redo, preview, watch
 - [x] conservative conflict helper
-- [x] browser playground
-- [x] Windows/macOS/Linux CI
-- [x] paper draft
+- [x] browser playground and Windows/macOS/Linux CI
+- [x] initial paper
 
-## 0.2 beta: compiler + Patch Studio + semantic contracts
+## 0.2 beta: compiler + Studio + semantic contracts
 
-- [x] first compiler front end
-- [x] Change IR
-- [x] portable `.patchapp` manifest/bundle
-- [x] bootstrap WebAssembly `.wasm` module carrying source + Change IR
-- [x] WebAssembly validation/instantiation tests
-- [x] `patch run`
-- [x] `patch check`
-- [x] `patch changes`
-- [x] `patch build ... --target portable`
-- [x] `patch build ... --target wasm`
-- [x] browser-first Patch Studio shell
-- [x] local project autosave
-- [x] Change IR viewer
-- [x] Change Contract viewer
-- [x] installable PWA metadata/offline cache
-- [x] responsive iPhone/iPad layout
-- [x] `window` syntax
-- [x] `text`, `button`, `input`
-- [x] `when ... clicked`
-- [x] virtual Patch UI model
-- [x] browser GUI preview
-- [x] first visual Designer toolbox
-- [x] semantic Change Signature inference for recipes
-- [x] semantic operation classes (`increase`, `decrease`, `add`, `remove`, `set`, `clear`)
-- [x] `allow` Change Capability policies
-- [x] optional `up to` numeric bounds
-- [x] conservative bound checking
-- [x] transitive signature substitution for simple recipe calls
-- [x] deterministic GitHub Pages site build
-- [x] deployed-site integrity check in CI
+- [x] compiler front end and Change IR
+- [x] portable `.patchapp`
+- [x] bootstrap WebAssembly
+- [x] CLI run/check/changes/build
+- [x] browser-first Patch Studio PWA and iPhone/iPad layout
+- [x] Change IR and Change Contract views
+- [x] first Patch UI and visual Designer slice
+- [x] semantic Change Signatures
+- [x] `allow` Change Capabilities
+- [x] numeric `up to` bounds
+- [x] transitive simple-call signature substitution
+- [x] deterministic Pages build and site integrity CI
+
+### beta.3 research additions
+
+- [x] ranged recipe parameters such as `bonus number 0..10`
+- [x] interval arithmetic for bounded change expressions
+- [x] runtime guards for declared parameter ranges
+- [x] source/recipe/event provenance on committed changes
+- [x] `why value` and `why condition` prototype
+- [x] Lean 4 formal project
+- [x] machine-checked State-Change Factorization for the formal step model
+- [x] machine-checked Mutation Transparency corollary
+- [x] machine-checked interval-containment transitivity
+- [x] machine-checked Semantic Change Contract composition theorem
+- [x] dedicated formal CI rejecting `sorry`/`admit`
+
+Still open in the 0.2/0.3 line:
+
 - [ ] typed AST
 - [ ] expression IR instead of expression strings
-- [ ] serialized `.patchlog` history
-- [ ] `replay` command
-- [ ] source locations inside every runtime change record
-- [ ] property-based inverse/composition tests
-- [ ] Studio timeline visualization
+- [ ] serialized `.patchlog` and explicit `replay`
+- [ ] property-based inverse/composition/range tests
+- [ ] Studio timeline/provenance graph
+- [ ] control selection, drag/resize, properties and event editing in Designer
+- [ ] richer Patch UI controls and two-way input binding
+- [ ] project import/export and immediate mode
 
-## 0.3: richer semantic analysis + Patch UI RAD designer
+## 0.3 research hardening
 
-- [ ] typed/range-aware Change Signature inference
-- [ ] prove bounded dynamic expressions, e.g. `bonus <= 10`
-- [ ] fixed-point analysis for recursive call graphs
-- [ ] richer parameter/path substitution
-- [ ] capability aliases/groups for larger programs
-- [ ] explain why a capability proof failed in Patch Studio
-- [ ] causal `why value` / `why condition` prototype
-- [ ] control selection in Designer
-- [ ] drag positioning/resizing with deterministic source/project representation
-- [ ] property inspector
-- [ ] create/edit event handlers from Designer
-- [ ] `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, `canvas`
-- [ ] `when ... changed/closed` events
-- [ ] two-way `input` binding
-- [ ] project file import/export
-- [ ] immediate mode against a running application
-- [ ] GUI change history / visual rewind
-- [ ] keyboard-oriented desktop layout and touch-first mobile layout
+- [ ] formalize the ranged expression language in Lean
+- [ ] prove executable interval-analysis soundness for that fragment
+- [ ] formalize recipes/calls and simple substitution
+- [ ] prove Change Signature soundness for a useful non-recursive core
+- [ ] derive end-to-end Change Capability soundness
+- [ ] establish compiler/analyzer-to-formal correspondence or a verified-checker boundary
+- [ ] richer path-sensitive and call-graph analysis
+- [ ] recursive fixed-point analysis where it can be made sound
+- [ ] richer `why` provenance graph and source navigation
+- [ ] distinguish historical provenance from counterfactual explanation in tooling
 
-## 0.4: direct portable execution backend
+## 0.4 direct portable execution backend
 
-- [ ] typed core suitable for formalization
-- [ ] direct Change IR-to-WebAssembly lowering for deterministic core
-- [ ] preserve semantic Change Signature evidence across lowering
+- [ ] typed core suitable for direct lowering
+- [ ] direct Change IR-to-WebAssembly lowering
+- [ ] preserve semantic contract evidence across lowering
 - [ ] WASI console runtime
 - [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner executing lowered code
-- [ ] Patch UI host-call interface for compiled GUI apps
-- [ ] runtime capability model
+- [ ] Patch UI host-call interface
 - [ ] compiler benchmark harness
 - [ ] Rust compiler migration where it materially improves the toolchain
 
-## 0.5: native application packaging
+## 0.5 native application packaging
 
 - [ ] Windows console `.exe`
 - [ ] Windows GUI-subsystem `.exe`
-- [ ] macOS CLI executable
-- [ ] macOS `.app` bundle
+- [ ] macOS CLI executable and `.app`
 - [ ] macOS Universal packaging where practical
-- [ ] Linux CLI executable
-- [ ] Linux graphical executable
+- [ ] Linux CLI and GUI executable
 - [ ] FreeBSD/OpenBSD/NetBSD runtime targets
 - [ ] generic Unix C99 fallback for console applications
-- [ ] Patch UI native Windows backend
-- [ ] Patch UI native macOS backend
+- [ ] native Windows/macOS Patch UI backends
 - [ ] SDL3 portable GUI backend for Linux/BSD/other supported Unix
 
-## 0.6: build service
+## 0.6 build service
 
-- [ ] **Build for…** dialog in Patch Studio
+- [ ] **Build for...** dialog in Patch Studio
 - [ ] GitHub Actions remote build integration
 - [ ] Windows/macOS/Linux artifact matrix
 - [ ] iPhone/iPad can request native desktop builds
 - [ ] signing/notarization hooks
-- [ ] release artifact download back into Patch Studio
+- [ ] release artifact delivery back into Patch Studio
 
-## 0.7: collaboration semantics
+## 0.7 collaboration semantics
 
 - [ ] branchable state histories
-- [ ] explicit merge operation
-- [ ] semantic conflict explanations
+- [ ] explicit semantic merge
+- [ ] conflict explanations
 - [ ] safe commuting changes
 - [ ] optional CRDT-backed types for well-understood cases
 - [ ] offline/local persistence
-- [ ] capability-aware collaboration/merge policies
+- [ ] capability-aware collaboration policies
 
-## Research artifact
+## Research artifact gate
 
-- [ ] systematic related-work review including Plaid, Worlds, effect systems, capability/effect systems, ChEOPS/COPE/Edit Transactions, reducer architectures and behavioral permissions
-- [x] design-stage State-Change Factorization calculus
-- [x] design-stage Change Signature / Change Capability formalization
-- [ ] machine-checked State-Change Factorization
-- [ ] machine-checked Change Signature soundness
-- [ ] machine-checked Change Capability soundness
-- [ ] benchmark suite
-- [ ] semantic-security case-study corpus
-- [ ] novice study with ethics/consent as required
-- [ ] cross-platform application case studies
+Before a high-venue submission:
+
+- [ ] systematic related-work review across Plaid, Worlds, effect/capability systems, behavioral permissions, provenance/why debugging, update calculi and reversible systems
+- [x] formal State-Change Factorization core
+- [x] initial machine-checked factorization and contract-composition results
+- [ ] machine-checked executable Change Signature soundness
+- [ ] compiler/formal correspondence
+- [ ] direct compiled execution
+- [ ] benchmark suite and semantic-security case studies
+- [ ] novice study with ethics/consent if retained
 - [ ] reproducibility bundle
 
 ## Design constraints
 
-1. Every new language feature must answer: **Can a beginner ignore this feature and still understand ordinary Patch code?**
-2. Platform complexity belongs in the compiler/runtime, not in Patch source.
-3. Patch Studio should remain usable from a phone, tablet, desktop browser, or native shell.
-4. Console and GUI applications use the same language, variables, change semantics, functions and compiler.
-5. High-venue research claims must come from formal semantics and measured evidence, not from product polish alone.
-6. Bootstrap infrastructure must be described honestly: embedding Change IR in Wasm is not the same as direct Wasm lowering.
-7. Semantic capability analysis must be conservative: when Patch cannot prove a bounded change safe, it must reject/mark it unproven rather than guess.
+1. Every advanced feature must remain ignorable by a beginner writing ordinary Patch.
+2. Platform complexity belongs in the compiler/runtime, not Patch source.
+3. Patch Studio must remain practical on phone, tablet and desktop.
+4. Console and GUI applications share the same state/change semantics.
+5. High-venue claims come from formal semantics and measured evidence, not product polish alone.
+6. Bootstrap Wasm must not be described as direct Wasm lowering.
+7. Semantic capability/range analysis must fail conservatively when it cannot prove safety.
+8. `why` must distinguish recorded provenance from stronger causal claims.
