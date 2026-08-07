@@ -38,6 +38,7 @@ export class PatchInterpreter {
         case 'createThing': return this.createThing(node,locals);
         case 'window': this.windows.push(node); return;
         case 'event': this.events.push(node); return;
+        case 'allow': return;
         case 'show': this.output.push(formatValue(evaluateExpression(node.expr,this.env(locals)))); return;
         case 'watch': this.requireTarget(node.target,node.line); this.watchers.add(node.target); this.output.push(`watching ${node.target}`); return;
         case 'history': return this.showHistory(node.target,node.line);
@@ -56,6 +57,7 @@ export class PatchInterpreter {
         case 'return': return new ReturnSignal(node.expr?evaluateExpression(node.expr,this.env(locals)):null);
         case 'field': throw new PatchRuntimeError('Field declarations only belong inside create thing.',node.line);
         case 'changeOp': throw new PatchRuntimeError('Change operations only belong inside change.',node.line);
+        case 'capRule': throw new PatchRuntimeError('Change capability rules only belong inside allow.',node.line);
         case 'uiControl': throw new PatchRuntimeError('UI controls belong inside a window.',node.line);
         default: throw new PatchRuntimeError(`Unknown instruction ${node.kind}.`,node.line);
       }
