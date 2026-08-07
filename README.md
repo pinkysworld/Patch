@@ -21,13 +21,13 @@ The language is intended to stay easy enough for a beginner while the compiler/r
 
 ## Patch Studio
 
-The public Patch Studio site and browser IDE is intended to live at:
+Public Patch Studio / project site:
 
 **https://pinkysworld.github.io/Patch/**
 
 Patch Studio is browser-first and installable as a PWA. It is designed for Windows, macOS, Linux, iPhone/iPad, Android, ChromeOS and browser-capable BSD/Unix systems.
 
-On iPhone/iPad, open Patch Studio in Safari and use **Share → Add to Home Screen**. The Studio can edit and run Patch locally, preview GUI applications, inspect Change IR and build portable `.patchapp` bundles. Future native Windows/macOS/Linux builds requested from iOS will use remote platform build runners.
+On iPhone/iPad, open Patch Studio in Safari and use **Share → Add to Home Screen**. The Studio can edit Patch, add basic GUI controls through the visual Designer, run console/window programs locally, inspect Change IR, and build portable `.patchapp` or bootstrap `.wasm` artifacts. Future native Windows/macOS/Linux builds requested from iOS will use remote platform build runners.
 
 ## Current status
 
@@ -38,11 +38,13 @@ Implemented now:
 - interpreter and compiler front end;
 - normalized Change IR that keeps `change` explicit;
 - portable `.patchapp` bundles;
+- valid bootstrap WebAssembly `.wasm` modules containing Patch source + Change IR;
 - console programs;
-- first GUI language slice: `window`, `text`, `button`, `input`, and `when ... clicked`;
+- GUI language: `window`, `text`, `button`, `input`, and `when ... clicked`;
 - live GUI preview in Patch Studio;
+- first visual form-Designer toolbox that edits normal Patch source;
 - history, watch, preview, undo and redo;
-- browser/PWA Studio with local autosave;
+- browser/PWA Studio with local autosave and offline core assets;
 - automated CI on Windows, macOS and Linux;
 - deterministic static-site build and deployment validation.
 
@@ -52,12 +54,13 @@ The compiler path is:
 Patch source
    -> AST / typed AST evolution
    -> Change IR
-   -> portable .patchapp       [implemented]
-   -> WebAssembly              [next backend]
-   -> native host packaging    [roadmap]
+   -> portable .patchapp            [implemented]
+   -> bootstrap WebAssembly .wasm   [implemented]
+   -> direct Change IR -> Wasm      [next]
+   -> native host packaging         [roadmap]
 ```
 
-Native `.exe`, `.app`, ELF and BSD/Unix executables are not claimed as finished yet.
+The bootstrap `.wasm` is a genuine instantiable WebAssembly module and portable compiler artifact. It currently embeds the compiled Patch payload for a Patch host. It does **not** yet execute every Patch operation as directly lowered Wasm instructions. Native `.exe`, `.app`, ELF and BSD/Unix executables are also not claimed as finished yet.
 
 ## One language for console and GUI applications
 
@@ -89,7 +92,7 @@ The long-term output matrix is:
 | macOS | CLI executable | `.app` |
 | Linux | native executable | native graphical executable |
 | FreeBSD/OpenBSD/NetBSD/Unix | native or C99 fallback | Patch UI / SDL3 fallback |
-| Browser | WebAssembly/WASI-style target | Web/Patch UI |
+| Browser | WebAssembly | Web/Patch UI |
 | Portable | `.patchapp` | `.patchapp` |
 
 Patch UI hides Cocoa/AppKit, Windows APIs and Unix/SDL details from ordinary Patch source.
@@ -116,12 +119,31 @@ Build a portable app:
 patch build examples/score.patch --kind console --target portable
 ```
 
-Build and validate the public site:
+Build bootstrap WebAssembly:
+
+```bash
+patch build examples/score.patch --kind console --target wasm
+```
+
+Build and validate the public Patch Studio site:
 
 ```bash
 npm run build:site
 npm run check:site
 ```
+
+## Visual Designer
+
+Patch Studio's current Designer can insert text, buttons and inputs into the first window while modifying the same readable `.patch` source you can edit by hand.
+
+For example, choosing **+ Button** creates source such as:
+
+```patch
+window "My App":
+  button "Button" as button_1
+```
+
+The next Designer stages add selection, drag positioning/resizing, properties, more controls and event creation. Patch will not hide GUI definitions in an opaque second language.
 
 ## Language tour
 
@@ -174,31 +196,33 @@ redo
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class changes, undo, event logs, reversible computation, lenses, CRDTs, incremental computation or change-oriented programming environments are new.
+Patch does **not** claim that patches, first-class changes, undo, event logs, reversible computation, lenses, CRDTs, incremental computation or earlier change-oriented programming environments are new.
 
-The research hypothesis is narrower:
+The current PL contribution candidate is stronger and more precise:
 
-> **What happens if explicit semantic change is the exclusive primitive for ordinary mutable application state in a deliberately low-complexity general-purpose language?**
+> **State-Change Factorization:** every supported post-creation persistent mutation must compile/execute through a semantic change `delta` such that `apply(delta, S) = S'`; the semantic change is the mutation mechanism rather than a log generated after hidden assignment.
 
-The current contribution candidate combines:
+Supporting research properties include:
 
-1. **Mutation Transparency**: every post-creation persistent state mutation corresponds to an inspectable semantic change.
-2. **Change-as-execution**: mutation is executed through the normalized change representation rather than logged after ordinary assignment.
-3. **Uniform derived tooling**: inversion, preview, history, replay foundations, conflict reasoning and GUI state evolution reuse the same Change IR.
-4. **Progressive disclosure**: beginners use `create`, `change`, `add`, `remove`, `window` and `when`; the algebra stays underneath.
-5. **Integrated environment**: the same language and Studio span console, GUI, browser and planned native targets.
+1. **Mutation Transparency**: every committed post-creation persistent mutation has an inspectable semantic change.
+2. **Inverse correctness** for the invertible change fragment.
+3. **Preview equivalence** without committing history.
+4. **Replay consistency** for the deterministic fragment.
+5. **Commutation/conflict soundness** for cases Patch classifies as independent.
+6. **Uniform derived tooling**: history, inversion, preview, replay foundations, conflict reasoning and GUI state evolution reuse one Change IR.
+7. **Progressive disclosure**: beginners see `create`, `change`, `add`, `remove`, `window` and `when`; the algebra remains underneath.
 
-For a high-venue paper, the repository treats novelty as a hypothesis to test, not a finished priority claim. The submission path requires a systematic related-work review, formal or machine-checked core properties, a larger compiler/runtime artifact, benchmark evaluation and preferably a controlled novice-comprehension study.
+Patch is therefore a **credible high-venue research direction, but not yet a high-venue result**. A serious top PL submission requires systematic prior-art analysis, formal/machine-checked core properties, direct compiled execution, benchmark evidence and preferably controlled novice-comprehension data.
 
 See `docs/NOVELTY.md`, `docs/SEMANTICS.md`, `docs/RESEARCH_PLAN.md` and `paper/main.tex`.
 
 ## Repository map
 
 ```text
-src/                    parser, interpreter, change algebra, compiler, bundler
+src/                    parser, interpreter, change algebra, compiler, Wasm bootstrap, Designer helpers, bundler
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
-tests/                  language, compiler and UI tests
+tests/                  language, compiler, UI, Designer and Wasm tests
 examples/               runnable .patch programs
 docs/SPEC.md             language specification
 docs/SEMANTICS.md        formal core and research properties
@@ -217,10 +241,11 @@ paper/                   manuscript draft
 Every CI matrix entry must pass:
 
 ```text
-syntax checks
-language tests
+JavaScript syntax checks
+language/compiler/UI/Designer/Wasm tests
 example smoke tests
-portable application build
+portable .patchapp build
+WebAssembly build
 public-site build
 public-site integrity validation
 ```
