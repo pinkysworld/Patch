@@ -3,6 +3,15 @@ import { compile } from '../src/compiler.js';
 import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
 
 const samples = {
+  counterWindow: `create number count = 0
+
+window "Counter":
+  text "Count: {count}"
+  button "Add" as add_button
+
+when add_button clicked:
+  change count:
+    add 1`,
   score: `create number score = 0
 watch score
 
@@ -64,18 +73,21 @@ show courage`
 const code = document.querySelector('#code');
 const output = document.querySelector('#output');
 const irView = document.querySelector('#ir');
+const appView = document.querySelector('#app');
 const sample = document.querySelector('#sample');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
 const saveState = document.querySelector('#saveState');
+let runtime = null;
 
 const saved = loadProject();
-code.value = saved?.code ?? samples.score;
+code.value = saved?.code ?? samples.counterWindow;
 projectName.value = saved?.name ?? 'MyPatchApp';
-projectKind.value = saved?.kind ?? 'console';
+projectKind.value = saved?.kind ?? (saved ? 'console' : 'window');
 
 sample.addEventListener('change', () => {
   code.value = samples[sample.value];
+  projectKind.value = sample.value === 'counterWindow' ? 'window' : 'console';
   saveProject();
 });
 
@@ -84,18 +96,7 @@ for (const input of [code, projectName, projectKind]) {
   input.addEventListener('change', saveProject);
 }
 
-document.querySelector('#run').addEventListener('click', () => {
-  try {
-    const compiled = compile(code.value, projectOptions());
-    const result = new PatchInterpreter().run(code.value);
-    output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no output)';
-    irView.textContent = JSON.stringify(compiled.ir, null, 2);
-    showTab('output');
-  } catch (err) {
-    output.textContent = `Patch stopped:\n${err.message}`;
-    showTab('output');
-  }
-});
+document.querySelector('#run').addEventListener('click', runProject);
 
 document.querySelector('#build').addEventListener('click', () => {
   try {
@@ -115,8 +116,76 @@ for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => showTab(tab.dataset.tab));
 }
 
+function runProject() {
+  try {
+    const compiled = compile(code.value, projectOptions());
+    runtime = new PatchInterpreter();
+    const result = runtime.run(code.value);
+    output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no console output)';
+    irView.textContent = JSON.stringify(compiled.ir, null, 2);
+    renderApp(result.ui);
+    showTab(result.ui.length ? 'app' : 'output');
+  } catch (err) {
+    output.textContent = `Patch stopped:\n${err.message}`;
+    appView.innerHTML = '<p class="empty-preview">The app could not start.</p>';
+    showTab('output');
+  }
+}
+
+function renderApp(windows) {
+  appView.innerHTML = '';
+  if (!windows?.length) {
+    appView.innerHTML = '<p class="empty-preview">This is a console project. Its output is in the Output tab.</p>';
+    return;
+  }
+  for (const model of windows) {
+    const shell = document.createElement('section');
+    shell.className = 'patch-window';
+    const title = document.createElement('div');
+    title.className = 'patch-window-title';
+    title.textContent = model.title;
+    const body = document.createElement('div');
+    body.className = 'patch-window-body';
+    for (const control of model.controls) {
+      if (control.type === 'text') {
+        const el = document.createElement('p');
+        el.className = 'patch-text';
+        el.textContent = control.text;
+        body.appendChild(el);
+      } else if (control.type === 'button') {
+        const el = document.createElement('button');
+        el.className = 'patch-button';
+        el.textContent = control.text;
+        el.addEventListener('click', () => trigger(control.id, 'clicked'));
+        body.appendChild(el);
+      } else if (control.type === 'input') {
+        const el = document.createElement('input');
+        el.className = 'patch-input';
+        el.value = control.value ?? '';
+        el.placeholder = control.id ?? '';
+        body.appendChild(el);
+      }
+    }
+    shell.append(title, body);
+    appView.appendChild(shell);
+  }
+}
+
+function trigger(control, event) {
+  if (!runtime) return;
+  try {
+    const result = runtime.trigger(control, event);
+    output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
+    renderApp(result.ui);
+  } catch (err) {
+    output.textContent = `Patch stopped:\n${err.message}`;
+    showTab('output');
+  }
+}
+
 function showTab(name) {
   for (const tab of document.querySelectorAll('.tab')) tab.classList.toggle('active', tab.dataset.tab === name);
+  appView.hidden = name !== 'app';
   output.hidden = name !== 'output';
   irView.hidden = name !== 'ir';
 }
