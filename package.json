@@ -1,6 +1,6 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.0",
+  "version": "0.2.0-beta.1",
   "description": "Patch: a tiny change-oriented programming language with a browser-first cross-platform IDE",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
@@ -9,9 +9,11 @@
     "run": "node src/cli.js run",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
-    "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp"
+    "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
+    "build:site": "node scripts/build-site.js",
+    "check:site": "node scripts/check-site.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide"]
 }
