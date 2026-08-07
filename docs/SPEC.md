@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.2 development**
+Status: **0.2.0-beta.3 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -16,7 +16,7 @@ change x:
 
 Direct reassignment such as `x = 2` is intentionally invalid outside a `create thing` field block.
 
-## Values
+## Values and expressions
 
 ```patch
 create number score = 10
@@ -24,8 +24,6 @@ create text name = "Mia"
 create boolean ready = true
 create list fruits = apple, banana
 ```
-
-Lists can also use expression form: `create list values = [1, 2, 3]`.
 
 Things are simple records:
 
@@ -36,66 +34,27 @@ create thing player:
   active = true
 ```
 
-## Expressions
-
-Current expressions include numbers, strings, booleans, variables, thing fields such as `player.score`, arithmetic `+ - * / %`, comparisons, `and`, `or`, `not`, parentheses, and list literals.
+Expressions include numbers, strings, booleans, variables, thing fields such as `player.score`, arithmetic `+ - * / %`, comparisons, `and`, `or`, `not`, parentheses, and list literals.
 
 ## Change
 
-A `change` block is atomic from the language-history perspective: all operations in one block form one semantic change record.
-
-### set
-
-```patch
-change name:
-  set = "Alex"
-
-change player:
-  set name = "Alex"
-```
-
-### add
+A `change` block forms one semantic change record.
 
 ```patch
 change score:
   add 10
 
-change fruits:
-  add orange
-
 change player:
   add 10 to score
-```
-
-For numbers `add` performs numeric addition; for lists it appends; for text it appends text.
-
-### remove
-
-```patch
-change lives:
-  remove 1
-
-change fruits:
-  remove banana
-
-change player:
   remove 1 from lives
+  set name = "Alex"
 ```
 
-For numbers `remove` subtracts; for lists it removes the first semantically equal item.
-
-### clear
-
-```patch
-change fruits:
-  clear
-```
-
-The beta maps clear to the natural empty value: `[]`, `""`, `0`, or `{}`.
+Supported source operations are `set`, `add`, `remove`, and `clear`. The runtime normalizes these into semantic operations and generated inverses where supported.
 
 ## Semantic Change Signatures
 
-Patch 0.2 beta.2 automatically infers a semantic **Change Signature** for each recipe.
+Patch automatically infers a semantic Change Signature for every recipe.
 
 ```patch
 make reward(player):
@@ -103,136 +62,92 @@ make reward(player):
     add 5 to score
 ```
 
-The compiler infers approximately:
+Conceptually:
 
 ```text
 reward(player)
   player.score -> increase by 5
 ```
 
-This is compiler information, not syntax the beginner has to write. The signature records the target/path, semantic operation class, statically known amount when available, source location, and simple transitive effects through recipe calls.
-
-The current semantic classes are:
-
-- `increase` and `decrease` when the compiler can prove a numeric literal change;
-- `add` and `remove` when the value/type cannot be proven more precisely;
-- `set`;
-- `clear`.
-
-Preview-only changes are represented in signatures but marked as non-committing.
-
-Use the CLI to inspect inferred signatures:
-
-```text
-patch changes program.patch
-```
-
-Patch Studio exposes the same information in the **Change Contract** tab.
+Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively.
 
 ## Change Capabilities
 
-A recipe can optionally declare which semantic changes it is allowed to produce.
+A recipe can optionally state what semantic changes it may produce.
 
 ```patch
 allow reward:
   player.score may increase up to 10
-
-make reward(player):
-  change player:
-    add 5 to score
 ```
 
-The `allow` block is a compile-time policy. It does not execute at runtime.
-
-A rule has the form:
+Rules use:
 
 ```text
 target[.field] may operation [up to number]
 ```
 
-Current operations:
+Current operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clear`.
 
-```text
-increase
-decrease
-add
-remove
-set
-clear
-```
+A protected recipe is rejected if its inferred committed changes are not covered by its rules.
 
-Examples:
+## Ranged recipe parameters
+
+Beta 3 introduces bounded numeric parameters:
 
 ```patch
-allow inventory_action:
-  player.inventory may add
-  player.inventory may remove
-```
-
-```patch
-allow reward:
-  player.score may increase up to 10
-```
-
-If a protected recipe produces a committed change that is not covered by a rule, compilation fails.
-
-For example, this is rejected:
-
-```patch
-allow reward:
-  player.score may increase up to 10
-
-make reward(player):
-  change player:
-    set score = 999
-```
-
-This is also rejected because the bound is exceeded:
-
-```patch
-make reward(player):
-  change player:
-    add 25 to score
-```
-
-### Conservative proof rule
-
-When a bounded policy uses `up to`, Patch must be able to prove the amount statically in the current beta.
-
-```patch
-allow reward:
-  player.score may add up to 10
-
-make reward(player, bonus):
+make reward(player, bonus number 0..10):
   change player:
     add bonus to score
 ```
 
-The compiler rejects this form because it cannot yet prove that `bonus <= 10`. Later typed/range analysis can make more dynamic cases provable.
+A ranged parameter is still used like an ordinary number. The annotation is an optional contract for the compiler/runtime, not a new numeric type visible in ordinary expressions.
 
-### Transitive recipe effects
-
-Patch follows simple recipe calls when it can map a callee parameter to a simple caller identifier.
+The compiler uses interval analysis to reason about simple arithmetic:
 
 ```patch
-make add_points(target):
-  change target:
-    add 5 to score
-
 allow reward:
   player.score may increase up to 10
 
-make reward(player):
-  do add_points(player)
+make reward(player, bonus number 0..5):
+  change player:
+    add bonus * 2 to score
 ```
 
-The inferred signature for `reward` contains `player.score -> increase by 5`, and the capability is checked against that transitive effect.
+`bonus * 2` is inferred as `0..10`, so the capability is proven. If the declared input range were `0..6`, the possible result would be `0..12` and compilation would fail.
 
-If recursion, an unknown recipe, or a dynamic target prevents a safe proof inside a capability-protected recipe, the compiler rejects the proof rather than guessing.
+The current interval analyzer supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
+
+Calls to ranged recipes are also guarded at runtime. For example, a recipe declaring `bonus number 0..10` rejects a call with `11`. This guard is part of the assumptions behind signature soundness until a stronger static call proof is mechanized.
+
+## Causal provenance and `why`
+
+Committed semantic changes retain:
+
+- source line;
+- change target and before/after values;
+- semantic operations;
+- active recipe-call chain;
+- GUI event cause when a change occurs from an event handler.
+
+To explain the current value of a target:
+
+```patch
+why score
+```
+
+Patch reports the recorded changes that led to the current value and includes known recipe/event causes.
+
+A condition can also be queried:
+
+```patch
+why score > 100
+```
+
+For the deterministic in-memory history, Patch reconstructs the pre-change state and replays committed changes until it finds the first transition where the condition changed from false to true. If the condition is false now or was already true before the recorded changes, Patch reports that instead.
+
+`why` is a provenance/debugging facility. It does not claim to infer philosophical or counterfactual causation, and it does not yet reason about arbitrary external effects.
 
 ## Window applications
-
-Patch 0.2 introduces the first intentionally small Patch UI slice. The same state and `change` semantics are used in console and window programs.
 
 ```patch
 create number count = 0
@@ -246,72 +161,22 @@ when add_button clicked:
     add 1
 ```
 
-### window
+Current GUI syntax includes `window`, `text`, `button`, `input`, and event syntax `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers.
 
-```patch
-window "My App":
-  ...
-```
-
-A program may declare one or more windows. In the browser beta they are represented by a virtual Patch UI model and rendered by Patch Studio.
-
-### text
-
-```patch
-text "Hello"
-text "Count: {count}"
-```
-
-Text supports simple `{name}` interpolation from Patch state in the current UI runtime.
-
-### button
-
-```patch
-button "Save" as save_button
-```
-
-The identifier after `as` is used by event handlers.
-
-### input
-
-```patch
-input name
-```
-
-The first parser/runtime slice recognizes inputs and renders them. Binding input changes back into Patch state is not yet part of the 0.2 event model.
-
-### when
-
-```patch
-when save_button clicked:
-  show "clicked"
-```
-
-Recognized event names are currently `clicked`, `changed`, and `closed`; the browser beta executes `clicked` for buttons. The other event kinds reserve stable syntax while their host wiring is implemented.
-
-### Planned Patch UI controls
-
-The stable UI vocabulary is intended to grow carefully with `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, and `canvas`. These are roadmap items, not implemented syntax yet.
-
-## Named changes
+## Named changes, undo, preview, history
 
 ```patch
 change score called bonus:
   add 10
-```
 
-A name can be used by `undo` when it is the latest committed change.
-
-## Undo / redo
-
-```patch
-undo
+history score
+undo bonus
 redo
 ```
 
-or `undo bonus` for the latest named change. Arbitrary non-last undo is deliberately deferred because it requires rebasing/commutation semantics.
+Named undo is currently restricted to the latest committed change.
 
-## Preview
+Preview executes against cloned state/history and restores committed state:
 
 ```patch
 preview:
@@ -319,37 +184,26 @@ preview:
     add 100
 ```
 
-The body executes against cloned state/history. Patch reports the proposed state difference and restores the committed state.
+`watch score` reports future committed transitions.
 
-## History and watch
-
-```patch
-history score
-watch score
-```
-
-History is semantic rather than merely textual: it records normalized operations plus before/after state. `watch` reports future committed transitions.
-
-## Conditions
+## Control flow
 
 ```patch
 if score >= 10:
   show "winner"
 else:
   show "keep going"
-```
 
-## Repeat
-
-```patch
 repeat 5:
   change score:
     add 1
 ```
 
-Inside a loop, `count` is available as a one-based local number.
+Inside `repeat`, `count` is a one-based local number.
 
 ## Recipes
+
+Plain parameters remain valid:
 
 ```patch
 make greet(name):
@@ -358,16 +212,21 @@ make greet(name):
 do greet("Ada")
 ```
 
+Ranged parameters are optional and currently numeric only:
+
+```patch
+make award(points number 0..100):
+  show points
+```
+
 ## Compiler-visible application kind
 
-A project is currently marked `console` or `window` in Patch Studio/build options. The compiler can also infer a window-oriented program when the AST contains `window` declarations.
-
-Both kinds compile through the same Change IR.
+Projects are `console` or `window` applications. Both compile through the same Change IR.
 
 ## Reserved words
 
-`create thing number text boolean list change called set add remove clear show watch history undo redo preview if else repeat make do return allow may increase decrease up to window text button input when clicked changed closed as true false and or not`
+`create thing number text boolean list change called set add remove clear show why watch history undo redo preview if else repeat make do return allow may increase decrease up to window text button input when clicked changed closed as true false and or not`
 
 ## Error design
 
-Patch errors should answer what went wrong, where, and how to fix it, while avoiding unnecessary compiler terminology. Example: `line 4: I cannot change 'score' because it does not exist.`
+Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe.
