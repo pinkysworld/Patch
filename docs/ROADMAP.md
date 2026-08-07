@@ -20,7 +20,7 @@
 - [x] Windows/macOS/Linux CI
 - [x] paper draft
 
-## 0.2 beta: compiler + Patch Studio
+## 0.2 beta: compiler + Patch Studio + semantic contracts
 
 - [x] first compiler front end
 - [x] Change IR
@@ -29,11 +29,13 @@
 - [x] WebAssembly validation/instantiation tests
 - [x] `patch run`
 - [x] `patch check`
+- [x] `patch changes`
 - [x] `patch build ... --target portable`
 - [x] `patch build ... --target wasm`
 - [x] browser-first Patch Studio shell
 - [x] local project autosave
 - [x] Change IR viewer
+- [x] Change Contract viewer
 - [x] installable PWA metadata/offline cache
 - [x] responsive iPhone/iPad layout
 - [x] `window` syntax
@@ -41,7 +43,13 @@
 - [x] `when ... clicked`
 - [x] virtual Patch UI model
 - [x] browser GUI preview
-- [x] first visual Designer toolbox: add Text/Button/Input while editing normal Patch source
+- [x] first visual Designer toolbox
+- [x] semantic Change Signature inference for recipes
+- [x] semantic operation classes (`increase`, `decrease`, `add`, `remove`, `set`, `clear`)
+- [x] `allow` Change Capability policies
+- [x] optional `up to` numeric bounds
+- [x] conservative bound checking
+- [x] transitive signature substitution for simple recipe calls
 - [x] deterministic GitHub Pages site build
 - [x] deployed-site integrity check in CI
 - [ ] typed AST
@@ -52,8 +60,15 @@
 - [ ] property-based inverse/composition tests
 - [ ] Studio timeline visualization
 
-## 0.3: richer Patch UI + RAD designer
+## 0.3: richer semantic analysis + Patch UI RAD designer
 
+- [ ] typed/range-aware Change Signature inference
+- [ ] prove bounded dynamic expressions, e.g. `bonus <= 10`
+- [ ] fixed-point analysis for recursive call graphs
+- [ ] richer parameter/path substitution
+- [ ] capability aliases/groups for larger programs
+- [ ] explain why a capability proof failed in Patch Studio
+- [ ] causal `why value` / `why condition` prototype
 - [ ] control selection in Designer
 - [ ] drag positioning/resizing with deterministic source/project representation
 - [ ] property inspector
@@ -70,6 +85,7 @@
 
 - [ ] typed core suitable for formalization
 - [ ] direct Change IR-to-WebAssembly lowering for deterministic core
+- [ ] preserve semantic Change Signature evidence across lowering
 - [ ] WASI console runtime
 - [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner executing lowered code
@@ -110,13 +126,18 @@
 - [ ] safe commuting changes
 - [ ] optional CRDT-backed types for well-understood cases
 - [ ] offline/local persistence
+- [ ] capability-aware collaboration/merge policies
 
 ## Research artifact
 
-- [ ] systematic related-work review including ChEOPS/COPE/Edit Transactions and reducer architectures
-- [ ] formal State-Change Factorization calculus
-- [ ] machine-checked core properties
+- [ ] systematic related-work review including Plaid, Worlds, effect systems, capability/effect systems, ChEOPS/COPE/Edit Transactions, reducer architectures and behavioral permissions
+- [x] design-stage State-Change Factorization calculus
+- [x] design-stage Change Signature / Change Capability formalization
+- [ ] machine-checked State-Change Factorization
+- [ ] machine-checked Change Signature soundness
+- [ ] machine-checked Change Capability soundness
 - [ ] benchmark suite
+- [ ] semantic-security case-study corpus
 - [ ] novice study with ethics/consent as required
 - [ ] cross-platform application case studies
 - [ ] reproducibility bundle
@@ -129,3 +150,4 @@
 4. Console and GUI applications use the same language, variables, change semantics, functions and compiler.
 5. High-venue research claims must come from formal semantics and measured evidence, not from product polish alone.
 6. Bootstrap infrastructure must be described honestly: embedding Change IR in Wasm is not the same as direct Wasm lowering.
+7. Semantic capability analysis must be conservative: when Patch cannot prove a bounded change safe, it must reject/mark it unproven rather than guess.
