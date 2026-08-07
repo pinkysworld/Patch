@@ -1,0 +1,10 @@
+create number score = 5
+
+change score called bonus:
+  add 10
+show score
+undo bonus
+show score
+redo
+show score
+history score
