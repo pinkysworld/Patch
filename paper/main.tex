@@ -1,0 +1,213 @@
+\documentclass[10pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,enumitem,listings,microtype}
+\usepackage[hidelinks]{hyperref}
+\lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,watch,history,undo,redo,preview,if,else,repeat,make,do,return,true,false,and,or,not,to,from},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
+\lstset{language=Patch,basicstyle=\ttfamily\small,columns=fullflexible,frame=single,breaklines=true,showstringspaces=false}
+
+\title{Patch: Change-Oriented Programming with Transparent State Evolution}
+\author{Mich\'el Nguyen}
+\date{Beta artifact manuscript, August 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Mutable state is usually expressed through assignment, method calls, or data-structure-specific operations whose semantic relationship is reconstructed later by debuggers, event logs, undo stacks, synchronization layers, or application code. This paper explores a different design point: a general-purpose language in which persistent state can change only through explicit \emph{semantic changes}. We present Patch, a deliberately small language whose beginner-facing vocabulary centers on \texttt{create} and \texttt{change}. Each committed mutation is normalized into a structured change record containing a target, version transition, semantic operations, inverse operations when available, and before/after state. The same representation drives execution, history, preview, undo/redo, replay foundations, and conservative conflict analysis. We call the resulting property \emph{Mutation Transparency}: every post-creation mutation of persistent state corresponds to an inspectable semantic change. Patch is not proposed as the invention of patches, edit algebras, reversible updates, bidirectional transformations, event logs, or incremental computation. Rather, it tests whether semantic change can serve as the \emph{exclusive ordinary mutation primitive} while retaining a surface language simple enough for novice use. We describe the beta artifact, give a core operational model, state theorem targets for mutation transparency, inversion, replay, and commutation, and define an empirical program comparing Patch with conventional mutable syntax. Human-comprehension and compiler-performance claims are intentionally left for controlled evaluation.
+\end{abstract}
+
+\section{Introduction}
+A great deal of software engineering reconstructs how state changed. Debuggers record traces, databases keep logs, user interfaces maintain undo stacks, collaborative applications exchange operations, and event-sourced systems persist events. Yet many general-purpose languages start from the opposite abstraction: mutate state directly and recover the meaning of that mutation later.
+
+Patch explores whether that relationship can be inverted. Instead of treating change as a secondary interpretation of mutation, Patch requires persistent mutation to occur inside an explicit \texttt{change} construct:
+
+\begin{lstlisting}
+create number score = 0
+
+change score:
+  add 1
+
+show score
+\end{lstlisting}
+
+The source syntax is intentionally simple. Underneath, the block is normalized into a semantic change before commitment. A numeric addition becomes an operation equivalent to \textsc{AddNumber}(score,1), with \textsc{AddNumber}(score,-1) generated as its inverse. Record changes carry field paths; list removals retain the removed position/value needed for inversion. The same normalized representation powers \texttt{history}, \texttt{undo}, \texttt{redo}, \texttt{preview}, composition, and conflict analysis.
+
+The central research question is therefore:
+
+\begin{quote}
+Can explicit semantic change replace ordinary persistent assignment as the default mutation model of a low-complexity general-purpose language, while providing structural tooling benefits without increasing the conceptual burden on novice programmers?
+\end{quote}
+
+The beta contributes: (1) a change-only persistent mutation design; (2) a normalized semantic change representation reused by multiple facilities; (3) the Mutation Transparency property; (4) a runnable interpreter, CLI and browser playground; and (5) a falsifiable evaluation plan spanning programming-languages and HCI/education questions.
+
+\section{Design Principles}
+\subsection{Hide machinery from beginners}
+A user writes:
+\begin{lstlisting}
+change score:
+  add 1
+\end{lstlisting}
+The runtime may track versions, inverses and conflict metadata, but these are not prerequisites for a first program. Patch follows progressive disclosure: advanced semantics should improve simple programs without requiring algebraic syntax.
+
+\subsection{Creation is not mutation}
+\texttt{create} introduces a new binding. Beta history begins after creation, so Mutation Transparency is scoped to mutation of already-created persistent state.
+
+\subsection{No assignment escape hatch}
+A language that logs \texttt{change} blocks while also permitting ordinary persistent assignment would have an incomplete semantic history by construction. Patch therefore rejects direct reassignment such as \texttt{x = 2} outside initialization contexts.
+
+\subsection{A very small mutation vocabulary}
+The beta offers \texttt{set}, \texttt{add}, \texttt{remove}, and \texttt{clear}. The runtime normalizes these friendly words into more precise semantic operations. Surface simplicity and semantic precision need not be identical.
+
+\section{Language Overview}
+Patch beta provides numbers, text, booleans, lists, and record-like ``things.''
+\begin{lstlisting}
+create text hero = "Mia"
+create list inventory = key, map
+
+create thing player:
+  name = "Mia"
+  score = 0
+  lives = 3
+
+change player:
+  add 10 to score
+  remove 1 from lives
+\end{lstlisting}
+
+Control flow remains conventional:
+\begin{lstlisting}
+if lives > 0:
+  show "keep playing"
+else:
+  show "game over"
+
+repeat 3:
+  change score:
+    add 1
+\end{lstlisting}
+
+\subsection{Preview}
+\begin{lstlisting}
+preview:
+  change lives:
+    remove 1
+\end{lstlisting}
+The body executes against cloned state/history, the resulting state difference is reported, and committed state is restored.
+
+\subsection{History and inversion}
+\begin{lstlisting}
+watch score
+change score called bonus:
+  add 10
+history score
+undo bonus
+redo
+\end{lstlisting}
+Named undo is restricted to the latest change in beta. Arbitrary selective undo requires rebasing/commutation semantics and is deliberately deferred.
+
+\section{Semantic Model}
+Let state be a finite map $\sigma:Name\rightarrow Value$, history an ordered sequence $H=[\delta_1,\ldots,\delta_n]$, and $\nu(x)$ the current target version. A committed change is
+\[
+\delta=\langle id,x,b,n,\Delta,\Delta^{-1},v,v'\rangle,
+\]
+where $x$ is the target, $b/n$ are base/new versions, $\Delta$ is an ordered sequence of normalized operations, $\Delta^{-1}$ its inverse sequence when supported, and $v/v'$ the before/after values.
+
+Write $apply(\Delta,v)=v'$. A source \texttt{change x} block computes $v=\sigma(x)$, normalizes its operations to $\Delta$, computes $v'=apply(\Delta,v)$, updates $\sigma[x\mapsto v']$, increments $\nu(x)$, and appends the corresponding $\delta$.
+
+\subsection{Mutation Transparency}
+\paragraph{Property MT.} If an execution step changes an already-created persistent binding, that step also creates and commits a semantic change record whose before/after values correspond to the transition.
+
+In the beta, MT follows structurally from the AST and interpreter dispatch: creation introduces bindings; the only execution case that updates an existing persistent binding is \texttt{change}; and that case constructs a change object before committing it. A submission-ready version should mechanize this property.
+
+\subsection{Inverse generation}
+Representative inverses include
+\[
+inv(AddNumber(n))=AddNumber(-n)
+\]
+and
+\[
+inv(Set(new),old)=Set(old).
+\]
+For list append and removal, the runtime records enough position/value information to derive \textsc{RemoveAt} and \textsc{InsertAt} inverses. For a sequence, inverse operation order is reversed.
+
+The theorem target for the supported invertible fragment is
+\[
+apply(inv(\Delta,v),apply(\Delta,v))=v.
+\]
+Patch does not claim arbitrary reversible computation.
+
+\subsection{Composition and conflict}
+Two changes to the same target compose sequentially when $\delta_1.newVersion=\delta_2.baseVersion$. Forward operation lists concatenate in execution order and inverses in reverse change order.
+
+The beta also implements a conservative conflict predicate. Changes to different targets do not conflict; distinct record fields from the same base version do not conflict; numeric additions to the same path commute; competing writes to the same path conflict. This is not a CRDT convergence claim.
+
+\subsection{Replay target}
+For the deterministic core, a version-consistent ordered history replayed from the same initial state should reproduce the same final state. Future I/O, randomness, concurrency, and time require explicit treatment before the property can be generalized.
+
+\section{Implementation}
+The beta is implemented as dependency-free ECMAScript modules. A recursive-descent expression evaluator avoids host-language \texttt{eval}. The indentation-sensitive parser produces an AST that deliberately has no persistent-assignment node. The interpreter stores state, target versions, change history, redo state, watchers, and recipe definitions.
+
+The browser playground imports the same interpreter used by the Node.js CLI. The repository includes automated semantic/conformance tests and runnable examples. CI is configured for Windows, macOS, and Linux on current Node.js release lines. This establishes beta portability of the interpreter, not future native-compiler performance.
+
+A later compiler is planned as
+\begin{verbatim}
+Patch source -> typed AST -> Change IR -> WebAssembly/WASI
+\end{verbatim}
+with a Rust front end. Interpreter-first development is intentional so that the semantics can stabilize before compiler infrastructure hardens accidental decisions.
+
+\section{Related Work and Novelty Boundary}
+Patch occupies a crowded conceptual region and must be positioned conservatively.
+
+\subsection{Edit lenses and bidirectional programming}
+Edit lenses explicitly represent edits and translate them between connected structures \cite{hofmann2012edit}; languages such as HOBiT make lens-style consistency more programmable \cite{matsuda2018hobit}. Patch differs in primary objective: it does not begin from a source/view consistency problem, but from ordinary runtime mutation in a small general-purpose language.
+
+\subsection{Change structures and self-adjusting computation}
+Cai et al. develop a theory of changes for higher-order languages in which derivatives map input changes to output changes for incremental computation \cite{cai2014changes}. Self-adjusting computation tracks dependencies and propagates updates efficiently \cite{acar2013selfadjusting}. Patch currently does neither automatic differentiation nor dependency propagation; its change values describe state transitions initiated by program statements and drive transparency/tooling.
+
+\subsection{Patch theory}
+Formal patch theories study composition, inversion, identity, commutation and conflict. Homotopical Patch Theory provides a formal account of patch theories and models \cite{anguilhomotopical2016}. Patch adopts the broad insight that edits deserve semantic structure but applies it to runtime program state while hiding patch algebra from ordinary beginner code.
+
+\subsection{CRDTs}
+CRDTs provide principled convergence for specific distributed update types \cite{shapiro2011crdt}. Patch beta does not claim convergence; its conflict relation is local and conservative.
+
+\subsection{Educational languages}
+Scratch demonstrates the value of designing programming representations around accessibility and immediate feedback \cite{resnick2009scratch}. Patch's educational hypothesis is narrower: an explicit change block may reduce conceptual distance for mutable state while simultaneously exposing useful semantics for debugging and history.
+
+\subsection{Claimed combination}
+The proposed novelty is the combination of: a general-purpose language; no ordinary persistent mutation outside semantic change blocks; reification of every such mutation; reuse of one change representation for inversion, preview, history, composition, and conflict analysis; a beginner surface that does not expose the algebra; and empirical evaluation of whether this design remains simple in practice. A systematic literature review must still test whether a previous language already satisfies this full combination.
+
+\section{Evaluation Plan}
+\subsection{RQ1: Expressiveness}
+Implement 30--50 small programs in Patch and a conventional baseline, measuring source size, mutation constructs, and helper infrastructure required for history/undo functionality.
+
+\subsection{RQ2: Mutation transparency}
+Generate a conformance corpus that exercises each mutable operation under direct code, conditions, loops, recipes, and preview. Every post-creation committed state difference must have a corresponding semantic change record.
+
+\subsection{RQ3: Derived tooling}
+Measure inverse coverage, undo/redo correctness, replay, preview correctness, history reconstruction, and conflict classification. Unsupported cases must be reported rather than hidden.
+
+\subsection{RQ4: Novice comprehension}
+Run a randomized/counterbalanced study comparing equivalent Patch and conventional mutable snippets. Tasks should include predicting outputs, identifying changes, modifying behavior, undoing requested transitions, and explaining mutation bugs. Measure correctness, completion time, edit/error count, confidence, and cognitive load. Hypotheses should be preregistered.
+
+\subsection{RQ5: Performance}
+Benchmark numeric loops, list changes, object-field updates, and different history/inverse settings against equivalent JavaScript. A later Wasm compiler should be evaluated separately.
+
+\subsection{RQ6: Conflict analysis}
+Use a manually labeled corpus of independent field writes, commuting numeric additions, competing writes, list operations, and nested structures to measure soundness and conservatism.
+
+\section{Limitations}
+Patch beta is intentionally incomplete. Its type system is mostly dynamic; complete before/after snapshots are inefficient for large structures; conflict analysis is narrow; arbitrary selective undo is absent; replay claims are restricted to the deterministic core; and no novice study has yet validated the accessibility hypothesis. Novelty also requires a complete literature review before submission. These limitations are part of the research program rather than results to hide.
+
+\section{Conclusion}
+Patch asks a simple question with nontrivial consequences: what if changing state were a language-level object before it became a debugging artifact, event-log entry, undo command, or synchronization message? The beta demonstrates that a small textual language can make \texttt{change} the exclusive route for persistent mutation while using one normalized semantic representation for execution, history, inverse generation, preview, composition, and basic conflict analysis. The design does not claim to invent edits, patches, lenses, incremental computation, or reversible updates. Its research contribution is the integration of semantic change as the ordinary mutation model with a deliberately small user-facing vocabulary. Whether that combination improves comprehensibility and scales is now a formal and empirical question that the artifact makes possible to test.
+
+\begin{thebibliography}{9}
+\bibitem{hofmann2012edit} Martin Hofmann, Benjamin C. Pierce, and Daniel Wagner. Edit Lenses. In \emph{POPL}, 2012. \url{https://doi.org/10.1145/2103621.2103715}.
+\bibitem{cai2014changes} Yufei Cai, Paolo G. Giarrusso, Tillmann Rendel, and Klaus Ostermann. A Theory of Changes for Higher-Order Languages. In \emph{PLDI}, 2014. \url{https://doi.org/10.1145/2594291.2594304}.
+\bibitem{acar2013selfadjusting} Umut A. Acar, Matthias Blume, and Jacob Donham. A Consistent Semantics of Self-Adjusting Computation. \emph{JFP}, 2013. \url{https://doi.org/10.1017/S0956796813000099}.
+\bibitem{anguilhomotopical2016} Carlo Angiuli, Edward Morehouse, Daniel R. Licata, and Robert Harper. Homotopical Patch Theory. \emph{JFP}, 2016. \url{https://doi.org/10.1017/S0956796816000198}.
+\bibitem{shapiro2011crdt} Marc Shapiro, Nuno Pregui\c{c}a, Carlos Baquero, and Marek Zawirski. Conflict-Free Replicated Data Types. 2011. \url{https://doi.org/10.1007/978-3-642-24550-3_29}.
+\bibitem{resnick2009scratch} Mitchel Resnick et al. Scratch: Programming for All. \emph{CACM}, 2009. \url{https://doi.org/10.1145/1592761.1592779}.
+\bibitem{matsuda2018hobit} Kazutaka Matsuda and Meng Wang. HOBiT: Programming Lenses Without Using Lens Combinators. 2018. \url{https://doi.org/10.1007/978-3-319-89884-1_2}.
+\end{thebibliography}
+\end{document}

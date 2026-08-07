@@ -1,0 +1,6 @@
+create number age = 8
+
+if age < 10:
+  show "You are a child"
+else:
+  show "You are older"

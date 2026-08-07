@@ -1,0 +1,7 @@
+create number score = 0
+
+repeat 5:
+  change score:
+    add 1
+
+show score

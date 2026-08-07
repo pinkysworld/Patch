@@ -1,0 +1,11 @@
+create number score = 0
+watch score
+
+change score:
+  add 1
+
+change score called bonus:
+  add 10
+
+show score
+history score
