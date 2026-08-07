@@ -5,12 +5,15 @@ const CORE = [
   './style.css',
   './playground.js',
   './manifest.webmanifest',
+  './icon.svg',
   '../src/interpreter.js',
   '../src/parser.js',
   '../src/expression.js',
   '../src/change.js',
   '../src/compiler.js',
-  '../src/bundle.js'
+  '../src/bundle.js',
+  '../src/wasm.js',
+  '../src/designer.js'
 ];
 
 self.addEventListener('install', event => {
