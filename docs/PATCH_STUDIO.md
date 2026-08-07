@@ -10,11 +10,12 @@ A beginner should be able to:
 2. create a console or window project;
 3. type a few lines of Patch or use the visual Designer;
 4. press **Run**;
-5. press **Build** to produce an application artifact.
+5. inspect what the program is allowed to change when desired;
+6. press **Build** to produce an application artifact.
 
 No build files, compiler setup, SDK selection or package-manager knowledge should be required for ordinary programs.
 
-## What works in 0.2 beta
+## What works in 0.2 beta.2
 
 Patch Studio now includes:
 
@@ -22,14 +23,44 @@ Patch Studio now includes:
 - Run for console and GUI programs;
 - live Patch UI preview;
 - Change IR viewer;
+- **Change Contract** viewer for inferred semantic Change Signatures and declared Change Capabilities;
 - portable `.patchapp` builds;
 - bootstrap `.wasm` builds;
 - first visual Designer toolbox with **+ Text**, **+ Button** and **+ Input**;
-- source-preserving Designer edits: adding a control updates ordinary readable `.patch` source rather than a hidden form language;
+- source-preserving Designer edits;
 - responsive phone/tablet layout;
 - installable PWA/offline cache.
 
 The Designer is intentionally an early RAD slice, not yet a finished drag-and-drop form editor. Positioning, resizing, control selection, a property inspector and richer widgets are next milestones.
+
+## Change Contract view
+
+Patch Studio can show advanced users what semantic changes the compiler infers from recipes without forcing that information into normal beginner code.
+
+Example source:
+
+```patch
+allow reward:
+  player.score may increase up to 10
+
+make reward(player):
+  change player:
+    add 5 to score
+```
+
+The Change Contract view reports approximately:
+
+```text
+reward(player)
+  produces: player.score -> increase by 5
+  allowed:
+    player.score may increase up to 10
+  proof: produced changes are inside the declared policy
+```
+
+If the recipe changes to `set score = 999`, compilation and the contract view report that the policy does not permit the semantic change.
+
+This is an advanced opt-in safety feature. A beginner can write ordinary Patch programs without declaring `allow` blocks.
 
 ## Browser-first IDE
 
@@ -43,11 +74,11 @@ Patch Studio is a Progressive Web App. The same IDE is intended to work in moder
 - ChromeOS;
 - FreeBSD/OpenBSD/NetBSD and other Unix-like systems with a modern browser.
 
-The PWA caches the compiler/interpreter/Designer assets for offline use and stores the current project locally in the browser.
+The PWA caches the compiler/interpreter/change-analysis/Designer assets for offline use and stores the current project locally in the browser.
 
 ### iPhone and iPad
 
-On iPhone/iPad, open Patch Studio in Safari and choose **Share → Add to Home Screen**.
+On iPhone/iPad, open Patch Studio in Safari and choose **Share -> Add to Home Screen**.
 
 Today the phone can locally:
 
@@ -56,6 +87,7 @@ edit Patch
 add basic GUI controls in Designer
 run console programs
 run/preview window programs
+inspect semantic Change Contracts
 inspect Change IR
 build .patchapp
 build bootstrap .wasm
@@ -67,9 +99,10 @@ Native Windows/macOS/Linux application builds require platform toolchains and si
 Patch Studio on iPhone
         |
         +-- edit / design / run locally
+        +-- inspect Change Contracts locally
         +-- Build portable .patchapp locally
         +-- Build bootstrap/direct Wasm locally
-        `-- Build for… through remote platform runner
+        `-- Build for... through remote platform runner
                 |
                 +-- Windows -> .exe
                 +-- macOS   -> .app / CLI universal binary
@@ -85,7 +118,7 @@ Desktop direction:
 
 ```text
 +----------------------------------------------------------------+
-| Patch Studio                    Run   Target   Build   Build…   |
+| Patch Studio                    Run   Target   Build   Build... |
 +-------------+---------------------------+----------------------+
 | Project     |                           | Properties           |
 | Toolbox     |       Window Designer     | (next stage)         |
@@ -94,11 +127,11 @@ Desktop direction:
 | + Button    |       [ Button ]          |                      |
 | + Input     |                           |                      |
 +-------------+---------------------------+----------------------+
-| Designer | App | Output | Changes | History | Change IR       |
+| Designer | App | Output | Change Contract | Change IR         |
 +----------------------------------------------------------------+
 ```
 
-The current web beta combines editor and Designer panes rather than reproducing every panel yet. On phones, the areas collapse vertically and tabs switch between Designer/App/Output/IR instead of shrinking a desktop UI to unreadable size.
+On phones, the areas collapse vertically and tabs switch between the relevant views instead of shrinking a desktop UI to unreadable size.
 
 ## Source-preserving visual design
 
@@ -133,7 +166,7 @@ when add_button clicked:
     add 1
 ```
 
-The same `change` semantics drive both console state and GUI state.
+The same `change` semantics and Change Signature analysis can apply to console recipes and GUI event handlers.
 
 ## Build UX
 
@@ -143,11 +176,13 @@ The same `change` semantics drive both console state and GUI state.
 - **Build Portable .patchapp**;
 - **Build WebAssembly .wasm** (bootstrap backend).
 
+Compilation validates any declared Change Capability policies before producing the artifact.
+
 The longer-term simple UI remains:
 
 - **Run**: execute immediately;
 - **Build**: build the selected target;
-- **Build for…**: Windows, macOS, Linux, Unix/BSD, Web or portable.
+- **Build for...**: Windows, macOS, Linux, Unix/BSD, Web or portable.
 
 Architecture selection, signing and packaging details remain optional advanced settings.
 
@@ -166,4 +201,4 @@ change score:
   add 10
 ```
 
-The application updates live and the same change can appear in history or be undone. This is a natural extension of Patch's semantic-change model and one of the intended bridges between classic BASIC immediacy and Patch's research contribution.
+The application updates live and the same change can appear in history or be undone. Future immediate-mode changes should also be checked against active semantic capability boundaries where appropriate.
