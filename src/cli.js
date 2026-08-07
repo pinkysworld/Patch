@@ -7,7 +7,7 @@ import { buildPatchApp, serializePatchApp } from './bundle.js';
 import { compileToWasm } from './wasm.js';
 
 const args = process.argv.slice(2);
-const known = new Set(['run', 'check', 'build']);
+const known = new Set(['run', 'check', 'changes', 'build']);
 const command = known.has(args[0]) ? args.shift() : 'run';
 const file = args.shift();
 
@@ -27,7 +27,15 @@ try {
 
   if (command === 'check') {
     const { ir } = compile(source, { name: appName(file) });
-    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${ir.capabilities.length} capability set(s).`);
+    const recipeSignatures = Object.keys(ir.changeSignatures).filter(name => name !== '$program').length;
+    const policies = Object.keys(ir.changeCapabilities).length;
+    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies.`);
+    process.exit(0);
+  }
+
+  if (command === 'changes') {
+    const { ir } = compile(source, { name: appName(file) });
+    printChangeAnalysis(ir);
     process.exit(0);
   }
 
@@ -64,6 +72,31 @@ try {
   process.exit(2);
 }
 
+function printChangeAnalysis(ir) {
+  const names = Object.keys(ir.changeSignatures).filter(name => name !== '$program');
+  if (!names.length) console.log('No recipes declare persistent changes.');
+  for (const name of names) {
+    const signature = ir.changeSignatures[name];
+    console.log(`${name}(${signature.params.join(', ')})`);
+    if (!signature.changes.length) console.log('  changes: none');
+    for (const change of signature.changes) {
+      const amount = change.staticAmount ? ` by ${change.amount}` : '';
+      const via = change.via ? ` via ${change.via}` : '';
+      const preview = change.committed === false ? ' [preview only]' : '';
+      console.log(`  ${change.path}: ${change.operation}${amount}${via}${preview}`);
+    }
+    const rules = ir.changeCapabilities[name];
+    if (rules?.length) {
+      console.log('  allowed:');
+      for (const rule of rules) {
+        const path = rule.field ? `${rule.target}.${rule.field}` : rule.target;
+        const bound = rule.maxAmount === null ? '' : ` up to ${rule.maxAmount}`;
+        console.log(`    ${path}: ${rule.operation}${bound}`);
+      }
+    }
+  }
+}
+
 function option(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : null;
@@ -74,5 +107,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
+  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
 }
