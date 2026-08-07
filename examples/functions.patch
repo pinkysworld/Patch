@@ -1,0 +1,5 @@
+make greet(name):
+  show "Hello " + name
+
+do greet("Ada")
+do greet("Grace")
