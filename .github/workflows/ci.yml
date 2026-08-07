@@ -24,8 +24,8 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - name: Syntax check
-        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/wasm.js && node --check src/designer.js && node --check web/playground.js
-      - name: Language, compiler, designer and Wasm tests
+        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-bridge.js && node --check src/wasm.js && node --check src/designer.js && node --check web/playground.js
+      - name: Language, compiler, formal-bridge, designer and Wasm tests
         run: npm test
       - name: Example smoke tests
         run: npm run check
