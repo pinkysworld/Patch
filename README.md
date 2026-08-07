@@ -196,7 +196,7 @@ redo
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class changes, undo, event logs, reversible computation, lenses, CRDTs, incremental computation or earlier change-oriented programming environments are new.
+Patch does **not** claim that patches, first-class changes, first-class state change, undo, reified program state, event logs, reversible computation, lenses, CRDTs, incremental computation or earlier change-oriented programming environments are new.
 
 The current PL contribution candidate is stronger and more precise:
 
@@ -212,9 +212,11 @@ Supporting research properties include:
 6. **Uniform derived tooling**: history, inversion, preview, replay foundations, conflict reasoning and GUI state evolution reuse one Change IR.
 7. **Progressive disclosure**: beginners see `create`, `change`, `add`, `remove`, `window` and `when`; the algebra remains underneath.
 
+The novelty review now explicitly compares Patch against Plaid's first-class state change, Worlds' reified program-state model, XMF first-class undo, ChEOPS/COPE, Edit Transactions, reducer/event architectures, lenses and patch theory.
+
 Patch is therefore a **credible high-venue research direction, but not yet a high-venue result**. A serious top PL submission requires systematic prior-art analysis, formal/machine-checked core properties, direct compiled execution, benchmark evidence and preferably controlled novice-comprehension data.
 
-See `docs/NOVELTY.md`, `docs/SEMANTICS.md`, `docs/RESEARCH_PLAN.md` and `paper/main.tex`.
+See `docs/NOVELTY.md`, `docs/FORMAL_MODEL.md`, `docs/SEMANTICS.md`, `docs/RESEARCH_PLAN.md` and `paper/main.tex`.
 
 ## Repository map
 
@@ -225,7 +227,8 @@ scripts/                smoke checks and deterministic site build
 tests/                  language, compiler, UI, Designer and Wasm tests
 examples/               runnable .patch programs
 docs/SPEC.md             language specification
-docs/SEMANTICS.md        formal core and research properties
+docs/FORMAL_MODEL.md     State-Change Factorization calculus and Lean proof plan
+docs/SEMANTICS.md        implementation-oriented semantic notes
 docs/NOVELTY.md          prior-art boundary and novelty claim
 docs/RESEARCH_PLAN.md    evaluation and publication plan
 docs/COMPILER.md         Change IR and compiler architecture
