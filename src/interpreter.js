@@ -12,7 +12,7 @@ export class PatchInterpreter {
   reset() {
     this.state=new Map(); this.types=new Map(); this.versions=new Map(); this.history=[]; this.redoStack=[];
     this.watchers=new Set(); this.functions=new Map(); this.output=[]; this.changeCounter=0;
-    this.windows=[]; this.events=[];
+    this.windows=[]; this.events=[]; this.causeStack=[];
   }
   run(source,{reset=true}={}) {
     if(reset)this.reset(); else this.output=[];
@@ -24,7 +24,7 @@ export class PatchInterpreter {
       this.output=[];
       const matches=this.events.filter(x=>x.control===control&&x.event===event);
       if(!matches.length)throw new PatchRuntimeError(`There is no '${event}' action for '${control}'.`);
-      for(const handler of matches)this.executeBlock(handler.body,{});
+      for(const handler of matches)this.withCause({kind:'event',control,event,line:handler.line},()=>this.executeBlock(handler.body,{}));
       return this.result();
     } catch(err){ if(err instanceof PatchRuntimeError||err instanceof ExpressionError)throw err; throw new PatchRuntimeError(err.message); }
   }
@@ -40,6 +40,7 @@ export class PatchInterpreter {
         case 'event': this.events.push(node); return;
         case 'allow': return;
         case 'show': this.output.push(formatValue(evaluateExpression(node.expr,this.env(locals)))); return;
+        case 'why': return this.explainWhy(node.expr,node.line);
         case 'watch': this.requireTarget(node.target,node.line); this.watchers.add(node.target); this.output.push(`watching ${node.target}`); return;
         case 'history': return this.showHistory(node.target,node.line);
         case 'change': return this.applyChange(node,locals,false);
@@ -72,7 +73,7 @@ export class PatchInterpreter {
     this.state.set(node.name,clone(value));this.types.set(node.name,node.valueType);this.versions.set(node.name,0);
   }
   createThing(node,locals){
-    if(this.state.has(node.name))throw new PatchRuntimeError(`'${node.name}' already exists.`,node.line);
+    if(this.state.has(node.name))throw new PatchRuntimeError(`'${node.name}' already exists. Use change to modify it.`,node.line);
     const value={}; for(const field of node.fields)value[field.name]=evaluateLoose(field.expr,this.env(locals));
     this.state.set(node.name,value);this.types.set(node.name,'thing');this.versions.set(node.name,0);
   }
@@ -99,10 +100,11 @@ export class PatchInterpreter {
         else if(Array.isArray(old)){const index=old.findIndex(x=>JSON.stringify(x)===JSON.stringify(value));if(index<0)throw new PatchRuntimeError(`Cannot remove ${formatValue(value)} because it is not in the list.`,op.line);semantic={op:'removeAt',field,index};inverse={op:'insertAt',field,index,value:clone(old[index])};}
         else throw new PatchRuntimeError('remove works with numbers or lists.',op.line);
       } else if(op.op==='clear'){ semantic={op:'clear',field}; inverse={op:'set',field,value:clone(old)}; }
+      semantic.sourceLine=op.line; inverse.sourceLine=op.line;
       current=applySemanticOperations(current,[semantic]);operations.push(semantic);inverseOperations.unshift(inverse);
     }
     const baseVersion=this.versions.get(node.target)??0;
-    const change={id:`c${++this.changeCounter}`,name:node.name,target:node.target,baseVersion,newVersion:baseVersion+1,operations,inverseOperations,before,after:clone(current)};
+    const change={id:`c${++this.changeCounter}`,name:node.name,target:node.target,baseVersion,newVersion:baseVersion+1,operations,inverseOperations,before,after:clone(current),sourceLine:node.line,cause:clone(this.causeStack)};
     if(previewOnly)return change; this.commit(change);
   }
   envWithTarget(locals,target,current){const temp=new Map(this.state);temp.set(target,current);return{state:temp,locals};}
@@ -127,26 +129,63 @@ export class PatchInterpreter {
     const diffs=[];for(const key of new Set([...Object.keys(beforeState),...Object.keys(afterState)]))if(JSON.stringify(beforeState[key])!==JSON.stringify(afterState[key]))diffs.push(`${key}: ${formatValue(beforeState[key])} -> ${formatValue(afterState[key])}`);
     this.output.push(diffs.length?`preview ${diffs.join(' | ')}`:'preview no changes');this.output.push(...previewOutput.map(x=>`preview output: ${x}`));
   }
-  showHistory(target,line){this.requireTarget(target,line);const entries=this.history.filter(h=>h.target===target);if(!entries.length){this.output.push(`${target} has not changed yet`);return;}for(const h of entries)this.output.push(`${h.id}${h.name?` (${h.name})`:''}: ${formatValue(h.before)} -> ${formatValue(h.after)}`);}
+  showHistory(target,line){
+    this.requireTarget(target,line);const entries=this.history.filter(h=>h.target===target);
+    if(!entries.length){this.output.push(`${target} has not changed yet`);return;}
+    for(const h of entries)this.output.push(`${h.id}${h.name?` (${h.name})`:''}: ${formatValue(h.before)} -> ${formatValue(h.after)}${this.causeText(h)}`);
+  }
+  explainWhy(expr,line){
+    const text=String(expr).trim();
+    if(/^[A-Za-z_]\w*$/.test(text)&&this.state.has(text)){
+      const entries=this.history.filter(h=>h.target===text);
+      if(!entries.length){this.output.push(`why ${text}: ${formatValue(this.state.get(text))} is its created value; no committed change has modified it.`);return;}
+      this.output.push(`why ${text}: ${entries.length} committed change${entries.length===1?'':'s'} explain its current value ${formatValue(this.state.get(text))}.`);
+      for(const h of entries)this.output.push(`  ${h.id}: ${formatValue(h.before)} -> ${formatValue(h.after)}${this.causeText(h)}`);
+      return;
+    }
+    let current;
+    try{current=Boolean(evaluateExpression(text,this.env({})));}catch(err){throw new PatchRuntimeError(`I cannot explain '${text}': ${err.message}`,line);}
+    if(!current){this.output.push(`why ${text}: the condition is false now.`);return;}
+    const replay=cloneMap(this.state);
+    for(let i=this.history.length-1;i>=0;i--)replay.set(this.history[i].target,clone(this.history[i].before));
+    let beforeTruth;
+    try{beforeTruth=Boolean(evaluateExpression(text,{state:replay,locals:{}}));}catch{beforeTruth=false;}
+    if(beforeTruth){this.output.push(`why ${text}: the condition was already true before the recorded changes.`);return;}
+    for(const h of this.history){
+      const oldTruth=Boolean(evaluateExpression(text,{state:replay,locals:{}}));
+      replay.set(h.target,clone(h.after));
+      const newTruth=Boolean(evaluateExpression(text,{state:replay,locals:{}}));
+      if(!oldTruth&&newTruth){this.output.push(`why ${text}: ${h.id} made it true when ${h.target} changed ${formatValue(h.before)} -> ${formatValue(h.after)}${this.causeText(h)}.`);return;}
+    }
+    this.output.push(`why ${text}: it is true, but Patch could not isolate one recorded transition that made it true.`);
+  }
+  causeText(change){
+    const causes=change.cause??[];
+    const parts=causes.map(c=>c.kind==='event'?`event ${c.control} ${c.event}`:c.kind==='recipe'?`recipe ${c.name}`:c.kind).filter(Boolean);
+    const source=change.sourceLine?` at line ${change.sourceLine}`:'';
+    return parts.length?`${source} because ${parts.join(' -> ')}`:source;
+  }
   call(node,locals){
     const fn=this.functions.get(node.name);if(!fn)throw new PatchRuntimeError(`I cannot find a recipe called '${node.name}'.`,node.line);if(fn.params.length!==node.args.length)throw new PatchRuntimeError(`${node.name} needs ${fn.params.length} value(s).`,node.line);
-    const args=node.args.map(a=>evaluateLoose(a,this.env(locals)));const childLocals={...locals};fn.params.forEach((p,idx)=>{childLocals[p]=args[idx];});const signal=this.executeBlock(fn.body,childLocals);return signal instanceof ReturnSignal?signal.value:null;
+    const args=node.args.map(a=>evaluateLoose(a,this.env(locals)));
+    fn.params.forEach((p,idx)=>{
+      const range=fn.paramRanges?.[p]; if(!range)return;
+      const value=args[idx];
+      if(typeof value!=='number'||value<range.min||value>range.max)throw new PatchRuntimeError(`${node.name} expects '${p}' to be a number from ${range.min} to ${range.max}, but got ${formatValue(value)}.`,node.line);
+    });
+    const childLocals={...locals};fn.params.forEach((p,idx)=>{childLocals[p]=args[idx];});
+    return this.withCause({kind:'recipe',name:node.name,line:node.line},()=>{const signal=this.executeBlock(fn.body,childLocals);return signal instanceof ReturnSignal?signal.value:null;});
   }
+  withCause(cause,fn){this.causeStack.push(cause);try{return fn();}finally{this.causeStack.pop();}}
   buildUIModel(){
     return this.windows.map((windowNode,index)=>({
       id:`window${index+1}`,
       title:this.uiText(windowNode.titleExpr),
-      controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({
-        type:node.control,
-        id:node.id,
-        text:node.textExpr?this.uiText(node.textExpr):'',
-        value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
-      }))
+      controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({type:node.control,id:node.id,text:node.textExpr?this.uiText(node.textExpr):'',value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''}))
     }));
   }
   uiText(expr){
-    let value;
-    try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
+    let value;try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
     return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>this.state.has(name)?formatValue(this.state.get(name)):`{${name}}`);
   }
 }
