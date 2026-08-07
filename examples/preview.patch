@@ -1,0 +1,7 @@
+create number lives = 3
+
+preview:
+  change lives:
+    remove 1
+
+show lives
