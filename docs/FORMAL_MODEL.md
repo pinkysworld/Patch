@@ -1,8 +1,8 @@
 # Patch Core Formal Model
 
-Status: **beta 4 mechanized core with Change Signature Soundness and end-to-end capability containment proved for the formal control-flow fragment**.
+Status: **beta 5: mechanized core plus an executable production-to-formal validation bridge**.
 
-The executable Patch language is larger than this model. The `formal/` directory intentionally starts with a compact semantics whose theorems can be machine checked, then expands toward the production compiler.
+The executable Patch language is larger than the Lean model. The `formal/` directory defines a compact semantics whose theorems are machine checked. Beta 5 adds `src/formal-bridge.js`, which begins connecting real compiler output to that model without pretending the whole JavaScript compiler is verified.
 
 ## 1. State-Change Factorization
 
@@ -29,19 +29,9 @@ and commit is the sole modeled persistent-write operation.
 
 The formal project is pinned to Lean 4.30.0.
 
-`formal/PatchFormal.lean` defines:
+`formal/PatchFormal.lean` defines scalar values, semantic operations, `applyOp`/`applyOps`, well-formed changes, persistent store/version/history state, one semantic `Step.change` rule, intervals, semantic effects, capability rules, and signature/policy relations.
 
-- scalar values `Int`, `Bool`, and `Text`;
-- semantic operations `Set`, `AddInt`, and `RemoveInt`;
-- `applyOp` / `applyOps`;
-- well-formed semantic changes;
-- persistent store, target versions, and history;
-- one semantic `Step.change` rule;
-- intervals and interval containment;
-- semantic effects and capability rules;
-- signature coverage and policy-admission relations.
-
-`formal/PatchSignature.lean` adds an executable formal control-flow core:
+`formal/PatchSignature.lean` defines a structured formal control-flow core:
 
 ```text
 skip
@@ -51,7 +41,7 @@ branch then else
 repeat n body
 ```
 
-and a static `inferSignature` function over that core. Runtime execution is represented by an `Executes stmt trace` relation whose trace contains the semantic effects actually emitted by one execution.
+plus static `inferSignature` and runtime `Executes stmt trace` definitions.
 
 CI builds both modules and rejects `sorry` and `admit`.
 
@@ -59,27 +49,13 @@ CI builds both modules and rejects `sorry` and `admit`.
 
 ### State-Change Factorization
 
-For every formal machine step:
-
-```text
-m -> m'
-```
-
-Lean proves that there exists a well-formed change `delta` such that:
-
-```text
-m' = commit(delta, m)
-```
-
-and the resulting history appends that same change.
+For every formal machine step `m -> m'`, Lean proves there exists a well-formed semantic change `delta` such that the resulting machine is the defined commit of that delta and history appends the same witness.
 
 ### Mutation Transparency
 
-As a corollary, every formal machine step has a well-formed change witness present in resulting history.
+Every formal machine step has a well-formed semantic change witness in resulting history.
 
 ### Interval containment transitivity
-
-For intervals:
 
 ```text
 A within B
@@ -88,37 +64,20 @@ B within C
 A within C
 ```
 
-This supports composition of bounded range evidence.
-
 ### Change Signature Soundness
 
-For the structured formal core, Lean now proves:
+For the structured formal core, Lean proves:
 
 ```text
 Executes(stmt, runtime)
------------------------------------
-RuntimeChanges(runtime) subset-of inferSignature(stmt)
+=> RuntimeChanges(runtime) subset-of inferSignature(stmt)
 ```
 
-or, in the paper notation:
-
-```text
-RuntimeChanges(stmt) subset-of Signature(stmt)
-```
-
-The inferred signature intentionally over-approximates control flow. For a branch, effects from both branches appear in the signature even though only one branch executes. Repetition may emit the same effect multiple times at runtime, but every emitted effect kind remains covered by the body's static signature.
-
-This theorem covers the formal constructs `seq`, `branch`, and bounded `repeat`; it is no longer an assumed premise for this core.
+The inferred signature intentionally over-approximates branch alternatives. Bounded repetition can emit an effect multiple times, but every emitted effect remains represented by the static body signature.
 
 ### End-to-end Change Capability Soundness
 
-A protected formal statement satisfies:
-
-```text
-PolicyAllows(inferSignature(stmt), policy)
-```
-
-Combining that static check with the proved Change Signature Soundness theorem gives:
+If the inferred signature of a formal statement is admitted by its policy, Lean proves that every runtime semantic effect of an execution is admitted by that policy:
 
 ```text
 RuntimeChanges(stmt) subset-of Signature(stmt)
@@ -127,98 +86,150 @@ Signature(stmt) admitted-by Capability(stmt)
 RuntimeChanges(stmt) admitted-by Capability(stmt)
 ```
 
-Lean proves this directly as `endToEndCapabilitySoundness` and exposes the corollary `protectedExecutionCannotEscape`.
+The relevant theorem is `endToEndCapabilitySoundness` with `protectedExecutionCannotEscape` as a direct corollary.
 
-For the formal core, the key security chain is therefore machine checked rather than conditional on an externally supplied signature-coverage hypothesis.
+## 4. Beta 5 production-to-formal bridge
 
-## 4. What is still not proved
+`src/formal-bridge.js` is a conservative translation-validation layer over the real production AST and production Change Signature analyzer.
 
-The formal result is intentionally narrower than “the whole Patch implementation is verified.” Open obligations include:
-
-- **production-compiler correspondence**: prove that the JavaScript parser/analyzer/lowering implements the same signature judgments for the supported fragment;
-- soundness of the production interval analyzer against expression evaluation;
-- recipe-call and parameter-substitution soundness beyond the current formal control-flow core;
-- recursive/fixed-point call analysis;
-- richer values, records and nested paths;
-- inverse correctness for the production change algebra;
-- preview equivalence/non-interference;
-- deterministic replay consistency;
-- commutation/conflict-analysis soundness;
-- GUI/event semantics;
-- external I/O and irreversible effects.
-
-These are explicit research tasks, not implied claims.
-
-## 5. Semantic Change Signatures
-
-For a recipe or formal statement `f`, the intended signature is:
+For each top-level program entry or recipe, it performs two paths:
 
 ```text
-Sig(f) = { effect_1, ..., effect_n }
+production AST ----------------------> production Change Signature
+      |
+      v
+independent bridge lowering
+      |
+      v
+Lean-like CoreStmt representation
+      |
+      v
+independent formal-style signature
+      |
+      +------------------------------> compare
 ```
 
-where effects conceptually contain:
+If an entry is inside the currently supported bridge subset and the two signatures differ, compilation fails. This turns accidental divergence between the production analyzer and the formal signature shape into a CI-visible failure.
+
+The bridge output is embedded in Change IR as:
+
+```text
+formalBridge
+```
+
+and records, per entry:
+
+```text
+supported
+reasons
+abstractions
+core
+formalSignature
+productionSignature
+signatureMatchesProduction
+```
+
+The CLI command:
+
+```bash
+patch formal program.patch
+```
+
+prints the same coverage boundary in human-readable form.
+
+### Current supported bridge subset
+
+The bridge currently handles:
+
+- direct semantic changes that classify as `increase`, `decrease`, `set`, or `clear`;
+- sequential statements;
+- both alternatives of `if` control flow;
+- literal non-negative `repeat` counts;
+- numeric range-derived amounts within the current formal effect representation;
+- preview as an explicit no-committed-effect abstraction.
+
+### Explicitly unsupported today
+
+The bridge marks these as outside the correspondence subset rather than treating them as verified:
+
+- recipe calls and parameter substitution across calls;
+- dynamic repeat counts;
+- `undo` / `redo` state transitions;
+- GUI/window/event execution;
+- `return` control flow;
+- semantic operations outside the current Lean effect vocabulary;
+- unproven or transitive production effects.
+
+This conservative behavior is important: **unsupported is not the same as unsafe, and supported is not the same as fully compiler-verified.**
+
+## 5. What beta 5 establishes and does not establish
+
+Beta 5 gives reproducible **translation-validation/conformance evidence** for a real production subset. It establishes that, for entries accepted as bridge-supported, the production Change Signature agrees with an independently reconstructed signature shaped like the current Lean core.
+
+It does **not** yet prove:
+
+- that the JavaScript implementation of `buildFormalBridge` is itself correct with respect to Lean;
+- that production execution follows the Lean `Executes` relation;
+- that all Patch language constructs are covered;
+- soundness of production interval analysis;
+- recipe-call/substitution correspondence;
+- full production capability soundness as a machine-checked theorem.
+
+A stronger endpoint can be reached in one of three ways:
+
+1. prove a formal correspondence theorem for the production compiler subset;
+2. generate semantic evidence and validate it with a small verified checker;
+3. move the relevant compiler analysis into a verified/extracted component.
+
+The verified-checker boundary is currently the most attractive engineering/research compromise.
+
+## 6. Semantic Change Signatures and capabilities
+
+Production signatures conceptually contain:
 
 ```text
 <target, path, operation, amount-or-range?>
 ```
 
-The production analyzer supports operation-sensitive effects such as `increase`, `decrease`, `set`, `clear`, and bounded amounts. The formal beta-4 theorem proves the central coverage shape on a smaller normalized effect language.
-
-## 6. Change Capabilities
-
-A policy can contain a rule such as:
+The production analyzer supports operation-sensitive effects such as `increase`, `decrease`, `set`, `clear`, and bounded amounts. Policies admit selected semantic transitions, for example:
 
 ```text
 player.score may increase up to 10
 ```
 
-The static checker aims to establish:
+which can permit a bounded increase while rejecting an arbitrary replacement to the same path.
 
-```text
-Sig(f) subset-of Cap(f)
-```
-
-where containment is semantic: an `increase` may be permitted while a `set` to the same storage path remains forbidden.
-
-For the formal core, the combination of static policy admission and the newly proved signature theorem now yields the end-to-end runtime containment result without assuming signature coverage.
+The formal theorem proves runtime-signature-policy containment for the normalized core. Beta 5 makes the gap between that theorem and production analysis explicit and machine-testable.
 
 ## 7. Numeric range reasoning
 
-Patch supports ranged recipe parameters:
+Patch supports ranged recipe parameters such as:
 
 ```patch
 make reward(player, bonus number 0..10):
 ```
 
-The production compiler performs interval analysis over a small arithmetic fragment. The formal model currently proves interval-containment composition, but not yet the analyzer's full expression semantics.
+The production compiler performs interval analysis over a small arithmetic fragment. The formal model currently proves interval-containment composition, but not the full expression analyzer.
 
 The next range theorem should be:
 
-> If the range analyzer returns interval `I` for expression `e` under environment `Gamma`, every evaluation of `e` satisfying `Gamma` lies inside `I`.
-
-That result would connect the production range evidence directly to semantic Change Capability bounds.
+> If the range analyzer returns interval `I` for expression `e` under environment `Gamma`, every supported evaluation of `e` satisfying `Gamma` lies inside `I`.
 
 ## 8. Causal provenance
 
-The production runtime records source, recipe-call, and GUI-event context with committed changes. The `why` command consumes this history.
+The production runtime records source, recipe-call, and GUI-event context with committed changes. The `why` command consumes this history. Provenance remains outside the Lean model for now.
 
-This remains outside the Lean model. A future provenance semantics can attach cause metadata to factorized transitions without weakening the core commit theorem.
+## 9. Next mechanization / validation order
 
-## 9. Next mechanization order
-
-1. define a correspondence relation between production Change IR effects and Lean `Effect` values;
-2. add a machine-readable conformance corpus emitted by the JavaScript analyzer and checked against the formal vocabulary;
-3. prove interval-analysis soundness for the ranged expression fragment;
-4. formalize non-recursive recipes/calls and parameter substitution;
-5. prove production-analyzer correspondence for that recipe fragment;
-6. extend end-to-end capability soundness through the compiler boundary;
-7. prove inverse correctness;
-8. prove preview and replay properties;
-9. extend to records, nested paths, and GUI events.
+1. define a stable JSON/evidence schema mapping production Change IR effects to Lean `Effect` values;
+2. add a small checker whose accepted evidence can be related directly to Lean definitions;
+3. extend bridge coverage to non-recursive recipe calls and parameter substitution;
+4. formalize the ranged expression language and prove interval-analysis soundness;
+5. connect actual production execution traces to formal `Executes` traces for a restricted core;
+6. derive end-to-end production capability soundness for that restricted core;
+7. then move to inverse, preview, replay and commutation proofs;
+8. extend to records, nested paths, GUI events and external effects.
 
 ## 10. Research boundary
 
-State transitions, effects, capabilities, range analysis, provenance, undo, edit algebras, and patches all have substantial prior art. The candidate contribution is the **factorization discipline and reuse**: ordinary persistent mutation executes through a structured semantic delta, and the same mandatory representation is used to derive semantic signatures, constrain operation-aware authority, record provenance, and support runtime tooling while the surface language remains deliberately small.
-
-Beta 4 strengthens that claim with a machine-checked result that connects actual runtime effect traces of a formal structured core to the statically inferred signature and then to semantic policy containment.
+State transitions, effects, capabilities, range analysis, translation validation, provenance, undo, edit algebras and patches all have substantial prior art. The candidate contribution is the **factorization discipline and reuse**: ordinary persistent mutation executes through a structured semantic delta, semantic contracts are derived from the same mandatory representation, and the project now connects a production implementation to machine-checked semantics through an explicit conservative validation boundary while preserving a deliberately small source language.
