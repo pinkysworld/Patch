@@ -4,19 +4,34 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [20, 22]
+        node: [22, 24]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: npm test
-      - run: npm run check
-      - run: npm run build:example
+          package-manager-cache: false
+      - name: Syntax check
+        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/compiler.js && node --check web/playground.js
+      - name: Language tests
+        run: npm test
+      - name: Example smoke tests
+        run: npm run check
+      - name: Portable application build
+        run: npm run build:example
+      - name: Build public Patch Studio site
+        run: npm run build:site
+      - name: Validate public Patch Studio site
+        run: npm run check:site
