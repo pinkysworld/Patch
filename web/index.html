@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
   <title>Patch Studio · Patch Programming Language</title>
   <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -17,7 +18,7 @@
     <header class="topbar">
       <div>
         <h1>Patch Studio <span>0.2 beta</span></h1>
-        <p>Create, run and build Patch applications from one browser-first IDE.</p>
+        <p>Create, design, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
         <select id="sample" aria-label="Example">
@@ -29,7 +30,11 @@
           <option value="story">Tiny story</option>
         </select>
         <button id="run">▶ Run</button>
-        <button id="build" class="secondary">🔨 Build .patchapp</button>
+        <select id="buildTarget" aria-label="Build target">
+          <option value="portable">Portable .patchapp</option>
+          <option value="wasm">WebAssembly .wasm</option>
+        </select>
+        <button id="build" class="secondary">🔨 Build</button>
       </div>
     </header>
 
@@ -48,11 +53,22 @@
       </div>
       <div class="pane result-pane">
         <div class="tabs" role="tablist">
-          <button class="tab active" data-tab="app">App</button>
+          <button class="tab active" data-tab="designer">Designer</button>
+          <button class="tab" data-tab="app">App</button>
           <button class="tab" data-tab="output">Output</button>
           <button class="tab" data-tab="ir">Change IR</button>
         </div>
-        <div id="app" class="app-preview"><p class="empty-preview">Press Run to preview a window application.</p></div>
+        <div id="designer" class="designer-view">
+          <div class="designer-toolbar" aria-label="Form designer toolbox">
+            <strong>Toolbox</strong>
+            <button id="addText" class="secondary small">+ Text</button>
+            <button id="addButton" class="secondary small">+ Button</button>
+            <button id="addInput" class="secondary small">+ Input</button>
+            <span>Controls are added to the first window and the readable Patch source is updated.</span>
+          </div>
+          <div id="designerCanvas" class="app-preview designer-canvas"><p class="empty-preview">A window project appears here as you edit it.</p></div>
+        </div>
+        <div id="app" class="app-preview" hidden><p class="empty-preview">Press Run to preview a window application.</p></div>
         <pre id="output" hidden>Press Run.</pre>
         <pre id="ir" hidden>Build or Run to inspect the compiler IR.</pre>
       </div>
@@ -89,8 +105,10 @@ when add clicked:
             <li>Interpreter plus compiler front end</li>
             <li>Normalized Change IR</li>
             <li>Portable <code>.patchapp</code> builds</li>
+            <li>Bootstrap WebAssembly <code>.wasm</code> builds carrying Patch source + Change IR</li>
             <li>Console programs</li>
-            <li>First GUI language slice: window, text, button, input and click events</li>
+            <li>GUI language: window, text, button, input and click events</li>
+            <li>First visual form-designer toolbox that edits normal Patch source</li>
             <li>Live GUI preview inside Patch Studio</li>
             <li>History, preview, undo/redo and watch</li>
             <li>Windows, macOS and Linux CI</li>
@@ -100,7 +118,7 @@ when add clicked:
         <article class="info-card">
           <p class="eyebrow">iPhone & iPad</p>
           <h3>Patch Studio is mobile-first too</h3>
-          <p>Edit and run Patch in Safari, preview GUI programs, inspect Change IR and build portable <code>.patchapp</code> bundles locally. To install it like an app on iPhone or iPad, open this site in Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</p>
+          <p>Edit and run Patch in Safari, add GUI controls from the Designer, preview applications, inspect Change IR and build portable <code>.patchapp</code> or bootstrap <code>.wasm</code> artifacts locally. To install it like an app on iPhone or iPad, open this site in Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</p>
           <p>Future Windows <code>.exe</code>, macOS <code>.app</code> and Linux/BSD builds from iOS will be delegated to platform build runners because iOS cannot host those native desktop toolchains itself.</p>
         </article>
 
@@ -108,13 +126,13 @@ when add clicked:
           <p class="eyebrow">Compiler direction</p>
           <h3>Portable core, native packaging</h3>
           <p class="pipeline">Patch source → typed AST → Change IR → WebAssembly / native host</p>
-          <p>The intended output matrix includes Windows console and GUI applications, macOS command-line tools and <code>.app</code> bundles, Linux and BSD/Unix applications, web builds and the portable <code>.patchapp</code> format. A C99 backend remains a planned portability escape hatch for unusual Unix systems.</p>
+          <p>The 0.2 bootstrap Wasm backend already emits a valid WebAssembly module containing the compiled Patch payload for a Patch host. Direct Change IR-to-Wasm execution is the next backend stage. The intended output matrix includes Windows console/GUI apps, macOS CLI/<code>.app</code>, Linux and BSD/Unix apps, web builds and portable <code>.patchapp</code>.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Patch UI</p>
           <h3>Visual-Basic-style simplicity</h3>
-          <p>Patch UI is designed so programmers say <code>window</code>, <code>text</code>, <code>button</code> and <code>when ... clicked</code>, while platform-specific Cocoa/AppKit, Windows and Unix/SDL details stay behind the runtime. A drag-and-drop form designer and property editor are next major Studio milestones.</p>
+          <p>Patch UI keeps platform-specific Cocoa/AppKit, Windows and Unix/SDL details behind the runtime. Patch Studio now has a first visual Designer toolbox for adding text, buttons and inputs while keeping the generated source readable. Drag positioning, richer controls and a property inspector remain next-stage work.</p>
         </article>
       </div>
 
@@ -122,12 +140,13 @@ when add clicked:
         <div>
           <p class="eyebrow">Research project</p>
           <h2>Patch: Change-Oriented Programming with Transparent State Evolution</h2>
-          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates what happens when semantic change is the exclusive ordinary mutation primitive of a deliberately low-complexity general-purpose language, and when one normalized change representation drives execution, history, inversion, preview, replay foundations, UI state evolution and conflict reasoning.</p>
-          <p><strong>Current status:</strong> promising research artifact, not yet a high-venue result. The path to a strong PL paper requires a systematic related-work review, formalized or machine-checked properties, a larger compiler/runtime artifact, benchmark evaluation and preferably a controlled novice-comprehension study.</p>
+          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation primitive of a low-complexity general-purpose language, with one normalized Change IR driving execution, history, inversion, preview, replay foundations, UI state evolution and conflict reasoning.</p>
+          <p><strong>Current status:</strong> a credible high-venue research direction, but not yet a high-venue result. The strongest PL formulation is now <em>State-Change Factorization</em>: every persistent state mutation must factor through a semantic change that is applied as the mutation mechanism itself. A serious submission still requires formalization/mechanization, systematic related-work analysis, a larger compiler/runtime artifact and measured evaluation.</p>
         </div>
         <div class="link-stack">
           <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language specification</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Novelty boundary</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md">Compiler architecture</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md">Patch Studio design</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/TARGETS.md">Platform targets</a>
@@ -137,10 +156,10 @@ when add clicked:
 
       <article class="roadmap-card">
         <p class="eyebrow">Roadmap</p>
-        <div class="roadmap-row"><strong>Now</strong><span>Compiler front end · Change IR · PWA Studio · portable build · first GUI events</span></div>
-        <div class="roadmap-row"><strong>Next</strong><span>Visual form designer · richer Patch UI · persistent project files · immediate mode · timeline debugger</span></div>
-        <div class="roadmap-row"><strong>Then</strong><span>WebAssembly backend · Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for…</span></div>
-        <div class="roadmap-row"><strong>Research</strong><span>Mechanized semantics · change algebra evaluation · benchmarks · novice study · submission-quality artifact</span></div>
+        <div class="roadmap-row"><strong>Now</strong><span>Change IR · PWA Studio · portable build · bootstrap Wasm · GUI events · first Designer toolbox</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Drag/form property editing · richer Patch UI · persistent project files · immediate mode · timeline debugger · direct Wasm lowering</span></div>
+        <div class="roadmap-row"><strong>Then</strong><span>Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for… · signing/notarization hooks</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>State-Change Factorization calculus · mechanized proofs · change algebra evaluation · benchmarks · novice study</span></div>
       </article>
     </section>
   </main>
