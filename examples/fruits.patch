@@ -1,0 +1,7 @@
+create list fruits = apple, banana
+
+change fruits:
+  add orange
+  remove banana
+
+show fruits
