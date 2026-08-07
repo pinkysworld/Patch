@@ -29,7 +29,7 @@ Patch Studio is browser-first and installable as a PWA. It is designed for Windo
 
 ## Current status
 
-Current development beta: **0.2.0-beta.3**
+Current development beta: **0.2.0-beta.4**
 
 Implemented now:
 
@@ -42,7 +42,7 @@ Implemented now:
 - runtime guards for declared numeric parameter ranges;
 - causal provenance on committed changes;
 - `why value` and `why condition` explanations;
-- an initial **Lean 4 formalization** of State-Change Factorization and Semantic Change Contract composition;
+- a **Lean 4 formalization** of State-Change Factorization, Mutation Transparency, Change Signature Soundness for a structured control-flow core, and end-to-end Semantic Change Contract soundness for that core;
 - dedicated Lean CI with no `sorry`/`admit` placeholders allowed;
 - `patch changes` CLI inspection;
 - Patch Studio Change Contract view;
@@ -94,7 +94,7 @@ A `set score = 999` is not accepted as an `increase`, even though both technical
 
 ## Bounded range proofs
 
-Beta 3 adds simple numeric range declarations to recipe parameters:
+Patch supports simple numeric range declarations on recipe parameters:
 
 ```patch
 allow reward:
@@ -127,7 +127,7 @@ Declared ranges are also checked at runtime so a recipe cannot be called with an
 
 ## Causal `why`
 
-Committed Patch changes now retain source and causal context such as recipe calls and GUI events.
+Committed Patch changes retain source and causal context such as recipe calls and GUI events.
 
 ```patch
 create number score = 0
@@ -160,16 +160,30 @@ This is a first causal-provenance prototype, not yet a full causal-inference sys
 
 ## Lean 4 formalization
 
-The `formal/` directory is now a real Lean 4 project pinned to Lean 4.30.0. It mechanizes an initial core model with no unfinished proof placeholders.
+The `formal/` directory is a real Lean 4 project pinned to Lean 4.30.0 with no unfinished proof placeholders.
 
-Current proved results include:
+Current machine-checked results include:
 
-- a **State-Change Factorization** theorem for the formal machine step;
-- Mutation Transparency as a corollary;
+- **State-Change Factorization** for the formal machine step;
+- **Mutation Transparency** as a corollary;
 - interval-containment transitivity used by bounded change reasoning;
-- Semantic Change Contract composition: if runtime effects are covered by an inferred signature, and the signature is admitted by a capability policy, then runtime effects are admitted by the policy.
+- Semantic Change Contract composition;
+- **Change Signature Soundness** for a formal structured core containing sequencing, branching and bounded repetition: every runtime semantic effect is contained in the statically inferred signature;
+- **end-to-end Capability Soundness** for that core: if the inferred signature is admitted by the policy, an execution cannot emit a semantic effect outside the declared policy.
 
-The formal model is intentionally smaller than the full implementation. The next proof work is to connect the executable analyzer more directly to the Lean definitions and extend the model to richer values, calls and GUI events.
+The new soundness chain for the formal core is therefore machine checked:
+
+```text
+RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
+```
+
+and consequently:
+
+```text
+RuntimeChanges(stmt) ⊆ Capability(stmt)
+```
+
+The important remaining proof obligation is **compiler correspondence**: demonstrate that the production JavaScript parser/analyzer/lowering implements the same formal judgments for the supported fragment. The repository does not claim that the full production compiler is formally verified yet.
 
 ## Compiler path
 
@@ -242,25 +256,23 @@ The research program now has three connected layers:
 2. **Semantic Change Contracts**: Patch infers semantic Change Signatures and checks them against optional semantic Change Capabilities.
 3. **Change-native analysis**: because the same representation is mandatory, Patch can derive bounded amount proofs and causal explanations without a second application-specific mutation model.
 
-The central prospective soundness chain is:
+The strongest current formal result is no longer merely the composition implication. For the mechanized structured core, Lean proves the signature-coverage premise itself and therefore derives end-to-end policy containment:
 
 ```text
-RuntimeChanges(f) ⊆ Signature(f) ⊆ Capability(f)
+execution
+   -> runtime semantic changes
+   -> all covered by inferred signature        [proved for formal core]
+   -> signature covered by capability policy
+   -> every runtime change satisfies policy    [proved for formal core]
 ```
 
-and therefore:
-
-```text
-RuntimeChanges(f) ⊆ Capability(f)
-```
-
-The repository now contains an initial machine-checked proof of the composition step in Lean 4. A high-venue submission still requires a stronger correspondence proof between the executable compiler and the formal model, systematic prior-art review, direct compiled execution, benchmarks/security evaluation and controlled user evidence if the novice-comprehension claim is retained.
+A high-venue submission still requires production-compiler correspondence, a systematic prior-art review, direct compiled execution, benchmark/security case studies, and controlled user evidence if the novice-comprehension claim is retained.
 
 ## Repository map
 
 ```text
 src/                    parser, interpreter, change/range analysis, compiler, Wasm bootstrap, Designer, bundler
-formal/                 Lean 4 formal model and machine-checked theorems
+formal/                 Lean 4 formal model, signature semantics and machine-checked theorems
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
 tests/                  language, range/provenance, compiler, capability, UI, Designer and Wasm tests
