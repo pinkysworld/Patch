@@ -1,0 +1,31 @@
+name: Patch Formal Verification
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    name: Lean 4 proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build Lean formalization
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: formal
+          build: true
+          test: false
+          lint: false
+          use-mathlib-cache: false
+      - name: Reject unfinished proofs
+        shell: bash
+        run: |
+          if grep -R -n -E '\bsorry\b|\badmit\b' formal/*.lean; then
+            echo 'Unfinished Lean proof found.'
+            exit 1
+          fi
