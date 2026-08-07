@@ -1,6 +1,6 @@
 # Patch Studio
 
-Patch Studio is the browser-first IDE for Patch. Its design goal is the immediacy of QuickBASIC and Visual Basic, but with one project format and one language across desktop, Unix-like systems, and the web.
+Patch Studio is the browser-first IDE for Patch. Its design goal is the immediacy of QuickBASIC and Visual Basic, but with one project format and one language across desktop, Unix-like systems, mobile devices and the web.
 
 ## Product goal
 
@@ -8,15 +8,32 @@ A beginner should be able to:
 
 1. open Patch Studio;
 2. create a console or window project;
-3. type a few lines of Patch or use the visual window designer;
+3. type a few lines of Patch or use the visual Designer;
 4. press **Run**;
-5. press **Build** to produce an application.
+5. press **Build** to produce an application artifact.
 
-No build files, compiler setup, SDK selection, or package manager knowledge should be required for ordinary programs.
+No build files, compiler setup, SDK selection or package-manager knowledge should be required for ordinary programs.
+
+## What works in 0.2 beta
+
+Patch Studio now includes:
+
+- source editor and local project autosave;
+- Run for console and GUI programs;
+- live Patch UI preview;
+- Change IR viewer;
+- portable `.patchapp` builds;
+- bootstrap `.wasm` builds;
+- first visual Designer toolbox with **+ Text**, **+ Button** and **+ Input**;
+- source-preserving Designer edits: adding a control updates ordinary readable `.patch` source rather than a hidden form language;
+- responsive phone/tablet layout;
+- installable PWA/offline cache.
+
+The Designer is intentionally an early RAD slice, not yet a finished drag-and-drop form editor. Positioning, resizing, control selection, a property inspector and richer widgets are next milestones.
 
 ## Browser-first IDE
 
-Patch Studio is implemented as a Progressive Web App (PWA). This makes the same IDE available in modern browsers on:
+Patch Studio is a Progressive Web App. The same IDE is intended to work in modern browsers on:
 
 - Windows;
 - macOS;
@@ -26,50 +43,73 @@ Patch Studio is implemented as a Progressive Web App (PWA). This makes the same 
 - ChromeOS;
 - FreeBSD/OpenBSD/NetBSD and other Unix-like systems with a modern browser.
 
-The PWA caches its core files for offline use and stores the current project locally in the browser.
+The PWA caches the compiler/interpreter/Designer assets for offline use and stores the current project locally in the browser.
 
 ### iPhone and iPad
 
-On iPhone/iPad, Patch Studio can be opened in Safari and added to the Home Screen. The editor, interpreter, compiler front end, Change IR viewer, and portable `.patchapp` builder can run locally in the browser.
+On iPhone/iPad, open Patch Studio in Safari and choose **Share → Add to Home Screen**.
 
-Native Windows/macOS/Linux application builds require platform toolchains and signing facilities that iOS cannot host. The intended design is therefore:
+Today the phone can locally:
+
+```text
+edit Patch
+add basic GUI controls in Designer
+run console programs
+run/preview window programs
+inspect Change IR
+build .patchapp
+build bootstrap .wasm
+```
+
+Native Windows/macOS/Linux application builds require platform toolchains and signing facilities that iOS cannot host. The intended later design is:
 
 ```text
 Patch Studio on iPhone
         |
-        +-- Run locally in browser
+        +-- edit / design / run locally
         +-- Build portable .patchapp locally
-        +-- Build Web/Wasm locally when backend is available
-        `-- Request native build through GitHub Actions / Patch Build service
+        +-- Build bootstrap/direct Wasm locally
+        `-- Build for… through remote platform runner
                 |
-                +-- Windows runner -> .exe
-                +-- macOS runner   -> .app / CLI universal binary
-                +-- Linux runner   -> executable / packages
-                `-- BSD/Unix       -> runtime package or C fallback
+                +-- Windows -> .exe
+                +-- macOS   -> .app / CLI universal binary
+                +-- Linux   -> executable / packages
+                `-- BSD/Unix -> runtime package or C fallback
 ```
 
-This means a Patch application can be developed from an iPhone even though an iPhone cannot itself run Microsoft's or Apple's desktop linker toolchains.
+This lets the iPhone be the development computer even when the final binary targets a desktop OS.
 
 ## Studio layout
 
-The long-term desktop layout is intentionally reminiscent of classic RAD IDEs:
+Desktop direction:
 
 ```text
 +----------------------------------------------------------------+
-| Patch Studio                         Run   Stop   Build   Build… |
+| Patch Studio                    Run   Target   Build   Build…   |
 +-------------+---------------------------+----------------------+
 | Project     |                           | Properties           |
-| Toolbox     |       Window Designer     |                      |
+| Toolbox     |       Window Designer     | (next stage)         |
 |             |                           |                      |
-| Button      |       [Hello world]       |                      |
-| Text        |       [ Click me ]        |                      |
-| Input       |                           |                      |
+| + Text      |       Hello               |                      |
+| + Button    |       [ Button ]          |                      |
+| + Input     |                           |                      |
 +-------------+---------------------------+----------------------+
-| Code | Output | Problems | Changes | History | Change IR       |
+| Designer | App | Output | Changes | History | Change IR       |
 +----------------------------------------------------------------+
 ```
 
-On phones the same areas collapse vertically rather than trying to reproduce a desktop layout at tiny scale.
+The current web beta combines editor and Designer panes rather than reproducing every panel yet. On phones, the areas collapse vertically and tabs switch between Designer/App/Output/IR instead of shrinking a desktop UI to unreadable size.
+
+## Source-preserving visual design
+
+Patch Studio must not introduce a hidden UI-description language. If the user adds a Button, the source changes to something like:
+
+```patch
+window "My App":
+  button "Button" as button_1
+```
+
+The source remains the truth and can always be edited manually. Future drag/resize/property operations should likewise produce predictable Patch source or project metadata with a documented textual representation.
 
 ## Project types
 
@@ -79,11 +119,7 @@ On phones the same areas collapse vertically rather than trying to reproduce a d
 show "Hello world"
 ```
 
-Build targets eventually include Windows `.exe`, macOS/Linux/BSD command-line executables, WebAssembly, and a portable `.patchapp`.
-
 ### Window
-
-Planned source syntax:
 
 ```patch
 create number count = 0
@@ -97,11 +133,27 @@ when add_button clicked:
     add 1
 ```
 
-Patch Studio's visual designer will generate/edit this same readable Patch source. The visual representation is not a separate hidden language.
+The same `change` semantics drive both console state and GUI state.
+
+## Build UX
+
+0.2 currently offers:
+
+- **Run**;
+- **Build Portable .patchapp**;
+- **Build WebAssembly .wasm** (bootstrap backend).
+
+The longer-term simple UI remains:
+
+- **Run**: execute immediately;
+- **Build**: build the selected target;
+- **Build for…**: Windows, macOS, Linux, Unix/BSD, Web or portable.
+
+Architecture selection, signing and packaging details remain optional advanced settings.
 
 ## Immediate mode
 
-Patch Studio should eventually allow expressions and changes to be sent to a running application:
+Patch Studio should next allow expressions and semantic changes to be sent to a running application:
 
 ```patch
 show score
@@ -114,14 +166,4 @@ change score:
   add 10
 ```
 
-The running application updates, and `undo` can reverse the live state change. This is a natural consequence of Patch's semantic-change model.
-
-## Build UX
-
-Ordinary users should see only three main actions:
-
-- **Run**: execute immediately;
-- **Build**: build for the current platform/profile;
-- **Build for…**: select Windows, macOS, Linux, Unix/BSD, Web, or portable `.patchapp`.
-
-Advanced signing, architecture selection, and packaging remain optional settings.
+The application updates live and the same change can appear in history or be undone. This is a natural extension of Patch's semantic-change model and one of the intended bridges between classic BASIC immediacy and Patch's research contribution.

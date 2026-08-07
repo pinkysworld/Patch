@@ -4,6 +4,7 @@ import path from 'node:path';
 import { PatchInterpreter } from './interpreter.js';
 import { compile } from './compiler.js';
 import { buildPatchApp, serializePatchApp } from './bundle.js';
+import { compileToWasm } from './wasm.js';
 
 const args = process.argv.slice(2);
 const known = new Set(['run', 'check', 'build']);
@@ -34,13 +35,29 @@ try {
     const kind = option('--kind') ?? 'console';
     const target = option('--target') ?? 'portable';
     const name = option('--name') ?? appName(file);
-    const out = option('--out') ?? `${name}.patchapp`;
-    const bundle = buildPatchApp(source, { name, kind, targets: [target] });
-    fs.writeFileSync(out, serializePatchApp(bundle), 'utf8');
-    console.log(`Built ${out}`);
-    console.log(`  type: ${kind}`);
-    console.log(`  target: ${target}`);
-    console.log('Note: beta 0.2 emits the portable Patch application bundle. Native .exe/.app/Wasm packaging is the next compiler backend milestone.');
+
+    if (target === 'portable') {
+      const out = option('--out') ?? `${name}.patchapp`;
+      const bundle = buildPatchApp(source, { name, kind, targets: [target] });
+      fs.writeFileSync(out, serializePatchApp(bundle), 'utf8');
+      console.log(`Built ${out}`);
+      console.log(`  type: ${kind}`);
+      console.log('  target: portable .patchapp');
+      process.exit(0);
+    }
+
+    if (target === 'wasm') {
+      const out = option('--out') ?? `${name}.wasm`;
+      const { module } = compileToWasm(source, { name, kind, entry: path.basename(file) });
+      fs.writeFileSync(out, module);
+      console.log(`Built ${out}`);
+      console.log(`  type: ${kind}`);
+      console.log('  target: WebAssembly bootstrap module');
+      console.log('  note: this beta embeds Patch source + Change IR for a Patch host; direct Change IR-to-Wasm execution is the next backend stage.');
+      process.exit(0);
+    }
+
+    throw new Error(`Unknown build target '${target}'. Use portable or wasm.`);
   }
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
@@ -57,5 +74,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch program.patch\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp`);
+  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
 }

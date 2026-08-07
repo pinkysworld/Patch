@@ -20,47 +20,63 @@
 - [x] Windows/macOS/Linux CI
 - [x] paper draft
 
-## 0.2: compiler + Patch Studio
+## 0.2 beta: compiler + Patch Studio
 
 - [x] first compiler front end
 - [x] Change IR
 - [x] portable `.patchapp` manifest/bundle
+- [x] bootstrap WebAssembly `.wasm` module carrying source + Change IR
+- [x] WebAssembly validation/instantiation tests
 - [x] `patch run`
 - [x] `patch check`
 - [x] `patch build ... --target portable`
+- [x] `patch build ... --target wasm`
 - [x] browser-first Patch Studio shell
 - [x] local project autosave
 - [x] Change IR viewer
 - [x] installable PWA metadata/offline cache
 - [x] responsive iPhone/iPad layout
+- [x] `window` syntax
+- [x] `text`, `button`, `input`
+- [x] `when ... clicked`
+- [x] virtual Patch UI model
+- [x] browser GUI preview
+- [x] first visual Designer toolbox: add Text/Button/Input while editing normal Patch source
+- [x] deterministic GitHub Pages site build
+- [x] deployed-site integrity check in CI
 - [ ] typed AST
 - [ ] expression IR instead of expression strings
 - [ ] serialized `.patchlog` history
 - [ ] `replay` command
 - [ ] source locations inside every runtime change record
 - [ ] property-based inverse/composition tests
-- [ ] playground/Studio timeline visualization
+- [ ] Studio timeline visualization
 
-## 0.3: Patch UI + visual application model
+## 0.3: richer Patch UI + RAD designer
 
-- [ ] `window` syntax
-- [ ] `text`, `button`, `input`, `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, `canvas`
-- [ ] `when ... clicked/changed/closed` event syntax
-- [ ] Patch UI intermediate model
-- [ ] browser Patch UI backend
-- [ ] visual form/window designer
+- [ ] control selection in Designer
+- [ ] drag positioning/resizing with deterministic source/project representation
 - [ ] property inspector
+- [ ] create/edit event handlers from Designer
+- [ ] `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, `canvas`
+- [ ] `when ... changed/closed` events
+- [ ] two-way `input` binding
+- [ ] project file import/export
 - [ ] immediate mode against a running application
 - [ ] GUI change history / visual rewind
+- [ ] keyboard-oriented desktop layout and touch-first mobile layout
 
-## 0.4: portable execution backend
+## 0.4: direct portable execution backend
 
-- [ ] Rust compiler implementation
-- [ ] WebAssembly code generation
+- [ ] typed core suitable for formalization
+- [ ] direct Change IR-to-WebAssembly lowering for deterministic core
 - [ ] WASI console runtime
-- [ ] `.patchapp` runtime
-- [ ] browser Wasm runner
+- [ ] runnable `.patchapp` host
+- [ ] browser Wasm runner executing lowered code
+- [ ] Patch UI host-call interface for compiled GUI apps
 - [ ] runtime capability model
+- [ ] compiler benchmark harness
+- [ ] Rust compiler migration where it materially improves the toolchain
 
 ## 0.5: native application packaging
 
@@ -95,9 +111,10 @@
 - [ ] optional CRDT-backed types for well-understood cases
 - [ ] offline/local persistence
 
-## paper artifact
+## Research artifact
 
-- [ ] complete systematic related-work review
+- [ ] systematic related-work review including ChEOPS/COPE/Edit Transactions and reducer architectures
+- [ ] formal State-Change Factorization calculus
 - [ ] machine-checked core properties
 - [ ] benchmark suite
 - [ ] novice study with ethics/consent as required
@@ -109,4 +126,6 @@
 1. Every new language feature must answer: **Can a beginner ignore this feature and still understand ordinary Patch code?**
 2. Platform complexity belongs in the compiler/runtime, not in Patch source.
 3. Patch Studio should remain usable from a phone, tablet, desktop browser, or native shell.
-4. Console and GUI applications use the same language, variables, change semantics, functions, and compiler.
+4. Console and GUI applications use the same language, variables, change semantics, functions and compiler.
+5. High-venue research claims must come from formal semantics and measured evidence, not from product polish alone.
+6. Bootstrap infrastructure must be described honestly: embedding Change IR in Wasm is not the same as direct Wasm lowering.

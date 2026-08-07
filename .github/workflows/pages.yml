@@ -1,4 +1,4 @@
-name: Deploy Patch Play
+name: Deploy Patch Studio
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -20,17 +21,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - name: Prepare static site
-        run: |
-          mkdir -p _site
-          cp -R web _site/web
-          cp -R src _site/src
-          cp web/style.css _site/style.css
-          sed 's#./playground.js#./web/playground.js#' web/index.html > _site/index.html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: actions/configure-pages@v6
+      - name: Build public site
+        run: npm run build:site
+      - name: Validate public site
+        run: npm run check:site
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - name: Deploy
