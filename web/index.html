@@ -2,23 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Patch Play</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15171c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Patch Studio">
+  <title>Patch Studio</title>
+  <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <main>
-    <header>
-      <div><h1>Patch Play <span>beta</span></h1><p>Programming as small, visible changes.</p></div>
-      <select id="sample" aria-label="Example">
-        <option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option>
-      </select>
+  <main class="studio">
+    <header class="topbar">
+      <div>
+        <h1>Patch Studio <span>0.2 dev</span></h1>
+        <p>Create, run and build Patch applications from one browser-first IDE.</p>
+      </div>
+      <div class="toolbar">
+        <select id="sample" aria-label="Example">
+          <option value="score">Score</option>
+          <option value="fruits">Fruit list</option>
+          <option value="player">Player</option>
+          <option value="undo">Undo & history</option>
+          <option value="story">Tiny story</option>
+        </select>
+        <button id="run">▶ Run</button>
+        <button id="build" class="secondary">🔨 Build .patchapp</button>
+      </div>
     </header>
-    <section class="workspace">
-      <div class="pane"><div class="pane-title">Code</div><textarea id="code" spellcheck="false" aria-label="Patch code"></textarea><div class="buttons"><button id="run">▶ Run</button><button id="clear" class="secondary">Clear output</button></div></div>
-      <div class="pane"><div class="pane-title">Output</div><pre id="output">Press Run.</pre></div>
+
+    <section class="projectbar">
+      <label>Project <input id="projectName" value="MyPatchApp" autocomplete="off"></label>
+      <label>Type
+        <select id="projectKind"><option value="console">Console</option><option value="window">Window</option></select>
+      </label>
+      <span id="saveState">Saved locally</span>
     </section>
-    <section class="help"><strong>Core words:</strong> create · change · set · add · remove · show · if · repeat · preview · undo · history · watch</section>
+
+    <section class="workspace">
+      <div class="pane editor-pane">
+        <div class="pane-title">main.patch</div>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Patch code"></textarea>
+      </div>
+      <div class="pane result-pane">
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="output">Output</button>
+          <button class="tab" data-tab="ir">Change IR</button>
+        </div>
+        <pre id="output">Press Run.</pre>
+        <pre id="ir" hidden>Build or Run to inspect the compiler IR.</pre>
+      </div>
+    </section>
+
+    <section class="statusbar">
+      <span><strong>Patch core:</strong> create · change · show · if · repeat · preview · undo</span>
+      <span>Projects are autosaved in this browser.</span>
+    </section>
   </main>
   <script type="module" src="./playground.js"></script>
 </body>
