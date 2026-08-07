@@ -167,7 +167,7 @@ make reward(player):
   do add_points(player)
 \end{lstlisting}
 
-The inferred effect for \texttt{reward} includes \texttt{player.score -> increase by 5} with provenance through \texttt{add_points}. Dynamic targets, unknown callees, and recursive cycles are treated conservatively as unproven rather than silently safe.
+The inferred effect for \texttt{reward} includes \texttt{player.score -> increase by 5} with provenance through \texttt{add\_points}. Dynamic targets, unknown callees, and recursive cycles are treated conservatively as unproven rather than silently safe.
 
 \paragraph{Signature Soundness target.}
 Every committed semantic change that can arise during supported execution of recipe $f$ must be represented by an effect admitted by $Sig(f)$. The signature may over-approximate behavior; soundness is more important than minimality.
