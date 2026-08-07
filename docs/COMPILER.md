@@ -2,7 +2,7 @@
 
 ## Status
 
-Patch 0.1 was interpreter-only. The `studio/0.2` development line introduces the first real compiler front end:
+Patch 0.1 was interpreter-only. Patch 0.2 now has a real compiler front end and two portable output forms:
 
 ```text
 Patch source
@@ -19,13 +19,16 @@ Patch compiler
    v
 Change IR
    |
-   +--> .patchapp portable bundle   [implemented in 0.2 dev]
-   +--> WebAssembly                 [planned backend]
-   +--> native host package         [planned backend]
-   `--> portable C99 fallback       [planned backend]
+   +--> .patchapp portable bundle      [implemented]
+   +--> bootstrap WebAssembly module   [implemented]
+   +--> direct executable Wasm         [next backend stage]
+   +--> native host package            [planned]
+   `--> portable C99 fallback          [planned]
 ```
 
-`src/compiler.js` currently lowers valid Patch source to a normalized JSON Change IR. `src/bundle.js` packages source + IR + manifest into a portable `.patchapp` bundle.
+`src/compiler.js` lowers valid Patch source to normalized Change IR. `src/bundle.js` packages source + IR + manifest into `.patchapp`. `src/wasm.js` emits an instantiable WebAssembly module containing a compiled Patch payload (project metadata, source and Change IR) that a Patch host can load.
+
+The current `.wasm` backend is deliberately called **bootstrap WebAssembly**. It proves the portable binary/container path and runs through the standard WebAssembly validator/loader, but it does not yet lower every Patch operation directly into executable Wasm instructions. Direct Change IR-to-Wasm execution is the next backend milestone.
 
 ## Why Change IR
 
@@ -50,7 +53,15 @@ becomes conceptually:
 }
 ```
 
-Later compiler stages may specialize this into efficient machine operations, but the semantic Change IR remains available for history, debugging, preview, replay, and conflict analysis.
+Later compiler stages may specialize this into efficient machine operations, but the semantic Change IR remains available for execution semantics, history, debugging, preview, replay, GUI updates and conflict analysis.
+
+## Research invariant: State-Change Factorization
+
+The compiler architecture is being shaped around a formal property rather than around logging convenience:
+
+> If a supported Patch source step mutates existing persistent state from `S` to `S'`, the transition factors through a semantic change `delta` such that `apply(delta, S) = S'`, and commit occurs through `apply` rather than through a hidden assignment path.
+
+A submission-quality formalization should prove this property for a small typed core and extend the proof as the compiler grows.
 
 ## Application kinds
 
@@ -60,25 +71,26 @@ Patch has one language and one compiler with multiple application profiles.
 
 Has console I/O and no graphical event loop by default.
 
-Planned packages:
+Target packages:
 
-- Windows PE console executable (`.exe`);
-- macOS Mach-O CLI, preferably Universal where practical;
-- Linux ELF CLI;
-- BSD/Unix native or portable-C build;
-- WebAssembly/WASI component;
-- portable `.patchapp`.
+- portable `.patchapp` [implemented];
+- bootstrap `.wasm` [implemented];
+- direct WebAssembly/WASI console executable [planned];
+- Windows PE console executable [planned];
+- macOS CLI, preferably Universal where practical [planned];
+- Linux ELF CLI [planned];
+- BSD/Unix native or portable-C build [planned].
 
 ### Window application
 
 Uses Patch UI and a graphical event loop.
 
-Planned packages:
+The compiler already represents `window`, controls and event handlers in Change IR and Patch Studio can execute/preview that model in the browser. Planned native packages are:
 
 - Windows GUI-subsystem `.exe`;
 - macOS `.app` bundle;
 - Linux/BSD graphical executable;
-- browser application;
+- browser/WebAssembly application;
 - portable `.patchapp`.
 
 ## Portable `.patchapp`
@@ -97,9 +109,21 @@ MyApp.patchapp
 
 A later binary/ZIP container may replace the transport encoding while preserving the logical format.
 
+## Bootstrap WebAssembly
+
+Current command:
+
+```text
+patch build hello.patch --kind console --target wasm
+```
+
+produces a valid `.wasm` module. The module exports linear memory and metadata locating an embedded Patch payload containing source + Change IR. This lets browser/native Patch hosts load the same compiled artifact and gives CI a real WebAssembly validation/instantiation target today.
+
+The next stage replaces host interpretation of Change IR with direct lowering of the deterministic core to Wasm functions and memory operations. GUI operations then call a small Patch UI host interface rather than embedding platform-specific APIs in Patch source.
+
 ## Native packaging strategy
 
-Patch should not implement x86-64, ARM64, RISC-V, PE, Mach-O and ELF backends itself in the early project.
+Patch should not implement x86-64, ARM64, RISC-V, PE, Mach-O and ELF code generators independently in the early project.
 
 The initial native strategy is:
 
@@ -107,7 +131,7 @@ The initial native strategy is:
 program.wasm + small Patch host/runtime = standalone native package
 ```
 
-This allows one code generator to support multiple operating systems while native host shells provide windows, menus, file dialogs, clipboard integration, application lifecycle, and packaging.
+This allows one portable program representation while host shells supply windows, menus, file dialogs, clipboard integration, application lifecycle and platform packaging.
 
 A future AOT backend can be added without changing Patch source semantics.
 
@@ -123,15 +147,18 @@ This is especially valuable for console programs on less common Unix variants an
 
 ## Compiler commands
 
-Development syntax:
-
 ```text
 patch run hello.patch
 patch check hello.patch
 patch build hello.patch --kind console --target portable
+patch build hello.patch --kind console --target wasm
 ```
 
-The 0.2 development compiler currently emits `.patchapp`. `--target windows`, `macos`, `linux`, `bsd`, `web`, and `wasm` become active as the corresponding packagers/backends land.
+Windows/macOS/Linux/BSD native targets become active as their host packagers land.
+
+## Quality gates
+
+CI must instantiate the generated bootstrap Wasm, validate Change IR preservation, build `.patchapp`, run language/compiler tests and build/validate the deployed Patch Studio site on Windows, macOS and Linux.
 
 ## Compiler design constraint
 
