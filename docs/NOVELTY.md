@@ -1,12 +1,38 @@
 # Novelty Boundary
 
-Patch is **not** novel merely because it has patches, first-class changes, undo, history, change propagation, a live IDE, or English-like syntax. All of those have substantial prior art.
+Patch is **not** novel merely because it has patches, first-class changes, undo, history, change propagation, explicit state transitions, a live IDE, or English-like syntax. All of those have substantial prior art.
 
 The current research hypothesis is narrower:
 
 > **ordinary runtime mutation is factored through a semantic Change IR that is the exclusive route for persistent application-state evolution, while the same representation drives execution, inversion, preview, replay foundations, GUI state refresh, history and conflict reasoning without exposing patch algebra to beginners.**
 
 ## Important prior-art collisions
+
+### Plaid: first-class state change
+
+Plaid is a particularly important neighbor. Sunshine et al.'s OOPSLA 2011 paper *First-Class State Change in Plaid* makes changing abstract object states a central programming-language concept and gives formal semantics for state transitions and state composition.
+
+Patch therefore must **not** claim to invent first-class state change, explicit state transitions, or language support for state-oriented programming.
+
+The current distinction is more specific. A Plaid transition changes an object's abstract typestate/state representation. Patch's proposed contribution is a normalized **transition object/Change IR** through which ordinary persistent value mutation itself must execute, with the same delta reused for inversion, preview, history, replay and conflict reasoning. The systematic review must verify this distinction against the full Plaid semantics rather than relying on abstracts alone.
+
+Reference: Joshua Sunshine, Karl Naden, Sven Stork, Jonathan Aldrich, and Eric Tanter, *First-Class State Change in Plaid*, OOPSLA 2011, DOI 10.1145/2048066.2048122.
+
+### Worlds: reified program state, speculation and undo
+
+Warth et al.'s *Worlds: Controlling the Scope of Side Effects* (ECOOP 2011) reifies whole program state as a first-class object. Computation inside a child world captures side effects, worlds can be committed/discarded, and the mechanism naturally supports experimentation and undo.
+
+This means Patch cannot claim that reifying state, speculative state evolution, commit/discard, automatic undo, or maintaining multiple state versions is new.
+
+Patch's intended distinction is again at the delta level: Worlds make **program states/worlds** first-class; Patch aims to make every ordinary persistent mutation factor through an inspectable semantic **change** whose operation structure is available independently of whole-state snapshots and is reused by several language/tooling facilities.
+
+Reference: Alessandro Warth, Yoshiki Ohshima, Ted Kaehler, and Alan Kay, *Worlds: Controlling the Scope of Side Effects*, ECOOP 2011, DOI 10.1007/978-3-642-22655-7_9.
+
+### XMF first-class undoability
+
+XMF documents a VM-level first-class undo mechanism that can capture and reverse state changes inside an `Undoable` region. This is direct evidence that VM-supported general undo of state mutation predates Patch.
+
+Patch's novelty cannot rest on automatic undo. The relevant question is whether a normalized semantic change is the **required execution representation** for mutation and whether its structure supports the broader factorization and change-law properties proposed below.
 
 ### Change-oriented programming environments: ChEOPS and COPE
 
@@ -62,6 +88,8 @@ and the state transition is committed only through `apply`.
 
 This is stronger than logging a mutation after it happened: **the semantic change is the mutation mechanism.**
 
+The theorem matters only if the language has no alternate persistent-write rule that bypasses the change representation.
+
 ### Mutation Transparency
 
 Every committed post-creation mutation corresponds to an inspectable semantic change carrying the target, base/new versions and normalized operations.
@@ -92,7 +120,9 @@ These properties are more useful for a high-venue paper than the existence of an
 
 A defensible submission claim is:
 
-> We present Patch, an experimental general-purpose language in which post-creation persistent mutation is compiled into and executed through a normalized semantic Change IR, with no ordinary assignment escape hatch for existing persistent values. The same representation drives state transition, generated inversion, preview, history, replay foundations, GUI state evolution and conservative conflict reasoning, while the source language exposes a small beginner-oriented vocabulary. We formalize state-change factorization and associated change laws, then evaluate whether this design provides structural tooling benefits without increasing novice programming burden.
+> We present Patch, an experimental general-purpose language in which post-creation persistent mutation is compiled into and executed through a normalized semantic Change IR, with no ordinary assignment escape hatch for existing persistent values. Unlike prior work centered on abstract typestate transitions, reified whole-program worlds, source-code transformations, or application-level event logs, Patch exposes a structured delta for each ordinary persistent mutation and reuses that representation for state transition, generated inversion, preview, history, replay foundations, GUI state evolution and conservative conflict reasoning. We formalize state-change factorization and associated change laws, then evaluate whether this design provides structural tooling benefits without increasing novice programming burden.
+
+This is a **candidate claim**, not a priority assertion. It must survive a complete literature review and specialist review.
 
 ## What would invalidate or materially weaken the claim?
 
@@ -101,21 +131,24 @@ Before submission we must determine whether an earlier system already satisfies 
 1. general-purpose runtime programming rather than primarily source evolution, version control or a database/view DSL;
 2. existing persistent application state cannot mutate outside the semantic change mechanism;
 3. the mutation transition itself is executed through a reified/normalized change, not merely logged afterward;
-4. one representation is reused for multiple facilities such as inversion, preview, replay, UI evolution and conflict analysis;
-5. the core properties are formalized/proved rather than presented only as tooling behavior;
-6. the language deliberately keeps the patch/change algebra outside the beginner surface;
-7. the model is empirically evaluated for practical or novice programming.
+4. the change has semantic operation structure beyond only whole-state snapshots or abstract typestate labels;
+5. one representation is reused for multiple facilities such as inversion, preview, replay, UI evolution and conflict analysis;
+6. the core properties are formalized/proved rather than presented only as tooling behavior;
+7. the language deliberately keeps the patch/change algebra outside the beginner surface;
+8. the model is empirically evaluated for practical or novice programming.
 
-Finding a language that meets the central items 1-5 would substantially narrow the novelty claim.
+Finding a language that meets central items 1-6 would substantially narrow or potentially eliminate the main novelty claim.
 
 ## Search plan before submission
 
 Systematically search ACM DL, IEEE Xplore, DBLP, SpringerLink, Semantic Scholar, Google Scholar and arXiv for combinations of:
 
-`change-oriented programming`, `ChEOPS`, `COPE programming environment`, `first-class changes`, `first-class edits`, `edit transactions`, `runtime state changes programming language`, `semantic mutation`, `change calculus mutable state`, `event sourcing language semantics`, `reducer language state`, `patch algebra mutable state`, `mutation transparency`, `edit lenses`, `change structures`, `reversible updates`, `live programming state history`.
+`first-class state change`, `Plaid state change`, `typestate-oriented programming`, `Worlds scope side effects`, `first-class program state`, `first-class undo`, `XMF undo`, `change-oriented programming`, `ChEOPS`, `COPE programming environment`, `first-class changes`, `first-class edits`, `edit transactions`, `runtime state changes programming language`, `semantic mutation`, `change calculus mutable state`, `event sourcing language semantics`, `reducer language state`, `patch algebra mutable state`, `mutation transparency`, `edit lenses`, `change structures`, `reversible updates`, `live programming state history`.
 
 ## Current positioning
 
-Patch is still a plausible high-venue research direction, but **not yet a high-venue paper**. The high-end PL story should center on State-Change Factorization + Change IR + mechanized properties + a substantial artifact. Patch Studio, mobile development and GUI compilation make the artifact compelling, but are supporting engineering contributions rather than substitutes for formal novelty.
+Patch is still a plausible high-venue research direction, but **not yet a high-venue paper**. Discovering Plaid and Worlds makes broad novelty claims weaker but makes the *correct* research question clearer. The high-end PL story should center on State-Change Factorization + structured Change IR + mechanized properties + a substantial artifact, and it must compare directly against Plaid's state-transition model and Worlds' whole-state reification.
+
+Patch Studio, mobile development and GUI compilation make the artifact compelling, but are supporting engineering contributions rather than substitutes for formal novelty.
 
 A second empirical axis can test whether the low-complexity syntax and integrated change debugger improve comprehension. If those results are unusually strong, a PL/HCI venue story may become stronger than a pure PL story.
