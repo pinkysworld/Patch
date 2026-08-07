@@ -2,7 +2,7 @@
 
 ## Status
 
-Patch 0.1 was interpreter-only. Patch 0.2 beta.2 has a compiler front end, semantic change analysis, and two portable output forms:
+Patch 0.1 was interpreter-only. Patch 0.2 beta.4 has a compiler front end, semantic change analysis, a mechanized formal core, and two portable output forms:
 
 ```text
 Patch source
@@ -62,15 +62,15 @@ Later compiler stages may specialize this into efficient machine operations, but
 
 ## Research invariant: State-Change Factorization
 
-The compiler architecture is being shaped around a formal property rather than around logging convenience:
+The compiler architecture is shaped around a formal property rather than around logging convenience:
 
 > If a supported Patch source step mutates existing persistent state from `S` to `S'`, the transition factors through a semantic change `delta` such that `apply(delta, S) = S'`, and commit occurs through `apply` rather than through a hidden assignment path.
 
-A submission-quality formalization should prove this property for a small typed core and extend the proof as the compiler grows.
+The Lean formal machine already proves this property for its modeled change step. The production compiler still needs a correspondence proof connecting emitted Change IR to that formal model.
 
 ## Semantic Change Signatures
 
-Patch now statically summarizes the semantic state changes a recipe may produce.
+Patch statically summarizes the semantic state changes a recipe may produce.
 
 ```patch
 make reward(player):
@@ -96,7 +96,7 @@ The compiler records approximately:
 }
 ```
 
-The analysis distinguishes `set`, `clear`, source-level `add`/`remove`, and provable numeric `increase`/`decrease`. It also records whether a change is preview-only.
+The production analysis distinguishes `set`, `clear`, source-level `add`/`remove`, and provable numeric `increase`/`decrease`. It also records whether a change is preview-only.
 
 For simple recipe calls the analysis substitutes callee parameters into the caller signature:
 
@@ -113,6 +113,30 @@ The signature for `reward` contains `player.score -> increase by 5`, with proven
 
 This is intentionally conservative. Dynamic targets, unknown callees and recursive cycles are marked unproven rather than silently treated as safe.
 
+## Machine-checked Change Signature Soundness
+
+Beta 4 adds `formal/PatchSignature.lean`, which defines a smaller normalized control-flow core containing:
+
+```text
+skip
+emit effect
+seq first second
+branch then else
+repeat n body
+```
+
+It also defines a static `inferSignature` function and a runtime `Executes stmt trace` relation.
+
+Lean proves:
+
+```text
+RuntimeChanges(stmt) subset-of inferSignature(stmt)
+```
+
+for every execution of that formal core. Branch inference intentionally includes effects from both possible branches, so the signature can over-approximate behavior but cannot omit a runtime effect. Bounded repetition can emit an effect multiple times, but every emitted effect remains covered by the body's static signature.
+
+This is an important theorem about the formal core, not yet verification of `src/change-analysis.js`.
+
 ## Change Capabilities
 
 Patch can optionally restrict a recipe to a declared semantic change policy:
@@ -126,27 +150,45 @@ make reward(player):
     add 5 to score
 ```
 
-The compiler checks the inferred committed Change Signature against the policy before emitting IR.
-
-Conceptually the proof obligation is:
-
-```text
-ProducedChanges(recipe) subset-of AllowedChanges(recipe)
-```
+The production compiler checks the inferred committed Change Signature against the policy before emitting IR.
 
 A recipe protected by a capability fails compilation when:
 
 - it changes a target/path not named by the policy;
 - it performs a semantic operation not allowed by the policy;
 - it exceeds a statically declared `up to` bound;
-- a bounded dynamic amount cannot yet be proven safe;
+- a bounded dynamic amount cannot be proven safe;
 - a transitive call prevents safe target/effect resolution.
 
 This is intentionally different from a traditional binary read/write permission. A policy can permit `increase player.score up to 10` while rejecting `set player.score`, even though both are writes to the same storage location.
 
+### Formal end-to-end theorem
+
+For the structured Lean core, beta 4 now proves:
+
+```text
+RuntimeChanges(stmt) subset-of Signature(stmt)
+Signature(stmt) admitted-by Capability(stmt)
+------------------------------------------------
+RuntimeChanges(stmt) admitted-by Capability(stmt)
+```
+
+The theorem is `endToEndCapabilitySoundness`. Unlike the earlier composition theorem, it derives signature coverage from the formal execution semantics rather than receiving that coverage as an assumption.
+
+### Remaining compiler bridge
+
+The next research step is to connect production analysis to the formal theorem. Candidate approaches:
+
+1. define a correspondence relation between Change IR effects and Lean `Effect` values;
+2. emit a deterministic machine-readable semantic evidence file from the compiler;
+3. validate that evidence with a small verified checker;
+4. or prove direct correspondence for a restricted executable compiler fragment.
+
+Until one of these bridges exists, documentation must distinguish **formal-core soundness** from **production-compiler soundness**.
+
 ### IR representation
 
-Patch IR now includes both:
+Patch IR includes both:
 
 ```text
 changeSignatures
@@ -154,6 +196,23 @@ changeCapabilities
 ```
 
 alongside host/runtime capability strings such as `ui.window`. These concepts are distinct: host capabilities describe services the application needs; Change Capabilities describe semantic mutations a recipe is allowed to produce.
+
+## Numeric range analysis
+
+Ranged recipe parameters can provide quantitative evidence:
+
+```patch
+allow reward:
+  player.score may increase up to 10
+
+make reward(player, bonus number 0..5):
+  change player:
+    add bonus * 2 to score
+```
+
+The production interval analyzer derives `bonus * 2` as `0..10`. If the possible range exceeds the capability bound, compilation fails conservatively. Runtime guards preserve declared parameter-range assumptions.
+
+The next formal target is soundness of this executable interval analyzer: every supported concrete evaluation must lie inside the inferred interval.
 
 ## Application kinds
 
@@ -256,6 +315,8 @@ Windows/macOS/Linux/BSD native targets become active as their host packagers lan
 ## Quality gates
 
 CI must syntax-check semantic analysis, run Change Signature/Capability tests, compile every example, instantiate the generated bootstrap Wasm, validate Change IR preservation, build `.patchapp`, and build/validate the deployed Patch Studio site on Windows, macOS and Linux.
+
+Formal CI separately builds both Lean libraries and rejects unfinished proofs.
 
 ## Compiler design constraint
 
