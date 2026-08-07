@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.1.0-beta.1**
+Status: **0.2.0 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -38,7 +38,7 @@ create thing player:
 
 ## Expressions
 
-Beta expressions include numbers, strings, booleans, variables, thing fields such as `player.score`, arithmetic `+ - * / %`, comparisons, `and`, `or`, `not`, parentheses, and list literals.
+Current expressions include numbers, strings, booleans, variables, thing fields such as `player.score`, arithmetic `+ - * / %`, comparisons, `and`, `or`, `not`, parentheses, and list literals.
 
 ## Change
 
@@ -92,6 +92,69 @@ change fruits:
 ```
 
 The beta maps clear to the natural empty value: `[]`, `""`, `0`, or `{}`.
+
+## Window applications
+
+Patch 0.2 introduces the first intentionally small Patch UI slice. The same state and `change` semantics are used in console and window programs.
+
+```patch
+create number count = 0
+
+window "Counter":
+  text "Count: {count}"
+  button "Add" as add_button
+
+when add_button clicked:
+  change count:
+    add 1
+```
+
+### window
+
+```patch
+window "My App":
+  ...
+```
+
+A program may declare one or more windows. In the browser beta they are represented by a virtual Patch UI model and rendered by Patch Studio.
+
+### text
+
+```patch
+text "Hello"
+text "Count: {count}"
+```
+
+Text supports simple `{name}` interpolation from Patch state in the current UI runtime.
+
+### button
+
+```patch
+button "Save" as save_button
+```
+
+The identifier after `as` is used by event handlers.
+
+### input
+
+```patch
+input name
+```
+
+The first parser/runtime slice recognizes inputs and renders them. Binding input changes back into Patch state is not yet part of the 0.2 event model.
+
+### when
+
+```patch
+when save_button clicked:
+  show "clicked"
+```
+
+Recognized event names are currently `clicked`, `changed`, and `closed`; the browser beta executes `clicked` for buttons. The other event kinds reserve stable syntax while their host wiring is implemented.
+
+### Planned Patch UI controls
+
+The stable UI vocabulary is intended to grow carefully with `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, and `canvas`. These are roadmap items, not implemented syntax yet.
 
 ## Named changes
 
@@ -158,9 +221,15 @@ make greet(name):
 do greet("Ada")
 ```
 
+## Compiler-visible application kind
+
+A project is currently marked `console` or `window` in Patch Studio/build options. The compiler can also infer a window-oriented program when the AST contains `window` declarations.
+
+Both kinds compile through the same Change IR.
+
 ## Reserved words
 
-`create thing number text boolean list change called set add remove clear show watch history undo redo preview if else repeat make do return true false and or not`
+`create thing number text boolean list change called set add remove clear show watch history undo redo preview if else repeat make do return window text button input when clicked changed closed as true false and or not`
 
 ## Error design
 

@@ -1,0 +1,9 @@
+create number count = 0
+
+window "Counter":
+  text "Count: {count}"
+  button "Add" as add_button
+
+when add_button clicked:
+  change count:
+    add 1

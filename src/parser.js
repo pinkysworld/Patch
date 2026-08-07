@@ -38,6 +38,11 @@ export function parse(source) {
       const fields = childBlock(indent,row).map(n=>{ if(n.kind!=='field') throw new PatchSyntaxError('A thing can only contain fields like name = "Sam".',n.line); return n; });
       return {kind:'createThing',name:m[1],fields,line:row.line};
     }
+    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return {kind:'window',titleExpr:m[1],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^text\s+(.+)$/))) return {kind:'uiControl',control:'text',textExpr:m[1],id:null,line:row.line};
+    if ((m = row.text.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return {kind:'uiControl',control:'button',textExpr:m[1],id:m[2],line:row.line};
+    if ((m = row.text.match(/^input\s+([A-Za-z_]\w*)$/))) return {kind:'uiControl',control:'input',textExpr:null,id:m[1],line:row.line};
+    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) return {kind:'field',name:m[1],expr:m[2],line:row.line};
     if ((m = row.text.match(/^show\s+(.+)$/))) return {kind:'show',expr:m[1],line:row.line};
     if ((m = row.text.match(/^watch\s+([A-Za-z_]\w*)$/))) return {kind:'watch',target:m[1],line:row.line};

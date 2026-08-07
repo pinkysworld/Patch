@@ -12,13 +12,23 @@ export class PatchInterpreter {
   reset() {
     this.state=new Map(); this.types=new Map(); this.versions=new Map(); this.history=[]; this.redoStack=[];
     this.watchers=new Set(); this.functions=new Map(); this.output=[]; this.changeCounter=0;
+    this.windows=[]; this.events=[];
   }
   run(source,{reset=true}={}) {
     if(reset)this.reset(); else this.output=[];
     try { const program=parse(source); this.executeBlock(program,{}); return this.result(); }
     catch(err){ if(err instanceof PatchSyntaxError||err instanceof PatchRuntimeError||err instanceof ExpressionError)throw err; throw new PatchRuntimeError(err.message); }
   }
-  result(){ return {output:[...this.output],state:Object.fromEntries([...this.state].map(([k,v])=>[k,clone(v)])),history:clone(this.history)}; }
+  trigger(control,event='clicked') {
+    try {
+      this.output=[];
+      const matches=this.events.filter(x=>x.control===control&&x.event===event);
+      if(!matches.length)throw new PatchRuntimeError(`There is no '${event}' action for '${control}'.`);
+      for(const handler of matches)this.executeBlock(handler.body,{});
+      return this.result();
+    } catch(err){ if(err instanceof PatchRuntimeError||err instanceof ExpressionError)throw err; throw new PatchRuntimeError(err.message); }
+  }
+  result(){ return {output:[...this.output],state:Object.fromEntries([...this.state].map(([k,v])=>[k,clone(v)])),history:clone(this.history),ui:this.buildUIModel()}; }
   env(locals={}){ return {state:this.state,locals}; }
   executeBlock(nodes,locals){ for(const node of nodes){const signal=this.execute(node,locals);if(signal instanceof ReturnSignal)return signal;} return null; }
   execute(node,locals){
@@ -26,6 +36,8 @@ export class PatchInterpreter {
       switch(node.kind){
         case 'create': return this.create(node,locals);
         case 'createThing': return this.createThing(node,locals);
+        case 'window': this.windows.push(node); return;
+        case 'event': this.events.push(node); return;
         case 'show': this.output.push(formatValue(evaluateExpression(node.expr,this.env(locals)))); return;
         case 'watch': this.requireTarget(node.target,node.line); this.watchers.add(node.target); this.output.push(`watching ${node.target}`); return;
         case 'history': return this.showHistory(node.target,node.line);
@@ -44,6 +56,7 @@ export class PatchInterpreter {
         case 'return': return new ReturnSignal(node.expr?evaluateExpression(node.expr,this.env(locals)):null);
         case 'field': throw new PatchRuntimeError('Field declarations only belong inside create thing.',node.line);
         case 'changeOp': throw new PatchRuntimeError('Change operations only belong inside change.',node.line);
+        case 'uiControl': throw new PatchRuntimeError('UI controls belong inside a window.',node.line);
         default: throw new PatchRuntimeError(`Unknown instruction ${node.kind}.`,node.line);
       }
     } catch(err){ if(err instanceof PatchRuntimeError)throw err; if(err instanceof ExpressionError)throw new PatchRuntimeError(err.message,node.line); throw err; }
@@ -116,6 +129,23 @@ export class PatchInterpreter {
   call(node,locals){
     const fn=this.functions.get(node.name);if(!fn)throw new PatchRuntimeError(`I cannot find a recipe called '${node.name}'.`,node.line);if(fn.params.length!==node.args.length)throw new PatchRuntimeError(`${node.name} needs ${fn.params.length} value(s).`,node.line);
     const args=node.args.map(a=>evaluateLoose(a,this.env(locals)));const childLocals={...locals};fn.params.forEach((p,idx)=>{childLocals[p]=args[idx];});const signal=this.executeBlock(fn.body,childLocals);return signal instanceof ReturnSignal?signal.value:null;
+  }
+  buildUIModel(){
+    return this.windows.map((windowNode,index)=>({
+      id:`window${index+1}`,
+      title:this.uiText(windowNode.titleExpr),
+      controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({
+        type:node.control,
+        id:node.id,
+        text:node.textExpr?this.uiText(node.textExpr):'',
+        value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
+      }))
+    }));
+  }
+  uiText(expr){
+    let value;
+    try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
+    return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>this.state.has(name)?formatValue(this.state.get(name)):`{${name}}`);
   }
 }
 function cloneMap(map){return new Map([...map].map(([k,v])=>[k,clone(v)]));}

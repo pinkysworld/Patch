@@ -20,19 +20,73 @@
 - [x] Windows/macOS/Linux CI
 - [x] paper draft
 
-## 0.2 beta: research artifact
+## 0.2: compiler + Patch Studio
 
+- [x] first compiler front end
+- [x] Change IR
+- [x] portable `.patchapp` manifest/bundle
+- [x] `patch run`
+- [x] `patch check`
+- [x] `patch build ... --target portable`
+- [x] browser-first Patch Studio shell
+- [x] local project autosave
+- [x] Change IR viewer
+- [x] installable PWA metadata/offline cache
+- [x] responsive iPhone/iPad layout
+- [ ] typed AST
+- [ ] expression IR instead of expression strings
 - [ ] serialized `.patchlog` history
 - [ ] `replay` command
-- [ ] source locations inside every change record
-- [ ] first-class advanced change values without complicating beginner syntax
-- [ ] richer lists/maps
-- [ ] user-defined schemas
+- [ ] source locations inside every runtime change record
 - [ ] property-based inverse/composition tests
-- [ ] mutation-transparency test generator
-- [ ] playground timeline visualization
+- [ ] playground/Studio timeline visualization
 
-## 0.3 beta: collaboration semantics
+## 0.3: Patch UI + visual application model
+
+- [ ] `window` syntax
+- [ ] `text`, `button`, `input`, `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, `canvas`
+- [ ] `when ... clicked/changed/closed` event syntax
+- [ ] Patch UI intermediate model
+- [ ] browser Patch UI backend
+- [ ] visual form/window designer
+- [ ] property inspector
+- [ ] immediate mode against a running application
+- [ ] GUI change history / visual rewind
+
+## 0.4: portable execution backend
+
+- [ ] Rust compiler implementation
+- [ ] WebAssembly code generation
+- [ ] WASI console runtime
+- [ ] `.patchapp` runtime
+- [ ] browser Wasm runner
+- [ ] runtime capability model
+
+## 0.5: native application packaging
+
+- [ ] Windows console `.exe`
+- [ ] Windows GUI-subsystem `.exe`
+- [ ] macOS CLI executable
+- [ ] macOS `.app` bundle
+- [ ] macOS Universal packaging where practical
+- [ ] Linux CLI executable
+- [ ] Linux graphical executable
+- [ ] FreeBSD/OpenBSD/NetBSD runtime targets
+- [ ] generic Unix C99 fallback for console applications
+- [ ] Patch UI native Windows backend
+- [ ] Patch UI native macOS backend
+- [ ] SDL3 portable GUI backend for Linux/BSD/other supported Unix
+
+## 0.6: build service
+
+- [ ] **Build for…** dialog in Patch Studio
+- [ ] GitHub Actions remote build integration
+- [ ] Windows/macOS/Linux artifact matrix
+- [ ] iPhone/iPad can request native desktop builds
+- [ ] signing/notarization hooks
+- [ ] release artifact download back into Patch Studio
+
+## 0.7: collaboration semantics
 
 - [ ] branchable state histories
 - [ ] explicit merge operation
@@ -41,23 +95,18 @@
 - [ ] optional CRDT-backed types for well-understood cases
 - [ ] offline/local persistence
 
-## 0.4 compiler
-
-- [ ] Rust front end
-- [ ] typed AST
-- [ ] Change IR
-- [ ] WebAssembly/WASI backend
-- [ ] standalone Windows/macOS/Linux builds
-- [ ] browser Wasm bundle
-
-## 0.5 paper artifact
+## paper artifact
 
 - [ ] complete systematic related-work review
-- [ ] mechanized or machine-checked core properties
+- [ ] machine-checked core properties
 - [ ] benchmark suite
 - [ ] novice study with ethics/consent as required
+- [ ] cross-platform application case studies
 - [ ] reproducibility bundle
 
-## Design constraint
+## Design constraints
 
-Every new feature must answer: **Can a beginner ignore this feature and still understand ordinary Patch code?** If not, the feature should live behind an advanced layer or outside the language core.
+1. Every new language feature must answer: **Can a beginner ignore this feature and still understand ordinary Patch code?**
+2. Platform complexity belongs in the compiler/runtime, not in Patch source.
+3. Patch Studio should remain usable from a phone, tablet, desktop browser, or native shell.
+4. Console and GUI applications use the same language, variables, change semantics, functions, and compiler.

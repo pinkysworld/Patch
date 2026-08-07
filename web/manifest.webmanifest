@@ -1,0 +1,12 @@
+{
+  "name": "Patch Studio",
+  "short_name": "Patch Studio",
+  "description": "Browser-first IDE for the Patch programming language",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101114",
+  "theme_color": "#15171c",
+  "orientation": "any",
+  "icons": []
+}
