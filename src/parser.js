@@ -43,6 +43,15 @@ export function parse(source) {
     if ((m = row.text.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return {kind:'uiControl',control:'button',textExpr:m[1],id:m[2],line:row.line};
     if ((m = row.text.match(/^input\s+([A-Za-z_]\w*)$/))) return {kind:'uiControl',control:'input',textExpr:null,id:m[1],line:row.line};
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^allow\s+([A-Za-z_]\w*)\s*:\s*$/))) {
+      const rules=childBlock(indent,row); for(const rule of rules) if(rule.kind!=='capRule') throw new PatchSyntaxError('An allow block can only contain rules like player.score may increase up to 10.',rule.line);
+      return {kind:'allow',name:m[1],rules,line:row.line};
+    }
+    if ((m = row.text.match(/^([A-Za-z_]\w*)(?:\.([A-Za-z_]\w*))?\s+may\s+(increase|decrease|add|remove|set|clear)(?:\s+up\s+to\s+([0-9]+(?:\.[0-9]+)?))?$/))) {
+      const maxAmount=m[4]===undefined?null:Number(m[4]);
+      if(maxAmount!==null&&!['increase','decrease','add','remove'].includes(m[3])) throw new PatchSyntaxError(`'up to' is only meaningful for increase, decrease, add, or remove.`,row.line);
+      return {kind:'capRule',target:m[1],field:m[2]??null,operation:m[3],maxAmount,line:row.line};
+    }
     if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) return {kind:'field',name:m[1],expr:m[2],line:row.line};
     if ((m = row.text.match(/^show\s+(.+)$/))) return {kind:'show',expr:m[1],line:row.line};
     if ((m = row.text.match(/^watch\s+([A-Za-z_]\w*)$/))) return {kind:'watch',target:m[1],line:row.line};

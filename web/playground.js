@@ -14,6 +14,19 @@ window "Counter":
 when add_button clicked:
   change count:
     add 1`,
+  capabilities: `create thing player:
+  name = "Mia"
+  score = 0
+
+allow reward:
+  player.score may increase up to 10
+
+make reward(player):
+  change player:
+    add 5 to score
+
+do reward(player)
+show player.score`,
   score: `create number score = 0
 watch score
 
@@ -74,6 +87,7 @@ show courage`
 
 const code = document.querySelector('#code');
 const output = document.querySelector('#output');
+const changesView = document.querySelector('#changes');
 const irView = document.querySelector('#ir');
 const appView = document.querySelector('#app');
 const designerView = document.querySelector('#designer');
@@ -96,12 +110,13 @@ sample.addEventListener('change', () => {
   projectKind.value = sample.value === 'counterWindow' ? 'window' : 'console';
   saveProject();
   refreshDesigner();
-  showTab(projectKind.value === 'window' ? 'designer' : 'output');
+  showTab(sample.value === 'capabilities' ? 'changes' : (projectKind.value === 'window' ? 'designer' : 'output'));
+  if (sample.value === 'capabilities') refreshChangeContract();
 });
 
 for (const input of [code, projectName, projectKind]) {
-  input.addEventListener('input', () => { saveProject(); scheduleDesigner(); });
-  input.addEventListener('change', () => { saveProject(); refreshDesigner(); });
+  input.addEventListener('input', () => { saveProject(); scheduleDesigner(); scheduleChangeContract(); });
+  input.addEventListener('change', () => { saveProject(); refreshDesigner(); refreshChangeContract(); });
 }
 
 document.querySelector('#run').addEventListener('click', runProject);
@@ -116,11 +131,13 @@ document.querySelector('#build').addEventListener('click', () => {
       const built = compileToWasm(code.value, projectOptions());
       download(`${name}.wasm`, built.module, 'application/wasm');
       irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
+      changesView.textContent = formatChangeAnalysis(built.compiled.ir);
       output.textContent = `Built ${name}.wasm\n\nThis is Patch's 0.2 bootstrap WebAssembly backend. The module is valid Wasm and embeds Patch source + Change IR for a Patch host. Direct Change IR-to-Wasm execution is the next compiler-backend stage.`;
     } else {
       const bundle = buildPatchApp(code.value, { ...projectOptions(), targets: ['portable'] });
       download(`${name}.patchapp`, serializePatchApp(bundle), 'application/json');
       irView.textContent = JSON.stringify(bundle.ir, null, 2);
+      changesView.textContent = formatChangeAnalysis(bundle.ir);
       output.textContent = `Built ${name}.patchapp\n\nThis portable Patch application contains the manifest, source and Change IR. Native Windows/macOS/Linux/BSD hosts remain a later packaging milestone.`;
     }
     showTab('output');
@@ -131,7 +148,10 @@ document.querySelector('#build').addEventListener('click', () => {
 });
 
 for (const tab of document.querySelectorAll('.tab')) {
-  tab.addEventListener('click', () => showTab(tab.dataset.tab));
+  tab.addEventListener('click', () => {
+    if (tab.dataset.tab === 'changes') refreshChangeContract();
+    showTab(tab.dataset.tab);
+  });
 }
 
 function addControl(type) {
@@ -140,6 +160,7 @@ function addControl(type) {
     projectKind.value = 'window';
     saveProject();
     refreshDesigner();
+    refreshChangeContract();
     showTab('designer');
     code.focus();
   } catch (err) {
@@ -155,13 +176,57 @@ function runProject() {
     const result = runtime.run(code.value);
     output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no console output)';
     irView.textContent = JSON.stringify(compiled.ir, null, 2);
+    changesView.textContent = formatChangeAnalysis(compiled.ir);
     renderWindows(appView, result.ui, true);
     showTab(result.ui.length ? 'app' : 'output');
   } catch (err) {
     output.textContent = `Patch stopped:\n${err.message}`;
     appView.innerHTML = '<p class="empty-preview">The app could not start.</p>';
+    changesView.textContent = `Change contract unavailable:\n${err.message}`;
     showTab('output');
   }
+}
+
+function refreshChangeContract() {
+  try {
+    const compiled = compile(code.value, projectOptions());
+    changesView.textContent = formatChangeAnalysis(compiled.ir);
+  } catch (err) {
+    changesView.textContent = `Change contract stopped:\n${err.message}`;
+  }
+}
+
+function scheduleChangeContract() {
+  setTimeout(refreshChangeContract, 220);
+}
+
+function formatChangeAnalysis(ir) {
+  const lines = [];
+  const names = Object.keys(ir.changeSignatures ?? {}).filter(name => name !== '$program');
+  if (!names.length) lines.push('No recipe change signatures yet.');
+  for (const name of names) {
+    const signature = ir.changeSignatures[name];
+    lines.push(`${name}(${signature.params.join(', ')})`);
+    if (!signature.changes.length) lines.push('  changes: none');
+    for (const change of signature.changes) {
+      const amount = change.staticAmount ? ` by ${change.amount}` : '';
+      const via = change.via ? ` via ${change.via}` : '';
+      const preview = change.committed === false ? ' [preview only]' : '';
+      lines.push(`  produces: ${change.path} -> ${change.operation}${amount}${via}${preview}`);
+    }
+    const rules = ir.changeCapabilities?.[name];
+    if (rules?.length) {
+      lines.push('  allowed:');
+      for (const rule of rules) {
+        const path = rule.field ? `${rule.target}.${rule.field}` : rule.target;
+        const bound = rule.maxAmount === null ? '' : ` up to ${rule.maxAmount}`;
+        lines.push(`    ${path} may ${rule.operation}${bound}`);
+      }
+      lines.push('  proof: produced changes are inside the declared policy ✓');
+    }
+    lines.push('');
+  }
+  return lines.join('\n').trimEnd();
 }
 
 function refreshDesigner() {
@@ -238,6 +303,7 @@ function showTab(name) {
   designerView.hidden = name !== 'designer';
   appView.hidden = name !== 'app';
   output.hidden = name !== 'output';
+  changesView.hidden = name !== 'changes';
   irView.hidden = name !== 'ir';
 }
 
@@ -278,6 +344,7 @@ function escapeHtml(text) {
 }
 
 refreshDesigner();
+refreshChangeContract();
 showTab(projectKind.value === 'window' ? 'designer' : 'output');
 
 if ('serviceWorker' in navigator) {

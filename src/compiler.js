@@ -1,6 +1,7 @@
 import { parse } from './parser.js';
+import { analyzeChangeSemantics } from './change-analysis.js';
 
-export const PATCH_IR_VERSION = '0.2';
+export const PATCH_IR_VERSION = '0.3';
 
 export function compile(source, options = {}) {
   const ast = parse(source);
@@ -9,16 +10,19 @@ export function compile(source, options = {}) {
     kind: options.kind ?? inferKind(ast),
     entry: options.entry ?? 'main.patch'
   };
+  const changeAnalysis = analyzeChangeSemantics(ast);
 
   const ir = {
     format: 'patch-ir',
     version: PATCH_IR_VERSION,
     project,
     instructions: lowerBlock(ast),
-    capabilities: inferCapabilities(ast)
+    capabilities: inferRuntimeCapabilities(ast),
+    changeSignatures: changeAnalysis.signatures,
+    changeCapabilities: changeAnalysis.capabilities
   };
 
-  return { ast, ir, project };
+  return { ast, ir, project, changeAnalysis };
 }
 
 function inferKind(ast) {
@@ -44,6 +48,17 @@ function lowerNode(node) {
       return op('UI_CONTROL', node, { control: node.control, id: node.id, textExpr: node.textExpr });
     case 'event':
       return op('EVENT', node, { control: node.control, event: node.event, body: lowerBlock(node.body) });
+    case 'allow':
+      return op('ALLOW_CHANGES', node, {
+        name: node.name,
+        rules: node.rules.map(rule => ({
+          target: rule.target,
+          field: rule.field,
+          operation: rule.operation,
+          maxAmount: rule.maxAmount,
+          line: rule.line
+        }))
+      });
     case 'show':
       return op('SHOW', node, { expr: node.expr });
     case 'watch':
@@ -81,6 +96,8 @@ function lowerNode(node) {
       return op('DO', node, { name: node.name, args: node.args });
     case 'return':
       return op('RETURN', node, { expr: node.expr });
+    case 'capRule':
+      throw new Error('Capability rules only belong inside allow blocks.');
     default:
       throw new Error(`Compiler does not know AST node '${node.kind}'.`);
   }
@@ -90,12 +107,13 @@ function op(code, node, fields = {}) {
   return { code, line: node.line ?? null, ...fields };
 }
 
-function inferCapabilities(ast) {
+function inferRuntimeCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
     if (node.kind === 'window' || node.kind === 'uiControl' || node.kind === 'event') caps.add('ui.window');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo') caps.add('change.history');
+    if (node.kind === 'allow') caps.add('change.capabilities');
   });
   return [...caps].sort();
 }

@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0 development**
+Status: **0.2.0-beta.2 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -92,6 +92,143 @@ change fruits:
 ```
 
 The beta maps clear to the natural empty value: `[]`, `""`, `0`, or `{}`.
+
+## Semantic Change Signatures
+
+Patch 0.2 beta.2 automatically infers a semantic **Change Signature** for each recipe.
+
+```patch
+make reward(player):
+  change player:
+    add 5 to score
+```
+
+The compiler infers approximately:
+
+```text
+reward(player)
+  player.score -> increase by 5
+```
+
+This is compiler information, not syntax the beginner has to write. The signature records the target/path, semantic operation class, statically known amount when available, source location, and simple transitive effects through recipe calls.
+
+The current semantic classes are:
+
+- `increase` and `decrease` when the compiler can prove a numeric literal change;
+- `add` and `remove` when the value/type cannot be proven more precisely;
+- `set`;
+- `clear`.
+
+Preview-only changes are represented in signatures but marked as non-committing.
+
+Use the CLI to inspect inferred signatures:
+
+```text
+patch changes program.patch
+```
+
+Patch Studio exposes the same information in the **Change Contract** tab.
+
+## Change Capabilities
+
+A recipe can optionally declare which semantic changes it is allowed to produce.
+
+```patch
+allow reward:
+  player.score may increase up to 10
+
+make reward(player):
+  change player:
+    add 5 to score
+```
+
+The `allow` block is a compile-time policy. It does not execute at runtime.
+
+A rule has the form:
+
+```text
+target[.field] may operation [up to number]
+```
+
+Current operations:
+
+```text
+increase
+decrease
+add
+remove
+set
+clear
+```
+
+Examples:
+
+```patch
+allow inventory_action:
+  player.inventory may add
+  player.inventory may remove
+```
+
+```patch
+allow reward:
+  player.score may increase up to 10
+```
+
+If a protected recipe produces a committed change that is not covered by a rule, compilation fails.
+
+For example, this is rejected:
+
+```patch
+allow reward:
+  player.score may increase up to 10
+
+make reward(player):
+  change player:
+    set score = 999
+```
+
+This is also rejected because the bound is exceeded:
+
+```patch
+make reward(player):
+  change player:
+    add 25 to score
+```
+
+### Conservative proof rule
+
+When a bounded policy uses `up to`, Patch must be able to prove the amount statically in the current beta.
+
+```patch
+allow reward:
+  player.score may add up to 10
+
+make reward(player, bonus):
+  change player:
+    add bonus to score
+```
+
+The compiler rejects this form because it cannot yet prove that `bonus <= 10`. Later typed/range analysis can make more dynamic cases provable.
+
+### Transitive recipe effects
+
+Patch follows simple recipe calls when it can map a callee parameter to a simple caller identifier.
+
+```patch
+make add_points(target):
+  change target:
+    add 5 to score
+
+allow reward:
+  player.score may increase up to 10
+
+make reward(player):
+  do add_points(player)
+```
+
+The inferred signature for `reward` contains `player.score -> increase by 5`, and the capability is checked against that transitive effect.
+
+If recursion, an unknown recipe, or a dynamic target prevents a safe proof inside a capability-protected recipe, the compiler rejects the proof rather than guessing.
 
 ## Window applications
 
@@ -229,7 +366,7 @@ Both kinds compile through the same Change IR.
 
 ## Reserved words
 
-`create thing number text boolean list change called set add remove clear show watch history undo redo preview if else repeat make do return window text button input when clicked changed closed as true false and or not`
+`create thing number text boolean list change called set add remove clear show watch history undo redo preview if else repeat make do return allow may increase decrease up to window text button input when clicked changed closed as true false and or not`
 
 ## Error design
 

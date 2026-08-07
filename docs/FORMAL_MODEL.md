@@ -2,7 +2,7 @@
 
 Status: design-stage formalization for the 0.2 research artifact.
 
-This document defines the smallest semantic core needed to state Patch's main research property precisely. It is intentionally smaller than the full surface language. The goal is to mechanize this core before expanding the proof to lists, records, GUI events and I/O.
+This document defines the smallest semantic core needed to state Patch's main research properties precisely. It is intentionally smaller than the full surface language. The goal is to mechanize this core before expanding the proof to lists, records, GUI events and I/O.
 
 ## 1. Core idea
 
@@ -13,6 +13,18 @@ The intended invariant is:
 > **State-Change Factorization.** Every transition that mutates an existing persistent binding factors through a semantic change `delta`; there is no alternative persistent-write rule.
 
 This is the property that distinguishes the research claim from ordinary assignment plus logging.
+
+Patch 0.2 beta.2 adds a second layer:
+
+> **Semantic Change Contract.** The compiler may infer the set of semantic changes a recipe can produce and verify that this set is contained in a declared set of allowed semantic changes.
+
+The intended proof shape is:
+
+```text
+ProducedChanges(f) subset-of AllowedChanges(f)
+```
+
+for each capability-protected recipe `f` that the compiler accepts.
 
 ## 2. Core domains
 
@@ -253,8 +265,6 @@ replay(sigma0, [delta1, ..., deltan]) = sigman
 
 when every `delta_i` is version-consistent and applicable to the state produced by the previous delta.
 
-The proof is straightforward from sequential `apply`, but future external effects require a distinction between replaying state changes and replaying real-world I/O.
-
 ## 13. Commutation relation
 
 The initial relation should be conservative.
@@ -275,21 +285,19 @@ Initial decidable cases:
 
 Competing `Set` operations on the same path are conflicts.
 
-The proof obligation is **soundness**, not completeness: Patch may report “unknown/conflict” for changes that actually commute, but must not classify a non-commuting pair as safely commuting.
+The proof obligation is **soundness**, not completeness.
 
 ## 14. GUI semantics
 
-Patch UI should not need a separate mutation model.
+Patch UI should not need a separate mutation model. A button event handler executes ordinary Patch statements. If it changes bound application state, the same factorization theorem applies.
 
-A button event handler executes ordinary Patch statements. If it changes bound application state, the same factorization theorem applies. GUI rendering is a projection:
+GUI rendering is a projection:
 
 ```text
 render : Store x UIModel -> View
 ```
 
 and is not itself allowed to mutate persistent state behind the Change IR.
-
-This lets a future theorem state that programmatic GUI state evolution has the same mutation transparency as console applications.
 
 ## 15. External effects
 
@@ -303,9 +311,88 @@ external irreversible effects
 external reversible/compensatable effects
 ```
 
-The first paper should avoid claiming replay/undo of arbitrary external reality.
+## 16. Semantic Change Signatures
 
-## 16. Mechanization plan
+For a recipe `f`, define an inferred signature:
+
+```text
+Sig(f) = { effect_1, ..., effect_n }
+```
+
+where an effect is initially:
+
+```text
+effect = <target, path, operation, amount?>
+```
+
+and:
+
+```text
+operation ::= increase | decrease | add | remove | set | clear
+```
+
+`amount` is present only when the compiler can prove a concrete numeric magnitude.
+
+For the first formal core, inference can be syntax-directed:
+
+```text
+change x { add 5 }      => <x, x, increase, 5>
+change x { remove 2 }   => <x, x, decrease, 2>
+change x { set e }      => <x, x, set, none>
+```
+
+Record paths and transitive recipe calls can be added after the base proof.
+
+A **signature soundness** theorem should state:
+
+> Every committed semantic change that can arise from executing a well-typed recipe is represented by an effect admitted by its inferred signature.
+
+The signature may over-approximate behavior; soundness is more important than minimality.
+
+## 17. Change Capabilities
+
+A declared policy is a set of allowed effects:
+
+```text
+Cap(f) = { rule_1, ..., rule_m }
+```
+
+A rule is:
+
+```text
+rule = <target, path, operation, maxAmount?>
+```
+
+The acceptance judgment is:
+
+```text
+Sig(f) <= Cap(f)
+```
+
+where `<=` means every inferred committed effect is covered by at least one policy rule and every statically known amount respects the rule's bound.
+
+For bounded rules, an unknown/dynamic amount is **not** accepted until the compiler has a proof that it respects the bound.
+
+The key theorem target is:
+
+> **Capability Soundness.** If a capability-protected recipe type-checks/compiles under policy `Cap(f)`, then every committed persistent change produced by that recipe during a supported execution satisfies `Cap(f)`.
+
+The planned proof decomposes into:
+
+1. Change Signature soundness: runtime committed changes are covered by `Sig(f)`;
+2. static policy validation: `Sig(f) <= Cap(f)`;
+3. therefore runtime committed changes satisfy `Cap(f)`.
+
+For calls, the first mechanized version should require an explicit compositional substitution rule for simple identifier arguments. Recursive/dynamic cases may be rejected conservatively until a sound fixed-point/range analysis is added.
+
+This is deliberately more semantic than a binary write capability. Two operations that write the same location may have different authority:
+
+```text
+increase score by <= 10     allowed
+set score = 999             forbidden
+```
+
+## 18. Mechanization plan
 
 Preferred initial target: Lean 4.
 
@@ -320,12 +407,16 @@ Suggested order:
 7. derive State-Change Factorization / Mutation Transparency;
 8. prove inverse correctness for the primitive fragment;
 9. prove preview non-interference;
-10. prove commutation soundness for the initial relation.
+10. prove commutation soundness for the initial relation;
+11. define semantic effects and `Sig(f)`;
+12. prove Change Signature soundness;
+13. define capability policies and the coverage relation;
+14. prove Capability Soundness for the first non-recursive core.
 
-Only then expand to lists, records, nested paths and GUI events.
+Only then expand to lists, records, nested paths, richer call graphs and GUI events.
 
-## 17. Research boundary
+## 19. Research boundary
 
-This model does not claim that state transitions, first-class state, undo, edit algebras or patches are novel. Plaid, Worlds, XMF, edit lenses, patch theory, event sourcing, change structures and live programming all cover important neighboring ideas.
+This model does not claim that state transitions, first-class state, effect systems, capabilities, typestate, undo, edit algebras or patches are novel. Plaid, Worlds, XMF, effect systems, capability systems, edit lenses, patch theory, event sourcing, change structures and live programming all cover important neighboring ideas.
 
-The proposed contribution is specifically the **factorization discipline**: ordinary persistent mutation in a low-complexity general-purpose language is executed through a structured semantic delta, and that exact delta representation is reused across multiple language/runtime facilities.
+The proposed contribution is the **combination and factorization discipline**: ordinary persistent mutation is executed through a structured semantic delta; the compiler can derive semantic Change Signatures from those same operations; optional Change Capabilities constrain the *kind* and magnitude of changes rather than merely granting generic write permission; and all of this is exposed through a deliberately low-complexity language surface.
