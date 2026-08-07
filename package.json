@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.4",
-  "description": "Patch: a tiny change-oriented programming language with machine-checked semantic change contracts, range proofs, causal provenance, and a browser-first cross-platform IDE",
+  "version": "0.2.0-beta.5",
+  "description": "Patch: a tiny change-oriented programming language with machine-checked semantic change contracts, a production-to-formal validation bridge, range proofs, causal provenance, and a browser-first cross-platform IDE",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -9,6 +9,7 @@
     "run": "node src/cli.js run",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
+    "formal:example": "node src/cli.js formal examples/score.patch",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:site": "node scripts/build-site.js",
@@ -16,5 +17,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "signature-soundness", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "signature-soundness", "translation-validation", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
 }
