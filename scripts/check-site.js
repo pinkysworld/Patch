@@ -9,6 +9,7 @@ const required = [
   '_site/playground.js',
   '_site/sw.js',
   '_site/manifest.webmanifest',
+  '_site/icon.svg',
   '_site/src/interpreter.js',
   '_site/src/parser.js',
   '_site/src/expression.js',
@@ -29,6 +30,9 @@ for (const needle of ['./style.css', './manifest.webmanifest', './playground.js'
 for (const id of ['code', 'run', 'build', 'output', 'ir', 'app', 'projectName', 'projectKind']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
+for (const phrase of ['One language. One Studio. Many targets.', 'iPhone & iPad', 'Research project', 'Roadmap']) {
+  if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
+}
 
 const playground = fs.readFileSync(path.join(root, '_site/playground.js'), 'utf8');
 if (playground.includes("'../src/")) throw new Error('Generated playground still points outside the deployed site.');
@@ -38,9 +42,11 @@ for (const mod of ['./src/interpreter.js', './src/compiler.js', './src/bundle.js
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
+if (!sw.includes("'./src/compiler.js'")) throw new Error('Generated service worker does not cache compiler assets.');
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, '_site/manifest.webmanifest'), 'utf8'));
 if (manifest.name !== 'Patch Studio') throw new Error('PWA manifest name mismatch.');
 if (manifest.display !== 'standalone') throw new Error('Patch Studio must remain installable as a standalone PWA.');
+if (!manifest.icons?.some(icon => icon.src === './icon.svg')) throw new Error('PWA manifest is missing the Patch Studio icon.');
 
 console.log('ok generated Patch Studio site');
