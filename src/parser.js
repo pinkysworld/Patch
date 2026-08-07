@@ -54,6 +54,7 @@ export function parse(source) {
     }
     if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) return {kind:'field',name:m[1],expr:m[2],line:row.line};
     if ((m = row.text.match(/^show\s+(.+)$/))) return {kind:'show',expr:m[1],line:row.line};
+    if ((m = row.text.match(/^why\s+(.+)$/))) return {kind:'why',expr:m[1],line:row.line};
     if ((m = row.text.match(/^watch\s+([A-Za-z_]\w*)$/))) return {kind:'watch',target:m[1],line:row.line};
     if ((m = row.text.match(/^history\s+([A-Za-z_]\w*)$/))) return {kind:'history',target:m[1],line:row.line};
     if ((m = row.text.match(/^undo(?:\s+([A-Za-z_]\w*))?$/))) return {kind:'undo',name:m[1]??null,line:row.line};
@@ -74,13 +75,33 @@ export function parse(source) {
     }
     if ((m = row.text.match(/^repeat\s+(.+)\s*:\s*$/))) return {kind:'repeat',expr:m[1],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^make\s+([A-Za-z_]\w*)\s*\(([^)]*)\)\s*:\s*$/))) {
-      const params=m[2].trim()?m[2].split(',').map(x=>x.trim()):[]; return {kind:'function',name:m[1],params,body:childBlock(indent,row),line:row.line};
+      const parsed=parseParams(m[2],row.line);
+      return {kind:'function',name:m[1],params:parsed.names,paramRanges:parsed.ranges,body:childBlock(indent,row),line:row.line};
     }
     if ((m = row.text.match(/^do\s+([A-Za-z_]\w*)\s*\((.*)\)\s*$/))) return {kind:'call',name:m[1],args:splitArgs(m[2]),line:row.line};
     if ((m = row.text.match(/^return(?:\s+(.+))?$/))) return {kind:'return',expr:m[1]??null,line:row.line};
     throw new PatchSyntaxError(`I do not understand '${row.text}'.`,row.line);
   }
   return block(0);
+}
+
+function parseParams(text,line) {
+  if(!text.trim())return {names:[],ranges:{}};
+  const names=[]; const ranges={};
+  const number='[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)';
+  const re=new RegExp(`^([A-Za-z_]\\w*)(?:\\s+number\\s+(${number})\\.\\.(${number}))?$`);
+  for(const part of splitArgs(text)){
+    const m=part.match(re);
+    if(!m)throw new PatchSyntaxError(`I do not understand recipe parameter '${part}'. Use name or name number 0..10.`,line);
+    if(names.includes(m[1]))throw new PatchSyntaxError(`Recipe parameter '${m[1]}' is declared more than once.`,line);
+    names.push(m[1]);
+    if(m[2]!==undefined){
+      const min=Number(m[2]); const max=Number(m[3]);
+      if(min>max)throw new PatchSyntaxError(`Range for '${m[1]}' must go from a smaller number to a larger number.`,line);
+      ranges[m[1]]={min,max};
+    }
+  }
+  return {names,ranges};
 }
 
 function splitArgs(text) {
