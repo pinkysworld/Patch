@@ -4,10 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
+  <meta name="description" content="Patch Studio: the browser-first IDE for Patch, a tiny change-oriented programming language for console, GUI and portable applications.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
-  <title>Patch Studio</title>
+  <title>Patch Studio · Patch Programming Language</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -15,7 +16,7 @@
   <main class="studio">
     <header class="topbar">
       <div>
-        <h1>Patch Studio <span>0.2 dev</span></h1>
+        <h1>Patch Studio <span>0.2 beta</span></h1>
         <p>Create, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
@@ -32,7 +33,7 @@
       </div>
     </header>
 
-    <section class="projectbar">
+    <section class="projectbar" aria-label="Project settings">
       <label>Project <input id="projectName" value="MyPatchApp" autocomplete="off"></label>
       <label>Type
         <select id="projectKind"><option value="console">Console</option><option value="window">Window</option></select>
@@ -40,7 +41,7 @@
       <span id="saveState">Saved locally</span>
     </section>
 
-    <section class="workspace">
+    <section class="workspace" aria-label="Patch Studio workspace">
       <div class="pane editor-pane">
         <div class="pane-title">main.patch</div>
         <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Patch code"></textarea>
@@ -60,6 +61,87 @@
     <section class="statusbar">
       <span><strong>Patch core:</strong> create · change · window · when · show · if · repeat · preview · undo</span>
       <span>Projects are autosaved in this browser.</span>
+    </section>
+
+    <section class="site-info" aria-label="About Patch">
+      <article class="hero-card">
+        <div>
+          <p class="eyebrow">One language. One Studio. Many targets.</p>
+          <h2>Programming should feel like making clear changes.</h2>
+          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit <code>change</code> blocks. The beginner-facing language stays small while the runtime records structured semantic changes for history, preview, undo/redo, replay foundations and conflict analysis.</p>
+        </div>
+        <pre class="code-card">create number count = 0
+
+window "Counter":
+  text "Count: {count}"
+  button "Add" as add
+
+when add clicked:
+  change count:
+    add 1</pre>
+      </article>
+
+      <div class="info-grid">
+        <article class="info-card">
+          <p class="eyebrow">Works now</p>
+          <h3>Patch 0.2 beta</h3>
+          <ul>
+            <li>Interpreter plus compiler front end</li>
+            <li>Normalized Change IR</li>
+            <li>Portable <code>.patchapp</code> builds</li>
+            <li>Console programs</li>
+            <li>First GUI language slice: window, text, button, input and click events</li>
+            <li>Live GUI preview inside Patch Studio</li>
+            <li>History, preview, undo/redo and watch</li>
+            <li>Windows, macOS and Linux CI</li>
+          </ul>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">iPhone & iPad</p>
+          <h3>Patch Studio is mobile-first too</h3>
+          <p>Edit and run Patch in Safari, preview GUI programs, inspect Change IR and build portable <code>.patchapp</code> bundles locally. To install it like an app on iPhone or iPad, open this site in Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</p>
+          <p>Future Windows <code>.exe</code>, macOS <code>.app</code> and Linux/BSD builds from iOS will be delegated to platform build runners because iOS cannot host those native desktop toolchains itself.</p>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Compiler direction</p>
+          <h3>Portable core, native packaging</h3>
+          <p class="pipeline">Patch source → typed AST → Change IR → WebAssembly / native host</p>
+          <p>The intended output matrix includes Windows console and GUI applications, macOS command-line tools and <code>.app</code> bundles, Linux and BSD/Unix applications, web builds and the portable <code>.patchapp</code> format. A C99 backend remains a planned portability escape hatch for unusual Unix systems.</p>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Patch UI</p>
+          <h3>Visual-Basic-style simplicity</h3>
+          <p>Patch UI is designed so programmers say <code>window</code>, <code>text</code>, <code>button</code> and <code>when ... clicked</code>, while platform-specific Cocoa/AppKit, Windows and Unix/SDL details stay behind the runtime. A drag-and-drop form designer and property editor are next major Studio milestones.</p>
+        </article>
+      </div>
+
+      <article class="research-card">
+        <div>
+          <p class="eyebrow">Research project</p>
+          <h2>Patch: Change-Oriented Programming with Transparent State Evolution</h2>
+          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates what happens when semantic change is the exclusive ordinary mutation primitive of a deliberately low-complexity general-purpose language, and when one normalized change representation drives execution, history, inversion, preview, replay foundations, UI state evolution and conflict reasoning.</p>
+          <p><strong>Current status:</strong> promising research artifact, not yet a high-venue result. The path to a strong PL paper requires a systematic related-work review, formalized or machine-checked properties, a larger compiler/runtime artifact, benchmark evaluation and preferably a controlled novice-comprehension study.</p>
+        </div>
+        <div class="link-stack">
+          <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language specification</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md">Compiler architecture</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md">Patch Studio design</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/TARGETS.md">Platform targets</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/paper/main.tex">Research manuscript</a>
+        </div>
+      </article>
+
+      <article class="roadmap-card">
+        <p class="eyebrow">Roadmap</p>
+        <div class="roadmap-row"><strong>Now</strong><span>Compiler front end · Change IR · PWA Studio · portable build · first GUI events</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Visual form designer · richer Patch UI · persistent project files · immediate mode · timeline debugger</span></div>
+        <div class="roadmap-row"><strong>Then</strong><span>WebAssembly backend · Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for…</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>Mechanized semantics · change algebra evaluation · benchmarks · novice study · submission-quality artifact</span></div>
+      </article>
     </section>
   </main>
   <script type="module" src="./playground.js"></script>
