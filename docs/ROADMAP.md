@@ -20,7 +20,7 @@
 - [x] Windows/macOS/Linux CI
 - [x] paper draft
 
-## 0.2: compiler + Patch Studio
+## 0.2 beta: compiler + Patch Studio
 
 - [x] first compiler front end
 - [x] Change IR
@@ -33,34 +33,42 @@
 - [x] Change IR viewer
 - [x] installable PWA metadata/offline cache
 - [x] responsive iPhone/iPad layout
+- [x] `window` syntax
+- [x] `text`, `button`, `input`
+- [x] `when ... clicked`
+- [x] virtual Patch UI model
+- [x] browser GUI preview
+- [x] deterministic GitHub Pages site build
+- [x] deployed-site integrity check in CI
 - [ ] typed AST
 - [ ] expression IR instead of expression strings
 - [ ] serialized `.patchlog` history
 - [ ] `replay` command
 - [ ] source locations inside every runtime change record
 - [ ] property-based inverse/composition tests
-- [ ] playground/Studio timeline visualization
+- [ ] Studio timeline visualization
 
 ## 0.3: Patch UI + visual application model
 
-- [ ] `window` syntax
-- [ ] `text`, `button`, `input`, `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, `canvas`
-- [ ] `when ... clicked/changed/closed` event syntax
-- [ ] Patch UI intermediate model
-- [ ] browser Patch UI backend
+- [ ] `list`, `image`, `checkbox`, `slider`, `menu`, `tabs`, `canvas`
+- [ ] `when ... changed/closed` events
+- [ ] two-way `input` binding
 - [ ] visual form/window designer
 - [ ] property inspector
+- [ ] project file import/export
 - [ ] immediate mode against a running application
 - [ ] GUI change history / visual rewind
+- [ ] keyboard-oriented desktop layout and touch-first mobile layout
 
 ## 0.4: portable execution backend
 
 - [ ] Rust compiler implementation
 - [ ] WebAssembly code generation
 - [ ] WASI console runtime
-- [ ] `.patchapp` runtime
+- [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner
 - [ ] runtime capability model
+- [ ] compiler benchmark harness
 
 ## 0.5: native application packaging
 
@@ -95,9 +103,10 @@
 - [ ] optional CRDT-backed types for well-understood cases
 - [ ] offline/local persistence
 
-## paper artifact
+## Research artifact
 
-- [ ] complete systematic related-work review
+- [ ] systematic related-work review including ChEOPS/COPE/Edit Transactions
+- [ ] formal State-Change Factorization calculus
 - [ ] machine-checked core properties
 - [ ] benchmark suite
 - [ ] novice study with ethics/consent as required
@@ -110,3 +119,4 @@
 2. Platform complexity belongs in the compiler/runtime, not in Patch source.
 3. Patch Studio should remain usable from a phone, tablet, desktop browser, or native shell.
 4. Console and GUI applications use the same language, variables, change semantics, functions, and compiler.
+5. High-venue research claims must come from formal semantics and measured evidence, not from product polish alone.
