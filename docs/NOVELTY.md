@@ -1,6 +1,6 @@
 # Novelty Boundary
 
-Patch is **not** novel merely because it has patches, first-class changes, undo, history, explicit state transitions, effect inference, capabilities, a live IDE, or English-like syntax. All of those have substantial prior art.
+Patch is **not** novel merely because it has patches, first-class changes, undo, history, explicit state transitions, effect inference, capabilities, a live IDE, range analysis, provenance, or English-like syntax. All of those have substantial prior art.
 
 The current research hypothesis has two linked layers:
 
@@ -8,9 +8,9 @@ The current research hypothesis has two linked layers:
 
 and:
 
-> **Semantic Change Contracts:** because mutation already has semantic operation structure, the compiler can infer a Change Signature for a recipe and optionally prove that its possible committed changes are contained in a declared semantic Change Capability policy.
+> **Semantic Change Contracts:** because mutation already has semantic operation structure, the compiler can infer a Change Signature and optionally prove that possible committed changes are contained in a declared semantic Change Capability policy.
 
-The candidate contribution is the combination, not any one ingredient in isolation.
+The candidate contribution is the combination and the formal connection between these layers, not any one ingredient in isolation.
 
 ## Important prior-art collisions
 
@@ -20,7 +20,7 @@ Sunshine et al.'s OOPSLA 2011 paper *First-Class State Change in Plaid* makes ch
 
 Patch therefore must **not** claim to invent first-class state change, explicit state transitions, typestate-oriented programming, or language-level state evolution.
 
-Patch's intended distinction is a normalized delta/Change IR through which ordinary persistent value mutation itself executes, with operation structure reused for several services and analyses.
+Patch's intended distinction is a normalized delta/Change IR through which ordinary persistent value mutation itself executes, with operation structure reused for static policy and runtime/tooling services.
 
 Reference: DOI 10.1145/2048066.2048122.
 
@@ -47,7 +47,7 @@ set
 clear
 ```
 
-rather than only a generic read/write region effect. Whether this distinction is genuinely new or merely an instance of richer behavioral effects must be tested systematically.
+and may additionally contain a proved amount interval. Whether this is a genuinely distinctive semantic-contract design or an instance of richer behavioral/graded/refinement effects must be tested systematically.
 
 Reference: DOI 10.1145/73560.73564.
 
@@ -55,7 +55,7 @@ Reference: DOI 10.1145/73560.73564.
 
 Brachthaeuser, Schuster and Ostermann's OOPSLA 2020 work *Effects as Capabilities* explicitly combines effect information and capabilities. Patch therefore must **not** claim that "effects plus capabilities" is new.
 
-Patch's Change Capability proposal is narrower: a policy constrains which semantic persistent-state transitions a recipe may commit. For example:
+Patch's Change Capability proposal is narrower and state-transition oriented: a policy constrains which semantic persistent-state transitions code may commit. For example:
 
 ```patch
 player.score may increase up to 10
@@ -65,9 +65,9 @@ can reject `set player.score` even though both are writes to the same location.
 
 Reference: DOI 10.1145/3428194.
 
-### Capability, permission and typestate systems
+### Capability, permission, refinement and typestate systems
 
-Ownership, capability, permission, typestate and behavioral type systems can restrict what code may do to resources and how state may evolve. Patch must compare against these families before any firstness claim.
+Ownership, object-capability, permission, typestate, refinement, graded-effect and behavioral type systems can restrict what code may do to resources and how state may evolve. Patch must compare against these families before any priority claim.
 
 The possible distinction is that the authority is checked directly against the semantic deltas already required for normal mutation, rather than adding an independent resource-state protocol to an otherwise conventional assignment model.
 
@@ -91,62 +91,67 @@ Edit lenses explicitly model edits between related structures; higher-order chan
 
 CRDTs provide convergence for specific distributed data types. Patch beta makes no general convergence claim.
 
-## Formal contribution candidates
+## Formal contribution status
 
 ### State-Change Factorization
 
-For every well-typed supported source step that mutates existing persistent state from `S` to `S'`, execution produces `delta` such that:
-
-```text
-apply(delta, S) = S'
-```
-
-and the store transition commits only through that semantic change.
+For the current Lean machine, every modeled state-changing step is witnessed by a well-formed semantic change and commits through the single change path. This is machine checked.
 
 ### Mutation Transparency
 
-Every committed post-creation mutation has an inspectable semantic change matching the transition.
+Every such formal mutation has an inspectable change witness in resulting history. This is machine checked.
 
 ### Change Signature Soundness
 
-For recipe `f`:
+For the new structured Lean control-flow core:
 
 ```text
-RuntimeChanges(f) subset-of Sig(f)
+RuntimeChanges(stmt) subset-of Signature(stmt)
 ```
 
-where `Sig(f)` is a conservative semantic effect summary inferred by the compiler.
+is now machine checked. The core contains sequencing, branch choice, and bounded repetition. The static signature may over-approximate untaken branches but cannot miss an emitted runtime semantic effect.
 
-### Change Capability Soundness
+This is a theorem about the formal core, not yet a verification theorem about the full JavaScript analyzer.
 
-For a capability-protected recipe accepted by the compiler:
+### End-to-end Change Capability Soundness
+
+For a protected formal statement whose inferred signature is admitted by a semantic policy, Lean now proves:
 
 ```text
-Sig(f) subset-of Cap(f)
+RuntimeChanges(stmt) subset-of Signature(stmt)
+Signature(stmt) admitted-by Capability(stmt)
+------------------------------------------------
+RuntimeChanges(stmt) admitted-by Capability(stmt)
 ```
 
-and therefore, if Signature Soundness holds:
+The earlier beta-3 composition theorem took signature coverage as an assumption. Beta 4 proves that coverage from the formal execution semantics and static inference function for the structured core.
 
-```text
-RuntimeChanges(f) subset-of Cap(f)
-```
+### Remaining critical bridge
 
-The interesting semantic distinction is that rules may constrain operation kind and magnitude, not merely whether a location is writable.
+The next major theorem is **production correspondence**:
 
-### Other supporting properties
+> For the supported Patch subset, the JavaScript parser/analyzer/lowering produces semantic effects corresponding to the Lean representation and therefore preserves the proved signature and capability judgments.
 
+Possible implementation strategies include a direct compiler correspondence proof, translation validation, or a small verified checker over emitted Change IR evidence.
+
+## Supporting properties, not primary novelty claims
+
+- magnitude/range analysis for bounded semantic changes;
 - inverse correctness for the invertible fragment;
 - preview non-interference/agreement;
 - deterministic replay consistency;
-- soundness of certified commuting changes.
+- soundness of certified commuting changes;
+- causal provenance and `why` explanations.
 
-## Candidate novelty claim
+These can strengthen the artifact and evaluation without being claimed as individually new.
 
-A defensible current claim is:
+## Candidate paper claim
 
-> We present Patch, an experimental general-purpose language in which post-creation persistent mutation is executed through a normalized semantic Change IR rather than ordinary assignment plus logging. The compiler reuses that mandatory representation to infer semantic Change Signatures and can check optional Change Capabilities that constrain the operation and, when statically provable, magnitude of changes to persistent paths. The same change representation also drives history, inversion, preview, replay foundations, GUI state evolution and conservative conflict reasoning, while the beginner-facing language remains deliberately small.
+A defensible beta-4 claim is:
 
-This is a **candidate claim**, not a priority assertion.
+> We present Patch, an experimental general-purpose language in which post-creation persistent mutation is executed through a normalized semantic Change IR rather than ordinary assignment plus logging. The same mutation representation supports operation-sensitive and magnitude-aware semantic Change Contracts. For a mechanized structured core, we prove that runtime semantic changes are covered by the inferred Change Signature and that a protected execution cannot emit a semantic change outside its admitted capability policy. The production language retains a deliberately small surface syntax; compiler-to-formal correspondence remains an explicit next obligation.
+
+This is a **candidate contribution claim**, not a priority assertion.
 
 ## What would materially weaken the claim?
 
@@ -156,26 +161,28 @@ An earlier general-purpose language/system satisfying most of the following woul
 2. mutation executes through the structured change rather than being logged afterward;
 3. the change contains semantic operation structure more precise than only a location write;
 4. compiler-inferred component summaries conservatively describe those semantic changes;
-5. policies constrain which semantic changes a component may emit, including operation-sensitive restrictions on the same path;
-6. one representation is reused for inversion/preview/replay/tooling;
-7. the system provides formal soundness evidence and practical evaluation.
+5. policies constrain which semantic changes a component may emit, including operation-sensitive and quantitative restrictions on the same path;
+6. the runtime/signature/policy chain has formal soundness evidence;
+7. one representation is reused for inversion/preview/replay/provenance/tooling;
+8. the system demonstrates practical advantages with measured evaluation.
 
 ## Search plan before submission
 
 Systematically search ACM DL, IEEE Xplore, DBLP, SpringerLink, Semantic Scholar, Google Scholar and arXiv for combinations of:
 
-`first-class state change`, `typestate`, `behavioral types`, `effect systems state updates`, `update effects`, `write effects`, `semantic effects`, `effects as capabilities`, `capability type systems`, `permission systems`, `bounded effects`, `state transition permissions`, `operation capabilities`, `change-oriented programming`, `runtime state changes`, `edit lenses`, `change structures`, `patch algebra mutable state`, `event sourcing language semantics`, `reducer state transitions`.
+`first-class state change`, `typestate`, `behavioral types`, `graded effects`, `quantitative effects`, `refinement effects`, `effect systems state updates`, `update effects`, `write effects`, `semantic effects`, `effects as capabilities`, `capability type systems`, `permission systems`, `bounded effects`, `state transition permissions`, `operation capabilities`, `change-oriented programming`, `runtime state changes`, `edit lenses`, `change structures`, `patch algebra mutable state`, `event sourcing language semantics`, `reducer state transitions`.
 
 ## Current positioning
 
-The new Change Signature/Capability layer **improves the high-venue story**, but it also broadens the prior-art burden. The paper can no longer simply say "Patch knows what changes." Effect systems have done conservative effect inference for decades, and capability/effect combinations are established research.
+Beta 4 materially improves the high-venue story because the central signature-coverage link is no longer merely aspirational in the formal core. But the prior-art burden remains substantial.
 
-The strongest possible story is instead:
+The strongest story is:
 
-1. State-Change Factorization gives Patch an unusually explicit semantic mutation substrate;
-2. semantic operation-aware signatures are derived from that substrate;
-3. semantic capabilities constrain operation kind/magnitude over the same path;
-4. mechanized soundness shows the analysis actually constrains runtime committed changes;
-5. evaluation shows useful security/tooling benefits with low programmer burden.
+1. State-Change Factorization supplies an explicit mandatory mutation substrate;
+2. operation- and magnitude-aware semantic signatures are derived from that substrate;
+3. semantic capabilities constrain those same changes;
+4. Lean proves runtime-signature-policy containment for a structured core;
+5. compiler correspondence transfers that result to a useful executable subset;
+6. security/engineering case studies show concrete benefit with low programmer burden.
 
-Patch remains a plausible high-venue research direction, but **not yet a high-venue paper**. Product polish, mobile development and GUI compilation strengthen the artifact but do not substitute for formal novelty and measured evidence.
+Patch remains a plausible high-venue research direction, but **not yet a submission-ready high-venue paper**. Product polish, mobile development and GUI compilation strengthen the artifact but do not substitute for formal correspondence and measured evidence.
