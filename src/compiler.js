@@ -1,7 +1,7 @@
 import { parse } from './parser.js';
 import { analyzeChangeSemantics } from './change-analysis.js';
 
-export const PATCH_IR_VERSION = '0.3';
+export const PATCH_IR_VERSION = '0.4';
 
 export function compile(source, options = {}) {
   const ast = parse(source);
@@ -29,9 +29,7 @@ function inferKind(ast) {
   return ast.some(node => node.kind === 'window') ? 'window' : 'console';
 }
 
-function lowerBlock(nodes) {
-  return nodes.map(lowerNode);
-}
+function lowerBlock(nodes) { return nodes.map(lowerNode); }
 
 function lowerNode(node) {
   switch (node.kind) {
@@ -51,69 +49,43 @@ function lowerNode(node) {
     case 'allow':
       return op('ALLOW_CHANGES', node, {
         name: node.name,
-        rules: node.rules.map(rule => ({
-          target: rule.target,
-          field: rule.field,
-          operation: rule.operation,
-          maxAmount: rule.maxAmount,
-          line: rule.line
-        }))
+        rules: node.rules.map(rule => ({ target: rule.target, field: rule.field, operation: rule.operation, maxAmount: rule.maxAmount, line: rule.line }))
       });
-    case 'show':
-      return op('SHOW', node, { expr: node.expr });
-    case 'watch':
-      return op('WATCH', node, { target: node.target });
-    case 'history':
-      return op('HISTORY', node, { target: node.target });
-    case 'undo':
-      return op('UNDO', node, { name: node.name });
-    case 'redo':
-      return op('REDO', node);
-    case 'preview':
-      return op('PREVIEW', node, { body: lowerBlock(node.body) });
+    case 'show': return op('SHOW', node, { expr: node.expr });
+    case 'why': return op('WHY', node, { expr: node.expr });
+    case 'watch': return op('WATCH', node, { target: node.target });
+    case 'history': return op('HISTORY', node, { target: node.target });
+    case 'undo': return op('UNDO', node, { name: node.name });
+    case 'redo': return op('REDO', node);
+    case 'preview': return op('PREVIEW', node, { body: lowerBlock(node.body) });
     case 'change':
       return op('CHANGE', node, {
         target: node.target,
         name: node.name,
-        operations: node.ops.map(change => ({
-          op: change.op,
-          field: change.field,
-          expr: change.expr ?? null,
-          line: change.line
-        }))
+        operations: node.ops.map(change => ({ op: change.op, field: change.field, expr: change.expr ?? null, line: change.line }))
       });
-    case 'if':
-      return op('IF', node, {
-        expr: node.expr,
-        then: lowerBlock(node.thenBody),
-        else: lowerBlock(node.elseBody)
-      });
-    case 'repeat':
-      return op('REPEAT', node, { expr: node.expr, body: lowerBlock(node.body) });
+    case 'if': return op('IF', node, { expr: node.expr, then: lowerBlock(node.thenBody), else: lowerBlock(node.elseBody) });
+    case 'repeat': return op('REPEAT', node, { expr: node.expr, body: lowerBlock(node.body) });
     case 'function':
-      return op('MAKE', node, { name: node.name, params: node.params, body: lowerBlock(node.body) });
-    case 'call':
-      return op('DO', node, { name: node.name, args: node.args });
-    case 'return':
-      return op('RETURN', node, { expr: node.expr });
-    case 'capRule':
-      throw new Error('Capability rules only belong inside allow blocks.');
-    default:
-      throw new Error(`Compiler does not know AST node '${node.kind}'.`);
+      return op('MAKE', node, { name: node.name, params: node.params, paramRanges: node.paramRanges ?? {}, body: lowerBlock(node.body) });
+    case 'call': return op('DO', node, { name: node.name, args: node.args });
+    case 'return': return op('RETURN', node, { expr: node.expr });
+    case 'capRule': throw new Error('Capability rules only belong inside allow blocks.');
+    default: throw new Error(`Compiler does not know AST node '${node.kind}'.`);
   }
 }
 
-function op(code, node, fields = {}) {
-  return { code, line: node.line ?? null, ...fields };
-}
+function op(code, node, fields = {}) { return { code, line: node.line ?? null, ...fields }; }
 
 function inferRuntimeCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
     if (node.kind === 'window' || node.kind === 'uiControl' || node.kind === 'event') caps.add('ui.window');
-    if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo') caps.add('change.history');
+    if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
+    if (node.kind === 'why') caps.add('change.provenance');
     if (node.kind === 'allow') caps.add('change.capabilities');
+    if (node.kind === 'function' && Object.keys(node.paramRanges ?? {}).length) caps.add('change.range-analysis');
   });
   return [...caps].sort();
 }
