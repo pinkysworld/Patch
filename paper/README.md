@@ -6,84 +6,78 @@ Working manuscript:
 
 ## Status
 
-This is a substantial beta/design manuscript tied to the Patch 0.2.0-beta.2 artifact. It is not yet a submission-ready empirical paper. Implemented mechanisms are separated from theorem targets, performance hypotheses, security claims and human-comprehension hypotheses.
+This manuscript is now tied to **Patch 0.2.0-beta.3**. It remains a research-artifact manuscript rather than a submission-ready top-venue paper, but beta 3 materially advances the formal side of the project.
 
-The current artifact includes:
+Implemented mechanisms now include:
 
-- compiler front end lowering Patch to normalized Change IR;
-- automatically inferred semantic Change Signatures for recipes;
-- optional compile-time Change Capabilities with operation/path rules and numeric bounds;
-- conservative transitive analysis through simple recipe calls;
-- `patch changes` CLI inspection and Patch Studio Change Contract view;
-- `.patchapp` portable bundle format;
-- valid bootstrap WebAssembly `.wasm` backend carrying Patch source + Change IR;
-- Patch Studio browser-first PWA with iPhone/iPad support;
-- first visual form-Designer toolbox and Patch UI browser runtime/preview;
-- hardened Windows/macOS/Linux CI and deterministic public-site validation.
+- compiler front end and normalized Change IR;
+- automatically inferred semantic Change Signatures;
+- Change Capabilities over target/path, semantic operation and optional numeric magnitude;
+- ranged numeric recipe parameters and interval analysis for bounded dynamic changes;
+- runtime range guards preserving current signature assumptions;
+- simple transitive recipe-effect analysis;
+- source/recipe/GUI-event provenance on committed changes;
+- initial `why value` / `why predicate` history explanations;
+- `.patchapp`, bootstrap WebAssembly and browser-first Patch Studio;
+- GUI preview/Designer and Change Contract view;
+- Windows/macOS/Linux CI;
+- a separate Lean 4 formal-verification CI gate.
 
-## Formal story
+## Mechanized core
 
-The manuscript now has two linked formal contribution candidates.
+`formal/PatchFormal.lean` is a real Lean 4.30.0 project. The formal CI builds it and rejects `sorry`/`admit` placeholders.
 
-### State-Change Factorization
+The current Lean core proves:
 
-Every supported post-creation persistent state transition from `S` to `S'` factors through a semantic change `delta` such that:
+1. **State-Change Factorization** for the formal machine step;
+2. **Mutation Transparency** as a corollary;
+3. transitivity of interval containment;
+4. **Semantic Change Contract composition**: if runtime changes are covered by a signature and the signature is admitted by a policy, runtime changes are admitted by the policy.
+
+This is intentionally not described as verification of the complete JavaScript compiler. The missing high-value theorem is **implementation/signature correspondence**: the executable analyzer must be connected to the formal definition strongly enough to prove that generated signatures really cover runtime changes in a useful Patch core.
+
+## Current formal chain
+
+The intended end-to-end statement remains:
 
 ```text
-apply(delta, S) = S'
+RuntimeChanges(f) subset-of Signature(f)
+Signature(f) subset-of Capability(f)
+-------------------------------------
+RuntimeChanges(f) subset-of Capability(f)
 ```
 
-The transition commits through that change representation rather than through hidden assignment followed by logging.
+Lean currently proves the composition step once the first inclusion is assumed. Beta 3's executable interval analyzer supplies useful evidence for bounded changes, but its soundness is not yet mechanized.
 
-### Semantic Change Contracts
+## Range analysis and provenance
 
-For a recipe `f`, the compiler infers a conservative semantic Change Signature `Sig(f)`. A protected recipe declares a semantic policy `Cap(f)`.
+Range analysis and `why`-style debugging are supporting mechanisms, not firstness claims.
 
-The desired proof chain is:
+A recipe can now declare:
 
-```text
-RuntimeChanges(f) subset-of Sig(f)
-Sig(f) subset-of Cap(f)
---------------------------------
-RuntimeChanges(f) subset-of Cap(f)
+```patch
+make reward(player, bonus number 0..10):
 ```
 
-The current implementation demonstrates the analysis and conservative checking but does not yet constitute a machine-checked proof of these properties.
+and interval analysis can prove expressions such as `bonus * 2` stay inside a policy bound when the declared range is sufficient.
 
-## Prior-art boundary
+Committed changes also retain source, recipe and GUI-event cause context. `why score` shows recorded transitions behind a value; `why score > 100` replays the semantic history to find the first recorded false-to-true transition when possible.
 
-The paper explicitly does **not** claim to invent first-class state change, effect inference, capabilities, typestate, undo, patches or event histories.
+The paper explicitly distinguishes this historical provenance from general causal inference.
 
-The comparison set now includes at least:
+## High-venue gate
 
-- Plaid / First-Class State Change (OOPSLA 2011);
-- Worlds / reified program state (ECOOP 2011);
-- Lucassen and Gifford's Polymorphic Effect Systems (POPL 1988);
-- Effects as Capabilities / Effekt (OOPSLA 2020);
-- capability, permission and typestate systems;
-- XMF first-class undoability;
-- ChEOPS/COPE and Edit Transactions;
-- reducer/event architectures and event sourcing;
-- edit lenses, change structures, patch theory and CRDTs.
+Patch remains a credible high-venue direction. Before an OOPSLA/PLDI/ICFP-level submission, the project should still add:
 
-The candidate distinction is the combination of mandatory semantic-delta execution, operation-aware inferred signatures, semantic capability policies over those deltas, reuse of one Change IR across runtime/tooling facilities, and a deliberately low-complexity source language.
-
-## High-venue position
-
-Patch remains a credible high-venue research direction, but the current manuscript should **not** yet be submitted to a top PL venue.
-
-A serious OOPSLA/PLDI/ICFP-level attempt should wait for:
-
-- a systematic literature review across effect/capability/behavioral-state systems;
-- a small formal calculus centered on State-Change Factorization;
-- machine-checked State-Change Factorization, Change Signature soundness and Change Capability soundness for a useful core;
+- systematic literature review across effects, capabilities, behavioral types, update calculi, provenance and reversible systems;
+- executable-to-formal correspondence or a verified checker boundary;
+- machine-checked Change Signature soundness for a useful core;
+- mechanized interval-analysis soundness if bounded capabilities remain a central theorem;
 - direct compiled execution rather than only the bootstrap Wasm carrier;
-- benchmark and semantic-security evaluation;
-- ideally a preregistered novice-comprehension study if accessibility remains part of the paper story.
+- benchmark/security evaluation;
+- controlled comprehension evidence if novice simplicity remains part of the contribution.
 
 ## Build
-
-With a standard LaTeX installation:
 
 ```bash
 cd paper
@@ -91,15 +85,4 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-The manuscript contains its display bibliography directly, so BibTeX is not required. `references.bib` is maintained as structured citation metadata for later venue formatting.
-
-## Next manuscript work
-
-The next research rounds should focus on:
-
-1. mechanizing the factorization and semantic-capability core in Lean 4;
-2. typed/range-aware signature inference so bounded dynamic changes can be proved;
-3. systematic comparison against richer effect/capability and behavioral type systems;
-4. direct Change IR-to-Wasm execution;
-5. a reproducible security/capability benchmark corpus;
-6. controlled comprehension results if retained.
+The manuscript has an inline display bibliography, so BibTeX is not required for the current artifact version.
