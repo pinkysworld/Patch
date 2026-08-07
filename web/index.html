@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic change contracts, range proofs, causal why explanations, GUI and portable application builds.">
+  <meta name="description" content="Patch Studio: browser-first Patch IDE with machine-checked semantic change contracts, range proofs, causal why explanations, GUI and portable application builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -17,7 +17,7 @@
   <main class="studio">
     <header class="topbar">
       <div>
-        <h1>Patch Studio <span>0.2 beta.3</span></h1>
+        <h1>Patch Studio <span>0.2 beta.4</span></h1>
         <p>Create, design, inspect, explain, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
@@ -87,7 +87,7 @@
         <div>
           <p class="eyebrow">One language. One Studio. Semantic changes.</p>
           <h2>Programming should feel like making clear, inspectable changes.</h2>
-          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 3 adds bounded numeric range proofs, causal <code>why</code> explanations and the first machine-checked Lean 4 formalization of the research core.</p>
+          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 4 adds machine-checked Change Signature Soundness and end-to-end Semantic Change Contract soundness for a structured Lean 4 core.</p>
         </div>
         <pre class="code-card">allow reward:
   player.score may increase up to 10
@@ -102,7 +102,7 @@ why player.score</pre>
       <div class="info-grid">
         <article class="info-card">
           <p class="eyebrow">Works now</p>
-          <h3>Patch 0.2 beta.3</h3>
+          <h3>Patch 0.2 beta.4</h3>
           <ul>
             <li>Interpreter plus compiler front end</li>
             <li>Normalized Change IR</li>
@@ -111,7 +111,9 @@ why player.score</pre>
             <li>Ranged recipe parameters and interval arithmetic proofs</li>
             <li>Runtime guards for declared numeric ranges</li>
             <li>Causal source/recipe/event provenance and <code>why</code></li>
-            <li>Lean 4 State-Change Factorization and capability-composition proofs</li>
+            <li>Lean 4 State-Change Factorization and Mutation Transparency</li>
+            <li>Lean 4 Change Signature Soundness for sequence, branching and repetition</li>
+            <li>Lean 4 end-to-end Capability Soundness for the formal core</li>
             <li>Portable <code>.patchapp</code> and bootstrap WebAssembly builds</li>
             <li>Console programs and first Patch UI/Designer slice</li>
             <li>Windows, macOS and Linux CI plus formal-verification CI</li>
@@ -122,7 +124,7 @@ why player.score</pre>
           <p class="eyebrow">Semantic security</p>
           <h3>Permission to change is more precise than permission to write</h3>
           <p>A normal write permission says code may modify a value. Patch can say that a recipe may only perform a particular semantic change, for example <code>player.score may increase up to 10</code>. A replacement with <code>set score = 999</code> is a different semantic operation and is rejected.</p>
-          <p>With <code>bonus number 0..10</code>, the compiler can now prove many dynamic bounded changes instead of rejecting them just because the amount is a variable.</p>
+          <p>With <code>bonus number 0..10</code>, the compiler can prove many dynamic bounded changes instead of rejecting them just because the amount is a variable.</p>
         </article>
 
         <article class="info-card">
@@ -134,9 +136,9 @@ why player.score</pre>
 
         <article class="info-card">
           <p class="eyebrow">Formal verification</p>
-          <h3>The first Lean 4 proofs are part of the repository</h3>
-          <p>The <code>formal/</code> project mechanizes an initial State-Change Factorization theorem, Mutation Transparency, interval-containment composition and Semantic Change Contract composition. Dedicated CI builds the proofs and rejects unfinished <code>sorry</code>/<code>admit</code> placeholders.</p>
-          <p>The formal model is intentionally smaller than the production interpreter. Connecting the executable analyzer more tightly to the mechanized semantics is the next research step.</p>
+          <h3>The central contract chain is now machine checked for a formal core</h3>
+          <p>The <code>formal/</code> project proves State-Change Factorization, Mutation Transparency and interval-containment composition. Beta 4 additionally proves that every runtime semantic effect of a structured core execution is contained in its inferred Change Signature.</p>
+          <p>Lean then composes that result with capability-policy admission, yielding <code>RuntimeChanges ⊆ Signature ⊆ Capability</code> and therefore runtime policy containment for the formal core. The remaining major obligation is correspondence between the production JavaScript analyzer and these formal judgments.</p>
         </article>
 
         <article class="info-card">
@@ -159,13 +161,14 @@ why player.score</pre>
           <p class="eyebrow">Research project</p>
           <h2>Patch: State-Change Factorization and Semantic Change Contracts</h2>
           <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. On top of that mandatory representation, the compiler derives semantic signatures, capability proofs, bounded range facts and provenance.</p>
-          <p><strong>Current status:</strong> the project now includes initial machine-checked proofs, but it is still not a finished high-venue result. The next high-value work is correspondence between the executable compiler and formal model, direct compiled execution, systematic related work and measured evaluation.</p>
+          <p><strong>Current status:</strong> the formal core now has machine-checked Change Signature Soundness and end-to-end policy containment. The next high-value work is proving correspondence between the executable compiler/analyzer and the formal model, then direct compiled execution, systematic related work and measured security/engineering evaluation.</p>
         </div>
         <div class="link-stack">
           <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language specification</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a>
-          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchFormal.lean">Lean 4 proofs</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchFormal.lean">Factorization Lean proofs</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchSignature.lean">Signature & capability Lean proofs</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Novelty boundary</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md">Compiler architecture</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/paper/main.tex">Research manuscript</a>
@@ -174,10 +177,10 @@ why player.score</pre>
 
       <article class="roadmap-card">
         <p class="eyebrow">Roadmap</p>
-        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range proofs · causal why · Lean core · PWA Studio · bootstrap Wasm</span></div>
-        <div class="roadmap-row"><strong>Next</strong><span>Executable-to-Lean correspondence · richer range/dataflow analysis · provenance graph UI · direct Wasm lowering</span></div>
+        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range proofs · causal why · signature soundness · PWA Studio · bootstrap Wasm</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Production-compiler ↔ Lean correspondence · richer range/dataflow analysis · security case studies · direct Wasm lowering</span></div>
         <div class="roadmap-row"><strong>Then</strong><span>Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for… · richer visual Designer</span></div>
-        <div class="roadmap-row"><strong>Research</strong><span>Mechanized signature soundness · security case studies · benchmarks · novice study</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>Verified correspondence · inverse/replay proofs · benchmarks · controlled novice study if retained</span></div>
       </article>
     </section>
   </main>
