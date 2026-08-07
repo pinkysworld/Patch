@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.4 development**
+Status: **0.2.0-beta.5 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -71,7 +71,7 @@ reward(player)
 
 Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively.
 
-Beta 4 adds a separate Lean formal core where static signature inference is machine-checked against runtime semantic-effect traces for sequencing, branch choice and bounded repetition. That theorem validates the formal model, not yet every production JavaScript analyzer path.
+The Lean formal core machine-checks signature soundness for sequencing, branch choice and bounded repetition. Beta 5 adds a conservative production-to-formal bridge for a subset of the real language. This bridge is compiler metadata/tooling, not new beginner syntax.
 
 ## Change Capabilities
 
@@ -92,7 +92,7 @@ Current operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clea
 
 A protected recipe is rejected if its inferred committed changes are not covered by its rules.
 
-For the structured Lean core, beta 4 machine-checks the end-to-end relation:
+For the structured Lean core, the end-to-end relation is machine checked:
 
 ```text
 RuntimeChanges(stmt) subset-of Signature(stmt)
@@ -101,7 +101,21 @@ Signature(stmt) admitted-by Capability(stmt)
 RuntimeChanges(stmt) admitted-by Capability(stmt)
 ```
 
-Production compiler/formal correspondence remains an explicit research obligation.
+## Production/formal validation metadata
+
+Patch IR 0.5 includes a `formalBridge` object. It records whether each program/recipe entry is inside the currently supported production-to-formal correspondence subset, the reconstructed formal-style signature, the normalized production signature, and reasons for unsupported constructs.
+
+A supported signature mismatch is a compiler error.
+
+Inspect the current boundary with:
+
+```bash
+patch formal program.patch
+```
+
+Current bridge coverage includes direct supported semantic changes, sequence, `if` alternatives, literal bounded `repeat`, and supported numeric range amounts. Recipe calls, dynamic repetition, undo/redo, return control flow, and GUI/event execution are currently reported as outside this bridge subset.
+
+This metadata is translation-validation evidence, not a language promise that all supported Patch code is formally verified.
 
 ## Ranged recipe parameters
 
@@ -113,7 +127,7 @@ make reward(player, bonus number 0..10):
     add bonus to score
 ```
 
-A ranged parameter is still used like an ordinary number. The annotation is an optional contract for the compiler/runtime, not a new numeric type visible in ordinary expressions.
+A ranged parameter is still used like an ordinary number. The annotation is an optional contract for the compiler/runtime.
 
 The compiler uses interval analysis to reason about simple arithmetic:
 
@@ -130,35 +144,20 @@ make reward(player, bonus number 0..5):
 
 The current interval analyzer supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
 
-Calls to ranged recipes are also guarded at runtime. For example, a recipe declaring `bonus number 0..10` rejects a call with `11`. Production interval-analysis soundness and static call correspondence are not yet mechanized.
+Calls to ranged recipes are guarded at runtime. Production interval-analysis soundness and static call correspondence are not yet mechanized.
 
 ## Causal provenance and `why`
 
-Committed semantic changes retain:
-
-- source line;
-- change target and before/after values;
-- semantic operations;
-- active recipe-call chain;
-- GUI event cause when a change occurs from an event handler.
-
-To explain the current value of a target:
+Committed semantic changes retain source line, target/before/after values, semantic operations, active recipe-call chain, and GUI event cause when relevant.
 
 ```patch
 why score
-```
-
-Patch reports the recorded changes that led to the current value and includes known recipe/event causes.
-
-A condition can also be queried:
-
-```patch
 why score > 100
 ```
 
-For the deterministic in-memory history, Patch reconstructs the pre-change state and replays committed changes until it finds the first transition where the condition changed from false to true. If the condition is false now or was already true before the recorded changes, Patch reports that instead.
+`why score` reports recorded transitions and known recipe/event causes. A condition query reconstructs pre-change state and replays committed changes until it finds the first false-to-true transition when possible.
 
-`why` is a provenance/debugging facility. It does not claim to infer philosophical or counterfactual causation, and it does not yet reason about arbitrary external effects.
+`why` is a provenance/debugging facility. It does not claim general counterfactual causal inference.
 
 ## Window applications
 
@@ -174,7 +173,7 @@ when add_button clicked:
     add 1
 ```
 
-Current GUI syntax includes `window`, `text`, `button`, `input`, and event syntax `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers.
+Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers.
 
 ## Named changes, undo, preview, history
 
@@ -216,8 +215,6 @@ Inside `repeat`, `count` is a one-based local number.
 
 ## Recipes
 
-Plain parameters remain valid:
-
 ```patch
 make greet(name):
   show "Hello " + name
@@ -242,4 +239,4 @@ Projects are `console` or `window` applications. Both compile through the same C
 
 ## Error design
 
-Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe.
+Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe. Formal bridge coverage follows the same principle: code outside the correspondence subset is reported as unsupported, never silently treated as verified.

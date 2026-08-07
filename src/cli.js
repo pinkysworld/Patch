@@ -7,7 +7,7 @@ import { buildPatchApp, serializePatchApp } from './bundle.js';
 import { compileToWasm } from './wasm.js';
 
 const args = process.argv.slice(2);
-const known = new Set(['run', 'check', 'changes', 'build']);
+const known = new Set(['run', 'check', 'changes', 'formal', 'build']);
 const command = known.has(args[0]) ? args.shift() : 'run';
 const file = args.shift();
 
@@ -29,7 +29,9 @@ try {
     const { ir } = compile(source, { name: appName(file) });
     const recipeSignatures = Object.keys(ir.changeSignatures).filter(name => name !== '$program').length;
     const policies = Object.keys(ir.changeCapabilities).length;
-    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies.`);
+    const covered = ir.formalBridge.summary.supported;
+    const total = covered + ir.formalBridge.summary.unsupported;
+    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies, ${covered}/${total} formal-bridge entry/entries supported.`);
     process.exit(0);
   }
 
@@ -37,6 +39,12 @@ try {
     const { ir } = compile(source, { name: appName(file) });
     printChangeAnalysis(ir);
     process.exit(0);
+  }
+
+  if (command === 'formal') {
+    const { ir } = compile(source, { name: appName(file) });
+    printFormalBridge(ir.formalBridge);
+    process.exit(ir.formalBridge.summary.mismatches === 0 ? 0 : 2);
   }
 
   if (command === 'build') {
@@ -80,7 +88,7 @@ function printChangeAnalysis(ir) {
     console.log(`${name}(${signature.params.join(', ')})`);
     if (!signature.changes.length) console.log('  changes: none');
     for (const change of signature.changes) {
-      const amount = change.staticAmount ? ` by ${change.amount}` : '';
+      const amount = change.staticAmount ? ` by ${change.amount}` : change.amountRange ? ` by ${change.amountRange.min}..${change.amountRange.max}` : '';
       const via = change.via ? ` via ${change.via}` : '';
       const preview = change.committed === false ? ' [preview only]' : '';
       console.log(`  ${change.path}: ${change.operation}${amount}${via}${preview}`);
@@ -97,6 +105,21 @@ function printChangeAnalysis(ir) {
   }
 }
 
+function printFormalBridge(bridge) {
+  console.log(`Formal bridge ${bridge.version} -> Lean model ${bridge.leanModel}`);
+  console.log(`  theorem basis: ${bridge.theorem}`);
+  for (const [name, entry] of Object.entries(bridge.entries)) {
+    if (entry.supported) {
+      console.log(`  ✓ ${name}: production signature matches independently reconstructed formal-core signature`);
+      continue;
+    }
+    console.log(`  · ${name}: not yet inside the formal correspondence subset`);
+    for (const reason of entry.reasons) console.log(`      - ${reason}`);
+  }
+  console.log(`Summary: ${bridge.summary.supported} supported, ${bridge.summary.unsupported} unsupported, ${bridge.summary.mismatches} mismatch(es).`);
+  console.log('Note: supported means translation-validation evidence against the current formal-core signature shape, not full verification of the JavaScript compiler.');
+}
+
 function option(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : null;
@@ -107,5 +130,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
+  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect production-to-formal bridge coverage:\n  patch formal program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
 }

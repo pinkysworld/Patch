@@ -1,7 +1,8 @@
 import { parse } from './parser.js';
 import { analyzeChangeSemantics } from './change-analysis.js';
+import { buildFormalBridge } from './formal-bridge.js';
 
-export const PATCH_IR_VERSION = '0.4';
+export const PATCH_IR_VERSION = '0.5';
 
 export function compile(source, options = {}) {
   const ast = parse(source);
@@ -11,6 +12,7 @@ export function compile(source, options = {}) {
     entry: options.entry ?? 'main.patch'
   };
   const changeAnalysis = analyzeChangeSemantics(ast);
+  const formalBridge = buildFormalBridge(ast, changeAnalysis);
 
   const ir = {
     format: 'patch-ir',
@@ -19,10 +21,11 @@ export function compile(source, options = {}) {
     instructions: lowerBlock(ast),
     capabilities: inferRuntimeCapabilities(ast),
     changeSignatures: changeAnalysis.signatures,
-    changeCapabilities: changeAnalysis.capabilities
+    changeCapabilities: changeAnalysis.capabilities,
+    formalBridge
   };
 
-  return { ast, ir, project, changeAnalysis };
+  return { ast, ir, project, changeAnalysis, formalBridge };
 }
 
 function inferKind(ast) {

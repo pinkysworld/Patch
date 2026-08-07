@@ -29,7 +29,7 @@ Patch Studio is browser-first and installable as a PWA. It is designed for Windo
 
 ## Current status
 
-Current development beta: **0.2.0-beta.4**
+Current development beta: **0.2.0-beta.5**
 
 Implemented now:
 
@@ -43,6 +43,8 @@ Implemented now:
 - causal provenance on committed changes;
 - `why value` and `why condition` explanations;
 - a **Lean 4 formalization** of State-Change Factorization, Mutation Transparency, Change Signature Soundness for a structured control-flow core, and end-to-end Semantic Change Contract soundness for that core;
+- a conservative **production-to-formal validation bridge** for the currently supported correspondence subset;
+- `patch formal` CLI coverage reporting;
 - dedicated Lean CI with no `sorry`/`admit` placeholders allowed;
 - `patch changes` CLI inspection;
 - Patch Studio Change Contract view;
@@ -105,15 +107,9 @@ make reward(player, bonus number 0..10):
     add bonus to score
 ```
 
-Patch no longer has to reject `bonus` merely because it is dynamic. The compiler knows:
+The compiler can reason that `bonus` lies in `[0,10]` and prove that the resulting increase stays inside the declared Change Capability.
 
-```text
-bonus ∈ [0, 10]
-```
-
-and can prove that the resulting increase stays inside the declared Change Capability.
-
-The interval analyzer also handles simple arithmetic:
+Simple arithmetic is propagated too:
 
 ```patch
 make reward(player, bonus number 0..5):
@@ -121,9 +117,7 @@ make reward(player, bonus number 0..5):
     add bonus * 2 to score
 ```
 
-The inferred amount is `0..10`. If the possible result exceeds the capability bound, compilation fails conservatively.
-
-Declared ranges are also checked at runtime so a recipe cannot be called with an out-of-range value and invalidate its inferred Change Signature.
+The inferred amount is `0..10`. If the possible result exceeds the capability bound, compilation fails conservatively. Declared ranges are also checked at runtime.
 
 ## Causal `why`
 
@@ -148,15 +142,7 @@ Conditions can also be queried:
 why score > 100
 ```
 
-Patch replays the semantic history and reports the first recorded change that made the condition true, when it can isolate one.
-
-For GUI programs, provenance can include a chain such as:
-
-```text
-event bonus_button clicked -> recipe reward -> change score
-```
-
-This is a first causal-provenance prototype, not yet a full causal-inference system.
+Patch replays semantic history and reports the first recorded change that made the condition true when it can isolate one. This is historical provenance, not a claim of general causal inference.
 
 ## Lean 4 formalization
 
@@ -168,10 +154,10 @@ Current machine-checked results include:
 - **Mutation Transparency** as a corollary;
 - interval-containment transitivity used by bounded change reasoning;
 - Semantic Change Contract composition;
-- **Change Signature Soundness** for a formal structured core containing sequencing, branching and bounded repetition: every runtime semantic effect is contained in the statically inferred signature;
-- **end-to-end Capability Soundness** for that core: if the inferred signature is admitted by the policy, an execution cannot emit a semantic effect outside the declared policy.
+- **Change Signature Soundness** for a formal structured core containing sequencing, branching and bounded repetition;
+- **end-to-end Capability Soundness** for that core.
 
-The new soundness chain for the formal core is therefore machine checked:
+For the formal core, Lean proves:
 
 ```text
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
@@ -183,7 +169,41 @@ and consequently:
 RuntimeChanges(stmt) ⊆ Capability(stmt)
 ```
 
-The important remaining proof obligation is **compiler correspondence**: demonstrate that the production JavaScript parser/analyzer/lowering implements the same formal judgments for the supported fragment. The repository does not claim that the full production compiler is formally verified yet.
+## Production-to-formal bridge
+
+Beta 5 begins the next important step: connecting the real JavaScript compiler to the mechanized model.
+
+`src/formal-bridge.js` independently reconstructs a Lean-like structured control-flow representation from the production Patch AST for the currently supported subset. It then derives that representation's static signature and compares it with the normal production Change Signature.
+
+For a supported entry:
+
+```text
+production AST
+     |                         production analyzer
+     |                                |
+     v                                v
+formal-bridge core              Change Signature
+     |
+     v
+independent formal-style signature
+     |_______________________________|
+                     |
+                  compare
+                     |
+            mismatch -> compiler error
+```
+
+The current bridge covers direct supported semantic changes, sequencing, branch alternatives, literal bounded repetition and ranged numeric amounts that fall inside the formal effect vocabulary. Unsupported constructs such as recipe calls, dynamic repeat counts, undo/redo and GUI/event execution are **reported explicitly** instead of silently receiving a verification claim.
+
+Use:
+
+```bash
+patch formal examples/score.patch
+```
+
+A typical report tells you which program/recipe entries match the current formal subset and why other entries are not yet covered.
+
+This is **translation-validation/conformance evidence**, not yet a machine-checked proof that the JavaScript compiler implements the Lean semantics. A verified checker or stronger compiler-correspondence theorem remains a research goal.
 
 ## Compiler path
 
@@ -192,6 +212,7 @@ Patch source
    -> AST + numeric range annotations
    -> semantic Change Signature analysis
    -> Change Capability validation
+   -> production/formal bridge evidence
    -> Change IR
    -> portable .patchapp            [implemented]
    -> bootstrap WebAssembly .wasm   [implemented]
@@ -199,7 +220,7 @@ Patch source
    -> native host packaging         [roadmap]
 ```
 
-The bootstrap `.wasm` is a genuine instantiable WebAssembly module containing the compiled Patch payload for a Patch host. Direct Change IR-to-Wasm execution and native `.exe`/`.app`/ELF/BSD packages are not yet claimed as finished.
+The bootstrap `.wasm` is a genuine instantiable WebAssembly module containing the compiled Patch payload for a Patch host. Direct Change IR-to-Wasm execution and native `.exe`, `.app`, ELF and BSD packages are not yet claimed as finished.
 
 ## One language for console and GUI applications
 
@@ -242,6 +263,7 @@ The JavaScript beta toolchain requires Node.js 22+.
 patch run examples/score.patch
 patch check examples/score.patch
 patch changes examples/change-capabilities.patch
+patch formal examples/score.patch
 patch build examples/score.patch --kind console --target portable
 patch build examples/score.patch --kind console --target wasm
 ```
@@ -250,32 +272,24 @@ patch build examples/score.patch --kind console --target wasm
 
 Patch does **not** claim that patches, first-class state change, effect systems, capabilities, ranges, provenance, undo, event logs, lenses, CRDTs or reversible computation are individually new.
 
-The research program now has three connected layers:
+The research program has three connected layers:
 
 1. **State-Change Factorization**: persistent mutation must execute through a semantic change.
 2. **Semantic Change Contracts**: Patch infers semantic Change Signatures and checks them against optional semantic Change Capabilities.
-3. **Change-native analysis**: because the same representation is mandatory, Patch can derive bounded amount proofs and causal explanations without a second application-specific mutation model.
+3. **Change-native analysis**: the same mandatory representation supports bounded amount reasoning, provenance and runtime/tooling services.
 
-The strongest current formal result is no longer merely the composition implication. For the mechanized structured core, Lean proves the signature-coverage premise itself and therefore derives end-to-end policy containment:
+Beta 5 adds a fourth engineering/formal layer: a visible correspondence boundary between production compiler output and the mechanized signature model. That makes the remaining proof gap measurable rather than vague.
 
-```text
-execution
-   -> runtime semantic changes
-   -> all covered by inferred signature        [proved for formal core]
-   -> signature covered by capability policy
-   -> every runtime change satisfies policy    [proved for formal core]
-```
-
-A high-venue submission still requires production-compiler correspondence, a systematic prior-art review, direct compiled execution, benchmark/security case studies, and controlled user evidence if the novice-comprehension claim is retained.
+A high-venue submission still requires broader production-to-formal correspondence or a verified checker, systematic prior-art review, direct compiled execution, convincing security/engineering case studies and benchmarks. Controlled novice evidence is needed only if beginner simplicity remains a headline empirical claim.
 
 ## Repository map
 
 ```text
-src/                    parser, interpreter, change/range analysis, compiler, Wasm bootstrap, Designer, bundler
+src/                    parser, interpreter, analyses, formal bridge, compiler, Wasm bootstrap, Designer, bundler
 formal/                 Lean 4 formal model, signature semantics and machine-checked theorems
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
-tests/                  language, range/provenance, compiler, capability, UI, Designer and Wasm tests
+tests/                  language, formal bridge, range/provenance, compiler, capability, UI, Designer and Wasm tests
 examples/               runnable .patch programs
 docs/                   specification, semantics, formal model, novelty, research, compiler, Studio and targets
 paper/                   manuscript draft and references
@@ -284,7 +298,7 @@ paper/                   manuscript draft and references
 
 ## CI quality gate
 
-JavaScript CI runs on Windows, macOS and Linux with Node 22/24 and checks syntax, tests, examples, `.patchapp`, Wasm and the public site. A separate Ubuntu job installs the pinned Lean toolchain, runs `lake build`, and rejects `sorry` or `admit` in the formal proof source.
+JavaScript CI runs on Windows, macOS and Linux with Node 22/24. It checks syntax, tests, examples, the `patch formal` bridge report, `.patchapp`, Wasm and the public site. A separate Ubuntu job installs the pinned Lean toolchain, runs `lake build`, and rejects `sorry` or `admit` in the formal proof source.
 
 ## License
 
