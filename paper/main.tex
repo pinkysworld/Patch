@@ -1,12 +1,13 @@
 \documentclass[10pt]{article}
-\usepackage[margin=1in]{geometry}
+\usepackage[margin=0.9in]{geometry}
 \usepackage{amsmath,amssymb,booktabs,enumitem,listings,microtype,xcolor}
 \usepackage[hidelinks]{hyperref}
+\usepackage{array}
 
-\lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,watch,history,undo,redo,preview,if,else,repeat,make,do,return,true,false,and,or,not,to,from,window,text,button,input,when,clicked,as},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
+\lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,watch,history,undo,redo,preview,if,else,repeat,make,do,return,allow,may,increase,decrease,up,to,true,false,and,or,not,from,window,text,button,input,when,clicked,changed,closed,as},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
 \lstset{language=Patch,basicstyle=\ttfamily\small,columns=fullflexible,frame=single,breaklines=true,showstringspaces=false}
 
-\title{Patch: State-Change Factorization for Transparent Mutable Programs}
+\title{Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs}
 \author{Mich\'el Nguyen}
 \date{Beta artifact manuscript, August 2026}
 
@@ -14,50 +15,70 @@
 \maketitle
 
 \begin{abstract}
-Programming languages typically expose mutation through assignment or data-structure-specific operations and reconstruct the meaning of state transitions later for debugging, undo, replay, synchronization, or auditing. Patch explores a different factorization: post-creation persistent mutation is compiled into and executed through a normalized semantic change representation. The source language remains deliberately small---a programmer writes \texttt{change score: add 1}---while the compiler/runtime constructs a structured delta describing the target, version transition, semantic operations, before/after values, and generated inverse operations where supported. We call the central prospective property \emph{State-Change Factorization}: every supported persistent state transition from $S$ to $S'$ must occur through a semantic change $\delta$ such that $apply(\delta,S)=S'$, with no ordinary persistent-assignment escape hatch. The same Change IR drives execution, history, preview, undo/redo, replay foundations, GUI state evolution, and conservative conflict reasoning. This claim is intentionally narrower than ``first-class state change'': Plaid, Worlds, change-oriented programming environments, edit transactions, lenses, incremental change structures, reversible systems, and patch theories provide substantial prior art. We describe the Patch 0.2 artifact, including its interpreter, compiler front end, portable \texttt{.patchapp} format, bootstrap WebAssembly target, browser-first Patch Studio, and first GUI/visual-designer slice. We give a core semantic model and state proof targets for factorization, inversion, preview non-interference, replay, and commutation. The manuscript reports implemented mechanisms and a falsifiable evaluation plan; mechanized proofs, direct Change-IR-to-Wasm execution, performance results, and novice-study results remain future work rather than fabricated findings.
+Programming languages usually expose mutation through assignment or data-structure-specific operations and reconstruct the meaning of state transitions later for debugging, undo, replay, synchronization, auditing, or security analysis. Patch explores a different factorization: post-creation persistent mutation is compiled into and executed through a normalized semantic change representation. The source language remains deliberately small---a programmer writes \texttt{change score: add 1}---while the compiler/runtime constructs a structured delta describing the target, version transition, semantic operation, before/after values, and generated inverse where supported. We call the central prospective property \emph{State-Change Factorization}: every supported persistent transition from $S$ to $S'$ occurs through a semantic change $\delta$ such that $apply(\delta,S)=S'$, with no ordinary persistent-assignment escape hatch.
+
+Patch 0.2 beta.2 adds a second layer: \emph{Semantic Change Signatures} are inferred from recipe bodies, and optional \emph{Change Capabilities} constrain the kinds and magnitudes of semantic changes a recipe may produce. For example, \texttt{player.score may increase up to 10} permits a bounded increase while rejecting replacement with \texttt{set score = 999}. Conceptually, the compiler checks $ProducedChanges(f) \subseteq AllowedChanges(f)$. This is deliberately more specific than generic read/write authority or conventional effect tracking. The artifact includes an interpreter, compiler front end, Change IR, portable \texttt{.patchapp}, bootstrap WebAssembly target, browser-first Patch Studio, GUI preview, visual Designer, Change Contract view, and cross-platform CI. We state formal proof targets for factorization, signature soundness, capability soundness, inversion, preview, replay, and commutation. Mechanized proofs, direct Change-IR-to-Wasm execution, performance results, and human-subject results remain future work rather than fabricated findings.
 \end{abstract}
 
 \section{Introduction}
-A large fraction of software tooling exists to answer a deceptively simple question: \emph{what changed?} Debuggers reconstruct traces, user interfaces maintain undo stacks, event-sourced applications persist events, collaborative tools compare edits, and observability systems attempt to infer which operation produced a state transition. Yet general-purpose languages usually begin from a lower-level abstraction: mutate a location, then infer the semantic meaning of that mutation later.
+A large fraction of software tooling exists to answer a simple question: \emph{what changed?} Debuggers reconstruct traces, user interfaces maintain undo stacks, event-sourced systems persist events, collaborative applications compare edits, and security tools approximate side effects. Yet general-purpose languages usually begin from a lower-level abstraction: mutate a location, then infer the semantic meaning of that mutation later.
 
-Patch asks whether the relationship can be inverted. Instead of assignment being primary and change metadata secondary, Patch makes semantic change the route through which persistent application state evolves:
+Patch asks whether that relationship can be inverted. Instead of assignment being primary and change metadata secondary, Patch makes semantic change the route through which persistent application state evolves:
 
 \begin{lstlisting}
 create number score = 0
 
 change score:
   add 1
-
-show score
 \end{lstlisting}
 
-The programmer sees a small vocabulary. Internally, the \texttt{change} block is normalized before commit into a delta such as an \textsc{AddNumber} operation over a versioned target. The implementation can derive an inverse, retain history, preview the transition without committing it, replay a deterministic change sequence, and compare selected pairs of changes for commutation.
+The programmer sees a small vocabulary. Internally, the block is normalized before commit into a semantic delta such as \textsc{AddNumber}(score,1). That representation can drive execution, inversion, history, preview, replay foundations, conflict reasoning, and GUI state refresh.
 
-The project is motivated by two simultaneous goals that are usually treated separately. First, Patch investigates whether a structured change representation can be made a semantic invariant of ordinary mutable programming. Second, Patch attempts to keep the surface language simple enough that a beginner does not need to understand edit algebras, command objects, event sourcing, ownership, or compiler IRs.
+Patch 0.2 beta.2 builds a further idea on top of this invariant. Since the compiler already knows that a recipe performs a semantic operation such as \emph{increase}, \emph{decrease}, \emph{set}, or \emph{clear}, it can infer a semantic Change Signature. The programmer may then optionally state a policy:
 
-The central research question is therefore:
+\begin{lstlisting}
+allow reward:
+  player.score may increase up to 10
 
-\begin{quote}
-Can ordinary persistent mutation in a low-complexity general-purpose language be factored through a semantic Change IR, so that useful correctness and tooling properties follow from the language semantics rather than from application-specific logging infrastructure?
-\end{quote}
+make reward(player):
+  change player:
+    add 5 to score
+\end{lstlisting}
 
-The current artifact makes five concrete contributions. First, it provides a language design in which existing persistent bindings cannot be directly reassigned outside \texttt{change}. Second, it lowers change blocks to a normalized Change IR and executes runtime state transitions through corresponding semantic operations. Third, the same representation supports history, generated inverses, preview, undo/redo, replay foundations, GUI state refresh, and conservative conflict reasoning. Fourth, Patch Studio provides a browser-first integrated environment, including an installable mobile PWA, console/window execution, a first source-preserving visual Designer, and portable application builds. Fifth, this paper states a formalization and empirical program intended to determine whether the design is actually novel, correct, usable, and performant.
+The policy does not merely grant ``write player.score.'' It grants a narrower semantic authority: increasing that path by at most ten. A replacement, a decrease, or a statically known increase above the bound is rejected.
 
-\section{Design Principles}
+The main research questions are therefore:
+
+\begin{enumerate}[leftmargin=*]
+\item Can ordinary persistent mutation be factored through a semantic Change IR without making the source language cumbersome?
+\item Can the compiler soundly infer semantic Change Signatures that over-approximate the changes a recipe may commit?
+\item Can optional Change Capabilities constrain semantic mutation more precisely than generic write authority while remaining understandable and useful?
+\item Can the same representation support multiple runtime/tooling facilities with less duplicated application infrastructure?
+\end{enumerate}
+
+The current artifact contributes an implemented language/compiler path and a falsifiable formal and empirical program. It does not claim that patches, first-class state change, effect systems, capabilities, typestate, undo, or event sourcing are new.
+
+\section{Language Design}
 \subsection{Progressive disclosure}
-A beginner should be able to write ordinary programs without learning the internal change calculus. The source vocabulary emphasizes ordinary words such as \texttt{create}, \texttt{change}, \texttt{add}, \texttt{remove}, \texttt{show}, \texttt{window}, and \texttt{when}. Version numbers, inverse operation sequences, conflict metadata, and compiler IR remain inspectable advanced concepts rather than prerequisites.
+Patch is intended to keep sophisticated machinery beneath a small surface language. A beginner can ignore Change IR and capabilities entirely:
 
-\subsection{Creation is distinct from mutation}
-\texttt{create} introduces a fresh persistent binding. The main factorization theorem concerns post-creation mutation of an existing binding. This distinction keeps the theorem precise: extending the store domain is not conflated with changing a value already present in the store.
+\begin{lstlisting}
+create number lives = 3
+change lives:
+  remove 1
+show lives
+\end{lstlisting}
+
+Advanced users can inspect or constrain the inferred semantics without changing the basic programming model.
 
 \subsection{No persistent-assignment escape hatch}
-If a language allowed both \texttt{change x} and ordinary reassignment \texttt{x = e}, its semantic change history could be incomplete by construction. Patch therefore rejects direct reassignment of existing persistent bindings. Assignment-like syntax is limited to declaration contexts such as fields inside \texttt{create thing}.
+\texttt{create} introduces a new binding. Existing persistent bindings cannot be reassigned with ordinary \texttt{x = e}. Post-creation mutation must appear inside \texttt{change}. This is required for the semantic history to be complete by construction.
 
-\subsection{The semantic change is the mutation mechanism}
-Patch is not intended to perform an ordinary write and then emit a log record. A change is normalized first; commit applies that change to persistent state. This order is essential to the State-Change Factorization claim.
+\subsection{Semantic mutation vocabulary}
+The beta surface provides \texttt{set}, \texttt{add}, \texttt{remove}, and \texttt{clear}. Runtime lowering distinguishes more precise operations when types/values make them evident. Numeric \texttt{add 5}, for example, becomes a positive additive operation; list \texttt{add item} becomes an append operation.
 
-\subsection{One language for console and GUI state}
-GUI programs use the same variables and \texttt{change} semantics as console programs:
+\subsection{Recipes and GUI events}
+Patch recipes use \texttt{make}/\texttt{do}; GUI events execute the same statements as console code:
 
 \begin{lstlisting}
 create number count = 0
@@ -71,253 +92,278 @@ when add_button clicked:
     add 1
 \end{lstlisting}
 
-The event handler does not mutate hidden GUI state through a second language. It executes ordinary Patch statements, after which the UI is re-rendered from application state.
+There is no separate hidden GUI mutation language.
 
-\section{Language Overview}
-Patch 0.2 provides numbers, text, booleans, lists, record-like ``things,'' conditions, repetition, small recipes/functions, semantic-change inspection, and an initial event-driven GUI model.
-
-\begin{lstlisting}
-create text hero = "Mia"
-create list inventory = key, map
-
-create thing player:
-  name = "Mia"
-  score = 0
-  lives = 3
-
-change player:
-  add 10 to score
-  remove 1 from lives
-\end{lstlisting}
-
-Control flow is conventional:
-
-\begin{lstlisting}
-if player.lives > 0:
-  show "keep playing"
-else:
-  show "game over"
-
-repeat 3:
-  change player:
-    add 1 to score
-\end{lstlisting}
-
-\subsection{History, watch, and inverse operations}
-\begin{lstlisting}
-watch score
-
-change score called bonus:
-  add 10
-
-history score
-undo bonus
-redo
-\end{lstlisting}
-
-The beta restricts named undo to the latest change because arbitrary selective undo requires a sound rebasing or commutation model. This limitation is explicit rather than hidden behind unsafe behavior.
-
-\subsection{Preview}
-\begin{lstlisting}
-preview:
-  change score:
-    add 100
-\end{lstlisting}
-
-Preview evaluates against cloned state/history, reports the proposed transition, and restores committed state. The formal target is not merely ``preview seems to work,'' but a non-interference and agreement property stated in Section~\ref{sec:formal}.
-
-\section{State-Change Factorization}\label{sec:formal}
-We define a deliberately small semantic core before extending it to the full beta language. Let persistent state be a finite map
+\section{State-Change Factorization}\label{sec:factorization}
+Let persistent state be a finite map
 \[
 \sigma : Name \rightarrow Value,
 \]
-let $\nu(x)$ be the current version of target $x$, and let history be an ordered sequence $H=[\delta_1,\ldots,\delta_n]$.
+let $\nu(x)$ be the version of target $x$, and let history be $H=[\delta_1,\ldots,\delta_n]$.
 
 A normalized semantic change is
 \[
 \delta = \langle x,b,n,v,\Delta,v'\rangle,
 \]
-where $x$ is the target, $b$ and $n$ are base/new versions, $v$ and $v'$ are before/after values, and $\Delta$ is an ordered sequence of semantic operations.
-
-Representative operations include
+where $x$ is the target, $b/n$ are base/new versions, $v/v'$ are before/after values, and $\Delta$ is an ordered sequence of semantic operations. A well-formed delta satisfies
 \[
-\Delta ::= Set(v) \mid AddInt(k) \mid RemoveInt(k) \mid AppendText(t) \mid Clear.
+applyOps(\Delta,v)=v' \qquad \text{and} \qquad n=b+1.
 \]
 
-Write $applyOps(\Delta,v)=v'$. A well-formed change must satisfy
+Define one persistent commit path:
 \[
-applyOps(\Delta,v)=v' \qquad\text{and}\qquad n=b+1.
+commit(\delta,\sigma,\nu,H)=
+\langle\sigma[x\mapsto v'],\nu[x\mapsto n],H\cdot\delta\rangle.
 \]
 
-\subsection{Single commit path}
-Define the semantic commit function
+The intended core theorem is:
+
+\paragraph{State-Change Factorization.}
+If a well-typed operational step changes the value of an already-existing persistent binding, that step is the change-commit rule and appends exactly one well-formed semantic delta describing the transition.
+
+The global execution property follows by induction over the derivation. Mutation Transparency then becomes a corollary: every committed post-creation mutation has an inspectable change record whose before/after values correspond to the store transition.
+
+\section{Semantic Change Signatures}
+A Change Signature summarizes semantic persistent effects of a recipe. Let
 \[
-commit(\delta,\sigma,\nu,H)
-=
-\langle \sigma[x\mapsto v'],\nu[x\mapsto n],H\cdot\delta\rangle,
+Sig(f)=\{e_1,\ldots,e_k\},
 \]
-subject to $\sigma(x)=v$, $\nu(x)=b$, and $applyOps(\Delta,v)=v'$.
-
-The core language intentionally contains no rule that directly writes a new value to an existing persistent binding. \texttt{create} can extend the store; \texttt{change} is the only post-creation mutation rule.
-
-\subsection{State-Change Factorization theorem target}
-For a well-typed source execution
+where an effect initially contains
 \[
-\langle s,\sigma,\nu,H\rangle \rightarrow^{*}
-\langle skip,\sigma',\nu',H'\rangle,
+e=\langle target,path,kind,amount?\rangle.
 \]
-if an already-existing persistent target $x$ changes value, then the derivation contains a committed $\delta$ targeting $x$ whose semantic operations produce the corresponding transition, and the store update occurs through the commit rule.
-
-The preferred proof route is a stronger step-local lemma:
-
-\begin{quote}
-If one operational step changes the value of an already-existing persistent binding, that step is the change-commit rule and appends exactly one well-formed semantic change describing that transition.
-\end{quote}
-
-The global factorization theorem follows by induction over the execution derivation. Mutation Transparency is then a corollary rather than the deepest result.
-
-\subsection{Mutation Transparency}
-For each committed post-creation mutation, history contains an inspectable delta whose target and before/after values match the corresponding persistent-store transition. In the current interpreter this follows structurally from the parser/AST and commit path; submission-quality work should mechanize the corresponding core property.
-
-\subsection{Inverse correctness}
-For the supported invertible fragment, define a generated inverse $inv(\delta)$ and target
+The beta semantic kinds are
 \[
-apply(inv(\delta),apply(\delta,v))=v.
+kind \in \{increase,decrease,add,remove,set,clear\}.
 \]
-Numeric addition uses the negated amount; \textsc{Set} retains the previous value; list append/removal records the index/value necessary to construct \textsc{RemoveAt} or \textsc{InsertAt}. Patch does not claim that arbitrary computation is reversible.
+A statically known numeric magnitude is recorded when available.
 
-\subsection{Preview non-interference and agreement}
-Preview should satisfy two distinct properties. First, committed state and history are unchanged after preview. Second, in the deterministic fragment and under identical initial state/inputs, the proposed change sequence produced by preview should agree with the one produced by commit execution. Time, randomness, nondeterministic I/O, and concurrency must be modeled explicitly before this claim can be generalized.
-
-\subsection{Replay consistency}
-For the deterministic core, replaying a version-consistent ordered history from the same initial state should reproduce the same final state. This is a property of Patch state evolution, not a claim that arbitrary external effects such as network requests can be replayed safely.
-
-\subsection{Commutation soundness}
-Patch's initial conflict relation is intentionally conservative. Different targets, independent record paths, and additive numeric changes on the same path are candidate commuting cases. Competing writes to the same path conflict. The desired theorem is soundness, not completeness:
-\[
-commute(\delta_1,\delta_2)
-\Rightarrow
-apply(\delta_2,apply(\delta_1,S))
-\equiv
-apply(\delta_1,apply(\delta_2,S)).
-\]
-Patch may refuse to certify pairs that actually commute, but must not certify a non-commuting pair as safe.
-
-\section{Change IR and Compiler Architecture}
-Patch 0.2 includes a compiler front end rather than only an interpreter. Source is parsed to an AST and lowered to normalized Change IR. A source block such as
+For:
 
 \begin{lstlisting}
-change score:
-  add 1
+make reward(player):
+  change player:
+    add 5 to score
 \end{lstlisting}
 
-is preserved as a \texttt{CHANGE} instruction containing a target and normalized operation description rather than being erased into an opaque assignment immediately.
+Patch infers conceptually:
 
-The current compilation pipeline is
 \begin{verbatim}
-Patch source
-  -> AST
-  -> Change IR
-  -> .patchapp               [implemented]
-  -> bootstrap WebAssembly   [implemented]
-  -> direct Wasm lowering    [next]
-  -> native host packaging   [planned]
+reward(player)
+  player.score -> increase by 5
 \end{verbatim}
 
-\subsection{Portable application bundle}
-The \texttt{.patchapp} beta format is deliberately transparent JSON containing project metadata, source, Change IR, capabilities, and assets. A future archive encoding can change without altering the logical model.
+For a dynamic expression such as \texttt{add bonus to score}, the current analyzer records a less precise \texttt{add} effect because it cannot yet prove a numeric sign or magnitude.
 
-\subsection{Bootstrap WebAssembly}
-Patch 0.2 emits a valid, instantiable WebAssembly module containing project metadata, source, and Change IR in linear memory. The module exports the memory and metadata locating the payload. CI instantiates generated modules and validates recovered Change IR.
+\subsection{Transitive inference}
+Patch follows simple recipe calls and substitutes callee parameters into the caller's signature:
 
-This is intentionally described as a \emph{bootstrap} backend. It establishes a portable binary artifact and host boundary, but does not yet lower every Patch operation directly into executable WebAssembly instructions. Presenting it as a complete direct compiler would overstate the artifact.
+\begin{lstlisting}
+make add_points(target):
+  change target:
+    add 5 to score
 
-\section{Patch Studio and GUI Artifact}
-Patch Studio is a browser-first Progressive Web App intended to provide a QuickBASIC/Visual-Basic-like integrated experience without requiring a platform-specific development environment. The same Studio runs in desktop browsers and on iPhone/iPad; current browser builds can edit/run Patch, inspect Change IR, preview GUI applications, and build \texttt{.patchapp} or bootstrap \texttt{.wasm} artifacts locally.
+make reward(player):
+  do add_points(player)
+\end{lstlisting}
 
-The current GUI language includes \texttt{window}, \texttt{text}, \texttt{button}, \texttt{input}, and \texttt{when ... clicked}. The interpreter exposes a virtual Patch UI model, and Studio renders that model in the browser. Button handlers execute ordinary Patch statements, preserving the same state-change semantics as console code.
+The inferred effect for \texttt{reward} includes \texttt{player.score -> increase by 5} with provenance through \texttt{add_points}. Dynamic targets, unknown callees, and recursive cycles are treated conservatively as unproven rather than silently safe.
 
-Patch Studio also contains a first visual Designer toolbox. Adding Text, Button, or Input modifies readable Patch source rather than generating an opaque secondary form language. Drag positioning, resizing, properties, two-way input binding, and richer controls remain future work.
+\paragraph{Signature Soundness target.}
+Every committed semantic change that can arise during supported execution of recipe $f$ must be represented by an effect admitted by $Sig(f)$. The signature may over-approximate behavior; soundness is more important than minimality.
 
-The long-term portability architecture uses WebAssembly plus a small Patch host/runtime for Windows, macOS, Linux, BSD/Unix, and Web. A portable C99 fallback is planned for unusual Unix console targets. Native packages such as Windows \texttt{.exe} and macOS \texttt{.app} are not yet implemented and are therefore not evaluated in this manuscript.
+\section{Change Capabilities}
+A Change Capability policy declares semantic authority. Let
+\[
+Cap(f)=\{r_1,\ldots,r_m\},
+\]
+where a rule is
+\[
+r=\langle target,path,kind,max?\rangle.
+\]
+The compiler accepts a protected recipe when the inferred committed signature is covered by the policy:
+\[
+Sig(f) \preceq Cap(f).
+\]
 
-\section{Implementation and Quality Gates}
-The beta implementation is dependency-light ECMAScript. Its expression evaluator avoids host-language \texttt{eval}; an indentation-sensitive parser produces a restricted AST; the interpreter maintains persistent state, target versions, semantic history, redo state, watchers, functions, event handlers, and a virtual UI model.
+A surface rule is intentionally readable:
 
-The repository's CI matrix runs on Windows, macOS, and Linux with Node.js 22 and 24. The current quality gate performs syntax checks, language/compiler/UI/Designer/WebAssembly tests, example smoke tests, a portable \texttt{.patchapp} build, a WebAssembly build, deterministic public-site generation, and deployment-integrity validation. At the time of this manuscript revision, the suite contains 32 automated tests and the complete matrix passes. This establishes artifact consistency across those host environments; it does not imply that native Windows/macOS/Linux executables already exist.
+\begin{lstlisting}
+allow reward:
+  player.score may increase up to 10
+\end{lstlisting}
+
+The following implementation is accepted:
+
+\begin{lstlisting}
+make reward(player):
+  change player:
+    add 5 to score
+\end{lstlisting}
+
+but this one is rejected:
+
+\begin{lstlisting}
+make reward(player):
+  change player:
+    set score = 999
+\end{lstlisting}
+
+because \texttt{set} is not covered by an \texttt{increase} authority. Likewise, \texttt{add 25 to score} violates the numeric bound.
+
+\subsection{Conservative bounded checking}
+If a rule has a bound, the current compiler accepts only amounts it can prove within that bound. Thus:
+
+\begin{lstlisting}
+allow reward:
+  player.score may add up to 10
+
+make reward(player, bonus):
+  change player:
+    add bonus to score
+\end{lstlisting}
+
+is rejected in beta.2 because no range proof establishes $bonus\le 10$. Future typed/range analysis can make more dynamic cases provable.
+
+\subsection{Why this is not just write permission}
+A conventional write capability normally answers whether code may mutate a resource/location. Patch's Change Capability can distinguish two writes to the same path:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Operation & Generic write authority & Patch semantic policy \\
+\midrule
+increase score by 5 & write & may be allowed \\
+set score to 999 & write & may be forbidden \\
+decrease score by 5 & write & may be forbidden \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This does not make capability systems themselves novel. The candidate contribution is deriving and constraining \emph{semantic state transitions} from the same mandatory change representation used for execution.
+
+\paragraph{Capability Soundness target.}
+If a capability-protected recipe compiles under $Cap(f)$, every committed persistent change it produces in the supported execution model satisfies $Cap(f)$.
+
+A proof can decompose into (1) Signature Soundness and (2) static coverage $Sig(f)\preceq Cap(f)$.
+
+\section{Compiler and Artifact}
+Patch 0.2 beta.2 uses the pipeline:
+
+\begin{verbatim}
+Patch source
+  -> parser / AST
+  -> semantic Change Signature analysis
+  -> Change Capability validation
+  -> Change IR
+  -> .patchapp                [implemented]
+  -> bootstrap .wasm          [implemented]
+  -> direct Wasm lowering     [next]
+  -> native host packaging    [planned]
+\end{verbatim}
+
+The IR includes normal instructions plus \texttt{changeSignatures} and \texttt{changeCapabilities}. These are distinct from host/runtime capabilities such as \texttt{ui.window}.
+
+\subsection{Portable bundle and WebAssembly}
+The \texttt{.patchapp} beta representation is readable JSON containing source, project metadata, Change IR, semantic analysis, and assets. The bootstrap WebAssembly backend emits a valid instantiable module containing the compiled Patch payload for a Patch host. It is intentionally not presented as direct execution of every Patch operation in Wasm yet.
+
+\subsection{Patch Studio}
+Patch Studio is a browser-first PWA that runs on desktop browsers and iPhone/iPad. It provides editor, console/window execution, GUI preview, first visual Designer controls, Change IR inspection, and now a \emph{Change Contract} view that displays inferred changes and allowed policies. This makes the compiler's semantic analysis inspectable without forcing it into ordinary beginner syntax.
+
+\subsection{CLI}
+The beta exposes:
+
+\begin{verbatim}
+patch run program.patch
+patch check program.patch
+patch changes program.patch
+patch build program.patch --target portable
+patch build program.patch --target wasm
+\end{verbatim}
+
+\texttt{patch changes} prints inferred recipe effects and declared policies.
+
+\section{Derived Runtime Properties}
+The same normalized change model supports several additional targets.
+
+\paragraph{Inverse correctness.}
+For the declared invertible fragment,
+\[
+apply(inv(\delta),apply(\delta,S))=S.
+\]
+
+\paragraph{Preview non-interference.}
+Executing \texttt{preview} leaves committed state/history unchanged.
+
+\paragraph{Preview/commit agreement.}
+For deterministic code under identical inputs, the proposed semantic changes under preview should agree with subsequent committed execution.
+
+\paragraph{Replay consistency.}
+A version-consistent deterministic history replayed from the same initial state reproduces the same final Patch state.
+
+\paragraph{Commutation soundness.}
+If the analyzer certifies two changes as commuting, either application order yields observationally equivalent Patch state. The analyzer may conservatively reject unknown cases.
 
 \section{Related Work and Novelty Boundary}
-Patch sits in a crowded design space. Broad novelty claims would be incorrect.
+Patch occupies a crowded research space, so the contribution must be stated narrowly.
 
-\subsection{Plaid and first-class state change}
-Plaid explicitly makes changing abstract object states a language concept and provides formal semantics for state transitions and state composition \cite{sunshine2011plaid}. Patch therefore does not claim to invent first-class state change or state-oriented programming. The proposed distinction is that Patch's ordinary persistent value mutation factors through a structured delta/Change IR whose operation content is reused across execution and multiple tooling facilities, rather than primarily representing abstract typestate transitions. This distinction requires detailed semantic comparison before submission.
+\subsection{First-class state and state transitions}
+Plaid makes abstract object state changes a first-class language concept and formalizes state transitions \cite{sunshine2011plaid}. Worlds reifies program state and supports scoped speculative side effects and commit/discard behavior \cite{warth2011worlds}. Patch therefore does not claim to invent first-class state, state transitions, speculation, or undo. Its candidate distinction is the mandatory structured delta through which ordinary persistent mutation executes and from which further analysis is derived.
 
-\subsection{Worlds and first-class program state}
-Worlds reifies program state as a first-class object, captures side effects in nested worlds, and supports commit/discard behavior useful for experimentation and undo \cite{warth2011worlds}. Patch cannot claim that reified state, speculative state evolution, or automatic undo are new. Patch instead proposes structured per-mutation deltas as the required update path, rather than whole-world snapshots as the principal abstraction.
+\subsection{Effect systems}
+Classical type-and-effect systems infer conservative approximations of side effects and the regions of store they affect \cite{lucassen1988effects}. Patch's Change Signatures are clearly related. The proposed difference is semantic granularity tied to Patch's mutation calculus: the analyzer can distinguish \emph{increase}, \emph{decrease}, \emph{set}, and bounded magnitudes because these operations already exist as semantic changes. This distinction must be compared rigorously rather than asserted as firstness.
 
-\subsection{Change-oriented programming and edit transactions}
-COPE and earlier change-oriented programming work treat software-development/source transformations as first-class changes \cite{dig2016cope}. Edit Transactions provide dynamically scoped change sets for controlled live updates to program/system definitions \cite{mattis2017edittransactions}. Patch's research object is ordinary runtime application-state mutation, not primarily source evolution. Nevertheless these systems are close conceptual neighbors and invalidate any claim that Patch invented ``change-oriented programming.''
+\subsection{Effects as capabilities}
+Effekt reframes effect types as capabilities required from a context \cite{brachthaeuser2020effects}. Patch does not claim the combination of effects and capabilities is new. Its Change Capabilities instead constrain the set of semantic state transitions a recipe may commit over specific persistent targets/paths, and the policy is checked against an inferred semantic change signature.
 
-\subsection{Reducers, event sourcing, and command architectures}
-Message/reducer architectures and event sourcing centralize transitions and can naturally enable history or replay. Patch must therefore demonstrate more than syntactic centralization. The proposed PL contribution is the semantic guarantee that existing persistent bindings cannot bypass the Change IR through ordinary reassignment and that the compiler derives the structured delta representation rather than requiring application code to implement its own event/command protocol.
+\subsection{Edit lenses, changes, and patch theory}
+Edit Lenses make edits explicit and translate them between related structures \cite{hofmann2012edit}. Higher-order change structures support incremental computation \cite{cai2014changes}. Formal patch theories study composition, inversion, identity, and commutation \cite{angiuli2016patch}. Patch borrows the broad insight that changes deserve semantic structure, but targets ordinary runtime state mutation and a low-complexity surface language.
 
-\subsection{Edit lenses and bidirectional programming}
-Edit lenses explicitly represent edits and translate edits between related structures \cite{hofmann2012edit}; HOBiT makes lens-style consistency programmable \cite{matsuda2018hobit}. Patch does not begin from a source/view consistency problem, but this work demonstrates that semantic edits are a mature abstraction and must be reflected in Patch's change algebra.
-
-\subsection{Change structures and incremental computation}
-Cai et al. develop a theory in which derivatives map input changes to output changes for incremental computation \cite{cai2014changes}; self-adjusting computation similarly tracks dependencies and efficient update propagation \cite{acar2013selfadjusting}. Patch currently targets explicit runtime state evolution and transparency rather than automatic incremental recomputation.
-
-\subsection{Patch theory and CRDTs}
-Formal patch theories study composition, inversion, identity, commutation, and conflict \cite{anguilhomotopical2016}. CRDTs provide convergence for specific distributed update types \cite{shapiro2011crdt}. Patch borrows the general insight that changes deserve semantic structure but makes no general CRDT convergence claim. Its current conflict analysis is local and conservative.
+\subsection{CRDTs and distributed updates}
+CRDTs provide principled convergence for specific replicated data types \cite{shapiro2011crdt}. Patch beta makes no general convergence claim. Its conflict/commutation relation is intentionally conservative.
 
 \subsection{Educational languages}
-Scratch demonstrates the importance of accessible representations and immediate feedback \cite{resnick2009scratch}. Patch's educational hypothesis is narrower and must be tested: making mutation linguistically explicit through \texttt{change} may help novices reason about state while simultaneously enabling semantic tooling. This is an empirical question, not an assumption.
-
-\subsection{Candidate novelty claim}
-The defensible candidate claim is therefore the following combination: post-creation persistent mutation is executed through a normalized semantic Change IR with no assignment escape hatch; each change has structured operation content; the same representation drives several runtime/tooling facilities; and the algebra is hidden from the beginner surface. A systematic review must still determine whether an earlier language already satisfies the central parts of this combination. If it does, the claim must be narrowed further.
+Scratch demonstrates that programming representations can be designed around accessibility and immediate feedback \cite{resnick2009scratch}. Patch's empirical question is narrower: whether explicit \texttt{change} syntax and inspectable Change Contracts preserve or improve comprehensibility despite a richer semantic backend.
 
 \section{Evaluation Plan}
-The artifact enables a multi-axis evaluation rather than relying on aesthetic arguments.
+A high-venue submission should combine formal, systems, security, and usability evidence rather than rely on syntax examples.
 
-\subsection{RQ1: Expressiveness and ceremony}
-Implement at least 50 console and GUI programs in Patch and conventional baselines such as JavaScript/Python. Measure source size, number of mutation constructs, and helper infrastructure required to provide history, undo, preview, and replay-like behavior.
+\subsection{RQ1: Factorization coverage}
+Generate a conformance corpus exercising every persistent mutation under direct sequence, conditionals, loops, recipes, preview, and GUI events. Verify that all supported post-creation mutations correspond to committed semantic changes.
 
-\subsection{RQ2: Factorization and change-law correctness}
-Mechanize the small core, preferably in Lean 4, and prove the step-local factorization lemma, State-Change Factorization, inverse correctness for the declared fragment, preview non-interference, and commutation soundness for the initial certified relation. Property-based tests should complement proofs for the implemented richer language.
+\subsection{RQ2: Signature precision and soundness}
+Build a corpus of recipes with direct and transitive changes. Compare inferred signatures against manually labeled semantic effects. Measure false over-approximation while treating missed runtime changes as correctness failures.
 
-\subsection{RQ3: Derived tooling}
-Measure how much functionality is obtained from the common Change IR without application-specific history/undo plumbing: inverse coverage, preview correctness, replay reconstruction, change inspection, GUI refresh, and conflict explanation.
+\subsection{RQ3: Capability enforcement}
+Construct positive and negative security cases: bounded counters, balances, inventory actions, UI permissions, plugin-like modules, and nested helper calls. Test whether forbidden semantic transitions are rejected while permitted ones compile. Dynamic/unproven cases should be reported separately.
 
-\subsection{RQ4: Novice comprehension}
-Run a randomized/counterbalanced study comparing equivalent Patch and conventional mutable programs. Tasks should cover output prediction, identification of state-changing operations, modification, debugging, tracing nested updates, and GUI event behavior. Measure correctness, completion time, edit/error count, confidence, and cognitive load. Hypotheses and exclusions should be preregistered.
+\subsection{RQ4: Infrastructure reduction}
+Implement small applications in Patch and JavaScript/Python baselines. Compare code/tooling required for history, undo, preview, replay, semantic auditing, and change-policy enforcement.
 
 \subsection{RQ5: Performance}
-Benchmark interpreter overhead and, separately, direct compiled WebAssembly once implemented. Workloads should include numeric loops, list changes, record updates, event loops, and configurations with/without history/inverse retention. Interpreter speed must not be presented as the language's compiler ceiling.
+Measure interpreter and later direct-Wasm overhead of change construction, history recording, signature metadata, and policy checking. Compile-time analysis cost and runtime change-recording cost should be separated.
 
-\subsection{RQ6: Conflict analysis}
-Use a labeled corpus of paired changes including independent targets, independent fields, commuting additions, competing writes, list edits, and nested structures. Measure soundness and conservatism; false ``safe'' classifications are more serious than conservative conflicts.
+\subsection{RQ6: Novice comprehension}
+Use a preregistered randomized/counterbalanced study comparing equivalent Patch and conventional mutable snippets. Tasks include predicting outputs, identifying what changed, modifying behavior, locating an unauthorized change, and explaining mutation bugs. Measure correctness, completion time, edit count, confidence, and cognitive load.
 
-\section{Limitations}
-Patch 0.2 remains a research beta. The type system is mostly dynamic; direct Change-IR-to-Wasm execution is not yet implemented; native desktop packaging is planned rather than complete; snapshot retention is inefficient for large structures; arbitrary selective undo is absent; GUI controls are limited; the visual Designer is an initial toolbox rather than a full RAD form editor; external effects are outside the replay/undo theorem targets; and no controlled novice study has yet validated the accessibility hypothesis.
+\section{Limitations and Threats}
+The current analyzer is deliberately small. Numeric bounds require statically provable literal magnitudes; dynamic range analysis is absent. Transitive substitution currently handles simple identifier arguments; recursive/dynamic call graphs are conservatively unproven. The type system is still lightweight. Whole before/after snapshots are inefficient for large values. External I/O is not covered by replay/undo claims. Direct Change-IR-to-Wasm execution and native packages are not yet implemented. No mechanized theorem or human-subject result is reported yet.
 
-Most importantly, novelty is not established merely by implementing the artifact. Plaid, Worlds, change-oriented programming, edit transactions, edit lenses, reducer architectures, and patch theories cover neighboring territory. A top-venue claim requires a systematic literature review and external specialist scrutiny in addition to formal and empirical results.
+Most importantly, the novelty claim remains conditional on a systematic literature review. Effect systems, capability systems, typestate, permission systems, behavioral types, and domain-specific update languages may contain closer precedents than identified here. A top-venue paper must survive that comparison.
 
 \section{Conclusion}
-Patch investigates a specific inversion of the usual relationship between mutation and tooling. Instead of allowing arbitrary persistent writes and reconstructing semantic changes afterward, it attempts to make a structured semantic delta the route through which ordinary persistent state evolves. The current artifact demonstrates that this discipline can coexist with a deliberately small source language, an integrated browser/mobile IDE, an event-driven GUI model, portable application bundles, and an initial WebAssembly target.
+Patch asks whether a program can know the semantic meaning of a state transition \emph{before} applying it, rather than reconstructing that meaning afterward. State-Change Factorization makes a semantic delta the required route for ordinary persistent mutation. Patch 0.2 beta.2 then uses that same representation to infer Change Signatures and optionally check Change Capabilities such as ``this recipe may increase this score by at most ten.'' The result is a research direction that combines a simple user-facing language with a structured semantic backend for execution, history, inversion, preview, replay, conflict reasoning, GUI state evolution, and semantic mutation policy. The current artifact demonstrates the mechanism; formal soundness, scalability, performance, and usability remain explicit questions for the next research stage.
 
-The strongest prospective contribution is State-Change Factorization, with Mutation Transparency and change-law properties derived from the same core. The project does not claim to invent state transitions, undo, first-class state, patches, lenses, or change-oriented programming. Whether the narrower factorization discipline is sufficiently novel and useful for a high-end programming-languages contribution now depends on mechanized semantics, direct compiled execution, systematic prior-art analysis, and measured evaluation. Patch 0.2 provides the artifact on which those questions can be answered rather than assumed.
-
-\begin{thebibliography}{99}
+\begin{thebibliography}{10}
 \bibitem{sunshine2011plaid} Joshua Sunshine, Karl Naden, Sven Stork, Jonathan Aldrich, and Eric Tanter. First-Class State Change in Plaid. In \emph{OOPSLA}, 2011. \url{https://doi.org/10.1145/2048066.2048122}.
 \bibitem{warth2011worlds} Alessandro Warth, Yoshiki Ohshima, Ted Kaehler, and Alan Kay. Worlds: Controlling the Scope of Side Effects. In \emph{ECOOP}, 2011. \url{https://doi.org/10.1007/978-3-642-22655-7_9}.
-\bibitem{dig2016cope} Danny Dig, Ralph Johnson, Darko Marinov, Brian Bailey, and Don Batory. COPE: Vision for a Change-Oriented Programming Environment. In \emph{ICSE Companion}, 2016. \url{https://doi.org/10.1145/2889160.2889208}.
-\bibitem{mattis2017edittransactions} Toni Mattis, Patrick Rein, and Robert Hirschfeld. Edit Transactions: Dynamically Scoped Change Sets for Controlled Updates in Live Programming. \emph{The Art, Science, and Engineering of Programming}, 2017. \url{https://doi.org/10.22152/programming-journal.org/2017/1/13}.
-\bibitem{hofmann2012edit} Martin Hofmann, Benjamin C. Pierce, and Daniel Wagner. Edit Lenses. In \emph{POPL}, 2012. \url{https://doi.org/10.1145/2103621.2103715}.
-\bibitem{cai2014changes} Yufei Cai, Paolo G. Giarrusso, Tillmann Rendel, and Klaus Ostermann. A Theory of Changes for Higher-Order Languages: Incrementalizing Lambda-Calculi by Static Differentiation. In \emph{PLDI}, 2014. \url{https://doi.org/10.1145/2594291.2594304}.
-\bibitem{acar2013selfadjusting} Umut A. Acar, Matthias Blume, and Jacob Donham. A Consistent Semantics of Self-Adjusting Computation. \emph{Journal of Functional Programming}, 2013. \url{https://doi.org/10.1017/S0956796813000099}.
-\bibitem{anguilhomotopical2016} Carlo Angiuli, Edward Morehouse, Daniel R. Licata, and Robert Harper. Homotopical Patch Theory. \emph{Journal of Functional Programming}, 2016. \url{https://doi.org/10.1017/S0956796816000198}.
-\bibitem{shapiro2011crdt} Marc Shapiro, Nuno Pregui\c{c}a, Carlos Baquero, and Marek Zawirski. Conflict-Free Replicated Data Types. 2011. \url{https://doi.org/10.1007/978-3-642-24550-3_29}.
-\bibitem{resnick2009scratch} Mitchel Resnick et al. Scratch: Programming for All. \emph{Communications of the ACM}, 2009. \url{https://doi.org/10.1145/1592761.1592779}.
-\bibitem{matsuda2018hobit} Kazutaka Matsuda and Meng Wang. HOBiT: Programming Lenses Without Using Lens Combinators. 2018. \url{https://doi.org/10.1007/978-3-319-89884-1_2}.
+\bibitem{lucassen1988effects} J. M. Lucassen and D. K. Gifford. Polymorphic Effect Systems. In \emph{POPL}, 1988, pp. 47--57. \url{https://doi.org/10.1145/73560.73564}.
+\bibitem{brachthaeuser2020effects} Jonathan Immanuel Brachth\"auser, Philipp Schuster, and Klaus Ostermann. Effects as Capabilities: Effect Handlers and Lightweight Effect Polymorphism. \emph{Proceedings of the ACM on Programming Languages}, 4(OOPSLA), 2020. \url{https://doi.org/10.1145/3428194}.
+\bibitem{hofmann2012edit} Martin Hofmann, Benjamin C. Pierce, and Daniel Wagner. Edit Lenses. In \emph{POPL}, 2012, pp. 495--508. \url{https://doi.org/10.1145/2103621.2103715}.
+\bibitem{cai2014changes} Yufei Cai, Paolo G. Giarrusso, Tillmann Rendel, and Klaus Ostermann. A Theory of Changes for Higher-Order Languages: Incrementalizing Lambda-Calculi by Static Differentiation. In \emph{PLDI}, 2014, pp. 145--155. \url{https://doi.org/10.1145/2594291.2594304}.
+\bibitem{angiuli2016patch} Carlo Angiuli, Edward Morehouse, Daniel R. Licata, and Robert Harper. Homotopical Patch Theory. \emph{Journal of Functional Programming}, 26:e18, 2016. \url{https://doi.org/10.1017/S0956796816000198}.
+\bibitem{shapiro2011crdt} Marc Shapiro, Nuno Pregui\c{c}a, Carlos Baquero, and Marek Zawirski. Conflict-Free Replicated Data Types. In \emph{SSS}, 2011, pp. 386--400. \url{https://doi.org/10.1007/978-3-642-24550-3_29}.
+\bibitem{resnick2009scratch} Mitchel Resnick et al. Scratch: Programming for All. \emph{Communications of the ACM}, 52(11):60--67, 2009. \url{https://doi.org/10.1145/1592761.1592779}.
 \end{thebibliography}
+
 \end{document}
