@@ -10,10 +10,11 @@
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
+    "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:site": "node scripts/build-site.js",
     "check:site": "node scripts/check-site.js"
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
 }
