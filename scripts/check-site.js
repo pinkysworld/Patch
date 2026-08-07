@@ -15,6 +15,7 @@ const required = [
   '_site/src/expression.js',
   '_site/src/change.js',
   '_site/src/change-analysis.js',
+  '_site/src/range-analysis.js',
   '_site/src/compiler.js',
   '_site/src/bundle.js',
   '_site/src/wasm.js',
@@ -46,7 +47,7 @@ if (!playground.includes('formatChangeAnalysis')) throw new Error('Generated Pat
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
+for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
 

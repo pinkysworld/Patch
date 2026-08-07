@@ -21,12 +21,13 @@ when add_button clicked:
 allow reward:
   player.score may increase up to 10
 
-make reward(player):
+make reward(player, bonus number 0..10):
   change player:
-    add 5 to score
+    add bonus to score
 
-do reward(player)
-show player.score`,
+do reward(player, 7)
+show player.score
+why player.score`,
   score: `create number score = 0
 watch score
 
@@ -37,7 +38,8 @@ change score called bonus:
   add 10
 
 show score
-history score`,
+history score
+why score > 5`,
   fruits: `create list fruits = apple, banana
 
 change fruits:
@@ -132,7 +134,7 @@ document.querySelector('#build').addEventListener('click', () => {
       download(`${name}.wasm`, built.module, 'application/wasm');
       irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
       changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      output.textContent = `Built ${name}.wasm\n\nThis is Patch's 0.2 bootstrap WebAssembly backend. The module is valid Wasm and embeds Patch source + Change IR for a Patch host. Direct Change IR-to-Wasm execution is the next compiler-backend stage.`;
+      output.textContent = `Built ${name}.wasm\n\nThis is Patch's bootstrap WebAssembly backend. The module is valid Wasm and embeds Patch source + Change IR for a Patch host. Direct Change IR-to-Wasm execution is the next compiler-backend stage.`;
     } else {
       const bundle = buildPatchApp(code.value, { ...projectOptions(), targets: ['portable'] });
       download(`${name}.patchapp`, serializePatchApp(bundle), 'application/json');
@@ -196,9 +198,7 @@ function refreshChangeContract() {
   }
 }
 
-function scheduleChangeContract() {
-  setTimeout(refreshChangeContract, 220);
-}
+function scheduleChangeContract() { setTimeout(refreshChangeContract, 220); }
 
 function formatChangeAnalysis(ir) {
   const lines = [];
@@ -206,10 +206,16 @@ function formatChangeAnalysis(ir) {
   if (!names.length) lines.push('No recipe change signatures yet.');
   for (const name of names) {
     const signature = ir.changeSignatures[name];
-    lines.push(`${name}(${signature.params.join(', ')})`);
+    const params = signature.params.map(param => {
+      const range = signature.paramRanges?.[param];
+      return range ? `${param} number ${range.min}..${range.max}` : param;
+    });
+    lines.push(`${name}(${params.join(', ')})`);
     if (!signature.changes.length) lines.push('  changes: none');
     for (const change of signature.changes) {
-      const amount = change.staticAmount ? ` by ${change.amount}` : '';
+      let amount = '';
+      if (change.staticAmount) amount = ` by ${change.amount}`;
+      else if (change.amountRange) amount = ` by ${change.amountRange.min}..${change.amountRange.max} [proved]`;
       const via = change.via ? ` via ${change.via}` : '';
       const preview = change.committed === false ? ' [preview only]' : '';
       lines.push(`  produces: ${change.path} -> ${change.operation}${amount}${via}${preview}`);
@@ -307,27 +313,14 @@ function showTab(name) {
   irView.hidden = name !== 'ir';
 }
 
-function projectOptions() {
-  return { name: safeName(projectName.value), kind: projectKind.value, entry: 'main.patch' };
-}
-
-function safeName(name) {
-  return (name || 'PatchApp').replace(/[^A-Za-z0-9_-]/g, '_');
-}
+function projectOptions() { return { name: safeName(projectName.value), kind: projectKind.value, entry: 'main.patch' }; }
+function safeName(name) { return (name || 'PatchApp').replace(/[^A-Za-z0-9_-]/g, '_'); }
 
 function saveProject() {
-  localStorage.setItem('patchStudio.project', JSON.stringify({
-    name: projectName.value,
-    kind: projectKind.value,
-    code: code.value
-  }));
+  localStorage.setItem('patchStudio.project', JSON.stringify({ name: projectName.value, kind: projectKind.value, code: code.value }));
   saveState.textContent = 'Saved locally';
 }
-
-function loadProject() {
-  try { return JSON.parse(localStorage.getItem('patchStudio.project')); }
-  catch { return null; }
-}
+function loadProject() { try { return JSON.parse(localStorage.getItem('patchStudio.project')); } catch { return null; } }
 
 function download(filename, data, type) {
   const blob = new Blob([data], { type });
@@ -347,6 +340,4 @@ refreshDesigner();
 refreshChangeContract();
 showTab(projectKind.value === 'window' ? 'designer' : 'output');
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});

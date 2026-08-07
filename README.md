@@ -17,7 +17,7 @@ change score:
 show score
 ```
 
-The language is intended to stay easy enough for a beginner while the compiler/runtime derives history, undo/redo, preview, replay foundations, conflict analysis, semantic Change Signatures, and optional Change Capabilities from the same structured change model.
+The beginner-facing language stays deliberately small while the compiler/runtime derives history, undo/redo, preview, replay foundations, conflict analysis, semantic Change Signatures, optional Change Capabilities, bounded range proofs, and causal provenance from the same structured change model.
 
 ## Patch Studio
 
@@ -27,37 +27,155 @@ Public Patch Studio / project site:
 
 Patch Studio is browser-first and installable as a PWA. It is designed for Windows, macOS, Linux, iPhone/iPad, Android, ChromeOS and browser-capable BSD/Unix systems.
 
-On iPhone/iPad, open Patch Studio in Safari and use **Share → Add to Home Screen**. The Studio can edit Patch, add basic GUI controls through the visual Designer, run console/window programs locally, inspect Change IR and the new **Change Contract** view, and build portable `.patchapp` or bootstrap `.wasm` artifacts. Future native Windows/macOS/Linux builds requested from iOS will use remote platform build runners.
-
 ## Current status
 
-Current development beta: **0.2.0-beta.2**
+Current development beta: **0.2.0-beta.3**
 
 Implemented now:
 
 - interpreter and compiler front end;
 - normalized Change IR that keeps `change` explicit;
-- automatically inferred semantic **Change Signatures** for recipes;
-- compile-time **Change Capabilities** with path/operation rules and optional numeric bounds;
+- automatically inferred semantic **Change Signatures**;
+- compile-time **Change Capabilities**;
+- numeric parameter ranges and interval analysis for bounded change proofs;
 - conservative transitive analysis through simple recipe calls;
+- runtime guards for declared numeric parameter ranges;
+- causal provenance on committed changes;
+- `why value` and `why condition` explanations;
+- an initial **Lean 4 formalization** of State-Change Factorization and Semantic Change Contract composition;
+- dedicated Lean CI with no `sorry`/`admit` placeholders allowed;
 - `patch changes` CLI inspection;
-- Patch Studio **Change Contract** tab;
+- Patch Studio Change Contract view;
 - portable `.patchapp` bundles;
-- valid bootstrap WebAssembly `.wasm` modules containing Patch source + Change IR;
-- console programs;
-- GUI language: `window`, `text`, `button`, `input`, and `when ... clicked`;
-- live GUI preview in Patch Studio;
-- first visual form-Designer toolbox that edits normal Patch source;
-- history, watch, preview, undo and redo;
-- browser/PWA Studio with local autosave and offline core assets;
-- automated CI on Windows, macOS and Linux;
-- deterministic static-site build and deployment validation.
+- bootstrap WebAssembly `.wasm` output;
+- console and first GUI programs;
+- browser/PWA Studio with visual Designer, local autosave and offline core assets;
+- Windows/macOS/Linux JavaScript CI plus formal verification CI.
 
-The compiler path is:
+## State-Change Factorization
+
+Patch does not perform an ordinary write and then log what happened. The semantic change is the route through which persistent state changes:
+
+```text
+construct delta
+      ↓
+apply delta
+      ↓
+new persistent state
+```
+
+There is no ordinary persistent reassignment escape hatch.
+
+## Semantic Change Signatures and Capabilities
+
+Patch can infer what a recipe may change:
+
+```patch
+make reward(player):
+  change player:
+    add 5 to score
+```
+
+Conceptually:
+
+```text
+reward(player)
+  player.score -> increase by 5
+```
+
+A policy can restrict this:
+
+```patch
+allow reward:
+  player.score may increase up to 10
+```
+
+A `set score = 999` is not accepted as an `increase`, even though both technically write the same location.
+
+## Bounded range proofs
+
+Beta 3 adds simple numeric range declarations to recipe parameters:
+
+```patch
+allow reward:
+  player.score may increase up to 10
+
+make reward(player, bonus number 0..10):
+  change player:
+    add bonus to score
+```
+
+Patch no longer has to reject `bonus` merely because it is dynamic. The compiler knows:
+
+```text
+bonus ∈ [0, 10]
+```
+
+and can prove that the resulting increase stays inside the declared Change Capability.
+
+The interval analyzer also handles simple arithmetic:
+
+```patch
+make reward(player, bonus number 0..5):
+  change player:
+    add bonus * 2 to score
+```
+
+The inferred amount is `0..10`. If the possible result exceeds the capability bound, compilation fails conservatively.
+
+Declared ranges are also checked at runtime so a recipe cannot be called with an out-of-range value and invalidate its inferred Change Signature.
+
+## Causal `why`
+
+Committed Patch changes now retain source and causal context such as recipe calls and GUI events.
+
+```patch
+create number score = 0
+
+make reward():
+  change score:
+    add 5
+
+do reward()
+why score
+```
+
+Patch can explain that the current value came from a change inside `reward`.
+
+Conditions can also be queried:
+
+```patch
+why score > 100
+```
+
+Patch replays the semantic history and reports the first recorded change that made the condition true, when it can isolate one.
+
+For GUI programs, provenance can include a chain such as:
+
+```text
+event bonus_button clicked -> recipe reward -> change score
+```
+
+This is a first causal-provenance prototype, not yet a full causal-inference system.
+
+## Lean 4 formalization
+
+The `formal/` directory is now a real Lean 4 project pinned to Lean 4.30.0. It mechanizes an initial core model with no unfinished proof placeholders.
+
+Current proved results include:
+
+- a **State-Change Factorization** theorem for the formal machine step;
+- Mutation Transparency as a corollary;
+- interval-containment transitivity used by bounded change reasoning;
+- Semantic Change Contract composition: if runtime effects are covered by an inferred signature, and the signature is admitted by a capability policy, then runtime effects are admitted by the policy.
+
+The formal model is intentionally smaller than the full implementation. The next proof work is to connect the executable analyzer more directly to the Lean definitions and extend the model to richer values, calls and GUI events.
+
+## Compiler path
 
 ```text
 Patch source
-   -> AST
+   -> AST + numeric range annotations
    -> semantic Change Signature analysis
    -> Change Capability validation
    -> Change IR
@@ -67,69 +185,7 @@ Patch source
    -> native host packaging         [roadmap]
 ```
 
-The bootstrap `.wasm` is a genuine instantiable WebAssembly module and portable compiler artifact. It currently embeds the compiled Patch payload for a Patch host. It does **not** yet execute every Patch operation as directly lowered Wasm instructions. Native `.exe`, `.app`, ELF and BSD/Unix executables are also not claimed as finished yet.
-
-## Semantic Change Signatures
-
-Patch can infer what kinds of persistent changes a recipe may produce.
-
-```patch
-make reward(player):
-  change player:
-    add 5 to score
-```
-
-The compiler derives conceptually:
-
-```text
-reward(player)
-  player.score -> increase by 5
-```
-
-This is not extra syntax the programmer has to maintain. It is derived from the same semantic operations used by Patch execution.
-
-Use:
-
-```bash
-patch changes examples/change-capabilities.patch
-```
-
-to inspect inferred recipe effects from the CLI.
-
-## Change Capabilities
-
-A recipe can optionally declare the semantic changes it is allowed to produce:
-
-```patch
-allow reward:
-  player.score may increase up to 10
-
-make reward(player):
-  change player:
-    add 5 to score
-```
-
-This compiles because the inferred change is inside the declared policy.
-
-This does not:
-
-```patch
-make reward(player):
-  change player:
-    set score = 999
-```
-
-Even though both operations write `player.score`, `set` is not an allowed `increase`.
-
-Likewise, a statically known `add 25 to score` violates the `up to 10` bound. If the current beta cannot prove a bounded dynamic amount safe, it rejects the proof rather than guessing.
-
-Conceptually:
-
-```text
-ProducedChanges(recipe) subset-of AllowedChanges(recipe)
-```
-
-This is the new **Semantic Change Contract** layer built on top of State-Change Factorization.
+The bootstrap `.wasm` is a genuine instantiable WebAssembly module containing the compiled Patch payload for a Patch host. Direct Change IR-to-Wasm execution and native `.exe`/`.app`/ELF/BSD packages are not yet claimed as finished.
 
 ## One language for console and GUI applications
 
@@ -164,176 +220,59 @@ The long-term output matrix is:
 | Browser | WebAssembly | Web/Patch UI |
 | Portable | `.patchapp` | `.patchapp` |
 
-Patch UI hides Cocoa/AppKit, Windows APIs and Unix/SDL details from ordinary Patch source.
-
 ## CLI
 
 The JavaScript beta toolchain requires Node.js 22+.
 
-Run:
-
 ```bash
 patch run examples/score.patch
-```
-
-Compile/check:
-
-```bash
 patch check examples/score.patch
-```
-
-Inspect semantic changes and policies:
-
-```bash
 patch changes examples/change-capabilities.patch
-```
-
-Build a portable app:
-
-```bash
 patch build examples/score.patch --kind console --target portable
-```
-
-Build bootstrap WebAssembly:
-
-```bash
 patch build examples/score.patch --kind console --target wasm
-```
-
-Build and validate the public Patch Studio site:
-
-```bash
-npm run build:site
-npm run check:site
-```
-
-## Visual Designer
-
-Patch Studio's current Designer can insert text, buttons and inputs into the first window while modifying the same readable `.patch` source you can edit by hand.
-
-For example, choosing **+ Button** creates source such as:
-
-```patch
-window "My App":
-  button "Button" as button_1
-```
-
-The next Designer stages add selection, drag positioning/resizing, properties, more controls and event creation. Patch will not hide GUI definitions in an opaque second language.
-
-## Language tour
-
-```patch
-create number lives = 3
-create text hero = "Mia"
-create list fruits = apple, banana
-
-change lives:
-  remove 1
-
-change fruits:
-  add orange
-  remove banana
-
-if lives > 0:
-  show "keep playing"
-else:
-  show "game over"
-
-repeat 3:
-  change lives:
-    add 1
-```
-
-Things are simple records:
-
-```patch
-create thing player:
-  name = "Sam"
-  score = 0
-  lives = 3
-
-change player:
-  add 10 to score
-  remove 1 from lives
-  set name = "Alex"
-```
-
-Patch can inspect semantic changes:
-
-```patch
-watch score
-change score called bonus:
-  add 10
-history score
-undo bonus
-redo
 ```
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class changes, first-class state change, effect systems, capabilities, typestate, undo, reified program state, event logs, reversible computation, lenses, CRDTs, incremental computation or earlier change-oriented programming environments are new.
+Patch does **not** claim that patches, first-class state change, effect systems, capabilities, ranges, provenance, undo, event logs, lenses, CRDTs or reversible computation are individually new.
 
-The current PL contribution candidate has two layers:
+The research program now has three connected layers:
 
-> **State-Change Factorization:** every supported post-creation persistent mutation must compile/execute through a semantic change `delta` such that `apply(delta, S) = S'`; the semantic change is the mutation mechanism rather than a log generated after hidden assignment.
+1. **State-Change Factorization**: persistent mutation must execute through a semantic change.
+2. **Semantic Change Contracts**: Patch infers semantic Change Signatures and checks them against optional semantic Change Capabilities.
+3. **Change-native analysis**: because the same representation is mandatory, Patch can derive bounded amount proofs and causal explanations without a second application-specific mutation model.
 
-and:
+The central prospective soundness chain is:
 
-> **Semantic Change Contracts:** Patch infers semantic Change Signatures from those mandatory deltas and can verify that the changes a recipe may produce stay inside an optional declared Change Capability policy.
+```text
+RuntimeChanges(f) ⊆ Signature(f) ⊆ Capability(f)
+```
 
-Supporting research properties include:
+and therefore:
 
-1. **Mutation Transparency**: every committed post-creation persistent mutation has an inspectable semantic change.
-2. **Change Signature soundness**: inferred signatures conservatively cover committed changes in the supported fragment.
-3. **Change Capability soundness**: accepted protected recipes cannot commit changes outside their declared semantic policy.
-4. **Inverse correctness** for the invertible change fragment.
-5. **Preview equivalence/non-interference** without committing history.
-6. **Replay consistency** for the deterministic fragment.
-7. **Commutation/conflict soundness** for cases Patch classifies as independent.
-8. **Progressive disclosure**: beginners can ignore the algebra and optional policy layer.
+```text
+RuntimeChanges(f) ⊆ Capability(f)
+```
 
-The novelty review explicitly compares Patch against Plaid's first-class state change, Worlds' reified program-state model, classical effect systems, Effects as Capabilities/Effekt, XMF first-class undo, ChEOPS/COPE, Edit Transactions, reducer/event architectures, lenses and patch theory.
-
-Patch remains a **credible high-venue research direction, but not yet a high-venue result**. A serious top PL submission still requires systematic prior-art analysis, formal/machine-checked core properties, direct compiled execution, benchmark/security evidence and preferably controlled novice-comprehension data.
-
-See `docs/NOVELTY.md`, `docs/FORMAL_MODEL.md`, `docs/SEMANTICS.md`, `docs/RESEARCH_PLAN.md` and `paper/main.tex`.
+The repository now contains an initial machine-checked proof of the composition step in Lean 4. A high-venue submission still requires a stronger correspondence proof between the executable compiler and the formal model, systematic prior-art review, direct compiled execution, benchmarks/security evaluation and controlled user evidence if the novice-comprehension claim is retained.
 
 ## Repository map
 
 ```text
-src/                    parser, interpreter, change algebra, change analysis, compiler, Wasm bootstrap, Designer helpers, bundler
+src/                    parser, interpreter, change/range analysis, compiler, Wasm bootstrap, Designer, bundler
+formal/                 Lean 4 formal model and machine-checked theorems
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
-tests/                  language, compiler, Change Capability, UI, Designer and Wasm tests
+tests/                  language, range/provenance, compiler, capability, UI, Designer and Wasm tests
 examples/               runnable .patch programs
-docs/SPEC.md             language specification
-docs/FORMAL_MODEL.md     factorization + semantic capability proof targets
-docs/SEMANTICS.md        implementation-oriented semantic notes
-docs/NOVELTY.md          prior-art boundary and novelty claim
-docs/RESEARCH_PLAN.md    evaluation and publication plan
-docs/COMPILER.md         Change IR and compiler architecture
-docs/PATCH_STUDIO.md     IDE and mobile development design
-docs/TARGETS.md          platform/output targets
-docs/ROADMAP.md          implementation milestones
+docs/                   specification, semantics, formal model, novelty, research, compiler, Studio and targets
 paper/                   manuscript draft and references
-.github/workflows/       cross-platform CI and Pages deployment
+.github/workflows/       cross-platform CI, formal verification and Pages deployment
 ```
 
 ## CI quality gate
 
-Every CI matrix entry must pass:
-
-```text
-JavaScript syntax checks
-language/compiler/Change-Capability/UI/Designer/Wasm tests
-compile + execute example smoke tests
-portable .patchapp build
-WebAssembly build
-public-site build
-public-site integrity validation
-```
-
-The matrix runs on Windows, macOS and Linux with supported Node.js release lines.
+JavaScript CI runs on Windows, macOS and Linux with Node 22/24 and checks syntax, tests, examples, `.patchapp`, Wasm and the public site. A separate Ubuntu job installs the pinned Lean toolchain, runs `lake build`, and rejects `sorry` or `admit` in the formal proof source.
 
 ## License
 

@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.2",
-  "description": "Patch: a tiny change-oriented programming language with semantic change signatures, capabilities, and a browser-first cross-platform IDE",
+  "version": "0.2.0-beta.3",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, range proofs, causal provenance, and a browser-first cross-platform IDE",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -16,5 +16,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
 }

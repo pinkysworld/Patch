@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio: the browser-first IDE for Patch, with semantic change signatures, change capabilities, console, GUI and portable application builds.">
+  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic change contracts, range proofs, causal why explanations, GUI and portable application builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -17,8 +17,8 @@
   <main class="studio">
     <header class="topbar">
       <div>
-        <h1>Patch Studio <span>0.2 beta.2</span></h1>
-        <p>Create, design, inspect, run and build Patch applications from one browser-first IDE.</p>
+        <h1>Patch Studio <span>0.2 beta.3</span></h1>
+        <p>Create, design, inspect, explain, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
         <select id="sample" aria-label="Example">
@@ -72,13 +72,13 @@
         </div>
         <div id="app" class="app-preview" hidden><p class="empty-preview">Press Run to preview a window application.</p></div>
         <pre id="output" hidden>Press Run.</pre>
-        <pre id="changes" hidden>Run or build to inspect inferred semantic changes and allowed change capabilities.</pre>
+        <pre id="changes" hidden>Run or build to inspect inferred semantic changes, proven ranges and allowed change capabilities.</pre>
         <pre id="ir" hidden>Build or Run to inspect the compiler IR.</pre>
       </div>
     </section>
 
     <section class="statusbar">
-      <span><strong>Patch core:</strong> create · change · allow · make · window · when · preview · undo</span>
+      <span><strong>Patch core:</strong> create · change · allow · why · make · window · when · preview · undo</span>
       <span>Projects are autosaved in this browser.</span>
     </section>
 
@@ -87,52 +87,70 @@
         <div>
           <p class="eyebrow">One language. One Studio. Semantic changes.</p>
           <h2>Programming should feel like making clear, inspectable changes.</h2>
-          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Patch 0.2 beta.2 can also infer what kinds of changes a recipe may produce and optionally check them against a declared change capability policy.</p>
+          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 3 adds bounded numeric range proofs, causal <code>why</code> explanations and the first machine-checked Lean 4 formalization of the research core.</p>
         </div>
         <pre class="code-card">allow reward:
   player.score may increase up to 10
 
-make reward(player):
+make reward(player, bonus number 0..10):
   change player:
-    add 5 to score</pre>
+    add bonus to score
+
+why player.score</pre>
       </article>
 
       <div class="info-grid">
         <article class="info-card">
           <p class="eyebrow">Works now</p>
-          <h3>Patch 0.2 beta.2</h3>
+          <h3>Patch 0.2 beta.3</h3>
           <ul>
             <li>Interpreter plus compiler front end</li>
             <li>Normalized Change IR</li>
-            <li>Automatically inferred semantic Change Signatures for recipes</li>
-            <li>Compile-time Change Capabilities with operation and numeric-bound checking</li>
-            <li>Transitive analysis through simple recipe calls</li>
+            <li>Automatically inferred semantic Change Signatures</li>
+            <li>Compile-time Change Capabilities</li>
+            <li>Ranged recipe parameters and interval arithmetic proofs</li>
+            <li>Runtime guards for declared numeric ranges</li>
+            <li>Causal source/recipe/event provenance and <code>why</code></li>
+            <li>Lean 4 State-Change Factorization and capability-composition proofs</li>
             <li>Portable <code>.patchapp</code> and bootstrap WebAssembly builds</li>
             <li>Console programs and first Patch UI/Designer slice</li>
-            <li>History, preview, undo/redo and watch</li>
-            <li>Windows, macOS and Linux CI</li>
+            <li>Windows, macOS and Linux CI plus formal-verification CI</li>
           </ul>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Semantic security</p>
           <h3>Permission to change is more precise than permission to write</h3>
-          <p>A normal write permission says that code may modify a value. Patch can say that a recipe may only perform a particular semantic change, for example <code>player.score may increase up to 10</code>. A replacement with <code>set score = 999</code> or a larger statically known increase is rejected at compile time.</p>
-          <p>The compiler is conservative: when a numeric bound cannot be proved from the current source, it rejects the bounded policy rather than guessing.</p>
+          <p>A normal write permission says code may modify a value. Patch can say that a recipe may only perform a particular semantic change, for example <code>player.score may increase up to 10</code>. A replacement with <code>set score = 999</code> is a different semantic operation and is rejected.</p>
+          <p>With <code>bonus number 0..10</code>, the compiler can now prove many dynamic bounded changes instead of rejecting them just because the amount is a variable.</p>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Causal provenance</p>
+          <h3>Ask Patch why a value or condition exists</h3>
+          <p><code>why score</code> explains the recorded semantic changes behind the current value. <code>why score &gt; 100</code> replays history and identifies the first recorded transition that made the condition true when one can be isolated.</p>
+          <p>GUI-driven changes can retain provenance such as <code>event bonus clicked → recipe reward → change score</code>.</p>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Formal verification</p>
+          <h3>The first Lean 4 proofs are part of the repository</h3>
+          <p>The <code>formal/</code> project mechanizes an initial State-Change Factorization theorem, Mutation Transparency, interval-containment composition and Semantic Change Contract composition. Dedicated CI builds the proofs and rejects unfinished <code>sorry</code>/<code>admit</code> placeholders.</p>
+          <p>The formal model is intentionally smaller than the production interpreter. Connecting the executable analyzer more tightly to the mechanized semantics is the next research step.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">iPhone & iPad</p>
           <h3>Patch Studio remains mobile-first</h3>
-          <p>Edit and run Patch in Safari, inspect the new <strong>Change Contract</strong> tab, add GUI controls from the Designer, preview applications, inspect Change IR and build portable <code>.patchapp</code> or bootstrap <code>.wasm</code> artifacts locally.</p>
+          <p>Edit and run Patch in Safari, inspect Change Contracts and proven ranges, use <code>why</code>, add GUI controls from the Designer, preview applications, inspect Change IR and build portable <code>.patchapp</code> or bootstrap <code>.wasm</code> artifacts locally.</p>
           <p>Future native Windows <code>.exe</code>, macOS <code>.app</code> and Linux/BSD builds from iOS will use remote platform build runners.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Compiler direction</p>
           <h3>One semantic layer, many derived services</h3>
-          <p class="pipeline">Patch source → AST → Change Signature analysis → Change IR → WebAssembly / native host</p>
-          <p>The same semantic vocabulary now supports execution, history, inversion, preview, conflict reasoning and compile-time change contracts. Direct Change IR-to-Wasm execution remains the next backend stage.</p>
+          <p class="pipeline">Patch source → ranges → Change Signatures → capabilities → Change IR → WebAssembly / native host</p>
+          <p>The same semantic vocabulary drives execution, history, inversion, preview, conflict reasoning, bounded contracts and causal explanations. Direct Change IR-to-Wasm execution remains the next backend stage.</p>
         </article>
       </div>
 
@@ -140,13 +158,14 @@ make reward(player):
         <div>
           <p class="eyebrow">Research project</p>
           <h2>Patch: State-Change Factorization and Semantic Change Contracts</h2>
-          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. The new Change Signature/Capability layer asks a further question: if every mutation already has semantic structure, can the compiler infer the set of changes a component may produce and prove that those changes stay inside a semantic policy?</p>
-          <p><strong>Current status:</strong> a credible high-venue research direction, not yet a finished high-venue result. Formalization, mechanization, systematic related-work analysis, direct compiled execution and measured evaluation remain required.</p>
+          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. On top of that mandatory representation, the compiler derives semantic signatures, capability proofs, bounded range facts and provenance.</p>
+          <p><strong>Current status:</strong> the project now includes initial machine-checked proofs, but it is still not a finished high-venue result. The next high-value work is correspondence between the executable compiler and formal model, direct compiled execution, systematic related work and measured evaluation.</p>
         </div>
         <div class="link-stack">
           <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language specification</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchFormal.lean">Lean 4 proofs</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Novelty boundary</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md">Compiler architecture</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/paper/main.tex">Research manuscript</a>
@@ -155,10 +174,10 @@ make reward(player):
 
       <article class="roadmap-card">
         <p class="eyebrow">Roadmap</p>
-        <div class="roadmap-row"><strong>Now</strong><span>State-Change Factorization · Change Signatures · Change Capabilities · PWA Studio · bootstrap Wasm · GUI Designer</span></div>
-        <div class="roadmap-row"><strong>Next</strong><span>Typed/range-aware capability proofs · richer transitive analysis · causal <code>why</code> explanations · direct Wasm lowering</span></div>
+        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range proofs · causal why · Lean core · PWA Studio · bootstrap Wasm</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Executable-to-Lean correspondence · richer range/dataflow analysis · provenance graph UI · direct Wasm lowering</span></div>
         <div class="roadmap-row"><strong>Then</strong><span>Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for… · richer visual Designer</span></div>
-        <div class="roadmap-row"><strong>Research</strong><span>Mechanized change calculus · capability soundness theorem · benchmarks · security case studies · novice study</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>Mechanized signature soundness · security case studies · benchmarks · novice study</span></div>
       </article>
     </section>
   </main>

@@ -1,0 +1,38 @@
+name: Patch Formal Verification
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    name: Lean 4 proofs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Elan and pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+      - name: Build Lean formalization
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          elan override set leanprover/lean4:v4.30.0
+          lake update
+          lake build
+      - name: Reject unfinished proofs
+        shell: bash
+        run: |
+          if grep -R -n -E '\bsorry\b|\badmit\b' formal/*.lean; then
+            echo 'Unfinished Lean proof found.'
+            exit 1
+          fi
