@@ -1,201 +1,163 @@
 # Research and Evaluation Plan
 
-The paper must distinguish implemented beta facts from research hypotheses. Patch should not be submitted to a high venue until the core formal claim, artifact and evaluation all line up.
+Patch should not be submitted to a high venue until the formal claim, executable artifact and evaluation line up. Beta 3 has crossed an important milestone by adding a real Lean 4 core, but the production compiler is not yet formally verified.
 
-## Central research question
+## Central question
 
-Can a low-complexity general-purpose language make semantic change the exclusive route for persistent runtime mutation, infer the semantic changes a component may produce, constrain those changes with operation-aware capabilities, and derive useful tooling/security properties without making ordinary programming harder to understand?
+Can a low-complexity general-purpose language make semantic change the exclusive route for persistent mutation, infer the semantic changes a component may produce, constrain them with operation-aware capabilities, and reuse the same representation for explanation/tooling without making ordinary programming harder?
 
-## RQ1: Expressiveness and ceremony
+## RQ1: State-Change Factorization
 
-Can the change-only mutation model express ordinary imperative and event-driven programs without excessive ceremony?
-
-Implement at least 50 programs in Patch and conventional baselines (primarily Python/JavaScript): counters, collections, todo model, state machines, text adventure, small games, form apps, file-processing tools and browser GUI programs. Measure source lines/tokens, number of state-changing constructs, and helper infrastructure required for undo/history/preview in the baseline.
-
-## RQ2: State-Change Factorization
-
-Does every supported post-creation persistent mutation execute through a semantic change?
-
-Formalize the core language and prove a factorization theorem: if a well-typed source step changes persistent state from `S` to `S'`, execution produces `delta` such that `apply(delta, S) = S'`, and no alternate persistent-assignment path bypasses that mechanism.
-
-This should be machine-checked if feasible (Lean 4 is the preferred first option).
-
-## RQ3: Change Signature soundness
-
-Does the compiler-inferred semantic Change Signature conservatively cover every committed change a recipe can produce in the supported fragment?
-
-Build a labeled corpus containing direct changes, branches, loops, preview-only changes, nested helpers and simple transitive calls. For each recipe compare the inferred effects against the committed changes observed across exhaustive/symbolic test cases where feasible.
-
-The formal target is:
+Formal target:
 
 ```text
-RuntimeChanges(f) subset-of Sig(f)
+persistent state transition S -> S'
+=> exists delta such that apply(delta, S) = S'
+and the transition commits through delta
 ```
 
-Missing a runtime change is a soundness failure. Over-approximation is allowed but should be measured because excessive imprecision weakens capability usefulness.
+Beta 3 now mechanizes this property for the small Lean machine model. Next, prove a correspondence result for a useful executable Patch core.
 
-## RQ4: Change Capability soundness and usefulness
+## RQ2: Change Signature soundness
 
-Can Patch enforce semantic authority such as "this recipe may increase player.score by at most 10" rather than only generic write permission?
-
-The formal target is:
+Target:
 
 ```text
-compile(f, Cap(f)) succeeds
-  => RuntimeChanges(f) subset-of Cap(f)
+RuntimeChanges(f) subset-of Signature(f)
 ```
 
-Evaluate positive/negative cases including:
+The executable compiler already infers direct and simple transitive effects. The next mechanized model must include recipes/calls and prove that no supported runtime change is omitted.
 
-- bounded score/reward updates;
-- balances that may decrease but may never be replaced;
-- inventory functions limited to add/remove;
-- UI handlers restricted to specific fields;
-- plugin-like modules with narrow semantic authority;
-- nested helper calls;
-- dynamic values that the current compiler must conservatively reject.
+Measure both soundness failures and conservative over-approximation.
 
-Measure accepted safe programs, rejected unsafe programs, and false rejections due to insufficient static information.
+## RQ3: Change Capability soundness
 
-## RQ5: Change-law correctness
+Target:
 
-For the supported fragment, establish and test:
+```text
+Signature(f) subset-of Capability(f)
+```
+
+combined with RQ2 gives:
+
+```text
+RuntimeChanges(f) subset-of Capability(f)
+```
+
+Beta 3's Lean model proves the composition step once signature coverage is assumed. The production checker still needs formal correspondence.
+
+Security cases should include bounded rewards, balances, inventory operations, UI handlers, plugin-like modules and nested helpers.
+
+## RQ4: Range-analysis soundness and precision
+
+Beta 3 supports ranged parameters such as:
+
+```patch
+make reward(player, bonus number 0..10):
+```
+
+and interval propagation through a small arithmetic fragment.
+
+Formal target:
+
+> If the analyzer returns interval `I` for expression `e` under range environment `Gamma`, every supported evaluation of `e` satisfying `Gamma` lies in `I`.
+
+Evaluate how many safe bounded programs become provable, how many remain conservatively rejected, and analysis cost.
+
+## RQ5: Provenance and `why`
+
+Patch now records source, recipe and GUI-event context on committed changes. Evaluate:
+
+- whether `why value` identifies the useful change chain;
+- whether `why predicate` identifies the first recorded false-to-true transition;
+- how much explicit logging/instrumentation JavaScript/Python baselines need;
+- where historical provenance is insufficient for true counterfactual causation.
+
+Do not market history replay as general causal inference.
+
+## RQ6: Derived change laws
+
+Establish/prove/test:
 
 - Mutation Transparency;
 - inverse correctness;
-- preview equivalence/non-interference;
+- preview non-interference and preview/commit agreement;
 - deterministic replay consistency;
 - composition laws;
-- soundness of the cases reported as commuting/non-conflicting.
+- commutation/conflict soundness.
 
-Property-based/randomized testing should supplement proofs and ordinary examples.
+## RQ7: Expressiveness and infrastructure reduction
 
-## RQ6: Derived tooling
+Implement at least 50 representative programs in Patch and conventional baselines. Measure source size and extra infrastructure required for history, undo, preview, semantic auditing, capability enforcement and provenance.
 
-How much functionality can one normalized Change IR drive without application-specific undo/history/security plumbing?
+## RQ8: Comparison to prior systems
 
-Evaluate history reconstruction, undo/redo coverage, preview, replay, change inspection, Change Contract display, GUI state refresh, timeline debugging and conflict explanation. Count how much dedicated application code is required in Patch versus baseline implementations.
+Systematically compare against:
 
-## RQ7: Comparison with effect/capability systems
+- Plaid and typestate/state-transition languages;
+- Worlds and reified program-state systems;
+- classical type-and-effect systems;
+- Effects as Capabilities/Effekt;
+- object-capability, permission and refinement systems;
+- range/abstract-interpretation systems;
+- provenance and why-oriented debugging;
+- ChEOPS/COPE/Edit Transactions;
+- edit lenses/change structures/patch theory;
+- event sourcing, reversible programming and CRDTs.
 
-Compare Patch against classical effect systems, modern effect-capability systems, typestate/permission systems and ordinary read/write capability models.
-
-Questions include:
-
-- Does Patch infer semantically finer distinctions than read/write for its supported state operations?
-- Is an operation distinction such as `increase` versus `set` practically useful?
-- How much precision is lost without a richer type/range system?
-- Can equivalent policies be expressed in baseline systems, and at what annotation/implementation cost?
-
-This RQ is essential to avoid presenting existing effect/capability ideas as new.
-
-## RQ8: Novice comprehension
-
-Do beginners understand state evolution and semantic permissions with Patch's vocabulary?
-
-Use a randomized/counterbalanced controlled study. Tasks should include predicting final values, identifying which operations mutated state, changing behavior, undoing a requested transition, explaining mutation bugs, and identifying why a semantic capability rejects a change.
-
-The capability layer should be tested separately from basic Patch syntax so advanced policy features do not contaminate the core novice comparison.
-
-Measure correctness, completion time, edit/error count, confidence and an appropriate cognitive-load measure. Pre-register hypotheses, exclusions, sample-size rationale and analysis before data collection.
+The goal is to falsify overbroad novelty claims before reviewers do.
 
 ## RQ9: Performance
 
-Measure the overhead of semantic-change execution and compile-time analysis.
-
 Separate:
 
-1. runtime change construction/history overhead;
-2. Change Signature inference and capability validation time;
-3. JavaScript interpreter beta;
-4. direct Change IR / WebAssembly backend;
-5. later native/AOT host packaging.
+1. change construction/history overhead;
+2. Change Signature + range + capability analysis cost;
+3. JavaScript interpreter performance;
+4. future direct Change IR-to-Wasm performance;
+5. native host packaging overhead.
 
-Do not treat interpreter performance as the language's performance ceiling.
+## RQ10: Novice comprehension
 
-## RQ10: GUI and cross-platform artifact
+If accessibility remains part of the paper, preregister a controlled study comparing Patch with conventional mutable syntax. Keep advanced capability questions separate from the basic state-mutation comparison.
 
-Can the same Patch source, Change IR and semantic policy model support console and GUI applications across browser and desktop targets without exposing platform APIs in ordinary code?
+Measure correctness, completion time, edit/error count, confidence and cognitive load.
 
-The artifact evaluation should include browser/PWA execution, Windows/macOS/Linux CI, portable `.patchapp`, WebAssembly, at least one native GUI host before a systems-heavy submission claim, and reproducible builds from Patch Studio and CLI.
+## RQ11: Cross-platform artifact
 
-## RQ11: Related-work falsification
+Evaluate the same language/Change IR across browser/PWA, Windows/macOS/Linux CI, portable `.patchapp`, direct Wasm when available, and at least one native GUI host before making a systems-heavy portability claim.
 
-Before submission, systematically test the novelty claim against:
+## Current milestone: 0.2.0-beta.3
 
-- Plaid and typestate-oriented programming;
-- Worlds / reified program state;
-- classical type-and-effect systems;
-- Effects as Capabilities / Effekt and related capability/effect systems;
-- ownership/permission/capability type systems;
-- behavioral/session/update-effect systems;
-- ChEOPS, COPE, Changeboxes and Edit Transactions;
-- edit lenses and change structures;
-- event sourcing and reducer architectures;
-- reversible programming, CRDTs and live-programming systems.
+Implemented:
 
-The paper should explicitly explain which part of Patch is genuinely different and which part is recombination/application of prior ideas.
+- Change IR and semantic change runtime;
+- Semantic Change Signatures and Change Capabilities;
+- ranged parameters and interval analysis;
+- runtime range guards;
+- causal provenance and initial `why` queries;
+- Lean 4 formal project;
+- machine-checked factorization, Mutation Transparency, interval containment and contract-composition results;
+- Patch Studio/PWA, GUI preview/Designer, `.patchapp`, bootstrap Wasm;
+- Windows/macOS/Linux CI and dedicated formal-verification CI.
 
-## Artifact milestones
+## Next formal milestone
 
-### 0.1 complete
-
-Parser/interpreter, semantic change records, inversion, history, preview, conflict helper, examples, cross-platform tests and initial design manuscript.
-
-### 0.2 beta.2 current
-
-- compiler front end and Change IR;
-- semantic Change Signature inference;
-- optional Change Capability policies with numeric bounds;
-- simple transitive recipe analysis;
-- `patch changes` CLI;
-- Change Contract view in Patch Studio;
-- portable `.patchapp` and bootstrap `.wasm`;
-- Patch Studio PWA / iPhone-responsive IDE;
-- first GUI language/Designer slice;
-- deterministic public-site build and CI validation.
-
-### 0.3 next
-
-- typed AST and richer expression IR;
-- range analysis for proving bounded dynamic changes;
-- fixed-point/recursive call graph analysis;
-- richer capability policy composition;
-- causal `why` prototype;
-- full visual form designer/property editor;
-- persistent project files/import-export;
-- serialized `.patchlog` and explicit replay;
-- immediate mode / timeline debugger;
-- randomized change-algebra and capability tests.
-
-### 0.4 compiler backend
-
-- direct Change IR-to-WebAssembly lowering;
-- preserve/verifiably export semantic change evidence;
-- WASI-facing console runtime;
-- runnable `.patchapp` host;
-- benchmark harness;
-- first native host proof of concept.
-
-### Research-complete milestone
-
-- systematic literature review;
-- machine-checked State-Change Factorization;
-- machine-checked Change Signature soundness;
-- machine-checked Change Capability soundness for a useful core;
-- benchmark/security corpus and reproducibility bundle;
-- controlled novice study if retained;
-- artifact documentation sufficient for external reproduction.
+1. formalize the ranged expression fragment in Lean;
+2. prove interval analyzer soundness;
+3. formalize recipes and simple calls;
+4. prove executable Change Signature soundness for a non-recursive core;
+5. derive end-to-end Change Capability soundness;
+6. establish compiler-to-formal correspondence or a small verified checker boundary.
 
 ## High-venue gate
 
-A top PL submission should not be attempted merely because Patch Studio looks polished. Before aiming at OOPSLA/PLDI/ICFP-level review, the project should have at least:
+Before an OOPSLA/PLDI/ICFP-level attempt, require:
 
-1. a crisp formal contribution beyond terminology;
-2. mechanized or otherwise unusually rigorous correctness evidence;
-3. a substantial working compiler/runtime artifact;
-4. evaluation isolating the benefit of semantic Change IR and Change Contracts over ordinary mutation plus logging/effect annotations;
-5. explicit comparison to the closest effect/capability and state-transition systems;
-6. no unsupported "first" claims.
-
-If the formal/compiler/security contribution is strongest, pursue a PL venue. If the controlled-user-study contribution is strongest, a PL/HCI or top computing-education/HCI framing may be more defensible. Venue selection should follow the evidence rather than precede it.
+1. systematic related-work review;
+2. meaningful executable/formal correspondence, not only an abstract toy theorem;
+3. direct compiled execution;
+4. benchmark/security evidence;
+5. a reproducible artifact;
+6. no unsupported firstness claims;
+7. controlled user evidence if novice simplicity remains a headline claim.
