@@ -11,5 +11,5 @@ make reward(player, bonus number 0..10):
 
 do reward(player, 7)
 show player.score
-why player.score
+why player.score > 0
 why player.score > 5
