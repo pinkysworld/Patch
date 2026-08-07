@@ -45,7 +45,20 @@
 - [x] machine-checked **Change Signature Soundness** for the formal core
 - [x] machine-checked **end-to-end Change Capability Soundness** for the formal core
 - [x] explicit separation between formal-core soundness and production-compiler correspondence
-- [x] beta.4 website/paper/docs synchronization
+
+### beta.5 production/formal bridge
+
+- [x] independent production-AST -> Lean-like `CoreStmt` bridge for a conservative subset
+- [x] independent formal-style signature reconstruction
+- [x] supported-case comparison against production Change Signatures
+- [x] compiler failure on supported signature mismatches
+- [x] explicit unsupported reasons rather than false verification claims
+- [x] `formalBridge` evidence embedded in Change IR, `.patchapp`, and bootstrap Wasm payloads
+- [x] `patch formal program.patch` coverage report
+- [x] dedicated formal-bridge tests
+- [x] formal bridge smoke check on Windows/macOS/Linux CI
+- [x] PWA/offline packaging of the bridge dependency
+- [x] beta.5 website/paper/docs synchronization
 
 Still open in the 0.2/0.3 line:
 
@@ -60,13 +73,15 @@ Still open in the 0.2/0.3 line:
 
 ## 0.3 research hardening
 
-- [ ] define a correspondence relation between production Change IR effects and Lean `Effect`
-- [ ] emit a machine-readable compiler/formal conformance corpus
+- [x] first machine-readable compiler/formal bridge artifact
+- [x] first conformance tests for direct changes, branches, bounded repetition and ranged amounts
+- [ ] define a Lean-checkable stable evidence schema for production Change IR effects
+- [ ] implement a small verified checker or mechanized translation-validation boundary
+- [ ] extend bridge coverage to non-recursive recipe calls and parameter substitution
 - [ ] formalize the ranged expression language in Lean
 - [ ] prove interval-analysis soundness for that fragment
-- [ ] formalize non-recursive recipes/calls and parameter substitution
-- [ ] prove analyzer-to-formal correspondence for a useful executable subset
-- [ ] extend end-to-end Change Capability Soundness across that compiler boundary
+- [ ] connect production runtime traces to formal `Executes` traces for a restricted core
+- [ ] derive end-to-end production Change Capability Soundness for that restricted core
 - [ ] richer path-sensitive and call-graph analysis
 - [ ] recursive fixed-point analysis where it can be made sound
 - [ ] richer `why` provenance graph and source navigation
@@ -77,7 +92,7 @@ Still open in the 0.2/0.3 line:
 
 - [ ] typed core suitable for direct lowering
 - [ ] direct Change IR-to-WebAssembly lowering
-- [ ] preserve semantic contract evidence across lowering
+- [ ] preserve semantic contract/formal evidence across lowering
 - [ ] WASI console runtime
 - [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner executing lowered code
@@ -125,7 +140,8 @@ Before a high-venue submission:
 - [x] machine-checked factorization and Mutation Transparency
 - [x] machine-checked Change Signature Soundness for a structured formal core
 - [x] machine-checked end-to-end capability containment for that formal core
-- [ ] production compiler/formal correspondence or verified-checker boundary
+- [x] first production/formal translation-validation artifact and CI boundary
+- [ ] machine-checked production correspondence or verified-checker boundary for a useful subset
 - [ ] interval-analyzer soundness proof if magnitude-aware contracts remain central
 - [ ] direct compiled execution
 - [ ] benchmark suite and semantic-security case studies
@@ -142,4 +158,5 @@ Before a high-venue submission:
 6. Bootstrap Wasm must not be described as direct Wasm lowering.
 7. Semantic capability/range analysis must fail conservatively when it cannot prove safety.
 8. `why` must distinguish recorded provenance from stronger causal claims.
-9. Formal-core theorems must not be presented as production-compiler verification until a correspondence boundary is proved.
+9. Formal-core theorems must not be presented as production-compiler verification until a mechanized correspondence/checker boundary exists.
+10. Formal bridge support must be explicit: unsupported code is never silently labeled verified.
