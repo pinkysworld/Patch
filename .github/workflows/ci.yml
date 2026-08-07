@@ -24,13 +24,15 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - name: Syntax check
-        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/compiler.js && node --check web/playground.js
-      - name: Language tests
+        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/compiler.js && node --check src/wasm.js && node --check src/designer.js && node --check web/playground.js
+      - name: Language, compiler, designer and Wasm tests
         run: npm test
       - name: Example smoke tests
         run: npm run check
       - name: Portable application build
         run: npm run build:example
+      - name: WebAssembly application build
+        run: npm run build:wasm
       - name: Build public Patch Studio site
         run: npm run build:site
       - name: Validate public Patch Studio site
