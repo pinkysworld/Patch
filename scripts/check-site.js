@@ -16,6 +16,7 @@ const required = [
   '_site/src/change.js',
   '_site/src/change-analysis.js',
   '_site/src/range-analysis.js',
+  '_site/src/formal-bridge.js',
   '_site/src/compiler.js',
   '_site/src/bundle.js',
   '_site/src/wasm.js',
@@ -45,9 +46,17 @@ for (const mod of ['./src/interpreter.js', './src/compiler.js', './src/bundle.js
 }
 if (!playground.includes('formatChangeAnalysis')) throw new Error('Generated Patch Studio does not expose semantic change contracts.');
 
+const compiler = fs.readFileSync(path.join(root, '_site/src/compiler.js'), 'utf8');
+if (!compiler.includes("'./formal-bridge.js'")) throw new Error('Generated compiler does not include the production-to-formal bridge.');
+
+const bridge = fs.readFileSync(path.join(root, '_site/src/formal-bridge.js'), 'utf8');
+for (const phrase of ['patch-formal-bridge', 'signatureMatchesProduction', 'buildFormalBridge']) {
+  if (!bridge.includes(phrase)) throw new Error(`Generated formal bridge is missing ${phrase}.`);
+}
+
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
+for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-bridge.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
 
