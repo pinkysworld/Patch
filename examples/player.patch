@@ -1,0 +1,11 @@
+create thing player:
+  name = "Sam"
+  score = 0
+  lives = 3
+
+change player:
+  add 10 to score
+  remove 1 from lives
+  set name = "Alex"
+
+show player
