@@ -72,7 +72,7 @@ test('direct Wasm supports if inside repeat using the count local', async () => 
   assert.equal(direct.state.hits, 2);
 });
 
-test('direct Wasm rejects dynamic repeat and non-boolean conditions explicitly', () => {
+test('direct Wasm rejects dynamic repeat, non-boolean conditions and nested creation explicitly', () => {
   const dynamicRepeat = `create number times = 3\ncreate number score = 0\nrepeat times:\n  change score:\n    add 1`;
   assert.throws(
     () => compileToDirectWasm(dynamicRepeat, { kind: 'console' }),
@@ -83,6 +83,12 @@ test('direct Wasm rejects dynamic repeat and non-boolean conditions explicitly',
   assert.throws(
     () => compileToDirectWasm(numericCondition, { kind: 'console' }),
     err => err instanceof DirectWasmUnsupportedError && /must be a boolean or comparison/.test(err.message)
+  );
+
+  const nestedCreate = `create number score = 1\nif score > 0:\n  create number score = 2`;
+  assert.throws(
+    () => compileToDirectWasm(nestedCreate, { kind: 'console' }),
+    err => err instanceof DirectWasmUnsupportedError && /only supported at top level/.test(err.message)
   );
 });
 
