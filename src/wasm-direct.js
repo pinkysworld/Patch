@@ -23,7 +23,8 @@ export function compileToDirectWasm(source, options = {}) {
     defined: new Set(),
     locals: new Map(),
     allocator: { nextLocal: 0 },
-    instructions: []
+    instructions: [],
+    allowCreate: true
   };
 
   lowerBlock(compiled.ir.instructions, ctx);
@@ -105,7 +106,8 @@ function childContext(ctx, instructions, locals = ctx.locals) {
     defined: ctx.defined,
     locals,
     allocator: ctx.allocator,
-    instructions
+    instructions,
+    allowCreate: false
   };
 }
 
@@ -119,6 +121,9 @@ function lowerInstruction(instruction, ctx) {
       return;
 
     case 'CREATE': {
+      if (!ctx.allowCreate) {
+        throw unsupported(`create '${instruction.name}' at line ${instruction.line ?? '?'} is only supported at top level by the direct backend`);
+      }
       if (instruction.valueType !== 'number') {
         throw unsupported(`only numeric create is directly lowered, got ${instruction.valueType}`);
       }
@@ -223,7 +228,7 @@ function literalRepeatCount(source, line) {
 }
 
 function requireGlobal(name, globals, line) {
-  if (!globals.has(name)) throw unsupported(`numeric binding '${name}' at line ${line ?? '?'} has no direct Wasm global; nested create is not supported yet`);
+  if (!globals.has(name)) throw unsupported(`numeric binding '${name}' at line ${line ?? '?'} has no direct Wasm global`);
   return globals.get(name);
 }
 
