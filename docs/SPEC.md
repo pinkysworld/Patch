@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.6 development**
+Status: **0.2.0-beta.7 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -71,7 +71,7 @@ reward(player)
 
 Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively by the production analyzer.
 
-The Lean formal core machine-checks signature soundness for sequencing, branch choice and bounded repetition. The production/formal bridge covers a conservative subset of the real language. This bridge and the beta-6 certificate system are compiler tooling, not new beginner syntax.
+The Lean formal core machine-checks signature soundness for sequencing, branch choice and bounded repetition. The production/formal bridge covers a conservative subset of the real language. The beta-7 evidence/certificate system is compiler tooling, not new beginner syntax.
 
 ## Change Capabilities
 
@@ -115,25 +115,74 @@ patch formal program.patch
 
 Current bridge coverage includes direct supported semantic changes, sequence, `if` alternatives, literal bounded `repeat`, and supported numeric range amounts. Recipe calls, dynamic repetition, undo/redo, return control flow, and GUI/event execution are currently reported as outside this bridge subset.
 
-## Verified semantic policy certificates
+## Verified semantic evidence certificates
 
-Beta 6 adds a certificate command for protected recipes inside the formal bridge subset:
+Beta 7 supports certificate generation for protected recipes inside the formal bridge subset:
 
 ```bash
 patch certify program.patch --out Program.patchcert.lean
 ```
 
-The generated Lean artifact contains the bridge-produced formal statement, semantic policy, Patch IR version and source SHA-256. It is checked against `formal/PatchChecker.lean`.
+The generated Lean artifact contains:
 
-The verified checker proves that:
+- SHA-256 of the exact Patch source bytes;
+- Patch IR version and evidence-schema version;
+- proof-free `EvidenceStmt` control-flow evidence;
+- a separately emitted production Change Signature claim as `EvidenceEffect` values;
+- the semantic Change Capability policy.
+
+The production artifact does **not** directly supply a trusted Lean `CoreStmt`. `formal/PatchEvidence.lean` validates raw evidence intervals and decodes the evidence to `Option CoreStmt`.
+
+Lean then checks:
 
 ```text
-checkProtected(stmt, policy) = true
+checkEvidenceSignature(evidence, productionClaim) = true
 ```
 
-implies the formal relational policy judgment and, together with Change Signature Soundness, that any modeled execution of that statement cannot emit a semantic effect outside the policy.
+and proves that for a decoded statement:
 
-This guarantee applies to the **translated formal statement**. Beta 6 does not yet prove the JavaScript source-to-formal translation correct. Certificate generation therefore refuses protected recipes outside the bridge subset, and documentation must not present a generated certificate as full compiler verification.
+```text
+decodeEvidenceStmt(evidence) = some stmt
+------------------------------------------------
+encodeSignature(inferSignature(stmt)) = productionClaim
+```
+
+when that executable check succeeds.
+
+Lean also checks:
+
+```text
+checkEvidenceProtected(evidence, policy) = true
+```
+
+and composes it with formal Change Signature Soundness so that modeled executions of the decoded core cannot emit semantic effects outside the policy.
+
+### Important boundary
+
+This is **not full compiler verification**.
+
+Still trusted/unproved:
+
+```text
+Patch source / production AST
+  -> proof-free evidence extraction
+  -> production signature claim extraction
+  -> policy extraction
+```
+
+Lean-checked after that point:
+
+```text
+proof-free evidence
+  -> raw interval validation
+  -> CoreStmt decoding
+  -> formal signature inference
+  -> production-signature correspondence
+  -> semantic policy checking
+  -> runtime containment for formal executions
+```
+
+Certificate generation refuses protected recipes outside the bridge/evidence subset. Documentation must not present a generated certificate as proof that the entire JavaScript compiler is correct.
 
 ## Ranged recipe parameters
 
@@ -162,7 +211,7 @@ make reward(player, bonus number 0..5):
 
 The current interval analyzer supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
 
-Calls to ranged recipes are guarded at runtime. The beta-6 Lean checker independently verifies interval **containment once the interval is in the certificate**, but production interval-analysis soundness itself is not yet mechanized.
+Calls to ranged recipes are guarded at runtime. Beta 7's Lean evidence decoder verifies that an **emitted raw interval is internally ordered**, and the policy checker verifies containment after decoding. Production interval-analysis soundness itself is not yet mechanized.
 
 ## Causal provenance and `why`
 
@@ -191,7 +240,7 @@ when add_button clicked:
     add 1
 ```
 
-Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers. GUI/event execution is not yet in the formal certificate subset.
+Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers. GUI/event execution is not yet in the formal evidence subset.
 
 ## Named changes, undo, preview, history
 
@@ -259,4 +308,4 @@ Projects are `console` or `window` applications. Both compile through the same C
 
 ## Error design
 
-Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe. Formal bridge and certificate coverage follow the same principle: code outside the correspondence subset is reported as unsupported, never silently treated as verified.
+Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe. Formal bridge and evidence-certificate coverage follow the same principle: code outside the correspondence subset is reported as unsupported, never silently treated as verified.

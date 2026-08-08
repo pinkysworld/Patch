@@ -11,3 +11,6 @@ lean_lib PatchSignature where
 
 lean_lib PatchChecker where
   srcDir := "."
+
+lean_lib PatchEvidence where
+  srcDir := "."

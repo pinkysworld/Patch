@@ -47,15 +47,14 @@
 
 ### beta.5 production/formal bridge
 
-- [x] independent production-AST -> Lean-like `CoreStmt` bridge for a conservative subset
+- [x] independent production-AST -> Lean-like formal bridge for a conservative subset
 - [x] independent formal-style signature reconstruction
 - [x] supported-case comparison against production Change Signatures
 - [x] compiler failure on supported signature mismatches
 - [x] explicit unsupported reasons rather than false verification claims
 - [x] `formalBridge` evidence embedded in Change IR, `.patchapp`, and bootstrap Wasm payloads
 - [x] `patch formal program.patch` coverage report
-- [x] dedicated formal-bridge tests
-- [x] formal bridge smoke check on Windows/macOS/Linux CI
+- [x] dedicated formal-bridge tests and CI smoke checks
 
 ### beta.6 verified checker / certificates
 
@@ -68,8 +67,23 @@
 - [x] production-generated certificate compiled by Lean in formal CI
 - [x] explicit `lake build PatchFormal PatchSignature PatchChecker` CI gate
 - [x] repair latent Lean 4.30 compatibility issues exposed by the stronger CI gate
-- [x] syntax-aware unfinished-proof gate instead of matching prose comments
-- [x] beta.6 research/docs/site/paper synchronization
+- [x] syntax-aware unfinished-proof gate
+
+### beta.7 verified production evidence correspondence
+
+- [x] proof-free `EvidenceAmount`, `EvidenceEffect`, and `EvidenceStmt` Lean schema
+- [x] Lean validation of raw interval ordering
+- [x] Lean decoding from proof-free evidence to `CoreStmt`
+- [x] separately emitted production Change Signature claim in generated certificates
+- [x] canonical semantic-effect deduplication on the Lean side
+- [x] executable `checkEvidenceSignature`
+- [x] machine-checked `checkedEvidenceSignatureCorresponds` theorem
+- [x] evidence-level `checkEvidenceProtected`
+- [x] machine-checked `checkedEvidenceExecutionCannotEscape` theorem
+- [x] generated certificates no longer directly trust a producer-created `CoreStmt`
+- [x] formal CI explicitly builds `PatchEvidence` and compiles generated evidence certificates
+- [x] Windows/macOS/Linux certificate tests for the new evidence format
+- [x] beta.7 research/docs/site/paper synchronization
 
 Still open in the 0.2/0.3 line:
 
@@ -85,16 +99,19 @@ Still open in the 0.2/0.3 line:
 ## 0.3 research hardening
 
 - [x] first machine-readable compiler/formal bridge artifact
-- [x] first conformance tests for direct changes, branches, bounded repetition and ranged amounts
+- [x] conformance tests for direct changes, branches, bounded repetition and ranged amounts
 - [x] small Lean-verified semantic policy checker
 - [x] generated Lean certificate path from production Patch source
-- [ ] define/prove a stable source/Change-IR-to-`CoreStmt` correspondence relation
-- [ ] extend bridge/certificate coverage to non-recursive recipe calls and parameter substitution
+- [x] stable proof-free semantic evidence schema
+- [x] Lean-validated evidence -> `CoreStmt` decoding
+- [x] machine-checked evidence/formal-signature correspondence
+- [ ] formalize a supported Patch source/AST fragment and prove extraction to `EvidenceStmt`
+- [ ] extend bridge/evidence coverage to non-recursive recipe calls and parameter substitution
 - [ ] formalize the ranged expression language in Lean
 - [ ] prove production interval-analysis soundness for that fragment
 - [ ] connect production runtime traces to formal `Executes` traces for a restricted core
 - [ ] derive stronger source-level end-to-end Change Capability Soundness
-- [ ] package checker evidence in a stable machine-readable certificate/container format
+- [ ] package evidence in a stable machine-readable certificate/container format beyond generated Lean source
 - [ ] richer path-sensitive and call-graph analysis
 - [ ] recursive fixed-point analysis where it can be made sound
 - [ ] richer `why` provenance graph and source navigation
@@ -154,13 +171,15 @@ Before a high-venue submission:
 - [x] machine-checked Change Signature Soundness for a structured formal core
 - [x] machine-checked end-to-end capability containment for that formal core
 - [x] production/formal translation-validation artifact and CI boundary
-- [x] Lean-verified semantic policy checker over translated evidence
+- [x] Lean-verified semantic policy checker
 - [x] production-generated Lean certificate smoke path
-- [ ] machine-checked source/IR-to-formal correspondence for a useful executable subset
+- [x] proof-free evidence validated/decoded by Lean
+- [x] machine-checked evidence/formal-signature correspondence
+- [ ] machine-checked source/AST-to-evidence extraction for a useful executable subset
 - [ ] interval-analyzer soundness proof if magnitude-aware contracts remain central
 - [ ] direct compiled execution
 - [ ] benchmark suite and semantic-security case studies
-- [ ] certificate/checker overhead evaluation
+- [ ] evidence/certificate/checker overhead evaluation
 - [ ] novice study with ethics/consent if retained
 - [ ] reproducibility bundle
 
@@ -174,5 +193,5 @@ Before a high-venue submission:
 6. Bootstrap Wasm must not be described as direct Wasm lowering.
 7. Semantic capability/range analysis must fail conservatively when it cannot prove safety.
 8. `why` must distinguish recorded provenance from stronger causal claims.
-9. A successful verified-checker result applies to the translated formal evidence; it must not be presented as full source-level compiler verification until correspondence is proved.
-10. Formal bridge/certificate support must be explicit: unsupported code is never silently labeled verified.
+9. Evidence/formal correspondence is machine checked only after proof-free evidence extraction; do not present the JavaScript source/AST-to-evidence step as verified until its correspondence theorem exists.
+10. Formal bridge/evidence certificate support must be explicit: unsupported code is never silently labeled verified.
