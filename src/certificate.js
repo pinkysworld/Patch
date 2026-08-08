@@ -4,7 +4,8 @@ import { compile } from './compiler.js';
 const CHECKER_KINDS = new Set(['increase', 'decrease', 'set', 'clear']);
 const SOURCE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
 const EVIDENCE_SCHEMA_VERSION = '0.1';
-const SOURCE_SCHEMA_VERSION = '0.1';
+const SOURCE_SCHEMA_VERSION = '0.2';
+const RANGE_SCHEMA_VERSION = '0.1';
 
 export function generateLeanCertificate(source, options = {}) {
   const { ir } = compile(source, options);
@@ -19,6 +20,7 @@ export function generateLeanCertificate(source, options = {}) {
 
   const blocks = [];
   const certified = [];
+  let certifiedRangeClaims = 0;
 
   for (const name of protectedNames) {
     const entry = bridge[name];
@@ -32,7 +34,7 @@ export function generateLeanCertificate(source, options = {}) {
     if (!sourceEntry) throw new Error(`No formal source-core entry exists for protected recipe '${name}'.`);
     if (!sourceEntry.supported) {
       const why = sourceEntry.reasons?.length ? sourceEntry.reasons.join('; ') : 'formal source-core mismatch';
-      throw new Error(`Protected recipe '${name}' is outside the formal source-core subset: ${why}`);
+      throw new Error(`Protected recipe '${name}' is outside the formal source/range subset: ${why}`);
     }
 
     const rules = policies[name] ?? [];
@@ -59,6 +61,21 @@ export function generateLeanCertificate(source, options = {}) {
     blocks.push(`def ${evidenceName} : EvidenceStmt :=\n${indent(leanEvidenceCore(entry.core), 2)}`);
     blocks.push(`def ${claimName} : List EvidenceEffect :=\n${indent(leanList(productionClaim.map(leanEvidenceEffect)), 2)}`);
     blocks.push(`def ${policyName} : List Rule :=\n${indent(leanList(rules.map(leanRule)), 2)}`);
+
+    for (const [index, rangeClaim] of (sourceEntry.rangeClaims ?? []).entries()) {
+      const prefix = `cert_${id}_range_${index + 1}`;
+      const exprName = `${prefix}_expr`;
+      const envName = `${prefix}_env`;
+      const rangeName = `${prefix}_inferred`;
+      const checkName = `${prefix}_analysis_checked`;
+      blocks.push(`/-- Formal range claim for source line ${rangeClaim.line}, expression ${leanString(rangeClaim.expression)}. -/\ndef ${exprName} : RangeExpr :=\n${indent(leanRangeExpr(rangeClaim.expr), 2)}`);
+      blocks.push(`def ${envName} : RangeEnv :=\n${indent(leanRangeEnv(rangeClaim.bindings), 2)}`);
+      blocks.push(`def ${rangeName} : Interval := ${leanInterval(rangeClaim.range.min, rangeClaim.range.max)}`);
+      blocks.push(`theorem ${checkName} :\n    analyzeRange ${exprName} ${envName} = some ${rangeName} := by\n  native_decide`);
+      blocks.push(`theorem ${prefix}_sound\n    {values : IntEnv} {value : Int}\n    (hEnv : EnvRespects ${envName} values)\n    (hEval : evalRangeExpr ${exprName} values = some value) :\n    InRange value ${rangeName} := by\n  exact rangeAnalysisSound hEnv ${checkName} hEval`);
+      certifiedRangeClaims++;
+    }
+
     blocks.push(`theorem ${sourceEvidenceCheckName} :\n    checkSourceEvidence ${sourceName} ${evidenceName} = true := by\n  native_decide`);
     blocks.push(`theorem ${signatureCheckName} :\n    checkSourceSignature ${sourceName} ${claimName} = true := by\n  native_decide`);
     blocks.push(`theorem cert_${id}_source_signature_corresponds :\n    ∃ evidence stmt,\n      lowerSourceStmt ${sourceName} = some evidence ∧\n      decodeEvidenceStmt evidence = some stmt ∧\n      encodeSignature (inferSignature stmt) = ${claimName} := by\n  exact checkSourceSignature_sound ${signatureCheckName}`);
@@ -68,7 +85,7 @@ export function generateLeanCertificate(source, options = {}) {
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchSource\n\nopen PatchFormal\n\nnamespace PatchGeneratedCertificate\n\n/-- Generated from production Patch source. The hash binds this certificate to\n    the exact source bytes. Lean independently normalizes the formal source core,\n    checks its lowering to proof-free evidence, reconstructs the formal Change\n    Signature, and validates the semantic policy. The remaining trust boundary is\n    JavaScript source/AST extraction into SourceStmt plus production range claims. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\n\ndef patchIrVersion : String := ${leanString(ir.version)}\n\ndef sourceSchemaVersion : String := ${leanString(SOURCE_SCHEMA_VERSION)}\n\ndef evidenceSchemaVersion : String := ${leanString(EVIDENCE_SCHEMA_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedCertificate\n`;
+  const lean = `import PatchRange\n\nopen PatchFormal\n\nnamespace PatchGeneratedCertificate\n\n/-- Generated from production Patch source. The hash binds this certificate to\n    the exact source bytes. Lean independently checks the beta.9 formal integer\n    range fragment, normalizes the formal source core, checks its lowering to\n    proof-free evidence, reconstructs the formal Change Signature, and validates\n    the semantic policy. The remaining trust boundary includes JavaScript source/\n    AST extraction into RangeExpr/SourceStmt and runtime-to-formal correspondence. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\n\ndef patchIrVersion : String := ${leanString(ir.version)}\n\ndef sourceSchemaVersion : String := ${leanString(SOURCE_SCHEMA_VERSION)}\n\ndef evidenceSchemaVersion : String := ${leanString(EVIDENCE_SCHEMA_VERSION)}\n\ndef rangeSchemaVersion : String := ${leanString(RANGE_SCHEMA_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedCertificate\n`;
 
   return {
     lean,
@@ -76,10 +93,13 @@ export function generateLeanCertificate(source, options = {}) {
     irVersion: ir.version,
     sourceSchemaVersion: SOURCE_SCHEMA_VERSION,
     evidenceSchemaVersion: EVIDENCE_SCHEMA_VERSION,
+    rangeSchemaVersion: RANGE_SCHEMA_VERSION,
     certified,
+    certifiedRangeClaims,
     checker: 'PatchSource.checkSourceProtected',
     sourceCorrespondence: 'PatchSource.checkSourceEvidence_sound',
     signatureCorrespondence: 'PatchSource.checkSourceSignature_sound',
+    rangeSoundness: 'PatchRange.rangeAnalysisSound',
     theorem: 'PatchSource.checkedSourceExecutionCannotEscape'
   };
 }
@@ -139,6 +159,29 @@ function leanEvidenceCore(core) {
     case 'repeat': return `EvidenceStmt.repeat ${core.count}\n${indent(`(${leanEvidenceCore(core.body)})`, 2)}`;
     default: throw new Error(`Cannot encode formal bridge node '${core.kind}' in a Lean evidence certificate.`);
   }
+}
+
+function leanRangeExpr(expr) {
+  switch (expr.kind) {
+    case 'lit': return `RangeExpr.lit ${leanInt(expr.value)}`;
+    case 'var': return `RangeExpr.var ${leanString(expr.name)}`;
+    case 'add': return `RangeExpr.add\n${indent(`(${leanRangeExpr(expr.left)})`, 2)}\n${indent(`(${leanRangeExpr(expr.right)})`, 2)}`;
+    case 'sub': return `RangeExpr.sub\n${indent(`(${leanRangeExpr(expr.left)})`, 2)}\n${indent(`(${leanRangeExpr(expr.right)})`, 2)}`;
+    case 'neg': return `RangeExpr.neg (${leanRangeExpr(expr.expr)})`;
+    case 'scale': return `RangeExpr.scale ${expr.factor}\n${indent(`(${leanRangeExpr(expr.expr)})`, 2)}`;
+    default: throw new Error(`Cannot encode formal range expression '${expr.kind}'.`);
+  }
+}
+
+function leanRangeEnv(bindings) {
+  const entries = Object.entries(bindings ?? {}).sort(([a], [b]) => a.localeCompare(b));
+  if (!entries.length) return 'fun _ => none';
+  const lines = ['fun name =>'];
+  entries.forEach(([name, range], index) => {
+    lines.push(`  ${index === 0 ? 'if' : 'else if'} name = ${leanString(name)} then some ${leanInterval(range.min, range.max)}`);
+  });
+  lines.push('  else none');
+  return lines.join('\n');
 }
 
 function leanEvidenceEffect(effect) {
