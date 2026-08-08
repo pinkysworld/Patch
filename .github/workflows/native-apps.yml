@@ -25,6 +25,14 @@ on:
           - macos
           - linux
         default: macos
+      kind:
+        description: Patch application type
+        required: true
+        type: choice
+        options:
+          - console
+          - window
+        default: console
       request_id:
         description: Studio request identifier
         required: false
@@ -32,6 +40,7 @@ on:
   pull_request:
     paths:
       - scripts/build-native-sea.js
+      - scripts/build-native-window.js
       - src/native-app.js
       - src/webapp.js
       - src/wasm-direct.js
@@ -41,10 +50,12 @@ on:
       - web/playground.js
       - .github/workflows/native-apps.yml
       - examples/direct-wasm-recipes.patch
+      - examples/counter-window.patch
   push:
     branches: [main]
     paths:
       - scripts/build-native-sea.js
+      - scripts/build-native-window.js
       - src/native-app.js
       - src/webapp.js
       - src/wasm-direct.js
@@ -60,7 +71,7 @@ permissions:
 jobs:
   smoke-native:
     if: github.event_name != 'workflow_dispatch'
-    name: ${{ matrix.os }} native smoke
+    name: ${{ matrix.os }} console smoke
     strategy:
       fail-fast: false
       matrix:
@@ -76,7 +87,7 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Build native Patch application
+      - name: Build native Patch console application
         shell: bash
         run: |
           mkdir -p dist
@@ -94,15 +105,63 @@ jobs:
         shell: pwsh
         run: "& ./dist/$env:PATCH_APP_NAME.exe"
 
+  smoke-window:
+    if: github.event_name != 'workflow_dispatch'
+    name: ${{ matrix.os }} window smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      PATCH_APP_NAME: PatchWindowSmoke
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Check Patch window source
+        shell: bash
+        run: node src/cli.js check examples/counter-window.patch
+      - name: Build standalone Patch window application
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-window.js examples/counter-window.patch "$PATCH_APP_NAME" dist
+      - name: Smoke check window application on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          APP=$(find dist -maxdepth 2 -type f -name "$PATCH_APP_NAME" -perm -111 | head -1)
+          test -n "$APP"
+          xvfb-run -a "$APP" --no-sandbox --patch-smoke
+      - name: Smoke check window application on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          APP=$(find dist -type f -path "*.app/Contents/MacOS/$PATCH_APP_NAME" | head -1)
+          test -n "$APP"
+          "$APP" --patch-smoke
+      - name: Smoke check window application on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $app = Get-ChildItem -Path dist -Recurse -Filter "$env:PATCH_APP_NAME.exe" | Select-Object -First 1
+          if (-not $app) { throw 'Packaged Patch window executable was not found.' }
+          & $app.FullName --patch-smoke
+
   studio-windows:
     if: github.event_name == 'workflow_dispatch' && inputs.platform == 'windows'
-    name: Studio Windows build
+    name: Studio Windows ${{ inputs.kind }} build
     runs-on: windows-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     env:
       PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
       PATCH_SOURCE_PATH: ${{ inputs.source_path }}
       PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_KIND: ${{ inputs.kind }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -114,17 +173,43 @@ jobs:
         shell: bash
         run: |
           node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
-      - name: Build Windows executable
+      - name: Check Patch source
+        shell: bash
+        run: node src/cli.js check studio.patch
+      - name: Build Windows console executable
+        if: inputs.kind == 'console'
         shell: bash
         run: |
           mkdir -p dist
           node scripts/build-native-sea.js studio.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
-      - name: Smoke run Windows executable
+      - name: Build Windows GUI application
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-window.js studio.patch "$PATCH_SAFE_NAME" dist
+      - name: Smoke run Windows console executable
+        if: inputs.kind == 'console'
         shell: pwsh
         run: "& ./dist/$env:PATCH_SAFE_NAME.exe"
-      - name: Package Windows application
+      - name: Smoke run Windows GUI application
+        if: inputs.kind == 'window'
+        shell: pwsh
+        run: |
+          $app = Get-ChildItem -Path dist -Recurse -Filter "$env:PATCH_SAFE_NAME.exe" | Select-Object -First 1
+          if (-not $app) { throw 'Packaged Patch window executable was not found.' }
+          & $app.FullName --patch-smoke
+      - name: Package Windows console application
+        if: inputs.kind == 'console'
         shell: pwsh
         run: Compress-Archive -Path "dist/$env:PATCH_SAFE_NAME.exe" -DestinationPath "dist/$env:PATCH_SAFE_NAME-windows.zip" -Force
+      - name: Package Windows GUI application
+        if: inputs.kind == 'window'
+        shell: pwsh
+        run: |
+          $folder = Get-ChildItem -Path dist -Directory -Filter "$env:PATCH_SAFE_NAME-win32-*" | Select-Object -First 1
+          if (-not $folder) { throw 'Packaged Patch Windows GUI folder was not found.' }
+          Compress-Archive -Path $folder.FullName -DestinationPath "dist/$env:PATCH_SAFE_NAME-windows.zip" -Force
       - uses: actions/upload-artifact@v4
         with:
           name: patch-windows-${{ inputs.request_id }}
@@ -133,13 +218,14 @@ jobs:
 
   studio-macos:
     if: github.event_name == 'workflow_dispatch' && inputs.platform == 'macos'
-    name: Studio macOS build
+    name: Studio macOS ${{ inputs.kind }} build
     runs-on: macos-latest
-    timeout-minutes: 12
+    timeout-minutes: 30
     env:
       PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
       PATCH_SOURCE_PATH: ${{ inputs.source_path }}
       PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_KIND: ${{ inputs.kind }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -151,17 +237,43 @@ jobs:
         shell: bash
         run: |
           node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
-      - name: Build macOS application bundle
+      - name: Check Patch source
+        shell: bash
+        run: node src/cli.js check studio.patch
+      - name: Build macOS console application bundle
+        if: inputs.kind == 'console'
         shell: bash
         run: |
           mkdir -p dist
           node scripts/build-native-sea.js studio.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
-      - name: Smoke run macOS application
+      - name: Build macOS GUI application bundle
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-window.js studio.patch "$PATCH_SAFE_NAME" dist
+      - name: Smoke run macOS console application
+        if: inputs.kind == 'console'
         shell: bash
         run: ./dist/$PATCH_SAFE_NAME.app/Contents/MacOS/$PATCH_SAFE_NAME
-      - name: Package macOS application
+      - name: Smoke run macOS GUI application
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          APP=$(find dist -type f -path "*.app/Contents/MacOS/$PATCH_SAFE_NAME" | head -1)
+          test -n "$APP"
+          "$APP" --patch-smoke
+      - name: Package macOS console application
+        if: inputs.kind == 'console'
         shell: bash
         run: ditto -c -k --sequesterRsrc --keepParent "dist/$PATCH_SAFE_NAME.app" "dist/$PATCH_SAFE_NAME-macos.zip"
+      - name: Package macOS GUI application
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          APP=$(find dist -type d -name "$PATCH_SAFE_NAME.app" | head -1)
+          test -n "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "dist/$PATCH_SAFE_NAME-macos.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: patch-macos-${{ inputs.request_id }}
@@ -170,13 +282,14 @@ jobs:
 
   studio-linux:
     if: github.event_name == 'workflow_dispatch' && inputs.platform == 'linux'
-    name: Studio Linux build
+    name: Studio Linux ${{ inputs.kind }} build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     env:
       PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
       PATCH_SOURCE_PATH: ${{ inputs.source_path }}
       PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_KIND: ${{ inputs.kind }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -188,17 +301,43 @@ jobs:
         shell: bash
         run: |
           node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
-      - name: Build Linux executable
+      - name: Check Patch source
+        shell: bash
+        run: node src/cli.js check studio.patch
+      - name: Build Linux console executable
+        if: inputs.kind == 'console'
         shell: bash
         run: |
           mkdir -p dist
           node scripts/build-native-sea.js studio.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
-      - name: Smoke run Linux executable
+      - name: Build Linux GUI application
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-window.js studio.patch "$PATCH_SAFE_NAME" dist
+      - name: Smoke run Linux console executable
+        if: inputs.kind == 'console'
         shell: bash
         run: ./dist/$PATCH_SAFE_NAME
-      - name: Package Linux application
+      - name: Smoke run Linux GUI application
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          APP=$(find dist -maxdepth 2 -type f -name "$PATCH_SAFE_NAME" -perm -111 | head -1)
+          test -n "$APP"
+          xvfb-run -a "$APP" --no-sandbox --patch-smoke
+      - name: Package Linux console application
+        if: inputs.kind == 'console'
         shell: bash
         run: tar -czf "dist/$PATCH_SAFE_NAME-linux.tar.gz" -C dist "$PATCH_SAFE_NAME"
+      - name: Package Linux GUI application
+        if: inputs.kind == 'window'
+        shell: bash
+        run: |
+          APP_DIR=$(find dist -maxdepth 1 -type d -name "$PATCH_SAFE_NAME-linux-*" | head -1)
+          test -n "$APP_DIR"
+          tar -czf "dist/$PATCH_SAFE_NAME-linux.tar.gz" -C dist "$(basename "$APP_DIR")"
       - uses: actions/upload-artifact@v4
         with:
           name: patch-linux-${{ inputs.request_id }}

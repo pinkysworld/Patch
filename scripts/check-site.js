@@ -40,7 +40,7 @@ for (const needle of ['./style.css', './manifest.webmanifest', './native-build.j
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind', 'nativeBuildPanel', 'nativeBuildToken', 'nativeBuildStatus']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['0.2 beta.16', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Windows App', 'macOS App', 'Linux App', 'GitHub Actions', 'Roadmap']) {
+for (const phrase of ['0.2 beta.17', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Windows App', 'macOS App', 'Linux App', 'Project Type', 'Console and GUI packages', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
 }
 for (const option of ['value="web"', 'value="native-windows"', 'value="native-macos"', 'value="native-linux"', 'value="wasm-direct"', 'value="wasm-bootstrap"']) {
@@ -58,7 +58,7 @@ for (const phrase of ['buildStandaloneWebApp', 'compileToDirectWasm', 'wasm-dire
 
 const nativeBuild = fs.readFileSync(path.join(root, '_site/native-build.js'), 'utf8');
 if (nativeBuild.includes("'../src/")) throw new Error('Generated native build module still points outside the deployed site.');
-for (const phrase of ['./src/wasm-direct.js', 'native-windows', 'native-macos', 'native-linux', 'workflow_dispatch', 'source_b64', 'actions/workflows', 'downloadArtifact', 'Actions read/write']) {
+for (const phrase of ['./src/compiler.js', './src/wasm-direct.js', 'native-windows', 'native-macos', 'native-linux', 'workflow_dispatch', 'source_b64', 'kind', 'projectKind', 'Window / GUI', 'actions/workflows', 'downloadArtifact', 'Actions read/write']) {
   if (!nativeBuild.includes(phrase)) throw new Error(`Generated Studio native builder is missing ${phrase}.`);
 }
 
@@ -92,7 +92,7 @@ for (const phrase of ['buildStandaloneWebApp', 'Standalone single-file Patch Web
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-if (!sw.includes("patch-studio-0.2-beta.16")) throw new Error('Generated service worker cache is not on beta.16.');
+if (!sw.includes("patch-studio-0.2-beta.17")) throw new Error('Generated service worker cache is not on beta.17.');
 for (const cached of ["'./native-build.js'", "'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/wasm-direct.js'", "'./src/webapp.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
