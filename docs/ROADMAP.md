@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.23**
+Current development beta: **0.2.0-beta.24**
 
 Checked items are implemented and must pass the final exact-head pull-request gates before merge. Unchecked items are not presented as finished features.
 
@@ -44,7 +44,7 @@ Checked items are implemented and must pass the final exact-head pull-request ga
 - [x] multi-operation Change semantics aligned with `PatchInterpreter`
 - [x] shared Window runtime-support preflight
 - [x] duplicate/missing control-event validation
-- [x] button `clicked` as current portable event subset
+- [x] button `clicked` as first portable event subset
 - [x] `PatchRuntimeCapability.lean`
 - [x] `allowsRefinedEffect`, `traceRefinesPreservesPolicy`
 - [x] `checkedConcreteRuntimeCannotEscape`
@@ -61,29 +61,47 @@ Compiler/translation-validation:
 - [x] guard extraction tamper tests
 - [x] guard support remains separate from existing static SourceStmt support
 
-Runtime evidence:
+Runtime evidence / Lean:
 - [x] RuntimePath witness schema 0.2 records concrete protected-recipe parameter environments
 - [x] runtime certificate requires independent guard validation
 - [x] generated certificates contain SourceStmt, GuardTree, IntEnv, observed effects, RuntimePath and policy
-- [x] safe-integer guard parameter boundary enforced explicitly
-
-Lean:
-- [x] `PatchGuarded.lean`
-- [x] `GuardExpr` + concrete `evalGuard`
-- [x] `GuardTree` + `GuardShape`
-- [x] executable `checkGuardShape` + soundness theorem
-- [x] `GuardPathValid`: Then requires guard=true; Else requires guard=false
-- [x] executable `checkGuardPath` + soundness theorem
+- [x] `PatchGuarded.lean`, `GuardExpr`, `evalGuard`, `GuardTree`, `GuardShape`, `GuardPathValid`
+- [x] Then/Else witnesses checked against concrete guard truth
 - [x] `checkGuardedSourceRuntimeEvidence_sound`
 - [x] `checkedGuardedConcreteRuntimeCannotEscape`
 - [x] generated guard-aware direct-runtime certificate accepted by pinned Lean
 
-See [RUNTIME_CORRESPONDENCE.md](RUNTIME_CORRESPONDENCE.md).
+### beta.24: semantic Window input events
+
+State/change semantics:
+- [x] `input changed` exposes transient event-local `value`
+- [x] editing a control does not directly assign persistent Patch state
+- [x] persistent input updates still require ordinary semantic `change`
+- [x] interpreter-backed event execution records normal Change history/provenance when source commits
+
+Cross-target implementation:
+- [x] `src/window-events.js` shared transient-payload adapter
+- [x] Patch Studio interactive Window preview routes DOM input through the adapter
+- [x] generated Windows/macOS/Linux desktop player routes the same payload contract
+- [x] Standalone Window Web runtime 0.3 implements the same transient-value rule
+- [x] shared Window preflight supports exactly button `clicked` and input `changed`
+- [x] unsupported event/control pairs still fail before packaging
+
+Regression/release hardening:
+- [x] unit test: changed value can be observed without persistent mutation
+- [x] unit test: explicit `change ... set = value` persists and creates Change history/provenance
+- [x] generated single-file Window HTML fake-DOM test for observation-only input
+- [x] generated single-file Window HTML fake-DOM test for explicit semantic persistence
+- [x] cross-target source gates require Studio/Web/Desktop wiring
+- [x] PWA cache includes `window-events.js`
+- [x] Window event adapter is included in syntax/site consistency gates
+
+Beta.24 is product/semantic-consistency evidence for State-Change Factorization; it does not add a new primary formal novelty claim.
 
 ## Current product priorities
 
 ### Studio / Designer
-- [ ] explicit semantic `input changed` event value without hidden persistent assignment
+- [x] explicit semantic `input changed` event value without hidden persistent assignment
 - [ ] control selection and property inspector
 - [ ] drag positioning/resizing
 - [ ] richer controls/event editing
@@ -135,6 +153,7 @@ Highest-value remaining research work:
 - [x] concrete runtime capability containment
 - [x] guard-aware branch truth correspondence for an explicit fragment
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
+- [x] GUI input path preserves explicit persistent `change` rather than adding hidden assignment
 - [ ] formal recipe-call/substitution correspondence
 - [ ] security/engineering case studies
 - [ ] overhead evaluation
@@ -152,6 +171,7 @@ Highest-value remaining research work:
 7. Translation validation does not imply JavaScript parser correctness.
 8. RuntimePath and invocation environments are proof-free evidence; Lean checks them against formal artifacts.
 9. Beta.23 guard-aware claims cover safe-integer recipe parameters, not arbitrary persistent-state guards or floating-point semantics.
-10. Direct-Wasm/C99 support is narrower than the full Patch language.
-11. Window packages are standalone but not yet native-widget generation.
-12. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
+10. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
+11. Direct-Wasm/C99 support is narrower than the full Patch language.
+12. Window packages are standalone but not yet native-widget generation.
+13. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.

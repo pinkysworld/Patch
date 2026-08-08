@@ -6,9 +6,11 @@ Working manuscript:
 
 ## Current artifact status
 
-The implementation/research artifact is **Patch 0.2.0-beta.23 / Change IR 0.9**. The manuscript remains working research text, not yet a submission-ready top-venue paper.
+The implementation/research artifact is **Patch 0.2.0-beta.24 / Change IR 0.9**. The manuscript remains working research text, not yet a submission-ready top-venue paper.
 
-The assurance story now has five distinct layers around the primary State-Change Factorization / Semantic Change Contracts claim:
+The latest formal research milestone remains beta.23; beta.24 is a product/semantic-consistency release showing that editable GUI input can be added without introducing a second hidden persistent-write mechanism.
+
+The assurance story has five distinct layers around the primary State-Change Factorization / Semantic Change Contracts claim:
 
 1. **Lean semantic core** — factorization, Mutation Transparency, Change Signature Soundness, verified semantic policy containment and integer range-analysis soundness for explicit fragments.
 2. **Source translation validation** — an independent raw-source path reconstructs SourceStmt/range claims and compares them with production extraction.
@@ -79,6 +81,23 @@ Guard-aware runtime certification covers safe-integer recipe parameter values, i
 
 Persistent/global state guards, decimal guard values, division and general variable multiplication remain outside this stronger runtime theorem. A recipe can still retain older static SourceStmt/signature/capability coverage when its guard is outside beta.23; guard-aware runtime certification is a separate stricter layer.
 
+## Beta.24 GUI mutation-path evidence
+
+Beta.24 implements editable Window inputs with this source model:
+
+```patch
+create text name = ""
+window "Hello":
+  input name
+when name changed:
+  change name:
+    set = value
+```
+
+The control edit supplies transient event-local `value`; the UI runtime does not assign `name` directly. Only source-level `change` commits persistent state. Unit tests verify the interpreter history/provenance route, and generated single-file Window HTML is executed in a fake-DOM harness to distinguish observation-only input from explicit persistence.
+
+This is implementation evidence that the GUI surface respects State-Change Factorization. It is **not** a new mechanized theorem or standalone novelty claim.
+
 ## Current formal modules
 
 ```text
@@ -97,13 +116,13 @@ Formal CI generates and compiles both static and guard-aware direct-runtime cert
 
 ## Artifact engineering
 
-The artifact also contains direct numeric Patch→Wasm, portable C99 tested on Linux/macOS/FreeBSD 15.1, Windows/macOS/Linux Console and Window packages, Standalone Window Web Apps and Patch Studio. The generated Window Web runtime is executed in differential tests against `PatchInterpreter`.
+The beta.24 artifact contains direct numeric Patch→Wasm, portable C99 tested on Linux/macOS/FreeBSD 15.1, Windows/macOS/Linux Console and Window packages, Standalone Window Web Apps and Patch Studio. Window runtimes support button `clicked` and semantic input `changed`; generated Window Web input behavior is executed in regression tests.
 
 These platform features support artifact evaluation but are not novelty claims.
 
 ## Current claim boundary
 
-A defensible beta.23 implementation/formal statement is:
+A defensible beta.23 formal statement is:
 
 > For a conservative protected direct-WebAssembly fragment, Patch independently validates source and guard/control-flow artifacts before runtime certification. Proof-free concrete semantic occurrences, path witnesses and concrete recipe-parameter environments are then checked by Lean against formal execution; branch witnesses must agree with evaluation of the normalized source guard in a safe-integer parameter fragment, and every decoded concrete occurrence is proved to remain within the declared semantic Change Capability. These results do not constitute full compiler verification.
 
@@ -120,7 +139,7 @@ Still unverified: JavaScript parser correctness, JavaScript→Wasm lowering, Was
 
 ## Prior-art discipline
 
-Patch does not claim novelty for guard semantics, operational semantics, range analysis, abstract interpretation, refinement, path witnesses, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C generation, provenance, undo or cross-platform packaging.
+Patch does not claim novelty for guard semantics, operational semantics, range analysis, abstract interpretation, refinement, path witnesses, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C generation, provenance, undo, GUI event wiring or cross-platform packaging.
 
 The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**.
 

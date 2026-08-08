@@ -30,12 +30,13 @@ export function validateWindowBuild(compiled) {
 }
 
 /**
- * Validate the shared beta Window runtime surface used by Studio preview,
+ * Validate the shared Window runtime surface used by Studio preview,
  * Standalone Window Web Apps and the generated desktop player.
  *
- * Button `clicked` is the only event path that all three targets currently wire
- * end-to-end. Other parsed event forms are rejected at build time rather than
- * being packaged with dead or target-specific behavior.
+ * Beta.24 deliberately exposes only the event pairs implemented consistently
+ * across all three targets: button `clicked` and input `changed`. Other parsed
+ * event forms fail before packaging rather than becoming target-specific or
+ * silently dead behavior.
  */
 export function validateWindowRuntimeSupport(compiled) {
   validateWindowBuild(compiled);
@@ -72,9 +73,12 @@ export function validateWindowRuntimeSupport(compiled) {
         `line ${event.line ?? '?'}: event '${event.control} ${event.event}' refers to a control that is not defined in a Patch window.`
       );
     }
-    if (event.event !== 'clicked' || controlType !== 'button') {
+    const supported =
+      (controlType === 'button' && event.event === 'clicked') ||
+      (controlType === 'input' && event.event === 'changed');
+    if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds currently support 'clicked' events on buttons only. ` +
+        `line ${event.line ?? '?'}: Window builds currently support 'clicked' on buttons and 'changed' on inputs. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }

@@ -131,17 +131,15 @@ when add_button clicked:
 });
 
 test('Window builds reject parsed event forms that are not wired consistently across targets', () => {
-  const source = `create text name = "Mia"
+  const source = `window "Broken":
+  button "Bad" as bad
 
-window "Input":
-  input name
-
-when name changed:
-  show name`;
+when bad changed:
+  show 1`;
 
   assert.throws(
-    () => buildStandaloneWebApp(source, { name: 'InputApp', kind: 'window' }),
-    /support 'clicked' events on buttons only/
+    () => buildStandaloneWebApp(source, { name: 'BadEventPair', kind: 'window' }),
+    /support 'clicked' on buttons and 'changed' on inputs/
   );
 });
 

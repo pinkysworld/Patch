@@ -1,8 +1,10 @@
 # Patch Compiler Architecture
 
-Status: **0.2.0-beta.23** · Change IR **0.9**
+Status: **0.2.0-beta.24** · Change IR **0.9**
 
 Patch combines a working compiler frontend, semantic Change analysis, independent source/guard translation validation, Lean-checkable static/runtime certificates, direct Wasm/C99 Console backends, Standalone Window Web Apps and cross-platform packaging.
+
+Beta.24 does not change Change IR. It strengthens the Window runtime boundary so GUI input cannot become a second persistent-write mechanism.
 
 ## Architecture
 
@@ -44,78 +46,53 @@ sourceValidation
 guardValidation
 ```
 
-`formalSource` is version 0.3. Its existing `source`/range artifact is retained; beta.23 adds a parallel `guardTree`, normalized `guardClaims`, `guardVariables`, and separate guard-support diagnostics.
+`formalSource` is version 0.3. Its existing `source`/range artifact is retained; beta.23 added a parallel `guardTree`, normalized `guardClaims`, `guardVariables`, and separate guard-support diagnostics.
 
 `guardValidation` is a separate artifact from raw-source control-flow extraction. A program can therefore remain supported by the static SourceStmt/signature/capability path while being outside the stricter guard-aware runtime path.
 
-## Source translation validation
+## Source and guard translation validation
 
-Production:
+Production source artifacts originate from the normal AST. Independent `source-validation.js` and `guard-validation.js` reconstruct the supported SourceStmt/range and GuardTree/control-flow views from raw source bytes. Agreement is required at the relevant certification boundary.
 
-```text
-source -> parser.js -> AST -> formalSource SourceStmt/ranges
-```
-
-Independent:
-
-```text
-source bytes -> source-validation.js -> raw SourceStmt/ranges
-```
-
-Exact agreement is required for supported static certification. This is translation validation, not parser verification.
-
-## Guard translation validation
-
-Production:
-
-```text
-AST -> formal-source.js -> GuardTree + normalized guard claims
-```
-
-Independent:
-
-```text
-source bytes -> guard-validation.js -> independent indentation/control-flow tree
-                                     -> normalized guard claims
-```
-
-The guard validator does not import `parser.js` or consume the AST. It shares the conservative `formal-guard.js` expression normalizer; the independently checked part is source/control-flow extraction, parameter vocabulary and agreement of normalized claims.
+This is translation validation, not parser verification. The guard validator shares the conservative `formal-guard.js` expression normalizer; the independently checked part is source/control-flow extraction, parameter vocabulary and agreement of normalized claims.
 
 ## Guard-aware runtime certificate
 
-`runtime-path-witness.js` records, per protected invocation:
+`runtime-path-witness.js` records per protected invocation the recipe/index, RuntimePath, effect count and concrete recipe parameter environment. These remain proof-free inputs.
+
+`PatchGuarded.checkGuardedSourceRuntimeEvidence` checks SourceStmt/GuardTree shape, concrete guard truth, RuntimePath, formal execution and effect refinement. `checkedGuardedConcreteRuntimeCannotEscape` composes accepted guarded execution with the verified Change Capability checker.
+
+The current guard-aware fragment deliberately accepts only safe-integer recipe parameters with the documented integer/Boolean expression subset. Persistent/global state guards, floating-point guard correspondence and general multiplication/division remain outside this stronger certification layer.
+
+## Beta.24 Window event path
+
+`src/window-build.js` detects normalized `WINDOW` IR and validates the shared portable event surface. The accepted pairs are currently:
 
 ```text
-recipe name + invocation index
-RuntimePath
-effectCount
-concrete recipe parameter environment
+button + clicked
+input  + changed
 ```
 
-These are proof-free inputs. `runtime-certificate.js` additionally requires both source and guard validation before emitting a beta.23 guarded certificate.
-
-Generated Lean data includes:
+For input events, the current control text is **transient event payload**, not persistent state. Interpreter-backed targets call `src/window-events.js`, which exposes the payload as local `value` to the Patch event body. A source handler must still execute `change` to commit persistent state.
 
 ```text
-SourceStmt
-GuardTree
-IntEnv with concrete used guard parameters
-EvidenceEffect list
-RuntimePath
-Rule policy list
+DOM input
+   ↓ transient { value }
+window-events.js
+   ↓ event-local Patch value
+when input changed
+   ↓ optional explicit change
+persistent Patch state/history
 ```
 
-`PatchGuarded.checkGuardedSourceRuntimeEvidence` checks SourceStmt/GuardTree shape, concrete guard truth, RuntimePath, formal execution and effect refinement. `checkedGuardedConcreteRuntimeCannotEscape` composes the accepted guarded execution with the verified Change Capability checker.
+Patch Studio uses this adapter directly. The generated Windows/macOS/Linux desktop player imports the same adapter. `src/window-webapp.js` creates a self-contained HTML runtime and implements the same rule internally because it intentionally has no external Patch interpreter dependency.
 
-## Guard fragment
+The generated Window Web runtime is version 0.3. Executable fake-DOM tests verify that:
 
-The current guard-aware compiler/formal bridge deliberately accepts only safe-integer recipe parameters with literals, parameter variables, `+`, `-`, unary minus, scale by a non-negative integer literal, comparisons, Boolean literals and `not/and/or`.
+- a handler may observe the new `value` while persistent state remains unchanged;
+- `change target: set = value` commits the new value and the rerender then reflects it.
 
-Persistent/global state in guards is not yet bound into `IntEnv`; decimal guard values, division and general multiplication are also rejected at this stronger certification layer.
-
-## Window path
-
-`src/window-build.js` detects normalized `WINDOW` IR and validates the current shared runtime surface. `src/window-webapp.js` creates one self-contained Window HTML app and is differentially tested against `PatchInterpreter`. Desktop Window packages use the generated desktop player. Direct Wasm remains Console-only.
+Unsupported event/control pairs still fail during shared Window preflight. Direct Wasm remains Console-only.
 
 ## Console backends
 
@@ -139,13 +116,15 @@ full floating-point semantics
 full Patch language semantics
 ```
 
-Lean checks the supplied guard/path/environment evidence against independently validated formal artifacts, but that does not turn the whole compiler into a verified compiler.
+Beta.24's input-event regression tests are implementation evidence that supported GUI input preserves the single semantic persistent-mutation route. They are not a new formal compiler-correctness theorem.
 
 ## Quality gates
 
 - Windows/macOS/Linux Node 22/24 tests;
 - source/range/guard extraction and tamper tests;
 - generated Window Web differential execution tests;
+- generated Window Web input fake-DOM tests;
+- cross-target Studio/Web/Desktop input-wiring tests;
 - direct-Wasm differential/trace/effect tests;
 - guard-aware runtime certificate generation;
 - Lean builds through `PatchGuarded.lean`;
@@ -153,4 +132,4 @@ Lean checks the supplied guard/path/environment evidence against independently v
 - no `sorry`/`admit`;
 - native Windows/macOS/Linux Console + Window smoke builds;
 - Linux/macOS/FreeBSD C99 compile/run;
-- public Studio/site/version consistency checks.
+- public Studio/PWA/site/version consistency checks.
