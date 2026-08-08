@@ -144,7 +144,7 @@ jobs:
         run: |
           APP=$(find dist -maxdepth 2 -type f -name "$PATCH_APP_NAME" -perm -111 | head -1)
           test -n "$APP"
-          "$APP" --patch-smoke
+          xvfb-run -a "$APP" --no-sandbox --patch-smoke
       - name: Smoke check window application on macOS
         if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'window' && runner.os == 'macOS'
         shell: bash
