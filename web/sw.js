@@ -4,6 +4,7 @@ const CORE = [
   './index.html',
   './style.css',
   './playground.js',
+  './native-build.js',
   './manifest.webmanifest',
   './icon.svg',
   '../src/interpreter.js',

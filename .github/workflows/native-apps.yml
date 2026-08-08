@@ -1,61 +1,86 @@
 name: Patch Native Apps
+run-name: Native Patch ${{ inputs.request_id || github.run_id }}
 
 on:
   workflow_dispatch:
     inputs:
+      source_b64:
+        description: Base64-encoded Patch source from Patch Studio (leave empty to use source_path)
+        required: false
+        default: ''
       source_path:
-        description: Patch source file in this repository
-        required: true
+        description: Patch source file in this repository when source_b64 is empty
+        required: false
         default: examples/direct-wasm-recipes.patch
       app_name:
         description: Application name
         required: true
         default: PatchNativeApp
+      platform:
+        description: Desktop target
+        required: true
+        type: choice
+        options:
+          - windows
+          - macos
+          - linux
+        default: macos
+      request_id:
+        description: Studio request identifier
+        required: false
+        default: manual
   pull_request:
     paths:
+      - scripts/build-native-sea.js
       - src/native-app.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
+      - web/index.html
+      - web/native-build.js
+      - web/playground.js
       - .github/workflows/native-apps.yml
       - examples/direct-wasm-recipes.patch
   push:
     branches: [main]
     paths:
+      - scripts/build-native-sea.js
       - src/native-app.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
+      - web/index.html
+      - web/native-build.js
+      - web/playground.js
       - .github/workflows/native-apps.yml
 
 permissions:
   contents: read
 
 jobs:
-  build-native:
-    name: ${{ matrix.os }} native app
+  smoke-native:
+    if: github.event_name != 'workflow_dispatch'
+    name: ${{ matrix.os }} native smoke
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 12
     env:
-      PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/direct-wasm-recipes.patch' }}
-      PATCH_APP_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchNativeSmoke' }}
+      PATCH_APP_NAME: PatchNativeSmoke
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
           package-manager-cache: false
-      - uses: dtolnay/rust-toolchain@stable
       - name: Build native Patch application
         shell: bash
         run: |
           mkdir -p dist
-          node src/cli.js build "$PATCH_SOURCE" --kind console --target app --name "$PATCH_APP_NAME" --out "dist/$PATCH_APP_NAME"
+          node scripts/build-native-sea.js examples/direct-wasm-recipes.patch --name "$PATCH_APP_NAME" --out "dist/$PATCH_APP_NAME"
       - name: Smoke run native application on Linux
         if: runner.os == 'Linux'
         shell: bash
@@ -68,8 +93,114 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: "& ./dist/$env:PATCH_APP_NAME.exe"
+
+  studio-windows:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'windows'
+    name: Studio Windows build
+    runs-on: windows-latest
+    timeout-minutes: 12
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Prepare Patch Studio source
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
+      - name: Build Windows executable
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-sea.js studio.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
+      - name: Smoke run Windows executable
+        shell: pwsh
+        run: "& ./dist/$env:PATCH_SAFE_NAME.exe"
+      - name: Package Windows application
+        shell: pwsh
+        run: Compress-Archive -Path "dist/$env:PATCH_SAFE_NAME.exe" -DestinationPath "dist/$env:PATCH_SAFE_NAME-windows.zip" -Force
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.os }}-${{ env.PATCH_APP_NAME }}
-          path: dist/**
+          name: patch-windows-${{ inputs.request_id }}
+          path: dist/*-windows.zip
+          if-no-files-found: error
+
+  studio-macos:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'macos'
+    name: Studio macOS build
+    runs-on: macos-latest
+    timeout-minutes: 12
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Prepare Patch Studio source
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
+      - name: Build macOS application bundle
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-sea.js studio.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
+      - name: Smoke run macOS application
+        shell: bash
+        run: ./dist/$PATCH_SAFE_NAME.app/Contents/MacOS/$PATCH_SAFE_NAME
+      - name: Package macOS application
+        shell: bash
+        run: ditto -c -k --sequesterRsrc --keepParent "dist/$PATCH_SAFE_NAME.app" "dist/$PATCH_SAFE_NAME-macos.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-macos-${{ inputs.request_id }}
+          path: dist/*-macos.zip
+          if-no-files-found: error
+
+  studio-linux:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'linux'
+    name: Studio Linux build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Prepare Patch Studio source
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
+      - name: Build Linux executable
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-sea.js studio.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
+      - name: Smoke run Linux executable
+        shell: bash
+        run: ./dist/$PATCH_SAFE_NAME
+      - name: Package Linux application
+        shell: bash
+        run: tar -czf "dist/$PATCH_SAFE_NAME-linux.tar.gz" -C dist "$PATCH_SAFE_NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-linux-${{ inputs.request_id }}
+          path: dist/*-linux.tar.gz
           if-no-files-found: error
