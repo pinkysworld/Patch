@@ -49,7 +49,7 @@ Windows -> Hello.exe
 Linux   -> Hello
 ```
 
-The builder first compiles Patch to the direct Wasm backend, embeds that module inside a small Rust host, and compiles the host as a standalone native program. The native host currently uses Wasmtime 47.0.2.
+The builder first compiles Patch to the direct Wasm backend, embeds that module inside a small Rust host, and compiles the host as a standalone native program. Beta.16 pins the native host exactly to Wasmtime 47.0.3 for reproducible packaging.
 
 On macOS the output is a real `.app` bundle with `Contents/MacOS` and `Info.plist`. For the current console subset, Finder launches show program output in a simple system dialog as well as standard output. Windows application builds similarly surface `show` output in a desktop dialog. Linux currently remains a native console executable.
 
