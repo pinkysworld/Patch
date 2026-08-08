@@ -212,7 +212,7 @@ theorem checkSourceRuntimeEvidence_sound
               have hPointwise : TraceRefines actualTrace formalTrace :=
                 traceRefinesBool_sound hRefines
               obtain ⟨stmt, hDecode, hExec⟩ := decodeLinearEvidenceTrace_sound hFormal
-              refine ⟨formalTrace, actualTrace, ?_, hActual, hPointwise⟩
+              refine ⟨formalTrace, actualTrace, ?_, rfl, hPointwise⟩
               exact ⟨evidence, stmt, hLower, hDecode, hExec⟩
 
 end PatchFormal
