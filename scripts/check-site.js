@@ -18,7 +18,11 @@ for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new 
 const html = read('_site/index.html');
 for (const needle of ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./icon.svg']) requireText('index', html, needle);
 for (const id of ['code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus']) requireText('index', html, `id="${id}"`);
-for (const phrase of [`0.2 beta.${beta}`,`Beta ${pkg.version}`,'Change IR 0.8','Change Contract','Independent raw-source validation','State-Change Factorization','Standalone Web App','Windows App','macOS App','Linux App','FreeBSD Console','portable C99','FreeBSD 15.1','Project Type','Roadmap']) requireText('public site', html, phrase);
+for (const phrase of [
+  `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.8', 'Change Contract', 'Independent raw-source validation',
+  'Runtime → Lean correspondence', 'SourceExecutes', 'State-Change Factorization', 'Standalone Web App',
+  'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
+]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
 
 const playground = read('_site/playground.js');
