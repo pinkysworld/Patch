@@ -1,219 +1,164 @@
 # Novelty Boundary
 
-Patch is **not** novel merely because it has patches, first-class changes, undo, history, state transitions, effect inference, capabilities, range analysis, provenance, source calculi, translation validation, proof-carrying evidence, verified checkers, or simple syntax. All of those have substantial prior art.
+Patch is **not** novel merely because it has patches, first-class changes, undo, history, effects, capabilities, range analysis, provenance, source calculi, translation validation, proof-carrying evidence, verified checkers, WebAssembly or C generation. All have substantial prior art.
 
 The current research hypothesis remains centered on two linked ideas:
 
 > **State-Change Factorization:** ordinary post-creation persistent mutation is forced through a structured semantic Change representation rather than ordinary assignment plus later logging.
 
-> **Semantic Change Contracts:** because the mandatory mutation representation contains semantic operation structure, Patch derives operation- and magnitude-aware summaries and policies from it.
+> **Semantic Change Contracts:** because that mandatory mutation representation contains operation structure, Patch derives operation- and magnitude-aware summaries and policies from the same mutation substrate.
 
-Beta 8 strengthens the assurance evidence for those claims. It does **not** introduce a new novelty headline. A formal `SourceStmt` preserves source-level `add`, `remove`, `set`, and `clear`; Lean itself normalizes those source operations into semantic evidence, checks the separately emitted `EvidenceStmt`, reconstructs the formal Change Signature, compares it with a separate production signature claim, and checks the policy.
+Beta.19 strengthens the implementation/formal correspondence story. It does **not** add a new novelty headline.
 
 ## Important prior-art collisions
 
-### Plaid
+Patch must continue to compare against, at minimum:
 
-Sunshine et al., *First-Class State Change in Plaid*, OOPSLA 2011, DOI 10.1145/2048066.2048122, makes changing abstract object states central to a programming language. Patch must not claim to invent first-class state change or language-level state evolution.
+- Plaid and first-class state change;
+- Worlds and scoped/reified state;
+- classical, graded, quantitative, refinement and behavioral effect systems;
+- Effects as Capabilities, object capabilities, permissions and typestate;
+- abstract interpretation and range/refinement analysis;
+- translation validation, including Necula's compiler-assurance work;
+- Proof-Carrying Code and certifying compilation;
+- verified source/IR lowering and compiler-correctness work;
+- ChEOPS/COPE/Edit Transactions, event sourcing, edit lenses, patch theory, reversible languages and CRDTs;
+- provenance/Whyline-style debugging.
 
-### Worlds
-
-Warth et al., *Worlds: Controlling the Scope of Side Effects*, ECOOP 2011, DOI 10.1007/978-3-642-22655-7_9, reifies program state and supports scoped speculation/commit/discard. Patch must not claim reified state, speculative state, or undo as new.
-
-### Classical and richer effect systems
-
-Lucassen and Gifford's *Polymorphic Effect Systems*, POPL 1988, DOI 10.1145/73560.73564, is foundational prior art for inferred effects. Modern graded, quantitative, refinement and behavioral effect systems can express much more than binary read/write information.
-
-Patch therefore must not claim that inferring what a function changes, or attaching numeric information to effects, is new by itself.
-
-The candidate distinction is more specific: operation-/magnitude-sensitive state-transition information is derived from the **same semantic mutation representation through which persistent mutation must execute**.
-
-### Effects as Capabilities
-
-Brachthaeuser, Schuster and Ostermann, *Effects as Capabilities*, OOPSLA 2020, DOI 10.1145/3428194, explicitly combines effects and capabilities. Patch must not claim “effects + capabilities” as novel.
-
-Patch instead investigates policies such as:
-
-```text
-player.score may increase up to 10
-```
-
-where `increase`, `decrease`, `set`, and `clear` are semantically distinct authorities over the same path.
-
-### Typestate, permissions, refinements and object capabilities
-
-These families already constrain state transitions and authority in rich ways. Patch needs a systematic comparison before any priority claim about expressive power.
-
-### Translation validation
-
-Necula's PLDI 2000 work on translation validation is established compiler assurance. Patch's independent producer paths and checked correspondence artifacts are not a new verification paradigm.
-
-### Proof-Carrying Code and certifying compilation
-
-Necula's POPL 1997 *Proof-Carrying Code*, DOI 10.1145/263699.263712, established producer-supplied safety evidence checked by a smaller consumer-side verifier. Patch's generated Lean artifacts and small verified checkers are assurance infrastructure, not a novelty claim.
-
-### Source calculi and verified lowering
-
-Formal source/intermediate languages, semantics-preserving lowering and compiler-correctness proofs have extensive prior art. Beta 8's `SourceStmt` layer must not be presented as a new verification technique. Its purpose is to reduce producer-side semantic trust for Patch's specific mutation model.
-
-### Other neighboring systems
-
-Patch must also compare against XMF first-class undoability, ChEOPS/COPE/Edit Transactions, Elm/Redux-like update architectures, event sourcing, Edit Lenses, incremental change structures, patch theory, reversible languages, CRDTs, provenance/Whyline, abstract interpretation and quantitative/refinement type systems.
+Therefore Patch must not claim to invent first-class state change, effect inference, quantitative effects, effect+capability combinations, translation validation, source calculi or proof-carrying evidence.
 
 ## Formal contribution status
 
-### State-Change Factorization
-
-Machine checked for the current Lean state-changing machine step. Every modeled persistent transition has a well-formed semantic Change witness and commits through the single modeled commit route.
-
-### Mutation Transparency
-
-Machine checked as a corollary. The witnessing Change appears in resulting history.
-
-### Change Signature Soundness
-
-For the structured Lean `CoreStmt` execution model:
+Machine-checked for the current formal models:
 
 ```text
-RuntimeChanges(stmt) subset-of Signature(stmt)
+State-Change Factorization
+Mutation Transparency
+Change Signature Soundness
+formal runtime-signature-policy containment
+verified semantic policy checker soundness
+proof-free EvidenceStmt decoding/correspondence
+SourceStmt semantic normalization/correspondence
+formal source execution policy containment
+integer rangeAnalysisSound
 ```
 
-is machine checked.
-
-### End-to-end formal capability containment
-
-For protected formal statements:
+For the structured formal core:
 
 ```text
-RuntimeChanges(stmt) subset-of Signature(stmt)
-Signature(stmt) admitted-by Capability(stmt)
-------------------------------------------------
-RuntimeChanges(stmt) admitted-by Capability(stmt)
+RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-is machine checked.
+is the core formal containment story.
 
-### Verified policy checker
+## Beta.19 independent raw-source validation
 
-`PatchChecker.lean` implements an executable target/field/operation/interval policy checker and proves successful decisions sound.
-
-### Verified semantic evidence boundary
-
-`PatchEvidence.lean` validates proof-free semantic evidence, decodes it into `CoreStmt`, reconstructs the formal signature and checks a separate production signature claim.
-
-### Beta 8 formal Source core
-
-`PatchSource.lean` now moves the checked boundary one step closer to source semantics:
-
-```text
-SourceStmt(add/remove/set/clear)
-        ↓ Lean normalization
-EvidenceStmt(increase/decrease/set/clear)
-        ↓ Lean decoding
-CoreStmt
-        ↓ Lean inferSignature
-formal signature
-        ↓
-compare separate production signature claim
-        ↓
-verified policy checker
-```
-
-Lean checks source/evidence equality with `checkSourceEvidence`, and `checkSourceEvidence_sound` proves a successful boolean result means:
-
-```text
-lowerSourceStmt(source) = some evidence
-```
-
-`checkSourceSignature_sound` proves successful source/signature checking yields a decoded formal statement whose canonical inferred signature equals the production claim.
-
-For the formal source execution relation, Lean proves via `checkedSourceExecutionCannotEscape`:
-
-```text
-SourceExecutes(source, runtime)
-checkSourceProtected(source, policy) = true
-------------------------------------------------
-every runtime effect is allowed by policy
-```
-
-This reduces trust in producer-side semantic classification. For example, the producer can say the source verb is `add -5`, but Lean itself must normalize it to semantic `decrease 5` and verify that the separately supplied semantic evidence agrees.
-
-## What Beta 8 still does not prove
-
-The following are still explicit trust gaps:
+Before beta.19, a key implementation trust path was:
 
 ```text
 Patch source bytes
-   -> JavaScript parser / production AST
-   -> SourceStmt extraction
+   -> parser.js / production AST
+   -> formal SourceStmt + range claims
 ```
 
-and:
+Beta.19 adds a second path that does not import `parser.js` and does not consume the production AST:
 
 ```text
-numeric Patch expression
-   -> production-inferred amount interval
+exact source bytes
+   -> small independent raw-source parser
+   -> raw SourceStmt + raw range claims
 ```
 
-as well as production runtime correspondence with the formal `SourceExecutes` relation.
+The two views must structurally agree for a supported protected recipe before `patch certify` will emit its Lean certificate.
 
-Therefore **do not** say “Patch programs are formally verified end-to-end.” A correct statement is that the formal source-core-to-semantic-evidence/signature/policy chain is machine checked for the current subset, while production frontend extraction, range-analysis soundness and runtime correspondence remain open.
+This reduces exposure to a single production-parser/AST-extractor error. It is **translation validation**, not a theorem that either JavaScript parser is correct. The validator itself is not claimed as a new verification technique or a novelty contribution.
 
-## Supporting properties, not primary novelty claims
+The assurance path is now approximately:
 
-- formal source/evidence checking;
-- magnitude/range analysis;
+```text
+                      -> production SourceStmt/ranges --+
+Patch source bytes ---|                                 +-> exact comparison
+                      -> raw-source SourceStmt/ranges ---+
+                                                          |
+                                                          v
+                                               certificate emission
+                                                          |
+                                                          v
+SourceStmt -> Lean normalization -> EvidenceStmt -> CoreStmt
+                                              -> formal Signature
+                                              -> policy checker
+```
+
+## Runtime assurance status
+
+Separately, direct Wasm emits small transition observations. An independent Change-IR validator reconstructs expected transitions and concrete `increase/decrease/set/clear` effects and checks observed execution against static Change Signatures and protected Change Capabilities.
+
+This is useful translation/runtime-validation evidence, but not a compiler-correctness proof.
+
+## What beta.19 still does not prove
+
+Do **not** say “Patch programs are formally verified end-to-end.” Remaining gaps include:
+
+- production JavaScript parser correctness is not machine proved;
+- independent raw-source parser correctness is not machine proved;
+- production/direct runtime occurrences are not yet connected by theorem to Lean `SourceExecutes` / `Executes`;
+- direct Wasm and C99 lowering are tested/validated rather than machine proved;
+- recipe-call substitution is not fully covered in the formal source model;
+- full Patch language semantics are not formalized.
+
+A more accurate statement is:
+
+> For a conservative source subset, Patch independently reconstructs and compares source-level formal evidence before certification; Lean then checks range, source/evidence/signature and policy properties of the accepted formal artifact. Runtime/backend correspondence remains a separate validation and proof obligation.
+
+## Primary vs supporting contributions
+
+Primary candidate claim:
+
+> Patch factors ordinary persistent mutation through a structured semantic Change representation and derives operation- and magnitude-aware semantic authority from that same mandatory mutation substrate.
+
+Supporting assurance/evaluation mechanisms, not primary novelty headlines:
+
+- independent raw-source extraction validation;
+- production/formal bridge;
+- verified policy checker;
+- machine-checked range fragment;
 - generated Lean certificates;
-- inverse correctness;
-- preview laws;
-- replay determinism;
-- commutation/conflict analysis;
-- provenance and `why`;
-- GUI/IDE/mobile support;
-- portable and future native packaging.
+- independent runtime transition/effect validation;
+- C99/FreeBSD portability;
+- provenance, undo, preview and replay tooling;
+- GUI/IDE/mobile/cross-platform packaging.
 
-These may strengthen evaluation but should not become the novelty headline.
+## Candidate beta.19 paper claim
 
-## Candidate Beta 8 paper claim
+A defensible working claim is:
 
-A defensible claim is:
+> We present Patch, an experimental language in which post-creation persistent mutation is factored through structured semantic Changes. Patch derives operation- and magnitude-aware semantic Change Contracts from that mandatory mutation substrate. For a mechanized core, we prove Change Signature Soundness and runtime policy containment. For a conservative implementation subset, separate source, semantic-evidence and production-signature claims are checked through a combination of independent source translation validation and Lean-checked source/evidence/signature/policy correspondence. Direct runtime transitions are additionally checked against an independent Change-IR model. These results do not constitute full compiler verification; parser correctness and production-runtime-to-formal-execution correspondence remain explicit boundaries.
 
-> We present Patch, an experimental general-purpose language in which post-creation persistent mutation is factored through a structured semantic Change representation. Patch derives operation- and magnitude-aware semantic Change Contracts from that mandatory mutation substrate. For a mechanized core, we prove Change Signature Soundness and runtime policy containment. For a conservative production subset, generated artifacts preserve source mutation verbs in a proof-free Source core; Lean normalizes those source changes to semantic evidence, checks source/evidence correspondence, reconstructs the formal Change Signature, compares it with a separate production claim, and verifies the semantic policy. Production source-to-SourceStmt extraction, interval-analysis soundness, and runtime correspondence remain explicit proof obligations.
-
-This is a candidate contribution claim, not a firstness assertion.
+This is a contribution hypothesis, not a firstness assertion.
 
 ## What would materially weaken the claim?
 
-An earlier general-purpose language/system satisfying most of the following would substantially narrow Patch's contribution:
+Prior work satisfying most of the following would substantially narrow the contribution:
 
 1. existing persistent state cannot ordinarily mutate outside a structured semantic change mechanism;
 2. mutation executes through that representation rather than being logged afterward;
-3. the representation distinguishes semantic transition operations beyond only write location;
-4. conservative summaries are derived from those same mutations;
+3. the representation distinguishes semantic transition operations beyond write location;
+4. conservative operation/magnitude summaries derive from those same mutations;
 5. policies constrain operation kind and quantitative magnitude;
 6. runtime-signature-policy containment has formal evidence;
-7. a realistic implementation is connected to the formal model through a strong correspondence boundary;
-8. the same change representation materially supports tooling such as history/inversion/provenance;
-9. evaluation demonstrates practical advantages.
+7. a realistic implementation is strongly connected to the formal model;
+8. the same change representation materially supports history/inversion/provenance tooling;
+9. empirical evaluation demonstrates practical value.
 
-## Systematic search plan
+## Current high-venue path
 
-Before submission, search ACM DL, IEEE Xplore, DBLP, SpringerLink, Semantic Scholar, Google Scholar and arXiv across combinations of:
+The highest-value next steps are:
 
-`first-class state change`, `semantic mutation`, `update effects`, `state transition effects`, `graded effects`, `quantitative effects`, `refinement effects`, `behavioral effects`, `effects as capabilities`, `bounded effects`, `state transition permissions`, `operation capabilities`, `verified update language`, `effect soundness`, `proof carrying effects`, `certifying effect systems`, `translation validation effects`, `verified IR correspondence`, `source effect correspondence`, `edit lenses`, `change structures`, `event sourcing semantics`, `reducer state transitions`, `reversible state change`.
+1. keep State-Change Factorization + quantitative semantic authority as the primary paper claim;
+2. connect independently reconstructed runtime effect occurrences to Lean `SourceExecutes` / `Executes`;
+3. introduce a typed expression/core IR or another smaller independently checkable lowering input;
+4. extend formal recipe-call/substitution semantics for the direct subset;
+5. build compelling security/engineering cases and measure analysis/evidence/checker overhead;
+6. conduct a systematic related-work review and reproducibility pass.
 
-## Current positioning
-
-Beta 8 improves the high-venue story because semantic classification itself is no longer entirely producer-trusted inside the certified subset. The producer supplies a source-level mutation representation, a semantic evidence representation and a production signature claim as separate artifacts; Lean checks that the source representation actually lowers to the semantic evidence and that the semantic evidence implies the claimed formal signature and policy judgment.
-
-The strongest next path is:
-
-1. keep State-Change Factorization + quantitative semantic authority as the paper's primary claim;
-2. prove/validate production AST → `SourceStmt` extraction for the supported fragment;
-3. mechanize interval-analysis soundness because magnitude-aware contracts are central;
-4. connect production execution traces to the formal source/core semantics;
-5. build two or three compelling security/engineering cases;
-6. measure analysis, evidence and checker overhead;
-7. conduct a systematic related-work review before submission.
-
-Patch remains a plausible high-venue direction, but **not yet submission-ready**. The next gains should come from closing these formal/evaluation gaps rather than adding surface-language features.
+Patch remains a plausible OOPSLA/ECOOP-style direction, but is **not yet submission-ready**. The next gains should come from correspondence and evaluation rather than feature accumulation.
