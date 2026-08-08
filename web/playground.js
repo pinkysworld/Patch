@@ -5,6 +5,7 @@ import { compileToWasm } from '../src/wasm.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { addDesignerControl } from '../src/designer.js';
+import { triggerWindowEvent } from '../src/window-events.js';
 
 const samples = {
   counterWindow: `create number count = 0
@@ -306,7 +307,8 @@ function renderWindows(container, windows, interactive) {
         el.className = 'patch-input';
         el.value = control.value ?? '';
         el.placeholder = control.id ?? '';
-        if (!interactive) el.readOnly = true;
+        if (interactive) el.addEventListener('input', () => trigger(control.id, 'changed', { value: el.value }));
+        else el.readOnly = true;
         body.appendChild(el);
       }
     }
@@ -315,10 +317,10 @@ function renderWindows(container, windows, interactive) {
   }
 }
 
-function trigger(control, event) {
+function trigger(control, event, payload = {}) {
   if (!runtime) return;
   try {
-    const result = runtime.trigger(control, event);
+    const result = triggerWindowEvent(runtime, control, event, payload);
     output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
     renderWindows(appView, result.ui, true);
   } catch (err) {
