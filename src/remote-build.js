@@ -14,15 +14,16 @@ export function createRemoteBuildRequest({ source, name = 'PatchApp', kind = 'co
   if (sourceBytes.length > PATCH_REMOTE_SOURCE_LIMIT) {
     throw new Error(`Studio cloud builds currently accept Patch source up to ${PATCH_REMOTE_SOURCE_LIMIT} UTF-8 bytes.`);
   }
+  const id = requestId ?? makeRequestId();
   return {
-    requestId: requestId ?? makeRequestId(),
+    requestId: id,
     inputs: {
       source_path: '',
       source_b64: bytesToBase64(sourceBytes),
       app_name: safeName(name),
       target,
       kind,
-      request_id: requestId ?? makeRequestId()
+      request_id: id
     }
   };
 }
