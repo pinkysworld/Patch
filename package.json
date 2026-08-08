@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.17",
-  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked evidence, direct WebAssembly execution, standalone web/native application builds, Studio desktop GUI builds, and independent transition/effect validation",
+  "version": "0.2.0-beta.18",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked evidence, direct WebAssembly, portable C99/FreeBSD execution, cross-platform Studio builds, and independent transition/effect validation",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
