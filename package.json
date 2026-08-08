@@ -11,6 +11,7 @@
     "validate:wasm-direct": "node scripts/validate-direct-trace.js examples/direct-wasm-recipes.patch",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
+    "check:project": "node scripts/check-project-surface.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
