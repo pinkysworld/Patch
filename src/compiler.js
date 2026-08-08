@@ -6,7 +6,7 @@ import { buildFormalCalls } from './formal-calls.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
 
-export const PATCH_IR_VERSION = '0.9';
+export const PATCH_IR_VERSION = '0.10';
 
 export function compile(source, options = {}) {
   const ast = parse(source);
