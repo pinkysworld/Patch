@@ -24,8 +24,8 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - name: Syntax check
-        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/cli.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-range.js && node --check src/formal-bridge.js && node --check src/formal-source.js && node --check src/certificate.js && node --check src/wasm.js && node --check src/wasm-direct.js && node --check src/webapp.js && node --check src/native-app.js && node --check src/direct-trace-validator.js && node --check src/direct-effect-validator.js && node --check src/designer.js && node --check scripts/build-native-sea.js && node --check scripts/validate-direct-trace.js && node --check scripts/check-project-surface.js && node --check web/native-build.js && node --check web/playground.js
-      - name: Language, compiler, formal, certificate, direct-Wasm, app-build, trace-validator, designer and bootstrap-Wasm tests
+        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/cli.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-range.js && node --check src/formal-bridge.js && node --check src/formal-source.js && node --check src/certificate.js && node --check src/wasm.js && node --check src/wasm-direct.js && node --check src/c99.js && node --check src/webapp.js && node --check src/native-app.js && node --check src/direct-trace-validator.js && node --check src/direct-effect-validator.js && node --check src/designer.js && node --check scripts/build-native-sea.js && node --check scripts/validate-direct-trace.js && node --check scripts/check-project-surface.js && node --check web/native-build.js && node --check web/playground.js
+      - name: Language, compiler, formal, certificate, direct-Wasm, C99, app-build, trace-validator, designer and bootstrap-Wasm tests
         run: npm test
       - name: Example smoke tests
         run: npm run check
@@ -39,6 +39,8 @@ jobs:
         run: npm run build:wasm
       - name: Direct WebAssembly application build
         run: npm run build:wasm-direct
+      - name: Portable C99 source build
+        run: npm run build:c99
       - name: Standalone single-file Web App build
         run: npm run build:web
       - name: Execute direct WebAssembly application

@@ -1,20 +1,36 @@
-# Simple application builds
+# Application builds
 
-Status: **0.2.0-beta.17**
+Status: **0.2.0-beta.18**
 
-Patch has separate build targets for browser, WebAssembly and desktop applications. The Studio desktop targets now support both Console and Window projects.
+Patch has separate build paths for browser, WebAssembly and desktop applications. Beta.18 adds a portable C99 Console backend and a tested FreeBSD build path.
 
-## Easiest browser build
+## Build matrix
 
-For the currently supported direct numeric console subset:
+```text
+Console
+  Windows -> .exe via native direct-Wasm host
+  macOS   -> .app via native direct-Wasm host
+  Linux   -> native executable via direct-Wasm host
+  FreeBSD -> native executable via portable C99 + FreeBSD cc
+
+Window / GUI
+  Windows -> standalone packaged GUI application
+  macOS   -> standalone packaged GUI application
+  Linux   -> standalone packaged GUI application
+  FreeBSD -> not yet supported
+```
+
+## Browser build
+
+For the supported direct numeric Console subset:
 
 ```bash
 patch build hello.patch --target web --out Hello.html
 ```
 
-The result is one HTML file containing the directly compiled Patch WebAssembly module plus the tiny JavaScript host needed for `show` and semantic transition callbacks.
+The result is one HTML file containing the directly compiled Patch WebAssembly module plus the small JavaScript host required for `show` and semantic transition callbacks.
 
-Patch Studio exposes the same target as **Standalone Web App (.html)**.
+Patch Studio exposes this as **Standalone Web App (.html)**.
 
 ## Direct WebAssembly
 
@@ -22,96 +38,106 @@ Patch Studio exposes the same target as **Standalone Web App (.html)**.
 patch build hello.patch --target wasm-direct --out Hello.direct.wasm
 ```
 
-This is directly lowered WebAssembly. It currently imports the small Patch host ABI:
+This is directly lowered WebAssembly. It currently imports:
 
 ```text
 patch.show_number(f64)
 patch.change_number(i32 targetId, f64 before, f64 after)
 ```
 
-A raw `.direct.wasm` file is therefore not yet a WASI command module. Use `patch run-wasm`, the standalone Web App target, or a native Patch host.
+A raw `.direct.wasm` is therefore not yet a standalone WASI command module. Use `patch run-wasm`, Standalone Web App, or a desktop Patch host.
 
-The older `--target wasm` target remains an advanced bootstrap carrier containing Patch source plus Change IR.
+The older `--target wasm` remains an advanced bootstrap carrier containing Patch source plus Change IR.
 
-## Native console application on the current OS
+## Portable C99
 
 ```bash
-patch build hello.patch --target app --name Hello
+patch build hello.patch --target c99 --out Hello.c
+cc -std=c99 -Wall -Wextra -pedantic -O2 -o Hello Hello.c -lm
+./Hello
 ```
 
-For the current direct console subset this creates, on the machine performing the build:
+The C99 generator first applies the same conservative language boundary used by the direct numeric Wasm backend. It then independently emits C source from normalized Change IR.
+
+Supported in beta.18:
+
+- top-level numeric state;
+- numeric `set`, `add`, `remove`, `clear`;
+- numeric `show`;
+- supported `+ - * /` expressions and comparisons;
+- `if` / `else`;
+- literal `repeat` with 1-based Patch `count`;
+- non-recursive acyclic numeric recipes;
+- ranged numeric recipe guards;
+- one block-level transition hook per supported `change` block.
+
+Unsupported constructs fail explicitly rather than falling back to the interpreter.
+
+CI generates the same C99 program and compiles/runs it with the system C compiler on Linux, macOS and **FreeBSD 15.1**.
+
+## FreeBSD from Patch Studio
+
+Select **FreeBSD Console** in Studio and keep Project Type set to **Console**.
+
+The flow is:
 
 ```text
-macOS   -> Hello.app
-Windows -> Hello.exe
-Linux   -> Hello
+current Patch Studio source
+        |
+        v
+C99 preflight in the browser
+        |
+        v
+Patch FreeBSD C99 GitHub workflow
+        |
+        v
+FreeBSD 15.1 virtual machine
+        |
+        v
+cc -std=c99 ...
+        |
+        v
+smoke run
+        |
+        v
+FreeBSD executable artifact
+        |
+        v
+Patch Studio download
 ```
 
-The native builder embeds direct Patch Wasm inside the platform host.
+The source does not need to be committed. It is sent as a workflow input. A fine-grained GitHub token with Actions read/write permission is currently required; Studio does not store it in `localStorage` or the project.
 
-## Build desktop applications from Patch Studio
+The workflow deliberately uses the compiler supplied by the FreeBSD base system. This keeps the generated C source independent of Node.js, Wasmtime or Rust at runtime.
 
-Patch Studio exposes three remote desktop targets directly in the Build menu:
+## Windows, macOS and Linux from Studio
+
+The three existing desktop targets continue to support both Project Types:
 
 ```text
-Windows App (.exe)
-macOS App (.app)
-Linux App
+Console -> direct Patch Wasm + native host
+Window  -> generated Patch desktop GUI player
 ```
 
-Set **Project Type** to either `Console` or `Window`, choose the operating system and press **Build**.
+The current source in the editor is sent to **Patch Native Apps**, compiled/packaged on the actual target operating system, smoke-run and returned as an Actions artifact.
 
-The current source in the editor is base64-encoded and supplied to the **Patch Native Apps** GitHub Actions workflow. It does not have to be committed first.
+## Current GUI boundary
 
-A fine-grained GitHub token with Actions read/write permission is required. The Studio native-build module keeps it only in the current page and does not store it in local storage.
+The Window player currently handles the first Patch UI slice: `window`, `text`, `button`, `input` and supported button click events. The package is standalone for Windows, macOS or Linux, but this is **not yet native-widget lowering** to AppKit, Win32 or GTK.
 
-The workflow checks the Patch source before packaging, builds on the actual target operating system, performs a smoke run and uploads a platform artifact that Studio downloads when the run succeeds.
+FreeBSD Window packages, a portable Unix GUI backend, signing/notarization and installer formats remain separate future work.
 
-## Console Studio builds
+## Portability claim
 
-Console projects use the directly compiled Patch Wasm/native host path. The current direct boundary covers the documented numeric state/change/control-flow/recipe subset.
-
-CI smoke-builds and runs this path on Windows, macOS and Linux.
-
-## Window / GUI Studio builds
-
-Window projects use a separate generated desktop player. The packager:
-
-1. embeds the current Patch source and Patch runtime modules;
-2. creates a small Electron desktop host;
-3. renders current Patch `window`, `text`, `button` and `input` controls;
-4. forwards supported button events back to the Patch runtime;
-5. packages the application for the selected desktop OS.
-
-The resulting package is standalone for the target OS. It is **not yet native-widget lowering** to AppKit, Win32 or GTK.
-
-Current package shapes are approximately:
+Beta.18 has executable evidence for portable C99 on:
 
 ```text
-Windows -> packaged application folder containing App.exe
-macOS   -> App.app inside a universal Electron bundle
-Linux   -> packaged application folder with executable and runtime files
+Linux      tested
+macOS      tested
+FreeBSD    tested on 15.1
+OpenBSD    not yet claimed
+NetBSD     not yet claimed
+other Unix not yet claimed
 ```
 
-The Actions workflow smoke-builds and starts Window packages on all three desktop systems. The Linux smoke run uses a virtual display because GitHub-hosted Linux runners are headless.
-
-## GitHub Actions workflow
-
-The `Patch Native Apps` workflow accepts:
-
-- `source_b64`, used by Studio;
-- `source_path`, for a repository file when source_b64 is empty;
-- `app_name`;
-- `platform`: `windows`, `macos` or `linux`;
-- `kind`: `console` or `window`;
-- `request_id`, used by Studio to find its workflow run and artifact.
-
-For pull requests touching the native subsystem, the workflow independently tests both Console and Window builds across Windows, macOS and Linux.
-
-## Current boundary
-
-Console packages are true compiled direct-Wasm/native-host applications for the supported direct backend subset.
-
-Window packages are standalone desktop applications, but currently execute through the Patch runtime in the generated GUI player. The longer-term target is native UI lowering while preserving the same Patch source and `change` semantics.
-
-Signing, macOS notarization, Windows code signing and installer formats are intentionally separate release-engineering steps and are not required for development smoke builds.
+C99 is the intended fallback architecture for additional Unix-family Console targets, but each platform should be added to the public build matrix only after an actual compile/run gate exists.

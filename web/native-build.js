@@ -1,8 +1,10 @@
 import { compile } from '../src/compiler.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
+import { compileToC99 } from '../src/c99.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
-const WORKFLOW = 'native-apps.yml';
+const NATIVE_WORKFLOW = 'native-apps.yml';
+const FREEBSD_WORKFLOW = 'freebsd-c99.yml';
 const API = 'https://api.github.com';
 const code = document.querySelector('#code');
 const projectName = document.querySelector('#projectName');
@@ -17,7 +19,8 @@ const output = document.querySelector('#output');
 const nativeTargets = new Map([
   ['native-windows', 'windows'],
   ['native-macos', 'macos'],
-  ['native-linux', 'linux']
+  ['native-linux', 'linux'],
+  ['native-freebsd', 'freebsd']
 ]);
 
 buildTarget.addEventListener('change', refreshNativePanel);
@@ -36,7 +39,13 @@ buildButton.addEventListener('click', async event => {
   const kind = projectKind.value === 'window' ? 'window' : 'console';
   try {
     let preflightText;
-    if (kind === 'console') {
+    if (platform === 'freebsd') {
+      if (kind !== 'console') {
+        throw new Error('FreeBSD beta.18 currently supports Console projects through the portable C99 backend. Build this Window project for Windows, macOS or Linux until the Unix GUI backend is implemented.');
+      }
+      const preflight = compileToC99(code.value, { name, kind: 'console', entry: 'main.patch' });
+      preflightText = `portable C99 ${preflight.metadata.version}`;
+    } else if (kind === 'console') {
       const preflight = compileToDirectWasm(code.value, { name, kind: 'console', entry: 'main.patch' });
       preflightText = `direct Wasm ${preflight.metadata.version}`;
     } else {
@@ -58,34 +67,34 @@ buildButton.addEventListener('click', async event => {
 
     const requestId = makeRequestId();
     const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
+    const workflow = workflowFor(platform);
     setBusy(true, `Starting ${platformLabel(platform)} ${kindLabel} build…`);
-    output.textContent = `Native ${platformLabel(platform)} ${kindLabel} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to Patch Native Apps…`;
+    output.textContent = `${platformLabel(platform)} ${kindLabel} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to ${workflow === FREEBSD_WORKFLOW ? 'Patch FreeBSD C99' : 'Patch Native Apps'}…`;
 
-    await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${WORKFLOW}/dispatches`, token, {
+    const inputs = {
+      source_b64: sourceBase64,
+      source_path: '',
+      app_name: name,
+      kind,
+      request_id: requestId
+    };
+    if (platform !== 'freebsd') inputs.platform = platform;
+
+    await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${workflow}/dispatches`, token, {
       method: 'POST',
-      body: JSON.stringify({
-        ref: 'main',
-        inputs: {
-          source_b64: sourceBase64,
-          source_path: '',
-          app_name: name,
-          platform,
-          kind,
-          request_id: requestId
-        }
-      })
+      body: JSON.stringify({ ref: 'main', inputs })
     });
 
-    const run = await waitForRun(token, requestId, platform, kindLabel);
+    const run = await waitForRun(token, requestId, platform, kindLabel, workflow);
     if (run.conclusion !== 'success') {
-      throw new Error(`GitHub native build finished with '${run.conclusion}'. Open ${run.html_url} for the build log.`);
+      throw new Error(`GitHub build finished with '${run.conclusion}'. Open ${run.html_url} for the build log.`);
     }
 
     status.textContent = 'Build complete. Preparing download…';
     const artifacts = await apiJson(`${API}/repos/${REPOSITORY}/actions/runs/${run.id}/artifacts`, token);
     const expectedName = `patch-${platform}-${requestId}`;
     const artifact = (artifacts.artifacts ?? []).find(item => item.name === expectedName && !item.expired);
-    if (!artifact) throw new Error(`The native build succeeded but artifact '${expectedName}' was not found. Open ${run.html_url}.`);
+    if (!artifact) throw new Error(`The build succeeded but artifact '${expectedName}' was not found. Open ${run.html_url}.`);
 
     await downloadArtifact(artifact, token, `${name}-${platform}-${kind}-build.zip`);
     output.textContent = `Built ${name} for ${platformLabel(platform)} ✓\n\nType: ${kindLabel}\nThe downloaded GitHub Actions artifact contains the platform package produced from the code currently in Patch Studio.\n\n${artifactDescription(platform, kind)}\n\nBuild run: ${run.html_url}`;
@@ -103,28 +112,31 @@ function refreshNativePanel() {
   panel.hidden = !platform;
   if (platform && !buildButton.disabled) {
     const kindLabel = projectKind.value === 'window' ? 'Window / GUI' : 'Console';
-    status.textContent = `${platformLabel(platform)} ${kindLabel} build via GitHub Actions. Token is not saved.`;
+    if (platform === 'freebsd' && projectKind.value === 'window') {
+      status.textContent = 'FreeBSD currently supports Console builds only; Unix GUI packaging is still on the roadmap.';
+    } else {
+      status.textContent = `${platformLabel(platform)} ${kindLabel} build via GitHub Actions. Token is not saved.`;
+    }
   }
 }
 
-async function waitForRun(token, requestId, platform, kindLabel) {
-  const title = `Native Patch ${requestId}`;
+async function waitForRun(token, requestId, platform, kindLabel, workflow) {
   let seen = null;
   for (let attempt = 0; attempt < 360; attempt += 1) {
-    const data = await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=30`, token);
-    const run = (data.workflow_runs ?? []).find(item => item.display_title === title);
+    const data = await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${workflow}/runs?event=workflow_dispatch&per_page=30`, token);
+    const run = (data.workflow_runs ?? []).find(item => String(item.display_title ?? item.name ?? '').includes(requestId));
     if (run) {
       seen = run;
       const state = run.status === 'completed' ? run.conclusion : run.status;
       status.textContent = `${platformLabel(platform)} ${kindLabel} build: ${state}…`;
-      output.textContent = `Native ${platformLabel(platform)} ${kindLabel} build\n\nGitHub Actions run: ${state}\n${run.html_url}\n\nPatch Studio will download the artifact automatically when the build succeeds.`;
+      output.textContent = `${platformLabel(platform)} ${kindLabel} build\n\nGitHub Actions run: ${state}\n${run.html_url}\n\nPatch Studio will download the artifact automatically when the build succeeds.`;
       if (run.status === 'completed') return run;
     } else if (attempt > 3) {
       status.textContent = `${platformLabel(platform)} ${kindLabel} build queued…`;
     }
     await sleep(5000);
   }
-  throw new Error(seen ? `Native build did not finish in time. Open ${seen.html_url}.` : 'Patch Studio could not find the dispatched native build run.');
+  throw new Error(seen ? `Native build did not finish in time. Open ${seen.html_url}.` : 'Patch Studio could not find the dispatched build run.');
 }
 
 async function apiJson(url, token, options = {}) {
@@ -199,7 +211,12 @@ function countWindowInstructions(instructions) {
   return count;
 }
 
+function workflowFor(platform) {
+  return platform === 'freebsd' ? FREEBSD_WORKFLOW : NATIVE_WORKFLOW;
+}
+
 function artifactDescription(platform, kind) {
+  if (platform === 'freebsd') return 'FreeBSD: native Console executable compiled from Patch portable C99 with the FreeBSD base-system cc';
   if (kind === 'window') {
     if (platform === 'macos') return 'macOS: standalone .app GUI package';
     if (platform === 'windows') return 'Windows: standalone GUI application folder with .exe';
@@ -225,5 +242,10 @@ function makeRequestId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 function safeName(name) { return (name || 'PatchApp').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64) || 'PatchApp'; }
-function platformLabel(platform) { return platform === 'macos' ? 'macOS' : platform === 'windows' ? 'Windows' : 'Linux'; }
+function platformLabel(platform) {
+  if (platform === 'macos') return 'macOS';
+  if (platform === 'windows') return 'Windows';
+  if (platform === 'freebsd') return 'FreeBSD';
+  return 'Linux';
+}
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio is the browser-first IDE for Patch: semantic changes, Change Contracts, direct WebAssembly, a Lean-checked core, and Windows, macOS and Linux application builds.">
+  <meta name="description" content="Patch Studio is the browser-first IDE for Patch: semantic changes, Change Contracts, direct WebAssembly, portable C99/FreeBSD builds, a Lean-checked core, and cross-platform applications.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -19,7 +19,7 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">P</div>
         <div>
-          <h1>Patch Studio <span>0.2 beta.17</span></h1>
+          <h1>Patch Studio <span>0.2 beta.18</span></h1>
           <p>Write, run and build Patch.</p>
         </div>
       </div>
@@ -45,6 +45,7 @@
               <option value="native-windows">Windows App (.exe)</option>
               <option value="native-macos">macOS App (.app)</option>
               <option value="native-linux">Linux App</option>
+              <option value="native-freebsd">FreeBSD Console</option>
               <option value="portable">Portable .patchapp</option>
             </optgroup>
             <optgroup label="WebAssembly">
@@ -113,7 +114,7 @@
         <div class="intro-copy">
           <p class="eyebrow">Patch programming language</p>
           <h2>Small syntax. Visible changes. One Studio.</h2>
-          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. Run projects in the browser, inspect the Change Contract, and build Console or Window applications for Windows, macOS and Linux from the same source.</p>
+          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. Run projects in the browser, inspect the Change Contract, and build desktop applications from the same source.</p>
           <div class="intro-actions">
             <a class="primary-link" href="https://github.com/pinkysworld/Patch">GitHub + README</a>
             <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a>
@@ -129,24 +130,24 @@ show score</pre>
       </article>
 
       <div class="signal-grid" aria-label="Project highlights">
-        <div class="signal"><strong>Build apps</strong><span>Console and GUI packages for Windows, macOS and Linux</span></div>
+        <div class="signal"><strong>Build apps</strong><span>Console and GUI packages on the main desktop platforms; FreeBSD Console via C99</span></div>
         <div class="signal"><strong>Semantic contracts</strong><span>Operation- and magnitude-aware Change Capabilities</span></div>
         <div class="signal"><strong>Lean 4 core</strong><span>Factorization, signatures, policies and integer ranges</span></div>
       </div>
 
       <div class="details-stack">
         <details>
-          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.17</span></summary>
+          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.18</span></summary>
           <div class="details-body two-column">
             <div>
               <h3>Language & Studio</h3>
-              <p>Working interpreter and compiler front end, Change IR 0.7, console programs, first GUI/Designer slice, history, undo/redo, preview, <code>why</code> provenance, Changes view and IR view.</p>
+              <p>Working interpreter and compiler front end, Change IR 0.7, console programs, first GUI/Designer slice, history, undo/redo, preview, <code>why</code> provenance, Change Contract and IR views.</p>
               <p>Browser-local formats include a <strong>Standalone Web App</strong>, direct WebAssembly, bootstrap Wasm for compatibility, and portable <code>.patchapp</code>.</p>
             </div>
             <div>
               <h3>Desktop targets from Studio</h3>
-              <p>Select <strong>Windows App</strong>, <strong>macOS App</strong> or <strong>Linux App</strong>. The selected <strong>Project Type</strong> chooses Console or Window packaging, and GitHub Actions builds the current editor source on the target operating system.</p>
-              <p>Console and GUI packages are smoke-tested on Windows, macOS and Linux in the native-build workflow.</p>
+              <p>Select <strong>Windows App</strong>, <strong>macOS App</strong> or <strong>Linux App</strong>; the selected <strong>Project Type</strong> chooses Console or Window/GUI packaging. Beta.18 also adds <strong>FreeBSD Console</strong>, compiled from Patch's portable C99 output with the FreeBSD base-system compiler.</p>
+              <p>Windows/macOS/Linux Console and GUI packages plus FreeBSD C99 Console execution are covered by dedicated CI smoke runs.</p>
             </div>
           </div>
         </details>
@@ -155,12 +156,14 @@ show score</pre>
           <summary><span>Build formats & important boundaries</span><span class="summary-hint">Choose the right artifact</span></summary>
           <div class="details-body two-column">
             <div>
-              <h3>Direct Wasm is real Wasm</h3>
-              <p>The direct backend lowers the supported numeric subset to WebAssembly instructions. The raw <code>.direct.wasm</code> currently imports Patch's small host ABI, so it is <strong>not yet a standalone WASI command</strong>. Use <code>patch run-wasm</code>, a Standalone Web App, or a desktop package for a ready-to-run host.</p>
+              <h3>Direct Wasm and portable C99</h3>
+              <p>The direct backend lowers the supported numeric subset to WebAssembly instructions. The raw <code>.direct.wasm</code> currently imports Patch's small host ABI, so it is <strong>not yet a standalone WASI command</strong>.</p>
+              <p>The new C99 backend lowers the same conservative Console subset from Change IR into portable C. It has been compiled and run on Linux, macOS and FreeBSD 15.1. This does not silently claim OpenBSD or NetBSD support before they are tested.</p>
             </div>
             <div>
               <h3>Window packages are standalone</h3>
-              <p>Current Window projects can be packaged as desktop GUI applications for all three supported desktop operating systems. They run the Patch Window model inside a generated desktop player; beta.17 does <strong>not</strong> claim native AppKit, Win32 or GTK widget lowering yet.</p>
+              <p>Current Window projects can be packaged as desktop GUI applications for Windows, macOS and Linux. They run the Patch Window model inside a generated desktop player; beta.18 does <strong>not</strong> claim native AppKit, Win32 or GTK widget lowering yet.</p>
+              <p>FreeBSD currently supports Console projects only. A portable Unix GUI backend remains a roadmap item.</p>
             </div>
           </div>
         </details>
@@ -188,11 +191,11 @@ show score</pre>
           <div class="details-body two-column">
             <div>
               <h3>Independent transition model</h3>
-              <p>For the direct numeric backend, an independent validator reconstructs expected Change-IR transitions instead of using the Wasm lowerer or the production interpreter as its sole oracle.</p>
+              <p>For the direct numeric Wasm backend, an independent validator reconstructs expected Change-IR transitions instead of using the Wasm lowerer or production interpreter as its sole oracle.</p>
             </div>
             <div>
               <h3>Semantic effect checks</h3>
-              <p>The validator reconstructs concrete increase/decrease/set/clear effects and checks them against static Change Signatures and protected Change Capabilities. This is translation/runtime validation evidence, not a theorem that the complete JavaScript compiler is verified.</p>
+              <p>The validator reconstructs concrete increase/decrease/set/clear effects and checks them against static Change Signatures and protected Change Capabilities. This is translation/runtime validation evidence, not a theorem that the complete compiler is verified.</p>
             </div>
           </div>
         </details>
@@ -201,15 +204,15 @@ show score</pre>
           <summary><span>Roadmap</span><span class="summary-hint">Highest-value next work</span></summary>
           <div class="details-body roadmap-list">
             <div><strong>Formal correspondence</strong><span>Reduce the remaining trust gap from production source/AST to formal RangeExpr / SourceStmt and connect runtime effects to Lean execution.</span></div>
-            <div><strong>Native GUI lowering</strong><span>Move the visual Window/Designer model from the current desktop player toward native AppKit, Win32 and a portable Unix GUI backend.</span></div>
-            <div><strong>Designer</strong><span>Add selection, properties, drag/resize, richer controls and two-way input binding.</span></div>
-            <div><strong>Distribution</strong><span>Add Windows signing, macOS Developer ID/notarization, installers and a build service that does not require an end-user GitHub token.</span></div>
+            <div><strong>Unix portability</strong><span>Extend the tested C99 fallback beyond FreeBSD before advertising OpenBSD/NetBSD support, and add a portable Unix GUI layer.</span></div>
+            <div><strong>Native GUI lowering</strong><span>Move the visual model toward AppKit, Win32 and a portable Unix backend rather than the current desktop player.</span></div>
+            <div><strong>Designer & distribution</strong><span>Add selection, properties, drag/resize, richer controls, signing/notarization and installers.</span></div>
           </div>
         </details>
       </div>
 
       <footer class="site-footer">
-        <span>Patch is experimental research software · 0.2.0-beta.17</span>
+        <span>Patch is experimental research software · 0.2.0-beta.18</span>
         <nav aria-label="Project links">
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a>
