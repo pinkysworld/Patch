@@ -3,19 +3,20 @@ import { compileToDirectWasm, runDirectWasm } from './wasm-direct.js';
 import { validateDirectSemanticEffects } from './direct-effect-validator.js';
 import { deriveRuntimePathWitnesses, PATCH_RUNTIME_PATH_WITNESS_VERSION } from './runtime-path-witness.js';
 
-export const PATCH_RUNTIME_CERTIFICATE_VERSION = '0.2';
-const RUNTIME_SCHEMA_VERSION = '0.2';
+export const PATCH_RUNTIME_CERTIFICATE_VERSION = '0.3';
+const RUNTIME_SCHEMA_VERSION = '0.3';
 const CHECKER_KINDS = new Set(['increase', 'decrease', 'set', 'clear']);
 const SOURCE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
 
 /**
  * Execute direct Wasm, independently reconstruct concrete semantic effect
  * occurrences, derive untrusted control-flow witnesses, and emit Lean checks
- * tying each observed protected-recipe invocation to SourceExecutes.
+ * tying each observed protected-recipe invocation to SourceExecutes and the
+ * recipe's semantic Change Capability policy.
  *
- * Beta.21 accepts branch/repeat witnesses and multiple invocations. The witness
- * producer itself is not trusted: PatchRuntime.lean validates its shape and
- * repeat count against the decoded formal CoreStmt before accepting it.
+ * The occurrence/path producer itself is not trusted: Lean validates path
+ * shape/repeat counts, concrete-to-formal refinement, source execution and the
+ * final concrete-runtime capability containment theorem.
  */
 export async function generateLeanRuntimeCertificate(source, options = {}) {
   const name = options.name ?? 'PatchRuntimeApp';
@@ -49,6 +50,16 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
       throw new Error(`Protected recipe '${recipeName}' is not source-validated: ${why}`);
     }
 
+    const rules = policies[recipeName] ?? [];
+    for (const rule of rules) {
+      if (!CHECKER_KINDS.has(rule.operation)) {
+        throw new Error(`Policy operation '${rule.operation}' for '${recipeName}' is outside the current Lean runtime capability vocabulary.`);
+      }
+      if (rule.maxAmount !== null && (!Number.isSafeInteger(rule.maxAmount) || rule.maxAmount < 0)) {
+        throw new Error(`Policy bound for '${recipeName}' must be a non-negative safe integer for Lean runtime certificate generation.`);
+      }
+    }
+
     const invocations = pathWitnesses.invocations.filter(item => item.recipe === recipeName);
     const occurrences = validation.occurrences.filter(item => item.scope === recipeName);
     let offset = 0;
@@ -68,13 +79,18 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
       const sourceDef = `runtime_${id}_source`;
       const observedDef = `runtime_${id}_observed`;
       const pathDef = `runtime_${id}_path`;
+      const policyDef = `runtime_${id}_policy`;
       const checkTheorem = `runtime_${id}_checked`;
+      const policyCheckTheorem = `runtime_${id}_policy_checked`;
 
       blocks.push(`def ${sourceDef} : SourceStmt :=\n${indent(leanSourceCore(sourceEntry.source), 2)}`);
       blocks.push(`def ${observedDef} : List EvidenceEffect :=\n${indent(leanList(observed.map(leanEvidenceEffect)), 2)}`);
       blocks.push(`def ${pathDef} : RuntimePath :=\n${indent(leanRuntimePath(invocation.path), 2)}`);
+      blocks.push(`def ${policyDef} : List Rule :=\n${indent(leanList(rules.map(leanRule)), 2)}`);
       blocks.push(`theorem ${checkTheorem} :\n    checkSourceRuntimeEvidence ${sourceDef} ${observedDef} ${pathDef} = true := by\n  native_decide`);
+      blocks.push(`theorem ${policyCheckTheorem} :\n    checkSourceProtected ${sourceDef} ${policyDef} = true := by\n  native_decide`);
       blocks.push(`theorem runtime_${id}_corresponds :\n    ∃ formalTrace actualTrace,\n      SourceExecutes ${sourceDef} formalTrace ∧\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      TraceRefines actualTrace formalTrace := by\n  exact checkSourceRuntimeEvidence_sound ${checkTheorem}`);
+      blocks.push(`theorem runtime_${id}_concrete_policy_safe :\n    ∃ actualTrace,\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      ∀ effect, effect ∈ actualTrace →\n        ∃ rule, rule ∈ ${policyDef} ∧ Allows rule effect := by\n  exact checkedConcreteRuntimeCannotEscape ${checkTheorem} ${policyCheckTheorem}`);
 
       observedEffects += observed.length;
       certified.push(`${recipeName}#${invocation.invocation}`);
@@ -94,7 +110,7 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
   const sourceSha256 = sha256(source);
   const runtimeTraceJson = JSON.stringify(execution.trace);
   const runtimeTraceSha256 = sha256(runtimeTraceJson);
-  const lean = `import PatchRuntime\n\nopen PatchFormal\n\nnamespace PatchGeneratedRuntimeCertificate\n\n/-- Generated after executing the direct-Wasm backend. The source hash binds\n    the certificate to exact Patch source bytes; the runtime hash binds it to\n    the observed target/before/after transition trace that was independently\n    reinterpreted into semantic effect occurrences. Control-flow witnesses are\n    untrusted certificate data: Lean validates branch choice, repeat shape/count,\n    formal execution and concrete-to-formal effect refinement. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef runtimeTraceSha256 : String := ${leanString(runtimeTraceSha256)}\ndef runtimeCertificateVersion : String := ${leanString(PATCH_RUNTIME_CERTIFICATE_VERSION)}\ndef runtimeSchemaVersion : String := ${leanString(RUNTIME_SCHEMA_VERSION)}\ndef runtimePathWitnessVersion : String := ${leanString(PATCH_RUNTIME_PATH_WITNESS_VERSION)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedRuntimeCertificate\n`;
+  const lean = `import PatchRuntimeCapability\n\nopen PatchFormal\n\nnamespace PatchGeneratedRuntimeCertificate\n\n/-- Generated after executing the direct-Wasm backend. The source hash binds\n    the certificate to exact Patch source bytes; the runtime hash binds it to\n    the observed target/before/after transition trace that was independently\n    reinterpreted into semantic effect occurrences. Control-flow witnesses and\n    concrete occurrences are untrusted certificate data: Lean validates path\n    execution, concrete-to-formal effect refinement, the semantic policy, and\n    concrete runtime capability containment. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef runtimeTraceSha256 : String := ${leanString(runtimeTraceSha256)}\ndef runtimeCertificateVersion : String := ${leanString(PATCH_RUNTIME_CERTIFICATE_VERSION)}\ndef runtimeSchemaVersion : String := ${leanString(RUNTIME_SCHEMA_VERSION)}\ndef runtimePathWitnessVersion : String := ${leanString(PATCH_RUNTIME_PATH_WITNESS_VERSION)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedRuntimeCertificate\n`;
 
   return {
     lean,
@@ -111,13 +127,13 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
     runtimeSchemaVersion: RUNTIME_SCHEMA_VERSION,
     runtimePathWitnessVersion: PATCH_RUNTIME_PATH_WITNESS_VERSION,
     checker: 'PatchRuntime.checkSourceRuntimeEvidence',
-    theorem: 'PatchRuntime.checkSourceRuntimeEvidence_sound'
+    theorem: 'PatchRuntimeCapability.checkedConcreteRuntimeCannotEscape'
   };
 }
 
 function runtimeEvidenceEffect(effect, recipeName) {
   if (!CHECKER_KINDS.has(effect.operation)) {
-    throw new Error(`Observed runtime effect '${effect.operation}' for '${recipeName}' is outside the beta.21 formal runtime vocabulary.`);
+    throw new Error(`Observed runtime effect '${effect.operation}' for '${recipeName}' is outside the beta.22 formal runtime vocabulary.`);
   }
   const hasAmount = effect.operation === 'increase' || effect.operation === 'decrease';
   let amountRange = null;
@@ -175,12 +191,24 @@ function leanEvidenceEffect(effect) {
   return `{ target := ${leanString(effect.target)}, field := ${leanOptionString(effect.field)}, kind := .${effect.operation}, amount := ${leanEvidenceAmount(effect.amountRange)} }`;
 }
 
+function leanRule(rule) {
+  const amount = rule.maxAmount === null ? 'none' : `some ${leanInterval(0, rule.maxAmount)}`;
+  return `{ target := ${leanString(rule.target)}, field := ${leanOptionString(rule.field)}, kind := .${rule.operation}, amount := ${amount} }`;
+}
+
 function leanEvidenceAmount(range) {
   if (!range) return 'none';
   if (!Number.isSafeInteger(range.min) || !Number.isSafeInteger(range.max) || range.min > range.max) {
     throw new Error(`Invalid runtime evidence interval ${range.min}..${range.max}.`);
   }
   return `some ({ lo := ${leanInt(range.min)}, hi := ${leanInt(range.max)} } : EvidenceAmount)`;
+}
+
+function leanInterval(lo, hi) {
+  if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi) || lo > hi) {
+    throw new Error(`Invalid interval ${lo}..${hi} for Lean runtime certificate generation.`);
+  }
+  return `({ lo := ${leanInt(lo)}, hi := ${leanInt(hi)}, ordered := by decide } : Interval)`;
 }
 
 function leanOptionString(value) {
