@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.23** · Change IR **0.9**
+Status: **0.2.0-beta.24** · Change IR **0.9**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.23 changes the research evidence carried by compiled artifacts, not the ordinary application build syntax.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.24 changes Window event execution, not the package formats or formal Change IR schema.
 
 ## Build matrix
 
@@ -22,13 +22,31 @@ Window / GUI
   FreeBSD -> not yet supported
 ```
 
-## Window preflight
+## Window preflight and semantic events
 
 The shared **Window preflight** compiles source and checks normalized `code == "WINDOW"` IR, then validates the common runtime contract before cloud dispatch and again inside the target-side desktop packager.
 
-Current cross-target event support is deliberately conservative: button `clicked` only. Duplicate control ids, handlers for nonexistent controls, input `changed`, and window `closed` are rejected at build time rather than packaged with inconsistent behavior.
+Current cross-target event support is deliberately conservative and explicit:
 
-The Standalone Window Web backend has executable differential tests against `PatchInterpreter`, including multi-operation semantic changes and actual button clicks.
+- button `clicked`;
+- input `changed`, with the current control text exposed as event-local `value`.
+
+The input edit itself does not write persistent Patch state. Source must still use an ordinary semantic `change` to commit it, for example:
+
+```patch
+create text name = ""
+window "Hello":
+  input name
+when name changed:
+  change name:
+    set = value
+```
+
+Duplicate control ids, handlers for nonexistent controls and unsupported event/control pairs such as button `changed` or window `closed` are rejected at build time rather than packaged with inconsistent behavior.
+
+The Standalone Window Web backend has executable differential tests against `PatchInterpreter`, plus fake-DOM tests proving that an observation-only input handler does not persist control edits while an explicit `change` does.
+
+The generated Windows/macOS/Linux desktop player uses the same `src/window-events.js` adapter as interpreter-backed Studio preview, so the event-local-value contract is shared rather than reimplemented as a hidden assignment.
 
 ## Browser and WebAssembly
 
@@ -42,11 +60,9 @@ Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the v
 
 ## Runtime formal assurance
 
-`patch runtime-certify` is independent of packaging. Beta.23 requires eligible protected recipes to pass both the existing raw SourceStmt/range validation and the new independent raw GuardTree/control-flow validation. The generated Lean certificate contains proof-free concrete semantic effects, `RuntimePath`, concrete used recipe-parameter values, and the declared policy.
+`patch runtime-certify` is independent of packaging. The beta.23 research layer requires eligible protected recipes to pass raw SourceStmt/range validation and independent raw GuardTree/control-flow validation. `PatchGuarded.lean` checks supported branch witnesses against concrete safe-integer parameter guards and composes accepted concrete effects with Change Capabilities.
 
-`PatchGuarded.lean` checks SourceStmt/GuardTree shape and requires `branchThen`/`branchElse` to agree with evaluation of the normalized guard in the supported safe-integer recipe-parameter fragment. `checkedGuardedConcreteRuntimeCannotEscape` then retains that guard-validity evidence while proving every decoded concrete runtime effect remains inside the declared Change Capability.
-
-These are assurance properties for the supported direct-Wasm fragment; they do not alter the executable package format and do not constitute end-to-end compiler verification.
+Beta.24 does not extend this Lean fragment; it is product/semantic-consistency work that preserves the same single persistent-mutation route for GUI input.
 
 ## Portable C99
 
