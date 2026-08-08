@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.20",
-  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked source/runtime correspondence, direct WebAssembly, portable C99/FreeBSD execution, and cross-platform Studio builds",
+  "version": "0.2.0-beta.21",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, path-witnessed Lean runtime correspondence, working Window Web/desktop builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -27,5 +27,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "runtime-correspondence", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "runtime-correspondence", "runtime-path-witness", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
 }
