@@ -92,7 +92,26 @@
 - [x] Change IR 0.6 with `formalSource`
 - [x] `patch formal` reports both source-core and semantic bridge coverage
 - [x] formal CI explicitly builds `PatchSource`
-- [x] source-core/certificate tests on cross-platform CI
+
+### beta.9: machine-checked integer range-analysis soundness
+
+- [x] formal `RangeExpr` fragment in Lean
+- [x] formal concrete evaluator `evalRangeExpr`
+- [x] executable formal interval analyzer `analyzeRange`
+- [x] machine-checked `rangeAnalysisSound`
+- [x] integer literals and ranged variables
+- [x] addition, subtraction and negation
+- [x] multiplication by a non-negative integer constant via `scale`
+- [x] motivating theorem for `bonus in 0..5` and `bonus * 2 in 0..10`
+- [x] independent production `src/formal-range.js` extractor
+- [x] independent formal-range calculation compared with production range analysis
+- [x] conservative refusal of division, decimals and general multiplication in beta.9 certification
+- [x] formal range claims embedded with formal Source-core metadata
+- [x] generated certificates emit `RangeExpr`, environment, inferred interval and Lean soundness theorem
+- [x] Change IR 0.7
+- [x] formal CI builds `PatchRange`
+- [x] formal CI certificate example exercises dynamic `bonus * 2`
+- [x] Windows/macOS/Linux tests for formal range extraction and certification boundaries
 
 Still open in product/tooling:
 
@@ -117,13 +136,15 @@ Completed foundation:
 - [x] machine-checked SourceStmt → EvidenceStmt correspondence for generated artifacts
 - [x] machine-checked source → formal-signature correspondence for generated artifacts
 - [x] formal source-runtime capability containment
+- [x] formal integer expression fragment
+- [x] machine-checked interval-analysis soundness for that formal fragment
+- [x] independent production expression extraction and range-agreement validation
 
 Highest-priority remaining work:
 
-- [ ] **formalize the numeric expression fragment in Lean**
-- [ ] **prove production interval-analysis soundness for that fragment**
-- [ ] define/validate production AST → `SourceStmt` extraction for the supported source subset
-- [ ] connect production runtime traces to `SourceExecutes` / `Executes`
+- [ ] **prove or independently validate production AST → `RangeExpr` / `SourceStmt` extraction for the supported source subset**
+- [ ] **connect production runtime traces to `evalRangeExpr` / `SourceExecutes` / `Executes`**
+- [ ] extend the verified arithmetic fragment only where semantics are explicit and useful
 - [ ] extend certification to non-recursive recipe calls and parameter substitution
 - [ ] stable machine-readable certificate/container format beyond generated Lean source
 - [ ] richer path-sensitive/call-graph analysis
@@ -135,7 +156,7 @@ Highest-priority remaining work:
 
 - [ ] typed core suitable for direct lowering
 - [ ] direct Change IR-to-WebAssembly lowering
-- [ ] preserve semantic contract/source/evidence certificates across lowering
+- [ ] preserve semantic contract/range/source/evidence certificates across lowering
 - [ ] WASI console runtime
 - [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner executing lowered code
@@ -177,7 +198,7 @@ Highest-priority remaining work:
 
 Before a high-venue submission:
 
-- [ ] systematic related-work review across state-transition languages, effects/capabilities, quantitative/refinement systems, certifying systems, update calculi, provenance and reversible systems
+- [ ] systematic related-work review across state-transition languages, effects/capabilities, quantitative/refinement systems, certifying systems, abstract interpretation, update calculi, provenance and reversible systems
 - [x] State-Change Factorization formal core
 - [x] factorization and Mutation Transparency proofs
 - [x] Change Signature Soundness for structured formal core
@@ -188,12 +209,13 @@ Before a high-venue submission:
 - [x] evidence/formal-signature correspondence
 - [x] formal source mutation vocabulary
 - [x] SourceStmt→EvidenceStmt and source→signature checked correspondence for certificate artifacts
-- [ ] production AST→SourceStmt extraction assurance for a useful subset
-- [ ] production interval-analyzer soundness proof
-- [ ] production runtime/formal trace correspondence
+- [x] machine-checked range-analysis soundness for a useful integer fragment
+- [x] production/formal range-agreement boundary for supported expressions
+- [ ] production AST→RangeExpr/SourceStmt extraction assurance for a useful subset
+- [ ] production runtime/formal evaluation and trace correspondence
 - [ ] direct compiled execution
 - [ ] benchmark suite and semantic-security case studies
-- [ ] source/evidence/certificate/checker overhead evaluation
+- [ ] source/range/evidence/certificate/checker overhead evaluation
 - [ ] reproducibility bundle
 - [ ] novice study with ethics/consent only if retained as a headline claim
 
@@ -207,6 +229,7 @@ Before a high-venue submission:
 6. Bootstrap Wasm must never be described as direct Wasm lowering.
 7. Capability/range analysis must fail conservatively when safety cannot be proved.
 8. `why` must distinguish recorded provenance from stronger causal claims.
-9. Beta 8 checks the formal SourceStmt→semantic chain, but JavaScript source/AST→SourceStmt extraction is not yet verified.
-10. Production interval claims remain a separate proof obligation until range-analysis soundness is mechanized.
-11. Unsupported certification constructs are never silently labeled verified.
+9. JavaScript source/AST→RangeExpr/SourceStmt extraction is not yet machine proved.
+10. Beta 9 range soundness applies only to the explicitly modeled integer expression fragment.
+11. Division, decimal/floating-point semantics and general multiplication are not silently labeled verified.
+12. Unsupported certification constructs are never silently labeled verified.
