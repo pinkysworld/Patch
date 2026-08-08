@@ -27,7 +27,7 @@ Patch Studio is browser-first and installable as a PWA, with desktop and iPhone/
 
 ## Current status
 
-Current development beta: **0.2.0-beta.9**
+Current development beta: **0.2.0-beta.10**
 
 Implemented now:
 
@@ -44,6 +44,8 @@ Implemented now:
 - independent production `RangeExpr` extraction and range-agreement checking before certification;
 - `patch formal` coverage reporting and `patch certify` Lean certificates;
 - portable `.patchapp` bundles and valid bootstrap WebAssembly modules;
+- **first directly executable Change IR to WebAssembly backend for the numeric console core**;
+- differential interpreter vs direct-Wasm execution tests;
 - console programs and first GUI/Designer slice;
 - Windows/macOS/Linux JavaScript CI plus explicit Lean range/source/evidence/certificate CI.
 
@@ -185,9 +187,56 @@ PatchRange.lean       integer expression evaluation + range-analysis soundness
 
 Formal CI explicitly builds all six modules and compiles a certificate generated from a real `bonus * 2` Patch example.
 
+## Beta 10: first directly executable WebAssembly core
+
+Beta 10 adds a second WebAssembly target alongside the existing bootstrap carrier.
+
+```text
+--target wasm
+Patch source -> Change IR -> embedded payload -> Patch host
+
+--target wasm-direct
+Patch source -> Change IR -> Wasm instructions -> WebAssembly VM
+```
+
+The first direct backend is intentionally narrow. It currently supports console programs containing:
+
+```text
+create number
+change number: set / add / remove / clear
+show numeric-expression
+numeric literals and earlier numeric bindings
++  -  *  /
+```
+
+For example:
+
+```patch
+create number base = 2
+create number score = base * 3 + 1
+
+change score:
+  add base * (4 - 1)
+
+show score
+```
+
+can now be compiled into a Wasm module whose `run()` function performs the Patch state updates directly. Numeric persistent bindings are exported as mutable Wasm globals and output uses the minimal host ABI `patch.show_number(f64)`.
+
+```bash
+patch build examples/direct-wasm.patch --kind console --target wasm-direct --out DirectScore.wasm
+patch run-wasm examples/direct-wasm.patch
+```
+
+CI executes the same supported Patch programs through both the interpreter and direct Wasm and compares output and final state. Unsupported language features fail explicitly with `DirectWasmUnsupportedError`; they do not silently fall back to interpretation.
+
+This is direct compiled execution for a useful core, not yet full-language direct compilation and not yet a compiler-correctness theorem. Recipes/calls, structured control flow, strings/lists, things/fields, history operations and GUI lowering remain open backend work.
+
+See `docs/DIRECT_WASM.md` for the exact boundary.
+
 ## Remaining trust boundary
 
-Beta 9 is **not full compiler verification**.
+Beta 10 is **not full compiler verification**.
 
 Still trusted/unproved:
 
@@ -196,17 +245,17 @@ Patch source bytes
    -> JavaScript parser / AST
    -> independent RangeExpr / SourceStmt extraction
 
-production runtime
+production runtime / direct backend
    -> correspondence with formal evalRangeExpr / SourceExecutes
 ```
 
-Within the certified fragment, Lean now machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment.
+Within the certified fragment, Lean machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment. The direct backend currently adds differential execution evidence rather than a lowering correctness proof.
 
-The next strongest formal target is a theorem or independently validated relation connecting the supported production AST directly to `RangeExpr` / `SourceStmt`, followed by production runtime-trace correspondence.
+The next strongest formal target is a theorem or independently validated relation connecting the supported production AST directly to `RangeExpr` / `SourceStmt`, followed by production/direct-runtime trace correspondence.
 
 ## Compiler status
 
-The compiler is already functional as a beta compiler front end and artifact pipeline:
+The compiler is already functional as a beta compiler and artifact pipeline:
 
 ```text
 Patch source
@@ -216,11 +265,12 @@ Patch source
    -> Change IR 0.7                        [implemented]
    -> portable .patchapp                   [implemented]
    -> bootstrap WebAssembly .wasm          [implemented]
-   -> direct Change IR -> Wasm             [not yet]
+   -> direct numeric Change IR -> Wasm     [implemented, beta.10 subset]
+   -> structured control-flow/call Wasm    [next backend stage]
    -> native .exe / .app packaging         [not yet]
 ```
 
-The current WebAssembly backend emits a genuine instantiable module containing Patch source and Change IR for a Patch host. It remains a **bootstrap carrier backend**, not direct compiled execution.
+The bootstrap target remains useful for broader Patch/browser coverage. The new direct target executes the supported numeric console subset as real WebAssembly instructions without a Patch interpreter host.
 
 ## CLI
 
@@ -228,17 +278,19 @@ Node.js 22+ for the current JavaScript beta toolchain:
 
 ```bash
 patch run examples/score.patch
+patch run-wasm examples/direct-wasm.patch
 patch check examples/score.patch
 patch changes examples/change-capabilities.patch
 patch formal examples/range-soundness.patch
 patch certify examples/range-soundness.patch --out RangeSoundness.patchcert.lean
 patch build examples/score.patch --kind console --target portable
 patch build examples/score.patch --kind console --target wasm
+patch build examples/direct-wasm.patch --kind console --target wasm-direct
 ```
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, source calculi, undo, event logs, lenses, CRDTs or reversible computation are individually new.
+Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, source calculi, undo, event logs, lenses, CRDTs, reversible computation or WebAssembly compilation are individually new.
 
 The candidate contribution is the combination:
 
@@ -247,19 +299,20 @@ The candidate contribution is the combination:
 3. **Formal runtime containment**: Lean proves the runtime-signature-policy chain for a structured core.
 4. **Source-to-semantic assurance**: Lean performs source-operation normalization before semantic evidence checking.
 5. **Quantitative assurance for a useful fragment**: Lean proves soundness of the formal integer interval analyzer, while production extraction and unsupported arithmetic remain explicit boundaries.
+6. **Executable backend path**: a first Change IR subset now lowers directly to Wasm and is differentially checked against interpreter behavior.
 
-A high-venue submission still needs systematic related work, stronger AST/source correspondence, runtime correspondence, direct compiled execution, convincing security/engineering case studies and measured overhead/effectiveness.
+A high-venue submission still needs systematic related work, stronger AST/source correspondence, runtime/lowering correspondence, broader direct compiled execution, convincing security/engineering case studies and measured overhead/effectiveness.
 
 ## Repository map
 
 ```text
-src/                    parser, interpreter, analyses, formal extractors, certificates, compiler, Wasm, Designer
+src/                    parser, interpreter, analyses, formal extractors, certificates, compiler, bootstrap Wasm, direct Wasm, Designer
 formal/                 Lean factorization, signatures, checker, evidence, source core, range soundness
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
-tests/                  language, range/source/bridge/certificate, compiler, UI, Designer, Wasm
-examples/               runnable .patch programs including range-soundness.patch
-docs/                   specification, formal model, novelty, research, compiler, Studio, targets
+tests/                  language, range/source/bridge/certificate, compiler, UI, Designer, bootstrap/direct Wasm
+examples/               runnable .patch programs including range-soundness.patch and direct-wasm.patch
+docs/                   specification, formal model, novelty, research, compiler, direct Wasm, Studio, targets
 paper/                   manuscript draft and references
 .github/workflows/       cross-platform CI, formal verification, Pages deployment
 ```

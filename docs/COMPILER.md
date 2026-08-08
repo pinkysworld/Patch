@@ -2,7 +2,7 @@
 
 ## Status
 
-Patch 0.2 beta.8 has a compiler front end, semantic Change Signature analysis, Change Capabilities, a conservative semantic bridge, a formal source-core extractor, a Lean-verified policy checker, and machine-checked source/evidence/signature correspondence for the formal subset.
+Patch 0.2.0-beta.10 has a working compiler front end, Change IR 0.7, semantic Change Signature analysis, Change Capabilities, formal source/range extraction, Lean-checkable certificates, a bootstrap WebAssembly carrier, and a first **directly executable WebAssembly backend** for a numeric console subset.
 
 ```text
 Patch source
@@ -13,6 +13,9 @@ JavaScript parser / AST
    +--> production Change Signature analysis
    |       `--> production Change Capability validation
    |
+   +--> independent formal-range extractor
+   |       `--> RangeExpr + independently reconstructed interval
+   |
    +--> formal-source extractor
    |       `--> SourceStmt preserving add/remove/set/clear
    |
@@ -20,28 +23,29 @@ JavaScript parser / AST
    |       `--> EvidenceStmt-style semantic claim
    |
    v
-Change IR 0.6
+Change IR 0.7
    |
    +--> generated Lean certificate
    |       |
-   |       v
-   |    PatchSource [Lean]
-   |       +--> validate source amount bounds
-   |       +--> normalize add/remove/set/clear
-   |       +--> check SourceStmt -> EvidenceStmt
-   |       v
-   |    PatchEvidence [Lean]
-   |       +--> validate/decode EvidenceStmt -> CoreStmt
-   |       +--> infer formal Change Signature
-   |       +--> compare separate production signature claim
-   |       v
-   |    PatchChecker [Lean]
-   |       `--> verify semantic policy
+   |       +--> PatchRange [Lean]
+   |       |      `--> rangeAnalysisSound
+   |       |
+   |       +--> PatchSource [Lean]
+   |       |      +--> normalize add/remove/set/clear
+   |       |      `--> check SourceStmt -> EvidenceStmt
+   |       |
+   |       +--> PatchEvidence [Lean]
+   |       |      +--> decode EvidenceStmt -> CoreStmt
+   |       |      +--> infer formal Change Signature
+   |       |      `--> compare separate production signature claim
+   |       |
+   |       `--> PatchChecker [Lean]
+   |              `--> verify semantic policy
    |
-   +--> .patchapp                    [implemented]
-   +--> bootstrap .wasm              [implemented]
-   +--> direct executable Wasm       [planned]
-   `--> native host packaging        [roadmap]
+   +--> .patchapp                     [implemented]
+   +--> bootstrap .wasm               [implemented]
+   +--> direct numeric .wasm          [implemented beta.10 subset]
+   `--> native host packaging         [roadmap]
 ```
 
 ## Why Change IR
@@ -63,7 +67,7 @@ conceptually lowers to:
 }
 ```
 
-This structure is reused by execution, history, inverse generation, provenance, semantic contracts and formal evidence.
+This structure is reused by execution, history, inverse generation, provenance, semantic contracts, formal evidence, and now the first direct Wasm lowering path.
 
 ## State-Change Factorization
 
@@ -71,7 +75,7 @@ The compiler/runtime architecture follows the intended property:
 
 > For supported persistent mutation, the state transition is performed through a semantic change rather than through hidden assignment followed by observation.
 
-The Lean formal machine proves State-Change Factorization for its modeled state-changing step. Production-runtime correspondence remains a separate obligation.
+The Lean formal machine proves State-Change Factorization for its modeled state-changing step. Correspondence with the production interpreter and direct backend remains a separate proof obligation.
 
 ## Production semantic analysis
 
@@ -85,13 +89,29 @@ player.score -> set
 
 Optional `allow` policies constrain the target, field, operation and maximum amount. The production compiler rejects protected code when it cannot prove that inferred committed effects are inside the declared policy.
 
-## Two separate production formal views
+## Independent quantitative view
 
-Beta 8 deliberately avoids deriving every formal claim through one producer path.
+Beta 9 introduced `src/formal-range.js`. For the certifiable integer fragment it independently parses production expression text into a formal-style `RangeExpr` and independently computes the range represented by that expression.
+
+The production interval analyzer and formal-range extractor therefore remain separate paths:
+
+```text
+expression -> production range analyzer -> production interval
+
+expression -> formal-range extractor -> RangeExpr -> independent interval
+```
+
+A formal range claim is emitted only when the supported independent result agrees with the production result. Lean then proves soundness of its own formal `analyzeRange` for the modeled expression language through `rangeAnalysisSound`.
+
+The formal range fragment currently models integer literals, ranged variables, addition, subtraction, negation and multiplication by a non-negative integer constant. Division, decimal/floating-point semantics and general multiplication are outside the beta.9 Lean range theorem even though the production language supports more arithmetic.
+
+## Formal source and semantic views
+
+The compiler deliberately avoids deriving every formal claim through one producer path.
 
 ### `src/formal-source.js`
 
-This extractor preserves source mutation verbs:
+Preserves source mutation verbs:
 
 ```text
 add | remove | set | clear
@@ -103,168 +123,187 @@ and structured control flow:
 skip | change | seq | branch | repeat
 ```
 
-For numeric `add`/`remove`, it attaches the production-inferred raw amount range, but it does **not** pre-classify the source verb as increase/decrease.
+For numeric `add`/`remove`, it includes a range claim only when the formal-range boundary supports and agrees with the production result.
 
 ### `src/formal-bridge.js`
 
-This older independent path reconstructs the semantic formal subset and normalizes operations to semantic effects such as `increase`, `decrease`, `set`, and `clear`.
+Independently reconstructs the semantic formal subset and normalizes operations to semantic effects such as `increase`, `decrease`, `set`, and `clear`.
 
 ### `src/change-analysis.js`
 
-This remains the third path producing the production Change Signature claim.
+Produces the independent production Change Signature claim.
 
-The certificate can therefore contain three distinct statements about a protected recipe:
+A generated protected certificate can therefore contain separate:
 
 ```text
+RangeExpr claims
 SourceStmt
 EvidenceStmt
 production Change Signature claim
+semantic policy
 ```
 
-Lean checks their required correspondence.
+Lean checks the modeled relationships among these artifacts.
 
-## PatchSource: source-level normalization in Lean
+## Lean certificate chain
 
-`formal/PatchSource.lean` defines:
+For supported protected recipes the generated artifact carries exact source binding information and the proof-free formal data required for machine checking.
 
-```text
-SourceChangeKind = add | remove | set | clear
-SourceChange
-SourceStmt
-```
-
-and executable `normalizeSourceChange` / `lowerSourceStmt` functions.
-
-Examples of normalization:
+Conceptually:
 
 ```text
-add [0,5]       -> increase [0,5]
-remove [0,5]    -> decrease [0,5]
-add [-5,-5]     -> decrease [5,5]
-remove [-5,-5]  -> increase [5,5]
-```
+RangeExpr + range environment
+   -> Lean analyzeRange
+   -> rangeAnalysisSound
 
-Raw bounds are validated by Lean before use. Mixed-sign source ranges are rejected from the certifiable source subset because one static semantic direction cannot describe them.
-
-The source/evidence checker is:
-
-```text
-checkSourceEvidence(source, evidence)
-```
-
-and Lean proves:
-
-```text
-checkSourceEvidence(source, evidence) = true
-------------------------------------------------
-lowerSourceStmt(source) = some evidence
-```
-
-via `checkSourceEvidence_sound`.
-
-## Source → signature correspondence
-
-`checkSourceSignature source claim` composes the source lowering with beta.7 evidence decoding and formal signature inference:
-
-```text
 SourceStmt
    -> Lean semantic normalization
-   -> EvidenceStmt
-   -> CoreStmt
+   -> EvidenceStmt equality
+   -> CoreStmt decoding
    -> inferSignature
-   -> canonical EvidenceEffect signature
-   -> compare with production claim
+   -> compare independent production signature claim
+   -> verified semantic policy checker
+   -> containment for formal SourceExecutes traces
 ```
 
-`checkSourceSignature_sound` proves that a successful executable check yields a decoded formal statement whose canonical inferred signature exactly equals the separate production claim.
+`patch certify` refuses protected code outside its verified subset instead of silently weakening the guarantee.
 
-## Formal source-level policy containment
+## Beta 10 direct WebAssembly backend
 
-The current formal source execution relation is:
+`src/wasm-direct.js` is the first backend that executes a Patch subset as WebAssembly instructions rather than asking a Patch interpreter to execute an embedded payload.
+
+The backend is intentionally separate from the existing bootstrap target:
 
 ```text
-SourceExecutes(source, runtime)
+patch build app.patch --target wasm
 ```
 
-which requires successful Lean lowering to evidence, successful evidence decoding to `CoreStmt`, and an existing formal `Executes` trace.
-
-Lean proves:
+produces the existing carrier:
 
 ```text
-SourceExecutes(source, runtime)
-checkSourceProtected(source, policy) = true
-------------------------------------------------
-every runtime semantic effect is allowed by policy
+Patch source -> Change IR -> payload inside Wasm -> Patch host/interpreter
 ```
 
-via `checkedSourceExecutionCannotEscape`.
-
-This is a theorem about the formal source core. It is **not yet** a theorem that the JavaScript interpreter/runtime implements the same execution relation.
-
-## Generated certificates
-
-Use:
+while:
 
 ```text
-patch certify program.patch --out Program.patchcert.lean
+patch build app.patch --target wasm-direct
 ```
 
-For each protected recipe inside both supported production subsets, the generated artifact contains:
+uses:
 
 ```text
-exact source SHA-256
-Patch IR version
-source schema version
-semantic evidence schema version
-formal SourceStmt
-separate semantic EvidenceStmt
-separate production Change Signature claim
-semantic policy
-source/evidence equality theorem
-source/signature correspondence theorem
-source/policy checker theorem
-formal source-runtime containment theorem
+Patch source -> compiler -> Change IR -> direct numeric lowering -> Wasm instructions
 ```
 
-The generator refuses unsupported protected recipes rather than silently weakening the guarantee.
+### Direct subset
+
+The first executable subset supports:
+
+```text
+console project
+create number
+change number: set / add / remove / clear
+show numeric expression
+numeric literals
+references to earlier persistent numeric bindings
+parentheses
++  -  *  /
+```
+
+Persistent numeric bindings are represented by mutable WebAssembly `f64` globals. The module exports:
+
+```text
+run()
+patch_state_<binding>
+```
+
+and imports one host function:
+
+```text
+patch.show_number(f64) -> void
+```
+
+For example:
+
+```patch
+create number base = 2
+create number score = base * 3 + 1
+
+change score:
+  add base * (4 - 1)
+
+show score
+```
+
+lowers to executable Wasm arithmetic and global operations. No Patch source or Change IR interpreter is required to perform those state transitions at runtime.
+
+### Direct backend support boundary
+
+The first slice rejects unsupported constructs with `DirectWasmUnsupportedError`. It does not silently route them through the interpreter.
+
+Not directly lowered yet include:
+
+```text
+if / else
+repeat
+make / do / return
+things and field access
+text and lists
+watch / history / undo / redo / why / preview
+window / controls / events
+```
+
+A valid protected `allow recipe:` declaration requires its matching recipe. Because `make`/`do` are not yet in the direct subset, protected recipe programs are also not yet directly executable.
+
+## Differential backend validation
+
+Beta 10 does not claim a compiler-correctness theorem for the Wasm backend. Instead, the implementation starts with a strict differential validation layer:
+
+```text
+same supported Patch program
+        |                 |
+        v                 v
+   interpreter       direct Wasm
+        |                 |
+        +--> compare output
+        +--> compare final persistent state
+```
+
+Tests cover basic changes, multiple numeric bindings, expression lowering and decimal `f64` behavior. Cross-platform CI additionally builds and executes a direct module on Windows, macOS and Linux with Node 22 and 24.
+
+This is stronger evidence than merely validating the Wasm binary, but it remains empirical validation rather than a proof of lowering correctness.
+
+## Numeric model
+
+The beta.10 direct backend uses WebAssembly `f64` for the supported Patch `number` subset. This deliberately matches the current JavaScript `Number` execution model for the supported arithmetic operators.
+
+This direct-backend choice is separate from the beta.9 Lean range model. The Lean range theorem currently reasons about an explicit integer fragment. Therefore decimal direct-Wasm execution must not be described as covered by `rangeAnalysisSound`.
 
 ## Remaining trusted boundary
 
-Beta 8 does **not** verify the whole compiler.
+Patch does **not** yet verify the whole compiler.
 
-Still trusted/unproved:
+Still trusted/unproved include:
 
 ```text
 Patch source bytes
    -> JavaScript parser / AST
-   -> SourceStmt extraction
+   -> RangeExpr / SourceStmt extraction
 ```
 
 and:
 
 ```text
-Patch numeric expression
-   -> production-inferred amount interval
+production interpreter / direct Wasm execution
+   -> correspondence with formal evalRangeExpr / SourceExecutes / Executes
 ```
 
-Lean checks, for the current subset, everything after the formal `SourceStmt` and its raw amount intervals:
-
-```text
-SourceStmt
-   -> semantic normalization
-   -> EvidenceStmt equality
-   -> CoreStmt decoding
-   -> formal signature reconstruction
-   -> production-signature correspondence
-   -> semantic policy checking
-   -> containment for formal SourceExecutes traces
-```
-
-The next formal priorities are AST→SourceStmt correspondence, interval-analyzer soundness, and then production-runtime trace correspondence.
+For the direct backend specifically, a future high-value theorem or translation-validation layer should connect supported Change IR operations with their Wasm execution effects.
 
 ## IR representation
 
-Patch IR **0.6** includes:
+Patch IR **0.7** includes:
 
 ```text
 instructions
@@ -275,6 +314,8 @@ formalBridge
 formalSource
 ```
 
+Expressions are still strings inside the general IR. The direct backend currently parses the supported numeric expression subset independently during lowering. A typed expression IR remains an important next step for broader and easier-to-verify compilation.
+
 Host/runtime capabilities such as `ui.window` remain distinct from semantic Change Capabilities.
 
 ## Current formal subset
@@ -282,7 +323,7 @@ Host/runtime capabilities such as `ui.window` remain distinct from semantic Chan
 Covered by the source/evidence certificate path:
 
 - direct `add`, `remove`, `set`, `clear` changes;
-- proven non-mixed-sign numeric ranges for `add`/`remove`;
+- supported proven non-mixed-sign numeric ranges for `add`/`remove`;
 - sequence;
 - `if` alternatives;
 - literal non-negative repetition;
@@ -290,19 +331,20 @@ Covered by the source/evidence certificate path:
 
 Explicitly unsupported today include recipe calls/substitution, dynamic loops, `return`, undo/redo, GUI/event execution, mixed-sign numeric updates, and operations outside the current formal vocabulary.
 
+The formal subset and direct-Wasm subset are deliberately not presented as identical. They serve different current purposes and have different boundaries.
+
 ## Outputs
 
-Current outputs:
+Current outputs include:
 
 - portable `.patchapp`;
-- bootstrap `.wasm`;
-- generated Lean `.patchcert.lean` source/evidence certificate.
-
-Bootstrap Wasm is a genuine instantiable carrier containing Patch source + Change IR for a Patch host. It is not direct Change IR-to-Wasm execution.
+- bootstrap `.wasm` carrier;
+- direct numeric `.wasm` for the beta.10 subset;
+- generated Lean `.patchcert.lean` range/source/evidence certificate.
 
 ## Quality gates
 
-JavaScript CI runs on Windows, macOS and Linux with Node 22/24. It checks syntax including `formal-source.js`, tests, examples, formal coverage reporting, certificate generation, `.patchapp`, bootstrap Wasm and the public site.
+JavaScript CI runs on Windows, macOS and Linux with Node 22/24. It checks syntax, language/compiler/formal tests, examples, certificate generation, `.patchapp`, bootstrap Wasm, direct Wasm build, direct Wasm execution and the public site.
 
 Formal CI explicitly builds:
 
@@ -312,17 +354,31 @@ PatchSignature
 PatchChecker
 PatchEvidence
 PatchSource
+PatchRange
 ```
 
 with Lean 4.30, compiles a certificate generated by the production compiler, and rejects unfinished proof placeholders.
 
+## Next backend stages
+
+The highest-value direct-backend sequence is:
+
+1. structured `if` lowering;
+2. bounded/literal `repeat` lowering;
+3. non-recursive `make` / `do` lowering with parameters;
+4. explicit semantic change-trace ABI so direct execution still exposes Patch changes;
+5. typed expression/core IR;
+6. lowering correspondence or independently checked translation validation;
+7. WASI/browser hosts and broader value representations;
+8. native application packaging around the portable runtime.
+
 ## Design constraint
 
-Formal machinery must remain optional from the beginner's perspective. Ordinary Patch code still looks like:
+Formal and compiler machinery must remain optional from the beginner's perspective. Ordinary Patch code still looks like:
 
 ```patch
 change score:
   add 1
 ```
 
-without requiring users to understand SourceStmt, EvidenceStmt, Lean or the checker architecture.
+without requiring users to understand Change IR, Wasm opcodes, SourceStmt, EvidenceStmt, Lean or the checker architecture.

@@ -5,10 +5,11 @@ import { PatchInterpreter } from './interpreter.js';
 import { compile } from './compiler.js';
 import { buildPatchApp, serializePatchApp } from './bundle.js';
 import { compileToWasm } from './wasm.js';
+import { compileToDirectWasm, runDirectWasm } from './wasm-direct.js';
 import { generateLeanCertificate } from './certificate.js';
 
 const args = process.argv.slice(2);
-const known = new Set(['run', 'check', 'changes', 'formal', 'certify', 'build']);
+const known = new Set(['run', 'run-wasm', 'check', 'changes', 'formal', 'certify', 'build']);
 const command = known.has(args[0]) ? args.shift() : 'run';
 const file = args.shift();
 
@@ -22,6 +23,14 @@ try {
 
   if (command === 'run') {
     const result = new PatchInterpreter().run(source);
+    for (const line of result.output) console.log(line);
+    process.exit(0);
+  }
+
+  if (command === 'run-wasm') {
+    const name = option('--name') ?? appName(file);
+    const { module, metadata } = compileToDirectWasm(source, { name, kind: 'console', entry: path.basename(file) });
+    const result = await runDirectWasm(module, metadata);
     for (const line of result.output) console.log(line);
     process.exit(0);
   }
@@ -89,11 +98,23 @@ try {
       console.log(`Built ${out}`);
       console.log(`  type: ${kind}`);
       console.log('  target: WebAssembly bootstrap module');
-      console.log('  note: this beta embeds Patch source + Change IR for a Patch host; direct Change IR-to-Wasm execution is the next backend stage.');
+      console.log('  note: this target embeds Patch source + Change IR for a Patch host.');
       process.exit(0);
     }
 
-    throw new Error(`Unknown build target '${target}'. Use portable or wasm.`);
+    if (target === 'wasm-direct') {
+      const out = option('--out') ?? `${name}.direct.wasm`;
+      const { module, metadata } = compileToDirectWasm(source, { name, kind, entry: path.basename(file) });
+      fs.writeFileSync(out, module);
+      console.log(`Built ${out}`);
+      console.log(`  type: ${kind}`);
+      console.log(`  target: direct WebAssembly ${metadata.version}`);
+      console.log('  executes: numeric create/change/show subset directly as Wasm instructions');
+      console.log('  host ABI: patch.show_number(f64)');
+      process.exit(0);
+    }
+
+    throw new Error(`Unknown build target '${target}'. Use portable, wasm, or wasm-direct.`);
   }
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
@@ -161,5 +182,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect semantic bridge, formal source and formal integer-range coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable range/source/evidence certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
+  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun the direct numeric Wasm subset:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect semantic bridge, formal source and formal integer-range coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable range/source/evidence certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm\n\nBuild directly executable numeric WebAssembly:\n  patch build program.patch --kind console --target wasm-direct --out MyApp.direct.wasm`);
 }

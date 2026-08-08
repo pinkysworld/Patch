@@ -1,0 +1,7 @@
+create number base = 2
+create number score = base * 3 + 1
+
+change score:
+  add base * (4 - 1)
+
+show score
