@@ -1,0 +1,118 @@
+name: Patch FreeBSD C99
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('FreeBSD Patch {0}', inputs.request_id) || format('FreeBSD C99 smoke · {0}', github.ref_name) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_b64:
+        description: Base64-encoded Patch source from Patch Studio
+        required: false
+        default: ''
+      source_path:
+        description: Repository Patch source when source_b64 is empty
+        required: false
+        default: examples/direct-wasm-recipes.patch
+      app_name:
+        description: Application name
+        required: true
+        default: PatchFreeBSDApp
+      kind:
+        description: Patch application type
+        required: true
+        type: choice
+        options:
+          - console
+        default: console
+      request_id:
+        description: Patch Studio request identifier
+        required: false
+        default: manual
+  pull_request:
+    paths:
+      - src/c99.js
+      - src/cli.js
+      - tests/c99.test.js
+      - .github/workflows/freebsd-c99.yml
+      - examples/direct-wasm-recipes.patch
+  push:
+    branches: [main]
+    paths:
+      - src/c99.js
+      - src/cli.js
+      - tests/c99.test.js
+      - .github/workflows/freebsd-c99.yml
+      - examples/direct-wasm-recipes.patch
+
+permissions:
+  contents: read
+
+jobs:
+  portable-hosts:
+    if: github.event_name != 'workflow_dispatch'
+    name: ${{ matrix.os }} C99 smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Generate portable C99
+        run: node src/cli.js build examples/direct-wasm-recipes.patch --target c99 --out DirectRecipes.c
+      - name: Compile with system C compiler
+        shell: bash
+        run: cc -std=c99 -Wall -Wextra -pedantic -O2 -o DirectRecipes DirectRecipes.c -lm
+      - name: Run portable C99 program
+        shell: bash
+        run: |
+          actual="$(./DirectRecipes)"
+          test "$actual" = "8"
+
+  freebsd:
+    name: FreeBSD 15.1 C99 ${{ github.event_name == 'workflow_dispatch' && 'Studio build' || 'smoke' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
+      PATCH_SOURCE_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/direct-wasm-recipes.patch' }}
+      PATCH_APP_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchFreeBSDSmoke' }}
+      PATCH_EXPECT_OUTPUT: ${{ github.event_name == 'workflow_dispatch' && '' || '8' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Prepare Patch source and portable C99
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('freebsd.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'freebsd.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchFreeBSDApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchFreeBSDApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
+          mkdir -p dist
+          node src/cli.js check freebsd.patch
+          node src/cli.js build freebsd.patch --kind console --target c99 --out dist/PatchFreeBSD.c
+      - name: Compile and run inside FreeBSD
+        uses: vmactions/freebsd-vm@v1.5.3
+        with:
+          release: '15.1'
+          usesh: true
+          envs: 'PATCH_EXPECT_OUTPUT'
+          run: |
+            freebsd-version
+            cc --version | head -1
+            cc -std=c99 -Wall -Wextra -pedantic -O2 -o dist/PatchFreeBSD dist/PatchFreeBSD.c -lm
+            actual="$(./dist/PatchFreeBSD)"
+            if [ -n "$PATCH_EXPECT_OUTPUT" ]; then
+              test "$actual" = "$PATCH_EXPECT_OUTPUT"
+            fi
+            tar -czf dist/PatchFreeBSD-freebsd.tar.gz -C dist PatchFreeBSD
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: patch-freebsd-${{ inputs.request_id }}
+          path: dist/PatchFreeBSD-freebsd.tar.gz
+          if-no-files-found: error
