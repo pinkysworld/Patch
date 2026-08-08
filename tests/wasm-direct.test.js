@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { compileToDirectWasm, runDirectWasm, DirectWasmUnsupportedError } from '../src/wasm-direct.js';
 
+function normalizedInterpreterTrace(history) {
+  return history.map(change => ({
+    target: change.target,
+    before: change.before,
+    after: change.after
+  }));
+}
+
 async function compare(source) {
   const interpreted = new PatchInterpreter().run(source);
   const { module, metadata } = compileToDirectWasm(source, { name: 'DirectParity', kind: 'console' });
@@ -10,17 +18,30 @@ async function compare(source) {
   const direct = await runDirectWasm(module, metadata);
   assert.deepEqual(direct.output, interpreted.output);
   assert.deepEqual(direct.state, interpreted.state);
-  return { direct, metadata };
+  assert.deepEqual(direct.trace, normalizedInterpreterTrace(interpreted.history));
+  return { direct, metadata, interpreted };
 }
 
 test('direct Wasm executes create, numeric changes and show without a Patch interpreter host', async () => {
   const source = `create number score = 1\nchange score:\n  add 2\nshow score\nchange score:\n  remove 1\nshow score`;
   const { direct, metadata } = await compare(source);
   assert.deepEqual(direct.output, ['3', '2']);
+  assert.deepEqual(direct.trace, [
+    { target: 'score', before: 1, after: 3 },
+    { target: 'score', before: 3, after: 2 }
+  ]);
   assert.equal(direct.state.score, 2);
   assert.equal(metadata.format, 'patch-wasm-direct');
   assert.equal(metadata.irVersion, '0.7');
+  assert.equal(metadata.traceVersion, '0.1');
   assert.equal(direct.instance.exports.patch_state_score.value, 2);
+});
+
+test('one Patch change block emits one direct trace event even with multiple operations', async () => {
+  const source = `create number score = 1\nchange score:\n  add 2\n  add 3\n  remove 1\nshow score`;
+  const { direct, interpreted } = await compare(source);
+  assert.equal(interpreted.history.length, 1);
+  assert.deepEqual(direct.trace, [{ target: 'score', before: 1, after: 5 }]);
 });
 
 test('direct Wasm lowers numeric expressions and reads earlier persistent bindings', async () => {
@@ -55,6 +76,11 @@ test('direct Wasm lowers literal repeat to a real Wasm loop and exposes Patch co
   const { direct } = await compare(source);
   assert.deepEqual(direct.output, ['1', '2', '3', '6']);
   assert.equal(direct.state.score, 6);
+  assert.deepEqual(direct.trace, [
+    { target: 'score', before: 0, after: 1 },
+    { target: 'score', before: 1, after: 3 },
+    { target: 'score', before: 3, after: 6 }
+  ]);
 });
 
 test('direct Wasm preserves nested repeat count shadowing', async () => {
@@ -71,12 +97,13 @@ test('direct Wasm supports if inside repeat using the count local', async () => 
   assert.equal(direct.state.hits, 2);
 });
 
-test('direct Wasm compiles protected ranged recipes to Wasm functions', async () => {
+test('direct Wasm compiles protected ranged recipes to Wasm functions and preserves their transition trace', async () => {
   const source = `create number score = 0\n\nallow reward:\n  score may increase up to 10\n\nmake reward(bonus number 0..5):\n  change score:\n    add bonus * 2\n\ndo reward(4)\nshow score`;
   const { direct, metadata } = await compare(source);
   assert.deepEqual(direct.output, ['8']);
+  assert.deepEqual(direct.trace, [{ target: 'score', before: 0, after: 8 }]);
   assert.equal(direct.state.score, 8);
-  assert.equal(metadata.version, '0.3-recipes');
+  assert.equal(metadata.version, '0.4-trace');
   assert.deepEqual(metadata.recipes.reward.params, ['bonus']);
   assert.deepEqual(metadata.recipes.reward.paramRanges, { bonus: { min: 0, max: 5 } });
 });
@@ -86,6 +113,10 @@ test('direct Wasm supports acyclic recipe-to-recipe calls', async () => {
   const { direct } = await compare(source);
   assert.deepEqual(direct.output, ['6']);
   assert.equal(direct.state.score, 6);
+  assert.deepEqual(direct.trace, [
+    { target: 'score', before: 0, after: 3 },
+    { target: 'score', before: 3, after: 6 }
+  ]);
 });
 
 test('direct Wasm passes repeat count as a numeric recipe argument', async () => {
@@ -100,6 +131,18 @@ test('direct Wasm recipe parameters participate in direct conditions', async () 
   const { direct } = await compare(source);
   assert.deepEqual(direct.output, ['4']);
   assert.equal(direct.state.score, 4);
+});
+
+test('direct Wasm exposes transition events through the host callback', async () => {
+  const source = `create number score = 0\nchange score:\n  add 2\nchange score:\n  add 3`;
+  const { module, metadata } = compileToDirectWasm(source, { name: 'TraceCallback', kind: 'console' });
+  const observed = [];
+  const result = await runDirectWasm(module, metadata, { changeNumber: event => observed.push(event) });
+  assert.deepEqual(observed, result.trace);
+  assert.deepEqual(observed, [
+    { target: 'score', before: 0, after: 2 },
+    { target: 'score', before: 2, after: 5 }
+  ]);
 });
 
 test('direct Wasm enforces ranged recipe parameters with a Wasm trap', async () => {
