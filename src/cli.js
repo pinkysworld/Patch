@@ -5,9 +5,10 @@ import { PatchInterpreter } from './interpreter.js';
 import { compile } from './compiler.js';
 import { buildPatchApp, serializePatchApp } from './bundle.js';
 import { compileToWasm } from './wasm.js';
+import { generateLeanCertificate } from './certificate.js';
 
 const args = process.argv.slice(2);
-const known = new Set(['run', 'check', 'changes', 'formal', 'build']);
+const known = new Set(['run', 'check', 'changes', 'formal', 'certify', 'build']);
 const command = known.has(args[0]) ? args.shift() : 'run';
 const file = args.shift();
 
@@ -45,6 +46,18 @@ try {
     const { ir } = compile(source, { name: appName(file) });
     printFormalBridge(ir.formalBridge);
     process.exit(ir.formalBridge.summary.mismatches === 0 ? 0 : 2);
+  }
+
+  if (command === 'certify') {
+    const name = option('--name') ?? appName(file);
+    const out = option('--out') ?? `${name}.patchcert.lean`;
+    const certificate = generateLeanCertificate(source, { name });
+    fs.writeFileSync(out, certificate.lean, 'utf8');
+    console.log(`Generated ${out}`);
+    console.log(`  source sha256: ${certificate.sourceSha256}`);
+    console.log(`  certified recipe(s): ${certificate.certified.join(', ')}`);
+    console.log('  next: compile this certificate with the repository\'s Lean PatchChecker to obtain the verified policy judgment.');
+    process.exit(0);
   }
 
   if (command === 'build') {
@@ -130,5 +143,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect production-to-formal bridge coverage:\n  patch formal program.patch\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
+  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect production-to-formal bridge coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable semantic-policy certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
 }
