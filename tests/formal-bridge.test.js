@@ -62,12 +62,13 @@ test('formal bridge marks dynamic repetition unsupported', () => {
   assert.ok(bridged.reasons.some(reason => reason.includes('dynamic repeat count')));
 });
 
-test('compiler embeds semantic bridge, source core and beta.9 formal range metadata', () => {
+test('compiler embeds bridge, source core, raw-source validation and formal range metadata', () => {
   const source = `create number score = 0\nchange score:\n  add 1\nshow score`;
-  const { ir, formalBridge, formalSource } = compile(source, { name: 'FormalCounter' });
-  assert.equal(ir.version, '0.7');
+  const { ir, formalBridge, formalSource, sourceValidation } = compile(source, { name: 'FormalCounter' });
+  assert.equal(ir.version, '0.8');
   assert.equal(ir.formalBridge, formalBridge);
   assert.equal(ir.formalSource, formalSource);
+  assert.equal(ir.sourceValidation, sourceValidation);
   assert.equal(formalBridge.format, 'patch-formal-bridge');
   assert.equal(formalBridge.summary.mismatches, 0);
   assert.equal(formalBridge.entries.$program.supported, true);
@@ -77,4 +78,7 @@ test('compiler embeds semantic bridge, source core and beta.9 formal range metad
   assert.equal(formalSource.entries.$program.supported, true);
   assert.equal(formalSource.entries.$program.rangeClaims.length, 1);
   assert.equal(formalSource.summary.rangeClaims, 1);
+  assert.equal(sourceValidation.format, 'patch-source-extraction-validation');
+  assert.equal(sourceValidation.entries.$program.validated, true);
+  assert.equal(sourceValidation.summary.mismatches, 0);
 });
