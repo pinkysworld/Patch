@@ -134,7 +134,7 @@ theorem checkEvidenceSignature_sound
       have hEq : encodeSignature (inferSignature stmt) = claim := by
         apply of_decide_eq_true
         simpa [checkEvidenceSignature, hDecode] using h
-      exact ⟨stmt, hDecode, hEq⟩
+      exact ⟨stmt, rfl, hEq⟩
 
 /-- Once a particular decoded core is known, a successful evidence/signature
     check gives an exact machine-checked correspondence to that core. -/
@@ -171,7 +171,7 @@ theorem checkEvidenceProtected_sound
         simpa [checkEvidenceProtected, hDecode] using h
       have hProtected : Protected stmt policy := by
         exact policyAllowsBool_sound (inferSignature stmt) policy hCheck
-      exact ⟨stmt, hDecode, hProtected⟩
+      exact ⟨stmt, rfl, hProtected⟩
 
 /-- **Verified evidence boundary.** If production evidence decodes to a core
     statement, the evidence-level checker accepts its policy, and that decoded
