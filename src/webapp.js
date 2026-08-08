@@ -74,3 +74,7 @@ function bytesToBase64(bytes) {
 
 function safeName(name) { return String(name || 'PatchApp').replace(/[^A-Za-z0-9 _.-]/g, '').trim() || 'PatchApp'; }
 function escapeHtml(text) { return String(text).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]); }
+
+if (typeof document !== 'undefined') {
+  import('./studio-cloud-build.js').then(module => module.installStudioCloudBuild()).catch(() => {});
+}
