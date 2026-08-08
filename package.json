@@ -1,24 +1,24 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.11",
-  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked range/source evidence, and direct WebAssembly execution for a numeric control-flow core",
+  "version": "0.2.0-beta.12",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked range/source evidence, and direct WebAssembly execution for numeric control flow and protected recipes",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
     "test": "node --test",
     "run": "node src/cli.js run",
-    "run:wasm-direct": "node src/cli.js run-wasm examples/direct-wasm-control.patch",
+    "run:wasm-direct": "node src/cli.js run-wasm examples/direct-wasm-recipes.patch",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
-    "build:wasm-direct": "node src/cli.js build examples/direct-wasm-control.patch --kind console --target wasm-direct --out DirectControl.wasm",
+    "build:wasm-direct": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm",
     "build:site": "node scripts/build-site.js",
     "check:site": "node scripts/check-site.js"
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "control-flow"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "control-flow", "recipes", "runtime-guards"]
 }
