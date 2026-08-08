@@ -47,7 +47,7 @@ mustInclude('docs/NATIVE_APPS.md', files.native, [
 
 mustInclude('docs/ROADMAP.md', files.roadmap, [
   `Current development beta: **${version}**`, '### beta.24: semantic Window input events',
-  'input `changed` exposes transient event-local `value`', '`src/window-events.js`',
+  '`input changed` exposes transient event-local `value`', '`src/window-events.js`',
   'formal recipe-call/substitution semantics', 'native AppKit Window backend'
 ]);
 
