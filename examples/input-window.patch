@@ -1,0 +1,9 @@
+create text name = ""
+
+window "Hello":
+  input name
+  text "Hello {name}"
+
+when name changed:
+  change name:
+    set = value
