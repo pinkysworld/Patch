@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.22**
+Status: **0.2.0-beta.23** · Change IR **0.9**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.23 changes the research evidence carried by compiled artifacts, not the ordinary application build syntax.
 
 ## Build matrix
 
@@ -24,7 +24,7 @@ Window / GUI
 
 ## Window preflight
 
-The shared **Window preflight** compiles source and checks normalized `code == "WINDOW"` IR. Beta.22 additionally validates the common runtime contract before cloud dispatch and again inside the target-side desktop packager.
+The shared **Window preflight** compiles source and checks normalized `code == "WINDOW"` IR, then validates the common runtime contract before cloud dispatch and again inside the target-side desktop packager.
 
 Current cross-target event support is deliberately conservative: button `clicked` only. Duplicate control ids, handlers for nonexistent controls, input `changed`, and window `closed` are rejected at build time rather than packaged with inconsistent behavior.
 
@@ -42,7 +42,11 @@ Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the v
 
 ## Runtime formal assurance
 
-`patch runtime-certify` is independent of packaging. It executes supported direct Wasm, reconstructs concrete semantic effects and an untrusted `RuntimePath`, then generates Lean evidence. Beta.22 also emits the declared policy and checks `checkedConcreteRuntimeCannotEscape`, proving the decoded concrete runtime effects of an accepted protected invocation stay within the verified Change Capability.
+`patch runtime-certify` is independent of packaging. Beta.23 requires eligible protected recipes to pass both the existing raw SourceStmt/range validation and the new independent raw GuardTree/control-flow validation. The generated Lean certificate contains proof-free concrete semantic effects, `RuntimePath`, concrete used recipe-parameter values, and the declared policy.
+
+`PatchGuarded.lean` checks SourceStmt/GuardTree shape and requires `branchThen`/`branchElse` to agree with evaluation of the normalized guard in the supported safe-integer recipe-parameter fragment. `checkedGuardedConcreteRuntimeCannotEscape` then retains that guard-validity evidence while proving every decoded concrete runtime effect remains inside the declared Change Capability.
+
+These are assurance properties for the supported direct-Wasm fragment; they do not alter the executable package format and do not constitute end-to-end compiler verification.
 
 ## Portable C99
 
@@ -65,7 +69,7 @@ current editor source
 
 A fine-grained GitHub token with Actions read/write permission is currently required; Studio does not save it.
 
-Window packages are standalone but are **not yet native-widget lowering** to AppKit, Win32 or GTK. A native AppKit Window backend, native Win32 backend and portable Unix GUI layer remain roadmap items.
+Window packages are standalone but are **not yet native-widget lowering** to AppKit, Win32 or GTK. Native AppKit, Win32 and a portable Unix GUI layer remain roadmap items.
 
 ## Portability claim
 
