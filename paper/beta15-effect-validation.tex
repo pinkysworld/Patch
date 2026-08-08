@@ -1,0 +1,50 @@
+\section{Effect-Aware Validation of Direct Execution}
+\label{sec:direct-effect-validation}
+
+The transition validator of Section~\ref{sec:direct-trace-validation} checks target identity and numeric before/after state, but Patch's authority model distinguishes semantic operations that can induce similar writes. Beta~15 therefore extends independent direct-runtime validation to concrete semantic effects without asking the WebAssembly lowerer to self-report effect labels.
+
+For every executed operation in a supported Change-IR site, the validator independently evaluates the concrete numeric expression and normalizes the source mutation to the semantic vocabulary used by Patch contracts. For concrete amount $k$,
+\[
+\begin{array}{rcl}
+\texttt{add}\; k,\;k\ge 0 &\mapsto& \mathsf{increase}(|k|),\\
+\texttt{add}\; k,\;k<0 &\mapsto& \mathsf{decrease}(|k|),\\
+\texttt{remove}\; k,\;k\ge 0 &\mapsto& \mathsf{decrease}(|k|),\\
+\texttt{remove}\; k,\;k<0 &\mapsto& \mathsf{increase}(|k|),
+\end{array}
+\]
+while \texttt{set} and \texttt{clear} retain distinct semantic identities. The resulting occurrence records the concrete magnitude and operation-level before/after values. A source-level \texttt{change} block may consequently contain several semantic effects while remaining one committed transition in the block-level runtime trace.
+
+After validating the observed transition sequence, beta~15 checks each independently reconstructed runtime effect against the static Change Signature associated with the executing scope. Numeric coverage requires matching target, field, semantic operation, and inclusion of the concrete magnitude in the signature's static amount or interval evidence. For a protected recipe, the same occurrence is additionally checked against its declared Change Capability, including any maximum magnitude.
+
+For example,
+\begin{lstlisting}
+allow reward:
+  score may increase up to 10
+
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
+\end{lstlisting}
+executed with \texttt{bonus=4} yields an independently reconstructed concrete effect \emph{increase score by 8}. The validation gate requires this occurrence to be covered by the production Change Signature and admitted by the declared bound of 10. The direct WebAssembly runtime itself reports only the target and before/after values; the semantic label and magnitude are reconstructed by the validator.
+
+The artifact includes negative tests that mutate otherwise accepted IR after compilation. Removing the relevant static signature effect or narrowing the capability below an already observed concrete magnitude causes validation failure. These tests separate the dynamic validation result from the fact that the original source happened to pass production compilation.
+
+The resulting executable chain for the supported numeric subset is:
+\[
+\begin{array}{c}
+\text{observed Wasm transition trace}\\
+\Updownarrow\\
+\text{independently executed Change-IR transition relation}\\
+\Downarrow\\
+\text{independently reconstructed concrete semantic effects}\\
+\subseteq\\
+\text{production Change Signature}\\
+\subseteq\\
+\text{declared Change Capability (when protected).}
+\end{array}
+\]
+This relation resembles the formal containment story used elsewhere in Patch, but the beta~15 validator remains a dynamic translation-validation mechanism rather than a proof. In particular, it trusts the supplied Change IR and its static signatures/policies, and it does not establish correctness of source parsing or source-to-IR lowering.
+
+The significance of this step is architectural rather than a claim that differential testing is novel. Mandatory semantic mutation gives Patch a stable unit that can be named consistently across source Change sites, static signatures, authority policies, formal effects, and direct-runtime transitions. This makes semantic backend validation practical without requiring the compiler to erase mutations into generic writes and later reconstruct their meaning.
+
+The next formalization target is to connect these concrete effect occurrences to the Lean execution/signature relations, or to implement a small independently checked translation validator over a typed core IR. Either approach would further reduce reliance on the production JavaScript compiler while preserving the existing direct backend as an executable artifact.
