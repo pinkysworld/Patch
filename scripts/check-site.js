@@ -35,7 +35,7 @@ for (const needle of ['./style.css', './manifest.webmanifest', './playground.js'
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone & iPad', 'Research project', 'State-Change Factorization', 'Roadmap']) {
+for (const phrase of ['Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone & iPad', 'Research project', 'State-Change Factorization', 'Verified checker', 'patch certify', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
 }
 

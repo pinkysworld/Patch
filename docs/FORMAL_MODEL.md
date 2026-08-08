@@ -1,8 +1,8 @@
 # Patch Core Formal Model
 
-Status: **beta 5: mechanized core plus an executable production-to-formal validation bridge**.
+Status: **beta 6: mechanized core, production-to-formal translation validation, and a Lean-verified semantic policy checker with generated certificates**.
 
-The executable Patch language is larger than the Lean model. The `formal/` directory defines a compact semantics whose theorems are machine checked. Beta 5 adds `src/formal-bridge.js`, which begins connecting real compiler output to that model without pretending the whole JavaScript compiler is verified.
+The executable Patch language is larger than the Lean model. The `formal/` directory defines a compact semantics whose theorems are machine checked. Beta 5 introduced `src/formal-bridge.js`; beta 6 adds a much smaller trusted policy-checking boundary in `formal/PatchChecker.lean` and production-generated Lean certificates.
 
 ## 1. State-Change Factorization
 
@@ -43,7 +43,15 @@ repeat n body
 
 plus static `inferSignature` and runtime `Executes stmt trace` definitions.
 
-CI builds both modules and rejects `sorry` and `admit`.
+`formal/PatchChecker.lean` defines a small executable checker for semantic policies. Its boolean procedures check target, field, operation kind and optional interval containment. Lean proves that successful boolean checks imply the relational policy judgments used by the formal semantics.
+
+Formal CI now explicitly builds **all three targets**:
+
+```bash
+lake build PatchFormal PatchSignature PatchChecker
+```
+
+and compiles a certificate generated from a real Patch source file. This explicit-target gate replaced the earlier weaker `lake build` invocation, which could complete without compiling the libraries. Beta 6 therefore also fixes latent Lean 4.30 compatibility issues that the previous CI did not expose.
 
 ## 3. Mechanized theorems
 
@@ -88,7 +96,28 @@ RuntimeChanges(stmt) admitted-by Capability(stmt)
 
 The relevant theorem is `endToEndCapabilitySoundness` with `protectedExecutionCannotEscape` as a direct corollary.
 
-## 4. Beta 5 production-to-formal bridge
+### Verified checker soundness
+
+Beta 6 adds an executable decision path:
+
+```text
+checkProtected(stmt, policy) = true
+```
+
+Lean proves that a successful result implies the relational `Protected stmt policy` judgment. The proof proceeds through soundness lemmas for interval containment, one rule/effect pair, rule search, and full signature-policy checking.
+
+Combining that executable checker result with Change Signature Soundness yields:
+
+```text
+checkProtected(stmt, policy) = true
+Executes(stmt, runtime)
+-----------------------------------------
+every runtime effect is allowed by policy
+```
+
+The main theorem is `checkedExecutionCannotEscape`, with `checkedProtectedExecutionCannotEscape` as a one-effect corollary.
+
+## 4. Production-to-formal bridge
 
 `src/formal-bridge.js` is a conservative translation-validation layer over the real production AST and production Change Signature analyzer.
 
@@ -109,33 +138,11 @@ independent formal-style signature
       +------------------------------> compare
 ```
 
-If an entry is inside the currently supported bridge subset and the two signatures differ, compilation fails. This turns accidental divergence between the production analyzer and the formal signature shape into a CI-visible failure.
-
-The bridge output is embedded in Change IR as:
-
-```text
-formalBridge
-```
-
-and records, per entry:
-
-```text
-supported
-reasons
-abstractions
-core
-formalSignature
-productionSignature
-signatureMatchesProduction
-```
-
-The CLI command:
+If an entry is inside the currently supported bridge subset and the two signatures differ, compilation fails. Bridge evidence is embedded in Change IR and exposed with:
 
 ```bash
 patch formal program.patch
 ```
-
-prints the same coverage boundary in human-readable form.
 
 ### Current supported bridge subset
 
@@ -160,30 +167,45 @@ The bridge marks these as outside the correspondence subset rather than treating
 - semantic operations outside the current Lean effect vocabulary;
 - unproven or transitive production effects.
 
-This conservative behavior is important: **unsupported is not the same as unsafe, and supported is not the same as fully compiler-verified.**
+**Unsupported is not the same as unsafe, and bridge-supported is not the same as source-to-semantics verified.**
 
-## 5. What beta 5 establishes and does not establish
+## 5. Beta 6 generated certificates
 
-Beta 5 gives reproducible **translation-validation/conformance evidence** for a real production subset. It establishes that, for entries accepted as bridge-supported, the production Change Signature agrees with an independently reconstructed signature shaped like the current Lean core.
+For protected recipes that are inside the bridge subset, the production toolchain can emit a Lean-checkable certificate:
 
-It does **not** yet prove:
+```bash
+patch certify program.patch --out Program.patchcert.lean
+```
 
-- that the JavaScript implementation of `buildFormalBridge` is itself correct with respect to Lean;
+The generated file contains:
+
+- a SHA-256 hash of the exact Patch source bytes;
+- the Patch IR version;
+- the bridge-produced formal `CoreStmt`;
+- the semantic capability policy as Lean `Rule` values;
+- a theorem that `checkProtected stmt policy = true`, discharged by Lean computation;
+- a theorem that any formal execution of that checked statement cannot emit a semantic effect outside the policy.
+
+The production compiler is therefore no longer trusted to merely say “policy safe.” It emits evidence, and the Lean checker independently validates the formal policy judgment.
+
+The source hash binds the certificate file to source bytes for artifact integrity. It does **not** prove that the JavaScript translation from those source bytes to `CoreStmt` is correct.
+
+## 6. What beta 6 establishes and does not establish
+
+Beta 6 establishes a genuine **verified checker boundary over translated semantic evidence**. For the formal `CoreStmt` and policy contained in a generated certificate, Lean checks the policy and derives runtime policy containment from the mechanized execution theorem.
+
+It still does **not** prove:
+
+- that the JavaScript parser or `buildFormalBridge` translates Patch source to the correct formal `CoreStmt`;
 - that production execution follows the Lean `Executes` relation;
 - that all Patch language constructs are covered;
-- soundness of production interval analysis;
+- soundness of production interval analysis against expression evaluation;
 - recipe-call/substitution correspondence;
-- full production capability soundness as a machine-checked theorem.
+- full production compiler correctness.
 
-A stronger endpoint can be reached in one of three ways:
+Thus the trust boundary is smaller than beta 5, but not zero. The remaining high-value theorem is the source/IR-to-formal correspondence relation for the supported fragment.
 
-1. prove a formal correspondence theorem for the production compiler subset;
-2. generate semantic evidence and validate it with a small verified checker;
-3. move the relevant compiler analysis into a verified/extracted component.
-
-The verified-checker boundary is currently the most attractive engineering/research compromise.
-
-## 6. Semantic Change Signatures and capabilities
+## 7. Semantic Change Signatures and capabilities
 
 Production signatures conceptually contain:
 
@@ -199,9 +221,9 @@ player.score may increase up to 10
 
 which can permit a bounded increase while rejecting an arbitrary replacement to the same path.
 
-The formal theorem proves runtime-signature-policy containment for the normalized core. Beta 5 makes the gap between that theorem and production analysis explicit and machine-testable.
+The verified checker operates directly over the normalized formal effect and rule vocabulary rather than trusting the JavaScript policy checker result.
 
-## 7. Numeric range reasoning
+## 8. Numeric range reasoning
 
 Patch supports ranged recipe parameters such as:
 
@@ -209,27 +231,29 @@ Patch supports ranged recipe parameters such as:
 make reward(player, bonus number 0..10):
 ```
 
-The production compiler performs interval analysis over a small arithmetic fragment. The formal model currently proves interval-containment composition, but not the full expression analyzer.
+The production compiler performs interval analysis over a small arithmetic fragment. The formal model proves interval-containment composition and the beta-6 checker proves its executable interval-containment test is sound. It does not yet prove the **production expression range analyzer** itself.
 
 The next range theorem should be:
 
 > If the range analyzer returns interval `I` for expression `e` under environment `Gamma`, every supported evaluation of `e` satisfying `Gamma` lies inside `I`.
 
-## 8. Causal provenance
+## 9. Causal provenance
 
 The production runtime records source, recipe-call, and GUI-event context with committed changes. The `why` command consumes this history. Provenance remains outside the Lean model for now.
 
-## 9. Next mechanization / validation order
+## 10. Next mechanization / validation order
 
-1. define a stable JSON/evidence schema mapping production Change IR effects to Lean `Effect` values;
-2. add a small checker whose accepted evidence can be related directly to Lean definitions;
-3. extend bridge coverage to non-recursive recipe calls and parameter substitution;
-4. formalize the ranged expression language and prove interval-analysis soundness;
-5. connect actual production execution traces to formal `Executes` traces for a restricted core;
-6. derive end-to-end production capability soundness for that restricted core;
+1. define and prove a stable correspondence relation from supported production Change IR / bridge structures to Lean `CoreStmt` and `Effect` values;
+2. formalize the ranged expression language and prove production interval-analysis soundness for that fragment;
+3. extend formal/bridge coverage to non-recursive recipe calls and parameter substitution;
+4. connect actual production execution traces to formal `Executes` traces for a restricted core;
+5. derive a stronger end-to-end source-level capability theorem for that restricted core;
+6. package checker evidence with `.patchapp` / future direct Wasm artifacts;
 7. then move to inverse, preview, replay and commutation proofs;
 8. extend to records, nested paths, GUI events and external effects.
 
-## 10. Research boundary
+## 11. Research boundary
 
-State transitions, effects, capabilities, range analysis, translation validation, provenance, undo, edit algebras and patches all have substantial prior art. The candidate contribution is the **factorization discipline and reuse**: ordinary persistent mutation executes through a structured semantic delta, semantic contracts are derived from the same mandatory representation, and the project now connects a production implementation to machine-checked semantics through an explicit conservative validation boundary while preserving a deliberately small source language.
+State transitions, effects, capabilities, range analysis, translation validation, proof-carrying code, certifying compilation, provenance, undo, edit algebras and patches all have substantial prior art. The verified checker/certificate architecture is therefore **not itself a novelty claim**. Its role is to make Patch's primary claim harder to dismiss by reducing trust in the production analyzer.
+
+The candidate contribution remains the factorization discipline and reuse: ordinary persistent mutation executes through a structured semantic delta, operation- and magnitude-aware semantic contracts are derived from that same mandatory representation, and a small verified checker can validate the resulting semantic authority evidence while the source language stays deliberately small.

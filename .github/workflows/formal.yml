@@ -9,11 +9,17 @@ permissions:
 
 jobs:
   lean:
-    name: Lean 4 proofs
+    name: Lean 4 proofs + generated certificate
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Generate certificate from production compiler
+        run: npm run certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -21,18 +27,27 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build Lean formalization
+      - name: Build Lean formalization and verified checker
         working-directory: formal
         shell: bash
         run: |
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build
+          lake build PatchFormal PatchSignature PatchChecker
+      - name: Verify generated production certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |
-          if grep -R -n -E '\bsorry\b|\badmit\b' formal/*.lean; then
+          set -euo pipefail
+          matches="$(grep -R -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/*.lean || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
             echo 'Unfinished Lean proof found.'
             exit 1
           fi

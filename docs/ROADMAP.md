@@ -36,7 +36,6 @@
 - [x] machine-checked Mutation Transparency corollary
 - [x] machine-checked interval-containment transitivity
 - [x] machine-checked Semantic Change Contract composition theorem
-- [x] dedicated formal CI rejecting `sorry`/`admit`
 
 ### beta.4 formal soundness additions
 
@@ -57,8 +56,20 @@
 - [x] `patch formal program.patch` coverage report
 - [x] dedicated formal-bridge tests
 - [x] formal bridge smoke check on Windows/macOS/Linux CI
-- [x] PWA/offline packaging of the bridge dependency
-- [x] beta.5 website/paper/docs synchronization
+
+### beta.6 verified checker / certificates
+
+- [x] executable Lean semantic policy checker
+- [x] machine-checked soundness of interval, rule, policy and protected-statement checker stages
+- [x] `checkedExecutionCannotEscape` theorem connecting a successful checker result to runtime policy containment
+- [x] `patch certify program.patch` Lean certificate generation
+- [x] source SHA-256 embedded in generated certificate artifacts
+- [x] conservative refusal to certify protected recipes outside the formal bridge subset
+- [x] production-generated certificate compiled by Lean in formal CI
+- [x] explicit `lake build PatchFormal PatchSignature PatchChecker` CI gate
+- [x] repair latent Lean 4.30 compatibility issues exposed by the stronger CI gate
+- [x] syntax-aware unfinished-proof gate instead of matching prose comments
+- [x] beta.6 research/docs/site/paper synchronization
 
 Still open in the 0.2/0.3 line:
 
@@ -75,13 +86,15 @@ Still open in the 0.2/0.3 line:
 
 - [x] first machine-readable compiler/formal bridge artifact
 - [x] first conformance tests for direct changes, branches, bounded repetition and ranged amounts
-- [ ] define a Lean-checkable stable evidence schema for production Change IR effects
-- [ ] implement a small verified checker or mechanized translation-validation boundary
-- [ ] extend bridge coverage to non-recursive recipe calls and parameter substitution
+- [x] small Lean-verified semantic policy checker
+- [x] generated Lean certificate path from production Patch source
+- [ ] define/prove a stable source/Change-IR-to-`CoreStmt` correspondence relation
+- [ ] extend bridge/certificate coverage to non-recursive recipe calls and parameter substitution
 - [ ] formalize the ranged expression language in Lean
-- [ ] prove interval-analysis soundness for that fragment
+- [ ] prove production interval-analysis soundness for that fragment
 - [ ] connect production runtime traces to formal `Executes` traces for a restricted core
-- [ ] derive end-to-end production Change Capability Soundness for that restricted core
+- [ ] derive stronger source-level end-to-end Change Capability Soundness
+- [ ] package checker evidence in a stable machine-readable certificate/container format
 - [ ] richer path-sensitive and call-graph analysis
 - [ ] recursive fixed-point analysis where it can be made sound
 - [ ] richer `why` provenance graph and source navigation
@@ -135,16 +148,19 @@ Still open in the 0.2/0.3 line:
 
 Before a high-venue submission:
 
-- [ ] systematic related-work review across Plaid, Worlds, effect/capability systems, graded/refinement effects, behavioral permissions, provenance/why debugging, update calculi and reversible systems
+- [ ] systematic related-work review across Plaid, Worlds, effect/capability systems, graded/refinement effects, behavioral permissions, proof-carrying/certifying systems, provenance/why debugging, update calculi and reversible systems
 - [x] formal State-Change Factorization core
 - [x] machine-checked factorization and Mutation Transparency
 - [x] machine-checked Change Signature Soundness for a structured formal core
 - [x] machine-checked end-to-end capability containment for that formal core
-- [x] first production/formal translation-validation artifact and CI boundary
-- [ ] machine-checked production correspondence or verified-checker boundary for a useful subset
+- [x] production/formal translation-validation artifact and CI boundary
+- [x] Lean-verified semantic policy checker over translated evidence
+- [x] production-generated Lean certificate smoke path
+- [ ] machine-checked source/IR-to-formal correspondence for a useful executable subset
 - [ ] interval-analyzer soundness proof if magnitude-aware contracts remain central
 - [ ] direct compiled execution
 - [ ] benchmark suite and semantic-security case studies
+- [ ] certificate/checker overhead evaluation
 - [ ] novice study with ethics/consent if retained
 - [ ] reproducibility bundle
 
@@ -158,5 +174,5 @@ Before a high-venue submission:
 6. Bootstrap Wasm must not be described as direct Wasm lowering.
 7. Semantic capability/range analysis must fail conservatively when it cannot prove safety.
 8. `why` must distinguish recorded provenance from stronger causal claims.
-9. Formal-core theorems must not be presented as production-compiler verification until a mechanized correspondence/checker boundary exists.
-10. Formal bridge support must be explicit: unsupported code is never silently labeled verified.
+9. A successful verified-checker result applies to the translated formal evidence; it must not be presented as full source-level compiler verification until correspondence is proved.
+10. Formal bridge/certificate support must be explicit: unsupported code is never silently labeled verified.

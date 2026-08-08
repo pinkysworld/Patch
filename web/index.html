@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio: browser-first Patch IDE with machine-checked semantic change contracts, production-to-formal validation, range proofs, causal why explanations, GUI and portable application builds.">
+  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic Change Contracts, Lean-verified policy checking, production-to-formal validation, causal why explanations, GUI and portable application builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -17,7 +17,7 @@
   <main class="studio">
     <header class="topbar">
       <div>
-        <h1>Patch Studio <span>0.2 beta.5</span></h1>
+        <h1>Patch Studio <span>0.2 beta.6</span></h1>
         <p>Create, design, inspect, explain, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
@@ -87,7 +87,7 @@
         <div>
           <p class="eyebrow">One language. One Studio. Semantic changes.</p>
           <h2>Programming should feel like making clear, inspectable changes.</h2>
-          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 5 adds a conservative production-to-formal validation bridge connecting real compiler output to the machine-checked Change Signature model.</p>
+          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 6 adds a small Lean-verified checker that independently validates semantic policy evidence generated for the current formal subset.</p>
         </div>
         <pre class="code-card">allow reward:
   player.score may increase up to 10
@@ -102,23 +102,21 @@ why player.score</pre>
       <div class="info-grid">
         <article class="info-card">
           <p class="eyebrow">Works now</p>
-          <h3>Patch 0.2 beta.5</h3>
+          <h3>Patch 0.2 beta.6</h3>
           <ul>
-            <li>Interpreter plus compiler front end</li>
-            <li>Normalized Change IR</li>
+            <li>Interpreter plus compiler front end and normalized Change IR</li>
             <li>Automatically inferred semantic Change Signatures</li>
-            <li>Compile-time Change Capabilities</li>
-            <li>Ranged recipe parameters and interval arithmetic proofs</li>
-            <li>Runtime guards for declared numeric ranges</li>
+            <li>Operation- and magnitude-aware Change Capabilities</li>
+            <li>Ranged recipe parameters, interval analysis and runtime guards</li>
             <li>Causal source/recipe/event provenance and <code>why</code></li>
             <li>Lean 4 State-Change Factorization and Mutation Transparency</li>
-            <li>Lean 4 Change Signature Soundness for sequence, branching and repetition</li>
-            <li>Lean 4 end-to-end Capability Soundness for the formal core</li>
-            <li>Production-to-formal signature validation for the currently supported subset</li>
-            <li><code>patch formal</code> coverage reporting</li>
+            <li>Lean 4 Change Signature Soundness and end-to-end capability containment</li>
+            <li>Production-to-formal translation validation for a conservative subset</li>
+            <li>Lean-verified executable semantic policy checker</li>
+            <li><code>patch formal</code> coverage reporting and <code>patch certify</code> certificate generation</li>
             <li>Portable <code>.patchapp</code> and bootstrap WebAssembly builds</li>
             <li>Console programs and first Patch UI/Designer slice</li>
-            <li>Windows, macOS and Linux CI plus formal-verification CI</li>
+            <li>Windows, macOS and Linux CI plus explicit Lean certificate CI</li>
           </ul>
         </article>
 
@@ -126,42 +124,49 @@ why player.score</pre>
           <p class="eyebrow">Semantic security</p>
           <h3>Permission to change is more precise than permission to write</h3>
           <p>A normal write permission says code may modify a value. Patch can say that a recipe may only perform a particular semantic change, for example <code>player.score may increase up to 10</code>. A replacement with <code>set score = 999</code> is a different semantic operation and is rejected.</p>
-          <p>With <code>bonus number 0..10</code>, the compiler can prove many dynamic bounded changes instead of rejecting them just because the amount is a variable.</p>
+          <p>With ranged parameters, the production analyzer can reason about bounded dynamic changes instead of rejecting them merely because an amount is a variable.</p>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Verified checker</p>
+          <h3>Production code emits evidence; Lean checks the formal policy</h3>
+          <p><code>patch certify protected.patch</code> emits a Lean certificate containing the bridge-produced formal statement, policy, source SHA-256 and a machine-checkable protectedness theorem.</p>
+          <p><code>PatchChecker.lean</code> proves that a successful executable policy check implies the relational policy judgment and therefore runtime policy containment for every modeled execution of that formal statement.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Compiler ↔ formal model</p>
-          <h3>Beta 5 makes formal coverage inspectable</h3>
-          <p>The compiler now independently reconstructs a Lean-like control-flow signature from the real Patch AST for the currently supported subset and compares it with the production Change Signature. A supported mismatch is a compiler error.</p>
-          <p>Unsupported constructs are listed explicitly rather than silently receiving a verification claim. Run <code>patch formal program.patch</code> to see which entries currently sit inside the validation boundary.</p>
+          <h3>The remaining trust boundary is explicit</h3>
+          <p>The compiler independently reconstructs a Lean-like control-flow signature from the real Patch AST for the currently supported subset and compares it with the production Change Signature. A supported mismatch is a compiler error.</p>
+          <p>The JavaScript source-to-formal translation is not yet proved correct. Unsupported constructs are listed rather than silently called verified. <code>patch formal program.patch</code> shows current coverage.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Causal provenance</p>
           <h3>Ask Patch why a value or condition exists</h3>
-          <p><code>why score</code> explains the recorded semantic changes behind the current value. <code>why score &gt; 100</code> replays history and identifies the first recorded transition that made the condition true when one can be isolated.</p>
+          <p><code>why score</code> explains recorded semantic changes behind the current value. <code>why score &gt; 100</code> replays history and identifies the first recorded transition that made the condition true when one can be isolated.</p>
           <p>GUI-driven changes can retain provenance such as <code>event bonus clicked → recipe reward → change score</code>.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Formal verification</p>
-          <h3>The central contract chain is machine checked for a formal core</h3>
-          <p>The <code>formal/</code> project proves State-Change Factorization, Mutation Transparency and interval-containment composition. It also proves that every runtime semantic effect of a structured core execution is contained in its inferred Change Signature.</p>
-          <p>Lean composes that result with capability-policy admission, yielding <code>RuntimeChanges ⊆ Signature ⊆ Capability</code>. Beta 5 does not claim that JavaScript itself is formally verified; the new bridge is translation-validation evidence on the path toward that correspondence.</p>
+          <h3>The core contract chain and checker are machine checked</h3>
+          <p>Lean proves State-Change Factorization, Mutation Transparency, Change Signature Soundness and <code>RuntimeChanges ⊆ Signature ⊆ Capability</code> for the structured formal core.</p>
+          <p>Beta 6 additionally proves the executable checker sound. Formal CI explicitly builds all proof modules and compiles a certificate generated from production Patch source.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">iPhone & iPad</p>
           <h3>Patch Studio remains mobile-first</h3>
           <p>Edit and run Patch in Safari, inspect Change Contracts and proven ranges, use <code>why</code>, add GUI controls from the Designer, preview applications, inspect Change IR and build portable <code>.patchapp</code> or bootstrap <code>.wasm</code> artifacts locally.</p>
-          <p>Future native Windows <code>.exe</code>, macOS <code>.app</code> and Linux/BSD builds from iOS will use remote platform build runners.</p>
+          <p>Certificate generation currently belongs to the Node/Lean toolchain; future remote build/check services can make that available directly from iOS.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Compiler direction</p>
           <h3>One semantic layer, many derived services</h3>
-          <p class="pipeline">Patch source → ranges → Change Signatures → capabilities → Change IR → WebAssembly / native host</p>
-          <p>The same semantic vocabulary drives execution, history, inversion, preview, conflict reasoning, bounded contracts and causal explanations. Direct Change IR-to-Wasm execution remains the next backend stage.</p>
+          <p class="pipeline">Patch source → Change Signatures → capabilities → formal evidence → Change IR → WebAssembly / native host</p>
+          <p>The same semantic vocabulary drives execution, history, inversion, preview, bounded contracts, provenance and formal policy evidence. Direct Change IR-to-Wasm execution remains the next backend stage.</p>
         </article>
       </div>
 
@@ -169,8 +174,8 @@ why player.score</pre>
         <div>
           <p class="eyebrow">Research project</p>
           <h2>Patch: State-Change Factorization and Semantic Change Contracts</h2>
-          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. On top of that mandatory representation, the compiler derives semantic signatures, capability proofs, bounded range facts and provenance.</p>
-          <p><strong>Current status:</strong> the formal core has machine-checked Change Signature Soundness and end-to-end policy containment. Beta 5 adds a reproducible production-to-formal validation boundary for a conservative subset. Full compiler correspondence or a verified checker remains the major formal objective.</p>
+          <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. Operation- and magnitude-aware contracts are derived from that mandatory representation.</p>
+          <p><strong>Current status:</strong> the formal core has machine-checked signature and policy containment; a production bridge translation-validates a conservative subset; and beta 6 adds a Lean-verified checker for generated semantic-policy evidence. The next major obligation is source/Change-IR-to-formal correspondence, followed by interval-analyzer soundness and measured security case studies.</p>
         </div>
         <div class="link-stack">
           <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
@@ -178,19 +183,20 @@ why player.score</pre>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchFormal.lean">Factorization Lean proofs</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchSignature.lean">Signature & capability Lean proofs</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchChecker.lean">Verified policy checker</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/src/formal-bridge.js">Compiler/formal bridge</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/src/certificate.js">Certificate generator</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Novelty boundary</a>
-          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md">Compiler architecture</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/paper/main.tex">Research manuscript</a>
         </div>
       </article>
 
       <article class="roadmap-card">
         <p class="eyebrow">Roadmap</p>
-        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range proofs · causal why · signature soundness · formal bridge · PWA Studio</span></div>
-        <div class="roadmap-row"><strong>Next</strong><span>Broaden compiler ↔ Lean coverage · verified checker boundary · interval soundness · security case studies · direct Wasm lowering</span></div>
+        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range analysis · causal why · signature soundness · formal bridge · verified checker · PWA Studio</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Source/IR ↔ Lean correspondence · interval-analyzer proof · certified security case studies · direct Wasm lowering</span></div>
         <div class="roadmap-row"><strong>Then</strong><span>Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for… · richer visual Designer</span></div>
-        <div class="roadmap-row"><strong>Research</strong><span>Stronger end-to-end correspondence · inverse/replay proofs · benchmarks · controlled novice study if retained</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>Stronger source-level theorem · inverse/replay proofs · checker/benchmark evidence · controlled novice study if retained</span></div>
       </article>
     </section>
   </main>

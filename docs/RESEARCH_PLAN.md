@@ -1,6 +1,6 @@
 # Research and Evaluation Plan
 
-Patch should not be submitted to a high venue until the formal claim, executable artifact and evaluation line up. Beta 4 closed the abstract Change Signature Soundness gap for a structured Lean core. Beta 5 begins the next gap: connecting the production compiler to that model with a conservative, reproducible validation boundary.
+Patch should not be submitted to a high venue until the formal claim, executable artifact and evaluation line up. Beta 4 proved Change Signature Soundness for a structured Lean core. Beta 5 introduced production-to-formal translation validation. **Beta 6 adds a small executable Lean checker whose successful policy decisions are machine-checked to imply runtime policy containment for the formal core.**
 
 ## Central question
 
@@ -30,8 +30,6 @@ Beta 4 proves this for a structured formal core with sequencing, branch choice a
 
 Beta 5 adds a production-to-formal validation bridge. For a conservative supported subset, the real AST is independently translated into a Lean-like `CoreStmt` representation and a second signature is reconstructed. That signature is compared to the production analyzer's Change Signature; a supported mismatch is a compiler error.
 
-This is useful correspondence evidence but not yet a machine-checked JavaScript-to-Lean theorem because both translation paths currently execute in JavaScript.
-
 Measure:
 
 - percentage of production corpus entries inside the bridge subset;
@@ -51,37 +49,48 @@ Signature(f) admitted-by Capability(f)
 RuntimeChanges(f) admitted-by Capability(f)
 ```
 
-This end-to-end chain is machine checked for the formal structured core. Beta 5 carries formal bridge evidence inside production Change IR, `.patchapp`, and bootstrap Wasm payloads, but the production checker still requires a mechanized correspondence/checker boundary before its soundness can inherit the Lean theorem.
+This end-to-end chain is machine checked for the formal structured core.
+
+Beta 6 additionally implements an executable Lean policy checker and proves:
+
+```text
+checkProtected(stmt, policy) = true
+=> PolicyAllows(inferSignature(stmt), policy)
+```
+
+so an actual checker result, not merely an assumed relational premise, is sufficient to derive runtime policy containment for formal executions.
 
 Security cases should include bounded rewards, balances, inventory operations, UI handlers, plugin-like modules and nested helpers.
 
-## RQ4: Verified bridge / translation validation
+## RQ4: Verified checker / production boundary
 
-This is now a dedicated research question rather than a vague implementation task.
+Beta 6 changes this from a planned architecture into an implemented research artifact.
 
-Current beta-5 bridge:
+Current pipeline:
 
 ```text
-production AST -> independently reconstructed CoreStmt/signature
-production AST -> production Change Signature
-                         |
-                         v
-                      compare
+Patch source
+   -> production JavaScript parser/analyzer
+   -> formal bridge CoreStmt + policy
+   -> generated Lean certificate
+   -> verified PatchChecker
+   -> formal policy-containment theorem
 ```
 
-Next target:
+`patch certify` emits a source-bound Lean artifact for bridge-supported protected recipes. Formal CI generates that artifact using the production compiler, explicitly compiles all Lean proof modules, and then compiles the generated certificate.
 
-> A small verified checker, or equivalent mechanized validation relation, accepts production semantic evidence only when it corresponds to the Lean effect/signature model.
+The remaining critical trust gap is **translation correctness**:
 
-Candidate route:
+> Does the JavaScript bridge-generated `CoreStmt` faithfully represent the semantics of the supported Patch source/Change IR?
 
-1. define a stable JSON evidence schema for normalized effects and control flow;
-2. write a very small checker corresponding closely to Lean definitions;
-3. prove/check the checker against Lean;
-4. make compiler output pass through that checker in CI and release builds;
-5. extend coverage incrementally.
+Candidate routes:
 
-This may be more tractable and auditable than attempting to verify the entire JavaScript compiler.
+1. formalize a stable semantic evidence schema and prove a decoder/checker over it;
+2. prove correspondence between supported Change IR and `CoreStmt`;
+3. generate both semantic evidence and dynamic traces and validate them against formal execution;
+4. eventually move the small bridge encoder into a more readily verified component if necessary.
+
+The whole JavaScript compiler need not be verified if a sufficiently small, auditable boundary can be justified.
 
 ## RQ5: Range-analysis soundness and precision
 
@@ -96,6 +105,8 @@ and interval propagation through a small arithmetic fragment.
 Formal target:
 
 > If the analyzer returns interval `I` for expression `e` under range environment `Gamma`, every supported evaluation of `e` satisfying `Gamma` lies in `I`.
+
+Beta 6's verified checker proves its **own** interval-containment decision is sound. It does not yet prove the production expression analyzer's inferred interval is correct. That distinction must remain explicit.
 
 Evaluate how many safe bounded programs become provable, how many remain conservatively rejected, and analysis cost.
 
@@ -133,15 +144,27 @@ Build two or three examples where operation- or magnitude-sensitive authority is
 
 Measure prevented policy violations, annotations, validation code, logging/audit code and runtime overhead.
 
-At least one case study should fit entirely inside the verified/validated subset so the formal claim and practical example are connected.
+At least one case study must fit entirely inside the beta-6 certifiable subset so the formal theorem, generated certificate and practical example form one reproducible path.
 
-## RQ9: Expressiveness and infrastructure reduction
+## RQ9: Certificate and checker cost
+
+Measure separately:
+
+- certificate generation time and size;
+- Lean checker/build time;
+- size of the checker trusted code/proof base;
+- effect of number of changes, branches, repetition and policy rules;
+- incremental/cached verification opportunities.
+
+The goal is not to outperform conventional compilation. It is to show that stronger semantic assurance is practical for useful program components.
+
+## RQ10: Expressiveness and infrastructure reduction
 
 Implement representative programs in Patch and conventional baselines. Measure source size and extra infrastructure required for history, undo, preview, semantic auditing, capability enforcement and provenance.
 
 Do not let this become a feature-count contest. The paper should center the formal mutation-contract contribution.
 
-## RQ10: Comparison to prior systems
+## RQ11: Comparison to prior systems
 
 Systematically compare against:
 
@@ -152,7 +175,8 @@ Systematically compare against:
 - Effects as Capabilities/Effekt;
 - object-capability, permission and refinement systems;
 - range/abstract-interpretation systems;
-- translation-validation / verified-checker approaches;
+- translation validation and certifying compilers;
+- Proof-Carrying Code and small proof-checker architectures;
 - provenance and why-oriented debugging;
 - ChEOPS/COPE/Edit Transactions;
 - edit lenses/change structures/patch theory;
@@ -160,26 +184,27 @@ Systematically compare against:
 
 The goal is to falsify overbroad novelty claims before reviewers do.
 
-## RQ11: Performance
+## RQ12: Runtime and compiler performance
 
 Separate:
 
 1. change construction/history overhead;
-2. Change Signature + range + capability analysis cost;
-3. formal-bridge / verification cost;
-4. JavaScript interpreter performance;
-5. future direct Change IR-to-Wasm performance;
-6. native host packaging overhead.
+2. Change Signature + range + production capability analysis cost;
+3. formal-bridge cost;
+4. certificate generation/checking cost;
+5. JavaScript interpreter performance;
+6. future direct Change IR-to-Wasm performance;
+7. native host packaging overhead.
 
-## RQ12: Novice comprehension
+## RQ13: Novice comprehension
 
 If accessibility remains part of the paper, preregister a controlled study comparing Patch with conventional mutable syntax. Keep advanced capability/formal questions separate from the basic state-mutation comparison.
 
-## RQ13: Cross-platform artifact
+## RQ14: Cross-platform artifact
 
 Evaluate the same language/Change IR across browser/PWA, Windows/macOS/Linux CI, portable `.patchapp`, direct Wasm when available, and at least one native GUI host before making a systems-heavy portability claim.
 
-## Current milestone: 0.2.0-beta.5
+## Current milestone: 0.2.0-beta.6
 
 Implemented:
 
@@ -192,28 +217,30 @@ Implemented:
 - machine-checked State-Change Factorization and Mutation Transparency;
 - machine-checked Change Signature Soundness for the structured formal core;
 - machine-checked end-to-end capability containment for that formal core;
-- first production-to-formal translation-validation artifact;
+- production-to-formal translation-validation bridge;
 - `patch formal` coverage reporting;
 - automatic compiler failure on supported production/formal signature mismatch;
+- **Lean-verified executable semantic policy checker**;
+- **`patch certify` generated Lean certificates** for protected bridge-supported recipes;
+- formal CI that generates a certificate from production source, explicitly builds all Lean modules, and verifies the generated certificate;
 - formal bridge evidence embedded in Change IR / portable artifacts;
 - Patch Studio/PWA, GUI preview/Designer, `.patchapp`, bootstrap Wasm;
-- Windows/macOS/Linux CI and dedicated formal-verification CI.
+- Windows/macOS/Linux JavaScript CI.
 
 ## Next formal milestone
 
-1. stabilize the formal evidence schema;
-2. implement a small Lean-related verified checker or equivalent mechanized validator;
-3. extend the bridge to non-recursive recipe calls and parameter substitution;
-4. formalize the ranged expression fragment and prove interval analyzer soundness;
-5. connect production execution traces to formal `Executes` traces;
-6. derive end-to-end production capability soundness for the validated subset;
-7. then move to inverse/replay/commutation proofs.
+1. prove or verify the source/Change-IR-to-`CoreStmt` translation boundary for a useful subset;
+2. formalize the ranged expression fragment and prove interval analyzer soundness;
+3. extend the bridge/certifier to non-recursive recipe calls and parameter substitution;
+4. connect production execution traces to formal `Executes` traces;
+5. derive a stronger source-level end-to-end capability theorem;
+6. then move to inverse/replay/commutation proofs.
 
 ## Paper strategy
 
 Primary claim:
 
-> Persistent mutation is forced through a semantic Change IR, and operation-/magnitude-aware semantic Change Contracts inferred from that same representation can be proved to constrain runtime semantic changes. A conservative production validation boundary makes the implementation-to-proof gap explicit and progressively checkable.
+> Persistent mutation is forced through a semantic Change IR, and operation-/magnitude-aware semantic Change Contracts derived from that same representation can be proved to constrain runtime semantic changes. For a conservative production subset, semantic evidence is translation-validated and accepted by a small Lean-verified policy checker.
 
 Supporting claims:
 
@@ -222,17 +249,18 @@ Supporting claims:
 - quantitative policies can prevent useful classes of state-update bugs;
 - the model can support console/GUI artifacts without exposing platform complexity.
 
-Avoid making GUI, undo, `why`, Wasm or mobile IDE support the novelty headline.
+Avoid making GUI, undo, `why`, Wasm, certificates, or mobile IDE support the novelty headline. Certificates are assurance machinery, not the semantic novelty.
 
 ## High-venue gate
 
 Before an OOPSLA/PLDI/ICFP-level attempt, require:
 
 1. systematic related-work review;
-2. meaningful machine-checked production/formal correspondence or verified-checker boundary for a useful subset;
-3. direct compiled execution;
-4. two or three convincing security/engineering case studies, with at least one inside the validated subset;
-5. benchmark evidence;
-6. a reproducible artifact;
-7. no unsupported firstness claims;
-8. controlled user evidence only if novice simplicity remains a headline empirical claim.
+2. stronger source/IR-to-formal correspondence for a useful subset;
+3. mechanized production interval-analysis soundness if magnitude-aware contracts remain central;
+4. direct compiled execution;
+5. two or three convincing security/engineering case studies, with at least one inside the certified subset;
+6. benchmark and certificate-overhead evidence;
+7. a reproducible artifact;
+8. no unsupported firstness claims;
+9. controlled user evidence only if novice simplicity remains a headline empirical claim.
