@@ -35,7 +35,7 @@ for (const needle of ['./style.css', './manifest.webmanifest', './playground.js'
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone & iPad', 'Research project', 'State-Change Factorization', 'Verified checker', 'patch certify', 'Roadmap']) {
+for (const phrase of ['Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone & iPad', 'Research project', 'State-Change Factorization', 'Verified checker', 'Verified evidence', 'PatchEvidence', 'patch certify', 'beta.7', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
 }
 
@@ -56,6 +56,7 @@ for (const phrase of ['patch-formal-bridge', 'signatureMatchesProduction', 'buil
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
+if (!sw.includes("patch-studio-0.2-beta.7")) throw new Error('Generated service worker cache is not on beta.7.');
 for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-bridge.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
