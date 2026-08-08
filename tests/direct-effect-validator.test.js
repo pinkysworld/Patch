@@ -54,7 +54,7 @@ test('validator derives decrease/increase direction from signed add/remove value
 });
 
 test('validator preserves semantic set and clear identities independently of net direction', async () => {
-  const source = `create number score = 10\nchange score:\n  set 20\nchange score:\n  clear\nshow score`;
+  const source = `create number score = 10\nchange score:\n  set = 20\nchange score:\n  clear\nshow score`;
   const { validation } = await validateProgram(source);
   assert.deepEqual(validation.occurrences.map(item => ({
     sourceOperation: item.effect.sourceOperation,
@@ -68,7 +68,7 @@ test('validator preserves semantic set and clear identities independently of net
 });
 
 test('validator checks every operation effect within one multi-operation change block', async () => {
-  const source = `create number score = 10\nchange score:\n  add 2\n  remove 1\n  set 20\nshow score`;
+  const source = `create number score = 10\nchange score:\n  add 2\n  remove 1\n  set = 20\nshow score`;
   const { direct, validation } = await validateProgram(source);
   assert.deepEqual(direct.trace, [{ target: 'score', before: 10, after: 20 }]);
   assert.deepEqual(validation.occurrences.map(item => item.effect.operation), ['increase', 'decrease', 'set']);

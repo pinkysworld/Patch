@@ -93,28 +93,110 @@ export function deriveExpectedDirectTrace(ir) {
           if (!state.has(instruction.target)) fail(`unknown numeric target '${instruction.target}'`, instruction.line);
           const site = contract.siteByInstruction.get(instruction);
           if (!site) fail(`missing trace contract site for '${instruction.target}'`, instruction.line);
+
           const before = state.get(instruction.target);
           let current = before;
+          const effects = [];
+
           for (const operation of instruction.operations ?? []) {
-            if (operation.field) fail(`field changes are outside validator numeric subset`, operation.line ?? instruction.line);
+            if (operation.field) fail('field changes are outside validator numeric subset', operation.line ?? instruction.line);
+            const effectBefore = current;
+            const line = operation.line ?? instruction.line;
+
             switch (operation.op) {
-              case 'clear':
+              case 'clear': {
                 current = 0;
+                effects.push({
+                  target: instruction.target,
+                  field: null,
+                  sourceOperation: 'clear',
+                  operation: 'clear',
+                  amount: null,
+                  rawAmount: null,
+                  value: null,
+                  before: effectBefore,
+                  after: current,
+                  line
+                });
                 break;
-              case 'set':
-                current = evaluateNumber(operation.expr, stateWithTarget(state, instruction.target, current), locals, operation.line ?? instruction.line);
+              }
+
+              case 'set': {
+                const value = evaluateNumber(
+                  operation.expr,
+                  stateWithTarget(state, instruction.target, current),
+                  locals,
+                  line
+                );
+                current = value;
+                effects.push({
+                  target: instruction.target,
+                  field: null,
+                  sourceOperation: 'set',
+                  operation: 'set',
+                  amount: null,
+                  rawAmount: null,
+                  value,
+                  before: effectBefore,
+                  after: current,
+                  line
+                });
                 break;
-              case 'add':
-                current += evaluateNumber(operation.expr, stateWithTarget(state, instruction.target, current), locals, operation.line ?? instruction.line);
+              }
+
+              case 'add': {
+                const rawAmount = evaluateNumber(
+                  operation.expr,
+                  stateWithTarget(state, instruction.target, current),
+                  locals,
+                  line
+                );
+                current += rawAmount;
+                effects.push({
+                  target: instruction.target,
+                  field: null,
+                  sourceOperation: 'add',
+                  operation: rawAmount >= 0 ? 'increase' : 'decrease',
+                  amount: Math.abs(rawAmount),
+                  rawAmount,
+                  value: null,
+                  before: effectBefore,
+                  after: current,
+                  line
+                });
                 break;
-              case 'remove':
-                current -= evaluateNumber(operation.expr, stateWithTarget(state, instruction.target, current), locals, operation.line ?? instruction.line);
+              }
+
+              case 'remove': {
+                const rawAmount = evaluateNumber(
+                  operation.expr,
+                  stateWithTarget(state, instruction.target, current),
+                  locals,
+                  line
+                );
+                current -= rawAmount;
+                effects.push({
+                  target: instruction.target,
+                  field: null,
+                  sourceOperation: 'remove',
+                  operation: rawAmount >= 0 ? 'decrease' : 'increase',
+                  amount: Math.abs(rawAmount),
+                  rawAmount,
+                  value: null,
+                  before: effectBefore,
+                  after: current,
+                  line
+                });
                 break;
+              }
+
               default:
-                fail(`change operation '${operation.op}' is outside validator subset`, operation.line ?? instruction.line);
+                fail(`change operation '${operation.op}' is outside validator subset`, line);
             }
-            requireFinite(current, `change result for '${instruction.target}'`, operation.line ?? instruction.line);
+
+            requireFinite(current, `change result for '${instruction.target}'`, line);
           }
+
           state.set(instruction.target, current);
           trace.push({
             siteId: site.siteId,
@@ -122,7 +204,8 @@ export function deriveExpectedDirectTrace(ir) {
             line: site.line,
             target: instruction.target,
             before,
-            after: current
+            after: current,
+            effects
           });
           break;
         }

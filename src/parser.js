@@ -52,7 +52,6 @@ export function parse(source) {
       if(maxAmount!==null&&!['increase','decrease','add','remove'].includes(m[3])) throw new PatchSyntaxError(`'up to' is only meaningful for increase, decrease, add, or remove.`,row.line);
       return {kind:'capRule',target:m[1],field:m[2]??null,operation:m[3],maxAmount,line:row.line};
     }
-    if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) return {kind:'field',name:m[1],expr:m[2],line:row.line};
     if ((m = row.text.match(/^show\s+(.+)$/))) return {kind:'show',expr:m[1],line:row.line};
     if ((m = row.text.match(/^why\s+(.+)$/))) return {kind:'why',expr:m[1],line:row.line};
     if ((m = row.text.match(/^watch\s+([A-Za-z_]\w*)$/))) return {kind:'watch',target:m[1],line:row.line};
@@ -64,10 +63,14 @@ export function parse(source) {
       const ops=childBlock(indent,row); for(const op of ops) if(op.kind!=='changeOp') throw new PatchSyntaxError('Only set, add, remove, or clear can appear directly inside change.',op.line);
       return {kind:'change',target:m[1],name:m[2]??null,ops,line:row.line};
     }
+    // Change verbs are parsed before generic `name = value` thing fields. This
+    // keeps scalar `set = value` unambiguous while preserving normal field
+    // initializers such as `name = "Sam"` inside create thing blocks.
     if ((m = row.text.match(/^set(?:\s+([A-Za-z_]\w*))?\s*=\s*(.+)$/))) return {kind:'changeOp',op:'set',field:m[1]??null,expr:m[2],line:row.line};
     if ((m = row.text.match(/^add\s+(.+?)(?:\s+to\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'add',field:m[2]??null,expr:m[1],line:row.line};
     if ((m = row.text.match(/^remove\s+(.+?)(?:\s+from\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'remove',field:m[2]??null,expr:m[1],line:row.line};
     if ((m = row.text.match(/^clear(?:\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'clear',field:m[1]??null,line:row.line};
+    if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) return {kind:'field',name:m[1],expr:m[2],line:row.line};
     if ((m = row.text.match(/^if\s+(.+)\s*:\s*$/))) {
       const thenBody=childBlock(indent,row); let elseBody=[];
       if(i<lines.length&&lines[i].indent===indent&&lines[i].text==='else:'){const elseRow=lines[i++];elseBody=childBlock(indent,elseRow);}
