@@ -1,13 +1,33 @@
+import { compile } from './compiler.js';
 import { compileToDirectWasm } from './wasm-direct.js';
+import { buildStandaloneWindowWebApp } from './window-webapp.js';
 
-export const PATCH_STANDALONE_WEB_VERSION = '0.1';
+export const PATCH_STANDALONE_WEB_VERSION = '0.2';
 
 export function buildStandaloneWebApp(source, options = {}) {
   const name = safeName(options.name ?? 'PatchApp');
+  const entry = options.entry ?? 'main.patch';
+  const requestedKind = options.kind ?? null;
+
+  if (requestedKind === 'window') {
+    const compiled = compile(source, { ...options, name, kind: 'window', entry });
+    return buildStandaloneWindowWebApp(compiled, name);
+  }
+
+  if (!requestedKind) {
+    const inferred = compile(source, { ...options, name, entry });
+    if (inferred.project.kind === 'window') return buildStandaloneWindowWebApp(inferred, name);
+  }
+
+  return buildStandaloneConsoleWebApp(source, { ...options, name, kind: 'console', entry });
+}
+
+function buildStandaloneConsoleWebApp(source, options) {
+  const { name, entry } = options;
   const { module, metadata, compiled } = compileToDirectWasm(source, {
     name,
     kind: 'console',
-    entry: options.entry ?? 'main.patch'
+    entry
   });
   const wasmBase64 = bytesToBase64(module);
   const meta = JSON.stringify({
@@ -15,7 +35,8 @@ export function buildStandaloneWebApp(source, options = {}) {
     version: PATCH_STANDALONE_WEB_VERSION,
     directWasmVersion: metadata.version,
     irVersion: metadata.irVersion,
-    stateTargets: metadata.stateTargets
+    stateTargets: metadata.stateTargets,
+    projectKind: 'console'
   });
 
   const html = `<!doctype html>
@@ -30,7 +51,7 @@ export function buildStandaloneWebApp(source, options = {}) {
 <body>
 <main class="app">
   <div class="bar"><strong>${escapeHtml(name)}</strong><span>Built with Patch</span></div>
-  <div class="body"><pre id="output">Starting…</pre><button id="run">Run again</button><small>Standalone single-file Patch Web App</small></div>
+  <div class="body"><pre id="output">Starting…</pre><button id="run">Run again</button><small>Standalone single-file Patch Console Web App</small></div>
 </main>
 <script>
 const PATCH_META=${meta};
