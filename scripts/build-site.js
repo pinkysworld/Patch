@@ -14,15 +14,12 @@ for (const name of ['index.html', 'style.css', 'manifest.webmanifest', 'icon.svg
   fs.copyFileSync(path.join(sourceWeb, name), path.join(out, name));
 }
 
-const playground = fs.readFileSync(path.join(sourceWeb, 'playground.js'), 'utf8')
-  .replaceAll("'../src/", "'./src/")
-  .replaceAll('"../src/', '"./src/');
-fs.writeFileSync(path.join(out, 'playground.js'), playground);
-
-const sw = fs.readFileSync(path.join(sourceWeb, 'sw.js'), 'utf8')
-  .replaceAll("'../src/", "'./src/")
-  .replaceAll('"../src/', '"./src/');
-fs.writeFileSync(path.join(out, 'sw.js'), sw);
+for (const name of ['playground.js', 'native-build.js', 'sw.js']) {
+  const content = fs.readFileSync(path.join(sourceWeb, name), 'utf8')
+    .replaceAll("'../src/", "'./src/")
+    .replaceAll('"../src/', '"./src/');
+  fs.writeFileSync(path.join(out, name), content);
+}
 
 fs.cpSync(sourceSrc, path.join(out, 'src'), { recursive: true });
 
