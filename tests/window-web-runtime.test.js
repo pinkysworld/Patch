@@ -144,3 +144,27 @@ when name changed:
     /support 'clicked' events on buttons only/
   );
 });
+
+test('Window builds reject event handlers for controls that do not exist', () => {
+  const source = `window "Broken":
+  text "Hello"
+
+when missing clicked:
+  show 1`;
+
+  assert.throws(
+    () => buildStandaloneWebApp(source, { name: 'BrokenEvent', kind: 'window' }),
+    /refers to a control that is not defined/
+  );
+});
+
+test('Window builds reject duplicate control ids before target packaging', () => {
+  const source = `window "Duplicate":
+  button "One" as action
+  button "Two" as action`;
+
+  assert.throws(
+    () => buildStandaloneWebApp(source, { name: 'DuplicateIds', kind: 'window' }),
+    /control id 'action' is declared more than once/
+  );
+});
