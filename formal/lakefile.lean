@@ -20,3 +20,6 @@ lean_lib PatchSource where
 
 lean_lib PatchRange where
   srcDir := "."
+
+lean_lib PatchRuntime where
+  srcDir := "."
