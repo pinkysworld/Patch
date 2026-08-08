@@ -1,8 +1,8 @@
 # Patch Core Formal Model
 
-Status: **beta.19: mechanized change semantics plus independently validated source extraction for the supported formal subset**.
+Status: **beta.20: mechanized change semantics, independently validated source extraction, and Lean-checked direct-runtime occurrence correspondence for a linear certified subset**.
 
-The executable Patch language remains larger than the Lean model. The `formal/` directory defines a compact semantics whose stated theorems are machine checked. The JavaScript implementation surrounds that formal core with explicit translation-validation boundaries rather than claiming full compiler verification.
+The executable Patch language remains larger than the Lean model. The `formal/` directory defines compact semantics whose stated theorems are machine checked. The JavaScript implementation surrounds that formal core with explicit translation/runtime-validation boundaries rather than claiming full compiler verification.
 
 ## 1. State-Change Factorization
 
@@ -26,8 +26,9 @@ well-formedness requires the semantic operations to map `before` to `after`, and
 - `PatchEvidence.lean` — proof-free EvidenceStmt decoding and evidence/signature correspondence.
 - `PatchSource.lean` — source-facing `add/remove/set/clear`, semantic normalization, `SourceExecutes` and source policy containment.
 - `PatchRange.lean` — integer RangeExpr evaluation/analysis and machine-checked `rangeAnalysisSound`.
+- `PatchRuntime.lean` — concrete runtime-effect refinement, proof-free occurrence decoding, linear execution-trace reconstruction and `checkSourceRuntimeEvidence_sound`.
 
-Formal CI builds these modules explicitly and then compiles a certificate generated from real Patch source.
+Formal CI builds all seven modules and compiles both a static certificate generated from Patch source and a beta.20 runtime certificate generated after actual direct-Wasm execution.
 
 ## 3. Main machine-checked results
 
@@ -87,11 +88,20 @@ source remove [-5,-5] -> semantic increase [5,5]
 
 `checkSourceEvidence_sound` establishes successful SourceStmt → EvidenceStmt equality. `checkSourceSignature_sound` composes source normalization, evidence decoding and formal signature inference and proves equality with the supplied production signature claim. `checkedSourceExecutionCannotEscape` gives capability containment for the formal source execution relation.
 
-`SourceExecutes` is a formal relation. It is not automatically a theorem about the JavaScript interpreter or direct Wasm runtime.
+`SourceExecutes` is defined through Lean-normalized source evidence and the existing `Executes` relation:
 
-## 5. Beta.19 independent raw-source extraction validation
+```text
+SourceExecutes(source, runtime)
+iff
+exists evidence stmt,
+  lowerSourceStmt source = some evidence
+  and decodeEvidenceStmt evidence = some stmt
+  and Executes stmt runtime
+```
 
-Before beta.19, the main frontend trust path was:
+## 5. Independent raw-source extraction validation
+
+The production frontend path is:
 
 ```text
 Patch source bytes
@@ -99,144 +109,211 @@ Patch source bytes
    -> formalSource SourceStmt + range claims
 ```
 
-Beta.19 adds a second implementation path:
+A second implementation path deliberately does not import `parser.js` or consume that AST:
 
 ```text
 exact Patch source bytes
    -> src/source-validation.js
-   -> independent indentation-aware raw-source parser
+   -> independent indentation-aware parser
    -> raw SourceStmt + raw formal range claims
 ```
 
-Important separation properties:
+For supported entries, the two SourceStmt views and range claims must agree exactly before protected static certification. Negative tests alter the production formal source or range claim and require disagreement to be detected.
 
-- `source-validation.js` does **not** import `parser.js`;
-- it does not consume the production AST;
-- it reconstructs source mutation verbs and formal structure directly from source lines;
-- range-expression source text is independently collected from the raw source path;
-- the resulting SourceStmt and range claims are compared structurally with `formalSource`.
+This is **translation validation**, not a machine-checked theorem that either JavaScript frontend is correct.
 
-The resulting Change IR 0.8 `sourceValidation` artifact records per entry:
+## 6. Beta.20 direct runtime → formal execution correspondence
 
-```text
-validated
-productionSupported
-rawSourceSupported
-sourceMatches
-rangeClaimsMatch
-reasons
-```
-
-A protected recipe is eligible for `patch certify` only when its source/range entry is supported **and** the independent raw-source comparison succeeds.
-
-Negative tests modify the production SourceStmt or production range claim and require validation failure.
-
-### What this establishes
-
-For supported entries, the implementation now has two separate routes from the exact source text to the formal-source claim and requires exact agreement before certification.
-
-### What this does not establish
-
-This is **translation validation**, not a Lean proof that the JavaScript production parser is correct. Both extraction paths are still executable JavaScript. Agreement makes a single shared parser/AST extraction error substantially harder to hide, but it is not equivalent to a verified frontend.
-
-## 6. Certificate boundary in beta.19
-
-A generated protected certificate is bound to the exact source via SHA-256 and carries schema versions for source, source validation, evidence and range data.
-
-Conceptually:
-
-```text
-exact Patch source
-    |                       |
-    v                       v
-production AST path     raw-source validator
-    |                       |
-    +------ SourceStmt/range equality ------+
-                            |
-                            v
-                      certificate emission
-                            |
-                            v
-                        Lean checks
-                            |
-        +-------------------+------------------+
-        |                   |                  |
-   range soundness    source/evidence    policy containment
-                      /signature checks
-```
-
-The generated Lean file records that raw-source translation validation passed, but does not pretend that this boolean fact was proved inside Lean.
-
-## 7. Production views remain separate
-
-The production implementation intentionally produces multiple artifacts:
-
-```text
-src/change-analysis.js   -> production Change Signature
-src/formal-range.js      -> formal RangeExpr + range reconstruction
-src/formal-source.js     -> AST-derived SourceStmt + range claims
-src/formal-bridge.js     -> independent semantic evidence view
-src/source-validation.js -> raw-source SourceStmt/range witness + comparison
-```
-
-This separation is important. A comparison is useful only if the two claims are not merely copies of the same intermediate object.
-
-## 8. Supported formal/source-validation subset
-
-Current coverage includes:
-
-- direct `add`, `remove`, `set`, `clear`;
-- proven integer amount ranges for `add/remove`;
-- sequence;
-- both `if` alternatives at the formal effect level;
-- literal non-negative `repeat` counts;
-- ranged recipe parameters for the supported integer expression fragment;
-- preview as no committed effect in the formal abstraction.
-
-Currently outside the certificate/source-validation subset include recipe-call substitution, dynamic repeat counts, undo/redo, GUI event execution, returns, mixed-sign amount ranges and full language value semantics.
-
-Unsupported means **not formally covered**, not necessarily unsafe.
-
-## 9. Direct runtime validation is a separate layer
-
-The direct Wasm runtime exposes:
+Before beta.20, concrete direct-Wasm execution and Lean execution semantics were checked separately. The direct runtime exposed:
 
 ```text
 patch.change_number(targetId, before, after)
 ```
 
-Independent JavaScript validators reconstruct expected Change-IR transitions and concrete semantic effects, then compare the observed execution with Change Signatures and protected Change Capabilities.
+and an independent JavaScript validator reconstructed concrete semantic effects from the observed transitions. Beta.20 connects that occurrence stream to the formal source semantics for a deliberately linear certified subset.
 
-This strengthens implementation evidence at the backend boundary. It is still distinct from the Lean `SourceExecutes` / `Executes` relation.
+### Concrete effects refine abstract formal effects
 
-## 10. Current trust boundary
-
-Beta.19 has narrowed the old frontend gap from a single extraction path to a checked dual path. The largest remaining formal correspondence gap is now:
+A formal ranged source change may normalize to:
 
 ```text
-production / direct runtime effect occurrence
-          -> Lean SourceExecutes / Executes
+score increase [0,10]
 ```
 
-Other remaining obligations include:
+while one concrete call produces:
 
-- JavaScript parser correctness is not machine proved;
-- raw-source validator correctness is not machine proved;
-- recipe-call/substitution correspondence is not yet formalized for the production direct subset;
-- direct Wasm and C99 lowering are validated/tested, not machine proved;
-- full Patch language coverage is not claimed.
+```text
+score increase [8,8]
+```
+
+`PatchRuntime.lean` defines:
+
+```text
+EffectRefines(actual, expected)
+```
+
+requiring target, field and semantic operation equality and, where amounts exist, interval containment:
+
+```text
+actual.amount ⊆ expected.amount
+```
+
+`effectRefinesBool_sound` proves that a successful executable refinement check implies the relational refinement judgment.
+
+### Runtime trace decoding
+
+Concrete occurrences are supplied as proof-free `EvidenceEffect` values. `decodeRuntimeTrace` validates their intervals before admitting them as formal `Effect` values.
+
+`traceRefinesBool` checks complete traces pointwise, and `traceRefinesBool_sound` derives `List.Forall₂ EffectRefines`.
+
+### Linear formal execution reconstruction
+
+`decodeLinearEvidenceTrace` accepts only:
+
+```text
+skip
+emit/change
+sequence
+```
+
+It deliberately rejects `branch` and `repeat` in beta.20. `decodeLinearEvidenceTrace_sound` proves that successful decoding yields a `CoreStmt` which actually `Executes` the reconstructed formal trace.
+
+### Main runtime correspondence theorem
+
+The executable checker is:
+
+```text
+checkSourceRuntimeEvidence source observed
+```
+
+and Lean proves:
+
+```text
+checkSourceRuntimeEvidence source observed = true
+-------------------------------------------------
+exists formalTrace actualTrace,
+  SourceExecutes source formalTrace
+  and decodeRuntimeTrace observed = some actualTrace
+  and List.Forall2 EffectRefines actualTrace formalTrace
+```
+
+The theorem is `checkSourceRuntimeEvidence_sound`.
+
+This is stronger than merely checking that an observed effect appears somewhere in a static signature: a successful certificate supplies a concrete ordered occurrence list and ties it pointwise to an actual execution trace admitted by the formal source semantics for the linear subset.
+
+## 7. Runtime certificate production boundary
+
+`src/runtime-certificate.js` is not itself verified. It performs the implementation-side steps:
+
+```text
+exact source
+   -> direct Wasm compilation
+   -> actual Wasm execution
+   -> observed target/before/after transitions
+   -> independent semantic-effect reconstruction
+   -> proof-free EvidenceEffect occurrences
+   -> generated Lean runtime certificate
+```
+
+The generated artifact records SHA-256 hashes of:
+
+- the exact Patch source bytes;
+- the observed direct transition trace.
+
+The hash binds the artifact to the tested execution; it is not a cryptographic proof of compiler correctness.
+
+For each protected recipe currently certified at runtime, the producer additionally requires:
+
+- formal SourceStmt support;
+- beta.19 raw-source extraction validation;
+- a linear formal SourceStmt (`skip`, `change`, `seq`);
+- exactly one observed invocation of that protected linear recipe;
+- concrete increase/decrease magnitudes representable as non-negative safe integers.
+
+Unsupported cases are rejected instead of being silently mapped to a weaker theorem.
+
+## 8. Static and runtime assurance chains
+
+Static chain:
+
+```text
+exact source
+   -> production formalSource --------+
+   -> independent raw-source witness --+-> structural equality validation
+                                        |
+                                        v
+formal RangeExpr -> Lean range soundness
+SourceStmt -> Lean normalization -> EvidenceStmt -> CoreStmt
+          -> formal Signature -> verified policy checker
+```
+
+Runtime chain:
+
+```text
+exact source
+   -> direct Wasm
+   -> actual execution
+   -> observed transitions
+   -> independent semantic reconstruction
+   -> concrete proof-free runtime evidence
+   -> Lean decoding/refinement
+   -> formal SourceExecutes witness
+```
+
+These layers intentionally separate producer evidence from Lean-checked conclusions.
+
+## 9. Supported beta.20 runtime subset
+
+The direct-Wasm backend is broader than the runtime theorem. Runtime certification currently accepts protected recipes whose formal source consists of:
+
+- direct `add`, `remove`, `set`, `clear` changes supported by the formal source model;
+- sequential composition;
+- integer-valued supported magnitudes;
+- one observed invocation per protected recipe.
+
+Currently rejected at the beta.20 runtime-correspondence boundary:
+
+- formal branches;
+- formal repeats;
+- multiple invocations of the same protected recipe in one runtime certificate;
+- recipe-call composition inside the formal recipe body;
+- floating-point/non-integer concrete magnitudes;
+- GUI/event execution;
+- return-valued recipes and other constructs outside the formal source subset.
+
+Unsupported means **not covered by this theorem**, not necessarily unsafe or unsupported by the Patch runtime.
+
+## 10. What beta.20 establishes and does not establish
+
+A successful beta.20 generated runtime certificate establishes inside Lean that the supplied proof-free concrete effect occurrences decode successfully and pointwise refine an actual formal `SourceExecutes` trace for the supplied formal source statement.
+
+It still does **not** prove:
+
+- production JavaScript parser correctness;
+- independent raw-source parser correctness;
+- direct-Wasm compiler correctness;
+- WebAssembly engine correctness;
+- that `patch.change_number` observes arbitrary mutations outside the supported direct backend contract;
+- correctness of JavaScript semantic reconstruction from before/after observations;
+- branch/repeat path selection correspondence;
+- multiple invocation segmentation;
+- full floating-point correspondence;
+- end-to-end correctness for the full Patch language.
+
+Therefore the correct description remains **Lean-checked runtime correspondence for a restricted observed execution**, not “Patch is a verified compiler.”
 
 ## 11. Next mechanization / validation order
 
-1. connect independently reconstructed runtime effect occurrences to `SourceExecutes` / `Executes` for a useful restricted core;
-2. introduce a typed expression/core IR or another smaller independently checkable lowering input;
-3. extend formal call/substitution semantics for non-recursive recipes;
-4. evaluate whether the independent raw-source frontend should itself be moved into a smaller verified/checkable implementation;
-5. preserve certificates/policies through all packaged backends;
-6. then extend to richer values, UI events, inverse/replay and collaboration semantics.
+1. add explicit `branchThen` / `branchElse` runtime path witnesses;
+2. add repeat-iteration witnesses and invocation identifiers so multiple recipe calls can be segmented;
+3. prove a useful downward-closure result connecting `EffectRefines actual formal` with formal capability admission, yielding a concrete-runtime capability corollary;
+4. introduce a typed expression/core IR or another smaller independently checkable lowering input;
+5. extend formal recipe-call/substitution semantics;
+6. preserve runtime/static certificates across packaged backends;
+7. then extend to richer values, UI events, inverse/replay and collaboration semantics.
 
 ## 12. Research boundary
 
-Source calculi, translation validation, Proof-Carrying Code, certifying compilers, effect/capability systems, range analysis, patches, provenance and verified checkers all have substantial prior art. The raw-source dual-path validator is an **assurance mechanism**, not the primary novelty claim.
+Source calculi, refinement relations, translation validation, Proof-Carrying Code, certifying compilers, effect/capability systems, range analysis, patches, provenance and verified checkers all have substantial prior art. `PatchRuntime` is an **assurance mechanism**, not a new primary novelty headline.
 
 The candidate contribution remains Patch's combination of mandatory semantic mutation, operation- and magnitude-aware contracts derived from that representation, and a formal/validation architecture that reuses the same semantic change model while keeping the beginner-facing language small.
