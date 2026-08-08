@@ -1,36 +1,23 @@
 # Patch Studio
 
-Patch Studio is the browser-first IDE for Patch. Its product goal is the immediacy of QuickBASIC and Visual Basic with one readable Patch source format across browser and desktop targets.
+Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.21
+## What works in 0.2 beta.22
 
-Patch Studio includes:
+Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
-- source editor and local autosave;
-- Run for Console and Window programs;
-- live Patch UI preview and first Designer toolbox;
-- Change IR and Change Contract views;
-- portable `.patchapp` and bootstrap Wasm artifacts;
-- direct Wasm for the supported **Console** subset;
-- Standalone Console Web Apps with embedded direct Wasm;
-- **Standalone Window Web App** builds with a generated browser Window runtime;
-- Windows, macOS and Linux Console and Window/GUI builds initiated directly from Studio;
-- **FreeBSD Console builds through the portable C99 backend**;
-- responsive phone/tablet layout and installable PWA.
+Advanced research commands stay outside the beginner workflow. `patch formal` reports source/formal coverage; `patch runtime-certify` executes supported direct Wasm and emits Lean-checkable runtime correspondence/capability evidence.
 
-Advanced research commands remain optional. `patch formal` exposes source/formal coverage and `patch runtime-certify` executes supported direct Wasm and creates a Lean-checkable runtime correspondence certificate with explicit branch/repeat path witnesses.
+## Window builds and review hardening
 
-## Beta.21 Window build fix
+A Window project is recognized from normalized Change IR using `code: "WINDOW"`. The shared `src/window-build.js` preflight now also validates the runtime surface before Web or desktop packaging:
 
-A normalized Window instruction in Change IR is represented as:
+- control ids must be unique;
+- an event handler must refer to an existing control;
+- the portable beta event path is currently **button `clicked`**;
+- parsed but not consistently wired events such as input `changed` or window `closed` are rejected instead of being shipped as dead behavior.
 
-```text
-code: "WINDOW"
-```
-
-An earlier Studio preflight incorrectly searched for a lower-case `instruction.op`, so a valid program could be rejected with “does not define a Patch window.” Beta.21 moves Window recognition into `src/window-build.js` and validates the actual normalized IR field.
-
-Therefore this program is a valid Window project:
+This example is supported everywhere in the current Window matrix:
 
 ```patch
 create number count = 0
@@ -44,98 +31,39 @@ when add_button clicked:
     add 1
 ```
 
-For Windows, macOS and Linux, Studio now validates the Window and submits the source to the dedicated Window packaging workflow.
+The **Standalone Window Web App** backend is differentially tested against the reference interpreter. The tests execute the generated single-file HTML runtime and cover sequential operations within one `change`, declared create types, Thing-field validity and actual button-click rerendering.
 
-## Standalone Window Web Apps
-
-A second beta.21 correction separates Window Web Apps from Console Direct Wasm. The build routes are now:
-
-```text
-Console + Standalone Web App
-  -> direct Patch Wasm
-  -> tiny browser host
-  -> one HTML file
-
-Window + Standalone Web App
-  -> parsed/validated Patch Window program
-  -> generated browser Window runtime
-  -> controls + events + semantic changes
-  -> one HTML file
-```
-
-Window projects therefore no longer fail merely because `WINDOW` is outside the Console-only Direct Wasm execution subset.
-
-`Direct WebAssembly (.wasm)` itself remains Console-only. If it is selected for a Window project, Studio gives a direct compatibility message and recommends Standalone Web App or Windows/macOS/Linux App instead of exposing a lower-level backend error.
-
-## Desktop Build menu
+## Build matrix
 
 ```text
 Windows App (.exe)   Console or Window
 macOS App (.app)     Console or Window
 Linux App            Console or Window
 FreeBSD Console      Console only
+Standalone Web App   Console or Window
 ```
 
-The current editor source is submitted as workflow input and does not have to be committed. Remote targets require a fine-grained GitHub token with Actions read/write access to `pinkysworld/Patch`; Studio keeps the token only in the current page and does not store it in the project or `localStorage`.
+Console Web Apps use direct Patch Wasm. Window Web Apps use the generated browser Window runtime. Direct WebAssembly itself remains Console-only.
 
-### Window preflight and packaging
-
-```text
-current Studio source
-        ↓
-compile -> normalized Change IR
-        ↓
-Window preflight: code == WINDOW
-        ↓
-Patch Native Apps workflow
-        ↓
-Windows / macOS / Linux runner
-        ↓
-dedicated Window packager + smoke check
-        ↓
-artifact downloaded by Studio
-```
-
-The current desktop player covers `window`, `text`, `button`, `input`, supported events and semantic `change` execution. Packages are standalone, but this is **not yet native-widget lowering** to AppKit, Win32 or GTK.
-
-## FreeBSD Console path
-
-```text
-Patch source
-    ↓
-portable C99 backend
-    ↓
-FreeBSD 15.1 VM
-    ↓
-base-system cc -std=c99
-    ↓
-native FreeBSD executable
-```
-
-FreeBSD remains Console-only. The C99 path covers the conservative numeric Console subset with supported state/change/show, arithmetic/conditions, literal repeat/count, acyclic numeric recipes and ranged guards.
+For desktop cloud builds, Studio performs browser preflight first, then sends the current editor source to GitHub Actions. The target-side Window packager repeats the shared runtime-support validation before packaging. A fine-grained GitHub token with Actions read/write access is currently required; it is not saved to the project or `localStorage`.
 
 ## iPhone and iPad
 
-Patch Studio can be installed from Safari with **Share → Add to Home Screen**. Locally it can edit, run/preview, use Designer tools, inspect Changes/IR, build `.patchapp`, bootstrap/direct Wasm where compatible, and build Console or Window single-file Web Apps. With network access and the GitHub build token it can request Windows/macOS/Linux artifacts remotely.
+Patch Studio can be installed from Safari with **Share → Add to Home Screen**. It can author/preview Window apps, build local Web/portable artifacts and dispatch supported desktop builds remotely.
 
-## PWA update behavior
+## PWA updates
 
-Beta.21 changes same-origin Studio HTML/JavaScript to a **network-first** service-worker strategy with cached fallback. This is specifically intended to reduce stale deployed JavaScript after a new beta while retaining offline operation. The cache key is versioned per beta.
+HTML and JavaScript use a versioned network-first strategy with cached offline fallback. The beta.22 cache key is `patch-studio-0.2-beta.22`, reducing stale deployed Studio code after releases.
 
-## Source-preserving design
+## Source remains truth
 
-The Designer keeps ordinary Patch source as truth. Adding a button should still produce readable source such as:
+The Designer edits ordinary Patch source rather than a hidden proprietary form format:
 
 ```patch
 window "My App":
   button "Button" as button_1
 ```
 
-## Remaining product work
+## Next product features
 
-- Designer selection, properties, drag positioning/resizing and richer controls;
-- stronger two-way input binding and event editing;
-- native AppKit/Win32 and portable Unix GUI lowering instead of the current player;
-- FreeBSD Window packaging and separately tested OpenBSD/NetBSD targets;
-- Windows signing, macOS Developer ID/notarization and installers;
-- optional build service so end users do not need a personal GitHub token.
+The next GUI feature should give `input` an explicit semantic event value without bypassing State-Change Factorization—for example, an event-local value that source must commit through `change`. Further work includes properties/drag-resize Designer editing, native AppKit/Win32/portable Unix GUI lowering, FreeBSD Window packaging, signing/notarization and a build service that does not require a personal GitHub token.
