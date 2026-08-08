@@ -53,7 +53,7 @@ mustInclude('docs/ROADMAP.md', files.roadmap, [
 
 mustInclude('docs/COMPILER.md', files.compiler, [
   `Status: **${version}**`, 'Change IR **0.9**', 'Beta.24 Window event path', '`src/window-events.js`',
-  'button + clicked', 'input  + changed', 'transient event payload', "PATCH_WINDOW_WEB_VERSION = '0.3'"
+  'button + clicked', 'input  + changed', 'transient event payload', 'generated Window Web runtime is version 0.3'
 ]);
 
 // The formal/runtime research layer remains the beta.23 milestone in beta.24.
