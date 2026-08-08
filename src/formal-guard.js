@@ -83,8 +83,11 @@ class GuardParser {
     if (this.peek('word', 'false')) { this.index += 1; return { kind: 'bool', value: false }; }
 
     // First try a numeric comparison. This lets arithmetic parentheses such as
-    // `(bonus + 1) > 0` remain part of the integer expression grammar.
+    // `(bonus + 1) > 0` remain part of the integer expression grammar. Preserve
+    // a specific numeric-fragment error so unsupported variables/multiplication
+    // do not degrade into a generic Boolean-parser diagnostic after backtracking.
     const start = this.index;
+    let numericError = null;
     try {
       const left = this.parseIntAddSub();
       if (['==', '!=', '<', '>', '<=', '>='].some(op => this.peek(op))) {
@@ -97,8 +100,8 @@ class GuardParser {
         if (op === '>') return { kind: 'lt', left: right, right: left };
         return { kind: 'le', left: right, right: left };
       }
-    } catch {
-      // Backtrack and try a parenthesized Boolean expression below.
+    } catch (error) {
+      numericError = error;
     }
     this.index = start;
 
@@ -109,6 +112,7 @@ class GuardParser {
       return inner;
     }
 
+    if (numericError) throw numericError;
     throw new Error(`formal guard needs a Boolean literal or integer comparison near '${this.current().text}'`);
   }
 
