@@ -17,54 +17,55 @@ const files = {
 };
 
 mustInclude('README.md', files.readme, [
-  `Current development beta: \`${version}\``, 'Change IR: `0.8`', 'Independent raw-source parser',
-  'Runtime → Lean correspondence', 'RuntimePath', 'checkedConcreteRuntimeCannotEscape', 'PatchRuntimeCapability.lean',
-  'Standalone Window Web App', 'button `clicked`', 'Windows Window/GUI', 'macOS Window/GUI', 'Linux Window/GUI',
-  'FreeBSD Console', '--target c99', 'FreeBSD 15.1', 'not yet a standalone WASI command module',
-  'typed, guard-aware execution core', 'translation validation', 'docs/RUNTIME_CORRESPONDENCE.md'
+  `Current development beta: \`${version}\``, 'Change IR: `0.9`', 'Independent raw-source parser',
+  'Independent raw-source guard parser', 'guardValidation', 'PatchGuarded.lean', 'GuardPathValid',
+  'checkedGuardedConcreteRuntimeCannotEscape', 'Standalone Window Web App', 'button `clicked`',
+  'Windows Window/GUI', 'macOS Window/GUI', 'Linux Window/GUI', 'FreeBSD Console', '--target c99',
+  'FreeBSD 15.1', 'not yet a standalone WASI command module', 'formal recipe-call/substitution semantics',
+  'translation validation', 'docs/RUNTIME_CORRESPONDENCE.md'
 ]);
 mustInclude('web/index.html', files.website, [
-  `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.8',
-  'Standalone Window Web App', 'Window preflight', 'RuntimePath', 'SourceExecutes',
-  'checkedConcreteRuntimeCannotEscape', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console',
-  'Project Type', 'portable C99', 'FreeBSD 15.1', 'not yet a standalone WASI command',
-  'State-Change Factorization', 'Roadmap'
+  `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.9',
+  'Standalone Window Web App', 'Window preflight', 'RuntimePath', 'GuardTree', 'branchThen', 'branchElse',
+  'checkedGuardedConcreteRuntimeCannotEscape', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App',
+  'FreeBSD Console', 'Project Type', 'portable C99', 'FreeBSD 15.1', 'not yet a standalone WASI command', 'Roadmap'
 ]);
 mustInclude('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, 'Standalone Window Web App', 'button `clicked`',
-  'FreeBSD Console builds through the portable C99 backend', 'patch runtime-certify'
+  `What works in 0.2 beta.${beta}`, 'Change IR **0.9**', 'Standalone Window Web App', 'button `clicked`',
+  'FreeBSD Console builds through the portable C99 backend', 'guard-aware Lean certificate', 'patch runtime-certify'
 ]);
 mustInclude('docs/NATIVE_APPS.md', files.native, [
-  `Status: **${version}**`, 'Window preflight', 'Portable C99', 'FreeBSD 15.1',
-  'not yet native-widget lowering', 'checkedConcreteRuntimeCannotEscape'
+  `Status: **${version}**`, 'Change IR **0.9**', 'Window preflight', 'Portable C99', 'FreeBSD 15.1',
+  'not yet native-widget lowering', 'PatchGuarded.lean', 'checkedGuardedConcreteRuntimeCannotEscape'
 ]);
 mustInclude('docs/ROADMAP.md', files.roadmap, [
-  `Current development beta: **${version}**`, `### beta.${beta}: Window runtime hardening + concrete runtime capability containment`,
-  'checkedConcreteRuntimeCannotEscape', 'typed, guard-aware execution core',
-  'FreeBSD Console package through portable C99', 'native AppKit Window backend'
+  `Current development beta: **${version}**`, `### beta.${beta}: guard-aware runtime correspondence`,
+  'Change IR **0.9**', 'PatchGuarded.lean', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape',
+  'formal recipe-call/substitution semantics', 'native AppKit Window backend'
 ]);
 mustInclude('docs/COMPILER.md', files.compiler, [
-  `Status: **${version}**`, 'Change IR **0.8**', 'sourceValidation', 'Standalone Window Web App',
-  'PatchRuntime.lean', 'PatchRuntimeCapability.lean', 'checkedConcreteRuntimeCannotEscape', 'typed, guard-aware execution core'
+  `Status: **${version}**`, 'Change IR **0.9**', 'sourceValidation', 'guardValidation', 'Standalone Window Web App',
+  'PatchGuarded.checkGuardedSourceRuntimeEvidence', 'checkedGuardedConcreteRuntimeCannotEscape', 'raw GuardTree'
 ]);
 mustInclude('docs/FORMAL_MODEL.md', files.formal, [
-  'Status: **beta.22', 'PatchRuntime.lean', 'PatchRuntimeCapability.lean', 'EffectRefines', 'RuntimePath',
-  'checkSourceRuntimeEvidence_sound', 'checkedConcreteRuntimeCannotEscape', 'SourceExecutes source formalTrace'
+  'Status: **beta.23', 'PatchGuarded.lean', 'GuardExpr', 'evalGuard', 'GuardShape', 'GuardPathValid',
+  'checkGuardedSourceRuntimeEvidence_sound', 'checkedGuardedConcreteRuntimeCannotEscape', 'SourceExecutes'
 ]);
 mustInclude('docs/NOVELTY.md', files.novelty, [
-  'Beta.22', 'runtime capability', 'RuntimePath', 'checkedConcreteRuntimeCannotEscape',
-  'end-to-end compiler verification', 'guard-aware execution core'
+  'Beta.23', 'guard-aware', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape',
+  'end-to-end compiler verification', 'formal recipe-call/substitution semantics'
 ]);
 mustInclude('paper/README.md', files.paper, [
-  `Patch ${version} / Change IR 0.8`, 'Beta.22 runtime-capability milestone',
-  'PatchRuntimeCapability.lean', 'checkedConcreteRuntimeCannotEscape', 'GeneratedRuntimeCertificate.lean'
+  `Patch ${version} / Change IR 0.9`, 'Beta.23 guard-aware milestone', 'PatchGuarded.lean',
+  'checkGuardedSourceRuntimeEvidence', 'checkedGuardedConcreteRuntimeCannotEscape'
 ]);
 mustInclude('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
-  `Status: **${version}**`, 'EffectRefines', 'RuntimePath', 'branchThen', 'repeatSucc',
-  'checkSourceRuntimeEvidence_sound', 'checkedConcreteRuntimeCannotEscape', 'SourceExecutes source formalTrace'
+  `Status: **${version}**`, 'Change IR **0.9**', 'GuardShape', 'GuardPathValid', 'branchThen', 'branchElse',
+  'checkGuardedSourceRuntimeEvidence_sound', 'checkedGuardedConcreteRuntimeCannotEscape', 'SourceExecutes'
 ]);
 mustInclude('web/sw.js', files.serviceWorker, [
-  cacheVersion, "'../src/c99.js'", "'../src/source-validation.js'", "'../src/window-webapp.js'", "'../src/window-build.js'", 'freshFirst'
+  cacheVersion, "'../src/formal-guard.js'", "'../src/guard-validation.js'", "'../src/c99.js'",
+  "'../src/window-webapp.js'", "'../src/window-build.js'", 'freshFirst'
 ]);
 
 for (const [name, content] of Object.entries({
