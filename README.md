@@ -7,7 +7,7 @@
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 [![FreeBSD C99](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml)
 
-**Current development beta: `0.2.0-beta.23`** · **Change IR: `0.9`**
+**Current development beta: `0.2.0-beta.24`** · **Change IR: `0.9`**
 
 [Open Patch Studio](https://pinkysworld.github.io/Patch/) · [Language spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Runtime correspondence](docs/RUNTIME_CORRESPONDENCE.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
@@ -37,7 +37,7 @@ The same structured mutation substrate supports history, undo/redo, preview, pro
 | Guard validation | **Independent raw-source guard parser** checks GuardTree, guard claims and recipe parameter vocabulary against production extraction |
 | Runtime → Lean | Direct Wasm execution + proof-free effects/path/invocation environment → checked `SourceExecutes` + `GuardPathValid` |
 | Branch truth | For the beta.23 parameter fragment, Lean checks `branchThen`/`branchElse` against actual integer/Boolean guard evaluation |
-| Concrete authority | Guard-aware accepted concrete runtime effects are proved inside declared Change Capabilities |
+| Window input | **`input changed` exposes transient event-local `value`; persistent state changes only through explicit `change`** |
 | Web/Desktop | Console + Standalone Window Web App; Windows/macOS/Linux Console + Window; FreeBSD Console via portable C99 |
 
 ## Try Patch
@@ -79,11 +79,37 @@ For the structured effect core, Lean proves the familiar containment chain:
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
+## Beta.24: semantic Window input events
+
+GUI input must not create a second, invisible persistent-write path. Beta.24 therefore treats the current control value as **event-local data**:
+
+```patch
+create text name = ""
+
+window "Hello":
+  input name
+  text "Hello {name}"
+
+when name changed:
+  change name:
+    set = value
+```
+
+`value` exists for the `changed` handler. Editing the DOM/control by itself does **not** assign to `name`. If a handler merely executes `show value`, the new text can be observed but persistent Patch state and history remain unchanged. Only an ordinary semantic `change` commits the value.
+
+This contract is wired consistently through:
+
+- Patch Studio interactive Window preview;
+- the Standalone single-file Window Web runtime;
+- generated Windows/macOS/Linux desktop Window players.
+
+`src/window-events.js` is the shared adapter for interpreter-backed Window targets. The generated single-file browser runtime implements the same transient-value rule internally. Cross-target and executable fake-DOM regression tests cover both the observation-only and explicit-commit cases.
+
+The shared Window preflight now permits exactly the portable event pairs **button `clicked`** and **input `changed`**. Unsupported combinations are rejected before packaging.
+
 ## Beta.23: guard-aware runtime correspondence
 
-Beta.21/22 connected concrete direct-Wasm effects to formal execution and capability containment, but the old effect-only `CoreStmt.branch` erased the original source Boolean condition. A structural `branchThen` witness could therefore be proved to be *a* legal formal branch without yet proving that the source guard was actually true.
-
-Beta.23 closes that gap for a conservative fragment of guards over **concrete recipe parameters**.
+Beta.21/22 connected concrete direct-Wasm effects to formal execution and capability containment, but the old effect-only `CoreStmt.branch` erased the original source Boolean condition. Beta.23 closes that gap for a conservative fragment of guards over **concrete recipe parameters**.
 
 Example:
 
@@ -102,14 +128,14 @@ do reward(4)
 do reward(0)
 ```
 
-The implementation now produces two separate, proof-free invocation records:
+The implementation produces separate proof-free invocation records such as:
 
 ```text
 reward#1: bonus = 4, RuntimePath.branchThen(...)
 reward#2: bonus = 0, RuntimePath.branchElse(...)
 ```
 
-The new assurance chain is:
+The assurance chain is:
 
 ```text
 exact Patch source
@@ -129,40 +155,13 @@ Lean PatchGuarded
   -> checked concrete Change Capability containment
 ```
 
-`PatchGuarded.lean` adds:
+`PatchGuarded.lean` includes `GuardExpr`, `evalGuard`, `GuardTree`, `GuardShape`, `GuardPathValid`, `checkGuardedSourceRuntimeEvidence_sound`, and `checkedGuardedConcreteRuntimeCannotEscape`.
 
-```text
-GuardExpr
-evalGuard
-GuardTree
-GuardShape / checkGuardShape_sound
-GuardPathValid / checkGuardPath_sound
-checkGuardedSourceRuntimeEvidence
-checkGuardedSourceRuntimeEvidence_sound
-checkedGuardedConcreteRuntimeCannotEscape
-```
-
-Thus a `branchThen` certificate for `bonus = 4` must satisfy `bonus > 0 = true` inside Lean, while `bonus = 0` requires the else path.
-
-### Current guard fragment
-
-The beta.23 guard-aware runtime theorem deliberately supports only safe-integer recipe parameters and:
-
-```text
-integer literals and parameter variables
-+  -  unary -
-multiplication by one non-negative integer literal
-==  !=  <  >  <=  >=
-true / false
-not / and / or
-parentheses
-```
-
-Persistent/global state in a guard, decimal guard values, division and general variable-by-variable multiplication are rejected at this stronger runtime-certification boundary. This does **not** invalidate the existing static SourceStmt/signature/capability proof path; it only means the program is outside beta.23 guard-aware runtime correspondence.
+Persistent/global state in a guard, decimal guard values, division and general variable-by-variable multiplication remain outside this stronger guard-aware runtime-certification fragment. This does **not** invalidate the static SourceStmt/signature/capability proof path.
 
 ## Change IR 0.9
 
-The compiler now carries both source and guard translation-validation artifacts:
+The compiler carries both source and guard translation-validation artifacts:
 
 ```text
 instructions
@@ -175,13 +174,13 @@ sourceValidation
 guardValidation
 ```
 
-`formalSource` version 0.3 contains the existing SourceStmt/range representation plus a parallel GuardTree and formal guard claims. `guardValidation` comes from a separate indentation/control-flow parser that does not import the production parser or consume its AST.
+`formalSource` version 0.3 contains the SourceStmt/range representation plus a parallel GuardTree and formal guard claims. `guardValidation` comes from a separate indentation/control-flow parser that does not import the production parser or consume its AST.
 
 This is **translation validation**, not a proof that either JavaScript parser is correct.
 
 ## Window builds
 
-The standard Window example remains:
+A standard button example remains:
 
 ```patch
 create number count = 0
@@ -195,7 +194,7 @@ when add_button clicked:
     add 1
 ```
 
-The shared Window preflight consumes normalized `code: 'WINDOW'` IR, rejects duplicate control ids and invalid handlers, and currently exposes button `clicked` as the portable event subset. The generated Standalone Window Web runtime is executed in differential tests against `PatchInterpreter`, including real button rerendering and multi-operation semantic changes.
+The shared Window preflight consumes normalized `code: 'WINDOW'` IR, rejects duplicate control ids and invalid handlers, and supports the two portable event pairs documented above. The generated Standalone Window Web runtime is executed in differential tests against `PatchInterpreter`, including real event rerendering and multi-operation semantic changes.
 
 | Target | Current result |
 |---|---|
@@ -209,7 +208,7 @@ The shared Window preflight consumes normalized `code: 'WINDOW'` IR, rejects dup
 
 `--target wasm-direct` is a Console backend for the conservative numeric/control-flow/recipe subset. Raw `.direct.wasm` uses the small Patch host ABI and is **not yet a standalone WASI command module**.
 
-Portable C99 covers the conservative numeric Console subset and is compile/run tested on Linux, macOS and FreeBSD 15.1. FreeBSD GUI, OpenBSD and NetBSD remain unclaimed until separately tested.
+Portable C99 covers the conservative numeric Console subset and is compile/run tested on Linux, macOS and FreeBSD 15.1. For example: `patch build program.patch --target c99 --out Program.c`. FreeBSD GUI, OpenBSD and NetBSD remain unclaimed until separately tested.
 
 ## Formal and implementation modules
 
@@ -219,6 +218,7 @@ src/formal-guard.js            conservative integer/Boolean guard normalizer
 src/guard-validation.js        independent raw-source GuardTree validation
 src/runtime-path-witness.js    proof-free path + invocation environment producer
 src/runtime-certificate.js     direct execution + guard-aware Lean certificate
+src/window-events.js           transient Window event-local payload adapter
 formal/PatchFormal.lean        factorization, intervals, effects, policies
 formal/PatchSignature.lean     effect-only execution + signature soundness
 formal/PatchChecker.lean       verified semantic policy checker
@@ -232,9 +232,9 @@ formal/PatchGuarded.lean       guard truth + guarded runtime/capability correspo
 
 ## Research boundary
 
-Patch does **not** claim novelty for patches, first-class state change, effects, capabilities, range analysis, guard semantics, refinement relations, execution witnesses, translation validation, verified checkers, Proof-Carrying Code, WebAssembly/C generation or native packaging.
+Patch does **not** claim novelty for patches, first-class state change, effects, capabilities, range analysis, guard semantics, refinement relations, execution witnesses, translation validation, verified checkers, Proof-Carrying Code, WebAssembly/C generation, GUI event plumbing or native packaging.
 
-The primary candidate contribution remains: **ordinary persistent mutation is factored through a mandatory semantic Change substrate, and operation-/magnitude-aware semantic authority is derived from that same substrate**. The increasingly tight implementation/formal connection is supporting evidence for that design claim.
+The primary candidate contribution remains: **ordinary persistent mutation is factored through a mandatory semantic Change substrate, and operation-/magnitude-aware semantic authority is derived from that same substrate**. Beta.24 is product/semantic-consistency evidence for that design principle, not a new primary novelty claim.
 
 Patch is still **not a fully verified compiler**. Production parser correctness, JavaScript→Wasm lowering, the Wasm engine, runtime observation and JavaScript semantic reconstruction remain explicit trust/validation boundaries.
 
@@ -242,7 +242,7 @@ Patch is still **not a fully verified compiler**. Production parser correctness,
 
 Research: formal recipe-call/substitution semantics for the already implemented acyclic direct subset, then semantic-security case studies, certificate/checker overhead measurement and reproducibility hardening.
 
-Product: explicit semantic `input changed` event values that still require `change` to commit persistent state, richer Designer interaction, native AppKit/Win32/portable Unix GUI lowering, signing/notarization and a less token-dependent build service.
+Product: richer Designer interaction, native AppKit/Win32/portable Unix GUI lowering, signing/notarization and a less token-dependent build service.
 
 ## License
 
