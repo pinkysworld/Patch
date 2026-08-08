@@ -1,0 +1,50 @@
+name: Patch Beta26 Call Substitution
+
+on:
+  pull_request:
+  push:
+    branches: [feature/beta26-concrete-call-substitution]
+
+permissions:
+  contents: read
+
+jobs:
+  lean-substitution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+      - name: Build existing formal dependencies
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          elan override set leanprover/lean4:v4.30.0
+          lake update
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls
+      - name: Check concrete argument evaluation and binding module
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean PatchCallSubstitution.lean
+      - name: Reject unfinished substitution proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallSubstitution.lean || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            exit 1
+          fi
