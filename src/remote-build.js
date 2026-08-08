@@ -1,6 +1,7 @@
 export const PATCH_REMOTE_BUILD_VERSION = '0.1';
 export const PATCH_REMOTE_BUILD_REPOSITORY = 'pinkysworld/Patch';
 export const PATCH_REMOTE_BUILD_WORKFLOW = 'native-apps.yml';
+export const PATCH_REMOTE_BUILD_EVENT = 'workflow_dispatch';
 export const PATCH_REMOTE_SOURCE_LIMIT = 45_000;
 
 const TARGETS = new Set(['all', 'windows', 'macos', 'linux']);
@@ -45,7 +46,7 @@ export async function waitForRemoteBuild({ token, requestId, repository = PATCH_
   const started = Date.now();
   let run = null;
   while (Date.now() - started < timeoutMs) {
-    const response = await fetchImpl(`https://api.github.com/repos/${repository}/actions/workflows/${PATCH_REMOTE_BUILD_WORKFLOW}/runs?event=workflow_dispatch&branch=main&per_page=30`, {
+    const response = await fetchImpl(`https://api.github.com/repos/${repository}/actions/workflows/${PATCH_REMOTE_BUILD_WORKFLOW}/runs?event=${PATCH_REMOTE_BUILD_EVENT}&branch=main&per_page=30`, {
       headers: githubHeaders(token)
     });
     if (!response.ok) throw new Error(await githubError(response, 'Could not read GitHub build status'));
