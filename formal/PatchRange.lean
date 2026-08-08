@@ -105,7 +105,9 @@ private theorem inRange_add
     (hLeft : InRange leftValue leftRange)
     (hRight : InRange rightValue rightRange) :
     InRange (leftValue + rightValue) (addRange leftRange rightRange) := by
-  unfold InRange addRange
+  unfold InRange at hLeft hRight
+  change leftRange.lo + rightRange.lo ≤ leftValue + rightValue ∧
+    leftValue + rightValue ≤ leftRange.hi + rightRange.hi
   constructor <;> omega
 
 private theorem inRange_sub
@@ -113,14 +115,17 @@ private theorem inRange_sub
     (hLeft : InRange leftValue leftRange)
     (hRight : InRange rightValue rightRange) :
     InRange (leftValue - rightValue) (subRange leftRange rightRange) := by
-  unfold InRange subRange
+  unfold InRange at hLeft hRight
+  change leftRange.lo - rightRange.hi ≤ leftValue - rightValue ∧
+    leftValue - rightValue ≤ leftRange.hi - rightRange.lo
   constructor <;> omega
 
 private theorem inRange_neg
     {value : Int} {range : Interval}
     (h : InRange value range) :
     InRange (-value) (negRange range) := by
-  unfold InRange negRange
+  unfold InRange at h
+  change -range.hi ≤ -value ∧ -value ≤ -range.lo
   constructor <;> omega
 
 private theorem inRange_scale
@@ -181,8 +186,8 @@ theorem rangeAnalysisSound
                       subst range
                       subst value
                       exact inRange_add
-                        (ihLeft hEnv hLeftAnalyze hLeftEval)
-                        (ihRight hEnv hRightAnalyze hRightEval)
+                        (ihLeft hLeftAnalyze hLeftEval)
+                        (ihRight hRightAnalyze hRightEval)
   | sub left right ihLeft ihRight =>
       cases hLeftAnalyze : analyzeRange left ranges with
       | none =>
@@ -207,8 +212,8 @@ theorem rangeAnalysisSound
                       subst range
                       subst value
                       exact inRange_sub
-                        (ihLeft hEnv hLeftAnalyze hLeftEval)
-                        (ihRight hEnv hRightAnalyze hRightEval)
+                        (ihLeft hLeftAnalyze hLeftEval)
+                        (ihRight hRightAnalyze hRightEval)
   | neg inner ih =>
       cases hInnerAnalyze : analyzeRange inner ranges with
       | none =>
@@ -224,7 +229,7 @@ theorem rangeAnalysisSound
                 simpa [evalRangeExpr, hInnerEval] using hEval
               subst range
               subst value
-              exact inRange_neg (ih hEnv hInnerAnalyze hInnerEval)
+              exact inRange_neg (ih hInnerAnalyze hInnerEval)
   | scale factor inner ih =>
       cases hInnerAnalyze : analyzeRange inner ranges with
       | none =>
@@ -240,7 +245,7 @@ theorem rangeAnalysisSound
                 simpa [evalRangeExpr, hInnerEval] using hEval
               subst range
               subst value
-              exact inRange_scale (ih hEnv hInnerAnalyze hInnerEval) factor
+              exact inRange_scale (ih hInnerAnalyze hInnerEval) factor
 
 /-- Concrete beta.9 sanity theorem matching the motivating capability example. -/
 theorem bonusTimesTwoWithinTen
