@@ -1,31 +1,56 @@
 name: Patch Native Apps
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('Studio {0} · {1} · {2} · {3}', inputs.request_id, inputs.app_name, inputs.kind, inputs.target) || format('Native smoke · {0}', github.ref_name) }}
 
 on:
   workflow_dispatch:
     inputs:
       source_path:
-        description: Patch source file in this repository
-        required: true
+        description: Patch source file in this repository (used when source_b64 is empty)
+        required: false
         default: examples/direct-wasm-recipes.patch
+      source_b64:
+        description: Base64 Patch source sent by Patch Studio
+        required: false
+        default: ''
       app_name:
         description: Application name
         required: true
         default: PatchNativeApp
+      target:
+        description: Desktop operating system
+        required: true
+        type: choice
+        options: [all, windows, macos, linux]
+        default: all
+      kind:
+        description: Patch application type
+        required: true
+        type: choice
+        options: [console, window]
+        default: console
+      request_id:
+        description: Patch Studio request identifier
+        required: false
+        default: manual
   pull_request:
     paths:
       - src/native-app.js
+      - src/remote-build.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
+      - scripts/build-native-window.js
       - .github/workflows/native-apps.yml
       - examples/direct-wasm-recipes.patch
   push:
     branches: [main]
     paths:
       - src/native-app.js
+      - src/remote-build.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
+      - scripts/build-native-window.js
       - .github/workflows/native-apps.yml
 
 permissions:
@@ -33,16 +58,25 @@ permissions:
 
 jobs:
   build-native:
-    name: ${{ matrix.os }} native app
+    name: ${{ matrix.target }} ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'console' }} app
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: windows-latest
+            target: windows
+          - os: macos-latest
+            target: macos
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/direct-wasm-recipes.patch' }}
+      PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
       PATCH_APP_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchNativeSmoke' }}
+      PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'console' }}
+      PATCH_BUILD_SELECTED: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == matrix.target }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -51,25 +85,68 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - uses: dtolnay/rust-toolchain@stable
-      - name: Build native Patch application
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'console'
+      - name: Materialize Patch Studio source
+        if: env.PATCH_BUILD_SELECTED == 'true'
+        shell: bash
+        run: |
+          if [ -n "$PATCH_SOURCE_B64" ]; then
+            mkdir -p .patch-studio
+            node -e "require('fs').writeFileSync('.patch-studio/main.patch', Buffer.from(process.env.PATCH_SOURCE_B64, 'base64'))"
+            echo "PATCH_SOURCE=.patch-studio/main.patch" >> "$GITHUB_ENV"
+          fi
+      - name: Check Patch source
+        if: env.PATCH_BUILD_SELECTED == 'true'
+        shell: bash
+        run: node src/cli.js check "$PATCH_SOURCE"
+      - name: Build native Patch console application
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'console'
         shell: bash
         run: |
           mkdir -p dist
           node src/cli.js build "$PATCH_SOURCE" --kind console --target app --name "$PATCH_APP_NAME" --out "dist/$PATCH_APP_NAME"
-      - name: Smoke run native application on Linux
-        if: runner.os == 'Linux'
+      - name: Build native Patch window application
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'window'
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-window.js "$PATCH_SOURCE" "$PATCH_APP_NAME" dist
+      - name: Smoke run console application on Linux
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'console' && runner.os == 'Linux'
         shell: bash
         run: ./dist/$PATCH_APP_NAME
-      - name: Smoke run native application on macOS
-        if: runner.os == 'macOS'
+      - name: Smoke run console application on macOS
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'console' && runner.os == 'macOS'
         shell: bash
         run: ./dist/$PATCH_APP_NAME.app/Contents/MacOS/$PATCH_APP_NAME
-      - name: Smoke run native application on Windows
-        if: runner.os == 'Windows'
+      - name: Smoke run console application on Windows
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'console' && runner.os == 'Windows'
         shell: pwsh
         run: "& ./dist/$env:PATCH_APP_NAME.exe"
+      - name: Smoke check window application on Linux
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'window' && runner.os == 'Linux'
+        shell: bash
+        run: |
+          APP=$(find dist -maxdepth 2 -type f -name "$PATCH_APP_NAME" -perm -111 | head -1)
+          test -n "$APP"
+          "$APP" --patch-smoke
+      - name: Smoke check window application on macOS
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'window' && runner.os == 'macOS'
+        shell: bash
+        run: |
+          APP=$(find dist -type f -path "*.app/Contents/MacOS/$PATCH_APP_NAME" | head -1)
+          test -n "$APP"
+          "$APP" --patch-smoke
+      - name: Smoke check window application on Windows
+        if: env.PATCH_BUILD_SELECTED == 'true' && env.PATCH_KIND == 'window' && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $app = Get-ChildItem -Path dist -Recurse -Filter "$env:PATCH_APP_NAME.exe" | Select-Object -First 1
+          if (-not $app) { throw 'Packaged Patch window executable was not found.' }
+          & $app.FullName --patch-smoke
       - uses: actions/upload-artifact@v4
+        if: env.PATCH_BUILD_SELECTED == 'true'
         with:
-          name: ${{ matrix.os }}-${{ env.PATCH_APP_NAME }}
+          name: ${{ matrix.target }}-${{ env.PATCH_KIND }}-${{ env.PATCH_APP_NAME }}
           path: dist/**
           if-no-files-found: error
