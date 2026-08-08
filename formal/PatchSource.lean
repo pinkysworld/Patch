@@ -1,4 +1,5 @@
 import PatchEvidence
+import Std.Tactic.Omega
 
 namespace PatchFormal
 
@@ -34,7 +35,7 @@ inductive SourceStmt where
 private def negateInterval (interval : Interval) : Interval :=
   { lo := -interval.hi
     hi := -interval.lo
-    ordered := neg_le_neg interval.ordered }
+    ordered := by omega }
 
 private def mkEffect
     (change : SourceChange)
