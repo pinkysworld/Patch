@@ -1,3 +1,4 @@
+import { compile } from '../src/compiler.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
@@ -20,6 +21,7 @@ const nativeTargets = new Map([
 ]);
 
 buildTarget.addEventListener('change', refreshNativePanel);
+projectKind.addEventListener('change', refreshNativePanel);
 refreshNativePanel();
 
 // Capture native targets before the ordinary browser-local build handler.
@@ -31,13 +33,19 @@ buildButton.addEventListener('click', async event => {
   showOutput();
 
   const name = safeName(projectName.value);
+  const kind = projectKind.value === 'window' ? 'window' : 'console';
   try {
-    if (projectKind.value !== 'console') {
-      throw new Error('Native desktop builds currently support the direct numeric console subset. Build this Window project as a portable app for now; native Window/Designer hosts are the next milestone.');
+    let preflightText;
+    if (kind === 'console') {
+      const preflight = compileToDirectWasm(code.value, { name, kind: 'console', entry: 'main.patch' });
+      preflightText = `direct Wasm ${preflight.metadata.version}`;
+    } else {
+      const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
+      const windowCount = countWindowInstructions(preflight.ir.instructions);
+      if (!windowCount) throw new Error('This project is marked Window but does not define a Patch window. Add a window in Designer or change Project Type to Console.');
+      preflightText = `${windowCount} Patch window${windowCount === 1 ? '' : 's'} validated`;
     }
 
-    // Fail immediately in the browser when the current source is outside the direct backend subset.
-    const preflight = compileToDirectWasm(code.value, { name, kind: 'console', entry: 'main.patch' });
     const token = tokenInput.value.trim();
     if (!token) {
       throw new Error('Paste a fine-grained GitHub token in the Native build bar. It needs Actions read/write access to pinkysworld/Patch. The token is kept only in this page and is never saved to localStorage.');
@@ -49,8 +57,9 @@ buildButton.addEventListener('click', async event => {
     }
 
     const requestId = makeRequestId();
-    setBusy(true, `Starting ${platformLabel(platform)} build…`);
-    output.textContent = `Native ${platformLabel(platform)} build\n\nPreflight passed: direct Wasm ${preflight.metadata.version}.\nSubmitting the current editor source to Patch Native Apps…`;
+    const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
+    setBusy(true, `Starting ${platformLabel(platform)} ${kindLabel} build…`);
+    output.textContent = `Native ${platformLabel(platform)} ${kindLabel} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to Patch Native Apps…`;
 
     await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${WORKFLOW}/dispatches`, token, {
       method: 'POST',
@@ -61,12 +70,13 @@ buildButton.addEventListener('click', async event => {
           source_path: '',
           app_name: name,
           platform,
+          kind,
           request_id: requestId
         }
       })
     });
 
-    const run = await waitForRun(token, requestId, platform);
+    const run = await waitForRun(token, requestId, platform, kindLabel);
     if (run.conclusion !== 'success') {
       throw new Error(`GitHub native build finished with '${run.conclusion}'. Open ${run.html_url} for the build log.`);
     }
@@ -77,9 +87,9 @@ buildButton.addEventListener('click', async event => {
     const artifact = (artifacts.artifacts ?? []).find(item => item.name === expectedName && !item.expired);
     if (!artifact) throw new Error(`The native build succeeded but artifact '${expectedName}' was not found. Open ${run.html_url}.`);
 
-    await downloadArtifact(artifact, token, `${name}-${platform}-build.zip`);
-    output.textContent = `Built ${name} for ${platformLabel(platform)} ✓\n\nThe downloaded GitHub Actions artifact contains the platform package produced from the code currently in Patch Studio.\n\nWindows: .exe package\nmacOS: .app package\nLinux: native executable package\n\nBuild run: ${run.html_url}`;
-    status.textContent = `${platformLabel(platform)} build downloaded`;
+    await downloadArtifact(artifact, token, `${name}-${platform}-${kind}-build.zip`);
+    output.textContent = `Built ${name} for ${platformLabel(platform)} ✓\n\nType: ${kindLabel}\nThe downloaded GitHub Actions artifact contains the platform package produced from the code currently in Patch Studio.\n\n${artifactDescription(platform, kind)}\n\nBuild run: ${run.html_url}`;
+    status.textContent = `${platformLabel(platform)} ${kindLabel} build downloaded`;
   } catch (error) {
     output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
     status.textContent = 'Native build stopped';
@@ -92,11 +102,12 @@ function refreshNativePanel() {
   const platform = nativeTargets.get(buildTarget.value);
   panel.hidden = !platform;
   if (platform && !buildButton.disabled) {
-    status.textContent = `${platformLabel(platform)} build via GitHub Actions. Token is not saved.`;
+    const kindLabel = projectKind.value === 'window' ? 'Window / GUI' : 'Console';
+    status.textContent = `${platformLabel(platform)} ${kindLabel} build via GitHub Actions. Token is not saved.`;
   }
 }
 
-async function waitForRun(token, requestId, platform) {
+async function waitForRun(token, requestId, platform, kindLabel) {
   const title = `Native Patch ${requestId}`;
   let seen = null;
   for (let attempt = 0; attempt < 360; attempt += 1) {
@@ -105,11 +116,11 @@ async function waitForRun(token, requestId, platform) {
     if (run) {
       seen = run;
       const state = run.status === 'completed' ? run.conclusion : run.status;
-      status.textContent = `${platformLabel(platform)} build: ${state}…`;
-      output.textContent = `Native ${platformLabel(platform)} build\n\nGitHub Actions run: ${state}\n${run.html_url}\n\nPatch Studio will download the artifact automatically when the build succeeds.`;
+      status.textContent = `${platformLabel(platform)} ${kindLabel} build: ${state}…`;
+      output.textContent = `Native ${platformLabel(platform)} ${kindLabel} build\n\nGitHub Actions run: ${state}\n${run.html_url}\n\nPatch Studio will download the artifact automatically when the build succeeds.`;
       if (run.status === 'completed') return run;
     } else if (attempt > 3) {
-      status.textContent = `${platformLabel(platform)} build queued…`;
+      status.textContent = `${platformLabel(platform)} ${kindLabel} build queued…`;
     }
     await sleep(5000);
   }
@@ -172,6 +183,31 @@ function setBusy(busy, message = null) {
   buildButton.disabled = busy;
   if (message) status.textContent = message;
   if (!busy) refreshNativePanel();
+}
+
+function countWindowInstructions(instructions) {
+  let count = 0;
+  const visit = list => {
+    for (const instruction of list ?? []) {
+      if (instruction.op === 'window') count += 1;
+      if (instruction.body) visit(instruction.body);
+      if (instruction.then) visit(instruction.then);
+      if (instruction.else) visit(instruction.else);
+    }
+  };
+  visit(instructions);
+  return count;
+}
+
+function artifactDescription(platform, kind) {
+  if (kind === 'window') {
+    if (platform === 'macos') return 'macOS: standalone .app GUI package';
+    if (platform === 'windows') return 'Windows: standalone GUI application folder with .exe';
+    return 'Linux: standalone GUI application folder';
+  }
+  if (platform === 'macos') return 'macOS: native .app containing the direct Patch Wasm host';
+  if (platform === 'windows') return 'Windows: native .exe';
+  return 'Linux: native executable';
 }
 
 function utf8Base64(text) {
