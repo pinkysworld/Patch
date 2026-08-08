@@ -27,7 +27,7 @@ Patch Studio is browser-first and installable as a PWA, with desktop and iPhone/
 
 ## Current status
 
-Current development beta: **0.2.0-beta.10**
+Current development beta: **0.2.0-beta.11**
 
 Implemented now:
 
@@ -44,7 +44,8 @@ Implemented now:
 - independent production `RangeExpr` extraction and range-agreement checking before certification;
 - `patch formal` coverage reporting and `patch certify` Lean certificates;
 - portable `.patchapp` bundles and valid bootstrap WebAssembly modules;
-- **first directly executable Change IR to WebAssembly backend for the numeric console core**;
+- **directly executable Change IR to WebAssembly for a numeric console core**;
+- **direct Wasm `if` / `else` and literal `repeat` with Patch `count`**;
 - differential interpreter vs direct-Wasm execution tests;
 - console programs and first GUI/Designer slice;
 - Windows/macOS/Linux JavaScript CI plus explicit Lean range/source/evidence/certificate CI.
@@ -80,18 +81,9 @@ The normal production analyzer infers `bonus * 2` as `0..10`, so the capability 
 
 ## Beta 9: machine-checked integer range analysis
 
-`formal/PatchRange.lean` defines a compact integer expression language:
+`formal/PatchRange.lean` defines a compact integer expression language with integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant.
 
-```text
-integer literal
-ranged variable
-addition
-subtraction
-negation
-multiplication by a non-negative integer constant
-```
-
-It defines both:
+It defines:
 
 ```text
 analyzeRange : RangeExpr -> RangeEnv -> Option Interval
@@ -108,7 +100,7 @@ evalRangeExpr(expr, values) = some concrete
 concrete is inside inferred
 ```
 
-So for the motivating example:
+So for:
 
 ```text
 bonus in [0,5]
@@ -117,42 +109,13 @@ bonus * 2
 
 Lean proves every modeled concrete result is inside `[0,10]`.
 
-### Conservative verification boundary
+The production expression analyzer supports more than this verified fragment. Division, decimal/floating-point semantics and general variable-by-variable multiplication are not silently presented as covered by the Lean range theorem.
 
-The production expression analyzer supports more than the beta.9 verified fragment. That does **not** mean all production arithmetic is now formally verified.
-
-Beta 9 certification deliberately refuses currently unmodeled cases such as:
-
-- division;
-- decimal/floating-point semantics;
-- general variable-by-variable multiplication.
-
-`src/formal-range.js` independently parses supported production expression text into `RangeExpr`. It independently computes the corresponding range and compares it with the ordinary production analyzer result before a formal range claim is accepted.
-
-This gives three deliberately separate paths:
-
-```text
-production expression -> normal production range analyzer
-
-production expression -> independent formal RangeExpr extractor -> formal-style range
-
-RangeExpr -> Lean analyzeRange -> machine-checked range-soundness theorem
-```
-
-A disagreement or unsupported formal expression prevents certification instead of silently receiving a verification claim.
+`src/formal-range.js` independently parses supported production expression text into `RangeExpr`, independently reconstructs the corresponding range and compares it with the ordinary production analyzer before a formal range claim is accepted.
 
 ## Formal source and semantic evidence chain
 
-Beta 8 introduced a proof-free `SourceStmt` retaining `add`, `remove`, `set` and `clear`. Lean performs semantic direction normalization itself. For example:
-
-```patch
-change player:
-  add -5 to score
-```
-
-is preserved as source `add [-5,-5]`, then Lean normalizes it to semantic `decrease [5,5]`.
-
-Beta 9 extends the certificate chain to quantitative expressions:
+Beta 8 introduced a proof-free `SourceStmt` retaining `add`, `remove`, `set` and `clear`. Lean performs semantic direction normalization itself. Beta 9 adds the quantitative range layer:
 
 ```text
 formal RangeExpr
@@ -187,56 +150,98 @@ PatchRange.lean       integer expression evaluation + range-analysis soundness
 
 Formal CI explicitly builds all six modules and compiles a certificate generated from a real `bonus * 2` Patch example.
 
-## Beta 10: first directly executable WebAssembly core
+## Direct WebAssembly execution
 
-Beta 10 adds a second WebAssembly target alongside the existing bootstrap carrier.
+Patch now has two deliberately distinct WebAssembly targets:
 
 ```text
 --target wasm
-Patch source -> Change IR -> embedded payload -> Patch host
+Patch source -> Change IR -> embedded payload -> Patch host/interpreter
 
 --target wasm-direct
-Patch source -> Change IR -> Wasm instructions -> WebAssembly VM
+Patch source -> Change IR -> direct lowering -> Wasm instructions -> WebAssembly VM
 ```
 
-The first direct backend is intentionally narrow. It currently supports console programs containing:
+The bootstrap target remains useful for broader language/browser coverage. The direct target never silently falls back to interpretation for unsupported constructs.
+
+### Beta 10 numeric core
+
+The first direct backend added:
 
 ```text
-create number
+create number at top level
 change number: set / add / remove / clear
 show numeric-expression
 numeric literals and earlier numeric bindings
 +  -  *  /
 ```
 
+Numeric persistent bindings are mutable Wasm `f64` globals. Output uses the minimal host ABI:
+
+```text
+patch.show_number(f64) -> void
+```
+
+### Beta 11 structured control flow
+
+Beta 11 adds real WebAssembly control flow:
+
+```text
+if / else
+true / false
+numeric == != < > <= >=
+not / and / or
+literal repeat 0..100000
+Patch repeat local count
+nested repeat count shadowing
+```
+
 For example:
 
 ```patch
-create number base = 2
-create number score = base * 3 + 1
+create number score = 0
 
-change score:
-  add base * (4 - 1)
+repeat 4:
+  if count == 2 or count == 4:
+    change score:
+      add count
 
 show score
 ```
 
-can now be compiled into a Wasm module whose `run()` function performs the Patch state updates directly. Numeric persistent bindings are exported as mutable Wasm globals and output uses the minimal host ABI `patch.show_number(f64)`.
+builds into a module using Wasm `if`, `block`, `loop`, `br_if` and `br`. The loop and branch are executed by the WebAssembly VM, not by a Patch interpreter host.
 
 ```bash
-patch build examples/direct-wasm.patch --kind console --target wasm-direct --out DirectScore.wasm
-patch run-wasm examples/direct-wasm.patch
+patch build examples/direct-wasm-control.patch --kind console --target wasm-direct --out DirectControl.wasm
+patch run-wasm examples/direct-wasm-control.patch
 ```
 
-CI executes the same supported Patch programs through both the interpreter and direct Wasm and compares output and final state. Unsupported language features fail explicitly with `DirectWasmUnsupportedError`; they do not silently fall back to interpretation.
+Patch's 1-based `count` is represented by a real Wasm local. Nested repeats allocate independent locals so the inner `count` shadows the outer value just as it does in the interpreter.
 
-This is direct compiled execution for a useful core, not yet full-language direct compilation and not yet a compiler-correctness theorem. Recipes/calls, structured control flow, strings/lists, things/fields, history operations and GUI lowering remain open backend work.
+Bare numeric truthiness such as `if score:` and dynamic `repeat times:` are deliberately rejected by the beta.11 direct backend. The supported direct subset is kept explicit rather than approximating broader interpreter semantics.
 
 See `docs/DIRECT_WASM.md` for the exact boundary.
 
+## Differential backend validation
+
+For the direct subset, the same Patch source is executed through both implementations:
+
+```text
+same supported Patch source
+      |                    |
+      v                    v
+Patch interpreter     direct Wasm
+      |                    |
+      +---- compare output + final state ----+
+```
+
+The suite covers linear mutation, multiple numeric bindings, decimal arithmetic, branches, boolean composition, repeat/count, nested repeats, and branches inside loops. Cross-platform CI also builds and executes the direct control-flow artifact on Windows, macOS and Linux with Node 22 and 24.
+
+This is meaningful executable evidence, but it is **not** claimed as a compiler-correctness proof.
+
 ## Remaining trust boundary
 
-Beta 10 is **not full compiler verification**.
+Beta 11 is **not full compiler verification**.
 
 Still trusted/unproved:
 
@@ -245,13 +250,30 @@ Patch source bytes
    -> JavaScript parser / AST
    -> independent RangeExpr / SourceStmt extraction
 
-production runtime / direct backend
-   -> correspondence with formal evalRangeExpr / SourceExecutes
+production interpreter / direct Wasm backend
+   -> correspondence with formal evalRangeExpr / SourceExecutes / Executes
 ```
 
-Within the certified fragment, Lean machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment. The direct backend currently adds differential execution evidence rather than a lowering correctness proof.
+Within the certified fragment, Lean machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment. The direct backend currently adds differential execution evidence rather than a lowering correctness theorem.
 
-The next strongest formal target is a theorem or independently validated relation connecting the supported production AST directly to `RangeExpr` / `SourceStmt`, followed by production/direct-runtime trace correspondence.
+A particularly strong next research step is an explicit semantic change-trace ABI for direct execution plus translation validation or a theorem connecting supported Change IR operations to Wasm effects.
+
+## Direct backend boundary
+
+Not directly lowered yet include:
+
+```text
+dynamic repeat counts
+create inside control-flow bodies
+make / do / return
+things and field access
+text and lists
+%
+watch / history / undo / redo / why / preview
+window / controls / events
+```
+
+A valid protected `allow recipe:` declaration requires a corresponding recipe. Because `make` / `do` lowering is not yet implemented, protected recipe programs are not yet in the direct executable subset.
 
 ## Compiler status
 
@@ -265,12 +287,12 @@ Patch source
    -> Change IR 0.7                        [implemented]
    -> portable .patchapp                   [implemented]
    -> bootstrap WebAssembly .wasm          [implemented]
-   -> direct numeric Change IR -> Wasm     [implemented, beta.10 subset]
-   -> structured control-flow/call Wasm    [next backend stage]
+   -> direct numeric Change IR -> Wasm     [implemented]
+   -> direct if/literal-repeat Wasm         [implemented, beta.11]
+   -> recipe/call Wasm                     [next backend stage]
+   -> semantic direct change-trace ABI     [next research/backend stage]
    -> native .exe / .app packaging         [not yet]
 ```
-
-The bootstrap target remains useful for broader Patch/browser coverage. The new direct target executes the supported numeric console subset as real WebAssembly instructions without a Patch interpreter host.
 
 ## CLI
 
@@ -278,14 +300,14 @@ Node.js 22+ for the current JavaScript beta toolchain:
 
 ```bash
 patch run examples/score.patch
-patch run-wasm examples/direct-wasm.patch
+patch run-wasm examples/direct-wasm-control.patch
 patch check examples/score.patch
 patch changes examples/change-capabilities.patch
 patch formal examples/range-soundness.patch
 patch certify examples/range-soundness.patch --out RangeSoundness.patchcert.lean
 patch build examples/score.patch --kind console --target portable
 patch build examples/score.patch --kind console --target wasm
-patch build examples/direct-wasm.patch --kind console --target wasm-direct
+patch build examples/direct-wasm-control.patch --kind console --target wasm-direct
 ```
 
 ## Research identity
@@ -299,9 +321,9 @@ The candidate contribution is the combination:
 3. **Formal runtime containment**: Lean proves the runtime-signature-policy chain for a structured core.
 4. **Source-to-semantic assurance**: Lean performs source-operation normalization before semantic evidence checking.
 5. **Quantitative assurance for a useful fragment**: Lean proves soundness of the formal integer interval analyzer, while production extraction and unsupported arithmetic remain explicit boundaries.
-6. **Executable backend path**: a first Change IR subset now lowers directly to Wasm and is differentially checked against interpreter behavior.
+6. **Executable backend path**: a growing Change IR subset now lowers directly to Wasm, including structured branches and literal loops, and is differentially checked against interpreter behavior.
 
-A high-venue submission still needs systematic related work, stronger AST/source correspondence, runtime/lowering correspondence, broader direct compiled execution, convincing security/engineering case studies and measured overhead/effectiveness.
+A high-venue submission still needs systematic related work, stronger AST/source correspondence, runtime/lowering correspondence, recipe/call direct execution, convincing semantic-security/engineering case studies and measured overhead/effectiveness.
 
 ## Repository map
 
@@ -311,7 +333,7 @@ formal/                 Lean factorization, signatures, checker, evidence, sourc
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
 tests/                  language, range/source/bridge/certificate, compiler, UI, Designer, bootstrap/direct Wasm
-examples/               runnable .patch programs including range-soundness.patch and direct-wasm.patch
+examples/               runnable .patch programs including range-soundness.patch and direct-wasm-control.patch
 docs/                   specification, formal model, novelty, research, compiler, direct Wasm, Studio, targets
 paper/                   manuscript draft and references
 .github/workflows/       cross-platform CI, formal verification, Pages deployment
