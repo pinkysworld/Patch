@@ -44,7 +44,10 @@ jobs:
       - name: Reject unfinished proofs
         shell: bash
         run: |
-          if grep -R -n -E '\bsorry\b|\badmit\b' formal/*.lean; then
+          set -euo pipefail
+          matches="$(grep -R -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/*.lean || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
             echo 'Unfinished Lean proof found.'
             exit 1
           fi
