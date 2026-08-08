@@ -1,34 +1,28 @@
 # Patch Core Formal Model
 
-Status: **beta.20: mechanized change semantics, independently validated source extraction, and Lean-checked direct-runtime occurrence correspondence for a linear certified subset**.
+Status: **beta.21: mechanized change semantics, independently validated source extraction, and path-witnessed Lean-checked direct-runtime occurrence correspondence for branch/repeat executions and repeated protected invocations**.
 
-The executable Patch language remains larger than the Lean model. The `formal/` directory defines compact semantics whose stated theorems are machine checked. The JavaScript implementation surrounds that formal core with explicit translation/runtime-validation boundaries rather than claiming full compiler verification.
+The executable Patch language remains larger than the Lean model. The `formal/` directory defines compact semantics whose stated theorems are machine checked. JavaScript/Wasm implementation layers remain explicit validation/trust boundaries rather than being called a verified compiler.
 
 ## 1. State-Change Factorization
 
-Patch models existing persistent state as changing through a semantic delta rather than an ordinary write followed by optional logging.
+Patch models mutation of existing persistent state through a semantic delta rather than an ordinary write followed by optional logging.
 
 > **State-Change Factorization.** Every modeled transition that mutates an existing persistent binding factors through a semantic change; no alternative persistent-write rule exists in the formal machine.
 
-For a modeled change:
-
-```text
-delta = <target, baseVersion, newVersion, before, ops, after>
-```
-
-well-formedness requires the semantic operations to map `before` to `after`, and commit is the modeled persistent-write step.
+A change witness contains target, versions, before state, operations and after state. Well-formedness requires the semantic operations to map `before` to `after`; commit is the modeled persistent-write path.
 
 ## 2. Lean modules
 
-- `PatchFormal.lean` — values, semantic operations, well-formed changes, machine state, intervals, effects and policies.
-- `PatchSignature.lean` — structured `skip/emit/seq/branch/repeat` core, `inferSignature`, `Executes`, Change Signature Soundness.
-- `PatchChecker.lean` — executable verified semantic-policy checker and `checkedExecutionCannotEscape`.
-- `PatchEvidence.lean` — proof-free EvidenceStmt decoding and evidence/signature correspondence.
-- `PatchSource.lean` — source-facing `add/remove/set/clear`, semantic normalization, `SourceExecutes` and source policy containment.
-- `PatchRange.lean` — integer RangeExpr evaluation/analysis and machine-checked `rangeAnalysisSound`.
-- `PatchRuntime.lean` — concrete runtime-effect refinement, proof-free occurrence decoding, linear execution-trace reconstruction and `checkSourceRuntimeEvidence_sound`.
+- `PatchFormal.lean` — values, operations, well-formed changes, machine state, intervals, effects and policies.
+- `PatchSignature.lean` — `skip/emit/seq/branch/repeat`, `inferSignature`, `Executes`, Change Signature Soundness.
+- `PatchChecker.lean` — executable verified semantic-policy checker.
+- `PatchEvidence.lean` — proof-free EvidenceStmt decoding and signature correspondence.
+- `PatchSource.lean` — source-facing `add/remove/set/clear`, semantic normalization and `SourceExecutes`.
+- `PatchRange.lean` — integer RangeExpr analysis and `rangeAnalysisSound`.
+- `PatchRuntime.lean` — concrete effect refinement, `RuntimePath`, path decoding and `checkSourceRuntimeEvidence_sound`.
 
-Formal CI builds all seven modules and compiles both a static certificate generated from Patch source and a beta.20 runtime certificate generated after actual direct-Wasm execution.
+Formal CI builds these modules and then compiles generated static and runtime certificates produced from real Patch source/direct-Wasm execution.
 
 ## 3. Main machine-checked results
 
@@ -43,11 +37,9 @@ Executes(stmt, runtime)
 => RuntimeChanges(runtime) subset-of inferSignature(stmt)
 ```
 
-Static branch alternatives may be conservative, but a modeled runtime semantic effect cannot be omitted from the inferred signature.
-
 ### Capability containment
 
-If the inferred signature is admitted by the policy, every modeled runtime semantic effect is admitted by the policy:
+For accepted formal executions:
 
 ```text
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
@@ -62,33 +54,27 @@ Executes(stmt, runtime)
 every runtime effect is allowed by policy
 ```
 
-### Range-analysis soundness
+### Integer range-analysis soundness
 
-For the explicitly modeled integer expression fragment, if the range environment is respected and `analyzeRange` returns interval `I`, every successful concrete formal evaluation lies in `I`.
+For the explicit integer RangeExpr fragment, a successful formal range analysis over a respected environment contains every successful concrete formal evaluation. It does not silently cover JavaScript/Wasm floating point, division or arbitrary multiplication.
 
-This theorem does **not** cover floating-point execution, division or arbitrary multiplication.
-
-## 4. Source → evidence → signature path
-
-The formal source vocabulary preserves source mutation intent:
+## 4. Source semantics
 
 ```text
 SourceChangeKind = add | remove | set | clear
 SourceStmt = skip | change | seq | branch | repeat
 ```
 
-Lean performs semantic classification. Examples:
+Lean performs source-to-semantic classification, for example:
 
 ```text
-source add [0,5]      -> semantic increase [0,5]
-source remove [0,5]   -> semantic decrease [0,5]
-source add [-5,-5]    -> semantic decrease [5,5]
-source remove [-5,-5] -> semantic increase [5,5]
+source add [0,5]      -> increase [0,5]
+source remove [0,5]   -> decrease [0,5]
+source add [-5,-5]    -> decrease [5,5]
+source remove [-5,-5] -> increase [5,5]
 ```
 
-`checkSourceEvidence_sound` establishes successful SourceStmt → EvidenceStmt equality. `checkSourceSignature_sound` composes source normalization, evidence decoding and formal signature inference and proves equality with the supplied production signature claim. `checkedSourceExecutionCannotEscape` gives capability containment for the formal source execution relation.
-
-`SourceExecutes` is defined through Lean-normalized source evidence and the existing `Executes` relation:
+`SourceExecutes` is defined through successful source lowering, evidence decoding and the existing semantic `Executes` relation:
 
 ```text
 SourceExecutes(source, runtime)
@@ -101,97 +87,156 @@ exists evidence stmt,
 
 ## 5. Independent raw-source extraction validation
 
-The production frontend path is:
+Two implementation paths construct the supported source-level formal claim:
 
 ```text
-Patch source bytes
-   -> production parser / AST
-   -> formalSource SourceStmt + range claims
+exact source -> production parser/AST -> formalSource
+exact source -> independent raw-source parser -> raw SourceStmt/ranges
 ```
 
-A second implementation path deliberately does not import `parser.js` or consume that AST:
+For supported entries, structural source and range claims must agree before protected static certification. This is **translation validation**, not a machine-checked proof that either JavaScript parser is correct.
+
+## 6. Effect refinement
+
+A concrete direct execution may instantiate an abstract formal amount interval. `PatchRuntime.lean` defines:
 
 ```text
-exact Patch source bytes
-   -> src/source-validation.js
-   -> independent indentation-aware parser
-   -> raw SourceStmt + raw formal range claims
+EffectRefines(actual, expected)
 ```
 
-For supported entries, the two SourceStmt views and range claims must agree exactly before protected static certification. Negative tests alter the production formal source or range claim and require disagreement to be detected.
+Target, optional field and semantic operation kind must agree. When both effects carry amounts, the concrete interval must be contained in the formal interval.
 
-This is **translation validation**, not a machine-checked theorem that either JavaScript frontend is correct.
-
-## 6. Beta.20 direct runtime → formal execution correspondence
-
-Before beta.20, concrete direct-Wasm execution and Lean execution semantics were checked separately. The direct runtime exposed:
+Thus:
 
 ```text
-patch.change_number(targetId, before, after)
+actual increase [4,4]
+formal increase [0,5]
 ```
 
-and an independent JavaScript validator reconstructed concrete semantic effects from the observed transitions. Beta.20 connects that occurrence stream to the formal source semantics for a deliberately linear certified subset.
+is a valid refinement. `effectRefinesBool_sound` connects the executable check to the relational judgment.
 
-### Concrete effects refine abstract formal effects
-
-A formal ranged source change may normalize to `score increase [0,10]` while one concrete call produces `score increase [8,8]`.
-
-`PatchRuntime.lean` defines `EffectRefines(actual, expected)`, requiring target, field and semantic operation equality and, where amounts exist, interval containment:
-
-```text
-actual.amount ⊆ expected.amount
-```
-
-`effectRefinesBool_sound` proves that a successful executable refinement check implies the relational refinement judgment.
-
-### Runtime trace decoding
-
-Concrete occurrences are supplied as proof-free `EvidenceEffect` values. `decodeRuntimeTrace` validates their intervals before admitting them as formal `Effect` values.
-
-Patch defines its own inductive pointwise relation `TraceRefines`. `traceRefinesBool` checks complete traces pointwise, and `traceRefinesBool_sound` derives:
+Patch defines its own pointwise relation:
 
 ```text
 TraceRefines actualTrace formalTrace
 ```
 
-### Linear formal execution reconstruction
+and proves `traceRefinesBool_sound`.
 
-`decodeLinearEvidenceTrace` accepts only:
+## 7. Beta.21 RuntimePath
+
+Beta.20 reconstructed only linear execution. Beta.21 replaces that restricted decoder with an explicit proof-free path vocabulary:
 
 ```text
-skip
-emit/change
-sequence
+RuntimePath.leaf
+RuntimePath.seq
+RuntimePath.branchThen
+RuntimePath.branchElse
+RuntimePath.repeatZero
+RuntimePath.repeatSucc(body, rest)
 ```
 
-It deliberately rejects `branch` and `repeat` in beta.20. `decodeLinearEvidenceTrace_sound` proves that successful decoding yields a `CoreStmt` which actually `Executes` the reconstructed formal trace.
+A `RuntimePath` is **untrusted input**, not a proof. It merely proposes which constructor sequence an execution took.
 
-### Main runtime correspondence theorem
-
-The executable checker is:
+Lean checks the proposal using:
 
 ```text
-checkSourceRuntimeEvidence source observed
+decodeCorePath : RuntimePath -> CoreStmt -> Option (List Effect)
 ```
 
-and Lean proves:
+Important checks are structural:
+
+- `leaf` can match only `skip` or `emit`;
+- `seq` must match formal sequence structure;
+- `branchThen` can execute only the formal then-branch;
+- `branchElse` can execute only the formal else-branch;
+- `repeatZero` is accepted only for a formal repeat count of zero;
+- `repeatSucc` consumes exactly one formal iteration and checks the remaining witness against the decremented repeat count.
+
+This supports different branch witnesses inside different loop iterations because each `repeatSucc` carries its own body path.
+
+### Path soundness
+
+Lean proves:
 
 ```text
-checkSourceRuntimeEvidence source observed = true
--------------------------------------------------
+decodeCorePath path stmt = some trace
+-------------------------------------
+Executes stmt trace
+```
+
+as `decodeCorePath_sound`.
+
+Therefore a malformed or producer-invented branch/repeat path cannot establish runtime correspondence merely because JavaScript emitted it.
+
+## 8. Main runtime correspondence checker
+
+The beta.21 checker is:
+
+```text
+checkSourceRuntimeEvidence source observed path
+```
+
+It performs, inside Lean:
+
+```text
+SourceStmt
+  -> lowerSourceStmt
+  -> EvidenceStmt
+  -> decodeEvidenceStmt
+  -> CoreStmt
+  -> decodeCorePath(path)
+  -> formalTrace
+
+observed proof-free EvidenceEffect list
+  -> decodeRuntimeTrace
+  -> actualTrace
+
+traceRefinesBool actualTrace formalTrace
+```
+
+The theorem `checkSourceRuntimeEvidence_sound` has the shape:
+
+```text
+checkSourceRuntimeEvidence source observed path = true
+------------------------------------------------------
 exists formalTrace actualTrace,
   SourceExecutes source formalTrace
   and decodeRuntimeTrace observed = some actualTrace
   and TraceRefines actualTrace formalTrace
 ```
 
-The theorem is `checkSourceRuntimeEvidence_sound`.
+This connects an ordered concrete occurrence stream to an actual formal execution, not merely to membership in a static signature.
 
-This is stronger than merely checking that an observed effect appears somewhere in a static signature: a successful certificate supplies a concrete ordered occurrence list and ties it pointwise to an actual execution trace admitted by the formal source semantics for the linear subset.
+## 9. Multiple protected recipe invocations
 
-## 7. Runtime certificate production boundary
+`src/runtime-certificate.js` now emits a separate checked block for each observed invocation, for example:
 
-`src/runtime-certificate.js` is not itself verified. It performs the implementation-side steps:
+```text
+reward#1
+reward#2
+```
+
+The producer independently executes/validates the direct trace, proposes a `RuntimePath` per protected invocation, and segments concrete effect occurrences by that invocation's expected witnessed execution count.
+
+For the repository CI example:
+
+```patch
+make reward(bonus number 0..5):
+  if bonus > 0:
+    repeat 2:
+      change score:
+        add bonus
+
+do reward(4)
+do reward(0)
+```
+
+one invocation proposes `branchThen` with two `repeatSucc` steps; the second proposes `branchElse`. Lean checks both separately. A zero-effect branch remains checkable because the formal path can yield an empty trace.
+
+## 10. Runtime certificate production boundary
+
+The implementation path is:
 
 ```text
 exact source
@@ -199,105 +244,71 @@ exact source
    -> actual Wasm execution
    -> observed target/before/after transitions
    -> independent semantic-effect reconstruction
-   -> proof-free EvidenceEffect occurrences
-   -> generated Lean runtime certificate
+   -> proof-free concrete EvidenceEffect occurrences
+
+same execution context
+   -> runtime-path-witness.js
+   -> proof-free RuntimePath per protected invocation
+
+occurrences + path
+   -> GeneratedRuntimeCertificate.lean
+   -> PatchRuntime checks
 ```
 
-The generated artifact records SHA-256 hashes of the exact Patch source bytes and the observed direct transition trace. The hash binds the artifact to the tested execution; it is not a cryptographic proof of compiler correctness.
+The generated certificate records SHA-256 hashes of exact source bytes and the observed direct transition trace. These hashes bind the artifact to the tested inputs/observations; they do not prove compiler correctness.
 
-For each protected recipe currently certified at runtime, the producer additionally requires:
+The JavaScript path witness producer is deliberately outside the trusted theorem base: its claim is useful only if Lean accepts it.
 
-- formal SourceStmt support;
-- beta.19 raw-source extraction validation;
-- a linear formal SourceStmt (`skip`, `change`, `seq`);
-- exactly one observed invocation of that protected linear recipe;
-- concrete increase/decrease magnitudes representable as non-negative safe integers.
+## 11. Supported beta.21 runtime-correspondence subset
 
-Unsupported cases are rejected instead of being silently mapped to a weaker theorem.
+Currently covered when the surrounding static/source requirements also pass:
 
-## 8. Static and runtime assurance chains
+- formal `add/remove/set/clear` changes;
+- sequence;
+- formal branch choices through explicit `branchThen`/`branchElse` witnesses;
+- literal formal repeats through exact `repeatSucc`/`repeatZero` witnesses;
+- multiple direct calls to the same protected recipe, certified separately;
+- current integer-valued amount fragment.
 
-Static chain:
+Still outside this runtime theorem:
 
-```text
-exact source
-   -> production formalSource --------+
-   -> independent raw-source witness --+-> structural equality validation
-                                        |
-                                        v
-formal RangeExpr -> Lean range soundness
-SourceStmt -> Lean normalization -> EvidenceStmt -> CoreStmt
-          -> formal Signature -> verified policy checker
-```
+- recipe-call nodes **inside** the protected formal recipe body (formal call/substitution semantics are not yet modeled in `SourceStmt`);
+- dynamic repeat counts outside the formal literal-repeat model;
+- GUI/event execution correspondence;
+- undo/redo/preview/returns outside the formal source subset;
+- non-integer/floating-point concrete magnitude correspondence;
+- the full Patch language.
 
-Runtime chain:
+Unsupported means not covered by this theorem, not necessarily unsafe or unsupported by the implementation.
 
-```text
-exact source
-   -> direct Wasm
-   -> actual execution
-   -> observed transitions
-   -> independent semantic reconstruction
-   -> concrete proof-free runtime evidence
-   -> Lean decoding/refinement
-   -> TraceRefines
-   -> formal SourceExecutes witness
-```
+## 12. What beta.21 does not prove
 
-These layers intentionally separate producer evidence from Lean-checked conclusions.
+Do not state “Patch is formally verified end-to-end.” Remaining boundaries include:
 
-## 9. Supported beta.20 runtime subset
-
-The direct-Wasm backend is broader than the runtime theorem. Runtime certification currently accepts protected recipes whose formal source consists of:
-
-- direct `add`, `remove`, `set`, `clear` changes supported by the formal source model;
-- sequential composition;
-- integer-valued supported magnitudes;
-- one observed invocation per protected recipe.
-
-Currently rejected at the beta.20 runtime-correspondence boundary:
-
-- formal branches;
-- formal repeats;
-- multiple invocations of the same protected recipe in one runtime certificate;
-- recipe-call composition inside the formal recipe body;
-- floating-point/non-integer concrete magnitudes;
-- GUI/event execution;
-- return-valued recipes and other constructs outside the formal source subset.
-
-Unsupported means **not covered by this theorem**, not necessarily unsafe or unsupported by the Patch runtime.
-
-## 10. What beta.20 establishes and does not establish
-
-A successful beta.20 generated runtime certificate establishes inside Lean that the supplied proof-free concrete effect occurrences decode successfully and `TraceRefines` an actual formal `SourceExecutes` trace for the supplied formal source statement.
-
-It still does **not** prove:
-
-- production JavaScript parser correctness;
+- production parser correctness;
 - independent raw-source parser correctness;
-- direct-Wasm compiler correctness;
+- JavaScript → Wasm compiler correctness;
 - WebAssembly engine correctness;
-- that `patch.change_number` observes arbitrary mutations outside the supported direct backend contract;
-- correctness of JavaScript semantic reconstruction from before/after observations;
-- branch/repeat path selection correspondence;
-- multiple invocation segmentation;
-- full floating-point correspondence;
-- end-to-end correctness for the full Patch language.
+- completeness/correctness of the direct transition observer outside its supported ABI contract;
+- JavaScript before/after → semantic-effect reconstruction correctness;
+- JavaScript `RuntimePath` producer correctness;
+- floating-point correspondence;
+- full recipe-call/substitution correspondence;
+- full language semantics.
 
-Therefore the correct description remains **Lean-checked runtime correspondence for a restricted observed execution**, not “Patch is a verified compiler.”
+The meaningful improvement is that **producer correctness for the control-flow witness is not assumed by the theorem**: the witness must be validated against formal structure to yield `SourceExecutes`.
 
-## 11. Next mechanization / validation order
+## 13. Next formal order
 
-1. add explicit `branchThen` / `branchElse` runtime path witnesses;
-2. add repeat-iteration witnesses and invocation identifiers so multiple recipe calls can be segmented;
-3. prove a useful downward-closure result connecting `EffectRefines actual formal` with formal capability admission, yielding a concrete-runtime capability corollary;
-4. introduce a typed expression/core IR or another smaller independently checkable lowering input;
-5. extend formal recipe-call/substitution semantics;
-6. preserve runtime/static certificates across packaged backends;
-7. then extend to richer values, UI events, inverse/replay and collaboration semantics.
+1. add formal recipe-call/substitution semantics for the non-recursive direct subset;
+2. introduce a typed expression/core IR or another smaller independently checkable lowering input;
+3. derive a concrete-runtime capability corollary from `EffectRefines` plus formal policy admission;
+4. stabilize a machine-readable certificate container;
+5. measure checker/certificate/validation overhead;
+6. extend carefully to richer values and eventually UI/inverse/replay semantics.
 
-## 12. Research boundary
+## 14. Research boundary
 
-Source calculi, refinement relations, translation validation, Proof-Carrying Code, certifying compilers, effect/capability systems, range analysis, patches, provenance and verified checkers all have substantial prior art. `PatchRuntime` is an **assurance mechanism**, not a new primary novelty headline.
+Source calculi, refinement relations, translation validation, Proof-Carrying Code, certifying compilers, effect/capability systems, abstract interpretation and verified checkers all have substantial prior art. `RuntimePath` is an assurance device, not a firstness or novelty headline.
 
-The candidate contribution remains Patch's combination of mandatory semantic mutation, operation- and magnitude-aware contracts derived from that representation, and a formal/validation architecture that reuses the same semantic change model while keeping the beginner-facing language small.
+The candidate contribution remains Patch's combination of mandatory semantic mutation, operation/magnitude-aware semantic authority derived from that same representation, and progressively tighter formal/validation reuse of the semantic change model while keeping source syntax small.
