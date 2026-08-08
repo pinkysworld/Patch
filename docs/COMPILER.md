@@ -2,57 +2,58 @@
 
 ## Status
 
-Patch 0.2 beta.7 has a compiler front end, semantic change analysis, a mechanized formal core, a conservative production-to-formal bridge, a Lean-verified policy checker, and a **Lean-validated proof-free production evidence boundary**.
+Patch 0.2 beta.8 has a compiler front end, semantic Change Signature analysis, Change Capabilities, a conservative semantic bridge, a formal source-core extractor, a Lean-verified policy checker, and machine-checked source/evidence/signature correspondence for the formal subset.
 
 ```text
 Patch source
    |
    v
-parser / AST
+JavaScript parser / AST
    |
-   +--> semantic Change Signature analysis
-   |       |
+   +--> production Change Signature analysis
    |       `--> production Change Capability validation
    |
-   +--> conservative formal bridge
-   |       |
-   |       `--> JavaScript translation-validation comparison
+   +--> formal-source extractor
+   |       `--> SourceStmt preserving add/remove/set/clear
    |
-   +--> proof-free EvidenceStmt + production signature claim
-   |       |
-   |       v
-   |    PatchEvidence [Lean verified]
-   |       |
-   |       +--> validate raw intervals
-   |       +--> decode to CoreStmt
-   |       +--> infer formal signature
-   |       +--> check production-signature correspondence
-   |       `--> PatchChecker policy judgment
+   +--> semantic formal bridge
+   |       `--> EvidenceStmt-style semantic claim
    |
    v
-Change IR 0.5
+Change IR 0.6
    |
-   +--> .patchapp portable bundle      [implemented]
-   +--> bootstrap WebAssembly module   [implemented]
-   +--> direct executable Wasm         [next backend stage]
-   +--> native host package            [planned]
-   `--> portable C99 fallback          [planned]
+   +--> generated Lean certificate
+   |       |
+   |       v
+   |    PatchSource [Lean]
+   |       +--> validate source amount bounds
+   |       +--> normalize add/remove/set/clear
+   |       +--> check SourceStmt -> EvidenceStmt
+   |       v
+   |    PatchEvidence [Lean]
+   |       +--> validate/decode EvidenceStmt -> CoreStmt
+   |       +--> infer formal Change Signature
+   |       +--> compare separate production signature claim
+   |       v
+   |    PatchChecker [Lean]
+   |       `--> verify semantic policy
+   |
+   +--> .patchapp                    [implemented]
+   +--> bootstrap .wasm              [implemented]
+   +--> direct executable Wasm       [planned]
+   `--> native host packaging        [roadmap]
 ```
-
-`src/compiler.js` lowers valid Patch source to normalized Change IR. `src/change-analysis.js` infers semantic Change Signatures and performs the production policy check. `src/formal-bridge.js` reconstructs the conservative formal subset. `src/certificate.js` emits proof-free semantic evidence, a separate production-signature claim and policy rules. `formal/PatchEvidence.lean` validates and decodes that evidence; `formal/PatchChecker.lean` checks semantic authority.
-
-`src/bundle.js` packages source + IR + manifest into `.patchapp`. `src/wasm.js` emits an instantiable WebAssembly bootstrap module containing a Patch payload for a Patch host.
 
 ## Why Change IR
 
-In Patch, a state change is not instrumentation added after assignment. The change is the mutation primitive. The compiler therefore preserves `CHANGE` explicitly in its intermediate representation.
+Patch does not perform an ordinary persistent assignment and then attach a log record. `change` is the source mutation primitive and `CHANGE` is preserved in IR.
 
 ```patch
 change score:
   add 1
 ```
 
-becomes conceptually:
+conceptually lowers to:
 
 ```json
 {
@@ -62,146 +63,145 @@ becomes conceptually:
 }
 ```
 
-Later compiler stages may specialize this into efficient machine operations, while the semantic Change IR remains available for contracts, history, debugging, preview, replay and UI state updates.
+This structure is reused by execution, history, inverse generation, provenance, semantic contracts and formal evidence.
 
 ## State-Change Factorization
 
-The architecture is shaped around the property:
+The compiler/runtime architecture follows the intended property:
 
-> If a supported Patch source step mutates existing persistent state from `S` to `S'`, the transition factors through a semantic change `delta` such that `apply(delta, S) = S'`, and commit occurs through that semantic change rather than hidden assignment followed by logging.
+> For supported persistent mutation, the state transition is performed through a semantic change rather than through hidden assignment followed by observation.
 
-The Lean formal machine proves this for its modeled state-changing step.
+The Lean formal machine proves State-Change Factorization for its modeled state-changing step. Production-runtime correspondence remains a separate obligation.
 
-## Semantic Change Signatures
+## Production semantic analysis
 
-Patch statically summarizes semantic state changes a recipe may produce.
-
-```patch
-make reward(player):
-  change player:
-    add 5 to score
-```
-
-Conceptually:
+`src/change-analysis.js` infers semantic Change Signatures. It can distinguish, for example:
 
 ```text
-reward(player)
-  player.score -> increase by 5
+player.score -> increase by [0,10]
+player.score -> decrease by 2
+player.score -> set
 ```
 
-The production analyzer distinguishes `set`, `clear`, source-level `add`/`remove`, and provable numeric `increase`/`decrease`, including amount intervals. Dynamic targets, unknown callees and recursion are treated conservatively.
+Optional `allow` policies constrain the target, field, operation and maximum amount. The production compiler rejects protected code when it cannot prove that inferred committed effects are inside the declared policy.
 
-## Formal signature and policy theorems
+## Two separate production formal views
 
-`formal/PatchSignature.lean` defines:
+Beta 8 deliberately avoids deriving every formal claim through one producer path.
+
+### `src/formal-source.js`
+
+This extractor preserves source mutation verbs:
 
 ```text
-skip
-emit effect
-seq first second
-branch then else
-repeat n body
+add | remove | set | clear
 ```
 
-with static `inferSignature` and runtime `Executes stmt trace`.
-
-Lean proves:
+and structured control flow:
 
 ```text
-RuntimeChanges(stmt) subset-of inferSignature(stmt)
+skip | change | seq | branch | repeat
 ```
 
-and, for a protected formal statement:
+For numeric `add`/`remove`, it attaches the production-inferred raw amount range, but it does **not** pre-classify the source verb as increase/decrease.
+
+### `src/formal-bridge.js`
+
+This older independent path reconstructs the semantic formal subset and normalizes operations to semantic effects such as `increase`, `decrease`, `set`, and `clear`.
+
+### `src/change-analysis.js`
+
+This remains the third path producing the production Change Signature claim.
+
+The certificate can therefore contain three distinct statements about a protected recipe:
 
 ```text
-RuntimeChanges(stmt) subset-of Signature(stmt)
-Signature(stmt) admitted-by Capability(stmt)
-------------------------------------------------
-RuntimeChanges(stmt) admitted-by Capability(stmt)
+SourceStmt
+EvidenceStmt
+production Change Signature claim
 ```
 
-`PatchChecker.lean` makes policy checking executable and proves the boolean checker sound.
+Lean checks their required correspondence.
 
-## Production-to-formal bridge
+## PatchSource: source-level normalization in Lean
 
-`buildFormalBridge(ast, changeAnalysis)` independently translates the real AST into a small formal-like control-flow representation and compares its reconstructed signature with the production Change Signature.
-
-A supported mismatch aborts compilation. The bridge currently covers direct formal-vocabulary changes, sequencing, both branch alternatives, literal repetition and supported range-derived numeric amounts. Preview is modeled as no committed effect.
-
-Recipe calls, dynamic repeat counts, return, undo/redo, GUI/events, mixed-sign unsupported amount classes and unproven/transitive effects remain outside the bridge subset.
-
-Use:
+`formal/PatchSource.lean` defines:
 
 ```text
-patch formal program.patch
+SourceChangeKind = add | remove | set | clear
+SourceChange
+SourceStmt
 ```
 
-This JavaScript comparison remains useful translation-validation evidence, but beta 7 adds an independent Lean boundary after it.
+and executable `normalizeSourceChange` / `lowerSourceStmt` functions.
 
-## Beta 7 proof-free evidence schema
-
-The certificate producer emits `EvidenceStmt`, not a trusted generated `CoreStmt`.
-
-The Lean evidence vocabulary is deliberately simple:
+Examples of normalization:
 
 ```text
-EvidenceAmount { lo, hi }
-EvidenceEffect { target, field, kind, amount? }
-EvidenceStmt = skip | emit | seq | branch | repeat
+add [0,5]       -> increase [0,5]
+remove [0,5]    -> decrease [0,5]
+add [-5,-5]     -> decrease [5,5]
+remove [-5,-5]  -> increase [5,5]
 ```
 
-`EvidenceAmount` contains no `lo <= hi` proof. Lean checks the bound order during `decodeEvidenceAmount`; invalid evidence fails decoding.
+Raw bounds are validated by Lean before use. Mixed-sign source ranges are rejected from the certifiable source subset because one static semantic direction cannot describe them.
 
-`decodeEvidenceStmt` recursively validates evidence and produces `Option CoreStmt`.
-
-## Machine-checked evidence/signature correspondence
-
-The production certificate also emits a **separate production Change Signature claim** as `List EvidenceEffect`.
-
-Lean independently:
-
-1. decodes the EvidenceStmt;
-2. runs the mechanized `inferSignature` on the decoded `CoreStmt`;
-3. erases proof fields into canonical `EvidenceEffect` values;
-4. removes duplicate semantic effects;
-5. compares the result with the production claim.
-
-The executable check is:
+The source/evidence checker is:
 
 ```text
-checkEvidenceSignature(evidence, claim)
+checkSourceEvidence(source, evidence)
 ```
 
 and Lean proves:
 
 ```text
-decodeEvidenceStmt(evidence) = some stmt
-checkEvidenceSignature(evidence, claim) = true
+checkSourceEvidence(source, evidence) = true
 ------------------------------------------------
-encodeSignature(inferSignature(stmt)) = claim
+lowerSourceStmt(source) = some evidence
 ```
 
-via `checkedEvidenceSignatureCorresponds`.
+via `checkSourceEvidence_sound`.
 
-This is stronger than beta 6 because JavaScript no longer creates the formal `CoreStmt` value that the policy theorem directly trusts. Lean derives that core from proof-free evidence and independently reconstructs its signature.
+## Source → signature correspondence
 
-## Evidence-level semantic policy checking
+`checkSourceSignature source claim` composes the source lowering with beta.7 evidence decoding and formal signature inference:
 
-`checkEvidenceProtected(evidence, policy)` first decodes evidence and only then invokes the verified semantic policy checker.
+```text
+SourceStmt
+   -> Lean semantic normalization
+   -> EvidenceStmt
+   -> CoreStmt
+   -> inferSignature
+   -> canonical EvidenceEffect signature
+   -> compare with production claim
+```
+
+`checkSourceSignature_sound` proves that a successful executable check yields a decoded formal statement whose canonical inferred signature exactly equals the separate production claim.
+
+## Formal source-level policy containment
+
+The current formal source execution relation is:
+
+```text
+SourceExecutes(source, runtime)
+```
+
+which requires successful Lean lowering to evidence, successful evidence decoding to `CoreStmt`, and an existing formal `Executes` trace.
 
 Lean proves:
 
 ```text
-decodeEvidenceStmt(evidence) = some stmt
-checkEvidenceProtected(evidence, policy) = true
-Executes(stmt, runtime)
+SourceExecutes(source, runtime)
+checkSourceProtected(source, policy) = true
 ------------------------------------------------
-every runtime effect has an allowing policy rule
+every runtime semantic effect is allowed by policy
 ```
 
-via `checkedEvidenceExecutionCannotEscape`.
+via `checkedSourceExecutionCannotEscape`.
 
-## Generated Lean certificates
+This is a theorem about the formal source core. It is **not yet** a theorem that the JavaScript interpreter/runtime implements the same execution relation.
+
+## Generated certificates
 
 Use:
 
@@ -209,68 +209,62 @@ Use:
 patch certify program.patch --out Program.patchcert.lean
 ```
 
-For each protected recipe inside the bridge subset, `src/certificate.js` emits:
+For each protected recipe inside both supported production subsets, the generated artifact contains:
 
 ```text
-source SHA-256
+exact source SHA-256
 Patch IR version
-evidence schema version
-proof-free EvidenceStmt
+source schema version
+semantic evidence schema version
+formal SourceStmt
+separate semantic EvidenceStmt
 separate production Change Signature claim
-formal policy rules
-machine-decided evidence/signature theorem
-machine-decided evidence/policy theorem
-runtime policy-containment theorem
+semantic policy
+source/evidence equality theorem
+source/signature correspondence theorem
+source/policy checker theorem
+formal source-runtime containment theorem
 ```
 
-The generator refuses protected recipes outside the supported bridge/evidence subset rather than silently weakening the guarantee.
+The generator refuses unsupported protected recipes rather than silently weakening the guarantee.
 
-### Remaining trust boundary
+## Remaining trusted boundary
 
-Beta 7 still does **not** verify the whole compiler.
+Beta 8 does **not** verify the whole compiler.
 
-Trusted/unproved today:
+Still trusted/unproved:
 
 ```text
-Patch source
+Patch source bytes
    -> JavaScript parser / AST
-   -> proof-free evidence extraction
-   -> production signature claim extraction
-   -> policy extraction
+   -> SourceStmt extraction
 ```
 
-Lean-checked after that boundary:
+and:
 
 ```text
-proof-free evidence
-   -> interval validation
+Patch numeric expression
+   -> production-inferred amount interval
+```
+
+Lean checks, for the current subset, everything after the formal `SourceStmt` and its raw amount intervals:
+
+```text
+SourceStmt
+   -> semantic normalization
+   -> EvidenceStmt equality
    -> CoreStmt decoding
-   -> formal signature inference
+   -> formal signature reconstruction
    -> production-signature correspondence
    -> semantic policy checking
-   -> runtime policy containment for formal traces
+   -> containment for formal SourceExecutes traces
 ```
 
-The next major formal theorem should relate the supported production AST/source fragment to the emitted `EvidenceStmt` rather than proving policy soundness again.
-
-## Numeric range analysis
-
-Ranged parameters provide quantitative evidence:
-
-```patch
-allow reward:
-  player.score may increase up to 10
-
-make reward(player, bonus number 0..5):
-  change player:
-    add bonus * 2 to score
-```
-
-The production analyzer derives `bonus * 2` as `0..10`. Lean beta 7 validates that the emitted raw interval is internally well formed and checks policy containment, but it still does not prove that the JavaScript expression analyzer computed a sound interval. That production range-analysis theorem remains a priority.
+The next formal priorities are AST→SourceStmt correspondence, interval-analyzer soundness, and then production-runtime trace correspondence.
 
 ## IR representation
 
-Patch IR 0.5 includes:
+Patch IR **0.6** includes:
 
 ```text
 instructions
@@ -278,45 +272,57 @@ capabilities
 changeSignatures
 changeCapabilities
 formalBridge
+formalSource
 ```
 
-Host capabilities such as `ui.window` remain distinct from semantic Change Capabilities.
+Host/runtime capabilities such as `ui.window` remain distinct from semantic Change Capabilities.
 
-## Application kinds and output
+## Current formal subset
+
+Covered by the source/evidence certificate path:
+
+- direct `add`, `remove`, `set`, `clear` changes;
+- proven non-mixed-sign numeric ranges for `add`/`remove`;
+- sequence;
+- `if` alternatives;
+- literal non-negative repetition;
+- preview as no committed effect.
+
+Explicitly unsupported today include recipe calls/substitution, dynamic loops, `return`, undo/redo, GUI/event execution, mixed-sign numeric updates, and operations outside the current formal vocabulary.
+
+## Outputs
 
 Current outputs:
 
-- portable `.patchapp` [implemented];
-- bootstrap `.wasm` [implemented];
-- Lean-checkable `.patchcert.lean` evidence for protected bridge-supported recipes [implemented].
+- portable `.patchapp`;
+- bootstrap `.wasm`;
+- generated Lean `.patchcert.lean` source/evidence certificate.
 
-Planned outputs include direct WebAssembly/WASI and native Windows/macOS/Linux/BSD packaging.
-
-Bootstrap Wasm remains a carrier for Patch source + Change IR loaded by a Patch host. Direct Change IR-to-Wasm execution is still the next backend stage.
-
-## Compiler commands
-
-```text
-patch run hello.patch
-patch check hello.patch
-patch changes hello.patch
-patch formal hello.patch
-patch certify protected.patch --out Protected.patchcert.lean
-patch build hello.patch --kind console --target portable
-patch build hello.patch --kind console --target wasm
-```
+Bootstrap Wasm is a genuine instantiable carrier containing Patch source + Change IR for a Patch host. It is not direct Change IR-to-Wasm execution.
 
 ## Quality gates
 
-Every Windows/macOS/Linux CI matrix job checks syntax, tests the formal bridge and certificate generator, executes examples, generates an evidence certificate, builds `.patchapp`, builds bootstrap Wasm and validates the public Patch Studio site.
+JavaScript CI runs on Windows, macOS and Linux with Node 22/24. It checks syntax including `formal-source.js`, tests, examples, formal coverage reporting, certificate generation, `.patchapp`, bootstrap Wasm and the public site.
 
-Formal CI separately:
+Formal CI explicitly builds:
 
-1. generates a certificate using the production JavaScript compiler;
-2. explicitly compiles `PatchFormal`, `PatchSignature`, `PatchChecker` and `PatchEvidence` with pinned Lean 4.30;
-3. compiles the generated evidence certificate;
-4. rejects actual `sorry`/`admit` proof placeholders.
+```text
+PatchFormal
+PatchSignature
+PatchChecker
+PatchEvidence
+PatchSource
+```
+
+with Lean 4.30, compiles a certificate generated by the production compiler, and rejects unfinished proof placeholders.
 
 ## Design constraint
 
-Formal machinery must not make beginner Patch syntax harder. A beginner can ignore `allow`, formal bridge reports, certificate generation and the proof system entirely while writing normal Patch programs.
+Formal machinery must remain optional from the beginner's perspective. Ordinary Patch code still looks like:
+
+```patch
+change score:
+  add 1
+```
+
+without requiring users to understand SourceStmt, EvidenceStmt, Lean or the checker architecture.

@@ -2,12 +2,15 @@ import crypto from 'node:crypto';
 import { compile } from './compiler.js';
 
 const CHECKER_KINDS = new Set(['increase', 'decrease', 'set', 'clear']);
+const SOURCE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
 const EVIDENCE_SCHEMA_VERSION = '0.1';
+const SOURCE_SCHEMA_VERSION = '0.1';
 
 export function generateLeanCertificate(source, options = {}) {
   const { ir } = compile(source, options);
   const policies = ir.changeCapabilities ?? {};
   const bridge = ir.formalBridge?.entries ?? {};
+  const sourceEntries = ir.formalSource?.entries ?? {};
   const protectedNames = Object.keys(policies).sort();
 
   if (!protectedNames.length) {
@@ -25,6 +28,13 @@ export function generateLeanCertificate(source, options = {}) {
       throw new Error(`Protected recipe '${name}' is outside the verified-checker subset: ${why}`);
     }
 
+    const sourceEntry = sourceEntries[name];
+    if (!sourceEntry) throw new Error(`No formal source-core entry exists for protected recipe '${name}'.`);
+    if (!sourceEntry.supported) {
+      const why = sourceEntry.reasons?.length ? sourceEntry.reasons.join('; ') : 'formal source-core mismatch';
+      throw new Error(`Protected recipe '${name}' is outside the formal source-core subset: ${why}`);
+    }
+
     const rules = policies[name] ?? [];
     for (const rule of rules) {
       if (!CHECKER_KINDS.has(rule.operation)) {
@@ -37,34 +47,40 @@ export function generateLeanCertificate(source, options = {}) {
 
     const productionClaim = productionEvidenceClaim(ir.changeSignatures?.[name], name);
     const id = leanIdentifier(name);
+    const sourceName = `cert_${id}_source`;
     const evidenceName = `cert_${id}_evidence`;
     const claimName = `cert_${id}_production_signature`;
     const policyName = `cert_${id}_policy`;
-    const signatureCheckName = `cert_${id}_signature_checked`;
-    const policyCheckName = `cert_${id}_policy_checked`;
+    const sourceEvidenceCheckName = `cert_${id}_source_evidence_checked`;
+    const signatureCheckName = `cert_${id}_source_signature_checked`;
+    const policyCheckName = `cert_${id}_source_policy_checked`;
 
+    blocks.push(`def ${sourceName} : SourceStmt :=\n${indent(leanSourceCore(sourceEntry.source), 2)}`);
     blocks.push(`def ${evidenceName} : EvidenceStmt :=\n${indent(leanEvidenceCore(entry.core), 2)}`);
     blocks.push(`def ${claimName} : List EvidenceEffect :=\n${indent(leanList(productionClaim.map(leanEvidenceEffect)), 2)}`);
     blocks.push(`def ${policyName} : List Rule :=\n${indent(leanList(rules.map(leanRule)), 2)}`);
-    blocks.push(`theorem ${signatureCheckName} :\n    checkEvidenceSignature ${evidenceName} ${claimName} = true := by\n  native_decide`);
-    blocks.push(`theorem cert_${id}_signature_corresponds\n    {stmt : CoreStmt}\n    (hDecode : decodeEvidenceStmt ${evidenceName} = some stmt) :\n    encodeSignature (inferSignature stmt) = ${claimName} := by\n  exact checkedEvidenceSignatureCorresponds hDecode ${signatureCheckName}`);
-    blocks.push(`theorem ${policyCheckName} :\n    checkEvidenceProtected ${evidenceName} ${policyName} = true := by\n  native_decide`);
-    blocks.push(`theorem cert_${id}_runtime_safe\n    {stmt : CoreStmt} {runtime : List Effect}\n    (hDecode : decodeEvidenceStmt ${evidenceName} = some stmt)\n    (hExec : Executes stmt runtime) :\n    ∀ effect, effect ∈ runtime →\n      ∃ rule, rule ∈ ${policyName} ∧ Allows rule effect := by\n  exact checkedEvidenceExecutionCannotEscape hDecode hExec ${policyCheckName}`);
+    blocks.push(`theorem ${sourceEvidenceCheckName} :\n    checkSourceEvidence ${sourceName} ${evidenceName} = true := by\n  native_decide`);
+    blocks.push(`theorem ${signatureCheckName} :\n    checkSourceSignature ${sourceName} ${claimName} = true := by\n  native_decide`);
+    blocks.push(`theorem cert_${id}_source_signature_corresponds :\n    ∃ evidence stmt,\n      lowerSourceStmt ${sourceName} = some evidence ∧\n      decodeEvidenceStmt evidence = some stmt ∧\n      encodeSignature (inferSignature stmt) = ${claimName} := by\n  exact checkSourceSignature_sound ${signatureCheckName}`);
+    blocks.push(`theorem ${policyCheckName} :\n    checkSourceProtected ${sourceName} ${policyName} = true := by\n  native_decide`);
+    blocks.push(`theorem cert_${id}_runtime_safe\n    {runtime : List Effect}\n    (hExec : SourceExecutes ${sourceName} runtime) :\n    ∀ effect, effect ∈ runtime →\n      ∃ rule, rule ∈ ${policyName} ∧ Allows rule effect := by\n  exact checkedSourceExecutionCannotEscape hExec ${policyCheckName}`);
     certified.push(name);
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchEvidence\n\nopen PatchFormal\n\nnamespace PatchGeneratedCertificate\n\n/-- Generated from production Patch source. The hash binds this certificate to\n    the exact source bytes. Lean independently validates the proof-free evidence\n    schema, its decoded Change Signature, and the semantic policy. The remaining\n    trust boundary is the production source/AST-to-evidence translation. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\n\ndef patchIrVersion : String := ${leanString(ir.version)}\n\ndef evidenceSchemaVersion : String := ${leanString(EVIDENCE_SCHEMA_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedCertificate\n`;
+  const lean = `import PatchSource\n\nopen PatchFormal\n\nnamespace PatchGeneratedCertificate\n\n/-- Generated from production Patch source. The hash binds this certificate to\n    the exact source bytes. Lean independently normalizes the formal source core,\n    checks its lowering to proof-free evidence, reconstructs the formal Change\n    Signature, and validates the semantic policy. The remaining trust boundary is\n    JavaScript source/AST extraction into SourceStmt plus production range claims. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\n\ndef patchIrVersion : String := ${leanString(ir.version)}\n\ndef sourceSchemaVersion : String := ${leanString(SOURCE_SCHEMA_VERSION)}\n\ndef evidenceSchemaVersion : String := ${leanString(EVIDENCE_SCHEMA_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedCertificate\n`;
 
   return {
     lean,
     sourceSha256,
     irVersion: ir.version,
+    sourceSchemaVersion: SOURCE_SCHEMA_VERSION,
     evidenceSchemaVersion: EVIDENCE_SCHEMA_VERSION,
     certified,
-    checker: 'PatchEvidence.checkEvidenceProtected_sound',
-    correspondence: 'PatchEvidence.checkedEvidenceSignatureCorresponds',
-    theorem: 'PatchEvidence.checkedEvidenceExecutionCannotEscape'
+    checker: 'PatchSource.checkSourceProtected',
+    sourceCorrespondence: 'PatchSource.checkSourceEvidence_sound',
+    signatureCorrespondence: 'PatchSource.checkSourceSignature_sound',
+    theorem: 'PatchSource.checkedSourceExecutionCannotEscape'
   };
 }
 
@@ -93,6 +109,25 @@ function productionEvidenceClaim(signature, name) {
     out.push(normalized);
   }
   return out;
+}
+
+function leanSourceCore(core) {
+  switch (core.kind) {
+    case 'skip': return 'SourceStmt.skip';
+    case 'change': return `SourceStmt.change ${leanSourceChange(core.change)}`;
+    case 'seq': return `SourceStmt.seq\n${indent(`(${leanSourceCore(core.first)})`, 2)}\n${indent(`(${leanSourceCore(core.second)})`, 2)}`;
+    case 'branch': return `SourceStmt.branch\n${indent(`(${leanSourceCore(core.then)})`, 2)}\n${indent(`(${leanSourceCore(core.else)})`, 2)}`;
+    case 'repeat': return `SourceStmt.repeat ${core.count}\n${indent(`(${leanSourceCore(core.body)})`, 2)}`;
+    default: throw new Error(`Cannot encode formal source-core node '${core.kind}' in a Lean certificate.`);
+  }
+}
+
+function leanSourceChange(change) {
+  if (!SOURCE_KINDS.has(change.operation)) throw new Error(`Unsupported formal source change '${change.operation}'.`);
+  const needsAmount = change.operation === 'add' || change.operation === 'remove';
+  if (needsAmount && !change.amountRange) throw new Error(`Source change '${change.operation}' requires a proven amount range.`);
+  if (!needsAmount && change.amountRange) throw new Error(`Source change '${change.operation}' must not carry a numeric amount range.`);
+  return `({ target := ${leanString(change.target)}, field := ${leanOptionString(change.field)}, kind := .${change.operation}, amount := ${leanEvidenceAmount(change.amountRange)} } : SourceChange)`;
 }
 
 function leanEvidenceCore(core) {

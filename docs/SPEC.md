@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.7 development**
+Status: **0.2.0-beta.8 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -14,7 +14,7 @@ change x:
   add 1
 ```
 
-Direct reassignment such as `x = 2` is intentionally invalid outside a `create thing` field block.
+Direct reassignment such as `x = 2` is intentionally invalid outside a `create thing` field initializer.
 
 ## Values and expressions
 
@@ -50,7 +50,7 @@ change player:
   set name = "Alex"
 ```
 
-Supported source operations are `set`, `add`, `remove`, and `clear`. The runtime normalizes these into semantic operations and generated inverses where supported.
+Supported source mutation verbs are `set`, `add`, `remove`, and `clear`. The runtime normalizes these into semantic operations and generates inverses where supported.
 
 ## Semantic Change Signatures
 
@@ -69,9 +69,7 @@ reward(player)
   player.score -> increase by 5
 ```
 
-Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively by the production analyzer.
-
-The Lean formal core machine-checks signature soundness for sequencing, branch choice and bounded repetition. The production/formal bridge covers a conservative subset of the real language. The beta-7 evidence/certificate system is compiler tooling, not new beginner syntax.
+Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls can be followed transitively by the production analyzer, although recipe calls remain outside the current formal certificate subset.
 
 ## Change Capabilities
 
@@ -88,11 +86,11 @@ Rules use:
 target[.field] may operation [up to number]
 ```
 
-Current operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clear`.
+Current policy operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clear`. The verified formal policy vocabulary currently uses normalized `increase`, `decrease`, `set`, and `clear` effects.
 
 A protected recipe is rejected by the production compiler if its inferred committed changes are not covered by its rules.
 
-For the structured Lean core, the end-to-end relation is machine checked:
+For the structured Lean core, the machine-checked relation is:
 
 ```text
 RuntimeChanges(stmt) subset-of Signature(stmt)
@@ -100,89 +98,6 @@ Signature(stmt) admitted-by Capability(stmt)
 ---------------------------------------------
 RuntimeChanges(stmt) admitted-by Capability(stmt)
 ```
-
-## Production/formal validation metadata
-
-Patch IR 0.5 includes a `formalBridge` object. It records whether each program/recipe entry is inside the currently supported production-to-formal correspondence subset, the reconstructed formal-style signature, the normalized production signature, and reasons for unsupported constructs.
-
-A supported signature mismatch is a compiler error.
-
-Inspect the current boundary with:
-
-```bash
-patch formal program.patch
-```
-
-Current bridge coverage includes direct supported semantic changes, sequence, `if` alternatives, literal bounded `repeat`, and supported numeric range amounts. Recipe calls, dynamic repetition, undo/redo, return control flow, and GUI/event execution are currently reported as outside this bridge subset.
-
-## Verified semantic evidence certificates
-
-Beta 7 supports certificate generation for protected recipes inside the formal bridge subset:
-
-```bash
-patch certify program.patch --out Program.patchcert.lean
-```
-
-The generated Lean artifact contains:
-
-- SHA-256 of the exact Patch source bytes;
-- Patch IR version and evidence-schema version;
-- proof-free `EvidenceStmt` control-flow evidence;
-- a separately emitted production Change Signature claim as `EvidenceEffect` values;
-- the semantic Change Capability policy.
-
-The production artifact does **not** directly supply a trusted Lean `CoreStmt`. `formal/PatchEvidence.lean` validates raw evidence intervals and decodes the evidence to `Option CoreStmt`.
-
-Lean then checks:
-
-```text
-checkEvidenceSignature(evidence, productionClaim) = true
-```
-
-and proves that for a decoded statement:
-
-```text
-decodeEvidenceStmt(evidence) = some stmt
-------------------------------------------------
-encodeSignature(inferSignature(stmt)) = productionClaim
-```
-
-when that executable check succeeds.
-
-Lean also checks:
-
-```text
-checkEvidenceProtected(evidence, policy) = true
-```
-
-and composes it with formal Change Signature Soundness so that modeled executions of the decoded core cannot emit semantic effects outside the policy.
-
-### Important boundary
-
-This is **not full compiler verification**.
-
-Still trusted/unproved:
-
-```text
-Patch source / production AST
-  -> proof-free evidence extraction
-  -> production signature claim extraction
-  -> policy extraction
-```
-
-Lean-checked after that point:
-
-```text
-proof-free evidence
-  -> raw interval validation
-  -> CoreStmt decoding
-  -> formal signature inference
-  -> production-signature correspondence
-  -> semantic policy checking
-  -> runtime containment for formal executions
-```
-
-Certificate generation refuses protected recipes outside the bridge/evidence subset. Documentation must not present a generated certificate as proof that the entire JavaScript compiler is correct.
 
 ## Ranged recipe parameters
 
@@ -194,9 +109,11 @@ make reward(player, bonus number 0..10):
     add bonus to score
 ```
 
-A ranged parameter is still used like an ordinary number. The annotation is an optional contract for the compiler/runtime.
+A ranged parameter is still used as an ordinary number. The annotation gives the analyzer/runtime a declared input contract.
 
-The compiler uses interval analysis to reason about simple arithmetic:
+The production interval analyzer currently supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
+
+Example:
 
 ```patch
 allow reward:
@@ -207,24 +124,176 @@ make reward(player, bonus number 0..5):
     add bonus * 2 to score
 ```
 
-`bonus * 2` is inferred as `0..10`, so the capability is proven. If the declared input range were `0..6`, the possible result would be `0..12` and compilation would fail.
+The production analyzer infers `bonus * 2` as `0..10`. With `bonus number 0..6`, the possible range becomes `0..12` and the current capability checker rejects the program.
 
-The current interval analyzer supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
+Calls to ranged recipes are guarded at runtime. Production interval-analysis soundness itself is still a formal proof obligation.
 
-Calls to ranged recipes are guarded at runtime. Beta 7's Lean evidence decoder verifies that an **emitted raw interval is internally ordered**, and the policy checker verifies containment after decoding. Production interval-analysis soundness itself is not yet mechanized.
+## Formal metadata in Change IR 0.6
+
+Patch IR 0.6 contains both:
+
+```text
+formalSource
+formalBridge
+```
+
+in addition to ordinary instructions, runtime capabilities, Change Signatures, and Change Capability policies.
+
+### `formalSource`
+
+`formalSource` preserves source mutation verbs for the supported formal subset:
+
+```text
+add | remove | set | clear
+```
+
+plus sequence, branch and literal-repeat structure. Numeric `add`/`remove` nodes carry the production-inferred raw amount range.
+
+### `formalBridge`
+
+`formalBridge` contains the independent semantic view used for production translation validation. Numeric changes are normalized there to semantic operation classes such as `increase` and `decrease`.
+
+`patch formal program.patch` reports coverage of both views. Unsupported constructs are listed explicitly.
+
+## Beta 8 source/evidence certificates
+
+For protected recipes inside both supported formal subsets:
+
+```bash
+patch certify program.patch --out Program.patchcert.lean
+```
+
+emits a Lean-checkable artifact containing separate claims:
+
+```text
+SourceStmt
+EvidenceStmt
+production Change Signature
+semantic policy
+source SHA-256
+Patch IR version
+source/evidence schema versions
+```
+
+The important distinction is that the source artifact still says source-level `add`, `remove`, `set`, or `clear`.
+
+For example:
+
+```patch
+change player:
+  add -5 to score
+```
+
+can be represented in the formal source artifact as:
+
+```text
+add amount [-5,-5]
+```
+
+while the separate semantic evidence says:
+
+```text
+decrease amount [5,5]
+```
+
+`formal/PatchSource.lean` validates the raw amount bounds and performs this semantic normalization itself. Lean then checks that the independently emitted semantic evidence matches the source lowering.
+
+The executable source/evidence check is:
+
+```text
+checkSourceEvidence(source, evidence)
+```
+
+and successful checking implies:
+
+```text
+lowerSourceStmt(source) = some evidence
+```
+
+The source/signature path is:
+
+```text
+SourceStmt
+  -> Lean source normalization
+  -> EvidenceStmt
+  -> Lean evidence decoding
+  -> CoreStmt
+  -> formal inferSignature
+  -> compare with separate production Change Signature claim
+```
+
+For the formal Source-core execution relation, Lean also proves that a successful source policy check prevents modeled runtime effects outside policy.
+
+## Important verification boundary
+
+Beta 8 is **not full compiler verification**.
+
+Still trusted/unproved:
+
+```text
+Patch source bytes
+  -> JavaScript parser / AST
+  -> SourceStmt extraction
+```
+
+and:
+
+```text
+Patch numeric expression
+  -> production-inferred amount interval
+```
+
+Lean-checked after the formal source boundary:
+
+```text
+SourceStmt
+  -> semantic normalization
+  -> EvidenceStmt correspondence
+  -> CoreStmt decoding
+  -> formal signature reconstruction
+  -> production-signature correspondence
+  -> semantic policy checking
+  -> runtime containment for formal SourceExecutes traces
+```
+
+The production JavaScript runtime is also not yet proved to correspond to the formal `SourceExecutes` relation.
+
+Certificate generation refuses protected recipes outside the source/semantic formal subset. Unsupported code is not silently called verified.
+
+## Current formal certificate subset
+
+Currently supported:
+
+- direct `add`, `remove`, `set`, `clear` source changes;
+- non-mixed-sign proven numeric amount ranges for `add`/`remove`;
+- sequence;
+- `if` alternatives;
+- literal non-negative `repeat`;
+- preview as no committed formal effect.
+
+Currently outside the subset:
+
+- recipe calls and cross-call substitution;
+- dynamic repeat counts;
+- `return`;
+- `undo` / `redo`;
+- GUI/window/event execution;
+- mixed-sign numeric ranges;
+- numeric mutation amounts for which no range is proved;
+- external effects and richer source semantics not represented by the current formal core.
 
 ## Causal provenance and `why`
 
-Committed semantic changes retain source line, target/before/after values, semantic operations, active recipe-call chain, and GUI event cause when relevant.
+Committed semantic changes retain source line, target/before/after values, semantic operations, active recipe-call chain, and GUI-event cause when relevant.
 
 ```patch
 why score
 why score > 100
 ```
 
-`why score` reports recorded transitions and known recipe/event causes. A condition query reconstructs pre-change state and replays committed changes until it finds the first false-to-true transition when possible.
+`why score` reports recorded transitions and known recipe/event causes. A condition query reconstructs pre-change state and replays committed changes until it finds the first recorded false-to-true transition when possible.
 
-`why` is a provenance/debugging facility. It does not claim general counterfactual causal inference.
+This is historical provenance, not a general counterfactual causality system.
 
 ## Window applications
 
@@ -240,7 +309,7 @@ when add_button clicked:
     add 1
 ```
 
-Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers. GUI/event execution is not yet in the formal evidence subset.
+Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. GUI/event execution uses the same production mutation machinery but is not yet in the formal certificate subset.
 
 ## Named changes, undo, preview, history
 
@@ -278,7 +347,7 @@ repeat 5:
     add 1
 ```
 
-Inside `repeat`, `count` is a one-based local number.
+Inside production `repeat`, `count` is a one-based local number. Only literal non-negative repeat counts are currently in the formal source certificate subset.
 
 ## Recipes
 
@@ -289,16 +358,16 @@ make greet(name):
 do greet("Ada")
 ```
 
-Ranged parameters are optional and currently numeric only:
+Ranged parameters are optional and numeric only in the current beta:
 
 ```patch
 make award(points number 0..100):
   show points
 ```
 
-## Compiler-visible application kind
+## Application kind
 
-Projects are `console` or `window` applications. Both compile through the same Change IR.
+Projects are `console` or `window` applications. Both compile through the same Change IR and state/change semantics.
 
 ## Reserved words
 
@@ -308,4 +377,4 @@ Projects are `console` or `window` applications. Both compile through the same C
 
 ## Error design
 
-Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe. Formal bridge and evidence-certificate coverage follow the same principle: code outside the correspondence subset is reported as unsupported, never silently treated as verified.
+Patch errors should explain what went wrong, where, and how to fix it without unnecessary compiler jargon. Capability/range/formal checks deliberately fail conservatively when they cannot prove the required property.

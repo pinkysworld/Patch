@@ -14,3 +14,6 @@ lean_lib PatchChecker where
 
 lean_lib PatchEvidence where
   srcDir := "."
+
+lean_lib PatchSource where
+  srcDir := "."

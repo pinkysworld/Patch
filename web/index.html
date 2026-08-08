@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic Change Contracts, Lean-validated production evidence, verified policy checking, causal why explanations, GUI and portable application builds.">
+  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic Change Contracts, a Lean-checked formal source core, verified semantic evidence, causal why explanations, GUI and portable application builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -17,7 +17,7 @@
   <main class="studio">
     <header class="topbar">
       <div>
-        <h1>Patch Studio <span>0.2 beta.7</span></h1>
+        <h1>Patch Studio <span>0.2 beta.8</span></h1>
         <p>Create, design, inspect, explain, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
@@ -73,7 +73,7 @@
         <div id="app" class="app-preview" hidden><p class="empty-preview">Press Run to preview a window application.</p></div>
         <pre id="output" hidden>Press Run.</pre>
         <pre id="changes" hidden>Run or build to inspect inferred semantic changes, proven ranges and allowed change capabilities.</pre>
-        <pre id="ir" hidden>Build or Run to inspect the compiler IR, including the formal bridge report.</pre>
+        <pre id="ir" hidden>Build or Run to inspect Change IR, semantic bridge evidence and the formal Source core.</pre>
       </div>
     </section>
 
@@ -87,7 +87,7 @@
         <div>
           <p class="eyebrow">One language. One Studio. Semantic changes.</p>
           <h2>Programming should feel like making clear, inspectable changes.</h2>
-          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 7 adds proof-free production evidence that Lean validates and decodes before checking semantic Change Signatures and policies.</p>
+          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 8 adds a formal Source core that preserves source verbs such as <code>add</code> and <code>remove</code>; Lean itself normalizes those source operations to semantic evidence before checking signatures and policies.</p>
         </div>
         <pre class="code-card">allow reward:
   player.score may increase up to 10
@@ -102,23 +102,24 @@ why player.score</pre>
       <div class="info-grid">
         <article class="info-card">
           <p class="eyebrow">Works now</p>
-          <h3>Patch 0.2 beta.7</h3>
+          <h3>Patch 0.2 beta.8</h3>
           <ul>
-            <li>Interpreter plus compiler front end and normalized Change IR</li>
+            <li>Interpreter plus compiler front end and normalized Change IR 0.6</li>
             <li>Automatically inferred semantic Change Signatures</li>
             <li>Operation- and magnitude-aware Change Capabilities</li>
             <li>Ranged recipe parameters, interval analysis and runtime guards</li>
             <li>Causal source/recipe/event provenance and <code>why</code></li>
             <li>Lean 4 State-Change Factorization and Mutation Transparency</li>
             <li>Lean 4 Change Signature Soundness and end-to-end capability containment</li>
-            <li>Production-to-formal translation validation for a conservative subset</li>
+            <li>Conservative production semantic bridge</li>
+            <li>Proof-free <code>SourceStmt</code> extraction preserving <code>add/remove/set/clear</code></li>
+            <li><code>PatchSource.lean</code> semantic normalization and source/evidence checking</li>
+            <li><code>PatchEvidence.lean</code> evidence decoding and signature correspondence</li>
             <li>Lean-verified executable semantic policy checker</li>
-            <li>Proof-free production evidence validated and decoded by Lean</li>
-            <li>Machine-checked evidence → formal-signature correspondence</li>
-            <li><code>patch formal</code> coverage reporting and <code>patch certify</code> certificate generation</li>
+            <li><code>patch formal</code> coverage reporting and <code>patch certify</code> source/evidence certificates</li>
             <li>Portable <code>.patchapp</code> and bootstrap WebAssembly builds</li>
             <li>Console programs and first Patch UI/Designer slice</li>
-            <li>Windows, macOS and Linux CI plus explicit Lean evidence/certificate CI</li>
+            <li>Windows, macOS and Linux CI plus explicit Lean source/evidence/certificate CI</li>
           </ul>
         </article>
 
@@ -130,24 +131,31 @@ why player.score</pre>
         </article>
 
         <article class="info-card">
+          <p class="eyebrow">Source core</p>
+          <h3>Lean now sees source mutation verbs before semantic normalization</h3>
+          <p>The beta.8 certificate contains a proof-free <code>SourceStmt</code> whose changes still say <code>add</code>, <code>remove</code>, <code>set</code> or <code>clear</code>. <code>PatchSource.lean</code> validates raw range bounds and performs the semantic direction normalization itself.</p>
+          <p>For example, a source-level <code>add -5</code> can be normalized by Lean to a semantic <code>decrease</code> of 5. The separately emitted semantic evidence must match this Lean-computed lowering.</p>
+        </article>
+
+        <article class="info-card">
           <p class="eyebrow">Verified evidence</p>
-          <h3>Production emits proof-free evidence; Lean reconstructs the formal meaning</h3>
-          <p><code>patch certify protected.patch</code> now emits a proof-free <code>EvidenceStmt</code>, a separate production Change Signature claim, and the policy. Raw interval evidence contains no producer-created proof.</p>
-          <p><code>PatchEvidence.lean</code> validates interval bounds, decodes the evidence to <code>CoreStmt</code>, runs formal signature inference, and machine-checks that the result equals the separate production claim before policy checking.</p>
+          <h3>Source, evidence and production signature are separate claims</h3>
+          <p><code>patch certify protected.patch</code> emits a Source core, a separately produced <code>EvidenceStmt</code>, a separate production Change Signature claim, and the policy.</p>
+          <p>Lean checks source → evidence equality, decodes evidence to <code>CoreStmt</code>, reconstructs the formal signature, checks that against the production claim, and only then checks the semantic policy.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Verified checker</p>
-          <h3>The semantic policy decision is also machine checked</h3>
+          <h3>The semantic policy decision remains machine checked</h3>
           <p><code>PatchChecker.lean</code> proves that a successful executable policy check implies the relational policy judgment used by the formal semantics.</p>
-          <p>Together with Change Signature Soundness, Lean proves that a modeled execution of accepted decoded evidence cannot emit a semantic effect outside the declared policy.</p>
+          <p><code>PatchSource.checkedSourceExecutionCannotEscape</code> lifts this to executions admitted by the formal Source-core semantics.</p>
         </article>
 
         <article class="info-card">
-          <p class="eyebrow">Compiler ↔ formal model</p>
-          <h3>The remaining trust boundary is smaller and explicit</h3>
-          <p>JavaScript still parses Patch source and extracts the proof-free evidence and production signature claim. That frontend extraction is not yet formally proved correct.</p>
-          <p>After evidence emission, however, validation, <code>CoreStmt</code> decoding, formal signature reconstruction, signature correspondence and policy checking are performed by the Lean side. Unsupported constructs are listed rather than silently called verified.</p>
+          <p class="eyebrow">Trust boundary</p>
+          <h3>The remaining frontend gap is narrower and explicit</h3>
+          <p>JavaScript still parses full Patch source and extracts the formal <code>SourceStmt</code>. That extraction is not yet a theorem about the production parser.</p>
+          <p>Production interval analysis is also still trusted to supply conservative amount ranges. Those two obligations are now the main formal targets rather than semantic operation normalization or policy checking.</p>
         </article>
 
         <article class="info-card">
@@ -159,9 +167,9 @@ why player.score</pre>
 
         <article class="info-card">
           <p class="eyebrow">Formal verification</p>
-          <h3>The core contract chain, checker and evidence decoder are machine checked</h3>
+          <h3>The proof chain now starts at a formal source-level mutation vocabulary</h3>
           <p>Lean proves State-Change Factorization, Mutation Transparency, Change Signature Soundness and <code>RuntimeChanges ⊆ Signature ⊆ Capability</code> for the structured core.</p>
-          <p>Formal CI explicitly builds <code>PatchFormal</code>, <code>PatchSignature</code>, <code>PatchChecker</code> and <code>PatchEvidence</code>, then compiles a certificate generated from production Patch source.</p>
+          <p>Formal CI explicitly builds <code>PatchFormal</code>, <code>PatchSignature</code>, <code>PatchChecker</code>, <code>PatchEvidence</code> and <code>PatchSource</code>, then compiles a certificate generated from production Patch source.</p>
         </article>
 
         <article class="info-card">
@@ -174,7 +182,7 @@ why player.score</pre>
         <article class="info-card">
           <p class="eyebrow">Compiler direction</p>
           <h3>One semantic layer, many derived services</h3>
-          <p class="pipeline">Patch source → Change Signatures → capabilities → proof-free evidence → Lean validation → Change IR → WebAssembly / native host</p>
+          <p class="pipeline">Patch source → formal SourceStmt → semantic evidence → Change Signatures → capabilities → Lean validation → Change IR → WebAssembly / native host</p>
           <p>The same semantic vocabulary drives execution, history, inversion, preview, bounded contracts, provenance and formal policy evidence. Direct Change IR-to-Wasm execution remains the next backend stage.</p>
         </article>
       </div>
@@ -184,7 +192,7 @@ why player.score</pre>
           <p class="eyebrow">Research project</p>
           <h2>Patch: State-Change Factorization and Semantic Change Contracts</h2>
           <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. Operation- and magnitude-aware contracts are derived from that mandatory representation.</p>
-          <p><strong>Current status:</strong> the formal core has machine-checked signature and policy containment. Beta 7 adds a proof-free evidence boundary where Lean reconstructs the formal statement and signature and checks that signature against a separate production claim. The next major obligation is source/AST-to-evidence extraction soundness, followed by interval-analyzer soundness and measured security case studies.</p>
+          <p><strong>Current status:</strong> beta.8 adds a formal source layer before semantic evidence. Lean normalizes source change verbs and proves source-level policy containment for the formal Source-core execution relation. The remaining critical obligations are production AST → SourceStmt extraction soundness and production interval-analyzer soundness, followed by measured security case studies.</p>
         </div>
         <div class="link-stack">
           <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
@@ -194,7 +202,8 @@ why player.score</pre>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchSignature.lean">Signature & capability Lean proofs</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchChecker.lean">Verified policy checker</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchEvidence.lean">Verified evidence decoder/correspondence</a>
-          <a href="https://github.com/pinkysworld/Patch/blob/main/src/formal-bridge.js">Compiler/formal bridge</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchSource.lean">Formal source-core normalization</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/src/formal-source.js">Production Source-core extractor</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/src/certificate.js">Certificate generator</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Novelty boundary</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/paper/main.tex">Research manuscript</a>
@@ -203,10 +212,10 @@ why player.score</pre>
 
       <article class="roadmap-card">
         <p class="eyebrow">Roadmap</p>
-        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range analysis · causal why · signature soundness · verified evidence · PWA Studio</span></div>
-        <div class="roadmap-row"><strong>Next</strong><span>Source/AST → EvidenceStmt proof · interval-analyzer soundness · certified security case studies · direct Wasm lowering</span></div>
+        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range analysis · causal why · formal Source core · verified evidence · PWA Studio</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Production AST → SourceStmt proof/validation · interval-analyzer soundness · certified security case studies · direct Wasm lowering</span></div>
         <div class="roadmap-row"><strong>Then</strong><span>Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for… · richer visual Designer</span></div>
-        <div class="roadmap-row"><strong>Research</strong><span>Stronger source-level theorem · inverse/replay proofs · evidence/checker benchmarks · controlled novice study if retained</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>Stronger production-runtime correspondence · inverse/replay proofs · evidence/checker benchmarks · controlled novice study if retained</span></div>
       </article>
     </section>
   </main>
