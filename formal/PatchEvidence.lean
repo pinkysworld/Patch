@@ -93,9 +93,24 @@ def encodeEvidenceEffect (effect : Effect) : EvidenceEffect :=
       | some interval => some { lo := interval.lo, hi := interval.hi }
   }
 
+/-- Preserve the first occurrence of each semantic evidence effect. Production
+    Change Signatures are sets of possible semantic changes, so duplicate
+    occurrences do not create additional authority. -/
+def dedupeEvidenceAux
+    (seen : List EvidenceEffect) : List EvidenceEffect → List EvidenceEffect
+  | [] => []
+  | effect :: rest =>
+      if effect ∈ seen then
+        dedupeEvidenceAux seen rest
+      else
+        effect :: dedupeEvidenceAux (effect :: seen) rest
+
+def dedupeEvidence (effects : List EvidenceEffect) : List EvidenceEffect :=
+  dedupeEvidenceAux [] effects
+
 /-- Canonical evidence view of a semantic Change Signature. -/
 def encodeSignature (signature : List Effect) : List EvidenceEffect :=
-  signature.map encodeEvidenceEffect
+  dedupeEvidence (signature.map encodeEvidenceEffect)
 
 /-- Machine decision that a production signature claim agrees exactly with the
     signature inferred by Lean after decoding the evidence tree. -/
