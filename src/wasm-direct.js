@@ -1,14 +1,17 @@
 import { compile } from './compiler.js';
 
-export const PATCH_DIRECT_WASM_VERSION = '0.3-recipes';
+export const PATCH_DIRECT_WASM_VERSION = '0.4-trace';
+export const PATCH_DIRECT_TRACE_VERSION = '0.1';
 
 export class DirectWasmUnsupportedError extends Error {}
 
 /**
  * Compile a numeric console subset of Patch directly to executable WebAssembly.
  * The generated module executes state changes, control flow and non-recursive
- * numeric recipes itself. Unsupported constructs fail explicitly instead of
- * falling back to the interpreter.
+ * numeric recipes itself. Every supported CHANGE block also emits one numeric
+ * transition event through the direct host ABI after the block commits.
+ * Unsupported constructs fail explicitly instead of falling back to the
+ * interpreter.
  */
 export function compileToDirectWasm(source, options = {}) {
   const compiled = compile(source, options);
@@ -21,10 +24,14 @@ export function compileToDirectWasm(source, options = {}) {
   const recipeList = collectRecipes(compiled.ir.instructions);
   validateAcyclicRecipes(recipeList);
 
+  // Function indices include two imports:
+  //   0 patch.show_number
+  //   1 patch.change_number
+  // Defined functions start at 2 with run(), followed by recipes.
   const recipes = new Map(recipeList.map((instruction, index) => [instruction.name, {
     instruction,
-    functionIndex: 2 + index, // function 0 is imported show_number; function 1 is run
-    typeIndex: 2 + index,
+    functionIndex: 3 + index,
+    typeIndex: 3 + index,
     params: instruction.params ?? [],
     paramRanges: instruction.paramRanges ?? {}
   }]));
@@ -88,11 +95,17 @@ export function compileToDirectWasm(source, options = {}) {
   const metadata = {
     format: 'patch-wasm-direct',
     version: PATCH_DIRECT_WASM_VERSION,
+    traceVersion: PATCH_DIRECT_TRACE_VERSION,
     project: compiled.project,
     irVersion: compiled.ir.version,
     numericModel: 'wasm-f64 / JavaScript Number subset',
-    hostAbi: { module: 'patch', showNumber: 'show_number(f64) -> void' },
+    hostAbi: {
+      module: 'patch',
+      showNumber: 'show_number(f64) -> void',
+      changeNumber: 'change_number(i32 targetId, f64 before, f64 after) -> void'
+    },
     stateExports,
+    stateTargets: numericNames,
     recipes: Object.fromEntries(recipeFunctions.map(recipe => [recipe.name, {
       params: recipe.params,
       paramRanges: recipe.paramRanges,
@@ -101,6 +114,7 @@ export function compileToDirectWasm(source, options = {}) {
     supported: [
       'create number at top level',
       'change number set/add/remove/clear',
+      'one block-level numeric transition trace event per committed CHANGE',
       'show numeric expression',
       'numeric literals, earlier bindings, recipe parameters and repeat count',
       'numeric + - * /',
@@ -117,11 +131,22 @@ export function compileToDirectWasm(source, options = {}) {
 /** Instantiate and execute a directly compiled module with the minimal Patch host ABI. */
 export async function runDirectWasm(module, metadata, options = {}) {
   const output = [];
+  const trace = [];
   const imports = {
     patch: {
       show_number(value) {
         output.push(String(value));
         if (options.showNumber) options.showNumber(value);
+      },
+      change_number(targetId, before, after) {
+        const target = metadata.stateTargets?.[targetId] ?? `#${targetId}`;
+        const event = {
+          target,
+          before: Number(before),
+          after: Number(after)
+        };
+        trace.push(event);
+        if (options.changeNumber) options.changeNumber(event);
       }
     }
   };
@@ -133,7 +158,7 @@ export async function runDirectWasm(module, metadata, options = {}) {
   for (const [name, info] of Object.entries(metadata.stateExports ?? {})) {
     state[name] = Number(instance.exports[info.export].value);
   }
-  return { output, state, instance };
+  return { output, state, trace, instance };
 }
 
 function collectNumericBindings(instructions) {
@@ -240,13 +265,10 @@ function lowerInstruction(instruction, ctx) {
   switch (instruction.code) {
     case 'ALLOW_CHANGES':
       if (!ctx.allowDefinitions) throw unsupported(`allow declaration at line ${instruction.line ?? '?'} must be top level for direct execution`);
-      // The production compiler already validated Change Capabilities. There is
-      // no runtime instruction for the declaration itself.
       return;
 
     case 'MAKE':
       if (!ctx.allowDefinitions) throw unsupported(`nested recipe '${instruction.name}' is outside the direct Wasm subset`);
-      // Recipe definitions are emitted as separate Wasm functions.
       return;
 
     case 'CREATE': {
@@ -258,13 +280,21 @@ function lowerInstruction(instruction, ctx) {
       }
       const index = requireGlobal(instruction.name, globals, instruction.line);
       instructions.push(...compileNumericExpression(instruction.expr, ctx, instruction.line));
-      instructions.push(0x24, ...u32(index)); // global.set
+      instructions.push(0x24, ...u32(index));
       defined.add(instruction.name);
       return;
     }
 
     case 'CHANGE': {
       const index = requireDefinedNumeric(instruction.target, globals, defined, instruction.line);
+
+      // Preserve one event per Patch CHANGE block rather than one event per
+      // operation. The target id and block-before value stay on the Wasm value
+      // stack while individual operations update the target global. After all
+      // operations, the final target value is pushed and the host trace hook is
+      // called with (targetId, before, after).
+      instructions.push(...i32Const(index), 0x23, ...u32(index));
+
       for (const operation of instruction.operations) {
         if (operation.field) {
           throw unsupported(`field change '${instruction.target}.${operation.field}' at line ${operation.line ?? instruction.line ?? '?'} is outside the direct numeric Wasm subset`);
@@ -280,18 +310,20 @@ function lowerInstruction(instruction, ctx) {
         if (operation.op === 'set') {
           instructions.push(...expr, 0x24, ...u32(index));
         } else {
-          instructions.push(0x23, ...u32(index)); // global.get current target
+          instructions.push(0x23, ...u32(index));
           instructions.push(...expr);
-          instructions.push(operation.op === 'add' ? 0xa0 : 0xa1); // f64.add / f64.sub
+          instructions.push(operation.op === 'add' ? 0xa0 : 0xa1);
           instructions.push(0x24, ...u32(index));
         }
       }
+
+      instructions.push(0x23, ...u32(index), 0x10, ...u32(1));
       return;
     }
 
     case 'SHOW':
       instructions.push(...compileNumericExpression(instruction.expr, ctx, instruction.line));
-      instructions.push(0x10, ...u32(0)); // call imported patch.show_number
+      instructions.push(0x10, ...u32(0));
       return;
 
     case 'IF': {
@@ -301,10 +333,10 @@ function lowerInstruction(instruction, ctx) {
       lowerBlock(instruction.then ?? [], childContext(ctx, thenInstructions));
       lowerBlock(instruction.else ?? [], childContext(ctx, elseInstructions));
 
-      instructions.push(...condition, 0x04, 0x40); // if, empty block type
+      instructions.push(...condition, 0x04, 0x40);
       instructions.push(...thenInstructions);
-      if (elseInstructions.length) instructions.push(0x05, ...elseInstructions); // else
-      instructions.push(0x0b); // end if
+      if (elseInstructions.length) instructions.push(0x05, ...elseInstructions);
+      instructions.push(0x0b);
       return;
     }
 
@@ -319,14 +351,14 @@ function lowerInstruction(instruction, ctx) {
 
       instructions.push(...i32Const(repeatCount), 0x21, ...u32(remainingLocal));
       instructions.push(...i32Const(1), 0x21, ...u32(countLocal));
-      instructions.push(0x02, 0x40); // block
-      instructions.push(0x03, 0x40); // loop
-      instructions.push(0x20, ...u32(remainingLocal), 0x45, 0x0d, ...u32(1)); // br_if outer block
+      instructions.push(0x02, 0x40);
+      instructions.push(0x03, 0x40);
+      instructions.push(0x20, ...u32(remainingLocal), 0x45, 0x0d, ...u32(1));
       instructions.push(...bodyInstructions);
       instructions.push(0x20, ...u32(remainingLocal), ...i32Const(1), 0x6b, 0x21, ...u32(remainingLocal));
       instructions.push(0x20, ...u32(countLocal), ...i32Const(1), 0x6a, 0x21, ...u32(countLocal));
-      instructions.push(0x0c, ...u32(0)); // br loop
-      instructions.push(0x0b, 0x0b); // end loop, end block
+      instructions.push(0x0c, ...u32(0));
+      instructions.push(0x0b, 0x0b);
       return;
     }
 
@@ -356,9 +388,7 @@ function emitParameterRangeGuards(recipe, ctx) {
   for (const [name, range] of Object.entries(recipe.paramRanges ?? {})) {
     const local = ctx.locals.get(name);
     if (!local || local.kind !== 'f64-number') throw unsupported(`range guard parameter '${name}' has no numeric Wasm parameter`);
-    // if param < min: unreachable
     ctx.instructions.push(0x20, ...u32(local.index), ...f64Const(range.min), 0x63, 0x04, 0x40, 0x00, 0x0b);
-    // if param > max: unreachable
     ctx.instructions.push(0x20, ...u32(local.index), ...f64Const(range.max), 0x64, 0x04, 0x40, 0x00, 0x0b);
   }
 }
@@ -455,7 +485,7 @@ class DirectExpressionCompiler {
       const right = this.and();
       requireKind(left, 'i32-bool', 'or');
       requireKind(right, 'i32-bool', 'or');
-      left = { kind: 'i32-bool', code: [...left.code, ...right.code, 0x72] }; // i32.or
+      left = { kind: 'i32-bool', code: [...left.code, ...right.code, 0x72] };
     }
     return left;
   }
@@ -467,7 +497,7 @@ class DirectExpressionCompiler {
       const right = this.equality();
       requireKind(left, 'i32-bool', 'and');
       requireKind(right, 'i32-bool', 'and');
-      left = { kind: 'i32-bool', code: [...left.code, ...right.code, 0x71] }; // i32.and
+      left = { kind: 'i32-bool', code: [...left.code, ...right.code, 0x71] };
     }
     return left;
   }
@@ -479,9 +509,9 @@ class DirectExpressionCompiler {
       const right = this.comparison();
       if (left.kind !== right.kind) throw unsupported(`${op} requires two values of the same direct expression kind`);
       if (left.kind === 'f64-number') {
-        left = { kind: 'i32-bool', code: [...left.code, ...right.code, op === '==' ? 0x61 : 0x62] }; // f64.eq/ne
+        left = { kind: 'i32-bool', code: [...left.code, ...right.code, op === '==' ? 0x61 : 0x62] };
       } else if (left.kind === 'i32-bool') {
-        left = { kind: 'i32-bool', code: [...left.code, ...right.code, op === '==' ? 0x46 : 0x47] }; // i32.eq/ne
+        left = { kind: 'i32-bool', code: [...left.code, ...right.code, op === '==' ? 0x46 : 0x47] };
       } else {
         throw unsupported(`${op} is unsupported for ${left.kind}`);
       }
@@ -532,13 +562,13 @@ class DirectExpressionCompiler {
       this.i += 1;
       const value = this.unary();
       requireKind(value, 'f64-number', 'unary -');
-      return { kind: 'f64-number', code: [...value.code, 0x9a] }; // f64.neg
+      return { kind: 'f64-number', code: [...value.code, 0x9a] };
     }
     if (this.peek('word', 'not')) {
       this.i += 1;
       const value = this.unary();
       requireKind(value, 'i32-bool', 'not');
-      return { kind: 'i32-bool', code: [...value.code, 0x45] }; // i32.eqz
+      return { kind: 'i32-bool', code: [...value.code, 0x45] };
     }
     return this.primary();
   }
@@ -560,7 +590,7 @@ class DirectExpressionCompiler {
       const local = this.ctx.locals.get(name);
       if (local) {
         if (local.kind === 'f64-number') return { kind: 'f64-number', code: [0x20, ...u32(local.index)] };
-        if (local.kind === 'i32-number') return { kind: 'f64-number', code: [0x20, ...u32(local.index), 0xb7] }; // f64.convert_i32_s
+        if (local.kind === 'i32-number') return { kind: 'f64-number', code: [0x20, ...u32(local.index), 0xb7] };
         throw unsupported(`unsupported local representation for '${name}'`);
       }
       if (!this.ctx.globals.has(name)) throw unsupported(`'${name}' is not a numeric persistent binding or recipe parameter`);
@@ -604,15 +634,16 @@ function tokenizeDirect(source) {
 function buildModule({ globalCount, runFunction, recipeFunctions, stateExports }) {
   const globals = Array.from({ length: globalCount }, () => globalF64(0));
   const types = [
-    funcType([0x7c], []), // type 0: host show_number(f64)
-    funcType([], []),     // type 1: run()
+    funcType([0x7c], []),
+    funcType([0x7f, 0x7c, 0x7c], []),
+    funcType([], []),
     ...recipeFunctions.map(recipe => funcType(Array(recipe.params.length).fill(0x7c), []))
   ];
   const functionTypeIndices = [
-    u32(1),
+    u32(2),
     ...recipeFunctions.map(recipe => u32(recipe.typeIndex))
   ];
-  const exports = [exportEntry('run', 0x00, 1)];
+  const exports = [exportEntry('run', 0x00, 2)];
   for (const info of Object.values(stateExports)) exports.push(exportEntry(info.export, 0x03, info.globalIndex));
   const bodies = [
     functionBody(runFunction.instructions, runFunction.localCount),
@@ -622,7 +653,10 @@ function buildModule({ globalCount, runFunction, recipeFunctions, stateExports }
   return bytes(
     [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00],
     section(1, vec(types)),
-    section(2, vec([importFunction('patch', 'show_number', 0)])),
+    section(2, vec([
+      importFunction('patch', 'show_number', 0),
+      importFunction('patch', 'change_number', 1)
+    ])),
     section(3, vec(functionTypeIndices)),
     globals.length ? section(6, vec(globals)) : null,
     section(7, vec(exports)),
@@ -652,7 +686,7 @@ function globalF64(value) {
 
 function functionBody(instructions, localCount) {
   const locals = localCount > 0
-    ? bytes(u32(1), u32(localCount), [0x7f]) // one local declaration group: N x i32
+    ? bytes(u32(1), u32(localCount), [0x7f])
     : u32(0);
   const payload = bytes(locals, instructions, [0x0b]);
   return bytes(u32(payload.length), payload);
