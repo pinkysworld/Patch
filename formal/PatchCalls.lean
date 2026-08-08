@@ -390,7 +390,7 @@ theorem callSignatureSoundness
       simp at hMem
   | emit =>
       intro hBody effect hMem
-      have hSame : effect = ‹Effect› := by simpa using hMem
+      simp only [List.mem_singleton] at hMem
       subst effect
       simpa [BodyComposes] using hBody
   | seq hFirst hSecond ihFirst ihSecond =>
@@ -427,7 +427,7 @@ theorem callSignatureSoundness
         (by simpa [BodyComposes] using hBody)
       have hSame : checkedCallee = callee := by
         rw [hLookup] at hCheckedLookup
-        exact Option.some.inj hCheckedLookup
+        exact (Option.some.inj hCheckedLookup).symm
       subst checkedCallee
       have hCalleeBody :
           BodyComposes env callee.rank callee.signature callee.body :=
