@@ -24,6 +24,7 @@ const required = [
   '_site/src/bundle.js',
   '_site/src/wasm.js',
   '_site/src/wasm-direct.js',
+  '_site/src/c99.js',
   '_site/src/webapp.js',
   '_site/src/designer.js'
 ];
@@ -40,10 +41,10 @@ for (const needle of ['./style.css', './manifest.webmanifest', './native-build.j
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind', 'nativeBuildPanel', 'nativeBuildToken', 'nativeBuildStatus']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['0.2 beta.17', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Windows App', 'macOS App', 'Linux App', 'Project Type', 'Console and GUI packages', 'Roadmap']) {
+for (const phrase of ['0.2 beta.18', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Console and GUI packages', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
 }
-for (const option of ['value="web"', 'value="native-windows"', 'value="native-macos"', 'value="native-linux"', 'value="wasm-direct"', 'value="wasm-bootstrap"']) {
+for (const option of ['value="web"', 'value="native-windows"', 'value="native-macos"', 'value="native-linux"', 'value="native-freebsd"', 'value="wasm-direct"', 'value="wasm-bootstrap"']) {
   if (!html.includes(option)) throw new Error(`Build target selector is missing ${option}`);
 }
 
@@ -58,7 +59,7 @@ for (const phrase of ['buildStandaloneWebApp', 'compileToDirectWasm', 'wasm-dire
 
 const nativeBuild = fs.readFileSync(path.join(root, '_site/native-build.js'), 'utf8');
 if (nativeBuild.includes("'../src/")) throw new Error('Generated native build module still points outside the deployed site.');
-for (const phrase of ['./src/compiler.js', './src/wasm-direct.js', 'native-windows', 'native-macos', 'native-linux', 'workflow_dispatch', 'source_b64', 'kind', 'projectKind', 'Window / GUI', 'actions/workflows', 'downloadArtifact', 'Actions read/write']) {
+for (const phrase of ['./src/compiler.js', './src/wasm-direct.js', './src/c99.js', 'native-windows', 'native-macos', 'native-linux', 'native-freebsd', 'freebsd-c99.yml', 'compileToC99', 'workflow_dispatch', 'source_b64', 'kind', 'projectKind', 'Window / GUI', 'actions/workflows', 'downloadArtifact', 'Actions read/write']) {
   if (!nativeBuild.includes(phrase)) throw new Error(`Generated Studio native builder is missing ${phrase}.`);
 }
 
@@ -85,6 +86,10 @@ for (const phrase of ['buildFormalRangeExpression', 'inferFormalRange', 'general
 
 const directWasm = fs.readFileSync(path.join(root, '_site/src/wasm-direct.js'), 'utf8');
 if (!directWasm.includes('compileToDirectWasm')) throw new Error('Generated site is missing direct Wasm compilation.');
+const c99 = fs.readFileSync(path.join(root, '_site/src/c99.js'), 'utf8');
+for (const phrase of ['compileToC99', 'PATCH_C99_VERSION', 'portable C99']) {
+  if (!c99.includes(phrase)) throw new Error(`Generated portable C99 backend is missing ${phrase}.`);
+}
 const webapp = fs.readFileSync(path.join(root, '_site/src/webapp.js'), 'utf8');
 for (const phrase of ['buildStandaloneWebApp', 'Standalone single-file Patch Web App', 'WASM_BASE64']) {
   if (!webapp.includes(phrase)) throw new Error(`Generated standalone web builder is missing ${phrase}.`);
@@ -92,8 +97,8 @@ for (const phrase of ['buildStandaloneWebApp', 'Standalone single-file Patch Web
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-if (!sw.includes("patch-studio-0.2-beta.17")) throw new Error('Generated service worker cache is not on beta.17.');
-for (const cached of ["'./native-build.js'", "'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/wasm-direct.js'", "'./src/webapp.js'", "'./src/designer.js'"]) {
+if (!sw.includes("patch-studio-0.2-beta.18")) throw new Error('Generated service worker cache is not on beta.18.');
+for (const cached of ["'./native-build.js'", "'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/wasm-direct.js'", "'./src/c99.js'", "'./src/webapp.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
 
