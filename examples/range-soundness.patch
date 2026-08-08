@@ -1,0 +1,13 @@
+create thing player:
+  name = "Mia"
+  score = 0
+
+allow reward:
+  player.score may increase up to 10
+
+make reward(player, bonus number 0..5):
+  change player:
+    add bonus * 2 to score
+
+do reward(player, 5)
+show player.score
