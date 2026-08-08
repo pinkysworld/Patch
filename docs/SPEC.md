@@ -1,6 +1,6 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.5 development**
+Status: **0.2.0-beta.6 development**
 
 Patch is indentation-sensitive. Two spaces are recommended.
 
@@ -69,9 +69,9 @@ reward(player)
   player.score -> increase by 5
 ```
 
-Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively.
+Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls are followed transitively by the production analyzer.
 
-The Lean formal core machine-checks signature soundness for sequencing, branch choice and bounded repetition. Beta 5 adds a conservative production-to-formal bridge for a subset of the real language. This bridge is compiler metadata/tooling, not new beginner syntax.
+The Lean formal core machine-checks signature soundness for sequencing, branch choice and bounded repetition. The production/formal bridge covers a conservative subset of the real language. This bridge and the beta-6 certificate system are compiler tooling, not new beginner syntax.
 
 ## Change Capabilities
 
@@ -90,7 +90,7 @@ target[.field] may operation [up to number]
 
 Current operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clear`.
 
-A protected recipe is rejected if its inferred committed changes are not covered by its rules.
+A protected recipe is rejected by the production compiler if its inferred committed changes are not covered by its rules.
 
 For the structured Lean core, the end-to-end relation is machine checked:
 
@@ -115,7 +115,25 @@ patch formal program.patch
 
 Current bridge coverage includes direct supported semantic changes, sequence, `if` alternatives, literal bounded `repeat`, and supported numeric range amounts. Recipe calls, dynamic repetition, undo/redo, return control flow, and GUI/event execution are currently reported as outside this bridge subset.
 
-This metadata is translation-validation evidence, not a language promise that all supported Patch code is formally verified.
+## Verified semantic policy certificates
+
+Beta 6 adds a certificate command for protected recipes inside the formal bridge subset:
+
+```bash
+patch certify program.patch --out Program.patchcert.lean
+```
+
+The generated Lean artifact contains the bridge-produced formal statement, semantic policy, Patch IR version and source SHA-256. It is checked against `formal/PatchChecker.lean`.
+
+The verified checker proves that:
+
+```text
+checkProtected(stmt, policy) = true
+```
+
+implies the formal relational policy judgment and, together with Change Signature Soundness, that any modeled execution of that statement cannot emit a semantic effect outside the policy.
+
+This guarantee applies to the **translated formal statement**. Beta 6 does not yet prove the JavaScript source-to-formal translation correct. Certificate generation therefore refuses protected recipes outside the bridge subset, and documentation must not present a generated certificate as full compiler verification.
 
 ## Ranged recipe parameters
 
@@ -144,7 +162,7 @@ make reward(player, bonus number 0..5):
 
 The current interval analyzer supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
 
-Calls to ranged recipes are guarded at runtime. Production interval-analysis soundness and static call correspondence are not yet mechanized.
+Calls to ranged recipes are guarded at runtime. The beta-6 Lean checker independently verifies interval **containment once the interval is in the certificate**, but production interval-analysis soundness itself is not yet mechanized.
 
 ## Causal provenance and `why`
 
@@ -173,7 +191,7 @@ when add_button clicked:
     add 1
 ```
 
-Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers.
+Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. The same persistent-state semantics and provenance model apply inside event handlers. GUI/event execution is not yet in the formal certificate subset.
 
 ## Named changes, undo, preview, history
 
@@ -237,6 +255,8 @@ Projects are `console` or `window` applications. Both compile through the same C
 
 `create thing number text boolean list change called set add remove clear show why watch history undo redo preview if else repeat make do return allow may increase decrease up to window text button input when clicked changed closed as true false and or not`
 
+`formal` and `certify` are CLI commands, not source-language reserved words.
+
 ## Error design
 
-Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe. Formal bridge coverage follows the same principle: code outside the correspondence subset is reported as unsupported, never silently treated as verified.
+Patch errors should answer what went wrong, where, and how to fix it while avoiding unnecessary compiler terminology. Range/capability failures deliberately fail conservatively when the compiler cannot prove a bounded change safe. Formal bridge and certificate coverage follow the same principle: code outside the correspondence subset is reported as unsupported, never silently treated as verified.
