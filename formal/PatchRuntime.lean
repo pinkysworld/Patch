@@ -40,7 +40,7 @@ theorem effectRefinesBool_sound
         cases hActual : actual.amount with
         | none =>
             cases hExpected : expected.amount with
-            | none => simp [hActual, hExpected]
+            | none => simp
             | some expectedAmount =>
                 simp [effectRefinesBool, hTarget, hField, hKind, hActual, hExpected] at h
         | some actualAmount =>
@@ -64,6 +64,15 @@ def decodeRuntimeTrace : List EvidenceEffect → Option (List Effect)
       let decodedRest ← decodeRuntimeTrace rest
       pure (decodedFirst :: decodedRest)
 
+/-- A deliberately small pointwise trace-refinement relation. Defining it in
+    the Patch model keeps the theorem independent of library relation names. -/
+inductive TraceRefines : List Effect → List Effect → Prop where
+  | nil : TraceRefines [] []
+  | cons {actual expected : Effect} {actualRest expectedRest : List Effect} :
+      EffectRefines actual expected →
+      TraceRefines actualRest expectedRest →
+      TraceRefines (actual :: actualRest) (expected :: expectedRest)
+
 /-- Pointwise executable refinement for complete runtime traces. -/
 def traceRefinesBool : List Effect → List Effect → Bool
   | [], [] => true
@@ -75,13 +84,13 @@ def traceRefinesBool : List Effect → List Effect → Bool
 theorem traceRefinesBool_sound :
     ∀ {actual expected : List Effect},
       traceRefinesBool actual expected = true →
-      List.Forall₂ EffectRefines actual expected := by
+      TraceRefines actual expected := by
   intro actual
   induction actual with
   | nil =>
       intro expected h
       cases expected with
-      | nil => exact List.Forall₂.nil
+      | nil => exact TraceRefines.nil
       | cons first rest => simp [traceRefinesBool] at h
   | cons first rest ih =>
       intro expected h
@@ -92,7 +101,7 @@ theorem traceRefinesBool_sound :
               effectRefinesBool first expectedFirst = true ∧
               traceRefinesBool rest expectedRest = true := by
             simpa [traceRefinesBool, Bool.and_eq_true] using h
-          exact List.Forall₂.cons (effectRefinesBool_sound hBoth.1) (ih hBoth.2)
+          exact TraceRefines.cons (effectRefinesBool_sound hBoth.1) (ih hBoth.2)
 
 /-- Decode only the linear formal evidence fragment to its exact formal trace.
     Branches and repeats are intentionally rejected in beta.20 rather than
@@ -156,7 +165,7 @@ theorem decodeLinearEvidenceTrace_sound :
   | branch thenBranch elseBranch ihThen ihElse =>
       intro trace h
       simp [decodeLinearEvidenceTrace] at h
-  | repeat count body ih =>
+  | «repeat» count body ih =>
       intro trace h
       simp [decodeLinearEvidenceTrace] at h
 
@@ -185,7 +194,7 @@ theorem checkSourceRuntimeEvidence_sound
     ∃ formalTrace actualTrace,
       SourceExecutes source formalTrace ∧
       decodeRuntimeTrace observed = some actualTrace ∧
-      List.Forall₂ EffectRefines actualTrace formalTrace := by
+      TraceRefines actualTrace formalTrace := by
   cases hLower : lowerSourceStmt source with
   | none =>
       simp [checkSourceRuntimeEvidence, hLower] at h
@@ -200,7 +209,7 @@ theorem checkSourceRuntimeEvidence_sound
           | some actualTrace =>
               have hRefines : traceRefinesBool actualTrace formalTrace = true := by
                 simpa [checkSourceRuntimeEvidence, hLower, hFormal, hActual] using h
-              have hPointwise : List.Forall₂ EffectRefines actualTrace formalTrace :=
+              have hPointwise : TraceRefines actualTrace formalTrace :=
                 traceRefinesBool_sound hRefines
               obtain ⟨stmt, hDecode, hExec⟩ := decodeLinearEvidenceTrace_sound hFormal
               refine ⟨formalTrace, actualTrace, ?_, hActual, hPointwise⟩
