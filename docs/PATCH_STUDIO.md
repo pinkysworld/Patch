@@ -6,7 +6,7 @@ Patch Studio is the browser-first IDE for Patch. Its product goal is the immedia
 
 A beginner should be able to open Studio, create a Console or Window project, type Patch or use the Designer, press **Run**, then press **Build** and choose the desired platform. Build files, SDK selection and platform-specific Patch source should remain unnecessary for ordinary projects.
 
-## What works in 0.2 beta.19
+## What works in 0.2 beta.20
 
 Patch Studio includes:
 
@@ -20,7 +20,7 @@ Patch Studio includes:
 - **FreeBSD Console builds through the portable C99 backend**;
 - responsive phone/tablet layout and installable PWA.
 
-Change IR 0.8 also carries the beta.19 source-validation artifact. `patch formal` can report whether the independent raw-source validator reconstructed the same formal SourceStmt/range claims as the production AST path. This is advanced research information and does not complicate normal Studio use.
+Change IR 0.8 carries the source-validation artifact. `patch formal` can report whether the independent raw-source validator reconstructed the same formal SourceStmt/range claims as the production AST path. Beta.20 additionally adds the advanced CLI-only `patch runtime-certify` workflow, which executes supported direct Wasm and emits a Lean-checkable runtime-correspondence certificate. That research path does not add controls or complexity to ordinary Studio use.
 
 ## Desktop Build menu
 
@@ -69,7 +69,7 @@ native FreeBSD executable
 
 The C99 path covers the conservative numeric Console subset: numeric state/change/show, supported arithmetic and conditions, literal repeat/count, acyclic numeric recipes and ranged parameter guards.
 
-**FreeBSD Window/GUI packaging is not implemented in beta.19.** Studio reports that boundary rather than silently changing execution strategy.
+**FreeBSD Window/GUI packaging is not implemented in beta.20.** Studio reports that boundary rather than silently changing execution strategy.
 
 ## Platform package summary
 
@@ -118,7 +118,7 @@ when add_button clicked:
     add 1
 ```
 
-Set Project Type to **Window** and choose Windows, macOS or Linux. FreeBSD remains Console-only in beta.19.
+Set Project Type to **Window** and choose Windows, macOS or Linux. FreeBSD remains Console-only in beta.20.
 
 ## Remaining product work
 
