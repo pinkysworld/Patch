@@ -136,21 +136,28 @@ document.querySelector('#build').addEventListener('click', () => {
       download(`${name}.html`, built.html, 'text/html');
       irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
       changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      output.textContent = `Built ${name}.html\n\nStandalone single-file Web App. Open it directly in a modern browser; the direct Patch Wasm module and its tiny host are embedded in the HTML file.`;
+      if (built.metadata?.projectKind === 'window') {
+        output.textContent = `Built ${name}.html\n\nStandalone single-file Patch Window Web App. Open it directly in a modern browser. The Window UI and event logic execute through Patch's generated browser Window runtime; this target no longer routes Window projects through the Console-only Direct Wasm backend.`;
+      } else {
+        output.textContent = `Built ${name}.html\n\nStandalone single-file Patch Console Web App. Open it directly in a modern browser; the direct Patch Wasm module and its tiny host are embedded in the HTML file.`;
+      }
     } else if (buildTarget.value === 'wasm-direct') {
+      if (projectKind.value === 'window') {
+        throw new Error('Direct WebAssembly currently supports Console projects only. For a Window project choose Standalone Web App or a Windows/macOS/Linux App target.');
+      }
       const built = compileToDirectWasm(code.value, projectOptions());
       download(`${name}.direct.wasm`, built.module, 'application/wasm');
       irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
       changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      output.textContent = `Built ${name}.direct.wasm\n\nThis contains directly lowered Patch instructions. It imports patch.show_number and patch.change_number, so use the Patch CLI host, the standalone Web App target, or a native Patch app host to run it.`;
+      output.textContent = `Built ${name}.direct.wasm\n\nThis contains directly lowered Patch Console instructions. It imports patch.show_number and patch.change_number, so use the Patch CLI host, a Console Standalone Web App, or a native Patch console host to run it.`;
     } else if (buildTarget.value === 'wasm-bootstrap') {
       const built = compileToWasm(code.value, projectOptions());
       download(`${name}.bootstrap.wasm`, built.module, 'application/wasm');
       irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
       changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      output.textContent = `Built ${name}.bootstrap.wasm\n\nAdvanced compatibility artifact: valid Wasm carrying Patch source + Change IR for a Patch host. For executable code choose Direct WebAssembly or Standalone Web App.`;
+      output.textContent = `Built ${name}.bootstrap.wasm\n\nAdvanced compatibility artifact: valid Wasm carrying Patch source + Change IR for a Patch host. For a ready-to-run Window build choose Standalone Web App or a Windows/macOS/Linux App target.`;
     } else if (buildTarget.value === 'native-info') {
-      output.textContent = `Native desktop builds use the Patch CLI because a browser sandbox cannot invoke the local Rust/native toolchain.\n\nmacOS:\n  patch build main.patch --target app --name ${name}\n  → ${name}.app\n\nWindows:\n  patch build main.patch --target app --name ${name}\n  → ${name}.exe\n\nLinux:\n  patch build main.patch --target app --name ${name}\n  → ${name}\n\nThe repository also includes a GitHub Actions native builder for cloud builds on all three systems.`;
+      output.textContent = `Desktop builds run through Patch's platform builders. Window projects use the dedicated Window application path; Console projects use the direct-Wasm console host.\n\nFrom Patch Studio choose Windows App, macOS App or Linux App and press Build.`;
     } else {
       const bundle = buildPatchApp(code.value, { ...projectOptions(), targets: ['portable'] });
       download(`${name}.patchapp`, serializePatchApp(bundle), 'application/json');
