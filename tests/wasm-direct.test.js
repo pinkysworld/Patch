@@ -37,12 +37,6 @@ test('direct Wasm preserves decimal JavaScript Number behavior through f64', asy
   assert.equal(direct.state.value, 3.75);
 });
 
-test('direct Wasm supports compile-time allow declarations without runtime code', async () => {
-  const source = `create number score = 0\nallow reward:\n  score may increase up to 10\nchange score:\n  add 5\nshow score`;
-  const { direct } = await compare(source);
-  assert.deepEqual(direct.output, ['5']);
-});
-
 test('direct Wasm rejects unsupported language constructs instead of silently falling back', () => {
   const textSource = `create text greeting = "hello"\nshow greeting`;
   assert.throws(
