@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.15",
-  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked evidence, direct WebAssembly execution, and independent transition/effect validation",
+  "version": "0.2.0-beta.16",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked evidence, direct WebAssembly execution, standalone web/native application builds, and independent transition/effect validation",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -16,10 +16,13 @@
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:wasm-direct": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm",
+    "build:web": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target web --out DirectRecipes.html",
+    "build:native": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target native --name DirectRecipes",
+    "build:app": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target app --name DirectRecipes",
     "build:site": "node scripts/build-site.js",
     "check:site": "node scripts/check-site.js"
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "standalone-web-app", "native-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
 }
