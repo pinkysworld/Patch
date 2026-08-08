@@ -104,7 +104,7 @@ test('direct Wasm recipe parameters participate in direct conditions', async () 
 
 test('direct Wasm enforces ranged recipe parameters with a Wasm trap', async () => {
   const source = `create number score = 0\n\nmake add_points(amount number 0..5):\n  change score:\n    add amount\n\ndo add_points(6)\nshow score`;
-  assert.throws(() => new PatchInterpreter().run(source), /outside 0\.\.5/);
+  assert.throws(() => new PatchInterpreter().run(source), /number from 0 to 5/);
   const { module, metadata } = compileToDirectWasm(source, { name: 'RangeTrap', kind: 'console' });
   assert.equal(WebAssembly.validate(module), true);
   await assert.rejects(() => runDirectWasm(module, metadata), WebAssembly.RuntimeError);
