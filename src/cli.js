@@ -48,9 +48,12 @@ try {
     const sourceCovered = ir.formalSource.summary.supported;
     const sourceTotal = sourceCovered + ir.formalSource.summary.unsupported;
     const sourceValidated = ir.sourceValidation.summary.validated;
-    const validationTotal = sourceValidated + ir.sourceValidation.summary.unvalidated;
+    const sourceValidationTotal = sourceValidated + ir.sourceValidation.summary.unvalidated;
+    const guardValidated = ir.guardValidation.summary.validated;
+    const guardValidationTotal = guardValidated + ir.guardValidation.summary.unvalidated;
     const rangeClaims = ir.formalSource.summary.rangeClaims ?? 0;
-    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies, ${bridgeCovered}/${bridgeTotal} semantic bridge entry/entries supported, ${sourceCovered}/${sourceTotal} source/range entry/entries supported, ${sourceValidated}/${validationTotal} raw-source extraction entry/entries validated, ${rangeClaims} formal integer range claim(s).`);
+    const guardClaims = ir.formalSource.summary.guardClaims ?? 0;
+    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies, ${bridgeCovered}/${bridgeTotal} semantic bridge entry/entries supported, ${sourceCovered}/${sourceTotal} source/range entry/entries supported, ${sourceValidated}/${sourceValidationTotal} raw-source extraction entry/entries validated, ${guardValidated}/${guardValidationTotal} raw guard entry/entries validated, ${rangeClaims} formal integer range claim(s), ${guardClaims} formal guard claim(s).`);
     process.exit(0);
   }
 
@@ -62,8 +65,12 @@ try {
 
   if (command === 'formal') {
     const { ir } = compile(source, { name: appName(file) });
-    printFormalCoverage(ir.formalBridge, ir.formalSource, ir.sourceValidation);
-    process.exit(ir.formalBridge.summary.mismatches === 0 && ir.sourceValidation.summary.mismatches === 0 ? 0 : 2);
+    printFormalCoverage(ir.formalBridge, ir.formalSource, ir.sourceValidation, ir.guardValidation);
+    process.exit(
+      ir.formalBridge.summary.mismatches === 0 &&
+      ir.sourceValidation.summary.mismatches === 0 &&
+      ir.guardValidation.summary.mismatches === 0 ? 0 : 2
+    );
   }
 
   if (command === 'certify') {
@@ -94,10 +101,12 @@ try {
     console.log(`  observed direct trace sha256: ${certificate.runtimeTraceSha256}`);
     console.log(`  runtime schema: ${certificate.runtimeSchemaVersion}`);
     console.log(`  path-witness schema: ${certificate.runtimePathWitnessVersion}`);
+    console.log(`  guard-validation schema: ${certificate.guardValidationVersion}`);
     console.log(`  observed semantic effect occurrence(s): ${certificate.observedEffects}`);
+    console.log(`  checked formal guard occurrence(s): ${certificate.checkedGuardClaims}`);
     console.log(`  certified protected invocation(s): ${certificate.certifiedInvocations}`);
     console.log(`  runtime-correspondence invocation(s): ${certificate.certified.join(', ')}`);
-    console.log('  assurance: direct Wasm was executed; semantic effects and control-flow witnesses were reconstructed independently; Lean checks branch/repeat witness shape, SourceExecutes execution, concrete-to-formal effect refinement, and concrete effect containment in the declared Change Capability.');
+    console.log('  assurance: direct Wasm was executed; semantic effects, invocation environments and control-flow witnesses are proof-free evidence; Lean checks SourceStmt/GuardTree shape, branch choice against concrete integer/Boolean guard evaluation, SourceExecutes execution, concrete-to-formal effect refinement, and concrete effect containment in the declared Change Capability.');
     process.exit(0);
   }
 
@@ -221,7 +230,7 @@ function printChangeAnalysis(ir) {
   }
 }
 
-function printFormalCoverage(bridge, sourceCore, sourceValidation) {
+function printFormalCoverage(bridge, sourceCore, sourceValidation, guardValidation) {
   console.log(`Semantic bridge ${bridge.version} -> Lean model ${bridge.leanModel}`);
   console.log(`  theorem basis: ${bridge.theorem}`);
   for (const [name, entry] of Object.entries(bridge.entries)) {
@@ -234,16 +243,19 @@ function printFormalCoverage(bridge, sourceCore, sourceValidation) {
   }
   console.log(`Semantic bridge summary: ${bridge.summary.supported} supported, ${bridge.summary.unsupported} unsupported, ${bridge.summary.mismatches} mismatch(es).`);
 
-  console.log(`Formal source/range core ${sourceCore.version} -> Lean model ${sourceCore.leanModel}`);
+  console.log(`Formal source/range/guard core ${sourceCore.version} -> Lean model ${sourceCore.leanModel}`);
   for (const [name, entry] of Object.entries(sourceCore.entries)) {
     if (entry.supported) {
-      console.log(`  ✓ ${name}: source changes are covered; ${entry.rangeClaims.length} numeric range claim(s) use the formal integer fragment`);
+      const guard = entry.guardSupported
+        ? `${entry.guardClaims.length} guard claim(s) in the beta.23 parameter fragment`
+        : `guard-aware runtime coverage unavailable: ${(entry.guardReasons ?? []).join('; ') || 'unsupported guard'}`;
+      console.log(`  ✓ ${name}: source changes are covered; ${entry.rangeClaims.length} numeric range claim(s); ${guard}`);
       continue;
     }
     console.log(`  · ${name}: outside formal source/range subset`);
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
-  console.log(`Source/range summary: ${sourceCore.summary.supported} supported, ${sourceCore.summary.unsupported} unsupported, ${sourceCore.summary.rangeClaims ?? 0} formal integer range claim(s).`);
+  console.log(`Source/range summary: ${sourceCore.summary.supported} supported, ${sourceCore.summary.unsupported} unsupported, ${sourceCore.summary.rangeClaims ?? 0} formal integer range claim(s), ${sourceCore.summary.guardClaims ?? 0} formal guard claim(s).`);
 
   console.log(`Raw-source extraction validation ${sourceValidation.version}`);
   for (const [name, entry] of Object.entries(sourceValidation.entries)) {
@@ -255,7 +267,18 @@ function printFormalCoverage(bridge, sourceCore, sourceValidation) {
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
   console.log(`Source extraction summary: ${sourceValidation.summary.validated} validated, ${sourceValidation.summary.unvalidated} unvalidated, ${sourceValidation.summary.mismatches} mismatch(es).`);
-  console.log('Note: Lean checks the formal range/source/evidence/signature/policy chain. Beta.22 separately certifies supported concrete direct-Wasm protected-recipe invocations with explicit branch/repeat path witnesses and composes accepted concrete effects with the verified semantic Change Capability policy. The witness/effect producers remain implementation boundaries; this is not full compiler verification.');
+
+  console.log(`Raw guard extraction validation ${guardValidation.version}`);
+  for (const [name, entry] of Object.entries(guardValidation.entries)) {
+    if (entry.validated) {
+      console.log(`  ✓ ${name}: raw source independently reconstructs GuardTree, guard claims and recipe guard variables`);
+      continue;
+    }
+    console.log(`  · ${name}: not guard-validated for beta.23 runtime correspondence`);
+    for (const reason of entry.reasons) console.log(`      - ${reason}`);
+  }
+  console.log(`Guard extraction summary: ${guardValidation.summary.validated} validated, ${guardValidation.summary.unvalidated} unvalidated, ${guardValidation.summary.mismatches} mismatch(es).`);
+  console.log('Note: static source/signature/policy certification remains independent of guard-aware runtime coverage. Beta.23 runtime certification additionally requires translation-validated parameter guards and concrete safe-integer invocation values; Lean checks each branch choice against guard evaluation before deriving SourceExecutes/refinement/capability conclusions. This remains restricted correspondence rather than full compiler verification.');
 }
 
 function option(name) {
@@ -268,5 +291,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm (Console subset):\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal + source-extraction coverage:\n  patch formal program.patch\n\nGenerate static Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nExecute direct Wasm and generate Lean runtime/capability certificate:\n  patch runtime-certify program.patch --out Program.runtime.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App (Console or Window inferred):\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (Console subset):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix Console:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild local native Console app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild local native Console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nWindow desktop packages:\n  use Patch Studio -> Windows/macOS/Linux App\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
+  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm (Console subset):\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal source/range/guard and translation-validation coverage:\n  patch formal program.patch\n\nGenerate static Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nExecute direct Wasm and generate guard-aware Lean runtime/capability certificate:\n  patch runtime-certify program.patch --out Program.runtime.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App (Console or Window inferred):\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (Console subset):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix Console:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild local native Console app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild local native Console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nWindow desktop packages:\n  use Patch Studio -> Windows/macOS/Linux App\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
 }
