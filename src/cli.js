@@ -6,6 +6,7 @@ import { compile } from './compiler.js';
 import { buildPatchApp, serializePatchApp } from './bundle.js';
 import { compileToWasm } from './wasm.js';
 import { compileToDirectWasm, runDirectWasm } from './wasm-direct.js';
+import { compileToC99 } from './c99.js';
 import { buildStandaloneWebApp } from './webapp.js';
 import { buildNativeApp } from './native-app.js';
 import { generateLeanCertificate } from './certificate.js';
@@ -116,6 +117,18 @@ try {
       process.exit(0);
     }
 
+    if (target === 'c99') {
+      if (kind !== 'console') throw new Error('Portable C99 currently supports Console projects only.');
+      const out = option('--out') ?? `${name}.c`;
+      const built = compileToC99(source, { name, kind: 'console', entry: path.basename(file) });
+      fs.writeFileSync(out, built.source, 'utf8');
+      console.log(`Built ${out}`);
+      console.log(`  target: portable C99 ${built.metadata.version}`);
+      console.log('  compile: cc -std=c99 -O2 -o App App.c -lm');
+      console.log('  intended use: FreeBSD and generic Unix portability fallback');
+      process.exit(0);
+    }
+
     if (target === 'web') {
       const out = option('--out') ?? `${name}.html`;
       const built = buildStandaloneWebApp(source, { name, entry: path.basename(file) });
@@ -142,7 +155,7 @@ try {
       process.exit(0);
     }
 
-    throw new Error(`Unknown build target '${target}'. Use portable, wasm, wasm-direct, web, native, or app.`);
+    throw new Error(`Unknown build target '${target}'. Use portable, wasm, wasm-direct, c99, web, native, or app.`);
   }
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
@@ -210,5 +223,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal coverage:\n  patch formal program.patch\n\nGenerate Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App:\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (requires Patch host ABI):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild native app for the current OS (Rust/cargo required once):\n  patch build program.patch --target app --name MyApp\n\nBuild native console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
+  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal coverage:\n  patch formal program.patch\n\nGenerate Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App:\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (requires Patch host ABI):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild native app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild native console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
 }
