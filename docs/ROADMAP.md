@@ -113,6 +113,27 @@
 - [x] formal CI certificate example exercises dynamic `bonus * 2`
 - [x] Windows/macOS/Linux tests for formal range extraction and certification boundaries
 
+### beta.10: first direct WebAssembly execution core
+
+- [x] separate `wasm-direct` backend with no interpreter fallback
+- [x] direct lowering of `create number`
+- [x] direct lowering of numeric `change` set/add/remove/clear
+- [x] direct lowering of numeric `show`
+- [x] numeric literals, earlier persistent numeric bindings and parentheses
+- [x] direct `+`, `-`, `*`, `/` via WebAssembly `f64`
+- [x] exported mutable Wasm state globals
+- [x] minimal `patch.show_number(f64)` host ABI
+- [x] `patch run-wasm`
+- [x] `patch build --target wasm-direct`
+- [x] explicit `DirectWasmUnsupportedError` outside the supported subset
+- [x] interpreter-vs-Wasm differential tests for output and final state
+- [x] direct Wasm build and execution in Windows/macOS/Linux CI
+- [ ] structured `if` lowering
+- [ ] `repeat` lowering
+- [ ] non-recursive recipe/call lowering
+- [ ] preserve and expose semantic change traces from direct execution
+- [ ] lowering correspondence proof/validation against the formal execution model
+
 Still open in product/tooling:
 
 - [ ] typed AST
@@ -139,11 +160,13 @@ Completed foundation:
 - [x] formal integer expression fragment
 - [x] machine-checked interval-analysis soundness for that formal fragment
 - [x] independent production expression extraction and range-agreement validation
+- [x] first directly executing Wasm backend for a numeric Change IR subset
+- [x] differential interpreter/direct-Wasm execution tests
 
 Highest-priority remaining work:
 
 - [ ] **prove or independently validate production AST → `RangeExpr` / `SourceStmt` extraction for the supported source subset**
-- [ ] **connect production runtime traces to `evalRangeExpr` / `SourceExecutes` / `Executes`**
+- [ ] **connect production and direct-Wasm traces to `evalRangeExpr` / `SourceExecutes` / `Executes`**
 - [ ] extend the verified arithmetic fragment only where semantics are explicit and useful
 - [ ] extend certification to non-recursive recipe calls and parameter substitution
 - [ ] stable machine-readable certificate/container format beyond generated Lean source
@@ -154,9 +177,20 @@ Highest-priority remaining work:
 
 ## 0.4 direct portable execution backend
 
-- [ ] typed core suitable for direct lowering
-- [ ] direct Change IR-to-WebAssembly lowering
+Completed first slice:
+
+- [x] directly executable numeric Change IR-to-WebAssembly subset
+- [x] explicit backend support boundary with no silent fallback
+- [x] differential interpreter/backend execution tests
+- [x] cross-platform direct-Wasm build and execution CI
+
+Remaining:
+
+- [ ] typed core / expression IR suitable for broader direct lowering
+- [ ] structured control-flow lowering
+- [ ] recipe/call lowering
 - [ ] preserve semantic contract/range/source/evidence certificates across lowering
+- [ ] direct execution change-trace ABI
 - [ ] WASI console runtime
 - [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner executing lowered code
@@ -211,11 +245,13 @@ Before a high-venue submission:
 - [x] SourceStmt→EvidenceStmt and source→signature checked correspondence for certificate artifacts
 - [x] machine-checked range-analysis soundness for a useful integer fragment
 - [x] production/formal range-agreement boundary for supported expressions
+- [x] first direct compiled execution for a numeric core
+- [x] direct-backend differential execution gate
 - [ ] production AST→RangeExpr/SourceStmt extraction assurance for a useful subset
-- [ ] production runtime/formal evaluation and trace correspondence
-- [ ] direct compiled execution
+- [ ] production/direct-Wasm runtime and formal trace correspondence
+- [ ] broader direct compiled execution with structured control flow and calls
 - [ ] benchmark suite and semantic-security case studies
-- [ ] source/range/evidence/certificate/checker overhead evaluation
+- [ ] source/range/evidence/certificate/checker/backend overhead evaluation
 - [ ] reproducibility bundle
 - [ ] novice study with ethics/consent only if retained as a headline claim
 
@@ -231,5 +267,7 @@ Before a high-venue submission:
 8. `why` must distinguish recorded provenance from stronger causal claims.
 9. JavaScript source/AST→RangeExpr/SourceStmt extraction is not yet machine proved.
 10. Beta 9 range soundness applies only to the explicitly modeled integer expression fragment.
-11. Division, decimal/floating-point semantics and general multiplication are not silently labeled verified.
-12. Unsupported certification constructs are never silently labeled verified.
+11. Division, decimal/floating-point semantics and general multiplication are not silently labeled formally verified.
+12. Direct-Wasm support is narrower than the Patch language and unsupported constructs must fail explicitly rather than fall back silently.
+13. Differential backend tests are evidence, not a compiler-correctness theorem.
+14. Unsupported certification constructs are never silently labeled verified.
