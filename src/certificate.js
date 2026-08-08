@@ -6,12 +6,14 @@ const SOURCE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
 const EVIDENCE_SCHEMA_VERSION = '0.1';
 const SOURCE_SCHEMA_VERSION = '0.2';
 const RANGE_SCHEMA_VERSION = '0.1';
+const SOURCE_VALIDATION_SCHEMA_VERSION = '0.1';
 
 export function generateLeanCertificate(source, options = {}) {
   const { ir } = compile(source, options);
   const policies = ir.changeCapabilities ?? {};
   const bridge = ir.formalBridge?.entries ?? {};
   const sourceEntries = ir.formalSource?.entries ?? {};
+  const sourceValidationEntries = ir.sourceValidation?.entries ?? {};
   const protectedNames = Object.keys(policies).sort();
 
   if (!protectedNames.length) {
@@ -37,6 +39,12 @@ export function generateLeanCertificate(source, options = {}) {
       throw new Error(`Protected recipe '${name}' is outside the formal source/range subset: ${why}`);
     }
 
+    const extraction = sourceValidationEntries[name];
+    if (!extraction?.validated) {
+      const why = extraction?.reasons?.length ? extraction.reasons.join('; ') : 'independent raw-source extraction validation is missing';
+      throw new Error(`Protected recipe '${name}' did not pass raw-source extraction validation: ${why}`);
+    }
+
     const rules = policies[name] ?? [];
     for (const rule of rules) {
       if (!CHECKER_KINDS.has(rule.operation)) {
@@ -57,6 +65,7 @@ export function generateLeanCertificate(source, options = {}) {
     const signatureCheckName = `cert_${id}_source_signature_checked`;
     const policyCheckName = `cert_${id}_source_policy_checked`;
 
+    blocks.push(`/-- Source extraction for '${name}' was independently reconstructed from raw Patch text\n    and matched the production AST-derived SourceStmt/range claims before this\n    certificate was emitted. This is translation validation, not a Lean proof of\n    the JavaScript parser. -/\ndef cert_${id}_raw_source_validated : Bool := true`);
     blocks.push(`def ${sourceName} : SourceStmt :=\n${indent(leanSourceCore(sourceEntry.source), 2)}`);
     blocks.push(`def ${evidenceName} : EvidenceStmt :=\n${indent(leanEvidenceCore(entry.core), 2)}`);
     blocks.push(`def ${claimName} : List EvidenceEffect :=\n${indent(leanList(productionClaim.map(leanEvidenceEffect)), 2)}`);
@@ -85,18 +94,20 @@ export function generateLeanCertificate(source, options = {}) {
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchRange\n\nopen PatchFormal\n\nnamespace PatchGeneratedCertificate\n\n/-- Generated from production Patch source. The hash binds this certificate to\n    the exact source bytes. Lean independently checks the beta.9 formal integer\n    range fragment, normalizes the formal source core, checks its lowering to\n    proof-free evidence, reconstructs the formal Change Signature, and validates\n    the semantic policy. The remaining trust boundary includes JavaScript source/\n    AST extraction into RangeExpr/SourceStmt and runtime-to-formal correspondence. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\n\ndef patchIrVersion : String := ${leanString(ir.version)}\n\ndef sourceSchemaVersion : String := ${leanString(SOURCE_SCHEMA_VERSION)}\n\ndef evidenceSchemaVersion : String := ${leanString(EVIDENCE_SCHEMA_VERSION)}\n\ndef rangeSchemaVersion : String := ${leanString(RANGE_SCHEMA_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedCertificate\n`;
+  const lean = `import PatchRange\n\nopen PatchFormal\n\nnamespace PatchGeneratedCertificate\n\n/-- Generated from production Patch source. The hash binds this certificate to\n    the exact source bytes. Before certificate emission, an independent raw-source\n    validator re-parsed the formal source subset without using parser.js and\n    required exact SourceStmt/range-claim agreement with the production AST path.\n    Lean then checks the formal integer range fragment, source normalization,\n    evidence/signature correspondence, and semantic policy. Raw-source validation\n    reduces the JavaScript extraction trust boundary but is translation validation,\n    not a machine-checked parser-correctness theorem. Runtime-to-formal execution\n    correspondence also remains a separate proof obligation. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\n\ndef patchIrVersion : String := ${leanString(ir.version)}\n\ndef sourceSchemaVersion : String := ${leanString(SOURCE_SCHEMA_VERSION)}\n\ndef sourceValidationSchemaVersion : String := ${leanString(SOURCE_VALIDATION_SCHEMA_VERSION)}\n\ndef evidenceSchemaVersion : String := ${leanString(EVIDENCE_SCHEMA_VERSION)}\n\ndef rangeSchemaVersion : String := ${leanString(RANGE_SCHEMA_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedCertificate\n`;
 
   return {
     lean,
     sourceSha256,
     irVersion: ir.version,
     sourceSchemaVersion: SOURCE_SCHEMA_VERSION,
+    sourceValidationSchemaVersion: SOURCE_VALIDATION_SCHEMA_VERSION,
     evidenceSchemaVersion: EVIDENCE_SCHEMA_VERSION,
     rangeSchemaVersion: RANGE_SCHEMA_VERSION,
     certified,
     certifiedRangeClaims,
     checker: 'PatchSource.checkSourceProtected',
+    rawSourceValidation: 'patch-source-extraction-validation',
     sourceCorrespondence: 'PatchSource.checkSourceEvidence_sound',
     signatureCorrespondence: 'PatchSource.checkSourceSignature_sound',
     rangeSoundness: 'PatchRange.rangeAnalysisSound',
