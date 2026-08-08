@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio is the browser-first IDE for Patch: semantic changes, Change Contracts, independent source validation, direct WebAssembly, portable C99/FreeBSD builds and a Lean-checked core.">
+  <meta name="description" content="Patch Studio is the browser-first IDE for Patch: semantic Change Contracts, independent source validation, Lean-checked runtime correspondence, direct WebAssembly and portable C99/FreeBSD builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -18,7 +18,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">P</div>
-        <div><h1>Patch Studio <span>0.2 beta.19</span></h1><p>Write, run and build Patch.</p></div>
+        <div><h1>Patch Studio <span>0.2 beta.20</span></h1><p>Write, run and build Patch.</p></div>
       </div>
       <div class="toolbar" aria-label="Run and build controls">
         <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example">
@@ -72,7 +72,7 @@
           <p class="eyebrow">Patch programming language</p>
           <h2>Small syntax. Visible changes. One Studio.</h2>
           <p>Patch makes persistent mutation explicit through semantic <code>change</code> operations. Run projects in the browser, inspect their Change Contract, and build applications from the same source.</p>
-          <div class="intro-actions"><a class="primary-link" href="https://github.com/pinkysworld/Patch">GitHub + README</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a></div>
+          <div class="intro-actions"><a class="primary-link" href="https://github.com/pinkysworld/Patch">GitHub + README</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a></div>
         </div>
         <pre class="code-card">create number score = 0
 
@@ -85,54 +85,54 @@ show score</pre>
       <div class="signal-grid" aria-label="Project highlights">
         <div class="signal"><strong>Build apps</strong><span>Windows, macOS, Linux; FreeBSD Console via portable C99</span></div>
         <div class="signal"><strong>Validate claims</strong><span>Independent raw-source, transition and semantic-effect checks</span></div>
-        <div class="signal"><strong>Lean 4 core</strong><span>Factorization, signatures, policies and integer ranges</span></div>
+        <div class="signal"><strong>Lean 4 correspondence</strong><span>Formal contracts plus checked linear direct-runtime refinement</span></div>
       </div>
 
       <div class="details-stack">
         <details>
-          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.19 · Change IR 0.8</span></summary>
+          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.20 · Change IR 0.8</span></summary>
           <div class="details-body two-column">
-            <div><h3>Language & Studio</h3><p>Working interpreter/compiler front end, history, undo/redo, preview, <code>why</code> provenance, first GUI/Designer slice, Change Contract and IR views.</p><p>Local outputs include Standalone Web App, direct WebAssembly, bootstrap Wasm and portable <code>.patchapp</code>.</p></div>
-            <div><h3>Desktop targets</h3><p>Windows, macOS and Linux support Console and Window/GUI packages. The selected <strong>Project Type</strong> chooses the package. <strong>FreeBSD Console</strong> uses Patch's portable C99 backend and FreeBSD 15.1 base-system compiler.</p></div>
+            <div><h3>Language & Studio</h3><p>Working interpreter/compiler front end, history, undo/redo, preview, <code>why</code> provenance, first GUI/Designer slice, Change Contract and IR views.</p><p>Local outputs include <strong>Standalone Web App</strong>, direct WebAssembly, bootstrap Wasm and portable <code>.patchapp</code>.</p></div>
+            <div><h3>Desktop targets</h3><p><strong>Windows App</strong>, <strong>macOS App</strong> and <strong>Linux App</strong> support Console and Window/GUI packages. The selected <strong>Project Type</strong> chooses the package. <strong>FreeBSD Console</strong> uses Patch's <strong>portable C99</strong> backend and the FreeBSD 15.1 base-system compiler.</p></div>
           </div>
         </details>
 
         <details>
-          <summary><span>Research & verification</span><span class="summary-hint">Three independent boundaries</span></summary>
+          <summary><span>Research & verification</span><span class="summary-hint">Source + runtime correspondence</span></summary>
           <div class="details-body two-column">
-            <div><p class="eyebrow">State-Change Factorization</p><h3>Semantic Change Contracts</h3><p>Patch infers operation- and magnitude-aware Change Signatures and can constrain them with Change Capabilities. The Lean formal core covers factorization, Change Signature Soundness, policy containment and integer range-analysis soundness for explicitly modeled fragments.</p></div>
-            <div><p class="eyebrow">Beta.19</p><h3>Independent raw-source validation</h3><p>A small validator re-parses the exact Patch source without importing <code>parser.js</code> or consuming the production AST. It independently reconstructs formal <strong>Source core</strong> structure and range claims, then compares them with the production AST-derived artifact.</p><p><code>patch certify</code> requires this comparison for supported protected recipes before emitting the Lean-checkable certificate. This is translation validation, not a parser-correctness theorem.</p></div>
+            <div><p class="eyebrow">State-Change Factorization</p><h3>Semantic Change Contracts</h3><p>Patch infers operation- and magnitude-aware Change Signatures and constrains them with Change Capabilities. The Lean formal core covers factorization, Change Signature Soundness, policy containment, source/evidence correspondence and integer range-analysis soundness for explicitly modeled fragments.</p><p><strong>Independent raw-source validation</strong> re-parses supported source without importing the production parser and checks its Source core and range claims before static certification.</p></div>
+            <div><p class="eyebrow">Beta.20</p><h3>Runtime → Lean correspondence</h3><p>For the current linear protected subset, <code>patch runtime-certify</code> executes direct Wasm, uses the independent runtime validator to reconstruct concrete semantic effects, and emits proof-free evidence checked by Lean.</p><p>A concrete effect such as <code>increase [8,8]</code> must refine an actual formal <code>SourceExecutes</code> effect such as <code>increase [0,10]</code>. This is restricted runtime correspondence, not end-to-end compiler verification.</p></div>
           </div>
         </details>
 
         <details>
           <summary><span>Build formats & boundaries</span><span class="summary-hint">No silent fallbacks</span></summary>
           <div class="details-body two-column">
-            <div><h3>Direct Wasm + portable C99</h3><p>Direct Wasm lowers the supported numeric Console subset to WebAssembly instructions. Raw direct Wasm uses Patch's small host ABI and is <strong>not yet a standalone WASI command</strong>. Portable C99 lowers the same conservative subset and is compile/run tested on Linux, macOS and FreeBSD 15.1.</p></div>
-            <div><h3>Window packages</h3><p>Window projects are standalone GUI packages on Windows, macOS and Linux through the current desktop player. Beta.19 does <strong>not</strong> claim native AppKit, Win32 or GTK widget lowering yet. FreeBSD Window packaging is not yet supported.</p></div>
+            <div><h3>Direct Wasm + portable C99</h3><p>Direct Wasm lowers the supported numeric Console subset to WebAssembly instructions. Raw direct Wasm uses Patch's small host ABI and is <strong>not yet a standalone WASI command</strong>. Portable C99 lowers the conservative Console subset and is compile/run tested on Linux, macOS and <strong>FreeBSD 15.1</strong>.</p></div>
+            <div><h3>Window packages</h3><p>Window projects are standalone GUI packages on Windows, macOS and Linux through the current desktop player. Beta.20 does <strong>not</strong> claim native AppKit, Win32 or GTK widget lowering yet. FreeBSD Window packaging is not yet supported.</p></div>
           </div>
         </details>
 
         <details>
-          <summary><span>Runtime validation</span><span class="summary-hint">Evidence, not overclaiming</span></summary>
+          <summary><span>Runtime validation</span><span class="summary-hint">Observed execution, checked in layers</span></summary>
           <div class="details-body two-column">
-            <div><h3>Independent transition model</h3><p>An independent validator reconstructs expected Change-IR transitions and compares target/before/after ordering with observed direct-Wasm execution.</p></div>
-            <div><h3>Semantic effects</h3><p>Concrete increase/decrease/set/clear effects and magnitudes are reconstructed separately and checked against static Change Signatures and protected Change Capabilities. This is translation/runtime validation evidence, not complete compiler verification.</p></div>
+            <div><h3>Independent transition/effect model</h3><p>The direct validator reconstructs expected Change-IR transitions and concrete increase/decrease/set/clear effects instead of trusting semantic labels from the Wasm lowerer.</p></div>
+            <div><h3>Lean-checked linear refinement</h3><p><code>PatchRuntime.lean</code> validates proof-free concrete occurrences and checks ordered pointwise refinement to an actual formal source execution. Branch/repeat path witnesses and multiple protected invocations remain next-step work.</p></div>
           </div>
         </details>
 
         <details>
           <summary><span>Roadmap</span><span class="summary-hint">Next highest-value work</span></summary>
           <div class="details-body roadmap-list">
-            <div><strong>Runtime ↔ Lean</strong><span>Connect independently reconstructed runtime effect occurrences to formal <code>SourceExecutes</code> / <code>Executes</code>.</span></div>
+            <div><strong>Control-flow witnesses</strong><span>Extend runtime correspondence to branch choice, repeat iterations and multiple recipe invocation identifiers.</span></div>
             <div><strong>Smaller compiler core</strong><span>Introduce typed expression/core IR or another independently checkable lowering input.</span></div>
-            <div><strong>Native GUI + Unix</strong><span>Move toward AppKit, Win32 and a portable Unix GUI backend; add more Unix targets only after real compile/run gates.</span></div>
-            <div><strong>Designer & distribution</strong><span>Add selection, properties, drag/resize, richer controls, signing/notarization and installers.</span></div>
+            <div><strong>Evaluation</strong><span>Build semantic-security cases and measure source/static/runtime-certificate and checker overhead.</span></div>
+            <div><strong>Designer & native GUI</strong><span>Improve visual editing and move toward AppKit, Win32 and a portable Unix GUI backend.</span></div>
           </div>
         </details>
       </div>
 
-      <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.19</span><nav aria-label="Project links"><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_TRACE_VALIDATION.md">Trace validation</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a></nav></footer>
+      <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.20</span><nav aria-label="Project links"><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a></nav></footer>
     </section>
   </main>
   <script type="module" src="./native-build.js"></script><script type="module" src="./playground.js"></script>

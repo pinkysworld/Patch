@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.19**
+Status: **0.2.0-beta.20**
 
-Patch has separate build paths for browser, WebAssembly and desktop applications. The portable C99/FreeBSD Console path introduced in beta.18 remains part of beta.19 alongside the new source-validation work.
+Patch has separate build paths for browser, WebAssembly and desktop applications. The portable C99/FreeBSD Console path remains unchanged in beta.20; the new work is runtime/formal correspondence for the direct-Wasm research path.
 
 ## Build matrix
 
@@ -28,6 +28,15 @@ patch build hello.patch --target wasm-direct --out Hello.direct.wasm
 ```
 
 The Web App is one HTML file containing direct Patch Wasm plus its small browser host. Raw direct Wasm imports `patch.show_number(f64)` and `patch.change_number(i32,f64,f64)`, so it is not yet a standalone WASI command module. The older `--target wasm` remains the bootstrap source+IR carrier.
+
+For research assurance, beta.20 adds a separate CLI path:
+
+```bash
+patch runtime-certify examples/runtime-correspondence.patch \
+  --out formal/GeneratedRuntimeCertificate.lean
+```
+
+That command executes direct Wasm, independently reconstructs concrete semantic effects from its transition trace, and emits proof-free evidence that Lean checks against a formal `SourceExecutes` trace for the current linear certified subset. It does not change the application package format.
 
 ## Portable C99
 

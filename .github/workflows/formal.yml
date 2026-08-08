@@ -2,6 +2,7 @@ name: Patch Formal Verification
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -9,7 +10,7 @@ permissions:
 
 jobs:
   lean:
-    name: Lean 4 proofs + generated certificate
+    name: Lean 4 proofs + generated certificates
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -18,8 +19,10 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Generate certificate from production compiler
+      - name: Generate static certificate from production compiler
         run: npm run certify:example
+      - name: Execute direct Wasm and generate runtime correspondence certificate
+        run: npm run runtime-certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -27,20 +30,26 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build Lean formalization, checker, evidence, source and range boundary
+      - name: Build Lean formalization, checker, evidence, source, range and runtime boundary
         working-directory: formal
         shell: bash
         run: |
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime
       - name: Verify generated production certificate
         working-directory: formal
         shell: bash
         run: |
           set -euo pipefail
           lake env lean GeneratedCertificate.lean
+      - name: Verify generated direct-runtime correspondence certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedRuntimeCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |

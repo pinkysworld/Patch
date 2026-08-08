@@ -6,45 +6,64 @@ Working manuscript:
 
 ## Current artifact status
 
-The implementation/research artifact is now **Patch 0.2.0-beta.19 / Change IR 0.8**. The paper is still a working manuscript, not a submission-ready top-venue paper.
+The implementation/research artifact is now **Patch 0.2.0-beta.20 / Change IR 0.8**. The paper remains a working manuscript, not a submission-ready top-venue paper.
 
-The research story now has three distinct assurance layers around the primary State-Change Factorization / Semantic Change Contracts claim:
+The research story now has four distinct assurance layers around the primary State-Change Factorization / Semantic Change Contracts claim:
 
 1. **Lean formal core** — factorization, Mutation Transparency, Change Signature Soundness, policy containment and integer range-analysis soundness for explicit formal fragments.
-2. **Source translation validation** — beta.19 independently re-parses the exact Patch source without importing `parser.js` or consuming the production AST, reconstructs SourceStmt/range claims, and compares them with the production AST-derived `formalSource` artifact before protected certification.
+2. **Source translation validation** — an independent raw-source path reconstructs SourceStmt/range claims without importing `parser.js` or consuming the production AST and compares them with the production formal-source artifact before protected certification.
 3. **Direct-runtime validation** — an independent Change-IR execution model reconstructs ordered transitions and concrete semantic effects and compares them with observed direct-Wasm execution, Change Signatures and Change Capabilities.
+4. **Beta.20 runtime → Lean correspondence** — for a narrower linear protected subset, proof-free concrete effect occurrences reconstructed from one direct-Wasm execution are checked by Lean against an actual formal `SourceExecutes` trace through `EffectRefines` and the pointwise `TraceRefines` relation.
 
 None of these is described as complete compiler verification.
 
-## Beta.19 source-validation milestone
+## Beta.20 runtime-correspondence milestone
 
-Before beta.19, the remaining frontend assurance boundary included:
+For the motivating example:
 
-```text
-Patch source bytes
-   -> production parser / AST
-   -> formal SourceStmt + range claims
+```patch
+create number score = 0
+
+allow reward:
+  score may increase up to 10
+
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
+
+do reward(4)
 ```
 
-Beta.19 adds:
+the static formal source model admits the abstract effect:
 
 ```text
-exact Patch source bytes
-   -> independent raw-source parser
-   -> raw SourceStmt + raw range claims
-                 |
-                 +---- exact structural comparison ----+
-                                                       |
-production AST -> formalSource ------------------------+
+score increase [0,10]
 ```
 
-The independent path does not import the production parser or consume the production AST. `patch certify` now refuses to certify a supported protected recipe unless this source/range comparison succeeds.
+The direct Wasm run reports target/before/after. The independent runtime validator reconstructs:
 
-Tamper tests cover disagreements in both SourceStmt structure and range claims.
+```text
+score increase [8,8]
+```
 
-This is **translation validation**, not a machine-checked parser-correctness theorem. Both frontend paths are still JavaScript implementations.
+The generated runtime certificate then asks Lean to establish that the concrete occurrence refines a formal execution effect. `PatchRuntime.lean` defines executable effect/trace refinement checks and proves them sound, reconstructs the exact trace of the current linear evidence subset, and proves:
+
+```text
+checkSourceRuntimeEvidence source observed = true
+-------------------------------------------------
+exists formalTrace actualTrace,
+  SourceExecutes source formalTrace
+  and decodeRuntimeTrace observed = some actualTrace
+  and TraceRefines actualTrace formalTrace
+```
+
+The runtime certificate is bound by SHA-256 to the exact source bytes and the observed direct transition trace.
+
+This is a restricted correspondence theorem, not a theorem that the direct-Wasm compiler or runtime observer is correct.
 
 ## Current formal chain
+
+Static:
 
 ```text
 exact source
@@ -59,9 +78,19 @@ formal RangeExpr
    -> EvidenceStmt
    -> CoreStmt
    -> formal inferSignature
-   -> compare separate production Change Signature claim
    -> verified semantic policy check
-   -> formal SourceExecutes policy containment
+```
+
+Runtime:
+
+```text
+direct Wasm execution
+   -> observed before/after transitions
+   -> independent semantic-effect reconstruction
+   -> concrete proof-free EvidenceEffect list
+   -> Lean runtime-effect decoding/refinement
+   -> TraceRefines
+   -> formal SourceExecutes witness
 ```
 
 Formal modules:
@@ -73,21 +102,36 @@ PatchChecker.lean     executable verified semantic policy checker
 PatchEvidence.lean    proof-free semantic evidence + correspondence
 PatchSource.lean      source vocabulary + source/evidence/signature checks
 PatchRange.lean       integer evaluator + range-analysis soundness
+PatchRuntime.lean     concrete runtime refinement + SourceExecutes correspondence
 ```
+
+Formal CI generates and compiles both `GeneratedCertificate.lean` and `GeneratedRuntimeCertificate.lean` with the pinned Lean toolchain.
+
+## Current runtime-certificate boundary
+
+Beta.20 intentionally certifies only:
+
+- protected recipes already covered by the formal source model and raw-source validation;
+- linear formal source (`skip`, change, sequence);
+- one observed invocation per protected recipe;
+- concrete integer increase/decrease magnitudes.
+
+Branches, repeats, multiple invocations and floating-point/non-integer concrete magnitudes are rejected at this boundary. Direct Wasm supports more than the runtime theorem currently covers.
 
 ## Executable artifact status
 
-The artifact is no longer interpreter-only. It includes:
+The artifact includes:
 
 - direct numeric Patch → WebAssembly compilation;
 - direct control flow and acyclic numeric recipes;
 - ranged runtime guards;
 - independent direct-Wasm transition/effect validation;
+- beta.20 Lean-checkable runtime correspondence for a linear protected subset;
 - standalone single-file Web Apps;
 - Windows/macOS/Linux Console packages;
 - Windows/macOS/Linux standalone Window packages through the current desktop player;
 - portable C99 for the compiled numeric Console subset;
-- compile/run gates for that C99 on Linux, macOS and FreeBSD 15.1;
+- compile/run gates for C99 on Linux, macOS and FreeBSD 15.1;
 - FreeBSD Console builds from Patch Studio.
 
 These product/platform capabilities support artifact evaluation but are not individually novelty claims.
@@ -96,24 +140,25 @@ These product/platform capabilities support artifact evaluation but are not indi
 
 The strongest next steps are:
 
-- connect independently reconstructed runtime effect occurrences to Lean `SourceExecutes` / `Executes`;
+- extend runtime correspondence to explicit branch/repeat path witnesses and multiple invocation identifiers;
+- prove a concrete-runtime capability result by combining `EffectRefines` with formal capability admission;
 - introduce a typed expression/core IR or another smaller independently checkable lowering input;
 - extend formal recipe-call/substitution semantics for the direct subset;
 - build semantic-security/engineering case studies;
-- measure analysis, source-validation, evidence/certificate, checker and backend overhead;
+- measure analysis, source-validation, static/runtime certificate, checker and backend overhead;
 - perform a systematic related-work review and reproducibility pass.
 
 If source simplicity remains a headline empirical claim, user evidence should be collected only with an appropriate study design and ethics/consent process.
 
 ## Prior-art discipline
 
-Patch does not claim novelty for interval analysis, abstract interpretation, source calculi, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C code generation, provenance, undo or cross-platform packaging.
+Patch does not claim novelty for interval analysis, abstract interpretation, source calculi, refinement/simulation relations, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C code generation, provenance, undo or cross-platform packaging.
 
 The candidate contribution remains the combination of **mandatory semantic mutation factorization** and operation-/magnitude-aware state-transition authority derived from the same representation, supported by a progressively tighter formal/validation connection to the implementation.
 
 ## Manuscript source
 
-`main.tex` is the working article source. Its next editorial pass should consolidate beta.9–beta.19 into one coherent implementation-assurance section rather than narrating every beta chronologically. The claims in `docs/FORMAL_MODEL.md` and `docs/NOVELTY.md` are the current source of truth for the exact proof/validation boundary.
+`main.tex` is the working article source. It should describe beta.20 as one coherent assurance architecture rather than narrating every beta chronologically. No empirical performance or user-study results should be stated until they have actually been collected.
 
 ## Build
 

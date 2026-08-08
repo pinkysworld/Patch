@@ -10,9 +10,10 @@ import { compileToC99 } from './c99.js';
 import { buildStandaloneWebApp } from './webapp.js';
 import { buildNativeApp } from './native-app.js';
 import { generateLeanCertificate } from './certificate.js';
+import { generateLeanRuntimeCertificate } from './runtime-certificate.js';
 
 const args = process.argv.slice(2);
-const known = new Set(['run', 'run-wasm', 'check', 'changes', 'formal', 'certify', 'build']);
+const known = new Set(['run', 'run-wasm', 'check', 'changes', 'formal', 'certify', 'runtime-certify', 'build']);
 const command = known.has(args[0]) ? args.shift() : 'run';
 const file = args.shift();
 
@@ -80,6 +81,21 @@ try {
     console.log(`  certified recipe(s): ${certificate.certified.join(', ')}`);
     console.log('  source extraction: independently re-parsed from raw source and matched against the production AST-derived formal source view');
     console.log('  next: compile this certificate with the repository\'s Lean PatchRange module to validate integer range soundness, source-core normalization, evidence/signature correspondence and the semantic policy.');
+    process.exit(0);
+  }
+
+  if (command === 'runtime-certify') {
+    const name = option('--name') ?? appName(file);
+    const out = option('--out') ?? `${name}.runtime.patchcert.lean`;
+    const certificate = await generateLeanRuntimeCertificate(source, { name, entry: path.basename(file) });
+    fs.writeFileSync(out, certificate.lean, 'utf8');
+    console.log(`Generated ${out}`);
+    console.log(`  source sha256: ${certificate.sourceSha256}`);
+    console.log(`  observed direct trace sha256: ${certificate.runtimeTraceSha256}`);
+    console.log(`  runtime schema: ${certificate.runtimeSchemaVersion}`);
+    console.log(`  observed semantic effect occurrence(s): ${certificate.observedEffects}`);
+    console.log(`  runtime-correspondence recipe(s): ${certificate.certified.join(', ')}`);
+    console.log('  assurance: direct Wasm was executed, semantic effects were independently reconstructed, and Lean checks that the concrete occurrences refine a formal SourceExecutes trace for the current linear certified subset.');
     process.exit(0);
   }
 
@@ -225,7 +241,7 @@ function printFormalCoverage(bridge, sourceCore, sourceValidation) {
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
   console.log(`Source extraction summary: ${sourceValidation.summary.validated} validated, ${sourceValidation.summary.unvalidated} unvalidated, ${sourceValidation.summary.mismatches} mismatch(es).`);
-  console.log('Note: Lean checks the formal range/source/evidence/signature/policy chain. The independent raw-source parser now translation-validates SourceStmt/range extraction for supported entries, but this is not a machine-checked proof of parser correctness. Production runtime-to-formal execution correspondence remains an explicit proof obligation.');
+  console.log('Note: Lean checks the formal range/source/evidence/signature/policy chain and beta.20 can separately certify concrete direct-Wasm runtime occurrences for the linear source subset with `patch runtime-certify`. This remains translation/runtime validation rather than full compiler verification.');
 }
 
 function option(name) {
@@ -238,5 +254,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal + source-extraction coverage:\n  patch formal program.patch\n\nGenerate Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App:\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (requires Patch host ABI):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild native app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild native console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
+  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal + source-extraction coverage:\n  patch formal program.patch\n\nGenerate static Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nExecute direct Wasm and generate Lean runtime-correspondence certificate:\n  patch runtime-certify program.patch --out Program.runtime.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App:\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (requires Patch host ABI):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild native app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild native console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
 }
