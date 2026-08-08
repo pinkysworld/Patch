@@ -395,31 +395,26 @@ theorem callSignatureSoundness
       simpa [BodyComposes] using hBody
   | seq hFirst hSecond ihFirst ihSecond =>
       intro hBody effect hMem
-      have hBodies :
-          BodyComposes env _ signature _ ∧ BodyComposes env _ signature _ := by
-        simpa [BodyComposes] using hBody
+      simp only [BodyComposes] at hBody
       rcases List.mem_append.mp hMem with hLeft | hRight
-      · exact ihFirst hBodies.1 effect hLeft
-      · exact ihSecond hBodies.2 effect hRight
+      · exact ihFirst hBody.1 effect hLeft
+      · exact ihSecond hBody.2 effect hRight
   | branchThen hThen ihThen =>
       intro hBody
-      have hThenBody : BodyComposes env _ signature _ := by
-        exact (by simpa [BodyComposes] using hBody).1
-      exact ihThen hThenBody
+      simp only [BodyComposes] at hBody
+      exact ihThen hBody.1
   | branchElse hElse ihElse =>
       intro hBody
-      have hElseBody : BodyComposes env _ signature _ := by
-        exact (by simpa [BodyComposes] using hBody).2
-      exact ihElse hElseBody
+      simp only [BodyComposes] at hBody
+      exact ihElse hBody.2
   | repeatZero =>
       intro hBody effect hMem
       simp at hMem
   | repeatSucc hFirst hRest ihFirst ihRest =>
       intro hBody effect hMem
-      have hLoop : BodyComposes env _ signature _ := by
-        simpa [BodyComposes] using hBody
+      simp only [BodyComposes] at hBody
       rcases List.mem_append.mp hMem with hNow | hLater
-      · exact ihFirst hLoop effect hNow
+      · exact ihFirst hBody effect hNow
       · exact ihRest hBody effect hLater
   | @call rank name args callee trace hLookup hRank hArgs hCallee ih =>
       intro hBody
