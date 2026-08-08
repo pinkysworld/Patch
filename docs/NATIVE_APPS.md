@@ -1,42 +1,70 @@
 # Application builds
 
-Status: **0.2.0-beta.20**
+Status: **0.2.0-beta.21**
 
-Patch has separate build paths for browser, WebAssembly and desktop applications. The portable C99/FreeBSD Console path remains unchanged in beta.20; the new work is runtime/formal correspondence for the direct-Wasm research path.
+Patch has separate build paths for Console and Window applications. Beta.21 fixes Studio Window routing and adds a compatible single-file Window Web target without pretending that the Console-only Direct Wasm backend supports GUI instructions.
 
 ## Build matrix
 
 ```text
 Console
+  Web     -> one HTML file with direct Patch Wasm + browser host
   Windows -> .exe via native direct-Wasm host
   macOS   -> .app via native direct-Wasm host
   Linux   -> native executable via direct-Wasm host
   FreeBSD -> native executable via portable C99 + FreeBSD cc
 
 Window / GUI
+  Web     -> Standalone Window Web App with generated browser runtime
   Windows -> standalone packaged GUI application
   macOS   -> standalone packaged GUI application
   Linux   -> standalone packaged GUI application
   FreeBSD -> not yet supported
 ```
 
+## Window preflight
+
+Studio's desktop **Window preflight** compiles source to normalized Change IR and checks for the actual representation:
+
+```text
+code == "WINDOW"
+```
+
+An older browser-side check looked for a nonexistent lower-case `instruction.op` field, which made valid Window source appear to contain no window. Beta.21 centralizes this check in `src/window-build.js` and the regression suite verifies the real `WINDOW` IR instruction.
+
+After preflight, Windows/macOS/Linux Window source is dispatched to the existing dedicated Window packager and smoke-tested on the target runner.
+
 ## Browser and WebAssembly
 
 ```bash
-patch build hello.patch --target web --out Hello.html
-patch build hello.patch --target wasm-direct --out Hello.direct.wasm
+patch build console.patch --target web --out Console.html
+patch build window.patch --target web --out Window.html
+patch build console.patch --target wasm-direct --out Console.direct.wasm
 ```
 
-The Web App is one HTML file containing direct Patch Wasm plus its small browser host. Raw direct Wasm imports `patch.show_number(f64)` and `patch.change_number(i32,f64,f64)`, so it is not yet a standalone WASI command module. The older `--target wasm` remains the bootstrap source+IR carrier.
+The CLI now infers Console versus Window when `--kind` is omitted for ordinary builds.
 
-For research assurance, beta.20 adds a separate CLI path:
+Console Web Apps embed direct Patch Wasm. A **Standalone Window Web App** instead embeds the parsed validated Window program plus a generated browser runtime for the current Window/control/event subset. It does not silently feed `WINDOW` into Direct Wasm.
+
+Raw Direct Wasm remains Console-only and imports:
+
+```text
+patch.show_number(f64)
+patch.change_number(i32,f64,f64)
+```
+
+It is not yet a standalone WASI command module. The older `--target wasm` remains the bootstrap source+IR carrier.
+
+## Research runtime certification
+
+The application packaging path is separate from formal assurance, but beta.21's CLI still supports:
 
 ```bash
 patch runtime-certify examples/runtime-correspondence.patch \
   --out formal/GeneratedRuntimeCertificate.lean
 ```
 
-That command executes direct Wasm, independently reconstructs concrete semantic effects from its transition trace, and emits proof-free evidence that Lean checks against a formal `SourceExecutes` trace for the current linear certified subset. It does not change the application package format.
+`runtime-certify` executes supported direct Wasm, independently reconstructs concrete semantic effects and an untrusted `RuntimePath`, and emits proof-free evidence. Lean checks branch/repeat witness shape, source execution and concrete effect refinement. Multiple observed protected recipe invocations can now be checked separately.
 
 ## Portable C99
 
@@ -46,13 +74,11 @@ cc -std=c99 -Wall -Wextra -pedantic -O2 -o Hello Hello.c -lm
 ./Hello
 ```
 
-Portable C99 uses the same conservative numeric Console boundary as direct Wasm and independently emits C from normalized Change IR. It covers top-level numeric state, `set/add/remove/clear`, `show`, supported arithmetic/comparisons, `if/else`, literal `repeat` + Patch `count`, acyclic numeric recipes, ranged runtime guards and a block-level transition hook.
-
-CI compiles/runs the generated C with system compilers on Linux, macOS and **FreeBSD 15.1**.
+Portable C99 uses the conservative numeric Console boundary and independently emits C from normalized Change IR. CI compiles/runs generated C on Linux, macOS and **FreeBSD 15.1**.
 
 ## FreeBSD from Patch Studio
 
-Select **FreeBSD Console** and keep Project Type set to **Console**:
+Select **FreeBSD Console** with Project Type **Console**:
 
 ```text
 current Studio source
@@ -62,25 +88,29 @@ current Studio source
   -> base-system cc -std=c99
   -> smoke run
   -> native executable artifact
-  -> Studio download
 ```
 
-The source need not be committed. A fine-grained GitHub token with Actions read/write permission is currently required; Studio does not save it in `localStorage` or the project.
+FreeBSD Window remains unsupported rather than being silently redirected to a different runtime.
 
 ## Windows, macOS and Linux from Studio
 
-Both Project Types are supported:
-
 ```text
-Console -> direct Patch Wasm + native host
-Window  -> generated Patch desktop GUI player
+Console
+  -> direct-Wasm preflight
+  -> platform Console host
+
+Window
+  -> compiler + normalized WINDOW preflight
+  -> dedicated generated desktop GUI player
 ```
 
-The target runner compiles/packages the current editor source, smoke-runs the result and returns an Actions artifact.
+The Window player currently handles `window`, `text`, `button`, `input`, supported events and semantic changes. It is standalone for Windows/macOS/Linux but is **not yet native-widget lowering** to AppKit, Win32 or GTK.
 
-## Current GUI boundary
+A fine-grained GitHub token with Actions read/write permission is currently required for Studio remote desktop builds. The token stays in the current page and is not saved in project storage.
 
-The Window player currently handles `window`, `text`, `button`, `input` and supported button click events. It is standalone for Windows/macOS/Linux, but is **not yet native-widget lowering** to AppKit, Win32 or GTK. FreeBSD Window packages and a portable Unix GUI backend remain future work.
+## Local CLI desktop boundary
+
+`patch build --target app/native` currently remains the local **Console** host. Window desktop packaging is currently exposed through Patch Studio/GitHub Actions and `scripts/build-native-window.js`. The CLI reports this boundary directly instead of failing inside Direct Wasm.
 
 ## Portability claim
 
@@ -93,4 +123,4 @@ NetBSD     not yet claimed
 other Unix not yet claimed
 ```
 
-Additional Unix-family targets should enter the public build matrix only after an actual compile/run gate exists.
+Additional Unix-family targets should enter the public matrix only after a real compile/run gate exists.
