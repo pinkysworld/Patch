@@ -8,7 +8,7 @@
 
 \title{Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs}
 \author{Mich\'el Nguyen}
-\date{Beta 19 research artifact manuscript, August 2026}
+\date{Beta 20 research artifact manuscript, August 2026}
 
 \begin{document}
 \maketitle
@@ -18,7 +18,7 @@ General-purpose languages typically expose persistent mutation through assignmen
 
 Patch derives \emph{Semantic Change Signatures} from this mandatory mutation representation and checks optional \emph{Change Capabilities} constraining target, semantic operation kind, and numeric magnitude. A component may therefore be authorized to increase \texttt{score} by at most 10 while remaining unauthorized to replace or decrease the same location. A Lean 4 core proves State-Change Factorization, Mutation Transparency, Change Signature Soundness for a structured control-flow model, policy containment for accepted formal executions, and integer range-analysis soundness for an explicit arithmetic fragment.
 
-The implementation connects to this core through deliberately separated assurance paths rather than a claim of full compiler verification. For a conservative source subset, an independent raw-source validator---which does not import the production parser or consume the production AST---reconstructs the formal source structure and range claims and compares them with the AST-derived artifact before protected certification. Lean then validates source-to-semantic normalization, evidence decoding, formal signature reconstruction, and policy admission. Separately, the direct WebAssembly backend is checked against an independent Change-IR execution model that reconstructs ordered transitions and concrete semantic effects. Patch also includes a portable C99 backend compile/run tested on Linux, macOS, and FreeBSD. These mechanisms are assurance infrastructure, not firstness claims. The research hypothesis is that mandatory semantic mutation provides a useful common substrate for quantitative state-transition authority, formal reasoning, and runtime tooling without enlarging the beginner-facing language.
+The implementation connects to the formal model through separated assurance paths rather than a claim of full compiler verification. An independent raw-source validator reconstructs formal source structure and range claims without importing the production parser or consuming its AST and compares them before protected certification. Separately, an independent Change-IR validator reconstructs concrete semantic effects from observed direct-WebAssembly transitions. Beta 20 adds a checked connection between these layers for a narrower linear protected subset: concrete proof-free runtime effect occurrences are decoded by Lean and must pointwise refine an actual formal \texttt{SourceExecutes} trace. A concrete occurrence such as an increase of 8 may refine a formal increase interval $[0,10]$. The resulting theorem narrows a runtime-to-formal correspondence gap while leaving parser correctness, WebAssembly lowering, runtime semantic reconstruction, control-flow path witnesses, and full-language semantics explicit as trusted or unmodeled boundaries. Patch does not claim effects, capabilities, refinement relations, translation validation, range analysis, provenance, or undo as individually new; the research hypothesis concerns the reuse enabled by mandatory semantic mutation.
 \end{abstract}
 
 \section{Introduction}
@@ -33,8 +33,6 @@ change score:
   add 1
 \end{lstlisting}
 
-The surface syntax is intentionally small. Internally, the transition can retain target, operation, before/after state, source location, inverse information, provenance, and static authority information.
-
 The same mutation vocabulary supports authority more precise than binary write permission:
 
 \begin{lstlisting}
@@ -46,16 +44,16 @@ make reward(bonus number 0..5):
     add bonus * 2
 \end{lstlisting}
 
-The policy authorizes a bounded increase. It does not authorize an arbitrary \texttt{set}, even though both operations technically write the same persistent location.
+The policy authorizes a bounded increase. It does not authorize an arbitrary \texttt{set}, even though both operations write the same persistent location.
 
-The research question is not whether explicit state changes, effect systems, capabilities, abstract interpretation, source calculi, translation validation, or proof-carrying evidence exist. They do. The question is whether forcing persistent mutation through one semantic representation yields a useful factorization in which execution, quantitative authority, history, provenance, and formal checking reuse the same mutation vocabulary.
+The research question is not whether explicit state changes, effect systems, capabilities, abstract interpretation, source calculi, refinement, translation validation, or proof-carrying evidence exist. They do. The question is whether forcing persistent mutation through one semantic representation yields a useful factorization in which execution, quantitative authority, history, provenance, and formal checking reuse the same mutation vocabulary.
 
-This manuscript makes four connected claims about the current artifact:
+The current artifact supports four connected claims:
 \begin{enumerate}[leftmargin=*]
-\item Patch enforces a language-level factorization in which ordinary post-creation persistent mutation uses structured semantic \texttt{change} operations.
-\item The compiler derives operation- and magnitude-sensitive Change Signatures and checks optional Change Capabilities from those mutations.
-\item A Lean model proves factorization, signature soundness, policy containment, and integer range soundness for explicit formal fragments.
-\item A realistic implementation is connected to the formal artifacts through independent source translation validation and direct-runtime transition/effect validation, while remaining explicit about the parts that are not machine proved.
+\item ordinary post-creation persistent mutation uses structured semantic \texttt{change} operations rather than a separate assignment escape hatch;
+\item operation- and magnitude-sensitive Change Signatures and optional Change Capabilities are derived from those mutations;
+\item a Lean model proves factorization, signature soundness, policy containment, source/evidence correspondence, and integer range soundness for explicit formal fragments; and
+\item a realistic implementation is connected to those artifacts through independent source translation validation and, for a narrower linear protected subset, Lean-checked refinement of concrete direct-runtime effects to an actual formal source execution trace.
 \end{enumerate}
 
 \section{Language Design}
@@ -69,32 +67,15 @@ change lives:
 show lives
 \end{lstlisting}
 
-Advanced machinery derives information from the same source mutation model rather than requiring a separate command/event architecture for ordinary state updates.
+Advanced machinery derives information from the same source mutation model rather than requiring a second command/event architecture for ordinary state updates.
 
 \subsection{No persistent-assignment escape hatch}
 \texttt{create} introduces a fresh persistent binding. Existing persistent bindings are not subsequently updated with ordinary \texttt{x = e}; state-changing source uses \texttt{change}. This syntactic restriction mirrors the single modeled commit route in the formal machine.
 
-\subsection{Source and semantic operation vocabularies}
-The source-facing verbs are \texttt{set}, \texttt{add}, \texttt{remove}, and \texttt{clear}. Static semantic analysis can classify numeric mutations more precisely: \texttt{add 5} is an increase, \texttt{add -5} is a decrease, and \texttt{set 5} is a set. Policies can distinguish these authorities even when they address the same location.
+\subsection{Source and semantic operations}
+The source-facing verbs are \texttt{set}, \texttt{add}, \texttt{remove}, and \texttt{clear}. Static semantic analysis can classify numeric mutations more precisely: \texttt{add 5} is an increase, \texttt{add -5} is a decrease, and \texttt{set 5} remains a set. Policies can distinguish these authorities even when they address the same location.
 
-\subsection{Console and GUI code}
-Console and GUI programs share the same state/change semantics:
-
-\begin{lstlisting}
-create number count = 0
-
-window "Counter":
-  text "Count: {count}"
-  button "Add" as add_button
-
-when add_button clicked:
-  change count:
-    add 1
-\end{lstlisting}
-
-GUI event execution is implemented but remains outside the current Lean source subset.
-
-\section{State-Change Factorization}
+\section{State-Change Factorization and Change Contracts}
 Let persistent state be a map $\sigma : Name \rightarrow Value$, let $\nu(x)$ be the current version of target $x$, and let history be $H=[\delta_1,\ldots,\delta_n]$. A normalized semantic change is
 \[
 \delta = \langle x,b,n,v,\Delta,v'\rangle,
@@ -103,209 +84,174 @@ where $x$ is the target, $b$ and $n$ are base and new versions, $v$ and $v'$ are
 \[
 applyOps(\Delta,v)=v' \quad\text{and}\quad n=b+1.
 \]
-The modeled persistent commit is
-\[
-commit(\delta,\sigma,\nu,H)=
-\langle\sigma[x\mapsto v'],\nu[x\mapsto n],H\cdot\delta\rangle.
-\]
 
 \paragraph{State-Change Factorization.}
-For every state-changing step in the current Lean machine, there exists a well-formed $\delta$ such that the resulting machine is exactly the defined commit of $\delta$.
+For every state-changing step in the current Lean machine, there exists a well-formed $\delta$ such that the resulting machine is exactly the modeled commit of $\delta$.
 
 \paragraph{Mutation Transparency.}
-The witnessing change appears in resulting history. Thus a modeled persistent transition cannot occur without an inspectable semantic witness.
+The witnessing change appears in resulting history.
 
-These are properties of the formal machine. Production-runtime correspondence is a separate obligation.
-
-\section{Semantic Change Contracts}
-\subsection{Change Signatures}
 For a recipe $f$, a Change Signature conservatively describes semantic effects:
 \[
 Sig(f)=\{e_1,\ldots,e_k\}.
 \]
-An effect includes a target, optional field, semantic operation kind, and optional amount interval. For example,
-\begin{lstlisting}
-make reward():
-  change score:
-    add 5
-\end{lstlisting}
-produces the conceptual summary
-\begin{verbatim}
-score -> increase by [5,5]
-\end{verbatim}
+An effect contains target, optional field, semantic operation kind, and optional amount interval. A Change Capability specifies the allowed semantic authority. For example, \texttt{score may increase up to 10} distinguishes bounded increase from set or decrease authority.
 
-\subsection{Magnitude-aware capabilities}
-A policy may authorize selected semantic transitions:
-\begin{lstlisting}
-allow reward:
-  score may increase up to 10
-\end{lstlisting}
-A protected recipe is rejected if its inferred committed changes are not covered by policy. A \texttt{set} is not interchangeable with an increase, and a proven increase exceeding the bound is rejected.
+\section{Formal Core}
+The artifact contains seven principal Lean modules: \texttt{PatchFormal}, \texttt{PatchSignature}, \texttt{PatchChecker}, \texttt{PatchEvidence}, \texttt{PatchSource}, \texttt{PatchRange}, and \texttt{PatchRuntime}.
 
-Magnitude information by itself is not claimed as new. The candidate distinction is that quantitative authority is attached to semantic transition kinds derived from the same mandatory mutation representation through which the state changes.
-
-\section{Formal Core and Machine-Checked Results}
-The artifact contains six principal Lean modules: \texttt{PatchFormal}, \texttt{PatchSignature}, \texttt{PatchChecker}, \texttt{PatchEvidence}, \texttt{PatchSource}, and \texttt{PatchRange}.
-
-\subsection{Signature soundness}
+\subsection{Signature and capability soundness}
 For the structured semantic core, Lean proves
 \[
 Executes(s,r) \Longrightarrow RuntimeChanges(r) \subseteq Sig(s).
 \]
-The static signature may conservatively contain untaken branch alternatives, but it cannot omit a modeled runtime semantic effect.
-
-\subsection{Policy containment}
 If every inferred effect is admitted by policy,
 \[
-RuntimeChanges(s) \subseteq Sig(s) \subseteq Cap(s),
+RuntimeChanges(s) \subseteq Sig(s) \subseteq Cap(s).
 \]
-and therefore
-\[
-RuntimeChanges(s) \subseteq Cap(s).
-\]
-The executable verified checker removes the need to assume the middle relation as an unchecked implementation judgment: successful boolean policy checks are proved sound with respect to the relational policy semantics.
+The executable policy checker is itself proved sound with respect to the relational policy semantics.
 
 \subsection{Source semantic normalization}
-The formal source vocabulary preserves \texttt{add/remove/set/clear}. Lean normalizes source operations into semantic effects. For example,
+The formal source vocabulary preserves \texttt{add/remove/set/clear}. Lean, rather than the producer, normalizes source operations into semantic effects. For example:
 \begin{verbatim}
 source add [0,5]      -> increase [0,5]
 source remove [0,5]   -> decrease [0,5]
 source add [-5,-5]    -> decrease [5,5]
 \end{verbatim}
-Mixed-sign ranges are outside the certifiable source fragment because they do not have one static semantic direction.
+Mixed-sign ranges are outside the current certifiable source fragment.
 
 \subsection{Integer range soundness}
 For the explicit integer RangeExpr grammar, Lean proves schematically:
 \[
-\begin{split}
-&EnvRespects(\Gamma,\rho)\\
-&analyzeRange(e,\Gamma)=I\\
-&eval(e,\rho)=v
-\end{split}
-\quad\Longrightarrow\quad v\in I.
+EnvRespects(\Gamma,\rho) \wedge analyzeRange(e,\Gamma)=I \wedge eval(e,\rho)=v
+\Longrightarrow v\in I.
 \]
-The mechanized fragment includes integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. It does not silently cover decimal/floating-point semantics, division, or general multiplication.
+The mechanized fragment includes integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. Decimal/floating-point semantics, division, and general multiplication are not silently included in this theorem.
 
-\section{Independent Raw-Source Translation Validation}
-A central implementation challenge is connecting production source parsing to the formal source artifact without placing the entire JavaScript frontend inside the trusted base.
-
-The production route is
+\section{Independent Source Translation Validation}
+The production source path is:
 \begin{verbatim}
 source bytes -> parser.js -> AST -> formal-source.js -> SourceStmt/ranges
 \end{verbatim}
-Beta 19 adds a second route:
+A separate implementation path is:
 \begin{verbatim}
 source bytes -> source-validation.js -> raw SourceStmt/ranges
 \end{verbatim}
-The validator does not import \texttt{parser.js} and does not consume the production AST. It is a small indentation-aware recognizer for the formal source subset. It reconstructs source mutation verbs, sequence/branch/literal-repeat structure, ranged recipe parameters, and formal integer range claims directly from source lines.
+The second path does not import the production parser or consume its AST. For a supported protected recipe, static certification requires exact agreement of the two SourceStmt views and their formal range claims.
 
-For each supported entry, certification requires exact structural agreement between the two SourceStmt views and exact agreement between their range claims. Change IR 0.8 records this result as a separate \texttt{sourceValidation} artifact. Negative tests mutate the AST-derived SourceStmt and range claims and require the validator to report disagreement.
+This is deliberately framed as \emph{translation validation}. Both paths remain executable JavaScript and their agreement is not a Lean proof that either parser is correct. The purpose is to avoid using one production AST/extractor path as the sole producer of formal evidence.
 
-This is deliberately framed as \emph{translation validation}. Both paths are executable JavaScript; their agreement is not a machine-checked parser-correctness theorem. Its value is to avoid relying on one production AST/extractor path as the sole source of formal evidence.
+\section{Direct Compiled Execution and Independent Runtime Validation}
+The direct backend lowers a conservative numeric Console subset to WebAssembly. It supports numeric state, \texttt{set/add/remove/clear}, numeric output, arithmetic/comparisons, \texttt{if/else}, literal repetition, acyclic numeric recipes, and ranged parameter guards.
 
-\section{Certificate Pipeline}
-For a protected recipe in the supported fragment, certificate generation now requires:
-\begin{verbatim}
-production formalSource supported
-raw-source witness supported
-SourceStmt equality
-range-claim equality
-semantic bridge supported
-production/formal signature agreement
-\end{verbatim}
-The generated artifact is bound to the exact source bytes by SHA-256 and records schema versions for source, source validation, evidence, and range data.
-
-Lean then checks:
-\begin{verbatim}
-RangeExpr -> analyzeRange / rangeAnalysisSound
-SourceStmt -> semantic normalization
-           -> EvidenceStmt
-           -> CoreStmt
-           -> inferSignature
-           -> compare production signature
-           -> verified policy checker
-\end{verbatim}
-The generated file records that independent source validation passed, but the manuscript does not treat that JavaScript-side fact as a Lean theorem.
-
-\section{Compiled Execution and Runtime Validation}
-Patch is no longer an interpreter-only artifact. A direct backend lowers the supported numeric Console subset to WebAssembly. It covers numeric state, \texttt{set/add/remove/clear}, numeric output, arithmetic/comparisons, \texttt{if/else}, literal repetition, acyclic numeric recipes, and ranged parameter guards.
-
-The direct runtime reports a small observation:
+The direct runtime reports a deliberately small observation:
 \begin{verbatim}
 patch.change_number(targetId, before, after)
 \end{verbatim}
-An independent validator executes the supported Change IR semantics separately, reconstructs the expected ordered transitions, and compares target/order/before/after with observed Wasm execution. A second layer reconstructs concrete increase/decrease/set/clear effects and magnitudes and checks them against static Change Signatures and protected Change Capabilities.
+An independent validator executes the supported Change IR semantics separately and reconstructs expected ordered transitions. A second layer reconstructs concrete semantic increase/decrease/set/clear occurrences and magnitudes and checks them against static Change Signatures and protected Change Capabilities.
 
-These checks are stronger than comparing only final state, but they remain implementation validation rather than a proof of Wasm lowering correctness.
+These checks are stronger than comparing only final state, but by themselves they remain implementation validation rather than a proof of WebAssembly lowering correctness.
 
-\subsection{Portable C99}
-A second Console backend emits portable C99 for the same conservative numeric subset after support-boundary validation. The generated C preserves ranged parameter guards and a block-level transition hook. Repository gates compile and execute generated C on Linux, macOS, and FreeBSD 15.1. This portability work supports artifact evaluation; C generation is not a novelty claim.
+\section{Runtime-to-Formal Correspondence}
+Beta 20 connects the independently reconstructed concrete occurrence stream to the Lean source semantics for a narrower linear protected subset.
 
-\section{Implementation and Tooling}
-Patch Studio is a browser-first PWA. It provides editing, execution, the first Window Designer slice, Change Contract inspection, and Change IR inspection. Browser-local build targets include a standalone Web App, direct Wasm, the bootstrap Wasm carrier, and \texttt{.patchapp}. GitHub-hosted platform runners build Windows/macOS/Linux Console and Window packages from the current editor source; FreeBSD Console uses the C99 backend.
+Consider:
+\begin{lstlisting}
+create number score = 0
 
-The Window packages currently use a generated desktop player rather than native AppKit/Win32/GTK widgets. Platform packaging is therefore an engineering artifact, not part of the formal or novelty claims.
+allow reward:
+  score may increase up to 10
+
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
+
+do reward(4)
+\end{lstlisting}
+The formal range/source path yields an abstract semantic effect \texttt{increase [0,10]}. The direct execution produces a transition from 0 to 8, from which the independent runtime validator reconstructs the concrete occurrence \texttt{increase [8,8]}.
+
+\subsection{Effect refinement}
+\texttt{PatchRuntime.lean} defines $EffectRefines(a,e)$ such that target, field, and semantic operation must agree. For numeric effects, the concrete interval must be contained in the formal interval:
+\[
+a.amount \subseteq e.amount.
+\]
+Thus $[8,8] \subseteq [0,10]$ is accepted. The executable \texttt{effectRefinesBool} checker is proved sound.
+
+\subsection{Trace refinement and formal execution}
+Concrete runtime occurrences are supplied as proof-free \texttt{EvidenceEffect} values. Lean validates their interval structure before decoding them to semantic effects. \texttt{traceRefinesBool} checks two traces pointwise, and its soundness theorem derives a \texttt{List.Forall2 EffectRefines} relation.
+
+For the first beta 20 subset, \texttt{decodeLinearEvidenceTrace} accepts only skip, emit/change, and sequence. Its soundness theorem establishes that the reconstructed formal trace is an actual \texttt{Executes} trace.
+
+The main executable runtime checker is \texttt{checkSourceRuntimeEvidence}. Lean proves:
+\[
+\begin{split}
+&checkSourceRuntimeEvidence(source,observed)=true\\
+&\Longrightarrow \exists formalTrace,actualTrace.\\
+&\quad SourceExecutes(source,formalTrace)\\
+&\quad \wedge decodeRuntimeTrace(observed)=actualTrace\\
+&\quad \wedge Forall2(EffectRefines,actualTrace,formalTrace).
+\end{split}
+\]
+This result ties an accepted ordered concrete occurrence list to an actual formal source execution rather than merely to static signature membership.
+
+\subsection{Generated runtime certificate}
+The production-side runtime certificate generator:
+\begin{enumerate}[leftmargin=*]
+\item compiles and executes the direct-WebAssembly artifact;
+\item captures observed target/before/after transitions;
+\item passes them through the independent semantic-effect validator;
+\item requires the protected formal source to have passed raw-source validation;
+\item emits concrete proof-free effect evidence; and
+\item generates a Lean file checked against \texttt{PatchRuntime}.
+\end{enumerate}
+The artifact records SHA-256 hashes of the exact Patch source bytes and observed direct transition trace. The hash makes the checked execution artifact reproducible and identifiable; it is not a compiler-correctness proof.
+
+The current runtime certificate accepts only linear protected recipes, one observed invocation per protected recipe, and concrete integer magnitudes. Branches, repeats, multiple invocations, and floating-point/non-integer magnitudes are rejected at this assurance boundary rather than over-approximated.
+
+\section{Portable C99 and Application Tooling}
+A second Console backend emits portable C99 for the conservative numeric subset after support-boundary validation. Repository gates compile and execute generated C on Linux, macOS, and FreeBSD 15.1. Patch Studio is a browser-first PWA with editing, execution, Change Contract/IR inspection, a first Window Designer slice, and browser/desktop build paths. Windows, macOS, and Linux support Console and current Window packages; FreeBSD currently supports Console through C99.
+
+These platform capabilities support artifact evaluation but are not novelty claims.
 
 \section{Evaluation Plan}
-The current artifact supports a concrete evaluation plan but does not yet report fabricated performance or user-study results.
+The artifact supports evaluation, but this manuscript does not invent performance or user-study results.
 
 \paragraph{RQ1: semantic authority precision.}
-Construct examples where write-location permissions cannot distinguish bounded increase/decrease/set/clear authority. Report accepted/rejected contracts and compare the amount of manual runtime checking required.
+Construct examples where write-location permissions cannot distinguish bounded increase/decrease/set/clear authority. Compare accepted/rejected contracts and manual runtime checks.
 
-\paragraph{RQ2: assurance boundary.}
-Measure source-validation, certificate-generation, Lean-checking, and runtime-validation cost across a reproducible corpus. Record artifact sizes and failure diagnostics.
+\paragraph{RQ2: assurance cost.}
+Measure source validation, static certificate generation, runtime certificate generation, Lean checking, and runtime validation over a reproducible corpus. Report latency and artifact sizes.
 
 \paragraph{RQ3: implementation correspondence.}
-Use differential and tamper tests to evaluate how effectively independent source and runtime validators detect disagreement with production artifacts.
+Use differential and tamper tests to evaluate detection of disagreements in source artifacts, runtime transitions, signatures, capabilities, and runtime occurrence evidence.
 
-\paragraph{RQ4: engineering reuse.}
-Compare the implementation needed for history, inverse operations, provenance, preview, and policy checking when these features reuse semantic Changes versus ad-hoc write instrumentation.
+\paragraph{RQ4: security/engineering cases.}
+Evaluate plugin-style or extension-style cases where a component may increase one field by a bounded amount while lacking set/decrease authority.
 
 \paragraph{RQ5: usability, only if retained as a headline claim.}
-A novice study may compare comprehension and mutation errors with a mainstream language, but should be performed only with appropriate study design, consent, and ethics procedures.
+A novice study may compare comprehension and mutation errors with a mainstream language, but only with an appropriate study design, consent, and ethics process.
 
 \section{Related Work and Claim Boundary}
-Patch intersects several mature areas. Plaid makes state change central to object typestate; Worlds reifies and scopes state; effect systems infer and constrain effects; graded/refinement systems can carry quantitative information; object-capability and permission systems constrain authority; abstract interpretation provides sound numeric approximation; event sourcing and reversible systems make updates/history explicit; provenance systems explain executions; translation validation and verified compilers establish implementation assurance; Proof-Carrying Code and certifying compilation attach checkable evidence to programs.
+Patch intersects mature work on first-class state change, typestate, reified/scoped state, effect systems, graded/refinement effects, capabilities and permissions, abstract interpretation, event sourcing, reversible computation, provenance, source calculi, simulation/refinement, translation validation, verified compilers, Proof-Carrying Code, and certifying compilation.
 
-Patch therefore does not claim that first-class state change, effects, capabilities, range analysis, proof-carrying evidence, translation validation, source calculi, WebAssembly compilation, C code generation, undo, or provenance are individually new. The candidate contribution is narrower: persistent mutation is forced through a semantic Change substrate, and operation-/magnitude-aware authority plus tooling are derived from that same mandatory representation.
+Patch therefore does not claim that first-class state change, effects, capabilities, range analysis, proof-carrying evidence, refinement checking, translation validation, WebAssembly compilation, C generation, undo, or provenance are individually new. The candidate contribution is narrower: persistent mutation is forced through a semantic Change substrate, and operation-/magnitude-aware authority plus derived tooling reuse that same mandatory representation.
 
 \section{Limitations and Trusted Boundaries}
 The current artifact is not a fully verified compiler. Important limitations are explicit:
 \begin{itemize}[leftmargin=*]
 \item production parser correctness and independent raw-source parser correctness are not machine proved;
-\item beta 19 checks that the two source-extraction paths agree for the supported subset, but agreement is translation-validation evidence;
-\item production/direct runtime effect occurrences are not yet connected by theorem to Lean \texttt{SourceExecutes}/\texttt{Executes};
-\item direct Wasm and C99 lowering are tested and independently validated in parts, not machine proved;
-\item formal call/substitution semantics do not yet cover the full direct recipe implementation;
-\item the Lean range theorem covers an integer fragment, not general floating-point runtime arithmetic;
-\item GUI event execution, undo/redo, provenance, richer values, external effects, and the full Patch language are outside the current Lean source model.
+\item direct-WebAssembly lowering and the WebAssembly engine are not verified by the current Lean development;
+\item JavaScript reconstruction of semantic operations from observed before/after transitions remains an implementation boundary;
+\item runtime correspondence currently covers linear protected source traces, not formal branches, repeats, or multiple recipe invocations;
+\item concrete runtime amount correspondence is restricted to the formal integer fragment;
+\item formal recipe-call/substitution coverage is narrower than the implemented direct backend;
+\item GUI/event execution, richer values, external effects, and the full Patch language remain outside the current formal semantics;
+\item current evaluation results are tests and mechanized proofs, not a completed benchmark or user study.
 \end{itemize}
 
-The highest-value next theorem/validation step is to connect independently reconstructed runtime semantic-effect occurrences to the formal execution relation for a useful restricted core.
+The next formal steps are explicit branch/repeat path witnesses, invocation identifiers, a concrete-runtime capability corollary from effect refinement, and a smaller typed or independently checkable compiler core.
 
 \section{Conclusion}
-Patch explores a simple language-design commitment: existing persistent state changes through explicit semantic Changes. That commitment enables the compiler to derive operation- and magnitude-aware contracts from the same mutation representation used by execution. The current Lean core proves factorization, signature soundness, policy containment, and integer range soundness for explicit fragments. The implementation increasingly connects to that core through separated claims: independent raw-source extraction validation before certification and independent direct-runtime transition/effect validation after compilation.
-
-The artifact deliberately stops short of an end-to-end verification claim. The remaining research problem is now more precise: connect real runtime effect occurrences to formal execution, reduce duplicated untyped lowering through a smaller core IR, and evaluate whether the semantic factorization materially improves security/engineering tasks. If those steps succeed, Patch offers a testable programming-language contribution rather than merely a collection of change-related tools.
-
-\begin{thebibliography}{9}
-\bibitem{sunshine2011plaid}
-J. Sunshine et al. \emph{First-Class State Change in Plaid}. OOPSLA, 2011. DOI: 10.1145/2048066.2048122.
-
-\bibitem{warth2011worlds}
-A. Warth et al. \emph{Worlds: Controlling the Scope of Side Effects}. ECOOP, 2011. DOI: 10.1007/978-3-642-22655-7\_9.
-
-\bibitem{lucassen1988effects}
-J. Lucassen and D. Gifford. \emph{Polymorphic Effect Systems}. POPL, 1988. DOI: 10.1145/73560.73564.
-
-\bibitem{brachthaeuser2020capabilities}
-J. I. Brachthaeuser, P. Schuster, and K. Ostermann. \emph{Effects as Capabilities}. OOPSLA, 2020. DOI: 10.1145/3428194.
-
-\bibitem{necula2000validation}
-G. C. Necula. \emph{Translation Validation for an Optimizing Compiler}. PLDI, 2000.
-
-\bibitem{necula1997pcc}
-G. C. Necula. \emph{Proof-Carrying Code}. POPL, 1997. DOI: 10.1145/263699.263712.
-\end{thebibliography}
+Patch investigates a language architecture in which persistent mutation is not merely observed but semantically factored through an explicit change representation. That representation supports operation- and magnitude-aware contracts while retaining compact beginner-facing syntax. The Lean development proves key properties of the modeled change, signature, policy, source, range, and now restricted runtime-correspondence layers. The implementation uses independent producer paths and proof-free evidence to move practical execution closer to those formal claims without presenting validation as full compiler verification. The remaining research task is to determine, through broader correspondence and empirical evaluation, whether this factorization yields sufficient security, engineering, and usability benefits to justify the language design.
 
 \end{document}
