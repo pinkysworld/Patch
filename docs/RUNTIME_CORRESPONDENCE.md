@@ -11,9 +11,7 @@ Before beta.20 the repository had two strong but separate facts:
 1. Lean proves properties of `SourceStmt` / `CoreStmt` executions.
 2. An independent JavaScript validator reconstructs semantic effects from direct-Wasm `target/before/after` transitions and checks them against production Change Signatures and Change Capabilities.
 
-The missing bridge was whether concrete observed runtime effect occurrences could be admitted by the formal execution semantics.
-
-Beta.20 adds that bridge for linear protected recipes.
+The missing bridge was whether concrete observed runtime effect occurrences could be admitted by the formal execution semantics. Beta.20 adds that bridge for linear protected recipes.
 
 ## Pipeline
 
@@ -52,7 +50,7 @@ PatchRuntime.checkSourceRuntimeEvidence
       v
 exists formalTrace:
   SourceExecutes source formalTrace
-  and observedTrace pointwise refines formalTrace
+  and TraceRefines actualTrace formalTrace
 ```
 
 ## Why refinement is required
@@ -65,19 +63,9 @@ make reward(bonus number 0..5):
     add bonus * 2
 ```
 
-has a formal amount interval:
+has formal amount interval `increase [0,10]`. If the direct program calls `reward(4)`, the concrete runtime occurrence is `increase [8,8]`.
 
-```text
-increase [0,10]
-```
-
-If the direct program calls `reward(4)`, the concrete runtime occurrence is:
-
-```text
-increase [8,8]
-```
-
-The concrete occurrence should not have to equal the abstract formal interval. Instead beta.20 defines `EffectRefines actual expected`: target, field and semantic operation must agree, and a concrete amount interval must lie within the formal amount interval.
+The concrete occurrence should not have to equal the abstract formal interval. Beta.20 therefore defines `EffectRefines actual expected`: target, field and semantic operation must agree, and a concrete amount interval must lie within the formal amount interval.
 
 The executable checker `effectRefinesBool` is proved sound with respect to that relation.
 
@@ -87,10 +75,11 @@ The executable checker `effectRefinesBool` is proved sound with respect to that 
 
 ```text
 EffectRefines
- effectRefinesBool
- effectRefinesBool_sound
+effectRefinesBool
+effectRefinesBool_sound
 
 decodeRuntimeTrace
+TraceRefines
 traceRefinesBool
 traceRefinesBool_sound
 
@@ -101,6 +90,8 @@ checkSourceRuntimeEvidence
 checkSourceRuntimeEvidence_sound
 ```
 
+`TraceRefines` is Patch's small inductive pointwise relation over two effect lists. It is intentionally local to the formal model instead of depending on a library relation name.
+
 The main theorem has the shape:
 
 ```text
@@ -109,7 +100,7 @@ checkSourceRuntimeEvidence source observed = true
 exists formalTrace actualTrace,
   SourceExecutes source formalTrace
   and decodeRuntimeTrace observed = some actualTrace
-  and List.Forall2 EffectRefines actualTrace formalTrace
+  and TraceRefines actualTrace formalTrace
 ```
 
 This is the important new connection: accepted concrete runtime occurrences are tied to an execution in the existing mechanized source semantics rather than only to a production-side signature.
@@ -161,8 +152,9 @@ The certificate producer also currently requires:
 
 For a successful generated beta.20 runtime certificate, Lean checks that:
 
-- the supplied proof-free runtime occurrences decode to valid formal effects;
+- supplied proof-free runtime occurrences decode to valid formal effects;
 - every observed occurrence semantically refines the corresponding formal effect;
+- `TraceRefines` holds for the complete ordered actual/formal occurrence lists;
 - the formal effect sequence is an actual `SourceExecutes` trace of the supplied formal source statement;
 - interval containment used for occurrence refinement is checked by Lean's executable interval checker and its soundness theorem.
 
