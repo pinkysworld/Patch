@@ -1,4 +1,4 @@
-const CACHE = 'patch-studio-0.2-beta.16';
+const CACHE = 'patch-studio-0.2-beta.17';
 const CORE = [
   './',
   './index.html',
