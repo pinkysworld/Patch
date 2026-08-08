@@ -1,0 +1,88 @@
+% Beta 9 manuscript section. This file is kept separate so it can be integrated
+% into the venue-template version of main.tex without weakening the explicit
+% artifact boundary.
+\section{Machine-Checked Range-Analysis Soundness}
+
+Magnitude-aware Change Capabilities depend on a quantitative analysis: if a
+source change amount is summarized by an interval, concrete executions of the
+supported expression must remain inside that interval. Beta 9 mechanizes this
+obligation for a deliberately small integer fragment rather than treating all
+production arithmetic as verified.
+
+\subsection{Formal expression fragment}
+The Lean module \texttt{PatchRange.lean} defines expressions
+\[
+e ::= n \mid x \mid e_1 + e_2 \mid e_1 - e_2 \mid -e \mid k \cdot e,
+\]
+where $n\in\mathbb{Z}$ and $k\in\mathbb{N}$. The final form is represented by
+\texttt{scale k e}; restricting the factor to a non-negative integer constant
+keeps this initial formal fragment linear while covering common contracts such
+as \texttt{bonus * 2}.
+
+An abstract environment $\Gamma$ maps variable names to ordered integer
+intervals, while a concrete environment $\rho$ maps variable names to integer
+values. The predicate \texttt{EnvRespects} states that each concrete value used
+by $\rho$ lies inside the corresponding interval in $\Gamma$.
+
+The formalization defines an executable abstract interpreter
+\[
+\mathit{analyzeRange}(e,\Gamma) : Option\ Interval
+\]
+and a concrete evaluator
+\[
+\mathit{evalRangeExpr}(e,\rho) : Option\ Int.
+\]
+
+\subsection{Soundness theorem}
+Lean machine-checks the theorem \texttt{rangeAnalysisSound}:
+\[
+\begin{split}
+&EnvRespects(\Gamma,\rho) \\
+&\land\ analyzeRange(e,\Gamma)=Some(I) \\
+&\land\ evalRangeExpr(e,\rho)=Some(v) \\
+&\Longrightarrow v\in I.
+\end{split}
+\]
+The proof is structural over the formal expression grammar. Addition,
+subtraction and negation use the usual interval endpoint rules; constant scaling
+is proved by induction through repeated addition. A concrete corollary proves
+that $bonus\in[0,5]$ implies $2\cdot bonus\in[0,10]$.
+
+\subsection{Production connection}
+The normal JavaScript analyzer and the formal-certificate extractor are kept as
+separate claim paths. \texttt{src/range-analysis.js} computes the ordinary
+production interval. \texttt{src/formal-range.js} independently parses supported
+production expression text into the formal \texttt{RangeExpr} vocabulary and
+independently computes the corresponding interval. Certification requires these
+intervals to agree.
+
+For each accepted numeric change, the generated Lean certificate contains the
+formal expression, its abstract environment and the claimed interval. Lean then
+checks that \texttt{analyzeRange} returns exactly that interval and instantiates
+\texttt{rangeAnalysisSound}. Formal CI exercises this path with a real Patch
+program whose protected recipe is:
+
+\begin{lstlisting}
+allow reward:
+  player.score may increase up to 10
+
+make reward(player, bonus number 0..5):
+  change player:
+    add bonus * 2 to score
+\end{lstlisting}
+
+\subsection{Boundary}
+This theorem does not establish soundness for every expression currently
+accepted by the production analyzer. Beta 9 range certification intentionally
+excludes division, decimal or floating-point semantics, and general
+multiplication where neither operand is a non-negative integer literal. Such
+constructs are not silently labeled verified.
+
+Two important correspondence obligations remain. First, JavaScript parsing and
+extraction from production source/AST into \texttt{RangeExpr} are independently
+implemented and cross-checked but are not themselves machine-proved. Second,
+the production runtime evaluator is not yet proved to correspond to
+\texttt{evalRangeExpr}. The beta-9 result should therefore be stated as a
+machine-checked soundness theorem for the formal integer fragment plus a
+conservative production-validation boundary, not as full compiler or full
+production-analyzer verification.
