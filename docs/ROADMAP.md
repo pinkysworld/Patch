@@ -128,8 +128,21 @@
 - [x] explicit `DirectWasmUnsupportedError` outside the supported subset
 - [x] interpreter-vs-Wasm differential tests for output and final state
 - [x] direct Wasm build and execution in Windows/macOS/Linux CI
-- [ ] structured `if` lowering
-- [ ] `repeat` lowering
+
+### beta.11: direct WebAssembly control flow
+
+- [x] structured Wasm `if` / `else` lowering
+- [x] typed direct expression results (`f64-number`, `i32-bool`)
+- [x] direct numeric comparisons `== != < > <= >=`
+- [x] direct boolean `true`, `false`, `not`, `and`, `or`
+- [x] explicit rejection of bare numeric truthiness in the direct subset
+- [x] literal `repeat 0..100000` lowering to Wasm `block` / `loop`
+- [x] 1-based Patch `count` represented as a Wasm local
+- [x] nested repeat `count` shadowing
+- [x] `if` inside `repeat`
+- [x] control-flow differential tests against the interpreter
+- [x] cross-platform direct control-flow build/execution example
+- [ ] dynamic repeat lowering
 - [ ] non-recursive recipe/call lowering
 - [ ] preserve and expose semantic change traces from direct execution
 - [ ] lowering correspondence proof/validation against the formal execution model
@@ -160,7 +173,8 @@ Completed foundation:
 - [x] formal integer expression fragment
 - [x] machine-checked interval-analysis soundness for that formal fragment
 - [x] independent production expression extraction and range-agreement validation
-- [x] first directly executing Wasm backend for a numeric Change IR subset
+- [x] direct Wasm numeric Change IR subset
+- [x] direct Wasm `if` / literal `repeat` control flow
 - [x] differential interpreter/direct-Wasm execution tests
 
 Highest-priority remaining work:
@@ -177,17 +191,19 @@ Highest-priority remaining work:
 
 ## 0.4 direct portable execution backend
 
-Completed first slice:
+Completed:
 
 - [x] directly executable numeric Change IR-to-WebAssembly subset
 - [x] explicit backend support boundary with no silent fallback
 - [x] differential interpreter/backend execution tests
 - [x] cross-platform direct-Wasm build and execution CI
+- [x] structured `if` / `else` lowering
+- [x] literal `repeat` lowering with Patch `count`
 
 Remaining:
 
 - [ ] typed core / expression IR suitable for broader direct lowering
-- [ ] structured control-flow lowering
+- [ ] dynamic loop lowering with explicit bounded runtime semantics
 - [ ] recipe/call lowering
 - [ ] preserve semantic contract/range/source/evidence certificates across lowering
 - [ ] direct execution change-trace ABI
@@ -245,11 +261,12 @@ Before a high-venue submission:
 - [x] SourceStmt→EvidenceStmt and source→signature checked correspondence for certificate artifacts
 - [x] machine-checked range-analysis soundness for a useful integer fragment
 - [x] production/formal range-agreement boundary for supported expressions
-- [x] first direct compiled execution for a numeric core
+- [x] direct compiled execution for a numeric core
+- [x] direct structured branch/literal-loop execution
 - [x] direct-backend differential execution gate
 - [ ] production AST→RangeExpr/SourceStmt extraction assurance for a useful subset
 - [ ] production/direct-Wasm runtime and formal trace correspondence
-- [ ] broader direct compiled execution with structured control flow and calls
+- [ ] broader direct compiled execution with calls and richer values
 - [ ] benchmark suite and semantic-security case studies
 - [ ] source/range/evidence/certificate/checker/backend overhead evaluation
 - [ ] reproducibility bundle
@@ -270,4 +287,5 @@ Before a high-venue submission:
 11. Division, decimal/floating-point semantics and general multiplication are not silently labeled formally verified.
 12. Direct-Wasm support is narrower than the Patch language and unsupported constructs must fail explicitly rather than fall back silently.
 13. Differential backend tests are evidence, not a compiler-correctness theorem.
-14. Unsupported certification constructs are never silently labeled verified.
+14. Direct numeric equality is not presented as a proof of all JavaScript `deepEqual` edge cases for non-finite values.
+15. Unsupported certification constructs are never silently labeled verified.
