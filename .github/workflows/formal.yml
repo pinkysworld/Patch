@@ -23,6 +23,8 @@ jobs:
         run: npm run certify:example
       - name: Execute direct Wasm and generate runtime correspondence certificate
         run: npm run runtime-certify:example
+      - name: Generate recipe-call composition certificate from production compiler
+        run: npm run call-certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -50,6 +52,12 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean GeneratedRuntimeCertificate.lean
+      - name: Verify generated recipe-call composition certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedCallCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |
