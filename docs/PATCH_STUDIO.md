@@ -15,9 +15,9 @@ A beginner should be able to:
 
 No build files, compiler setup, SDK selection or package-manager knowledge should be required for ordinary programs.
 
-## What works in 0.2 beta.2
+## What works in 0.2 beta.17
 
-Patch Studio now includes:
+Patch Studio includes:
 
 - source editor and local project autosave;
 - Run for console and GUI programs;
@@ -25,13 +25,51 @@ Patch Studio now includes:
 - Change IR viewer;
 - **Change Contract** viewer for inferred semantic Change Signatures and declared Change Capabilities;
 - portable `.patchapp` builds;
-- bootstrap `.wasm` builds;
+- direct `.wasm` builds and the advanced bootstrap Wasm carrier;
+- standalone single-file Web App builds;
 - first visual Designer toolbox with **+ Text**, **+ Button** and **+ Input**;
 - source-preserving Designer edits;
 - responsive phone/tablet layout;
-- installable PWA/offline cache.
+- installable PWA/offline cache;
+- **Studio cloud builds for Windows, macOS and Linux** from the Patch source currently open in the editor.
 
-The Designer is intentionally an early RAD slice, not yet a finished drag-and-drop form editor. Positioning, resizing, control selection, a property inspector and richer widgets are next milestones.
+The Designer is intentionally an early RAD slice, not yet a finished drag-and-drop form editor. Positioning, resizing, control selection, a property inspector and richer widgets remain future milestones.
+
+## Build for Windows, macOS and Linux from Studio
+
+Choose **Windows / macOS / Linux desktop** in the Build selector and press **Build**.
+
+Patch Studio opens a small desktop-build dialog where the user chooses:
+
+- Windows, macOS, Linux or all three;
+- Console or Window / GUI application.
+
+Because a browser or iPhone cannot execute every desktop toolchain locally, Studio sends the Patch source currently in the editor to the repository's **Patch Native Apps** GitHub Actions workflow. The source is sent as a base64 workflow input, so it does not have to be committed first.
+
+A GitHub token is required to dispatch and monitor the workflow. Patch Studio keeps that token only in memory in the current browser tab and does not put it in `localStorage` or the Patch project. The token is sent only to `api.github.com` for the workflow API calls.
+
+Studio then:
+
+1. dispatches the build;
+2. finds the workflow run by a unique request ID;
+3. follows queued/running/completed status;
+4. lists the produced artifacts;
+5. downloads the selected artifact ZIP when the browser permits the authenticated artifact redirect;
+6. otherwise offers the corresponding GitHub Actions run as a fallback download location.
+
+### Console desktop applications
+
+Console projects use the direct Patch Wasm backend and the small Rust/Wasmtime native host already used by the CLI native target.
+
+The cloud runner builds the host on the target operating system and smoke-runs it before uploading the artifact.
+
+### Window / GUI desktop applications
+
+Window projects are packaged as desktop GUI applications using a minimal generated Electron host. The generated player includes the current Patch source and Patch runtime, renders Patch `window`, `text`, `button` and `input` controls, and forwards supported button events back to the Patch runtime.
+
+The current GUI package is therefore a **standalone desktop build**, but it is not yet native-widget lowering of Patch UI to AppKit/Win32/GTK. That remains a later compiler/runtime target.
+
+For macOS, the GUI packager requests a universal Electron bundle. Windows and Linux currently package the architecture supplied by their GitHub-hosted runner.
 
 ## Change Contract view
 
@@ -74,13 +112,13 @@ Patch Studio is a Progressive Web App. The same IDE is intended to work in moder
 - ChromeOS;
 - FreeBSD/OpenBSD/NetBSD and other Unix-like systems with a modern browser.
 
-The PWA caches the compiler/interpreter/change-analysis/Designer assets for offline use and stores the current project locally in the browser.
+The PWA caches the compiler/interpreter/change-analysis/Designer assets for offline use and stores the current project locally in the browser. Cloud desktop builds naturally require network access.
 
 ### iPhone and iPad
 
 On iPhone/iPad, open Patch Studio in Safari and choose **Share -> Add to Home Screen**.
 
-Today the phone can locally:
+The phone can locally:
 
 ```text
 edit Patch
@@ -90,27 +128,24 @@ run/preview window programs
 inspect semantic Change Contracts
 inspect Change IR
 build .patchapp
-build bootstrap .wasm
+build direct/bootstrap Wasm
+build a standalone Web App
 ```
 
-Native Windows/macOS/Linux application builds require platform toolchains and signing facilities that iOS cannot host. The intended later design is:
+And, with GitHub Actions access, it can now request desktop builds without owning those desktop machines:
 
 ```text
 Patch Studio on iPhone
         |
         +-- edit / design / run locally
-        +-- inspect Change Contracts locally
-        +-- Build portable .patchapp locally
-        +-- Build bootstrap/direct Wasm locally
-        `-- Build for... through remote platform runner
+        +-- Build for desktop
                 |
-                +-- Windows -> .exe
-                +-- macOS   -> .app / CLI universal binary
-                +-- Linux   -> executable / packages
-                `-- BSD/Unix -> runtime package or C fallback
+                +-- Windows -> native console .exe or packaged GUI app
+                +-- macOS   -> .app / native console host
+                `-- Linux   -> executable / packaged GUI app
 ```
 
-This lets the iPhone be the development computer even when the final binary targets a desktop OS.
+This makes the iPhone a usable development front end even when the final application targets a desktop operating system.
 
 ## Studio layout
 
@@ -118,7 +153,7 @@ Desktop direction:
 
 ```text
 +----------------------------------------------------------------+
-| Patch Studio                    Run   Target   Build   Build... |
+| Patch Studio                    Run   Target   Build            |
 +-------------+---------------------------+----------------------+
 | Project     |                           | Properties           |
 | Toolbox     |       Window Designer     | (next stage)         |
@@ -127,7 +162,7 @@ Desktop direction:
 | + Button    |       [ Button ]          |                      |
 | + Input     |                           |                      |
 +-------------+---------------------------+----------------------+
-| Designer | App | Output | Change Contract | Change IR         |
+| Designer | App | Output | Changes | IR                         |
 +----------------------------------------------------------------+
 ```
 
@@ -170,21 +205,17 @@ The same `change` semantics and Change Signature analysis can apply to console r
 
 ## Build UX
 
-0.2 currently offers:
+The Studio build selector now offers:
 
-- **Run**;
-- **Build Portable .patchapp**;
-- **Build WebAssembly .wasm** (bootstrap backend).
+- **Standalone Web App (.html)**;
+- **Windows / macOS / Linux desktop**;
+- **Portable .patchapp**;
+- **Direct WebAssembly (.wasm)**;
+- **Bootstrap Wasm (advanced)**.
 
-Compilation validates any declared Change Capability policies before producing the artifact.
+Compilation validates declared Change Capability policies before producing local compiler artifacts. Desktop cloud builds also run `patch check` before packaging.
 
-The longer-term simple UI remains:
-
-- **Run**: execute immediately;
-- **Build**: build the selected target;
-- **Build for...**: Windows, macOS, Linux, Unix/BSD, Web or portable.
-
-Architecture selection, signing and packaging details remain optional advanced settings.
+Architecture selection, signing, notarization and installer formats remain advanced/future release concerns.
 
 ## Immediate mode
 
