@@ -14,7 +14,6 @@ export class DirectWasmUnsupportedError extends Error {}
  *   - change number: set/add/remove/clear
  *   - show numeric expressions
  *   - numeric expressions with literals, earlier numeric bindings, + - * /
- *   - allow declarations (compile-time only, therefore no runtime code)
  */
 export function compileToDirectWasm(source, options = {}) {
   const compiled = compile(source, options);
@@ -50,8 +49,7 @@ export function compileToDirectWasm(source, options = {}) {
       'change number set/add/remove/clear',
       'show numeric expression',
       'numeric literals and earlier bindings',
-      'numeric + - * /',
-      'compile-time allow declarations'
+      'numeric + - * /'
     ]
   };
 
@@ -101,6 +99,9 @@ function lowerInstruction(instruction, ctx) {
   const { globals, defined, instructions } = ctx;
   switch (instruction.code) {
     case 'ALLOW_CHANGES':
+      // The production compiler has already validated the declaration. A valid
+      // protected recipe still contains MAKE/DO and is therefore rejected by
+      // this first executable subset until recipe lowering lands.
       return;
     case 'CREATE': {
       if (instruction.valueType !== 'number') {
