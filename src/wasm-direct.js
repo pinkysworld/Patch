@@ -1,19 +1,14 @@
 import { compile } from './compiler.js';
 
-export const PATCH_DIRECT_WASM_VERSION = '0.1-core';
+export const PATCH_DIRECT_WASM_VERSION = '0.2-control';
 
 export class DirectWasmUnsupportedError extends Error {}
 
 /**
- * Compile a deliberately small numeric console subset of Patch directly to
- * executable WebAssembly instructions. Unlike the bootstrap backend, the
- * resulting module executes the lowered Patch operations itself.
- *
- * Supported in this first slice:
- *   - create number
- *   - change number: set/add/remove/clear
- *   - show numeric expressions
- *   - numeric expressions with literals, earlier numeric bindings, + - * /
+ * Compile a numeric console subset of Patch directly to executable WebAssembly.
+ * The generated module executes state changes and structured control flow itself.
+ * Unsupported Patch constructs fail explicitly instead of falling back to the
+ * interpreter.
  */
 export function compileToDirectWasm(source, options = {}) {
   const compiled = compile(source, options);
@@ -23,19 +18,22 @@ export function compileToDirectWasm(source, options = {}) {
 
   const numericNames = collectNumericBindings(compiled.ir.instructions);
   const globals = new Map(numericNames.map((name, index) => [name, index]));
-  const defined = new Set();
-  const instructions = [];
+  const ctx = {
+    globals,
+    defined: new Set(),
+    locals: new Map(),
+    allocator: { nextLocal: 0 },
+    instructions: []
+  };
 
-  for (const instruction of compiled.ir.instructions) {
-    lowerInstruction(instruction, { globals, defined, instructions });
-  }
+  lowerBlock(compiled.ir.instructions, ctx);
 
   const stateExports = Object.fromEntries(numericNames.map((name, index) => [name, {
     export: `patch_state_${name}`,
     globalIndex: index
   }]));
 
-  const module = buildModule(numericNames.length, instructions, stateExports);
+  const module = buildModule(numericNames.length, ctx.allocator.nextLocal, ctx.instructions, stateExports);
   const metadata = {
     format: 'patch-wasm-direct',
     version: PATCH_DIRECT_WASM_VERSION,
@@ -45,11 +43,13 @@ export function compileToDirectWasm(source, options = {}) {
     hostAbi: { module: 'patch', showNumber: 'show_number(f64) -> void' },
     stateExports,
     supported: [
-      'create number',
+      'create number at top level',
       'change number set/add/remove/clear',
       'show numeric expression',
-      'numeric literals and earlier bindings',
-      'numeric + - * /'
+      'numeric literals, earlier bindings and repeat count',
+      'numeric + - * /',
+      'if/else with supported boolean/numeric comparisons',
+      'literal repeat 0..100000 with Patch count local'
     ]
   };
 
@@ -95,24 +95,40 @@ function collectNumericBindings(instructions) {
   return names;
 }
 
+function lowerBlock(block, ctx) {
+  for (const instruction of block) lowerInstruction(instruction, ctx);
+}
+
+function childContext(ctx, instructions, locals = ctx.locals) {
+  return {
+    globals: ctx.globals,
+    defined: ctx.defined,
+    locals,
+    allocator: ctx.allocator,
+    instructions
+  };
+}
+
 function lowerInstruction(instruction, ctx) {
   const { globals, defined, instructions } = ctx;
   switch (instruction.code) {
     case 'ALLOW_CHANGES':
       // The production compiler has already validated the declaration. A valid
-      // protected recipe still contains MAKE/DO and is therefore rejected by
-      // this first executable subset until recipe lowering lands.
+      // protected recipe still contains MAKE/DO and remains outside this direct
+      // subset until recipe lowering lands.
       return;
+
     case 'CREATE': {
       if (instruction.valueType !== 'number') {
         throw unsupported(`only numeric create is directly lowered, got ${instruction.valueType}`);
       }
       const index = requireGlobal(instruction.name, globals, instruction.line);
-      instructions.push(...compileNumericExpression(instruction.expr, globals, defined, instruction.line));
+      instructions.push(...compileNumericExpression(instruction.expr, ctx, instruction.line));
       instructions.push(0x24, ...u32(index)); // global.set
       defined.add(instruction.name);
       return;
     }
+
     case 'CHANGE': {
       const index = requireDefinedNumeric(instruction.target, globals, defined, instruction.line);
       for (const operation of instruction.operations) {
@@ -126,7 +142,7 @@ function lowerInstruction(instruction, ctx) {
         if (!['set', 'add', 'remove'].includes(operation.op)) {
           throw unsupported(`change operation '${operation.op}' at line ${operation.line ?? instruction.line ?? '?'} is not directly lowered yet`);
         }
-        const expr = compileNumericExpression(operation.expr, globals, defined, operation.line ?? instruction.line);
+        const expr = compileNumericExpression(operation.expr, ctx, operation.line ?? instruction.line);
         if (operation.op === 'set') {
           instructions.push(...expr, 0x24, ...u32(index));
         } else {
@@ -138,17 +154,76 @@ function lowerInstruction(instruction, ctx) {
       }
       return;
     }
+
     case 'SHOW':
-      instructions.push(...compileNumericExpression(instruction.expr, globals, defined, instruction.line));
+      instructions.push(...compileNumericExpression(instruction.expr, ctx, instruction.line));
       instructions.push(0x10, ...u32(0)); // call imported patch.show_number
       return;
+
+    case 'IF': {
+      const condition = compileBooleanExpression(instruction.expr, ctx, instruction.line);
+      const thenInstructions = [];
+      const elseInstructions = [];
+      lowerBlock(instruction.then ?? [], childContext(ctx, thenInstructions));
+      lowerBlock(instruction.else ?? [], childContext(ctx, elseInstructions));
+
+      instructions.push(...condition, 0x04, 0x40); // if, empty block type
+      instructions.push(...thenInstructions);
+      if (elseInstructions.length) instructions.push(0x05, ...elseInstructions); // else
+      instructions.push(0x0b); // end if
+      return;
+    }
+
+    case 'REPEAT': {
+      const repeatCount = literalRepeatCount(instruction.expr, instruction.line);
+      const remainingLocal = allocateI32Local(ctx);
+      const countLocal = allocateI32Local(ctx);
+      const bodyInstructions = [];
+      const bodyLocals = new Map(ctx.locals);
+      bodyLocals.set('count', { index: countLocal, kind: 'i32-number' });
+      lowerBlock(instruction.body ?? [], childContext(ctx, bodyInstructions, bodyLocals));
+
+      // remaining := N; count := 1
+      instructions.push(...i32Const(repeatCount), 0x21, ...u32(remainingLocal));
+      instructions.push(...i32Const(1), 0x21, ...u32(countLocal));
+
+      // block { loop { if remaining == 0 break; body; remaining--; count++; continue } }
+      instructions.push(0x02, 0x40); // block
+      instructions.push(0x03, 0x40); // loop
+      instructions.push(0x20, ...u32(remainingLocal), 0x45, 0x0d, ...u32(1)); // br_if outer block
+      instructions.push(...bodyInstructions);
+      instructions.push(0x20, ...u32(remainingLocal), ...i32Const(1), 0x6b, 0x21, ...u32(remainingLocal));
+      instructions.push(0x20, ...u32(countLocal), ...i32Const(1), 0x6a, 0x21, ...u32(countLocal));
+      instructions.push(0x0c, ...u32(0)); // br loop
+      instructions.push(0x0b, 0x0b); // end loop, end block
+      return;
+    }
+
     default:
-      throw unsupported(`${instruction.code} at line ${instruction.line ?? '?'} is not in the first direct Wasm execution subset`);
+      throw unsupported(`${instruction.code} at line ${instruction.line ?? '?'} is not in the direct Wasm execution subset`);
   }
 }
 
+function allocateI32Local(ctx) {
+  const index = ctx.allocator.nextLocal;
+  ctx.allocator.nextLocal += 1;
+  return index;
+}
+
+function literalRepeatCount(source, line) {
+  const text = String(source ?? '').trim();
+  if (!/^\d+$/.test(text)) {
+    throw unsupported(`repeat count '${text || '?'}' at line ${line ?? '?'} must be a literal whole number in the beta.11 direct subset`);
+  }
+  const count = Number(text);
+  if (!Number.isSafeInteger(count) || count < 0 || count > 100000) {
+    throw unsupported(`repeat count at line ${line ?? '?'} must be from 0 to 100000`);
+  }
+  return count;
+}
+
 function requireGlobal(name, globals, line) {
-  if (!globals.has(name)) throw unsupported(`numeric binding '${name}' at line ${line ?? '?'} has no direct Wasm global`);
+  if (!globals.has(name)) throw unsupported(`numeric binding '${name}' at line ${line ?? '?'} has no direct Wasm global; nested create is not supported yet`);
   return globals.get(name);
 }
 
@@ -158,93 +233,204 @@ function requireDefinedNumeric(name, globals, defined, line) {
   return index;
 }
 
-function compileNumericExpression(source, globals, defined, line) {
+function compileNumericExpression(source, ctx, line) {
+  const compiled = compileExpression(source, ctx, line);
+  if (compiled.kind !== 'f64-number') {
+    throw unsupported(`expression '${String(source).trim()}' at line ${line ?? '?'} is boolean where a number is required`);
+  }
+  return compiled.code;
+}
+
+function compileBooleanExpression(source, ctx, line) {
+  const compiled = compileExpression(source, ctx, line);
+  if (compiled.kind !== 'i32-bool') {
+    throw unsupported(`condition '${String(source).trim()}' at line ${line ?? '?'} must be a boolean or comparison in the direct subset`);
+  }
+  return compiled.code;
+}
+
+function compileExpression(source, ctx, line) {
   if (source === null || source === undefined || !String(source).trim()) {
-    throw unsupported(`missing numeric expression at line ${line ?? '?'}`);
+    throw unsupported(`missing expression at line ${line ?? '?'}`);
   }
   try {
-    const parser = new NumericExpressionCompiler(String(source), globals, defined);
-    return parser.compile();
+    return new DirectExpressionCompiler(String(source), ctx).compile();
   } catch (err) {
     if (err instanceof DirectWasmUnsupportedError) {
-      throw unsupported(`${err.message}${line ? ` at line ${line}` : ''}`);
+      throw unsupported(`${stripDirectPrefix(err.message)}${line ? ` at line ${line}` : ''}`);
     }
     throw err;
   }
 }
 
-class NumericExpressionCompiler {
-  constructor(source, globals, defined) {
-    this.tokens = tokenizeNumeric(source);
+class DirectExpressionCompiler {
+  constructor(source, ctx) {
+    this.tokens = tokenizeDirect(source);
     this.i = 0;
-    this.globals = globals;
-    this.defined = defined;
+    this.ctx = ctx;
   }
-  peek(type) { return this.tokens[this.i]?.type === type; }
-  take(type) {
+
+  peek(type, text) {
     const token = this.tokens[this.i];
-    if (!token || token.type !== type) throw unsupported(`expected '${type}', found '${token?.text ?? 'end of expression'}'`);
+    return token?.type === type && (text === undefined || token.text === text);
+  }
+
+  take(type, text) {
+    const token = this.tokens[this.i];
+    if (!this.peek(type, text)) throw unsupported(`expected '${text ?? type}', found '${token?.text ?? 'end of expression'}'`);
     this.i += 1;
     return token;
   }
+
   compile() {
-    const code = this.additive();
-    if (!this.peek('eof')) throw unsupported(`unexpected '${this.tokens[this.i].text}' in numeric expression`);
-    return code;
+    const value = this.or();
+    if (!this.peek('eof')) throw unsupported(`unexpected '${this.tokens[this.i].text}' in expression`);
+    return value;
   }
+
+  or() {
+    let left = this.and();
+    while (this.peek('word', 'or')) {
+      this.i += 1;
+      const right = this.and();
+      requireKind(left, 'i32-bool', 'or');
+      requireKind(right, 'i32-bool', 'or');
+      left = { kind: 'i32-bool', code: [...left.code, ...right.code, 0x72] }; // i32.or
+    }
+    return left;
+  }
+
+  and() {
+    let left = this.equality();
+    while (this.peek('word', 'and')) {
+      this.i += 1;
+      const right = this.equality();
+      requireKind(left, 'i32-bool', 'and');
+      requireKind(right, 'i32-bool', 'and');
+      left = { kind: 'i32-bool', code: [...left.code, ...right.code, 0x71] }; // i32.and
+    }
+    return left;
+  }
+
+  equality() {
+    let left = this.comparison();
+    while (this.peek('==') || this.peek('!=')) {
+      const op = this.tokens[this.i++].type;
+      const right = this.comparison();
+      if (left.kind !== right.kind) throw unsupported(`${op} requires two values of the same direct expression kind`);
+      if (left.kind === 'f64-number') {
+        left = { kind: 'i32-bool', code: [...left.code, ...right.code, op === '==' ? 0x61 : 0x62] }; // f64.eq/ne
+      } else if (left.kind === 'i32-bool') {
+        left = { kind: 'i32-bool', code: [...left.code, ...right.code, op === '==' ? 0x46 : 0x47] }; // i32.eq/ne
+      } else {
+        throw unsupported(`${op} is unsupported for ${left.kind}`);
+      }
+    }
+    return left;
+  }
+
+  comparison() {
+    let left = this.additive();
+    while (this.peek('<') || this.peek('>') || this.peek('<=') || this.peek('>=')) {
+      const op = this.tokens[this.i++].type;
+      const right = this.additive();
+      requireKind(left, 'f64-number', op);
+      requireKind(right, 'f64-number', op);
+      const opcode = { '<': 0x63, '>': 0x64, '<=': 0x65, '>=': 0x66 }[op];
+      left = { kind: 'i32-bool', code: [...left.code, ...right.code, opcode] };
+    }
+    return left;
+  }
+
   additive() {
-    let code = this.multiplicative();
+    let left = this.multiplicative();
     while (this.peek('+') || this.peek('-')) {
       const op = this.tokens[this.i++].type;
       const right = this.multiplicative();
-      code = [...code, ...right, op === '+' ? 0xa0 : 0xa1];
+      requireKind(left, 'f64-number', op);
+      requireKind(right, 'f64-number', op);
+      left = { kind: 'f64-number', code: [...left.code, ...right.code, op === '+' ? 0xa0 : 0xa1] };
     }
-    return code;
+    return left;
   }
+
   multiplicative() {
-    let code = this.unary();
+    let left = this.unary();
     while (this.peek('*') || this.peek('/') || this.peek('%')) {
       const op = this.tokens[this.i++].type;
       if (op === '%') throw unsupported("'%' is not in the direct Wasm numeric subset yet");
       const right = this.unary();
-      code = [...code, ...right, op === '*' ? 0xa2 : 0xa3];
+      requireKind(left, 'f64-number', op);
+      requireKind(right, 'f64-number', op);
+      left = { kind: 'f64-number', code: [...left.code, ...right.code, op === '*' ? 0xa2 : 0xa3] };
     }
-    return code;
+    return left;
   }
+
   unary() {
     if (this.peek('-')) {
       this.i += 1;
-      return [...this.unary(), 0x9a]; // f64.neg
+      const value = this.unary();
+      requireKind(value, 'f64-number', 'unary -');
+      return { kind: 'f64-number', code: [...value.code, 0x9a] }; // f64.neg
+    }
+    if (this.peek('word', 'not')) {
+      this.i += 1;
+      const value = this.unary();
+      requireKind(value, 'i32-bool', 'not');
+      return { kind: 'i32-bool', code: [...value.code, 0x45] }; // i32.eqz
     }
     return this.primary();
   }
+
   primary() {
-    if (this.peek('number')) return f64Const(this.take('number').value);
+    if (this.peek('number')) return { kind: 'f64-number', code: f64Const(this.take('number').value) };
+
+    if (this.peek('word', 'true')) {
+      this.i += 1;
+      return { kind: 'i32-bool', code: i32Const(1) };
+    }
+    if (this.peek('word', 'false')) {
+      this.i += 1;
+      return { kind: 'i32-bool', code: i32Const(0) };
+    }
+
     if (this.peek('word')) {
       const name = this.take('word').text;
-      if (!this.globals.has(name)) throw unsupported(`'${name}' is not a numeric persistent binding`);
-      if (!this.defined.has(name)) throw unsupported(`'${name}' is referenced before its create`);
-      return [0x23, ...u32(this.globals.get(name))];
+      const local = this.ctx.locals.get(name);
+      if (local) {
+        if (local.kind !== 'i32-number') throw unsupported(`unsupported local representation for '${name}'`);
+        return { kind: 'f64-number', code: [0x20, ...u32(local.index), 0xb7] }; // local.get + f64.convert_i32_s
+      }
+      if (!this.ctx.globals.has(name)) throw unsupported(`'${name}' is not a numeric persistent binding`);
+      if (!this.ctx.defined.has(name)) throw unsupported(`'${name}' is referenced before its create`);
+      return { kind: 'f64-number', code: [0x23, ...u32(this.ctx.globals.get(name))] };
     }
+
     if (this.peek('(')) {
       this.i += 1;
-      const code = this.additive();
+      const value = this.or();
       this.take(')');
-      return code;
+      return value;
     }
-    throw unsupported(`unexpected '${this.tokens[this.i]?.text ?? 'end of expression'}' in numeric expression`);
+
+    throw unsupported(`unexpected '${this.tokens[this.i]?.text ?? 'end of expression'}' in expression`);
   }
 }
 
-function tokenizeNumeric(source) {
+function requireKind(value, expected, operator) {
+  if (value.kind !== expected) throw unsupported(`operator '${operator}' requires ${expected === 'f64-number' ? 'numbers' : 'booleans'}`);
+}
+
+function tokenizeDirect(source) {
   const text = source.trim();
   const out = [];
-  const token = /\s*(?:(\d+(?:\.\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(\+|-|\*|\/|%|\(|\)))/gy;
+  const token = /\s*(?:(\d+(?:\.\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(==|!=|<=|>=|\+|-|\*|\/|%|<|>|\(|\)))/gy;
   let pos = 0;
   while (pos < text.length) {
     token.lastIndex = pos;
     const match = token.exec(text);
-    if (!match) throw unsupported(`cannot directly lower numeric expression near '${text.slice(pos)}'`);
+    if (!match) throw unsupported(`cannot directly lower expression near '${text.slice(pos)}'`);
     pos = token.lastIndex;
     if (match[1] !== undefined) out.push({ type: 'number', value: Number(match[1]), text: match[1] });
     else if (match[2] !== undefined) out.push({ type: 'word', text: match[2] });
@@ -254,7 +440,7 @@ function tokenizeNumeric(source) {
   return out;
 }
 
-function buildModule(globalCount, runInstructions, stateExports) {
+function buildModule(globalCount, localCount, runInstructions, stateExports) {
   const globals = Array.from({ length: globalCount }, () => globalF64(0));
   const exports = [exportEntry('run', 0x00, 1)]; // function 0 is imported show_number
   for (const info of Object.values(stateExports)) exports.push(exportEntry(info.export, 0x03, info.globalIndex));
@@ -269,8 +455,12 @@ function buildModule(globalCount, runInstructions, stateExports) {
     section(3, vec([u32(1)])),
     globals.length ? section(6, vec(globals)) : null,
     section(7, vec(exports)),
-    section(10, vec([functionBody(runInstructions)]))
+    section(10, vec([functionBody(runInstructions, localCount)]))
   );
+}
+
+function stripDirectPrefix(message) {
+  return String(message).replace(/^Direct Wasm:\s*/, '').replace(/\.$/, '');
 }
 
 function unsupported(message) {
@@ -289,8 +479,11 @@ function globalF64(value) {
   return bytes([0x7c, 0x01], f64Const(value), [0x0b]);
 }
 
-function functionBody(instructions) {
-  const payload = bytes([0x00], instructions, [0x0b]); // zero local groups + code + end
+function functionBody(instructions, localCount) {
+  const locals = localCount > 0
+    ? bytes(u32(1), u32(localCount), [0x7f]) // one local declaration group: N x i32
+    : u32(0);
+  const payload = bytes(locals, instructions, [0x0b]);
   return bytes(u32(payload.length), payload);
 }
 
@@ -298,6 +491,10 @@ function f64Const(value) {
   const buffer = new ArrayBuffer(8);
   new DataView(buffer).setFloat64(0, Number(value), true);
   return bytes([0x44], new Uint8Array(buffer));
+}
+
+function i32Const(value) {
+  return bytes([0x41], s32(value));
 }
 
 function exportEntry(name, kind, index) {
@@ -326,6 +523,21 @@ function u32(value) {
     if (n !== 0) byte |= 0x80;
     out.push(byte);
   } while (n !== 0);
+  return out;
+}
+
+function s32(value) {
+  const out = [];
+  let n = Number(value) | 0;
+  let more = true;
+  while (more) {
+    let byte = n & 0x7f;
+    n >>= 7;
+    const signBit = (byte & 0x40) !== 0;
+    more = !((n === 0 && !signBit) || (n === -1 && signBit));
+    if (more) byte |= 0x80;
+    out.push(byte);
+  }
   return out;
 }
 
