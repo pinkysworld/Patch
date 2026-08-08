@@ -18,41 +18,54 @@ const files = {
 
 mustInclude('README.md', files.readme, [
   `Current development beta: \`${version}\``, 'Change IR: `0.8`', 'Independent raw-source parser',
-  'Runtime → Lean correspondence', 'patch runtime-certify', 'SourceExecutes',
-  'Windows Window/GUI', 'macOS Window/GUI', 'Linux Window/GUI', 'FreeBSD Console', '--target c99', 'FreeBSD 15.1',
-  'not yet a standalone WASI command module', 'translation validation', 'docs/RUNTIME_CORRESPONDENCE.md', 'docs/ROADMAP.md'
+  'Runtime → Lean correspondence', 'RuntimePath', 'patch runtime-certify', 'SourceExecutes',
+  'Standalone Window Web App', 'Windows Window/GUI', 'macOS Window/GUI', 'Linux Window/GUI',
+  'FreeBSD Console', '--target c99', 'FreeBSD 15.1', 'not yet a standalone WASI command module',
+  'translation validation', 'docs/RUNTIME_CORRESPONDENCE.md', 'docs/ROADMAP.md'
 ]);
 mustInclude('web/index.html', files.website, [
-  `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.8', 'Independent raw-source validation',
-  'Runtime → Lean correspondence', 'SourceExecutes', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console',
-  'Project Type', 'portable C99', 'FreeBSD 15.1', 'not yet a standalone WASI command', 'State-Change Factorization', 'Roadmap'
+  `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.8',
+  'Standalone Window Web App', 'Independent raw-source validation', 'Runtime → Lean correspondence',
+  'RuntimePath', 'SourceExecutes', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console',
+  'Project Type', 'portable C99', 'FreeBSD 15.1', 'not yet a standalone WASI command',
+  'State-Change Factorization', 'Roadmap'
 ]);
 mustInclude('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, 'FreeBSD Console builds through the portable C99 backend', 'patch runtime-certify'
+  `What works in 0.2 beta.${beta}`, 'Standalone Window Web App',
+  'FreeBSD Console builds through the portable C99 backend', 'patch runtime-certify'
 ]);
 mustInclude('docs/NATIVE_APPS.md', files.native, [
-  `Status: **${version}**`, 'Portable C99', 'FreeBSD 15.1', 'not yet native-widget lowering', 'runtime-certify'
+  `Status: **${version}**`, 'Window preflight', 'Portable C99', 'FreeBSD 15.1',
+  'not yet native-widget lowering', 'runtime-certify'
 ]);
 mustInclude('docs/ROADMAP.md', files.roadmap, [
-  `Current development beta: **${version}**`, `### beta.${beta}: direct runtime → Lean source-execution correspondence`,
-  'FreeBSD Console package through portable C99', 'checkSourceRuntimeEvidence_sound', 'native AppKit Window backend'
+  `Current development beta: **${version}**`, `### beta.${beta}: Window build routing + path-witnessed runtime correspondence`,
+  'RuntimePath', 'checkSourceRuntimeEvidence_sound', 'FreeBSD Console package through portable C99',
+  'native AppKit Window backend'
 ]);
 mustInclude('docs/COMPILER.md', files.compiler, [
-  `Status: **${version}**`, 'Change IR **0.8**', 'sourceValidation', 'runtime Lean certificate', 'PatchRuntime.lean', 'checkSourceRuntimeEvidence_sound'
+  `Status: **${version}**`, 'Change IR **0.8**', 'sourceValidation', 'Standalone Window Web App',
+  'runtime Lean certificate', 'RuntimePath', 'PatchRuntime.lean', 'checkSourceRuntimeEvidence_sound'
 ]);
 mustInclude('docs/FORMAL_MODEL.md', files.formal, [
-  'Status: **beta.20', 'PatchRuntime.lean', 'EffectRefines', 'checkSourceRuntimeEvidence_sound', 'SourceExecutes source formalTrace'
+  'Status: **beta.21', 'PatchRuntime.lean', 'EffectRefines', 'RuntimePath',
+  'checkSourceRuntimeEvidence_sound', 'SourceExecutes source formalTrace'
 ]);
 mustInclude('docs/NOVELTY.md', files.novelty, [
-  'Beta.20', 'runtime correspondence', 'checkSourceRuntimeEvidence_sound', 'end-to-end compiler verification'
+  'Beta.21', 'runtime correspondence', 'RuntimePath', 'checkSourceRuntimeEvidence_sound',
+  'end-to-end compiler verification'
 ]);
 mustInclude('paper/README.md', files.paper, [
-  `Patch ${version} / Change IR 0.8`, 'Beta.20 runtime-correspondence milestone', 'PatchRuntime.lean', 'GeneratedRuntimeCertificate.lean'
+  `Patch ${version} / Change IR 0.8`, 'Beta.21 runtime-correspondence milestone',
+  'RuntimePath', 'PatchRuntime.lean', 'GeneratedRuntimeCertificate.lean'
 ]);
 mustInclude('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
-  `Status: **${version}**`, 'EffectRefines', 'checkSourceRuntimeEvidence_sound', 'SourceExecutes source formalTrace'
+  `Status: **${version}**`, 'EffectRefines', 'RuntimePath', 'branchThen', 'repeatSucc',
+  'checkSourceRuntimeEvidence_sound', 'SourceExecutes source formalTrace'
 ]);
-mustInclude('web/sw.js', files.serviceWorker, [cacheVersion, "'../src/c99.js'", "'../src/source-validation.js'"]);
+mustInclude('web/sw.js', files.serviceWorker, [
+  cacheVersion, "'../src/c99.js'", "'../src/source-validation.js'", "'../src/window-webapp.js'", "'../src/window-build.js'", 'freshFirst'
+]);
 
 for (const [name, content] of Object.entries({
   'README.md': files.readme,
