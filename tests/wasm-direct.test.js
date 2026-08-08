@@ -32,7 +32,7 @@ test('direct Wasm executes create, numeric changes and show without a Patch inte
   ]);
   assert.equal(direct.state.score, 2);
   assert.equal(metadata.format, 'patch-wasm-direct');
-  assert.equal(metadata.irVersion, '0.9');
+  assert.equal(metadata.irVersion, '0.10');
   assert.equal(metadata.traceVersion, '0.1');
   assert.equal(direct.instance.exports.patch_state_score.value, 2);
 });
