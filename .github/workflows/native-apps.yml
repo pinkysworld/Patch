@@ -36,6 +36,7 @@ on:
     paths:
       - src/native-app.js
       - src/remote-build.js
+      - src/studio-cloud-build.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
@@ -47,6 +48,7 @@ on:
     paths:
       - src/native-app.js
       - src/remote-build.js
+      - src/studio-cloud-build.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
@@ -58,25 +60,37 @@ permissions:
 
 jobs:
   build-native:
-    name: ${{ matrix.target }} ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'console' }} app
+    name: ${{ matrix.target }} ${{ matrix.kind }} app
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             target: linux
+            kind: console
+          - os: ubuntu-latest
+            target: linux
+            kind: window
           - os: windows-latest
             target: windows
+            kind: console
+          - os: windows-latest
+            target: windows
+            kind: window
           - os: macos-latest
             target: macos
+            kind: console
+          - os: macos-latest
+            target: macos
+            kind: window
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    timeout-minutes: 40
     env:
-      PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/direct-wasm-recipes.patch' }}
+      PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || (matrix.kind == 'window' && 'examples/window-app.patch' || 'examples/direct-wasm-recipes.patch') }}
       PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
-      PATCH_APP_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchNativeSmoke' }}
-      PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'console' }}
-      PATCH_BUILD_SELECTED: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'all' || inputs.target == matrix.target }}
+      PATCH_APP_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || (matrix.kind == 'window' && 'PatchWindowSmoke' || 'PatchNativeSmoke') }}
+      PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || matrix.kind }}
+      PATCH_BUILD_SELECTED: ${{ github.event_name != 'workflow_dispatch' || ((inputs.target == 'all' || inputs.target == matrix.target) && inputs.kind == matrix.kind) }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
