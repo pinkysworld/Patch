@@ -37,7 +37,7 @@ jobs:
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability
       - name: Verify generated production certificate
         working-directory: formal
         shell: bash
