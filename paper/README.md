@@ -6,97 +6,92 @@ Working manuscript:
 
 ## Current artifact status
 
-The implementation/research artifact is **Patch 0.2.0-beta.24 / Change IR 0.9**. The manuscript remains working research text, not yet a submission-ready top-venue paper.
+The implementation/research artifact is **Patch 0.2.0-beta.25 / Change IR 0.10**. The manuscript remains working research text, not yet a submission-ready top-venue paper.
 
-The latest formal research milestone remains beta.23; beta.24 is a product/semantic-consistency release showing that editable GUI input can be added without introducing a second hidden persistent-write mechanism.
-
-The assurance story has five distinct layers around the primary State-Change Factorization / Semantic Change Contracts claim:
+The current assurance story has six distinct layers around the primary State-Change Factorization / Semantic Change Contracts claim:
 
 1. **Lean semantic core** — factorization, Mutation Transparency, Change Signature Soundness, verified semantic policy containment and integer range-analysis soundness for explicit fragments.
 2. **Source translation validation** — an independent raw-source path reconstructs SourceStmt/range claims and compares them with production extraction.
-3. **Guard translation validation** — an independent raw-source control-flow parser reconstructs GuardTree/guard claims/parameter vocabulary and compares them with production extraction.
+3. **Guard translation validation** — an independent raw-source control-flow path reconstructs GuardTree/guard claims/parameter vocabulary and compares them with production extraction.
 4. **Direct-runtime validation** — an independent Change-IR execution model reconstructs concrete semantic effects from observed direct-Wasm transitions.
-5. **Guard-aware runtime → Lean composition** — proof-free concrete effects, RuntimePath and invocation parameter environments are checked against `SourceExecutes`, source-guard truth and Change Capability containment.
+5. **Guard-aware runtime → Lean composition** — proof-free concrete effects, RuntimePath and invocation parameter environments are checked against formal execution, source-guard truth and Change Capability containment.
+6. **Call-aware semantic-signature composition** — a production-generated finite acyclic recipe environment is checked by `PatchCalls.lean` for rank decrease, argument-interval fit, direct-effect membership and callee-to-caller signature containment.
 
 None of these is described as complete compiler verification.
 
-## Beta.23 guard-aware milestone
+## Beta.25 call-composition milestone
 
 Consider:
 
 ```patch
 create number score = 0
 
-allow reward:
-  score may increase up to 5
+make add_points(amount number 0..5):
+  change score:
+    add amount
 
 make reward(bonus number 0..5):
-  if bonus > 0:
-    change score:
-      add bonus
+  do add_points(bonus)
 
-do reward(4)
-do reward(0)
+make double_reward(bonus number 0..5):
+  do reward(bonus)
+  do reward(bonus)
 ```
 
-The implementation produces separate proof-free invocation evidence such as:
+The production compiler emits a separate proof-free `formalCalls` artifact. The finite recipe graph is assigned a rank such as:
 
 ```text
-reward#1: bonus = 4, branchThen
-reward#2: bonus = 0, branchElse
+add_points     0
+reward         1
+double_reward  2
 ```
 
-`PatchGuarded.lean` introduces a small integer/Boolean `GuardExpr`, a parallel `GuardTree`, and executable/verified checks for SourceStmt/GuardTree shape and guard/path validity. For the first invocation, Lean must evaluate the normalized guard `0 < bonus` under `bonus ↦ 4` to true before accepting `branchThen`; the second invocation requires false before accepting `branchElse`.
+For each call, the artifact contains statically established safe-integer argument intervals. `PatchCalls.lean` defines `CallStmt`, `RecipeDef`, `RecipeEnv`, `ArgsFit`, executable semantic-signature membership/containment checks, `BodyComposes`, `checkRecipeEnv`, a rank-decreasing `CallExec`, and `callSignatureSoundness`.
 
-The main beta.23 checker is:
+The main result is schematically:
 
 ```text
-checkGuardedSourceRuntimeEvidence
+EnvironmentChecked env
+CallExec env rank stmt trace
+BodyComposes env rank signature stmt
+------------------------------------------------
+SignatureCovers trace signature
 ```
 
-with soundness theorem:
+A production-generated `GeneratedCallCertificate.lean` must prove:
 
 ```text
-checkGuardedSourceRuntimeEvidence source tree env observed path = true
---------------------------------------------------------------------
-exists formalTrace actualTrace,
-  SourceExecutes source formalTrace
-  and decodeRuntimeTrace observed = some actualTrace
-  and TraceRefines actualTrace formalTrace
-  and GuardShape source tree
-  and GuardPathValid env tree path
+checkRecipeEnv callEnv = true
 ```
 
-`checkedGuardedConcreteRuntimeCannotEscape` additionally composes this guarded correspondence with the verified semantic policy checker, proving every decoded concrete occurrence remains within the declared Change Capability.
+with `native_decide`. Formal CI generates that certificate from `examples/formal-calls.patch`, compiles it under pinned Lean, derives `EnvironmentChecked callEnv` via `checkRecipeEnv_sound`, and rejects unfinished `sorry`/`admit` proofs.
 
-## Independent guard extraction
+The certificate-facing theorem `checkedRecipeExecutionCannotEscape` states that for a checked environment, a looked-up root recipe and a modeled finite call execution, the resulting semantic effect trace remains within the root recipe signature.
 
-Change IR 0.9 adds `guardValidation`. Production AST extraction yields `formalSource.guardTree` and normalized guard claims. A separate indentation/control-flow parser reads raw source without importing `parser.js` and compares its GuardTree, guard claims and recipe parameter vocabulary with production extraction.
+### Exact beta.25 boundary
 
-The small guard-expression normalizer is shared between the two paths; therefore the independent claim concerns source/control-flow extraction and equality of normalized claims, not two independent expression parsers.
+This result is **abstract interprocedural composition**. Arguments are represented by safe-integer intervals established by the existing formal range fragment. Beta.25 does not yet prove:
 
-## Current formal guard fragment
+```text
+caller expression -> exact concrete value
+exact value -> callee parameter environment
+callee body under that exact environment -> concrete formal trace
+concrete formal call trace == production JavaScript/Wasm call execution
+```
 
-Guard-aware runtime certification covers safe-integer recipe parameter values, integer literals/parameter variables, `+`, `-`, unary minus, multiplication by one non-negative integer literal, comparisons, Boolean literals and `not/and/or`.
+Concrete argument evaluation, parameter binding/substitution and runtime correspondence are therefore explicit next-step gaps, not silently included in the beta.25 claim.
 
-Persistent/global state guards, decimal guard values, division and general variable multiplication remain outside this stronger runtime theorem. A recipe can still retain older static SourceStmt/signature/capability coverage when its guard is outside beta.23; guard-aware runtime certification is a separate stricter layer.
+## Beta.23 guard-aware runtime milestone
+
+For supported protected direct-WebAssembly recipes, proof-free concrete semantic occurrences, path witnesses and concrete recipe-parameter environments are checked by `PatchGuarded.lean`. Branch witnesses must agree with normalized guard evaluation in a safe-integer parameter fragment, and accepted concrete effects are composed with the verified Change Capability checker via `checkedGuardedConcreteRuntimeCannotEscape`.
+
+This layer remains separate from beta.25: the current runtime certificate does not claim full call-aware concrete execution correspondence.
 
 ## Beta.24 GUI mutation-path evidence
 
-Beta.24 implements editable Window inputs with this source model:
+Editable Window input supplies transient event-local `value`; control editing itself does not assign persistent Patch state. Source must use an ordinary semantic `change` to commit it. Unit and generated-HTML fake-DOM tests distinguish observation-only input from explicit persistence.
 
-```patch
-create text name = ""
-window "Hello":
-  input name
-when name changed:
-  change name:
-    set = value
-```
-
-The control edit supplies transient event-local `value`; the UI runtime does not assign `name` directly. Only source-level `change` commits persistent state. Unit tests verify the interpreter history/provenance route, and generated single-file Window HTML is executed in a fake-DOM harness to distinguish observation-only input from explicit persistence.
-
-This is implementation evidence that the GUI surface respects State-Change Factorization. It is **not** a new mechanized theorem or standalone novelty claim.
+This is implementation evidence that GUI input respects State-Change Factorization. It is not a new mechanized theorem or standalone novelty claim.
 
 ## Current formal modules
 
@@ -110,27 +105,33 @@ PatchRange.lean              integer evaluator/range soundness
 PatchRuntime.lean            EffectRefines + RuntimePath correspondence
 PatchRuntimeCapability.lean  concrete runtime capability containment
 PatchGuarded.lean            guard truth + guarded runtime/capability correspondence
+PatchCalls.lean              finite ranked recipe calls + call-aware signature soundness
 ```
 
-Formal CI generates and compiles both static and guard-aware direct-runtime certificates under pinned Lean and rejects `sorry`/`admit`.
+Formal CI generates and compiles static, guard-aware direct-runtime and recipe-call certificates under pinned Lean.
 
 ## Artifact engineering
 
-The beta.24 artifact contains direct numeric Patch→Wasm, portable C99 tested on Linux/macOS/FreeBSD 15.1, Windows/macOS/Linux Console and Window packages, Standalone Window Web Apps and Patch Studio. Window runtimes support button `clicked` and semantic input `changed`; generated Window Web input behavior is executed in regression tests.
+The beta.25 artifact includes direct numeric Patch→Wasm, portable C99 tested on Linux/macOS/FreeBSD 15.1, Windows/macOS/Linux Console and Window packages, Standalone Window Web Apps, Patch Studio, and the CLI research command:
 
-These platform features support artifact evaluation but are not novelty claims.
+```bash
+patch call-certify examples/formal-calls.patch --out Calls.patchcert.lean
+```
+
+These engineering features support artifact evaluation but are not novelty claims.
 
 ## Current claim boundary
 
-A defensible beta.23 formal statement is:
+A defensible beta.25 formal statement is:
 
-> For a conservative protected direct-WebAssembly fragment, Patch independently validates source and guard/control-flow artifacts before runtime certification. Proof-free concrete semantic occurrences, path witnesses and concrete recipe-parameter environments are then checked by Lean against formal execution; branch witnesses must agree with evaluation of the normalized source guard in a safe-integer parameter fragment, and every decoded concrete occurrence is proved to remain within the declared semantic Change Capability. These results do not constitute full compiler verification.
+> For explicit mechanized fragments, Patch proves semantic Change Signature and policy properties and checks conservative source/guard/runtime evidence. In addition, for a finite acyclic recipe fragment, a production-generated proof-free recipe environment records safe-integer argument intervals and semantic signatures; Lean independently checks call resolution, strict rank decrease, argument-interval fit, direct-effect membership and callee-to-caller signature containment. Under the resulting environment invariant, modeled transitive call effects remain within the caller semantic signature. This does not prove concrete parameter-substitution correctness or full compiler correctness.
 
-Still unverified: JavaScript parser correctness, JavaScript→Wasm lowering, Wasm engine correctness, runtime observation/semantic reconstruction, and correct binding of proof-free JavaScript invocation values to machine-level Wasm parameters.
+Still unverified include JavaScript parser correctness, JavaScript→Wasm lowering, Wasm engine correctness, runtime observation/semantic reconstruction, production `formalCalls` extraction correctness, and concrete call argument binding/substitution correspondence.
 
 ## Remaining high-value gaps
 
-- formal recipe-call/substitution semantics for the implemented acyclic direct subset;
+- concrete recipe argument evaluation and parameter binding/substitution semantics;
+- composition of that concrete call semantics with beta.25 abstract signature containment;
 - semantic-security/plugin case studies;
 - measured analysis/source/guard-validation/certificate/checker/backend overhead;
 - systematic related-work review;
@@ -139,7 +140,7 @@ Still unverified: JavaScript parser correctness, JavaScript→Wasm lowering, Was
 
 ## Prior-art discipline
 
-Patch does not claim novelty for guard semantics, operational semantics, range analysis, abstract interpretation, refinement, path witnesses, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C generation, provenance, undo, GUI event wiring or cross-platform packaging.
+Patch does not claim novelty for procedure-call operational semantics, call graphs, ranked/well-founded restrictions, interprocedural effect summaries, interval argument analysis, guard semantics, abstract interpretation, refinement, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C generation, provenance, undo, GUI event wiring or cross-platform packaging.
 
 The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**.
 

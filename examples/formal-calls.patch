@@ -1,0 +1,15 @@
+create number score = 0
+
+make add_points(amount number 0..5):
+  change score:
+    add amount
+
+make reward(bonus number 0..5):
+  do add_points(bonus)
+
+make double_reward(bonus number 0..5):
+  do reward(bonus)
+  do reward(bonus)
+
+do double_reward(4)
+show score

@@ -23,6 +23,8 @@ jobs:
         run: npm run certify:example
       - name: Execute direct Wasm and generate runtime correspondence certificate
         run: npm run runtime-certify:example
+      - name: Generate recipe-call composition certificate from production compiler
+        run: npm run call-certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -30,14 +32,14 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build Lean formalization, checker, evidence, source, range, runtime and guarded boundary
+      - name: Build Lean formalization, checker, evidence, source, range, runtime, guarded and call boundaries
         working-directory: formal
         shell: bash
         run: |
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls
       - name: Verify generated production certificate
         working-directory: formal
         shell: bash
@@ -50,6 +52,12 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean GeneratedRuntimeCertificate.lean
+      - name: Verify generated recipe-call composition certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedCallCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |

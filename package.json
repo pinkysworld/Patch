@@ -1,9 +1,9 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.24",
-  "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, guard-aware Lean runtime correspondence, transient semantic Window input events, hardened cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
+  "version": "0.2.0-beta.25",
+  "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, guard-aware runtime correspondence, Lean-checked acyclic recipe-call signature composition, semantic Window input events, cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
   "type": "module",
-  "bin": { "patch": "./src/cli.js" },
+  "bin": { "patch": "./src/cli-entry.js" },
   "scripts": {
     "test": "node --test",
     "run": "node src/cli.js run",
@@ -15,6 +15,7 @@
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
     "runtime-certify:example": "node src/cli.js runtime-certify examples/runtime-correspondence.patch --out formal/GeneratedRuntimeCertificate.lean",
+    "call-certify:example": "node scripts/generate-call-certificate.js examples/formal-calls.patch --out formal/GeneratedCallCertificate.lean",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:wasm-direct": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm",
@@ -27,5 +28,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "guard-validation", "guard-aware-runtime", "runtime-correspondence", "runtime-path-witness", "runtime-capability-containment", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "window-input-events", "semantic-input", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "guard-validation", "guard-aware-runtime", "runtime-correspondence", "runtime-path-witness", "runtime-capability-containment", "formal-recipe-calls", "call-signature-composition", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "window-input-events", "semantic-input", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
 }

@@ -2,10 +2,11 @@ import { parse } from './parser.js';
 import { analyzeChangeSemantics } from './change-analysis.js';
 import { buildFormalBridge } from './formal-bridge.js';
 import { buildFormalSource } from './formal-source.js';
+import { buildFormalCalls } from './formal-calls.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
 
-export const PATCH_IR_VERSION = '0.9';
+export const PATCH_IR_VERSION = '0.10';
 
 export function compile(source, options = {}) {
   const ast = parse(source);
@@ -17,6 +18,7 @@ export function compile(source, options = {}) {
   const changeAnalysis = analyzeChangeSemantics(ast);
   const formalBridge = buildFormalBridge(ast, changeAnalysis);
   const formalSource = buildFormalSource(ast);
+  const formalCalls = buildFormalCalls(ast, changeAnalysis);
   const sourceValidation = validateFormalSourceExtraction(source, formalSource);
   const guardValidation = validateFormalGuardExtraction(source, formalSource);
 
@@ -30,12 +32,13 @@ export function compile(source, options = {}) {
     changeCapabilities: changeAnalysis.capabilities,
     formalBridge,
     formalSource,
+    formalCalls,
     sourceValidation,
     guardValidation
   };
 
   return {
-    ast, ir, project, changeAnalysis, formalBridge, formalSource,
+    ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation
   };
 }

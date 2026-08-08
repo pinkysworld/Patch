@@ -1,22 +1,23 @@
 # Patch Core Formal Model
 
-Status: **beta.23: mechanized semantic-change contracts, independently translation-validated source/guard extraction, guard-aware runtime correspondence, and concrete runtime capability containment**.
+Status: **beta.25: mechanized semantic-change contracts, source/guard translation validation, guard-aware runtime correspondence, concrete runtime capability containment, and finite acyclic recipe-call signature composition**.
 
-Patch is not a fully verified compiler. The Lean model covers explicit fragments; the JavaScript frontend, WebAssembly lowering/runtime and implementation-side reconstruction remain named trust/validation boundaries.
+Patch is not a fully verified compiler. Lean covers explicit fragments; the JavaScript frontend, WebAssembly lowering/runtime and implementation-side evidence producers remain named trust/validation boundaries.
 
 ## Lean modules
 
 - `PatchFormal.lean` — semantic operations, changes, state, intervals, effects and policies.
-- `PatchSignature.lean` — effect-only `CoreStmt`, `Executes`, `inferSignature`, Change Signature Soundness.
+- `PatchSignature.lean` — effect-only `CoreStmt`, execution and Change Signature Soundness.
 - `PatchChecker.lean` — executable verified semantic policy checker.
-- `PatchEvidence.lean` — proof-free EvidenceStmt decoding/correspondence.
-- `PatchSource.lean` — source `add/remove/set/clear`, normalization and `SourceExecutes`.
+- `PatchEvidence.lean` — proof-free evidence decoding/correspondence.
+- `PatchSource.lean` — source mutation verbs, normalization and `SourceExecutes`.
 - `PatchRange.lean` — integer `RangeExpr` evaluation/analysis and `rangeAnalysisSound`.
 - `PatchRuntime.lean` — `EffectRefines`, `TraceRefines`, proof-free `RuntimePath` and runtime correspondence.
 - `PatchRuntimeCapability.lean` — concrete runtime capability containment.
-- **`PatchGuarded.lean`** — beta.23 integer/Boolean guard evaluation, GuardTree/SourceStmt shape checking and guard-aware RuntimePath validity.
+- `PatchGuarded.lean` — guard evaluation, GuardTree shape and guard-aware RuntimePath validity.
+- **`PatchCalls.lean`** — beta.25 finite recipe environments, argument-interval fit, rank-decreasing calls and call-aware signature soundness.
 
-Formal CI builds every module, compiles generated static/runtime certificates under pinned Lean, and rejects `sorry`/`admit`.
+Formal CI builds every module, generates static/runtime/call certificates from production Patch source, compiles those certificates under pinned Lean, and rejects `sorry`/`admit`.
 
 ## Core containment
 
@@ -33,173 +34,218 @@ Combined with the verified semantic policy checker:
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-`allowsRefinedEffect`, `traceRefinesPreservesPolicy` and `checkedConcreteRuntimeCannotEscape` additionally transfer that authority result to decoded concrete runtime effects that refine the formal trace.
+The runtime/capability modules additionally transfer authority to decoded concrete runtime effects that refine a formal source execution.
 
-## Source and range translation validation
+## Source and guard validation
 
-Production extraction:
-
-```text
-Patch source -> parser.js -> AST -> formalSource
-```
-
-Independent extraction:
+The implementation keeps production extraction and independent raw-source validation separate:
 
 ```text
-Patch source bytes -> source-validation.js -> raw SourceStmt/ranges
+Patch source -> production parser/AST -> formalSource / guardTree
+Patch source bytes -> source-validation.js / guard-validation.js
 ```
 
-For supported static certification the two SourceStmt/range views must agree. Lean then performs source semantic normalization and checks integer range claims. This is translation validation, not parser verification.
+Supported certification requires agreement of the relevant artifacts. This is translation validation, not parser verification.
 
-## Beta.23 GuardExpr and GuardTree
+`PatchGuarded.lean` then checks that proof-free branch witnesses agree with normalized safe-integer recipe-parameter guards. `checkedGuardedConcreteRuntimeCannotEscape` composes accepted guard-aware runtime evidence with the verified Change Capability checker.
 
-The old effect-only `CoreStmt.branch` intentionally discarded the source condition. Beta.23 does **not** replace that mature effect core. Instead it adds a parallel guard artifact whose leaves line up with `SourceStmt`:
+## Beta.25: call-aware effect core
+
+The older `formalSource`/`PatchGuarded` layers deliberately do not pretend recipe calls are direct SourceStmt nodes. Beta.25 adds a **separate** call-aware effect core:
 
 ```text
-GuardTree.leaf
-GuardTree.seq
-GuardTree.branch GuardExpr then else
-GuardTree.repeat count body
+CallStmt.skip
+CallStmt.emit Effect
+CallStmt.seq first second
+CallStmt.branch then else
+CallStmt.repeat count body
+CallStmt.call name argumentIntervals
 ```
 
-The guard expression vocabulary is deliberately small:
+A finite `RecipeEnv` maps names to:
 
 ```text
-integer RangeExpr operands
-true / false
-==  <  <=
-not / and / or
+RecipeDef {
+  params     : List Interval
+  rank       : Nat
+  signature  : List Effect
+  body       : CallStmt
+}
 ```
 
-Source `!=`, `>` and `>=` are normalized into those constructors. Integer operands reuse `RangeExpr`: literal, parameter variable, addition, subtraction, negation and scale by a non-negative integer literal.
+The production compiler emits a proof-free `formalCalls` artifact. Unsupported recipes are excluded from certification rather than approximated as verified.
 
-`evalGuard : GuardExpr -> IntEnv -> Option Bool` reuses the existing concrete integer evaluator from `PatchRange.lean`.
+## Argument interval fit
 
-## Independent guard extraction validation
-
-Change IR 0.9 adds `guardValidation`.
-
-Production path:
+`ArgsFit actual expected` is a positional relation requiring every actual interval to be contained in the corresponding declared parameter interval. The executable checker is:
 
 ```text
-AST -> formalSource.guardTree + guardClaims
+argsFitBool actual expected
 ```
 
-Independent path:
+and Lean proves:
 
 ```text
-raw source -> guard-validation.js indentation/control-flow parser
-           -> raw GuardTree + guardClaims + parameter vocabulary
+argsFitBool actual expected = true
+=> ArgsFit actual expected
 ```
 
-The raw guard parser does not import `parser.js` and does not consume the production AST. It shares only the small formal guard-expression normalizer; source/control-flow extraction is independent. Runtime certification requires exact agreement of GuardTree, guard claims and recipe guard variables.
+The producer obtains actual call-argument intervals from the existing formal integer range fragment. This is an **abstract interval argument model**, not concrete value substitution.
 
-## GuardShape
+## Semantic signature containment
 
-`GuardShape source tree` states that a GuardTree has the same control-flow skeleton as a `SourceStmt`. `checkGuardShape` is executable, and Lean proves:
+`PatchCalls` defines executable equality/membership for formal `Effect` values and:
 
 ```text
-checkGuardShape source tree = true
-=> GuardShape source tree
+signatureCoversBool inner outer
 ```
 
-Thus guard evidence cannot silently describe a different branch/repeat layout from the source-core artifact.
-
-## GuardPathValid
-
-`RuntimePath` remains proof-free input:
+with soundness:
 
 ```text
-leaf
-seq
-branchThen
-branchElse
-repeatZero
-repeatSucc
+signatureCoversBool inner outer = true
+=> SignatureCovers inner outer
 ```
 
-Beta.23 strengthens branch validation:
+This lets the checker validate two kinds of obligations:
+
+1. direct emitted semantic effects occur in the caller signature;
+2. every imported callee signature is contained in the caller signature.
+
+## Ranked call graph
+
+A certified call must resolve to a recipe with strictly lower rank:
 
 ```text
-GuardPathValid values (.branch guard then else) (.branchThen path)
+callee.rank < caller.rank
 ```
 
-requires
+The production artifact assigns ranks to the finite acyclic recipe graph. Recursive and mutually recursive graphs are rejected before certification, and the Lean checker independently checks the rank inequality encoded in the proof-free environment.
+
+The rank is an assurance device for this conservative fragment; Patch does not claim ranked/well-founded call graphs as a novel technique.
+
+## `BodyComposes` and executable checker
+
+`BodyComposes env rank signature stmt` expresses the local semantic obligations for one body. For a call it requires a looked-up callee satisfying:
 
 ```text
-evalGuard guard values = some true
+lookupRecipe env name = some callee
+callee.rank < rank
+ArgsFit args callee.params
+SignatureCovers callee.signature signature
 ```
 
-and the else constructor requires `some false`.
+`checkCallStmt` is executable and Lean proves `checkCallStmt_sound`.
 
-`checkGuardPath` is executable and `checkGuardPath_sound` proves an accepted path satisfies this relational judgment. Repeat witnesses are checked inductively as before.
-
-## Main beta.23 theorem
-
-The combined checker is:
+The environment-wide executable checker is:
 
 ```text
-checkGuardedSourceRuntimeEvidence
-  source guardTree invocationEnv observedEffects runtimePath
+checkRecipeEnv : RecipeEnv -> Bool
 ```
 
-A successful check implies:
+and:
 
 ```text
-exists formalTrace actualTrace,
-  SourceExecutes source formalTrace
-  and decodeRuntimeTrace observed = some actualTrace
-  and TraceRefines actualTrace formalTrace
-  and GuardShape source guardTree
-  and GuardPathValid invocationEnv guardTree runtimePath
+checkRecipeEnv env = true
+=> EnvironmentChecked env
 ```
 
-The theorem is `checkGuardedSourceRuntimeEvidence_sound`.
+is theorem `checkRecipeEnv_sound`.
 
-The capability corollary `checkedGuardedConcreteRuntimeCannotEscape` adds the verified policy premise and proves every decoded concrete runtime effect is admitted by the declared Change Capability while retaining `GuardShape` and `GuardPathValid` in the conclusion.
+## Call execution and soundness
+
+`CallExec env rank stmt trace` is a big-step effect execution relation. Its call constructor requires lookup, rank decrease, argument fit and execution of the callee body at the callee rank.
+
+The main beta.25 theorem is:
+
+```text
+callSignatureSoundness
+```
+
+Schematically:
+
+```text
+EnvironmentChecked env
+CallExec env rank stmt trace
+BodyComposes env rank signature stmt
+------------------------------------------------
+SignatureCovers trace signature
+```
+
+Thus all effects produced by a modeled finite rank-decreasing call execution remain in the caller semantic signature.
+
+The certificate-facing corollary is:
+
+```text
+checkedRecipeExecutionCannotEscape
+```
+
+Given an environment accepted by `checkRecipeEnv`, a looked-up root recipe and a modeled call execution of its body, the produced effect trace is contained by the root recipe signature.
+
+## Production-generated call certificate
+
+`src/formal-calls.js` builds the conservative production artifact. `src/call-certificate.js` encodes it as proof-free Lean definitions. A generated certificate contains a finite `RecipeEnv` and requires:
+
+```text
+checkRecipeEnv callEnv = true
+```
+
+proved with `native_decide`.
+
+Formal CI generates `GeneratedCallCertificate.lean` from `examples/formal-calls.patch` and compiles it after building `PatchCalls`. The JavaScript producer is therefore not trusted to assert that the environment is valid; it only supplies data that the Lean checker accepts or rejects.
 
 ## Example
 
-For:
-
 ```patch
+create number score = 0
+
+make add_points(amount number 0..5):
+  change score:
+    add amount
+
 make reward(bonus number 0..5):
-  if bonus > 0:
-    change score:
-      add bonus
+  do add_points(bonus)
+
+make double_reward(bonus number 0..5):
+  do reward(bonus)
+  do reward(bonus)
 ```
 
-one direct invocation may produce proof-free evidence:
+A valid artifact may assign:
 
 ```text
-bonus = 4
-RuntimePath.branchThen(...)
+add_points     rank 0
+reward         rank 1
+double_reward  rank 2
 ```
 
-The certificate encodes the normalized guard as `0 < bonus`; Lean evaluates it under `bonus ↦ 4` and accepts the Then witness only if the result is true. A second invocation with `bonus ↦ 0` requires the Else witness.
+For `reward -> add_points`, the actual interval `[0,5]` must fit the declared `add_points.amount` interval `[0,5]`, and `add_points`' semantic signature must be contained by `reward`'s semantic signature.
 
-## Current guard-aware boundary
+Calling `reward` twice does not add a frequency claim to the signature. The beta.25 signature remains a set-like may-effect summary. Temporal/frequency authority is deliberately outside the current research scope.
 
-Covered:
+## Exact beta.25 boundary
 
-- safe-integer recipe parameter values;
-- integer literals/parameter variables;
-- `+`, `-`, unary `-`, multiplication by a non-negative integer literal;
-- comparisons and Boolean `not/and/or`;
-- branch/repeat/sequence structure;
-- multiple protected invocations;
-- concrete runtime effect refinement and capability containment.
+Covered by the call-composition layer:
 
-Rejected by the stronger beta.23 runtime theorem:
+- finite named recipe environments;
+- safe-integer bounded formal parameters;
+- arguments analyzable by the existing formal integer range fragment;
+- direct semantic `increase/decrease/set/clear` effects represented in semantic signatures;
+- sequence, nondeterministic branch structure and literal repeats;
+- acyclic/rank-decreasing calls;
+- transitive semantic-signature containment.
 
-- persistent/global state in guards;
-- decimal/non-integer guard values;
-- division and general variable multiplication;
-- dynamic repeats outside the literal formal core;
-- nested recipe-call semantics inside protected formal bodies;
-- GUI/event execution and the wider Patch language.
+Not proved by beta.25:
 
-A program may still be covered by the older static SourceStmt/signature/capability theorem even when its guard is outside beta.23. Guard-aware runtime coverage is deliberately a separate, stricter layer.
+- concrete caller-expression evaluation to a particular value;
+- binding that exact value to a callee parameter;
+- substitution of concrete values into a callee body;
+- equivalence of the call-aware Lean execution to production JavaScript/Wasm call execution;
+- recursive recipe semantics;
+- dynamic repeat counts, returns, GUI/events or the full Patch language;
+- full compiler correctness.
+
+The next formal refinement is a small concrete integer call semantics with argument evaluation and parameter binding, composed with this abstract signature theorem.
 
 ## Trust boundaries
 
@@ -208,14 +254,14 @@ Still not machine proved:
 - production or independent JavaScript parser correctness;
 - JavaScript -> Wasm lowering correctness;
 - Wasm engine correctness;
-- runtime observation completeness outside the supported ABI;
-- JavaScript semantic-effect reconstruction correctness;
-- JavaScript RuntimePath/environment producer correctness.
+- runtime observation completeness;
+- JavaScript semantic-effect/path reconstruction correctness;
+- correctness of the production `formalCalls` extractor itself.
 
-The last item is why path/environment values remain proof-free inputs: Lean checks them against the independently validated formal guard/source artifacts.
+The last item is why the generated call environment is proof-free data checked by Lean.
 
 ## Research boundary
 
-Guard semantics, operational semantics, refinement relations, proof-carrying evidence, translation validation and verified checkers all have substantial prior art. `PatchGuarded` is supporting assurance for Patch's primary design hypothesis, not a standalone firstness claim.
+Call graphs, ranked/well-founded recursion restrictions, interprocedural effect summaries, interval argument analysis, refinement, proof-carrying evidence, translation validation and verified checkers all have extensive prior art. `PatchCalls` is supporting assurance for Patch's primary design hypothesis, not a standalone firstness claim.
 
 The primary candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from that same mutation substrate**.

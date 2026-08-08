@@ -1,10 +1,8 @@
 # Patch Compiler Architecture
 
-Status: **0.2.0-beta.24** · Change IR **0.9**
+Status: **0.2.0-beta.25** · Change IR **0.10**
 
-Patch combines a working compiler frontend, semantic Change analysis, independent source/guard translation validation, Lean-checkable static/runtime certificates, direct Wasm/C99 Console backends, Standalone Window Web Apps and cross-platform packaging.
-
-Beta.24 does not change Change IR. It strengthens the Window runtime boundary so GUI input cannot become a second persistent-write mechanism.
+Patch combines a working compiler frontend, semantic Change analysis, independent source/guard translation validation, Lean-checkable static/runtime/call certificates, direct Wasm/C99 Console backends, Standalone Window Web Apps and cross-platform packaging.
 
 ## Architecture
 
@@ -12,28 +10,28 @@ Beta.24 does not change Change IR. It strengthens the Window runtime boundary so
 exact Patch source
    ├─ production parser / AST
    │    ├─ Change Signatures / Capabilities
-   │    ├─ SourceStmt + range claims
-   │    └─ GuardTree + guard claims
+   │    ├─ SourceStmt + ranges + GuardTree
+   │    └─ finite formalCalls recipe environment
    │
    ├─ independent raw SourceStmt/range parser ----┐
    └─ independent raw GuardTree/control parser ---┤ compare
                                                   ↓
                                       sourceValidation + guardValidation
                                                   ↓
-                                           Change IR 0.9
+                                           Change IR 0.10
        ┌─────────────┬───────────┬──────────┬────────────┬─────────────┐
     .patchapp     bootstrap    direct      C99       Window Web    certificates
                   Wasm         Wasm                 generated runtime
-                                ↓
-                       observed transitions
-                                ↓
+                                ↓                              ├─ static
+                       observed transitions                   ├─ runtime/guard
+                                ↓                              └─ formal calls
                     independent effect validation
                     + RuntimePath + invocation env
                                 ↓
                          PatchGuarded Lean check
 ```
 
-## Change IR 0.9
+## Change IR 0.10
 
 ```text
 instructions
@@ -42,61 +40,114 @@ changeSignatures
 changeCapabilities
 formalBridge
 formalSource
+formalCalls
 sourceValidation
 guardValidation
 ```
 
-`formalSource` is version 0.3. Its existing `source`/range artifact is retained; beta.23 added a parallel `guardTree`, normalized `guardClaims`, `guardVariables`, and separate guard-support diagnostics.
+`formalCalls` version 0.1 is a separate assurance artifact rather than an extension of the older SourceStmt semantics. This preserves the claim boundary: beta.25 does not pretend the existing source/runtime theorem already models recipe calls.
 
-`guardValidation` is a separate artifact from raw-source control-flow extraction. A program can therefore remain supported by the static SourceStmt/signature/capability path while being outside the stricter guard-aware runtime path.
+## Source and guard assurance
 
-## Source and guard translation validation
+Production source/guard artifacts originate from the normal AST. Independent `source-validation.js` and `guard-validation.js` reconstruct the supported SourceStmt/range and GuardTree/control-flow views from raw source bytes. Agreement is required at the relevant certification boundary.
 
-Production source artifacts originate from the normal AST. Independent `source-validation.js` and `guard-validation.js` reconstruct the supported SourceStmt/range and GuardTree/control-flow views from raw source bytes. Agreement is required at the relevant certification boundary.
+`PatchGuarded` checks proof-free branch paths against normalized guards over concrete safe-integer recipe-parameter environments and composes accepted runtime effects with Change Capabilities. This remains separate from the beta.25 static/interprocedural call layer.
 
-This is translation validation, not parser verification. The guard validator shares the conservative `formal-guard.js` expression normalizer; the independently checked part is source/control-flow extraction, parameter vocabulary and agreement of normalized claims.
+## Beta.25 `formalCalls`
 
-## Guard-aware runtime certificate
+`src/formal-calls.js` takes the production AST and semantic Change Signatures and emits a conservative per-recipe representation:
 
-`runtime-path-witness.js` records per protected invocation the recipe/index, RuntimePath, effect count and concrete recipe parameter environment. These remain proof-free inputs.
+```text
+recipe name
+parameter intervals
+rank
+semantic signature
+CallStmt body
+support diagnostics
+```
 
-`PatchGuarded.checkGuardedSourceRuntimeEvidence` checks SourceStmt/GuardTree shape, concrete guard truth, RuntimePath, formal execution and effect refinement. `checkedGuardedConcreteRuntimeCannotEscape` composes accepted guarded execution with the verified Change Capability checker.
+The call body vocabulary is intentionally small:
 
-The current guard-aware fragment deliberately accepts only safe-integer recipe parameters with the documented integer/Boolean expression subset. Persistent/global state guards, floating-point guard correspondence and general multiplication/division remain outside this stronger certification layer.
+```text
+skip
+emit semantic-effect
+seq
+branch
+literal repeat
+call name argument-intervals
+```
+
+The producer requires bounded safe-integer formal parameters, argument expressions supported by the existing formal integer range fragment, concrete formal semantic effects and a rank-decreasing acyclic call graph. Unknown calls, duplicate recipes, recursion/cycles, unbounded parameters, returns and other unsupported body constructs are reported as outside the beta.25 call layer.
+
+The JavaScript artifact is **not trusted as a proof**. `src/call-certificate.js` encodes it into a generated Lean `RecipeEnv`.
+
+## `PatchCalls` checker
+
+`formal/PatchCalls.lean` defines:
+
+```text
+CallStmt
+RecipeDef
+RecipeEnv
+ArgsFit / argsFitBool_sound
+effectMemberBool / signatureCoversBool
+BodyComposes / checkCallStmt_sound
+checkRecipeEnv / checkRecipeEnv_sound
+CallExec
+callSignatureSoundness
+checkedRecipeExecutionCannotEscape
+```
+
+For each call, the executable checker independently verifies:
+
+```text
+callee exists
+callee.rank < caller.rank
+actual argument intervals fit callee parameter intervals
+callee.signature ⊆ caller.signature
+```
+
+Direct emitted effects must also occur in the caller signature.
+
+The production-generated `GeneratedCallCertificate.lean` requires:
+
+```text
+checkRecipeEnv callEnv = true
+```
+
+and Formal CI proves it with `native_decide`. The same generated file derives `EnvironmentChecked callEnv` through `checkRecipeEnv_sound`.
+
+`callSignatureSoundness` is stronger than the checker statement alone: for a modeled `CallExec`, every effect in the resulting trace remains inside the caller semantic signature.
+
+## Exact call boundary
+
+Beta.25 proves abstract interprocedural composition over intervals and semantic signatures. It does **not** yet prove:
+
+```text
+caller expression -> exact concrete integer
+exact integer -> callee parameter binding
+callee body under that concrete environment -> production runtime execution
+```
+
+Those concrete substitution/binding steps are the next formal refinement. Recursive recipes, floating-point parameter correspondence, dynamic loops and the wider language also remain outside the call theorem.
+
+## CLI boundary
+
+The installed `patch` command uses `src/cli-entry.js`, a thin dispatcher. Existing commands delegate unchanged to the mature `src/cli.js`; only the new research command is handled by the dispatcher:
+
+```bash
+patch call-certify examples/formal-calls.patch --out Calls.patchcert.lean
+```
+
+This avoids a broad rewrite of the existing CLI solely to expose the new certificate path.
 
 ## Beta.24 Window event path
 
-`src/window-build.js` detects normalized `WINDOW` IR and validates the shared portable event surface. The accepted pairs are currently:
-
-```text
-button + clicked
-input  + changed
-```
-
-For input events, the current control text is **transient event payload**, not persistent state. Interpreter-backed targets call `src/window-events.js`, which exposes the payload as local `value` to the Patch event body. A source handler must still execute `change` to commit persistent state.
-
-```text
-DOM input
-   ↓ transient { value }
-window-events.js
-   ↓ event-local Patch value
-when input changed
-   ↓ optional explicit change
-persistent Patch state/history
-```
-
-Patch Studio uses this adapter directly. The generated Windows/macOS/Linux desktop player imports the same adapter. `src/window-webapp.js` creates a self-contained HTML runtime and implements the same rule internally because it intentionally has no external Patch interpreter dependency.
-
-The generated Window Web runtime is version 0.3. Executable fake-DOM tests verify that:
-
-- a handler may observe the new `value` while persistent state remains unchanged;
-- `change target: set = value` commits the new value and the rerender then reflects it.
-
-Unsupported event/control pairs still fail during shared Window preflight. Direct Wasm remains Console-only.
+The shared Window preflight supports button `clicked` and input `changed`. Input control editing supplies transient event-local `value`; persistent Patch state still changes only through an explicit semantic `change`. Studio, Standalone Window Web and generated Windows/macOS/Linux players implement the same contract.
 
 ## Console backends
 
-Direct Wasm supports the conservative numeric Console subset with control flow, literal repeats, acyclic numeric recipes and ranged guards. It imports the small Patch host ABI; raw direct Wasm is not yet a standalone WASI command.
+Direct Wasm supports the conservative numeric Console subset with control flow, literal repeats, acyclic numeric recipes and ranged guards. It imports a small Patch host ABI; raw direct Wasm is not yet a standalone WASI command.
 
 Portable C99 independently lowers the conservative numeric Console subset and is compile/run tested on Linux, macOS and FreeBSD 15.1.
 
@@ -107,29 +158,28 @@ Not machine proved:
 ```text
 production parser correctness
 independent raw source/guard parser correctness
+formalCalls JavaScript extractor correctness
 JavaScript -> Wasm lowering correctness
 Wasm engine correctness
 before/after -> semantic-effect reconstruction correctness
 runtime path/environment producer correctness
-binding of proof-free invocation values to machine-level Wasm parameters
+concrete call argument binding/substitution correspondence
 full floating-point semantics
 full Patch language semantics
 ```
 
-Beta.24's input-event regression tests are implementation evidence that supported GUI input preserves the single semantic persistent-mutation route. They are not a new formal compiler-correctness theorem.
+`formalCalls` is therefore treated as proof-free certificate data: the executable Lean checker accepts or rejects the generated finite environment.
 
 ## Quality gates
 
 - Windows/macOS/Linux Node 22/24 tests;
-- source/range/guard extraction and tamper tests;
-- generated Window Web differential execution tests;
-- generated Window Web input fake-DOM tests;
-- cross-target Studio/Web/Desktop input-wiring tests;
-- direct-Wasm differential/trace/effect tests;
-- guard-aware runtime certificate generation;
-- Lean builds through `PatchGuarded.lean`;
-- generated static/runtime certificate checking;
+- formalCalls positive/negative/cycle/duplicate tests;
+- CLI-dispatch and call-certificate tests;
+- generated static/runtime/call certificate generation;
+- `PatchCalls` and all previous Lean modules under pinned Lean;
+- generated `GeneratedCallCertificate.lean` checked with `native_decide`;
 - no `sorry`/`admit`;
+- direct-Wasm/C99/Window build and execution gates;
 - native Windows/macOS/Linux Console + Window smoke builds;
 - Linux/macOS/FreeBSD C99 compile/run;
 - public Studio/PWA/site/version consistency checks.
