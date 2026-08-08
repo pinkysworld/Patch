@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.24** · Change IR **0.9**
+Status: **0.2.0-beta.25** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.24 changes Window event execution, not the package formats or formal Change IR schema.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.25 adds the `formalCalls` assurance artifact and does **not** change package formats or the Window runtime contract.
 
 ## Build matrix
 
@@ -26,27 +26,14 @@ Window / GUI
 
 The shared **Window preflight** compiles source and checks normalized `code == "WINDOW"` IR, then validates the common runtime contract before cloud dispatch and again inside the target-side desktop packager.
 
-Current cross-target event support is deliberately conservative and explicit:
+Current cross-target event support is deliberately conservative:
 
 - button `clicked`;
 - input `changed`, with the current control text exposed as event-local `value`.
 
-The input edit itself does not write persistent Patch state. Source must still use an ordinary semantic `change` to commit it, for example:
+The input edit itself does not write persistent Patch state. Source must use an ordinary semantic `change` to commit it. Duplicate control ids, handlers for nonexistent controls and unsupported event/control pairs are rejected at build time.
 
-```patch
-create text name = ""
-window "Hello":
-  input name
-when name changed:
-  change name:
-    set = value
-```
-
-Duplicate control ids, handlers for nonexistent controls and unsupported event/control pairs such as button `changed` or window `closed` are rejected at build time rather than packaged with inconsistent behavior.
-
-The Standalone Window Web backend has executable differential tests against `PatchInterpreter`, plus fake-DOM tests proving that an observation-only input handler does not persist control edits while an explicit `change` does.
-
-The generated Windows/macOS/Linux desktop player uses the same `src/window-events.js` adapter as interpreter-backed Studio preview, so the event-local-value contract is shared rather than reimplemented as a hidden assignment.
+Generated Window Web HTML is executed in regression tests, including observation-only input and explicit semantic persistence. The Windows/macOS/Linux desktop player uses the shared `src/window-events.js` adapter used by Studio preview.
 
 ## Browser and WebAssembly
 
@@ -58,11 +45,15 @@ patch build console.patch --target wasm-direct --out Console.direct.wasm
 
 Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the validated Patch Window AST plus a generated browser runtime. Raw direct Wasm is Console-only, imports `patch.show_number` / `patch.change_number`, and is **not yet a standalone WASI command module**.
 
-## Runtime formal assurance
+## Formal assurance is separate from packaging
 
-`patch runtime-certify` is independent of packaging. The beta.23 research layer requires eligible protected recipes to pass raw SourceStmt/range validation and independent raw GuardTree/control-flow validation. `PatchGuarded.lean` checks supported branch witnesses against concrete safe-integer parameter guards and composes accepted concrete effects with Change Capabilities.
+`patch runtime-certify` covers the beta.23 guard-aware direct-runtime fragment. Beta.25 adds a separate static/interprocedural command:
 
-Beta.24 does not extend this Lean fragment; it is product/semantic-consistency work that preserves the same single persistent-mutation route for GUI input.
+```bash
+patch call-certify examples/formal-calls.patch --out Calls.patchcert.lean
+```
+
+This certificate checks a finite acyclic recipe environment through `PatchCalls.lean`: call resolution, strict rank decrease, safe-integer argument-interval fit and callee-to-caller semantic-signature containment. It does not change the executable package and does not yet prove concrete call argument substitution.
 
 ## Portable C99
 
