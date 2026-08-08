@@ -1,0 +1,75 @@
+name: Patch Native Apps
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_path:
+        description: Patch source file in this repository
+        required: true
+        default: examples/direct-wasm-recipes.patch
+      app_name:
+        description: Application name
+        required: true
+        default: PatchNativeApp
+  pull_request:
+    paths:
+      - src/native-app.js
+      - src/webapp.js
+      - src/wasm-direct.js
+      - src/cli.js
+      - .github/workflows/native-apps.yml
+      - examples/direct-wasm-recipes.patch
+  push:
+    branches: [main]
+    paths:
+      - src/native-app.js
+      - src/webapp.js
+      - src/wasm-direct.js
+      - src/cli.js
+      - .github/workflows/native-apps.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-native:
+    name: ${{ matrix.os }} native app
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/direct-wasm-recipes.patch' }}
+      PATCH_APP_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchNativeSmoke' }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build native Patch application
+        shell: bash
+        run: |
+          mkdir -p dist
+          node src/cli.js build "$PATCH_SOURCE" --kind console --target app --name "$PATCH_APP_NAME" --out "dist/$PATCH_APP_NAME"
+      - name: Smoke run native application on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: ./dist/$PATCH_APP_NAME
+      - name: Smoke run native application on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: ./dist/$PATCH_APP_NAME.app/Contents/MacOS/$PATCH_APP_NAME
+      - name: Smoke run native application on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: "& ./dist/$env:PATCH_APP_NAME.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ env.PATCH_APP_NAME }}
+          path: dist/**
+          if-no-files-found: error
