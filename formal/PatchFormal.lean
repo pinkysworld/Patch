@@ -100,6 +100,10 @@ structure Interval where
 def Within (inner outer : Interval) : Prop :=
   outer.lo ≤ inner.lo ∧ inner.hi ≤ outer.hi
 
+instance decidableWithin (inner outer : Interval) : Decidable (Within inner outer) := by
+  unfold Within
+  infer_instance
+
 /-- Interval containment composes. This is the small mathematical fact used by
     bounded-parameter reasoning: if an expression range is inside a parameter
     range and that parameter range is inside a capability bound, the expression
@@ -141,6 +145,10 @@ def Allows (r : Rule) (e : Effect) : Prop :=
   | none, _ => True
   | some _, none => True
   | some actual, some permitted => Within actual permitted
+
+instance decidableAllows (r : Rule) (e : Effect) : Decidable (Allows r e) := by
+  unfold Allows
+  infer_instance
 
 def SignatureCovers (runtime signature : List Effect) : Prop :=
   ∀ e, e ∈ runtime → e ∈ signature
