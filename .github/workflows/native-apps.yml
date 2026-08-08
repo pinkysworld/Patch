@@ -43,6 +43,7 @@ on:
       - scripts/build-native-window.js
       - .github/workflows/native-apps.yml
       - examples/direct-wasm-recipes.patch
+      - examples/counter-window.patch
   push:
     branches: [main]
     paths:
@@ -86,7 +87,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     env:
-      PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || (matrix.kind == 'window' && 'examples/window-app.patch' || 'examples/direct-wasm-recipes.patch') }}
+      PATCH_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || (matrix.kind == 'window' && 'examples/counter-window.patch' || 'examples/direct-wasm-recipes.patch') }}
       PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
       PATCH_APP_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || (matrix.kind == 'window' && 'PatchWindowSmoke' || 'PatchNativeSmoke') }}
       PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || matrix.kind }}
