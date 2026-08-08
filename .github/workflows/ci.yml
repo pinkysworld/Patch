@@ -24,8 +24,8 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - name: Syntax check
-        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/cli.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-range.js && node --check src/formal-bridge.js && node --check src/formal-source.js && node --check src/certificate.js && node --check src/wasm.js && node --check src/wasm-direct.js && node --check src/designer.js && node --check web/playground.js
-      - name: Language, compiler, formal-range, formal-source, formal-bridge, certificate, direct-Wasm, designer and bootstrap-Wasm tests
+        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/cli.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-range.js && node --check src/formal-bridge.js && node --check src/formal-source.js && node --check src/certificate.js && node --check src/wasm.js && node --check src/wasm-direct.js && node --check src/direct-trace-validator.js && node --check src/designer.js && node --check scripts/validate-direct-trace.js && node --check web/playground.js
+      - name: Language, compiler, formal, certificate, direct-Wasm, trace-validator, designer and bootstrap-Wasm tests
         run: npm test
       - name: Example smoke tests
         run: npm run check
@@ -41,6 +41,8 @@ jobs:
         run: npm run build:wasm-direct
       - name: Execute direct WebAssembly application
         run: npm run run:wasm-direct
+      - name: Independently validate direct WebAssembly transition trace
+        run: npm run validate:wasm-direct
       - name: Build public Patch Studio site
         run: npm run build:site
       - name: Validate public Patch Studio site
