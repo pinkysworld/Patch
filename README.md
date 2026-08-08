@@ -27,7 +27,7 @@ Patch Studio is browser-first and installable as a PWA, with desktop and iPhone/
 
 ## Current status
 
-Current development beta: **0.2.0-beta.16**
+Current development beta: **0.2.0-beta.17**
 
 Implemented now:
 
@@ -45,7 +45,8 @@ Implemented now:
 - independent direct-Wasm transition and semantic-effect validation;
 - **standalone single-file Web App builds**;
 - **native macOS `.app`, Windows `.exe` and Linux executable builds for the direct numeric console subset**;
-- cloud native-build matrix on macOS, Windows and Linux;
+- **Patch Studio cloud builds for Windows, macOS and Linux from the source currently open in the editor**;
+- **standalone packaged Window/GUI applications on Windows, macOS and Linux**;
 - first Patch Window/Designer slice in Studio;
 - Windows/macOS/Linux JavaScript CI plus explicit Lean verification CI.
 
@@ -63,7 +64,28 @@ This emits one HTML file containing the directly compiled Patch Wasm module and 
 
 Patch Studio exposes this as **Standalone Web App (.html)**.
 
-### Native desktop package
+### Build desktop applications directly from Patch Studio
+
+Choose **Windows / macOS / Linux desktop** in Patch Studio and press **Build**.
+
+Studio opens a small cloud-build dialog where you can choose:
+
+```text
+Target: Windows / macOS / Linux / all three
+Type:   Console / Window GUI
+```
+
+The Patch source currently in the editor is sent as a workflow input to the repository's **Patch Native Apps** GitHub Actions workflow, so the source does not need to be committed first. Studio follows the workflow run and exposes the resulting artifacts.
+
+A GitHub token is required to dispatch and inspect the Actions run. Patch Studio keeps the token only in memory in the current browser tab and does not save it in the Patch project or `localStorage`.
+
+Console desktop builds use the direct Patch Wasm native host. Window projects are packaged as standalone desktop GUI applications with a generated Electron player. The GUI package is standalone, but the Patch Window model is **not yet lowered to native AppKit/Win32/GTK widgets**.
+
+This makes it possible to edit a Patch program on an iPhone or in any modern browser and request a Windows, macOS or Linux build from the same Studio UI.
+
+See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) and [`docs/NATIVE_APPS.md`](docs/NATIVE_APPS.md).
+
+### Native desktop package from the CLI
 
 ```bash
 patch build hello.patch --target app --name Hello
@@ -85,9 +107,7 @@ For a terminal-style native binary:
 patch build hello.patch --target native --out Hello
 ```
 
-For all three desktop OSes from one repository, run the **Patch Native Apps** GitHub Actions workflow. It builds and uploads separate macOS, Windows and Linux artifacts.
-
-See [`docs/NATIVE_APPS.md`](docs/NATIVE_APPS.md).
+For all three desktop OSes from one repository, the **Patch Native Apps** GitHub Actions workflow builds and uploads separate macOS, Windows and Linux artifacts. Beta.17 lets Patch Studio dispatch that workflow with the unsaved source currently in the editor.
 
 ## WebAssembly targets
 
@@ -152,7 +172,7 @@ window / controls / events
 
 Unsupported constructs fail explicitly instead of silently falling back.
 
-**Important:** native app packaging in beta.16 uses this same direct numeric console subset. Patch Window/Designer projects are not yet native-widget apps. Native GUI lowering is the next major product step.
+**Important:** the compact native console host uses this same direct numeric subset. Beta.17 adds a separate packaged desktop player for current Patch Window/Designer projects, so GUI projects can be built for Windows, macOS and Linux even though native-widget lowering remains future work.
 
 ## Semantic Change Contracts
 
@@ -254,7 +274,7 @@ patch build examples/direct-wasm-recipes.patch --target app --name App
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, undo, event logs, lenses, CRDTs, reversible computation, WebAssembly compilation or native packaging are individually new.
+Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, undo, event logs, lenses, CRDTs, reversible computation, WebAssembly compilation, Electron packaging or native packaging are individually new.
 
 The candidate contribution is the combination of mandatory semantic mutation, operation/magnitude-aware semantic contracts, formal containment for a structured core, source/evidence separation, quantitative range assurance, and a growing executable backend whose runtime transitions can be independently validated against the same semantic contracts.
 
@@ -264,7 +284,7 @@ The candidate contribution is the combination of mandatory semantic mutation, op
 src/                    language, compiler, analyses, certificates, Wasm and app builders
 formal/                 Lean factorization, signatures, checker, evidence, source, ranges
 web/                    Patch Studio PWA and public project site
-scripts/                smoke checks and deterministic site build
+scripts/                smoke checks, native GUI packaging and deterministic site build
 tests/                  language, compiler, formal bridge, Wasm and app-build tests
 examples/               runnable .patch programs
 docs/                   specification, formal model, compiler, Wasm and native-app docs
