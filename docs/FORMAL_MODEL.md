@@ -1,27 +1,24 @@
 # Patch Core Formal Model
 
-Status: **beta.22: mechanized change semantics, independently validated source extraction, path-witnessed runtime correspondence, and Lean-checked concrete runtime capability containment**.
+Status: **beta.23: mechanized semantic-change contracts, independently translation-validated source/guard extraction, guard-aware runtime correspondence, and concrete runtime capability containment**.
 
-The executable Patch implementation remains larger than the Lean model. The `formal/` directory proves properties of explicit fragments; JavaScript/Wasm layers remain validation/trust boundaries rather than being described as a verified compiler.
+Patch is not a fully verified compiler. The Lean model covers explicit fragments; the JavaScript frontend, WebAssembly lowering/runtime and implementation-side reconstruction remain named trust/validation boundaries.
 
 ## Lean modules
 
-- `PatchFormal.lean` — values, semantic operations, well-formed changes, machine state, intervals, effects and policies.
+- `PatchFormal.lean` — semantic operations, changes, state, intervals, effects and policies.
 - `PatchSignature.lean` — effect-only `CoreStmt`, `Executes`, `inferSignature`, Change Signature Soundness.
 - `PatchChecker.lean` — executable verified semantic policy checker.
 - `PatchEvidence.lean` — proof-free EvidenceStmt decoding/correspondence.
 - `PatchSource.lean` — source `add/remove/set/clear`, normalization and `SourceExecutes`.
-- `PatchRange.lean` — integer RangeExpr analysis and `rangeAnalysisSound`.
-- `PatchRuntime.lean` — concrete `EffectRefines`, `TraceRefines`, proof-free `RuntimePath`, runtime correspondence.
-- `PatchRuntimeCapability.lean` — downward-closed authority under refinement and concrete runtime capability containment.
+- `PatchRange.lean` — integer `RangeExpr` evaluation/analysis and `rangeAnalysisSound`.
+- `PatchRuntime.lean` — `EffectRefines`, `TraceRefines`, proof-free `RuntimePath` and runtime correspondence.
+- `PatchRuntimeCapability.lean` — concrete runtime capability containment.
+- **`PatchGuarded.lean`** — beta.23 integer/Boolean guard evaluation, GuardTree/SourceStmt shape checking and guard-aware RuntimePath validity.
 
-Formal CI builds all modules and compiles generated static/runtime certificates under pinned Lean. Unfinished `sorry`/`admit` proofs are rejected.
+Formal CI builds every module, compiles generated static/runtime certificates under pinned Lean, and rejects `sorry`/`admit`.
 
-## State-Change Factorization
-
-Every modeled mutation of an existing persistent binding is witnessed by a well-formed semantic `Change`; the formal machine has no alternative persistent-write step. Mutation Transparency follows because the witnessing Change is appended to modeled history.
-
-## Signature and capability soundness
+## Core containment
 
 For the effect-only structured core:
 
@@ -30,174 +27,195 @@ Executes(stmt, runtime)
 => RuntimeChanges(runtime) ⊆ inferSignature(stmt)
 ```
 
-and for a protected formal execution:
+Combined with the verified semantic policy checker:
 
 ```text
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-The executable policy checker is proved sound with respect to relational `Allows`.
+`allowsRefinedEffect`, `traceRefinesPreservesPolicy` and `checkedConcreteRuntimeCannotEscape` additionally transfer that authority result to decoded concrete runtime effects that refine the formal trace.
 
-## Source and range correspondence
+## Source and range translation validation
 
-`SourceStmt` preserves source mutation verbs:
+Production extraction:
 
 ```text
-skip | change | seq | branch | repeat
-add | remove | set | clear
+Patch source -> parser.js -> AST -> formalSource
 ```
 
-Lean performs semantic normalization, e.g. non-negative source `add` becomes semantic `increase`. The static certificate also checks formal integer range claims with `rangeAnalysisSound`.
-
-The implementation emits an AST-derived `formalSource`, while an **Independent raw-source parser** separately reconstructs the supported SourceStmt/ranges. Exact agreement is required before protected static certification. This is translation validation, not a proof of either JavaScript parser.
-
-## RuntimePath and runtime correspondence
-
-Concrete direct-Wasm transitions are independently reconstructed into proof-free `EvidenceEffect` occurrences. A separate producer proposes an untrusted execution path:
+Independent extraction:
 
 ```text
-RuntimePath.leaf
-RuntimePath.seq
-RuntimePath.branchThen
-RuntimePath.branchElse
-RuntimePath.repeatZero
-RuntimePath.repeatSucc
+Patch source bytes -> source-validation.js -> raw SourceStmt/ranges
 ```
 
-Lean checks the path against decoded `CoreStmt` structure. `decodeCorePath_sound` proves:
+For supported static certification the two SourceStmt/range views must agree. Lean then performs source semantic normalization and checks integer range claims. This is translation validation, not parser verification.
+
+## Beta.23 GuardExpr and GuardTree
+
+The old effect-only `CoreStmt.branch` intentionally discarded the source condition. Beta.23 does **not** replace that mature effect core. Instead it adds a parallel guard artifact whose leaves line up with `SourceStmt`:
 
 ```text
-decodeCorePath path stmt = some trace
-=> Executes stmt trace
+GuardTree.leaf
+GuardTree.seq
+GuardTree.branch GuardExpr then else
+GuardTree.repeat count body
 ```
 
-`checkSourceRuntimeEvidence_sound` then establishes:
+The guard expression vocabulary is deliberately small:
 
 ```text
-checkSourceRuntimeEvidence source observed path = true
-------------------------------------------------------
+integer RangeExpr operands
+true / false
+==  <  <=
+not / and / or
+```
+
+Source `!=`, `>` and `>=` are normalized into those constructors. Integer operands reuse `RangeExpr`: literal, parameter variable, addition, subtraction, negation and scale by a non-negative integer literal.
+
+`evalGuard : GuardExpr -> IntEnv -> Option Bool` reuses the existing concrete integer evaluator from `PatchRange.lean`.
+
+## Independent guard extraction validation
+
+Change IR 0.9 adds `guardValidation`.
+
+Production path:
+
+```text
+AST -> formalSource.guardTree + guardClaims
+```
+
+Independent path:
+
+```text
+raw source -> guard-validation.js indentation/control-flow parser
+           -> raw GuardTree + guardClaims + parameter vocabulary
+```
+
+The raw guard parser does not import `parser.js` and does not consume the production AST. It shares only the small formal guard-expression normalizer; source/control-flow extraction is independent. Runtime certification requires exact agreement of GuardTree, guard claims and recipe guard variables.
+
+## GuardShape
+
+`GuardShape source tree` states that a GuardTree has the same control-flow skeleton as a `SourceStmt`. `checkGuardShape` is executable, and Lean proves:
+
+```text
+checkGuardShape source tree = true
+=> GuardShape source tree
+```
+
+Thus guard evidence cannot silently describe a different branch/repeat layout from the source-core artifact.
+
+## GuardPathValid
+
+`RuntimePath` remains proof-free input:
+
+```text
+leaf
+seq
+branchThen
+branchElse
+repeatZero
+repeatSucc
+```
+
+Beta.23 strengthens branch validation:
+
+```text
+GuardPathValid values (.branch guard then else) (.branchThen path)
+```
+
+requires
+
+```text
+evalGuard guard values = some true
+```
+
+and the else constructor requires `some false`.
+
+`checkGuardPath` is executable and `checkGuardPath_sound` proves an accepted path satisfies this relational judgment. Repeat witnesses are checked inductively as before.
+
+## Main beta.23 theorem
+
+The combined checker is:
+
+```text
+checkGuardedSourceRuntimeEvidence
+  source guardTree invocationEnv observedEffects runtimePath
+```
+
+A successful check implies:
+
+```text
 exists formalTrace actualTrace,
   SourceExecutes source formalTrace
   and decodeRuntimeTrace observed = some actualTrace
   and TraceRefines actualTrace formalTrace
+  and GuardShape source guardTree
+  and GuardPathValid invocationEnv guardTree runtimePath
 ```
 
-`EffectRefines` requires target/field/kind equality and amount-interval containment where amounts are present. A concrete `increase [8,8]` can therefore refine formal `increase [0,10]`.
+The theorem is `checkGuardedSourceRuntimeEvidence_sound`.
 
-Multiple protected recipe invocations are emitted and checked separately; supported branch/repeat paths can differ between invocations.
+The capability corollary `checkedGuardedConcreteRuntimeCannotEscape` adds the verified policy premise and proves every decoded concrete runtime effect is admitted by the declared Change Capability while retaining `GuardShape` and `GuardPathValid` in the conclusion.
 
-## Beta.22 concrete runtime capability theorem
+## Example
 
-The formal policy theorem previously applied directly to formal `SourceExecutes` effects. Beta.22 closes the next composition step.
+For:
 
-### Downward-closed authority
+```patch
+make reward(bonus number 0..5):
+  if bonus > 0:
+    change score:
+      add bonus
+```
 
-`allowsRefinedEffect` proves:
+one direct invocation may produce proof-free evidence:
 
 ```text
-EffectRefines actual expected
-Allows rule expected
---------------------------
-Allows rule actual
+bonus = 4
+RuntimePath.branchThen(...)
 ```
 
-For quantitative effects, this uses interval transitivity:
+The certificate encodes the normalized guard as `0 < bonus`; Lean evaluates it under `bonus ↦ 4` and accepts the Then witness only if the result is true. A second invocation with `bonus ↦ 0` requires the Else witness.
 
-```text
-actual ⊆ expected ⊆ permitted
-=> actual ⊆ permitted
-```
+## Current guard-aware boundary
 
-`traceRefinesPreservesPolicy` lifts the result pointwise to complete traces.
+Covered:
 
-### Concrete runtime containment
-
-`checkedConcreteRuntimeCannotEscape` combines:
-
-```text
-checkSourceRuntimeEvidence source observed path = true
-checkSourceProtected source policy = true
-```
-
-and proves that the decoded concrete `actualTrace` exists and every effect in that trace is allowed by a rule in the declared policy.
-
-Schematically:
-
-```text
-observed concrete runtime trace
-       ↓ TraceRefines
-formal SourceExecutes trace
-       ↓ checked source policy
-formal capability admission
-       ↓ downward closure under EffectRefines
-concrete runtime capability admission
-```
-
-Generated runtime certificates now include the policy and a per-invocation theorem such as `runtime_reward_1_concrete_policy_safe`.
-
-This is stronger than merely checking the concrete occurrence against a production-side JavaScript policy table, but it remains conditional on the proof-free occurrences/path supplied to Lean. It does not verify the Wasm compiler or runtime observer.
-
-## Important branch-condition limitation
-
-The current `CoreStmt` is intentionally effect-only:
-
-```text
-CoreStmt.branch thenBranch elseBranch
-```
-
-It does **not** retain the original source Boolean condition. Consequently `Executes` admits either `branchThen` or `branchElse` when the chosen branch itself executes. RuntimePath checking therefore proves that the supplied branch choice is structurally a valid formal execution path, but it does not yet prove that the original source guard evaluated to that Boolean.
-
-This limitation matters. The next formal/compiler feature is a **typed, guard-aware execution core** with a small integer/Boolean expression language and explicit environment/state evaluation. The intended proof structure is:
-
-```text
-guard-aware typed execution
-      ↓ erase conditions/values
-existing effect-only CoreStmt Executes
-      ↓
-existing signature/capability theorems
-```
-
-That preserves the simple effect core while strengthening branch correspondence.
-
-## Current covered runtime fragment
-
-When source/static requirements also pass:
-
-- formal add/remove/set/clear;
-- sequence;
-- structural branch witnesses;
-- literal repeat witnesses;
+- safe-integer recipe parameter values;
+- integer literals/parameter variables;
+- `+`, `-`, unary `-`, multiplication by a non-negative integer literal;
+- comparisons and Boolean `not/and/or`;
+- branch/repeat/sequence structure;
 - multiple protected invocations;
-- safe-integer concrete magnitudes;
-- concrete runtime capability containment.
+- concrete runtime effect refinement and capability containment.
 
-Still outside the theorem:
+Rejected by the stronger beta.23 runtime theorem:
 
-- source guard truth correspondence;
-- recipe-call/substitution nodes inside protected formal bodies;
+- persistent/global state in guards;
+- decimal/non-integer guard values;
+- division and general variable multiplication;
 - dynamic repeats outside the literal formal core;
-- floating-point/non-integer correspondence;
-- GUI/event execution correspondence;
-- undo/redo/preview and the full language.
+- nested recipe-call semantics inside protected formal bodies;
+- GUI/event execution and the wider Patch language.
+
+A program may still be covered by the older static SourceStmt/signature/capability theorem even when its guard is outside beta.23. Guard-aware runtime coverage is deliberately a separate, stricter layer.
 
 ## Trust boundaries
 
-A successful certificate does **not** prove:
+Still not machine proved:
 
-- production parser correctness;
-- independent raw-source parser correctness;
-- JavaScript → Wasm lowering correctness;
+- production or independent JavaScript parser correctness;
+- JavaScript -> Wasm lowering correctness;
 - Wasm engine correctness;
-- completeness/correctness of transition observation outside the supported ABI;
+- runtime observation completeness outside the supported ABI;
 - JavaScript semantic-effect reconstruction correctness;
-- JavaScript RuntimePath producer correctness;
-- source-guard branch correspondence;
-- full Patch semantics.
+- JavaScript RuntimePath/environment producer correctness.
 
-The correct description is **Lean-checked correspondence and capability containment for accepted proof-free runtime evidence in a restricted fragment**, not end-to-end verified compilation.
+The last item is why path/environment values remain proof-free inputs: Lean checks them against the independently validated formal guard/source artifacts.
 
 ## Research boundary
 
-Refinement/simulation relations, Proof-Carrying Code, translation validation, effect/capability systems, source calculi, abstract interpretation and verified checkers have substantial prior art. The new runtime-capability theorem is an assurance composition result, not a standalone novelty claim.
+Guard semantics, operational semantics, refinement relations, proof-carrying evidence, translation validation and verified checkers all have substantial prior art. `PatchGuarded` is supporting assurance for Patch's primary design hypothesis, not a standalone firstness claim.
 
-The candidate primary contribution remains mandatory semantic mutation factorization plus operation-/magnitude-aware authority derived from that same mutation substrate.
+The primary candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from that same mutation substrate**.
