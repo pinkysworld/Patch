@@ -134,25 +134,9 @@ and an independent JavaScript validator reconstructed concrete semantic effects 
 
 ### Concrete effects refine abstract formal effects
 
-A formal ranged source change may normalize to:
+A formal ranged source change may normalize to `score increase [0,10]` while one concrete call produces `score increase [8,8]`.
 
-```text
-score increase [0,10]
-```
-
-while one concrete call produces:
-
-```text
-score increase [8,8]
-```
-
-`PatchRuntime.lean` defines:
-
-```text
-EffectRefines(actual, expected)
-```
-
-requiring target, field and semantic operation equality and, where amounts exist, interval containment:
+`PatchRuntime.lean` defines `EffectRefines(actual, expected)`, requiring target, field and semantic operation equality and, where amounts exist, interval containment:
 
 ```text
 actual.amount ⊆ expected.amount
@@ -164,7 +148,11 @@ actual.amount ⊆ expected.amount
 
 Concrete occurrences are supplied as proof-free `EvidenceEffect` values. `decodeRuntimeTrace` validates their intervals before admitting them as formal `Effect` values.
 
-`traceRefinesBool` checks complete traces pointwise, and `traceRefinesBool_sound` derives `List.Forall₂ EffectRefines`.
+Patch defines its own inductive pointwise relation `TraceRefines`. `traceRefinesBool` checks complete traces pointwise, and `traceRefinesBool_sound` derives:
+
+```text
+TraceRefines actualTrace formalTrace
+```
 
 ### Linear formal execution reconstruction
 
@@ -194,7 +182,7 @@ checkSourceRuntimeEvidence source observed = true
 exists formalTrace actualTrace,
   SourceExecutes source formalTrace
   and decodeRuntimeTrace observed = some actualTrace
-  and List.Forall2 EffectRefines actualTrace formalTrace
+  and TraceRefines actualTrace formalTrace
 ```
 
 The theorem is `checkSourceRuntimeEvidence_sound`.
@@ -215,12 +203,7 @@ exact source
    -> generated Lean runtime certificate
 ```
 
-The generated artifact records SHA-256 hashes of:
-
-- the exact Patch source bytes;
-- the observed direct transition trace.
-
-The hash binds the artifact to the tested execution; it is not a cryptographic proof of compiler correctness.
+The generated artifact records SHA-256 hashes of the exact Patch source bytes and the observed direct transition trace. The hash binds the artifact to the tested execution; it is not a cryptographic proof of compiler correctness.
 
 For each protected recipe currently certified at runtime, the producer additionally requires:
 
@@ -257,6 +240,7 @@ exact source
    -> independent semantic reconstruction
    -> concrete proof-free runtime evidence
    -> Lean decoding/refinement
+   -> TraceRefines
    -> formal SourceExecutes witness
 ```
 
@@ -285,7 +269,7 @@ Unsupported means **not covered by this theorem**, not necessarily unsafe or uns
 
 ## 10. What beta.20 establishes and does not establish
 
-A successful beta.20 generated runtime certificate establishes inside Lean that the supplied proof-free concrete effect occurrences decode successfully and pointwise refine an actual formal `SourceExecutes` trace for the supplied formal source statement.
+A successful beta.20 generated runtime certificate establishes inside Lean that the supplied proof-free concrete effect occurrences decode successfully and `TraceRefines` an actual formal `SourceExecutes` trace for the supplied formal source statement.
 
 It still does **not** prove:
 
