@@ -46,11 +46,11 @@ theorem allowsBool_sound
       · refine ⟨hTarget, hField, hKind, ?_⟩
         cases hEffectAmount : effect.amount with
         | none =>
-            simp [hEffectAmount]
+            simp
         | some actual =>
             cases hRuleAmount : rule.amount with
             | none =>
-                simp [hEffectAmount, hRuleAmount]
+                simp
             | some permitted =>
                 have hWithin : withinBool actual permitted = true := by
                   simpa [allowsBool, hTarget, hField, hKind, amountAllowsBool,
@@ -61,7 +61,7 @@ theorem allowsBool_sound
     · simp [allowsBool, hTarget, hField] at h
   · simp [allowsBool, hTarget] at h
 
-/-- Does at least one policy rule admit this effect? -/
+/-- Does at least one policy rule allow this effect? -/
 def anyRuleAllows : List Rule → Effect → Bool
   | [], _ => false
   | rule :: rest, effect => allowsBool rule effect || anyRuleAllows rest effect
