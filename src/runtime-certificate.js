@@ -69,7 +69,7 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
     blocks.push(`def ${sourceDef} : SourceStmt :=\n${indent(leanSourceCore(sourceEntry.source), 2)}`);
     blocks.push(`def ${observedDef} : List EvidenceEffect :=\n${indent(leanList(observed.map(leanEvidenceEffect)), 2)}`);
     blocks.push(`theorem ${checkTheorem} :\n    checkSourceRuntimeEvidence ${sourceDef} ${observedDef} = true := by\n  native_decide`);
-    blocks.push(`theorem runtime_${id}_corresponds :\n    ∃ formalTrace actualTrace,\n      SourceExecutes ${sourceDef} formalTrace ∧\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      List.Forall₂ EffectRefines actualTrace formalTrace := by\n  exact checkSourceRuntimeEvidence_sound ${checkTheorem}`);
+    blocks.push(`theorem runtime_${id}_corresponds :\n    ∃ formalTrace actualTrace,\n      SourceExecutes ${sourceDef} formalTrace ∧\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      TraceRefines actualTrace formalTrace := by\n  exact checkSourceRuntimeEvidence_sound ${checkTheorem}`);
 
     observedEffects += observed.length;
     certified.push(recipeName);
