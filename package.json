@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.7",
-  "description": "Patch: a tiny change-oriented programming language with machine-checked semantic change contracts, a Lean-validated production evidence boundary, Lean-checkable certificates, range proofs, causal provenance, and a browser-first cross-platform IDE",
+  "version": "0.2.0-beta.8",
+  "description": "Patch: a tiny change-oriented programming language with machine-checked semantic change contracts, formal source-core to evidence correspondence, Lean-checkable certificates, range proofs, causal provenance, and a browser-first cross-platform IDE",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -18,5 +18,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
 }
