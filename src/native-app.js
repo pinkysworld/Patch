@@ -47,7 +47,6 @@ export function buildNativeApp(source, options = {}) {
   }
 
   ensureCargo();
-
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-native-'));
   try {
     const srcDir = path.join(temp, 'src');
@@ -56,8 +55,7 @@ export function buildNativeApp(source, options = {}) {
     fs.writeFileSync(path.join(srcDir, 'main.rs'), plan.mainRs, 'utf8');
     fs.writeFileSync(path.join(srcDir, 'app.wasm'), plan.module);
 
-    const cargoArgs = ['build', '--release', '--manifest-path', path.join(temp, 'Cargo.toml')];
-    const built = spawnSync('cargo', cargoArgs, {
+    const built = spawnSync('cargo', ['build', '--release', '--manifest-path', path.join(temp, 'Cargo.toml')], {
       cwd: temp,
       stdio: options.quiet ? 'pipe' : 'inherit',
       encoding: 'utf8'
@@ -81,11 +79,7 @@ export function buildNativeApp(source, options = {}) {
     fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
     fs.copyFileSync(cargoBinary, output);
     if (plan.platform !== 'win32') fs.chmodSync(output, 0o755);
-    return {
-      ...plan,
-      output,
-      outputKind: plan.platform === 'win32' ? 'Windows .exe' : 'native executable'
-    };
+    return { ...plan, output, outputKind: plan.platform === 'win32' ? 'Windows .exe' : 'native executable' };
   } finally {
     if (!options.keepBuildDir) fs.rmSync(temp, { recursive: true, force: true });
   }
@@ -94,9 +88,7 @@ export function buildNativeApp(source, options = {}) {
 function ensureCargo() {
   const check = spawnSync('cargo', ['--version'], { stdio: 'pipe', encoding: 'utf8' });
   if (check.error || check.status !== 0) {
-    throw new NativeAppBuildError(
-      'Native app builds need the Rust toolchain (cargo) once on the build machine. Install Rust, then rerun the same Patch build command.'
-    );
+    throw new NativeAppBuildError('Native app builds need the Rust toolchain (cargo) once on the build machine. Install Rust, then rerun the same Patch build command.');
   }
 }
 
@@ -105,7 +97,7 @@ function cargoToml(name) {
 }
 
 function nativeHostSource(name, desktopShell) {
-  return `use std::error::Error;\nuse std::process::Command;\nuse std::sync::{Arc, Mutex};\nuse wasmtime::{Engine, Linker, Module, Store};\n\nstatic APP_WASM: &[u8] = include_bytes!("app.wasm");\nconst APP_NAME: &str = ${JSON.stringify(name)};\nconst DESKTOP_SHELL: bool = ${desktopShell ? 'true' : 'false'};\n\nfn main() -> Result<(), Box<dyn Error>> {\n    let engine = Engine::default();\n    let module = Module::from_binary(&engine, APP_WASM)?;\n    let output = Arc::new(Mutex::new(Vec::<String>::new()));\n    let mut linker = Linker::new(&engine);\n\n    let shown = Arc::clone(&output);\n    linker.func_wrap("patch", "show_number", move |value: f64| {\n        let line = format_number(value);\n        println!("{}", line);\n        if let Ok(mut lines) = shown.lock() { lines.push(line); }\n    })?;\n    linker.func_wrap("patch", "change_number", |_target: i32, _before: f64, _after: f64| {})?;\n\n    let mut store = Store::new(&engine, ());\n    let instance = linker.instantiate(&mut store, &module)?;\n    let run = instance.get_typed_func::<(), ()>(&mut store, "run")?;\n    run.call(&mut store, ())?;\n\n    if DESKTOP_SHELL {\n        let text = output.lock().map(|lines| lines.join("\\n")).unwrap_or_default();\n        if !text.is_empty() { present_output(&text); }\n    }\n    Ok(())\n}\n\nfn format_number(value: f64) -> String {\n    if value.is_finite() && value.fract() == 0.0 { format!("{:.0}", value) } else { value.to_string() }\n}\n\n#[cfg(target_os = "macos")]\nfn present_output(text: &str) {\n    let _ = Command::new("/usr/bin/osascript")\n        .args(["-e", "on run argv", "-e", "display dialog (item 1 of argv) with title (item 2 of argv)", "-e", "end run", text, APP_NAME])\n        .status();\n}\n\n#[cfg(target_os = "windows")]\nfn present_output(text: &str) {\n    let _ = Command::new("powershell")\n        .args(["-NoProfile", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show($env:PATCH_OUTPUT, $env:PATCH_TITLE) | Out-Null"])\n        .env("PATCH_OUTPUT", text)\n        .env("PATCH_TITLE", APP_NAME)\n        .status();\n}\n\n#[cfg(not(any(target_os = "macos", target_os = "windows")))]\nfn present_output(_text: &str) {}\n`;
+  return `use std::error::Error;\nuse std::process::Command;\nuse std::sync::{Arc, Mutex};\nuse wasmtime::{Engine, Linker, Module, Store};\n\nstatic APP_WASM: &[u8] = include_bytes!("app.wasm");\nconst APP_NAME: &str = ${JSON.stringify(name)};\nconst DESKTOP_SHELL: bool = ${desktopShell ? 'true' : 'false'};\n\nfn main() -> Result<(), Box<dyn Error>> {\n    let engine = Engine::default();\n    let module = Module::from_binary(&engine, APP_WASM)?;\n    let output = Arc::new(Mutex::new(Vec::<String>::new()));\n    let mut linker = Linker::new(&engine);\n\n    let shown = Arc::clone(&output);\n    linker.func_wrap("patch", "show_number", move |value: f64| {\n        let line = format_number(value);\n        println!("{}", line);\n        if let Ok(mut lines) = shown.lock() { lines.push(line); }\n    })?;\n    linker.func_wrap("patch", "change_number", |_target: i32, _before: f64, _after: f64| {})?;\n\n    let mut store = Store::new(&engine, ());\n    let instance = linker.instantiate(&mut store, &module)?;\n    let run = instance.get_typed_func::<(), ()>(&mut store, "run")?;\n    run.call(&mut store, ())?;\n\n    if DESKTOP_SHELL && std::env::var_os("PATCH_NATIVE_HEADLESS").is_none() {\n        let text = output.lock().map(|lines| lines.join("\\n")).unwrap_or_default();\n        if !text.is_empty() { present_output(&text); }\n    }\n    Ok(())\n}\n\nfn format_number(value: f64) -> String {\n    if value.is_finite() && value.fract() == 0.0 { format!("{:.0}", value) } else { value.to_string() }\n}\n\n#[cfg(target_os = "macos")]\nfn present_output(text: &str) {\n    let _ = Command::new("/usr/bin/osascript")\n        .args(["-e", "on run argv", "-e", "display dialog (item 1 of argv) with title (item 2 of argv)", "-e", "end run", text, APP_NAME])\n        .status();\n}\n\n#[cfg(target_os = "windows")]\nfn present_output(text: &str) {\n    let _ = Command::new("powershell")\n        .args(["-NoProfile", "-Command", "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show($env:PATCH_OUTPUT, $env:PATCH_TITLE) | Out-Null"])\n        .env("PATCH_OUTPUT", text)\n        .env("PATCH_TITLE", APP_NAME)\n        .status();\n}\n\n#[cfg(not(any(target_os = "macos", target_os = "windows")))]\nfn present_output(_text: &str) {}\n`;
 }
 
 function writeMacAppBundle(binary, appPath, name) {
@@ -128,7 +120,6 @@ function normalizeMacAppOutput(out, name) {
   const candidate = out ?? `${name}.app`;
   return candidate.endsWith('.app') ? candidate : `${candidate}.app`;
 }
-
 function normalizeBinaryOutput(out, name, platform) {
   if (out) {
     if (platform === 'win32' && !out.toLowerCase().endsWith('.exe')) return `${out}.exe`;
@@ -136,11 +127,7 @@ function normalizeBinaryOutput(out, name, platform) {
   }
   return platform === 'win32' ? `${name}.exe` : name;
 }
-
-function safeAppName(name) {
-  const cleaned = String(name).trim().replace(/[^A-Za-z0-9 _.-]/g, '').replace(/\s+/g, ' ').slice(0, 80);
-  return cleaned || 'PatchApp';
-}
+function safeAppName(name) { const cleaned = String(name).trim().replace(/[^A-Za-z0-9 _.-]/g, '').replace(/\s+/g, ' ').slice(0, 80); return cleaned || 'PatchApp'; }
 function safeExecutableName(name) { return name.replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp'; }
 function safeBundlePart(name) { return name.toLowerCase().replace(/[^a-z0-9.-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'app'; }
 function tomlEscape(text) { return String(text).replace(/\\/g, '\\\\').replace(/"/g, '\\"'); }
