@@ -26,12 +26,13 @@ export function generateLeanCallCertificate(source, options = {}) {
     throw new Error(`Formal call certification requires a fully supported finite recipe environment. ${details}`);
   }
 
-  const envEntries = entries.map(([name, entry]) => leanRecipePair(name, entry));
+  const recipeDefs = entries.map(([name, entry]) => leanRecipeDefinition(name, entry));
+  const envEntries = recipeDefs.map(item => `(${leanString(item.name)}, ${item.defName})`);
   const certifiedRecipes = entries.map(([name]) => name);
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
   const envName = 'callEnv';
 
-  const lean = `import PatchCalls\n\nopen PatchFormal\n\nnamespace PatchGeneratedCallCertificate\n\n/-- Generated from the production compiler's proof-free formalCalls artifact.\n    The source hash binds this certificate to exact Patch source bytes. Lean\n    independently checks the finite recipe environment: direct semantic effects\n    must occur in each caller signature, every call must resolve to a lower-rank\n    recipe, argument intervals must fit declared parameter intervals, and each\n    imported callee signature must be contained by the caller signature. This\n    establishes abstract call-aware signature composition; it does not prove\n    concrete runtime argument-value substitution or compiler correctness. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef formalCallsVersion : String := ${leanString(artifact.version)}\ndef callCertificateVersion : String := ${leanString(PATCH_CALL_CERTIFICATE_VERSION)}\n\ndef ${envName} : RecipeEnv :=\n${indent(leanList(envEntries), 2)}\n\ntheorem callEnvChecked :\n    checkRecipeEnv ${envName} = true := by\n  native_decide\n\ntheorem callEnvironmentComposes : EnvironmentChecked ${envName} := by\n  exact checkRecipeEnv_sound callEnvChecked\n\nend PatchGeneratedCallCertificate\n`;
+  const lean = `import PatchCalls\n\nopen PatchFormal\n\nnamespace PatchGeneratedCallCertificate\n\n/-- Generated from the production compiler's proof-free formalCalls artifact.\n    The source hash binds this certificate to exact Patch source bytes. Lean\n    independently checks the finite recipe environment: direct semantic effects\n    must occur in each caller signature, every call must resolve to a lower-rank\n    recipe, argument intervals must fit declared parameter intervals, and each\n    imported callee signature must be contained by the caller signature. This\n    establishes abstract call-aware signature composition; it does not prove\n    concrete runtime argument-value substitution or compiler correctness. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef formalCallsVersion : String := ${leanString(artifact.version)}\ndef callCertificateVersion : String := ${leanString(PATCH_CALL_CERTIFICATE_VERSION)}\n\n${recipeDefs.map(item => item.code).join('\n\n')}\n\ndef ${envName} : RecipeEnv :=\n${indent(leanList(envEntries), 2)}\n\ntheorem callEnvChecked :\n    checkRecipeEnv ${envName} = true := by\n  native_decide\n\ntheorem callEnvironmentComposes : EnvironmentChecked ${envName} := by\n  exact checkRecipeEnv_sound callEnvChecked\n\nend PatchGeneratedCallCertificate\n`;
 
   return {
     lean,
@@ -48,7 +49,7 @@ export function generateLeanCallCertificate(source, options = {}) {
   };
 }
 
-function leanRecipePair(name, entry) {
+function leanRecipeDefinition(name, entry) {
   const params = entry.params.map(param => {
     const found = entry.paramRanges.find(candidate => candidate.name === param);
     if (!found) throw new Error(`Recipe '${name}' is missing the certified range for parameter '${param}'.`);
@@ -58,7 +59,9 @@ function leanRecipePair(name, entry) {
   const body = leanCallStmt(entry.body);
   if (!Number.isSafeInteger(entry.rank) || entry.rank < 0) throw new Error(`Recipe '${name}' has invalid formal rank '${entry.rank}'.`);
 
-  return `(${leanString(name)}, ({ params := ${leanList(params)}, rank := ${entry.rank}, signature := ${leanList(signature)}, body :=\n${indent(body, 4)} } : RecipeDef))`;
+  const defName = `call_recipe_${leanIdentifier(name)}`;
+  const code = `def ${defName} : RecipeDef := {\n  params := ${leanList(params)},\n  rank := ${entry.rank},\n  signature := ${leanList(signature)},\n  body :=\n${indent(body, 4)}\n}`;
+  return { name, defName, code };
 }
 
 function leanCallStmt(stmt) {
@@ -100,6 +103,11 @@ function leanInterval(lo, hi) {
 
 function leanOptionString(value) {
   return value === null || value === undefined ? 'none' : `some ${leanString(value)}`;
+}
+
+function leanIdentifier(value) {
+  const cleaned = String(value).replace(/[^A-Za-z0-9_]/g, '_');
+  return (/^[A-Za-z_]/.test(cleaned) ? cleaned : `r_${cleaned}`) || 'recipe';
 }
 
 function leanString(value) { return JSON.stringify(String(value)); }
