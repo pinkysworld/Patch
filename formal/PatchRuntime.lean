@@ -64,8 +64,7 @@ def decodeRuntimeTrace : List EvidenceEffect → Option (List Effect)
       let decodedRest ← decodeRuntimeTrace rest
       pure (decodedFirst :: decodedRest)
 
-/-- A deliberately small pointwise trace-refinement relation. Defining it in
-    the Patch model keeps the theorem independent of library relation names. -/
+/-- A deliberately small pointwise trace-refinement relation. -/
 inductive TraceRefines : List Effect → List Effect → Prop where
   | nil : TraceRefines [] []
   | cons {actual expected : Effect} {actualRest expectedRest : List Effect} :
@@ -103,94 +102,170 @@ theorem traceRefinesBool_sound :
             simpa [traceRefinesBool, Bool.and_eq_true] using h
           exact TraceRefines.cons (effectRefinesBool_sound hBoth.1) (ih hBoth.2)
 
-/-- Decode only the linear formal evidence fragment to its exact formal trace.
-    Branches and repeats are intentionally rejected in beta.20 rather than
-    silently approximated; they can be added with explicit path witnesses later. -/
-def decodeLinearEvidenceTrace : EvidenceStmt → Option (List Effect)
-  | .skip => some []
-  | .emit raw => do
-      let effect ← decodeEvidenceEffect raw
-      pure [effect]
-  | .seq first second => do
-      let left ← decodeLinearEvidenceTrace first
-      let right ← decodeLinearEvidenceTrace second
+/-- Proof-free execution-path witness. It mirrors the constructors of the
+    mechanized `Executes` relation. `repeatSucc` contains one witness for the
+    current body execution and another witness for the remaining iterations,
+    so different branch choices may be represented on different iterations. -/
+inductive RuntimePath where
+  | leaf
+  | seq (first second : RuntimePath)
+  | branchThen (path : RuntimePath)
+  | branchElse (path : RuntimePath)
+  | repeatZero
+  | repeatSucc (body rest : RuntimePath)
+  deriving Repr, DecidableEq
+
+/-- Execute a formal CoreStmt according to an explicit untrusted path witness.
+    Shape mismatches, impossible branch witnesses, and repeat-count mismatches
+    are rejected instead of approximated. -/
+def decodeCorePath : RuntimePath → CoreStmt → Option (List Effect)
+  | .leaf, .skip => some []
+  | .leaf, .emit effect => some [effect]
+  | .seq firstPath secondPath, .seq first second => do
+      let left ← decodeCorePath firstPath first
+      let right ← decodeCorePath secondPath second
       pure (left ++ right)
-  | .branch _ _ => none
-  | .repeat _ _ => none
+  | .branchThen path, .branch thenBranch _ =>
+      decodeCorePath path thenBranch
+  | .branchElse path, .branch _ elseBranch =>
+      decodeCorePath path elseBranch
+  | .repeatZero, .repeat 0 _ => some []
+  | .repeatSucc bodyPath restPath, .repeat (Nat.succ n) body => do
+      let first ← decodeCorePath bodyPath body
+      let rest ← decodeCorePath restPath (.repeat n body)
+      pure (first ++ rest)
+  | _, _ => none
 
-/-- Successful linear evidence decoding constructs an actual execution of the
-    existing mechanized `CoreStmt` semantics. -/
-theorem decodeLinearEvidenceTrace_sound :
-    ∀ {evidence : EvidenceStmt} {trace : List Effect},
-      decodeLinearEvidenceTrace evidence = some trace →
-      ∃ stmt,
-        decodeEvidenceStmt evidence = some stmt ∧
-        Executes stmt trace := by
-  intro evidence
-  induction evidence with
-  | skip =>
-      intro trace h
-      have hTrace : trace = [] := by
-        simpa [decodeLinearEvidenceTrace] using h.symm
-      subst trace
-      exact ⟨.skip, rfl, Executes.skip⟩
-  | emit raw =>
-      intro trace h
-      cases hDecode : decodeEvidenceEffect raw with
-      | none =>
-          simp [decodeLinearEvidenceTrace, hDecode] at h
-      | some effect =>
-          have hTrace : trace = [effect] := by
-            simpa [decodeLinearEvidenceTrace, hDecode] using h.symm
+/-- **Path-witness soundness.** If Lean accepts an execution-path witness for a
+    formal core statement, the reconstructed trace is an actual execution of
+    that statement under the existing mechanized semantics. -/
+theorem decodeCorePath_sound :
+    ∀ {path : RuntimePath} {stmt : CoreStmt} {trace : List Effect},
+      decodeCorePath path stmt = some trace →
+      Executes stmt trace := by
+  intro path
+  induction path with
+  | leaf =>
+      intro stmt trace h
+      cases stmt with
+      | skip =>
+          simp [decodeCorePath] at h
           subst trace
-          refine ⟨.emit effect, ?_, Executes.emit⟩
-          simp [decodeEvidenceStmt, hDecode]
-  | seq first second ihFirst ihSecond =>
-      intro trace h
-      cases hLeft : decodeLinearEvidenceTrace first with
-      | none =>
-          simp [decodeLinearEvidenceTrace, hLeft] at h
-      | some left =>
-          cases hRight : decodeLinearEvidenceTrace second with
+          exact Executes.skip
+      | emit effect =>
+          simp [decodeCorePath] at h
+          subst trace
+          exact Executes.emit
+      | seq first second => simp [decodeCorePath] at h
+      | branch thenBranch elseBranch => simp [decodeCorePath] at h
+      | «repeat» count body => simp [decodeCorePath] at h
+  | seq firstPath secondPath ihFirst ihSecond =>
+      intro stmt trace h
+      cases stmt with
+      | skip => simp [decodeCorePath] at h
+      | emit effect => simp [decodeCorePath] at h
+      | seq first second =>
+          cases hLeft : decodeCorePath firstPath first with
           | none =>
-              simp [decodeLinearEvidenceTrace, hLeft, hRight] at h
-          | some right =>
-              have hTrace : trace = left ++ right := by
-                simpa [decodeLinearEvidenceTrace, hLeft, hRight] using h.symm
+              simp [decodeCorePath, hLeft] at h
+          | some left =>
+              cases hRight : decodeCorePath secondPath second with
+              | none =>
+                  simp [decodeCorePath, hLeft, hRight] at h
+              | some right =>
+                  have hTrace : trace = left ++ right := by
+                    simpa [decodeCorePath, hLeft, hRight] using h.symm
+                  subst trace
+                  exact Executes.seq (ihFirst hLeft) (ihSecond hRight)
+      | branch thenBranch elseBranch => simp [decodeCorePath] at h
+      | «repeat» count body => simp [decodeCorePath] at h
+  | branchThen path ih =>
+      intro stmt trace h
+      cases stmt with
+      | skip => simp [decodeCorePath] at h
+      | emit effect => simp [decodeCorePath] at h
+      | seq first second => simp [decodeCorePath] at h
+      | branch thenBranch elseBranch =>
+          have hThen : decodeCorePath path thenBranch = some trace := by
+            simpa [decodeCorePath] using h
+          exact Executes.branchThen (ih hThen)
+      | «repeat» count body => simp [decodeCorePath] at h
+  | branchElse path ih =>
+      intro stmt trace h
+      cases stmt with
+      | skip => simp [decodeCorePath] at h
+      | emit effect => simp [decodeCorePath] at h
+      | seq first second => simp [decodeCorePath] at h
+      | branch thenBranch elseBranch =>
+          have hElse : decodeCorePath path elseBranch = some trace := by
+            simpa [decodeCorePath] using h
+          exact Executes.branchElse (ih hElse)
+      | «repeat» count body => simp [decodeCorePath] at h
+  | repeatZero =>
+      intro stmt trace h
+      cases stmt with
+      | skip => simp [decodeCorePath] at h
+      | emit effect => simp [decodeCorePath] at h
+      | seq first second => simp [decodeCorePath] at h
+      | branch thenBranch elseBranch => simp [decodeCorePath] at h
+      | «repeat» count body =>
+          cases count with
+          | zero =>
+              simp [decodeCorePath] at h
               subst trace
-              obtain ⟨leftStmt, hDecodeLeft, hExecLeft⟩ := ihFirst hLeft
-              obtain ⟨rightStmt, hDecodeRight, hExecRight⟩ := ihSecond hRight
-              refine ⟨.seq leftStmt rightStmt, ?_, Executes.seq hExecLeft hExecRight⟩
-              simp [decodeEvidenceStmt, hDecodeLeft, hDecodeRight]
-  | branch thenBranch elseBranch ihThen ihElse =>
-      intro trace h
-      simp [decodeLinearEvidenceTrace] at h
-  | «repeat» count body ih =>
-      intro trace h
-      simp [decodeLinearEvidenceTrace] at h
+              exact Executes.repeatZero
+          | succ n => simp [decodeCorePath] at h
+  | repeatSucc bodyPath restPath ihBody ihRest =>
+      intro stmt trace h
+      cases stmt with
+      | skip => simp [decodeCorePath] at h
+      | emit effect => simp [decodeCorePath] at h
+      | seq first second => simp [decodeCorePath] at h
+      | branch thenBranch elseBranch => simp [decodeCorePath] at h
+      | «repeat» count body =>
+          cases count with
+          | zero => simp [decodeCorePath] at h
+          | succ n =>
+              cases hFirst : decodeCorePath bodyPath body with
+              | none =>
+                  simp [decodeCorePath, hFirst] at h
+              | some first =>
+                  cases hRest : decodeCorePath restPath (.repeat n body) with
+                  | none =>
+                      simp [decodeCorePath, hFirst, hRest] at h
+                  | some rest =>
+                      have hTrace : trace = first ++ rest := by
+                        simpa [decodeCorePath, hFirst, hRest] using h.symm
+                      subst trace
+                      have hBodyExec : Executes body first := ihBody hFirst
+                      have hRestExec : Executes (.repeat n body) rest := ihRest hRest
+                      simpa [Nat.succ_eq_add_one] using Executes.repeatSucc hBodyExec hRestExec
 
-/-- Runtime correspondence checker for the beta.20 linear certified source core.
-    It independently decodes the observed proof-free occurrence list and checks
-    that each occurrence refines the exact formal execution trace derived from
-    Lean-normalized source evidence. -/
+/-- Runtime correspondence checker for the beta.21 path-witnessed source core.
+    The observed occurrence list and the proposed control-flow witness are both
+    untrusted inputs. Lean validates the source lowering, evidence decoding,
+    path execution and pointwise concrete-to-formal effect refinement. -/
 def checkSourceRuntimeEvidence
-    (source : SourceStmt) (observed : List EvidenceEffect) : Bool :=
+    (source : SourceStmt) (observed : List EvidenceEffect) (path : RuntimePath) : Bool :=
   match lowerSourceStmt source with
   | none => false
   | some evidence =>
-      match decodeLinearEvidenceTrace evidence with
+      match decodeEvidenceStmt evidence with
       | none => false
-      | some formalTrace =>
-          match decodeRuntimeTrace observed with
+      | some stmt =>
+          match decodeCorePath path stmt with
           | none => false
-          | some actualTrace => traceRefinesBool actualTrace formalTrace
+          | some formalTrace =>
+              match decodeRuntimeTrace observed with
+              | none => false
+              | some actualTrace => traceRefinesBool actualTrace formalTrace
 
-/-- **Runtime-to-formal correspondence for the checked linear source core.**
-    A successful runtime-evidence check yields a formal `SourceExecutes` trace,
-    a decoded observed trace, and pointwise semantic refinement between them. -/
+/-- **Runtime-to-formal correspondence with explicit control-flow witnesses.**
+    A successful check yields an actual formal SourceExecutes trace and an
+    ordered pointwise refinement from the decoded concrete runtime occurrences. -/
 theorem checkSourceRuntimeEvidence_sound
-    {source : SourceStmt} {observed : List EvidenceEffect}
-    (h : checkSourceRuntimeEvidence source observed = true) :
+    {source : SourceStmt} {observed : List EvidenceEffect} {path : RuntimePath}
+    (h : checkSourceRuntimeEvidence source observed path = true) :
     ∃ formalTrace actualTrace,
       SourceExecutes source formalTrace ∧
       decodeRuntimeTrace observed = some actualTrace ∧
@@ -199,20 +274,24 @@ theorem checkSourceRuntimeEvidence_sound
   | none =>
       simp [checkSourceRuntimeEvidence, hLower] at h
   | some evidence =>
-      cases hFormal : decodeLinearEvidenceTrace evidence with
+      cases hDecode : decodeEvidenceStmt evidence with
       | none =>
-          simp [checkSourceRuntimeEvidence, hLower, hFormal] at h
-      | some formalTrace =>
-          cases hActual : decodeRuntimeTrace observed with
+          simp [checkSourceRuntimeEvidence, hLower, hDecode] at h
+      | some stmt =>
+          cases hFormal : decodeCorePath path stmt with
           | none =>
-              simp [checkSourceRuntimeEvidence, hLower, hFormal, hActual] at h
-          | some actualTrace =>
-              have hRefines : traceRefinesBool actualTrace formalTrace = true := by
-                simpa [checkSourceRuntimeEvidence, hLower, hFormal, hActual] using h
-              have hPointwise : TraceRefines actualTrace formalTrace :=
-                traceRefinesBool_sound hRefines
-              obtain ⟨stmt, hDecode, hExec⟩ := decodeLinearEvidenceTrace_sound hFormal
-              refine ⟨formalTrace, actualTrace, ?_, rfl, hPointwise⟩
-              exact ⟨evidence, stmt, hLower, hDecode, hExec⟩
+              simp [checkSourceRuntimeEvidence, hLower, hDecode, hFormal] at h
+          | some formalTrace =>
+              cases hActual : decodeRuntimeTrace observed with
+              | none =>
+                  simp [checkSourceRuntimeEvidence, hLower, hDecode, hFormal, hActual] at h
+              | some actualTrace =>
+                  have hRefines : traceRefinesBool actualTrace formalTrace = true := by
+                    simpa [checkSourceRuntimeEvidence, hLower, hDecode, hFormal, hActual] using h
+                  have hPointwise : TraceRefines actualTrace formalTrace :=
+                    traceRefinesBool_sound hRefines
+                  have hExec : Executes stmt formalTrace := decodeCorePath_sound hFormal
+                  refine ⟨formalTrace, actualTrace, ?_, rfl, hPointwise⟩
+                  exact ⟨evidence, stmt, hLower, hDecode, hExec⟩
 
 end PatchFormal

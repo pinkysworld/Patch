@@ -1,0 +1,166 @@
+import { validateWindowBuild } from './window-build.js';
+
+export const PATCH_WINDOW_WEB_VERSION = '0.1';
+
+const WINDOW_WEB_SUPPORTED = new Set([
+  'create', 'createThing', 'window', 'uiControl', 'event', 'allow', 'show',
+  'change', 'if', 'repeat', 'function', 'call', 'return'
+]);
+
+/** Build a single-file executable browser app from the parsed Patch AST. */
+export function buildStandaloneWindowWebApp(compiled, name) {
+  const windowCount = validateWindowBuild(compiled);
+  validateWindowWebSubset(compiled.ast);
+  const programJson = scriptJson(compiled.ast);
+  const appName = String(name || 'PatchApp');
+  const metadata = {
+    format: 'patch-standalone-window-web',
+    version: PATCH_WINDOW_WEB_VERSION,
+    irVersion: compiled.ir.version,
+    projectKind: 'window',
+    windows: windowCount,
+    execution: 'generated-browser-window-runtime'
+  };
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(appName)}</title>
+<style>
+:root{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark;background:#f3f4f6;color:#171717}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px;background:#f3f4f6}#app{max-width:760px;margin:0 auto;display:grid;gap:20px}.window,.console{overflow:hidden;border:1px solid #d4d4d8;border-radius:14px;background:#fff;box-shadow:0 20px 55px #0002;color:#18181b}.window header{padding:11px 15px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;font-size:13px;font-weight:750}.body{min-height:220px;padding:28px;display:flex;flex-direction:column;align-items:flex-start;gap:16px}.text{margin:0;font-size:20px}.body button{border:0;border-radius:9px;background:#18181b;color:#fff;padding:10px 16px;font-weight:700;cursor:pointer}.body input{min-width:260px;border:1px solid #d4d4d8;border-radius:9px;padding:10px 12px;background:#fff;color:#18181b}.console{padding:20px}#output{max-width:760px;margin:18px auto 0;padding:14px;border-radius:10px;background:#18181b;color:#fafafa;white-space:pre-wrap;font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}#output:empty{display:none}.badge{max-width:760px;margin:14px auto 0;color:#71717a;font-size:11px}@media(prefers-color-scheme:dark){:root,body{background:#111318;color:#f4f4f5}.window,.console{background:#1b1d22;color:#f4f4f5;border-color:#34363e}.window header{background:#24262d;border-color:#34363e}.body input{background:#17191e;color:#f4f4f5;border-color:#41444e}.body button{background:#f4f4f5;color:#18181b}.badge{color:#a1a1aa}}
+</style>
+</head>
+<body>
+<main id="app"><section class="console"><strong>Starting Patch…</strong></section></main>
+<pre id="output"></pre>
+<div class="badge">Standalone single-file Patch Window Web App · beta runtime ${PATCH_WINDOW_WEB_VERSION}</div>
+<script>
+const PROGRAM=${programJson};
+${windowRuntimeSource()}
+</script>
+</body>
+</html>`;
+
+  return { html, module: null, metadata, compiled, name: appName };
+}
+
+export function validateWindowWebSubset(ast) {
+  const unsupported = [];
+  walk(ast, node => {
+    if (!WINDOW_WEB_SUPPORTED.has(node.kind)) unsupported.push(`line ${node.line ?? '?'}: ${node.kind}`);
+  });
+  if (unsupported.length) {
+    throw new Error(`Standalone Window Web App does not yet support: ${unsupported.join(', ')}. Use the Studio Run preview or a Windows/macOS/Linux Window build for those features.`);
+  }
+}
+
+function walk(nodes, visit) {
+  for (const node of nodes ?? []) {
+    visit(node);
+    if (node.kind === 'window') {
+      for (const control of node.body ?? []) visit(control);
+      continue;
+    }
+    if (node.body) walk(node.body, visit);
+    if (node.thenBody) walk(node.thenBody, visit);
+    if (node.elseBody) walk(node.elseBody, visit);
+  }
+}
+
+function scriptJson(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+function windowRuntimeSource() {
+  return String.raw`
+class PatchAppError extends Error {}
+class ReturnSignal { constructor(value){ this.value=value; } }
+const state=new Map();
+const functions=new Map();
+const windows=[];
+const events=[];
+let output=[];
+const appEl=document.getElementById('app');
+const outputEl=document.getElementById('output');
+
+function clone(value){ return value===undefined?undefined:structuredClone(value); }
+function formatValue(value){
+  if(typeof value==='string')return value;
+  if(Array.isArray(value))return value.join(', ');
+  if(value&&typeof value==='object')return Object.entries(value).map(([k,v])=>k+'='+formatValue(v)).join(', ');
+  return String(value);
+}
+function deepEqual(a,b){return JSON.stringify(a)===JSON.stringify(b);}
+
+const TOKEN=/\s*(?:(\d+(?:\.\d+)?)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|([A-Za-z_][A-Za-z0-9_]*)|(==|!=|<=|>=|\+|-|\*|\/|%|<|>|\(|\)|\[|\]|,|\.))/gy;
+function tokenize(source){
+  const tokens=[];let pos=0;
+  while(pos<source.length){TOKEN.lastIndex=pos;const m=TOKEN.exec(source);if(!m)throw new PatchAppError('I do not understand this expression near: '+source.slice(pos));pos=TOKEN.lastIndex;
+    if(m[1]!==undefined)tokens.push({type:'number',value:Number(m[1])});
+    else if(m[2]!==undefined){const raw=m[2];tokens.push({type:'string',value:raw[0]==="'"?raw.slice(1,-1):JSON.parse(raw)});}
+    else if(m[3]!==undefined)tokens.push({type:'word',value:m[3]});
+    else tokens.push({type:m[4],value:m[4]});
+  }
+  tokens.push({type:'eof',value:null});return tokens;
+}
+function lookupPath(env,path){const parts=Array.isArray(path)?path:String(path).split('.');const root=parts[0];let value;if(env.locals&&Object.prototype.hasOwnProperty.call(env.locals,root))value=env.locals[root];else if(state.has(root))value=state.get(root);else throw new PatchAppError("I cannot find '"+root+"'. Create it first.");for(const part of parts.slice(1)){if(value===null||typeof value!=='object'||!(part in value))throw new PatchAppError("I cannot find '"+parts.join('.')+"'.");value=value[part];}return value;}
+class ExprParser{
+  constructor(tokens,env){this.tokens=tokens;this.i=0;this.env=env;}
+  peek(type,value){const t=this.tokens[this.i];return t.type===type&&(value===undefined||t.value===value);}
+  take(type,value){const t=this.tokens[this.i];if(!this.peek(type,value))throw new PatchAppError('Expected '+(value??type)+'.');this.i++;return t;}
+  parse(){const v=this.or();if(!this.peek('eof'))throw new PatchAppError("Unexpected '"+this.tokens[this.i].value+"'.");return v;}
+  or(){let v=this.and();while(this.peek('word','or')){this.i++;const r=this.and();v=Boolean(v)||Boolean(r);}return v;}
+  and(){let v=this.equality();while(this.peek('word','and')){this.i++;const r=this.equality();v=Boolean(v)&&Boolean(r);}return v;}
+  equality(){let v=this.comparison();while(this.peek('==')||this.peek('!=')){const op=this.tokens[this.i++].type;const r=this.comparison();v=op==='=='?deepEqual(v,r):!deepEqual(v,r);}return v;}
+  comparison(){let v=this.term();while(['<','>','<=','>='].some(x=>this.peek(x))){const op=this.tokens[this.i++].type;const r=this.term();if(op==='<')v=v<r;else if(op==='>')v=v>r;else if(op==='<=')v=v<=r;else v=v>=r;}return v;}
+  term(){let v=this.factor();while(this.peek('+')||this.peek('-')){const op=this.tokens[this.i++].type;const r=this.factor();v=op==='+'?v+r:v-r;}return v;}
+  factor(){let v=this.unary();while(this.peek('*')||this.peek('/')||this.peek('%')){const op=this.tokens[this.i++].type;const r=this.unary();if(op==='*')v*=r;else if(op==='/')v/=r;else v%=r;}return v;}
+  unary(){if(this.peek('-')){this.i++;return -Number(this.unary());}if(this.peek('word','not')){this.i++;return !Boolean(this.unary());}return this.primary();}
+  primary(){if(this.peek('number'))return this.tokens[this.i++].value;if(this.peek('string'))return this.tokens[this.i++].value;if(this.peek('word','true')){this.i++;return true;}if(this.peek('word','false')){this.i++;return false;}if(this.peek('word')){const parts=[this.tokens[this.i++].value];while(this.peek('.')){this.i++;parts.push(this.take('word').value);}return lookupPath(this.env,parts);}if(this.peek('(')){this.i++;const v=this.or();this.take(')');return v;}if(this.peek('[')){this.i++;const out=[];if(!this.peek(']')){while(true){out.push(this.or());if(this.peek(',')){this.i++;continue;}break;}}this.take(']');return out;}throw new PatchAppError("Unexpected '"+(this.tokens[this.i].value??'end of expression')+"'.");}
+}
+function evaluateExpression(source,locals={}){return new ExprParser(tokenize(String(source).trim()),{locals}).parse();}
+function evaluateLoose(source,locals={}){const s=String(source).trim();try{return evaluateExpression(s,locals);}catch(err){if(/^[A-Za-z_][A-Za-z0-9_-]*$/.test(s))return s;throw err;}}
+function splitComma(text){const out=[];let cur='';let quote=null;let depth=0;for(const ch of text){if(quote){cur+=ch;if(ch===quote)quote=null;continue;}if(ch==='"'||ch==="'"){quote=ch;cur+=ch;continue;}if(ch==='['||ch==='(')depth++;if(ch===']'||ch===')')depth--;if(ch===','&&depth===0){if(cur.trim())out.push(cur.trim());cur='';continue;}cur+=ch;}if(cur.trim())out.push(cur.trim());return out;}
+function clearValue(value){if(Array.isArray(value))return[];if(typeof value==='string')return'';if(typeof value==='number')return 0;if(value&&typeof value==='object')return{};return null;}
+function setField(current,field,value){return field?{...current,[field]:value}:value;}
+function currentAt(current,field){return field?current[field]:current;}
+
+function executeBlock(nodes,locals={}){for(const node of nodes??[]){const signal=execute(node,locals);if(signal instanceof ReturnSignal)return signal;}return null;}
+function execute(node,locals){
+  switch(node.kind){
+    case 'create':{if(state.has(node.name))throw new PatchAppError("'"+node.name+"' already exists.");let value=node.valueType==='list'?(String(node.expr).trim().startsWith('[')?evaluateExpression(node.expr,locals):splitComma(node.expr).map(x=>evaluateLoose(x,locals))):evaluateExpression(node.expr,locals);state.set(node.name,clone(value));return;}
+    case 'createThing':{if(state.has(node.name))throw new PatchAppError("'"+node.name+"' already exists.");const value={};for(const field of node.fields)value[field.name]=evaluateLoose(field.expr,locals);state.set(node.name,value);return;}
+    case 'window':windows.push(node);return;
+    case 'event':events.push(node);return;
+    case 'allow':return;
+    case 'show':output.push(formatValue(evaluateExpression(node.expr,locals)));return;
+    case 'change':return applyChange(node,locals);
+    case 'if':return executeBlock(Boolean(evaluateExpression(node.expr,locals))?node.thenBody:node.elseBody,locals);
+    case 'repeat':{const count=Number(evaluateExpression(node.expr,locals));if(!Number.isInteger(count)||count<0||count>100000)throw new PatchAppError('repeat needs a whole number from 0 to 100000.');for(let i=0;i<count;i++){const signal=executeBlock(node.body,{...locals,count:i+1});if(signal instanceof ReturnSignal)return signal;}return;}
+    case 'function':functions.set(node.name,node);return;
+    case 'call':return callRecipe(node,locals);
+    case 'return':return new ReturnSignal(node.expr?evaluateExpression(node.expr,locals):null);
+    default:throw new PatchAppError('Standalone Window Web runtime cannot execute '+node.kind+'.');
+  }
+}
+function applyChange(node,locals){if(!state.has(node.target))throw new PatchAppError("I cannot change '"+node.target+"' because it does not exist.");let current=clone(state.get(node.target));for(const op of node.ops){const old=currentAt(current,op.field);let next;if(op.op==='set')next=evaluateLoose(op.expr,{...locals});else if(op.op==='add'){const value=evaluateLoose(op.expr,{...locals});if(typeof old==='number'&&typeof value==='number')next=old+value;else if(Array.isArray(old))next=[...old,clone(value)];else if(typeof old==='string')next=old+String(value);else throw new PatchAppError('add works with numbers, lists, or text.');}else if(op.op==='remove'){const value=evaluateLoose(op.expr,{...locals});if(typeof old==='number'&&typeof value==='number')next=old-value;else if(Array.isArray(old)){const index=old.findIndex(x=>deepEqual(x,value));if(index<0)throw new PatchAppError('Cannot remove '+formatValue(value)+' because it is not in the list.');next=[...old];next.splice(index,1);}else throw new PatchAppError('remove works with numbers or lists.');}else if(op.op==='clear')next=clearValue(old);else throw new PatchAppError('Unknown change operation '+op.op+'.');current=setField(current,op.field,next);}state.set(node.target,current);}
+function callRecipe(node,locals){const fn=functions.get(node.name);if(!fn)throw new PatchAppError("I cannot find a recipe called '"+node.name+"'.");if(fn.params.length!==node.args.length)throw new PatchAppError(node.name+' needs '+fn.params.length+' value(s).');const args=node.args.map(a=>evaluateLoose(a,locals));fn.params.forEach((p,index)=>{const range=fn.paramRanges?.[p];if(range){const value=args[index];if(typeof value!=='number'||value<range.min||value>range.max)throw new PatchAppError(node.name+" expects '"+p+"' to be from "+range.min+' to '+range.max+'.');}});const child={...locals};fn.params.forEach((p,index)=>child[p]=args[index]);const signal=executeBlock(fn.body,child);return signal instanceof ReturnSignal?signal.value:null;}
+function uiText(expr){let value;try{value=evaluateLoose(expr,{});}catch{value=expr;}return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>state.has(name)?formatValue(state.get(name)):'{'+name+'}');}
+function buildUI(){return windows.map((windowNode,index)=>({id:'window'+(index+1),title:uiText(windowNode.titleExpr),controls:(windowNode.body??[]).filter(node=>node.kind==='uiControl').map(node=>({type:node.control,id:node.id,text:node.textExpr?uiText(node.textExpr):'',value:node.id&&state.has(node.id)?clone(state.get(node.id)):''}))}));}
+function trigger(control,event='clicked'){output=[];const matches=events.filter(x=>x.control===control&&x.event===event);if(!matches.length)throw new PatchAppError("There is no '"+event+"' action for '"+control+"'.");for(const handler of matches)executeBlock(handler.body,{});render();showOutput();}
+function render(){const models=buildUI();appEl.innerHTML='';if(!models.length){appEl.innerHTML='<section class="console"><strong>No Patch window is defined.</strong></section>';return;}for(const model of models){const shell=document.createElement('section');shell.className='window';const title=document.createElement('header');title.textContent=model.title;const body=document.createElement('div');body.className='body';for(const control of model.controls){if(control.type==='text'){const el=document.createElement('p');el.className='text';el.textContent=control.text;body.append(el);}else if(control.type==='button'){const el=document.createElement('button');el.textContent=control.text;el.addEventListener('click',()=>safeTrigger(control.id,'clicked'));body.append(el);}else if(control.type==='input'){const el=document.createElement('input');el.value=control.value??'';el.placeholder=control.text||control.id||'';el.addEventListener('change',()=>safeTrigger(control.id,'changed'));body.append(el);}}shell.append(title,body);appEl.append(shell);}}
+function showOutput(){outputEl.textContent=output.join('\n');}
+function fail(error){appEl.innerHTML='<section class="console"><strong>Patch stopped</strong><p></p></section>';appEl.querySelector('p').textContent=error?.message??String(error);}
+function safeTrigger(control,event){try{trigger(control,event);}catch(error){fail(error);}}
+try{executeBlock(PROGRAM,{});render();showOutput();}catch(error){fail(error);}
+`;
+}

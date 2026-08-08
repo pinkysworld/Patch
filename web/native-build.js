@@ -1,6 +1,7 @@
 import { compile } from '../src/compiler.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { compileToC99 } from '../src/c99.js';
+import { validateWindowBuild } from '../src/window-build.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
 const NATIVE_WORKFLOW = 'native-apps.yml';
@@ -41,7 +42,7 @@ buildButton.addEventListener('click', async event => {
     let preflightText;
     if (platform === 'freebsd') {
       if (kind !== 'console') {
-        throw new Error('FreeBSD beta.18 currently supports Console projects through the portable C99 backend. Build this Window project for Windows, macOS or Linux until the Unix GUI backend is implemented.');
+        throw new Error('FreeBSD currently supports Console projects through the portable C99 backend. Build this Window project for Windows, macOS or Linux until the Unix GUI backend is implemented.');
       }
       const preflight = compileToC99(code.value, { name, kind: 'console', entry: 'main.patch' });
       preflightText = `portable C99 ${preflight.metadata.version}`;
@@ -50,8 +51,7 @@ buildButton.addEventListener('click', async event => {
       preflightText = `direct Wasm ${preflight.metadata.version}`;
     } else {
       const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
-      const windowCount = countWindowInstructions(preflight.ir.instructions);
-      if (!windowCount) throw new Error('This project is marked Window but does not define a Patch window. Add a window in Designer or change Project Type to Console.');
+      const windowCount = validateWindowBuild(preflight);
       preflightText = `${windowCount} Patch window${windowCount === 1 ? '' : 's'} validated`;
     }
 
@@ -195,20 +195,6 @@ function setBusy(busy, message = null) {
   buildButton.disabled = busy;
   if (message) status.textContent = message;
   if (!busy) refreshNativePanel();
-}
-
-function countWindowInstructions(instructions) {
-  let count = 0;
-  const visit = list => {
-    for (const instruction of list ?? []) {
-      if (instruction.op === 'window') count += 1;
-      if (instruction.body) visit(instruction.body);
-      if (instruction.then) visit(instruction.then);
-      if (instruction.else) visit(instruction.else);
-    }
-  };
-  visit(instructions);
-  return count;
 }
 
 function workflowFor(platform) {

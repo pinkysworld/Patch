@@ -93,16 +93,20 @@ try {
     console.log(`  source sha256: ${certificate.sourceSha256}`);
     console.log(`  observed direct trace sha256: ${certificate.runtimeTraceSha256}`);
     console.log(`  runtime schema: ${certificate.runtimeSchemaVersion}`);
+    console.log(`  path-witness schema: ${certificate.runtimePathWitnessVersion}`);
     console.log(`  observed semantic effect occurrence(s): ${certificate.observedEffects}`);
-    console.log(`  runtime-correspondence recipe(s): ${certificate.certified.join(', ')}`);
-    console.log('  assurance: direct Wasm was executed, semantic effects were independently reconstructed, and Lean checks that the concrete occurrences refine a formal SourceExecutes trace for the current linear certified subset.');
+    console.log(`  certified protected invocation(s): ${certificate.certifiedInvocations}`);
+    console.log(`  runtime-correspondence invocation(s): ${certificate.certified.join(', ')}`);
+    console.log('  assurance: direct Wasm was executed, semantic effects and control-flow witnesses were reconstructed independently, and Lean checks branch/repeat witness shape, SourceExecutes execution and concrete-to-formal effect refinement.');
     process.exit(0);
   }
 
   if (command === 'build') {
-    const kind = option('--kind') ?? 'console';
     const target = option('--target') ?? 'portable';
     const name = option('--name') ?? appName(file);
+    const explicitKind = option('--kind');
+    const inferred = explicitKind ? null : compile(source, { name, entry: path.basename(file) });
+    const kind = explicitKind ?? inferred.project.kind;
 
     if (target === 'portable') {
       const out = option('--out') ?? `${name}.patchapp`;
@@ -121,16 +125,19 @@ try {
       console.log(`Built ${out}`);
       console.log(`  type: ${kind}`);
       console.log('  target: bootstrap WebAssembly module');
-      console.log('  note: this target embeds Patch source + Change IR for a Patch host; use wasm-direct or web for executable output.');
+      console.log('  note: this target embeds Patch source + Change IR for a Patch host; use web for an executable Window app or wasm-direct for the supported Console subset.');
       process.exit(0);
     }
 
     if (target === 'wasm-direct') {
+      if (kind === 'window') {
+        throw new Error('Direct WebAssembly currently supports Console projects only. For a Window project use --target web or Patch Studio\'s Windows/macOS/Linux App builds.');
+      }
       const out = option('--out') ?? `${name}.direct.wasm`;
-      const { module, metadata } = compileToDirectWasm(source, { name, kind, entry: path.basename(file) });
+      const { module, metadata } = compileToDirectWasm(source, { name, kind: 'console', entry: path.basename(file) });
       fs.writeFileSync(out, module);
       console.log(`Built ${out}`);
-      console.log(`  type: ${kind}`);
+      console.log('  type: console');
       console.log(`  target: direct WebAssembly ${metadata.version}`);
       console.log('  executes: numeric create/change/show/control-flow/recipe subset directly as Wasm instructions');
       console.log('  host ABI: patch.show_number(f64), patch.change_number(i32,f64,f64)');
@@ -151,15 +158,22 @@ try {
 
     if (target === 'web') {
       const out = option('--out') ?? `${name}.html`;
-      const built = buildStandaloneWebApp(source, { name, entry: path.basename(file) });
+      const built = buildStandaloneWebApp(source, { name, kind, entry: path.basename(file) });
       fs.writeFileSync(out, built.html, 'utf8');
       console.log(`Built ${out}`);
+      console.log(`  type: ${built.metadata?.projectKind ?? kind}`);
       console.log('  target: standalone single-file Web App');
+      console.log(built.metadata?.projectKind === 'window'
+        ? '  runtime: generated Patch Window browser runtime'
+        : '  runtime: embedded direct Patch Wasm + tiny browser host');
       console.log('  run: open the HTML file in a modern browser');
       process.exit(0);
     }
 
     if (target === 'app' || target === 'native') {
+      if (kind === 'window') {
+        throw new Error('Local CLI Window packaging currently uses the dedicated Window packager through Patch Studio/GitHub Actions. Choose a Windows/macOS/Linux App in Patch Studio; --target app/native remains the local Console host for now.');
+      }
       const out = option('--out');
       const built = buildNativeApp(source, {
         name,
@@ -171,7 +185,7 @@ try {
       console.log(`Built ${built.output}`);
       console.log(`  target: ${built.outputKind}`);
       console.log(`  runtime: ${built.runtime}`);
-      console.log('  note: the direct Patch Wasm module is embedded inside the standalone native host.');
+      console.log('  note: the direct Patch Wasm module is embedded inside the standalone native Console host.');
       process.exit(0);
     }
 
@@ -241,7 +255,7 @@ function printFormalCoverage(bridge, sourceCore, sourceValidation) {
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
   console.log(`Source extraction summary: ${sourceValidation.summary.validated} validated, ${sourceValidation.summary.unvalidated} unvalidated, ${sourceValidation.summary.mismatches} mismatch(es).`);
-  console.log('Note: Lean checks the formal range/source/evidence/signature/policy chain and beta.20 can separately certify concrete direct-Wasm runtime occurrences for the linear source subset with `patch runtime-certify`. This remains translation/runtime validation rather than full compiler verification.');
+  console.log('Note: Lean checks the formal range/source/evidence/signature/policy chain. Beta.21 can separately certify concrete direct-Wasm protected-recipe invocations with explicit branch/repeat path witnesses; the witness producer remains untrusted and the path is accepted only when Lean reconstructs a real SourceExecutes execution. This is not full compiler verification.');
 }
 
 function option(name) {
@@ -254,5 +268,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal + source-extraction coverage:\n  patch formal program.patch\n\nGenerate static Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nExecute direct Wasm and generate Lean runtime-correspondence certificate:\n  patch runtime-certify program.patch --out Program.runtime.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App:\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (requires Patch host ABI):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild native app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild native console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
+  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm (Console subset):\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal + source-extraction coverage:\n  patch formal program.patch\n\nGenerate static Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nExecute direct Wasm and generate Lean runtime-correspondence certificate:\n  patch runtime-certify program.patch --out Program.runtime.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App (Console or Window inferred):\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (Console subset):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild portable C99 for FreeBSD/Unix Console:\n  patch build program.patch --target c99 --out MyApp.c\n\nBuild local native Console app for the current OS:\n  patch build program.patch --target app --name MyApp\n\nBuild local native Console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nWindow desktop packages:\n  use Patch Studio -> Windows/macOS/Linux App\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
 }
