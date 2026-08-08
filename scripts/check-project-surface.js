@@ -64,7 +64,7 @@ mustInclude('docs/ROADMAP.md', files.roadmap, [
   `### beta.${beta}: cross-platform builds from Patch Studio`,
   'Windows/macOS/Linux Console packages',
   'Windows/macOS/Linux standalone Window packages',
-  'Native GUI lowering'
+  'native AppKit Window backend'
 ]);
 
 mustInclude('web/sw.js', files.serviceWorker, [cacheVersion]);
