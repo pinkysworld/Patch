@@ -27,7 +27,7 @@ Patch Studio is browser-first and installable as a PWA, with desktop and iPhone/
 
 ## Current status
 
-Current development beta: **0.2.0-beta.11**
+Current development beta: **0.2.0-beta.12**
 
 Implemented now:
 
@@ -46,6 +46,8 @@ Implemented now:
 - portable `.patchapp` bundles and valid bootstrap WebAssembly modules;
 - **directly executable Change IR to WebAssembly for a numeric console core**;
 - **direct Wasm `if` / `else` and literal `repeat` with Patch `count`**;
+- **direct non-recursive numeric `make` / `do` recipes as real Wasm functions**;
+- **Wasm runtime guards for ranged numeric recipe parameters**;
 - differential interpreter vs direct-Wasm execution tests;
 - console programs and first GUI/Designer slice;
 - Windows/macOS/Linux JavaScript CI plus explicit Lean range/source/evidence/certificate CI.
@@ -70,14 +72,32 @@ Patch can infer what a recipe may change and constrain that authority:
 
 ```patch
 allow reward:
-  player.score may increase up to 10
+  score may increase up to 10
 
-make reward(player, bonus number 0..5):
-  change player:
-    add bonus * 2 to score
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
 ```
 
-The normal production analyzer infers `bonus * 2` as `0..10`, so the capability is accepted. A `set score = 999` is not accepted as an `increase`, even though both write the same path.
+The production analyzer infers `bonus * 2` as `0..10`, so the capability is accepted. A `set score = 999` is not accepted as an `increase`, even though both technically write the same persistent location.
+
+Beta 12 can now execute this kind of protected numeric recipe through the direct Wasm backend as well:
+
+```patch
+create number score = 0
+
+allow reward:
+  score may increase up to 10
+
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
+
+do reward(4)
+show score
+```
+
+The capability is still checked by the production compiler before lowering. The ranged `bonus` parameter is also guarded inside the generated Wasm function.
 
 ## Beta 9: machine-checked integer range analysis
 
@@ -152,7 +172,7 @@ Formal CI explicitly builds all six modules and compiles a certificate generated
 
 ## Direct WebAssembly execution
 
-Patch now has two deliberately distinct WebAssembly targets:
+Patch has two deliberately distinct WebAssembly targets:
 
 ```text
 --target wasm
@@ -184,7 +204,7 @@ patch.show_number(f64) -> void
 
 ### Beta 11 structured control flow
 
-Beta 11 adds real WebAssembly control flow:
+Beta 11 added real WebAssembly control flow:
 
 ```text
 if / else
@@ -196,31 +216,73 @@ Patch repeat local count
 nested repeat count shadowing
 ```
 
-For example:
+A repeat is executed through Wasm `block`, `loop`, `br_if` and `br`, not by a Patch interpreter host.
+
+Patch's 1-based `count` is represented by a real Wasm local. Nested repeats allocate independent locals so the inner `count` shadows the outer value just as it does in the interpreter.
+
+Bare numeric truthiness such as `if score:` and dynamic `repeat times:` remain deliberately outside the current direct backend.
+
+### Beta 12 recipes and ranged guards
+
+Beta 12 adds non-recursive numeric recipes as actual Wasm functions:
 
 ```patch
 create number score = 0
 
-repeat 4:
-  if count == 2 or count == 4:
-    change score:
-      add count
+make add_points(amount):
+  change score:
+    add amount
 
+do add_points(3)
 show score
 ```
 
-builds into a module using Wasm `if`, `block`, `loop`, `br_if` and `br`. The loop and branch are executed by the WebAssembly VM, not by a Patch interpreter host.
+The Wasm module now contains `run()` plus one function for each supported recipe. `do` becomes a real Wasm `call`. Recipe parameters are Wasm `f64` parameters and can participate in arithmetic, comparisons, `if`, and calls to other acyclic recipes.
 
-```bash
-patch build examples/direct-wasm-control.patch --kind console --target wasm-direct --out DirectControl.wasm
-patch run-wasm examples/direct-wasm-control.patch
+Acyclic recipe-to-recipe calls are supported:
+
+```patch
+make add_points(amount):
+  change score:
+    add amount
+
+make twice(amount):
+  do add_points(amount)
+  do add_points(amount)
 ```
 
-Patch's 1-based `count` is represented by a real Wasm local. Nested repeats allocate independent locals so the inner `count` shadows the outer value just as it does in the interpreter.
+Ranged parameters receive generated runtime guards:
 
-Bare numeric truthiness such as `if score:` and dynamic `repeat times:` are deliberately rejected by the beta.11 direct backend. The supported direct subset is kept explicit rather than approximating broader interpreter semantics.
+```patch
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
+```
 
-See `docs/DIRECT_WASM.md` for the exact boundary.
+If a statically known call is outside the range, the production compiler rejects it before Wasm generation. If the argument cannot be proven statically and reaches the function outside the range at runtime, the generated Wasm guard traps before the recipe body executes.
+
+This gives a useful two-stage enforcement path:
+
+```text
+Patch Change Capability / call-range analysis
+                  ↓
+           compile-time checks
+                  ↓
+           direct Wasm lowering
+                  ↓
+      ranged parameter runtime guard
+                  ↓
+         Wasm recipe function body
+```
+
+Build and run the beta-12 example:
+
+```bash
+patch build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm
+patch run-wasm examples/direct-wasm-recipes.patch
+```
+
+See `docs/DIRECT_WASM.md` for the detailed backend boundary.
 
 ## Differential backend validation
 
@@ -235,13 +297,15 @@ Patch interpreter     direct Wasm
       +---- compare output + final state ----+
 ```
 
-The suite covers linear mutation, multiple numeric bindings, decimal arithmetic, branches, boolean composition, repeat/count, nested repeats, and branches inside loops. Cross-platform CI also builds and executes the direct control-flow artifact on Windows, macOS and Linux with Node 22 and 24.
+The suite covers linear mutation, multiple numeric bindings, decimal arithmetic, branches, boolean composition, repeat/count, nested repeats, branches inside loops, protected ranged recipes, acyclic recipe calls, recipe parameters, and runtime range enforcement.
+
+Cross-platform CI builds and executes the direct backend on Windows, macOS and Linux with Node 22 and 24.
 
 This is meaningful executable evidence, but it is **not** claimed as a compiler-correctness proof.
 
 ## Remaining trust boundary
 
-Beta 11 is **not full compiler verification**.
+Beta 12 is **not full compiler verification**.
 
 Still trusted/unproved:
 
@@ -254,9 +318,9 @@ production interpreter / direct Wasm backend
    -> correspondence with formal evalRangeExpr / SourceExecutes / Executes
 ```
 
-Within the certified fragment, Lean machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment. The direct backend currently adds differential execution evidence rather than a lowering correctness theorem.
+Within the certified fragment, Lean machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment. The direct backend currently adds differential execution and explicit runtime checks rather than a lowering-correctness theorem.
 
-A particularly strong next research step is an explicit semantic change-trace ABI for direct execution plus translation validation or a theorem connecting supported Change IR operations to Wasm effects.
+A particularly strong next research step is an explicit semantic change-trace ABI for direct execution plus translation validation or a theorem connecting supported Change IR operations and calls to Wasm effects.
 
 ## Direct backend boundary
 
@@ -265,7 +329,8 @@ Not directly lowered yet include:
 ```text
 dynamic repeat counts
 create inside control-flow bodies
-make / do / return
+recursive recipe cycles
+return-valued recipes
 things and field access
 text and lists
 %
@@ -273,7 +338,7 @@ watch / history / undo / redo / why / preview
 window / controls / events
 ```
 
-A valid protected `allow recipe:` declaration requires a corresponding recipe. Because `make` / `do` lowering is not yet implemented, protected recipe programs are not yet in the direct executable subset.
+Unsupported constructs fail explicitly with `DirectWasmUnsupportedError` rather than silently falling back to the bootstrap backend.
 
 ## Compiler status
 
@@ -288,9 +353,11 @@ Patch source
    -> portable .patchapp                   [implemented]
    -> bootstrap WebAssembly .wasm          [implemented]
    -> direct numeric Change IR -> Wasm     [implemented]
-   -> direct if/literal-repeat Wasm         [implemented, beta.11]
-   -> recipe/call Wasm                     [next backend stage]
+   -> direct if/literal-repeat Wasm         [implemented]
+   -> direct non-recursive recipe/call Wasm [implemented, beta.12]
+   -> ranged recipe Wasm runtime guards     [implemented, beta.12]
    -> semantic direct change-trace ABI     [next research/backend stage]
+   -> typed expression/core IR             [next compiler stage]
    -> native .exe / .app packaging         [not yet]
 ```
 
@@ -300,14 +367,14 @@ Node.js 22+ for the current JavaScript beta toolchain:
 
 ```bash
 patch run examples/score.patch
-patch run-wasm examples/direct-wasm-control.patch
+patch run-wasm examples/direct-wasm-recipes.patch
 patch check examples/score.patch
 patch changes examples/change-capabilities.patch
 patch formal examples/range-soundness.patch
 patch certify examples/range-soundness.patch --out RangeSoundness.patchcert.lean
 patch build examples/score.patch --kind console --target portable
 patch build examples/score.patch --kind console --target wasm
-patch build examples/direct-wasm-control.patch --kind console --target wasm-direct
+patch build examples/direct-wasm-recipes.patch --kind console --target wasm-direct
 ```
 
 ## Research identity
@@ -321,9 +388,9 @@ The candidate contribution is the combination:
 3. **Formal runtime containment**: Lean proves the runtime-signature-policy chain for a structured core.
 4. **Source-to-semantic assurance**: Lean performs source-operation normalization before semantic evidence checking.
 5. **Quantitative assurance for a useful fragment**: Lean proves soundness of the formal integer interval analyzer, while production extraction and unsupported arithmetic remain explicit boundaries.
-6. **Executable backend path**: a growing Change IR subset now lowers directly to Wasm, including structured branches and literal loops, and is differentially checked against interpreter behavior.
+6. **Executable backend path**: a growing Change IR subset lowers directly to Wasm, now including branches, literal loops, non-recursive recipe calls, and ranged-parameter guards, and is differentially checked against interpreter behavior.
 
-A high-venue submission still needs systematic related work, stronger AST/source correspondence, runtime/lowering correspondence, recipe/call direct execution, convincing semantic-security/engineering case studies and measured overhead/effectiveness.
+A high-venue submission still needs systematic related work, stronger AST/source correspondence, direct-runtime/formal correspondence, explicit semantic trace preservation through lowering, convincing semantic-security/engineering case studies and measured overhead/effectiveness.
 
 ## Repository map
 
@@ -333,7 +400,7 @@ formal/                 Lean factorization, signatures, checker, evidence, sourc
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
 tests/                  language, range/source/bridge/certificate, compiler, UI, Designer, bootstrap/direct Wasm
-examples/               runnable .patch programs including range-soundness.patch and direct-wasm-control.patch
+examples/               runnable .patch programs including range-soundness.patch and direct-wasm-recipes.patch
 docs/                   specification, formal model, novelty, research, compiler, direct Wasm, Studio, targets
 paper/                   manuscript draft and references
 .github/workflows/       cross-platform CI, formal verification, Pages deployment
