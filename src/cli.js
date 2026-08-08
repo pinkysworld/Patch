@@ -34,7 +34,8 @@ try {
     const bridgeTotal = bridgeCovered + ir.formalBridge.summary.unsupported;
     const sourceCovered = ir.formalSource.summary.supported;
     const sourceTotal = sourceCovered + ir.formalSource.summary.unsupported;
-    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies, ${bridgeCovered}/${bridgeTotal} semantic bridge entry/entries supported, ${sourceCovered}/${sourceTotal} source-core entry/entries supported.`);
+    const rangeClaims = ir.formalSource.summary.rangeClaims ?? 0;
+    console.log(`Patch check passed: ${ir.instructions.length} top-level instruction(s), ${recipeSignatures} recipe change signature(s), ${policies} change capability policy/policies, ${bridgeCovered}/${bridgeTotal} semantic bridge entry/entries supported, ${sourceCovered}/${sourceTotal} source/range entry/entries supported, ${rangeClaims} formal integer range claim(s).`);
     process.exit(0);
   }
 
@@ -59,8 +60,10 @@ try {
     console.log(`  source sha256: ${certificate.sourceSha256}`);
     console.log(`  source-core schema: ${certificate.sourceSchemaVersion}`);
     console.log(`  evidence schema: ${certificate.evidenceSchemaVersion}`);
+    console.log(`  range schema: ${certificate.rangeSchemaVersion}`);
+    console.log(`  certified formal range claim(s): ${certificate.certifiedRangeClaims}`);
     console.log(`  certified recipe(s): ${certificate.certified.join(', ')}`);
-    console.log('  next: compile this certificate with the repository\'s Lean PatchSource module to validate source-core normalization, evidence/signature correspondence and the semantic policy.');
+    console.log('  next: compile this certificate with the repository\'s Lean PatchRange module to validate integer range soundness, source-core normalization, evidence/signature correspondence and the semantic policy.');
     process.exit(0);
   }
 
@@ -135,17 +138,17 @@ function printFormalCoverage(bridge, sourceCore) {
   }
   console.log(`Semantic bridge summary: ${bridge.summary.supported} supported, ${bridge.summary.unsupported} unsupported, ${bridge.summary.mismatches} mismatch(es).`);
 
-  console.log(`Formal source core ${sourceCore.version} -> Lean model ${sourceCore.leanModel}`);
+  console.log(`Formal source/range core ${sourceCore.version} -> Lean model ${sourceCore.leanModel}`);
   for (const [name, entry] of Object.entries(sourceCore.entries)) {
     if (entry.supported) {
-      console.log(`  ✓ ${name}: source-level add/remove/set/clear structure can be emitted for Lean normalization`);
+      console.log(`  ✓ ${name}: source changes are covered; ${entry.rangeClaims.length} numeric range claim(s) use the beta.9 formal integer fragment`);
       continue;
     }
-    console.log(`  · ${name}: outside formal source-core subset`);
+    console.log(`  · ${name}: outside formal source/range subset`);
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
-  console.log(`Source-core summary: ${sourceCore.summary.supported} supported, ${sourceCore.summary.unsupported} unsupported.`);
-  console.log('Note: beta.8 certificates let Lean normalize the formal SourceStmt to semantic evidence and then check the independent production signature/policy. JavaScript source/AST -> SourceStmt extraction and production range-analysis soundness remain explicit proof obligations.');
+  console.log(`Source/range summary: ${sourceCore.summary.supported} supported, ${sourceCore.summary.unsupported} unsupported, ${sourceCore.summary.rangeClaims ?? 0} formal integer range claim(s).`);
+  console.log('Note: beta.9 certificates let Lean prove soundness of the supported integer range fragment, then normalize SourceStmt to semantic evidence and check the independent production signature/policy. JavaScript source/AST -> RangeExpr/SourceStmt extraction and production runtime -> formal execution correspondence remain explicit proof obligations.');
 }
 
 function option(name) {
@@ -158,5 +161,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect semantic-bridge and formal source-core coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable source/evidence certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
+  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect semantic bridge, formal source and formal integer-range coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable range/source/evidence certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
 }
