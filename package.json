@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.12",
-  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked range/source evidence, and direct WebAssembly execution for numeric control flow and protected recipes",
+  "version": "0.2.0-beta.13",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked range/source evidence, and direct WebAssembly execution with transition-trace validation",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -20,5 +20,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "control-flow", "recipes", "runtime-guards"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "control-flow", "recipes", "runtime-guards", "semantic-trace"]
 }
