@@ -55,8 +55,9 @@ try {
     fs.writeFileSync(out, certificate.lean, 'utf8');
     console.log(`Generated ${out}`);
     console.log(`  source sha256: ${certificate.sourceSha256}`);
+    console.log(`  evidence schema: ${certificate.evidenceSchemaVersion}`);
     console.log(`  certified recipe(s): ${certificate.certified.join(', ')}`);
-    console.log('  next: compile this certificate with the repository\'s Lean PatchChecker to obtain the verified policy judgment.');
+    console.log('  next: compile this certificate with the repository\'s Lean PatchEvidence module to validate evidence/signature correspondence and the semantic policy.');
     process.exit(0);
   }
 
@@ -130,7 +131,7 @@ function printFormalBridge(bridge) {
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
   console.log(`Summary: ${bridge.summary.supported} supported, ${bridge.summary.unsupported} unsupported, ${bridge.summary.mismatches} mismatch(es).`);
-  console.log('Note: supported means translation-validation evidence against the current formal-core signature shape, not full verification of the JavaScript compiler.');
+  console.log('Note: bridge support is conservative translation-validation coverage. For protected supported recipes, patch certify can additionally emit proof-free evidence whose decoding and signature/policy checks are machine-checked by Lean.');
 }
 
 function option(name) {
@@ -143,5 +144,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect production-to-formal bridge coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable semantic-policy certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
+  console.error(`Patch beta\n\nRun:\n  patch run program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect production-to-formal bridge coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable semantic-evidence certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm`);
 }
