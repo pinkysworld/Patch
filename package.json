@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.19",
-  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked evidence, independently validated source extraction, direct WebAssembly, portable C99/FreeBSD execution, and cross-platform Studio builds",
+  "version": "0.2.0-beta.20",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked source/runtime correspondence, direct WebAssembly, portable C99/FreeBSD execution, and cross-platform Studio builds",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
@@ -14,6 +14,7 @@
     "check:project": "node scripts/check-project-surface.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
+    "runtime-certify:example": "node src/cli.js runtime-certify examples/runtime-correspondence.patch --out formal/GeneratedRuntimeCertificate.lean",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:wasm-direct": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm",
@@ -26,5 +27,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "runtime-correspondence", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
 }
