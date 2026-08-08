@@ -23,3 +23,6 @@ lean_lib PatchRange where
 
 lean_lib PatchRuntime where
   srcDir := "."
+
+lean_lib PatchRuntimeCapability where
+  srcDir := "."
