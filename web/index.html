@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio is the browser-first IDE for Patch, a small language built around explicit semantic changes, Change Contracts, direct WebAssembly, standalone apps and a formally checked core.">
+  <meta name="description" content="Patch Studio is the browser-first IDE for Patch, with semantic changes, Change Contracts, direct WebAssembly and cloud builds for Windows, macOS and Linux.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -19,7 +19,7 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">P</div>
         <div>
-          <h1>Patch Studio <span>0.2 beta.16</span></h1>
+          <h1>Patch Studio <span>0.2 beta.17</span></h1>
           <p>Write, run and build Patch.</p>
         </div>
       </div>
@@ -37,12 +37,12 @@
           </select>
         </label>
         <button id="run">▶ Run</button>
-        <label class="compact-field">
+        <label class="compact-field build-field">
           <span>Build</span>
           <select id="buildTarget" aria-label="Build target">
-            <optgroup label="Simple apps">
+            <optgroup label="Applications">
               <option value="web">Standalone Web App (.html)</option>
-              <option value="native-info">Native app (.app / .exe / Linux)</option>
+              <option value="native-info">Windows / macOS / Linux desktop</option>
               <option value="portable">Portable .patchapp</option>
             </optgroup>
             <optgroup label="WebAssembly">
@@ -104,7 +104,7 @@
         <div class="intro-copy">
           <p class="eyebrow">Patch programming language</p>
           <h2>Small syntax. Build an app.</h2>
-          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. The same source can now be packaged as a single-file Web App, direct WebAssembly, or a standalone native application for the current desktop OS.</p>
+          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. Patch Studio can build locally for the web and send the source currently in the editor to GitHub Actions for Windows, macOS and Linux desktop builds.</p>
           <div class="intro-actions">
             <a class="primary-link" href="https://github.com/pinkysworld/Patch">View on GitHub</a>
             <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a>
@@ -120,24 +120,24 @@ show score</pre>
       </article>
 
       <div class="signal-grid" aria-label="Project highlights">
-        <div class="signal"><strong>Build apps</strong><span>Web App, macOS .app, Windows .exe and Linux executable</span></div>
+        <div class="signal"><strong>Build for desktop</strong><span>Windows, macOS and Linux from Patch Studio through GitHub Actions</span></div>
         <div class="signal"><strong>Direct Wasm</strong><span>Numeric Change IR, control flow and recipes</span></div>
         <div class="signal"><strong>Lean 4 core</strong><span>Factorization, signatures, policies and ranges</span></div>
       </div>
 
       <div class="details-stack">
         <details>
-          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.16</span></summary>
+          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.17</span></summary>
           <div class="details-body two-column">
             <div>
               <h3>Language & Studio</h3>
               <p>Interpreter, compiler front end, Change IR 0.7, console programs, first GUI/Designer slice, history, undo/redo, preview, <code>why</code> provenance and browser-local builds.</p>
-              <p>For the direct numeric console subset, Studio can emit a <strong>standalone single-file Web App</strong> or the actual direct Wasm module instead of the old ambiguous Wasm download.</p>
+              <p>For the direct numeric console subset, Studio can emit a <strong>standalone single-file Web App</strong> or the actual direct Wasm module.</p>
             </div>
             <div>
-              <h3>Simple application builds</h3>
-              <p><code>patch build app.patch --target app</code> builds a standalone native application on the current OS: a macOS <code>.app</code>, Windows <code>.exe</code>, or Linux executable. The direct Patch Wasm module is embedded in a small native host.</p>
-              <p>A GitHub Actions native builder can build the same repository Patch source on macOS, Windows and Linux without requiring all three machines locally.</p>
+              <h3>Cross-platform desktop builds</h3>
+              <p>Choose <strong>Windows / macOS / Linux desktop</strong> in Studio and press Build. Studio sends the current unsaved Patch source to the repository's GitHub Actions builder, monitors the run and exposes the resulting artifacts.</p>
+              <p>Console projects use the direct Patch Wasm native host. Window projects are packaged as standalone desktop GUI applications. The GitHub token is kept only in the current browser tab and is not saved by Patch Studio.</p>
             </div>
           </div>
         </details>
@@ -163,8 +163,8 @@ show score</pre>
         <details>
           <summary><span>Roadmap</span><span class="summary-hint">What comes next</span></summary>
           <div class="details-body roadmap-list">
-            <div><strong>Native GUI apps</strong><span>Move the visual Window/Designer model onto native desktop hosts, not only the current direct numeric console subset.</span></div>
-            <div><strong>Zero-toolchain packaging</strong><span>Prebuilt signed Patch hosts so native app builds do not need Cargo on the user's machine.</span></div>
+            <div><strong>Native GUI depth</strong><span>Move more of the visual Window/Designer model onto the compiled native runtime instead of the current packaged desktop player.</span></div>
+            <div><strong>Signing & installers</strong><span>Add signed/notarized release pipelines and installer formats after the unsigned cross-platform builder is stable.</span></div>
             <div><strong>Formal correspondence</strong><span>Reduce trust between source/AST, Change IR, direct runtime and the Lean semantics.</span></div>
             <div><strong>Studio</strong><span>Selection, properties, richer controls, input binding and a clearer change timeline.</span></div>
           </div>
