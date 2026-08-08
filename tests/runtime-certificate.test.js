@@ -25,7 +25,7 @@ test('runtime certificate binds direct execution to Lean runtime correspondence 
   assert.match(certificate.runtimeTraceSha256, /^[a-f0-9]{64}$/);
   assert.match(certificate.lean, /import PatchRuntime/);
   assert.match(certificate.lean, /checkSourceRuntimeEvidence runtime_reward_source runtime_reward_observed = true/);
-  assert.match(certificate.lean, /List\.Forall₂ EffectRefines actualTrace formalTrace/);
+  assert.match(certificate.lean, /TraceRefines actualTrace formalTrace/);
   assert.match(certificate.lean, /lo := 8, hi := 8/);
   assert.match(certificate.lean, /lo := 0, hi := 10/);
 });
