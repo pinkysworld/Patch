@@ -68,30 +68,19 @@
 - [x] Lean evidence → `CoreStmt` decoding
 - [x] separately emitted production Change Signature claim
 - [x] canonical semantic-effect deduplication
-- [x] `checkEvidenceSignature`
-- [x] `checkedEvidenceSignatureCorresponds`
+- [x] evidence/signature correspondence checks
 - [x] evidence-level policy checking
-- [x] `checkedEvidenceExecutionCannotEscape`
 - [x] certificates no longer directly trust producer-created `CoreStmt`
 
 ### beta.8: formal source-core correspondence
 
-- [x] `SourceChangeKind = add | remove | set | clear`
-- [x] proof-free `SourceChange` and structured `SourceStmt`
-- [x] production `src/formal-source.js` preserving source mutation verbs
-- [x] separate source-core and semantic-bridge producer paths
-- [x] Lean source semantic normalization to increase/decrease/set/clear
-- [x] Lean handling of negative add/remove direction by revalidated mirrored bounds
-- [x] conservative rejection of mixed-sign source amount ranges
-- [x] `checkSourceEvidence` and `checkSourceEvidence_sound`
-- [x] `checkSourceSignature` and `checkSourceSignature_sound`
-- [x] `SourceExecutes` formal relation
-- [x] `checkedSourceExecutionCannotEscape`
-- [x] `checkedSourceSignatureAndPolicy`
-- [x] generated certificates carrying SourceStmt + EvidenceStmt + production signature + policy
-- [x] Change IR 0.6 with `formalSource`
-- [x] `patch formal` reports both source-core and semantic bridge coverage
-- [x] formal CI explicitly builds `PatchSource`
+- [x] proof-free source mutation vocabulary `add | remove | set | clear`
+- [x] structured `SourceStmt`
+- [x] production source-core extractor
+- [x] Lean source semantic normalization
+- [x] source/evidence and source/signature checked correspondence
+- [x] formal `SourceExecutes`
+- [x] source-runtime capability containment
 
 ### beta.9: machine-checked integer range-analysis soundness
 
@@ -102,74 +91,77 @@
 - [x] integer literals and ranged variables
 - [x] addition, subtraction and negation
 - [x] multiplication by a non-negative integer constant via `scale`
-- [x] motivating theorem for `bonus in 0..5` and `bonus * 2 in 0..10`
-- [x] independent production `src/formal-range.js` extractor
-- [x] independent formal-range calculation compared with production range analysis
-- [x] conservative refusal of division, decimals and general multiplication in beta.9 certification
-- [x] formal range claims embedded with formal Source-core metadata
-- [x] generated certificates emit `RangeExpr`, environment, inferred interval and Lean soundness theorem
+- [x] independent production formal-range extractor
+- [x] production/formal range agreement before certification
+- [x] conservative refusal of unsupported arithmetic in certification
 - [x] Change IR 0.7
 - [x] formal CI builds `PatchRange`
 - [x] formal CI certificate example exercises dynamic `bonus * 2`
-- [x] Windows/macOS/Linux tests for formal range extraction and certification boundaries
 
 ### beta.10: first direct WebAssembly execution core
 
 - [x] separate `wasm-direct` backend with no interpreter fallback
-- [x] direct lowering of `create number`
-- [x] direct lowering of numeric `change` set/add/remove/clear
-- [x] direct lowering of numeric `show`
-- [x] numeric literals, earlier persistent numeric bindings and parentheses
-- [x] direct `+`, `-`, `*`, `/` via WebAssembly `f64`
-- [x] exported mutable Wasm state globals
-- [x] minimal `patch.show_number(f64)` host ABI
+- [x] direct lowering of top-level `create number`
+- [x] direct numeric `change` set/add/remove/clear
+- [x] direct numeric `show`
+- [x] numeric literals, bindings, parentheses and `+ - * /`
+- [x] mutable Wasm state globals
+- [x] minimal `patch.show_number(f64)` ABI
 - [x] `patch run-wasm`
 - [x] `patch build --target wasm-direct`
-- [x] explicit `DirectWasmUnsupportedError` outside the supported subset
-- [x] interpreter-vs-Wasm differential tests for output and final state
-- [x] direct Wasm build and execution in Windows/macOS/Linux CI
+- [x] interpreter-vs-Wasm output/final-state differential tests
+- [x] cross-platform direct build/execution CI
 
 ### beta.11: direct WebAssembly control flow
 
-- [x] structured Wasm `if` / `else` lowering
-- [x] typed direct expression results (`f64-number`, `i32-bool`)
-- [x] direct numeric comparisons `== != < > <= >=`
-- [x] direct boolean `true`, `false`, `not`, `and`, `or`
-- [x] explicit rejection of bare numeric truthiness in the direct subset
-- [x] literal `repeat 0..100000` lowering to Wasm `block` / `loop`
-- [x] 1-based Patch `count` represented as a Wasm local
+- [x] Wasm `if` / `else` lowering
+- [x] direct expression kinds `f64-number` / `i32-bool`
+- [x] numeric comparisons
+- [x] boolean `true`, `false`, `not`, `and`, `or`
+- [x] literal repeat to Wasm `block` / `loop`
+- [x] 1-based Patch `count` as Wasm local
 - [x] nested repeat `count` shadowing
 - [x] `if` inside `repeat`
-- [x] control-flow differential tests against the interpreter
-- [x] cross-platform direct control-flow build/execution example
+- [x] explicit rejection of dynamic repeat and bare numeric truthiness
 
 ### beta.12: direct WebAssembly recipes + ranged guards
 
-- [x] top-level `make` declarations collected before Wasm body lowering
 - [x] one real Wasm function per supported numeric recipe
 - [x] `do` lowered to Wasm `call`
 - [x] numeric recipe parameters as Wasm `f64` parameters
 - [x] recipe parameters usable in arithmetic and conditions
 - [x] acyclic recipe-to-recipe calls
-- [x] cycle detection and explicit recursive-recipe rejection
-- [x] exact call-arity checking in direct lowering
-- [x] repeat `count` passed as a recipe argument
-- [x] protected numeric recipes can execute directly after production capability validation
+- [x] cycle detection and recursive-recipe rejection
+- [x] exact call-arity checking
+- [x] repeat `count` passed as recipe argument
+- [x] protected numeric recipes execute directly after production capability validation
 - [x] ranged numeric recipe parameters receive Wasm min/max runtime guards
-- [x] statically provable out-of-range calls remain rejected before Wasm generation
-- [x] runtime-unproven out-of-range values trap before the Wasm recipe body
-- [x] dedicated `examples/direct-wasm-recipes.patch`
-- [x] recipe/range differential and enforcement tests
-- [x] cross-platform direct recipe build/execution CI
-- [ ] return-valued recipes
-- [ ] recursive recipe fixed-point semantics
-- [ ] direct semantic change-trace ABI
-- [ ] lowering correspondence proof/translation validation
+- [x] statically provable bad calls rejected before Wasm generation
+- [x] runtime-unproven bad values trap before recipe body
+- [x] cross-platform protected-recipe direct build/execution CI
+
+### beta.13: direct semantic transition trace
+
+- [x] second direct host ABI import `patch.change_number(i32,f64,f64)`
+- [x] stable numeric target-id table in direct metadata
+- [x] one trace event per committed supported Patch `change` block
+- [x] trace granularity matches interpreter history rather than individual operations
+- [x] trace includes target, before value and after value
+- [x] direct host returns structured `trace`
+- [x] optional direct-host `changeNumber(event)` callback
+- [x] multi-operation change block emits one event
+- [x] loops produce ordered transition sequences
+- [x] recipes and nested recipe calls produce ordered transition sequences
+- [x] differential suite compares trace against normalized interpreter history
+- [x] backend validation now checks output + final state + ordered transition trace
+- [ ] enrich trace with semantic operation/effect identity
+- [ ] enrich trace with source/version/provenance only where needed for correspondence
+- [ ] translation validation from Change IR effect to emitted Wasm trace
+- [ ] machine-checked direct-lowering correspondence
 
 Still open in product/tooling:
 
-- [ ] typed AST
-- [ ] expression IR instead of expression strings
+- [ ] typed AST / typed expression IR
 - [ ] serialized `.patchlog` and explicit `replay`
 - [ ] property-based inverse/composition/range tests
 - [ ] Studio timeline/provenance graph
@@ -177,7 +169,7 @@ Still open in product/tooling:
 - [ ] richer Patch UI controls and two-way input binding
 - [ ] project import/export and immediate mode
 
-## 0.3 research hardening
+## Research hardening
 
 Completed foundation:
 
@@ -186,59 +178,58 @@ Completed foundation:
 - [x] verified policy checker
 - [x] proof-free semantic evidence boundary
 - [x] formal Source core preserving source mutation verbs
-- [x] machine-checked SourceStmt → EvidenceStmt correspondence for generated artifacts
-- [x] machine-checked source → formal-signature correspondence for generated artifacts
+- [x] source→evidence→formal-signature checked correspondence
 - [x] formal source-runtime capability containment
 - [x] formal integer expression fragment
-- [x] machine-checked interval-analysis soundness for that formal fragment
+- [x] machine-checked interval-analysis soundness for that fragment
 - [x] independent production expression extraction and range-agreement validation
-- [x] direct Wasm numeric Change IR subset
-- [x] direct Wasm `if` / literal `repeat` control flow
+- [x] direct numeric Wasm execution
+- [x] direct branch/literal-loop execution
 - [x] direct non-recursive numeric recipe calls
 - [x] direct ranged-parameter runtime enforcement
-- [x] differential interpreter/direct-Wasm execution tests
+- [x] differential output/final-state backend validation
+- [x] differential ordered transition-trace backend validation
 
 Highest-priority remaining work:
 
 - [ ] **prove or independently validate production AST → `RangeExpr` / `SourceStmt` extraction for the supported source subset**
-- [ ] **connect production and direct-Wasm traces to `evalRangeExpr` / `SourceExecutes` / `Executes`**
-- [ ] **expose semantic Change events from direct Wasm and connect them to the Change IR effects**
-- [ ] extend certification to non-recursive recipe calls and parameter substitution
-- [ ] typed expression/core IR to reduce duplicate backend parsing
-- [ ] stable machine-readable certificate/container format beyond generated Lean source
-- [ ] richer path-sensitive/call-graph analysis
-- [ ] recursive fixed-point analysis where sound
-- [ ] richer `why` provenance graph and source navigation
+- [ ] **give direct trace events semantic operation/effect identity derived independently from lowering**
+- [ ] **translation-validate Change IR expected effects against direct Wasm transition traces**
+- [ ] connect production/direct traces to formal `SourceExecutes` / `Executes`
+- [ ] typed expression/core IR to reduce duplicate parsing
+- [ ] extend formal call/substitution semantics for the direct recipe subset
+- [ ] stable machine-readable certificate/container format
 - [ ] two or three semantic-security/engineering case studies
+- [ ] backend/certificate/checker overhead evaluation
 
-## 0.4 direct portable execution backend
+## Direct portable execution backend
 
 Completed:
 
 - [x] directly executable numeric Change IR-to-WebAssembly subset
-- [x] explicit backend support boundary with no silent fallback
-- [x] differential interpreter/backend execution tests
-- [x] cross-platform direct-Wasm build and execution CI
-- [x] structured `if` / `else` lowering
-- [x] literal `repeat` lowering with Patch `count`
+- [x] explicit support boundary with no silent fallback
+- [x] cross-platform direct-Wasm CI
+- [x] structured `if` / `else`
+- [x] literal `repeat` + Patch `count`
 - [x] non-recursive numeric recipe/call lowering
-- [x] ranged recipe parameter runtime guards
+- [x] ranged recipe parameter guards
+- [x] block-level numeric transition-trace ABI
 
 Remaining:
 
-- [ ] typed core / expression IR suitable for broader direct lowering
-- [ ] direct semantic change-trace ABI
+- [ ] typed expression/core IR
+- [ ] semantic operation-aware direct trace
 - [ ] lowering translation validation / machine-checked correspondence
-- [ ] dynamic loop lowering with explicit bounded runtime semantics
+- [ ] bounded dynamic loop semantics
 - [ ] return-valued recipes
-- [ ] preserve semantic contract/range/source/evidence artifacts across backend packaging
+- [ ] preserve formal/capability artifacts through backend packaging
 - [ ] WASI console runtime
-- [ ] runnable `.patchapp` host
-- [ ] browser Wasm runner executing lowered code
+- [ ] runnable `.patchapp` direct host
+- [ ] browser direct-Wasm runner
 - [ ] Patch UI host-call interface
 - [ ] compiler benchmark harness
 
-## 0.5 native application packaging
+## Native application packaging
 
 - [ ] Windows console `.exe`
 - [ ] Windows GUI-subsystem `.exe`
@@ -250,7 +241,7 @@ Remaining:
 - [ ] native Windows/macOS Patch UI backends
 - [ ] SDL3 portable GUI backend for Linux/BSD/other Unix
 
-## 0.6 build service
+## Build service
 
 - [ ] **Build for...** dialog in Patch Studio
 - [ ] GitHub Actions remote build integration
@@ -259,7 +250,7 @@ Remaining:
 - [ ] signing/notarization hooks
 - [ ] artifact delivery into Patch Studio
 
-## 0.7 collaboration semantics
+## Collaboration semantics
 
 - [ ] branchable state histories
 - [ ] explicit semantic merge
@@ -283,20 +274,19 @@ Before a high-venue submission:
 - [x] proof-free semantic evidence validated/decoded by Lean
 - [x] evidence/formal-signature correspondence
 - [x] formal source mutation vocabulary
-- [x] SourceStmt→EvidenceStmt and source→signature checked correspondence for certificate artifacts
+- [x] SourceStmt→EvidenceStmt and source→signature checked correspondence
 - [x] machine-checked range-analysis soundness for a useful integer fragment
-- [x] production/formal range-agreement boundary for supported expressions
-- [x] direct compiled execution for a numeric core
-- [x] direct structured branch/literal-loop execution
-- [x] direct non-recursive recipe/call execution
+- [x] production/formal range-agreement boundary
+- [x] direct compiled execution for numeric state/control/recipes
 - [x] direct ranged-parameter runtime guards
-- [x] direct-backend differential execution gate
-- [ ] production AST→RangeExpr/SourceStmt extraction assurance for a useful subset
-- [ ] production/direct-Wasm runtime and formal trace correspondence
-- [ ] semantic direct-execution change-trace preservation
+- [x] direct output/final-state differential execution gate
+- [x] direct ordered transition-trace differential execution gate
+- [ ] production AST→RangeExpr/SourceStmt extraction assurance
+- [ ] semantic effect-aware direct trace
+- [ ] production/direct-Wasm/formal trace correspondence
 - [ ] typed expression/core IR or independently checked lowering input
 - [ ] benchmark suite and semantic-security case studies
-- [ ] source/range/evidence/certificate/checker/backend overhead evaluation
+- [ ] overhead evaluation
 - [ ] reproducibility bundle
 - [ ] novice study with ethics/consent only if retained as a headline claim
 
@@ -313,8 +303,9 @@ Before a high-venue submission:
 9. JavaScript source/AST→RangeExpr/SourceStmt extraction is not yet machine proved.
 10. Beta 9 range soundness applies only to the explicitly modeled integer expression fragment.
 11. Division, decimal/floating-point semantics and general multiplication are not silently labeled formally verified.
-12. Direct-Wasm support is narrower than the Patch language and unsupported constructs must fail explicitly rather than fall back silently.
-13. Differential backend tests are evidence, not a compiler-correctness theorem.
-14. Direct numeric equality is not presented as a proof of all JavaScript `deepEqual` edge cases for non-finite values.
-15. Runtime parameter guards complement compile-time analysis; they do not imply the whole Wasm lowering is formally verified.
-16. Unsupported certification constructs are never silently labeled verified.
+12. Direct-Wasm support is narrower than the Patch language and unsupported constructs fail explicitly.
+13. Differential backend testing is evidence, not a compiler-correctness theorem.
+14. Direct numeric equality is not presented as proof of all non-finite JavaScript edge cases.
+15. Runtime parameter guards complement compile-time analysis; they do not imply full lowering verification.
+16. Beta.13 trace equivalence covers the recorded numeric target/before/after sequence, not yet the complete semantic Change object.
+17. Unsupported certification constructs are never silently labeled verified.
