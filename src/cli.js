@@ -6,6 +6,8 @@ import { compile } from './compiler.js';
 import { buildPatchApp, serializePatchApp } from './bundle.js';
 import { compileToWasm } from './wasm.js';
 import { compileToDirectWasm, runDirectWasm } from './wasm-direct.js';
+import { buildStandaloneWebApp } from './webapp.js';
+import { buildNativeApp } from './native-app.js';
 import { generateLeanCertificate } from './certificate.js';
 
 const args = process.argv.slice(2);
@@ -97,8 +99,8 @@ try {
       fs.writeFileSync(out, module);
       console.log(`Built ${out}`);
       console.log(`  type: ${kind}`);
-      console.log('  target: WebAssembly bootstrap module');
-      console.log('  note: this target embeds Patch source + Change IR for a Patch host.');
+      console.log('  target: bootstrap WebAssembly module');
+      console.log('  note: this target embeds Patch source + Change IR for a Patch host; use wasm-direct or web for executable output.');
       process.exit(0);
     }
 
@@ -109,12 +111,38 @@ try {
       console.log(`Built ${out}`);
       console.log(`  type: ${kind}`);
       console.log(`  target: direct WebAssembly ${metadata.version}`);
-      console.log('  executes: numeric create/change/show subset directly as Wasm instructions');
-      console.log('  host ABI: patch.show_number(f64)');
+      console.log('  executes: numeric create/change/show/control-flow/recipe subset directly as Wasm instructions');
+      console.log('  host ABI: patch.show_number(f64), patch.change_number(i32,f64,f64)');
       process.exit(0);
     }
 
-    throw new Error(`Unknown build target '${target}'. Use portable, wasm, or wasm-direct.`);
+    if (target === 'web') {
+      const out = option('--out') ?? `${name}.html`;
+      const built = buildStandaloneWebApp(source, { name, entry: path.basename(file) });
+      fs.writeFileSync(out, built.html, 'utf8');
+      console.log(`Built ${out}`);
+      console.log('  target: standalone single-file Web App');
+      console.log('  run: open the HTML file in a modern browser');
+      process.exit(0);
+    }
+
+    if (target === 'app' || target === 'native') {
+      const out = option('--out');
+      const built = buildNativeApp(source, {
+        name,
+        entry: path.basename(file),
+        out,
+        bundle: target === 'app',
+        desktopShell: target === 'app'
+      });
+      console.log(`Built ${built.output}`);
+      console.log(`  target: ${built.outputKind}`);
+      console.log(`  runtime: ${built.runtime}`);
+      console.log('  note: the direct Patch Wasm module is embedded inside the standalone native host.');
+      process.exit(0);
+    }
+
+    throw new Error(`Unknown build target '${target}'. Use portable, wasm, wasm-direct, web, native, or app.`);
   }
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
@@ -169,7 +197,7 @@ function printFormalCoverage(bridge, sourceCore) {
     for (const reason of entry.reasons) console.log(`      - ${reason}`);
   }
   console.log(`Source/range summary: ${sourceCore.summary.supported} supported, ${sourceCore.summary.unsupported} unsupported, ${sourceCore.summary.rangeClaims ?? 0} formal integer range claim(s).`);
-  console.log('Note: beta.9 certificates let Lean prove soundness of the supported integer range fragment, then normalize SourceStmt to semantic evidence and check the independent production signature/policy. JavaScript source/AST -> RangeExpr/SourceStmt extraction and production runtime -> formal execution correspondence remain explicit proof obligations.');
+  console.log('Note: Lean proves soundness for the supported integer range fragment and checks source/evidence/signature/policy correspondence. JavaScript source/AST extraction and production runtime correspondence remain explicit proof obligations.');
 }
 
 function option(name) {
@@ -182,5 +210,5 @@ function appName(filePath) {
 }
 
 function help() {
-  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun the direct numeric Wasm subset:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect semantic bridge, formal source and formal integer-range coverage:\n  patch formal program.patch\n\nGenerate Lean-checkable range/source/evidence certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --kind console --target portable\n  patch build program.patch --kind window --target portable --out MyApp.patchapp\n\nBuild bootstrap WebAssembly module:\n  patch build program.patch --kind console --target wasm --out MyApp.wasm\n\nBuild directly executable numeric WebAssembly:\n  patch build program.patch --kind console --target wasm-direct --out MyApp.direct.wasm`);
+  console.error(`Patch beta\n\nRun with interpreter:\n  patch run program.patch\n\nRun direct Wasm:\n  patch run-wasm program.patch\n\nCheck:\n  patch check program.patch\n\nInspect semantic change signatures and policies:\n  patch changes program.patch\n\nInspect formal coverage:\n  patch formal program.patch\n\nGenerate Lean certificate:\n  patch certify program.patch --out Program.patchcert.lean\n\nBuild portable bundle:\n  patch build program.patch --target portable\n\nBuild standalone single-file Web App:\n  patch build program.patch --target web --out MyApp.html\n\nBuild direct WebAssembly (requires Patch host ABI):\n  patch build program.patch --target wasm-direct --out MyApp.direct.wasm\n\nBuild native app for the current OS (Rust/cargo required once):\n  patch build program.patch --target app --name MyApp\n\nBuild native console executable for the current OS:\n  patch build program.patch --target native --out MyApp\n\nAdvanced bootstrap Wasm carrier:\n  patch build program.patch --target wasm --out MyApp.bootstrap.wasm`);
 }
