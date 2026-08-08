@@ -1,35 +1,37 @@
 # Patch Compiler Architecture
 
-Status: **0.2.0-beta.22** · Change IR **0.8**
+Status: **0.2.0-beta.23** · Change IR **0.9**
 
-Patch has a working compiler frontend, semantic Change analysis, independent source translation validation, static/runtime Lean certificates, direct Wasm/C99 Console backends, a **Standalone Window Web App** backend and cross-platform packaging.
+Patch combines a working compiler frontend, semantic Change analysis, independent source/guard translation validation, Lean-checkable static/runtime certificates, direct Wasm/C99 Console backends, Standalone Window Web Apps and cross-platform packaging.
 
 ## Architecture
 
 ```text
 exact Patch source
-   ├─ production parser / AST ──> Change Signatures / Capabilities
-   │                           └─> formalSource / range claims
-   └─ independent raw-source parser ────────────────┘ compare
-                                      ↓
-                               sourceValidation
-                                      ↓
-                                  Change IR 0.8
-          ┌──────────────┬────────────┼───────────┬──────────────┐
-       .patchapp      bootstrap     direct       C99         Window Web
-                       Wasm          Wasm                    generated runtime
-                                      ↓
-                              observed transitions
-                                      ↓
-                          independent effect validation
-                                      + untrusted RuntimePath
-                                      ↓
-                              runtime Lean certificate
+   ├─ production parser / AST
+   │    ├─ Change Signatures / Capabilities
+   │    ├─ SourceStmt + range claims
+   │    └─ GuardTree + guard claims
+   │
+   ├─ independent raw SourceStmt/range parser ----┐
+   └─ independent raw GuardTree/control parser ---┤ compare
+                                                  ↓
+                                      sourceValidation + guardValidation
+                                                  ↓
+                                           Change IR 0.9
+       ┌─────────────┬───────────┬──────────┬────────────┬─────────────┐
+    .patchapp     bootstrap    direct      C99       Window Web    certificates
+                  Wasm         Wasm                 generated runtime
+                                ↓
+                       observed transitions
+                                ↓
+                    independent effect validation
+                    + RuntimePath + invocation env
+                                ↓
+                         PatchGuarded Lean check
 ```
 
-`sourceValidation` is translation validation, not parser verification. The independent path does not import `parser.js` or consume the production AST.
-
-## Change IR 0.8
+## Change IR 0.9
 
 ```text
 instructions
@@ -39,74 +41,87 @@ changeCapabilities
 formalBridge
 formalSource
 sourceValidation
+guardValidation
 ```
 
-Persistent semantic mutation is normalized as explicit `CHANGE`; Windows are normalized as `WINDOW`.
+`formalSource` is version 0.3. Its existing `source`/range artifact is retained; beta.23 adds a parallel `guardTree`, normalized `guardClaims`, `guardVariables`, and separate guard-support diagnostics.
 
-## Window build/runtime path
+`guardValidation` is a separate artifact from raw-source control-flow extraction. A program can therefore remain supported by the static SourceStmt/signature/capability path while being outside the stricter guard-aware runtime path.
 
-`src/window-build.js` provides normalized Window detection plus shared runtime-support validation. Current portable GUI events are button `clicked`; duplicate control ids, missing control references and other parsed event forms fail before packaging.
+## Source translation validation
+
+Production:
 
 ```text
-Window source
- -> compile
- -> normalized WINDOW preflight
- -> shared runtime-support validation
- -> Window Web or Windows/macOS/Linux desktop player
+source -> parser.js -> AST -> formalSource SourceStmt/ranges
 ```
 
-`src/window-webapp.js` builds one self-contained HTML file. Beta.22 hardens its runtime against the reference interpreter: later operations inside a single `change` see prior operations in that same semantic change; declared create types and Thing fields are checked; generated HTML is executed in differential tests.
-
-This backend is **not direct Wasm lowering of GUI instructions**. Direct Wasm remains Console-only.
-
-## Static formal path
+Independent:
 
 ```text
-formal RangeExpr -> analyzeRange -> rangeAnalysisSound
-SourceStmt -> semantic normalization -> EvidenceStmt -> CoreStmt
-           -> inferSignature -> verified policy checker
+source bytes -> source-validation.js -> raw SourceStmt/ranges
 ```
 
-`patch certify` emits the static Lean artifact after independent source extraction validation.
+Exact agreement is required for supported static certification. This is translation validation, not parser verification.
 
-## Runtime Lean certificate
+## Guard translation validation
 
-`patch runtime-certify` executes the direct-Wasm artifact, independently reconstructs concrete effects and emits proof-free runtime occurrences plus an untrusted `RuntimePath`.
-
-`PatchRuntime.lean` checks:
+Production:
 
 ```text
-EffectRefines
+AST -> formal-source.js -> GuardTree + normalized guard claims
+```
+
+Independent:
+
+```text
+source bytes -> guard-validation.js -> independent indentation/control-flow tree
+                                     -> normalized guard claims
+```
+
+The guard validator does not import `parser.js` or consume the AST. It shares the conservative `formal-guard.js` expression normalizer; the independently checked part is source/control-flow extraction, parameter vocabulary and agreement of normalized claims.
+
+## Guard-aware runtime certificate
+
+`runtime-path-witness.js` records, per protected invocation:
+
+```text
+recipe name + invocation index
 RuntimePath
-checkSourceRuntimeEvidence
-checkSourceRuntimeEvidence_sound
+effectCount
+concrete recipe parameter environment
 ```
 
-Successful checking yields a real `SourceExecutes` trace and ordered `TraceRefines` relation.
+These are proof-free inputs. `runtime-certificate.js` additionally requires both source and guard validation before emitting a beta.23 guarded certificate.
 
-Beta.22 adds `PatchRuntimeCapability.lean`:
+Generated Lean data includes:
 
 ```text
-allowsRefinedEffect
-traceRefinesPreservesPolicy
-checkedConcreteRuntimeCannotEscape
+SourceStmt
+GuardTree
+IntEnv with concrete used guard parameters
+EvidenceEffect list
+RuntimePath
+Rule policy list
 ```
 
-The generated runtime certificate now also contains the declared semantic policy and Lean checks `checkSourceProtected`. Therefore an accepted concrete runtime trace is not only tied to a formal execution: every decoded concrete effect is formally shown to be admitted by the declared Change Capability.
+`PatchGuarded.checkGuardedSourceRuntimeEvidence` checks SourceStmt/GuardTree shape, concrete guard truth, RuntimePath, formal execution and effect refinement. `checkedGuardedConcreteRuntimeCannotEscape` composes the accepted guarded execution with the verified Change Capability checker.
 
-The theorem composes existing mechanisms; it does **not** verify the JavaScript/Wasm compiler.
+## Guard fragment
 
-## Current formal branch boundary
+The current guard-aware compiler/formal bridge deliberately accepts only safe-integer recipe parameters with literals, parameter variables, `+`, `-`, unary minus, scale by a non-negative integer literal, comparisons, Boolean literals and `not/and/or`.
 
-`CoreStmt.branch` currently stores only then/else bodies. Its `Executes` relation is intentionally nondeterministic between `branchThen` and `branchElse`. Thus RuntimePath checking proves structural branch execution but not yet evaluation of the original source Boolean guard.
+Persistent/global state in guards is not yet bound into `IntEnv`; decimal guard values, division and general multiplication are also rejected at this stronger certification layer.
 
-The next compiler/formal feature is a smaller typed, guard-aware execution core retaining integer/Boolean expressions and a state environment. That core should prove the chosen branch follows guard evaluation, then refine to the existing effect-only core used for signatures.
+## Window path
+
+`src/window-build.js` detects normalized `WINDOW` IR and validates the current shared runtime surface. `src/window-webapp.js` creates one self-contained Window HTML app and is differentially tested against `PatchInterpreter`. Desktop Window packages use the generated desktop player. Direct Wasm remains Console-only.
 
 ## Console backends
 
-Direct Wasm supports the conservative numeric Console subset: numeric create/change/show, supported arithmetic/comparisons, `if/else`, literal repeat/count, acyclic numeric recipes and ranged guards. It imports `patch.show_number` and `patch.change_number`; raw direct Wasm is not yet a standalone WASI command.
+Direct Wasm supports the conservative numeric Console subset with control flow, literal repeats, acyclic numeric recipes and ranged guards. It imports the small Patch host ABI; raw direct Wasm is not yet a standalone WASI command.
 
-Portable C99 independently lowers the same conservative subset and is compile/run tested on Linux, macOS and FreeBSD 15.1.
+Portable C99 independently lowers the conservative numeric Console subset and is compile/run tested on Linux, macOS and FreeBSD 15.1.
 
 ## Trust boundaries
 
@@ -114,28 +129,28 @@ Not machine proved:
 
 ```text
 production parser correctness
-independent raw-source parser correctness
+independent raw source/guard parser correctness
 JavaScript -> Wasm lowering correctness
 Wasm engine correctness
-before/after -> semantic effect reconstruction correctness
-RuntimePath producer correctness
-source guard -> branch-choice correspondence
+before/after -> semantic-effect reconstruction correctness
+runtime path/environment producer correctness
+binding of proof-free invocation values to machine-level Wasm parameters
 full floating-point semantics
 full Patch language semantics
 ```
 
-The untrusted RuntimePath producer is deliberately outside the theorem base; Lean accepts only witnesses structurally valid for the formal core.
+Lean checks the supplied guard/path/environment evidence against independently validated formal artifacts, but that does not turn the whole compiler into a verified compiler.
 
 ## Quality gates
 
 - Windows/macOS/Linux Node 22/24 tests;
-- source/evidence/tamper tests;
-- generated Window Web execution differential tests;
-- real Counter Window Web build;
-- runtime certificate generation;
-- Lean builds including `PatchRuntime.lean` and `PatchRuntimeCapability.lean`;
+- source/range/guard extraction and tamper tests;
+- generated Window Web differential execution tests;
+- direct-Wasm differential/trace/effect tests;
+- guard-aware runtime certificate generation;
+- Lean builds through `PatchGuarded.lean`;
 - generated static/runtime certificate checking;
 - no `sorry`/`admit`;
-- native Console/Window platform smoke packages;
+- native Windows/macOS/Linux Console + Window smoke builds;
 - Linux/macOS/FreeBSD C99 compile/run;
-- public Studio/site consistency checks.
+- public Studio/site/version consistency checks.
