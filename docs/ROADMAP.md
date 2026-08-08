@@ -142,10 +142,29 @@
 - [x] `if` inside `repeat`
 - [x] control-flow differential tests against the interpreter
 - [x] cross-platform direct control-flow build/execution example
-- [ ] dynamic repeat lowering
-- [ ] non-recursive recipe/call lowering
-- [ ] preserve and expose semantic change traces from direct execution
-- [ ] lowering correspondence proof/validation against the formal execution model
+
+### beta.12: direct WebAssembly recipes + ranged guards
+
+- [x] top-level `make` declarations collected before Wasm body lowering
+- [x] one real Wasm function per supported numeric recipe
+- [x] `do` lowered to Wasm `call`
+- [x] numeric recipe parameters as Wasm `f64` parameters
+- [x] recipe parameters usable in arithmetic and conditions
+- [x] acyclic recipe-to-recipe calls
+- [x] cycle detection and explicit recursive-recipe rejection
+- [x] exact call-arity checking in direct lowering
+- [x] repeat `count` passed as a recipe argument
+- [x] protected numeric recipes can execute directly after production capability validation
+- [x] ranged numeric recipe parameters receive Wasm min/max runtime guards
+- [x] statically provable out-of-range calls remain rejected before Wasm generation
+- [x] runtime-unproven out-of-range values trap before the Wasm recipe body
+- [x] dedicated `examples/direct-wasm-recipes.patch`
+- [x] recipe/range differential and enforcement tests
+- [x] cross-platform direct recipe build/execution CI
+- [ ] return-valued recipes
+- [ ] recursive recipe fixed-point semantics
+- [ ] direct semantic change-trace ABI
+- [ ] lowering correspondence proof/translation validation
 
 Still open in product/tooling:
 
@@ -175,14 +194,17 @@ Completed foundation:
 - [x] independent production expression extraction and range-agreement validation
 - [x] direct Wasm numeric Change IR subset
 - [x] direct Wasm `if` / literal `repeat` control flow
+- [x] direct non-recursive numeric recipe calls
+- [x] direct ranged-parameter runtime enforcement
 - [x] differential interpreter/direct-Wasm execution tests
 
 Highest-priority remaining work:
 
 - [ ] **prove or independently validate production AST → `RangeExpr` / `SourceStmt` extraction for the supported source subset**
 - [ ] **connect production and direct-Wasm traces to `evalRangeExpr` / `SourceExecutes` / `Executes`**
-- [ ] extend the verified arithmetic fragment only where semantics are explicit and useful
+- [ ] **expose semantic Change events from direct Wasm and connect them to the Change IR effects**
 - [ ] extend certification to non-recursive recipe calls and parameter substitution
+- [ ] typed expression/core IR to reduce duplicate backend parsing
 - [ ] stable machine-readable certificate/container format beyond generated Lean source
 - [ ] richer path-sensitive/call-graph analysis
 - [ ] recursive fixed-point analysis where sound
@@ -199,14 +221,17 @@ Completed:
 - [x] cross-platform direct-Wasm build and execution CI
 - [x] structured `if` / `else` lowering
 - [x] literal `repeat` lowering with Patch `count`
+- [x] non-recursive numeric recipe/call lowering
+- [x] ranged recipe parameter runtime guards
 
 Remaining:
 
 - [ ] typed core / expression IR suitable for broader direct lowering
+- [ ] direct semantic change-trace ABI
+- [ ] lowering translation validation / machine-checked correspondence
 - [ ] dynamic loop lowering with explicit bounded runtime semantics
-- [ ] recipe/call lowering
-- [ ] preserve semantic contract/range/source/evidence certificates across lowering
-- [ ] direct execution change-trace ABI
+- [ ] return-valued recipes
+- [ ] preserve semantic contract/range/source/evidence artifacts across backend packaging
 - [ ] WASI console runtime
 - [ ] runnable `.patchapp` host
 - [ ] browser Wasm runner executing lowered code
@@ -263,10 +288,13 @@ Before a high-venue submission:
 - [x] production/formal range-agreement boundary for supported expressions
 - [x] direct compiled execution for a numeric core
 - [x] direct structured branch/literal-loop execution
+- [x] direct non-recursive recipe/call execution
+- [x] direct ranged-parameter runtime guards
 - [x] direct-backend differential execution gate
 - [ ] production AST→RangeExpr/SourceStmt extraction assurance for a useful subset
 - [ ] production/direct-Wasm runtime and formal trace correspondence
-- [ ] broader direct compiled execution with calls and richer values
+- [ ] semantic direct-execution change-trace preservation
+- [ ] typed expression/core IR or independently checked lowering input
 - [ ] benchmark suite and semantic-security case studies
 - [ ] source/range/evidence/certificate/checker/backend overhead evaluation
 - [ ] reproducibility bundle
@@ -288,4 +316,5 @@ Before a high-venue submission:
 12. Direct-Wasm support is narrower than the Patch language and unsupported constructs must fail explicitly rather than fall back silently.
 13. Differential backend tests are evidence, not a compiler-correctness theorem.
 14. Direct numeric equality is not presented as a proof of all JavaScript `deepEqual` edge cases for non-finite values.
-15. Unsupported certification constructs are never silently labeled verified.
+15. Runtime parameter guards complement compile-time analysis; they do not imply the whole Wasm lowering is formally verified.
+16. Unsupported certification constructs are never silently labeled verified.
