@@ -62,7 +62,7 @@ test('validator reconstructs branch and loop site occurrences independently', as
 });
 
 test('validator reconstructs acyclic recipe calls and ranged parameters independently', async () => {
-  const source = `create number score = 0\n\nallow reward:\n  score may increase up to 10\n\nmake add_points(amount number 0..5):\n  change score:\n    add amount\n\nmake twice(amount number 0..5):\n  do add_points(amount)\n  do add_points(amount)\n\ndo twice(3)\nshow score`;
+  const source = `create number score = 0\n\nallow add_points:\n  score may increase up to 5\n\nmake add_points(amount number 0..5):\n  change score:\n    add amount\n\nmake twice(amount number 0..5):\n  do add_points(amount)\n  do add_points(amount)\n\ndo twice(3)\nshow score`;
   const { direct, validation } = await validateProgram(source);
   assert.deepEqual(direct.trace, [
     { target: 'score', before: 0, after: 3 },
