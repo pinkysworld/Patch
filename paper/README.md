@@ -13,7 +13,7 @@ The research story now has four distinct assurance layers around the primary Sta
 1. **Lean formal core** — factorization, Mutation Transparency, Change Signature Soundness, policy containment and integer range-analysis soundness for explicit formal fragments.
 2. **Source translation validation** — an independent raw-source path reconstructs SourceStmt/range claims without importing `parser.js` or consuming the production AST and compares them with the production formal-source artifact before protected certification.
 3. **Direct-runtime validation** — an independent Change-IR execution model reconstructs ordered transitions and concrete semantic effects and compares them with observed direct-Wasm execution, Change Signatures and Change Capabilities.
-4. **Beta.20 runtime → Lean correspondence** — for a narrower linear protected subset, proof-free concrete effect occurrences reconstructed from one direct-Wasm execution are checked by Lean against an actual formal `SourceExecutes` trace through `EffectRefines`.
+4. **Beta.20 runtime → Lean correspondence** — for a narrower linear protected subset, proof-free concrete effect occurrences reconstructed from one direct-Wasm execution are checked by Lean against an actual formal `SourceExecutes` trace through `EffectRefines` and the pointwise `TraceRefines` relation.
 
 None of these is described as complete compiler verification.
 
@@ -54,7 +54,7 @@ checkSourceRuntimeEvidence source observed = true
 exists formalTrace actualTrace,
   SourceExecutes source formalTrace
   and decodeRuntimeTrace observed = some actualTrace
-  and List.Forall2 EffectRefines actualTrace formalTrace
+  and TraceRefines actualTrace formalTrace
 ```
 
 The runtime certificate is bound by SHA-256 to the exact source bytes and the observed direct transition trace.
@@ -89,6 +89,7 @@ direct Wasm execution
    -> independent semantic-effect reconstruction
    -> concrete proof-free EvidenceEffect list
    -> Lean runtime-effect decoding/refinement
+   -> TraceRefines
    -> formal SourceExecutes witness
 ```
 
