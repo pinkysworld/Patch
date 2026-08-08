@@ -25,6 +25,8 @@ Public Patch Studio / project site:
 
 **https://pinkysworld.github.io/Patch/**
 
+GitHub Pages is configured to deploy this site through the repository's GitHub Actions workflow.
+
 Patch Studio is browser-first and installable as a PWA. It is designed for Windows, macOS, Linux, iPhone/iPad, Android, ChromeOS and browser-capable BSD/Unix systems.
 
 ## Current status
