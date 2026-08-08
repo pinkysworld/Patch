@@ -1,14 +1,14 @@
 import { evaluateExpression, evaluateLoose } from './expression.js';
 
-export const PATCH_RUNTIME_PATH_WITNESS_VERSION = '0.1';
+export const PATCH_RUNTIME_PATH_WITNESS_VERSION = '0.2';
 
 const PURE_SOURCE_NODES = new Set(['create', 'createThing', 'show', 'why', 'watch', 'history', 'allow', 'uiControl', 'function']);
 
 /**
  * Execute the production AST's direct numeric subset only to propose formal
- * control-flow witnesses. These witnesses are untrusted: PatchRuntime.lean
- * independently checks them against SourceStmt/CoreStmt before accepting a
- * runtime certificate.
+ * control-flow witnesses and concrete protected-recipe parameter environments.
+ * These values are untrusted: PatchGuarded.lean independently checks guard
+ * evaluation/path selection and PatchRuntime.lean checks the effect trace.
  */
 export function deriveRuntimePathWitnesses(ast, protectedNames = []) {
   const state = new Map();
@@ -95,7 +95,13 @@ export function deriveRuntimePathWitnesses(ast, protectedNames = []) {
         if (shouldCapture) {
           const index = (invocationCounts.get(node.name) ?? 0) + 1;
           invocationCounts.set(node.name, index);
-          invocations.push({ recipe: node.name, invocation: index, path: child.path, effectCount: child.effectCount });
+          invocations.push({
+            recipe: node.name,
+            invocation: index,
+            path: child.path,
+            effectCount: child.effectCount,
+            environment: Object.fromEntries((fn.params ?? []).map(param => [param, childLocals[param]]))
+          });
         }
         // A recipe call is outside the current formal SourceStmt vocabulary of
         // its caller. Runtime certificates therefore capture only the called

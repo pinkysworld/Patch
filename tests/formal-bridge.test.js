@@ -62,23 +62,28 @@ test('formal bridge marks dynamic repetition unsupported', () => {
   assert.ok(bridged.reasons.some(reason => reason.includes('dynamic repeat count')));
 });
 
-test('compiler embeds bridge, source core, raw-source validation and formal range metadata', () => {
+test('compiler embeds bridge, source, source validation and independently validated guard artifacts', () => {
   const source = `create number score = 0\nchange score:\n  add 1\nshow score`;
-  const { ir, formalBridge, formalSource, sourceValidation } = compile(source, { name: 'FormalCounter' });
-  assert.equal(ir.version, '0.8');
+  const { ir, formalBridge, formalSource, sourceValidation, guardValidation } = compile(source, { name: 'FormalCounter' });
+  assert.equal(ir.version, '0.9');
   assert.equal(ir.formalBridge, formalBridge);
   assert.equal(ir.formalSource, formalSource);
   assert.equal(ir.sourceValidation, sourceValidation);
+  assert.equal(ir.guardValidation, guardValidation);
   assert.equal(formalBridge.format, 'patch-formal-bridge');
   assert.equal(formalBridge.summary.mismatches, 0);
   assert.equal(formalBridge.entries.$program.supported, true);
   assert.equal(formalBridge.entries.$program.signatureMatchesProduction, true);
   assert.equal(formalSource.format, 'patch-formal-source');
-  assert.equal(formalSource.version, '0.2');
+  assert.equal(formalSource.version, '0.3');
   assert.equal(formalSource.entries.$program.supported, true);
+  assert.equal(formalSource.entries.$program.guardSupported, true);
   assert.equal(formalSource.entries.$program.rangeClaims.length, 1);
   assert.equal(formalSource.summary.rangeClaims, 1);
   assert.equal(sourceValidation.format, 'patch-source-extraction-validation');
   assert.equal(sourceValidation.entries.$program.validated, true);
   assert.equal(sourceValidation.summary.mismatches, 0);
+  assert.equal(guardValidation.format, 'patch-guard-extraction-validation');
+  assert.equal(guardValidation.entries.$program.validated, true);
+  assert.equal(guardValidation.summary.mismatches, 0);
 });

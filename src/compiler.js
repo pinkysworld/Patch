@@ -3,8 +3,9 @@ import { analyzeChangeSemantics } from './change-analysis.js';
 import { buildFormalBridge } from './formal-bridge.js';
 import { buildFormalSource } from './formal-source.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
+import { validateFormalGuardExtraction } from './guard-validation.js';
 
-export const PATCH_IR_VERSION = '0.8';
+export const PATCH_IR_VERSION = '0.9';
 
 export function compile(source, options = {}) {
   const ast = parse(source);
@@ -17,6 +18,7 @@ export function compile(source, options = {}) {
   const formalBridge = buildFormalBridge(ast, changeAnalysis);
   const formalSource = buildFormalSource(ast);
   const sourceValidation = validateFormalSourceExtraction(source, formalSource);
+  const guardValidation = validateFormalGuardExtraction(source, formalSource);
 
   const ir = {
     format: 'patch-ir',
@@ -28,10 +30,14 @@ export function compile(source, options = {}) {
     changeCapabilities: changeAnalysis.capabilities,
     formalBridge,
     formalSource,
-    sourceValidation
+    sourceValidation,
+    guardValidation
   };
 
-  return { ast, ir, project, changeAnalysis, formalBridge, formalSource, sourceValidation };
+  return {
+    ast, ir, project, changeAnalysis, formalBridge, formalSource,
+    sourceValidation, guardValidation
+  };
 }
 
 function inferKind(ast) {
