@@ -26,3 +26,6 @@ lean_lib PatchRuntime where
 
 lean_lib PatchRuntimeCapability where
   srcDir := "."
+
+lean_lib PatchGuarded where
+  srcDir := "."
