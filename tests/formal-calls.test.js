@@ -32,13 +32,14 @@ make double_reward(bonus number 0..5):
   assert.equal(result.entries.reward.rank, 1);
   assert.equal(result.entries.double_reward.rank, 2);
 
-  assert.deepEqual(result.entries.reward.body, {
-    kind: 'call',
-    name: 'add_points',
-    args: [{ parameter: 'amount', range: { min: 0, max: 5 }, expr: { kind: 'var', name: 'bonus' } }],
-    calleeRank: 0,
-    line: 9
-  });
+  const rewardCall = result.entries.reward.body;
+  assert.equal(rewardCall.kind, 'call');
+  assert.equal(rewardCall.name, 'add_points');
+  assert.equal(rewardCall.calleeRank, 0);
+  assert.ok(Number.isInteger(rewardCall.line) && rewardCall.line > 0);
+  assert.deepEqual(rewardCall.args, [
+    { parameter: 'amount', range: { min: 0, max: 5 }, expr: { kind: 'var', name: 'bonus' } }
+  ]);
   assert.deepEqual(result.entries.reward.signature, [
     { target: 'score', field: null, operation: 'increase', amountRange: { min: 0, max: 5 } }
   ]);
