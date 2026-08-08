@@ -1,24 +1,24 @@
 # Novelty Boundary
 
-Patch is **not** novel merely because it has patches, first-class changes, undo/history, effects, capabilities, range analysis, provenance, source calculi, refinement relations, translation validation, proof-carrying evidence, verified checkers, WebAssembly/C generation, GUI packaging or execution-path witnesses. All have substantial prior art.
+Patch is **not** novel merely because it has patches, first-class changes, undo/history, effects, capabilities, range analysis, provenance, source calculi, guard semantics, refinement relations, execution witnesses, translation validation, proof-carrying evidence, verified checkers, WebAssembly/C generation or GUI packaging. All have substantial prior art.
 
-The research hypothesis remains centered on:
+The research hypothesis remains centered on two linked ideas:
 
 > **State-Change Factorization:** ordinary post-creation persistent mutation is forced through a structured semantic Change representation rather than ordinary assignment plus later logging.
 
 > **Semantic Change Contracts:** Patch derives operation- and magnitude-aware summaries and authority policies from that same mandatory mutation substrate.
 
-**Beta.22 strengthens implementation correctness and assurance composition; it does not add a new primary novelty headline.**
+**Beta.23 strengthens the assurance connection between concrete compiled execution and the formal semantics; it is not a new primary novelty headline.**
 
 ## Prior-art discipline
 
-Patch must continue to compare against Plaid/first-class state change, Worlds/scoped state, classical/graded/quantitative/refinement effect systems, capability/permission/typestate work, abstract interpretation, translation validation (including Necula), Proof-Carrying Code/certifying compilation, verified compiler/refinement work, ChEOPS/COPE/Edit Transactions, event sourcing, edit lenses, patch theory, reversible languages, CRDTs and provenance/Whyline-style debugging.
+Patch must continue to compare against Plaid/first-class state change, Worlds/scoped state, classical/graded/quantitative/refinement effect systems, capability/permission/typestate work, abstract interpretation, translation validation (including Necula), Proof-Carrying Code/certifying compilation, verified compiler/refinement/simulation work, operational semantics for control flow, ChEOPS/COPE/Edit Transactions, event sourcing, edit lenses, patch theory, reversible languages, CRDTs and provenance/Whyline-style debugging.
 
-Do not claim invention of effect inference, quantitative effects, effect+capability combinations, translation validation, refinement checking, proof-carrying evidence, path witnesses or runtime-capability composition.
+Do not claim invention of effect inference, quantitative effects, effect+capability combinations, runtime path witnesses, guard-aware operational semantics, translation validation, refinement checking or proof-carrying evidence.
 
-## Formal contribution status
+## Machine-checked status
 
-Machine-checked for current fragments:
+Current formal results include:
 
 ```text
 State-Change Factorization
@@ -28,12 +28,16 @@ formal runtime-signature-policy containment
 verified semantic policy checker
 EvidenceStmt / SourceStmt correspondence
 integer rangeAnalysisSound
-EffectRefines / TraceRefines checker soundness
+EffectRefines / TraceRefines soundness
 RuntimePath -> Executes soundness
 checkSourceRuntimeEvidence_sound
 allowsRefinedEffect
 traceRefinesPreservesPolicy
 checkedConcreteRuntimeCannotEscape
+GuardShape / checkGuardShape_sound
+GuardPathValid / checkGuardPath_sound
+checkGuardedSourceRuntimeEvidence_sound
+checkedGuardedConcreteRuntimeCannotEscape
 ```
 
 For the effect-only structured core:
@@ -42,32 +46,34 @@ For the effect-only structured core:
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-## Beta.22 runtime capability composition
+## Beta.23 guard-aware assurance
+
+Beta.22 could prove structural branch execution but the effect-only `CoreStmt.branch` did not retain source guard truth. Beta.23 adds a parallel GuardTree instead of complicating that existing effect core.
 
 The runtime assurance chain is now:
 
 ```text
+exact source
+  -> production SourceStmt + GuardTree
+  -> independent source/range validation
+  -> independent raw GuardTree/control-flow validation
+
 actual direct-Wasm execution
-  -> observed before/after transitions
-  -> independent semantic reconstruction
-  -> proof-free concrete EvidenceEffect list
-  + untrusted RuntimePath
-  -> Lean SourceExecutes + TraceRefines
-  -> verified formal semantic policy
-  -> checked concrete runtime capability containment
+  -> independently reconstructed semantic effects
+  -> proof-free RuntimePath
+  -> proof-free concrete recipe-parameter environment
+
+Lean
+  -> GuardShape
+  -> evalGuard under concrete IntEnv
+  -> GuardPathValid
+  -> SourceExecutes + TraceRefines
+  -> concrete Change Capability containment
 ```
 
-`allowsRefinedEffect` establishes downward closure of semantic authority: if a concrete effect refines a formal effect and a rule allows the formal effect, that same rule allows the concrete effect. Quantitative containment composes by interval transitivity.
+Within the explicit safe-integer recipe-parameter fragment, `branchThen` therefore requires the normalized source guard to evaluate true and `branchElse` requires false.
 
-`checkedConcreteRuntimeCannotEscape` combines successful runtime correspondence with `checkSourceProtected`; every decoded concrete runtime effect is then admitted by a declared policy rule.
-
-This is a useful assurance result but **not end-to-end compiler verification**. The direct compiler, Wasm engine, transition observation and JavaScript semantic reconstruction remain implementation boundaries.
-
-## Important branch limitation
-
-`RuntimePath.branchThen` / `branchElse` currently validate against an effect-only `CoreStmt.branch` that contains no original Boolean guard. Therefore Lean proves that the selected branch is structurally an execution admitted by the formal effect core; it does not yet prove that the original source condition evaluated to the selected Boolean.
-
-This boundary must be stated explicitly. The next high-value formal feature is a typed, guard-aware execution core that retains enough integer/Boolean semantics to check branch truth and then erases/refines to the existing effect-only core.
+This is stronger than structural path correspondence, but it is still **not end-to-end compiler verification**. JavaScript parsing/lowering, the Wasm engine, runtime observation, semantic reconstruction and correct binding of proof-free invocation values to machine parameters remain implementation/trust boundaries.
 
 ## Primary vs supporting contribution
 
@@ -77,22 +83,22 @@ Primary candidate claim:
 
 Supporting assurance/evaluation mechanisms, not novelty headlines:
 
-- independent raw-source translation validation;
+- independent SourceStmt/range translation validation;
+- independent GuardTree/control-flow translation validation;
 - production/formal bridge;
-- verified semantic policy checker;
+- verified policy checker;
 - machine-checked range fragment;
-- runtime occurrence/refinement certificates;
-- RuntimePath checking;
+- RuntimePath/GuardPath checking;
 - concrete runtime capability containment;
 - independent runtime transition/effect validation;
 - C99/FreeBSD and Window platform artifacts;
 - provenance/undo/preview/replay tooling.
 
-## Candidate Beta.22 paper claim
+## Candidate beta.23 paper claim
 
 A defensible working claim is:
 
-> We present Patch, an experimental language in which post-creation persistent mutation is factored through structured semantic Changes and operation-/magnitude-aware Semantic Change Contracts are derived from that mandatory mutation substrate. For a mechanized core we prove Change Signature Soundness, semantic policy containment, source/evidence correspondence and integer range-analysis soundness. A conservative implementation subset independently validates source claims before certification. For supported direct-WebAssembly protected invocations, proof-free concrete semantic occurrences and control-flow witnesses are checked by Lean against a formal `SourceExecutes` trace; composing effect refinement with the verified policy checker proves every decoded concrete occurrence remains within the declared semantic capability. These results do not constitute full compiler verification, and source-guard truth correspondence remains future work.
+> We present Patch, an experimental language in which post-creation persistent mutation is factored through structured semantic Changes and operation-/magnitude-aware Semantic Change Contracts are derived from that mandatory mutation substrate. For a mechanized core we prove Change Signature Soundness, semantic policy containment, source/evidence correspondence and integer range-analysis soundness. Conservative implementation artifacts are checked by independent source/control-flow translation-validation paths. For supported protected direct-WebAssembly invocations, proof-free concrete semantic occurrences, path witnesses and concrete recipe-parameter environments are checked by Lean against a formal execution; branch witnesses must agree with evaluation of the normalized source guard in a safe-integer parameter fragment, and every decoded concrete occurrence is proved to remain within the declared semantic capability. These results do not constitute full compiler verification.
 
 This is a contribution hypothesis, not a firstness assertion.
 
@@ -101,10 +107,9 @@ This is a contribution hypothesis, not a firstness assertion.
 Highest-value next work:
 
 1. retain State-Change Factorization + quantitative semantic authority as the primary claim;
-2. add the typed, guard-aware execution core;
-3. add formal recipe-call/substitution semantics;
-4. build semantic-security/engineering case studies;
-5. measure source validation, analysis, certificate generation/checking and runtime overhead;
-6. conduct systematic related-work and reproducibility passes.
+2. add **formal recipe-call/substitution semantics** for the already implemented acyclic direct subset;
+3. build semantic-security/plugin cases where bounded semantic authority matters;
+4. measure analysis, translation-validation, certificate generation/checking and backend overhead;
+5. conduct systematic related-work and reproducibility passes.
 
-Patch remains plausible as an OOPSLA/ECOOP-style direction, but is not yet submission-ready. Formal correspondence and evaluation matter more than unrelated feature accumulation.
+Patch remains plausible as an OOPSLA/ECOOP-style direction, but is not yet submission-ready. The next gains should come from call correspondence and evaluation rather than unrelated feature accumulation.
