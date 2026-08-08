@@ -22,7 +22,7 @@ for (const id of ['code','run','build','buildTarget','output','changes','ir','ap
 for (const phrase of [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.9', 'Change Contract', 'Standalone Window Web App',
   'Semantic input events', 'event-local', 'input', 'changed', 'Window preflight', 'GuardTree', 'RuntimePath',
-  'checkedGuardedConcreteRuntimeCannotEscape', 'State-Change Factorization', 'Windows App', 'macOS App', 'Linux App',
+  'checkedGuardedConcreteRuntimeCannotEscape', 'persistent mutation explicit', 'Windows App', 'macOS App', 'Linux App',
   'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
 ]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
