@@ -6,6 +6,14 @@ namespace PatchFormal
 def allowsBool (rule : Rule) (effect : Effect) : Bool :=
   decide (Allows rule effect)
 
+/-- A successful boolean rule check implies the relational semantic judgment. -/
+theorem allowsBool_sound
+    {rule : Rule} {effect : Effect}
+    (h : allowsBool rule effect = true) :
+    Allows rule effect := by
+  apply of_decide_eq_true
+  simpa [allowsBool] using h
+
 /-- Does at least one policy rule admit this effect? -/
 def anyRuleAllows : List Rule → Effect → Bool
   | [], _ => false
@@ -34,8 +42,7 @@ theorem anyRuleAllows_sound
           obtain ⟨witness, hMem, hAllows⟩ := ih hRest
           exact ⟨witness, by simp [hMem], hAllows⟩
       | true =>
-          have hAllows : Allows rule effect := by
-            exact of_decide_eq_true hRule
+          have hAllows : Allows rule effect := allowsBool_sound hRule
           exact ⟨rule, by simp, hAllows⟩
 
 /-- **Verified checker soundness.** A `true` result from the executable checker
