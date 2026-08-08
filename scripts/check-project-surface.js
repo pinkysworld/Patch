@@ -18,7 +18,7 @@ const files = {
 
 mustInclude('README.md', files.readme, [
   `Current development beta: \`${version}\``, 'Change IR: `0.8`', 'Independent raw-source parser',
-  'patch runtime-certify', 'Lean-checked runtime correspondence', 'SourceExecutes',
+  'Runtime → Lean correspondence', 'patch runtime-certify', 'SourceExecutes',
   'Windows Window/GUI', 'macOS Window/GUI', 'Linux Window/GUI', 'FreeBSD Console', '--target c99', 'FreeBSD 15.1',
   'not yet a standalone WASI command module', 'translation validation', 'docs/RUNTIME_CORRESPONDENCE.md', 'docs/ROADMAP.md'
 ]);
@@ -44,7 +44,7 @@ mustInclude('docs/FORMAL_MODEL.md', files.formal, [
   'Status: **beta.20', 'PatchRuntime.lean', 'EffectRefines', 'checkSourceRuntimeEvidence_sound', 'SourceExecutes source formalTrace'
 ]);
 mustInclude('docs/NOVELTY.md', files.novelty, [
-  'Beta.20', 'runtime correspondence', 'checkSourceRuntimeEvidence_sound', 'not** end-to-end compiler verification'
+  'Beta.20', 'runtime correspondence', 'checkSourceRuntimeEvidence_sound', 'end-to-end compiler verification'
 ]);
 mustInclude('paper/README.md', files.paper, [
   `Patch ${version} / Change IR 0.8`, 'Beta.20 runtime-correspondence milestone', 'PatchRuntime.lean', 'GeneratedRuntimeCertificate.lean'
