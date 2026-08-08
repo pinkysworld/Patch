@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.23: semantic Change Contracts, guard-aware Lean runtime correspondence, hardened Window Web/desktop builds, direct WebAssembly and portable C99/FreeBSD builds.">
+  <meta name="description" content="Patch Studio beta.24: semantic Change Contracts, transient semantic input events, guard-aware Lean runtime correspondence, hardened Window Web/desktop builds, direct WebAssembly and portable C99/FreeBSD builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -18,7 +18,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">P</div>
-        <div><h1>Patch Studio <span>0.2 beta.23</span></h1><p>Write, run and build Patch.</p></div>
+        <div><h1>Patch Studio <span>0.2 beta.24</span></h1><p>Write, run and build Patch.</p></div>
       </div>
       <div class="toolbar" aria-label="Run and build controls">
         <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example">
@@ -74,37 +74,45 @@
           <p>Patch makes persistent mutation explicit through semantic <code>change</code> operations. Run projects in the browser, inspect their Change Contract, and build Console or Window applications from the same source.</p>
           <div class="intro-actions"><a class="primary-link" href="https://github.com/pinkysworld/Patch">GitHub + README</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a></div>
         </div>
-        <pre class="code-card">create number count = 0
+        <pre class="code-card">create text name = ""
 
-window "Counter":
-  text "Count: {count}"
-  button "Add" as add_button
+window "Hello":
+  input name
+  text "Hello {name}"
 
-when add_button clicked:
-  change count:
-    add 1</pre>
+when name changed:
+  change name:
+    set = value</pre>
       </article>
 
       <div class="signal-grid" aria-label="Project highlights">
+        <div class="signal"><strong>Semantic input events</strong><span><code>input changed</code> exposes event-local <code>value</code>; only explicit <code>change</code> persists it</span></div>
         <div class="signal"><strong>Guard-aware assurance</strong><span>Lean checks branch witnesses against concrete safe-integer recipe-parameter guards</span></div>
-        <div class="signal"><strong>Hardened Window builds</strong><span>Generated Window HTML is executed in differential tests; Web and desktop share preflight validation</span></div>
         <div class="signal"><strong>Portable targets</strong><span>Windows, macOS, Linux plus FreeBSD Console via portable C99</span></div>
       </div>
 
       <div class="details-stack">
         <details open>
-          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.23 · Change IR 0.9</span></summary>
+          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.24 · Change IR 0.9</span></summary>
           <div class="details-body two-column">
             <div><h3>Language & Studio</h3><p>Working interpreter/compiler frontend, history, undo/redo, preview, <code>why</code> provenance, first GUI/Designer slice, Change Contract and IR views.</p><p>Local outputs include Console and <strong>Standalone Window Web App</strong> HTML builds, direct/bootstrap Wasm where compatible, and portable <code>.patchapp</code>.</p></div>
             <div><h3>Desktop targets</h3><p><strong>Windows App (.exe)</strong>, <strong>macOS App (.app)</strong> and <strong>Linux App</strong> accept Console or Window <strong>Project Type</strong>. <strong>FreeBSD Console</strong> uses Patch's <strong>portable C99</strong> backend and the FreeBSD 15.1 base-system compiler.</p></div>
           </div>
         </details>
 
+        <details open>
+          <summary><span>Beta.24 semantic Window inputs</span><span class="summary-hint">No hidden assignment</span></summary>
+          <div class="details-body two-column">
+            <div><h3>Transient event value</h3><p>When an input changes, the current control value is supplied as local <code>value</code>. Editing the control does not write persistent Patch state.</p><p>A handler may observe <code>value</code> without committing it; the next rerender is still derived from the old persistent state.</p></div>
+            <div><h3>Explicit commit</h3><p>To persist input, source uses an ordinary semantic <code>change</code>, for example <code>change name: set = value</code>. Patch Studio, Standalone Window Web Apps and Windows/macOS/Linux desktop players implement the same rule.</p><p><strong>Window preflight</strong> supports button <code>clicked</code> and input <code>changed</code>; other event/control pairs still fail before packaging.</p></div>
+          </div>
+        </details>
+
         <details>
           <summary><span>Guard-aware runtime correspondence</span><span class="summary-hint">Beta.23 research layer</span></summary>
           <div class="details-body two-column">
-            <div><h3>Independent guard validation</h3><p>Change IR 0.9 carries <code>guardValidation</code>. A separate raw-source control-flow parser reconstructs the supported <code>GuardTree</code>, normalized guard claims and recipe-parameter vocabulary and compares them with production extraction.</p></div>
-            <div><h3>Concrete branch truth</h3><p>Proof-free <code>RuntimePath</code> and invocation values are checked by <code>PatchGuarded.lean</code>. In the supported safe-integer parameter fragment, <code>branchThen</code> requires the normalized source guard to evaluate true and <code>branchElse</code> requires false. <code>checkedGuardedConcreteRuntimeCannotEscape</code> additionally keeps concrete runtime effects within the declared Change Capability.</p><p>This is restricted correspondence, not end-to-end compiler verification.</p></div>
+            <div><h3>Independent raw-source validation</h3><p>Change IR 0.9 carries <code>guardValidation</code>. A separate raw-source control-flow parser reconstructs the supported <code>GuardTree</code>, normalized guard claims and recipe-parameter vocabulary and compares them with production extraction.</p></div>
+            <div><h3>Concrete branch truth</h3><p>Proof-free <code>RuntimePath</code> and invocation values are checked by <code>PatchGuarded.lean</code>. In the supported safe-integer parameter fragment, <code>branchThen</code> requires the normalized source guard to evaluate true and <code>branchElse</code> requires false. <code>checkedGuardedConcreteRuntimeCannotEscape</code> keeps concrete runtime effects within the declared Change Capability.</p><p>This is restricted correspondence, not end-to-end compiler verification.</p></div>
           </div>
         </details>
 
@@ -112,7 +120,7 @@ when add_button clicked:
           <summary><span>Window runtime quality</span><span class="summary-hint">Cross-target parity</span></summary>
           <div class="details-body two-column">
             <div><h3>Executable differential tests</h3><p>The generated single-file Window runtime is executed in CI and compared with <code>PatchInterpreter</code>. Multi-operation changes see prior operations in the same Change; declared create types and Thing fields are checked consistently.</p></div>
-            <div><h3>Conservative event surface</h3><p>Shared <strong>Window preflight</strong> rejects duplicate control ids, handlers for missing controls and event forms not wired across all current targets. The portable beta event path is button <code>clicked</code>.</p></div>
+            <div><h3>Input regression tests</h3><p>A generated Window Web App is executed with a fake DOM. Tests prove an observation-only input handler leaves persistent state unchanged while an explicit semantic <code>change</code> persists and rerenders the new value.</p></div>
           </div>
         </details>
 
@@ -128,14 +136,14 @@ when add_button clicked:
           <summary><span>Roadmap</span><span class="summary-hint">Next highest-value work</span></summary>
           <div class="details-body roadmap-list">
             <div><strong>Formal recipe calls</strong><span>Add call/substitution semantics for the existing non-recursive direct recipe subset.</span></div>
-            <div><strong>Semantic input events</strong><span>Make input changes expose an event-local value that must still be committed through <code>change</code>.</span></div>
             <div><strong>Evaluation</strong><span>Build semantic-security cases and measure source/guard validation, certificate and checker overhead.</span></div>
+            <div><strong>Designer</strong><span>Add control selection, properties and richer editing while keeping Patch source as truth.</span></div>
             <div><strong>Native GUI</strong><span>Move toward AppKit, Win32 and a portable Unix GUI backend.</span></div>
           </div>
         </details>
       </div>
 
-      <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.23</span><nav aria-label="Project links"><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a></nav></footer>
+      <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.24</span><nav aria-label="Project links"><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a></nav></footer>
     </section>
   </main>
   <script type="module" src="./native-build.js"></script><script type="module" src="./playground.js"></script>
