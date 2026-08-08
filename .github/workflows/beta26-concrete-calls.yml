@@ -1,0 +1,51 @@
+name: Patch Beta26 Concrete Calls
+
+on:
+  pull_request:
+  push:
+    branches: [feature/beta26-concrete-call-substitution-v2]
+
+permissions:
+  contents: read
+
+jobs:
+  concrete-calls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Run beta.26 JavaScript witness/certificate tests
+        run: node --test tests/concrete-call-witness.test.js tests/concrete-call-certificate.test.js
+      - name: Generate proof-free concrete call certificate
+        run: node scripts/generate-concrete-call-certificate.js examples/formal-calls.patch --out formal/GeneratedConcreteCallCertificate.lean
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+      - name: Check beta.26 concrete binding, refinement and generated certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          elan override set leanprover/lean4:v4.30.0
+          lake update
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls
+          lake env lean PatchCallSubstitution.lean
+          lake env lean PatchCallRefinement.lean
+          lake env lean GeneratedConcreteCallCertificate.lean
+      - name: Reject unfinished beta.26 proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallSubstitution.lean formal/PatchCallRefinement.lean formal/GeneratedConcreteCallCertificate.lean || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            exit 1
+          fi
