@@ -2,22 +2,97 @@ import PatchSignature
 
 namespace PatchFormal
 
-/-- Executable decision procedure for one semantic rule/effect pair. -/
+/-- Executable interval containment. -/
+def withinBool (inner outer : Interval) : Bool :=
+  decide (outer.lo ≤ inner.lo) && decide (inner.hi ≤ outer.hi)
+
+/-- Boolean interval containment is sound for the relational `Within` judgment. -/
+theorem withinBool_sound
+    {inner outer : Interval}
+    (h : withinBool inner outer = true) :
+    Within inner outer := by
+  have hBoth :
+      decide (outer.lo ≤ inner.lo) = true ∧
+      decide (inner.hi ≤ outer.hi) = true := by
+    simpa [withinBool, Bool.and_eq_true] using h
+  exact ⟨of_decide_eq_true hBoth.1, of_decide_eq_true hBoth.2⟩
+
+/-- Executable amount-policy check matching the amount clause of `Allows`. -/
+def amountAllowsBool : Option Interval → Option Interval → Bool
+  | none, _ => true
+  | some _, none => true
+  | some actual, some permitted => withinBool actual permitted
+
+theorem amountAllowsBool_sound
+    {actual permitted : Option Interval}
+    (h : amountAllowsBool actual permitted = true) :
+    match actual, permitted with
+    | none, _ => True
+    | some _, none => True
+    | some a, some p => Within a p := by
+  cases actual with
+  | none => simp
+  | some a =>
+      cases permitted with
+      | none => simp
+      | some p =>
+          apply withinBool_sound
+          simpa [amountAllowsBool] using h
+
+/-- Executable decision procedure for one semantic rule/effect pair. It uses
+    ordinary decidable equality for names/fields/kinds and a dedicated interval
+    checker for quantitative authority. -/
 def allowsBool (rule : Rule) (effect : Effect) : Bool :=
-  decide (Allows rule effect)
+  if rule.target = effect.target then
+    if rule.field = effect.field then
+      if rule.kind = effect.kind then
+        amountAllowsBool effect.amount rule.amount
+      else false
+    else false
+  else false
 
 /-- A successful boolean rule check implies the relational semantic judgment. -/
 theorem allowsBool_sound
     {rule : Rule} {effect : Effect}
     (h : allowsBool rule effect = true) :
     Allows rule effect := by
-  apply of_decide_eq_true
-  simpa [allowsBool] using h
+  by_cases hTarget : rule.target = effect.target
+  · by_cases hField : rule.field = effect.field
+    · by_cases hKind : rule.kind = effect.kind
+      · refine ⟨hTarget, hField, hKind, ?_⟩
+        apply amountAllowsBool_sound
+        simpa [allowsBool, hTarget, hField, hKind] using h
+      · simp [allowsBool, hTarget, hField, hKind] at h
+    · simp [allowsBool, hTarget, hField] at h
+  · simp [allowsBool, hTarget] at h
 
 /-- Does at least one policy rule admit this effect? -/
 def anyRuleAllows : List Rule → Effect → Bool
   | [], _ => false
   | rule :: rest, effect => allowsBool rule effect || anyRuleAllows rest effect
+
+/-- If the executable rule search says yes, the relational `Allows` judgment
+    has an actual witness in the policy. -/
+theorem anyRuleAllows_sound :
+    ∀ (policy : List Rule) (effect : Effect),
+      anyRuleAllows policy effect = true →
+      ∃ rule, rule ∈ policy ∧ Allows rule effect := by
+  intro policy
+  induction policy with
+  | nil =>
+      intro effect h
+      simp [anyRuleAllows] at h
+  | cons rule rest ih =>
+      intro effect h
+      cases hRule : allowsBool rule effect with
+      | false =>
+          have hRest : anyRuleAllows rest effect = true := by
+            simpa [anyRuleAllows, hRule] using h
+          obtain ⟨witness, hMem, hAllows⟩ := ih effect hRest
+          exact ⟨witness, by simp [hMem], hAllows⟩
+      | true =>
+          have hAllows : Allows rule effect := allowsBool_sound hRule
+          exact ⟨rule, by simp, hAllows⟩
 
 /-- Executable checker for a complete inferred Change Signature. -/
 def policyAllowsBool : List Effect → List Rule → Bool
@@ -25,44 +100,26 @@ def policyAllowsBool : List Effect → List Rule → Bool
   | effect :: rest, policy =>
       anyRuleAllows policy effect && policyAllowsBool rest policy
 
-/-- If the executable rule search says yes, the relational `Allows` judgment
-    has an actual witness in the policy. -/
-theorem anyRuleAllows_sound
-    {policy : List Rule} {effect : Effect}
-    (h : anyRuleAllows policy effect = true) :
-    ∃ rule, rule ∈ policy ∧ Allows rule effect := by
-  induction policy with
-  | nil =>
-      simp [anyRuleAllows] at h
-  | cons rule rest ih =>
-      cases hRule : allowsBool rule effect with
-      | false =>
-          have hRest : anyRuleAllows rest effect = true := by
-            simpa [anyRuleAllows, hRule] using h
-          obtain ⟨witness, hMem, hAllows⟩ := ih hRest
-          exact ⟨witness, by simp [hMem], hAllows⟩
-      | true =>
-          have hAllows : Allows rule effect := allowsBool_sound hRule
-          exact ⟨rule, by simp, hAllows⟩
-
 /-- **Verified checker soundness.** A `true` result from the executable checker
     implies the paper's relational `PolicyAllows` judgment. -/
-theorem policyAllowsBool_sound
-    {signature : List Effect} {policy : List Rule}
-    (h : policyAllowsBool signature policy = true) :
-    PolicyAllows signature policy := by
-  intro effect hMem
+theorem policyAllowsBool_sound :
+    ∀ (signature : List Effect) (policy : List Rule),
+      policyAllowsBool signature policy = true →
+      PolicyAllows signature policy := by
+  intro signature
   induction signature with
   | nil =>
+      intro policy h effect hMem
       simp at hMem
   | cons head tail ih =>
+      intro policy h effect hMem
       have hBoth :
           anyRuleAllows policy head = true ∧
           policyAllowsBool tail policy = true := by
         simpa [policyAllowsBool, Bool.and_eq_true] using h
       rcases List.mem_cons.mp hMem with rfl | hTail
-      · exact anyRuleAllows_sound hBoth.1
-      · exact ih hBoth.2 hTail
+      · exact anyRuleAllows_sound policy head hBoth.1
+      · exact ih policy hBoth.2 effect hTail
 
 /-- A boolean protectedness test for the formal executable core. -/
 def checkProtected (stmt : CoreStmt) (policy : List Rule) : Bool :=
@@ -77,7 +134,7 @@ theorem checkedExecutionCannotEscape
     ∀ effect, effect ∈ runtime →
       ∃ rule, rule ∈ policy ∧ Allows rule effect := by
   have hProtected : Protected stmt policy := by
-    exact policyAllowsBool_sound hCheck
+    exact policyAllowsBool_sound (inferSignature stmt) policy hCheck
   exact endToEndCapabilitySoundness hExec hProtected
 
 /-- Set-inclusion-shaped corollary used by generated Patch certificates. -/
