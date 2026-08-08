@@ -14,7 +14,6 @@ show numeric-expression
 numeric literals
 references to earlier numeric persistent bindings
 +  -  *  /
-allow declarations as compile-time-only metadata
 ```
 
 Example:
@@ -72,6 +71,8 @@ Patch source -> Change IR -> numeric lowering -> Wasm instructions -> WebAssembl
 ## Semantic boundary
 
 The first direct backend uses WebAssembly `f64` for the supported Patch `number` subset, matching JavaScript Number arithmetic for the supported literal and `+ - * /` operations. Remainder `%`, strings, lists, things/fields, control flow, recipes, history operations and GUI operations are rejected with `DirectWasmUnsupportedError` rather than approximated.
+
+`allow` declarations remain part of the production compiler, but a valid protected `allow recipe:` contract requires a corresponding `make recipe(...)`. Because recipe lowering is not in this first direct-Wasm slice, protected recipe programs are not yet directly executable.
 
 The direct backend does not yet prove a compiler-correctness theorem. Beta.10 uses differential execution tests as the first backend validation layer:
 
