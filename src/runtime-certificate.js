@@ -3,20 +3,21 @@ import { compileToDirectWasm, runDirectWasm } from './wasm-direct.js';
 import { validateDirectSemanticEffects } from './direct-effect-validator.js';
 import { deriveRuntimePathWitnesses, PATCH_RUNTIME_PATH_WITNESS_VERSION } from './runtime-path-witness.js';
 
-export const PATCH_RUNTIME_CERTIFICATE_VERSION = '0.3';
-const RUNTIME_SCHEMA_VERSION = '0.3';
+export const PATCH_RUNTIME_CERTIFICATE_VERSION = '0.4';
+const RUNTIME_SCHEMA_VERSION = '0.4';
 const CHECKER_KINDS = new Set(['increase', 'decrease', 'set', 'clear']);
 const SOURCE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
 
 /**
- * Execute direct Wasm, independently reconstruct concrete semantic effect
- * occurrences, derive untrusted control-flow witnesses, and emit Lean checks
- * tying each observed protected-recipe invocation to SourceExecutes and the
- * recipe's semantic Change Capability policy.
+ * Execute direct Wasm, independently reconstruct concrete semantic effects and
+ * raw control-flow witnesses, then emit a Lean certificate that checks:
  *
- * The occurrence/path producer itself is not trusted: Lean validates path
- * shape/repeat counts, concrete-to-formal refinement, source execution and the
- * final concrete-runtime capability containment theorem.
+ * 1. source/guard tree shape,
+ * 2. branch choice against concrete recipe-parameter guard evaluation,
+ * 3. concrete-to-formal runtime effect refinement, and
+ * 4. concrete runtime containment in the declared Change Capability.
+ *
+ * All occurrence/path/environment data remains proof-free certificate input.
  */
 export async function generateLeanRuntimeCertificate(source, options = {}) {
   const name = options.name ?? 'PatchRuntimeApp';
@@ -38,10 +39,13 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
   const blocks = [];
   const certified = [];
   let observedEffects = 0;
+  let checkedGuardClaims = 0;
 
   for (const recipeName of protectedNames) {
     const sourceEntry = compiled.ir.formalSource?.entries?.[recipeName];
     const sourceValidation = compiled.ir.sourceValidation?.entries?.[recipeName];
+    const guardValidation = compiled.ir.guardValidation?.entries?.[recipeName];
+
     if (!sourceEntry?.supported) {
       throw new Error(`Protected recipe '${recipeName}' is outside the formal SourceStmt subset.`);
     }
@@ -49,7 +53,16 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
       const why = sourceValidation?.reasons?.length ? sourceValidation.reasons.join('; ') : 'raw-source extraction did not validate';
       throw new Error(`Protected recipe '${recipeName}' is not source-validated: ${why}`);
     }
+    if (!sourceEntry.guardSupported) {
+      const why = sourceEntry.guardReasons?.length ? sourceEntry.guardReasons.join('; ') : 'guard extraction is outside the beta.23 formal fragment';
+      throw new Error(`Protected recipe '${recipeName}' is outside the beta.23 guard-aware fragment: ${why}`);
+    }
+    if (!guardValidation?.validated) {
+      const why = guardValidation?.reasons?.length ? guardValidation.reasons.join('; ') : 'independent raw guard extraction did not validate';
+      throw new Error(`Protected recipe '${recipeName}' is not guard-validated: ${why}`);
+    }
 
+    const guardVariables = usedGuardVariables(sourceEntry);
     const rules = policies[recipeName] ?? [];
     for (const rule of rules) {
       if (!CHECKER_KINDS.has(rule.operation)) {
@@ -74,25 +87,31 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
       }
       offset += invocation.effectCount;
 
+      const concreteEnvironment = guardEnvironment(invocation.environment ?? {}, guardVariables, recipeName, invocation.invocation);
       const observed = slice.map(item => runtimeEvidenceEffect(item.effect, recipeName));
       const id = `${leanIdentifier(recipeName)}_${invocation.invocation}`;
       const sourceDef = `runtime_${id}_source`;
+      const guardDef = `runtime_${id}_guard`;
+      const envDef = `runtime_${id}_env`;
       const observedDef = `runtime_${id}_observed`;
       const pathDef = `runtime_${id}_path`;
       const policyDef = `runtime_${id}_policy`;
-      const checkTheorem = `runtime_${id}_checked`;
+      const checkTheorem = `runtime_${id}_guarded_checked`;
       const policyCheckTheorem = `runtime_${id}_policy_checked`;
 
       blocks.push(`def ${sourceDef} : SourceStmt :=\n${indent(leanSourceCore(sourceEntry.source), 2)}`);
+      blocks.push(`def ${guardDef} : GuardTree :=\n${indent(leanGuardTree(sourceEntry.guardTree), 2)}`);
+      blocks.push(`def ${envDef} : IntEnv :=\n${indent(leanIntEnv(concreteEnvironment), 2)}`);
       blocks.push(`def ${observedDef} : List EvidenceEffect :=\n${indent(leanList(observed.map(leanEvidenceEffect)), 2)}`);
       blocks.push(`def ${pathDef} : RuntimePath :=\n${indent(leanRuntimePath(invocation.path), 2)}`);
       blocks.push(`def ${policyDef} : List Rule :=\n${indent(leanList(rules.map(leanRule)), 2)}`);
-      blocks.push(`theorem ${checkTheorem} :\n    checkSourceRuntimeEvidence ${sourceDef} ${observedDef} ${pathDef} = true := by\n  native_decide`);
+      blocks.push(`theorem ${checkTheorem} :\n    checkGuardedSourceRuntimeEvidence ${sourceDef} ${guardDef} ${envDef} ${observedDef} ${pathDef} = true := by\n  native_decide`);
       blocks.push(`theorem ${policyCheckTheorem} :\n    checkSourceProtected ${sourceDef} ${policyDef} = true := by\n  native_decide`);
-      blocks.push(`theorem runtime_${id}_corresponds :\n    ∃ formalTrace actualTrace,\n      SourceExecutes ${sourceDef} formalTrace ∧\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      TraceRefines actualTrace formalTrace := by\n  exact checkSourceRuntimeEvidence_sound ${checkTheorem}`);
-      blocks.push(`theorem runtime_${id}_concrete_policy_safe :\n    ∃ actualTrace,\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      ∀ effect, effect ∈ actualTrace →\n        ∃ rule, rule ∈ ${policyDef} ∧ Allows rule effect := by\n  exact checkedConcreteRuntimeCannotEscape ${checkTheorem} ${policyCheckTheorem}`);
+      blocks.push(`theorem runtime_${id}_guarded_corresponds :\n    ∃ formalTrace actualTrace,\n      SourceExecutes ${sourceDef} formalTrace ∧\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      TraceRefines actualTrace formalTrace ∧\n      GuardShape ${sourceDef} ${guardDef} ∧\n      GuardPathValid ${envDef} ${guardDef} ${pathDef} := by\n  exact checkGuardedSourceRuntimeEvidence_sound ${checkTheorem}`);
+      blocks.push(`theorem runtime_${id}_guarded_concrete_policy_safe :\n    ∃ actualTrace,\n      decodeRuntimeTrace ${observedDef} = some actualTrace ∧\n      (∀ effect, effect ∈ actualTrace →\n        ∃ rule, rule ∈ ${policyDef} ∧ Allows rule effect) ∧\n      GuardShape ${sourceDef} ${guardDef} ∧\n      GuardPathValid ${envDef} ${guardDef} ${pathDef} := by\n  exact checkedGuardedConcreteRuntimeCannotEscape ${checkTheorem} ${policyCheckTheorem}`);
 
       observedEffects += observed.length;
+      checkedGuardClaims += sourceEntry.guardClaims?.length ?? 0;
       certified.push(`${recipeName}#${invocation.invocation}`);
     }
 
@@ -110,7 +129,7 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
   const sourceSha256 = sha256(source);
   const runtimeTraceJson = JSON.stringify(execution.trace);
   const runtimeTraceSha256 = sha256(runtimeTraceJson);
-  const lean = `import PatchRuntimeCapability\n\nopen PatchFormal\n\nnamespace PatchGeneratedRuntimeCertificate\n\n/-- Generated after executing the direct-Wasm backend. The source hash binds\n    the certificate to exact Patch source bytes; the runtime hash binds it to\n    the observed target/before/after transition trace that was independently\n    reinterpreted into semantic effect occurrences. Control-flow witnesses and\n    concrete occurrences are untrusted certificate data: Lean validates path\n    execution, concrete-to-formal effect refinement, the semantic policy, and\n    concrete runtime capability containment. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef runtimeTraceSha256 : String := ${leanString(runtimeTraceSha256)}\ndef runtimeCertificateVersion : String := ${leanString(PATCH_RUNTIME_CERTIFICATE_VERSION)}\ndef runtimeSchemaVersion : String := ${leanString(RUNTIME_SCHEMA_VERSION)}\ndef runtimePathWitnessVersion : String := ${leanString(PATCH_RUNTIME_PATH_WITNESS_VERSION)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedRuntimeCertificate\n`;
+  const lean = `import PatchGuarded\n\nopen PatchFormal\n\nnamespace PatchGeneratedRuntimeCertificate\n\n/-- Generated after executing the direct-Wasm backend. Source/trace hashes bind\n    this artifact to exact input bytes and the observed target/before/after trace.\n    Concrete semantic occurrences, RuntimePath and invocation environments remain\n    proof-free data: Lean validates source/guard shape, branch truth for the\n    guard-aware integer/Boolean fragment, runtime-effect refinement and concrete\n    Change Capability containment. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef runtimeTraceSha256 : String := ${leanString(runtimeTraceSha256)}\ndef runtimeCertificateVersion : String := ${leanString(PATCH_RUNTIME_CERTIFICATE_VERSION)}\ndef runtimeSchemaVersion : String := ${leanString(RUNTIME_SCHEMA_VERSION)}\ndef runtimePathWitnessVersion : String := ${leanString(PATCH_RUNTIME_PATH_WITNESS_VERSION)}\ndef guardValidationVersion : String := ${leanString(compiled.ir.guardValidation?.version ?? 'unknown')}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedRuntimeCertificate\n`;
 
   return {
     lean,
@@ -119,21 +138,45 @@ export async function generateLeanRuntimeCertificate(source, options = {}) {
     runtimeTrace: execution.trace,
     runtimeValidation: validation,
     runtimePathWitnesses: pathWitnesses,
+    guardValidation: compiled.ir.guardValidation,
     certified,
     observedEffects,
+    checkedGuardClaims,
     certifiedInvocations: certified.length,
     irVersion: compiled.ir.version,
     runtimeCertificateVersion: PATCH_RUNTIME_CERTIFICATE_VERSION,
     runtimeSchemaVersion: RUNTIME_SCHEMA_VERSION,
     runtimePathWitnessVersion: PATCH_RUNTIME_PATH_WITNESS_VERSION,
-    checker: 'PatchRuntime.checkSourceRuntimeEvidence',
-    theorem: 'PatchRuntimeCapability.checkedConcreteRuntimeCannotEscape'
+    guardValidationVersion: compiled.ir.guardValidation?.version ?? null,
+    checker: 'PatchGuarded.checkGuardedSourceRuntimeEvidence',
+    theorem: 'PatchGuarded.checkedGuardedConcreteRuntimeCannotEscape'
   };
+}
+
+function usedGuardVariables(sourceEntry) {
+  const variables = new Set();
+  for (const claim of sourceEntry.guardClaims ?? []) for (const name of claim.variables ?? []) variables.add(name);
+  return [...variables].sort();
+}
+
+function guardEnvironment(environment, variables, recipeName, invocation) {
+  const result = {};
+  for (const name of variables) {
+    if (!Object.prototype.hasOwnProperty.call(environment, name)) {
+      throw new Error(`Protected recipe '${recipeName}' invocation ${invocation} has no concrete value for guard variable '${name}'.`);
+    }
+    const value = environment[name];
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(`Guard variable '${name}' for protected recipe '${recipeName}' invocation ${invocation} must be a safe integer, got ${String(value)}.`);
+    }
+    result[name] = value;
+  }
+  return result;
 }
 
 function runtimeEvidenceEffect(effect, recipeName) {
   if (!CHECKER_KINDS.has(effect.operation)) {
-    throw new Error(`Observed runtime effect '${effect.operation}' for '${recipeName}' is outside the beta.22 formal runtime vocabulary.`);
+    throw new Error(`Observed runtime effect '${effect.operation}' for '${recipeName}' is outside the beta.23 formal runtime vocabulary.`);
   }
   const hasAmount = effect.operation === 'increase' || effect.operation === 'decrease';
   let amountRange = null;
@@ -165,6 +208,52 @@ function leanRuntimePath(path) {
     case 'repeatSucc': return `RuntimePath.repeatSucc\n${indent(`(${leanRuntimePath(path.body)})`, 2)}\n${indent(`(${leanRuntimePath(path.rest)})`, 2)}`;
     default: throw new Error(`Cannot encode runtime path '${path?.kind ?? 'missing'}'.`);
   }
+}
+
+function leanGuardTree(tree) {
+  switch (tree?.kind) {
+    case 'leaf': return 'GuardTree.leaf';
+    case 'seq': return `GuardTree.seq\n${indent(`(${leanGuardTree(tree.first)})`, 2)}\n${indent(`(${leanGuardTree(tree.second)})`, 2)}`;
+    case 'branch':
+      if (!tree.guard) throw new Error('Cannot encode an unsupported/null formal guard into a runtime certificate.');
+      return `GuardTree.branch\n${indent(`(${leanGuardExpr(tree.guard)})`, 2)}\n${indent(`(${leanGuardTree(tree.then)})`, 2)}\n${indent(`(${leanGuardTree(tree.else)})`, 2)}`;
+    case 'repeat': return `GuardTree.repeat ${tree.count}\n${indent(`(${leanGuardTree(tree.body)})`, 2)}`;
+    default: throw new Error(`Cannot encode guard-tree node '${tree?.kind ?? 'missing'}'.`);
+  }
+}
+
+function leanGuardExpr(expr) {
+  switch (expr?.kind) {
+    case 'bool': return `GuardExpr.bool ${expr.value ? 'true' : 'false'}`;
+    case 'eq': return `GuardExpr.eq (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'lt': return `GuardExpr.lt (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'le': return `GuardExpr.le (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'and': return `GuardExpr.and (${leanGuardExpr(expr.left)}) (${leanGuardExpr(expr.right)})`;
+    case 'or': return `GuardExpr.or (${leanGuardExpr(expr.left)}) (${leanGuardExpr(expr.right)})`;
+    case 'not': return `GuardExpr.not (${leanGuardExpr(expr.expr)})`;
+    default: throw new Error(`Cannot encode formal guard node '${expr?.kind ?? 'missing'}'.`);
+  }
+}
+
+function leanRangeExpr(expr) {
+  switch (expr?.kind) {
+    case 'lit': return `RangeExpr.lit ${leanInt(expr.value)}`;
+    case 'var': return `RangeExpr.var ${leanString(expr.name)}`;
+    case 'add': return `RangeExpr.add (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'sub': return `RangeExpr.sub (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'neg': return `RangeExpr.neg (${leanRangeExpr(expr.expr)})`;
+    case 'scale': return `RangeExpr.scale ${expr.factor} (${leanRangeExpr(expr.expr)})`;
+    default: throw new Error(`Cannot encode formal integer guard expression '${expr?.kind ?? 'missing'}'.`);
+  }
+}
+
+function leanIntEnv(environment) {
+  const entries = Object.entries(environment).sort(([a], [b]) => a.localeCompare(b));
+  if (!entries.length) return 'fun _ => none';
+  const lines = ['fun name =>'];
+  for (const [name, value] of entries) lines.push(`  if name = ${leanString(name)} then some ${leanInt(value)} else`);
+  lines.push('    none');
+  return lines.join('\n');
 }
 
 function leanSourceCore(core) {
