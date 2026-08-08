@@ -95,7 +95,7 @@ structure Interval where
   lo : Int
   hi : Int
   ordered : lo ≤ hi
-  deriving Repr
+  deriving Repr, DecidableEq
 
 def Within (inner outer : Interval) : Prop :=
   outer.lo ≤ inner.lo ∧ inner.hi ≤ outer.hi

@@ -3,7 +3,7 @@ import { analyzeChangeSemantics } from './change-analysis.js';
 import { buildFormalBridge } from './formal-bridge.js';
 import { buildFormalSource } from './formal-source.js';
 
-export const PATCH_IR_VERSION = '0.6';
+export const PATCH_IR_VERSION = '0.7';
 
 export function compile(source, options = {}) {
   const ast = parse(source);

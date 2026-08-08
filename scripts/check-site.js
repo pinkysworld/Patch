@@ -16,6 +16,7 @@ const required = [
   '_site/src/change.js',
   '_site/src/change-analysis.js',
   '_site/src/range-analysis.js',
+  '_site/src/formal-range.js',
   '_site/src/formal-bridge.js',
   '_site/src/formal-source.js',
   '_site/src/compiler.js',
@@ -36,7 +37,7 @@ for (const needle of ['./style.css', './manifest.webmanifest', './playground.js'
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone & iPad', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'PatchSource', 'patch certify', 'beta.8', 'Roadmap']) {
+for (const phrase of ['Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone & iPad', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'PatchSource', 'patch certify', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
 }
 
@@ -51,7 +52,7 @@ const compiler = fs.readFileSync(path.join(root, '_site/src/compiler.js'), 'utf8
 for (const mod of ["'./formal-bridge.js'", "'./formal-source.js'"]) {
   if (!compiler.includes(mod)) throw new Error(`Generated compiler does not include ${mod}.`);
 }
-if (!compiler.includes("PATCH_IR_VERSION = '0.6'")) throw new Error('Generated compiler is not on Patch IR 0.6.');
+if (!compiler.includes("PATCH_IR_VERSION = '0.7'")) throw new Error('Generated compiler is not on Patch IR 0.7.');
 
 const bridge = fs.readFileSync(path.join(root, '_site/src/formal-bridge.js'), 'utf8');
 for (const phrase of ['patch-formal-bridge', 'signatureMatchesProduction', 'buildFormalBridge']) {
@@ -59,14 +60,19 @@ for (const phrase of ['patch-formal-bridge', 'signatureMatchesProduction', 'buil
 }
 
 const sourceCore = fs.readFileSync(path.join(root, '_site/src/formal-source.js'), 'utf8');
-for (const phrase of ['patch-formal-source', 'buildFormalSource', 'formal source core']) {
+for (const phrase of ['patch-formal-source', 'buildFormalSource', 'formal source core', 'buildFormalRangeExpression', 'rangeClaims']) {
   if (!sourceCore.includes(phrase)) throw new Error(`Generated formal source module is missing ${phrase}.`);
+}
+
+const formalRange = fs.readFileSync(path.join(root, '_site/src/formal-range.js'), 'utf8');
+for (const phrase of ['buildFormalRangeExpression', 'inferFormalRange', 'general multiplication', 'division']) {
+  if (!formalRange.includes(phrase)) throw new Error(`Generated formal range module is missing ${phrase}.`);
 }
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-if (!sw.includes("patch-studio-0.2-beta.8")) throw new Error('Generated service worker cache is not on beta.8.');
-for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
+if (!sw.includes("patch-studio-0.2-beta.9")) throw new Error('Generated service worker cache is not on beta.9.');
+for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
 

@@ -23,31 +23,29 @@ Public Patch Studio / project website:
 
 **https://pinkysworld.github.io/Patch/**
 
-The site is deployed through GitHub Actions. Patch Studio is browser-first and installable as a PWA, with desktop and iPhone/iPad layouts.
+Patch Studio is browser-first and installable as a PWA, with desktop and iPhone/iPad layouts.
 
 ## Current status
 
-Current development beta: **0.2.0-beta.8**
+Current development beta: **0.2.0-beta.9**
 
 Implemented now:
 
-- interpreter and compiler front end;
-- normalized Change IR 0.6 preserving semantic `change` operations;
+- working interpreter and compiler front end;
+- normalized Change IR 0.7 preserving semantic `change` operations;
 - automatically inferred semantic **Change Signatures**;
 - compile-time operation- and magnitude-aware **Change Capabilities**;
-- ranged numeric parameters, interval analysis and runtime range guards;
+- ranged numeric parameters, production interval analysis and runtime range guards;
 - causal source/recipe/event provenance and `why` queries;
-- Lean 4 formal core with State-Change Factorization, Mutation Transparency, Change Signature Soundness and end-to-end capability containment;
-- conservative production semantic bridge;
-- Lean-verified executable semantic policy checker;
-- proof-free semantic evidence validated and decoded by Lean;
-- **formal Source core preserving source-level `add` / `remove` / `set` / `clear` before semantic normalization**;
-- **machine-checked SourceStmt → EvidenceStmt → CoreStmt → Change Signature correspondence for generated certificates**;
-- `patch certify` Lean certificates for protected source/bridge-supported recipes;
-- portable `.patchapp` bundles and bootstrap WebAssembly;
+- Lean 4 State-Change Factorization, Mutation Transparency, Change Signature Soundness and end-to-end capability containment;
+- formal Source core preserving source-level `add` / `remove` / `set` / `clear` before semantic normalization;
+- proof-free semantic evidence decoded and checked by Lean;
+- **machine-checked integer range-analysis soundness for the beta.9 formal expression fragment**;
+- independent production `RangeExpr` extraction and range-agreement checking before certification;
+- `patch formal` coverage reporting and `patch certify` Lean certificates;
+- portable `.patchapp` bundles and valid bootstrap WebAssembly modules;
 - console programs and first GUI/Designer slice;
-- browser/PWA Patch Studio with local autosave and offline core assets;
-- Windows/macOS/Linux JavaScript CI plus explicit Lean source/evidence/certificate CI.
+- Windows/macOS/Linux JavaScript CI plus explicit Lean range/source/evidence/certificate CI.
 
 ## The core research idea
 
@@ -65,31 +63,7 @@ There is no ordinary persistent reassignment escape hatch for an existing Patch 
 
 ## Semantic Change Contracts
 
-Patch can infer what a recipe may change:
-
-```patch
-make reward(player):
-  change player:
-    add 5 to score
-```
-
-Conceptually:
-
-```text
-reward(player)
-  player.score -> increase by 5
-```
-
-A policy can restrict that semantic authority:
-
-```patch
-allow reward:
-  player.score may increase up to 10
-```
-
-A `set score = 999` is not accepted as an `increase`, even though both technically write the same location.
-
-Dynamic bounded changes can also be proven by the production analyzer:
+Patch can infer what a recipe may change and constrain that authority:
 
 ```patch
 allow reward:
@@ -100,213 +74,153 @@ make reward(player, bonus number 0..5):
     add bonus * 2 to score
 ```
 
-The analyzer infers `bonus * 2` as `0..10`. If the possible amount exceeds the capability bound, compilation fails conservatively.
+The normal production analyzer infers `bonus * 2` as `0..10`, so the capability is accepted. A `set score = 999` is not accepted as an `increase`, even though both write the same path.
 
-## Causal `why`
+## Beta 9: machine-checked integer range analysis
 
-Committed Patch changes retain source and causal context such as recipe calls and GUI events.
-
-```patch
-why score
-why score > 100
-```
-
-Patch can explain recorded transitions behind a value and identify the first recorded false-to-true transition for a predicate when possible. This is historical provenance, not a claim of general causal inference.
-
-## Lean 4 formalization
-
-The `formal/` directory is pinned to Lean 4.30.0. For the structured formal core, Lean machine-checks:
+`formal/PatchRange.lean` defines a compact integer expression language:
 
 ```text
-RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
+integer literal
+ranged variable
+addition
+subtraction
+negation
+multiplication by a non-negative integer constant
 ```
 
-and consequently:
+It defines both:
 
 ```text
-RuntimeChanges(stmt) ⊆ Capability(stmt)
+analyzeRange : RangeExpr -> RangeEnv -> Option Interval
+evalRangeExpr : RangeExpr -> IntEnv -> Option Int
 ```
 
-The key modules are:
+and proves the general theorem `rangeAnalysisSound`:
 
 ```text
-PatchFormal.lean      factorization, intervals, effects, policies
-PatchSignature.lean   structured execution + signature soundness
-PatchChecker.lean     executable verified semantic policy checker
-PatchEvidence.lean    proof-free evidence decoder + correspondence theorems
-PatchSource.lean      source verbs, Lean normalization + source-level containment
+EnvRespects(ranges, values)
+analyzeRange(expr, ranges) = some inferred
+evalRangeExpr(expr, values) = some concrete
+------------------------------------------------
+concrete is inside inferred
 ```
 
-Formal CI explicitly builds all five modules and compiles a certificate generated from real Patch source.
-
-## Beta 8 formal Source core
-
-Beta 7 already stopped trusting a JavaScript-generated `CoreStmt`: the producer emitted proof-free `EvidenceStmt`, and Lean decoded it and independently reconstructed the semantic signature.
-
-Beta 8 moves the boundary one step closer to the language surface. Generated certificates now also carry a proof-free `SourceStmt` whose mutation nodes still preserve the source vocabulary:
+So for the motivating example:
 
 ```text
-add
-remove
-set
-clear
+bonus in [0,5]
+bonus * 2
 ```
 
-The producer separately emits semantic `EvidenceStmt`. Lean then performs the semantic normalization itself:
+Lean proves every modeled concrete result is inside `[0,10]`.
+
+### Conservative verification boundary
+
+The production expression analyzer supports more than the beta.9 verified fragment. That does **not** mean all production arithmetic is now formally verified.
+
+Beta 9 certification deliberately refuses currently unmodeled cases such as:
+
+- division;
+- decimal/floating-point semantics;
+- general variable-by-variable multiplication.
+
+`src/formal-range.js` independently parses supported production expression text into `RangeExpr`. It independently computes the corresponding range and compares it with the ordinary production analyzer result before a formal range claim is accepted.
+
+This gives three deliberately separate paths:
 
 ```text
-formal SourceStmt
-      ↓
-validate raw amount bounds
-      ↓
-normalize source verb
-      ↓
-EvidenceStmt
-      ↓
-decode to CoreStmt
-      ↓
-infer formal Change Signature
-      ↓
-compare with separate production signature claim
-      ↓
-check semantic policy
+production expression -> normal production range analyzer
+
+production expression -> independent formal RangeExpr extractor -> formal-style range
+
+RangeExpr -> Lean analyzeRange -> machine-checked range-soundness theorem
 ```
 
-For example, a source-level operation such as:
+A disagreement or unsupported formal expression prevents certification instead of silently receiving a verification claim.
+
+## Formal source and semantic evidence chain
+
+Beta 8 introduced a proof-free `SourceStmt` retaining `add`, `remove`, `set` and `clear`. Lean performs semantic direction normalization itself. For example:
 
 ```patch
 change player:
   add -5 to score
 ```
 
-is preserved in `SourceStmt` as an `add` with range `[-5,-5]`. Lean's source normalizer converts that to a semantic `decrease` with magnitude `[5,5]`. The separately produced semantic evidence must match that Lean-computed result.
+is preserved as source `add [-5,-5]`, then Lean normalizes it to semantic `decrease [5,5]`.
 
-The relevant executable checks and theorems are in `PatchSource.lean`:
-
-```text
-checkSourceEvidence
-checkSourceSignature
-checkSourceProtected
-checkSourceEvidence_sound
-checkSourceSignature_sound
-checkedSourceExecutionCannotEscape
-checkedSourceSignatureAndPolicy
-```
-
-The resulting formal guarantee is now phrased over the formal source core:
+Beta 9 extends the certificate chain to quantitative expressions:
 
 ```text
-SourceExecutes(source, runtime)
-checkSourceProtected(source, policy) = true
-------------------------------------------------
-every runtime semantic effect is allowed by policy
+formal RangeExpr
+      ↓
+Lean analyzeRange + rangeAnalysisSound
+      ↓
+formal SourceStmt
+      ↓
+Lean source-operation normalization
+      ↓
+EvidenceStmt
+      ↓
+CoreStmt
+      ↓
+formal Change Signature
+      ↓
+compare independent production signature
+      ↓
+verified semantic policy check
 ```
 
-## Production correspondence boundary
-
-The production compiler now emits two distinct formal views:
+Key Lean modules:
 
 ```text
-src/formal-source.js
-  AST -> SourceStmt preserving add/remove/set/clear
-
-src/formal-bridge.js
-  AST -> semantic Evidence/Core-style representation
+PatchFormal.lean      factorization, intervals, effects, policies
+PatchSignature.lean   structured execution + signature soundness
+PatchChecker.lean     executable verified semantic policy checker
+PatchEvidence.lean    proof-free evidence decoder + correspondence
+PatchSource.lean      source verbs, normalization + source containment
+PatchRange.lean       integer expression evaluation + range-analysis soundness
 ```
 
-and the production Change Signature analyzer remains a third claim path.
+Formal CI explicitly builds all six modules and compiles a certificate generated from a real `bonus * 2` Patch example.
 
-`patch formal` reports both source-core and semantic-bridge coverage:
+## Remaining trust boundary
 
-```bash
-patch formal examples/score.patch
-```
-
-`patch certify` generates a Lean artifact containing:
-
-```text
-1. formal SourceStmt
-2. separate semantic EvidenceStmt
-3. separate production Change Signature claim
-4. declared semantic policy
-5. exact source SHA-256 + schema/IR versions
-```
-
-Lean checks SourceStmt → EvidenceStmt equality, evidence decoding, formal signature reconstruction and policy containment.
-
-### Remaining trust boundary
-
-Beta 8 still does **not** prove the complete production compiler.
+Beta 9 is **not full compiler verification**.
 
 Still trusted/unproved:
 
 ```text
 Patch source bytes
    -> JavaScript parser / AST
-   -> extraction of SourceStmt
+   -> independent RangeExpr / SourceStmt extraction
 
-production range analyzer
-   -> amount intervals attached to SourceStmt
+production runtime
+   -> correspondence with formal evalRangeExpr / SourceExecutes
 ```
 
-Lean-checked after that boundary:
+Within the certified fragment, Lean now machine-checks the range-analysis theorem, source semantic normalization, evidence correspondence, formal signature reconstruction and policy containment.
 
-```text
-SourceStmt
-   -> source-operation semantic normalization
-   -> EvidenceStmt correspondence
-   -> CoreStmt decoding
-   -> formal Change Signature reconstruction
-   -> production-signature correspondence
-   -> semantic policy check
-   -> runtime containment for formal SourceExecutes executions
-```
+The next strongest formal target is a theorem or independently validated relation connecting the supported production AST directly to `RangeExpr` / `SourceStmt`, followed by production runtime-trace correspondence.
 
-The two highest-value next proof obligations are therefore:
+## Compiler status
 
-1. production AST → formal `SourceStmt` extraction correspondence for a useful fragment;
-2. production numeric interval-analysis soundness for the expression fragment used by magnitude-aware contracts.
-
-## Compiler path
+The compiler is already functional as a beta compiler front end and artifact pipeline:
 
 ```text
 Patch source
-   -> AST + range annotations
-   -> semantic Change Signature analysis
-   -> production capability validation
-   -> formal SourceStmt extraction             [implemented]
-   -> conservative semantic bridge             [implemented]
-   -> Change IR 0.6
-   -> Lean SourceStmt/evidence/signature checks [implemented]
-   -> portable .patchapp                       [implemented]
-   -> bootstrap WebAssembly .wasm              [implemented]
-   -> direct Change IR -> Wasm                 [next backend stage]
-   -> native host packaging                    [roadmap]
+   -> parser / AST                         [implemented]
+   -> Change Signature + capability checks [implemented]
+   -> formal RangeExpr / SourceStmt views  [implemented]
+   -> Change IR 0.7                        [implemented]
+   -> portable .patchapp                   [implemented]
+   -> bootstrap WebAssembly .wasm          [implemented]
+   -> direct Change IR -> Wasm             [not yet]
+   -> native .exe / .app packaging         [not yet]
 ```
 
-Bootstrap Wasm is a genuine instantiable WebAssembly module containing the compiled Patch payload for a Patch host. It is **not yet direct Change IR-to-Wasm execution**.
-
-## Console and GUI use the same language
-
-Console:
-
-```patch
-show "Hello world"
-```
-
-Window application:
-
-```patch
-create number count = 0
-
-window "Counter":
-  text "Count: {count}"
-  button "Add" as add_button
-
-when add_button clicked:
-  change count:
-    add 1
-```
+The current WebAssembly backend emits a genuine instantiable module containing Patch source and Change IR for a Patch host. It remains a **bootstrap carrier backend**, not direct compiled execution.
 
 ## CLI
 
@@ -316,44 +230,39 @@ Node.js 22+ for the current JavaScript beta toolchain:
 patch run examples/score.patch
 patch check examples/score.patch
 patch changes examples/change-capabilities.patch
-patch formal examples/score.patch
-patch certify examples/change-capabilities.patch --out Reward.patchcert.lean
+patch formal examples/range-soundness.patch
+patch certify examples/range-soundness.patch --out RangeSoundness.patchcert.lean
 patch build examples/score.patch --kind console --target portable
 patch build examples/score.patch --kind console --target wasm
 ```
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class state change, effect systems, capabilities, range analysis, provenance, translation validation, verified checkers, Proof-Carrying Code, source calculi, undo, event logs, lenses, CRDTs or reversible computation are individually new.
+Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, source calculi, undo, event logs, lenses, CRDTs or reversible computation are individually new.
 
 The candidate contribution is the combination:
 
 1. **State-Change Factorization**: persistent mutation must execute through a semantic change.
 2. **Semantic Change Contracts**: operation- and magnitude-aware signatures/policies are derived from that mandatory mutation representation.
 3. **Formal runtime containment**: Lean proves the runtime-signature-policy chain for a structured core.
-4. **Source-to-semantic assurance boundary**: a formal source mutation vocabulary is normalized by Lean into semantic evidence before signature and policy checking, reducing trust in producer-side semantic classification.
+4. **Source-to-semantic assurance**: Lean performs source-operation normalization before semantic evidence checking.
+5. **Quantitative assurance for a useful fragment**: Lean proves soundness of the formal integer interval analyzer, while production extraction and unsupported arithmetic remain explicit boundaries.
 
-A high-venue submission still needs stronger production AST/source correspondence, systematic related work, production interval-analysis soundness, direct compiled execution, compelling security/engineering case studies and measured overhead/effectiveness.
+A high-venue submission still needs systematic related work, stronger AST/source correspondence, runtime correspondence, direct compiled execution, convincing security/engineering case studies and measured overhead/effectiveness.
 
 ## Repository map
 
 ```text
-src/                    parser, interpreter, analyses, source/semantic formal extractors, certificate generator, compiler, Wasm, Designer
-formal/                 Lean state semantics, signature semantics, checker, evidence decoder, formal source core
+src/                    parser, interpreter, analyses, formal extractors, certificates, compiler, Wasm, Designer
+formal/                 Lean factorization, signatures, checker, evidence, source core, range soundness
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks and deterministic site build
-tests/                  language, formal source/bridge, certificate, range, compiler, capability, UI, Designer, Wasm
-examples/               runnable .patch programs
-docs/                   specification, semantics, formal model, novelty, research, compiler, Studio, targets
+tests/                  language, range/source/bridge/certificate, compiler, UI, Designer, Wasm
+examples/               runnable .patch programs including range-soundness.patch
+docs/                   specification, formal model, novelty, research, compiler, Studio, targets
 paper/                   manuscript draft and references
-.github/workflows/       cross-platform CI, formal source/evidence/certificate verification, Pages deployment
+.github/workflows/       cross-platform CI, formal verification, Pages deployment
 ```
-
-## CI quality gate
-
-JavaScript CI runs on Windows, macOS and Linux with Node 22/24. It checks syntax, tests, examples, formal source/bridge output, source/evidence certificate generation, `.patchapp`, Wasm and the public site.
-
-Formal CI generates a certificate from production Patch source, explicitly compiles `PatchFormal`, `PatchSignature`, `PatchChecker`, `PatchEvidence` and `PatchSource`, compiles the generated certificate, and rejects actual unfinished proof placeholders.
 
 ## License
 

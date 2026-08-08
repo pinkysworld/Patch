@@ -1,4 +1,4 @@
-const CACHE = 'patch-studio-0.2-beta.8';
+const CACHE = 'patch-studio-0.2-beta.9';
 const CORE = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const CORE = [
   '../src/change.js',
   '../src/change-analysis.js',
   '../src/range-analysis.js',
+  '../src/formal-range.js',
   '../src/formal-bridge.js',
   '../src/formal-source.js',
   '../src/compiler.js',

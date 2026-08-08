@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic Change Contracts, a Lean-checked formal source core, verified semantic evidence, causal why explanations, GUI and portable application builds.">
+  <meta name="description" content="Patch Studio: browser-first Patch IDE with semantic Change Contracts, a Lean-checked source core and integer range-analysis soundness theorem, verified semantic evidence, causal why explanations, GUI and portable application builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -17,7 +17,7 @@
   <main class="studio">
     <header class="topbar">
       <div>
-        <h1>Patch Studio <span>0.2 beta.8</span></h1>
+        <h1>Patch Studio <span>0.2 beta.9</span></h1>
         <p>Create, design, inspect, explain, run and build Patch applications from one browser-first IDE.</p>
       </div>
       <div class="toolbar">
@@ -73,7 +73,7 @@
         <div id="app" class="app-preview" hidden><p class="empty-preview">Press Run to preview a window application.</p></div>
         <pre id="output" hidden>Press Run.</pre>
         <pre id="changes" hidden>Run or build to inspect inferred semantic changes, proven ranges and allowed change capabilities.</pre>
-        <pre id="ir" hidden>Build or Run to inspect Change IR, semantic bridge evidence and the formal Source core.</pre>
+        <pre id="ir" hidden>Build or Run to inspect Change IR, semantic bridge evidence, the formal Source core and formal integer-range claims.</pre>
       </div>
     </section>
 
@@ -87,14 +87,14 @@
         <div>
           <p class="eyebrow">One language. One Studio. Semantic changes.</p>
           <h2>Programming should feel like making clear, inspectable changes.</h2>
-          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 8 adds a formal Source core that preserves source verbs such as <code>add</code> and <code>remove</code>; Lean itself normalizes those source operations to semantic evidence before checking signatures and policies.</p>
+          <p>Patch is an experimental general-purpose language where persistent state changes only through explicit semantic changes. Beta 9 adds a machine-checked integer range-analysis theorem. For the supported arithmetic fragment, Lean proves that every concrete result lies inside the inferred interval.</p>
         </div>
         <pre class="code-card">allow reward:
   player.score may increase up to 10
 
-make reward(player, bonus number 0..10):
+make reward(player, bonus number 0..5):
   change player:
-    add bonus to score
+    add bonus * 2 to score
 
 why player.score</pre>
       </article>
@@ -102,9 +102,9 @@ why player.score</pre>
       <div class="info-grid">
         <article class="info-card">
           <p class="eyebrow">Works now</p>
-          <h3>Patch 0.2 beta.8</h3>
+          <h3>Patch 0.2 beta.9</h3>
           <ul>
-            <li>Interpreter plus compiler front end and normalized Change IR 0.6</li>
+            <li>Interpreter plus compiler front end and normalized Change IR 0.7</li>
             <li>Automatically inferred semantic Change Signatures</li>
             <li>Operation- and magnitude-aware Change Capabilities</li>
             <li>Ranged recipe parameters, interval analysis and runtime guards</li>
@@ -114,34 +114,50 @@ why player.score</pre>
             <li>Conservative production semantic bridge</li>
             <li>Proof-free <code>SourceStmt</code> extraction preserving <code>add/remove/set/clear</code></li>
             <li><code>PatchSource.lean</code> semantic normalization and source/evidence checking</li>
+            <li><code>PatchRange.lean</code> formal integer evaluator, interval analyzer and <code>rangeAnalysisSound</code></li>
+            <li>Independent production <code>RangeExpr</code> extraction and range-agreement checking</li>
             <li><code>PatchEvidence.lean</code> evidence decoding and signature correspondence</li>
             <li>Lean-verified executable semantic policy checker</li>
-            <li><code>patch formal</code> coverage reporting and <code>patch certify</code> source/evidence certificates</li>
+            <li><code>patch formal</code> range/source coverage reporting and <code>patch certify</code> Lean certificates</li>
             <li>Portable <code>.patchapp</code> and bootstrap WebAssembly builds</li>
             <li>Console programs and first Patch UI/Designer slice</li>
-            <li>Windows, macOS and Linux CI plus explicit Lean source/evidence/certificate CI</li>
+            <li>Windows, macOS and Linux CI plus explicit Lean range/source/evidence/certificate CI</li>
           </ul>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Range soundness</p>
+          <h3>For the verified integer fragment, inferred bounds are now a theorem</h3>
+          <p><code>PatchRange.lean</code> models integer literals, ranged variables, addition, subtraction, negation and multiplication by a non-negative integer constant. It defines both concrete evaluation and interval analysis.</p>
+          <p>The theorem <code>rangeAnalysisSound</code> proves that if the concrete environment respects the declared ranges, every concrete result lies inside the interval returned by formal analysis. Thus <code>bonus: 0..5</code> with <code>bonus * 2</code> is formally bounded by <code>0..10</code>.</p>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Conservative boundary</p>
+          <h3>The verified range fragment is intentionally smaller than production arithmetic</h3>
+          <p>The production analyzer can currently reason about more expressions. Beta 9 certification deliberately refuses decimal semantics, division and general multiplication unless they are later modeled and proved.</p>
+          <p><code>src/formal-range.js</code> independently extracts a formal integer expression and compares its interval with the ordinary production analyzer result before a range claim enters a certificate.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Semantic security</p>
           <h3>Permission to change is more precise than permission to write</h3>
           <p>A normal write permission says code may modify a value. Patch can say that a recipe may only perform a particular semantic change, for example <code>player.score may increase up to 10</code>. A replacement with <code>set score = 999</code> is a different semantic operation and is rejected.</p>
-          <p>With ranged parameters, the production analyzer can reason about bounded dynamic changes instead of rejecting them merely because an amount is a variable.</p>
+          <p>For beta.9-certified integer expressions, quantitative bounds now have a machine-checked formal soundness result rather than only a production interval claim.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Source core</p>
-          <h3>Lean now sees source mutation verbs before semantic normalization</h3>
-          <p>The beta.8 certificate contains a proof-free <code>SourceStmt</code> whose changes still say <code>add</code>, <code>remove</code>, <code>set</code> or <code>clear</code>. <code>PatchSource.lean</code> validates raw range bounds and performs the semantic direction normalization itself.</p>
-          <p>For example, a source-level <code>add -5</code> can be normalized by Lean to a semantic <code>decrease</code> of 5. The separately emitted semantic evidence must match this Lean-computed lowering.</p>
+          <h3>Lean sees source mutation verbs before semantic normalization</h3>
+          <p>The certificate contains a proof-free <code>SourceStmt</code> whose changes still say <code>add</code>, <code>remove</code>, <code>set</code> or <code>clear</code>. <code>PatchSource.lean</code> validates raw range bounds and performs semantic direction normalization itself.</p>
+          <p>For example, source-level <code>add -5</code> can be normalized by Lean to semantic <code>decrease</code> of 5. The separately emitted semantic evidence must match this Lean-computed lowering.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Verified evidence</p>
-          <h3>Source, evidence and production signature are separate claims</h3>
-          <p><code>patch certify protected.patch</code> emits a Source core, a separately produced <code>EvidenceStmt</code>, a separate production Change Signature claim, and the policy.</p>
-          <p>Lean checks source → evidence equality, decodes evidence to <code>CoreStmt</code>, reconstructs the formal signature, checks that against the production claim, and only then checks the semantic policy.</p>
+          <h3>Range, source, evidence and production signature remain separate claims</h3>
+          <p><code>patch certify protected.patch</code> can emit formal <code>RangeExpr</code> claims, a Source core, a separately produced <code>EvidenceStmt</code>, a separate production Change Signature claim, and the policy.</p>
+          <p>Lean checks formal interval analysis, source to evidence equality, evidence decoding, formal signature reconstruction, production-signature agreement and semantic policy containment.</p>
         </article>
 
         <article class="info-card">
@@ -153,9 +169,9 @@ why player.score</pre>
 
         <article class="info-card">
           <p class="eyebrow">Trust boundary</p>
-          <h3>The remaining frontend gap is narrower and explicit</h3>
-          <p>JavaScript still parses full Patch source and extracts the formal <code>SourceStmt</code>. That extraction is not yet a theorem about the production parser.</p>
-          <p>Production interval analysis is also still trusted to supply conservative amount ranges. Those two obligations are now the main formal targets rather than semantic operation normalization or policy checking.</p>
+          <h3>The remaining frontend and runtime gaps are explicit</h3>
+          <p>JavaScript still parses full Patch source and extracts the formal <code>RangeExpr</code> and <code>SourceStmt</code>. Those extraction functions are independently implemented and cross-checked, but they are not yet machine-proved translations of the production parser.</p>
+          <p>The production runtime is also not yet formally proved to correspond to <code>evalRangeExpr</code> and <code>SourceExecutes</code>. Beta 9 does not claim full compiler verification.</p>
         </article>
 
         <article class="info-card">
@@ -167,23 +183,23 @@ why player.score</pre>
 
         <article class="info-card">
           <p class="eyebrow">Formal verification</p>
-          <h3>The proof chain now starts at a formal source-level mutation vocabulary</h3>
-          <p>Lean proves State-Change Factorization, Mutation Transparency, Change Signature Soundness and <code>RuntimeChanges ⊆ Signature ⊆ Capability</code> for the structured core.</p>
-          <p>Formal CI explicitly builds <code>PatchFormal</code>, <code>PatchSignature</code>, <code>PatchChecker</code>, <code>PatchEvidence</code> and <code>PatchSource</code>, then compiles a certificate generated from production Patch source.</p>
+          <h3>The proof chain includes formal quantitative reasoning</h3>
+          <p>Lean proves State-Change Factorization, Mutation Transparency, Change Signature Soundness, <code>RuntimeChanges ⊆ Signature ⊆ Capability</code>, and range-analysis soundness for the supported integer expression fragment.</p>
+          <p>Formal CI explicitly builds <code>PatchFormal</code>, <code>PatchSignature</code>, <code>PatchChecker</code>, <code>PatchEvidence</code>, <code>PatchSource</code> and <code>PatchRange</code>, then compiles a certificate generated from production Patch source.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">iPhone & iPad</p>
           <h3>Patch Studio remains mobile-first</h3>
-          <p>Edit and run Patch in Safari, inspect Change Contracts and proven ranges, use <code>why</code>, add GUI controls from the Designer, preview applications, inspect Change IR and build portable <code>.patchapp</code> or bootstrap <code>.wasm</code> artifacts locally.</p>
+          <p>Edit and run Patch in Safari, inspect Change Contracts and ranges, use <code>why</code>, add GUI controls from the Designer, preview applications, inspect Change IR and build portable <code>.patchapp</code> or bootstrap <code>.wasm</code> artifacts locally.</p>
           <p>Lean certificate checking currently belongs to the Node/Lean toolchain; future remote build/check services can make that available directly from iOS.</p>
         </article>
 
         <article class="info-card">
           <p class="eyebrow">Compiler direction</p>
           <h3>One semantic layer, many derived services</h3>
-          <p class="pipeline">Patch source → formal SourceStmt → semantic evidence → Change Signatures → capabilities → Lean validation → Change IR → WebAssembly / native host</p>
-          <p>The same semantic vocabulary drives execution, history, inversion, preview, bounded contracts, provenance and formal policy evidence. Direct Change IR-to-Wasm execution remains the next backend stage.</p>
+          <p class="pipeline">Patch source → RangeExpr / SourceStmt → semantic evidence → Change Signatures → capabilities → Lean validation → Change IR → WebAssembly / native host</p>
+          <p>The compiler front end, Change IR, portable bundler and bootstrap Wasm backend are functional. Direct Change IR-to-Wasm execution and native executable packaging remain future backend stages.</p>
         </article>
       </div>
 
@@ -192,7 +208,7 @@ why player.score</pre>
           <p class="eyebrow">Research project</p>
           <h2>Patch: State-Change Factorization and Semantic Change Contracts</h2>
           <p>The research claim is intentionally narrower than “patches are new.” Patch investigates semantic change as the exclusive ordinary mutation mechanism of a low-complexity language. Operation- and magnitude-aware contracts are derived from that mandatory representation.</p>
-          <p><strong>Current status:</strong> beta.8 adds a formal source layer before semantic evidence. Lean normalizes source change verbs and proves source-level policy containment for the formal Source-core execution relation. The remaining critical obligations are production AST → SourceStmt extraction soundness and production interval-analyzer soundness, followed by measured security case studies.</p>
+          <p><strong>Current status:</strong> beta.9 adds machine-checked range-analysis soundness for a useful integer fragment and connects production expressions to it through an independent formal extractor and generated Lean obligations. The next critical obligations are stronger source/AST extraction correspondence and production runtime-to-formal execution correspondence, followed by measured security case studies.</p>
         </div>
         <div class="link-stack">
           <a href="https://github.com/pinkysworld/Patch">GitHub repository</a>
@@ -203,7 +219,8 @@ why player.score</pre>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchChecker.lean">Verified policy checker</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchEvidence.lean">Verified evidence decoder/correspondence</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchSource.lean">Formal source-core normalization</a>
-          <a href="https://github.com/pinkysworld/Patch/blob/main/src/formal-source.js">Production Source-core extractor</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/formal/PatchRange.lean">Formal range-analysis soundness</a>
+          <a href="https://github.com/pinkysworld/Patch/blob/main/src/formal-range.js">Production formal-range extractor</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/src/certificate.js">Certificate generator</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Novelty boundary</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/paper/main.tex">Research manuscript</a>
@@ -212,10 +229,10 @@ why player.score</pre>
 
       <article class="roadmap-card">
         <p class="eyebrow">Roadmap</p>
-        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · range analysis · causal why · formal Source core · verified evidence · PWA Studio</span></div>
-        <div class="roadmap-row"><strong>Next</strong><span>Production AST → SourceStmt proof/validation · interval-analyzer soundness · certified security case studies · direct Wasm lowering</span></div>
+        <div class="roadmap-row"><strong>Now</strong><span>Factorization · Change Contracts · formal integer range soundness · causal why · formal Source core · verified evidence · PWA Studio</span></div>
+        <div class="roadmap-row"><strong>Next</strong><span>Source/AST → RangeExpr/SourceStmt correspondence · production runtime correspondence · certified security case studies · direct Wasm lowering</span></div>
         <div class="roadmap-row"><strong>Then</strong><span>Windows/macOS/Linux native hosts · BSD/Unix runtime · remote Build for… · richer visual Designer</span></div>
-        <div class="roadmap-row"><strong>Research</strong><span>Stronger production-runtime correspondence · inverse/replay proofs · evidence/checker benchmarks · controlled novice study if retained</span></div>
+        <div class="roadmap-row"><strong>Research</strong><span>Extend verified arithmetic carefully · inverse/replay proofs · evidence/checker benchmarks · controlled novice study if retained</span></div>
       </article>
     </section>
   </main>

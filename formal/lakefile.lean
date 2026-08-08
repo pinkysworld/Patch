@@ -17,3 +17,6 @@ lean_lib PatchEvidence where
 
 lean_lib PatchSource where
   srcDir := "."
+
+lean_lib PatchRange where
+  srcDir := "."

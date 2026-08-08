@@ -1,4 +1,5 @@
 import { inferNumericRange } from './range-analysis.js';
+import { buildFormalRangeExpression } from './formal-range.js';
 
 const PURE_NODES = new Set(['create', 'createThing', 'show', 'why', 'watch', 'history', 'allow', 'uiControl']);
 const SOURCE_CHANGE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
@@ -10,6 +11,10 @@ const SOURCE_CHANGE_KINDS = new Set(['add', 'remove', 'set', 'clear']);
  * (`add`, `remove`, `set`, `clear`) instead of pre-classifying them as semantic
  * increase/decrease effects. Lean's PatchSource module performs that semantic
  * normalization and checks that it lowers to the separately emitted evidence.
+ *
+ * Beta.9 additionally attaches independently parsed integer range expressions
+ * for numeric source changes. These are consumed by PatchRange in generated
+ * certificates. Unsupported arithmetic is reported instead of being certified.
  */
 export function buildFormalSource(ast) {
   const functions = new Map();
@@ -23,24 +28,26 @@ export function buildFormalSource(ast) {
 
   return {
     format: 'patch-formal-source',
-    version: '0.1',
-    leanModel: 'PatchSource',
+    version: '0.2',
+    leanModel: 'PatchSource+PatchRange',
     entries,
     summary: {
       supported: Object.values(entries).filter(entry => entry.supported).length,
-      unsupported: Object.values(entries).filter(entry => !entry.supported).length
+      unsupported: Object.values(entries).filter(entry => !entry.supported).length,
+      rangeClaims: Object.values(entries).reduce((sum, entry) => sum + entry.rangeClaims.length, 0)
     }
   };
 }
 
 function sourceEntry(name, nodes, ranges) {
-  const context = { ranges, reasons: new Set(), abstractions: new Set() };
+  const context = { ranges, reasons: new Set(), abstractions: new Set(), rangeClaims: [] };
   const source = sequence(nodes.map(node => sourceNode(node, context)).filter(Boolean));
   return {
     name,
     supported: context.reasons.size === 0,
     reasons: [...context.reasons].sort(),
     abstractions: [...context.abstractions].sort(),
+    rangeClaims: context.rangeClaims,
     source
   };
 }
@@ -119,9 +126,21 @@ function classifySourceChange(changeNode, change, context) {
     return { target, field, path, operation: change.op, amountRange: null };
   }
 
-  const interval = inferNumericRange(change.expr ?? '', context.ranges);
+  const expression = change.expr ?? '';
+  const interval = inferNumericRange(expression, context.ranges);
   if (!interval) {
-    context.reasons.add(`line ${change.line ?? changeNode.line}: numeric source change amount has no proven range`);
+    context.reasons.add(`line ${change.line ?? changeNode.line}: numeric source change amount has no proven production range`);
+    return null;
+  }
+
+  const formal = buildFormalRangeExpression(expression, context.ranges);
+  if (!formal.supported) {
+    context.reasons.add(`line ${change.line ?? changeNode.line}: numeric expression is outside the beta.9 verified range fragment: ${formal.reason}`);
+    return null;
+  }
+
+  if (formal.range.min !== interval.min || formal.range.max !== interval.max) {
+    context.reasons.add(`line ${change.line ?? changeNode.line}: production range ${interval.min}..${interval.max} disagrees with independent formal-range extraction ${formal.range.min}..${formal.range.max}`);
     return null;
   }
 
@@ -129,6 +148,18 @@ function classifySourceChange(changeNode, change, context) {
     context.reasons.add(`line ${change.line ?? changeNode.line}: numeric source change range crosses zero and has no single semantic direction`);
     return null;
   }
+
+  context.rangeClaims.push({
+    line: change.line ?? changeNode.line,
+    target,
+    field,
+    path,
+    sourceOperation: change.op,
+    expression,
+    expr: formal.expr,
+    bindings: formal.bindings,
+    range: { min: formal.range.min, max: formal.range.max }
+  });
 
   return {
     target,
