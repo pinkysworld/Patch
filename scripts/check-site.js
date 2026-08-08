@@ -24,6 +24,8 @@ const required = [
   '_site/src/wasm.js',
   '_site/src/wasm-direct.js',
   '_site/src/webapp.js',
+  '_site/src/remote-build.js',
+  '_site/src/studio-cloud-build.js',
   '_site/src/designer.js'
 ];
 
@@ -39,7 +41,7 @@ for (const needle of ['./style.css', './manifest.webmanifest', './playground.js'
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['0.2 beta.16', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Native app', 'Windows .exe', 'macOS .app', 'Roadmap']) {
+for (const phrase of ['0.2 beta.17', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Windows / macOS / Linux desktop', 'GitHub Actions', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
 }
 for (const option of ['value="web"', 'value="native-info"', 'value="wasm-direct"', 'value="wasm-bootstrap"']) {
@@ -53,6 +55,19 @@ for (const mod of ['./src/interpreter.js', './src/compiler.js', './src/bundle.js
 }
 for (const phrase of ['buildStandaloneWebApp', 'compileToDirectWasm', 'wasm-direct', 'native-info', 'formatChangeAnalysis']) {
   if (!playground.includes(phrase)) throw new Error(`Generated Patch Studio is missing executable build support: ${phrase}`);
+}
+
+const webapp = fs.readFileSync(path.join(root, '_site/src/webapp.js'), 'utf8');
+for (const phrase of ['buildStandaloneWebApp', 'Standalone single-file Patch Web App', 'WASM_BASE64', 'studio-cloud-build.js', 'installStudioCloudBuild']) {
+  if (!webapp.includes(phrase)) throw new Error(`Generated standalone web/Studio builder is missing ${phrase}.`);
+}
+const remoteBuild = fs.readFileSync(path.join(root, '_site/src/remote-build.js'), 'utf8');
+for (const phrase of ['native-apps.yml', 'workflow_dispatch', 'createRemoteBuildRequest', 'dispatchRemoteBuild', 'waitForRemoteBuild', 'listRemoteBuildArtifacts']) {
+  if (!remoteBuild.includes(phrase)) throw new Error(`Generated Studio remote builder is missing ${phrase}.`);
+}
+const cloudBuild = fs.readFileSync(path.join(root, '_site/src/studio-cloud-build.js'), 'utf8');
+for (const phrase of ['installStudioCloudBuild', 'Build for desktop', 'Windows + macOS + Linux', 'GitHub token']) {
+  if (!cloudBuild.includes(phrase)) throw new Error(`Generated Studio cloud build UI is missing ${phrase}.`);
 }
 
 const compiler = fs.readFileSync(path.join(root, '_site/src/compiler.js'), 'utf8');
@@ -78,15 +93,11 @@ for (const phrase of ['buildFormalRangeExpression', 'inferFormalRange', 'general
 
 const directWasm = fs.readFileSync(path.join(root, '_site/src/wasm-direct.js'), 'utf8');
 if (!directWasm.includes('compileToDirectWasm')) throw new Error('Generated site is missing direct Wasm compilation.');
-const webapp = fs.readFileSync(path.join(root, '_site/src/webapp.js'), 'utf8');
-for (const phrase of ['buildStandaloneWebApp', 'Standalone single-file Patch Web App', 'WASM_BASE64']) {
-  if (!webapp.includes(phrase)) throw new Error(`Generated standalone web builder is missing ${phrase}.`);
-}
 
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-if (!sw.includes("patch-studio-0.2-beta.16")) throw new Error('Generated service worker cache is not on beta.16.');
-for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/wasm-direct.js'", "'./src/webapp.js'", "'./src/designer.js'"]) {
+if (!sw.includes("patch-studio-0.2-beta.17")) throw new Error('Generated service worker cache is not on beta.17.');
+for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/wasm-direct.js'", "'./src/webapp.js'", "'./src/remote-build.js'", "'./src/studio-cloud-build.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
 
