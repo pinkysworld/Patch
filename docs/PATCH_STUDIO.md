@@ -2,17 +2,26 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.24
+## What works in 0.2 beta.25
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
-Change IR **0.9** carries ordinary source/range translation-validation evidence plus the guard-validation artifact introduced in beta.23. Those research layers remain optional: a beginner can still just write, Run and Build.
+Change IR **0.10** adds the proof-free `formalCalls` artifact alongside the source/range/guard assurance artifacts. This remains advanced machinery: ordinary Studio use still consists of writing, running and building Patch code.
 
-Advanced CLI commands stay outside the ordinary Studio workflow. `patch formal` reports semantic/source/range/guard coverage separately. `patch runtime-certify` executes the supported direct-Wasm subset and emits a guard-aware Lean certificate for eligible protected recipes.
+Research CLI commands remain outside the beginner workflow:
+
+```bash
+patch formal program.patch
+patch certify program.patch
+patch runtime-certify program.patch
+patch call-certify program.patch
+```
+
+`patch call-certify` emits a Lean-checkable finite recipe environment for the supported acyclic safe-integer call fragment. It checks abstract argument intervals and semantic-signature composition; it does not yet prove concrete parameter substitution.
 
 ## Semantic input events
 
-Beta.24 adds the first useful editable input path without creating a hidden persistent assignment mechanism:
+Editable inputs preserve Patch's explicit persistent mutation route:
 
 ```patch
 create text name = ""
@@ -26,25 +35,19 @@ when name changed:
     set = value
 ```
 
-When the user edits the control, Patch exposes the current control text as the event-local name `value`. The browser/desktop control edit itself does **not** write `name` in persistent Patch state.
+The current control text is event-local `value`. The browser/desktop edit does **not** write persistent Patch state by itself. Source must execute an ordinary semantic `change` to commit it.
 
-If a handler only runs `show value`, the new input can be observed but Patch state/history remain unchanged. An explicit semantic `change` is required to persist the value. This preserves the same mutation route used by non-GUI Patch code.
-
-Studio uses `src/window-events.js` to route the transient payload. The same semantic contract is implemented by the Standalone Window Web runtime and generated Windows/macOS/Linux desktop Window player.
+Studio uses `src/window-events.js`; the standalone Window Web runtime and generated Windows/macOS/Linux desktop player implement the same contract. Generated HTML is executed in regression tests to distinguish observation-only input from explicit persistence.
 
 ## Window builds
 
-A Window project is recognized from normalized Change IR using `code: "WINDOW"`. The shared `src/window-build.js` preflight validates the runtime surface before Web or desktop packaging:
+The shared `src/window-build.js` preflight validates normalized Window IR before Web or desktop packaging:
 
 - control ids must be unique;
-- an event handler must refer to an existing control;
+- handlers must refer to existing controls;
 - button `clicked` is supported;
-- input `changed` is supported with transient event-local `value`;
-- other event/control pairs, including window `closed`, remain rejected until implemented consistently.
-
-Both the Counter button example and the input example above are supported in the current Web/Windows/macOS/Linux Window matrix.
-
-The **Standalone Window Web App** backend is differentially tested against `PatchInterpreter`. CI also executes generated single-file HTML with a fake DOM to verify both input cases: observation without persistent mutation and explicit persistence through `change`.
+- input `changed` is supported with transient `value`;
+- unsupported control/event combinations remain rejected.
 
 ## Build matrix
 
@@ -56,15 +59,15 @@ FreeBSD Console      Console only
 Standalone Web App   Console or Window
 ```
 
-Console Web Apps use direct Patch Wasm. Window Web Apps use the generated browser Window runtime. Direct WebAssembly itself remains Console-only.
+Console Web Apps use direct Patch Wasm. Window Web Apps use the generated browser Window runtime. Direct WebAssembly remains Console-only.
 
-For desktop cloud builds, Studio performs browser preflight first, then sends the current editor source to GitHub Actions. The target-side Window packager repeats the same runtime-support validation. A fine-grained GitHub token with Actions read/write access is currently required; it is not saved to the project or `localStorage`.
+For cloud desktop builds, Studio performs browser preflight, sends the current source to GitHub Actions, and the target-side packager repeats validation. The current workflow requires a fine-grained GitHub token with Actions read/write permission; Studio does not save it.
 
-## Guard-aware research assurance
+## Research assurance layers
 
-The beta.23 research layer strengthens what can be claimed about eligible protected direct-Wasm recipes. Patch separately translation-validates the supported guard artifact, and Lean checks proof-free branch paths against actual evaluation of concrete safe-integer recipe-parameter guards before composing them with runtime-effect/capability correspondence.
+The beta.23 guard-aware layer checks eligible direct-Wasm branch witnesses against normalized source guards and concrete safe-integer recipe parameter environments before composing runtime effects with Change Capabilities.
 
-This remains restricted runtime assurance, not a verified compiler, and it stays invisible during normal Studio use.
+Beta.25 separately adds **abstract acyclic recipe-call composition** through `formalCalls` and `PatchCalls.lean`. These layers do not alter normal Studio syntax and are not presented as full compiler verification.
 
 ## iPhone and iPad
 
@@ -72,7 +75,7 @@ Patch Studio can be installed from Safari with **Share → Add to Home Screen**.
 
 ## PWA updates
 
-HTML and JavaScript use a versioned network-first strategy with cached offline fallback. The beta.24 cache key is `patch-studio-0.2-beta.24`. The cache now includes `window-events.js` as well as the beta.23 formal/guard modules, so the interactive Studio cannot be updated while retaining an older event adapter offline.
+The beta.25 cache key is `patch-studio-0.2-beta.25`. Because `compiler.js` imports `formal-calls.js`, the service-worker cache includes `formal-calls.js` together with the source/guard compiler modules and `window-events.js`. This keeps offline Studio compilation consistent with Change IR 0.10.
 
 ## Source remains truth
 
