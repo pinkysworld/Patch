@@ -1,5 +1,4 @@
 import PatchEvidence
-import Std.Tactic.Omega
 
 namespace PatchFormal
 
@@ -32,10 +31,8 @@ inductive SourceStmt where
   | repeat (count : Nat) (body : SourceStmt)
   deriving Repr, DecidableEq
 
-private def negateInterval (interval : Interval) : Interval :=
-  { lo := -interval.hi
-    hi := -interval.lo
-    ordered := by omega }
+private def negateEvidenceAmount (amount : EvidenceAmount) : EvidenceAmount :=
+  { lo := -amount.hi, hi := -amount.lo }
 
 private def mkEffect
     (change : SourceChange)
@@ -48,7 +45,8 @@ private def mkEffect
 
 /-- Lean's executable source-change normalizer. It validates a raw interval,
     keeps non-negative `add` as increase and `remove` as decrease, and flips a
-    strictly non-positive range into the opposite semantic direction. Mixed-sign
+    strictly non-positive range into the opposite semantic direction. Mirrored
+    bounds are passed through the verified evidence decoder again. Mixed-sign
     numeric ranges remain outside the certifiable source core. -/
 def normalizeSourceChange (change : SourceChange) : Option Effect :=
   match change.kind with
@@ -70,7 +68,9 @@ def normalizeSourceChange (change : SourceChange) : Option Effect :=
               if 0 ≤ interval.lo then
                 some (mkEffect change .increase (some interval))
               else if interval.hi ≤ 0 then
-                some (mkEffect change .decrease (some (negateInterval interval)))
+                match decodeEvidenceAmount (negateEvidenceAmount raw) with
+                | none => none
+                | some magnitude => some (mkEffect change .decrease (some magnitude))
               else
                 none
   | .remove =>
@@ -83,7 +83,9 @@ def normalizeSourceChange (change : SourceChange) : Option Effect :=
               if 0 ≤ interval.lo then
                 some (mkEffect change .decrease (some interval))
               else if interval.hi ≤ 0 then
-                some (mkEffect change .increase (some (negateInterval interval)))
+                match decodeEvidenceAmount (negateEvidenceAmount raw) with
+                | none => none
+                | some magnitude => some (mkEffect change .increase (some magnitude))
               else
                 none
 
