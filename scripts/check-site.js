@@ -51,7 +51,7 @@ for (const [file, phrases] of [
   ['_site/src/c99.js',['compileToC99','PATCH_C99_VERSION','portable C99']],
   ['_site/src/webapp.js',['buildStandaloneWebApp','buildStandaloneWindowWebApp','WASM_BASE64']],
   ['_site/src/window-webapp.js',['buildStandaloneWindowWebApp','generated-browser-window-runtime',"PATCH_WINDOW_WEB_VERSION = '0.2'",'stateView']],
-  ['_site/src/window-build.js',['countWindowInstructions','validateWindowBuild','validateWindowRuntimeSupport',"code === 'WINDOW'",'control ids must be unique']]
+  ['_site/src/window-build.js',['countWindowInstructions','validateWindowBuild','validateWindowRuntimeSupport',"code === 'WINDOW'",'Control ids must be unique']]
 ]) { const content=read(file); for (const phrase of phrases) requireText(file,content,phrase); }
 
 const sw = read('_site/sw.js');
