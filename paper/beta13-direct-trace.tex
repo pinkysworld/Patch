@@ -1,0 +1,38 @@
+\section{Transition-Level Validation of Direct WebAssembly Execution}
+\label{sec:direct-wasm-trace}
+
+The direct WebAssembly backend provides a useful implementation path only if its state transitions remain aligned with Patch's semantic-change model. Final-state agreement alone is insufficient for this purpose: two executions may reach the same final store through different intermediate transitions. Beta~13 therefore introduces a transition-level observation boundary for the currently supported numeric direct backend.
+
+For each compiled numeric \texttt{change} block targeting persistent binding $x$, the generated module invokes a host trace function after the block's lowered operations have completed:
+\[
+\mathsf{change\_number}(id(x), v_{before}, v_{after}).
+\]
+The target identifier is resolved through immutable module metadata. The trace event is intentionally emitted once per source-level \texttt{change} block rather than once per arithmetic operation, matching the granularity of the interpreter's committed history entries.
+
+For example,
+\begin{lstlisting}
+create number score = 1
+change score:
+  add 2
+  add 3
+  remove 1
+\end{lstlisting}
+produces one observed direct transition
+\[
+\langle score,1,5\rangle,
+\]
+matching the interpreter's single committed Change witness for the block.
+
+The differential backend test harness now checks three observable dimensions for every successful program in the supported direct subset:
+\begin{enumerate}[leftmargin=*]
+\item program output;
+\item final persistent numeric state; and
+\item the ordered sequence of numeric transitions $\langle target,before,after\rangle$.
+\end{enumerate}
+This check is applied to linear programs, structured branches, literal loops, protected ranged recipes, and acyclic recipe-to-recipe calls.
+
+Transition-sequence equivalence is stronger than final-state equivalence as an implementation validation criterion. It can detect reorderings, duplicated changes, skipped intermediate changes, or incorrect change-block boundaries even when the final store happens to agree. It also exposes a concrete runtime boundary at which future translation validation can compare expected Change IR effects with observed direct-backend effects.
+
+The result should not be confused with a compiler-correctness theorem. The current event contains only target identity and numeric before/after values; it does not yet carry the normalized operation list, source location, version transition, inverse, or capability evidence contained in richer Patch Change representations. The host trace callback is also inside the current trusted runtime boundary. Consequently, beta~13 establishes an executable differential correspondence check for the supported numeric transition sequence, not a proof that arbitrary direct WebAssembly execution refines the formal \texttt{SourceExecutes} or \texttt{Executes} relations.
+
+A natural next step is an independently reconstructed effect-aware trace contract. A validator can derive the expected semantic effect sequence from the supported Change IR subset and compare it with a structured trace contract emitted or reconstructed from the direct artifact. This would create a translation-validation layer between the production compiler and the existing Lean semantic model without requiring immediate verification of the entire compiler implementation.
