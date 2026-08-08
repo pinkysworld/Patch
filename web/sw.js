@@ -1,8 +1,8 @@
-const CACHE = 'patch-studio-0.2-beta.24';
+const CACHE = 'patch-studio-0.2-beta.25';
 const CORE = [
   './', './index.html', './style.css', './playground.js', './native-build.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
-  '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-bridge.js', '../src/formal-source.js',
+  '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
   '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/bundle.js', '../src/wasm.js',
   '../src/wasm-direct.js', '../src/c99.js', '../src/webapp.js', '../src/window-webapp.js', '../src/window-build.js',
   '../src/window-events.js', '../src/designer.js'
