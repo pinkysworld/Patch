@@ -8,7 +8,8 @@ const source = `create number score = 1\nchange score:\n  add 4\nshow score`;
 test('native build plan embeds directly executable Patch Wasm in a Rust host', () => {
   const plan = createNativeBuildPlan(source, { name: 'Counter', platform: 'linux' });
   assert.equal(WebAssembly.validate(plan.module), true);
-  assert.match(plan.cargoToml, /wasmtime = "47\.0\.2"/);
+  assert.equal(plan.runtime, 'wasmtime-47.0.3');
+  assert.match(plan.cargoToml, /wasmtime = "=47\.0\.3"/);
   assert.match(plan.mainRs, /include_bytes!\("app\.wasm"\)/);
   assert.match(plan.mainRs, /func_wrap\("patch", "show_number"/);
   assert.match(plan.mainRs, /get_typed_func::<\(\), \(\)>/);
