@@ -107,7 +107,7 @@ theorem checkGuardShape_sound :
             simpa [checkGuardShape, Bool.and_eq_true] using h
           exact GuardShape.seq (ihFirst hBoth.1) (ihSecond hBoth.2)
       | branch guard thenBranch elseBranch => simp [checkGuardShape] at h
-      | repeat count body => simp [checkGuardShape] at h
+      | «repeat» count body => simp [checkGuardShape] at h
   | branch thenBranch elseBranch ihThen ihElse =>
       intro tree h
       cases tree with
@@ -119,14 +119,14 @@ theorem checkGuardShape_sound :
               checkGuardShape elseBranch guardElse = true := by
             simpa [checkGuardShape, Bool.and_eq_true] using h
           exact GuardShape.branch (ihThen hBoth.1) (ihElse hBoth.2)
-      | repeat count body => simp [checkGuardShape] at h
+      | «repeat» count body => simp [checkGuardShape] at h
   | «repeat» count sourceBody ih =>
       intro tree h
       cases tree with
       | leaf => simp [checkGuardShape] at h
       | seq first second => simp [checkGuardShape] at h
       | branch guard thenBranch elseBranch => simp [checkGuardShape] at h
-      | repeat guardCount guardBody =>
+      | «repeat» guardCount guardBody =>
           have hBoth :
               decide (count = guardCount) = true ∧
               checkGuardShape sourceBody guardBody = true := by
@@ -194,7 +194,7 @@ theorem checkGuardPath_sound :
             simpa [checkGuardPath, Bool.and_eq_true] using h
           exact GuardPathValid.seq (ihFirst hBoth.1) (ihSecond hBoth.2)
       | branch guard thenBranch elseBranch => simp [checkGuardPath] at h
-      | repeat count body => simp [checkGuardPath] at h
+      | «repeat» count body => simp [checkGuardPath] at h
   | branchThen path ih =>
       intro tree values h
       cases tree with
@@ -206,7 +206,7 @@ theorem checkGuardPath_sound :
               checkGuardPath values path thenBranch = true := by
             simpa [checkGuardPath, Bool.and_eq_true] using h
           exact GuardPathValid.branchThen (of_decide_eq_true hBoth.1) (ih hBoth.2)
-      | repeat count body => simp [checkGuardPath] at h
+      | «repeat» count body => simp [checkGuardPath] at h
   | branchElse path ih =>
       intro tree values h
       cases tree with
@@ -218,14 +218,14 @@ theorem checkGuardPath_sound :
               checkGuardPath values path elseBranch = true := by
             simpa [checkGuardPath, Bool.and_eq_true] using h
           exact GuardPathValid.branchElse (of_decide_eq_true hBoth.1) (ih hBoth.2)
-      | repeat count body => simp [checkGuardPath] at h
+      | «repeat» count body => simp [checkGuardPath] at h
   | repeatZero =>
       intro tree values h
       cases tree with
       | leaf => simp [checkGuardPath] at h
       | seq first second => simp [checkGuardPath] at h
       | branch guard thenBranch elseBranch => simp [checkGuardPath] at h
-      | repeat count body =>
+      | «repeat» count body =>
           cases count with
           | zero => exact GuardPathValid.repeatZero
           | succ n => simp [checkGuardPath] at h
@@ -235,7 +235,7 @@ theorem checkGuardPath_sound :
       | leaf => simp [checkGuardPath] at h
       | seq first second => simp [checkGuardPath] at h
       | branch guard thenBranch elseBranch => simp [checkGuardPath] at h
-      | repeat count body =>
+      | «repeat» count body =>
           cases count with
           | zero => simp [checkGuardPath] at h
           | succ n =>
