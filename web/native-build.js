@@ -1,7 +1,7 @@
 import { compile } from '../src/compiler.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { compileToC99 } from '../src/c99.js';
-import { validateWindowBuild } from '../src/window-build.js';
+import { validateWindowRuntimeSupport } from '../src/window-build.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
 const NATIVE_WORKFLOW = 'native-apps.yml';
@@ -51,8 +51,8 @@ buildButton.addEventListener('click', async event => {
       preflightText = `direct Wasm ${preflight.metadata.version}`;
     } else {
       const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
-      const windowCount = validateWindowBuild(preflight);
-      preflightText = `${windowCount} Patch window${windowCount === 1 ? '' : 's'} validated`;
+      const support = validateWindowRuntimeSupport(preflight);
+      preflightText = `${support.windows} Patch window${support.windows === 1 ? '' : 's'}, ${support.controls} interactive control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
     }
 
     const token = tokenInput.value.trim();

@@ -20,8 +20,8 @@ for (const needle of ['./style.css','./manifest.webmanifest','./native-build.js'
 for (const id of ['code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus']) requireText('index', html, `id="${id}"`);
 for (const phrase of [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.8', 'Change Contract', 'Standalone Window Web App',
-  'Independent raw-source validation', 'Runtime → Lean correspondence', 'RuntimePath', 'SourceExecutes',
-  'State-Change Factorization', 'Standalone Web App', 'Windows App', 'macOS App', 'Linux App',
+  'Independent raw-source validation', 'Concrete runtime capability containment', 'RuntimePath', 'SourceExecutes',
+  'checkedConcreteRuntimeCannotEscape', 'State-Change Factorization', 'Windows App', 'macOS App', 'Linux App',
   'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
 ]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
@@ -33,7 +33,7 @@ for (const phrase of ['Standalone single-file Patch Window Web App','Direct WebA
 
 const nativeBuild = read('_site/native-build.js');
 if (nativeBuild.includes("'../src/")) throw new Error('Generated native builder still points outside the deployed site.');
-for (const phrase of ['./src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','validateWindowBuild','native-windows','native-macos','native-linux','native-freebsd','freebsd-c99.yml','compileToC99','workflow_dispatch','source_b64','Window / GUI','downloadArtifact']) requireText('native builder', nativeBuild, phrase);
+for (const phrase of ['./src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','validateWindowRuntimeSupport','native-windows','native-macos','native-linux','native-freebsd','freebsd-c99.yml','compileToC99','workflow_dispatch','source_b64','Window / GUI','downloadArtifact']) requireText('native builder', nativeBuild, phrase);
 
 const compiler = read('_site/src/compiler.js');
 for (const mod of ["'./formal-bridge.js'","'./formal-source.js'","'./source-validation.js'"]) requireText('compiler', compiler, mod);
@@ -50,8 +50,8 @@ for (const [file, phrases] of [
   ['_site/src/wasm-direct.js',['compileToDirectWasm']],
   ['_site/src/c99.js',['compileToC99','PATCH_C99_VERSION','portable C99']],
   ['_site/src/webapp.js',['buildStandaloneWebApp','buildStandaloneWindowWebApp','WASM_BASE64']],
-  ['_site/src/window-webapp.js',['buildStandaloneWindowWebApp','generated-browser-window-runtime','safeTrigger']],
-  ['_site/src/window-build.js',['countWindowInstructions','validateWindowBuild',"code === 'WINDOW'"]]
+  ['_site/src/window-webapp.js',['buildStandaloneWindowWebApp','generated-browser-window-runtime',"PATCH_WINDOW_WEB_VERSION = '0.2'",'stateView']],
+  ['_site/src/window-build.js',['countWindowInstructions','validateWindowBuild','validateWindowRuntimeSupport',"code === 'WINDOW'",'Control ids must be unique']]
 ]) { const content=read(file); for (const phrase of phrases) requireText(file,content,phrase); }
 
 const sw = read('_site/sw.js');

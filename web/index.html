@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.21: semantic Change Contracts, working Window Web/desktop build routing, independent source validation, path-witnessed Lean runtime correspondence, direct WebAssembly and portable C99/FreeBSD builds.">
+  <meta name="description" content="Patch Studio beta.22: semantic Change Contracts, hardened Window Web/desktop builds, independent source validation, Lean-checked concrete runtime capability containment, direct WebAssembly and portable C99/FreeBSD builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -18,7 +18,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">P</div>
-        <div><h1>Patch Studio <span>0.2 beta.21</span></h1><p>Write, run and build Patch.</p></div>
+        <div><h1>Patch Studio <span>0.2 beta.22</span></h1><p>Write, run and build Patch.</p></div>
       </div>
       <div class="toolbar" aria-label="Run and build controls">
         <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example">
@@ -86,56 +86,56 @@ when add_button clicked:
       </article>
 
       <div class="signal-grid" aria-label="Project highlights">
-        <div class="signal"><strong>Build Window apps</strong><span>Standalone Window Web App plus Windows, macOS and Linux GUI packages</span></div>
-        <div class="signal"><strong>Validate claims</strong><span>Independent raw-source, transition and semantic-effect checks</span></div>
-        <div class="signal"><strong>Lean 4 correspondence</strong><span>RuntimePath branch/repeat witnesses checked against SourceExecutes</span></div>
+        <div class="signal"><strong>Hardened Window builds</strong><span>Generated Window HTML is executed in differential tests; desktop and Web share preflight validation</span></div>
+        <div class="signal"><strong>Concrete authority</strong><span>Lean checks decoded concrete runtime effects against declared Change Capabilities</span></div>
+        <div class="signal"><strong>Portable targets</strong><span>Windows, macOS, Linux plus FreeBSD Console via portable C99</span></div>
       </div>
 
       <div class="details-stack">
         <details open>
-          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.21 · Change IR 0.8</span></summary>
+          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.22 · Change IR 0.8</span></summary>
           <div class="details-body two-column">
-            <div><h3>Language & Studio</h3><p>Working interpreter/compiler front end, history, undo/redo, preview, <code>why</code> provenance, first GUI/Designer slice, Change Contract and IR views.</p><p>Local outputs include Console and <strong>Standalone Window Web App</strong> HTML builds, direct/bootstrap Wasm where compatible, and portable <code>.patchapp</code>.</p></div>
+            <div><h3>Language & Studio</h3><p>Working interpreter/compiler frontend, history, undo/redo, preview, <code>why</code> provenance, first GUI/Designer slice, Change Contract and IR views.</p><p>Local outputs include Console and <strong>Standalone Window Web App</strong> HTML builds, direct/bootstrap Wasm where compatible, and portable <code>.patchapp</code>.</p></div>
             <div><h3>Desktop targets</h3><p><strong>Windows App (.exe)</strong>, <strong>macOS App (.app)</strong> and <strong>Linux App</strong> accept Console or Window <strong>Project Type</strong>. <strong>FreeBSD Console</strong> uses Patch's <strong>portable C99</strong> backend and the FreeBSD 15.1 base-system compiler.</p></div>
           </div>
         </details>
 
         <details>
-          <summary><span>Window build fix</span><span class="summary-hint">Beta.21</span></summary>
+          <summary><span>Window runtime review</span><span class="summary-hint">Cross-target parity</span></summary>
           <div class="details-body two-column">
-            <div><h3>Correct desktop preflight</h3><p>The compiler represents a Patch Window as normalized <code>code: "WINDOW"</code>. Studio now checks that actual IR representation before dispatching a Windows/macOS/Linux Window build, fixing the older false “does not define a Patch window” rejection.</p></div>
-            <div><h3>Separate Window Web backend</h3><p>Window Web projects no longer enter the Console-only Direct Wasm backend. They build as a self-contained HTML application with Patch's generated browser Window runtime, controls and events. Direct WebAssembly remains explicitly Console-only.</p></div>
+            <div><h3>Executable differential tests</h3><p>The generated single-file Window runtime is now executed in CI and compared with <code>PatchInterpreter</code>. Multi-operation changes see prior operations in the same Change; declared create types and Thing fields are checked consistently.</p></div>
+            <div><h3>Conservative event surface</h3><p>Shared <strong>Window preflight</strong> rejects duplicate control ids, handlers for missing controls and event forms not wired across all current targets. The portable beta event path is button <code>clicked</code>.</p></div>
           </div>
         </details>
 
         <details>
-          <summary><span>Research & verification</span><span class="summary-hint">Source + runtime correspondence</span></summary>
+          <summary><span>Research & verification</span><span class="summary-hint">Runtime → capability</span></summary>
           <div class="details-body two-column">
-            <div><p class="eyebrow">State-Change Factorization</p><h3>Semantic Change Contracts</h3><p>Patch infers operation- and magnitude-aware Change Signatures and constrains them with Change Capabilities. The Lean core covers factorization, Change Signature Soundness, policy containment, source/evidence correspondence and integer range-analysis soundness for explicitly modeled fragments.</p><p><strong>Independent raw-source validation</strong> reconstructs supported Source core/range claims without importing the production parser before static certification.</p></div>
-            <div><p class="eyebrow">Beta.21</p><h3>Runtime → Lean correspondence</h3><p><code>patch runtime-certify</code> executes direct Wasm and emits proof-free concrete effects plus an untrusted <strong>RuntimePath</strong>. Lean validates <code>branchThen</code>/<code>branchElse</code>, exact <code>repeatSucc</code>/<code>repeatZero</code> structure and repeated protected invocations before deriving an actual formal <code>SourceExecutes</code> trace.</p><p>This is restricted runtime correspondence, not end-to-end compiler verification.</p></div>
+            <div><p class="eyebrow">State-Change Factorization</p><h3>Semantic Change Contracts</h3><p>Patch infers operation- and magnitude-aware Change Signatures and constrains them with Change Capabilities. The Lean core covers factorization, Change Signature Soundness, policy containment, source/evidence correspondence and integer range-analysis soundness for explicit fragments.</p><p><strong>Independent raw-source validation</strong> reconstructs the supported Source core and range claims before static certification.</p></div>
+            <div><p class="eyebrow">Beta.22</p><h3>Concrete runtime capability containment</h3><p><code>RuntimePath</code> and concrete effects are proof-free evidence. Lean first derives an actual formal <code>SourceExecutes</code> trace, then <code>PatchRuntimeCapability.lean</code> composes <code>EffectRefines</code> with the verified policy checker. <code>checkedConcreteRuntimeCannotEscape</code> proves every decoded concrete runtime effect is admitted by the declared capability.</p><p>This remains restricted correspondence, not end-to-end compiler verification.</p></div>
           </div>
         </details>
 
         <details>
           <summary><span>Build formats & boundaries</span><span class="summary-hint">No silent fallbacks</span></summary>
           <div class="details-body two-column">
-            <div><h3>Console Direct Wasm + portable C99</h3><p>Direct Wasm lowers the supported numeric Console subset to WebAssembly instructions. Raw direct Wasm uses Patch's small host ABI and is <strong>not yet a standalone WASI command</strong>. Portable C99 is compile/run tested on Linux, macOS and <strong>FreeBSD 15.1</strong>.</p></div>
-            <div><h3>Window targets</h3><p>Web Window apps use the generated browser Window runtime. Desktop Window projects use the current generated desktop player on Windows/macOS/Linux. These are standalone but beta.21 does not claim native AppKit, Win32 or GTK widget lowering. FreeBSD Window packaging is not yet supported.</p></div>
+            <div><h3>Direct Wasm + portable C99</h3><p>Direct Wasm lowers the supported numeric Console subset. Raw direct Wasm uses Patch's small host ABI and is <strong>not yet a standalone WASI command</strong>. Portable C99 is compile/run tested on Linux, macOS and <strong>FreeBSD 15.1</strong>.</p></div>
+            <div><h3>Window targets</h3><p>Window Web Apps use the generated browser runtime; Windows/macOS/Linux Window packages use the generated desktop player. They are standalone but are not yet native AppKit, Win32 or GTK widget lowering. FreeBSD Window is not supported yet.</p></div>
           </div>
         </details>
 
         <details>
           <summary><span>Roadmap</span><span class="summary-hint">Next highest-value work</span></summary>
           <div class="details-body roadmap-list">
+            <div><strong>Guard-aware typed core</strong><span>Retain a small integer/Boolean guard language so branch witnesses can be checked against actual condition evaluation.</span></div>
             <div><strong>Formal calls</strong><span>Add recipe-call/substitution semantics for the existing non-recursive direct subset.</span></div>
-            <div><strong>Smaller compiler core</strong><span>Introduce a typed expression/core IR or another independently checkable lowering boundary.</span></div>
-            <div><strong>Evaluation</strong><span>Build semantic-security cases and measure source/static/runtime-certificate and checker overhead.</span></div>
-            <div><strong>Designer & native GUI</strong><span>Improve visual editing and move toward AppKit, Win32 and a portable Unix GUI backend.</span></div>
+            <div><strong>Evaluation</strong><span>Build semantic-security cases and measure validation/certificate/checker overhead.</span></div>
+            <div><strong>Designer & native GUI</strong><span>Add explicit semantic input events and move toward AppKit, Win32 and a portable Unix GUI backend.</span></div>
           </div>
         </details>
       </div>
 
-      <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.21</span><nav aria-label="Project links"><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a></nav></footer>
+      <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.22</span><nav aria-label="Project links"><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md">Runtime correspondence</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a></nav></footer>
     </section>
   </main>
   <script type="module" src="./native-build.js"></script><script type="module" src="./playground.js"></script>

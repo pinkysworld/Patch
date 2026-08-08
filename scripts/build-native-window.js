@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { compile } from '../src/compiler.js';
+import { validateWindowRuntimeSupport } from '../src/window-build.js';
 
 const ELECTRON_VERSION = '43.2.0';
 const PACKAGER_VERSION = '20.0.4';
@@ -18,6 +20,8 @@ if (!sourcePath) {
 }
 
 const source = fs.readFileSync(path.resolve(sourcePath), 'utf8');
+const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
+validateWindowRuntimeSupport(compiled);
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-window-app-'));
 
 try {
@@ -37,7 +41,7 @@ try {
   fs.rmSync(temp, { recursive: true, force: true });
 }
 
-function writeProject(dir, source, name) {
+function writeProject(dir, sourceText, name) {
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
     name: safePackageName(name),
     productName: name,
@@ -48,7 +52,7 @@ function writeProject(dir, source, name) {
   fs.writeFileSync(path.join(dir, 'main.cjs'), mainProcessSource(name));
   fs.writeFileSync(path.join(dir, 'player.html'), playerHtml(name));
   fs.writeFileSync(path.join(dir, 'player.js'), playerJs());
-  fs.writeFileSync(path.join(dir, 'program.js'), `export const PATCH_SOURCE = ${JSON.stringify(source)};\nexport const PATCH_APP_NAME = ${JSON.stringify(name)};\n`);
+  fs.writeFileSync(path.join(dir, 'program.js'), `export const PATCH_SOURCE = ${JSON.stringify(sourceText)};\nexport const PATCH_APP_NAME = ${JSON.stringify(name)};\n`);
   fs.cpSync(path.join(root, 'src'), path.join(dir, 'src'), { recursive: true });
 }
 

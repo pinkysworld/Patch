@@ -7,11 +7,11 @@
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 [![FreeBSD C99](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml)
 
-**Current development beta: `0.2.0-beta.21`** · **Change IR: `0.8`**
+**Current development beta: `0.2.0-beta.22`** · **Change IR: `0.8`**
 
 [Open Patch Studio](https://pinkysworld.github.io/Patch/) · [Language spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Runtime correspondence](docs/RUNTIME_CORRESPONDENCE.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
-Patch is an experimental general-purpose language built around one deliberately simple rule:
+Patch is built around one rule:
 
 > **Existing persistent state does not mutate invisibly. Ordinary post-creation mutation is expressed as a semantic `change`.**
 
@@ -24,26 +24,25 @@ change score:
 show score
 ```
 
-The source stays small while the compiler/runtime can derive history, undo/redo, preview, provenance, semantic **Change Signatures**, magnitude-aware **Change Capabilities**, range evidence and formal certificates from the same structured change model.
+The same structured mutation substrate supports history, undo/redo, preview, provenance, semantic Change Signatures, magnitude-aware Change Capabilities, range evidence and formal certificates without making ordinary source code verbose.
 
-## Status at a glance
+## Status
 
-| Area | Beta.21 status |
+| Area | Current status |
 |---|---|
-| Language | Working interpreter and compiler front end; Change IR 0.8 |
-| Semantic contracts | Change Signatures, optional Change Capabilities, numeric magnitude bounds |
-| Formal work | Lean 4 factorization, signature soundness, policy containment, source/evidence checks and integer range soundness for explicit fragments |
-| Source validation | **Independent raw-source parser** reconstructs formal `SourceStmt` + range claims and checks them against the production AST path before certification |
-| Runtime correspondence | Direct Wasm execution → independently reconstructed effects + untrusted `RuntimePath` witness → **Lean-checked `SourceExecutes` trace**, now including branch/repeat paths and repeated protected invocations |
-| Web apps | Console Web Apps embed direct Wasm; **Standalone Window Web App** uses a generated single-file Patch Window browser runtime |
-| Direct backend | Numeric Console state, arithmetic, conditions, literal loops and non-recursive numeric recipes lowered directly to WebAssembly |
-| Unix fallback | Same conservative numeric Console subset emitted as portable C99 and compile/run tested on FreeBSD 15.1 |
-| Patch Studio | Browser-first PWA, editor, Run, first Window Designer, Changes/IR views and corrected Window build routing |
-| Desktop builds | Windows/macOS/Linux Console + Window/GUI packages; FreeBSD Console package |
+| Language | Working interpreter/compiler frontend; Change IR 0.8 |
+| Semantic contracts | Change Signatures + optional magnitude-aware Change Capabilities |
+| Formal core | State-Change Factorization, signature soundness, policy containment, source/evidence correspondence and integer range soundness in Lean 4 |
+| Source validation | **Independent raw-source parser** translation-validates supported `SourceStmt` and range claims against the production AST path |
+| Runtime → Lean correspondence | Direct Wasm execution + independently reconstructed effects + untrusted `RuntimePath` → checked `SourceExecutes` trace |
+| Concrete runtime authority | **Lean proves checked concrete runtime effects remain inside the declared Change Capability** via `checkedConcreteRuntimeCannotEscape` |
+| Web apps | Console Web Apps embed direct Wasm; **Standalone Window Web App** uses a generated single-file Window runtime |
+| Window quality | Generated Window Web runtime is differentially tested against `PatchInterpreter`; unsupported GUI event combinations fail before packaging |
+| Desktop | Windows/macOS/Linux Console + Window/GUI packages; FreeBSD Console through portable C99 |
 
 ## Try Patch
 
-Node.js 22+ is required for the current command-line toolchain.
+Node.js 22+ is required for the current CLI toolchain.
 
 ```bash
 git clone https://github.com/pinkysworld/Patch.git
@@ -52,17 +51,37 @@ npm install
 npm test
 
 patch run examples/score.patch
-patch check examples/score.patch
 patch formal examples/range-soundness.patch
 patch certify examples/range-soundness.patch --out RangeSoundness.patchcert.lean
 patch runtime-certify examples/runtime-correspondence.patch --out Runtime.patchcert.lean
 ```
 
-`patch formal` reports the semantic bridge, AST-derived formal source/range core and **Independent raw-source parser** validation separately. `patch runtime-certify` executes supported direct Wasm and produces a separate runtime correspondence certificate.
+## State-Change Factorization and semantic authority
+
+Patch does not treat a mutation as an ordinary write plus optional logging. Existing persistent state changes through the semantic `change` route. The compiler can therefore distinguish authority such as bounded increase from arbitrary replacement:
+
+```patch
+create number score = 0
+
+allow reward:
+  score may increase up to 10
+
+make reward(bonus number 0..5):
+  change score:
+    add bonus * 2
+
+do reward(4)
+```
+
+The formal containment story for the structured core is:
+
+```text
+RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
+```
 
 ## Runtime → Lean correspondence
 
-Beta.21 extends the first beta.20 runtime bridge with explicit, proof-free control-flow witnesses. The witness producer may propose:
+Patch executes the supported direct-Wasm program, observes target/before/after transitions, independently reconstructs concrete semantic occurrences, and emits proof-free runtime evidence plus an untrusted control-flow witness:
 
 ```text
 RuntimePath.leaf
@@ -73,53 +92,29 @@ RuntimePath.repeatZero
 RuntimePath.repeatSucc
 ```
 
-These values are **not trusted proofs**. `PatchRuntime.lean` checks that the supplied `RuntimePath` actually matches the decoded formal `CoreStmt`, that a branch choice is legal, that a repeat witness has the correct iteration shape/count, and that the reconstructed formal trace is a genuine execution.
+Lean does not trust those values as proofs. `PatchRuntime.lean` checks that the witness matches the formal effect/control-flow core and that the concrete effect trace refines an actual `SourceExecutes` trace. A concrete singleton amount such as `increase [8,8]` may refine an abstract formal effect `increase [0,10]`.
 
-For example:
-
-```patch
-create number score = 0
-
-allow reward:
-  score may increase up to 5
-
-make reward(bonus number 0..5):
-  if bonus > 0:
-    repeat 2:
-      change score:
-        add bonus
-
-do reward(4)
-do reward(0)
-```
-
-The first invocation gets a `branchThen` witness with two repeat iterations; the second gets `branchElse`. Direct Wasm observes concrete transitions, the independent validator reconstructs concrete semantic effect occurrences, and Lean checks each invocation separately:
+Beta.22 adds a further composition layer in `PatchRuntimeCapability.lean`:
 
 ```text
-source + abstract SourceStmt
-          ↓
-RuntimePath witness ─────┐
-                        v
-observed transitions → concrete EvidenceEffect list
-                        ↓
-              checkSourceRuntimeEvidence
-                        ↓
-∃ formalTrace actualTrace,
-  SourceExecutes source formalTrace
-  ∧ TraceRefines actualTrace formalTrace
+observed concrete runtime effects
+        ↓ EffectRefines
+formal SourceExecutes effects
+        ↓ verified semantic policy
+Change Capability
 ```
 
-A concrete effect such as `increase [4,4]` may refine an abstract effect such as `increase [0,5]`. The central runtime theorem remains `checkSourceRuntimeEvidence_sound`.
+`allowsRefinedEffect` proves semantic authority is downward closed under `EffectRefines`. `traceRefinesPreservesPolicy` lifts that result to traces. `checkedConcreteRuntimeCannotEscape` then combines the runtime-evidence checker with the existing source policy checker: for an accepted protected invocation, every decoded concrete runtime effect is admitted by a declared policy rule.
 
-This is **not end-to-end compiler verification**. Direct-Wasm lowering, the Wasm engine, runtime observation and JavaScript-side semantic/path reconstruction remain implementation boundaries. The important change is that both the proof-free occurrence list and control-flow witness are accepted only when Lean reconstructs a valid formal execution.
+This is still **not end-to-end compiler verification**. The JavaScript frontend, direct-Wasm lowering, Wasm engine, transition observation and implementation-side semantic reconstruction remain explicit trust/validation boundaries.
 
-See [Runtime correspondence](docs/RUNTIME_CORRESPONDENCE.md).
+One important current formal limitation is also explicit: the existing `CoreStmt.branch` abstracts away the original Boolean guard. `RuntimePath.branchThen` / `branchElse` prove structural execution of a formal branch, not yet that the original source guard evaluated to that Boolean. The next formal/compiler feature is therefore a smaller typed, guard-aware execution core.
 
-## Window app builds: beta.21 routing fix
+See [docs/RUNTIME_CORRESPONDENCE.md](docs/RUNTIME_CORRESPONDENCE.md).
 
-Patch Studio distinguishes Console and Window build paths instead of sending every target through Direct Wasm.
+## Window builds
 
-The normalized compiler IR represents a window as `code: 'WINDOW'`. Beta.21 uses that representation consistently for desktop preflight, fixing the earlier Studio bug that looked for a nonexistent `instruction.op === 'window'` and therefore rejected valid Window programs.
+The standard example is:
 
 ```patch
 create number count = 0
@@ -133,132 +128,62 @@ when add_button clicked:
     add 1
 ```
 
-For **Windows, macOS and Linux App**, this source now passes the Window preflight and is submitted to the dedicated Window packaging workflow. For **Standalone Web App**, Window projects no longer enter the Console-only Direct Wasm compiler; they build as a self-contained HTML Window application instead.
+Build targets:
 
-Direct WebAssembly remains deliberately Console-only. Studio now reports that boundary directly and recommends a compatible Window target instead of exposing the lower-level `WINDOW ... not in the direct Wasm execution subset` error.
+| Target | Result |
+|---|---|
+| Standalone Window Web App | Single `.html` with generated Patch Window runtime |
+| Windows Window/GUI | Standalone packaged GUI application with `.exe` |
+| macOS Window/GUI | Standalone `.app` package |
+| Linux Window/GUI | Standalone GUI application package |
+| FreeBSD Console | Native executable from portable C99 + FreeBSD 15.1 `cc` |
 
-## Build from Patch Studio
+The shared Window build preflight consumes normalized `code: 'WINDOW'` IR. It also rejects duplicate control ids, event handlers pointing at nonexistent controls, and event forms that are parsed but not yet wired consistently. The currently portable GUI event surface is deliberately **button `clicked`**. Input `changed` and window `closed` are not silently packaged as working features.
 
-| Target | Where it builds | Current result |
-|---|---|---|
-| Standalone Web App — Console | Locally in Studio | One `.html` file with direct Patch Wasm + tiny browser host |
-| **Standalone Window Web App** | Locally in Studio | One `.html` file with generated Patch Window runtime, controls and events |
-| Direct WebAssembly | Locally in Studio | Console subset only; directly lowered `.wasm` |
-| Portable Patch app | Locally in Studio | `.patchapp` bundle |
-| Windows Console | GitHub Actions Windows runner | `.exe` package |
-| Windows Window/GUI | GitHub Actions Windows runner | Standalone packaged GUI app |
-| macOS Console | GitHub Actions macOS runner | `.app` package |
-| macOS Window/GUI | GitHub Actions macOS runner | Standalone packaged GUI app |
-| Linux Console | GitHub Actions Linux runner | Native executable package |
-| Linux Window/GUI | GitHub Actions Linux runner | Standalone packaged GUI app |
-| FreeBSD Console | FreeBSD 15.1 VM | Native executable from portable C99 + FreeBSD `cc` |
+The Standalone Window Web runtime has regression/differential tests that actually execute generated HTML and compare important behavior with the reference interpreter, including sequential operations within one semantic `change`, declared create types, Thing-field validity and Counter button execution.
 
-For desktop cloud builds, select the operating system in Studio and press **Build**. Windows, macOS and Linux accept Console or Window projects. FreeBSD currently accepts Console projects only. A fine-grained GitHub token with Actions read/write permission is currently required for remote desktop builds; Studio does not save it to the Patch project or `localStorage`.
+Patch Studio performs the same Window preflight before remote Windows/macOS/Linux dispatch. The target-side desktop packager repeats validation before creating an artifact.
 
-Beta.21 also changes the PWA to fetch same-origin JavaScript/HTML **network-first**, while retaining cached offline fallbacks. This reduces stale-Studio cases after a deployment while preserving installability/offline use.
+## WebAssembly and C99 boundaries
 
-See [Patch Studio](docs/PATCH_STUDIO.md) and [Application builds](docs/NATIVE_APPS.md).
-
-## Portable C99 and FreeBSD
+`--target wasm-direct` is a Console backend. It directly lowers the supported numeric state/control-flow/recipe subset and imports the small Patch host ABI. A raw `.direct.wasm` is executable WebAssembly but **not yet a standalone WASI command module**.
 
 ```bash
 patch build program.patch --target c99 --out Program.c
 cc -std=c99 -O2 -o Program Program.c -lm
-./Program
 ```
 
-The C99 generator applies the conservative compiled-Console support boundary and independently lowers normalized Change IR. It preserves numeric state, `set/add/remove/clear`, supported conditions, literal `repeat`/`count`, acyclic numeric recipes and ranged guards. Generated C is compile/run tested on Linux, macOS and **FreeBSD 15.1**.
+Portable C99 covers the conservative numeric Console subset and is compile/run tested on Linux, macOS and **FreeBSD 15.1**. FreeBSD GUI, OpenBSD and NetBSD remain unclaimed until they have separate executable gates.
 
-FreeBSD Window/GUI, OpenBSD and NetBSD remain unclaimed until separate executable gates exist.
-
-## WebAssembly boundaries
+## Formal and implementation assurance modules
 
 ```text
---target wasm
-  bootstrap carrier: source + Change IR for a Patch host
-
---target wasm-direct
-  Console subset lowered directly to Wasm
-  imports patch.show_number and patch.change_number
+src/source-validation.js       Independent raw-source parser / translation validation
+src/runtime-path-witness.js    Untrusted path/invocation witness producer
+src/runtime-certificate.js     Direct execution + proof-free runtime certificate
+src/window-build.js            Shared Window build/runtime support validation
+src/window-webapp.js           Single-file Window browser backend
+formal/PatchFormal.lean        Factorization, intervals, effects, policies
+formal/PatchSignature.lean     Structured execution + Change Signature Soundness
+formal/PatchChecker.lean       Verified semantic policy checker
+formal/PatchEvidence.lean      Proof-free evidence decoding
+formal/PatchSource.lean        Source normalization + SourceExecutes
+formal/PatchRange.lean         Integer range-analysis soundness
+formal/PatchRuntime.lean       EffectRefines + RuntimePath correspondence
+formal/PatchRuntimeCapability.lean  Concrete runtime capability containment
 ```
 
-A raw `.direct.wasm` is executable WebAssembly but **not yet a standalone WASI command module**. Window source intentionally does not silently fall back to another execution mode when Direct Wasm is requested.
+## Research boundary
 
-## Formal assurance
+Patch does **not** claim that patches, first-class state change, effects, capabilities, interval/range analysis, provenance, translation validation, refinement relations, verified checkers, Proof-Carrying Code, WebAssembly compilation, C generation or native packaging are individually new.
 
-Patch is **not a fully verified compiler**. Its assurance architecture deliberately separates claims:
+The candidate contribution remains narrower: **ordinary persistent mutation is factored through a mandatory semantic Change substrate, and operation-/magnitude-aware state-transition authority is derived from that same substrate**. The formal/validation architecture is supporting evidence for that design claim.
 
-```text
-exact Patch source
-   ├─ production parser / AST → formalSource
-   └─ Independent raw-source parser ─┘ comparison
-                          ↓
-          Lean source/evidence/signature/policy checks
+## Next priorities
 
-separately:
+The next research feature is a **typed, guard-aware execution core** that retains a small integer/Boolean condition language so a branch witness can be checked against actual guard evaluation instead of only nondeterministic branch structure. After that: formal recipe-call/substitution semantics, semantic-security case studies, checker/certificate overhead measurements and reproducibility hardening.
 
-direct Wasm execution
-   ↓
-observed before/after transitions
-   ↓
-independent semantic occurrence reconstruction
-   + untrusted RuntimePath reconstruction
-   ↓
-Lean decode + path checking + TraceRefines
-   ↓
-SourceExecutes witness
-```
-
-For the structured formal core, Lean proves:
-
-```text
-RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
-```
-
-Key modules:
-
-```text
-src/source-validation.js    independent raw-source extraction validator
-src/runtime-path-witness.js untrusted branch/repeat/invocation path producer
-src/runtime-certificate.js  direct execution + runtime certificate producer
-src/window-build.js         normalized WINDOW build validation
-src/window-webapp.js        standalone Window browser backend
-PatchFormal.lean             factorization, intervals, effects, policies
-PatchSignature.lean          structured execution + signature soundness
-PatchChecker.lean            verified semantic policy checker
-PatchEvidence.lean           proof-free evidence decoding
-PatchSource.lean             source normalization + SourceExecutes
-PatchRange.lean              integer range-analysis soundness
-PatchRuntime.lean            EffectRefines, RuntimePath checking and runtime correspondence
-```
-
-## CI notification behavior
-
-Core CI and Lean workflows run on pull requests and pushes to `main`, not on every feature-branch push. This avoids duplicate full matrices while a branch is still being assembled.
-
-## Documentation
-
-| Document | Purpose |
-|---|---|
-| [SPEC](docs/SPEC.md) | Language syntax and semantics |
-| [COMPILER](docs/COMPILER.md) | Parser → AST → Change IR, validation and backends |
-| [FORMAL_MODEL](docs/FORMAL_MODEL.md) | Formal definitions, theorems and trust boundaries |
-| [RUNTIME_CORRESPONDENCE](docs/RUNTIME_CORRESPONDENCE.md) | Direct runtime → Lean source-execution correspondence |
-| [PATCH_STUDIO](docs/PATCH_STUDIO.md) | Browser IDE, Designer and cross-platform builds |
-| [NATIVE_APPS](docs/NATIVE_APPS.md) | Desktop packaging plus FreeBSD/C99 Console path |
-| [NOVELTY](docs/NOVELTY.md) | Contribution boundary and prior-art discipline |
-| [ROADMAP](docs/ROADMAP.md) | Completed milestones and next priorities |
-| [paper/](paper/) | Research manuscript source |
-
-## What comes next
-
-The highest-value next research steps are a smaller typed/independently checked lowering boundary, formal recipe-call/substitution semantics, semantic-security case studies and measured certificate/validation overhead. Product work should continue toward native AppKit/Win32/portable Unix GUI lowering, richer Designer interaction, signing/notarization and a less token-dependent build service.
-
-## Research identity
-
-Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, WebAssembly compilation, C code generation or native packaging are individually new.
-
-The candidate contribution is the combination of mandatory semantic mutation, operation/magnitude-aware semantic contracts, formal containment for a structured core, quantitative range assurance, independently checked source/runtime evidence boundaries, and increasing correspondence between concrete compiled execution and the same semantic change model.
+Product work continues with explicit input/change semantics, richer Designer interaction, native AppKit/Win32/portable Unix GUI lowering, signing/notarization and a less token-dependent remote build path.
 
 ## License
 
