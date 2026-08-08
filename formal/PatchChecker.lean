@@ -23,22 +23,6 @@ def amountAllowsBool : Option Interval → Option Interval → Bool
   | some _, none => true
   | some actual, some permitted => withinBool actual permitted
 
-theorem amountAllowsBool_sound
-    {actual permitted : Option Interval}
-    (h : amountAllowsBool actual permitted = true) :
-    match actual, permitted with
-    | none, _ => True
-    | some _, none => True
-    | some a, some p => Within a p := by
-  cases actual with
-  | none => simp
-  | some a =>
-      cases permitted with
-      | none => simp
-      | some p =>
-          apply withinBool_sound
-          simpa [amountAllowsBool] using h
-
 /-- Executable decision procedure for one semantic rule/effect pair. It uses
     ordinary decidable equality for names/fields/kinds and a dedicated interval
     checker for quantitative authority. -/
@@ -60,8 +44,19 @@ theorem allowsBool_sound
   · by_cases hField : rule.field = effect.field
     · by_cases hKind : rule.kind = effect.kind
       · refine ⟨hTarget, hField, hKind, ?_⟩
-        apply amountAllowsBool_sound
-        simpa [allowsBool, hTarget, hField, hKind] using h
+        cases hEffectAmount : effect.amount with
+        | none =>
+            simp [hEffectAmount]
+        | some actual =>
+            cases hRuleAmount : rule.amount with
+            | none =>
+                simp [hEffectAmount, hRuleAmount]
+            | some permitted =>
+                have hWithin : withinBool actual permitted = true := by
+                  simpa [allowsBool, hTarget, hField, hKind, amountAllowsBool,
+                    hEffectAmount, hRuleAmount] using h
+                have hRel : Within actual permitted := withinBool_sound hWithin
+                simpa [hEffectAmount, hRuleAmount] using hRel
       · simp [allowsBool, hTarget, hField, hKind] at h
     · simp [allowsBool, hTarget, hField] at h
   · simp [allowsBool, hTarget] at h
@@ -111,15 +106,16 @@ theorem policyAllowsBool_sound :
   | nil =>
       intro policy h effect hMem
       simp at hMem
-  | cons head tail ih =>
+  | cons first rest ih =>
       intro policy h effect hMem
       have hBoth :
-          anyRuleAllows policy head = true ∧
-          policyAllowsBool tail policy = true := by
+          anyRuleAllows policy first = true ∧
+          policyAllowsBool rest policy = true := by
         simpa [policyAllowsBool, Bool.and_eq_true] using h
-      rcases List.mem_cons.mp hMem with rfl | hTail
-      · exact anyRuleAllows_sound policy head hBoth.1
-      · exact ih policy hBoth.2 effect hTail
+      rcases List.mem_cons.mp hMem with hFirst | hRestMem
+      · subst effect
+        exact anyRuleAllows_sound policy first hBoth.1
+      · exact ih policy hBoth.2 effect hRestMem
 
 /-- A boolean protectedness test for the formal executable core. -/
 def checkProtected (stmt : CoreStmt) (policy : List Rule) : Bool :=
