@@ -8,3 +8,6 @@ lean_lib PatchFormal where
 
 lean_lib PatchSignature where
   srcDir := "."
+
+lean_lib PatchChecker where
+  srcDir := "."
