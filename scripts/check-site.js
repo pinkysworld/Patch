@@ -22,6 +22,8 @@ const required = [
   '_site/src/compiler.js',
   '_site/src/bundle.js',
   '_site/src/wasm.js',
+  '_site/src/wasm-direct.js',
+  '_site/src/webapp.js',
   '_site/src/designer.js'
 ];
 
@@ -37,16 +39,21 @@ for (const needle of ['./style.css', './manifest.webmanifest', './playground.js'
 for (const id of ['code', 'run', 'build', 'buildTarget', 'output', 'changes', 'ir', 'app', 'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'projectName', 'projectKind']) {
   if (!html.includes(`id="${id}"`)) throw new Error(`Patch Studio is missing required element #${id}`);
 }
-for (const phrase of ['0.2 beta.15', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'iPhone', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'PatchSource', 'patch certify', 'Roadmap']) {
+for (const phrase of ['0.2 beta.16', 'Semantic changes', 'Change Capabilities', 'Change Contract', 'Research project', 'State-Change Factorization', 'Verified checker', 'Source core', 'patch certify', 'Standalone Web App', 'Native app', 'Windows .exe', 'macOS .app', 'Roadmap']) {
   if (!html.includes(phrase)) throw new Error(`Public project information is missing: ${phrase}`);
+}
+for (const option of ['value="web"', 'value="native-info"', 'value="wasm-direct"', 'value="wasm-bootstrap"']) {
+  if (!html.includes(option)) throw new Error(`Build target selector is missing ${option}`);
 }
 
 const playground = fs.readFileSync(path.join(root, '_site/playground.js'), 'utf8');
 if (playground.includes("'../src/")) throw new Error('Generated playground still points outside the deployed site.');
-for (const mod of ['./src/interpreter.js', './src/compiler.js', './src/bundle.js', './src/wasm.js', './src/designer.js']) {
+for (const mod of ['./src/interpreter.js', './src/compiler.js', './src/bundle.js', './src/wasm.js', './src/wasm-direct.js', './src/webapp.js', './src/designer.js']) {
   if (!playground.includes(mod)) throw new Error(`Generated playground does not import ${mod}`);
 }
-if (!playground.includes('formatChangeAnalysis')) throw new Error('Generated Patch Studio does not expose semantic change contracts.');
+for (const phrase of ['buildStandaloneWebApp', 'compileToDirectWasm', 'wasm-direct', 'native-info', 'formatChangeAnalysis']) {
+  if (!playground.includes(phrase)) throw new Error(`Generated Patch Studio is missing executable build support: ${phrase}`);
+}
 
 const compiler = fs.readFileSync(path.join(root, '_site/src/compiler.js'), 'utf8');
 for (const mod of ["'./formal-bridge.js'", "'./formal-source.js'"]) {
@@ -69,10 +76,17 @@ for (const phrase of ['buildFormalRangeExpression', 'inferFormalRange', 'general
   if (!formalRange.includes(phrase)) throw new Error(`Generated formal range module is missing ${phrase}.`);
 }
 
+const directWasm = fs.readFileSync(path.join(root, '_site/src/wasm-direct.js'), 'utf8');
+if (!directWasm.includes('compileToDirectWasm')) throw new Error('Generated site is missing direct Wasm compilation.');
+const webapp = fs.readFileSync(path.join(root, '_site/src/webapp.js'), 'utf8');
+for (const phrase of ['buildStandaloneWebApp', 'Standalone single-file Patch Web App', 'WASM_BASE64']) {
+  if (!webapp.includes(phrase)) throw new Error(`Generated standalone web builder is missing ${phrase}.`);
+}
+
 const sw = fs.readFileSync(path.join(root, '_site/sw.js'), 'utf8');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
-if (!sw.includes("patch-studio-0.2-beta.15")) throw new Error('Generated service worker cache is not on beta.15.');
-for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/designer.js'"]) {
+if (!sw.includes("patch-studio-0.2-beta.16")) throw new Error('Generated service worker cache is not on beta.16.');
+for (const cached of ["'./src/compiler.js'", "'./src/change-analysis.js'", "'./src/range-analysis.js'", "'./src/formal-range.js'", "'./src/formal-bridge.js'", "'./src/formal-source.js'", "'./src/wasm.js'", "'./src/wasm-direct.js'", "'./src/webapp.js'", "'./src/designer.js'"]) {
   if (!sw.includes(cached)) throw new Error(`Generated service worker does not cache ${cached}.`);
 }
 

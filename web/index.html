@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio is the browser-first IDE for Patch, a small language built around explicit semantic changes, Change Contracts, direct WebAssembly and a formally checked core.">
+  <meta name="description" content="Patch Studio is the browser-first IDE for Patch, a small language built around explicit semantic changes, Change Contracts, direct WebAssembly, standalone apps and a formally checked core.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -19,8 +19,8 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">P</div>
         <div>
-          <h1>Patch Studio <span>0.2 beta.15</span></h1>
-          <p>Write, run and inspect Patch.</p>
+          <h1>Patch Studio <span>0.2 beta.16</span></h1>
+          <p>Write, run and build Patch.</p>
         </div>
       </div>
       <div class="toolbar" aria-label="Run and build controls">
@@ -40,8 +40,15 @@
         <label class="compact-field">
           <span>Build</span>
           <select id="buildTarget" aria-label="Build target">
-            <option value="portable">Portable .patchapp</option>
-            <option value="wasm">WebAssembly .wasm</option>
+            <optgroup label="Simple apps">
+              <option value="web">Standalone Web App (.html)</option>
+              <option value="native-info">Native app (.app / .exe / Linux)</option>
+              <option value="portable">Portable .patchapp</option>
+            </optgroup>
+            <optgroup label="WebAssembly">
+              <option value="wasm-direct">Direct WebAssembly (.wasm)</option>
+              <option value="wasm-bootstrap">Bootstrap Wasm (advanced)</option>
+            </optgroup>
           </select>
         </label>
         <button id="build" class="secondary">Build</button>
@@ -96,8 +103,8 @@
       <article class="intro-card">
         <div class="intro-copy">
           <p class="eyebrow">Patch programming language</p>
-          <h2>Small syntax. Explicit state changes.</h2>
-          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. The same representation powers history, reasoning, Change Capabilities and compiler validation.</p>
+          <h2>Small syntax. Build an app.</h2>
+          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. The same source can now be packaged as a single-file Web App, direct WebAssembly, or a standalone native application for the current desktop OS.</p>
           <div class="intro-actions">
             <a class="primary-link" href="https://github.com/pinkysworld/Patch">View on GitHub</a>
             <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a>
@@ -113,24 +120,24 @@ show score</pre>
       </article>
 
       <div class="signal-grid" aria-label="Project highlights">
+        <div class="signal"><strong>Build apps</strong><span>Web App, macOS .app, Windows .exe and Linux executable</span></div>
         <div class="signal"><strong>Direct Wasm</strong><span>Numeric Change IR, control flow and recipes</span></div>
         <div class="signal"><strong>Lean 4 core</strong><span>Factorization, signatures, policies and ranges</span></div>
-        <div class="signal"><strong>Studio PWA</strong><span>Browser, desktop and iPhone &amp; iPad</span></div>
       </div>
 
       <div class="details-stack">
         <details>
-          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.15</span></summary>
+          <summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.16</span></summary>
           <div class="details-body two-column">
             <div>
               <h3>Language & Studio</h3>
               <p>Interpreter, compiler front end, Change IR 0.7, console programs, first GUI/Designer slice, history, undo/redo, preview, <code>why</code> provenance and browser-local builds.</p>
-              <p>The Studio exposes the inferred <strong>Change Contract</strong> without making the main editor UI revolve around research internals.</p>
+              <p>For the direct numeric console subset, Studio can emit a <strong>standalone single-file Web App</strong> or the actual direct Wasm module instead of the old ambiguous Wasm download.</p>
             </div>
             <div>
-              <h3>Compiler</h3>
-              <p>Portable <code>.patchapp</code>, bootstrap Wasm and a direct numeric Wasm backend support arithmetic, conditions, literal loops, non-recursive recipes, ranged parameter guards and semantic transition tracing.</p>
-              <p>Independent runtime validation reconstructs concrete effects such as increase, decrease, set and clear from Change IR and checks them against static contracts.</p>
+              <h3>Simple application builds</h3>
+              <p><code>patch build app.patch --target app</code> builds a standalone native application on the current OS: a macOS <code>.app</code>, Windows <code>.exe</code>, or Linux executable. The direct Patch Wasm module is embedded in a small native host.</p>
+              <p>A GitHub Actions native builder can build the same repository Patch source on macOS, Windows and Linux without requiring all three machines locally.</p>
             </div>
           </div>
         </details>
@@ -156,10 +163,10 @@ show score</pre>
         <details>
           <summary><span>Roadmap</span><span class="summary-hint">What comes next</span></summary>
           <div class="details-body roadmap-list">
-            <div><strong>Compiler core</strong><span>Typed expression/core IR and a tighter validated lowering boundary.</span></div>
+            <div><strong>Native GUI apps</strong><span>Move the visual Window/Designer model onto native desktop hosts, not only the current direct numeric console subset.</span></div>
+            <div><strong>Zero-toolchain packaging</strong><span>Prebuilt signed Patch hosts so native app builds do not need Cargo on the user's machine.</span></div>
             <div><strong>Formal correspondence</strong><span>Reduce trust between source/AST, Change IR, direct runtime and the Lean semantics.</span></div>
             <div><strong>Studio</strong><span>Selection, properties, richer controls, input binding and a clearer change timeline.</span></div>
-            <div><strong>Native apps</strong><span>Small native hosts and packaging for Windows, macOS and Linux after the Wasm ABI stabilizes.</span></div>
           </div>
         </details>
       </div>
