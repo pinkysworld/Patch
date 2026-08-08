@@ -34,17 +34,25 @@ private def singletonRange (value : Int) : Interval :=
 private def addRange (left right : Interval) : Interval :=
   { lo := left.lo + right.lo
     hi := left.hi + right.hi
-    ordered := by omega }
+    ordered := by
+      have hLeft := left.ordered
+      have hRight := right.ordered
+      omega }
 
 private def subRange (left right : Interval) : Interval :=
   { lo := left.lo - right.hi
     hi := left.hi - right.lo
-    ordered := by omega }
+    ordered := by
+      have hLeft := left.ordered
+      have hRight := right.ordered
+      omega }
 
 private def negRange (range : Interval) : Interval :=
   { lo := -range.hi
     hi := -range.lo
-    ordered := by omega }
+    ordered := by
+      have h := range.ordered
+      omega }
 
 private def scaleRange : Nat → Interval → Interval
   | 0, _ => singletonRange 0
@@ -140,36 +148,99 @@ theorem rangeAnalysisSound
     InRange value range := by
   induction expr generalizing range value with
   | lit literal =>
-      simp [analyzeRange, evalRangeExpr] at hAnalyze hEval
+      have hRange : singletonRange literal = range := by
+        simpa [analyzeRange] using hAnalyze
+      have hValue : literal = value := by
+        simpa [evalRangeExpr] using hEval
       subst range
       subst value
       simp [singletonRange, InRange]
   | var name =>
       exact hEnv name range value hAnalyze hEval
   | add left right ihLeft ihRight =>
-      simp [analyzeRange] at hAnalyze
-      simp [evalRangeExpr] at hEval
-      obtain ⟨leftRange, hLeftAnalyze, rightRange, hRightAnalyze, rfl⟩ := hAnalyze
-      obtain ⟨leftValue, hLeftEval, rightValue, hRightEval, rfl⟩ := hEval
-      exact inRange_add (ihLeft hEnv hLeftAnalyze hLeftEval) (ihRight hEnv hRightAnalyze hRightEval)
+      cases hLeftAnalyze : analyzeRange left ranges with
+      | none =>
+          simp [analyzeRange, hLeftAnalyze] at hAnalyze
+      | some leftRange =>
+          cases hRightAnalyze : analyzeRange right ranges with
+          | none =>
+              simp [analyzeRange, hLeftAnalyze, hRightAnalyze] at hAnalyze
+          | some rightRange =>
+              have hRange : addRange leftRange rightRange = range := by
+                simpa [analyzeRange, hLeftAnalyze, hRightAnalyze] using hAnalyze
+              cases hLeftEval : evalRangeExpr left values with
+              | none =>
+                  simp [evalRangeExpr, hLeftEval] at hEval
+              | some leftValue =>
+                  cases hRightEval : evalRangeExpr right values with
+                  | none =>
+                      simp [evalRangeExpr, hLeftEval, hRightEval] at hEval
+                  | some rightValue =>
+                      have hValue : leftValue + rightValue = value := by
+                        simpa [evalRangeExpr, hLeftEval, hRightEval] using hEval
+                      subst range
+                      subst value
+                      exact inRange_add
+                        (ihLeft hEnv hLeftAnalyze hLeftEval)
+                        (ihRight hEnv hRightAnalyze hRightEval)
   | sub left right ihLeft ihRight =>
-      simp [analyzeRange] at hAnalyze
-      simp [evalRangeExpr] at hEval
-      obtain ⟨leftRange, hLeftAnalyze, rightRange, hRightAnalyze, rfl⟩ := hAnalyze
-      obtain ⟨leftValue, hLeftEval, rightValue, hRightEval, rfl⟩ := hEval
-      exact inRange_sub (ihLeft hEnv hLeftAnalyze hLeftEval) (ihRight hEnv hRightAnalyze hRightEval)
+      cases hLeftAnalyze : analyzeRange left ranges with
+      | none =>
+          simp [analyzeRange, hLeftAnalyze] at hAnalyze
+      | some leftRange =>
+          cases hRightAnalyze : analyzeRange right ranges with
+          | none =>
+              simp [analyzeRange, hLeftAnalyze, hRightAnalyze] at hAnalyze
+          | some rightRange =>
+              have hRange : subRange leftRange rightRange = range := by
+                simpa [analyzeRange, hLeftAnalyze, hRightAnalyze] using hAnalyze
+              cases hLeftEval : evalRangeExpr left values with
+              | none =>
+                  simp [evalRangeExpr, hLeftEval] at hEval
+              | some leftValue =>
+                  cases hRightEval : evalRangeExpr right values with
+                  | none =>
+                      simp [evalRangeExpr, hLeftEval, hRightEval] at hEval
+                  | some rightValue =>
+                      have hValue : leftValue - rightValue = value := by
+                        simpa [evalRangeExpr, hLeftEval, hRightEval] using hEval
+                      subst range
+                      subst value
+                      exact inRange_sub
+                        (ihLeft hEnv hLeftAnalyze hLeftEval)
+                        (ihRight hEnv hRightAnalyze hRightEval)
   | neg inner ih =>
-      simp [analyzeRange] at hAnalyze
-      simp [evalRangeExpr] at hEval
-      obtain ⟨innerRange, hInnerAnalyze, rfl⟩ := hAnalyze
-      obtain ⟨innerValue, hInnerEval, rfl⟩ := hEval
-      exact inRange_neg (ih hEnv hInnerAnalyze hInnerEval)
+      cases hInnerAnalyze : analyzeRange inner ranges with
+      | none =>
+          simp [analyzeRange, hInnerAnalyze] at hAnalyze
+      | some innerRange =>
+          have hRange : negRange innerRange = range := by
+            simpa [analyzeRange, hInnerAnalyze] using hAnalyze
+          cases hInnerEval : evalRangeExpr inner values with
+          | none =>
+              simp [evalRangeExpr, hInnerEval] at hEval
+          | some innerValue =>
+              have hValue : -innerValue = value := by
+                simpa [evalRangeExpr, hInnerEval] using hEval
+              subst range
+              subst value
+              exact inRange_neg (ih hEnv hInnerAnalyze hInnerEval)
   | scale factor inner ih =>
-      simp [analyzeRange] at hAnalyze
-      simp [evalRangeExpr] at hEval
-      obtain ⟨innerRange, hInnerAnalyze, rfl⟩ := hAnalyze
-      obtain ⟨innerValue, hInnerEval, rfl⟩ := hEval
-      exact inRange_scale (ih hEnv hInnerAnalyze hInnerEval) factor
+      cases hInnerAnalyze : analyzeRange inner ranges with
+      | none =>
+          simp [analyzeRange, hInnerAnalyze] at hAnalyze
+      | some innerRange =>
+          have hRange : scaleRange factor innerRange = range := by
+            simpa [analyzeRange, hInnerAnalyze] using hAnalyze
+          cases hInnerEval : evalRangeExpr inner values with
+          | none =>
+              simp [evalRangeExpr, hInnerEval] at hEval
+          | some innerValue =>
+              have hValue : scaleValue factor innerValue = value := by
+                simpa [evalRangeExpr, hInnerEval] using hEval
+              subst range
+              subst value
+              exact inRange_scale (ih hEnv hInnerAnalyze hInnerEval) factor
 
 /-- Concrete beta.9 sanity theorem matching the motivating capability example. -/
 theorem bonusTimesTwoWithinTen
