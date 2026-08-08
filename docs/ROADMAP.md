@@ -1,8 +1,8 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.20**
+Current development beta: **0.2.0-beta.21**
 
-Checked items are implemented and tested in the repository or are part of the current beta.20 branch pending the final merge gate. Unchecked items are not presented as finished features.
+Checked items are implemented on the current beta.21 branch and must still pass the final pull-request gates before merge. Unchecked items are not presented as finished features.
 
 ## Completed milestones
 
@@ -37,48 +37,61 @@ Checked items are implemented and tested in the repository or are part of the cu
 - [x] independent Change-IR transition execution model
 - [x] concrete `increase/decrease/set/clear` and magnitude reconstruction
 - [x] runtime effects checked against Change Signatures and Change Capabilities
-- [x] transition/signature/capability tamper tests
 
 ### beta.16–beta.18: standalone apps, cross-platform builds and FreeBSD
 
-- [x] standalone single-file Web App
+- [x] standalone single-file Console Web App
 - [x] Windows/macOS/Linux Console packages
 - [x] Windows/macOS/Linux standalone Window packages
 - [x] remote Studio build workflow from current unsaved source
 - [x] desktop builds usable from iPhone/iPad Studio
-- [x] portable C99 backend for the conservative numeric Console subset
-- [x] C99 compile/run on Linux and macOS
-- [x] FreeBSD 15.1 compile/run with base-system `cc`
+- [x] portable C99 backend and Linux/macOS/FreeBSD 15.1 compile/run gates
 - [x] FreeBSD Console target from Patch Studio
 
 ### beta.19: independent raw-source extraction validation
 
 - [x] Change IR **0.8** with `sourceValidation` artifact
-- [x] small indentation-aware raw-source validator that does not import `parser.js`
-- [x] independent reconstruction of formal SourceStmt structure and source mutation verbs
-- [x] independent reconstruction of formal integer range claims from raw expression text
-- [x] structural comparison against AST-derived `formalSource`
-- [x] SourceStmt and range-claim tamper tests
-- [x] `patch formal` reports raw-source validation coverage
-- [x] `patch certify` requires protected recipes to pass raw-source validation
-- [x] public docs explicitly call this **translation validation**, not parser verification
+- [x] independent raw-source parser that does not import `parser.js`
+- [x] independent SourceStmt/source-verb/range-claim reconstruction
+- [x] comparison against AST-derived `formalSource`
+- [x] source/range tamper tests and certificate gate
+- [x] explicit translation-validation framing rather than parser-verification claims
 
-### beta.20: direct runtime → Lean source-execution correspondence
+### beta.20: first direct runtime → Lean source-execution correspondence
 
-- [x] new `PatchRuntime.lean` formal module
-- [x] `EffectRefines` relation for concrete runtime occurrences versus abstract formal effects
-- [x] executable `effectRefinesBool` with soundness theorem
-- [x] proof-free runtime occurrence decoding
-- [x] pointwise trace-refinement checker with soundness theorem
-- [x] exact linear formal-evidence trace decoder with `Executes` soundness theorem
-- [x] `checkSourceRuntimeEvidence` over formal `SourceStmt`
-- [x] `checkSourceRuntimeEvidence_sound` deriving an actual formal `SourceExecutes` trace
-- [x] direct-Wasm runtime certificate producer bound to source and observed-trace SHA-256 hashes
-- [x] independent semantic-effect reconstruction before runtime evidence is emitted
+- [x] `PatchRuntime.lean`
+- [x] `EffectRefines` and executable sound refinement checking
+- [x] proof-free concrete runtime occurrence decoding
+- [x] Patch-owned `TraceRefines` relation
+- [x] linear execution reconstruction and `checkSourceRuntimeEvidence_sound`
+- [x] direct-Wasm runtime certificate bound to source + observed-trace hashes
 - [x] `patch runtime-certify`
-- [x] dedicated runtime-correspondence example and negative boundary tests
-- [x] formal CI generation/verification path for `GeneratedRuntimeCertificate.lean`
-- [x] CI trigger cleanup: full Patch/Lean push matrices run on `main`, while feature work is checked through pull requests instead of duplicate branch-push runs
+- [x] formal CI verification of a generated runtime certificate
+- [x] CI trigger cleanup to avoid duplicate feature-branch push matrices
+
+### beta.21: Window build routing + path-witnessed runtime correspondence
+
+Product/build work:
+
+- [x] fix Studio Window preflight to inspect normalized `code == "WINDOW"` instead of nonexistent `instruction.op`
+- [x] shared `src/window-build.js` validation helper + regression test using the Counter source
+- [x] **Standalone Window Web App** backend instead of routing Window source into Console Direct Wasm
+- [x] keep Direct WebAssembly explicitly Console-only with a useful compatibility message
+- [x] Console/Window web routing based on project kind, including CLI inference
+- [x] service-worker beta.21 cache + network-first HTML/JavaScript refresh to reduce stale Studio code
+- [x] CI build gate for a real `examples/counter-window.patch --target web`
+
+Formal/runtime work:
+
+- [x] proof-free `RuntimePath` vocabulary: `leaf`, `seq`, `branchThen`, `branchElse`, `repeatZero`, `repeatSucc`
+- [x] Lean `decodeCorePath` validates a proposed path against `CoreStmt`
+- [x] `decodeCorePath_sound` connects an accepted path to the existing `Executes` relation
+- [x] `checkSourceRuntimeEvidence` now consumes the explicit `RuntimePath`
+- [x] `checkSourceRuntimeEvidence_sound` still yields a real `SourceExecutes` trace and `TraceRefines`
+- [x] untrusted JavaScript runtime-path witness producer
+- [x] multiple observed protected-recipe invocations segmented and certified separately
+- [x] branch/repeat/multiple-invocation regression tests
+- [x] generated CI runtime certificate now exercises branch + repeat + two invocations
 
 See [RUNTIME_CORRESPONDENCE.md](RUNTIME_CORRESPONDENCE.md).
 
@@ -89,7 +102,7 @@ See [RUNTIME_CORRESPONDENCE.md](RUNTIME_CORRESPONDENCE.md).
 - [ ] control selection and property inspector
 - [ ] drag positioning and resizing
 - [ ] event editing and richer controls
-- [ ] two-way input binding
+- [ ] stronger two-way input binding
 - [ ] project import/export
 - [ ] immediate mode and provenance timeline
 
@@ -101,18 +114,19 @@ See [RUNTIME_CORRESPONDENCE.md](RUNTIME_CORRESPONDENCE.md).
 - [ ] native AppKit Window backend
 - [ ] native Win32/Windows UI backend
 - [ ] portable Linux/BSD GUI backend
+- [ ] local CLI Window packaging through the same dedicated Window builder
 - [ ] FreeBSD Window package
 - [ ] Windows signing
 - [ ] macOS Developer ID signing/notarization
-- [ ] installer formats and application resources
-- [ ] organization-level build service without a personal GitHub token
+- [ ] installers/application resources
+- [ ] build service without a personal GitHub token
 
 ### Additional Unix targets
 
 - [x] generic C99 fallback architecture for the numeric Console subset
 - [x] FreeBSD 15.1 compile/run gate
-- [ ] OpenBSD compile/run gate before claiming OpenBSD support
-- [ ] NetBSD compile/run gate before claiming NetBSD support
+- [ ] OpenBSD compile/run gate before claiming support
+- [ ] NetBSD compile/run gate before claiming support
 - [ ] portable Unix GUI package path
 - [ ] WASI command target for raw standalone Wasm execution
 
@@ -120,23 +134,21 @@ See [RUNTIME_CORRESPONDENCE.md](RUNTIME_CORRESPONDENCE.md).
 
 Completed:
 
-- [x] factorization formal core
+- [x] State-Change Factorization + Mutation Transparency
 - [x] Change Signature Soundness
 - [x] verified policy checker
-- [x] proof-free evidence boundary
 - [x] SourceStmt/EvidenceStmt/signature correspondence
 - [x] machine-checked integer range-analysis soundness
-- [x] production source/AST extraction assurance through independent raw-source translation validation
-- [x] direct compiled numeric execution and ranged guards
-- [x] independent transition/effect/contract validation
-- [x] **first production/direct-runtime/formal effect correspondence for linear protected recipes**
+- [x] independent raw-source translation validation
+- [x] direct compiled numeric execution and independent effect validation
+- [x] first linear runtime → SourceExecutes correspondence
+- [x] **branch/repeat path-witnessed runtime correspondence and multiple protected invocations**
 
 Highest-priority remaining work:
 
-- [ ] **extend runtime effect occurrences to explicit branch/repeat path witnesses and multiple recipe invocations**
 - [ ] typed expression/core IR or another independently checked lowering input
-- [ ] extend formal call/substitution semantics for the direct recipe subset
-- [ ] investigate a smaller verified/checkable frontend beyond JavaScript source translation validation
+- [ ] formal recipe-call/substitution semantics inside the source model
+- [ ] investigate a smaller verified/checkable frontend beyond JavaScript translation validation
 - [ ] stable machine-readable certificate/container format
 - [ ] semantic-security case studies and benchmark suite
 - [ ] backend/certificate/checker overhead evaluation
@@ -149,16 +161,15 @@ Before a high-venue submission:
 - [x] State-Change Factorization and Mutation Transparency
 - [x] Change Signature Soundness and formal capability containment
 - [x] verified semantic policy checker
-- [x] proof-free semantic evidence decoded by Lean
-- [x] source-core correspondence checks
-- [x] machine-checked range-analysis soundness for a useful integer fragment
+- [x] machine-checked useful integer range fragment
 - [x] independent raw-source → SourceStmt/range translation validation
 - [x] direct compiled numeric state/control/recipe execution
 - [x] independent ordered transition and semantic-effect validation
-- [x] **Lean-checked linear runtime occurrence → SourceExecutes correspondence**
+- [x] Lean-checked runtime occurrence → SourceExecutes correspondence
+- [x] **branch/repeat/multi-invocation RuntimePath checking**
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
-- [ ] branch/repeat/multi-invocation runtime correspondence
 - [ ] typed expression/core IR or independently checked lowering input
+- [ ] formal recipe-call/substitution correspondence
 - [ ] benchmark suite and semantic-security case studies
 - [ ] overhead evaluation
 - [ ] systematic related-work review
@@ -174,12 +185,12 @@ Before a high-venue submission:
 6. Bootstrap Wasm is never described as direct Wasm lowering.
 7. Capability/range analysis fails conservatively when safety cannot be proved.
 8. `why` describes recorded provenance, not universal causality.
-9. Raw-source extraction is independently translation-validated, but JavaScript parser correctness is **not machine proved**.
+9. Raw-source extraction is translation-validated; JavaScript parser correctness is not machine proved.
 10. Range soundness applies only to the explicitly modeled integer fragment.
-11. Division/floating point/general multiplication are not silently labeled formally verified.
-12. Direct-Wasm/C99 support is narrower than the full Patch language; unsupported constructs fail explicitly.
-13. Differential/translation-validation tests are evidence, not compiler-correctness theorems.
+11. Direct-Wasm/C99 support is narrower than the full Patch language; unsupported constructs fail explicitly.
+12. Differential/translation-validation tests are evidence, not compiler-correctness theorems.
+13. `RuntimePath` is untrusted evidence; only Lean acceptance provides the formal execution witness.
 14. Runtime guards complement compile-time analysis; they do not prove lowering correctness.
-15. Window packages are standalone on Windows/macOS/Linux but are not native-widget generation.
-16. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
-17. Beta.20 runtime correspondence is linear and integer-only; branches, repeats, multiple invocations and floating-point correspondence are rejected rather than overclaimed.
+15. Window desktop packages are standalone but are not native-widget generation.
+16. Window Web Apps use a generated browser runtime; they are not direct Wasm lowering.
+17. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
