@@ -95,6 +95,7 @@ structure Interval where
   lo : Int
   hi : Int
   ordered : lo ≤ hi
+  deriving Repr
 
 def Within (inner outer : Interval) : Prop :=
   outer.lo ≤ inner.lo ∧ inner.hi ≤ outer.hi
@@ -106,8 +107,8 @@ def Within (inner outer : Interval) : Prop :=
 theorem withinTrans {a b c : Interval}
     (hab : Within a b) (hbc : Within b c) : Within a c := by
   constructor
-  · exact le_trans hbc.1 hab.1
-  · exact le_trans hab.2 hbc.2
+  · exact Int.le_trans hbc.1 hab.1
+  · exact Int.le_trans hab.2 hbc.2
 
 inductive ChangeKind where
   | increase
