@@ -7,7 +7,7 @@
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 [![FreeBSD C99](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml)
 
-**Current development beta: `0.2.0-beta.18`** · **Change IR: `0.7`**
+**Current development beta: `0.2.0-beta.19`** · **Change IR: `0.8`**
 
 [Open Patch Studio](https://pinkysworld.github.io/Patch/) · [Language spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
@@ -28,17 +28,17 @@ The source stays small while the compiler/runtime can derive history, undo/redo,
 
 ## Status at a glance
 
-| Area | Beta.18 status |
+| Area | Beta.19 status |
 |---|---|
-| Language | Working interpreter and compiler front end; Change IR 0.7 |
+| Language | Working interpreter and compiler front end; Change IR 0.8 |
 | Semantic contracts | Change Signatures, optional Change Capabilities, numeric magnitude bounds |
 | Formal work | Lean 4 factorization, signature soundness, policy containment, source/evidence checks and integer range soundness for explicit fragments |
+| Source validation | **Independent raw-source parser** reconstructs formal `SourceStmt` + range claims and checks them against the production AST path before certification |
 | Direct backend | Numeric state, arithmetic, conditions, literal loops and non-recursive numeric recipes lowered directly to WebAssembly |
 | Unix fallback backend | Same conservative numeric Console subset emitted as portable C99 and compiled/smoke-run on FreeBSD 15.1 |
-| Backend validation | Interpreter differential tests plus independent transition and semantic-effect validation |
+| Runtime validation | Interpreter differential tests plus independent transition and semantic-effect validation |
 | Patch Studio | Browser-first PWA, editor, Run, first Window Designer, Changes and IR views |
-| Browser builds | `.patchapp`, standalone single-file Web App, direct Wasm and bootstrap Wasm |
-| Desktop builds | Windows/macOS/Linux Console + Window/GUI packages; **FreeBSD Console** package |
+| Desktop builds | Windows/macOS/Linux Console + Window/GUI packages; FreeBSD Console package |
 
 ## Try Patch
 
@@ -64,9 +64,11 @@ patch certify examples/range-soundness.patch --out RangeSoundness.patchcert.lean
 patch run-wasm examples/direct-wasm-recipes.patch
 ```
 
+`patch formal` now reports three separate implementation/formal views: the semantic bridge, the AST-derived formal source/range core, and the **independent raw-source extraction validation**.
+
 ## Build from Patch Studio
 
-Patch Studio is the easiest way to experiment with the language. It runs in a modern browser and can be installed as a PWA on desktop, iPhone and iPad.
+Patch Studio runs in a modern browser and can be installed as a PWA on desktop, iPhone and iPad.
 
 | Target | Where it builds | Current result |
 |---|---|---|
@@ -89,8 +91,6 @@ See [Patch Studio](docs/PATCH_STUDIO.md) and [Application builds](docs/NATIVE_AP
 
 ## Portable C99 and FreeBSD
 
-Beta.18 adds a second executable compiler backend for the direct numeric Console subset:
-
 ```bash
 patch build program.patch --target c99 --out Program.c
 cc -std=c99 -O2 -o Program Program.c -lm
@@ -99,13 +99,9 @@ cc -std=c99 -O2 -o Program Program.c -lm
 
 The C99 generator first applies the same conservative support boundary used by direct Wasm, then independently lowers normalized Change IR to ordinary C99. It preserves numeric state, `set/add/remove/clear`, `show`, supported conditions, literal `repeat`/`count`, acyclic numeric recipes and ranged-parameter runtime guards.
 
-The repository compiles and executes the generated source on Linux, macOS and **FreeBSD 15.1**. The FreeBSD Studio build uses the base-system `cc` inside a FreeBSD VM and returns the resulting executable as a GitHub Actions artifact.
-
-This is the start of Patch's generic Unix fallback strategy. It does **not** yet imply tested OpenBSD, NetBSD or arbitrary-Unix compatibility, and FreeBSD Window/GUI packaging is still future work.
+The repository compiles and executes generated C99 on Linux, macOS and **FreeBSD 15.1**. This is the start of Patch's generic Unix fallback strategy; OpenBSD, NetBSD and FreeBSD GUI remain unclaimed until they have their own executable gates.
 
 ## WebAssembly: two different targets
-
-Patch deliberately distinguishes the old compatibility carrier from the direct compiler backend:
 
 ```text
 --target wasm
@@ -117,22 +113,18 @@ Patch deliberately distinguishes the old compatibility carrier from the direct c
   imports the tiny Patch host ABI
 ```
 
-The direct module currently imports:
+Direct Wasm currently imports:
 
 ```text
 patch.show_number(f64)
 patch.change_number(i32 targetId, f64 before, f64 after)
 ```
 
-So a raw `.direct.wasm` is executable WebAssembly, but **not yet a standalone WASI command module**. For the simplest standalone experience, build a Web App or desktop application, or use:
+A raw `.direct.wasm` is executable WebAssembly, but **not yet a standalone WASI command module**. Use `patch run-wasm`, a Standalone Web App, or a desktop package for a ready-to-run host.
 
-```bash
-patch run-wasm program.patch
-```
+## Compiled Console boundary
 
-## Direct compiler boundary
-
-The direct Wasm and portable C99 Console paths currently share a conservative language boundary:
+Direct Wasm and portable C99 share a conservative compiled Console subset:
 
 ```text
 top-level numeric create
@@ -147,7 +139,7 @@ ranged numeric parameter guards
 block-level numeric transition hook
 ```
 
-Outside that compiled Console boundary:
+Outside that boundary:
 
 ```text
 dynamic repeat counts
@@ -167,8 +159,6 @@ Unsupported constructs fail explicitly instead of silently falling back.
 
 ## Semantic Change Contracts
 
-Patch can infer what a recipe may change and constrain that authority semantically rather than merely saying that it can write a location:
-
 ```patch
 allow reward:
   score may increase up to 10
@@ -178,60 +168,74 @@ make reward(bonus number 0..5):
     add bonus * 2
 ```
 
-For the supported range fragment, the compiler infers `bonus * 2` as `0..10`. A `set score = 999` is not treated as an `increase`, even though both operations write the same persistent location.
+For the supported range fragment, the production analyzer infers `bonus * 2` as `0..10`. A `set score = 999` is not treated as an `increase`, even though both operations write the same persistent location.
 
-A protected numeric recipe can execute through the direct Wasm backend with declared parameter ranges enforced again at the Wasm function boundary. The C99 backend emits corresponding range guards for the same supported recipe fragment.
+A protected numeric recipe can execute through direct Wasm with its declared parameter range enforced again at the Wasm function boundary. Portable C99 emits a corresponding runtime range guard.
 
-## Formal assurance
+## Formal assurance and source validation
 
-Patch is **not a fully verified compiler**. The repository keeps that boundary explicit.
+Patch is **not a fully verified compiler**. Beta.19 narrows one important trust boundary without describing translation validation as a proof.
 
-For the structured formal core, Lean proves the containment chain:
+The production path derives:
+
+```text
+Patch source
+   -> production parser / AST
+   -> formalSource: SourceStmt + range claims
+```
+
+A new independent path deliberately does **not** import `parser.js` or consume the production AST:
+
+```text
+exact Patch source bytes
+   -> small independent indentation-aware parser
+   -> raw SourceStmt + raw formal range claims
+   -> exact structural comparison with formalSource
+```
+
+For a protected recipe, `patch certify` now requires this raw-source comparison to pass before emitting the Lean certificate. Tampering with either the AST-derived `SourceStmt` or its range claim is covered by negative tests.
+
+This reduces the trusted JavaScript extraction path, but it remains **translation validation**, not a machine-checked theorem that the production parser is correct.
+
+After that implementation-side validation, Lean checks the formal chain:
+
+```text
+RangeExpr
+   -> analyzeRange + rangeAnalysisSound
+   -> SourceStmt
+   -> source-operation normalization
+   -> EvidenceStmt
+   -> CoreStmt
+   -> inferSignature
+   -> compare production Change Signature
+   -> verified semantic policy check
+```
+
+For the structured formal core, Lean proves:
 
 ```text
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-therefore:
+and therefore:
 
 ```text
 RuntimeChanges(stmt) ⊆ Capability(stmt)
 ```
 
-The certificate path keeps several claims separate:
-
-```text
-formal RangeExpr
-      ↓
-Lean analyzeRange + rangeAnalysisSound
-      ↓
-formal SourceStmt
-      ↓
-Lean source-operation normalization
-      ↓
-EvidenceStmt
-      ↓
-CoreStmt
-      ↓
-formal Change Signature
-      ↓
-compare independent production signature
-      ↓
-verified semantic policy check
-```
-
 Key modules:
 
 ```text
-PatchFormal.lean      factorization, intervals, effects, policies
-PatchSignature.lean   structured execution + signature soundness
-PatchChecker.lean     executable verified semantic policy checker
-PatchEvidence.lean    proof-free evidence decoder + correspondence
-PatchSource.lean      source verbs, normalization + source containment
-PatchRange.lean       integer evaluation + range-analysis soundness
+src/source-validation.js independent raw-source extraction validator
+PatchFormal.lean          factorization, intervals, effects, policies
+PatchSignature.lean       structured execution + signature soundness
+PatchChecker.lean         executable verified semantic policy checker
+PatchEvidence.lean        proof-free evidence decoder + correspondence
+PatchSource.lean          source verbs, normalization + source containment
+PatchRange.lean           integer evaluation + range-analysis soundness
 ```
 
-JavaScript source/AST extraction and complete production-runtime-to-formal-execution correspondence remain explicit proof obligations. The new C99 lowering is tested portability infrastructure, not a new formal verification claim.
+The largest remaining formal trust boundary is now **production/direct runtime effects → Lean `SourceExecutes` / `Executes`**, together with ultimately replacing validation of source extraction by a smaller verified or independently checkable frontend if that proves worthwhile.
 
 ## Direct runtime validation
 
@@ -241,7 +245,7 @@ The direct Wasm runtime reports a deliberately small observation:
 patch.change_number(i32 targetId, f64 before, f64 after)
 ```
 
-An independent validator executes the supported Change IR semantics separately, reconstructs expected transitions and concrete semantic effects, then compares those effects with the static Change Signature and, where present, the Change Capability.
+An independent validator executes the supported Change IR semantics separately, reconstructs expected transitions and concrete semantic effects, then compares them with the observed direct execution, static Change Signature and, where present, Change Capability.
 
 This is **translation/runtime validation evidence**, not a theorem that the entire compiler is correct. See [direct trace validation](docs/DIRECT_TRACE_VALIDATION.md) and [semantic-effect validation](docs/DIRECT_EFFECT_VALIDATION.md).
 
@@ -250,7 +254,7 @@ This is **translation/runtime validation evidence**, not a theorem that the enti
 | Document | Purpose |
 |---|---|
 | [SPEC](docs/SPEC.md) | Language syntax and semantics |
-| [COMPILER](docs/COMPILER.md) | Parser → AST → Change IR and backend architecture |
+| [COMPILER](docs/COMPILER.md) | Parser → AST → Change IR, validation and backend architecture |
 | [PATCH_STUDIO](docs/PATCH_STUDIO.md) | Browser IDE, Designer and cross-platform Build workflow |
 | [NATIVE_APPS](docs/NATIVE_APPS.md) | Windows/macOS/Linux packaging plus FreeBSD/C99 Console path |
 | [FORMAL_MODEL](docs/FORMAL_MODEL.md) | Formal definitions, theorems and trust boundaries |
@@ -262,28 +266,28 @@ This is **translation/runtime validation evidence**, not a theorem that the enti
 
 ## What comes next
 
-The highest-value next steps are deliberately narrower than adding more surface syntax:
+The highest-value next steps are:
 
-1. reduce the remaining trust gap from production source/AST to formal `RangeExpr` / `SourceStmt`;
-2. connect direct runtime effect occurrences to the Lean execution model;
-3. extend the Unix portability path beyond FreeBSD only when it is actually tested;
-4. move the Window backend toward native AppKit/Win32 and a portable Unix GUI layer;
-5. extend Designer selection/properties/drag-resize and add signing/notarization quality.
+1. connect independently reconstructed runtime effect occurrences to Lean `SourceExecutes` / `Executes`;
+2. introduce a typed expression/core IR or another smaller independently checked lowering input;
+3. extend tested Unix portability only when actual platform gates exist;
+4. move Window packaging toward native AppKit/Win32 and a portable Unix GUI layer;
+5. strengthen Designer interaction and desktop signing/notarization.
 
 ## Research identity
 
-Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, reversible computation, WebAssembly compilation, C code generation or native packaging are individually new.
+Patch does **not** claim that patches, first-class state change, effect systems, capabilities, interval analysis, abstract interpretation, provenance, translation validation, verified checkers, Proof-Carrying Code, WebAssembly compilation, C code generation or native packaging are individually new.
 
-The candidate contribution is the combination of mandatory semantic mutation, operation/magnitude-aware semantic contracts, formal containment for a structured core, source/evidence separation, quantitative range assurance, and executable backends whose runtime behavior can increasingly be checked against the same semantic model.
+The candidate contribution is the combination of mandatory semantic mutation, operation/magnitude-aware semantic contracts, formal containment for a structured core, separated source/evidence/signature claims, quantitative range assurance, source translation validation and executable backends whose runtime behavior can increasingly be checked against the same semantic model.
 
 ## Repository map
 
 ```text
-src/                    language, compiler, analyses, certificates, Wasm/C99 and app builders
+src/                    language, compiler, source/runtime validators, certificates, Wasm/C99 and app builders
 formal/                 Lean factorization, signatures, checker, evidence, source, ranges
 web/                    Patch Studio PWA and public project site
 scripts/                smoke checks, native packaging and deterministic site build
-tests/                  language, compiler, formal bridge, Wasm/C99 and app-build tests
+tests/                  language, compiler, formal, source-validation, Wasm/C99 and app-build tests
 examples/               runnable .patch programs
 docs/                   specification, research, compiler and platform docs
 paper/                   manuscript draft and references

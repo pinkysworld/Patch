@@ -4,135 +4,116 @@ Working manuscript:
 
 **Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs**
 
-## Status
+## Current artifact status
 
-The research artifact is now tied to **Patch 0.2.0-beta.9**. It is not yet a submission-ready top-venue paper.
+The implementation/research artifact is now **Patch 0.2.0-beta.19 / Change IR 0.8**. The paper is still a working manuscript, not a submission-ready top-venue paper.
 
-Beta 9 closes one of the major formal gaps left by beta 8: the project now has a machine-checked interval-analysis soundness theorem for a useful integer expression fragment. `formal/PatchRange.lean` defines both concrete evaluation and abstract interval analysis for integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. Lean proves that every concrete result lies inside the inferred interval when the concrete environment respects the declared ranges.
+The research story now has three distinct assurance layers around the primary State-Change Factorization / Semantic Change Contracts claim:
 
-The motivating capability example is now represented directly in the formal story:
+1. **Lean formal core** — factorization, Mutation Transparency, Change Signature Soundness, policy containment and integer range-analysis soundness for explicit formal fragments.
+2. **Source translation validation** — beta.19 independently re-parses the exact Patch source without importing `parser.js` or consuming the production AST, reconstructs SourceStmt/range claims, and compares them with the production AST-derived `formalSource` artifact before protected certification.
+3. **Direct-runtime validation** — an independent Change-IR execution model reconstructs ordered transitions and concrete semantic effects and compares them with observed direct-Wasm execution, Change Signatures and Change Capabilities.
 
-```patch
-allow reward:
-  player.score may increase up to 10
+None of these is described as complete compiler verification.
 
-make reward(player, bonus number 0..5):
-  change player:
-    add bonus * 2 to score
+## Beta.19 source-validation milestone
+
+Before beta.19, the remaining frontend assurance boundary included:
+
+```text
+Patch source bytes
+   -> production parser / AST
+   -> formal SourceStmt + range claims
 ```
 
-For the modeled fragment, `bonus * 2` is formally bounded by `0..10`.
+Beta.19 adds:
 
-Implemented research mechanisms now include:
+```text
+exact Patch source bytes
+   -> independent raw-source parser
+   -> raw SourceStmt + raw range claims
+                 |
+                 +---- exact structural comparison ----+
+                                                       |
+production AST -> formalSource ------------------------+
+```
 
-- normalized Change IR 0.7;
-- semantic Change Signatures and operation-/magnitude-aware Change Capabilities;
-- ranged numeric parameters and production interval analysis;
-- State-Change Factorization and Mutation Transparency proofs;
-- structured `CoreStmt`, formal `Executes`, and Change Signature Soundness;
-- executable verified semantic policy checker;
-- proof-free `EvidenceStmt` validated/decoded by Lean;
-- formal `SourceStmt` preserving `add/remove/set/clear`;
-- Lean source semantic normalization and source/evidence equality checking;
-- `checkSourceSignature_sound` and `checkedSourceExecutionCannotEscape`;
-- **formal `RangeExpr`, concrete integer evaluator and executable interval analyzer**;
-- **machine-checked `rangeAnalysisSound` theorem**;
-- **independent production `RangeExpr` extraction and production/formal range-agreement checking**;
-- generated range/source/evidence/signature/policy certificates;
-- Windows/macOS/Linux CI plus explicit Lean 4.30 range/source/evidence/certificate CI.
+The independent path does not import the production parser or consume the production AST. `patch certify` now refuses to certify a supported protected recipe unless this source/range comparison succeeds.
 
-## Formal modules
+Tamper tests cover disagreements in both SourceStmt structure and range claims.
+
+This is **translation validation**, not a machine-checked parser-correctness theorem. Both frontend paths are still JavaScript implementations.
+
+## Current formal chain
+
+```text
+exact source
+   -> production formalSource --------+
+   -> independent raw-source witness --+-> equality validation
+                                        |
+                                        v
+formal RangeExpr
+   -> Lean analyzeRange + rangeAnalysisSound
+   -> SourceStmt
+   -> Lean source semantic normalization
+   -> EvidenceStmt
+   -> CoreStmt
+   -> formal inferSignature
+   -> compare separate production Change Signature claim
+   -> verified semantic policy check
+   -> formal SourceExecutes policy containment
+```
+
+Formal modules:
 
 ```text
 PatchFormal.lean      factorization, state, intervals, effects, policies
 PatchSignature.lean   CoreStmt execution + signature soundness
 PatchChecker.lean     executable verified semantic policy checker
-PatchEvidence.lean    proof-free semantic evidence + signature correspondence
-PatchSource.lean      source mutation vocabulary + source/evidence correspondence
-PatchRange.lean       integer evaluator + machine-checked range-analysis soundness
+PatchEvidence.lean    proof-free semantic evidence + correspondence
+PatchSource.lean      source vocabulary + source/evidence/signature checks
+PatchRange.lean       integer evaluator + range-analysis soundness
 ```
 
-Formal CI explicitly builds all six modules. It then generates and compiles a certificate from `examples/range-soundness.patch`, whose protected recipe uses a ranged parameter and `bonus * 2`.
+## Executable artifact status
 
-## Current checked chain
+The artifact is no longer interpreter-only. It includes:
 
-For the beta.9-certified fragment:
+- direct numeric Patch → WebAssembly compilation;
+- direct control flow and acyclic numeric recipes;
+- ranged runtime guards;
+- independent direct-Wasm transition/effect validation;
+- standalone single-file Web Apps;
+- Windows/macOS/Linux Console packages;
+- Windows/macOS/Linux standalone Window packages through the current desktop player;
+- portable C99 for the compiled numeric Console subset;
+- compile/run gates for that C99 on Linux, macOS and FreeBSD 15.1;
+- FreeBSD Console builds from Patch Studio.
 
-```text
-formal RangeExpr
-      -> Lean analyzeRange
-      -> rangeAnalysisSound
-      -> formal SourceStmt(add/remove/set/clear)
-      -> Lean semantic normalization
-      -> EvidenceStmt
-      -> Lean decoding to CoreStmt
-      -> formal inferSignature
-      -> compare separate production Change Signature claim
-      -> verified semantic policy check
-      -> formal SourceExecutes runtime containment
-```
+These product/platform capabilities support artifact evaluation but are not individually novelty claims.
 
-The production side deliberately maintains separate claim paths. `src/range-analysis.js` computes the ordinary production interval. `src/formal-range.js` independently extracts the supported integer expression and computes a formal-style interval. Certification requires agreement before Lean receives the formal range claim.
+## Remaining high-value research gaps
 
-## Precise range theorem
+The strongest next steps are:
 
-Schematically, Lean proves:
+- connect independently reconstructed runtime effect occurrences to Lean `SourceExecutes` / `Executes`;
+- introduce a typed expression/core IR or another smaller independently checkable lowering input;
+- extend formal recipe-call/substitution semantics for the direct subset;
+- build semantic-security/engineering case studies;
+- measure analysis, source-validation, evidence/certificate, checker and backend overhead;
+- perform a systematic related-work review and reproducibility pass.
 
-```text
-EnvRespects(ranges, values)
-analyzeRange(expr, ranges) = some interval
-evalRangeExpr(expr, values) = some value
-------------------------------------------------
-value is inside interval
-```
+If source simplicity remains a headline empirical claim, user evidence should be collected only with an appropriate study design and ethics/consent process.
 
-This is a theorem over the entire modeled expression grammar, not a finite test suite.
+## Prior-art discipline
 
-The first verified fragment is intentionally narrow. It excludes division, decimal/floating-point semantics, and general multiplication where neither operand is a non-negative integer literal. Those constructs are not silently described as verified.
+Patch does not claim novelty for interval analysis, abstract interpretation, source calculi, translation validation, Proof-Carrying Code, verified checkers, effects, capabilities, quantitative analysis, WebAssembly/C code generation, provenance, undo or cross-platform packaging.
 
-## Remaining trust boundary
+The candidate contribution remains the combination of **mandatory semantic mutation factorization** and operation-/magnitude-aware state-transition authority derived from the same representation, supported by a progressively tighter formal/validation connection to the implementation.
 
-Beta 9 is **not full compiler verification**. Still unproved:
+## Manuscript source
 
-```text
-Patch source bytes
-   -> JavaScript parser / production AST
-   -> independent RangeExpr / SourceStmt extraction
-```
-
-and:
-
-```text
-production runtime expression/state execution
-   -> formal evalRangeExpr / SourceExecutes correspondence
-```
-
-The independent extractor and range-agreement check reduce the frontend trust boundary but do not prove the JavaScript parser or runtime correct.
-
-## Prior-art boundary
-
-Patch does not claim novelty for interval analysis, abstract interpretation, source calculi, compiler verification, translation validation, Proof-Carrying Code, effects, capabilities, quantitative analysis, provenance, undo or evidence checking. Those are established areas.
-
-The candidate contribution remains the mandatory semantic mutation factorization and the derivation of operation-/magnitude-aware state-transition authority from that same representation. The formal range theorem strengthens the assurance argument for magnitude-aware contracts rather than serving as a firstness claim about range analysis.
-
-## High-venue gate
-
-Before an OOPSLA/PLDI/ICFP-level attempt, the project should still add:
-
-- systematic related-work review;
-- stronger production AST → `RangeExpr` / `SourceStmt` correspondence assurance;
-- production-runtime/formal-evaluation and trace correspondence;
-- direct compiled execution;
-- two or three convincing semantic-security/engineering case studies;
-- range/source/evidence/certificate/checker and runtime overhead measurements;
-- reproducibility bundle;
-- user evidence only if beginner simplicity remains a headline empirical claim.
-
-The next most valuable formal step is no longer the basic range theorem. It is **closing the production correspondence gap**, first for supported AST extraction and then for production runtime traces.
-
-## Manuscript integration
-
-`main.tex` remains the working article source. Beta 9 results should be represented as a formal range-analysis subsection and reflected in the limitations/evaluation sections before an external submission snapshot is produced. `docs/RANGE_SOUNDNESS.md` contains the precise beta.9 theorem and current boundary for that integration.
+`main.tex` is the working article source. Its next editorial pass should consolidate beta.9–beta.19 into one coherent implementation-assurance section rather than narrating every beta chronologically. The claims in `docs/FORMAL_MODEL.md` and `docs/NOVELTY.md` are the current source of truth for the exact proof/validation boundary.
 
 ## Build
 
@@ -142,4 +123,4 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-The manuscript currently uses an inline bibliography, so BibTeX is not required for the artifact PDF. `references.bib` is maintained in parallel for later venue-template migration.
+`references.bib` is maintained for later venue-template migration.
