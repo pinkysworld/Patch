@@ -62,12 +62,13 @@ test('formal bridge marks dynamic repetition unsupported', () => {
   assert.ok(bridged.reasons.some(reason => reason.includes('dynamic repeat count')));
 });
 
-test('compiler embeds bridge, source, source validation and independently validated guard artifacts', () => {
+test('compiler embeds bridge, source, call, source validation and independently validated guard artifacts', () => {
   const source = `create number score = 0\nchange score:\n  add 1\nshow score`;
-  const { ir, formalBridge, formalSource, sourceValidation, guardValidation } = compile(source, { name: 'FormalCounter' });
-  assert.equal(ir.version, '0.9');
+  const { ir, formalBridge, formalSource, formalCalls, sourceValidation, guardValidation } = compile(source, { name: 'FormalCounter' });
+  assert.equal(ir.version, '0.10');
   assert.equal(ir.formalBridge, formalBridge);
   assert.equal(ir.formalSource, formalSource);
+  assert.equal(ir.formalCalls, formalCalls);
   assert.equal(ir.sourceValidation, sourceValidation);
   assert.equal(ir.guardValidation, guardValidation);
   assert.equal(formalBridge.format, 'patch-formal-bridge');
@@ -80,6 +81,9 @@ test('compiler embeds bridge, source, source validation and independently valida
   assert.equal(formalSource.entries.$program.guardSupported, true);
   assert.equal(formalSource.entries.$program.rangeClaims.length, 1);
   assert.equal(formalSource.summary.rangeClaims, 1);
+  assert.equal(formalCalls.format, 'patch-formal-calls');
+  assert.equal(formalCalls.version, '0.1');
+  assert.equal(formalCalls.summary.supported, 0);
   assert.equal(sourceValidation.format, 'patch-source-extraction-validation');
   assert.equal(sourceValidation.entries.$program.validated, true);
   assert.equal(sourceValidation.summary.mismatches, 0);
