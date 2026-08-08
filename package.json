@@ -1,22 +1,24 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.9",
-  "description": "Patch: a tiny change-oriented programming language with machine-checked semantic change contracts, formal source/evidence correspondence, machine-checked integer range-analysis soundness, Lean-checkable certificates, causal provenance, and a browser-first cross-platform IDE",
+  "version": "0.2.0-beta.10",
+  "description": "Patch: a tiny change-oriented programming language with semantic change contracts, Lean-checked range/source evidence, and a first direct Change IR to WebAssembly execution backend",
   "type": "module",
   "bin": { "patch": "./src/cli.js" },
   "scripts": {
     "test": "node --test",
     "run": "node src/cli.js run",
+    "run:wasm-direct": "node src/cli.js run-wasm examples/score.patch",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
+    "build:wasm-direct": "node src/cli.js build examples/score.patch --kind console --target wasm-direct --out Score.direct.wasm",
     "build:site": "node scripts/build-site.js",
     "check:site": "node scripts/check-site.js"
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm"]
 }
