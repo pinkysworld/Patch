@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio is the browser-first IDE for Patch, with semantic changes, Change Contracts, direct WebAssembly and Windows, macOS and Linux application builds.">
+  <meta name="description" content="Patch Studio is the browser-first IDE for Patch: semantic changes, Change Contracts, direct WebAssembly, a Lean-checked core, and Windows, macOS and Linux application builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -112,12 +112,12 @@
       <article class="intro-card">
         <div class="intro-copy">
           <p class="eyebrow">Patch programming language</p>
-          <h2>Small syntax. Build an app.</h2>
-          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. From Studio, Console and Window projects can be sent to Windows, macOS or Linux builders while browser-local builds remain available for Web Apps and WebAssembly.</p>
+          <h2>Small syntax. Visible changes. One Studio.</h2>
+          <p>Patch is an experimental language where existing persistent state changes through semantic <code>change</code> operations rather than ordinary reassignment. Run projects in the browser, inspect the Change Contract, and build Console or Window applications for Windows, macOS and Linux from the same source.</p>
           <div class="intro-actions">
-            <a class="primary-link" href="https://github.com/pinkysworld/Patch">View on GitHub</a>
+            <a class="primary-link" href="https://github.com/pinkysworld/Patch">GitHub + README</a>
             <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">Language spec</a>
-            <a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a>
+            <a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a>
           </div>
         </div>
         <pre class="code-card">create number score = 0
@@ -130,8 +130,8 @@ show score</pre>
 
       <div class="signal-grid" aria-label="Project highlights">
         <div class="signal"><strong>Build apps</strong><span>Console and GUI packages for Windows, macOS and Linux</span></div>
-        <div class="signal"><strong>Direct Wasm</strong><span>Numeric Change IR, control flow and recipes</span></div>
-        <div class="signal"><strong>Lean 4 core</strong><span>Factorization, signatures, policies and ranges</span></div>
+        <div class="signal"><strong>Semantic contracts</strong><span>Operation- and magnitude-aware Change Capabilities</span></div>
+        <div class="signal"><strong>Lean 4 core</strong><span>Factorization, signatures, policies and integer ranges</span></div>
       </div>
 
       <div class="details-stack">
@@ -140,49 +140,78 @@ show score</pre>
           <div class="details-body two-column">
             <div>
               <h3>Language & Studio</h3>
-              <p>Interpreter, compiler front end, Change IR 0.7, console programs, first GUI/Designer slice, history, undo/redo, preview, <code>why</code> provenance and browser-local builds.</p>
-              <p>For the direct numeric console subset, Studio can emit a <strong>standalone single-file Web App</strong> or the actual direct Wasm module instead of the older ambiguous Wasm download.</p>
+              <p>Working interpreter and compiler front end, Change IR 0.7, console programs, first GUI/Designer slice, history, undo/redo, preview, <code>why</code> provenance, Changes view and IR view.</p>
+              <p>Browser-local formats include a <strong>Standalone Web App</strong>, direct WebAssembly, bootstrap Wasm for compatibility, and portable <code>.patchapp</code>.</p>
             </div>
             <div>
               <h3>Desktop targets from Studio</h3>
-              <p>Select Windows, macOS or Linux in the Studio build menu. The selected <strong>Project Type</strong> determines whether the cloud builder produces a Console package or a Window / GUI package from the current editor source.</p>
-              <p>Console packages use Patch's compiled direct-Wasm host. Window packages use the current Patch runtime inside a standalone desktop player. Native AppKit, Win32 and GTK widget lowering remains future work.</p>
+              <p>Select <strong>Windows App</strong>, <strong>macOS App</strong> or <strong>Linux App</strong>. The selected <strong>Project Type</strong> chooses Console or Window packaging, and GitHub Actions builds the current editor source on the target operating system.</p>
+              <p>Console and GUI packages are smoke-tested on Windows, macOS and Linux in the native-build workflow.</p>
             </div>
           </div>
         </details>
 
         <details>
-          <summary><span>Research & verification</span><span class="summary-hint">Open the technical view</span></summary>
+          <summary><span>Build formats & important boundaries</span><span class="summary-hint">Choose the right artifact</span></summary>
+          <div class="details-body two-column">
+            <div>
+              <h3>Direct Wasm is real Wasm</h3>
+              <p>The direct backend lowers the supported numeric subset to WebAssembly instructions. The raw <code>.direct.wasm</code> currently imports Patch's small host ABI, so it is <strong>not yet a standalone WASI command</strong>. Use <code>patch run-wasm</code>, a Standalone Web App, or a desktop package for a ready-to-run host.</p>
+            </div>
+            <div>
+              <h3>Window packages are standalone</h3>
+              <p>Current Window projects can be packaged as desktop GUI applications for all three supported desktop operating systems. They run the Patch Window model inside a generated desktop player; beta.17 does <strong>not</strong> claim native AppKit, Win32 or GTK widget lowering yet.</p>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Research & verification</span><span class="summary-hint">Technical view</span></summary>
           <div class="details-body two-column">
             <div>
               <p class="eyebrow">Research project</p>
               <h3>State-Change Factorization</h3>
-              <p>The central research claim is deliberately narrow: ordinary post-creation persistent mutation must execute through a semantic change. Patch does not claim that patches, undo, effects or first-class state change are individually new.</p>
+              <p>The central claim is deliberately narrow: ordinary post-creation persistent mutation must execute through a semantic change. Patch does not claim that patches, undo, effects or first-class state change are individually new.</p>
               <p><strong>Change Capabilities</strong> constrain semantic operation and magnitude, for example allowing a recipe to increase a value only up to a declared bound.</p>
             </div>
             <div>
               <p class="eyebrow">Formal assurance</p>
               <h3>Lean-checked core</h3>
               <p>The formal project covers State-Change Factorization, Mutation Transparency, Change Signature Soundness, policy containment and integer range-analysis soundness for explicitly modeled fragments.</p>
-              <p>The <strong>Verified checker</strong>, <strong>Source core</strong> and <code>PatchSource</code> modules keep source operations and semantic evidence distinct. <code>patch certify</code> emits Lean-checkable certificates for supported protected programs.</p>
+              <p>The <strong>Verified checker</strong> and <strong>Source core</strong> keep producer claims separate from Lean validation. <code>patch certify</code> emits Lean-checkable certificates for supported protected programs.</p>
             </div>
           </div>
         </details>
 
         <details>
-          <summary><span>Roadmap</span><span class="summary-hint">What comes next</span></summary>
+          <summary><span>Runtime validation</span><span class="summary-hint">Compiler evidence, not overclaiming</span></summary>
+          <div class="details-body two-column">
+            <div>
+              <h3>Independent transition model</h3>
+              <p>For the direct numeric backend, an independent validator reconstructs expected Change-IR transitions instead of using the Wasm lowerer or the production interpreter as its sole oracle.</p>
+            </div>
+            <div>
+              <h3>Semantic effect checks</h3>
+              <p>The validator reconstructs concrete increase/decrease/set/clear effects and checks them against static Change Signatures and protected Change Capabilities. This is translation/runtime validation evidence, not a theorem that the complete JavaScript compiler is verified.</p>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Roadmap</span><span class="summary-hint">Highest-value next work</span></summary>
           <div class="details-body roadmap-list">
-            <div><strong>Native GUI lowering</strong><span>Move the visual Window/Designer model from the current standalone desktop player onto native AppKit, Win32 and Unix GUI backends.</span></div>
-            <div><strong>Signing</strong><span>Add optional Windows code signing and macOS Developer ID signing/notarization for distributable release builds.</span></div>
-            <div><strong>Formal correspondence</strong><span>Reduce trust between source/AST, Change IR, direct runtime and the Lean semantics.</span></div>
-            <div><strong>Studio</strong><span>Selection, properties, richer controls, input binding and a clearer change timeline.</span></div>
+            <div><strong>Formal correspondence</strong><span>Reduce the remaining trust gap from production source/AST to formal RangeExpr / SourceStmt and connect runtime effects to Lean execution.</span></div>
+            <div><strong>Native GUI lowering</strong><span>Move the visual Window/Designer model from the current desktop player toward native AppKit, Win32 and a portable Unix GUI backend.</span></div>
+            <div><strong>Designer</strong><span>Add selection, properties, drag/resize, richer controls and two-way input binding.</span></div>
+            <div><strong>Distribution</strong><span>Add Windows signing, macOS Developer ID/notarization, installers and a build service that does not require an end-user GitHub token.</span></div>
           </div>
         </details>
       </div>
 
       <footer class="site-footer">
-        <span>Patch is experimental research software.</span>
+        <span>Patch is experimental research software · 0.2.0-beta.17</span>
         <nav aria-label="Project links">
+          <a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_TRACE_VALIDATION.md">Trace validation</a>
           <a href="https://github.com/pinkysworld/Patch/blob/main/docs/DIRECT_EFFECT_VALIDATION.md">Effect validation</a>
