@@ -46,7 +46,14 @@ export function validateWindowRuntimeSupport(compiled) {
     for (const node of nodes ?? []) {
       if (node.kind === 'window') {
         for (const child of node.body ?? []) {
-          if (child.kind === 'uiControl' && child.id) controls.set(child.id, child.control);
+          if (child.kind !== 'uiControl' || !child.id) continue;
+          if (controls.has(child.id)) {
+            throw new WindowBuildError(
+              `line ${child.line ?? '?'}: Window control id '${child.id}' is declared more than once. ` +
+              'Control ids must be unique across the current application.'
+            );
+          }
+          controls.set(child.id, child.control);
         }
       } else if (node.kind === 'event') {
         events.push(node);
