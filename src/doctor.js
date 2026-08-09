@@ -101,7 +101,7 @@ function checkWritable(directory) {
 }
 
 function probe(command, args) {
-  const result = spawnSync(command, args, { encoding: 'utf8', shell: process.platform === 'win32' });
+  const result = spawnSync(command, args, { encoding: 'utf8', shell: false });
   if (result.error || result.status !== 0) return { ok: false, detail: result.error?.message ?? `${command} exited with status ${result.status}` };
   const firstLine = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim().split(/\r?\n/)[0];
   return { ok: true, detail: firstLine || `${command} is available.` };
