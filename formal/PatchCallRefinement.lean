@@ -12,7 +12,7 @@ theorem valueFitsWithin
     ValueFits value declared := by
   rcases hValue with ⟨hActualLo, hActualHi⟩
   rcases hWithin with ⟨hDeclaredLo, hDeclaredHi⟩
-  exact ⟨le_trans hDeclaredLo hActualLo, le_trans hActualHi hDeclaredHi⟩
+  constructor <;> omega
 
 /-- Pointwise bridge from exact concrete values through beta.25 abstract call
     intervals into the callee's declared parameter intervals. -/
@@ -21,12 +21,14 @@ theorem concreteArgsFitThroughAbstract :
       ConcreteArgsFit values actual →
       ArgsFit actual declared →
       ConcreteArgsFit values declared := by
-  intro values actual declared hConcrete hAbstract
-  induction hConcrete with
+  intro values actual declared hConcrete
+  induction hConcrete generalizing declared with
   | nil =>
+      intro hAbstract
       cases hAbstract
       exact ConcreteArgsFit.nil
   | @cons value interval values intervals hValue hRest ih =>
+      intro hAbstract
       cases hAbstract with
       | cons hWithin hTail =>
           exact ConcreteArgsFit.cons (valueFitsWithin hValue hWithin) (ih hTail)
