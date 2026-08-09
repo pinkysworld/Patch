@@ -71,7 +71,7 @@ theorem boundBodyCoveredBool_sound
           boundBodyCoveredBool signature second = true := by
         simpa [boundBodyCoveredBool, Bool.and_eq_true] using h
       exact BoundBodyCovered.seq (ihFirst hBoth.1) (ihSecond hBoth.2)
-  | repeat count body ih =>
+  | «repeat» count body ih =>
       apply BoundBodyCovered.repeat
       apply ih
       simpa [boundBodyCoveredBool] using h
@@ -126,7 +126,7 @@ theorem boundExecRefinesSignature
   | @repeatSucc count body firstTrace restTrace hFirst hRest ihFirst ihRest =>
       intro signature hCovered
       cases hCovered with
-      | repeat hBodyCovered =>
+      | «repeat» hBodyCovered =>
           have hRestCovered : BoundBodyCovered signature (.repeat count body) :=
             BoundBodyCovered.repeat hBodyCovered
           exact traceRefinesSignature_append
