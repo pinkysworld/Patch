@@ -16,37 +16,39 @@ inductive CallTreeStmt where
       (body : CallTreeStmt)
   deriving Repr
 
-/-- Exact finite call-tree execution. Every nested call re-evaluates the formal
-    argument expressions in the current exact environment and constructs the
-    next positional `BindingList` through beta.26 `concreteCallBinding`. -/
-inductive CallTreeExec (bindings : BindingList) : CallTreeStmt → List Effect → Prop where
-  | base {body : BoundStmt} {trace : List Effect} :
+/-- Exact finite call-tree execution. `bindings` is an index, not a fixed
+    inductive parameter, because a nested call intentionally executes its body
+    under a newly constructed callee binding environment. -/
+inductive CallTreeExec : BindingList → CallTreeStmt → List Effect → Prop where
+  | base {bindings : BindingList} {body : BoundStmt} {trace : List Effect} :
       BoundExec bindings body trace →
       CallTreeExec bindings (.base body) trace
-  | seq {first second : CallTreeStmt} {firstTrace secondTrace : List Effect} :
+  | seq {bindings : BindingList} {first second : CallTreeStmt}
+      {firstTrace secondTrace : List Effect} :
       CallTreeExec bindings first firstTrace →
       CallTreeExec bindings second secondTrace →
       CallTreeExec bindings (.seq first second) (firstTrace ++ secondTrace)
-  | repeatZero {body : CallTreeStmt} :
+  | repeatZero {bindings : BindingList} {body : CallTreeStmt} :
       CallTreeExec bindings (.repeat 0 body) []
-  | repeatSucc {count : Nat} {body : CallTreeStmt}
+  | repeatSucc {bindings : BindingList} {count : Nat} {body : CallTreeStmt}
       {firstTrace restTrace : List Effect} :
       CallTreeExec bindings body firstTrace →
       CallTreeExec bindings (.repeat count body) restTrace →
       CallTreeExec bindings (.repeat (count + 1) body) (firstTrace ++ restTrace)
-  | branchThen {guard : GuardExpr} {thenBranch elseBranch : CallTreeStmt}
-      {trace : List Effect} :
+  | branchThen {bindings : BindingList} {guard : GuardExpr}
+      {thenBranch elseBranch : CallTreeStmt} {trace : List Effect} :
       evalGuard guard (envOfBindings bindings) = some true →
       CallTreeExec bindings thenBranch trace →
       CallTreeExec bindings (.branch guard thenBranch elseBranch) trace
-  | branchElse {guard : GuardExpr} {thenBranch elseBranch : CallTreeStmt}
-      {trace : List Effect} :
+  | branchElse {bindings : BindingList} {guard : GuardExpr}
+      {thenBranch elseBranch : CallTreeStmt} {trace : List Effect} :
       evalGuard guard (envOfBindings bindings) = some false →
       CallTreeExec bindings elseBranch trace →
       CallTreeExec bindings (.branch guard thenBranch elseBranch) trace
-  | call {argExprs : List RangeExpr} {params : List Name}
-      {declared : List Interval} {calleeSignature : List Effect}
-      {body : CallTreeStmt} {calleeBindings : BindingList} {trace : List Effect} :
+  | call {bindings : BindingList} {argExprs : List RangeExpr}
+      {params : List Name} {declared : List Interval}
+      {calleeSignature : List Effect} {body : CallTreeStmt}
+      {calleeBindings : BindingList} {trace : List Effect} :
       concreteCallBinding argExprs (envOfBindings bindings) params declared =
         some calleeBindings →
       CallTreeExec calleeBindings body trace →
@@ -147,27 +149,28 @@ theorem evalCallTreeStmt_sound
             simpa [evalCallTreeStmt, hBinding] using h
           exact CallTreeExec.call hBinding (ih hBody)
 
-/-- Static transitive body coverage. A base subtree delegates to beta.29. A
-    nested call must be covered by its own semantic signature, and that entire
-    nested signature must be contained in the enclosing signature. -/
-inductive CallTreeCovered (signature : List Effect) : CallTreeStmt → Prop where
-  | base {body : BoundStmt} :
+/-- Static transitive body coverage. `signature` is an index because nested
+    bodies are checked against the nested callee signature before that signature
+    is imported into the enclosing signature. -/
+inductive CallTreeCovered : List Effect → CallTreeStmt → Prop where
+  | base {signature : List Effect} {body : BoundStmt} :
       BoundBodyCovered signature body →
       CallTreeCovered signature (.base body)
-  | seq {first second : CallTreeStmt} :
+  | seq {signature : List Effect} {first second : CallTreeStmt} :
       CallTreeCovered signature first →
       CallTreeCovered signature second →
       CallTreeCovered signature (.seq first second)
-  | repeat {count : Nat} {body : CallTreeStmt} :
+  | repeat {signature : List Effect} {count : Nat} {body : CallTreeStmt} :
       CallTreeCovered signature body →
       CallTreeCovered signature (.repeat count body)
-  | branch {guard : GuardExpr} {thenBranch elseBranch : CallTreeStmt} :
+  | branch {signature : List Effect} {guard : GuardExpr}
+      {thenBranch elseBranch : CallTreeStmt} :
       CallTreeCovered signature thenBranch →
       CallTreeCovered signature elseBranch →
       CallTreeCovered signature (.branch guard thenBranch elseBranch)
-  | call {argExprs : List RangeExpr} {params : List Name}
-      {declared : List Interval} {calleeSignature : List Effect}
-      {body : CallTreeStmt} :
+  | call {signature : List Effect} {argExprs : List RangeExpr}
+      {params : List Name} {declared : List Interval}
+      {calleeSignature : List Effect} {body : CallTreeStmt} :
       CallTreeCovered calleeSignature body →
       SignatureCovers calleeSignature signature →
       CallTreeCovered signature
@@ -235,22 +238,22 @@ theorem callTreeExecRefinesSignature
       CallTreeCovered signature stmt →
       TraceRefinesSignature trace signature := by
   induction hExec with
-  | @base body trace hBase =>
+  | @base bindings body trace hBase =>
       intro signature hCovered
       cases hCovered with
       | base hBodyCovered =>
           exact boundExecRefinesSignature hBase hBodyCovered
-  | @seq first second firstTrace secondTrace hFirst hSecond ihFirst ihSecond =>
+  | @seq bindings first second firstTrace secondTrace hFirst hSecond ihFirst ihSecond =>
       intro signature hCovered
       cases hCovered with
       | seq hFirstCovered hSecondCovered =>
           exact traceRefinesSignature_append
             (ihFirst hFirstCovered)
             (ihSecond hSecondCovered)
-  | @repeatZero body =>
+  | @repeatZero bindings body =>
       intro signature hCovered actual hMem
       simp at hMem
-  | @repeatSucc count body firstTrace restTrace hFirst hRest ihFirst ihRest =>
+  | @repeatSucc bindings count body firstTrace restTrace hFirst hRest ihFirst ihRest =>
       intro signature hCovered
       cases hCovered with
       | «repeat» hBodyCovered =>
@@ -259,15 +262,15 @@ theorem callTreeExecRefinesSignature
           exact traceRefinesSignature_append
             (ihFirst hBodyCovered)
             (ihRest hRestCovered)
-  | @branchThen guard thenBranch elseBranch trace hGuard hThen ihThen =>
+  | @branchThen bindings guard thenBranch elseBranch trace hGuard hThen ihThen =>
       intro signature hCovered
       cases hCovered with
       | branch hThenCovered hElseCovered => exact ihThen hThenCovered
-  | @branchElse guard thenBranch elseBranch trace hGuard hElse ihElse =>
+  | @branchElse bindings guard thenBranch elseBranch trace hGuard hElse ihElse =>
       intro signature hCovered
       cases hCovered with
       | branch hThenCovered hElseCovered => exact ihElse hElseCovered
-  | @call argExprs params declared calleeSignature body calleeBindings trace
+  | @call bindings argExprs params declared calleeSignature body calleeBindings trace
       hBinding hBody ihBody =>
       intro signature hCovered
       cases hCovered with
