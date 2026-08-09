@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
 import {
   PATCH_COMPILED_WINDOW_IR_VERSION,
+  PATCH_COMPILED_WINDOW_VERSION,
   buildCompiledWindowArtifact,
   validateCompiledWindowArtifact
 } from '../src/window-compiled.js';
@@ -48,10 +49,12 @@ function readStoredPayload(bytes, wanted = 'patch-app.json') {
   assert.fail(`missing ZIP entry ${wanted}`);
 }
 
-test('compiled Window artifacts are pinned to the supported Change IR', () => {
+test('compiled Window artifacts are pinned to the supported Change IR and lifecycle version', () => {
   const built = artifact();
   assert.equal(PATCH_COMPILED_WINDOW_IR_VERSION, '0.10');
+  assert.equal(PATCH_COMPILED_WINDOW_VERSION, '0.2');
   assert.equal(built.irVersion, PATCH_COMPILED_WINDOW_IR_VERSION);
+  assert.equal(built.version, PATCH_COMPILED_WINDOW_VERSION);
   assert.throws(
     () => validateCompiledWindowArtifact({ ...built, irVersion: '0.11' }),
     /requires Change IR 0\.10/
@@ -78,8 +81,9 @@ test('current Ready Window payload contains compiled program and no Patch source
     source: 'this option must never be packaged'
   });
   const payload = readStoredPayload(ready.bytes);
-  assert.equal(payload.version, '0.3');
+  assert.equal(payload.version, '0.4');
   assert.equal(payload.execution, 'compiled-window-program');
+  assert.equal(payload.compiled.version, '0.2');
   assert.equal(payload.compiled.irVersion, '0.10');
   assert.equal(Object.hasOwn(payload, 'source'), false);
 });
