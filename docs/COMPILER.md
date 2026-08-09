@@ -83,7 +83,7 @@ The JavaScript artifact is **not trusted as a proof**. `src/call-certificate.js`
 
 ## `PatchCalls` checker
 
-`formal/PatchCalls.lean` defines:
+The Lean module `PatchCalls.lean`, stored at `formal/PatchCalls.lean`, defines:
 
 ```text
 CallStmt
