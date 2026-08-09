@@ -16,9 +16,7 @@ const required = [
   '_site/src/prebuilt-native.js','_site/src/local-native-kit.js','_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js',
   '_site/src/concrete-call-body.js','_site/src/concrete-call-body-certificate.js'
 ];
-for (const rel of required) {
-  if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
-}
+for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
 const html = read('_site/index.html');
 requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./icon.svg']);
@@ -28,9 +26,8 @@ for (const id of [
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10',
-  'Beta.30 finite transitive exact call trees', 'GeneratedTransitiveCallBodyCertificate.lean',
-  'production JavaScript/direct-Wasm call equivalence',
-  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console'
+  'Beta.31 call-aware direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
+  'scoped-slice attribution', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console'
 ]);
 for (const option of [
   'value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"',
@@ -68,19 +65,13 @@ requireAll('prebuilt native packager', prebuilt, [
   'patch-linux-console-runtime.bin','patch-windows-window-runtime.zip','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip'
 ]);
 
-// Beta.30 is a research certificate layer and is not imported by Studio at
-// runtime. The deployed compiler still exposes the stable beta.29 leaf/call
-// artifacts used by ordinary Studio inspection.
+// Beta.31 remains a research/CI certificate layer. Ordinary Studio deploys the
+// stable compiler/runtime modules it actually imports; it does not ship Lean or
+// the Node-only runtime-certificate generator.
 const concreteBody = read('_site/src/concrete-call-body.js');
 requireAll('guarded concrete-call body producer', concreteBody, [
   "PATCH_CONCRETE_CALL_BODY_VERSION = '0.2'", 'buildFormalGuardExpression', "kind: 'branch'", 'evalGuardExact'
 ]);
-const concreteBodyCertificate = read('_site/src/concrete-call-body-certificate.js');
-requireAll('guarded concrete-call certificate generator', concreteBodyCertificate, [
-  "PATCH_CONCRETE_CALL_BODY_CERTIFICATE_VERSION = '0.2'", 'BoundStmt.branch', 'GuardExpr.',
-  'evalBoundStmtEqBool','boundBodyCoveredBool','checkedConcreteCallBodyRefinesCallerSignature'
-]);
-
 const compiler = read('_site/src/compiler.js');
 requireAll('compiler assurance modules', compiler, [
   "'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'",
@@ -107,7 +98,5 @@ function requireText(where, content, text) {
 }
 function requireAll(where, content, texts) { for (const text of texts) requireText(where, content, text); }
 function rejectOutsideSiteImport(where, content) {
-  if (content.includes("'../src/") || content.includes('"../src/')) {
-    throw new Error(`${where} still points outside the deployed site.`);
-  }
+  if (content.includes("'../src/") || content.includes('"../src/')) throw new Error(`${where} still points outside the deployed site.`);
 }
