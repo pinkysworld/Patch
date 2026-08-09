@@ -11,7 +11,7 @@
     "validate:wasm-direct": "node scripts/validate-direct-trace.js examples/direct-wasm-recipes.patch",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
-    "check:project": "node scripts/check-project-surface.js",
+    "check:project": "node scripts/check-project-surface.js && node scripts/check-checkout-extension-surface.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
     "runtime-certify:example": "node src/cli.js runtime-certify examples/runtime-correspondence.patch --out formal/GeneratedRuntimeCertificate.lean",
