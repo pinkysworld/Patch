@@ -75,7 +75,7 @@ requireAll('typed Window changed events', windowEvents, [
 const compiledWindow = read('_site/src/window-compiled.js');
 requireAll('compiled Window artifact contract', compiledWindow, [
   "PATCH_COMPILED_WINDOW_VERSION = '0.1'", "PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program'",
-  'buildCompiledWindowArtifact','validateCompiledWindowArtifact','runCompiledWindow','formLayout'
+  "PATCH_COMPILED_WINDOW_IR_VERSION = '0.10'", 'buildCompiledWindowArtifact','validateCompiledWindowArtifact','runCompiledWindow','formLayout'
 ]);
 
 const nativeBuild = read('_site/native-build.js');
@@ -87,7 +87,7 @@ requireAll('native builder imports', nativeBuild, [
 requireAll('native builder modes', nativeBuild, [
   'native-windows','native-macos','native-linux','native-freebsd','validateWindowRuntimeSupport','compileToC99',
   'buildCompiledWindowArtifact','buildPrebuiltCompiledWindowPackage','prebuiltNativeTemplateUrl',
-  'Ready app download (no token)','compiled-window-program','workflow_dispatch','source_b64'
+  'Ready app download (no token)','workflow_dispatch','source_b64'
 ]);
 
 const prebuilt = read('_site/src/prebuilt-native.js');
