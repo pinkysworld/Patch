@@ -9,9 +9,9 @@ Patch keeps Console and Window build paths explicit. Direct Wasm is a Console ba
 ```text
 Console
   Web     -> one HTML file with direct Patch Wasm + browser host
-  Windows -> ready ZIP with prebuilt native runtime + app.wasm payload
-  macOS   -> ready ZIP with prebuilt .app runtime + app.wasm payload
-  Linux   -> ready ZIP with prebuilt native runtime + app.wasm payload
+  Windows -> project-named .exe with sealed direct-Wasm payload
+  macOS   -> project-named .app with sealed executable payload
+  Linux   -> project-named executable with sealed direct-Wasm payload
   FreeBSD -> native executable via Portable C99 + FreeBSD 15.1 cc
 
 Window / GUI
@@ -22,27 +22,44 @@ Window / GUI
   FreeBSD -> not yet supported
 ```
 
-For Windows, macOS and Linux, the ordinary Studio path is **Ready app download (no token)**. The runtime is compiled ahead of time by the Patch project. Studio only validates/compiles the small project payload and inserts it into the already-built runtime archive in the browser. The user does not need a GitHub token or a local Node/Rust/compiler toolchain.
+For Windows, macOS and Linux, the ordinary Studio path is **Ready app download (no token)**. The platform runtime machine code is compiled ahead of time by the Patch project. Studio validates/compiles the project payload in the browser and produces the final project package without a GitHub token or local Node/Rust/compiler toolchain.
 
-## One-click prebuilt native packaging
+## Sealed project-specific Console binaries
 
-The flow is:
+Console builds no longer download a generic executable plus `app.wasm` and `patch-app.json` sidecars. Studio fetches an unsigned raw Console runtime for the selected OS, compiles the current Patch Console program to direct Wasm, appends a versioned CRC-checked metadata + Wasm payload to the runtime executable, and creates a project-named package.
 
 ```text
-Patch source in Studio
+Patch Console source in Studio
+    -> browser direct-Wasm compilation
+    -> fetch raw OS runtime binary
+    -> append project metadata + Wasm + sealed footer
+    -> Windows: MyApp.exe
+       Linux:  MyApp
+       macOS:  MyApp.app/Contents/MacOS/MyApp
+    -> ZIP for download
+```
+
+The runner reads the sealed payload from its own executable. The footer records format version, metadata length, Wasm length and CRC32 values so malformed or corrupted payloads fail closed. Legacy `app.wasm` + `patch-app.json` sidecars remain supported by the runtime for compatibility with earlier downloads.
+
+This is a **fresh project-specific executable assembly**, but it is not presented as a full Patch-to-machine-code AOT compiler. The OS runtime machine code is still a prebuilt trusted component, similar to the runtime component used by many managed/native packaging systems. A future direct-native backend would instead lower Patch IR itself to target machine code and link it for PE/COFF, Mach-O and ELF.
+
+On macOS the Studio-created sealed Console app is currently assembled from an unsigned raw runtime because changing a signed Mach-O after signing invalidates the signature. Developer ID signing/notarization therefore remains separate release infrastructure rather than something the browser silently fakes.
+
+## One-click Window packaging
+
+Window projects continue to use the generated desktop player architecture:
+
+```text
+Patch Window source in Studio
     -> browser compiler/preflight
-    -> Console: direct Wasm payload
-       Window: validated source payload
-    -> fetch prebuilt OS runtime ZIP
-    -> append patch-app.json (+ app.wasm for Console)
+    -> fetch prebuilt OS Window runtime ZIP
+    -> append checked Patch source payload
     -> download ready ZIP
 ```
 
-`src/prebuilt-native.js` performs the ZIP customization without decompressing or recompiling the platform runtime. Existing compressed runtime entries and offsets remain valid; the browser adds stored payload entries and emits a new central directory.
+`src/prebuilt-native.js` handles both paths: sealed executable assembly for Console projects and ZIP payload injection for Window projects.
 
-The generic runtime packages are built by `.github/workflows/runtime-templates.yml` on actual Windows, macOS and Linux runners. Both Console and Window templates are built before a PR can merge. On `main`, the six runtime ZIPs are published under the stable `studio-runtime-v0.1` release and the Pages deployment copies them to `runtimes/` so Patch Studio can fetch them from its own origin.
-
-The running app gets the project name from `patch-app.json`. At this stage the generic runtime name may remain visible as the outer executable/app-bundle name inside the ZIP. Project-specific package renaming, signing and notarization are separate polish steps and are not required to run the generated package.
+The generic runtime packages are built by `.github/workflows/runtime-templates.yml` on actual Windows, macOS and Linux runners. CI executes a sealed Console binary on every target OS and also checks Window payload loading before runtime assets can be published. On `main`, the stable runtime release contains both the raw sealable Console binaries and compatibility ZIPs plus the Window runtime ZIPs; the Pages deployment copies them to `runtimes/` for same-origin Studio fetches.
 
 ## Window preflight and semantic events
 
