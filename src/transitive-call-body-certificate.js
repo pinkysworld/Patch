@@ -15,9 +15,16 @@ export function generateTransitiveCallBodyCertificate(source, options = {}) {
   const certified = [];
   for (const witness of supported) {
     if (!witness.abstractArgRanges) throw new Error(`Call ${witness.caller} -> ${witness.callee} has no beta.25 abstract argument intervals.`);
+    const callerFormalEntry = compiled.ir.formalCalls?.entries?.[witness.caller];
     const calleeFormalEntry = compiled.ir.formalCalls?.entries?.[witness.callee];
+    if (!callerFormalEntry?.supported || !Number.isSafeInteger(callerFormalEntry.rank) || callerFormalEntry.rank < 0) {
+      throw new Error(`Call ${witness.caller} -> ${witness.callee} has no supported beta.25 caller rank.`);
+    }
     if (!calleeFormalEntry?.supported || !Number.isSafeInteger(calleeFormalEntry.rank) || calleeFormalEntry.rank < 0) {
       throw new Error(`Call ${witness.caller} -> ${witness.callee} has no supported beta.25 callee rank.`);
+    }
+    if (calleeFormalEntry.rank >= callerFormalEntry.rank) {
+      throw new Error(`Outer beta.30 call rank is not decreasing for '${witness.caller}' -> '${witness.callee}': ${callerFormalEntry.rank} -> ${calleeFormalEntry.rank}.`);
     }
     const id = `${leanIdentifier(witness.caller)}_${leanIdentifier(witness.callee)}_${witness.invocation}`;
     const exprs = witness.argExprs.map(leanRangeExpr);
@@ -28,6 +35,8 @@ export function generateTransitiveCallBodyCertificate(source, options = {}) {
     const values = witness.concreteValues.map(leanInt);
     const abstract = witness.abstractArgRanges.map(range => leanInterval(range.min, range.max));
 
+    blocks.push(`def ${id}_callerRank : Nat := ${callerFormalEntry.rank}`);
+    blocks.push(`def ${id}_calleeRank : Nat := ${calleeFormalEntry.rank}`);
     blocks.push(`def ${id}_exprs : List RangeExpr := ${leanList(exprs)}`);
     blocks.push(`def ${id}_callerBindings : BindingList := ${leanList(callerBindings)}`);
     blocks.push(`def ${id}_caller : IntEnv := envOfBindings ${id}_callerBindings`);
@@ -41,18 +50,19 @@ export function generateTransitiveCallBodyCertificate(source, options = {}) {
     blocks.push(`def ${id}_callerSignature : List Effect := ${leanList(witness.callerSignature.map(leanEffect))}`);
     blocks.push(`def ${id}_trace : List Effect := ${leanList(witness.claimedTrace.map(leanEffect))}`);
 
+    blocks.push(`theorem ${id}_rank_checked :\n    decide (${id}_calleeRank < ${id}_callerRank) = true := by\n  native_decide`);
     blocks.push(`theorem ${id}_binding_checked :\n    concreteCallBinding ${id}_exprs ${id}_caller ${id}_params ${id}_declared = some ${id}_bindings := by\n  native_decide`);
     blocks.push(`theorem ${id}_abstract_checked :\n    concreteThroughAbstractBool ${id}_values ${id}_abstract ${id}_declared = true := by\n  native_decide`);
     blocks.push(`theorem ${id}_trace_equality_checked :\n    evalCallTreeStmtEqBool ${id}_bindings ${id}_tree ${id}_trace = true := by\n  native_decide`);
     blocks.push(`theorem ${id}_trace_checked :\n    evalCallTreeStmt ${id}_bindings ${id}_tree = some ${id}_trace := by\n  exact evalCallTreeStmtEqBool_sound ${id}_trace_equality_checked`);
     blocks.push(`theorem ${id}_tree_covered_checked :\n    callTreeCoveredBool ${id}_calleeSignature ${id}_tree = true := by\n  native_decide`);
     blocks.push(`theorem ${id}_signature_import_checked :\n    signatureCoversBool ${id}_calleeSignature ${id}_callerSignature = true := by\n  native_decide`);
-    blocks.push(`theorem ${id}_transitive_trace_sound :\n    ConcreteArgsFit ${id}_values ${id}_declared ∧\n    ConcreteCallBindingSpec ${id}_exprs ${id}_caller ${id}_params ${id}_declared ${id}_bindings ∧\n    TraceRefinesSignature ${id}_trace ${id}_callerSignature := by\n  constructor\n  · exact concreteThroughAbstractBool_sound ${id}_abstract_checked\n  · exact checkedConcreteTransitiveCallTreeRefinesCallerSignature\n      ${id}_binding_checked\n      ${id}_trace_checked\n      ${id}_tree_covered_checked\n      ${id}_signature_import_checked`);
+    blocks.push(`theorem ${id}_transitive_trace_sound :\n    ${id}_calleeRank < ${id}_callerRank ∧\n    ConcreteArgsFit ${id}_values ${id}_declared ∧\n    ConcreteCallBindingSpec ${id}_exprs ${id}_caller ${id}_params ${id}_declared ${id}_bindings ∧\n    TraceRefinesSignature ${id}_trace ${id}_callerSignature := by\n  constructor\n  · exact of_decide_eq_true ${id}_rank_checked\n  · constructor\n    · exact concreteThroughAbstractBool_sound ${id}_abstract_checked\n    · exact checkedConcreteTransitiveCallTreeRefinesCallerSignature\n        ${id}_binding_checked\n        ${id}_trace_checked\n        ${id}_tree_covered_checked\n        ${id}_signature_import_checked`);
     certified.push(`${witness.caller}->${witness.callee}#${witness.invocation}@depth${witness.nestedCallDepth}`);
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchCallTree\n\nopen PatchFormal\n\nnamespace PatchGeneratedTransitiveCallBodyCertificate\n\n/-- Proof-free beta.30 transitive call-tree evidence. Lean recursively\n    re-evaluates every nested RangeExpr argument, positional BindingList,\n    GuardExpr branch, static repeat and direct quantitative effect. Nested\n    call nodes carry beta.25 caller/callee ranks and coverage checks strict rank\n    decrease at every edge. Nested traces are checked against each callee\n    signature and imported one signature edge at a time. The exported theorem\n    also connects concrete outer values through beta.25 abstract call intervals\n    into declarations. Recursion, dynamic repeat, state-dependent exact guards\n    and production-Wasm call equivalence remain outside this layer. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef transitiveWitnessVersion : String := ${leanString(artifact.version)}\ndef transitiveCertificateVersion : String := ${leanString(PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedTransitiveCallBodyCertificate\n`;
+  const lean = `import PatchCallTree\n\nopen PatchFormal\n\nnamespace PatchGeneratedTransitiveCallBodyCertificate\n\n/-- Proof-free beta.30 transitive call-tree evidence. Lean recursively\n    re-evaluates every nested RangeExpr argument, positional BindingList,\n    GuardExpr branch, static repeat and direct quantitative effect. Nested\n    call nodes carry beta.25 caller/callee ranks and coverage checks strict rank\n    decrease at every nested edge; the exported theorem also checks the outer\n    call edge. Nested traces are checked against each callee signature and\n    imported one signature edge at a time. Concrete outer values are connected\n    through beta.25 abstract call intervals into declarations. Recursion,\n    dynamic repeat, state-dependent exact guards and production-Wasm call\n    equivalence remain outside this layer. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef transitiveWitnessVersion : String := ${leanString(artifact.version)}\ndef transitiveCertificateVersion : String := ${leanString(PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedTransitiveCallBodyCertificate\n`;
 
   return { lean, sourceSha256, certified, artifact, certificateVersion: PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION };
 }
