@@ -2,15 +2,15 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.29
+## What works in 0.2 beta.30
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the Designer toolbox plus source-backed control selection/property editing, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
 For Windows, macOS and Linux, the default desktop workflow is **Ready app download (no token)**. Patch Studio performs browser preflight, compiles the Console subset to direct Wasm when needed, loads a stable runtime asset for the selected OS and produces the current project package in the browser. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Console ready builds are project-specific sealed executables. Studio appends the checked direct-Wasm payload and project metadata to the raw runtime executable and emits a project-named `.exe`, Linux executable or macOS `.app`. Window projects use the hardened prebuilt desktop player with a checked source payload.
+Console ready builds are project-specific sealed executables. Window projects use the hardened prebuilt desktop player with a checked source payload.
 
-Change IR **0.10** is unchanged. Beta.29 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
+Change IR **0.10** is unchanged. Beta.30 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
 
 Research commands remain outside the ordinary beginner workflow:
 
@@ -23,11 +23,12 @@ npm run concrete-call-certify:example
 npm run arithmetic-call-certify:example
 npm run callee-trace-certify:example
 npm run guarded-callee-trace-certify:example
+npm run transitive-callee-trace-certify:example
 ```
 
-`npm run callee-trace-certify:example` still generates `GeneratedConcreteCallBodyCertificate.lean` from `examples/formal-callee-trace.patch` as the beta.28 regression certificate. `npm run guarded-callee-trace-certify:example` generates `GeneratedGuardedCallBodyCertificate.lean` from `examples/formal-callee-guard.patch`. Lean re-evaluates exact call binding, exact `GuardExpr` branch truth and the selected complete branch/sequence/static-repeat callee effect trace, checks both branch arms against the callee signature and imports the selected trace into the caller signature.
+The beta.30 command generates `GeneratedTransitiveCallBodyCertificate.lean` from `examples/formal-transitive-calls.patch`. Lean recursively re-evaluates exact nested call arguments/bindings, strict call-graph rank decrease, exact `GuardExpr` choices, static repeats and direct quantitative effects, then checks nested semantic-signature containment edge by edge.
 
-This research machinery is intentionally invisible during normal editing, Run and Build.
+`GeneratedConcreteCallBodyCertificate.lean` and `GeneratedGuardedCallBodyCertificate.lean` remain regression evidence for beta.28 and beta.29. This research machinery is intentionally invisible during normal editing, Run and Build.
 
 ## Designer property inspector
 
@@ -60,7 +61,7 @@ when name changed:
 
 The current control text is event-local `value`. The browser/desktop edit does **not** write persistent Patch state by itself. Source must execute ordinary semantic `change` to commit it.
 
-Studio uses `src/window-events.js`; the standalone Window Web runtime and generated Windows/macOS/Linux desktop player implement the same contract. Generated HTML is executed in regression tests to distinguish observation-only input from explicit persistence.
+Studio uses `src/window-events.js`; the standalone Window Web runtime and generated Windows/macOS/Linux desktop player implement the same contract.
 
 ## Window builds
 
@@ -95,9 +96,9 @@ current editor source
     -> ready ZIP download
 ```
 
-The executable itself contains the project payload. There is no `app.wasm` or `patch-app.json` that the user must keep beside the program. This is intentionally **sealed native packaging**, not a claim that Patch IR is directly lowered to PE/COFF, Mach-O or ELF machine code in the browser.
+The executable itself contains the project payload. There is no `app.wasm` or `patch-app.json` that the user must keep beside the program. This is sealed native packaging, not a claim that Patch IR is directly lowered to PE/COFF, Mach-O or ELF machine code in the browser.
 
-For macOS, the sealed Console runtime asset is unsigned before browser assembly because changing an already-signed Mach-O would invalidate its code signature. Developer ID signing and notarization remain a distribution concern.
+For macOS, Developer ID signing and notarization remain distribution concerns.
 
 ### Ready Window build
 
@@ -122,21 +123,30 @@ FreeBSD currently uses these advanced paths because a stable prebuilt FreeBSD ru
 
 ## Research assurance layers
 
-Beta.23 provides guard-aware direct-runtime correspondence for an explicit safe-integer fragment. Beta.25 adds abstract acyclic recipe-call interval/signature composition. Beta.26 adds exact positional call binding and direct quantitative leaf-effect refinement. Beta.27 carries the already mechanized integer `RangeExpr` grammar through the concrete production certificate boundary.
+Beta.23 provides guard-aware direct-runtime correspondence for an explicit safe-integer fragment. Beta.25 adds abstract acyclic recipe-call interval/signature composition. Beta.26 adds exact positional call binding and direct quantitative leaf-effect refinement. Beta.27 carries the already mechanized integer `RangeExpr` grammar through concrete production certificates.
 
-Beta.28 adds `PatchCallBody.lean` and `PatchCallBodyImport.lean`. For a deliberately conservative exact-body fragment consisting of direct quantitative emits, sequence and static repeat, Lean evaluates the whole body, validates the proof-free claimed trace and proves every concrete occurrence is represented by the caller semantic signature. `GeneratedConcreteCallBodyCertificate.lean` remains verified as the regression baseline.
+Beta.28 adds exact complete sequence/static-repeat callee traces. Beta.29 adds exact `GuardExpr` branch selection under exact recipe-parameter bindings while requiring both branch arms to remain covered by the callee signature.
 
-Beta.29 extends that **same** `BoundStmt` semantics with a branch constructor. It reuses `GuardExpr`/`evalGuard` from the existing verified guard layer and `envOfBindings` from exact call substitution. The selected branch is determined in Lean under the exact callee bindings, while `BoundBodyCovered` requires both branch arms to be in the callee semantic signature. `GeneratedGuardedCallBodyCertificate.lean` checks both a true and a false branch.
+Beta.30 adds `PatchCallTree.lean`. It preserves beta.29 bodies as call-free leaves and recursively checks finite nested calls. For the supported call-tree fragment Lean checks:
 
-State-dependent guard variables, nested calls, dynamic repeats, complete transitive call trees and production JavaScript/direct-Wasm call equivalence remain outside beta.29. These layers are not presented as full compiler verification.
+- exact outer/nested bindings;
+- beta.25 abstract interval fit for the outer concrete call;
+- strict outer and nested rank decrease;
+- exact selected guards and static repeats;
+- direct quantitative effects;
+- nested body coverage by callee signatures;
+- edge-by-edge signature import into the caller;
+- exact equality of the complete selected transitive trace.
+
+Root-program certification, recursion/cycles, dynamic repeat, persistent-state exact guards, returns and production JavaScript/direct-Wasm call equivalence remain outside beta.30. These layers are not presented as full compiler verification.
 
 ## iPhone and iPad
 
-Patch Studio can be installed from Safari with **Share → Add to Home Screen**. It can author/preview Window apps and produce the same browser-generated ready-app ZIPs for Windows/macOS/Linux. The downloaded desktop package is run on its target desktop OS, not on iOS.
+Patch Studio can be installed from Safari with **Share → Add to Home Screen**. It can author/preview Window apps and produce browser-generated ready-app ZIPs for Windows/macOS/Linux. The downloaded desktop package is run on its target desktop OS, not on iOS.
 
 ## PWA updates
 
-The beta.29 cache key begins with `patch-studio-0.2-beta.29`. The Studio cache includes the browser-side native packager, Designer property-inspector stylesheet and source editor helpers together with compiler, formal-call, guard-validation and Window-event modules. Large OS runtime assets are fetched only when a user asks for a native build.
+The beta.30 cache key begins with `patch-studio-0.2-beta.30`. The Studio cache includes the browser-side native packager, Designer property-inspector stylesheet and source editor helpers together with compiler, formal-call, guard-validation and Window-event modules. Large OS runtime assets are fetched only when a user asks for a native build.
 
 ## Source remains truth
 

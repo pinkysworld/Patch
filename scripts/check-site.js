@@ -28,7 +28,8 @@ for (const id of [
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10',
-  'Beta.29 guard-aware exact callee traces', 'GeneratedGuardedCallBodyCertificate.lean',
+  'Beta.30 finite transitive exact call trees', 'GeneratedTransitiveCallBodyCertificate.lean',
+  'production JavaScript/direct-Wasm call equivalence',
   'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console'
 ]);
 for (const option of [
@@ -67,6 +68,9 @@ requireAll('prebuilt native packager', prebuilt, [
   'patch-linux-console-runtime.bin','patch-windows-window-runtime.zip','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip'
 ]);
 
+// Beta.30 is a research certificate layer and is not imported by Studio at
+// runtime. The deployed compiler still exposes the stable beta.29 leaf/call
+// artifacts used by ordinary Studio inspection.
 const concreteBody = read('_site/src/concrete-call-body.js');
 requireAll('guarded concrete-call body producer', concreteBody, [
   "PATCH_CONCRETE_CALL_BODY_VERSION = '0.2'", 'buildFormalGuardExpression', "kind: 'branch'", 'evalGuardExact'
