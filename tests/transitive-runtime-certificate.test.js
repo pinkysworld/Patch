@@ -24,7 +24,11 @@ test('beta31 certificate embeds beta30 proof and checks runtime-derived effects 
 });
 
 test('beta31 certificate generation refuses ambiguous repeated scoped traces', async () => {
-  const ambiguous = source.replace('do caller(1)\nshow score', 'do caller(1)\ndo caller(1)\nshow score');
+  const ambiguous = source.replace(
+    /do caller\(1\)\r?\nshow score/,
+    'do caller(1)\ndo caller(1)\nshow score'
+  );
+  assert.notEqual(ambiguous, source, 'ambiguity fixture must add a second concrete caller invocation');
   await assert.rejects(
     () => generateTransitiveRuntimeCertificate(ambiguous, { name: 'AmbiguousTransitiveRuntime' }),
     /No unambiguous beta\.31|ambiguous/i
