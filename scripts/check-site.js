@@ -45,7 +45,11 @@ for (const phrase of [
 ]) requireText('native builder', nativeBuild, phrase);
 
 const prebuilt = read('_site/src/prebuilt-native.js');
-for (const phrase of ['PATCH_PREBUILT_NATIVE_VERSION','buildPrebuiltNativePackage','appendStoredFilesToZip','patch-windows-console-runtime.zip','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip','app.wasm','patch-app.json']) requireText('prebuilt native packager', prebuilt, phrase);
+for (const phrase of [
+  'PATCH_PREBUILT_NATIVE_VERSION','PATCH_SEALED_CONSOLE_VERSION','buildPrebuiltNativePackage','sealConsoleRuntimeBinary',
+  'decodeSealedConsolePayload','appendStoredFilesToZip','patch-windows-console-runtime.bin','patch-macos-console-runtime.bin',
+  'patch-linux-console-runtime.bin','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip','patch-app.json'
+]) requireText('prebuilt native packager', prebuilt, phrase);
 
 const compiler = read('_site/src/compiler.js');
 for (const mod of ["'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'"]) requireText('compiler', compiler, mod);
