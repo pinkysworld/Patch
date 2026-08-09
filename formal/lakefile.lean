@@ -47,3 +47,6 @@ lean_lib PatchCallBody where
 
 lean_lib PatchCallBodyImport where
   srcDir := "."
+
+lean_lib PatchCallTree where
+  srcDir := "."
