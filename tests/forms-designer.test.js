@@ -22,11 +22,12 @@ test('parser keeps optional source-backed form and control geometry', () => {
   assert.deepEqual(ast[0].body[1].layout, { x: 24, y: 64, width: 120, height: 36 });
 });
 
-test('empty forms are valid and can receive controls later', () => {
+test('empty forms are valid, auto-named, and can receive controls later', () => {
   let source = addDesignerWindow('', { titleExpr: '"Main Form"', width: 700, height: 460 });
   assert.equal(parse(source)[0].body.length, 0);
+  assert.equal(parse(source)[0].id, 'form_1');
   source = addDesignerControl(source, 'button', { windowIndex: 0 });
-  assert.match(source, /window "Main Form" size 700, 460:/);
+  assert.match(source, /window "Main Form" as form_1 size 700, 460:/);
   assert.match(source, /button "Button" as button_1 at 24, 24 size 120, 36/);
 });
 
@@ -55,8 +56,10 @@ test('legacy flow-layout Window syntax remains valid without changing its AST sh
   const controls = listDesignerControls(source);
   assert.equal(Object.hasOwn(ast[0], 'width'), false);
   assert.equal(Object.hasOwn(ast[0], 'height'), false);
+  assert.equal(Object.hasOwn(ast[0], 'id'), false);
   assert.equal(Object.hasOwn(ast[0].body[0], 'layout'), false);
   assert.equal(listDesignerWindows(source)[0].width, null);
+  assert.equal(listDesignerWindows(source)[0].id, null);
   assert.equal(controls[0].x, null);
   assert.equal(controls[1].width, null);
 });
