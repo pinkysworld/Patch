@@ -1,0 +1,11 @@
+create number points = 0
+
+allow loyalty_reward:
+  points may increase up to 10
+
+make loyalty_reward(amount number 0..10):
+  change points:
+    add amount
+
+do loyalty_reward(8)
+show points

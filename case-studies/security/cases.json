@@ -1,0 +1,76 @@
+{
+  "format": "patch-security-case-study-manifest",
+  "version": "0.1",
+  "baseline": "coarse-target-write",
+  "cases": [
+    {
+      "id": "loyalty-safe",
+      "file": "loyalty-safe.patch",
+      "category": "magnitude-control",
+      "patchExpected": "accept",
+      "coarseWriteExpected": true,
+      "claim": "A bounded points increase within 10 is accepted."
+    },
+    {
+      "id": "loyalty-over-limit",
+      "file": "loyalty-over-limit.patch",
+      "category": "magnitude-control",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "above the allowed maximum of 10",
+      "claim": "The same target write is rejected when its proven range can reach 50."
+    },
+    {
+      "id": "wallet-safe-debit",
+      "file": "wallet-safe-debit.patch",
+      "category": "operation-direction",
+      "patchExpected": "accept",
+      "coarseWriteExpected": true,
+      "claim": "A bounded decrease of balance is accepted."
+    },
+    {
+      "id": "wallet-direction-escalation",
+      "file": "wallet-direction-escalation.patch",
+      "category": "operation-direction",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "allow block does not permit that change",
+      "claim": "Write authority to balance is insufficient when the semantic direction is unauthorized."
+    },
+    {
+      "id": "campaign-transitive-safe",
+      "file": "campaign-transitive-safe.patch",
+      "category": "transitive-authority",
+      "patchExpected": "accept",
+      "coarseWriteExpected": true,
+      "claim": "A helper's transitive increase of 8 remains within the campaign capability."
+    },
+    {
+      "id": "campaign-transitive-escalation",
+      "file": "campaign-transitive-escalation.patch",
+      "category": "transitive-authority",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "above the allowed maximum of 10",
+      "claim": "A helper's transitive increase of 50 escapes the campaign magnitude bound."
+    },
+    {
+      "id": "dynamic-unbounded",
+      "file": "dynamic-unbounded.patch",
+      "category": "fail-closed-proof",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "cannot prove it stays within the allowed maximum of 10",
+      "claim": "An unbounded amount is rejected when Patch cannot prove the magnitude bound."
+    },
+    {
+      "id": "target-escape",
+      "file": "target-escape.patch",
+      "category": "target-control",
+      "patchExpected": "reject",
+      "coarseWriteExpected": false,
+      "errorContains": "allow block does not permit that change",
+      "claim": "Both Patch and the coarse target-write baseline reject writes to an undeclared target."
+    }
+  ]
+}

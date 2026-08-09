@@ -1,0 +1,12 @@
+create number points = 0
+create number coins = 0
+
+allow extension:
+  points may increase up to 10
+
+make extension():
+  change coins:
+    add 1
+
+do extension()
+show coins

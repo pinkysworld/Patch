@@ -1,0 +1,14 @@
+create number points = 0
+
+make grant_small():
+  change points:
+    add 8
+
+allow campaign:
+  points may increase up to 10
+
+make campaign():
+  do grant_small()
+
+do campaign()
+show points

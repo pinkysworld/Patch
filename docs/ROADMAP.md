@@ -58,15 +58,10 @@ Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the su
 - [x] deterministic `src/evaluation-corpus.js`
 - [x] separate call-depth and concrete-invocation scaling axes
 - [x] representative execution validated against expected final state/trace count before timing
-- [x] compiler timing
-- [x] precompiled direct-Wasm execution timing
-- [x] independent transition/effect/invocation-frame validation timing
-- [x] end-to-end beta.32 correspondence timing
-- [x] beta.30+32 Lean-source certificate-generation timing
+- [x] compiler / execution / independent validation / correspondence / certificate-generation timing
 - [x] raw samples + min/median/mean/p95/max
 - [x] source/Wasm/trace/frame/correspondence/certificate-size metadata
-- [x] JSON and CSV outputs
-- [x] full CPU/OS/Node/V8 environment manifest
+- [x] JSON and CSV outputs plus CPU/OS/Node/V8 environment manifest
 - [x] separate Lean checker timing in a **manual-only** evaluation workflow
 - [x] `docs/EVALUATION.md` methodology and interpretation discipline
 - [ ] controlled paper-quality benchmark runs collected on fixed hardware
@@ -74,6 +69,23 @@ Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the su
 - [ ] measured results synchronized into the manuscript
 
 The harness is complete infrastructure. **No empirical performance result is claimed until controlled runs are actually collected.** Hosted GitHub runner measurements are treated as reproducibility evidence, not stable microbenchmark numbers.
+
+### Semantic-authority security ablation
+- [x] eight reproducible extension-style case files under `case-studies/security/`
+- [x] real Patch compiler / Semantic Change Capability decision for every case
+- [x] deliberately coarse target-path write-authority baseline for ablation only
+- [x] bounded magnitude safe/control pair
+- [x] semantic operation-direction safe/control pair
+- [x] transitive helper safe/escalation pair
+- [x] fail-closed unbounded-magnitude case
+- [x] target-escape control rejected by both Patch and coarse baseline
+- [x] mechanized JSON/CSV/Markdown case-study report
+- [x] regression tests require the expected 3 both-accept / 4 Patch-only-reject / 1 both-reject matrix
+- [x] `docs/SECURITY_CASE_STUDIES.md` interpretation and prior-art boundary
+- [ ] larger realistic extension/plugin-style application case
+- [ ] literature-grounded comparison dimensions against named related systems
+
+The coarse target-write baseline is explicitly an **internal ablation**, not a representation of a named prior effect/capability system. The current suite demonstrates concrete analyzer distinctions, not complete sandbox/security containment.
 
 ## Product priorities
 
@@ -99,9 +111,9 @@ The harness is complete infrastructure. **No empirical performance result is cla
 
 ## Highest-value remaining research work
 
-1. [ ] semantic-security/plugin case studies for bounded semantic authority;
-2. [ ] **collect controlled overhead/scaling measurements using the completed evaluation harness**;
-3. [ ] systematic related-work review;
+1. [ ] **collect controlled overhead/scaling measurements using the completed evaluation harness**;
+2. [ ] build a larger realistic extension/plugin-style authority case beyond the synthetic ablation suite;
+3. [ ] systematic related-work review and literature-grounded comparison dimensions;
 4. [ ] reproducibility bundle;
 5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
 6. [ ] extend invocation-frame evidence to richer branching/repeated call scenarios.
@@ -122,9 +134,10 @@ The harness is complete infrastructure. **No empirical performance result is cla
 - [x] independent invocation frames for repeated identical calls
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
 - [x] semantic GUI input route
-- [x] **reproducible assurance-overhead evaluation harness**
+- [x] reproducible assurance-overhead evaluation harness
+- [x] **mechanized semantic-authority ablation/security case suite**
 - [ ] controlled measured overhead results
-- [ ] security/engineering case studies
+- [ ] larger realistic security/engineering case study
 - [ ] systematic related work
 - [ ] reproducibility bundle
 
@@ -139,4 +152,5 @@ The harness is complete infrastructure. **No empirical performance result is cla
 7. Proof-free runtime/call witnesses remain evidence; Lean checks only explicit supported obligations.
 8. Beta.32 improves concrete invocation attribution but does not establish full compiler verification.
 9. Benchmark infrastructure does not become a performance claim until controlled measurements are collected.
-10. Direct-Wasm/C99 support remains narrower than the full language.
+10. Security ablations must not be presented as claims about unnamed or named prior systems.
+11. Direct-Wasm/C99 support remains narrower than the full language.

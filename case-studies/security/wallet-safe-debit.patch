@@ -1,0 +1,11 @@
+create number balance = 100
+
+allow debit:
+  balance may decrease up to 25
+
+make debit(amount number 0..25):
+  change balance:
+    remove amount
+
+do debit(20)
+show balance

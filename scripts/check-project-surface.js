@@ -14,7 +14,8 @@ const files = {
   readme: read('README.md'), website: read('web/index.html'), studio: read('docs/PATCH_STUDIO.md'),
   native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
   formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
-  evaluation: read('docs/EVALUATION.md'), runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
+  evaluation: read('docs/EVALUATION.md'), securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
+  runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
   directTrace: read('src/direct-trace-validator.js'), directEffect: read('src/direct-effect-validator.js'),
   transitiveBody: read('src/transitive-call-body.js'), transitiveCertificate: read('src/transitive-call-body-certificate.js'),
@@ -22,6 +23,8 @@ const files = {
   runtimeCertificate: read('src/transitive-runtime-certificate.js'),
   runtimeGenerator: read('scripts/generate-transitive-runtime-certificate.js'),
   evaluationCorpus: read('src/evaluation-corpus.js'), evaluationBenchmark: read('scripts/benchmark-assurance.js'),
+  securityEvaluator: read('src/security-case-study.js'), securityScript: read('scripts/evaluate-security-cases.js'),
+  securityManifest: read('case-studies/security/cases.json'),
   repeatedExample: read('examples/formal-transitive-calls-repeated.patch'),
   callTree: read('formal/PatchCallTree.lean'), callRuntime: read('formal/PatchCallRuntime.lean'), lakefile: read('formal/lakefile.lean'),
   formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'),
@@ -39,6 +42,9 @@ if (pkg.scripts?.['transitive-runtime-certify:repeated'] !==
 }
 if (pkg.scripts?.['evaluate:assurance'] !== 'node scripts/benchmark-assurance.js') {
   throw new Error('package.json is missing the canonical assurance evaluation command.');
+}
+if (pkg.scripts?.['evaluate:security'] !== 'node scripts/evaluate-security-cases.js') {
+  throw new Error('package.json is missing the canonical semantic-authority security evaluation command.');
 }
 
 requireAll('README.md', files.readme, [
@@ -58,7 +64,8 @@ requireAll('docs/NATIVE_APPS.md', files.native, [
 ]);
 requireAll('docs/ROADMAP.md', files.roadmap, [
   `Current development beta: **${version}**`, '### beta.32:', 'invocation frames',
-  'repeated identical calls', 'Assurance overhead/scaling harness', 'controlled paper-quality benchmark runs'
+  'repeated identical calls', 'Assurance overhead/scaling harness', 'controlled paper-quality benchmark runs',
+  'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject'
 ]);
 requireAll('docs/COMPILER.md', files.compiler, [
   `Status: **${version}**`, 'Change IR **0.10**', 'Beta.32', 'invocation-frame',
@@ -73,12 +80,21 @@ requireAll('docs/NOVELTY.md', files.novelty, [
 ]);
 requireAll('paper/README.md', files.paper, [
   `Patch ${version} / Change IR 0.10`, 'Beta.32', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
-  'PatchCallRuntime.lean', 'reproducible assurance-overhead/scaling evaluation harness', 'No overhead, scalability or asymptotic claim is made yet'
+  'PatchCallRuntime.lean', 'reproducible assurance-overhead/scaling evaluation harness',
+  'No overhead, scalability or asymptotic claim is made yet', 'Semantic-authority security ablation',
+  '4 cases  Patch reject / coarse target-write accept', 'not a model of any named effect system'
 ]);
 requireAll('docs/EVALUATION.md', files.evaluation, [
   `Patch ${version} / Change IR 0.10`, 'Call-tree depth', 'Concrete invocation count',
   'compileMs', 'executeMs', 'validateMs', 'correspondenceMs', 'certificateGenerationMs',
   'Patch Assurance Evaluation', 'hosted runner', 'raw JSON/CSV'
+]);
+requireAll('docs/SECURITY_CASE_STUDIES.md', files.securityCasesDoc, [
+  `Patch ${version} / Change IR 0.10`, 'coarse target-write baseline', 'internal ablation',
+  '`loyalty-over-limit`', '`wallet-direction-escalation`', '`campaign-transitive-escalation`',
+  '`dynamic-unbounded`', '3 cases: Patch accept / coarse accept',
+  '4 cases: Patch reject / coarse accept', '1 case : Patch reject / coarse reject',
+  'not a claim about any named prior effect or capability system'
 ]);
 requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
   'Status: **0.2.0-beta.23**', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape'
@@ -117,6 +133,18 @@ requireAll('scripts/benchmark-assurance.js', files.evaluationBenchmark, [
   "format: 'patch-assurance-evaluation'", 'performance.now()', 'compileToDirectWasm', 'runDirectWasm',
   'validateDirectSemanticEffects', 'buildTransitiveRuntimeCorrespondence', 'generateTransitiveRuntimeCertificate',
   'certificateGenerationMs', 'toCsv', 'environmentManifest'
+]);
+requireAll('src/security-case-study.js', files.securityEvaluator, [
+  "PATCH_SECURITY_CASE_STUDY_VERSION = '0.1'", 'evaluateSecurityCase', 'evaluateCoarseTargetWrite',
+  'target-path-only; operation/magnitude/provability intentionally ignored', 'collectReachableTargets'
+]);
+requireAll('scripts/evaluate-security-cases.js', files.securityScript, [
+  "format: 'patch-security-case-study-report'", 'coarse target-path write authority only',
+  'semanticAuthorityDifferentialRejects', 'toCsv', 'toMarkdown'
+]);
+requireAll('case-studies/security/cases.json', files.securityManifest, [
+  'patch-security-case-study-manifest', 'coarse-target-write', 'loyalty-over-limit',
+  'wallet-direction-escalation', 'campaign-transitive-escalation', 'dynamic-unbounded', 'target-escape'
 ]);
 requireAll('examples/formal-transitive-calls-repeated.patch', files.repeatedExample, ['do caller(1)\ndo caller(1)']);
 requireAll('formal/PatchCallTree.lean', files.callTree, [
