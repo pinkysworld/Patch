@@ -36,9 +36,7 @@ jobs:
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls
-          lake env lean PatchCallSubstitution.lean
-          lake env lean PatchCallRefinement.lean
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement
           lake env lean GeneratedConcreteCallCertificate.lean
       - name: Reject unfinished beta.26 proofs
         shell: bash
