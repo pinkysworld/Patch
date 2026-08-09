@@ -4,7 +4,12 @@ import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
 import { compileToWasm } from '../src/wasm.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
-import { addDesignerControl } from '../src/designer.js';
+import {
+  addDesignerControl,
+  listDesignerControls,
+  removeDesignerControl,
+  updateDesignerControl
+} from '../src/designer.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 
 const samples = {
@@ -90,6 +95,8 @@ preview:
 show courage`
 };
 
+installDesignerInspectorStylesheet();
+
 const code = document.querySelector('#code');
 const output = document.querySelector('#output');
 const changesView = document.querySelector('#changes');
@@ -97,6 +104,7 @@ const irView = document.querySelector('#ir');
 const appView = document.querySelector('#app');
 const designerView = document.querySelector('#designer');
 const designerCanvas = document.querySelector('#designerCanvas');
+const designerInspector = installDesignerInspector();
 const sample = document.querySelector('#sample');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
@@ -104,6 +112,8 @@ const buildTarget = document.querySelector('#buildTarget');
 const saveState = document.querySelector('#saveState');
 let runtime = null;
 let designerTimer = null;
+let designerSelection = null;
+let designerControls = [];
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -113,6 +123,7 @@ projectKind.value = saved?.kind ?? (saved ? 'console' : 'window');
 sample.addEventListener('change', () => {
   code.value = samples[sample.value];
   projectKind.value = sample.value === 'counterWindow' ? 'window' : 'console';
+  designerSelection = null;
   saveProject();
   refreshDesigner();
   showTab(sample.value === 'capabilities' ? 'changes' : (projectKind.value === 'window' ? 'designer' : 'output'));
@@ -128,6 +139,14 @@ document.querySelector('#run').addEventListener('click', runProject);
 document.querySelector('#addText').addEventListener('click', () => addControl('text'));
 document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
 document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
+designerInspector.apply.addEventListener('click', applyDesignerProperties);
+designerInspector.remove.addEventListener('click', removeSelectedDesignerControl);
+designerInspector.source.addEventListener('click', revealSelectedDesignerSource);
+for (const field of [designerInspector.idInput, designerInspector.textInput]) {
+  field.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); applyDesignerProperties(); }
+  });
+}
 
 document.querySelector('#build').addEventListener('click', () => {
   try {
@@ -184,15 +203,62 @@ function addControl(type) {
   try {
     code.value = addDesignerControl(code.value, type);
     projectKind.value = 'window';
+    designerControls = listDesignerControls(code.value);
+    const firstWindow = designerControls.filter(item => item.windowIndex === 0);
+    const added = firstWindow[firstWindow.length - 1];
+    designerSelection = added ? selectionOf(added) : null;
     saveProject();
     refreshDesigner();
     refreshChangeContract();
     showTab('designer');
-    code.focus();
   } catch (err) {
     output.textContent = `Designer stopped:\n${err.message}`;
     showTab('output');
   }
+}
+
+function applyDesignerProperties() {
+  const selected = currentDesignerControl();
+  if (!selected) return;
+  try {
+    const changes = {};
+    if (selected.type !== 'text') changes.id = designerInspector.idInput.value;
+    if (selected.type !== 'input') changes.textExpr = designerInspector.textInput.value;
+    code.value = updateDesignerControl(code.value, designerSelection, changes);
+    saveProject();
+    refreshDesigner();
+    refreshChangeContract();
+    showTab('designer');
+  } catch (err) {
+    designerInspector.error.textContent = err.message;
+    designerInspector.error.hidden = false;
+  }
+}
+
+function removeSelectedDesignerControl() {
+  if (!currentDesignerControl()) return;
+  try {
+    code.value = removeDesignerControl(code.value, designerSelection);
+    designerSelection = null;
+    saveProject();
+    refreshDesigner();
+    refreshChangeContract();
+    showTab('designer');
+  } catch (err) {
+    designerInspector.error.textContent = err.message;
+    designerInspector.error.hidden = false;
+  }
+}
+
+function revealSelectedDesignerSource() {
+  const selected = currentDesignerControl();
+  if (!selected) return;
+  const lines = code.value.replace(/\r\n/g, '\n').split('\n');
+  let start = 0;
+  for (let i = 0; i < selected.line - 1; i += 1) start += lines[i].length + 1;
+  const end = start + (lines[selected.line - 1]?.length ?? 0);
+  code.focus();
+  code.setSelectionRange(start, end);
 }
 
 function runProject() {
@@ -262,11 +328,17 @@ function formatChangeAnalysis(ir) {
 function refreshDesigner() {
   clearTimeout(designerTimer);
   try {
+    designerControls = listDesignerControls(code.value);
+    if (designerSelection && !currentDesignerControl()) designerSelection = null;
     const preview = new PatchInterpreter().run(code.value);
     renderWindows(designerCanvas, preview.ui, false);
     if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';
+    renderDesignerInspector();
   } catch (err) {
+    designerControls = [];
+    designerSelection = null;
     designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
+    renderDesignerInspector();
   }
 }
 
@@ -281,7 +353,7 @@ function renderWindows(container, windows, interactive) {
     container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
     return;
   }
-  for (const model of windows) {
+  windows.forEach((model, windowIndex) => {
     const shell = document.createElement('section');
     shell.className = 'patch-window';
     const title = document.createElement('div');
@@ -289,32 +361,135 @@ function renderWindows(container, windows, interactive) {
     title.textContent = model.title;
     const body = document.createElement('div');
     body.className = 'patch-window-body';
-    for (const control of model.controls) {
+    model.controls.forEach((control, controlIndex) => {
+      let el;
       if (control.type === 'text') {
-        const el = document.createElement('p');
+        el = document.createElement('p');
         el.className = 'patch-text';
         el.textContent = control.text;
-        body.appendChild(el);
       } else if (control.type === 'button') {
-        const el = document.createElement('button');
-        el.className = `patch-button${interactive ? '' : ' designer-control'}`;
+        el = document.createElement('button');
+        el.className = 'patch-button';
         el.textContent = control.text;
         if (interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
         else el.type = 'button';
-        body.appendChild(el);
       } else if (control.type === 'input') {
-        const el = document.createElement('input');
+        el = document.createElement('input');
         el.className = 'patch-input';
         el.value = control.value ?? '';
         el.placeholder = control.id ?? '';
         if (interactive) el.addEventListener('input', () => trigger(control.id, 'changed', { value: el.value }));
         else el.readOnly = true;
-        body.appendChild(el);
       }
-    }
+      if (!el) return;
+      if (!interactive) decorateDesignerControl(el, windowIndex, controlIndex, control);
+      body.appendChild(el);
+    });
     shell.append(title, body);
     container.appendChild(shell);
+  });
+}
+
+function decorateDesignerControl(el, windowIndex, controlIndex, control) {
+  el.classList.add('designer-control');
+  if (designerSelection?.windowIndex === windowIndex && designerSelection?.controlIndex === controlIndex) {
+    el.classList.add('designer-selected');
   }
+  if (el.tagName !== 'BUTTON' && el.tagName !== 'INPUT') el.tabIndex = 0;
+  el.setAttribute('aria-label', `Select ${control.type} control ${control.id ?? controlIndex + 1}`);
+  const select = event => {
+    event.preventDefault();
+    event.stopPropagation();
+    selectDesignerControl(windowIndex, controlIndex);
+  };
+  el.addEventListener('click', select);
+  el.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') select(event);
+  });
+}
+
+function selectDesignerControl(windowIndex, controlIndex) {
+  designerSelection = { windowIndex, controlIndex };
+  refreshDesigner();
+}
+
+function currentDesignerControl() {
+  if (!designerSelection) return null;
+  return designerControls.find(item => item.windowIndex === designerSelection.windowIndex && item.controlIndex === designerSelection.controlIndex) ?? null;
+}
+
+function selectionOf(control) {
+  return { windowIndex: control.windowIndex, controlIndex: control.controlIndex };
+}
+
+function renderDesignerInspector() {
+  const selected = currentDesignerControl();
+  designerInspector.error.hidden = true;
+  designerInspector.error.textContent = '';
+  designerInspector.empty.hidden = Boolean(selected);
+  designerInspector.form.hidden = !selected;
+  if (!selected) return;
+
+  designerInspector.type.textContent = selected.type[0].toUpperCase() + selected.type.slice(1);
+  designerInspector.location.textContent = `Window ${selected.windowIndex + 1} · control ${selected.controlIndex + 1} · line ${selected.line}`;
+  designerInspector.idField.hidden = selected.type === 'text';
+  designerInspector.textField.hidden = selected.type === 'input';
+  designerInspector.idInput.value = selected.id ?? '';
+  designerInspector.textInput.value = selected.textExpr ?? '';
+}
+
+function installDesignerInspector() {
+  const surface = document.createElement('div');
+  surface.className = 'designer-surface';
+  const canvasParent = designerCanvas.parentElement;
+  canvasParent.insertBefore(surface, designerCanvas);
+  surface.appendChild(designerCanvas);
+
+  const aside = document.createElement('aside');
+  aside.id = 'designerInspector';
+  aside.className = 'designer-inspector';
+  aside.setAttribute('aria-label', 'Selected control properties');
+  aside.innerHTML = `
+    <div id="designerInspectorEmpty" class="designer-inspector-empty">Select a control on the canvas to edit its source-backed properties.</div>
+    <div id="designerInspectorForm" hidden>
+      <h3>Properties</h3>
+      <p id="designerInspectorLocation" class="inspector-hint"></p>
+      <label class="inspector-field">Type <span id="designerInspectorType" class="inspector-readonly"></span></label>
+      <label id="designerInspectorIdField" class="inspector-field">Control id <input id="designerInspectorId" autocomplete="off" spellcheck="false"></label>
+      <label id="designerInspectorTextField" class="inspector-field">Text expression <input id="designerInspectorText" autocomplete="off" spellcheck="false"></label>
+      <p id="designerInspectorError" class="inspector-hint" hidden></p>
+      <div class="inspector-actions">
+        <button id="designerInspectorApply" type="button">Apply</button>
+        <button id="designerInspectorSource" class="secondary" type="button">Source</button>
+        <button id="designerInspectorDelete" class="danger" type="button">Delete</button>
+      </div>
+    </div>`;
+  surface.appendChild(aside);
+
+  return {
+    root: aside,
+    empty: aside.querySelector('#designerInspectorEmpty'),
+    form: aside.querySelector('#designerInspectorForm'),
+    type: aside.querySelector('#designerInspectorType'),
+    location: aside.querySelector('#designerInspectorLocation'),
+    idField: aside.querySelector('#designerInspectorIdField'),
+    idInput: aside.querySelector('#designerInspectorId'),
+    textField: aside.querySelector('#designerInspectorTextField'),
+    textInput: aside.querySelector('#designerInspectorText'),
+    error: aside.querySelector('#designerInspectorError'),
+    apply: aside.querySelector('#designerInspectorApply'),
+    source: aside.querySelector('#designerInspectorSource'),
+    remove: aside.querySelector('#designerInspectorDelete')
+  };
+}
+
+function installDesignerInspectorStylesheet() {
+  if (document.querySelector('link[data-patch-designer-inspector]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = './designer-inspector.css';
+  link.dataset.patchDesignerInspector = '1';
+  document.head.appendChild(link);
 }
 
 function trigger(control, event, payload = {}) {

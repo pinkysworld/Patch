@@ -4,11 +4,11 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 ## What works in 0.2 beta.28
 
-Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
+Patch Studio provides source editing/local autosave, Console and Window Run, the Designer toolbox plus source-backed control selection/property editing, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
 For Windows, macOS and Linux, the default desktop workflow is **Ready app download (no token)**. Patch Studio performs browser preflight, compiles the Console subset to direct Wasm when needed, loads a stable runtime asset for the selected OS and produces the current project package in the browser. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Console ready builds are now project-specific sealed executables. Studio appends the checked direct-Wasm payload and project metadata to the raw runtime executable and emits a project-named `.exe`, Linux executable or macOS `.app`. Window projects continue to use the prebuilt desktop-player package with a checked source payload.
+Console ready builds are project-specific sealed executables. Studio appends the checked direct-Wasm payload and project metadata to the raw runtime executable and emits a project-named `.exe`, Linux executable or macOS `.app`. Window projects continue to use the prebuilt desktop-player package with a checked source payload.
 
 Change IR **0.10** is unchanged. Beta.28 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
 
@@ -27,6 +27,22 @@ npm run callee-trace-certify:example
 `npm run callee-trace-certify:example` generates `GeneratedConcreteCallBodyCertificate.lean` from `examples/formal-callee-trace.patch`. Lean re-evaluates exact call binding and the complete supported sequence/static-repeat callee effect trace, checks the trace against the callee signature and imports it into the caller signature.
 
 This research machinery is intentionally invisible during normal editing, Run and Build.
+
+## Designer property inspector
+
+The Designer now derives selectable controls from parsed Patch source instead of keeping a second form file or hidden GUI model.
+
+- click or keyboard-select Text, Button and Input controls on the Designer canvas;
+- inspect the control type and exact source location;
+- edit button/input control ids;
+- edit Text/Button text expressions directly as Patch expressions;
+- Apply writes the changed declaration back to `main.patch`;
+- renaming a control id updates matching `when ...` event headers;
+- invalid or duplicate control ids are rejected before source is changed;
+- Delete removes the control and its associated event-handler blocks;
+- Source jumps to the selected declaration in the editor.
+
+Selection uses parsed `(windowIndex, controlIndex)` coordinates, so even Text controls without ids remain selectable without inventing persistent designer metadata.
 
 ## Semantic input events
 
@@ -98,7 +114,7 @@ current editor source
     -> ready ZIP download
 ```
 
-The prebuilt runtime templates are built and smoke-tested on Windows, macOS and Linux by `.github/workflows/runtime-templates.yml`. CI now executes a sealed Console binary on every target OS before raw runtime assets are published. Window payload loading is also smoke-tested on every target platform. `src/prebuilt-native.js` performs sealed Console assembly and Window ZIP customization.
+The prebuilt runtime templates are built and smoke-tested on Windows, macOS and Linux by `.github/workflows/runtime-templates.yml`. CI executes a sealed Console binary on every target OS before raw runtime assets are published. The generic Window player uses an Electron sandbox with a minimal IPC payload bridge and strict payload validation; that sandboxed bridge is smoke-tested on Windows, macOS and Linux. `src/prebuilt-native.js` performs sealed Console assembly and Window ZIP customization.
 
 This keeps user source out of GitHub Actions for the default path. App signing/notarization and native AppKit/Win32/portable Unix widget lowering remain later platform work.
 
@@ -127,7 +143,7 @@ Patch Studio can be installed from Safari with **Share → Add to Home Screen**.
 
 ## PWA updates
 
-The beta.28 cache key begins with `patch-studio-0.2-beta.28`. The Studio cache includes the browser-side prebuilt native packager together with compiler, formal-call, guard-validation and Window-event modules. Large OS runtime assets are fetched only when a user asks for a native build rather than being forced into the offline PWA cache.
+The beta.28 cache key begins with `patch-studio-0.2-beta.28`. The Studio cache includes the browser-side prebuilt native packager, Designer property-inspector stylesheet and source editor helpers together with compiler, formal-call, guard-validation and Window-event modules. Large OS runtime assets are fetched only when a user asks for a native build rather than being forced into the offline PWA cache.
 
 ## Source remains truth
 
@@ -138,6 +154,8 @@ window "My App":
   button "Button" as button_1
 ```
 
+Selecting that button and changing its text or id updates this declaration directly. The `.patch` file therefore remains the reviewable, diffable representation of both behavior and current GUI structure.
+
 ## Next product work
 
-Next GUI work is richer Designer interaction: control selection/properties, event editing and positioning/resizing while keeping source as truth. Desktop work should focus on signing/notarization, project-specific Window package metadata, and eventually a direct-native AOT backend plus native AppKit/Win32/portable Unix widget lowering. The normal Studio path no longer needs a personal GitHub token or a user-installed build toolchain.
+Next GUI work is drag positioning/resizing, richer controls and event editing while keeping source as truth. Desktop work should focus on signing/notarization, project-specific Window package metadata, and eventually a direct-native AOT backend plus native AppKit/Win32/portable Unix widget lowering. The normal Studio path no longer needs a personal GitHub token or a user-installed build toolchain.

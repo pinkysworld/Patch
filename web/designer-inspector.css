@@ -1,0 +1,94 @@
+.designer-surface {
+  flex: 1;
+  min-height: 522px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  overflow: hidden;
+}
+.designer-surface .designer-canvas {
+  min-width: 0;
+  min-height: 522px;
+}
+.designer-inspector {
+  padding: 14px;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  overflow: auto;
+}
+.designer-inspector h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.designer-inspector .inspector-hint {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.designer-inspector .inspector-field {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.designer-inspector .inspector-field input {
+  width: 100%;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 500;
+}
+.designer-inspector .inspector-readonly {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-weight: 600;
+}
+.designer-inspector .inspector-actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 14px;
+}
+.designer-inspector .inspector-actions button { flex: 1; }
+.designer-inspector .danger {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.designer-inspector-empty {
+  margin: 42px 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.designer-control {
+  cursor: pointer;
+  outline: 2px dashed transparent;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.designer-control:hover { outline-color: var(--border-strong); }
+.designer-control.designer-selected {
+  outline-style: solid;
+  outline-color: var(--text);
+}
+
+@media (max-width: 1180px) {
+  .designer-surface { grid-template-columns: 1fr; overflow: visible; }
+  .designer-inspector {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 640px) {
+  .designer-inspector { padding: 12px; }
+  .designer-inspector .inspector-actions { flex-direction: column; }
+}

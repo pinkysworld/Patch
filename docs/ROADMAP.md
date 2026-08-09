@@ -115,7 +115,13 @@ Beta.28 proves complete exact semantic-effect traces for the supported **sequenc
 
 ### Studio / Designer
 - [x] semantic input `changed` without hidden persistent assignment
-- [ ] control selection and property inspector
+- [x] control selection and property inspector
+  - [x] parsed source-backed selection for Text/Button/Input controls
+  - [x] id/text-expression edits write back to `main.patch`
+  - [x] id renames propagate to matching event headers
+  - [x] invalid/duplicate ids fail closed
+  - [x] Delete removes associated event-handler blocks
+  - [x] keyboard selection, Source jump and offline inspector assets
 - [ ] drag positioning/resizing
 - [ ] richer controls/event editing
 - [ ] project import/export

@@ -10,7 +10,7 @@ const out = path.join(root, '_site');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const name of ['index.html', 'style.css', 'manifest.webmanifest', 'icon.svg']) {
+for (const name of ['index.html', 'style.css', 'designer-inspector.css', 'manifest.webmanifest', 'icon.svg']) {
   fs.copyFileSync(path.join(sourceWeb, name), path.join(out, name));
 }
 
