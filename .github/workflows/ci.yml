@@ -51,6 +51,8 @@ jobs:
         run: npm run arithmetic-call-certify:example
       - name: Generate Lean structured callee trace certificate
         run: npm run callee-trace-certify:example
+      - name: Generate Lean guard-aware structured callee trace certificate
+        run: npm run guarded-callee-trace-certify:example
       - name: Portable application build
         run: npm run build:example
       - name: Bootstrap WebAssembly application build
