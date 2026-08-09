@@ -79,7 +79,7 @@ callee body under that exact environment -> concrete formal trace
 concrete formal call trace == production JavaScript/Wasm call execution
 ```
 
-Concrete argument evaluation, parameter binding/substitution and runtime correspondence are therefore explicit next-step gaps, not silently included in the beta.25 claim.
+**Concrete argument evaluation**, exact parameter binding/substitution and runtime correspondence are therefore explicit next-step gaps, not silently included in the beta.25 claim.
 
 ## Beta.23 guard-aware runtime milestone
 
