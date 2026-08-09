@@ -69,11 +69,13 @@ export function addDesignerControl(source, type, options = {}) {
   const baseIndent = indentOf(lines[windowIndex]);
   const childIndent = `${baseIndent}  `;
   let insertAt = windowIndex + 1;
-  while (insertAt < lines.length) {
-    const line = lines[insertAt];
-    if (!line.trim()) { insertAt++; continue; }
+  let scan = insertAt;
+  while (scan < lines.length) {
+    const line = lines[scan];
+    if (!line.trim()) { scan += 1; continue; }
     if (indentOf(line).length <= baseIndent.length) break;
-    insertAt++;
+    insertAt = scan + 1;
+    scan += 1;
   }
 
   const existing = listDesignerControls(normalized).filter(item => item.windowIndex === requestedWindow);
