@@ -24,7 +24,7 @@ if (scenario.variants?.length !== 3) throw new Error('Checkout extension scenari
 requireAll('docs/CHECKOUT_EXTENSION_CASE.md', doc, [
   'Checkout loyalty extension case study', 'balance = 80', 'points = 8', 'cashback = 0',
   'reward escalation', 'direction escalation', 'target escalation',
-  'internal ablation, not a model of a named prior system', 'complete plugin sandbox'
+  'internal ablation, not a model of a named prior system', 'complete malicious extension containment'
 ]);
 requireAll('scripts/evaluate-checkout-extension.js', evaluator, [
   'compileToDirectWasm', 'runDirectWasm', 'verifyProtectedEffects', 'verifyState',
