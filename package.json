@@ -11,7 +11,7 @@
     "validate:wasm-direct": "node scripts/validate-direct-trace.js examples/direct-wasm-recipes.patch",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
-    "check:project": "node scripts/check-project-surface.js",
+    "check:project": "node scripts/check-project-surface.js && node scripts/check-checkout-extension-surface.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
     "certify:example": "node src/cli.js certify examples/range-soundness.patch --out formal/GeneratedCertificate.lean",
     "runtime-certify:example": "node src/cli.js runtime-certify examples/runtime-correspondence.patch --out formal/GeneratedRuntimeCertificate.lean",
@@ -26,6 +26,7 @@
     "evaluate:assurance": "node scripts/benchmark-assurance.js",
     "evaluate:assurance:quick": "node scripts/benchmark-assurance.js --preset quick --iterations 3 --warmup 1",
     "evaluate:security": "node scripts/evaluate-security-cases.js",
+    "evaluate:checkout-extension": "node scripts/evaluate-checkout-extension.js",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:wasm-direct": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm",
@@ -38,5 +39,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "semantic-authority", "security-case-study", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "guard-validation", "guard-aware-runtime", "runtime-correspondence", "runtime-path-witness", "runtime-capability-containment", "formal-recipe-calls", "call-signature-composition", "concrete-call-binding", "arithmetic-call-binding", "structured-callee-trace", "guarded-callee-trace", "transitive-callee-trace", "transitive-runtime-correspondence", "call-aware-wasm-correspondence", "invocation-frame-correspondence", "assurance-evaluation", "benchmark", "finite-call-tree", "effect-refinement", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "window-input-events", "semantic-input", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "semantic-authority", "security-case-study", "extension-case-study", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "guard-validation", "guard-aware-runtime", "runtime-correspondence", "runtime-path-witness", "runtime-capability-containment", "formal-recipe-calls", "call-signature-composition", "concrete-call-binding", "arithmetic-call-binding", "structured-callee-trace", "guarded-callee-trace", "transitive-callee-trace", "transitive-runtime-correspondence", "call-aware-wasm-correspondence", "invocation-frame-correspondence", "assurance-evaluation", "benchmark", "finite-call-tree", "effect-refinement", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "window-input-events", "semantic-input", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
 }
