@@ -15,6 +15,8 @@ test('transitive certificate preserves recursive call-tree structure for Lean', 
   assert.ok(!certificate.certified.some(item => item.startsWith('middle->leaf#')));
   assert.match(certificate.lean, /import PatchCallTree/);
   assert.match(certificate.lean, /CallTreeStmt\.call/);
+  assert.match(certificate.lean, /CallTreeStmt\.call 2 1/);
+  assert.match(certificate.lean, /CallTreeStmt\.call 1 0/);
   assert.match(certificate.lean, /RangeExpr\.add \(RangeExpr\.var "seed"\) \(RangeExpr\.lit 1\)/);
   assert.match(certificate.lean, /RangeExpr\.add \(RangeExpr\.var "amount"\) \(RangeExpr\.lit 1\)/);
   assert.match(certificate.lean, /evalCallTreeStmtEqBool/);
