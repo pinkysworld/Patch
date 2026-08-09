@@ -7,14 +7,34 @@ on:
     paths:
       - scripts/build-native-sea-template.js
       - scripts/build-native-window-template.js
-      - src/**
+      - src/interpreter.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - src/window-events.js
+      - src/prebuilt-native.js
+      - src/wasm-direct.js
+      - src/compiler.js
+      - src/cli.js
+      - examples/direct-wasm-recipes.patch
+      - examples/counter-window.patch
       - .github/workflows/runtime-templates.yml
   push:
     branches: [main]
     paths:
       - scripts/build-native-sea-template.js
       - scripts/build-native-window-template.js
-      - src/**
+      - src/interpreter.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - src/window-events.js
+      - src/prebuilt-native.js
+      - src/wasm-direct.js
+      - src/compiler.js
+      - src/cli.js
+      - examples/direct-wasm-recipes.patch
+      - examples/counter-window.patch
       - .github/workflows/runtime-templates.yml
 
 concurrency:

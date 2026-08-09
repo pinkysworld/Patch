@@ -1,8 +1,8 @@
 # Patch Core Formal Model
 
-Status: **beta.31: mechanized semantic-change contracts, finite transitive exact call trees, and conservative call-aware direct-Wasm correspondence for unambiguous validated scoped traces**.
+Status: **beta.32: mechanized semantic-change contracts, finite transitive exact call trees, and invocation-frame-aware direct-Wasm correspondence for repeated finite calls**.
 
-Patch is not a fully verified compiler. Lean covers explicit fragments; production parsing, JavaScript-to-Wasm lowering/runtime, independent JavaScript validators and evidence attribution remain named boundaries.
+Patch is not a fully verified compiler. Lean covers explicit fragments; production parsing, JavaScript-to-Wasm lowering/runtime, independent JavaScript validators, runtime capture and invocation-frame reconstruction remain named boundaries.
 
 ## Lean modules
 
@@ -18,13 +18,11 @@ Patch is not a fully verified compiler. Lean covers explicit fragments; producti
 - `PatchCallEffect.lean`: exact quantitative effect refinement.
 - `PatchCallBody.lean` / `PatchCallBodyImport.lean`: beta.28/29 exact structured/guarded callee traces.
 - `PatchCallTree.lean`: beta.30 finite recursive exact call-tree evaluation and edge-by-edge signature import.
-- **`PatchCallRuntime.lean`: beta.31 bridge from runtime-derived observed effects to beta.30 exact call-tree refinement.**
+- **`PatchCallRuntime.lean`: runtime-derived observed effects re-evaluated against beta.30 exact call-tree semantics.**
 
 Change IR remains **0.10**.
 
 ## Core containment
-
-For the structured semantic core:
 
 ```text
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
@@ -34,18 +32,6 @@ RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 
 `CallTreeStmt` preserves beta.29 bodies as call-free leaves and adds sequence, literal/static repeat, exact `GuardExpr` branches and ranked nested calls.
 
-Each nested call carries:
-
-```text
-callerRank
-calleeRank
-RangeExpr arguments
-parameter names
-declared intervals
-callee semantic signature
-nested CallTreeStmt body
-```
-
 Lean independently checks exact nested argument evaluation/binding, strict rank decrease, selected guard/repeat/direct-effect execution, nested body coverage and one `SignatureCovers` import per call edge.
 
 The certificate theorem is:
@@ -54,41 +40,9 @@ The certificate theorem is:
 checkedConcreteTransitiveCallTreeRefinesCallerSignature
 ```
 
-The depth-2 example is:
+## Beta.31 observed runtime bridge
 
-```text
-caller -> outer -> middle -> leaf
-```
-
-with exact selected trace:
-
-```text
-score increase [4,4]
-coins increase [3,3]
-```
-
-## Beta.31 call-aware direct-Wasm correspondence
-
-Beta.31 does not modify the direct-Wasm backend to emit trusted call-enter/call-exit markers. The existing backend executes normally and returns its raw transition stream:
-
-```text
-target / before / after
-```
-
-`src/direct-trace-validator.js` independently executes the supported Change IR and validates the **complete** raw transition sequence. `src/direct-effect-validator.js` then reconstructs semantic operation identity and recipe scope from that independent execution model.
-
-`src/transitive-runtime-correspondence.js` compares the beta.30 exact scoped trace with the validated runtime semantic-effect stream. A candidate is accepted only if the same **scope + exact semantic-effect sequence** occurs once. Zero matches fail; repeated indistinguishable matches are marked ambiguous and fail closed.
-
-For the depth-2 example the validated scoped sequence is:
-
-```text
-leaf   : score increase [4,4]
-middle : coins increase [3,3]
-```
-
-Site ids, source operation lines and raw before/after transitions are retained as audit metadata, but beta.31's attribution criterion is the unique scoped exact-effect sequence.
-
-### Lean bridge
+Beta.31 first connected an actually executed direct-Wasm trace to beta.30 call-tree semantics without adding trusted backend call-enter/call-exit markers. Its limitation was attribution: repeated indistinguishable scoped traces were rejected.
 
 `PatchCallRuntime.lean` proves:
 
@@ -96,49 +50,84 @@ Site ids, source operation lines and raw before/after transitions are retained a
 checkedObservedTransitiveRuntimeRefinesCallerSignature
 ```
 
-Its critical premise is:
+with the critical premise:
 
 ```text
 evalCallTreeStmtEqBool calleeBindings body observed = true
 ```
 
-where `observed` is the semantic-effect list reconstructed from the validated direct-Wasm execution.
+so the runtime-derived observed list is re-evaluated in Lean rather than trusted as already equal to the beta.30 trace.
 
-Therefore the observed runtime list is not trusted as already equal to the beta.30 trace. `evalCallTreeStmtEqBool_sound` causes Lean to re-evaluate the exact nested call tree against that runtime-derived list before the beta.30 caller-signature theorem is reused.
+## Beta.32 independent invocation-frame correspondence
 
-The generated `GeneratedTransitiveRuntimeCertificate.lean` embeds the full beta.30 generated call-tree definitions/proofs and adds runtime-derived observed effects, scope/site audit metadata and the beta.31 theorem.
+The independent Change-IR execution model now reconstructs every concrete `DO` invocation-frame while deriving and validating the expected runtime path. No invocation metadata is accepted from the direct-Wasm backend.
 
-Standard Formal CI runs the Wasm program, generates the certificate and verifies it with pinned Lean. Standard Windows/macOS/Linux CI also executes the direct-Wasm example and regenerates beta.31 evidence.
+Each frame contains:
 
-## Exact beta.31 boundary
+```text
+frameId
+parentFrameId
+callerScope
+callee
+dynamic invocation ordinal
+depth
+exact argument values
+exact parameter BindingList
+transitionStart / transitionEndExclusive
+```
+
+Every independently validated transition/effect carries the active frame stack. A beta.30 witness is matched to one reconstructed frame by caller/callee/dynamic invocation identity, and the frame's exact parameter bindings must match the beta.30 expected callee binding.
+
+The generated beta.32 certificate then adds a Lean-decided equality:
+
+```text
+runtimeFrameBindings = beta30ExactBindings
+```
+
+before checking:
+
+```text
+evalCallTreeStmtEqBool beta30ExactBindings body frameSelectedObserved = true
+```
+
+and reusing:
+
+```text
+checkedObservedTransitiveRuntimeRefinesCallerSignature
+```
+
+This makes repeated identical calls distinguishable by independently reconstructed concrete frame identity while keeping the formal call-tree semantics unchanged.
+
+`examples/formal-transitive-calls-repeated.patch` contains two identical `do caller(1)` invocations. Beta.32 generates separate frame-selected observations and the corresponding `GeneratedRepeatedTransitiveRuntimeCertificate.lean`.
+
+## Exact beta.32 boundary
 
 Mechanically/formally checked after evidence generation:
 
-- beta.30 exact outer and nested bindings;
-- beta.30 outer/nested rank decrease;
+- beta.30 exact outer/nested bindings and rank decrease;
 - beta.30 exact guarded/static-repeat/direct-effect semantics;
-- beta.30 nested signature coverage and edge-by-edge import;
-- exact equality between the runtime-derived observed effect list and Lean's re-evaluated call-tree trace;
+- nested signature coverage and edge-by-edge import;
+- equality between each independently reconstructed runtime-frame `BindingList` and the beta.30 exact callee `BindingList`;
+- exact equality between each frame-selected observed effect list and Lean's re-evaluated call-tree trace;
 - observed-list refinement into the caller semantic signature.
 
 Runtime evidence established by JavaScript before Lean:
 
 - real direct-Wasm module execution;
 - complete raw transition validation against independent Change-IR execution;
-- semantic operation reconstruction;
-- recipe-scope reconstruction;
-- unique contiguous scoped-effect sequence attribution.
+- semantic operation and recipe-scope reconstruction;
+- concrete invocation-frame reconstruction and active frame stacks;
+- frame-based effect selection.
 
 Still explicit proof-free/trust boundaries:
 
 - **runtime capture**;
-- correctness/completeness of the independent JavaScript validator;
-- **scoped-slice attribution** from the validated effect stream to a concrete invocation;
+- correctness/completeness of the independent JavaScript validator and **invocation-frame reconstruction**;
 - production parser/extractor correctness;
 - JavaScript-to-Wasm lowering correctness;
 - Wasm engine correctness.
 
-Beta.31 is therefore not a full forward/backward simulation theorem for the compiler/runtime. In particular, repeated identical scoped traces are rejected rather than disambiguated.
+Beta.32 is therefore not a full forward/backward simulation theorem for the compiler/runtime and not full compiler verification.
 
 ## Earlier assurance layers
 
@@ -148,11 +137,10 @@ Beta.31 is therefore not a full forward/backward simulation theorem for the comp
 - Beta.28: exact direct quantitative sequence/static-repeat callee traces.
 - Beta.29: exact formal-guard branch selection with both-arm static coverage.
 - Beta.30: finite transitive exact call-tree traces.
+- Beta.31: first conservative call-aware direct-Wasm bridge with unique-slice attribution.
 
 ## Research boundary
 
-Procedure-call semantics, transitive traces, runtime validation, effect refinement, translation validation and proof-carrying evidence all have extensive prior art. Beta.31 is **supporting assurance**, not a new firstness claim.
+Procedure-call semantics, invocation frames, transitive traces, runtime validation, effect refinement, translation validation and proof-carrying evidence all have extensive prior art. Beta.32 is **supporting assurance**, not a new firstness claim.
 
 The primary candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from that same mutation substrate**.
-
-The next formal hardening target is independent concrete invocation-frame reconstruction so repeated identical calls can be mapped without relying on globally unique scoped slices or adding trusted compiler-emitted call events.

@@ -1,6 +1,6 @@
 # Patch Compiler Architecture
 
-Status: **0.2.0-beta.31** · Change IR **0.10**
+Status: **0.2.0-beta.32** · Change IR **0.10**
 
 Patch combines a working compiler frontend, semantic Change analysis, independent source/guard/runtime validation, direct Wasm/C99 backends, Window runtimes, desktop packaging and generated Lean certificates.
 
@@ -21,10 +21,11 @@ Patch source
        ├─ independent source/guard validation
        ├─ independent direct-Wasm transition/effect validation
        ├─ beta.30 exact transitive CallTreeStmt
-       └─ beta.31 call-aware observed-runtime certificate
+       ├─ beta.31 observed-runtime bridge
+       └─ beta.32 invocation-frame correspondence
 ```
 
-Beta.31 does **not** change Change IR.
+Beta.32 does **not** change Change IR.
 
 ## Beta.30 call-tree layer
 
@@ -36,55 +37,61 @@ The certificate theorem remains:
 checkedConcreteTransitiveCallTreeRefinesCallerSignature
 ```
 
-## Beta.31 call-aware direct-Wasm correspondence
+## Beta.32 invocation-frame runtime correspondence
 
-New production-side modules:
+Production-side modules:
 
 ```text
+src/direct-trace-validator.js
+src/direct-effect-validator.js
 src/transitive-runtime-correspondence.js
 src/transitive-runtime-certificate.js
 scripts/generate-transitive-runtime-certificate.js
 ```
 
-New formal module:
+Formal bridge:
 
 ```text
 formal/PatchCallRuntime.lean
 ```
 
-The direct-Wasm backend is deliberately unchanged. Beta.31 executes it and obtains the existing raw transition stream. `validateDirectSemanticEffects` first validates the complete trace against the independent Change-IR execution model. Only after whole-trace validation are semantic operation identity and recipe scope used for call-tree correspondence.
+The direct-Wasm backend is deliberately unchanged. It still emits only raw target/before/after transitions. The independent Change-IR validator executes the expected IR path, validates the complete observed transition stream, reconstructs semantic operation identity and recipe scope, and now reconstructs every concrete `DO` **invocation-frame**.
 
-`src/transitive-call-body.js` witness schema is **0.2** in beta.31 because exact selected effects additionally preserve expected recipe scope. The beta.30 effect-only trace remains unchanged.
-
-A runtime correspondence is accepted only when the exact scoped effect sequence occurs **exactly once** in the validated runtime semantic-effect stream:
+Each frame records:
 
 ```text
-scope + target + field + operation + exact amount
+frameId
+parentFrameId
+callerScope
+callee
+dynamic invocation ordinal
+depth
+exact arguments
+exact parameter BindingList
+transitionStart / transitionEndExclusive
 ```
 
-Zero matches fail. Multiple matches are ambiguous and fail closed. Site ids, source lines and before/after values are preserved as audit evidence, but unique scoped-sequence attribution remains a proof-free boundary.
+Every validated transition/effect also carries the active frame stack. `src/transitive-runtime-correspondence.js` therefore resolves a beta.30 witness by caller/callee/invocation identity and selects effects dominated by that concrete frame. Repeated identical calls no longer require globally unique scoped effect sequences.
 
-`PatchCallRuntime.lean` provides:
+The generated beta.32 certificate adds:
+
+```text
+runtimeFrameBindings = beta30ExactBindings
+```
+
+as a Lean-decided theorem and then checks:
+
+```text
+evalCallTreeStmtEqBool beta30ExactBindings exactTree frameSelectedObservedEffects = true
+```
+
+before reusing:
 
 ```text
 checkedObservedTransitiveRuntimeRefinesCallerSignature
 ```
 
-Its generated premise is:
-
-```text
-evalCallTreeStmtEqBool exactBindings exactTree runtimeObservedEffects = true
-```
-
-Therefore Lean re-evaluates the beta.30 call tree **against the effects reconstructed from the real validated Wasm execution**, rather than trusting a JavaScript equality assertion.
-
-`GeneratedTransitiveRuntimeCertificate.lean` embeds the complete beta.30 generated definitions and then adds runtime-derived observed effects and the beta.31 theorem.
-
-Regenerate with:
-
-```bash
-npm run transitive-runtime-certify:example
-```
+This keeps the formal call-tree theorem unchanged while strengthening the evidence attribution layer.
 
 ## Generated certificates
 
@@ -100,34 +107,42 @@ GeneratedConcreteCallBodyCertificate.lean
 GeneratedGuardedCallBodyCertificate.lean
 GeneratedTransitiveCallBodyCertificate.lean
 GeneratedTransitiveRuntimeCertificate.lean
+GeneratedRepeatedTransitiveRuntimeCertificate.lean
 ```
 
-Standard Windows/macOS/Linux CI also executes the direct-Wasm transitive example and regenerates beta.31 runtime evidence.
+Regenerate beta.32 runtime evidence with:
 
-## Exact beta.31 boundary
+```bash
+npm run transitive-runtime-certify:example
+npm run transitive-runtime-certify:repeated
+```
+
+The repeated example contains two identical `do caller(1)` calls and must produce separate independently reconstructed frames/certificates.
+
+## Exact Beta.32 boundary
 
 Covered:
 
 - real execution of the existing direct-Wasm backend;
 - complete independent transition/effect validation;
 - independently reconstructed semantic operation identity and recipe scope;
-- unambiguous scoped-effect slice correspondence;
+- concrete invocation-frame identity and exact parameter bindings;
+- repeated identical calls distinguished by dynamic invocation frame;
 - beta.30 exact safe-integer call-tree semantics;
-- runtime-derived observed list re-evaluated in Lean;
-- caller-signature refinement for that observed list.
+- frame-selected observed lists re-evaluated in Lean;
+- caller-signature refinement for accepted observed lists.
 
 Explicit proof-free/trust boundaries:
 
 ```text
 runtime capture
-independent JavaScript validator correctness/completeness
-scoped-slice attribution
+independent JavaScript validator and invocation-frame reconstruction correctness/completeness
 production parser/extractor correctness
 JavaScript -> Wasm lowering correctness
 Wasm engine correctness
 ```
 
-Beta.31 is not a complete compiler/runtime simulation proof. Repeated indistinguishable scoped traces are rejected rather than guessed.
+Beta.32 is not a complete compiler/runtime simulation proof or full compiler verification.
 
 ## Direct Wasm and other targets
 
@@ -137,10 +152,10 @@ Window preflight supports button `clicked` and input `changed`; input edits rema
 
 ## Quality gates
 
-- Windows/macOS/Linux Node 22/24 tests and beta.31 runtime certificate generation;
-- pinned-Lean verification including `PatchCallRuntime` and `GeneratedTransitiveRuntimeCertificate.lean`;
-- focused beta.28, beta.29, beta.30 and beta.31 workflows;
+- Windows/macOS/Linux Node 22/24 tests and single/repeated beta.32 runtime certificate generation;
+- pinned-Lean verification including `PatchCallRuntime` and both beta.32 generated runtime certificates;
+- one focused beta.32 release gate, while historical beta.28/29 gates are manual-only and beta.30/31 focused PR workflows are retired;
 - no `sorry`/`admit`;
 - direct-Wasm execution and independent trace validation;
-- native Windows/macOS/Linux Console/Window smoke builds;
+- native Windows/macOS/Linux Console/Window smoke builds when runtime-relevant paths change;
 - public Studio/PWA/version consistency checks.

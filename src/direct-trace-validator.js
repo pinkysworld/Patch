@@ -1,4 +1,5 @@
 export const PATCH_DIRECT_TRACE_CONTRACT_VERSION = '0.1';
+export const PATCH_DIRECT_INVOCATION_FRAME_VERSION = '0.1';
 
 export class DirectTraceValidationError extends Error {}
 
@@ -60,15 +61,22 @@ export function buildDirectTraceContract(ir) {
 
 /**
  * Independently execute the supported Change IR subset and derive the expected
- * ordered committed numeric transition sequence. This is a validator-side
- * execution model, not the Patch interpreter and not the Wasm backend.
+ * ordered committed numeric transition sequence. In addition to transitions,
+ * beta.32 reconstructs concrete recipe invocation frames entirely from IR
+ * execution: exact parameter bindings, parent frame, dynamic invocation ordinal
+ * and the transition interval dominated by each call. No backend call markers
+ * are consumed.
  */
 export function deriveExpectedDirectTrace(ir) {
   const contract = buildDirectTraceContract(ir);
   const state = new Map();
   const recipes = new Map();
   const trace = [];
+  const invocationFrames = [];
   const activeRecipes = [];
+  const activeFrameIds = [];
+  const invocationCounts = new Map();
+  let nextFrameId = 0;
 
   for (const instruction of ir.instructions ?? []) {
     if (instruction.code === 'MAKE') recipes.set(instruction.name, instruction);
@@ -205,7 +213,8 @@ export function deriveExpectedDirectTrace(ir) {
             target: instruction.target,
             before,
             after: current,
-            effects
+            effects,
+            frameIds: [...activeFrameIds]
           });
           break;
         }
@@ -238,18 +247,42 @@ export function deriveExpectedDirectTrace(ir) {
           const args = instruction.args ?? [];
           if (params.length !== args.length) fail(`recipe '${instruction.name}' arity mismatch`, instruction.line);
           const recipeLocals = new Map();
+          const argValues = [];
           params.forEach((name, index) => {
             const value = evaluateNumber(args[index], state, locals, instruction.line);
             const range = recipe.paramRanges?.[name];
             if (range && (value < range.min || value > range.max)) {
               fail(`recipe parameter '${name}' is outside ${range.min}..${range.max}`, instruction.line);
             }
+            argValues.push(value);
             recipeLocals.set(name, value);
           });
+
+          const invocation = (invocationCounts.get(instruction.name) ?? 0) + 1;
+          invocationCounts.set(instruction.name, invocation);
+          const frameId = nextFrameId++;
+          const frame = {
+            frameId,
+            parentFrameId: activeFrameIds.length ? activeFrameIds[activeFrameIds.length - 1] : null,
+            callerScope: scope,
+            callee: instruction.name,
+            invocation,
+            depth: activeFrameIds.length,
+            line: instruction.line ?? null,
+            args: [...argValues],
+            bindings: params.map((name, index) => ({ name, value: argValues[index] })),
+            transitionStart: trace.length,
+            transitionEndExclusive: null
+          };
+          invocationFrames.push(frame);
+
           activeRecipes.push(instruction.name);
+          activeFrameIds.push(frameId);
           try {
             executeBlock(recipe.body, recipeLocals, instruction.name);
           } finally {
+            frame.transitionEndExclusive = trace.length;
+            activeFrameIds.pop();
             activeRecipes.pop();
           }
           break;
@@ -269,14 +302,17 @@ export function deriveExpectedDirectTrace(ir) {
   return {
     contract: serializableContract(contract),
     trace,
-    state: Object.fromEntries(state)
+    state: Object.fromEntries(state),
+    invocationFrameVersion: PATCH_DIRECT_INVOCATION_FRAME_VERSION,
+    invocationFrames
   };
 }
 
 /**
  * Validate an observed direct-Wasm trace against the independently derived IR
- * transition contract. The observed trace intentionally need not contain siteId;
- * site identity is reconstructed by the validator from the expected execution.
+ * transition contract. The observed trace intentionally need not contain siteId,
+ * scope or invocation metadata; all such information is reconstructed from the
+ * independently executed expected IR path.
  */
 export function validateDirectTrace(ir, observedTrace) {
   const expected = deriveExpectedDirectTrace(ir);
@@ -306,7 +342,9 @@ export function validateDirectTrace(ir, observedTrace) {
     contract: expected.contract,
     expectedTrace: expected.trace,
     annotatedTrace,
-    expectedState: expected.state
+    expectedState: expected.state,
+    invocationFrameVersion: expected.invocationFrameVersion,
+    invocationFrames: expected.invocationFrames
   };
 }
 

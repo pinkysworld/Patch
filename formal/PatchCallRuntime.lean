@@ -2,11 +2,15 @@ import PatchCallTree
 
 namespace PatchFormal
 
-/-- Beta.31 bridge from a proof-free observed semantic-effect list to the
-    beta.30 finite exact call-tree theorem. The observed list is not trusted as
+/-- Bridge from a proof-free observed semantic-effect list to the beta.30 finite
+    exact call-tree theorem. Beta.32 uses this theorem after an independent
+    Change-IR validator has reconstructed a concrete invocation frame and the
+    generated certificate has checked that frame's BindingList equals the exact
+    beta.30 callee BindingList. The observed list itself is still not trusted as
     a call-tree result: `evalCallTreeStmtEqBool` independently re-evaluates the
-    nested call tree under the exact callee binding and compares every concrete
-    effect occurrence before caller-signature refinement is derived. -/
+    nested call tree under the exact callee binding before caller-signature
+    refinement is derived. Runtime capture and validator/frame reconstruction
+    correctness remain outside Lean. -/
 theorem checkedObservedTransitiveRuntimeRefinesCallerSignature
     {caller : IntEnv} {argExprs : List RangeExpr} {params : List Name}
     {declared : List Interval} {calleeBindings : BindingList}

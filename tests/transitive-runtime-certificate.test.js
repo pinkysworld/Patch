@@ -4,11 +4,13 @@ import fs from 'node:fs';
 import { generateTransitiveRuntimeCertificate } from '../src/transitive-runtime-certificate.js';
 
 const source = fs.readFileSync(new URL('../examples/formal-transitive-calls.patch', import.meta.url), 'utf8');
+const repeatedSource = fs.readFileSync(new URL('../examples/formal-transitive-calls-repeated.patch', import.meta.url), 'utf8');
 
-test('beta31 certificate embeds beta30 proof and checks runtime-derived effects directly', async () => {
+test('beta32 certificate binds an independently reconstructed invocation frame to the beta30 exact call tree', async () => {
   const certificate = await generateTransitiveRuntimeCertificate(source, { name: 'TransitiveRuntime' });
-  assert.equal(certificate.certificateVersion, '0.1');
-  assert.equal(certificate.correspondenceVersion, '0.1');
+  assert.equal(certificate.certificateVersion, '0.2');
+  assert.equal(certificate.correspondenceVersion, '0.2');
+  assert.equal(certificate.invocationFrameVersion, '0.1');
   assert.ok(certificate.certified.some(item => item.startsWith('caller->outer#') && item.endsWith('@depth2')));
   assert.match(certificate.lean, /import PatchCallRuntime/);
   assert.match(certificate.lean, /namespace PatchGeneratedTransitiveCallBodyCertificate/);
@@ -16,21 +18,30 @@ test('beta31 certificate embeds beta30 proof and checks runtime-derived effects 
   assert.match(certificate.lean, /runtime_caller_outer_1_observed/);
   assert.match(certificate.lean, /runtime_caller_outer_1_scopes : List String := \["leaf", "middle"\]/);
   assert.match(certificate.lean, /runtime_caller_outer_1_siteIds : List Nat := \[0, 1\]/);
+  assert.match(certificate.lean, /runtime_caller_outer_1_frameBindings : BindingList/);
+  assert.match(certificate.lean, /runtime_caller_outer_1_frame_binding_checked/);
+  assert.match(certificate.lean, /runtime_caller_outer_1_frameBindings = caller_outer_1_bindings/);
   assert.match(certificate.lean, /evalCallTreeStmtEqBool caller_outer_1_bindings caller_outer_1_tree runtime_caller_outer_1_observed/);
   assert.match(certificate.lean, /checkedObservedTransitiveRuntimeRefinesCallerSignature/);
+  assert.match(certificate.lean, /invocationFrameVersion/);
   assert.match(certificate.lean, /directWasmTraceSha256/);
   assert.match(certificate.lean, /target := "score"/);
   assert.match(certificate.lean, /target := "coins"/);
 });
 
-test('beta31 certificate generation refuses ambiguous repeated scoped traces', async () => {
-  const ambiguous = source.replace(
-    /do caller\(1\)\r?\nshow score/,
-    'do caller(1)\ndo caller(1)\nshow score'
-  );
-  assert.notEqual(ambiguous, source, 'ambiguity fixture must add a second concrete caller invocation');
-  await assert.rejects(
-    () => generateTransitiveRuntimeCertificate(ambiguous, { name: 'AmbiguousTransitiveRuntime' }),
-    /No unambiguous beta\.31|ambiguous/i
-  );
+test('beta32 certificate generation distinguishes repeated identical invocation frames', async () => {
+  const certificate = await generateTransitiveRuntimeCertificate(repeatedSource, { name: 'RepeatedTransitiveRuntime' });
+  assert.equal(certificate.certificateVersion, '0.2');
+  assert.equal(certificate.correspondenceVersion, '0.2');
+  assert.ok(certificate.certified.includes('caller->outer#1@depth2'));
+  assert.ok(certificate.certified.includes('caller->outer#2@depth2'));
+
+  const outer = certificate.correspondences.filter(item => item.caller === 'caller' && item.callee === 'outer');
+  assert.equal(outer.length, 2);
+  assert.deepEqual(outer.map(item => item.frameId), [1, 5]);
+  assert.deepEqual(outer.map(item => item.occurrenceIds), [[0, 1], [2, 3]]);
+  assert.match(certificate.lean, /runtime_caller_outer_1_frame_binding_checked/);
+  assert.match(certificate.lean, /runtime_caller_outer_2_frame_binding_checked/);
+  assert.match(certificate.lean, /runtime_caller_outer_1_direct_wasm_refines_caller/);
+  assert.match(certificate.lean, /runtime_caller_outer_2_direct_wasm_refines_caller/);
 });

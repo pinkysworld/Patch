@@ -1,4 +1,4 @@
-name: Patch Beta31 Call-Aware Wasm Correspondence
+name: Patch Beta32 Invocation Frames
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  call-aware-wasm-correspondence:
+  invocation-frames:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -23,12 +23,14 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Run beta31 runtime/call-tree regression tests
-        run: node --test tests/transitive-call-body.test.js tests/transitive-call-body-certificate.test.js tests/transitive-runtime-correspondence.test.js tests/transitive-runtime-certificate.test.js
-      - name: Generate beta30 transitive regression certificate
+      - name: Run beta32 frame/runtime regression tests
+        run: node --test tests/direct-trace-validator.test.js tests/direct-effect-validator.test.js tests/direct-invocation-frame-effects.test.js tests/transitive-call-body.test.js tests/transitive-call-body-certificate.test.js tests/transitive-runtime-correspondence.test.js tests/transitive-runtime-certificate.test.js
+      - name: Generate beta30 exact call-tree regression certificate
         run: npm run transitive-callee-trace-certify:example
-      - name: Execute direct Wasm and generate beta31 call-aware runtime certificate
+      - name: Execute direct Wasm and generate beta32 single-call frame certificate
         run: npm run transitive-runtime-certify:example
+      - name: Execute repeated direct Wasm calls and generate beta32 frame certificate
+        run: npm run transitive-runtime-certify:repeated
       - name: Install pinned Lean
         shell: bash
         run: |
@@ -36,7 +38,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build beta30 and beta31 Lean bridge
+      - name: Build call-tree/runtime formal bridge used by beta32 evidence
         working-directory: formal
         shell: bash
         run: |
@@ -44,25 +46,22 @@ jobs:
           elan override set leanprover/lean4:v4.30.0
           lake update
           lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport PatchCallTree PatchCallRuntime
-      - name: Verify beta30 transitive regression certificate
+      - name: Verify beta30 exact call-tree regression certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedTransitiveCallBodyCertificate.lean
-      - name: Verify generated beta31 call-aware direct-Wasm certificate
+        run: lake env lean GeneratedTransitiveCallBodyCertificate.lean
+      - name: Verify generated beta32 single-call invocation-frame certificate
         working-directory: formal
+        run: lake env lean GeneratedTransitiveRuntimeCertificate.lean
+      - name: Verify generated beta32 repeated-call invocation-frame certificate
+        working-directory: formal
+        run: lake env lean GeneratedRepeatedTransitiveRuntimeCertificate.lean
+      - name: Reject unfinished beta32 proofs
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean GeneratedTransitiveRuntimeCertificate.lean
-      - name: Reject unfinished beta31 proofs
-        shell: bash
-        run: |
-          set -euo pipefail
-          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallRuntime.lean formal/GeneratedTransitiveRuntimeCertificate.lean || true)"
+          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallRuntime.lean formal/GeneratedTransitiveRuntimeCertificate.lean formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean || true)"
           if [ -n "$matches" ]; then
             echo "$matches"
-            echo 'Unfinished beta.31 proof found.'
+            echo 'Unfinished beta.32 proof found.'
             exit 1
           fi

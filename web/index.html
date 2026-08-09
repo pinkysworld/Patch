@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.31: semantic Change Contracts, call-aware direct-Wasm correspondence, and ready desktop apps.">
+  <meta name="description" content="Patch Studio beta.32: semantic Change Contracts, invocation-frame-aware direct-Wasm correspondence, and ready desktop apps.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -16,7 +16,7 @@
 <body>
 <main class="studio">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true">P</div><div><h1>Patch Studio <span>0.2 beta.31</span></h1><p>Write, run and build Patch.</p></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true">P</div><div><h1>Patch Studio <span>0.2 beta.32</span></h1><p>Write, run and build Patch.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
       <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="counterWindow">Window app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
       <button id="run">▶ Run</button>
@@ -47,20 +47,19 @@ change score:
 show score</pre></article>
 
     <div class="signal-grid">
-      <div class="signal"><strong>Beta.31 call-aware direct-Wasm correspondence</strong><span>Real Wasm execution is independently validated, then Lean checks runtime-derived effects against the beta.30 exact call tree.</span></div>
+      <div class="signal"><strong>Beta.32 invocation-frame direct-Wasm correspondence</strong><span>Repeated identical calls are independently assigned concrete invocation frames, then Lean checks frame binding and observed effects against the beta.30 exact call tree.</span></div>
       <div class="signal"><strong>One-click desktop builds</strong><span>Windows App (.exe), macOS App (.app), Linux App and FreeBSD Console paths.</span></div>
       <div class="signal"><strong>Source-backed Designer</strong><span>Control property edits write back to Patch source.</span></div>
     </div>
 
     <div class="details-stack">
-      <details open><summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.31 · Change IR 0.10</span></summary><div class="details-body"><p>Language/compiler, Change Contract, source-backed Designer, Standalone Window Web App, direct WebAssembly, portable C99, ready Windows/macOS/Linux apps, and FreeBSD Console.</p></div></details>
-      <details open><summary><span>Beta.31 call-aware direct-Wasm correspondence</span><span class="summary-hint">Executed runtime + independent validation + Lean</span></summary><div class="details-body two-column"><div><h3>Runtime evidence</h3><p>The existing direct-Wasm backend runs unchanged. Its complete raw transition stream is independently validated; semantic operation identity and recipe scope are reconstructed outside the backend.</p><p><code>GeneratedTransitiveRuntimeCertificate.lean</code> records the runtime-derived effects and trace hash.</p></div><div><h3>Formal check</h3><p><code>PatchCallRuntime.lean</code> checks the observed effect list with <code>evalCallTreeStmtEqBool</code> against the exact beta.30 call tree before caller-signature refinement.</p><p>Only one unique scoped exact-effect sequence is accepted. Ambiguous repetitions fail closed. Runtime capture, validator correctness and <strong>scoped-slice attribution</strong> remain proof-free evidence boundaries.</p></div></div></details>
-      <details><summary><span>Beta.30 finite transitive exact call trees</span></summary><div class="details-body"><p><code>PatchCallTree.lean</code> checks nested exact bindings, strict rank decrease, selected guards/repeats/effects and edge-by-edge semantic-signature import for <code>caller → outer → middle → leaf</code>.</p></div></details>
-      <details><summary><span>Exact beta.31 boundary</span><span class="summary-hint">No full compiler claim</span></summary><div class="details-body"><p>Patch is not an end-to-end verified compiler. Parser correctness, JavaScript-to-Wasm lowering, Wasm-engine correctness, runtime capture, independent-validator correctness and scoped-slice attribution remain outside the theorem.</p></div></details>
-      <details><summary><span>Roadmap</span></summary><div class="details-body roadmap-list"><div><strong>Invocation-frame reconstruction</strong><span>Disambiguate repeated identical calls without trusted compiler-emitted call events.</span></div><div><strong>Designer layout</strong><span>Add drag positioning/resizing while keeping source as truth.</span></div><div><strong>Evaluation</strong><span>Security cases, overhead measurements and reproducibility.</span></div></div></details>
+      <details open><summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.32 · Change IR 0.10</span></summary><div class="details-body"><p>Language/compiler, Change Contract, source-backed Designer, Standalone Window Web App, direct WebAssembly, portable C99, ready Windows/macOS/Linux apps, and FreeBSD Console.</p></div></details>
+      <details open><summary><span>Beta.32 invocation-frame correspondence</span><span class="summary-hint">Executed runtime + independent frames + Lean</span></summary><div class="details-body two-column"><div><h3>Runtime evidence</h3><p>The direct-Wasm backend runs unchanged and emits no call-enter/call-exit markers. The independent Change-IR validator reconstructs concrete <strong>invocation-frame</strong> identities, exact parameter bindings, parent/depth information and active frame stacks while validating the complete raw transition trace.</p><p><code>GeneratedTransitiveRuntimeCertificate.lean</code> and <code>GeneratedRepeatedTransitiveRuntimeCertificate.lean</code> record single and repeated-call evidence.</p></div><div><h3>Formal check</h3><p><code>PatchCallRuntime.lean</code> re-evaluates the frame-selected observed effects using <code>evalCallTreeStmtEqBool</code>. The generated beta.32 certificate also checks the runtime frame <code>BindingList</code> equals the beta.30 exact callee binding.</p><p>Repeated identical calls can therefore be certified separately. Runtime capture and independent-validator/frame-reconstruction correctness remain proof-free boundaries.</p></div></div></details>
+      <details><summary><span>Exact beta.32 boundary</span><span class="summary-hint">No full compiler claim</span></summary><div class="details-body"><p>Patch is not an end-to-end verified compiler. Parser/extractor correctness, JavaScript-to-Wasm lowering, Wasm-engine correctness, runtime capture and independent invocation-frame reconstruction remain outside Lean.</p></div></details>
+      <details><summary><span>Roadmap</span></summary><div class="details-body roadmap-list"><div><strong>Evaluation</strong><span>Security cases, certificate/checker overhead and reproducibility.</span></div><div><strong>Designer layout</strong><span>Add drag positioning/resizing while keeping source as truth.</span></div><div><strong>Backend assurance</strong><span>Reduce remaining parser/lowering/runtime trust boundaries without overstating full verification.</span></div></div></details>
     </div>
 
-    <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.31</span><nav><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a></nav></footer>
+    <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.32</span><nav><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a></nav></footer>
   </section>
 </main>
 <script type="module" src="./native-build.js"></script>

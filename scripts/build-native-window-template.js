@@ -11,6 +11,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const appName = 'PatchWindowRuntime';
 const outDir = path.resolve(process.argv[2] ?? 'dist');
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-window-template-'));
+const WINDOW_RUNTIME_SOURCES = [
+  'interpreter.js',
+  'parser.js',
+  'expression.js',
+  'change.js',
+  'window-events.js'
+];
 
 try {
   writeProject(temp);
@@ -41,7 +48,17 @@ function writeProject(dir) {
   fs.writeFileSync(path.join(dir, 'preload.cjs'), preloadSource());
   fs.writeFileSync(path.join(dir, 'player.html'), playerHtml());
   fs.writeFileSync(path.join(dir, 'player.js'), playerJs());
-  fs.cpSync(path.join(root, 'src'), path.join(dir, 'src'), { recursive: true });
+  copyRuntimeSources(dir);
+}
+
+function copyRuntimeSources(dir) {
+  const target = path.join(dir, 'src');
+  fs.mkdirSync(target, { recursive: true });
+  for (const filename of WINDOW_RUNTIME_SOURCES) {
+    const source = path.join(root, 'src', filename);
+    if (!fs.existsSync(source)) throw new Error(`Missing Window runtime dependency ${source}.`);
+    fs.copyFileSync(source, path.join(target, filename));
+  }
 }
 
 function mainProcessSource() {

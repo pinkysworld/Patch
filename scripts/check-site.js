@@ -26,8 +26,9 @@ for (const id of [
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10',
-  'Beta.31 call-aware direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
-  'scoped-slice attribution', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console'
+  'Beta.32 invocation-frame direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'invocation-frame',
+  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console'
 ]);
 for (const option of [
   'value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"',
@@ -65,9 +66,9 @@ requireAll('prebuilt native packager', prebuilt, [
   'patch-linux-console-runtime.bin','patch-windows-window-runtime.zip','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip'
 ]);
 
-// Beta.31 remains a research/CI certificate layer. Ordinary Studio deploys the
+// Beta.32 remains a research/CI certificate layer. Ordinary Studio deploys the
 // stable compiler/runtime modules it actually imports; it does not ship Lean or
-// the Node-only runtime-certificate generator.
+// the Node-only invocation-frame runtime-certificate generator.
 const concreteBody = read('_site/src/concrete-call-body.js');
 requireAll('guarded concrete-call body producer', concreteBody, [
   "PATCH_CONCRETE_CALL_BODY_VERSION = '0.2'", 'buildFormalGuardExpression', "kind: 'branch'", 'evalGuardExact'
