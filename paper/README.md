@@ -8,7 +8,7 @@ Working manuscript:
 
 The implementation/research artifact is **Patch 0.2.0-beta.32 / Change IR 0.10**. The manuscript remains working research text, not yet a submission-ready top-venue paper.
 
-The assurance stack now includes:
+The assurance/evaluation stack now includes:
 
 1. semantic factorization, Change Signature Soundness, policy containment and integer range soundness;
 2. independent source/guard translation validation;
@@ -19,9 +19,10 @@ The assurance stack now includes:
 7. beta.30 finite transitive exact call-tree traces;
 8. beta.31 first call-aware direct-Wasm bridge;
 9. **Beta.32 invocation-frame-aware direct-Wasm correspondence, including repeated identical calls**;
-10. a **reproducible assurance-overhead/scaling evaluation harness** with controlled raw-data output.
+10. a reproducible assurance-overhead/scaling evaluation harness;
+11. a **mechanized semantic-authority security ablation suite** using the real Patch compiler plus an explicitly internal coarse target-write baseline.
 
-None is described as complete compiler verification, and the evaluation harness is not itself an empirical result.
+None is described as complete compiler verification, complete sandboxing, or evidence that named prior systems cannot express comparable restrictions.
 
 ## Beta.32 invocation-frame milestone
 
@@ -72,33 +73,61 @@ Explicit proof-free/trust boundaries remain runtime capture, correctness/complet
 
 Beta.32 is therefore not an end-to-end compiler/runtime refinement theorem.
 
+## Semantic-authority security ablation
+
+`case-studies/security/` contains eight small extension-style programs evaluated by the **real Patch compiler and Change Capability analysis**. The same programs are also evaluated by an intentionally coarse internal baseline that asks only whether transitively reachable changed target paths appear in the recipe's `allow` block.
+
+The baseline deliberately ignores semantic operation, magnitude and proof obligations. It is **not a model of any named effect system, capability language or related work**. It exists only to isolate the engineering value of Patch's semantic authority dimensions over target-only write authority.
+
+The expected mechanized matrix is:
+
+```text
+3 cases  Patch accept / coarse target-write accept
+4 cases  Patch reject / coarse target-write accept
+1 case   Patch reject / coarse target-write reject
+```
+
+The four differential rejections are:
+
+1. **magnitude escalation:** a `points` increase whose proven parameter range can reach 50 under `points may increase up to 10`;
+2. **operation-direction escalation:** an increase of `balance` under an authority that permits only decrease;
+3. **transitive magnitude escalation:** a helper call contributes an increase of 50 to an outer recipe limited to 10;
+4. **fail-closed unknown magnitude:** an unbounded dynamic amount targets an allowed path but cannot be proved to stay within 10.
+
+A separate target-escape control changes an undeclared target and is rejected by both Patch and the coarse baseline.
+
+Reproduce the case suite with:
+
+```bash
+npm run evaluate:security -- \
+  --out evaluation/security/report.json \
+  --csv evaluation/security/report.csv \
+  --markdown evaluation/security/table.md
+```
+
+`tests/security-case-studies.test.js` requires the exact case decisions, relevant diagnostics, transitive helper signature evidence, and JSON/CSV/Markdown report structure.
+
+### Security-case claim boundary
+
+The suite supports this narrow artifact statement:
+
+> In these controlled extension-style examples, Patch distinguishes semantic operation, magnitude, transitive helper effects and missing bound evidence that a target-only write-authority ablation intentionally ignores.
+
+It does **not** establish complete malicious-code containment, a general plugin sandbox, superiority over named prior systems, or novelty of quantitative/refinement effects and capabilities. A publication comparison against existing systems must come from systematic related work, not from this internal ablation.
+
 ## Assurance overhead evaluation harness
 
 `src/evaluation-corpus.js`, `scripts/benchmark-assurance.js` and `docs/EVALUATION.md` define a deterministic evaluation methodology rather than hard-coded performance claims.
 
-The corpus separates:
-
-- **nested call depth** at fixed concrete invocation count;
-- **concrete invocation count** at fixed call depth;
-- combined depth/invocation scenarios.
-
-The benchmark records raw timing samples plus min/median/mean/p95/max for:
-
-```text
-production direct-Wasm compilation
-precompiled direct-Wasm execution
-independent transition/effect/invocation-frame validation
-end-to-end beta.32 runtime correspondence
-beta.30+32 Lean-source certificate generation
-```
+The corpus separates nested call depth, concrete invocation count, and combined depth/invocation scenarios. The benchmark records raw timing samples plus min/median/mean/p95/max for direct-Wasm compilation, precompiled execution, independent validation, end-to-end beta.32 correspondence and beta.30+32 Lean-source certificate generation.
 
 It also records source/Wasm/certificate size, transition/effect/frame/correspondence counts and the CPU/OS/Node/V8 environment manifest.
 
-A manual-only **Patch Assurance Evaluation** workflow records separate pinned-Lean certificate-checking wall time and memory. It is deliberately not an ordinary PR workflow, both to avoid notification noise and because hosted-runner timings should be treated as reproducibility evidence rather than stable microbenchmark results.
+A manual-only **Patch Assurance Evaluation** workflow records separate pinned-Lean certificate-checking wall time and memory. Hosted-runner timings are treated as reproducibility evidence rather than stable microbenchmark results.
 
 ### Empirical-claim rule
 
-**No overhead, scalability or asymptotic claim is made yet.** The next step is to collect controlled paper-quality measurements on fixed hardware, preserve raw JSON/CSV, characterize variance and only then synchronize measured results into `main.tex`.
+**No overhead, scalability or asymptotic claim is made yet.** Controlled paper-quality measurements on fixed hardware must be collected and analyzed before measured results are synchronized into `main.tex`.
 
 ## Reproducibility
 
@@ -117,6 +146,11 @@ Evaluation:
 npm run evaluate:assurance -- --preset paper --iterations 10 --warmup 3 \
   --out evaluation/results/assurance.json \
   --csv evaluation/results/assurance.csv
+
+npm run evaluate:security -- \
+  --out evaluation/security/report.json \
+  --csv evaluation/security/report.csv \
+  --markdown evaluation/security/table.md
 ```
 
 Relevant formal modules:
@@ -132,19 +166,19 @@ PatchCallRuntime.lean
 
 A defensible beta.32 artifact statement is:
 
-> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. Runtime capture and independent-validator/frame-reconstruction correctness remain explicit proof-free evidence boundaries; the result is not a full compiler correctness theorem. The artifact additionally includes a reproducible overhead/scaling harness, but no empirical performance claim is made until controlled measurements are collected.
+> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. The artifact also includes a controlled semantic-authority ablation showing operation-, magnitude-, transitive-effect- and proof-aware distinctions over an explicitly internal target-only write baseline. These results do not establish full compiler correctness, complete sandboxing or superiority over named prior systems.
 
 ## Prior-art discipline
 
-Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, effect refinement, translation validation, proof-carrying code, benchmarking, WebAssembly or GUI packaging.
+Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, quantitative/refinement effects, capabilities, proof-carrying code, benchmarking, WebAssembly or GUI packaging.
 
-The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32 and the evaluation harness are supporting assurance/evaluation infrastructure, not firstness assertions.
+The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32, the evaluation harness and the security ablation are supporting assurance/evaluation infrastructure, not standalone firstness assertions.
 
 ## Remaining high-value gaps
 
-- semantic-security/plugin case studies;
 - controlled validation/certificate/checker/backend overhead measurements using the completed harness;
-- statistical analysis/plots from those measurements;
-- systematic related-work review and reproducibility bundle;
+- a larger realistic extension/plugin-style authority case beyond the synthetic ablation suite;
+- systematic related-work review and literature-grounded comparison dimensions;
+- reproducibility bundle;
 - controlled synchronization of measured results and current claims into `main.tex` before venue submission;
 - further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
