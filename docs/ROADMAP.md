@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.31**
+Current development beta: **0.2.0-beta.32**
 
 Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features.
 
@@ -10,66 +10,60 @@ Checked items are implemented and must pass final exact-head gates before merge.
 - [x] Change IR **0.10** with finite ranked `formalCalls`
 - [x] `PatchCalls.lean` abstract argument-interval and semantic-signature composition
 - [x] exact safe-integer positional binding through `concreteCallBinding`
-- [x] concrete values through beta.25 abstract intervals
 - [x] exact quantitative direct leaf-effect refinement
 - [x] integer `RangeExpr` arithmetic certificate coverage
 
-### beta.28: exact structured callee traces
-- [x] `PatchCallBody.lean`
+### beta.28–29: exact structured and guard-aware callee traces
 - [x] direct quantitative emit, sequence and literal/static repeat
-- [x] exact trace equality and callee-signature coverage
-- [x] caller-signature import through `PatchCallBodyImport.lean`
-- [x] `GeneratedConcreteCallBodyCertificate.lean`
-
-### beta.29: guard-aware exact structured callee traces
 - [x] exact formal `GuardExpr` selection under exact recipe-parameter bindings
-- [x] selected concrete trace contains only the chosen branch
-- [x] both branch arms remain statically covered by the callee signature
-- [x] `GeneratedGuardedCallBodyCertificate.lean`
+- [x] both branch arms statically covered by callee signatures
+- [x] generated beta.28/29 Lean regression certificates
 
 ### beta.30: finite transitive exact call-tree traces
 - [x] `formal/PatchCallTree.lean`
-- [x] beta.29 `BoundStmt` retained as call-free leaf semantics
-- [x] exact nested `RangeExpr` argument evaluation and positional `BindingList` construction
-- [x] strict beta.25 rank decrease checked on outer and nested call edges
+- [x] exact nested `RangeExpr` arguments and positional `BindingList`s
+- [x] strict rank decrease on outer and nested call edges
 - [x] exact nested guards/static repeats/direct quantitative effects
-- [x] nested body coverage by nested callee signature
 - [x] edge-by-edge `SignatureCovers` import
 - [x] `checkedConcreteTransitiveCallTreeRefinesCallerSignature`
 - [x] `caller → outer → middle → leaf` depth-2 example
-- [x] exact selected trace `score +4, coins +3`
 - [x] `GeneratedTransitiveCallBodyCertificate.lean`
-- [x] focused and standard pinned-Lean gates
 
-### beta.31: call-aware direct-Wasm correspondence
+### beta.31: first call-aware direct-Wasm bridge
+- [x] execute the existing direct-Wasm backend unchanged
+- [x] validate the complete raw target/before/after transition sequence independently
+- [x] reconstruct semantic operation identity and recipe scope outside the backend trace
+- [x] re-evaluate runtime-derived observed effects against the beta.30 call tree in Lean
+- [x] `formal/PatchCallRuntime.lean`
+- [x] `GeneratedTransitiveRuntimeCertificate.lean`
+- [x] fail closed when repeated identical scoped traces make attribution ambiguous
+
+### beta.32: independent invocation frames
 
 Runtime evidence:
-- [x] execute the existing direct-Wasm backend unchanged
-- [x] validate the **complete** raw target/before/after transition sequence using the independent Change-IR executor
-- [x] reconstruct semantic operation identity and recipe scope independently of the backend trace
-- [x] beta.31 transitive witness schema **0.2** preserves exact recipe scope per selected effect occurrence
-- [x] match beta.30 scoped exact traces only when the exact scope/effect sequence has one unique occurrence in the validated runtime stream
-- [x] ambiguous repeated identical scoped traces fail closed
-- [x] preserve site ids, source lines and before/after transitions as audit metadata
-- [x] `src/transitive-runtime-correspondence.js`
+- [x] independent Change-IR execution reconstructs every concrete `DO` invocation frame
+- [x] frame fields include `frameId`, parent frame, caller scope, callee, dynamic invocation ordinal, depth, exact arguments/bindings and transition interval
+- [x] every validated transition/effect carries the active frame stack
+- [x] correspondence selects effects by concrete frame identity rather than global trace uniqueness
+- [x] repeated identical calls are distinguishable without backend call-enter/call-exit markers
+- [x] frame exact parameter bindings are compared with the beta.30 expected callee binding
+- [x] `examples/formal-transitive-calls-repeated.patch` exercises two identical `do caller(1)` calls
 
 Formal/runtime bridge:
-- [x] `formal/PatchCallRuntime.lean`
-- [x] `checkedObservedTransitiveRuntimeRefinesCallerSignature`
-- [x] feed runtime-derived observed effects directly through `evalCallTreeStmtEqBool`
-- [x] reuse beta.30 exact binding, rank, call-tree coverage and caller-signature import
-- [x] self-contained `GeneratedTransitiveRuntimeCertificate.lean` embeds beta.30 generated evidence
-- [x] focused pinned-Lean beta.31 gate
-- [x] standard Formal CI generates/verifies beta.31
-- [x] Windows/macOS/Linux CI executes direct Wasm and regenerates beta.31 evidence
+- [x] generated beta.32 certificate checks runtime-frame `BindingList = beta.30 exact BindingList`
+- [x] frame-selected observed effects are re-evaluated through `evalCallTreeStmtEqBool`
+- [x] caller-signature refinement still reuses `checkedObservedTransitiveRuntimeRefinesCallerSignature`
+- [x] single-call `GeneratedTransitiveRuntimeCertificate.lean`
+- [x] repeated-call `GeneratedRepeatedTransitiveRuntimeCertificate.lean`
+- [x] standard Formal CI generates/verifies both certificates
+- [x] Windows/macOS/Linux standard CI regenerates both runtime evidence artifacts
 - [x] Change IR remains **0.10**
 
-Beta.31 establishes conservative **call-aware direct-Wasm correspondence for unambiguous validated scoped traces**. It is supporting assurance, not a full compiler/runtime refinement theorem.
+Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment, including repeated identical calls. Invocation-frame reconstruction is still proof-free evidence produced by the independent JavaScript validator, not a full compiler/runtime simulation theorem.
 
-Explicit beta.31 evidence boundaries remain:
-- runtime capture;
-- correctness/completeness of the independent JavaScript trace/effect validator;
-- **scoped-slice attribution** from the validated effect stream to one concrete invocation;
+Explicit beta.32 boundaries remain:
+- runtime trace capture;
+- correctness/completeness of the independent JavaScript trace/effect validator and invocation-frame reconstruction;
 - parser/extractor correctness;
 - JavaScript-to-Wasm lowering correctness;
 - Wasm engine correctness.
@@ -80,8 +74,6 @@ Explicit beta.31 evidence boundaries remain:
 - [x] semantic input `changed` without hidden persistent assignment
 - [x] source-backed control selection/property inspector
 - [x] property changes write directly to `main.patch`
-- [x] id renames propagate to matching event headers
-- [x] Delete removes matching event blocks
 - [ ] drag positioning/resizing
 - [ ] richer controls/event editing
 - [ ] project import/export
@@ -100,12 +92,12 @@ Explicit beta.31 evidence boundaries remain:
 
 ## Highest-value remaining research work
 
-1. [ ] replace unique scoped-slice attribution with **independent concrete invocation-frame reconstruction**, so repeated identical calls can be disambiguated without compiler-emitted trusted call events;
-2. [ ] extend the call-aware runtime theorem to richer repeated/branching call scenarios after invocation-frame evidence exists;
-3. [ ] semantic-security/plugin case studies for bounded semantic authority;
-4. [ ] certificate/checker/backend overhead evaluation;
-5. [ ] systematic related-work review;
-6. [ ] reproducibility bundle.
+1. [ ] semantic-security/plugin case studies for bounded semantic authority;
+2. [ ] certificate/checker/backend overhead evaluation;
+3. [ ] systematic related-work review;
+4. [ ] reproducibility bundle;
+5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
+6. [ ] extend invocation-frame evidence to richer branching/repeated call scenarios.
 
 ## High-venue artifact gate
 
@@ -119,10 +111,10 @@ Explicit beta.31 evidence boundaries remain:
 - [x] exact call binding and arithmetic
 - [x] guarded structured exact callee traces
 - [x] finite transitive exact call trees
-- [x] **call-aware direct-Wasm correspondence for unambiguous validated scoped traces**
+- [x] call-aware direct-Wasm correspondence
+- [x] **independent invocation frames for repeated identical calls**
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
 - [x] semantic GUI input route
-- [ ] invocation-frame runtime attribution
 - [ ] security/engineering case studies
 - [ ] overhead evaluation
 - [ ] systematic related work
@@ -137,6 +129,5 @@ Explicit beta.31 evidence boundaries remain:
 5. Unsupported assurance cases fail conservatively.
 6. Translation validation does not imply parser correctness.
 7. Proof-free runtime/call witnesses remain evidence; Lean checks only explicit supported obligations.
-8. Beta.30 proves exact finite transitive call-tree semantics, not production runtime equivalence.
-9. Beta.31 connects unambiguous independently validated direct-Wasm semantic-effect slices to beta.30 call trees but still keeps runtime capture, validator correctness and scoped-slice attribution explicit.
-10. Direct-Wasm/C99 support remains narrower than the full language.
+8. Beta.32 improves concrete invocation attribution but does not establish full compiler verification.
+9. Direct-Wasm/C99 support remains narrower than the full language.
