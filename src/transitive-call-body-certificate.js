@@ -15,6 +15,10 @@ export function generateTransitiveCallBodyCertificate(source, options = {}) {
   const certified = [];
   for (const witness of supported) {
     if (!witness.abstractArgRanges) throw new Error(`Call ${witness.caller} -> ${witness.callee} has no beta.25 abstract argument intervals.`);
+    const calleeFormalEntry = compiled.ir.formalCalls?.entries?.[witness.callee];
+    if (!calleeFormalEntry?.supported || !Number.isSafeInteger(calleeFormalEntry.rank) || calleeFormalEntry.rank < 0) {
+      throw new Error(`Call ${witness.caller} -> ${witness.callee} has no supported beta.25 callee rank.`);
+    }
     const id = `${leanIdentifier(witness.caller)}_${leanIdentifier(witness.callee)}_${witness.invocation}`;
     const exprs = witness.argExprs.map(leanRangeExpr);
     const callerBindings = witness.callerEnv.map(item => `(${leanString(item.name)}, ${leanInt(item.value)})`);
@@ -32,7 +36,7 @@ export function generateTransitiveCallBodyCertificate(source, options = {}) {
     blocks.push(`def ${id}_bindings : BindingList := ${leanList(exactBindings)}`);
     blocks.push(`def ${id}_values : List Int := ${leanList(values)}`);
     blocks.push(`def ${id}_abstract : List Interval := ${leanList(abstract)}`);
-    blocks.push(`def ${id}_tree : CallTreeStmt := ${leanCallTree(witness.callTree)}`);
+    blocks.push(`def ${id}_tree : CallTreeStmt := ${leanCallTree(witness.callTree, calleeFormalEntry.rank, compiled.ir.formalCalls)}`);
     blocks.push(`def ${id}_calleeSignature : List Effect := ${leanList(witness.calleeSignature.map(leanEffect))}`);
     blocks.push(`def ${id}_callerSignature : List Effect := ${leanList(witness.callerSignature.map(leanEffect))}`);
     blocks.push(`def ${id}_trace : List Effect := ${leanList(witness.claimedTrace.map(leanEffect))}`);
@@ -48,18 +52,27 @@ export function generateTransitiveCallBodyCertificate(source, options = {}) {
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchCallTree\n\nopen PatchFormal\n\nnamespace PatchGeneratedTransitiveCallBodyCertificate\n\n/-- Proof-free beta.30 transitive call-tree evidence. Lean recursively\n    re-evaluates every nested RangeExpr argument, positional BindingList,\n    GuardExpr branch, static repeat and direct quantitative effect. Nested\n    traces are checked against each callee signature and imported one\n    signature edge at a time. The exported theorem also connects concrete\n    outer values through beta.25 abstract call intervals into declarations.\n    Recursion, dynamic repeat, state-dependent exact guards and production-Wasm\n    call equivalence remain outside this layer. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef transitiveWitnessVersion : String := ${leanString(artifact.version)}\ndef transitiveCertificateVersion : String := ${leanString(PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedTransitiveCallBodyCertificate\n`;
+  const lean = `import PatchCallTree\n\nopen PatchFormal\n\nnamespace PatchGeneratedTransitiveCallBodyCertificate\n\n/-- Proof-free beta.30 transitive call-tree evidence. Lean recursively\n    re-evaluates every nested RangeExpr argument, positional BindingList,\n    GuardExpr branch, static repeat and direct quantitative effect. Nested\n    call nodes carry beta.25 caller/callee ranks and coverage checks strict rank\n    decrease at every edge. Nested traces are checked against each callee\n    signature and imported one signature edge at a time. The exported theorem\n    also connects concrete outer values through beta.25 abstract call intervals\n    into declarations. Recursion, dynamic repeat, state-dependent exact guards\n    and production-Wasm call equivalence remain outside this layer. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef transitiveWitnessVersion : String := ${leanString(artifact.version)}\ndef transitiveCertificateVersion : String := ${leanString(PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedTransitiveCallBodyCertificate\n`;
 
   return { lean, sourceSha256, certified, artifact, certificateVersion: PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION };
 }
 
-function leanCallTree(stmt) {
+function leanCallTree(stmt, callerRank, formalCalls) {
   switch (stmt?.kind) {
     case 'base': return `CallTreeStmt.base (${leanBoundStmt(stmt.body)})`;
-    case 'seq': return `CallTreeStmt.seq (${leanCallTree(stmt.first)}) (${leanCallTree(stmt.second)})`;
-    case 'repeat': return `CallTreeStmt.repeat ${stmt.count} (${leanCallTree(stmt.body)})`;
-    case 'branch': return `CallTreeStmt.branch (${leanGuardExpr(stmt.guard)}) (${leanCallTree(stmt.thenBranch)}) (${leanCallTree(stmt.elseBranch)})`;
-    case 'call': return `CallTreeStmt.call ${leanList(stmt.argExprs.map(leanRangeExpr))} ${leanList(stmt.params.map(leanString))} ${leanList(stmt.declared.map(range => leanInterval(range.min, range.max)))} ${leanList(stmt.calleeSignature.map(leanEffect))} (${leanCallTree(stmt.body)})`;
+    case 'seq': return `CallTreeStmt.seq (${leanCallTree(stmt.first, callerRank, formalCalls)}) (${leanCallTree(stmt.second, callerRank, formalCalls)})`;
+    case 'repeat': return `CallTreeStmt.repeat ${stmt.count} (${leanCallTree(stmt.body, callerRank, formalCalls)})`;
+    case 'branch': return `CallTreeStmt.branch (${leanGuardExpr(stmt.guard)}) (${leanCallTree(stmt.thenBranch, callerRank, formalCalls)}) (${leanCallTree(stmt.elseBranch, callerRank, formalCalls)})`;
+    case 'call': {
+      const calleeEntry = formalCalls?.entries?.[stmt.callee];
+      if (!calleeEntry?.supported || !Number.isSafeInteger(calleeEntry.rank) || calleeEntry.rank < 0) {
+        throw new Error(`Cannot encode beta.30 rank evidence for nested callee '${stmt.callee ?? 'missing'}'.`);
+      }
+      if (!Number.isSafeInteger(callerRank) || callerRank < 0 || calleeEntry.rank >= callerRank) {
+        throw new Error(`Nested beta.30 call rank is not decreasing for '${stmt.callee ?? 'missing'}': ${callerRank} -> ${calleeEntry.rank}.`);
+      }
+      return `CallTreeStmt.call ${callerRank} ${calleeEntry.rank} ${leanList(stmt.argExprs.map(leanRangeExpr))} ${leanList(stmt.params.map(leanString))} ${leanList(stmt.declared.map(range => leanInterval(range.min, range.max)))} ${leanList(stmt.calleeSignature.map(leanEffect))} (${leanCallTree(stmt.body, calleeEntry.rank, formalCalls)})`;
+    }
     default: throw new Error(`Cannot encode beta.30 CallTreeStmt '${stmt?.kind ?? 'missing'}'.`);
   }
 }
