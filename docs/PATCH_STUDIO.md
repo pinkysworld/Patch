@@ -1,14 +1,14 @@
 # Patch Studio
 
-Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
+Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic/Delphi-style immediacy with one readable Patch source format across browser and desktop targets.
 
 ## What works in 0.2 beta.32
 
-Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, source-backed Form layout with drag/resize, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics.
+Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry is UI/source metadata rather than a new persistent-mutation semantics claim.
 
 Research commands remain outside the beginner workflow:
 
@@ -40,6 +40,41 @@ and re-evaluates the frame-selected observed semantic effects against the beta.3
 
 Runtime capture and independent-validator/invocation-frame reconstruction correctness remain explicit proof-free boundaries.
 
+## Forms and RAD-style Designer
+
+Patch now has a source-backed Form layout path intended to provide the productive visual workflow associated with classic Delphi and Visual Basic while keeping Patch source as the reviewable truth.
+
+A form can carry an explicit design size:
+
+```patch
+window "Customer editor" size 640, 420:
+```
+
+Controls can carry position and dimensions:
+
+```patch
+window "Customer editor" size 640, 420:
+  text "Customer name" at 24, 24 size 180, 30
+  input customer_name at 24, 64 size 260, 36
+  button "Save" as save_button at 24, 116 size 120, 36
+```
+
+In Studio:
+
+- select the active Form from the Form selector;
+- create additional blank Forms with **+ Form**;
+- edit source-backed Form title, width and height;
+- add Text, Button and Input controls to the selected Form;
+- select a control and edit X, Y, width and height in Properties;
+- drag a selected control directly on the Form;
+- resize it from the bottom-right handle;
+- every visual edit rewrites the corresponding declaration in `main.patch`;
+- Standalone Window Web builds and Windows/macOS/Linux Window players preserve the same geometry.
+
+Legacy flow-layout source remains valid. A project is not required to use explicit pixel geometry.
+
+There is deliberately no hidden `.dfm`, `.frm` or second persistent form document. Future richer Form metadata should follow the same rule unless a separate artifact can be losslessly and visibly derived from Patch source.
+
 ## Designer property inspector
 
 The Designer derives selectable controls from Patch source rather than a second form file:
@@ -47,7 +82,8 @@ The Designer derives selectable controls from Patch source rather than a second 
 - select Text, Button and Input controls;
 - edit source-backed ids/text expressions;
 - propagate id renames to matching event headers;
-- reject invalid/duplicate ids;
+- edit X/Y/width/height for positioned controls;
+- reject invalid/duplicate ids and invalid geometry;
 - Delete removes matching event-handler blocks;
 - Source jumps to the exact declaration.
 
@@ -76,18 +112,18 @@ FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-Console ready builds are project-specific sealed executables. Window builds use the hardened sandboxed desktop player with a checked source payload.
+Console ready builds are project-specific sealed executables. Window builds use the hardened sandboxed desktop player with a checked source payload. The desktop player parses the same source-backed Form geometry and applies it after each UI render.
 
 ## PWA updates
 
-The beta.32 cache key begins with `patch-studio-0.2-beta.32`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
+The beta.32 Forms cache key begins with `patch-studio-0.2-beta.32-forms1`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
 
 ## Source remains truth
 
-The `.patch` file remains the reviewable representation of behavior and current GUI structure. No hidden persistent Designer model is introduced.
+The `.patch` file remains the reviewable representation of behavior and current GUI structure. Form dimensions and control geometry live in that same source. No hidden persistent Designer model is introduced.
 
 ## Next work
 
-Product: drag positioning/resizing, richer controls/events, signing/notarization and eventually native AppKit/Win32/portable Unix widget lowering.
+Product: richer controls/events such as Checkbox, List, Combo, tabs, menus, dialogs and table/grid; project tree/source files; alignment guides, anchors/docking and multi-select; project import/export; signing/notarization; eventually native AppKit/Win32/portable Unix widget lowering.
 
-Research: semantic-security case studies, overhead measurements, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
+Research: controlled overhead measurements, systematic related work, broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.

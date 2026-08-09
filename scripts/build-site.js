@@ -11,7 +11,7 @@ const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','compiler.js','bundle.js','wasm.js','wasm-direct.js',
-  'c99.js','webapp.js','window-webapp.js','window-build.js','window-events.js','designer.js',
+  'c99.js','webapp.js','window-webapp.js','window-build.js','window-events.js','designer.js','form-layout.js',
   'prebuilt-native.js','local-native-kit.js','concrete-call-witness.js','concrete-call-certificate.js',
   'concrete-call-body.js','concrete-call-body-certificate.js'
 ];
@@ -19,11 +19,11 @@ const SITE_SRC_FILES = [
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const name of ['index.html', 'style.css', 'designer-inspector.css', 'manifest.webmanifest', 'icon.svg']) {
+for (const name of ['index.html', 'style.css', 'designer-inspector.css', 'forms-designer.css', 'manifest.webmanifest', 'icon.svg']) {
   fs.copyFileSync(path.join(sourceWeb, name), path.join(out, name));
 }
 
-for (const name of ['playground.js', 'native-build.js', 'sw.js']) {
+for (const name of ['playground.js', 'forms-designer.js', 'native-build.js', 'sw.js']) {
   const content = fs.readFileSync(path.join(sourceWeb, name), 'utf8')
     .replaceAll("'../src/", "'./src/")
     .replaceAll('"../src/', '"./src/');

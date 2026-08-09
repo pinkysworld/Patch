@@ -12,6 +12,7 @@ on:
       - src/expression.js
       - src/change.js
       - src/window-events.js
+      - src/form-layout.js
       - src/prebuilt-native.js
       - src/wasm-direct.js
       - src/compiler.js
@@ -29,6 +30,7 @@ on:
       - src/expression.js
       - src/change.js
       - src/window-events.js
+      - src/form-layout.js
       - src/prebuilt-native.js
       - src/wasm-direct.js
       - src/compiler.js

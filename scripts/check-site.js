@@ -8,18 +8,18 @@ const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
 if (!beta) throw new Error(`Unexpected project version ${pkg.version}`);
 
 const required = [
-  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/playground.js','_site/native-build.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
+  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/forms-designer.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
   '_site/src/interpreter.js','_site/src/parser.js','_site/src/expression.js','_site/src/change.js','_site/src/change-analysis.js','_site/src/range-analysis.js',
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
-  '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js',
+  '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js','_site/src/form-layout.js',
   '_site/src/prebuilt-native.js','_site/src/local-native-kit.js','_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js',
   '_site/src/concrete-call-body.js','_site/src/concrete-call-body-certificate.js'
 ];
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
 const html = read('_site/index.html');
-requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./icon.svg']);
+requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./forms-designer.js','./icon.svg']);
 for (const id of [
   'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput',
   'projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
@@ -48,6 +48,19 @@ requireAll('playground Designer/runtime contract', playground, [
 
 const inspectorCss = read('_site/designer-inspector.css');
 requireAll('Designer inspector stylesheet', inspectorCss, ['.designer-inspector','.designer-control','.designer-selected']);
+
+const formsDesigner = read('_site/forms-designer.js');
+rejectOutsideSiteImport('forms designer', formsDesigner);
+requireAll('forms designer contract', formsDesigner, [
+  './src/designer.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl',
+  'patchFormSelect','patchAddForm','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
+]);
+const formsCss = read('_site/forms-designer.css');
+requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
+const formLayout = read('_site/src/form-layout.js');
+requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout']);
+const webapp = read('_site/src/webapp.js');
+requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
 
 const nativeBuild = read('_site/native-build.js');
 rejectOutsideSiteImport('native builder', nativeBuild);
@@ -82,7 +95,7 @@ requireAll('compiler assurance modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}`, "'./native-build.js'", "'./src/compiler.js'", "'./src/formal-calls.js'",
+  `patch-studio-0.2-beta.${beta}`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/compiler.js'", "'./src/formal-calls.js'",
   "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 

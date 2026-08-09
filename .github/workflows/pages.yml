@@ -31,6 +31,7 @@ on:
       - src/window-build.js
       - src/window-events.js
       - src/designer.js
+      - src/form-layout.js
       - src/prebuilt-native.js
       - src/local-native-kit.js
       - src/concrete-call-witness.js

@@ -1,8 +1,8 @@
 create number count = 0
 
-window "Counter":
-  text "Count: {count}"
-  button "Add" as add_button
+window "Counter" size 420, 240:
+  text "Count: {count}" at 24, 24 size 220, 32
+  button "Add" as add_button at 24, 72 size 120, 38
 
 when add_button clicked:
   change count:
