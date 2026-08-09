@@ -1,0 +1,16 @@
+create number score = 0
+create number coins = 0
+
+make award(amount number 1..5):
+  change score:
+    add amount
+  repeat 2:
+    change coins:
+      add amount * 2
+
+make caller(bonus number 0..4):
+  do award(bonus + 1)
+
+do caller(2)
+show score
+show coins

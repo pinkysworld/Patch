@@ -2,11 +2,11 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.27
+## What works in 0.2 beta.28
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
-Change IR **0.10** is unchanged. Beta.27 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
+Change IR **0.10** is unchanged. Beta.28 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
 
 Research commands remain outside the ordinary beginner workflow:
 
@@ -17,9 +17,10 @@ patch runtime-certify program.patch
 patch call-certify program.patch
 npm run concrete-call-certify:example
 npm run arithmetic-call-certify:example
+npm run callee-trace-certify:example
 ```
 
-The arithmetic command generates a concrete call certificate from `examples/formal-calls-arithmetic.patch`. Lean re-evaluates supported `RangeExpr` argument arithmetic, reconstructs exact positional bindings and checks a direct quantitative leaf effect through the existing caller-signature refinement theorem.
+`npm run callee-trace-certify:example` generates `GeneratedConcreteCallBodyCertificate.lean` from `examples/formal-callee-trace.patch`. Lean re-evaluates exact call binding and the complete supported sequence/static-repeat callee effect trace, checks the trace against the callee signature and imports it into the caller signature.
 
 This research machinery is intentionally invisible during normal editing, Run and Build.
 
@@ -66,11 +67,13 @@ For cloud desktop builds, Studio performs browser preflight, sends the current s
 
 ## Research assurance layers
 
-Beta.23 provides guard-aware direct-runtime correspondence for an explicit safe-integer fragment. Beta.25 adds abstract acyclic recipe-call interval/signature composition. Beta.26 adds exact positional call binding and direct quantitative leaf-effect refinement.
+Beta.23 provides guard-aware direct-runtime correspondence for an explicit safe-integer fragment. Beta.25 adds abstract acyclic recipe-call interval/signature composition. Beta.26 adds exact positional call binding and direct quantitative leaf-effect refinement. Beta.27 carries the already mechanized integer `RangeExpr` grammar through the concrete production certificate boundary.
 
-Beta.27 carries the already mechanized integer `RangeExpr` grammar through the concrete production certificate boundary: literals, variables, addition, subtraction, unary negation and non-negative constant scaling. The generated `GeneratedArithmeticCallCertificate.lean` is checked under pinned Lean.
+Beta.28 adds `PatchCallBody.lean` and `PatchCallBodyImport.lean`. For a deliberately conservative exact-body fragment consisting of direct quantitative emits, sequence and static repeat, Lean evaluates the whole body, validates the proof-free claimed trace and proves every concrete occurrence is represented by the caller semantic signature.
 
-Division, decimals, variable-by-variable multiplication, root-program concrete calls, arbitrary structured callee-body execution and production-Wasm call equivalence remain outside the concrete certificate claim. These layers are not presented as full compiler verification.
+The generated `GeneratedConcreteCallBodyCertificate.lean` checks a real `caller -> award` example where `award` emits one score effect and two repeated coin effects.
+
+Branches/guard choices, nested calls, dynamic repeats, complete transitive call trees and production JavaScript/direct-Wasm call equivalence remain outside beta.28. These layers are not presented as full compiler verification.
 
 ## iPhone and iPad
 
@@ -78,7 +81,7 @@ Patch Studio can be installed from Safari with **Share → Add to Home Screen**.
 
 ## PWA updates
 
-The beta.27 cache key is `patch-studio-0.2-beta.27`. Beta.27's concrete certificate changes are Node/Lean research tooling, so browser compiler dependencies remain the same. The cache still includes `formal-calls.js`, source/guard compiler modules and `window-events.js` for consistent offline Studio compilation with Change IR 0.10.
+The beta.28 cache key is `patch-studio-0.2-beta.28`. Beta.28's structured certificate changes are Node/Lean research tooling, so browser compiler dependencies remain the same. The cache still includes `formal-calls.js`, source/guard compiler modules and `window-events.js` for consistent offline Studio compilation with Change IR 0.10.
 
 ## Source remains truth
 

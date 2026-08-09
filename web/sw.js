@@ -1,4 +1,4 @@
-const CACHE = 'patch-studio-0.2-beta.27';
+const CACHE = 'patch-studio-0.2-beta.28';
 const CORE = [
   './', './index.html', './style.css', './playground.js', './native-build.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
