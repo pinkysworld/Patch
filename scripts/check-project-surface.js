@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 
-const read = path => fs.readFileSync(path, 'utf8');
+const read = path => fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 const pkg = JSON.parse(read('package.json'));
 const version = pkg.version;
 const match = /^0\.2\.0-beta\.(\d+)$/.exec(version);
