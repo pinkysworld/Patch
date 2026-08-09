@@ -41,3 +41,6 @@ lean_lib PatchCallRefinement where
 
 lean_lib PatchCallEffect where
   srcDir := "."
+
+lean_lib PatchCallBody where
+  srcDir := "."
