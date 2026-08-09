@@ -1,7 +1,7 @@
 create number points = 0
 
 allow extension:
-  points may increase up to 10
+  points may add up to 10
 
 make extension(amount):
   change points:
