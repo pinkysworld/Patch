@@ -58,12 +58,17 @@ function lowerNode(node) {
         name: node.name,
         fields: node.fields.map(field => ({ name: field.name, expr: field.expr, line: field.line }))
       });
-    case 'window':
-      return op('WINDOW', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body) });
+    case 'window': {
+      const fields = { titleExpr: node.titleExpr, body: lowerBlock(node.body) };
+      if (node.id) fields.id = node.id;
+      return op('WINDOW', node, fields);
+    }
     case 'uiControl':
       return op('UI_CONTROL', node, { control: node.control, id: node.id, textExpr: node.textExpr });
     case 'event':
       return op('EVENT', node, { control: node.control, event: node.event, body: lowerBlock(node.body) });
+    case 'openForm': return op('OPEN_FORM', node, { form: node.form });
+    case 'closeForm': return op('CLOSE_FORM', node, { form: node.form });
     case 'allow':
       return op('ALLOW_CHANGES', node, {
         name: node.name,
@@ -99,7 +104,8 @@ function inferRuntimeCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
-    if (node.kind === 'window' || node.kind === 'uiControl' || node.kind === 'event') caps.add('ui.window');
+    if (node.kind === 'window' || node.kind === 'uiControl' || node.kind === 'event' || node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.window');
+    if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
     if (node.kind === 'why') caps.add('change.provenance');
     if (node.kind === 'allow') caps.add('change.capabilities');
