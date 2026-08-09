@@ -38,3 +38,6 @@ lean_lib PatchCallSubstitution where
 
 lean_lib PatchCallRefinement where
   srcDir := "."
+
+lean_lib PatchCallEffect where
+  srcDir := "."
