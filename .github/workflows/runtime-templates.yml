@@ -1,0 +1,169 @@
+name: Patch Studio Runtime Templates
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - scripts/build-native-sea-template.js
+      - scripts/build-native-window-template.js
+      - src/**
+      - .github/workflows/runtime-templates.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/build-native-sea-template.js
+      - scripts/build-native-window-template.js
+      - src/**
+      - .github/workflows/runtime-templates.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    name: ${{ matrix.platform }} runtime templates
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+          - os: ubuntu-latest
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build generic Console runtime
+        shell: bash
+        run: node scripts/build-native-sea-template.js --name PatchConsoleRuntime --out dist/PatchConsoleRuntime
+      - name: Build generic Window runtime
+        shell: bash
+        run: node scripts/build-native-window-template.js dist
+      - name: Prepare real sidecar smoke payloads
+        shell: bash
+        run: |
+          node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out dist/app.wasm
+          node -e "const fs=require('fs'); fs.writeFileSync('dist/patch-app.json', JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.1',name:'Runtime Smoke',kind:'window',source:fs.readFileSync('examples/counter-window.patch','utf8')}));"
+
+      - name: Smoke generic Console runtime on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: "& ./dist/PatchConsoleRuntime.exe"
+      - name: Smoke generic Console runtime on macOS
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: ./dist/PatchConsoleRuntime.app/Contents/MacOS/PatchConsoleRuntime
+      - name: Smoke generic Console runtime on Linux
+        if: matrix.platform == 'linux'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: ./dist/PatchConsoleRuntime
+
+      - name: Smoke Window sidecar layout on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $app = Get-ChildItem -Path dist -Recurse -Filter 'PatchWindowRuntime.exe' | Select-Object -First 1
+          if (-not $app) { throw 'Generic Windows Window runtime executable was not found.' }
+          & $app.FullName --patch-payload-smoke
+      - name: Smoke Window sidecar layout on macOS
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          APP=$(find dist -type d -name 'PatchWindowRuntime.app' | head -1)
+          test -n "$APP"
+          cp dist/patch-app.json "$(dirname "$APP")/patch-app.json"
+          "$APP/Contents/MacOS/PatchWindowRuntime" --patch-payload-smoke
+      - name: Smoke Window sidecar layout on Linux
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          APP=$(find dist -maxdepth 2 -type f -name 'PatchWindowRuntime' -perm -111 | head -1)
+          test -n "$APP"
+          xvfb-run -a "$APP" --no-sandbox --patch-payload-smoke
+
+      - name: Package Windows templates
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force runtime | Out-Null
+          Compress-Archive -Path 'dist/PatchConsoleRuntime.exe' -DestinationPath 'runtime/patch-windows-console-runtime.zip' -Force
+          $source = Get-ChildItem -Path dist -Directory -Filter 'PatchWindowRuntime-win32-*' | Select-Object -First 1
+          if (-not $source) { throw 'Windows Window runtime folder was not found.' }
+          $stage = Join-Path $env:RUNNER_TEMP 'patch-window-runtime-stage'
+          Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Copy-Item -Recurse $source.FullName (Join-Path $stage 'PatchWindowRuntime')
+          $destination = Join-Path (Resolve-Path runtime).Path 'patch-windows-window-runtime.zip'
+          Compress-Archive -Path (Join-Path $stage 'PatchWindowRuntime') -DestinationPath $destination -Force
+
+      - name: Package macOS templates
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          mkdir -p runtime
+          ditto -c -k --sequesterRsrc --keepParent dist/PatchConsoleRuntime.app runtime/patch-macos-console-runtime.zip
+          APP=$(find dist -type d -name 'PatchWindowRuntime.app' | head -1)
+          test -n "$APP"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" runtime/patch-macos-window-runtime.zip
+
+      - name: Package Linux templates
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          mkdir -p runtime
+          (cd dist && zip -qry ../runtime/patch-linux-console-runtime.zip PatchConsoleRuntime)
+          SOURCE=$(find dist -maxdepth 1 -type d -name 'PatchWindowRuntime-linux-*' | head -1)
+          test -n "$SOURCE"
+          STAGE="$RUNNER_TEMP/patch-window-runtime-stage"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE"
+          cp -a "$SOURCE" "$STAGE/PatchWindowRuntime"
+          (cd "$STAGE" && zip -qry "$GITHUB_WORKSPACE/runtime/patch-linux-window-runtime.zip" PatchWindowRuntime)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-studio-runtime-${{ matrix.platform }}
+          path: runtime/*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    if: github.event_name != 'pull_request'
+    name: Publish runtime release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: patch-studio-runtime-*
+          path: release
+          merge-multiple: true
+      - name: Publish stable runtime assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: studio-runtime-v0.1
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.1' --notes 'Prebuilt generic Windows, macOS and Linux runtimes used by Patch Studio one-click native downloads.'
+          gh release upload "$TAG" release/*.zip --repo "$GITHUB_REPOSITORY" --clobber
