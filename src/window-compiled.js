@@ -2,6 +2,7 @@ import { buildFormLayoutManifest } from './form-layout.js';
 
 export const PATCH_COMPILED_WINDOW_VERSION = '0.1';
 export const PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program';
+export const PATCH_COMPILED_WINDOW_IR_VERSION = '0.10';
 
 export class CompiledWindowError extends Error {}
 
@@ -12,13 +13,16 @@ export function buildCompiledWindowArtifact(compiled) {
   if (compiled.project?.kind !== 'window') {
     throw new CompiledWindowError('Compiled Window artifacts can only be built from Window projects.');
   }
+  if (compiled.ir?.version !== PATCH_COMPILED_WINDOW_IR_VERSION) {
+    throw new CompiledWindowError(`Compiled Window artifacts require Change IR ${PATCH_COMPILED_WINDOW_IR_VERSION}.`);
+  }
   const windows = compiled.ast.filter(node => node.kind === 'window');
   if (!windows.length) throw new CompiledWindowError('A Window artifact needs at least one Patch window.');
 
   return {
     format: PATCH_COMPILED_WINDOW_FORMAT,
     version: PATCH_COMPILED_WINDOW_VERSION,
-    irVersion: compiled.ir?.version ?? null,
+    irVersion: PATCH_COMPILED_WINDOW_IR_VERSION,
     project: {
       name: compiled.project?.name ?? 'PatchApp',
       kind: 'window',
@@ -33,12 +37,18 @@ export function validateCompiledWindowArtifact(artifact) {
   if (!artifact || typeof artifact !== 'object') throw new CompiledWindowError('Compiled Window artifact must be an object.');
   if (artifact.format !== PATCH_COMPILED_WINDOW_FORMAT) throw new CompiledWindowError('Compiled Window artifact format is unsupported.');
   if (artifact.version !== PATCH_COMPILED_WINDOW_VERSION) throw new CompiledWindowError(`Compiled Window artifact version '${artifact.version ?? '?'}' is unsupported.`);
-  if (typeof artifact.irVersion !== 'string' || !artifact.irVersion) throw new CompiledWindowError('Compiled Window artifact is missing its Change IR version.');
+  if (artifact.irVersion !== PATCH_COMPILED_WINDOW_IR_VERSION) {
+    throw new CompiledWindowError(`Compiled Window artifact requires Change IR ${PATCH_COMPILED_WINDOW_IR_VERSION}.`);
+  }
   if (artifact.project?.kind !== 'window') throw new CompiledWindowError('Compiled Window artifact project kind must be window.');
   if (!Array.isArray(artifact.program)) throw new CompiledWindowError('Compiled Window artifact program is missing.');
-  if (!artifact.program.some(node => node?.kind === 'window')) throw new CompiledWindowError('Compiled Window artifact contains no Patch window.');
+  const windowCount = artifact.program.filter(node => node?.kind === 'window').length;
+  if (!windowCount) throw new CompiledWindowError('Compiled Window artifact contains no Patch window.');
   if (artifact.formLayout?.format !== 'patch-source-backed-form-layout' || !Array.isArray(artifact.formLayout.windows)) {
     throw new CompiledWindowError('Compiled Window artifact form layout is invalid.');
+  }
+  if (artifact.formLayout.windows.length !== windowCount) {
+    throw new CompiledWindowError('Compiled Window artifact Form layout does not match its executable Window program.');
   }
   return artifact;
 }
