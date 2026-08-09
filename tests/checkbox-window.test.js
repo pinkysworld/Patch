@@ -38,6 +38,16 @@ test('checkbox changed exposes a Boolean value and persists only through explici
   const event = triggerWindowEvent(transientRuntime, 'enabled', 'changed', { value: true });
   assert.equal(transientRuntime.state.get('enabled'), false);
   assert.deepEqual(event.output, ['true']);
+  assert.throws(
+    () => triggerWindowEvent(transientRuntime, 'enabled', 'changed', { value: 'true' }),
+    /Boolean event-local value/
+  );
+});
+
+test('clear on Boolean state deterministically resets it to false', () => {
+  const runtime = new PatchInterpreter();
+  runtime.run(`create boolean enabled = true\nchange enabled:\n  clear\n`);
+  assert.equal(runtime.state.get('enabled'), false);
 });
 
 test('Window build validation accepts checkbox changed and rejects checkbox clicked', () => {
