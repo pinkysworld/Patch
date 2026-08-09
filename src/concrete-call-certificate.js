@@ -25,18 +25,19 @@ export function generateConcreteCallCertificate(source, options = {}) {
     }
     const id = `${leanIdentifier(witness.caller)}_${leanIdentifier(witness.callee)}_${witness.invocation}`;
     const exprs = witness.argExprs.map(leanConcreteRangeExpr);
-    const callerEnv = witness.callerEnv.map(item => `(${leanString(item.name)}, ${leanInt(item.value)})`);
+    const callerBindings = witness.callerEnv.map(item => `(${leanString(item.name)}, ${leanInt(item.value)})`);
     const params = witness.params.map(leanString);
     const declared = witness.declared.map(item => leanInterval(item.range.min, item.range.max));
-    const expectedEnv = witness.expectedCalleeEnv.map(item => `(${leanString(item.name)}, ${leanInt(item.value)})`);
+    const expectedBindings = witness.expectedCalleeEnv.map(item => `(${leanString(item.name)}, ${leanInt(item.value)})`);
     const values = witness.concreteValues.map(leanInt);
     const abstract = witness.abstractArgRanges.map(range => leanInterval(range.min, range.max));
 
     blocks.push(`def ${id}_exprs : List RangeExpr := ${leanList(exprs)}`);
-    blocks.push(`def ${id}_caller : IntEnv := ${leanList(callerEnv)}`);
+    blocks.push(`def ${id}_callerBindings : BindingList := ${leanList(callerBindings)}`);
+    blocks.push(`def ${id}_caller : IntEnv := envOfBindings ${id}_callerBindings`);
     blocks.push(`def ${id}_params : List Name := ${leanList(params)}`);
     blocks.push(`def ${id}_declared : List Interval := ${leanList(declared)}`);
-    blocks.push(`def ${id}_expected : IntEnv := ${leanList(expectedEnv)}`);
+    blocks.push(`def ${id}_expected : BindingList := ${leanList(expectedBindings)}`);
     blocks.push(`def ${id}_values : List Int := ${leanList(values)}`);
     blocks.push(`def ${id}_abstract : List Interval := ${leanList(abstract)}`);
     blocks.push(`theorem ${id}_binding_checked :\n    concreteCallBinding ${id}_exprs ${id}_caller ${id}_params ${id}_declared = some ${id}_expected := by\n  native_decide`);
@@ -47,7 +48,7 @@ export function generateConcreteCallCertificate(source, options = {}) {
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchCallRefinement\n\nopen PatchFormal\n\nnamespace PatchGeneratedConcreteCallCertificate\n\n/-- Proof-free production call witnesses checked against the beta.26 concrete\n    argument evaluator/binder and beta.25 abstract argument intervals. The\n    source hash binds this file to exact Patch source bytes. This first slice\n    certifies inter-recipe variable pass-through; it is not yet complete\n    arithmetic substitution or production-Wasm call equivalence. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef concreteCallWitnessVersion : String := ${leanString(witnessArtifact.version)}\ndef concreteCallCertificateVersion : String := ${leanString(PATCH_CONCRETE_CALL_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedConcreteCallCertificate\n`;
+  const lean = `import PatchCallRefinement\n\nopen PatchFormal\n\nnamespace PatchGeneratedConcreteCallCertificate\n\n/-- Proof-free production call witnesses checked against the beta.26 concrete\n    argument evaluator/binder and beta.25 abstract argument intervals. The\n    source hash binds this file to exact Patch source bytes. Serializable\n    binding lists are converted by Lean to the established functional IntEnv.\n    This first slice certifies inter-recipe variable pass-through; it is not yet\n    complete arithmetic substitution or production-Wasm call equivalence. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef concreteCallWitnessVersion : String := ${leanString(witnessArtifact.version)}\ndef concreteCallCertificateVersion : String := ${leanString(PATCH_CONCRETE_CALL_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedConcreteCallCertificate\n`;
 
   return {
     lean,
