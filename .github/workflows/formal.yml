@@ -3,8 +3,68 @@ name: Patch Formal Verification
 on:
   push:
     branches: [main]
+    paths:
+      - formal/**
+      - src/compiler.js
+      - src/parser.js
+      - src/change-analysis.js
+      - src/range-analysis.js
+      - src/formal-*.js
+      - src/source-validation.js
+      - src/guard-validation.js
+      - src/certificate.js
+      - src/runtime-certificate.js
+      - src/runtime-path-witness.js
+      - src/call-certificate.js
+      - src/concrete-call-witness.js
+      - src/concrete-call-certificate.js
+      - src/concrete-call-body.js
+      - src/concrete-call-body-certificate.js
+      - src/transitive-call-body.js
+      - src/transitive-call-body-certificate.js
+      - src/direct-trace-validator.js
+      - src/direct-effect-validator.js
+      - src/transitive-runtime-correspondence.js
+      - src/transitive-runtime-certificate.js
+      - src/wasm-direct.js
+      - scripts/generate-*-certificate.js
+      - examples/range-soundness.patch
+      - examples/runtime-correspondence.patch
+      - examples/formal-*.patch
+      - package.json
+      - .github/workflows/formal.yml
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - formal/**
+      - src/compiler.js
+      - src/parser.js
+      - src/change-analysis.js
+      - src/range-analysis.js
+      - src/formal-*.js
+      - src/source-validation.js
+      - src/guard-validation.js
+      - src/certificate.js
+      - src/runtime-certificate.js
+      - src/runtime-path-witness.js
+      - src/call-certificate.js
+      - src/concrete-call-witness.js
+      - src/concrete-call-certificate.js
+      - src/concrete-call-body.js
+      - src/concrete-call-body-certificate.js
+      - src/transitive-call-body.js
+      - src/transitive-call-body-certificate.js
+      - src/direct-trace-validator.js
+      - src/direct-effect-validator.js
+      - src/transitive-runtime-correspondence.js
+      - src/transitive-runtime-certificate.js
+      - src/wasm-direct.js
+      - scripts/generate-*-certificate.js
+      - examples/range-soundness.patch
+      - examples/runtime-correspondence.patch
+      - examples/formal-*.patch
+      - package.json
+      - .github/workflows/formal.yml
   workflow_dispatch:
 
 concurrency:
