@@ -1,0 +1,83 @@
+{
+  "format": "patch-related-work-source-manifest",
+  "version": "0.1",
+  "status": "initial-primary-source-matrix-not-systematic-review",
+  "sources": [
+    {
+      "id": "plaid-first-class-state-change",
+      "title": "First-Class State Change in Plaid",
+      "authors": ["Joshua Sunshine", "Karl Naden", "Sven Stork", "Jonathan Aldrich", "Eric Tanter"],
+      "year": 2011,
+      "venue": "OOPSLA 2011",
+      "doi": "10.1145/2076021.2048122",
+      "primaryUrl": "https://www.cs.cmu.edu/~kbn/papers.html",
+      "role": "first-class object/state transitions and typestate-oriented language design",
+      "patchBoundary": "Patch must not claim novelty for first-class state change or state-transition abstractions. Patch's candidate distinction is mandatory ordinary persistent-mutation factorization through semantic Changes plus authority derived from that same mutation substrate."
+    },
+    {
+      "id": "permission-based-programming-languages",
+      "title": "Permission-Based Programming Languages",
+      "authors": ["Jonathan Aldrich", "Ronald Garcia", "Mark Hahnenberg", "Manuel Mohr", "Karl Naden", "Darpan Saini", "Sven Stork", "Joshua Sunshine", "Eric Tanter", "Roger Wolff"],
+      "year": 2011,
+      "venue": "ICSE 2011 NIER",
+      "doi": "10.1145/1985793.1985915",
+      "primaryUrl": "https://www.cs.cmu.edu/~svens/publications.html",
+      "role": "permission-oriented programming-language design for controlling access/state change",
+      "patchBoundary": "Patch must not claim invention of permission or capability-oriented control of mutation. The comparison question is whether authority is derived directly from Patch's mandatory semantic mutation representation at operation/magnitude granularity."
+    },
+    {
+      "id": "core-quantitative-coeffects",
+      "title": "A Core Quantitative Coeffect Calculus",
+      "authors": ["Tomas Petricek", "Dominic Orchard", "Alan Mycroft"],
+      "year": 2014,
+      "venue": "ESOP 2014",
+      "doi": "10.1007/978-3-642-54833-8_19",
+      "primaryUrl": "https://tomasp.net/academic/papers/coeffects/",
+      "role": "quantitative contextual/resource requirements through coeffects",
+      "patchBoundary": "Patch must not claim novelty for quantitative type/effect information. Coeffects quantify contextual requirements; Patch's candidate role for quantities is bounding semantic mutation magnitude and authority."
+    },
+    {
+      "id": "effect-quantales",
+      "title": "A Generic Approach to Flow-Sensitive Polymorphic Effects",
+      "authors": ["Colin S. Gordon"],
+      "year": 2017,
+      "venue": "ECOOP 2017",
+      "doi": "10.4230/LIPIcs.ECOOP.2017.13",
+      "primaryUrl": "https://arxiv.org/abs/1705.02264",
+      "role": "algebraic framework for order-sensitive/sequential effect systems",
+      "patchBoundary": "Patch must not claim novelty for sequential effect composition or algebraic effect summaries. The candidate distinction concerns the source of semantic mutation effects and their coupling to authority, not generic effect algebra."
+    },
+    {
+      "id": "object-capabilities-affinity-scala",
+      "title": "Object Capabilities and Lightweight Affinity in Scala",
+      "authors": ["Philipp Haller", "Alexandre Loiko"],
+      "year": 2016,
+      "venue": "OOPSLA 2016",
+      "doi": "10.1145/2983990.2984047",
+      "primaryUrl": "https://arxiv.org/abs/1607.05609",
+      "role": "object-capability discipline, isolation and uniqueness/affinity",
+      "patchBoundary": "Patch must not claim invention of object-capability security or isolation. Patch's Semantic Change Capabilities describe permitted semantic state transitions; they are not object-capability process/isolation guarantees."
+    },
+    {
+      "id": "edit-transactions",
+      "title": "Edit Transactions: Dynamically Scoped Change Sets for Controlled Updates in Live Programming",
+      "authors": ["Toni Mattis", "Patrick Rein", "Robert Hirschfeld"],
+      "year": 2017,
+      "venue": "The Art, Science, and Engineering of Programming",
+      "doi": "10.22152/programming-journal.org/2017/1/13",
+      "primaryUrl": "https://programming-journal.org/2017/1/13/",
+      "role": "first-class/dynamically scoped edit change sets for controlled live-program updates",
+      "patchBoundary": "Patch must not claim novelty for explicit change sets, delayed change activation or coarse-grained undo. Edit Transactions concern program edits/live updates; Patch's core claim concerns ordinary application-state mutation semantics."
+    },
+    {
+      "id": "cose-cheops",
+      "title": "Change-Oriented Software Engineering",
+      "authors": ["Peter Ebraert", "Jorge Antonio Vallejos Vargas", "Pascal Costanza", "Ellen Van Paesschen", "Theo D'Hondt"],
+      "year": 2007,
+      "venue": "International Conference on Dynamic Languages",
+      "primaryUrl": "https://researchportal.vub.be/en/publications/change-oriented-software-engineering/",
+      "role": "first-class software-development change model and change-oriented IDE support through ChEOPS",
+      "patchBoundary": "Patch must not claim invention of change-oriented software engineering or first-class software evolution changes. ChEOPS/COSE model changes to software artifacts; Patch targets runtime persistent-state mutation and derives semantic authority from that path."
+    }
+  ]
+}
