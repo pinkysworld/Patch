@@ -1,16 +1,21 @@
-export const PATCH_PREBUILT_NATIVE_VERSION = '0.1';
+import { zipStore } from './local-native-kit.js';
 
+export const PATCH_PREBUILT_NATIVE_VERSION = '0.2';
+export const PATCH_SEALED_CONSOLE_VERSION = 1;
+
+const SEALED_MAGIC_TEXT = 'PCHSEA01';
+const SEALED_FOOTER_SIZE = 28;
 const TEMPLATE_NAMES = {
   windows: {
-    console: 'patch-windows-console-runtime.zip',
+    console: 'patch-windows-console-runtime.bin',
     window: 'patch-windows-window-runtime.zip'
   },
   macos: {
-    console: 'patch-macos-console-runtime.zip',
+    console: 'patch-macos-console-runtime.bin',
     window: 'patch-macos-window-runtime.zip'
   },
   linux: {
-    console: 'patch-linux-console-runtime.zip',
+    console: 'patch-linux-console-runtime.bin',
     window: 'patch-linux-window-runtime.zip'
   }
 };
@@ -32,31 +37,120 @@ export function buildPrebuiltNativePackage(templateBytes, options = {}) {
   const platform = normalizePlatform(options.platform);
   const kind = options.kind === 'window' ? 'window' : 'console';
   const name = safeName(options.name ?? 'PatchApp');
+
+  if (kind === 'console') {
+    if (!(options.wasm instanceof Uint8Array)) {
+      throw new PrebuiltNativeError('Console prebuilt packaging needs the browser-compiled direct Wasm payload.');
+    }
+    const sealed = sealConsoleRuntimeBinary(toBytes(templateBytes), { name, wasm: options.wasm });
+    return {
+      format: 'patch-sealed-native-package',
+      version: PATCH_PREBUILT_NATIVE_VERSION,
+      platform,
+      kind,
+      name,
+      sealed: true,
+      filename: `${safeFileName(name)}-${platform}-${kind}.zip`,
+      bytes: zipStore(sealedConsoleFiles(platform, name, sealed))
+    };
+  }
+
   const payload = {
     format: 'patch-prebuilt-native-payload',
     version: PATCH_PREBUILT_NATIVE_VERSION,
     name,
-    kind
+    kind,
+    source: String(options.source ?? '')
   };
-
-  const files = [];
-  if (kind === 'console') {
-    if (!(options.wasm instanceof Uint8Array)) throw new PrebuiltNativeError('Console prebuilt packaging needs the browser-compiled direct Wasm payload.');
-    files.push({ name: 'app.wasm', data: options.wasm });
-  } else {
-    payload.source = String(options.source ?? '');
-  }
-  files.push({ name: 'patch-app.json', data: new TextEncoder().encode(JSON.stringify(payload)) });
-
   return {
     format: 'patch-prebuilt-native-package',
     version: PATCH_PREBUILT_NATIVE_VERSION,
     platform,
     kind,
     name,
+    sealed: false,
     filename: `${safeFileName(name)}-${platform}-${kind}.zip`,
-    bytes: appendStoredFilesToZip(toBytes(templateBytes), files)
+    bytes: appendStoredFilesToZip(toBytes(templateBytes), [
+      { name: 'patch-app.json', data: new TextEncoder().encode(JSON.stringify(payload)) }
+    ])
   };
+}
+
+export function sealConsoleRuntimeBinary(runtimeBytes, options = {}) {
+  const runtime = toBytes(runtimeBytes);
+  const name = safeName(options.name ?? 'PatchApp');
+  if (!(options.wasm instanceof Uint8Array)) throw new PrebuiltNativeError('Sealing a Console runtime needs a direct Wasm payload.');
+  if (hasSealedFooter(runtime)) throw new PrebuiltNativeError('Runtime template already contains a sealed Patch payload.');
+
+  const metadata = new TextEncoder().encode(JSON.stringify({
+    format: 'patch-sealed-console-payload',
+    version: PATCH_PREBUILT_NATIVE_VERSION,
+    name,
+    kind: 'console'
+  }));
+  const wasm = options.wasm;
+  const footer = new Uint8Array(SEALED_FOOTER_SIZE);
+  footer.set(new TextEncoder().encode(SEALED_MAGIC_TEXT), 0);
+  const view = new DataView(footer.buffer);
+  view.setUint32(8, PATCH_SEALED_CONSOLE_VERSION, true);
+  view.setUint32(12, metadata.length, true);
+  view.setUint32(16, wasm.length, true);
+  view.setUint32(20, crc32(metadata), true);
+  view.setUint32(24, crc32(wasm), true);
+  return concatBytes([runtime, metadata, wasm, footer]);
+}
+
+export function decodeSealedConsolePayload(binaryBytes) {
+  const bytes = toBytes(binaryBytes);
+  if (bytes.length < SEALED_FOOTER_SIZE) throw new PrebuiltNativeError('Executable does not contain a sealed Patch payload.');
+  const footerOffset = bytes.length - SEALED_FOOTER_SIZE;
+  const footer = bytes.subarray(footerOffset);
+  const magic = new TextDecoder().decode(footer.subarray(0, 8));
+  if (magic !== SEALED_MAGIC_TEXT) throw new PrebuiltNativeError('Executable does not contain a sealed Patch payload.');
+  const view = new DataView(footer.buffer, footer.byteOffset, footer.byteLength);
+  const version = view.getUint32(8, true);
+  if (version !== PATCH_SEALED_CONSOLE_VERSION) throw new PrebuiltNativeError(`Unsupported sealed Console payload version ${version}.`);
+  const metadataLength = view.getUint32(12, true);
+  const wasmLength = view.getUint32(16, true);
+  const payloadOffset = footerOffset - metadataLength - wasmLength;
+  if (payloadOffset < 0) throw new PrebuiltNativeError('Sealed Console payload lengths are invalid.');
+  const metadataBytes = bytes.subarray(payloadOffset, payloadOffset + metadataLength);
+  const wasm = bytes.subarray(payloadOffset + metadataLength, footerOffset);
+  if (crc32(metadataBytes) !== view.getUint32(20, true)) throw new PrebuiltNativeError('Sealed Console metadata CRC mismatch.');
+  if (crc32(wasm) !== view.getUint32(24, true)) throw new PrebuiltNativeError('Sealed Console Wasm CRC mismatch.');
+  let metadata;
+  try { metadata = JSON.parse(new TextDecoder().decode(metadataBytes)); }
+  catch { throw new PrebuiltNativeError('Sealed Console metadata is not valid JSON.'); }
+  return {
+    runtime: bytes.subarray(0, payloadOffset),
+    metadata,
+    wasm: new Uint8Array(wasm)
+  };
+}
+
+function sealedConsoleFiles(platform, name, binary) {
+  const file = safeFileName(name);
+  if (platform === 'windows') {
+    return [{ name: `${file}.exe`, content: binary, mode: 0o100755 }];
+  }
+  if (platform === 'linux') {
+    return [{ name: file, content: binary, mode: 0o100755 }];
+  }
+  const appRoot = `${file}.app/Contents`;
+  return [
+    { name: `${appRoot}/MacOS/${file}`, content: binary, mode: 0o100755 },
+    { name: `${appRoot}/Info.plist`, content: macInfoPlist(name, file), mode: 0o100644 }
+  ];
+}
+
+function macInfoPlist(name, executable) {
+  const bundlePart = safeFileName(name).toLowerCase().replace(/_/g, '-');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>\n<key>CFBundleName</key><string>${xml(name)}</string>\n<key>CFBundleDisplayName</key><string>${xml(name)}</string>\n<key>CFBundleExecutable</key><string>${xml(executable)}</string>\n<key>CFBundleIdentifier</key><string>org.patchlang.${xml(bundlePart)}</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>0.2</string>\n<key>CFBundleVersion</key><string>1</string>\n</dict></plist>\n`;
+}
+
+function hasSealedFooter(bytes) {
+  if (bytes.length < SEALED_FOOTER_SIZE) return false;
+  return new TextDecoder().decode(bytes.subarray(bytes.length - SEALED_FOOTER_SIZE, bytes.length - SEALED_FOOTER_SIZE + 8)) === SEALED_MAGIC_TEXT;
 }
 
 export function appendStoredFilesToZip(zipBytes, files) {
@@ -196,6 +290,7 @@ function dosTimestamp(date) {
   };
 }
 
+function xml(value) { return String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;' })[c]); }
 function normalizePlatform(platform) {
   if (['windows', 'macos', 'linux'].includes(platform)) return platform;
   throw new PrebuiltNativeError(`Prebuilt native downloads currently support Windows, macOS and Linux; '${platform}' is not available yet.`);
