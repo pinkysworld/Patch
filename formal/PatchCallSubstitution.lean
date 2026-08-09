@@ -44,10 +44,28 @@ theorem evalCallArgs_sound :
               subst values
               exact ArgsEvaluate.cons hExpr (ih hRest)
 
+/-- Serializable exact parameter bindings. The established formal `IntEnv`
+    remains the lookup function `Name → Option Int`; certificates use this list
+    representation only as decidable proof-free data. -/
+abbrev BindingList := List (Name × Int)
+
+/-- Turn serializable bindings into the existing functional integer environment.
+    The first occurrence wins. Production-certified parameter lists are expected
+    to use distinct names; duplicate-name handling is not a beta.26 claim. -/
+def envOfBindings : BindingList → IntEnv
+  | [] => fun _ => none
+  | (name, value) :: rest => fun query =>
+      if query = name then some value else envOfBindings rest query
+
+@[simp] theorem envOfBindings_head
+    (name : Name) (value : Int) (rest : BindingList) :
+    envOfBindings ((name, value) :: rest) name = some value := by
+  simp [envOfBindings]
+
 /-- Exact positional binding of evaluated arguments to callee parameter names.
-    This constructs only the callee-local integer environment; no persistent
-    Patch state is written here. -/
-def bindCallParams : List Name → List Int → Option IntEnv
+    This constructs only a decidable local binding list; no persistent Patch
+    state is written here. -/
+def bindCallParams : List Name → List Int → Option BindingList
   | [], [] => some []
   | name :: names, value :: values =>
       match bindCallParams names values with
@@ -55,14 +73,15 @@ def bindCallParams : List Name → List Int → Option IntEnv
       | none => none
   | _, _ => none
 
-inductive ParamsBind : List Name → List Int → IntEnv → Prop where
+inductive ParamsBind : List Name → List Int → BindingList → Prop where
   | nil : ParamsBind [] [] []
-  | cons {name : Name} {names : List Name} {value : Int} {values : List Int} {rest : IntEnv} :
+  | cons {name : Name} {names : List Name} {value : Int} {values : List Int}
+      {rest : BindingList} :
       ParamsBind names values rest →
       ParamsBind (name :: names) (value :: values) ((name, value) :: rest)
 
 theorem bindCallParams_sound :
-    ∀ {params : List Name} {values : List Int} {bound : IntEnv},
+    ∀ {params : List Name} {values : List Int} {bound : BindingList},
       bindCallParams params values = some bound → ParamsBind params values bound := by
   intro params
   induction params with
@@ -139,10 +158,11 @@ theorem concreteArgsFitBool_sound :
 
 /-- One executable concrete call-binding step: evaluate caller expressions,
     validate the exact values against callee declarations, then bind them to
-    callee-local names. -/
+    callee-local names. The result remains serializable `BindingList` evidence;
+    use `envOfBindings` when evaluating the callee formal semantics. -/
 def concreteCallBinding
     (exprs : List RangeExpr) (caller : IntEnv)
-    (params : List Name) (declared : List Interval) : Option IntEnv :=
+    (params : List Name) (declared : List Interval) : Option BindingList :=
   match evalCallArgs exprs caller with
   | none => none
   | some values =>
@@ -154,7 +174,7 @@ def concreteCallBinding
 /-- Relational specification of a successful concrete call-binding step. -/
 def ConcreteCallBindingSpec
     (exprs : List RangeExpr) (caller : IntEnv)
-    (params : List Name) (declared : List Interval) (bound : IntEnv) : Prop :=
+    (params : List Name) (declared : List Interval) (bound : BindingList) : Prop :=
   ∃ values,
     ArgsEvaluate caller exprs values ∧
     ConcreteArgsFit values declared ∧
@@ -162,7 +182,7 @@ def ConcreteCallBindingSpec
 
 theorem concreteCallBinding_sound
     {exprs : List RangeExpr} {caller : IntEnv}
-    {params : List Name} {declared : List Interval} {bound : IntEnv}
+    {params : List Name} {declared : List Interval} {bound : BindingList}
     (h : concreteCallBinding exprs caller params declared = some bound) :
     ConcreteCallBindingSpec exprs caller params declared bound := by
   unfold concreteCallBinding at h
