@@ -17,6 +17,10 @@ test('transitive certificate preserves recursive call-tree structure for Lean', 
   assert.match(certificate.lean, /CallTreeStmt\.call/);
   assert.match(certificate.lean, /CallTreeStmt\.call 2 1/);
   assert.match(certificate.lean, /CallTreeStmt\.call 1 0/);
+  assert.match(certificate.lean, /caller_outer_1_callerRank : Nat := 3/);
+  assert.match(certificate.lean, /caller_outer_1_calleeRank : Nat := 2/);
+  assert.match(certificate.lean, /caller_outer_1_rank_checked/);
+  assert.match(certificate.lean, /caller_outer_1_calleeRank < caller_outer_1_callerRank/);
   assert.match(certificate.lean, /RangeExpr\.add \(RangeExpr\.var "seed"\) \(RangeExpr\.lit 1\)/);
   assert.match(certificate.lean, /RangeExpr\.add \(RangeExpr\.var "amount"\) \(RangeExpr\.lit 1\)/);
   assert.match(certificate.lean, /evalCallTreeStmtEqBool/);
