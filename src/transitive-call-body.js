@@ -2,7 +2,7 @@ import { buildConcreteCallWitnesses } from './concrete-call-witness.js';
 import { buildFormalRangeExpression } from './formal-range.js';
 import { buildFormalGuardExpression } from './formal-guard.js';
 
-export const PATCH_TRANSITIVE_CALL_BODY_VERSION = '0.1';
+export const PATCH_TRANSITIVE_CALL_BODY_VERSION = '0.2';
 
 export function buildTransitiveCallBodyWitnesses(ast, formalCalls) {
   const exactCalls = buildConcreteCallWitnesses(ast, formalCalls);
@@ -27,9 +27,9 @@ export function buildTransitiveCallBodyWitnesses(ast, formalCalls) {
     }
 
     const exactEnv = Object.fromEntries((call.expectedCalleeEnv ?? []).map(item => [item.name, item.value]));
-    let claimedTrace;
+    let claimedScopedTrace;
     try {
-      claimedTrace = evalCallTreeClaim(built.stmt, exactEnv);
+      claimedScopedTrace = evalCallTreeScopedClaim(built.stmt, exactEnv, callee.name);
     } catch (err) {
       witnesses.push({ ...call, supported: false, reason: err.message });
       continue;
@@ -41,7 +41,8 @@ export function buildTransitiveCallBodyWitnesses(ast, formalCalls) {
       callTree: built.stmt,
       calleeSignature: calleeEntry.signature ?? [],
       callerSignature: callerEntry.signature ?? [],
-      claimedTrace,
+      claimedTrace: claimedScopedTrace.map(item => item.effect),
+      claimedScopedTrace,
       nestedCallDepth: callTreeDepth(built.stmt)
     });
   }
@@ -78,7 +79,7 @@ function buildBlock(nodes, recipe, entry, rangeBindings, allowedGuardVariables, 
     }
     if (node.kind === 'repeat') {
       const count = parseStaticRepeat(node.expr);
-      if (count === null) return unsupported(node, 'beta.30 transitive traces require a literal non-negative repeat count');
+      if (count === null) return unsupported(node, 'beta.31 transitive traces require a literal non-negative repeat count');
       const body = buildBlock(node.body ?? [], recipe, entry, rangeBindings, allowedGuardVariables, recipes, formalCalls, active);
       if (!body.supported) return body;
       statements.push({ kind: 'repeat', count, body: body.stmt });
@@ -100,7 +101,7 @@ function buildBlock(nodes, recipe, entry, rangeBindings, allowedGuardVariables, 
       statements.push(nested.stmt);
       continue;
     }
-    return unsupported(node, `body construct '${node.kind}' is outside beta.30 finite transitive exact-call traces`);
+    return unsupported(node, `body construct '${node.kind}' is outside beta.31 finite transitive exact-call traces`);
   }
   return { supported: true, stmt: sequenceTree(statements) };
 }
@@ -109,7 +110,7 @@ function buildNestedCall(node, recipe, entry, rangeBindings, recipes, formalCall
   const callee = recipes.get(node.name);
   const calleeEntry = formalCalls?.entries?.[node.name];
   if (!callee || !calleeEntry?.supported) return unsupported(node, `nested callee '${node.name}' is outside formalCalls support`);
-  if (active.has(callee.name)) return unsupported(node, `recursive/cyclic nested call '${callee.name}' is outside beta.30`);
+  if (active.has(callee.name)) return unsupported(node, `recursive/cyclic nested call '${callee.name}' is outside beta.31`);
   if (!Number.isInteger(entry.rank) || !Number.isInteger(calleeEntry.rank) || calleeEntry.rank >= entry.rank) {
     return unsupported(node, `nested call '${recipe.name}' -> '${callee.name}' is not rank-decreasing`);
   }
@@ -150,10 +151,10 @@ function buildNestedCall(node, recipe, entry, rangeBindings, recipes, formalCall
 function buildChangeBase(node, rangeBindings, signature) {
   const emits = [];
   for (const operation of node.ops ?? []) {
-    if (!['add', 'remove'].includes(operation.op)) return unsupported(operation, `change operation '${operation.op}' is outside beta.30 quantitative trace certification`);
+    if (!['add', 'remove'].includes(operation.op)) return unsupported(operation, `change operation '${operation.op}' is outside beta.31 quantitative trace certification`);
     const amount = buildFormalRangeExpression(operation.expr ?? '', rangeBindings);
     if (!amount.supported || !amount.range) return unsupported(operation, `change amount is outside the formal integer RangeExpr fragment: ${amount.reason ?? 'missing range'}`);
-    if (amount.range.min < 0) return unsupported(operation, 'beta.30 quantitative trace certification requires a provably non-negative amount range');
+    if (amount.range.min < 0) return unsupported(operation, 'beta.31 quantitative trace certification requires a provably non-negative amount range');
     const candidate = {
       target: node.target, field: operation.field ?? null,
       operation: operation.op === 'add' ? 'increase' : 'decrease',
@@ -179,16 +180,18 @@ function sequenceTree(statements) {
   return stmt;
 }
 
-function evalCallTreeClaim(stmt, env) {
+function evalCallTreeScopedClaim(stmt, env, scope) {
   switch (stmt?.kind) {
-    case 'base': return evalBoundClaim(stmt.body, env);
-    case 'seq': return [...evalCallTreeClaim(stmt.first, env), ...evalCallTreeClaim(stmt.second, env)];
+    case 'base': return evalBoundScopedClaim(stmt.body, env, scope);
+    case 'seq': return [...evalCallTreeScopedClaim(stmt.first, env, scope), ...evalCallTreeScopedClaim(stmt.second, env, scope)];
     case 'repeat': {
-      const one = evalCallTreeClaim(stmt.body, env); const trace = [];
+      const one = evalCallTreeScopedClaim(stmt.body, env, scope); const trace = [];
       for (let index = 0; index < stmt.count; index += 1) trace.push(...one);
       return trace;
     }
-    case 'branch': return evalGuardExact(stmt.guard, env) ? evalCallTreeClaim(stmt.thenBranch, env) : evalCallTreeClaim(stmt.elseBranch, env);
+    case 'branch': return evalGuardExact(stmt.guard, env)
+      ? evalCallTreeScopedClaim(stmt.thenBranch, env, scope)
+      : evalCallTreeScopedClaim(stmt.elseBranch, env, scope);
     case 'call': {
       const values = stmt.argExprs.map(expr => evalRangeExprExact(expr, env));
       if (values.length !== stmt.params.length || values.length !== stmt.declared.length) throw new Error(`nested call '${stmt.callee}' binding arity mismatch`);
@@ -198,13 +201,13 @@ function evalCallTreeClaim(stmt, env) {
         if (!Number.isSafeInteger(value) || value < range.min || value > range.max) throw new Error(`nested call '${stmt.callee}' exact argument ${value} is outside ${range.min}..${range.max}`);
         nestedEnv[stmt.params[index]] = value;
       }
-      return evalCallTreeClaim(stmt.body, nestedEnv);
+      return evalCallTreeScopedClaim(stmt.body, nestedEnv, stmt.callee);
     }
-    default: throw new Error(`cannot evaluate beta.30 CallTreeStmt kind '${stmt?.kind ?? 'missing'}'`);
+    default: throw new Error(`cannot evaluate beta.31 CallTreeStmt kind '${stmt?.kind ?? 'missing'}'`);
   }
 }
 
-function evalBoundClaim(stmt, env) {
+function evalBoundScopedClaim(stmt, env, scope) {
   switch (stmt?.kind) {
     case 'skip': return [];
     case 'emit': {
@@ -212,15 +215,25 @@ function evalBoundClaim(stmt, env) {
       if (!Number.isSafeInteger(value) || value < 0) throw new Error('claimed transitive trace amount is outside the safe non-negative integer boundary');
       const permitted = stmt.expected?.amountRange;
       if (!permitted || value < permitted.min || value > permitted.max) throw new Error(`claimed transitive trace amount ${value} is outside the expected semantic interval`);
-      return [{ target: stmt.expected.target, field: stmt.expected.field ?? null, operation: stmt.expected.operation, amountRange: { min: value, max: value } }];
+      return [{
+        scope,
+        effect: {
+          target: stmt.expected.target,
+          field: stmt.expected.field ?? null,
+          operation: stmt.expected.operation,
+          amountRange: { min: value, max: value }
+        }
+      }];
     }
-    case 'seq': return [...evalBoundClaim(stmt.first, env), ...evalBoundClaim(stmt.second, env)];
+    case 'seq': return [...evalBoundScopedClaim(stmt.first, env, scope), ...evalBoundScopedClaim(stmt.second, env, scope)];
     case 'repeat': {
-      const one = evalBoundClaim(stmt.body, env); const trace = [];
+      const one = evalBoundScopedClaim(stmt.body, env, scope); const trace = [];
       for (let index = 0; index < stmt.count; index += 1) trace.push(...one);
       return trace;
     }
-    case 'branch': return evalGuardExact(stmt.guard, env) ? evalBoundClaim(stmt.thenBranch, env) : evalBoundClaim(stmt.elseBranch, env);
+    case 'branch': return evalGuardExact(stmt.guard, env)
+      ? evalBoundScopedClaim(stmt.thenBranch, env, scope)
+      : evalBoundScopedClaim(stmt.elseBranch, env, scope);
     default: throw new Error(`cannot evaluate embedded beta.29 BoundStmt kind '${stmt?.kind ?? 'missing'}'`);
   }
 }
@@ -234,7 +247,7 @@ function evalGuardExact(expr, env) {
     case 'and': return evalGuardExact(expr.left, env) && evalGuardExact(expr.right, env);
     case 'or': return evalGuardExact(expr.left, env) || evalGuardExact(expr.right, env);
     case 'not': return !evalGuardExact(expr.expr, env);
-    default: throw new Error(`unsupported exact GuardExpr '${expr?.kind ?? 'missing'}' in beta.30 trace claim`);
+    default: throw new Error(`unsupported exact GuardExpr '${expr?.kind ?? 'missing'}' in beta.31 trace claim`);
   }
 }
 function evalRangeExprExact(expr, env) {
@@ -246,7 +259,7 @@ function evalRangeExprExact(expr, env) {
     case 'sub': value = evalRangeExprExact(expr.left, env) - evalRangeExprExact(expr.right, env); break;
     case 'neg': value = -evalRangeExprExact(expr.expr, env); break;
     case 'scale': value = expr.factor * evalRangeExprExact(expr.expr, env); break;
-    default: throw new Error(`unsupported exact RangeExpr '${expr?.kind ?? 'missing'}' in beta.30 trace claim`);
+    default: throw new Error(`unsupported exact RangeExpr '${expr?.kind ?? 'missing'}' in beta.31 trace claim`);
   }
   if (!Number.isSafeInteger(value)) throw new Error('transitive trace RangeExpr evaluation exceeds the JavaScript safe-integer boundary');
   return value;
