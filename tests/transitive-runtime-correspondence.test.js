@@ -38,7 +38,11 @@ test('validated direct-Wasm effects match the beta30 depth-2 scoped call-tree tr
 });
 
 test('beta31 fails closed when identical validated scoped traces are ambiguous', async () => {
-  const ambiguous = source.replace('do caller(1)\nshow score', 'do caller(1)\ndo caller(1)\nshow score');
+  const ambiguous = source.replace(
+    /do caller\(1\)\r?\nshow score/,
+    'do caller(1)\ndo caller(1)\nshow score'
+  );
+  assert.notEqual(ambiguous, source, 'ambiguity fixture must add a second concrete caller invocation');
   const artifact = await buildTransitiveRuntimeCorrespondence(ambiguous, { name: 'AmbiguousTransitiveRuntime' });
   assert.equal(artifact.runtimeValidation.ok, true);
   assert.equal(artifact.summary.runtimeTransitions, 4);
