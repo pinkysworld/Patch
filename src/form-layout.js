@@ -3,7 +3,8 @@ export const PATCH_FORM_LAYOUT_VERSION = '0.1';
 const CONTROL_DEFAULTS = {
   text: { width: 200, height: 30 },
   button: { width: 120, height: 36 },
-  input: { width: 220, height: 36 }
+  input: { width: 220, height: 36 },
+  checkbox: { width: 220, height: 36 }
 };
 
 export function buildFormLayoutManifest(ast) {
