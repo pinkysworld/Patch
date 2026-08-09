@@ -52,7 +52,7 @@ test('transitive witness preserves shallower nested edges as exact witnesses too
   ]);
 });
 
-test('transitive producer fails closed when nested calls are not inside the ranked formalCalls fragment', () => {
+test('transitive certification pipeline fails closed at the earliest range boundary', () => {
   const invalid = `create number score = 0
 
 make leaf(amount number 1..2):
@@ -66,9 +66,8 @@ make caller(seed number 0..2):
   do outer(seed + 1)
 
 do caller(1)`;
-  const compiled = compile(invalid, { name: 'InvalidTransitiveFit' });
   assert.throws(
-    () => buildTransitiveCallBodyWitnesses(compiled.ast, compiled.ir.formalCalls),
-    /outside formalCalls support|fit|range|argument|interval/i
+    () => compile(invalid, { name: 'InvalidTransitiveFit' }),
+    /outside its declared range|outside formalCalls support|fit|range|argument|interval/i
   );
 });
