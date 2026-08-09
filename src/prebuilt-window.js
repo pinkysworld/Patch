@@ -5,7 +5,7 @@ import {
 } from './prebuilt-native.js';
 import { validateCompiledWindowArtifact } from './window-compiled.js';
 
-export const PATCH_PREBUILT_WINDOW_PAYLOAD_VERSION = '0.3';
+export const PATCH_PREBUILT_WINDOW_PAYLOAD_VERSION = '0.4';
 
 export function buildPrebuiltCompiledWindowPackage(templateBytes, options = {}) {
   const platform = normalizePlatform(options.platform);
