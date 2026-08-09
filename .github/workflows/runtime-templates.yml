@@ -13,7 +13,9 @@ on:
       - src/change.js
       - src/window-events.js
       - src/form-layout.js
+      - src/window-compiled.js
       - src/prebuilt-native.js
+      - src/prebuilt-window.js
       - src/wasm-direct.js
       - src/compiler.js
       - src/cli.js
@@ -32,7 +34,9 @@ on:
       - src/change.js
       - src/window-events.js
       - src/form-layout.js
+      - src/window-compiled.js
       - src/prebuilt-native.js
+      - src/prebuilt-window.js
       - src/wasm-direct.js
       - src/compiler.js
       - src/cli.js
@@ -140,10 +144,10 @@ jobs:
           PATCH_NATIVE_HEADLESS: '1'
         run: ./dist/PatchConsoleRuntime
 
-      - name: Prepare Window smoke payload
+      - name: Prepare compiled Window smoke payload
         shell: bash
         run: |
-          node -e "const fs=require('fs'); fs.writeFileSync('dist/patch-app.json', JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.2',name:'Runtime Smoke',kind:'window',source:fs.readFileSync('examples/checkbox-window.patch','utf8')}));"
+          node --input-type=module -e "import fs from 'node:fs'; import { compile } from './src/compiler.js'; import { buildCompiledWindowArtifact } from './src/window-compiled.js'; const source=fs.readFileSync('examples/checkbox-window.patch','utf8'); const compiled=compile(source,{name:'Runtime Smoke',kind:'window',entry:'checkbox-window.patch'}); const artifact=buildCompiledWindowArtifact(compiled); fs.writeFileSync('dist/patch-app.json',JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.3',name:'Runtime Smoke',kind:'window',execution:'compiled-window-program',compiled:artifact,source}));"
       - name: Configure Linux Electron sandbox helper
         if: matrix.platform == 'linux'
         shell: bash
@@ -163,7 +167,7 @@ jobs:
           $app = Get-ChildItem -Path dist -Recurse -Filter 'PatchWindowRuntime.exe' | Select-Object -First 1
           if (-not $app) { throw 'Generic Windows Window runtime executable was not found.' }
           & $app.FullName --patch-payload-smoke
-      - name: Smoke sandboxed Window IPC on Windows
+      - name: Smoke sandboxed compiled Window IPC on Windows
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
@@ -178,7 +182,7 @@ jobs:
           test -n "$APP"
           cp dist/patch-app.json "$(dirname "$APP")/patch-app.json"
           "$APP/Contents/MacOS/PatchWindowRuntime" --patch-payload-smoke
-      - name: Smoke sandboxed Window IPC on macOS
+      - name: Smoke sandboxed compiled Window IPC on macOS
         if: matrix.platform == 'macos'
         shell: bash
         run: |
@@ -192,7 +196,7 @@ jobs:
           APP=$(find dist -maxdepth 2 -type f -name 'PatchWindowRuntime' -perm -111 | head -1)
           test -n "$APP"
           xvfb-run -a "$APP" --patch-payload-smoke
-      - name: Smoke sandboxed Window IPC on Linux
+      - name: Smoke sandboxed compiled Window IPC on Linux
         if: matrix.platform == 'linux'
         shell: bash
         run: |
@@ -256,11 +260,11 @@ jobs:
           pattern: patch-studio-runtime-*
           path: release
           merge-multiple: true
-      - name: Publish stable runtime assets
+      - name: Publish compiled runtime assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: studio-runtime-v0.2
+          TAG: studio-runtime-v0.3
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.2' --notes 'Hardened prebuilt Windows, macOS and Linux runtimes used by Patch Studio one-click native downloads.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.3' --notes 'Prebuilt Windows, macOS and Linux runtimes with compiled Patch Window program payload support and legacy v0.2 Window-source compatibility.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
