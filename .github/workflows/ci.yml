@@ -55,8 +55,10 @@ jobs:
         run: npm run guarded-callee-trace-certify:example
       - name: Generate Lean finite transitive exact call-tree certificate
         run: npm run transitive-callee-trace-certify:example
-      - name: Execute direct Wasm and generate call-aware transitive runtime certificate
+      - name: Execute direct Wasm and generate invocation-frame runtime certificate
         run: npm run transitive-runtime-certify:example
+      - name: Execute repeated direct Wasm calls and generate invocation-frame evidence
+        run: npm run transitive-runtime-certify:repeated
       - name: Portable application build
         run: npm run build:example
       - name: Bootstrap WebAssembly application build
