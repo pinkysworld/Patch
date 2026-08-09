@@ -1,9 +1,9 @@
 name: Patch Beta27 Arithmetic Calls
 
+# Compatibility gate retained for explicit/manual use. Beta.27 coverage is also
+# exercised by the standard Patch CI and Formal Verification workflows.
 on:
-  pull_request:
-  push:
-    branches: [feature/beta27-arithmetic-concrete-calls]
+  workflow_dispatch:
 
 permissions:
   contents: read
