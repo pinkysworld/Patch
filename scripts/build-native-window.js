@@ -45,7 +45,7 @@ function writeProject(dir, sourceText, name) {
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
     name: safePackageName(name),
     productName: name,
-    version: '0.1.0',
+    version: '0.2.0',
     type: 'module',
     main: 'main.cjs'
   }, null, 2));
@@ -57,7 +57,7 @@ function writeProject(dir, sourceText, name) {
 }
 
 function mainProcessSource(name) {
-  return `const { app, BrowserWindow } = require('electron');\nconst path = require('node:path');\n\nif (process.argv.includes('--patch-smoke')) {\n  app.whenReady().then(() => app.quit());\n} else {\n  app.whenReady().then(() => {\n    const win = new BrowserWindow({\n      width: 900, height: 640, minWidth: 480, minHeight: 360,\n      title: ${JSON.stringify(name)},\n      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }\n    });\n    win.loadFile(path.join(__dirname, 'player.html'));\n  });\n  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });\n}\n`;
+  return `const { app, BrowserWindow } = require('electron');\nconst path = require('node:path');\n\nif (process.argv.includes('--patch-smoke')) {\n  app.whenReady().then(() => app.quit());\n} else {\n  app.whenReady().then(() => {\n    const win = new BrowserWindow({\n      width: 900, height: 640, minWidth: 480, minHeight: 360,\n      title: ${JSON.stringify(name)},\n      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }\n    });\n    win.webContents.setWindowOpenHandler(()=>({action:'deny'}));\n    win.webContents.on('will-navigate',event=>event.preventDefault());\n    win.loadFile(path.join(__dirname, 'player.html'));\n  });\n  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });\n}\n`;
 }
 
 function playerHtml(name) {
@@ -74,4 +74,4 @@ function playerCss() {
 
 function safeName(name) { const cleaned=String(name).trim().replace(/[^A-Za-z0-9 _.-]/g,'').replace(/\s+/g,' ').slice(0,80); return cleaned||'PatchWindowApp'; }
 function safePackageName(name) { return safeName(name).toLowerCase().replace(/[^a-z0-9._-]/g,'-').replace(/-+/g,'-')||'patch-window-app'; }
-function escapeHtml(text) { return String(text).replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
+function escapeHtml(text) { return String(text).replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;' })[c]); }
