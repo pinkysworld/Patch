@@ -72,26 +72,40 @@ theorem boundBodyCoveredBool_sound
         simpa [boundBodyCoveredBool, Bool.and_eq_true] using h
       exact BoundBodyCovered.seq (ihFirst hBoth.1) (ihSecond hBoth.2)
   | repeat count body ih =>
-      exact BoundBodyCovered.repeat (ih (by simpa [boundBodyCoveredBool] using h))
+      apply BoundBodyCovered.repeat
+      apply ih
+      simpa [boundBodyCoveredBool] using h
 
 /-- Every concrete occurrence in a trace is represented by some effect in the
     enclosing semantic signature via the existing `EffectRefines` relation. -/
 def TraceRefinesSignature (trace signature : List Effect) : Prop :=
   ∀ actual, actual ∈ trace → RefinesSignature actual signature
 
+theorem traceRefinesSignature_append
+    {left right signature : List Effect}
+    (hLeft : TraceRefinesSignature left signature)
+    (hRight : TraceRefinesSignature right signature) :
+    TraceRefinesSignature (left ++ right) signature := by
+  intro actual hMem
+  rw [List.mem_append] at hMem
+  cases hMem with
+  | inl hInLeft => exact hLeft actual hInLeft
+  | inr hInRight => exact hRight actual hInRight
+
 /-- Structured exact-body soundness. This lifts beta.26's one-leaf effect theorem
     to a complete concrete trace for sequence/static-repeat bodies. -/
 theorem boundExecRefinesSignature
-    {bindings : BindingList} {signature : List Effect}
-    {stmt : BoundStmt} {trace : List Effect}
-    (hExec : BoundExec bindings stmt trace)
-    (hCovered : BoundBodyCovered signature stmt) :
-    TraceRefinesSignature trace signature := by
+    {bindings : BindingList} {stmt : BoundStmt} {trace : List Effect}
+    (hExec : BoundExec bindings stmt trace) :
+    ∀ {signature : List Effect},
+      BoundBodyCovered signature stmt →
+      TraceRefinesSignature trace signature := by
   induction hExec with
   | skip =>
-      intro actual hMem
+      intro signature hCovered actual hMem
       simp at hMem
   | @emit expected amountExpr actual hEval =>
+      intro signature hCovered
       cases hCovered with
       | emit hExpected =>
           intro effect hMem
@@ -100,27 +114,24 @@ theorem boundExecRefinesSignature
           subst effect
           exact ⟨expected, hExpected, evalBoundQuantitativeEffect_sound hEval⟩
   | @seq first second firstTrace secondTrace hFirst hSecond ihFirst ihSecond =>
+      intro signature hCovered
       cases hCovered with
       | seq hFirstCovered hSecondCovered =>
-          intro actual hMem
-          have hEither : actual ∈ firstTrace ∨ actual ∈ secondTrace := by
-            simpa [List.mem_append] using hMem
-          cases hEither with
-          | inl hLeft => exact ihFirst hFirstCovered actual hLeft
-          | inr hRight => exact ihSecond hSecondCovered actual hRight
+          exact traceRefinesSignature_append
+            (ihFirst hFirstCovered)
+            (ihSecond hSecondCovered)
   | @repeatZero body =>
-      intro actual hMem
+      intro signature hCovered actual hMem
       simp at hMem
   | @repeatSucc count body firstTrace restTrace hFirst hRest ihFirst ihRest =>
+      intro signature hCovered
       cases hCovered with
       | repeat hBodyCovered =>
-          intro actual hMem
-          have hEither : actual ∈ firstTrace ∨ actual ∈ restTrace := by
-            simpa [List.mem_append] using hMem
-          cases hEither with
-          | inl hLeft => exact ihFirst hBodyCovered actual hLeft
-          | inr hRight =>
-              exact ihRest (BoundBodyCovered.repeat hBodyCovered) actual hRight
+          have hRestCovered : BoundBodyCovered signature (.repeat count body) :=
+            BoundBodyCovered.repeat hBodyCovered
+          exact traceRefinesSignature_append
+            (ihFirst hBodyCovered)
+            (ihRest hRestCovered)
 
 /-- Fully executable coverage premise for generated beta.28 evidence. -/
 theorem checkedBoundBodyExecutionRefinesSignature
