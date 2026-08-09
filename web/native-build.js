@@ -2,8 +2,10 @@ import { compile } from '../src/compiler.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { compileToC99 } from '../src/c99.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
+import { buildCompiledWindowArtifact } from '../src/window-compiled.js';
 import { buildLocalNativeKit } from '../src/local-native-kit.js';
 import { buildPrebuiltNativePackage, prebuiltNativeTemplateUrl } from '../src/prebuilt-native.js';
+import { buildPrebuiltCompiledWindowPackage } from '../src/prebuilt-window.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
 const NATIVE_WORKFLOW = 'native-apps.yml';
@@ -45,6 +47,7 @@ buildButton.addEventListener('click', async event => {
   try {
     let preflightText;
     let directWasm = null;
+    let compiledWindow = null;
     if (platform === 'freebsd') {
       if (kind !== 'console') throw new Error('FreeBSD currently supports Console projects only.');
       const preflight = compileToC99(code.value, { name, kind: 'console', entry: 'main.patch' });
@@ -55,7 +58,8 @@ buildButton.addEventListener('click', async event => {
     } else {
       const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
       const support = validateWindowRuntimeSupport(preflight);
-      preflightText = `${support.windows} Patch window${support.windows === 1 ? '' : 's'}, ${support.controls} interactive control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
+      compiledWindow = buildCompiledWindowArtifact(preflight);
+      preflightText = `compiled Window ${compiledWindow.version}, Change IR ${compiledWindow.irVersion}, ${support.windows} form${support.windows === 1 ? '' : 's'}, ${support.controls} control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
     }
 
     const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
@@ -71,17 +75,24 @@ buildButton.addEventListener('click', async event => {
       if (!response.ok) throw new Error(`The prebuilt ${platformLabel(platform)} runtime is not available yet (${response.status}).`);
       status.textContent = kind === 'console'
         ? `Sealing project-specific ${platformLabel(platform)} executable in this browser…`
-        : `Packaging ${platformLabel(platform)} Window app in this browser…`;
-      const ready = buildPrebuiltNativePackage(new Uint8Array(await response.arrayBuffer()), {
-        platform,
-        kind,
-        name,
-        source: code.value,
-        wasm: directWasm?.module ?? null
-      });
+        : `Linking compiled Patch Window program into ${platformLabel(platform)} desktop runtime…`;
+      const templateBytes = new Uint8Array(await response.arrayBuffer());
+      const ready = kind === 'window'
+        ? buildPrebuiltCompiledWindowPackage(templateBytes, {
+            platform,
+            name,
+            compiledWindow,
+            source: code.value
+          })
+        : buildPrebuiltNativePackage(templateBytes, {
+            platform,
+            kind,
+            name,
+            wasm: directWasm?.module ?? null
+          });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
       output.textContent = `Ready app built ✓\n\nTarget: ${platformLabel(platform)}\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token was used. No Node.js, Rust, Cargo or local compiler is required. Unzip the download and open ${prebuiltLauncher(platform, kind, name)}.\n\n${readyPackageNote(kind)}`;
-      status.textContent = `${platformLabel(platform)} ${kindLabel} app downloaded · no token · no toolchain`;
+      status.textContent = `${platformLabel(platform)} ${kindLabel} app downloaded · compiled · no token · no toolchain`;
       return;
     }
 
@@ -153,7 +164,7 @@ function refreshNativePanel() {
       ? 'Ready-app downloads are not available for FreeBSD yet; choose local or cloud mode.'
       : projectKind.value === 'console'
         ? `${platformLabel(platform)} Console: click Build for a sealed project-specific executable. No token or local toolchain.`
-        : `${platformLabel(platform)} Window / GUI: click Build for a ready desktop-player package. No token or local toolchain.`;
+        : `${platformLabel(platform)} Window / GUI: click Build to compile the current Patch program and link it into the ready desktop runtime. No token or local toolchain.`;
   } else if (nativeBuildMode.value === 'local') {
     status.textContent = `${platformLabel(platform)} ${kindLabel}: advanced local toolchain kit.`;
   } else {
@@ -214,13 +225,13 @@ function setBusy(busy, message = null) { buildButton.disabled = busy; nativeBuil
 function workflowFor(platform) { return platform === 'freebsd' ? FREEBSD_WORKFLOW : NATIVE_WORKFLOW; }
 function artifactDescription(platform, kind) {
   if (platform === 'freebsd') return 'FreeBSD native Console package';
-  if (kind === 'window') return `${platformLabel(platform)} standalone GUI package`;
+  if (kind === 'window') return `${platformLabel(platform)} compiled standalone GUI package`;
   return `${platformLabel(platform)} native Console package`;
 }
 function readyPackageNote(kind) {
   return kind === 'console'
     ? 'Studio compiled this Console project to direct Wasm and sealed that checked payload inside a project-specific executable. The platform runtime machine code is prebuilt; this is sealed native packaging, not a claim of direct Patch-to-x86/ARM AOT compilation.'
-    : 'Studio inserted this checked Window project into the prebuilt Patch desktop player. The Window runtime is not yet native AppKit/Win32/GTK widget lowering.';
+    : 'Studio compiled the Patch Window source to a checked Window program artifact and linked that artifact into the prebuilt sandboxed desktop runtime. The finished app executes the compiled program artifact rather than recompiling main.patch at startup. The platform shell is still Electron; native AppKit/Win32/GTK widget lowering remains future work.';
 }
 function prebuiltLauncher(platform, kind, name) {
   if (kind === 'console') {
