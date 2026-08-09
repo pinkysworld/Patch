@@ -3,6 +3,7 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { buildStandaloneWindowWebApp } from './window-webapp.js';
 
 export const PATCH_STANDALONE_WEB_VERSION = '0.2';
+export const PATCH_FORM_LAYOUT_VERSION = '0.1';
 
 export function buildStandaloneWebApp(source, options = {}) {
   const name = safeName(options.name ?? 'PatchApp');
@@ -11,15 +12,39 @@ export function buildStandaloneWebApp(source, options = {}) {
 
   if (requestedKind === 'window') {
     const compiled = compile(source, { ...options, name, kind: 'window', entry });
-    return buildStandaloneWindowWebApp(compiled, name);
+    return addSourceBackedWindowLayout(buildStandaloneWindowWebApp(compiled, name));
   }
 
   if (!requestedKind) {
     const inferred = compile(source, { ...options, name, entry });
-    if (inferred.project.kind === 'window') return buildStandaloneWindowWebApp(inferred, name);
+    if (inferred.project.kind === 'window') return addSourceBackedWindowLayout(buildStandaloneWindowWebApp(inferred, name));
   }
 
   return buildStandaloneConsoleWebApp(source, { ...options, name, kind: 'console', entry });
+}
+
+function addSourceBackedWindowLayout(built) {
+  const layout = windowLayoutManifest(built.compiled?.ast ?? []);
+  if (!layout.windows.some(window => window.width || window.height || window.controls.some(Boolean))) return built;
+  const manifest = JSON.stringify(layout).replace(/</g, '\\u003c');
+  const runtime = `<script data-patch-form-layout>\nconst PATCH_FORM_LAYOUT=${manifest};\nfunction patchApplyFormLayout(){\n  const shells=[...document.querySelectorAll('#app .window')];\n  PATCH_FORM_LAYOUT.windows.forEach((form,index)=>{\n    const shell=shells[index]; if(!shell)return; const body=shell.querySelector('.body'); if(!body)return;\n    if(form.width){shell.style.width=form.width+'px';shell.style.maxWidth='100%';}\n    if(form.height)body.style.minHeight=form.height+'px';\n    if(!form.controls.some(Boolean))return;\n    body.style.position='relative';body.style.display='block';body.style.padding='0';body.style.overflow='hidden';\n    const elements=[...body.children];\n    form.controls.forEach((layout,controlIndex)=>{if(!layout)return;const el=elements[controlIndex];if(!el)return;el.style.position='absolute';el.style.left=layout.x+'px';el.style.top=layout.y+'px';if(layout.width!==null)el.style.width=layout.width+'px';if(layout.height!==null)el.style.height=layout.height+'px';el.style.maxWidth='none';el.style.margin='0';});\n  });\n}\nnew MutationObserver(patchApplyFormLayout).observe(document.getElementById('app'),{childList:true,subtree:true});\npatchApplyFormLayout();\n</script>`;
+  return {
+    ...built,
+    html: built.html.replace('</body>', `${runtime}\n</body>`),
+    metadata: { ...built.metadata, formLayoutVersion: PATCH_FORM_LAYOUT_VERSION }
+  };
+}
+
+function windowLayoutManifest(ast) {
+  return {
+    format: 'patch-source-backed-form-layout',
+    version: PATCH_FORM_LAYOUT_VERSION,
+    windows: ast.filter(node => node.kind === 'window').map(node => ({
+      width: node.width ?? null,
+      height: node.height ?? null,
+      controls: (node.body ?? []).filter(child => child.kind === 'uiControl').map(child => child.layout ?? null)
+    }))
+  };
 }
 
 function buildStandaloneConsoleWebApp(source, options) {
