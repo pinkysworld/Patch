@@ -34,6 +34,13 @@ export function parse(source) {
     if (i >= lines.length || lines[i].indent <= parentIndent) return [];
     return block(lines[i].indent);
   }
+  function windowNode(row, indent, titleExpr, id, width = null, height = null) {
+    if (width !== null && (width < 120 || height < 80)) throw new PatchSyntaxError('A window size must be at least 120 by 80.', row.line);
+    const fields = { kind:'window', titleExpr, body:optionalChildBlock(indent), line:row.line };
+    if (id) fields.id = id;
+    if (width !== null) { fields.width = width; fields.height = height; }
+    return fields;
+  }
   function statement(indent) {
     const row = lines[i++];
     let m;
@@ -42,12 +49,14 @@ export function parse(source) {
       const fields = childBlock(indent,row).map(n=>{ if(n.kind!=='field') throw new PatchSyntaxError('A thing can only contain fields like name = "Sam".',n.line); return n; });
       return {kind:'createThing',name:m[1],fields,line:row.line};
     }
-    if ((m = row.text.match(/^window\s+(.+?)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
-      const width=Number(m[2]); const height=Number(m[3]);
-      if(width<120||height<80) throw new PatchSyntaxError('A window size must be at least 120 by 80.',row.line);
-      return {kind:'window',titleExpr:m[1],width,height,body:optionalChildBlock(indent),line:row.line};
+    if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
+      return windowNode(row,indent,m[1],m[2],Number(m[3]),Number(m[4]));
     }
-    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return {kind:'window',titleExpr:m[1],body:optionalChildBlock(indent),line:row.line};
+    if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*:\s*$/))) return windowNode(row,indent,m[1],m[2]);
+    if ((m = row.text.match(/^window\s+(.+?)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
+      return windowNode(row,indent,m[1],null,Number(m[2]),Number(m[3]));
+    }
+    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return windowNode(row,indent,m[1],null);
 
     const ui=parseUILayout(row.text,row.line);
     if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
@@ -55,6 +64,8 @@ export function parse(source) {
     if ((m = ui.core.match(/^checkbox\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'checkbox',textExpr:m[1],id:m[2],line:row.line},ui.layout);
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^open\s+([A-Za-z_]\w*)$/))) return {kind:'openForm',form:m[1],line:row.line};
+    if ((m = row.text.match(/^close\s+([A-Za-z_]\w*)$/))) return {kind:'closeForm',form:m[1],line:row.line};
     if ((m = row.text.match(/^allow\s+([A-Za-z_]\w*)\s*:\s*$/))) {
       const rules=childBlock(indent,row); for(const rule of rules) if(rule.kind!=='capRule') throw new PatchSyntaxError('An allow block can only contain rules like player.score may increase up to 10.',rule.line);
       return {kind:'allow',name:m[1],rules,line:row.line};
