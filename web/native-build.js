@@ -2,6 +2,7 @@ import { compile } from '../src/compiler.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { compileToC99 } from '../src/c99.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
+import { buildLocalNativeKit } from '../src/local-native-kit.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
 const NATIVE_WORKFLOW = 'native-apps.yml';
@@ -14,8 +15,10 @@ const buildTarget = document.querySelector('#buildTarget');
 const buildButton = document.querySelector('#build');
 const panel = document.querySelector('#nativeBuildPanel');
 const tokenInput = document.querySelector('#nativeBuildToken');
+const tokenLabel = tokenInput.closest('label');
 const status = document.querySelector('#nativeBuildStatus');
 const output = document.querySelector('#output');
+const nativeBuildMode = installNativeModeControls();
 
 const nativeTargets = new Map([
   ['native-windows', 'windows'],
@@ -26,6 +29,7 @@ const nativeTargets = new Map([
 
 buildTarget.addEventListener('change', refreshNativePanel);
 projectKind.addEventListener('change', refreshNativePanel);
+nativeBuildMode.addEventListener('change', refreshNativePanel);
 refreshNativePanel();
 
 // Capture native targets before the ordinary browser-local build handler.
@@ -55,21 +59,30 @@ buildButton.addEventListener('click', async event => {
       preflightText = `${support.windows} Patch window${support.windows === 1 ? '' : 's'}, ${support.controls} interactive control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
     }
 
+    const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
+    if (nativeBuildMode.value === 'local') {
+      setBusy(true, `Preparing token-free ${platformLabel(platform)} ${kindLabel} kit…`);
+      const kit = buildLocalNativeKit(code.value, { name, kind, platform });
+      downloadBytes(kit.bytes, kit.filename, 'application/zip');
+      output.textContent = `Local native build kit ready ✓\n\nTarget: ${platformLabel(platform)}\nType: ${kindLabel}\nPreflight passed: ${preflightText}.\n\nNo GitHub token was used and your Patch source was not uploaded. Unzip ${kit.filename} and run ${localLauncher(platform)}. The finished app will be written to the kit's dist folder.\n\n${localRequirement(platform, kind)}\n\nIf you prefer not to install a local toolchain, switch Native build to “GitHub Actions cloud build” and use the optional token mode.`;
+      status.textContent = `${platformLabel(platform)} local build kit downloaded · no token`;
+      return;
+    }
+
     const token = tokenInput.value.trim();
     if (!token) {
-      throw new Error('Paste a fine-grained GitHub token in the Native build bar. It needs Actions read/write access to pinkysworld/Patch. The token is kept only in this page and is never saved to localStorage.');
+      throw new Error('Cloud build mode needs a fine-grained GitHub token with Actions read/write access to pinkysworld/Patch. Switch Native build to “Local build kit (no token)” to build without any GitHub credential.');
     }
 
     const sourceBase64 = utf8Base64(code.value);
     if (sourceBase64.length > 60000) {
-      throw new Error('This Studio source is too large for the current GitHub Actions dispatch channel. Use the Patch CLI/native workflow with a repository source file for larger projects.');
+      throw new Error('This Studio source is too large for the current GitHub Actions dispatch channel. Use the token-free local build kit or the Patch CLI/native workflow with a repository source file for larger projects.');
     }
 
     const requestId = makeRequestId();
-    const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
     const workflow = workflowFor(platform);
-    setBusy(true, `Starting ${platformLabel(platform)} ${kindLabel} build…`);
-    output.textContent = `${platformLabel(platform)} ${kindLabel} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to ${workflow === FREEBSD_WORKFLOW ? 'Patch FreeBSD C99' : 'Patch Native Apps'}…`;
+    setBusy(true, `Starting ${platformLabel(platform)} ${kindLabel} cloud build…`);
+    output.textContent = `${platformLabel(platform)} ${kindLabel} cloud build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to ${workflow === FREEBSD_WORKFLOW ? 'Patch FreeBSD C99' : 'Patch Native Apps'}…`;
 
     const inputs = {
       source_b64: sourceBase64,
@@ -90,7 +103,7 @@ buildButton.addEventListener('click', async event => {
       throw new Error(`GitHub build finished with '${run.conclusion}'. Open ${run.html_url} for the build log.`);
     }
 
-    status.textContent = 'Build complete. Preparing download…';
+    status.textContent = 'Cloud build complete. Preparing download…';
     const artifacts = await apiJson(`${API}/repos/${REPOSITORY}/actions/runs/${run.id}/artifacts`, token);
     const expectedName = `patch-${platform}-${requestId}`;
     const artifact = (artifacts.artifacts ?? []).find(item => item.name === expectedName && !item.expired);
@@ -98,7 +111,7 @@ buildButton.addEventListener('click', async event => {
 
     await downloadArtifact(artifact, token, `${name}-${platform}-${kind}-build.zip`);
     output.textContent = `Built ${name} for ${platformLabel(platform)} ✓\n\nType: ${kindLabel}\nThe downloaded GitHub Actions artifact contains the platform package produced from the code currently in Patch Studio.\n\n${artifactDescription(platform, kind)}\n\nBuild run: ${run.html_url}`;
-    status.textContent = `${platformLabel(platform)} ${kindLabel} build downloaded`;
+    status.textContent = `${platformLabel(platform)} ${kindLabel} cloud build downloaded`;
   } catch (error) {
     output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
     status.textContent = 'Native build stopped';
@@ -107,15 +120,32 @@ buildButton.addEventListener('click', async event => {
   }
 }, true);
 
+function installNativeModeControls() {
+  const label = document.createElement('label');
+  label.append('Native build ');
+  const select = document.createElement('select');
+  select.id = 'nativeBuildMode';
+  select.setAttribute('aria-label', 'Native build mode');
+  select.innerHTML = '<option value="local">Local build kit (no token)</option><option value="cloud">GitHub Actions cloud build</option>';
+  label.append(select);
+  panel.insertBefore(label, tokenLabel);
+  tokenLabel.firstChild.textContent = 'GitHub token (cloud only) ';
+  tokenInput.placeholder = 'Optional cloud-build token';
+  return select;
+}
+
 function refreshNativePanel() {
   const platform = nativeTargets.get(buildTarget.value);
   panel.hidden = !platform;
+  tokenLabel.hidden = nativeBuildMode.value !== 'cloud';
   if (platform && !buildButton.disabled) {
     const kindLabel = projectKind.value === 'window' ? 'Window / GUI' : 'Console';
     if (platform === 'freebsd' && projectKind.value === 'window') {
       status.textContent = 'FreeBSD currently supports Console builds only; Unix GUI packaging is still on the roadmap.';
+    } else if (nativeBuildMode.value === 'local') {
+      status.textContent = `${platformLabel(platform)} ${kindLabel}: token-free local kit. Source stays on this device.`;
     } else {
-      status.textContent = `${platformLabel(platform)} ${kindLabel} build via GitHub Actions. Token is not saved.`;
+      status.textContent = `${platformLabel(platform)} ${kindLabel} cloud build via GitHub Actions. Token is optional unless you choose this mode and is never saved.`;
     }
   }
 }
@@ -128,11 +158,11 @@ async function waitForRun(token, requestId, platform, kindLabel, workflow) {
     if (run) {
       seen = run;
       const state = run.status === 'completed' ? run.conclusion : run.status;
-      status.textContent = `${platformLabel(platform)} ${kindLabel} build: ${state}…`;
-      output.textContent = `${platformLabel(platform)} ${kindLabel} build\n\nGitHub Actions run: ${state}\n${run.html_url}\n\nPatch Studio will download the artifact automatically when the build succeeds.`;
+      status.textContent = `${platformLabel(platform)} ${kindLabel} cloud build: ${state}…`;
+      output.textContent = `${platformLabel(platform)} ${kindLabel} cloud build\n\nGitHub Actions run: ${state}\n${run.html_url}\n\nPatch Studio will download the artifact automatically when the build succeeds.`;
       if (run.status === 'completed') return run;
     } else if (attempt > 3) {
-      status.textContent = `${platformLabel(platform)} ${kindLabel} build queued…`;
+      status.textContent = `${platformLabel(platform)} ${kindLabel} cloud build queued…`;
     }
     await sleep(5000);
   }
@@ -155,7 +185,7 @@ async function apiJson(url, token, options = {}) {
     let detail = '';
     try { detail = (await response.json()).message ?? ''; } catch { detail = await response.text(); }
     if (response.status === 401 || response.status === 403) {
-      throw new Error(`GitHub rejected the build token (${response.status}). Use a fine-grained token for pinkysworld/Patch with Actions read/write permission.${detail ? ` ${detail}` : ''}`);
+      throw new Error(`GitHub rejected the cloud-build token (${response.status}). Use a fine-grained token for pinkysworld/Patch with Actions read/write permission, or switch to the token-free local build kit.${detail ? ` ${detail}` : ''}`);
     }
     throw new Error(`GitHub API ${response.status}: ${detail || response.statusText}`);
   }
@@ -171,7 +201,14 @@ async function downloadArtifact(artifact, token, filename) {
     }
   });
   if (!response.ok) throw new Error(`Could not download native build artifact (${response.status}).`);
-  const blob = await response.blob();
+  downloadBlob(await response.blob(), filename);
+}
+
+function downloadBytes(bytes, filename, type) {
+  downloadBlob(new Blob([bytes], { type }), filename);
+}
+
+function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -193,6 +230,7 @@ function showOutput() {
 
 function setBusy(busy, message = null) {
   buildButton.disabled = busy;
+  nativeBuildMode.disabled = busy;
   if (message) status.textContent = message;
   if (!busy) refreshNativePanel();
 }
@@ -211,6 +249,18 @@ function artifactDescription(platform, kind) {
   if (platform === 'macos') return 'macOS: native .app containing the direct Patch Wasm host';
   if (platform === 'windows') return 'Windows: native .exe';
   return 'Linux: native executable';
+}
+
+function localLauncher(platform) {
+  if (platform === 'windows') return 'build.cmd';
+  if (platform === 'macos') return 'build.command';
+  return 'build.sh';
+}
+
+function localRequirement(platform, kind) {
+  if (platform === 'freebsd') return 'Local requirement: Node.js 22+ and the FreeBSD C compiler (cc).';
+  if (kind === 'window') return 'Local requirement: Node.js 22+. The launcher downloads Electron Packager when it builds.';
+  return 'Local requirement: Node.js 22+ and Rust/Cargo for the current Wasmtime native Console host.';
 }
 
 function utf8Base64(text) {
