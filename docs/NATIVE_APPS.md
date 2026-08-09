@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.29** · Change IR **0.10**
+Status: **0.2.0-beta.30** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.29 strengthens research certificate coverage and does **not** change Change IR or the Window event contract.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.30 strengthens research certificate coverage and does **not** change Change IR, packaging semantics or the Window event contract.
 
 ## Build matrix
 
@@ -26,7 +26,7 @@ For Windows, macOS and Linux, the ordinary Studio path is **Ready app download (
 
 ## Sealed project-specific Console binaries
 
-Console builds no longer download a generic executable plus `app.wasm` and `patch-app.json` sidecars. Studio fetches an unsigned raw Console runtime for the selected OS, compiles the current Patch Console program to direct Wasm, appends a versioned CRC-checked metadata + Wasm payload to the runtime executable, and creates a project-named package.
+Studio fetches a raw Console runtime for the selected OS, compiles the current Patch Console program to direct Wasm, appends a versioned CRC-checked metadata + Wasm payload to the runtime executable, and creates a project-named package.
 
 ```text
 Patch Console source in Studio
@@ -39,15 +39,15 @@ Patch Console source in Studio
     -> ZIP for download
 ```
 
-The runner reads the sealed payload from its own executable. The footer records format version, metadata length, Wasm length and CRC32 values so malformed or corrupted payloads fail closed. Legacy `app.wasm` + `patch-app.json` sidecars remain supported by the runtime for compatibility with earlier downloads.
+The runner reads the sealed payload from its own executable. The footer records format version, metadata length, Wasm length and CRC32 values so malformed or corrupted payloads fail closed. Legacy `app.wasm` + `patch-app.json` sidecars remain supported for compatibility with earlier downloads.
 
-This is a **fresh project-specific executable assembly**, but it is not presented as a full Patch-to-machine-code AOT compiler. The OS runtime machine code is still a prebuilt trusted component. A future direct-native backend would instead lower Patch IR itself to target machine code and link it for PE/COFF, Mach-O and ELF.
+This is fresh project-specific executable assembly, not a claim that Patch IR is directly lowered to PE/COFF, Mach-O or ELF machine code in the browser. A future direct-native backend would perform that lowering explicitly.
 
-On macOS the Studio-created sealed Console app is assembled from an unsigned raw runtime because changing a signed Mach-O after signing invalidates the signature. Developer ID signing/notarization therefore remains separate release infrastructure.
+On macOS, Developer ID signing/notarization remains separate release infrastructure.
 
 ## One-click Window packaging
 
-Window projects continue to use the generated desktop player architecture:
+Window projects use the generated desktop player architecture:
 
 ```text
 Patch Window source in Studio
@@ -57,9 +57,9 @@ Patch Window source in Studio
     -> download ready ZIP
 ```
 
-`src/prebuilt-native.js` handles both paths: sealed executable assembly for Console projects and ZIP payload injection for Window projects.
+`src/prebuilt-native.js` handles sealed executable assembly for Console projects and ZIP payload injection for Window projects.
 
-The generic runtime packages are built by `.github/workflows/runtime-templates.yml` on actual Windows, macOS and Linux runners. CI executes a sealed Console binary on every target OS. The Window player uses `sandbox: true`, strict payload schema/size validation and a minimal IPC bridge; that sandboxed bridge is also exercised on Windows, macOS and Linux before runtime assets are published.
+The generic runtime packages are built by `.github/workflows/runtime-templates.yml` on actual Windows, macOS and Linux runners. CI executes a sealed Console binary on every target OS. The Window player uses `sandbox: true`, strict payload schema/size validation and a minimal IPC bridge; that sandboxed bridge is exercised on all three target OS families before runtime assets are published.
 
 ## Window preflight and semantic events
 
@@ -69,8 +69,6 @@ The shared **Window preflight** validates normalized Window IR before Web or des
 - input `changed`, with current control text exposed as transient event-local `value`.
 
 The input edit itself does not write persistent Patch state. Source must use ordinary semantic `change` to commit it. Duplicate control ids, missing controls and unsupported event/control pairs are rejected before packaging.
-
-Generated Window Web HTML is executed in regression tests. Windows/macOS/Linux desktop players use the shared `src/window-events.js` semantic adapter.
 
 ## Browser and WebAssembly
 
@@ -84,22 +82,34 @@ Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the v
 
 ## Formal assurance is separate from packaging
 
-`patch runtime-certify` covers the beta.23 guard-aware direct-runtime fragment. `patch call-certify` covers beta.25 abstract finite acyclic recipe composition.
-
-Concrete call research artifacts are reproducible with:
+Research artifacts are reproducible with:
 
 ```bash
 npm run concrete-call-certify:example
 npm run arithmetic-call-certify:example
 npm run callee-trace-certify:example
 npm run guarded-callee-trace-certify:example
+npm run transitive-callee-trace-certify:example
 ```
 
-Beta.26 checks exact binding and direct quantitative leaf refinement. Beta.27 preserves formal arithmetic such as `bonus + 1` and `amount * 2` through the production certificate path. Beta.28 extends the exact call layer to a complete semantic-effect trace for direct quantitative sequence/static-repeat callee bodies. Beta.29 adds exact formal `GuardExpr` branch selection under exact recipe-parameter bindings.
+Beta.28/29 establish exact call-free structured and guard-selected callee traces. Beta.30 adds finite nested/transitive exact call-tree traces in `PatchCallTree.lean`.
 
-`GeneratedConcreteCallBodyCertificate.lean` remains the beta.28 branch-free regression certificate. `GeneratedGuardedCallBodyCertificate.lean` checks exact true/false guard choices from `examples/formal-callee-guard.patch`, evaluates the selected complete trace in Lean, requires both branch arms to be covered by the callee signature, and imports the selected trace into the caller signature.
+For the supported beta.30 fragment, Lean independently checks:
 
-This assurance does **not** alter the trust boundary of the platform runtime and does not yet prove nested-call concrete callee execution, complete transitive call traces, or production-Wasm call equivalence.
+- exact outer call binding;
+- beta.25 abstract interval fit for concrete outer arguments;
+- strict outer call rank decrease;
+- every nested `RangeExpr` argument and exact positional binding;
+- strict rank decrease at every nested edge;
+- exact `GuardExpr` choices and literal/static repeats;
+- direct quantitative effects;
+- nested body coverage by each callee semantic signature;
+- edge-by-edge import into enclosing caller signatures;
+- equality of the complete selected transitive trace.
+
+`GeneratedTransitiveCallBodyCertificate.lean` is regenerated in focused beta.30 CI and standard Formal CI. The beta.29 guarded certificate remains regression evidence.
+
+This assurance does **not** alter the trust boundary of the platform runtime. Root-program certification, recursion/cycles, dynamic repeat, persistent-state exact guards, returns and **production JavaScript/direct-Wasm call equivalence** remain outside beta.30.
 
 ## Portable C99
 
@@ -128,7 +138,7 @@ Local toolchain kit
 
 Only the cloud mode needs a fine-grained GitHub token with Actions read/write permission; Studio does not save it. The local kit needs the relevant local toolchain. FreeBSD currently remains on these advanced/local paths because a prebuilt FreeBSD runtime is not published yet.
 
-Window packages are standalone but are **not yet native-widget lowering** to AppKit, Win32 or GTK. Native AppKit, Win32 and a portable Unix GUI layer remain roadmap items.
+Window packages are standalone but are **not yet native-widget lowering** to AppKit, Win32 or a portable Unix widget layer.
 
 ## Portability claim
 
