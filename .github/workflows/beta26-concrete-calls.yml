@@ -1,9 +1,9 @@
 name: Patch Beta26 Concrete Calls
 
+# Compatibility gate retained for explicit/manual use. Beta.26 coverage is also
+# exercised by the standard Patch CI and Formal Verification workflows.
 on:
-  pull_request:
-  push:
-    branches: [feature/beta26-concrete-call-substitution-v2]
+  workflow_dispatch:
 
 permissions:
   contents: read
