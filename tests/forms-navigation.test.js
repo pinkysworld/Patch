@@ -66,9 +66,17 @@ test('Window build validates duplicate and unknown Form names before packaging',
     () => validateWindowRuntimeSupport(compile(unknown, { kind: 'window' })),
     /Form 'setings' is not defined/
   );
+  assert.throws(
+    () => buildCompiledWindowArtifact(compile(unknown, { kind: 'window', name: 'BrokenNavigation' })),
+    /Form 'setings' is not defined/
+  );
   const duplicate = source.replace('window "Settings" as settings', 'window "Settings" as main');
   assert.throws(
     () => validateWindowRuntimeSupport(compile(duplicate, { kind: 'window' })),
+    /Form name 'main' is declared more than once/
+  );
+  assert.throws(
+    () => buildCompiledWindowArtifact(compile(duplicate, { kind: 'window', name: 'BrokenNavigation' })),
     /Form name 'main' is declared more than once/
   );
 });
