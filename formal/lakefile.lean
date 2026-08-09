@@ -50,3 +50,6 @@ lean_lib PatchCallBodyImport where
 
 lean_lib PatchCallTree where
   srcDir := "."
+
+lean_lib PatchCallRuntime where
+  srcDir := "."
