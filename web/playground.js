@@ -356,6 +356,7 @@ function renderWindows(container, windows, interactive) {
   windows.forEach((model, windowIndex) => {
     const shell = document.createElement('section');
     shell.className = 'patch-window';
+    shell.hidden = Boolean(interactive && model.visible === false);
     const title = document.createElement('div');
     title.className = 'patch-window-title';
     title.textContent = model.title;
