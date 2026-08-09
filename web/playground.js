@@ -380,6 +380,17 @@ function renderWindows(container, windows, interactive) {
         el.placeholder = control.id ?? '';
         if (interactive) el.addEventListener('input', () => trigger(control.id, 'changed', { value: el.value }));
         else el.readOnly = true;
+      } else if (control.type === 'checkbox') {
+        el = document.createElement('label');
+        el.className = 'patch-checkbox';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = control.value === true;
+        const text = document.createElement('span');
+        text.textContent = control.text;
+        el.append(input, text);
+        if (interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: input.checked }));
+        else input.disabled = true;
       }
       if (!el) return;
       if (!interactive) decorateDesignerControl(el, windowIndex, controlIndex, control);
