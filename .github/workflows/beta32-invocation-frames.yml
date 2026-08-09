@@ -24,13 +24,13 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - name: Run beta32 frame/runtime regression tests
-        run: node --test tests/direct-trace-validator.test.js tests/direct-effect-validator.test.js tests/transitive-call-body.test.js tests/transitive-call-body-certificate.test.js tests/transitive-runtime-correspondence.test.js tests/transitive-runtime-certificate.test.js
+        run: node --test tests/direct-trace-validator.test.js tests/direct-effect-validator.test.js tests/direct-invocation-frame-effects.test.js tests/transitive-call-body.test.js tests/transitive-call-body-certificate.test.js tests/transitive-runtime-correspondence.test.js tests/transitive-runtime-certificate.test.js
       - name: Generate beta30 exact call-tree regression certificate
         run: npm run transitive-callee-trace-certify:example
       - name: Execute direct Wasm and generate beta32 single-call frame certificate
         run: npm run transitive-runtime-certify:example
-      - name: Execute direct Wasm and generate beta32 repeated-call frame certificate
-        run: node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean
+      - name: Execute repeated direct Wasm calls and generate beta32 frame certificate
+        run: npm run transitive-runtime-certify:repeated
       - name: Install pinned Lean
         shell: bash
         run: |
@@ -38,7 +38,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build beta30/beta31 formal bridge used by beta32 evidence
+      - name: Build call-tree/runtime formal bridge used by beta32 evidence
         working-directory: formal
         shell: bash
         run: |
