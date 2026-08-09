@@ -22,10 +22,10 @@ for (const needle of ['./style.css','./manifest.webmanifest','./native-build.js'
 for (const id of ['code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus']) requireText('index', html, `id="${id}"`);
 for (const phrase of [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10', 'Change Contract', 'Standalone Window Web App',
-  'Arithmetic concrete calls', 'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add', 'amount * 2',
-  'checkedConcreteBoundEffectRefinesCallerSignature', 'production JavaScript/direct-Wasm call equivalence',
-  'Semantic input events', 'event-local', 'Window preflight', 'Windows App', 'macOS App', 'Linux App',
-  'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
+  'Beta.28 exact structured callee traces', 'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBody.lean',
+  'PatchCallBodyImport.lean', 'evalBoundStmtEqBool', 'checkedConcreteCallBodyRefinesCallerSignature',
+  'production JavaScript/direct-Wasm call equivalence', 'Semantic input events', 'event-local', 'Window preflight',
+  'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
 ]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
 
