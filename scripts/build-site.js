@@ -19,11 +19,11 @@ const SITE_SRC_FILES = [
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const name of ['index.html', 'style.css', 'designer-inspector.css', 'manifest.webmanifest', 'icon.svg']) {
+for (const name of ['index.html', 'style.css', 'designer-inspector.css', 'forms-designer.css', 'manifest.webmanifest', 'icon.svg']) {
   fs.copyFileSync(path.join(sourceWeb, name), path.join(out, name));
 }
 
-for (const name of ['playground.js', 'native-build.js', 'sw.js']) {
+for (const name of ['playground.js', 'forms-designer.js', 'native-build.js', 'sw.js']) {
   const content = fs.readFileSync(path.join(sourceWeb, name), 'utf8')
     .replaceAll("'../src/", "'./src/")
     .replaceAll('"../src/', '"./src/');
