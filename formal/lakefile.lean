@@ -32,3 +32,9 @@ lean_lib PatchGuarded where
 
 lean_lib PatchCalls where
   srcDir := "."
+
+lean_lib PatchCallSubstitution where
+  srcDir := "."
+
+lean_lib PatchCallRefinement where
+  srcDir := "."
