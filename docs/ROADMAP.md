@@ -70,7 +70,7 @@ The coarse baseline is an internal ablation, not a representation of any named p
 - [x] coherent multi-state checkout application under `case-studies/checkout-extension/`
 - [x] protected `checkout_extension` composes `apply_discount` and `grant_loyalty` helpers
 - [x] safe case executes through real direct Wasm to `balance=80`, `points=8`, `cashback=0`
-- [x] protected entry signature must contain both transitive helper effects and bounds
+- [x] protected entry signature must contain both transitive helper effects and their bounds
 - [x] reward-magnitude escalation variant
 - [x] balance-direction escalation variant
 - [x] unauthorized cashback-target variant
@@ -104,6 +104,11 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
 - [x] ready Windows/macOS/Linux Window packages
+- [x] Window build produces `patch-compiled-window-program` before desktop packaging
+- [x] local/cloud Window apps execute the compiled artifact instead of reparsing `main.patch`
+- [x] token-free Ready App payload v0.3 links the same compiled Window artifact into the sandboxed runtime
+- [x] runtime-template release versioned separately as `studio-runtime-v0.3`
+- [x] packaged Window smoke starts the real renderer and requires a rendered compiled Patch Form
 - [x] FreeBSD Console via portable C99
 - [ ] native AppKit/Win32/portable Unix widget lowering
 - [ ] signing/notarization/installers
@@ -150,3 +155,4 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 9. Direct-Wasm/C99 support remains narrower than the full language.
 10. Visual Form metadata remains source-backed UI structure and does not redefine semantic Change IR.
 11. GUI input widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.
+12. Desktop GUI apps must consume a build-time compiled Patch artifact; runtime reparsing is legacy compatibility only, not the current build path.

@@ -2,10 +2,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { compile } from '../src/compiler.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
+import { buildCompiledWindowArtifact } from '../src/window-compiled.js';
 
 const ELECTRON_VERSION = '43.2.0';
 const PACKAGER_VERSION = '20.0.4';
@@ -21,11 +23,24 @@ if (!sourcePath) {
 
 const source = fs.readFileSync(path.resolve(sourcePath), 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-validateWindowRuntimeSupport(compiled);
+const support = validateWindowRuntimeSupport(compiled);
+const windowProgram = buildCompiledWindowArtifact(compiled);
+const buildMetadata = {
+  format: 'patch-window-desktop-build',
+  version: '0.1',
+  appName,
+  irVersion: windowProgram.irVersion,
+  compiledWindowVersion: windowProgram.version,
+  windows: support.windows,
+  controls: support.controls,
+  events: support.events,
+  sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
+  execution: 'compiled-window-program'
+};
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-window-app-'));
 
 try {
-  writeProject(temp, source, appName);
+  writeProject(temp, windowProgram, buildMetadata, appName);
   fs.mkdirSync(outDir, { recursive: true });
   const platform = process.platform === 'win32' ? 'win32' : process.platform === 'darwin' ? 'darwin' : 'linux';
   const arch = platform === 'darwin' ? 'universal' : process.arch === 'arm64' ? 'arm64' : 'x64';
@@ -36,12 +51,13 @@ try {
   ], { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Electron Packager exited with status ${result.status}.`);
-  console.log(`Built Patch window application for ${platform}/${arch} in ${outDir}`);
+  console.log(`Built compiled Patch Window application for ${platform}/${arch} in ${outDir}`);
+  console.log(`Compiled Window artifact ${windowProgram.version}, Change IR ${windowProgram.irVersion}, source sha256 ${buildMetadata.sourceSha256}`);
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }
 
-function writeProject(dir, sourceText, name) {
+function writeProject(dir, artifact, metadata, name) {
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
     name: safePackageName(name),
     productName: name,
@@ -52,12 +68,13 @@ function writeProject(dir, sourceText, name) {
   fs.writeFileSync(path.join(dir, 'main.cjs'), mainProcessSource(name));
   fs.writeFileSync(path.join(dir, 'player.html'), playerHtml(name));
   fs.writeFileSync(path.join(dir, 'player.js'), playerJs());
-  fs.writeFileSync(path.join(dir, 'program.js'), `export const PATCH_SOURCE = ${JSON.stringify(sourceText)};\nexport const PATCH_APP_NAME = ${JSON.stringify(name)};\n`);
+  fs.writeFileSync(path.join(dir, 'program.js'), `export const PATCH_WINDOW_PROGRAM = ${JSON.stringify(artifact)};\n`);
+  fs.writeFileSync(path.join(dir, 'patch-build.json'), JSON.stringify(metadata, null, 2));
   fs.cpSync(path.join(root, 'src'), path.join(dir, 'src'), { recursive: true });
 }
 
 function mainProcessSource(name) {
-  return `const { app, BrowserWindow } = require('electron');\nconst path = require('node:path');\n\nif (process.argv.includes('--patch-smoke')) {\n  app.whenReady().then(() => app.quit());\n} else {\n  app.whenReady().then(() => {\n    const win = new BrowserWindow({\n      width: 900, height: 640, minWidth: 480, minHeight: 360,\n      title: ${JSON.stringify(name)},\n      webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }\n    });\n    win.webContents.setWindowOpenHandler(()=>({action:'deny'}));\n    win.webContents.on('will-navigate',event=>event.preventDefault());\n    win.loadFile(path.join(__dirname, 'player.html'));\n  });\n  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });\n}\n`;
+  return `const { app, BrowserWindow } = require('electron');\nconst path = require('node:path');\nconst smoke=process.argv.includes('--patch-smoke');\napp.whenReady().then(() => {\n  const win = new BrowserWindow({\n    width: 900, height: 640, minWidth: 480, minHeight: 360,\n    title: ${JSON.stringify(name)}, show: !smoke,\n    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }\n  });\n  win.webContents.setWindowOpenHandler(()=>({action:'deny'}));\n  win.webContents.on('will-navigate',event=>event.preventDefault());\n  if(smoke){\n    win.webContents.once('did-finish-load',async()=>{\n      try{\n        const ok=await win.webContents.executeJavaScript("new Promise(resolve=>setTimeout(()=>resolve(Boolean(document.documentElement.dataset.patchCompiled==='1'&&document.querySelector('.window')&&!document.querySelector('[data-patch-build-error]'))),100))");\n        if(!ok)throw new Error('Packaged Patch GUI did not execute its compiled Window artifact.');\n        app.quit();\n      }catch(error){console.error(error?.stack||error?.message||String(error));process.exitCode=1;app.quit();}\n    });\n  }\n  win.loadFile(path.join(__dirname, 'player.html'));\n}).catch(error=>{console.error(error?.stack||error?.message||String(error));process.exitCode=1;app.quit();});\napp.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });\n`;
 }
 
 function playerHtml(name) {
@@ -65,7 +82,7 @@ function playerHtml(name) {
 }
 
 function playerJs() {
-  return `import { PatchInterpreter } from './src/interpreter.js';\nimport { parse } from './src/parser.js';\nimport { buildFormLayoutManifest, applyFormLayout } from './src/form-layout.js';\nimport { triggerWindowEvent } from './src/window-events.js';\nimport { PATCH_SOURCE } from './program.js';\nconst appEl=document.querySelector('#app'); const output=document.querySelector('#output'); let runtime; const formLayout=buildFormLayoutManifest(parse(PATCH_SOURCE));\ntry { runtime=new PatchInterpreter(); const result=runtime.run(PATCH_SOURCE); render(result.ui); showOutput(result.output); } catch(error){ fail(error); }\nfunction render(windows){ appEl.innerHTML=''; if(!windows?.length){ appEl.innerHTML='<section class="console"><h1>Patch</h1><p>No window is defined in this project.</p></section>'; return; } for(const model of windows){ const shell=document.createElement('section'); shell.className='window'; const title=document.createElement('header'); title.textContent=model.title; const body=document.createElement('div'); body.className='body'; for(const control of model.controls){ if(control.type==='text'){const el=document.createElement('p'); el.className='text'; el.textContent=control.text; body.append(el);} else if(control.type==='button'){const el=document.createElement('button'); el.textContent=control.text; el.addEventListener('click',()=>trigger(control.id,'clicked')); body.append(el);} else if(control.type==='input'){const el=document.createElement('input'); el.value=control.value??''; el.placeholder=control.id??''; el.addEventListener('input',()=>trigger(control.id,'changed',{value:el.value})); body.append(el);} else if(control.type==='checkbox'){const label=document.createElement('label');label.className='checkbox';const el=document.createElement('input');el.type='checkbox';el.checked=control.value===true;const text=document.createElement('span');text.textContent=control.text;el.addEventListener('change',()=>trigger(control.id,'changed',{value:el.checked}));label.append(el,text);body.append(label);} } shell.append(title,body); appEl.append(shell); } applyFormLayout(appEl,formLayout); }\nfunction trigger(control,event,payload={}){ try { const result=triggerWindowEvent(runtime,control,event,payload); render(result.ui); showOutput(result.output); } catch(error){ fail(error); } }\nfunction showOutput(lines){ if(lines?.length){ output.hidden=false; output.textContent=lines.join('\\n'); } }\nfunction fail(error){ appEl.innerHTML='<section class="console"><h1>Patch stopped</h1><p></p></section>'; appEl.querySelector('p').textContent=error?.message??String(error); }\n`;
+  return `import { PatchInterpreter } from './src/interpreter.js';\nimport { applyFormLayout } from './src/form-layout.js';\nimport { triggerWindowEvent } from './src/window-events.js';\nimport { runCompiledWindow, validateCompiledWindowArtifact } from './src/window-compiled.js';\nimport { PATCH_WINDOW_PROGRAM } from './program.js';\nconst appEl=document.querySelector('#app'); const output=document.querySelector('#output'); let runtime; let artifact;\ntry { artifact=validateCompiledWindowArtifact(PATCH_WINDOW_PROGRAM); runtime=new PatchInterpreter(); const result=runCompiledWindow(runtime,artifact); document.documentElement.dataset.patchCompiled='1'; render(result.ui); showOutput(result.output); } catch(error){ fail(error); }\nfunction render(windows){ appEl.innerHTML=''; if(!windows?.length){ appEl.innerHTML='<section class="console"><h1>Patch</h1><p>No window is defined in this project.</p></section>'; return; } for(const model of windows){ const shell=document.createElement('section'); shell.className='window'; const title=document.createElement('header'); title.textContent=model.title; const body=document.createElement('div'); body.className='body'; for(const control of model.controls){ if(control.type==='text'){const el=document.createElement('p'); el.className='text'; el.textContent=control.text; body.append(el);} else if(control.type==='button'){const el=document.createElement('button'); el.textContent=control.text; el.addEventListener('click',()=>trigger(control.id,'clicked')); body.append(el);} else if(control.type==='input'){const el=document.createElement('input'); el.value=control.value??''; el.placeholder=control.id??''; el.addEventListener('input',()=>trigger(control.id,'changed',{value:el.value})); body.append(el);} else if(control.type==='checkbox'){const label=document.createElement('label');label.className='checkbox';const el=document.createElement('input');el.type='checkbox';el.checked=control.value===true;const text=document.createElement('span');text.textContent=control.text;el.addEventListener('change',()=>trigger(control.id,'changed',{value:el.checked}));label.append(el,text);body.append(label);} } shell.append(title,body); appEl.append(shell); } applyFormLayout(appEl,artifact.formLayout); }\nfunction trigger(control,event,payload={}){ try { const result=triggerWindowEvent(runtime,control,event,payload); render(result.ui); showOutput(result.output); } catch(error){ fail(error); } }\nfunction showOutput(lines){ if(lines?.length){ output.hidden=false; output.textContent=lines.join('\\n'); } else { output.hidden=true; output.textContent=''; } }\nfunction fail(error){ document.documentElement.dataset.patchCompiled='0'; appEl.innerHTML='<section class="console" data-patch-build-error="1"><h1>Patch stopped</h1><p></p></section>'; appEl.querySelector('p').textContent=error?.message??String(error); }\n`;
 }
 
 function playerCss() {

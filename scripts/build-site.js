@@ -12,8 +12,8 @@ const SITE_SRC_FILES = [
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','compiler.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-build.js','window-events.js','designer.js','form-layout.js',
-  'prebuilt-native.js','local-native-kit.js','concrete-call-witness.js','concrete-call-certificate.js',
-  'concrete-call-body.js','concrete-call-body-certificate.js'
+  'window-compiled.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
+  'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
 fs.rmSync(out, { recursive: true, force: true });

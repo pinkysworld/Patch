@@ -4,7 +4,7 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 ## What works in 0.2 beta.32
 
-Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, source-backed Form layout with drag/resize, Checkbox controls with typed Boolean events, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, source-backed Form layout with drag/resize, Checkbox controls with typed Boolean events, compiled Window program artifacts for desktop builds, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
@@ -134,6 +134,35 @@ when name changed:
 
 `value` is transient event-local data. Editing the input does not persist state by itself.
 
+## Compiled desktop GUI build contract
+
+Window desktop builds now have an explicit compile/link boundary instead of relying on reparsing `main.patch` inside the packaged app.
+
+Build flow:
+
+```text
+Patch source
+  -> Patch parser/compiler
+  -> validated Window runtime support
+  -> patch-compiled-window-program 0.1
+       - executable Patch AST
+       - Change IR version
+       - project metadata
+       - source-backed Form layout manifest
+  -> link/package with platform desktop runtime
+  -> Windows/macOS/Linux application
+```
+
+Local/cloud Window builds serialize only the compiled Window program into the application project. The source is used during the build and is not required for execution. `patch-build.json` records the compiled artifact version, Change IR version, counts of Forms/controls/events and SHA-256 of the source used for the build.
+
+The token-free Ready App path uses payload version **0.3** and links the same compiled Window artifact into the prebuilt sandboxed desktop runtime. The runtime accepts legacy v0.2 source payloads for backward compatibility, but current v0.3 apps execute `compiled.program` and do not recompile `main.patch` at startup.
+
+Runtime assets are published under **`studio-runtime-v0.3`** so the public Studio cannot intentionally combine the new compiled payload format with an older Window player.
+
+The packaged Windows/macOS/Linux smoke test now creates the real Electron application, loads its renderer and verifies that the compiled Window artifact actually produced a visible Patch Form. The runtime-template smoke additionally exercises Checkbox geometry and a real Boolean `changed` event on each supported OS.
+
+This is a real Patch compile + runtime-link/package step, but it is **not yet direct Patch-to-x86/ARM GUI AOT compilation**. The platform shell and widgets are still supplied by Electron. Native Win32/AppKit/portable Unix widget lowering remains a later backend milestone.
+
 ## Build matrix
 
 ```text
@@ -144,18 +173,18 @@ FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-Console ready builds are project-specific sealed executables. Window builds use the hardened sandboxed desktop player with a checked source payload. The desktop player parses the same source-backed Form geometry and applies it after each UI render.
+Console ready builds are project-specific sealed executables. Current Window ready builds contain a compiled Patch Window program linked into the hardened sandboxed desktop runtime. Local/cloud Window builders produce the same compiled-program execution model and package it with Electron for the target OS.
 
 ## PWA updates
 
-The beta.32 richer-controls cache key begins with `patch-studio-0.2-beta.32-controls2`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
+The beta.32 compiled-GUI cache key begins with `patch-studio-0.2-beta.32-compiled3`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
 
 ## Source remains truth
 
-The `.patch` file remains the reviewable representation of behavior and current GUI structure. Form dimensions, control geometry and Checkbox declarations live in that same source. No hidden persistent Designer model is introduced.
+The `.patch` file remains the reviewable representation of behavior and current GUI structure. Form dimensions, control geometry and Checkbox declarations live in that same source. The compiled Window artifact is a derived build product, not a second editable Form model.
 
 ## Next work
 
-Product: List/Combo controls and selection events; named Form navigation/show-close lifecycle; tabs, menus, dialogs and table/grid; project tree/source files; alignment guides, anchors/docking and multi-select; project import/export; signing/notarization; eventually native AppKit/Win32/portable Unix widget lowering.
+Product: named Form navigation/show-close lifecycle; List/Combo controls and selection events; tabs, menus, dialogs and table/grid; project tree/source files; alignment guides, anchors/docking and multi-select; project import/export; signing/notarization; eventually native AppKit/Win32/portable Unix widget lowering.
 
 Research: controlled overhead measurements, systematic related work, broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.

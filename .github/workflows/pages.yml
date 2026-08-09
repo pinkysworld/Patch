@@ -32,7 +32,9 @@ on:
       - src/window-events.js
       - src/designer.js
       - src/form-layout.js
+      - src/window-compiled.js
       - src/prebuilt-native.js
+      - src/prebuilt-window.js
       - src/local-native-kit.js
       - src/concrete-call-witness.js
       - src/concrete-call-certificate.js
@@ -71,17 +73,17 @@ jobs:
       - uses: actions/configure-pages@v6
       - name: Build public site
         run: npm run build:site
-      - name: Add prebuilt native runtime templates
+      - name: Add compiled prebuilt native runtime templates
         env:
           GH_TOKEN: ${{ github.token }}
-          RUNTIME_TAG: studio-runtime-v0.2
+          RUNTIME_TAG: studio-runtime-v0.3
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
             ls -lh _site/runtimes
           else
-            echo "Runtime release $RUNTIME_TAG is not published yet. The runtime-template workflow will trigger a second Pages deployment after publishing it."
+            echo "Runtime release $RUNTIME_TAG is not published yet. Runtime-template completion will trigger a second Pages deployment after publishing it."
           fi
       - name: Validate public site
         run: npm run check:site
