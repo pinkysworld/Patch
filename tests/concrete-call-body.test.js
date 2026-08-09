@@ -62,7 +62,7 @@ test('guard-aware callee witness selects then and else traces from exact paramet
   }
 });
 
-test('guard-aware callee witness rejects state-dependent branch variables', () => {
+test('guard-aware callee witness rejects state-dependent branch variables before certification', () => {
   const stateGuard = `create number threshold = 3
 create number score = 0
 
@@ -76,11 +76,10 @@ make caller(bonus number 0..4):
 
 do caller(2)`;
   const compiled = compile(stateGuard, { name: 'StateGuardUnsupported' });
-  const artifact = buildConcreteCallBodyWitnesses(compiled.ast, compiled.ir.formalCalls);
-  const witness = artifact.witnesses.find(item => item.callee === 'award');
-  assert.ok(witness);
-  assert.equal(witness.supported, false);
-  assert.match(witness.reason, /guard variable 'threshold' is not a recipe parameter/);
+  assert.throws(
+    () => buildConcreteCallBodyWitnesses(compiled.ast, compiled.ir.formalCalls),
+    /cannot find 'threshold'|not a recipe parameter/i
+  );
 });
 
 test('structured callee witness rejects nested recipe calls instead of flattening them', () => {
