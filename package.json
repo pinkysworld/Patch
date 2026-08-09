@@ -1,7 +1,7 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.31",
-  "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, Lean-checked finite transitive exact call trees, conservative call-aware direct-Wasm correspondence, semantic Window input events, cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
+  "version": "0.2.0-beta.32",
+  "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, Lean-checked finite transitive exact call trees, invocation-frame-aware direct-Wasm correspondence, semantic Window input events, cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
   "type": "module",
   "bin": { "patch": "./src/cli-entry.js" },
   "scripts": {
@@ -22,6 +22,7 @@
     "guarded-callee-trace-certify:example": "node scripts/generate-concrete-call-body-certificate.js examples/formal-callee-guard.patch --out formal/GeneratedGuardedCallBodyCertificate.lean",
     "transitive-callee-trace-certify:example": "node scripts/generate-transitive-call-body-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveCallBodyCertificate.lean",
     "transitive-runtime-certify:example": "node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveRuntimeCertificate.lean",
+    "transitive-runtime-certify:repeated": "node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",
     "build:wasm": "node src/cli.js build examples/score.patch --kind console --target wasm --out Score.wasm",
     "build:wasm-direct": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out DirectRecipes.wasm",
@@ -34,5 +35,5 @@
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
-  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "guard-validation", "guard-aware-runtime", "runtime-correspondence", "runtime-path-witness", "runtime-capability-containment", "formal-recipe-calls", "call-signature-composition", "concrete-call-binding", "arithmetic-call-binding", "structured-callee-trace", "guarded-callee-trace", "transitive-callee-trace", "transitive-runtime-correspondence", "call-aware-wasm-correspondence", "finite-call-tree", "effect-refinement", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "window-input-events", "semantic-input", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
+  "keywords": ["programming-language", "change-oriented-programming", "semantic-patches", "change-capabilities", "effect-system", "formal-verification", "lean4", "range-analysis", "abstract-interpretation", "signature-soundness", "translation-validation", "source-validation", "guard-validation", "guard-aware-runtime", "runtime-correspondence", "runtime-path-witness", "runtime-capability-containment", "formal-recipe-calls", "call-signature-composition", "concrete-call-binding", "arithmetic-call-binding", "structured-callee-trace", "guarded-callee-trace", "transitive-callee-trace", "transitive-runtime-correspondence", "call-aware-wasm-correspondence", "invocation-frame-correspondence", "finite-call-tree", "effect-refinement", "verified-checker", "verified-evidence", "source-correspondence", "proof-carrying-code", "causal-provenance", "education", "time-travel-debugging", "compiler", "pwa", "cross-platform", "gui", "ide", "webassembly", "direct-wasm", "c99", "freebsd", "unix", "standalone-web-app", "window-web-app", "window-input-events", "semantic-input", "native-app", "native-gui-app", "macos-app", "windows-exe", "linux-executable", "control-flow", "recipes", "runtime-guards", "semantic-trace", "trace-contract", "effect-validation"]
 }
