@@ -11,7 +11,7 @@ import {
 test('designer adds controls inside the first window before event handlers', () => {
   const source = `create number count = 0\n\nwindow "Counter":\n  text "Count"\n\nwhen add clicked:\n  change count:\n    add 1\n`;
   const next = addDesignerControl(source, 'button');
-  assert.match(next, /window "Counter":\n  text "Count"\n\n  button "Button" as button_1 at 24, 72 size 120, 36\nwhen add clicked:/);
+  assert.match(next, /window "Counter":\n  text "Count"\n  button "Button" as button_1 at 24, 72 size 120, 36\n\nwhen add clicked:/);
 });
 
 test('designer can create a window when none exists', () => {
