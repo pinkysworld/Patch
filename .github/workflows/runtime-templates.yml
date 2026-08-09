@@ -19,6 +19,7 @@ on:
       - src/cli.js
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
+      - examples/checkbox-window.patch
       - .github/workflows/runtime-templates.yml
   push:
     branches: [main]
@@ -37,6 +38,7 @@ on:
       - src/cli.js
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
+      - examples/checkbox-window.patch
       - .github/workflows/runtime-templates.yml
 
 concurrency:
@@ -141,7 +143,7 @@ jobs:
       - name: Prepare Window smoke payload
         shell: bash
         run: |
-          node -e "const fs=require('fs'); fs.writeFileSync('dist/patch-app.json', JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.2',name:'Runtime Smoke',kind:'window',source:fs.readFileSync('examples/counter-window.patch','utf8')}));"
+          node -e "const fs=require('fs'); fs.writeFileSync('dist/patch-app.json', JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.2',name:'Runtime Smoke',kind:'window',source:fs.readFileSync('examples/checkbox-window.patch','utf8')}));"
       - name: Configure Linux Electron sandbox helper
         if: matrix.platform == 'linux'
         shell: bash
