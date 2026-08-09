@@ -15,6 +15,17 @@ export const PATCH_TRANSITIVE_RUNTIME_CERTIFICATE_VERSION = '0.1';
 export async function generateTransitiveRuntimeCertificate(source, options = {}) {
   const beta30 = generateTransitiveCallBodyCertificate(source, options);
   const runtime = await buildTransitiveRuntimeCorrespondence(source, options);
+
+  if (beta30.sourceSha256 !== runtime.sourceSha256) {
+    throw new Error(`Beta.30/beta.31 source evidence mismatch: ${beta30.sourceSha256} != ${runtime.sourceSha256}.`);
+  }
+  if (beta30.artifact?.version !== runtime.transitiveWitnessVersion) {
+    throw new Error(`Beta.30/beta.31 transitive witness schema mismatch: ${beta30.artifact?.version ?? 'missing'} != ${runtime.transitiveWitnessVersion ?? 'missing'}.`);
+  }
+  if (runtime.runtimeValidation?.ok !== true) {
+    throw new Error('Beta.31 runtime certificate requires successful complete direct-Wasm semantic-effect validation.');
+  }
+
   const supported = runtime.correspondences.filter(item => item.supported);
   if (!supported.length) {
     const reasons = runtime.correspondences.map(item => item.reason).filter(Boolean);
