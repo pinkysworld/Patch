@@ -29,6 +29,8 @@ jobs:
         run: npm run concrete-call-certify:example
       - name: Generate arithmetic concrete-call certificate
         run: npm run arithmetic-call-certify:example
+      - name: Generate structured callee trace certificate
+        run: npm run callee-trace-certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -43,7 +45,7 @@ jobs:
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport
       - name: Verify generated production certificate
         working-directory: formal
         shell: bash
@@ -74,6 +76,12 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean GeneratedArithmeticCallCertificate.lean
+      - name: Verify generated structured callee trace certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedConcreteCallBodyCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |
