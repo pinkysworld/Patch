@@ -82,3 +82,17 @@ do choose(4)`;
   assert.ok(artifact.witnesses.some(item => item.callee === 'positive'));
   assert.equal(artifact.witnesses.some(item => item.callee === 'zero'), false);
 });
+
+test('concrete binding certification rejects duplicate recipe parameter names explicitly', () => {
+  const malformedAst = [
+    {
+      kind: 'function', name: 'duplicate', params: ['amount', 'amount'],
+      paramRanges: { amount: { min: 0, max: 5 } }, body: [], line: 1
+    },
+    { kind: 'call', name: 'duplicate', args: ['1', '2'], line: 3 }
+  ];
+  assert.throws(
+    () => buildConcreteCallWitnesses(malformedAst, { entries: {} }),
+    /duplicate parameter names outside concrete binding certification/
+  );
+});
