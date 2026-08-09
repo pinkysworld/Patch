@@ -15,6 +15,7 @@ let activeForm = 0;
 let scheduled = false;
 
 installStylesheet();
+installCheckboxTool();
 const formTools = installFormTools();
 installGeometryInspector();
 interceptToolbox();
@@ -24,6 +25,16 @@ observe(appView);
 code?.addEventListener('input', scheduleApply);
 code?.addEventListener('change', scheduleApply);
 scheduleApply();
+
+function installCheckboxTool() {
+  if (!toolbar || toolbar.querySelector('#addCheckbox')) return;
+  const button = document.createElement('button');
+  button.id = 'addCheckbox';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Checkbox';
+  toolbar.appendChild(button);
+}
 
 function installFormTools() {
   if (!toolbar) return null;
@@ -85,7 +96,8 @@ function interceptToolbox() {
   const buttons = [
     ['#addText', 'text'],
     ['#addButton', 'button'],
-    ['#addInput', 'input']
+    ['#addInput', 'input'],
+    ['#addCheckbox', 'checkbox']
   ];
   for (const [selector, type] of buttons) {
     const button = document.querySelector(selector);
@@ -352,7 +364,11 @@ function geometryFields() {
 }
 
 function effectiveLayout(control, index = control.controlIndex ?? 0) {
-  const defaults = control.type === 'text' ? { width: 200, height: 30 } : control.type === 'input' ? { width: 220, height: 36 } : { width: 120, height: 36 };
+  const defaults = control.type === 'text'
+    ? { width: 200, height: 30 }
+    : (control.type === 'input' || control.type === 'checkbox')
+      ? { width: 220, height: 36 }
+      : { width: 120, height: 36 };
   return {
     x: control.x ?? 24,
     y: control.y ?? (24 + index * 48),

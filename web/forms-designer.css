@@ -25,6 +25,26 @@
 #patchFormWidth,
 #patchFormHeight { width: 54px; }
 
+.patch-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 32px;
+  cursor: pointer;
+  user-select: none;
+}
+.patch-checkbox input[type="checkbox"] {
+  min-width: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--text);
+}
+.designer-canvas .patch-checkbox input[type="checkbox"] {
+  pointer-events: none;
+}
+
 .patch-window-body.patch-form-layout {
   position: relative;
   display: block;

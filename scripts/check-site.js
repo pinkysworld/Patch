@@ -43,6 +43,7 @@ requireAll('playground imports', playground, [
 ]);
 requireAll('playground Designer/runtime contract', playground, [
   'triggerWindowEvent','listDesignerControls','updateDesignerControl','removeDesignerControl','designerInspectorApply',
+  "control.type === 'checkbox'", "input.type = 'checkbox'", 'value: input.checked',
   "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
 ]);
 
@@ -53,14 +54,23 @@ const formsDesigner = read('_site/forms-designer.js');
 rejectOutsideSiteImport('forms designer', formsDesigner);
 requireAll('forms designer contract', formsDesigner, [
   './src/designer.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl',
+  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']",
   'patchFormSelect','patchAddForm','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
 ]);
 const formsCss = read('_site/forms-designer.css');
-requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
+requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
 const formLayout = read('_site/src/form-layout.js');
-requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout']);
+requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox']);
 const webapp = read('_site/src/webapp.js');
 requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
+const windowWebapp = read('_site/src/window-webapp.js');
+requireAll('Window Web checkbox runtime', windowWebapp, [
+  "PATCH_WINDOW_WEB_VERSION = '0.4'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked'
+]);
+const windowEvents = read('_site/src/window-events.js');
+requireAll('typed Window changed events', windowEvents, [
+  "PATCH_WINDOW_EVENTS_VERSION = '0.2'", "controlType === 'checkbox'", 'Boolean event-local value'
+]);
 
 const nativeBuild = read('_site/native-build.js');
 rejectOutsideSiteImport('native builder', nativeBuild);
@@ -95,7 +105,7 @@ requireAll('compiler assurance modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/compiler.js'", "'./src/formal-calls.js'",
+  `patch-studio-0.2-beta.${beta}-controls2`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/compiler.js'", "'./src/formal-calls.js'",
   "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 

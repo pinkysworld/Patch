@@ -91,7 +91,12 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] source-backed control `at X, Y size W, H` geometry
 - [x] drag positioning and resize handle rewrite `main.patch`
 - [x] Standalone Web and Windows/macOS/Linux Window runtimes preserve Form geometry
-- [ ] richer controls/event editing: checkbox, list, combo, tabs, menu, dialogs, table/grid
+- [x] Checkbox control with source-backed label/id/layout
+- [x] Checkbox `changed` exposes a typed transient Boolean `value`
+- [x] Checkbox persistence still requires explicit semantic `change`
+- [x] Boolean `clear` deterministically resets to `false`
+- [ ] richer controls/event editing: list, combo, tabs, menu, dialogs, table/grid
+- [ ] named Form navigation / show-close lifecycle
 - [ ] project tree and separate source files/forms
 - [ ] project import/export
 - [ ] alignment guides, multi-select, anchors/docking and keyboard layout editing
@@ -144,3 +149,4 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 8. Security ablations and application cases must not be presented as claims about unnamed or named prior systems.
 9. Direct-Wasm/C99 support remains narrower than the full language.
 10. Visual Form metadata remains source-backed UI structure and does not redefine semantic Change IR.
+11. GUI input widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.

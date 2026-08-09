@@ -52,6 +52,7 @@ export function parse(source) {
     const ui=parseUILayout(row.text,row.line);
     if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
     if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'button',textExpr:m[1],id:m[2],line:row.line},ui.layout);
+    if ((m = ui.core.match(/^checkbox\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'checkbox',textExpr:m[1],id:m[2],line:row.line},ui.layout);
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^allow\s+([A-Za-z_]\w*)\s*:\s*$/))) {
@@ -74,9 +75,6 @@ export function parse(source) {
       const ops=childBlock(indent,row); for(const op of ops) if(op.kind!=='changeOp') throw new PatchSyntaxError('Only set, add, remove, or clear can appear directly inside change.',op.line);
       return {kind:'change',target:m[1],name:m[2]??null,ops,line:row.line};
     }
-    // Change verbs are parsed before generic `name = value` thing fields. This
-    // keeps scalar `set = value` unambiguous while preserving normal field
-    // initializers such as `name = "Sam"` inside create thing blocks.
     if ((m = row.text.match(/^set(?:\s+([A-Za-z_]\w*))?\s*=\s*(.+)$/))) return {kind:'changeOp',op:'set',field:m[1]??null,expr:m[2],line:row.line};
     if ((m = row.text.match(/^add\s+(.+?)(?:\s+to\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'add',field:m[2]??null,expr:m[1],line:row.line};
     if ((m = row.text.match(/^remove\s+(.+?)(?:\s+from\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'remove',field:m[2]??null,expr:m[1],line:row.line};

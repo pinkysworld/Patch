@@ -1,13 +1,13 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-export const PATCH_WINDOW_EVENTS_VERSION = '0.1';
+export const PATCH_WINDOW_EVENTS_VERSION = '0.2';
 
 /**
  * Execute one Patch Window event with transient event-local data.
  *
- * Persistent state is never updated by this adapter. For an input `changed`
- * event the DOM/control value is exposed only as local `value`; source must use
- * an ordinary semantic `change` to commit it to persistent state.
+ * Persistent state is never updated by this adapter. For `changed` events the
+ * control value is exposed only as local `value`; source must use an ordinary
+ * semantic `change` to commit it. Checkbox `value` is required to be Boolean.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -16,6 +16,11 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
 
   if (!Object.prototype.hasOwnProperty.call(payload ?? {}, 'value')) {
     throw new PatchRuntimeError(`The '${event}' action for '${control}' needs an event-local value.`);
+  }
+
+  const controlType = findControlType(runtime, control);
+  if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
+    throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
   }
 
   try {
@@ -35,4 +40,12 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
     if (error instanceof PatchRuntimeError) throw error;
     throw new PatchRuntimeError(error?.message ?? String(error));
   }
+}
+
+function findControlType(runtime, id) {
+  for (const windowNode of runtime.windows ?? []) {
+    const control = (windowNode.body ?? []).find(node => node.kind === 'uiControl' && node.id === id);
+    if (control) return control.control;
+  }
+  return null;
 }
