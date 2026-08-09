@@ -13,7 +13,7 @@ const required = [
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
   '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js',
-  '_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js'
+  '_site/src/prebuilt-native.js','_site/src/local-native-kit.js','_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js'
 ];
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
@@ -25,7 +25,8 @@ for (const phrase of [
   'Beta.28 exact structured callee traces', 'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBody.lean',
   'PatchCallBodyImport.lean', 'evalBoundStmtEqBool', 'checkedConcreteCallBodyRefinesCallerSignature',
   'production JavaScript/direct-Wasm call equivalence', 'Semantic input events', 'event-local', 'Window preflight',
-  'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
+  'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap',
+  'One-click desktop builds', 'Ready app download', 'no GitHub token or local toolchain'
 ]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
 
@@ -36,7 +37,15 @@ for (const phrase of ['triggerWindowEvent', "'changed'", "addEventListener('inpu
 
 const nativeBuild = read('_site/native-build.js');
 if (nativeBuild.includes("'../src/")) throw new Error('Generated native builder still points outside the deployed site.');
-for (const phrase of ['./src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','validateWindowRuntimeSupport','native-windows','native-macos','native-linux','native-freebsd','freebsd-c99.yml','compileToC99','workflow_dispatch','source_b64','Window / GUI','downloadArtifact']) requireText('native builder', nativeBuild, phrase);
+for (const phrase of [
+  './src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','./src/prebuilt-native.js',
+  'validateWindowRuntimeSupport','native-windows','native-macos','native-linux','native-freebsd','freebsd-c99.yml','compileToC99',
+  'workflow_dispatch','source_b64','Window / GUI','downloadArtifact','buildPrebuiltNativePackage','prebuiltNativeTemplateUrl',
+  'Ready app download (no token)','no token · no toolchain'
+]) requireText('native builder', nativeBuild, phrase);
+
+const prebuilt = read('_site/src/prebuilt-native.js');
+for (const phrase of ['PATCH_PREBUILT_NATIVE_VERSION','buildPrebuiltNativePackage','appendStoredFilesToZip','patch-windows-console-runtime.zip','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip','app.wasm','patch-app.json']) requireText('prebuilt native packager', prebuilt, phrase);
 
 const compiler = read('_site/src/compiler.js');
 for (const mod of ["'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'"]) requireText('compiler', compiler, mod);
@@ -67,7 +76,7 @@ for (const phrase of ['validateFormalGuardExtraction','buildRawGuardWitness']) r
 const sw = read('_site/sw.js');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');
 requireText('service worker', sw, `patch-studio-0.2-beta.${beta}`);
-for (const cached of ["'./native-build.js'","'./src/compiler.js'","'./src/formal-calls.js'","'./src/formal-guard.js'","'./src/guard-validation.js'","'./src/wasm-direct.js'","'./src/c99.js'","'./src/webapp.js'","'./src/window-webapp.js'","'./src/window-build.js'","'./src/window-events.js'"]) requireText('service worker',sw,cached);
+for (const cached of ["'./native-build.js'","'./src/compiler.js'","'./src/formal-calls.js'","'./src/formal-guard.js'","'./src/guard-validation.js'","'./src/wasm-direct.js'","'./src/c99.js'","'./src/webapp.js'","'./src/window-webapp.js'","'./src/window-build.js'","'./src/window-events.js'","'./src/prebuilt-native.js'"]) requireText('service worker',sw,cached);
 requireText('service worker', sw, 'freshFirst');
 
 const manifest = JSON.parse(read('_site/manifest.webmanifest'));
