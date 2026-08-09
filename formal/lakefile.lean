@@ -44,3 +44,6 @@ lean_lib PatchCallEffect where
 
 lean_lib PatchCallBody where
   srcDir := "."
+
+lean_lib PatchCallBodyImport where
+  srcDir := "."
