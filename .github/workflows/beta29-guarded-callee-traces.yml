@@ -1,0 +1,68 @@
+name: Patch Beta29 Guarded Callee Traces
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guarded-callee-traces:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Run guarded callee trace regression tests
+        run: node --test tests/concrete-call-body.test.js tests/concrete-call-body-certificate.test.js
+      - name: Generate beta.28 regression certificate
+        run: npm run callee-trace-certify:example
+      - name: Generate proof-free beta.29 guarded callee trace certificate
+        run: npm run guarded-callee-trace-certify:example
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+      - name: Check exact guarded callee-body and caller-import theorems
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          elan override set leanprover/lean4:v4.30.0
+          lake update
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport
+      - name: Verify beta.28 regression certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedConcreteCallBodyCertificate.lean
+      - name: Verify generated beta.29 guarded callee trace certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedGuardedCallBodyCertificate.lean
+      - name: Reject unfinished beta.29 proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallBody.lean formal/PatchCallBodyImport.lean formal/GeneratedConcreteCallBodyCertificate.lean formal/GeneratedGuardedCallBodyCertificate.lean || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            echo 'Unfinished beta.29 proof found.'
+            exit 1
+          fi

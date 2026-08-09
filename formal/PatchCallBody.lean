@@ -1,21 +1,24 @@
 import PatchCallEffect
+import PatchGuarded
 
 namespace PatchFormal
 
-/-- Exact executable callee-body fragment for beta.28. The first slice is
-    deliberately smaller than Patch source: direct quantitative semantic emits,
-    sequence, and statically counted repetition. Branches and nested calls are
-    left for later layers so this theorem does not silently assume guard/call
-    choices. -/
+/-- Exact executable callee-body fragment. Beta.28 established direct
+    quantitative emits, sequence and static repetition. Beta.29 additionally
+    admits branches whose guards are evaluated by the already-verified
+    `GuardExpr` semantics under the exact callee binding environment. Nested
+    calls remain outside this layer. -/
 inductive BoundStmt where
   | skip
   | emit (expected : Effect) (amountExpr : RangeExpr)
   | seq (first second : BoundStmt)
   | repeat (count : Nat) (body : BoundStmt)
+  | branch (guard : GuardExpr) (thenBranch elseBranch : BoundStmt)
   deriving Repr
 
 /-- Concrete execution under one exact callee binding environment. Each emit
-    reuses beta.26's checked quantitative-effect evaluator. -/
+    reuses beta.26's checked quantitative-effect evaluator. A branch can execute
+    only the arm selected by concrete evaluation of its formal guard. -/
 inductive BoundExec (bindings : BindingList) : BoundStmt → List Effect → Prop where
   | skip : BoundExec bindings .skip []
   | emit {expected : Effect} {amountExpr : RangeExpr} {actual : Effect} :
@@ -32,8 +35,18 @@ inductive BoundExec (bindings : BindingList) : BoundStmt → List Effect → Pro
       BoundExec bindings body firstTrace →
       BoundExec bindings (.repeat count body) restTrace →
       BoundExec bindings (.repeat (count + 1) body) (firstTrace ++ restTrace)
+  | branchThen {guard : GuardExpr} {thenBranch elseBranch : BoundStmt}
+      {trace : List Effect} :
+      evalGuard guard (envOfBindings bindings) = some true →
+      BoundExec bindings thenBranch trace →
+      BoundExec bindings (.branch guard thenBranch elseBranch) trace
+  | branchElse {guard : GuardExpr} {thenBranch elseBranch : BoundStmt}
+      {trace : List Effect} :
+      evalGuard guard (envOfBindings bindings) = some false →
+      BoundExec bindings elseBranch trace →
+      BoundExec bindings (.branch guard thenBranch elseBranch) trace
 
-/-- Deterministic static-repeat trace used by the executable beta.28 checker. -/
+/-- Deterministic static-repeat trace used by the executable checker. -/
 def repeatTrace (count : Nat) (trace : List Effect) : List Effect :=
   (List.replicate count trace).flatten
 
@@ -55,8 +68,9 @@ theorem boundExec_repeat_of_body
         BoundExec.repeatSucc hBody ih
       simpa [repeatTrace] using hStep
 
-/-- Executable evaluator for the exact structured beta.28 callee-body fragment.
-    It fails closed when an emitted quantitative effect cannot be instantiated. -/
+/-- Executable evaluator for the exact structured callee-body fragment. It fails
+    closed when an emitted quantitative effect or branch guard cannot be
+    instantiated from the exact binding environment. -/
 def evalBoundStmt (bindings : BindingList) : BoundStmt → Option (List Effect)
   | .skip => some []
   | .emit expected amountExpr =>
@@ -70,9 +84,15 @@ def evalBoundStmt (bindings : BindingList) : BoundStmt → Option (List Effect)
   | .repeat count body => do
       let bodyTrace ← evalBoundStmt bindings body
       some (repeatTrace count bodyTrace)
+  | .branch guard thenBranch elseBranch =>
+      match evalGuard guard (envOfBindings bindings) with
+      | none => none
+      | some true => evalBoundStmt bindings thenBranch
+      | some false => evalBoundStmt bindings elseBranch
 
 /-- Successful executable body evaluation recovers the relational execution
-    witness used by the semantic soundness theorem. -/
+    witness used by the semantic soundness theorem, including concrete guard
+    truth for branch choices. -/
 theorem evalBoundStmt_sound
     {bindings : BindingList} {stmt : BoundStmt} {trace : List Effect}
     (h : evalBoundStmt bindings stmt = some trace) :
@@ -110,6 +130,20 @@ theorem evalBoundStmt_sound
           simp [evalBoundStmt, hBody] at h
           subst trace
           exact boundExec_repeat_of_body (ih hBody) count
+  | branch guard thenBranch elseBranch ihThen ihElse =>
+      cases hGuard : evalGuard guard (envOfBindings bindings) with
+      | none =>
+          simp [evalBoundStmt, hGuard] at h
+      | some choice =>
+          cases choice with
+          | false =>
+              have hElse : evalBoundStmt bindings elseBranch = some trace := by
+                simpa [evalBoundStmt, hGuard] using h
+              exact BoundExec.branchElse hGuard (ihElse hElse)
+          | true =>
+              have hThen : evalBoundStmt bindings thenBranch = some trace := by
+                simpa [evalBoundStmt, hGuard] using h
+              exact BoundExec.branchThen hGuard (ihThen hThen)
 
 /-- Proof-free list equality for generated effect traces. `Effect` deliberately
     has no global `DecidableEq`, so equality is delegated to the verified
@@ -144,7 +178,8 @@ theorem effectListEqBool_sound
           simpa [hHead, hTail]
 
 /-- Certificate-facing equality check: recompute the structured body trace in
-    Lean, then compare it to the proof-free production claim. -/
+    Lean, including exact branch choice, then compare it to the proof-free
+    production claim. -/
 def evalBoundStmtEqBool
     (bindings : BindingList) (stmt : BoundStmt) (claimed : List Effect) : Bool :=
   match evalBoundStmt bindings stmt with
@@ -165,8 +200,9 @@ theorem evalBoundStmtEqBool_sound
       have hSame : actual = claimed := effectListEqBool_sound hEq
       simpa [hSame] using hEval
 
-/-- Static body coverage: every formal expected effect used by the structured
-    concrete body is represented in the enclosing semantic signature. -/
+/-- Static body coverage: every formal expected effect occurring anywhere in the
+    supported body is represented in the enclosing semantic signature. Branches
+    require coverage for both arms even though exact execution selects only one. -/
 inductive BoundBodyCovered (signature : List Effect) : BoundStmt → Prop where
   | skip : BoundBodyCovered signature .skip
   | emit {expected : Effect} {amountExpr : RangeExpr} :
@@ -179,6 +215,10 @@ inductive BoundBodyCovered (signature : List Effect) : BoundStmt → Prop where
   | repeat {count : Nat} {body : BoundStmt} :
       BoundBodyCovered signature body →
       BoundBodyCovered signature (.repeat count body)
+  | branch {guard : GuardExpr} {thenBranch elseBranch : BoundStmt} :
+      BoundBodyCovered signature thenBranch →
+      BoundBodyCovered signature elseBranch →
+      BoundBodyCovered signature (.branch guard thenBranch elseBranch)
 
 /-- Executable certificate-facing coverage checker. -/
 def boundBodyCoveredBool (signature : List Effect) : BoundStmt → Bool
@@ -187,6 +227,9 @@ def boundBodyCoveredBool (signature : List Effect) : BoundStmt → Bool
   | .seq first second =>
       boundBodyCoveredBool signature first && boundBodyCoveredBool signature second
   | .repeat _ body => boundBodyCoveredBool signature body
+  | .branch _ thenBranch elseBranch =>
+      boundBodyCoveredBool signature thenBranch &&
+      boundBodyCoveredBool signature elseBranch
 
 theorem boundBodyCoveredBool_sound
     {signature : List Effect} {stmt : BoundStmt}
@@ -207,6 +250,12 @@ theorem boundBodyCoveredBool_sound
       apply BoundBodyCovered.repeat
       apply ih
       simpa [boundBodyCoveredBool] using h
+  | branch guard thenBranch elseBranch ihThen ihElse =>
+      have hBoth :
+          boundBodyCoveredBool signature thenBranch = true ∧
+          boundBodyCoveredBool signature elseBranch = true := by
+        simpa [boundBodyCoveredBool, Bool.and_eq_true] using h
+      exact BoundBodyCovered.branch (ihThen hBoth.1) (ihElse hBoth.2)
 
 /-- Every concrete occurrence in a trace is represented by some effect in the
     enclosing semantic signature via the existing `EffectRefines` relation. -/
@@ -224,8 +273,8 @@ theorem traceRefinesSignature_append
   | inl hInLeft => exact hLeft actual hInLeft
   | inr hInRight => exact hRight actual hInRight
 
-/-- Structured exact-body soundness. This lifts beta.26's one-leaf effect theorem
-    to a complete concrete trace for sequence/static-repeat bodies. -/
+/-- Structured exact-body soundness. Beta.29 adds guard-aware branch choices to
+    beta.28's complete sequence/static-repeat concrete traces. -/
 theorem boundExecRefinesSignature
     {bindings : BindingList} {stmt : BoundStmt} {trace : List Effect}
     (hExec : BoundExec bindings stmt trace) :
@@ -264,8 +313,18 @@ theorem boundExecRefinesSignature
           exact traceRefinesSignature_append
             (ihFirst hBodyCovered)
             (ihRest hRestCovered)
+  | @branchThen guard thenBranch elseBranch trace hGuard hThen ihThen =>
+      intro signature hCovered
+      cases hCovered with
+      | branch hThenCovered hElseCovered =>
+          exact ihThen hThenCovered
+  | @branchElse guard thenBranch elseBranch trace hGuard hElse ihElse =>
+      intro signature hCovered
+      cases hCovered with
+      | branch hThenCovered hElseCovered =>
+          exact ihElse hElseCovered
 
-/-- Fully executable coverage premise for generated beta.28 evidence. -/
+/-- Fully executable coverage premise for generated evidence. -/
 theorem checkedBoundBodyExecutionRefinesSignature
     {bindings : BindingList} {signature : List Effect}
     {stmt : BoundStmt} {trace : List Effect}
@@ -275,7 +334,8 @@ theorem checkedBoundBodyExecutionRefinesSignature
   exact boundExecRefinesSignature hExec (boundBodyCoveredBool_sound hChecked)
 
 /-- Generated evidence can use only executable premises: Lean independently
-    evaluates the whole supported structured body, then checks signature coverage. -/
+    evaluates the whole supported structured body, including guard truth, then
+    checks signature coverage. -/
 theorem checkedEvaluatedBoundBodyRefinesSignature
     {bindings : BindingList} {signature : List Effect}
     {stmt : BoundStmt} {trace : List Effect}

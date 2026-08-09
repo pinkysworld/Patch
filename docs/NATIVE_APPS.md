@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.28** · Change IR **0.10**
+Status: **0.2.0-beta.29** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.28 strengthens research certificate coverage and does **not** change Change IR or the Window event contract.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.29 strengthens research certificate coverage and does **not** change Change IR or the Window event contract.
 
 ## Build matrix
 
@@ -41,9 +41,9 @@ Patch Console source in Studio
 
 The runner reads the sealed payload from its own executable. The footer records format version, metadata length, Wasm length and CRC32 values so malformed or corrupted payloads fail closed. Legacy `app.wasm` + `patch-app.json` sidecars remain supported by the runtime for compatibility with earlier downloads.
 
-This is a **fresh project-specific executable assembly**, but it is not presented as a full Patch-to-machine-code AOT compiler. The OS runtime machine code is still a prebuilt trusted component, similar to the runtime component used by many managed/native packaging systems. A future direct-native backend would instead lower Patch IR itself to target machine code and link it for PE/COFF, Mach-O and ELF.
+This is a **fresh project-specific executable assembly**, but it is not presented as a full Patch-to-machine-code AOT compiler. The OS runtime machine code is still a prebuilt trusted component. A future direct-native backend would instead lower Patch IR itself to target machine code and link it for PE/COFF, Mach-O and ELF.
 
-On macOS the Studio-created sealed Console app is currently assembled from an unsigned raw runtime because changing a signed Mach-O after signing invalidates the signature. Developer ID signing/notarization therefore remains separate release infrastructure rather than something the browser silently fakes.
+On macOS the Studio-created sealed Console app is assembled from an unsigned raw runtime because changing a signed Mach-O after signing invalidates the signature. Developer ID signing/notarization therefore remains separate release infrastructure.
 
 ## One-click Window packaging
 
@@ -59,7 +59,7 @@ Patch Window source in Studio
 
 `src/prebuilt-native.js` handles both paths: sealed executable assembly for Console projects and ZIP payload injection for Window projects.
 
-The generic runtime packages are built by `.github/workflows/runtime-templates.yml` on actual Windows, macOS and Linux runners. CI executes a sealed Console binary on every target OS and also checks Window payload loading before runtime assets can be published. On `main`, the stable runtime release contains both the raw sealable Console binaries and compatibility ZIPs plus the Window runtime ZIPs; the Pages deployment copies them to `runtimes/` for same-origin Studio fetches.
+The generic runtime packages are built by `.github/workflows/runtime-templates.yml` on actual Windows, macOS and Linux runners. CI executes a sealed Console binary on every target OS. The Window player uses `sandbox: true`, strict payload schema/size validation and a minimal IPC bridge; that sandboxed bridge is also exercised on Windows, macOS and Linux before runtime assets are published.
 
 ## Window preflight and semantic events
 
@@ -92,13 +92,14 @@ Concrete call research artifacts are reproducible with:
 npm run concrete-call-certify:example
 npm run arithmetic-call-certify:example
 npm run callee-trace-certify:example
+npm run guarded-callee-trace-certify:example
 ```
 
-Beta.26 checks exact binding and direct quantitative leaf refinement. Beta.27 preserves formal arithmetic such as `bonus + 1` and `amount * 2` through the production certificate path. Beta.28 extends the exact call layer to a complete semantic-effect trace for direct quantitative sequence/static-repeat callee bodies.
+Beta.26 checks exact binding and direct quantitative leaf refinement. Beta.27 preserves formal arithmetic such as `bonus + 1` and `amount * 2` through the production certificate path. Beta.28 extends the exact call layer to a complete semantic-effect trace for direct quantitative sequence/static-repeat callee bodies. Beta.29 adds exact formal `GuardExpr` branch selection under exact recipe-parameter bindings.
 
-`GeneratedConcreteCallBodyCertificate.lean` is generated from `examples/formal-callee-trace.patch`. Lean checks exact caller-to-callee binding, evaluates the supported structured callee body, checks the full claimed effect trace, checks callee signature coverage and imports that trace into the caller signature.
+`GeneratedConcreteCallBodyCertificate.lean` remains the beta.28 branch-free regression certificate. `GeneratedGuardedCallBodyCertificate.lean` checks exact true/false guard choices from `examples/formal-callee-guard.patch`, evaluates the selected complete trace in Lean, requires both branch arms to be covered by the callee signature, and imports the selected trace into the caller signature.
 
-This assurance does **not** alter the trust boundary of the platform runtime and does not yet prove branch-aware or nested-call concrete callee execution, complete transitive call traces, or production-Wasm call equivalence.
+This assurance does **not** alter the trust boundary of the platform runtime and does not yet prove nested-call concrete callee execution, complete transitive call traces, or production-Wasm call equivalence.
 
 ## Portable C99
 

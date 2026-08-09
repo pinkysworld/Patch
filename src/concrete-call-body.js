@@ -1,20 +1,22 @@
 import { buildConcreteCallWitnesses } from './concrete-call-witness.js';
 import { buildFormalRangeExpression } from './formal-range.js';
+import { buildFormalGuardExpression } from './formal-guard.js';
 
-export const PATCH_CONCRETE_CALL_BODY_VERSION = '0.1';
+export const PATCH_CONCRETE_CALL_BODY_VERSION = '0.2';
 
 /**
- * Build proof-free exact structured callee-body witnesses for beta.28.
+ * Build proof-free exact structured callee-body witnesses.
  *
- * Supported production subset:
- * - inter-recipe concrete calls already supported by beta.27;
- * - callee body contains only direct `change` blocks and statically counted
- *   `repeat` blocks over the same subset;
- * - direct operations are non-negative quantitative add/remove expressions in
- *   the already-mechanized integer RangeExpr fragment.
+ * Beta.28 supports:
+ * - direct quantitative `change` blocks;
+ * - statically counted `repeat` blocks;
+ * - sequence over the same subset.
  *
- * Branches, nested calls, returns, creation and other body constructs are
- * reported unsupported rather than approximated as certified.
+ * Beta.29 additionally supports `if`/`else` when the guard belongs to the
+ * already-mechanized integer/Boolean GuardExpr fragment and refers only to
+ * exact callee recipe parameters. Both branch bodies must still reconstruct
+ * effects from the production semantic signature. Nested calls, returns,
+ * creation, dynamic repeat and state-dependent guards fail conservatively.
  */
 export function buildConcreteCallBodyWitnesses(ast, formalCalls) {
   const callArtifact = buildConcreteCallWitnesses(ast, formalCalls);
@@ -34,7 +36,13 @@ export function buildConcreteCallBodyWitnesses(ast, formalCalls) {
 
     const rangeBindings = {};
     for (const item of calleeEntry.paramRanges ?? []) rangeBindings[item.name] = item.range;
-    const built = buildBlock(callee.body ?? [], rangeBindings, calleeEntry.signature ?? []);
+    const allowedGuardVariables = new Set(Object.keys(rangeBindings));
+    const built = buildBlock(
+      callee.body ?? [],
+      rangeBindings,
+      allowedGuardVariables,
+      calleeEntry.signature ?? []
+    );
     if (!built.supported) {
       witnesses.push({ ...call, supported: false, reason: built.reason });
       continue;
@@ -71,7 +79,7 @@ export function buildConcreteCallBodyWitnesses(ast, formalCalls) {
   };
 }
 
-function buildBlock(nodes, rangeBindings, signature) {
+function buildBlock(nodes, rangeBindings, allowedGuardVariables, signature) {
   const statements = [];
   for (const node of nodes ?? []) {
     if (node.kind === 'change') {
@@ -82,13 +90,30 @@ function buildBlock(nodes, rangeBindings, signature) {
     }
     if (node.kind === 'repeat') {
       const count = parseStaticRepeat(node.expr);
-      if (count === null) return unsupported(node, 'beta.28 structured call traces require a literal non-negative repeat count');
-      const body = buildBlock(node.body ?? [], rangeBindings, signature);
+      if (count === null) return unsupported(node, 'beta.29 structured call traces require a literal non-negative repeat count');
+      const body = buildBlock(node.body ?? [], rangeBindings, allowedGuardVariables, signature);
       if (!body.supported) return body;
       statements.push({ kind: 'repeat', count, body: body.stmt });
       continue;
     }
-    return unsupported(node, `body construct '${node.kind}' is outside beta.28 structured exact-call traces`);
+    if (node.kind === 'if') {
+      const guard = buildFormalGuardExpression(node.expr ?? '', allowedGuardVariables);
+      if (!guard.supported) {
+        return unsupported(node, `branch guard is outside the exact formal GuardExpr fragment: ${guard.reason}`);
+      }
+      const thenBranch = buildBlock(node.thenBody ?? [], rangeBindings, allowedGuardVariables, signature);
+      if (!thenBranch.supported) return thenBranch;
+      const elseBranch = buildBlock(node.elseBody ?? [], rangeBindings, allowedGuardVariables, signature);
+      if (!elseBranch.supported) return elseBranch;
+      statements.push({
+        kind: 'branch',
+        guard: guard.expr,
+        thenBranch: thenBranch.stmt,
+        elseBranch: elseBranch.stmt
+      });
+      continue;
+    }
+    return unsupported(node, `body construct '${node.kind}' is outside beta.29 structured exact-call traces`);
   }
   return { supported: true, stmt: sequence(statements) };
 }
@@ -97,14 +122,14 @@ function buildChange(node, rangeBindings, signature) {
   const emits = [];
   for (const operation of node.ops ?? []) {
     if (!['add', 'remove'].includes(operation.op)) {
-      return unsupported(operation, `change operation '${operation.op}' is outside beta.28 quantitative trace certification`);
+      return unsupported(operation, `change operation '${operation.op}' is outside beta.29 quantitative trace certification`);
     }
     const amount = buildFormalRangeExpression(operation.expr ?? '', rangeBindings);
     if (!amount.supported) {
       return unsupported(operation, `change amount is outside the formal integer RangeExpr fragment: ${amount.reason}`);
     }
     if (!amount.range || amount.range.min < 0) {
-      return unsupported(operation, 'beta.28 quantitative trace certification requires a provably non-negative amount range');
+      return unsupported(operation, 'beta.29 quantitative trace certification requires a provably non-negative amount range');
     }
 
     const candidate = {
@@ -156,8 +181,33 @@ function evalBoundBodyClaim(stmt, env) {
       for (let index = 0; index < stmt.count; index += 1) trace.push(...one);
       return trace;
     }
+    case 'branch':
+      return evalGuardExact(stmt.guard, env)
+        ? evalBoundBodyClaim(stmt.thenBranch, env)
+        : evalBoundBodyClaim(stmt.elseBranch, env);
     default:
-      throw new Error(`cannot evaluate beta.28 BoundStmt kind '${stmt?.kind ?? 'missing'}'`);
+      throw new Error(`cannot evaluate beta.29 BoundStmt kind '${stmt?.kind ?? 'missing'}'`);
+  }
+}
+
+function evalGuardExact(expr, env) {
+  switch (expr?.kind) {
+    case 'bool': return Boolean(expr.value);
+    case 'eq': return evalRangeExprExact(expr.left, env) === evalRangeExprExact(expr.right, env);
+    case 'lt': return evalRangeExprExact(expr.left, env) < evalRangeExprExact(expr.right, env);
+    case 'le': return evalRangeExprExact(expr.left, env) <= evalRangeExprExact(expr.right, env);
+    case 'and': {
+      const left = evalGuardExact(expr.left, env);
+      const right = evalGuardExact(expr.right, env);
+      return left && right;
+    }
+    case 'or': {
+      const left = evalGuardExact(expr.left, env);
+      const right = evalGuardExact(expr.right, env);
+      return left || right;
+    }
+    case 'not': return !evalGuardExact(expr.expr, env);
+    default: throw new Error(`unsupported exact GuardExpr '${expr?.kind ?? 'missing'}' in beta.29 trace claim`);
   }
 }
 
@@ -165,12 +215,15 @@ function evalRangeExprExact(expr, env) {
   let value;
   switch (expr?.kind) {
     case 'lit': value = expr.value; break;
-    case 'var': value = env[expr.name]; break;
+    case 'var':
+      if (!Object.hasOwn(env, expr.name)) throw new Error(`exact callee environment has no binding for '${expr.name}'`);
+      value = env[expr.name];
+      break;
     case 'add': value = evalRangeExprExact(expr.left, env) + evalRangeExprExact(expr.right, env); break;
     case 'sub': value = evalRangeExprExact(expr.left, env) - evalRangeExprExact(expr.right, env); break;
     case 'neg': value = -evalRangeExprExact(expr.expr, env); break;
     case 'scale': value = expr.factor * evalRangeExprExact(expr.expr, env); break;
-    default: throw new Error(`unsupported exact RangeExpr '${expr?.kind ?? 'missing'}' in beta.28 trace claim`);
+    default: throw new Error(`unsupported exact RangeExpr '${expr?.kind ?? 'missing'}' in beta.29 trace claim`);
   }
   if (!Number.isSafeInteger(value)) throw new Error('structured trace RangeExpr evaluation exceeds the JavaScript safe-integer boundary');
   return value;

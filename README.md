@@ -7,7 +7,7 @@
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 [![FreeBSD C99](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/freebsd-c99.yml)
 
-**Current development beta: `0.2.0-beta.28`** · **Change IR: `0.10`**
+**Current development beta: `0.2.0-beta.29`** · **Change IR: `0.10`**
 
 [Open Patch Studio](https://pinkysworld.github.io/Patch/) · [Language spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Runtime correspondence](docs/RUNTIME_CORRESPONDENCE.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
@@ -33,7 +33,8 @@ The same mutation substrate supports history, undo/redo, provenance, semantic Ch
 | Static formal core | State-Change Factorization, signature soundness, policy containment, source/evidence correspondence and integer range soundness in Lean 4 |
 | Guard-aware runtime | For a conservative safe-integer recipe-parameter fragment, Lean checks branch truth plus runtime-effect/capability correspondence |
 | Abstract recipe calls | Lean-checked finite acyclic recipe environment with rank decrease, argument-interval fit and callee-signature containment |
-| Exact recipe calls | Exact safe-integer `RangeExpr` argument evaluation/binding, arithmetic direct effects and **complete traces for a conservative sequence/static-repeat callee-body fragment** |
+| Exact recipe calls | Exact safe-integer `RangeExpr` argument evaluation/binding, arithmetic direct effects and **complete guard-selected traces for a conservative branch/sequence/static-repeat callee-body fragment** |
+| Studio Designer | Source-backed control selection/property editing for Text, Button and Input |
 | Window input | `input changed` exposes transient event-local `value`; persistent state changes only through explicit `change` |
 | Targets | Web, Windows, macOS, Linux; FreeBSD Console via portable C99 |
 
@@ -54,6 +55,7 @@ patch call-certify examples/formal-calls.patch --out Calls.patchcert.lean
 npm run concrete-call-certify:example
 npm run arithmetic-call-certify:example
 npm run callee-trace-certify:example
+npm run guarded-callee-trace-certify:example
 ```
 
 ## State-Change Factorization and semantic authority
@@ -79,17 +81,18 @@ For the structured effect core, Lean proves the containment chain:
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-## Beta.28: exact structured callee traces
+## Beta.29: guard-aware exact structured callee traces
 
-Beta.28 lifts the beta.26/27 concrete-call result from one direct quantitative leaf effect to a **complete exact semantic-effect trace** for a deliberately conservative structured callee-body fragment.
+Beta.29 extends beta.28 with exact branch selection using the **existing verified `GuardExpr` semantics**. It does not introduce a second guard language or a new Change IR schema.
 
-The supported `BoundStmt` fragment is:
+The supported `BoundStmt` fragment is now:
 
 ```text
 skip
 quantitative emit
 sequence
 static repeat
+branch GuardExpr thenBody elseBody
 ```
 
 For example:
@@ -99,56 +102,75 @@ create number score = 0
 create number coins = 0
 
 make award(amount number 1..5):
-  change score:
-    add amount
-  repeat 2:
+  if amount >= 3:
+    change score:
+      add amount
+  else:
     change coins:
       add amount * 2
 
-make caller(bonus number 0..4):
+make caller_high(bonus number 0..4):
   do award(bonus + 1)
 
-do caller(2)
+make caller_low(bonus number 0..4):
+  do award(bonus + 1)
+
+do caller_high(2)
+do caller_low(0)
 ```
 
-The production witness records the concrete call `caller -> award` with `amount = 3` and emits a proof-free claimed trace:
+The concrete calls bind `amount = 3` and `amount = 1`. The proof-free production witness claims only the selected trace for each call:
 
 ```text
-score increase [3,3]
-coins increase [6,6]
-coins increase [6,6]
+caller_high -> award: score increase [3,3]
+caller_low  -> award: coins increase [2,2]
 ```
 
-Lean does not trust that trace as a proof. `PatchCallBody.lean` provides executable `evalBoundStmt`, relational `BoundExec`, proof-free effect-list equality through the verified `effectEqBool`, body coverage and `TraceRefinesSignature`. `evalBoundStmtEqBool_sound` establishes that the claimed trace equals Lean's independently evaluated structured trace. `checkedEvaluatedBoundBodyRefinesSignature` then proves every concrete occurrence refines the callee semantic signature.
+Lean independently reconstructs exact caller-to-callee binding, converts that `BindingList` into the same `IntEnv` used by the verified range semantics, evaluates the formal guard, evaluates only the selected branch body and checks the claimed trace through `evalBoundStmtEqBool_sound`.
 
-`PatchCallBodyImport.lean` composes that result with exact caller-to-callee binding and beta.25 `SignatureCovers`. The certificate-facing theorem `checkedConcreteCallBodyRefinesCallerSignature` establishes both the exact `ConcreteCallBindingSpec` and that the **whole concrete callee trace** is represented by the caller semantic signature.
+Static body coverage remains stronger than the selected trace: `BoundBodyCovered` requires **both branch arms** to be represented in the callee semantic signature. `checkedConcreteCallBodyRefinesCallerSignature` then combines exact binding, selected trace evaluation, both-arm callee coverage and beta.25 `SignatureCovers` to establish that every concrete occurrence in the selected callee trace is represented by the caller signature.
 
-`GeneratedConcreteCallBodyCertificate.lean` is generated from `examples/formal-callee-trace.patch` and compiled with pinned Lean. Standard Formal CI builds `PatchCallBody` and `PatchCallBodyImport`, generates the artifact and checks it. Cross-platform Node CI also generates the certificate.
+`GeneratedGuardedCallBodyCertificate.lean` is generated from `examples/formal-callee-guard.patch`, and focused beta.29 CI verifies it with pinned Lean alongside the unchanged beta.28 regression certificate.
 
-### Exact beta.28 boundary
+### Exact beta.29 boundary
 
 Covered:
 
-- safe-integer exact binding from beta.27;
-- direct quantitative `add`/`remove` emits using the existing integer `RangeExpr` fragment;
+- beta.27 safe-integer exact argument binding;
+- direct quantitative `add`/`remove` effects using the existing integer `RangeExpr` fragment;
 - sequence;
 - literal non-negative static repeat;
-- complete concrete effect trace for that structured callee body;
-- callee signature coverage;
+- `GuardExpr` Boolean/comparison composition over exact recipe-parameter bindings;
+- exact true/false branch selection;
+- complete concrete effect trace for the selected branch path;
+- static callee-signature coverage for both branch arms;
 - callee-to-caller signature import.
 
 Still deliberately excluded:
 
-- branches and guard choices inside the concrete callee-body certificate;
+- guard variables that depend on persistent state rather than exact recipe parameters;
 - nested recipe calls inside the certified body;
 - dynamic repeat counts;
-- arbitrary state-dependent amount expressions outside the formal integer fragment;
+- arbitrary amount/guard expressions outside the formal integer/Boolean fragments;
 - complete transitive concrete traces across a nested call tree;
 - recursive/floating-point call semantics;
 - production JavaScript/direct-Wasm call equivalence;
 - full compiler verification.
 
 Unsupported cases fail rather than being flattened into a stronger claim.
+
+## Beta.28: exact structured callee traces
+
+Beta.28 lifted the beta.26/27 concrete-call result from one direct quantitative leaf effect to a **complete exact semantic-effect trace** for a deliberately conservative branch-free callee-body fragment:
+
+```text
+skip
+quantitative emit
+sequence
+static repeat
+```
+
+`GeneratedConcreteCallBodyCertificate.lean` remains generated and verified on every guarded-trace run as a regression certificate. Beta.29 is a strict extension of this branch-free fragment.
 
 ## Beta.27: arithmetic concrete call certificates
 
@@ -206,7 +228,7 @@ sourceValidation
 guardValidation
 ```
 
-Beta.28 does **not** bump Change IR. Structured concrete-call witnesses and certificates remain separate research artifacts derived from the existing AST + `formalCalls` boundary.
+Beta.29 does **not** bump Change IR. Guard-aware structured concrete-call witnesses and certificates remain separate research artifacts derived from the existing AST + `formalCalls` boundary and reuse the existing formal guard representation.
 
 ## Window builds
 
@@ -220,6 +242,8 @@ The shared Window preflight supports button `clicked` and input `changed`, rejec
 | Linux Window/GUI | Standalone GUI application package |
 | FreeBSD Console | Native executable from portable C99 + FreeBSD 15.1 `cc` |
 
+Console ready-app builds use project-specific sealed executables. Window ready-app builds use a hardened Electron player with `sandbox: true`, context isolation, no renderer Node integration and a minimal validated IPC payload bridge.
+
 ## WebAssembly and C99 boundaries
 
 `--target wasm-direct` is a Console backend for the conservative numeric/control-flow/recipe subset. Raw `.direct.wasm` uses Patch's small host ABI and is **not yet a standalone WASI command module**.
@@ -232,30 +256,31 @@ Portable C99 covers the conservative numeric Console subset and is compile/run t
 src/formal-calls.js                       conservative finite abstract call artifact
 src/concrete-call-witness.js              proof-free exact call/binding witness producer
 src/concrete-call-certificate.js          exact/arithmetic binding/effect Lean certificate
-src/concrete-call-body.js                 structured callee-body witness producer
-src/concrete-call-body-certificate.js     structured full-trace Lean certificate generator
+src/concrete-call-body.js                 branch/sequence/repeat callee-body witness producer
+src/concrete-call-body-certificate.js     guard-aware full-trace Lean certificate generator
 formal/PatchRange.lean                    integer evaluator/range soundness
+formal/PatchGuarded.lean                  verified GuardExpr evaluator + guarded runtime layer
 formal/PatchCalls.lean                    ranked acyclic call composition
 formal/PatchCallSubstitution.lean         exact argument evaluation + positional binding
 formal/PatchCallRefinement.lean           exact value → abstract/declaration interval composition
 formal/PatchCallEffect.lean               exact quantitative effect refinement
-formal/PatchCallBody.lean                 executable sequence/static-repeat exact body traces
+formal/PatchCallBody.lean                 executable guarded exact body traces
 formal/PatchCallBodyImport.lean           whole-trace callee → caller signature composition
 ```
 
 ## Research boundary
 
-Patch does **not** claim novelty for patches, first-class state change, effects, capabilities, range analysis, procedure-call semantics, parameter substitution, call graphs, interprocedural effect composition, arithmetic evaluation, structured operational semantics, effect refinement, translation validation, proof-carrying evidence, verified checkers, WebAssembly/C generation or GUI event plumbing.
+Patch does **not** claim novelty for patches, first-class state change, effects, capabilities, range analysis, procedure-call semantics, parameter substitution, call graphs, interprocedural effect composition, arithmetic evaluation, structured operational semantics, guard evaluation, effect refinement, translation validation, proof-carrying evidence, verified checkers, WebAssembly/C generation or GUI event plumbing.
 
-The primary candidate contribution remains: **ordinary persistent mutation is factored through a mandatory semantic Change substrate, and operation-/magnitude-aware semantic authority is derived from that same substrate**. Beta.28 strengthens the assurance story by checking complete structured concrete traces for a conservative callee-body fragment. It is supporting assurance, not a separate firstness claim.
+The primary candidate contribution remains: **ordinary persistent mutation is factored through a mandatory semantic Change substrate, and operation-/magnitude-aware semantic authority is derived from that same substrate**. Beta.29 strengthens the assurance story by checking exact guard-selected concrete callee traces while statically covering both arms. It is supporting assurance, not a separate firstness claim.
 
-Patch is still **not a fully verified compiler**. Production parser/extractor correctness, JavaScript→Wasm lowering, the Wasm engine, proof-free witness extraction, branch/nested-call concrete body semantics and production runtime equivalence remain explicit boundaries.
+Patch is still **not a fully verified compiler**. Production parser/extractor correctness, JavaScript→Wasm lowering, the Wasm engine, proof-free witness extraction, nested/transitive concrete body semantics and production runtime equivalence remain explicit boundaries.
 
 ## Next priorities
 
-Research: extend beta.28 with **guard-aware structured concrete callee traces**, then nested/transitive call traces and connection to observed direct-Wasm call execution; build semantic-security/plugin case studies, measure certificate/checker overhead and harden reproducibility/related work.
+Research: extend beta.29 with **nested/transitive exact concrete call traces**, then connect those certificates to observed direct-Wasm call execution; build semantic-security/plugin case studies, measure certificate/checker overhead and harden reproducibility/related work.
 
-Product: richer Designer interaction, native AppKit/Win32/portable Unix GUI lowering, signing/notarization and a less token-dependent build service.
+Product: drag positioning/resizing in the source-backed Designer, richer controls/event editing, native AppKit/Win32/portable Unix GUI lowering, signing/notarization and direct-native compiler work.
 
 ## License
 

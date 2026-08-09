@@ -38,6 +38,8 @@ jobs:
         run: npm run arithmetic-call-certify:example
       - name: Generate structured callee trace certificate
         run: npm run callee-trace-certify:example
+      - name: Generate guard-aware structured callee trace certificate
+        run: npm run guarded-callee-trace-certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -89,6 +91,12 @@ jobs:
         run: |
           set -euo pipefail
           lake env lean GeneratedConcreteCallBodyCertificate.lean
+      - name: Verify generated guard-aware callee trace certificate
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean GeneratedGuardedCallBodyCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |

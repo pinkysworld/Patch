@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.28**
+Current development beta: **0.2.0-beta.29**
 
 Checked items are implemented and must pass the final exact-head pull-request gates before merge. Unchecked items are not presented as finished features.
 
@@ -91,25 +91,41 @@ Structured exact body semantics:
 - [x] `TraceRefinesSignature`
 - [x] `boundExecRefinesSignature`
 - [x] `checkedEvaluatedBoundBodyRefinesSignature`
-
-Interprocedural import:
 - [x] `formal/PatchCallBodyImport.lean`
 - [x] whole concrete callee trace imported through beta.25 `SignatureCovers`
 - [x] `checkedConcreteCallBodyRefinesCallerSignature`
-- [x] exact call binding and full supported callee trace established in one certificate theorem
-
-Production evidence and reproducibility:
-- [x] `src/concrete-call-body.js`
-- [x] `src/concrete-call-body-certificate.js`
-- [x] `examples/formal-callee-trace.patch`
-- [x] `callee-trace-certify:example`
 - [x] generated `GeneratedConcreteCallBodyCertificate.lean`
 - [x] focused beta.28 pinned-Lean workflow
-- [x] standard Formal CI integration
-- [x] standard Windows/macOS/Linux certificate generation
-- [x] conservative rejection of branches, nested calls, dynamic repeats and unsupported amount expressions
 
-Beta.28 proves complete exact semantic-effect traces for the supported **sequence/static-repeat direct quantitative callee-body fragment**. It does not prove arbitrary structured source execution or production-Wasm call equivalence.
+Beta.28 proves complete exact semantic-effect traces for the supported **sequence/static-repeat direct quantitative callee-body fragment**.
+
+### beta.29: guard-aware exact structured callee traces
+
+Formal semantics:
+- [x] extend the existing `BoundStmt` with `branch GuardExpr thenBranch elseBranch`
+- [x] reuse beta.23 verified `GuardExpr` / `evalGuard`
+- [x] evaluate guards under beta.26 exact `envOfBindings`
+- [x] relational `BoundExec.branchThen` / `branchElse`
+- [x] executable exact branch selection in `evalBoundStmt`
+- [x] extend `evalBoundStmt_sound`
+- [x] require `BoundBodyCovered` for **both** branch arms
+- [x] extend `boundBodyCoveredBool_sound`
+- [x] extend `boundExecRefinesSignature` through the selected branch
+- [x] preserve `checkedConcreteCallBodyRefinesCallerSignature` as the certificate-facing composition theorem
+
+Production evidence:
+- [x] `src/concrete-call-body.js` witness format **0.2**
+- [x] `src/concrete-call-body-certificate.js` certificate format **0.2**
+- [x] reuse `src/formal-guard.js` instead of creating a second guard grammar
+- [x] `examples/formal-callee-guard.patch` with exact true and false branch examples
+- [x] `guarded-callee-trace-certify:example`
+- [x] generated `GeneratedGuardedCallBodyCertificate.lean`
+- [x] focused `Patch Beta29 Guarded Callee Traces` pinned-Lean workflow
+- [x] beta.28 certificate retained as regression evidence in the beta.29 gate
+- [x] reject persistent-state guard variables at the exact-call boundary
+- [x] nested calls and dynamic repeat remain fail-closed
+
+Beta.29 proves exact selected semantic-effect traces for the supported **GuardExpr + sequence/static-repeat direct quantitative callee-body fragment**, while requiring static callee-signature coverage for both branch arms. It does not prove nested/transitive call execution or production-Wasm call equivalence.
 
 ## Current product priorities
 
@@ -131,12 +147,14 @@ Beta.28 proves complete exact semantic-effect traces for the supported **sequenc
 - [x] Windows/macOS/Linux Console packages
 - [x] Windows/macOS/Linux standalone Window packages
 - [x] FreeBSD Console through portable C99
+- [x] project-specific sealed Console executable packaging
+- [x] sandboxed/validated prebuilt Window runtime path
 - [ ] native AppKit Window backend
 - [ ] native Win32/Windows UI backend
 - [ ] portable Linux/BSD GUI backend
 - [ ] FreeBSD Window package
 - [ ] signing/notarization/installers
-- [ ] build service without personal GitHub token
+- [ ] direct-native AOT backend
 
 ## Research hardening priorities
 
@@ -152,11 +170,12 @@ Completed:
 - [x] exact safe-integer inter-recipe binding checked by Lean
 - [x] direct bound quantitative leaf effect refined into caller semantic signature
 - [x] full already-mechanized integer `RangeExpr` fragment carried through concrete call certificates
-- [x] **structured callee-body execution under exact bindings for direct emits + sequence + static repeat**
-- [x] **complete exact semantic-effect trace imported into caller signature for that fragment**
+- [x] structured callee-body execution for direct emits + sequence + static repeat
+- [x] complete exact semantic-effect trace imported into caller signature for that fragment
+- [x] **branch/guard-aware exact callee traces under exact recipe-parameter bindings**
+- [x] **both-arm static coverage + exact selected branch trace import**
 
 Highest-value remaining research work:
-- [ ] branch/guard-aware exact callee traces
 - [ ] nested-call and complete transitive concrete call-trace semantics
 - [ ] connect concrete call certificates to observed direct-Wasm call execution
 - [ ] semantic-security/plugin case studies
@@ -178,9 +197,9 @@ Highest-value remaining research work:
 - [x] arithmetic `RangeExpr` concrete certificate coverage
 - [x] exact direct leaf effect refinement through caller signature
 - [x] structured exact callee trace for sequence/static-repeat bodies
+- [x] **guard-aware exact callee traces**
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
 - [x] GUI input preserves explicit persistent `change`
-- [ ] guard-aware exact callee traces
 - [ ] transitive/nested concrete call traces
 - [ ] call-aware direct-Wasm runtime correspondence
 - [ ] security/engineering case studies
@@ -201,7 +220,8 @@ Highest-value remaining research work:
 9. Beta.25 call claims are abstract interval/signature-level.
 10. Beta.26 adds exact binding/direct leaf refinement.
 11. Beta.27 broadens the certificate to the existing integer `RangeExpr` fragment.
-12. Beta.28 adds exact whole-trace semantics for direct quantitative sequence/static-repeat callee bodies, not branches, nested calls or Wasm equivalence.
-13. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
-14. Direct-Wasm/C99 support is narrower than the full Patch language.
-15. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
+12. Beta.28 adds exact whole-trace semantics for direct quantitative sequence/static-repeat callee bodies.
+13. Beta.29 adds exact formal-guard branch selection over recipe parameters and still excludes state-dependent guards, nested calls and Wasm equivalence.
+14. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
+15. Direct-Wasm/C99 support is narrower than the full Patch language.
+16. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.

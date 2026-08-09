@@ -2,16 +2,16 @@ import crypto from 'node:crypto';
 import { compile } from './compiler.js';
 import { buildConcreteCallBodyWitnesses } from './concrete-call-body.js';
 
-export const PATCH_CONCRETE_CALL_BODY_CERTIFICATE_VERSION = '0.1';
+export const PATCH_CONCRETE_CALL_BODY_CERTIFICATE_VERSION = '0.2';
 
 const EFFECT_KINDS = new Set(['increase', 'decrease', 'set', 'clear']);
 
-/** Generate Lean evidence for beta.28 exact structured callee semantic traces. */
+/** Generate Lean evidence for beta.29 exact guard-aware callee semantic traces. */
 export function generateConcreteCallBodyCertificate(source, options = {}) {
   const compiled = compile(source, options);
   const artifact = buildConcreteCallBodyWitnesses(compiled.ast, compiled.ir.formalCalls);
   const supported = artifact.witnesses.filter(item => item.supported);
-  if (!supported.length) throw new Error('No beta.28 structured concrete callee-body witnesses are certifiable.');
+  if (!supported.length) throw new Error('No beta.29 structured concrete callee-body witnesses are certifiable.');
 
   const blocks = [];
   const certified = [];
@@ -52,7 +52,7 @@ export function generateConcreteCallBodyCertificate(source, options = {}) {
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchCallBodyImport\n\nopen PatchFormal\n\nnamespace PatchGeneratedConcreteCallBodyCertificate\n\n/-- Proof-free production structured-call evidence. Lean re-evaluates exact\n    argument binding and the complete supported callee semantic-effect body\n    (direct emits, sequence, static repeat), checks exact claimed trace equality,\n    checks callee signature coverage and imports the trace into the caller\n    signature. Branches, nested calls and production-Wasm equivalence remain\n    outside beta.28. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef callBodyWitnessVersion : String := ${leanString(artifact.version)}\ndef callBodyCertificateVersion : String := ${leanString(PATCH_CONCRETE_CALL_BODY_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedConcreteCallBodyCertificate\n`;
+  const lean = `import PatchCallBodyImport\n\nopen PatchFormal\n\nnamespace PatchGeneratedConcreteCallBodyCertificate\n\n/-- Proof-free production structured-call evidence. Lean re-evaluates exact\n    argument binding and the complete supported callee semantic-effect body\n    (direct emits, sequence, static repeat and exact GuardExpr branches), checks\n    exact claimed trace equality, checks both branch arms against the callee\n    signature and imports the selected concrete trace into the caller signature.\n    Nested calls, dynamic repeat and production-Wasm call equivalence remain\n    outside beta.29. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef callBodyWitnessVersion : String := ${leanString(artifact.version)}\ndef callBodyCertificateVersion : String := ${leanString(PATCH_CONCRETE_CALL_BODY_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedConcreteCallBodyCertificate\n`;
 
   return { lean, sourceSha256, certified, artifact, certificateVersion: PATCH_CONCRETE_CALL_BODY_CERTIFICATE_VERSION };
 }
@@ -63,7 +63,21 @@ function leanBoundStmt(stmt) {
     case 'emit': return `BoundStmt.emit (${leanEffect(stmt.expected)}) (${leanRangeExpr(stmt.amountExpr)})`;
     case 'seq': return `BoundStmt.seq (${leanBoundStmt(stmt.first)}) (${leanBoundStmt(stmt.second)})`;
     case 'repeat': return `BoundStmt.repeat ${stmt.count} (${leanBoundStmt(stmt.body)})`;
-    default: throw new Error(`Cannot encode beta.28 BoundStmt '${stmt?.kind ?? 'missing'}'.`);
+    case 'branch': return `BoundStmt.branch (${leanGuardExpr(stmt.guard)}) (${leanBoundStmt(stmt.thenBranch)}) (${leanBoundStmt(stmt.elseBranch)})`;
+    default: throw new Error(`Cannot encode beta.29 BoundStmt '${stmt?.kind ?? 'missing'}'.`);
+  }
+}
+
+function leanGuardExpr(expr) {
+  switch (expr?.kind) {
+    case 'bool': return `GuardExpr.bool ${expr.value ? 'true' : 'false'}`;
+    case 'eq': return `GuardExpr.eq (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'lt': return `GuardExpr.lt (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'le': return `GuardExpr.le (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
+    case 'and': return `GuardExpr.and (${leanGuardExpr(expr.left)}) (${leanGuardExpr(expr.right)})`;
+    case 'or': return `GuardExpr.or (${leanGuardExpr(expr.left)}) (${leanGuardExpr(expr.right)})`;
+    case 'not': return `GuardExpr.not (${leanGuardExpr(expr.expr)})`;
+    default: throw new Error(`Cannot encode beta.29 GuardExpr '${expr?.kind ?? 'missing'}'.`);
   }
 }
 
@@ -75,22 +89,22 @@ function leanRangeExpr(expr) {
     case 'sub': return `RangeExpr.sub (${leanRangeExpr(expr.left)}) (${leanRangeExpr(expr.right)})`;
     case 'neg': return `RangeExpr.neg (${leanRangeExpr(expr.expr)})`;
     case 'scale': return `RangeExpr.scale ${expr.factor} (${leanRangeExpr(expr.expr)})`;
-    default: throw new Error(`Cannot encode beta.28 RangeExpr '${expr?.kind ?? 'missing'}'.`);
+    default: throw new Error(`Cannot encode beta.29 RangeExpr '${expr?.kind ?? 'missing'}'.`);
   }
 }
 
 function leanEffect(effect) {
-  if (!EFFECT_KINDS.has(effect?.operation)) throw new Error(`Unsupported beta.28 effect '${effect?.operation}'.`);
+  if (!EFFECT_KINDS.has(effect?.operation)) throw new Error(`Unsupported beta.29 effect '${effect?.operation}'.`);
   let amount = 'none';
   if (effect.operation === 'increase' || effect.operation === 'decrease') {
-    if (!effect.amountRange) throw new Error(`Quantitative beta.28 effect '${effect.operation}' has no interval.`);
+    if (!effect.amountRange) throw new Error(`Quantitative beta.29 effect '${effect.operation}' has no interval.`);
     amount = `some ${leanInterval(effect.amountRange.min, effect.amountRange.max)}`;
   }
   return `({ target := ${leanString(effect.target)}, field := ${leanOptionString(effect.field)}, kind := .${effect.operation}, amount := ${amount} } : Effect)`;
 }
 
 function leanInterval(lo, hi) {
-  if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi) || lo > hi) throw new Error(`Invalid beta.28 interval ${lo}..${hi}.`);
+  if (!Number.isSafeInteger(lo) || !Number.isSafeInteger(hi) || lo > hi) throw new Error(`Invalid beta.29 interval ${lo}..${hi}.`);
   return `({ lo := ${leanInt(lo)}, hi := ${leanInt(hi)}, ordered := by decide } : Interval)`;
 }
 function leanOptionString(value) { return value === null || value === undefined ? 'none' : `some ${leanString(value)}`; }

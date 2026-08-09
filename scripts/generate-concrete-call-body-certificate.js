@@ -24,8 +24,8 @@ try {
   console.log(`Generated ${out}`);
   console.log(`  source sha256: ${certificate.sourceSha256}`);
   console.log(`  certified structured call(s): ${certificate.certified.join(', ')}`);
-  console.log('  assurance: Lean re-evaluates exact call binding and every direct quantitative effect in the complete supported callee semantic-effect body (sequence/static-repeat), checks the full claimed effect trace, checks callee signature coverage, and imports the complete trace into the caller semantic signature.');
-  console.log('  boundary: branches, nested recipe calls, dynamic repeat, arbitrary state-dependent amounts and production-Wasm call equivalence remain outside beta.28.');
+  console.log('  assurance: Lean re-evaluates exact call binding, GuardExpr branch truth and every direct quantitative effect in the complete supported callee semantic-effect body (branch/sequence/static-repeat), checks the full selected effect trace, checks both branch arms against the callee signature, and imports the selected trace into the caller semantic signature.');
+  console.log('  boundary: nested recipe calls, dynamic repeat, state-dependent guards/amounts outside the exact parameter fragment and production-Wasm call equivalence remain outside beta.29.');
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
   process.exit(2);
