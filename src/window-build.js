@@ -30,11 +30,22 @@ export function validateWindowBuild(compiled) {
 export function validateWindowRuntimeSupport(compiled) {
   validateWindowBuild(compiled);
   const controls = new Map();
+  const forms = new Map();
   const events = [];
+  const formActions = [];
 
   const walk = nodes => {
     for (const node of nodes ?? []) {
       if (node.kind === 'window') {
+        if (node.id) {
+          if (forms.has(node.id)) {
+            throw new WindowBuildError(
+              `line ${node.line ?? '?'}: Form name '${node.id}' is declared more than once. ` +
+              'Each named Form needs a unique name after as.'
+            );
+          }
+          forms.set(node.id, node);
+        }
         for (const child of node.body ?? []) {
           if (child.kind !== 'uiControl' || !child.id) continue;
           if (controls.has(child.id)) {
@@ -47,6 +58,8 @@ export function validateWindowRuntimeSupport(compiled) {
         }
       } else if (node.kind === 'event') {
         events.push(node);
+      } else if (node.kind === 'openForm' || node.kind === 'closeForm') {
+        formActions.push(node);
       }
       if (node.body && node.kind !== 'window') walk(node.body);
       if (node.thenBody) walk(node.thenBody);
@@ -73,5 +86,20 @@ export function validateWindowRuntimeSupport(compiled) {
     }
   }
 
-  return { windows: countWindowInstructions(compiled?.ir?.instructions), controls: controls.size, events: events.length };
+  for (const action of formActions) {
+    if (!forms.has(action.form)) {
+      throw new WindowBuildError(
+        `line ${action.line ?? '?'}: Form '${action.form}' is not defined. ` +
+        `Name a window with 'as ${action.form}' or use the correct Form name.`
+      );
+    }
+  }
+
+  return {
+    windows: countWindowInstructions(compiled?.ir?.instructions),
+    namedForms: forms.size,
+    controls: controls.size,
+    events: events.length,
+    formActions: formActions.length
+  };
 }
