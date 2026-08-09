@@ -47,12 +47,12 @@ export function parse(source) {
       if(width<120||height<80) throw new PatchSyntaxError('A window size must be at least 120 by 80.',row.line);
       return {kind:'window',titleExpr:m[1],width,height,body:optionalChildBlock(indent),line:row.line};
     }
-    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return {kind:'window',titleExpr:m[1],width:null,height:null,body:optionalChildBlock(indent),line:row.line};
+    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return {kind:'window',titleExpr:m[1],body:optionalChildBlock(indent),line:row.line};
 
     const ui=parseUILayout(row.text,row.line);
-    if ((m = ui.core.match(/^text\s+(.+)$/))) return {kind:'uiControl',control:'text',textExpr:m[1],id:null,layout:ui.layout,line:row.line};
-    if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return {kind:'uiControl',control:'button',textExpr:m[1],id:m[2],layout:ui.layout,line:row.line};
-    if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return {kind:'uiControl',control:'input',textExpr:null,id:m[1],layout:ui.layout,line:row.line};
+    if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
+    if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'button',textExpr:m[1],id:m[2],line:row.line},ui.layout);
+    if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^allow\s+([A-Za-z_]\w*)\s*:\s*$/))) {
       const rules=childBlock(indent,row); for(const rule of rules) if(rule.kind!=='capRule') throw new PatchSyntaxError('An allow block can only contain rules like player.score may increase up to 10.',rule.line);
@@ -97,6 +97,10 @@ export function parse(source) {
     throw new PatchSyntaxError(`I do not understand '${row.text}'.`,row.line);
   }
   return block(0);
+}
+
+function uiControl(fields,layout) {
+  return layout ? {kind:'uiControl',...fields,layout} : {kind:'uiControl',...fields};
 }
 
 function parseUILayout(text,line) {
