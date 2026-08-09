@@ -15,10 +15,7 @@ export function countWindowInstructions(instructions) {
   return count;
 }
 
-/**
- * Require an actual Patch window for a project explicitly built as Window.
- * This consumes normalized IR (`code: 'WINDOW'`), not source AST node fields.
- */
+/** Require an actual Patch window for a project explicitly built as Window. */
 export function validateWindowBuild(compiled) {
   const count = countWindowInstructions(compiled?.ir?.instructions);
   if (!count) {
@@ -29,15 +26,7 @@ export function validateWindowBuild(compiled) {
   return count;
 }
 
-/**
- * Validate the shared Window runtime surface used by Studio preview,
- * Standalone Window Web Apps and the generated desktop player.
- *
- * Beta.24 deliberately exposes only the event pairs implemented consistently
- * across all three targets: button `clicked` and input `changed`. Other parsed
- * event forms fail before packaging rather than becoming target-specific or
- * silently dead behavior.
- */
+/** Validate the shared Window runtime surface used by Studio, Web and desktop. */
 export function validateWindowRuntimeSupport(compiled) {
   validateWindowBuild(compiled);
   const controls = new Map();
@@ -75,10 +64,10 @@ export function validateWindowRuntimeSupport(compiled) {
     }
     const supported =
       (controlType === 'button' && event.event === 'clicked') ||
-      (controlType === 'input' && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'checkbox') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds currently support 'clicked' on buttons and 'changed' on inputs. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons and 'changed' on inputs/checkboxes. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
