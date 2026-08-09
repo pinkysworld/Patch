@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.27**
+Current development beta: **0.2.0-beta.28**
 
 Checked items are implemented and must pass the final exact-head pull-request gates before merge. Unchecked items are not presented as finished features.
 
@@ -62,39 +62,54 @@ Beta.25 establishes **abstract interval/signature composition**, not concrete va
 - [x] standard Formal CI + focused concrete-call Lean gate
 - [x] Windows/macOS/Linux concrete certificate generation
 
-Beta.26's production encoder deliberately certifies inter-recipe **variable pass-through** arguments and one direct quantitative leaf-effect subset.
-
 ### beta.27: arithmetic concrete-call certificate coverage
-
-Production-to-formal expression preservation:
 - [x] `src/concrete-call-certificate.js` certificate version **0.3**
-- [x] recursively encode `RangeExpr.lit`
-- [x] recursively encode `RangeExpr.var`
-- [x] recursively encode `RangeExpr.add`
-- [x] recursively encode `RangeExpr.sub`
-- [x] recursively encode `RangeExpr.neg`
-- [x] recursively encode `RangeExpr.scale` by non-negative integer literal
-- [x] preserve unsupported boundary for division, decimals and general variable multiplication
-
-Exact arithmetic call/effect certificate:
+- [x] preserve `RangeExpr.lit`, `var`, `add`, `sub`, `neg`, `scale`
 - [x] `examples/formal-calls-arithmetic.patch`
 - [x] `bonus + 1` exact inter-recipe argument binding
 - [x] `amount * 2` exact direct quantitative leaf amount
-- [x] JavaScript claimed singleton amount remains proof-free
 - [x] Lean independently re-evaluates arithmetic under exact bound `IntEnv`
-- [x] exact value still checked through beta.25 abstract interval → callee declaration
-- [x] exact arithmetic leaf effect still checked through `EffectRefines` → caller signature
-- [x] subtraction/unary-negation concrete binding regression test
-- [x] division remains conservatively rejected
-
-Reproducibility/gates:
-- [x] `arithmetic-call-certify:example`
 - [x] generated `GeneratedArithmeticCallCertificate.lean`
-- [x] dedicated `Patch Beta27 Arithmetic Calls` pinned-Lean workflow
-- [x] standard Formal CI generates/checks both beta.26 and beta.27 concrete certificates
-- [x] normal Windows/macOS/Linux CI generates both concrete certificate variants
+- [x] standard Formal CI and Windows/macOS/Linux certificate generation
 
 Beta.27 is a **coverage extension of the already mechanized integer `RangeExpr` semantics**, not a new arithmetic theorem or novelty claim.
+
+### beta.28: exact structured callee traces
+
+Structured exact body semantics:
+- [x] `formal/PatchCallBody.lean`
+- [x] `BoundStmt.skip`
+- [x] direct quantitative `BoundStmt.emit`
+- [x] `BoundStmt.seq`
+- [x] literal/static `BoundStmt.repeat`
+- [x] relational `BoundExec`
+- [x] executable `evalBoundStmt`
+- [x] `evalBoundStmt_sound`
+- [x] proof-free list comparison through verified `effectEqBool`
+- [x] `evalBoundStmtEqBool_sound`
+- [x] `BoundBodyCovered` + executable coverage checker
+- [x] `TraceRefinesSignature`
+- [x] `boundExecRefinesSignature`
+- [x] `checkedEvaluatedBoundBodyRefinesSignature`
+
+Interprocedural import:
+- [x] `formal/PatchCallBodyImport.lean`
+- [x] whole concrete callee trace imported through beta.25 `SignatureCovers`
+- [x] `checkedConcreteCallBodyRefinesCallerSignature`
+- [x] exact call binding and full supported callee trace established in one certificate theorem
+
+Production evidence and reproducibility:
+- [x] `src/concrete-call-body.js`
+- [x] `src/concrete-call-body-certificate.js`
+- [x] `examples/formal-callee-trace.patch`
+- [x] `callee-trace-certify:example`
+- [x] generated `GeneratedConcreteCallBodyCertificate.lean`
+- [x] focused beta.28 pinned-Lean workflow
+- [x] standard Formal CI integration
+- [x] standard Windows/macOS/Linux certificate generation
+- [x] conservative rejection of branches, nested calls, dynamic repeats and unsupported amount expressions
+
+Beta.28 proves complete exact semantic-effect traces for the supported **sequence/static-repeat direct quantitative callee-body fragment**. It does not prove arbitrary structured source execution or production-Wasm call equivalence.
 
 ## Current product priorities
 
@@ -130,11 +145,13 @@ Completed:
 - [x] finite rank-decreasing recipe-call semantic-signature composition
 - [x] exact safe-integer inter-recipe binding checked by Lean
 - [x] direct bound quantitative leaf effect refined into caller semantic signature
-- [x] **full already-mechanized integer `RangeExpr` fragment carried through concrete call certificates**
+- [x] full already-mechanized integer `RangeExpr` fragment carried through concrete call certificates
+- [x] **structured callee-body execution under exact bindings for direct emits + sequence + static repeat**
+- [x] **complete exact semantic-effect trace imported into caller signature for that fragment**
 
 Highest-value remaining research work:
-- [ ] **structured callee-body execution under exact bindings** beyond one direct leaf effect
-- [ ] complete transitive concrete call-trace semantics
+- [ ] branch/guard-aware exact callee traces
+- [ ] nested-call and complete transitive concrete call-trace semantics
 - [ ] connect concrete call certificates to observed direct-Wasm call execution
 - [ ] semantic-security/plugin case studies
 - [ ] certificate/checker/backend overhead evaluation
@@ -154,9 +171,11 @@ Highest-value remaining research work:
 - [x] exact safe-integer concrete call binding
 - [x] arithmetic `RangeExpr` concrete certificate coverage
 - [x] exact direct leaf effect refinement through caller signature
+- [x] structured exact callee trace for sequence/static-repeat bodies
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
 - [x] GUI input preserves explicit persistent `change`
-- [ ] structured concrete callee execution beyond one direct leaf effect
+- [ ] guard-aware exact callee traces
+- [ ] transitive/nested concrete call traces
 - [ ] call-aware direct-Wasm runtime correspondence
 - [ ] security/engineering case studies
 - [ ] overhead evaluation
@@ -175,7 +194,8 @@ Highest-value remaining research work:
 8. Runtime/call witnesses remain proof-free evidence; Lean checks only explicitly supported obligations.
 9. Beta.25 call claims are abstract interval/signature-level.
 10. Beta.26 adds exact binding/direct leaf refinement.
-11. Beta.27 broadens the certificate to the existing integer `RangeExpr` fragment; it does not prove arbitrary callee execution or Wasm equivalence.
-12. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
-13. Direct-Wasm/C99 support is narrower than the full Patch language.
-14. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
+11. Beta.27 broadens the certificate to the existing integer `RangeExpr` fragment.
+12. Beta.28 adds exact whole-trace semantics for direct quantitative sequence/static-repeat callee bodies, not branches, nested calls or Wasm equivalence.
+13. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
+14. Direct-Wasm/C99 support is narrower than the full Patch language.
+15. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
