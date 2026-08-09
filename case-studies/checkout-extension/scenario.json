@@ -1,0 +1,59 @@
+{
+  "format": "patch-realistic-extension-case",
+  "version": "0.1",
+  "name": "checkout-loyalty-extension",
+  "entryRecipe": "checkout_extension",
+  "safe": {
+    "file": "safe.patch",
+    "patchExpected": "accept",
+    "coarseWriteExpected": true,
+    "expectedState": {
+      "balance": 80,
+      "points": 8,
+      "cashback": 0
+    },
+    "expectedProtectedEffects": [
+      {
+        "target": "balance",
+        "operation": "decrease",
+        "maxAmount": 25,
+        "viaContains": "apply_discount"
+      },
+      {
+        "target": "points",
+        "operation": "increase",
+        "maxAmount": 10,
+        "viaContains": "grant_loyalty"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "id": "reward-escalation",
+      "file": "reward-escalation.patch",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "above the allowed maximum of 10",
+      "dimension": "magnitude",
+      "mutation": "loyalty helper multiplies reward by five"
+    },
+    {
+      "id": "direction-escalation",
+      "file": "direction-escalation.patch",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "allow block does not permit that change",
+      "dimension": "operation-direction",
+      "mutation": "discount helper increases balance instead of decreasing it"
+    },
+    {
+      "id": "target-escalation",
+      "file": "target-escalation.patch",
+      "patchExpected": "reject",
+      "coarseWriteExpected": false,
+      "errorContains": "allow block does not permit that change",
+      "dimension": "target-authority",
+      "mutation": "extension adds a new cashback helper outside declared authority"
+    }
+  ]
+}
