@@ -120,6 +120,17 @@ jobs:
         shell: bash
         run: |
           node -e "const fs=require('fs'); fs.writeFileSync('dist/patch-app.json', JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.2',name:'Runtime Smoke',kind:'window',source:fs.readFileSync('examples/counter-window.patch','utf8')}));"
+      - name: Configure Linux Electron sandbox helper
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          APP=$(find dist -maxdepth 2 -type f -name 'PatchWindowRuntime' -perm -111 | head -1)
+          test -n "$APP"
+          HELPER="$(dirname "$APP")/chrome-sandbox"
+          test -f "$HELPER"
+          sudo chown root:root "$HELPER"
+          sudo chmod 4755 "$HELPER"
+          test "$(stat -c '%u:%g:%a' "$HELPER")" = '0:0:4755'
 
       - name: Smoke Window payload validation on Windows
         if: matrix.platform == 'windows'
