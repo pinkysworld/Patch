@@ -18,9 +18,10 @@ The assurance stack now includes:
 6. beta.28/29 exact structured and guard-selected callee traces;
 7. beta.30 finite transitive exact call-tree traces;
 8. beta.31 first call-aware direct-Wasm bridge;
-9. **Beta.32 invocation-frame-aware direct-Wasm correspondence, including repeated identical calls**.
+9. **Beta.32 invocation-frame-aware direct-Wasm correspondence, including repeated identical calls**;
+10. a **reproducible assurance-overhead/scaling evaluation harness** with controlled raw-data output.
 
-None is described as complete compiler verification.
+None is described as complete compiler verification, and the evaluation harness is not itself an empirical result.
 
 ## Beta.32 invocation-frame milestone
 
@@ -44,13 +45,7 @@ evalCallTreeStmtEqBool beta30ExactBindings exactTree frameSelectedObservedEffect
 
 before reusing `checkedObservedTransitiveRuntimeRefinesCallerSignature` to derive caller-signature refinement.
 
-The repeated regression source is:
-
-```text
-examples/formal-transitive-calls-repeated.patch
-```
-
-and contains two identical `do caller(1)` calls. They receive distinct independently reconstructed frames and separate certifiable runtime observations.
+The repeated regression source is `examples/formal-transitive-calls-repeated.patch` and contains two identical `do caller(1)` calls. They receive distinct independently reconstructed frames and separate certifiable runtime observations.
 
 Generated runtime evidence:
 
@@ -73,29 +68,55 @@ Checked/validated in the artifact:
 - frame-selected observed effects re-evaluated by Lean;
 - caller-signature refinement of accepted observed lists.
 
-Explicit proof-free/trust boundaries remain:
-
-- runtime capture;
-- correctness/completeness of the independent JavaScript validator and invocation-frame reconstruction;
-- production parser/extractor correctness;
-- JavaScript-to-Wasm lowering correctness;
-- Wasm engine correctness.
+Explicit proof-free/trust boundaries remain runtime capture, correctness/completeness of the independent JavaScript validator and invocation-frame reconstruction, production parser/extractor correctness, JavaScript-to-Wasm lowering correctness and Wasm-engine correctness.
 
 Beta.32 is therefore not an end-to-end compiler/runtime refinement theorem.
 
-## Beta.30 regression milestone
+## Assurance overhead evaluation harness
 
-`PatchCallTree.lean` recursively checks exact nested `RangeExpr` bindings, strict outer/nested rank decrease, selected `GuardExpr`/static-repeat/direct-effect execution and edge-by-edge semantic-signature import.
+`src/evaluation-corpus.js`, `scripts/benchmark-assurance.js` and `docs/EVALUATION.md` define a deterministic evaluation methodology rather than hard-coded performance claims.
 
-`GeneratedTransitiveCallBodyCertificate.lean` remains runtime-independent beta.30 regression evidence.
+The corpus separates:
+
+- **nested call depth** at fixed concrete invocation count;
+- **concrete invocation count** at fixed call depth;
+- combined depth/invocation scenarios.
+
+The benchmark records raw timing samples plus min/median/mean/p95/max for:
+
+```text
+production direct-Wasm compilation
+precompiled direct-Wasm execution
+independent transition/effect/invocation-frame validation
+end-to-end beta.32 runtime correspondence
+beta.30+32 Lean-source certificate generation
+```
+
+It also records source/Wasm/certificate size, transition/effect/frame/correspondence counts and the CPU/OS/Node/V8 environment manifest.
+
+A manual-only **Patch Assurance Evaluation** workflow records separate pinned-Lean certificate-checking wall time and memory. It is deliberately not an ordinary PR workflow, both to avoid notification noise and because hosted-runner timings should be treated as reproducibility evidence rather than stable microbenchmark results.
+
+### Empirical-claim rule
+
+**No overhead, scalability or asymptotic claim is made yet.** The next step is to collect controlled paper-quality measurements on fixed hardware, preserve raw JSON/CSV, characterize variance and only then synchronize measured results into `main.tex`.
 
 ## Reproducibility
+
+Core assurance:
 
 ```bash
 npm test
 npm run transitive-callee-trace-certify:example
 npm run transitive-runtime-certify:example
 npm run transitive-runtime-certify:repeated
+```
+
+Evaluation:
+
+```bash
+npm run evaluate:assurance -- --preset paper --iterations 10 --warmup 3 \
+  --out evaluation/results/assurance.json \
+  --csv evaluation/results/assurance.csv
 ```
 
 Relevant formal modules:
@@ -107,31 +128,23 @@ PatchCallTree.lean
 PatchCallRuntime.lean
 ```
 
-Relevant generated evidence:
-
-```text
-GeneratedGuardedCallBodyCertificate.lean
-GeneratedTransitiveCallBodyCertificate.lean
-GeneratedTransitiveRuntimeCertificate.lean
-GeneratedRepeatedTransitiveRuntimeCertificate.lean
-```
-
 ## Current claim boundary
 
 A defensible beta.32 artifact statement is:
 
-> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. Runtime capture and independent-validator/frame-reconstruction correctness remain explicit proof-free evidence boundaries; the result is not a full compiler correctness theorem.
+> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. Runtime capture and independent-validator/frame-reconstruction correctness remain explicit proof-free evidence boundaries; the result is not a full compiler correctness theorem. The artifact additionally includes a reproducible overhead/scaling harness, but no empirical performance claim is made until controlled measurements are collected.
 
 ## Prior-art discipline
 
-Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, effect refinement, translation validation, proof-carrying code, WebAssembly or GUI packaging.
+Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, effect refinement, translation validation, proof-carrying code, benchmarking, WebAssembly or GUI packaging.
 
-The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32 is supporting assurance, not a firstness assertion.
+The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32 and the evaluation harness are supporting assurance/evaluation infrastructure, not firstness assertions.
 
 ## Remaining high-value gaps
 
 - semantic-security/plugin case studies;
-- validation/certificate/checker/backend overhead measurements;
+- controlled validation/certificate/checker/backend overhead measurements using the completed harness;
+- statistical analysis/plots from those measurements;
 - systematic related-work review and reproducibility bundle;
-- controlled synchronization of these claims into `main.tex` before venue submission;
+- controlled synchronization of measured results and current claims into `main.tex` before venue submission;
 - further reduction of parser/lowering/runtime trust boundaries without overstating full verification.

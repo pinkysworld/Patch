@@ -14,17 +14,19 @@ const files = {
   readme: read('README.md'), website: read('web/index.html'), studio: read('docs/PATCH_STUDIO.md'),
   native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
   formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
-  runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
+  evaluation: read('docs/EVALUATION.md'), runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
   directTrace: read('src/direct-trace-validator.js'), directEffect: read('src/direct-effect-validator.js'),
   transitiveBody: read('src/transitive-call-body.js'), transitiveCertificate: read('src/transitive-call-body-certificate.js'),
   runtimeCorrespondence: read('src/transitive-runtime-correspondence.js'),
   runtimeCertificate: read('src/transitive-runtime-certificate.js'),
   runtimeGenerator: read('scripts/generate-transitive-runtime-certificate.js'),
+  evaluationCorpus: read('src/evaluation-corpus.js'), evaluationBenchmark: read('scripts/benchmark-assurance.js'),
   repeatedExample: read('examples/formal-transitive-calls-repeated.patch'),
   callTree: read('formal/PatchCallTree.lean'), callRuntime: read('formal/PatchCallRuntime.lean'), lakefile: read('formal/lakefile.lean'),
   formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'),
-  beta32Workflow: read('.github/workflows/beta32-invocation-frames.yml')
+  beta32Workflow: read('.github/workflows/beta32-invocation-frames.yml'),
+  evaluationWorkflow: read('.github/workflows/assurance-evaluation.yml')
 };
 
 if (pkg.scripts?.['transitive-runtime-certify:example'] !==
@@ -34,6 +36,9 @@ if (pkg.scripts?.['transitive-runtime-certify:example'] !==
 if (pkg.scripts?.['transitive-runtime-certify:repeated'] !==
     'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean') {
   throw new Error('package.json is missing the canonical beta.32 repeated-call runtime certificate command.');
+}
+if (pkg.scripts?.['evaluate:assurance'] !== 'node scripts/benchmark-assurance.js') {
+  throw new Error('package.json is missing the canonical assurance evaluation command.');
 }
 
 requireAll('README.md', files.readme, [
@@ -53,7 +58,7 @@ requireAll('docs/NATIVE_APPS.md', files.native, [
 ]);
 requireAll('docs/ROADMAP.md', files.roadmap, [
   `Current development beta: **${version}**`, '### beta.32:', 'invocation frames',
-  'repeated identical calls'
+  'repeated identical calls', 'Assurance overhead/scaling harness', 'controlled paper-quality benchmark runs'
 ]);
 requireAll('docs/COMPILER.md', files.compiler, [
   `Status: **${version}**`, 'Change IR **0.10**', 'Beta.32', 'invocation-frame',
@@ -68,7 +73,12 @@ requireAll('docs/NOVELTY.md', files.novelty, [
 ]);
 requireAll('paper/README.md', files.paper, [
   `Patch ${version} / Change IR 0.10`, 'Beta.32', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
-  'PatchCallRuntime.lean'
+  'PatchCallRuntime.lean', 'reproducible assurance-overhead/scaling evaluation harness', 'No overhead, scalability or asymptotic claim is made yet'
+]);
+requireAll('docs/EVALUATION.md', files.evaluation, [
+  `Patch ${version} / Change IR 0.10`, 'Call-tree depth', 'Concrete invocation count',
+  'compileMs', 'executeMs', 'validateMs', 'correspondenceMs', 'certificateGenerationMs',
+  'Patch Assurance Evaluation', 'hosted runner', 'raw JSON/CSV'
 ]);
 requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
   'Status: **0.2.0-beta.23**', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape'
@@ -99,6 +109,15 @@ requireAll('src/transitive-runtime-certificate.js', files.runtimeCertificate, [
 requireAll('scripts/generate-transitive-runtime-certificate.js', files.runtimeGenerator, [
   'generateTransitiveRuntimeCertificate', 'direct-Wasm trace sha256', 'invocation frame'
 ]);
+requireAll('src/evaluation-corpus.js', files.evaluationCorpus, [
+  "PATCH_ASSURANCE_EVALUATION_CORPUS_VERSION = '0.1'", 'generateAssuranceScalingProgram',
+  'assuranceEvaluationScenarios', "preset === 'paper'", 'nestedDepth', 'invocations'
+]);
+requireAll('scripts/benchmark-assurance.js', files.evaluationBenchmark, [
+  "format: 'patch-assurance-evaluation'", 'performance.now()', 'compileToDirectWasm', 'runDirectWasm',
+  'validateDirectSemanticEffects', 'buildTransitiveRuntimeCorrespondence', 'generateTransitiveRuntimeCertificate',
+  'certificateGenerationMs', 'toCsv', 'environmentManifest'
+]);
 requireAll('examples/formal-transitive-calls-repeated.patch', files.repeatedExample, ['do caller(1)\ndo caller(1)']);
 requireAll('formal/PatchCallTree.lean', files.callTree, [
   'inductive CallTreeStmt', 'theorem checkedConcreteTransitiveCallTreeRefinesCallerSignature'
@@ -120,6 +139,10 @@ requireAll('.github/workflows/ci.yml', files.ciWorkflow, [
 requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflow, [
   'Patch Beta32 Invocation Frames', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
   'PatchCallRuntime', 'cancel-in-progress: true'
+]);
+requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflow, [
+  'Patch Assurance Evaluation', 'workflow_dispatch:', 'benchmark-assurance.js',
+  'Measure Lean certificate checking', 'actions/upload-artifact@v4', 'retention-days: 30'
 ]);
 requireAll('web/sw.js', files.serviceWorker, [cacheVersion, "'../src/formal-calls.js'", 'freshFirst']);
 

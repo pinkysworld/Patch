@@ -2,7 +2,7 @@
 
 Current development beta: **0.2.0-beta.32**
 
-Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features.
+Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features or measured results.
 
 ## Completed research milestones
 
@@ -26,7 +26,6 @@ Checked items are implemented and must pass final exact-head gates before merge.
 - [x] exact nested guards/static repeats/direct quantitative effects
 - [x] edge-by-edge `SignatureCovers` import
 - [x] `checkedConcreteTransitiveCallTreeRefinesCallerSignature`
-- [x] `caller → outer → middle → leaf` depth-2 example
 - [x] `GeneratedTransitiveCallBodyCertificate.lean`
 
 ### beta.31: first call-aware direct-Wasm bridge
@@ -39,34 +38,42 @@ Checked items are implemented and must pass final exact-head gates before merge.
 - [x] fail closed when repeated identical scoped traces make attribution ambiguous
 
 ### beta.32: independent invocation frames
-
-Runtime evidence:
-- [x] independent Change-IR execution reconstructs every concrete `DO` invocation frame
-- [x] frame fields include `frameId`, parent frame, caller scope, callee, dynamic invocation ordinal, depth, exact arguments/bindings and transition interval
+- [x] reconstruct every concrete `DO` invocation frame independently of backend call markers
+- [x] frame identity includes caller/callee, dynamic invocation ordinal, parent/depth, exact arguments/bindings and transition interval
 - [x] every validated transition/effect carries the active frame stack
 - [x] correspondence selects effects by concrete frame identity rather than global trace uniqueness
-- [x] repeated identical calls are distinguishable without backend call-enter/call-exit markers
-- [x] frame exact parameter bindings are compared with the beta.30 expected callee binding
-- [x] `examples/formal-transitive-calls-repeated.patch` exercises two identical `do caller(1)` calls
-
-Formal/runtime bridge:
-- [x] generated beta.32 certificate checks runtime-frame `BindingList = beta.30 exact BindingList`
+- [x] repeated identical calls are distinguishable
+- [x] generated certificate checks runtime-frame `BindingList = beta.30 exact BindingList`
 - [x] frame-selected observed effects are re-evaluated through `evalCallTreeStmtEqBool`
-- [x] caller-signature refinement still reuses `checkedObservedTransitiveRuntimeRefinesCallerSignature`
-- [x] single-call `GeneratedTransitiveRuntimeCertificate.lean`
-- [x] repeated-call `GeneratedRepeatedTransitiveRuntimeCertificate.lean`
-- [x] standard Formal CI generates/verifies both certificates
-- [x] Windows/macOS/Linux standard CI regenerates both runtime evidence artifacts
+- [x] `GeneratedTransitiveRuntimeCertificate.lean`
+- [x] `GeneratedRepeatedTransitiveRuntimeCertificate.lean`
+- [x] standard Formal CI and Windows/macOS/Linux CI regenerate the evidence
 - [x] Change IR remains **0.10**
 
-Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment, including repeated identical calls. Invocation-frame reconstruction is still proof-free evidence produced by the independent JavaScript validator, not a full compiler/runtime simulation theorem.
+Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment, including repeated identical calls. Runtime capture and independent validator/frame-reconstruction correctness remain explicit proof-free boundaries.
 
-Explicit beta.32 boundaries remain:
-- runtime trace capture;
-- correctness/completeness of the independent JavaScript trace/effect validator and invocation-frame reconstruction;
-- parser/extractor correctness;
-- JavaScript-to-Wasm lowering correctness;
-- Wasm engine correctness.
+## Evaluation infrastructure
+
+### Assurance overhead/scaling harness
+- [x] deterministic `src/evaluation-corpus.js`
+- [x] separate call-depth and concrete-invocation scaling axes
+- [x] representative execution validated against expected final state/trace count before timing
+- [x] compiler timing
+- [x] precompiled direct-Wasm execution timing
+- [x] independent transition/effect/invocation-frame validation timing
+- [x] end-to-end beta.32 correspondence timing
+- [x] beta.30+32 Lean-source certificate-generation timing
+- [x] raw samples + min/median/mean/p95/max
+- [x] source/Wasm/trace/frame/correspondence/certificate-size metadata
+- [x] JSON and CSV outputs
+- [x] full CPU/OS/Node/V8 environment manifest
+- [x] separate Lean checker timing in a **manual-only** evaluation workflow
+- [x] `docs/EVALUATION.md` methodology and interpretation discipline
+- [ ] controlled paper-quality benchmark runs collected on fixed hardware
+- [ ] statistical analysis / plots generated from those controlled runs
+- [ ] measured results synchronized into the manuscript
+
+The harness is complete infrastructure. **No empirical performance result is claimed until controlled runs are actually collected.** Hosted GitHub runner measurements are treated as reproducibility evidence, not stable microbenchmark numbers.
 
 ## Product priorities
 
@@ -93,7 +100,7 @@ Explicit beta.32 boundaries remain:
 ## Highest-value remaining research work
 
 1. [ ] semantic-security/plugin case studies for bounded semantic authority;
-2. [ ] certificate/checker/backend overhead evaluation;
+2. [ ] **collect controlled overhead/scaling measurements using the completed evaluation harness**;
 3. [ ] systematic related-work review;
 4. [ ] reproducibility bundle;
 5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
@@ -112,11 +119,12 @@ Explicit beta.32 boundaries remain:
 - [x] guarded structured exact callee traces
 - [x] finite transitive exact call trees
 - [x] call-aware direct-Wasm correspondence
-- [x] **independent invocation frames for repeated identical calls**
+- [x] independent invocation frames for repeated identical calls
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
 - [x] semantic GUI input route
+- [x] **reproducible assurance-overhead evaluation harness**
+- [ ] controlled measured overhead results
 - [ ] security/engineering case studies
-- [ ] overhead evaluation
 - [ ] systematic related work
 - [ ] reproducibility bundle
 
@@ -130,4 +138,5 @@ Explicit beta.32 boundaries remain:
 6. Translation validation does not imply parser correctness.
 7. Proof-free runtime/call witnesses remain evidence; Lean checks only explicit supported obligations.
 8. Beta.32 improves concrete invocation attribution but does not establish full compiler verification.
-9. Direct-Wasm/C99 support remains narrower than the full language.
+9. Benchmark infrastructure does not become a performance claim until controlled measurements are collected.
+10. Direct-Wasm/C99 support remains narrower than the full language.

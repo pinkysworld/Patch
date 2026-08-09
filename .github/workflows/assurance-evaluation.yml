@@ -1,0 +1,127 @@
+name: Patch Assurance Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: Evaluation corpus preset
+        required: true
+        type: choice
+        options:
+          - smoke
+          - quick
+          - paper
+        default: quick
+      iterations:
+        description: Measured JavaScript iterations per phase/scenario
+        required: true
+        default: '5'
+      warmup:
+        description: Warmup iterations per phase/scenario
+        required: true
+        default: '1'
+
+concurrency:
+  group: assurance-evaluation-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Record runner environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evaluation/results
+          {
+            echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "runner_os=$RUNNER_OS"
+            echo "runner_arch=$RUNNER_ARCH"
+            echo "node=$(node --version)"
+            echo "kernel=$(uname -a)"
+            echo "cpu=$(lscpu | sed -n 's/^Model name:[[:space:]]*//p' | head -1)"
+            echo "logical_cpus=$(nproc)"
+            echo "memory_kib=$(awk '/MemTotal/ {print $2}' /proc/meminfo)"
+            echo "commit=$GITHUB_SHA"
+          } > evaluation/results/environment.txt
+
+      - name: Run JavaScript assurance evaluation
+        shell: bash
+        env:
+          EVAL_PRESET: ${{ inputs.preset }}
+          EVAL_ITERATIONS: ${{ inputs.iterations }}
+          EVAL_WARMUP: ${{ inputs.warmup }}
+        run: |
+          set -euo pipefail
+          node scripts/benchmark-assurance.js \
+            --preset "$EVAL_PRESET" \
+            --iterations "$EVAL_ITERATIONS" \
+            --warmup "$EVAL_WARMUP" \
+            --out evaluation/results/assurance.json \
+            --csv evaluation/results/assurance.csv
+
+      - name: Generate pinned beta32 Lean certificates
+        run: |
+          npm run transitive-runtime-certify:example
+          npm run transitive-runtime-certify:repeated
+
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+
+      - name: Build Lean dependencies outside measured certificate checks
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          elan override set leanprover/lean4:v4.30.0
+          lake update
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport PatchCallTree PatchCallRuntime
+
+      - name: Measure Lean certificate checking
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > ../evaluation/results/lean-check-times.txt
+          /usr/bin/time -f 'single_wall_seconds=%e\nsingle_user_seconds=%U\nsingle_system_seconds=%S\nsingle_max_rss_kib=%M' \
+            -o ../evaluation/results/lean-single.time \
+            lake env lean GeneratedTransitiveRuntimeCertificate.lean
+          /usr/bin/time -f 'repeated_wall_seconds=%e\nrepeated_user_seconds=%U\nrepeated_system_seconds=%S\nrepeated_max_rss_kib=%M' \
+            -o ../evaluation/results/lean-repeated.time \
+            lake env lean GeneratedRepeatedTransitiveRuntimeCertificate.lean
+          cat ../evaluation/results/lean-single.time ../evaluation/results/lean-repeated.time \
+            > ../evaluation/results/lean-check-times.txt
+
+      - name: Preserve evaluated certificates and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp formal/GeneratedTransitiveRuntimeCertificate.lean evaluation/results/
+          cp formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean evaluation/results/
+          sha256sum \
+            evaluation/results/GeneratedTransitiveRuntimeCertificate.lean \
+            evaluation/results/GeneratedRepeatedTransitiveRuntimeCertificate.lean \
+            > evaluation/results/certificate-sha256.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-assurance-evaluation-${{ inputs.preset }}-${{ github.run_id }}
+          path: evaluation/results/**
+          if-no-files-found: error
+          retention-days: 30
