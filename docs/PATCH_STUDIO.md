@@ -2,22 +2,25 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.25
+## What works in 0.2 beta.26
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
-Change IR **0.10** adds the proof-free `formalCalls` artifact alongside the source/range/guard assurance artifacts. This remains advanced machinery: ordinary Studio use still consists of writing, running and building Patch code.
+Change IR **0.10** remains unchanged from beta.25. The compiler still carries `formalCalls` alongside source/range/guard assurance artifacts. Beta.26 adds a separate concrete-call certificate path rather than expanding beginner-facing syntax or the IR schema.
 
-Research CLI commands remain outside the beginner workflow:
+Research commands remain outside the ordinary beginner workflow:
 
 ```bash
 patch formal program.patch
 patch certify program.patch
 patch runtime-certify program.patch
 patch call-certify program.patch
+npm run concrete-call-certify:example
 ```
 
-`patch call-certify` emits a Lean-checkable finite recipe environment for the supported acyclic safe-integer call fragment. It checks abstract argument intervals and semantic-signature composition; it does not yet prove concrete parameter substitution.
+The beta.26 concrete-call certificate re-evaluates supported safe-integer inter-recipe variable arguments in Lean, checks exact positional parameter binding and, for a conservative direct quantitative leaf Change, proves the exact bound effect refines an effect represented by the caller semantic signature.
+
+This research layer is intentionally invisible during normal editing/running/building.
 
 ## Semantic input events
 
@@ -67,7 +70,11 @@ For cloud desktop builds, Studio performs browser preflight, sends the current s
 
 The beta.23 guard-aware layer checks eligible direct-Wasm branch witnesses against normalized source guards and concrete safe-integer recipe parameter environments before composing runtime effects with Change Capabilities.
 
-Beta.25 separately adds **abstract acyclic recipe-call composition** through `formalCalls` and `PatchCalls.lean`. These layers do not alter normal Studio syntax and are not presented as full compiler verification.
+Beta.25 adds abstract acyclic recipe-call interval/signature composition through `formalCalls` and `PatchCalls.lean`.
+
+Beta.26 adds `PatchCallSubstitution.lean`, `PatchCallRefinement.lean` and `PatchCallEffect.lean`. The supported concrete subset is inter-recipe variable pass-through binding plus direct quantitative leaf-effect refinement. Root-program concrete calls, richer arithmetic substitution, arbitrary callee-body execution and production-Wasm call equivalence remain outside the theorem.
+
+These layers do not alter normal Studio syntax and are not presented as full compiler verification.
 
 ## iPhone and iPad
 
@@ -75,7 +82,7 @@ Patch Studio can be installed from Safari with **Share → Add to Home Screen**.
 
 ## PWA updates
 
-The beta.25 cache key is `patch-studio-0.2-beta.25`. Because `compiler.js` imports `formal-calls.js`, the service-worker cache includes `formal-calls.js` together with the source/guard compiler modules and `window-events.js`. This keeps offline Studio compilation consistent with Change IR 0.10.
+The beta.26 cache key is `patch-studio-0.2-beta.26`. The browser compiler dependencies remain the same because beta.26's concrete-call certificate modules are Node/Lean research tooling rather than Studio runtime imports. The cache continues to include `formal-calls.js`, source/guard compiler modules and `window-events.js` for consistent offline Studio compilation with Change IR 0.10.
 
 ## Source remains truth
 
