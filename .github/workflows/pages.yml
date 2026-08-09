@@ -38,13 +38,14 @@ jobs:
       - name: Add prebuilt native runtime templates
         env:
           GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: studio-runtime-v0.2
         run: |
           mkdir -p _site/runtimes
-          if gh release view studio-runtime-v0.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download studio-runtime-v0.1 --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
+          if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
             ls -lh _site/runtimes
           else
-            echo 'Runtime release is not published yet. The runtime-template workflow will trigger a second Pages deployment after publishing it.'
+            echo "Runtime release $RUNTIME_TAG is not published yet. The runtime-template workflow will trigger a second Pages deployment after publishing it."
           fi
       - name: Validate public site
         run: npm run check:site
