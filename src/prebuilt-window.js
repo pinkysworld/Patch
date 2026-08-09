@@ -11,16 +11,13 @@ export function buildPrebuiltCompiledWindowPackage(templateBytes, options = {}) 
   const platform = normalizePlatform(options.platform);
   const name = safeName(options.name ?? 'PatchApp');
   const compiled = validateCompiledWindowArtifact(options.compiledWindow);
-  const source = String(options.source ?? '');
   const payload = {
     format: 'patch-prebuilt-native-payload',
     version: PATCH_PREBUILT_WINDOW_PAYLOAD_VERSION,
     name,
     kind: 'window',
     execution: 'compiled-window-program',
-    compiled,
-    // Kept only for diagnostics/backward inspection. Current players execute compiled.program.
-    source
+    compiled
   };
   return {
     format: 'patch-prebuilt-native-package',
