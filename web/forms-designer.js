@@ -43,6 +43,7 @@ function installFormTools() {
   group.innerHTML = `
     <label>Form <select id="patchFormSelect" aria-label="Active form"></select></label>
     <button id="patchAddForm" class="secondary small" type="button">+ Form</button>
+    <label>Name <input id="patchFormName" spellcheck="false" aria-label="Form name"></label>
     <label>Title <input id="patchFormTitle" spellcheck="false" aria-label="Form title expression"></label>
     <label>W <input id="patchFormWidth" inputmode="numeric" aria-label="Form width"></label>
     <label>H <input id="patchFormHeight" inputmode="numeric" aria-label="Form height"></label>
@@ -50,6 +51,7 @@ function installFormTools() {
   toolbar.appendChild(group);
 
   const select = group.querySelector('#patchFormSelect');
+  const id = group.querySelector('#patchFormName');
   const title = group.querySelector('#patchFormTitle');
   const width = group.querySelector('#patchFormWidth');
   const height = group.querySelector('#patchFormHeight');
@@ -70,12 +72,12 @@ function installFormTools() {
     } catch (error) { showDesignerError(error); }
   });
   apply.addEventListener('click', applyFormProperties);
-  for (const input of [title, width, height]) {
+  for (const input of [id, title, width, height]) {
     input.addEventListener('keydown', event => {
       if (event.key === 'Enter') { event.preventDefault(); applyFormProperties(); }
     });
   }
-  return { group, select, title, width, height, add, apply };
+  return { group, select, id, title, width, height, add, apply };
 }
 
 function applyFormProperties() {
@@ -83,11 +85,13 @@ function applyFormProperties() {
     const windows = listDesignerWindows(code.value);
     if (!windows.length) return;
     activeForm = Math.min(activeForm, windows.length - 1);
-    const next = updateDesignerWindow(code.value, activeForm, {
+    const changes = {
       titleExpr: formTools.title.value,
       width: formTools.width.value,
       height: formTools.height.value
-    });
+    };
+    if (formTools.id.value.trim()) changes.id = formTools.id.value;
+    const next = updateDesignerWindow(code.value, activeForm, changes);
     setSource(next);
   } catch (error) { showDesignerError(error); }
 }
@@ -245,13 +249,18 @@ function syncFormTools() {
   const windows = listDesignerWindows(code.value);
   if (!windows.length) {
     formTools.select.innerHTML = '<option value="0">No forms</option>';
-    for (const input of [formTools.title, formTools.width, formTools.height]) input.value = '';
+    for (const input of [formTools.id, formTools.title, formTools.width, formTools.height]) input.value = '';
     return;
   }
   activeForm = Math.min(activeForm, windows.length - 1);
-  formTools.select.innerHTML = windows.map(item => `<option value="${item.windowIndex}">${escapeHtml(displayTitle(item.titleExpr, item.windowIndex))}</option>`).join('');
+  formTools.select.innerHTML = windows.map(item => {
+    const title = displayTitle(item.titleExpr, item.windowIndex);
+    const suffix = item.id ? ` · ${item.id}` : '';
+    return `<option value="${item.windowIndex}">${escapeHtml(title + suffix)}</option>`;
+  }).join('');
   formTools.select.value = String(activeForm);
   const current = windows[activeForm];
+  formTools.id.value = current.id ?? '';
   formTools.title.value = current.titleExpr;
   formTools.width.value = String(current.width ?? 640);
   formTools.height.value = String(current.height ?? 420);
