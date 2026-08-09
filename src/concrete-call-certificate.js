@@ -62,7 +62,8 @@ export function generateConcreteCallCertificate(source, options = {}) {
       blocks.push(`def ${id}_actualEffect : Effect := ${leanEffect(effect.actual)}`);
       blocks.push(`def ${id}_calleeSignature : List Effect := ${leanList(effect.calleeSignature.map(leanEffect))}`);
       blocks.push(`def ${id}_callerSignature : List Effect := ${leanList(effect.callerSignature.map(leanEffect))}`);
-      blocks.push(`theorem ${id}_effect_checked :\n    evalBoundQuantitativeEffect ${id}_expectedEffect ${id}_amountExpr ${id}_expected = some ${id}_actualEffect := by\n  native_decide`);
+      blocks.push(`theorem ${id}_effect_equality_checked :\n    evalBoundQuantitativeEffectEqBool ${id}_expectedEffect ${id}_amountExpr ${id}_expected ${id}_actualEffect = true := by\n  native_decide`);
+      blocks.push(`theorem ${id}_effect_checked :\n    evalBoundQuantitativeEffect ${id}_expectedEffect ${id}_amountExpr ${id}_expected = some ${id}_actualEffect := by\n  exact evalBoundQuantitativeEffectEqBool_sound ${id}_effect_equality_checked`);
       blocks.push(`theorem ${id}_callee_member_checked :\n    effectMemberBool ${id}_expectedEffect ${id}_calleeSignature = true := by\n  native_decide`);
       blocks.push(`theorem ${id}_signature_import_checked :\n    signatureCoversBool ${id}_calleeSignature ${id}_callerSignature = true := by\n  native_decide`);
       blocks.push(`theorem ${id}_effect_sound :\n    ConcreteCallBindingSpec ${id}_exprs ${id}_caller ${id}_params ${id}_declared ${id}_expected ∧\n    RefinesSignature ${id}_actualEffect ${id}_callerSignature := by\n  exact checkedConcreteBoundEffectRefinesCallerSignature\n    ${id}_binding_checked\n    ${id}_effect_checked\n    ${id}_callee_member_checked\n    ${id}_signature_import_checked`);
