@@ -1,6 +1,6 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.28",
+  "version": "0.2.0-beta.29",
   "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, guard-aware runtime correspondence, Lean-checked acyclic recipe calls, exact safe-integer call binding, arithmetic concrete calls, guard-aware exact structured callee-effect traces, semantic Window input events, cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
   "type": "module",
   "bin": { "patch": "./src/cli-entry.js" },
