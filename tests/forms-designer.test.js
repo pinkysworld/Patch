@@ -9,6 +9,7 @@ import {
   updateDesignerControl,
   updateDesignerWindow
 } from '../src/designer.js';
+import { buildFormLayoutManifest } from '../src/form-layout.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 
 test('parser keeps optional source-backed form and control geometry', () => {
@@ -48,12 +49,31 @@ test('designer rewrites form and control properties directly in Patch source', (
   assert.match(source, /button "Go" as go_button at 40, 55 size 140, 44/);
 });
 
-test('legacy flow-layout Window syntax remains valid', () => {
+test('legacy flow-layout Window syntax remains valid without changing its AST shape', () => {
   const source = `window "Legacy":\n  text "Hello"\n  input name_input\n`;
+  const ast = parse(source);
   const controls = listDesignerControls(source);
+  assert.equal(Object.hasOwn(ast[0], 'width'), false);
+  assert.equal(Object.hasOwn(ast[0], 'height'), false);
+  assert.equal(Object.hasOwn(ast[0].body[0], 'layout'), false);
   assert.equal(listDesignerWindows(source)[0].width, null);
   assert.equal(controls[0].x, null);
   assert.equal(controls[1].width, null);
+});
+
+test('a sized or positioned form deterministically places legacy controls too', () => {
+  const ast = parse(`window "Mixed" size 500, 300:\n  text "First"\n  button "Go" as go at 200, 80 size 100, 36\n  input name_input\n`);
+  const manifest = buildFormLayoutManifest(ast);
+  assert.deepEqual(manifest.windows[0].controls, [
+    { x: 24, y: 24, width: 200, height: 30 },
+    { x: 200, y: 80, width: 100, height: 36 },
+    { x: 24, y: 120, width: 220, height: 36 }
+  ]);
+});
+
+test('a pure legacy flow form stays flow-layout in the exported manifest', () => {
+  const manifest = buildFormLayoutManifest(parse(`window "Legacy":\n  text "Hello"\n  input name_input\n`));
+  assert.deepEqual(manifest.windows[0].controls, [null, null]);
 });
 
 test('Standalone Window Web build embeds source-backed form layout manifest', () => {
