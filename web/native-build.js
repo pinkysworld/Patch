@@ -65,11 +65,13 @@ buildButton.addEventListener('click', async event => {
         throw new Error('Ready-app downloads are currently available for Windows, macOS and Linux. For FreeBSD, choose the local or cloud build mode.');
       }
       setBusy(true, `Building ready ${platformLabel(platform)} ${kindLabel} app…`);
-      output.textContent = `${platformLabel(platform)} ${kindLabel} ready-app build\n\nPreflight passed: ${preflightText}.\nLoading the prebuilt Patch runtime…`;
+      output.textContent = `${platformLabel(platform)} ${kindLabel} ready-app build\n\nPreflight passed: ${preflightText}.\nLoading the Patch runtime asset…`;
       const templateUrl = prebuiltNativeTemplateUrl(platform, kind);
       const response = await fetch(templateUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error(`The prebuilt ${platformLabel(platform)} runtime is not available yet (${response.status}).`);
-      status.textContent = `Packaging ${platformLabel(platform)} app in this browser…`;
+      status.textContent = kind === 'console'
+        ? `Sealing project-specific ${platformLabel(platform)} executable in this browser…`
+        : `Packaging ${platformLabel(platform)} Window app in this browser…`;
       const ready = buildPrebuiltNativePackage(new Uint8Array(await response.arrayBuffer()), {
         platform,
         kind,
@@ -78,7 +80,7 @@ buildButton.addEventListener('click', async event => {
         wasm: directWasm?.module ?? null
       });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
-      output.textContent = `Ready app built ✓\n\nTarget: ${platformLabel(platform)}\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token was used. No Node.js, Rust, Cargo or local compiler is required. Unzip the download and open ${prebuiltLauncher(platform, kind)}.\n\nThe native runtime was prebuilt by the Patch project; Studio only inserted this project's checked payload into that runtime package.`;
+      output.textContent = `Ready app built ✓\n\nTarget: ${platformLabel(platform)}\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token was used. No Node.js, Rust, Cargo or local compiler is required. Unzip the download and open ${prebuiltLauncher(platform, kind, name)}.\n\n${readyPackageNote(kind)}`;
       status.textContent = `${platformLabel(platform)} ${kindLabel} app downloaded · no token · no toolchain`;
       return;
     }
@@ -149,7 +151,9 @@ function refreshNativePanel() {
   } else if (nativeBuildMode.value === 'prebuilt') {
     status.textContent = platform === 'freebsd'
       ? 'Ready-app downloads are not available for FreeBSD yet; choose local or cloud mode.'
-      : `${platformLabel(platform)} ${kindLabel}: click Build to download a ready-to-run app. No token or local toolchain.`;
+      : projectKind.value === 'console'
+        ? `${platformLabel(platform)} Console: click Build for a sealed project-specific executable. No token or local toolchain.`
+        : `${platformLabel(platform)} Window / GUI: click Build for a ready desktop-player package. No token or local toolchain.`;
   } else if (nativeBuildMode.value === 'local') {
     status.textContent = `${platformLabel(platform)} ${kindLabel}: advanced local toolchain kit.`;
   } else {
@@ -213,10 +217,20 @@ function artifactDescription(platform, kind) {
   if (kind === 'window') return `${platformLabel(platform)} standalone GUI package`;
   return `${platformLabel(platform)} native Console package`;
 }
-function prebuiltLauncher(platform, kind) {
-  if (platform === 'macos') return kind === 'window' ? 'PatchWindowRuntime.app' : 'PatchConsoleRuntime.app';
-  if (platform === 'windows') return kind === 'window' ? 'PatchWindowRuntime/PatchWindowRuntime.exe' : 'PatchConsoleRuntime.exe';
-  return kind === 'window' ? 'PatchWindowRuntime/PatchWindowRuntime' : 'PatchConsoleRuntime';
+function readyPackageNote(kind) {
+  return kind === 'console'
+    ? 'Studio compiled this Console project to direct Wasm and sealed that checked payload inside a project-specific executable. The platform runtime machine code is prebuilt; this is sealed native packaging, not a claim of direct Patch-to-x86/ARM AOT compilation.'
+    : 'Studio inserted this checked Window project into the prebuilt Patch desktop player. The Window runtime is not yet native AppKit/Win32/GTK widget lowering.';
+}
+function prebuiltLauncher(platform, kind, name) {
+  if (kind === 'console') {
+    if (platform === 'macos') return `${name}.app`;
+    if (platform === 'windows') return `${name}.exe`;
+    return name;
+  }
+  if (platform === 'macos') return 'PatchWindowRuntime.app';
+  if (platform === 'windows') return 'PatchWindowRuntime/PatchWindowRuntime.exe';
+  return 'PatchWindowRuntime/PatchWindowRuntime';
 }
 function localLauncher(platform) { if (platform === 'windows') return 'build.cmd'; if (platform === 'macos') return 'build.command'; return 'build.sh'; }
 function localRequirement(platform, kind) {
