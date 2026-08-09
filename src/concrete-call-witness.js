@@ -32,7 +32,11 @@ export function buildConcreteCallWitnesses(ast, formalCalls) {
     const callee = recipes.get(callNode.name);
     if (!callee) throw unsupported(callNode, `unknown recipe '${callNode.name}'`);
     if (active.includes(callNode.name)) throw unsupported(callNode, `recursive recipe '${callNode.name}'`);
-    if ((callee.params ?? []).length !== (callNode.args ?? []).length) {
+    const params = callee.params ?? [];
+    if (new Set(params).size !== params.length) {
+      throw unsupported(callNode, `recipe '${callNode.name}' has duplicate parameter names outside concrete binding certification`);
+    }
+    if (params.length !== (callNode.args ?? []).length) {
       throw unsupported(callNode, `recipe '${callNode.name}' arity mismatch`);
     }
 
@@ -42,7 +46,7 @@ export function buildConcreteCallWitnesses(ast, formalCalls) {
     const declared = [];
     const calleeLocals = {};
 
-    (callee.params ?? []).forEach((param, index) => {
+    params.forEach((param, index) => {
       const declaredRange = callee.paramRanges?.[param];
       if (!safeRange(declaredRange)) {
         throw unsupported(callNode, `callee parameter '${callNode.name}.${param}' lacks a safe integer range`);
@@ -76,7 +80,7 @@ export function buildConcreteCallWitnesses(ast, formalCalls) {
       callerEnv: envEntries(callerLocals),
       argExprs,
       concreteValues: values,
-      params: [...(callee.params ?? [])],
+      params: [...params],
       declared,
       expectedCalleeEnv: envEntries(calleeLocals),
       abstractArgRanges: matchedSite?.args?.map(arg => ({ min: arg.range.min, max: arg.range.max })) ?? null
