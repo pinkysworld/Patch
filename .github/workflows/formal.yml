@@ -42,8 +42,10 @@ jobs:
         run: npm run guarded-callee-trace-certify:example
       - name: Generate finite transitive exact call-tree certificate
         run: npm run transitive-callee-trace-certify:example
-      - name: Execute direct Wasm and generate call-aware transitive runtime certificate
+      - name: Execute direct Wasm and generate invocation-frame runtime certificate
         run: npm run transitive-runtime-certify:example
+      - name: Execute repeated direct Wasm calls and generate invocation-frame certificate
+        run: npm run transitive-runtime-certify:repeated
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -51,7 +53,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build Lean formalization and call-aware runtime assurance boundaries
+      - name: Build Lean formalization and invocation-frame runtime assurance boundaries
         working-directory: formal
         shell: bash
         run: |
@@ -83,9 +85,12 @@ jobs:
       - name: Verify generated finite transitive exact call-tree certificate
         working-directory: formal
         run: lake env lean GeneratedTransitiveCallBodyCertificate.lean
-      - name: Verify generated call-aware direct-Wasm correspondence certificate
+      - name: Verify generated invocation-frame direct-Wasm certificate
         working-directory: formal
         run: lake env lean GeneratedTransitiveRuntimeCertificate.lean
+      - name: Verify repeated-call invocation-frame direct-Wasm certificate
+        working-directory: formal
+        run: lake env lean GeneratedRepeatedTransitiveRuntimeCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |
