@@ -24,8 +24,9 @@ try {
   console.log(`Generated ${out}`);
   console.log(`  source sha256: ${certificate.sourceSha256}`);
   console.log(`  certified concrete binding(s): ${certificate.certified.join(', ')}`);
-  console.log('  assurance: Lean re-evaluates inter-recipe variable arguments, checks exact positional parameter binding, and connects concrete values through beta.25 abstract intervals to declared callee intervals.');
-  console.log('  boundary: root calls, richer arithmetic substitution, effect execution under the bound environment and production-Wasm call equivalence remain outside this first beta.26 slice.');
+  console.log(`  certified direct bound effect(s): ${certificate.certifiedEffects.join(', ') || 'none'}`);
+  console.log('  assurance: Lean re-evaluates inter-recipe variable arguments, checks exact positional parameter binding, connects concrete values through beta.25 abstract intervals to declared callee intervals, and for conservative direct quantitative leaf Changes proves the exact bound effect refines an effect imported into the caller signature.');
+  console.log('  boundary: root calls, richer arithmetic substitution, arbitrary callee-body execution and production-Wasm call equivalence remain outside this beta.26 slice.');
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
   process.exit(2);
