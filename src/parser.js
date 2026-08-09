@@ -30,6 +30,10 @@ export function parse(source) {
     if (i >= lines.length || lines[i].indent <= parentIndent) throw new PatchSyntaxError('Expected an indented block below this line.', row.line);
     return block(lines[i].indent);
   }
+  function optionalChildBlock(parentIndent) {
+    if (i >= lines.length || lines[i].indent <= parentIndent) return [];
+    return block(lines[i].indent);
+  }
   function statement(indent) {
     const row = lines[i++];
     let m;
@@ -41,9 +45,9 @@ export function parse(source) {
     if ((m = row.text.match(/^window\s+(.+?)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
       const width=Number(m[2]); const height=Number(m[3]);
       if(width<120||height<80) throw new PatchSyntaxError('A window size must be at least 120 by 80.',row.line);
-      return {kind:'window',titleExpr:m[1],width,height,body:childBlock(indent,row),line:row.line};
+      return {kind:'window',titleExpr:m[1],width,height,body:optionalChildBlock(indent),line:row.line};
     }
-    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return {kind:'window',titleExpr:m[1],width:null,height:null,body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return {kind:'window',titleExpr:m[1],width:null,height:null,body:optionalChildBlock(indent),line:row.line};
 
     const ui=parseUILayout(row.text,row.line);
     if ((m = ui.core.match(/^text\s+(.+)$/))) return {kind:'uiControl',control:'text',textExpr:m[1],id:null,layout:ui.layout,line:row.line};
