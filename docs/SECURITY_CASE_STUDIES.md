@@ -19,7 +19,7 @@ It intentionally ignores:
 - whether a dynamic amount can be proved bounded;
 - any richer authority or refinement property.
 
-This baseline is **not a model of any named external language, effect system or capability system**. Its purpose is to isolate what Patch gains from semantic operation/magnitude information over target-only write authority.
+This baseline is **not a model of any named external language, effect system or capability system**. This internal ablation is **not a claim about any named prior effect or capability system**. Its purpose is to isolate what Patch gains from semantic operation/magnitude information over target-only write authority.
 
 ## Reproduction
 
