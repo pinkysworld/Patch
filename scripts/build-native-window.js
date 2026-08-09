@@ -74,4 +74,4 @@ function playerCss() {
 
 function safeName(name) { const cleaned=String(name).trim().replace(/[^A-Za-z0-9 _.-]/g,'').replace(/\s+/g,' ').slice(0,80); return cleaned||'PatchWindowApp'; }
 function safePackageName(name) { return safeName(name).toLowerCase().replace(/[^a-z0-9._-]/g,'-').replace(/-+/g,'-')||'patch-window-app'; }
-function escapeHtml(text) { return String(text).replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;' })[c]); }
+function escapeHtml(text) { return String(text).replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]); }
