@@ -2,6 +2,7 @@ export const PATCH_LOCAL_NATIVE_KIT_VERSION = '0.1';
 export const PATCH_LOCAL_NATIVE_SOURCE_REF = 'main';
 
 const ARCHIVE_BASE = 'https://github.com/pinkysworld/Patch/archive/refs/heads';
+const ARCHIVE_DIR = 'Patch-main';
 
 export class LocalNativeKitError extends Error {}
 
@@ -47,10 +48,13 @@ export function buildLocalNativeKitFiles(source, options = {}) {
     ];
   }
 
-  const launcher = shellLauncher(name, platform, kind);
   return [
     ...common,
-    { name: platform === 'macos' ? 'build.command' : 'build.sh', content: launcher, mode: 0o100755 }
+    {
+      name: platform === 'macos' ? 'build.command' : 'build.sh',
+      content: shellLauncher(name, platform, kind),
+      mode: 0o100755
+    }
   ];
 }
 
@@ -65,7 +69,8 @@ function windowsPowerShell(name, kind) {
   const build = kind === 'window'
     ? `& node (Join-Path $repo 'scripts\\build-native-window.js') (Join-Path $here 'main.patch') '${app}' (Join-Path $here 'dist')`
     : `if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw 'Rust/Cargo is required for a native Console executable. Install Rust from https://rustup.rs and run build.cmd again.' }\n  & node (Join-Path $repo 'src\\cli.js') build (Join-Path $here 'main.patch') --kind console --target native --name '${app}' --out (Join-Path $here 'dist\\${psQuote(output)}')`;
-  return `$ErrorActionPreference = 'Stop'\n$here = Split-Path -Parent $MyInvocation.MyCommand.Path\n$work = Join-Path $env:TEMP ('patch-local-build-' + [guid]::NewGuid().ToString('N'))\nNew-Item -ItemType Directory -Force -Path $work | Out-Null\ntry {\n  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js 22 or newer is required. Install it from https://nodejs.org and run build.cmd again.' }\n  $major = [int](& node -p "process.versions.node.split('.')[0]")\n  if ($major -lt 22) { throw ('Node.js 22 or newer is required; found Node ' + (& node --version)) }\n  $zip = Join-Path $work 'patch.zip'\n  $src = Join-Path $work 'src'\n  Write-Host 'Downloading the public Patch compiler source…'\n  Invoke-WebRequest -UseBasicParsing -Uri '${archive}' -OutFile $zip\n  Expand-Archive -Path $zip -DestinationPath $src -Force\n  $repo = (Get-ChildItem -Path $src -Directory | Select-Object -First 1).FullName\n  if (-not $repo) { throw 'Could not locate the downloaded Patch source.' }\n  New-Item -ItemType Directory -Force -Path (Join-Path $here 'dist') | Out-Null\n  Write-Host 'Building ${psQuote(name)} locally…'\n  ${build}\n  if ($LASTEXITCODE -ne 0) { throw ('Patch build exited with code ' + $LASTEXITCODE) }\n  Write-Host ''\n  Write-Host ('Done. Output: ' + (Join-Path $here 'dist'))\n} finally {\n  Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue\n}\n`;
+
+  return `$ErrorActionPreference = 'Stop'\n$here = Split-Path -Parent $MyInvocation.MyCommand.Path\n$work = Join-Path $env:TEMP ('patch-local-build-' + [guid]::NewGuid().ToString('N'))\nNew-Item -ItemType Directory -Force -Path $work | Out-Null\ntry {\n  if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Node.js 22 or newer is required. Install it from https://nodejs.org and run build.cmd again.' }\n  $major = [int](& node -p "process.versions.node.split('.')[0]")\n  if ($major -lt 22) { throw ('Node.js 22 or newer is required; found Node ' + (& node --version)) }\n  $zip = Join-Path $work 'patch.zip'\n  $src = Join-Path $work 'src'\n  Write-Host 'Downloading the public Patch compiler source…'\n  Invoke-WebRequest -UseBasicParsing -Uri '${archive}' -OutFile $zip\n  Expand-Archive -Path $zip -DestinationPath $src -Force\n  $repo = Join-Path $src '${ARCHIVE_DIR}'\n  if (-not (Test-Path $repo)) { throw 'Could not locate the downloaded Patch source.' }\n  New-Item -ItemType Directory -Force -Path (Join-Path $here 'dist') | Out-Null\n  Write-Host 'Building ${psQuote(name)} locally…'\n  ${build}\n  if ($LASTEXITCODE -ne 0) { throw ('Patch build exited with code ' + $LASTEXITCODE) }\n  Write-Host ''\n  Write-Host ('Done. Output: ' + (Join-Path $here 'dist'))\n} finally {\n  Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue\n}\n`;
 }
 
 function shellLauncher(name, platform, kind) {
@@ -75,6 +80,7 @@ function shellLauncher(name, platform, kind) {
   const fetchCommand = platform === 'freebsd'
     ? `if command -v fetch >/dev/null 2>&1; then fetch -q -o "$ARCHIVE" "${archive}"; elif command -v curl >/dev/null 2>&1; then curl -fL "${archive}" -o "$ARCHIVE"; else echo "Patch build needs fetch or curl." >&2; exit 2; fi`
     : `if command -v curl >/dev/null 2>&1; then curl -fL "${archive}" -o "$ARCHIVE"; elif command -v wget >/dev/null 2>&1; then wget -q "${archive}" -O "$ARCHIVE"; else echo "Patch build needs curl or wget." >&2; exit 2; fi`;
+
   let build;
   if (platform === 'freebsd') {
     build = `command -v cc >/dev/null 2>&1 || { echo "A C99 compiler (cc) is required on FreeBSD." >&2; exit 2; }\nnode "$REPO/src/cli.js" build "$HERE/main.patch" --kind console --target c99 --out "$HERE/dist/${output}.c"\ncc -std=c99 -O2 "$HERE/dist/${output}.c" -lm -o "$HERE/dist/${output}"\nchmod +x "$HERE/dist/${output}"`;
@@ -83,26 +89,34 @@ function shellLauncher(name, platform, kind) {
   } else {
     build = `command -v cargo >/dev/null 2>&1 || { echo "Rust/Cargo is required for a native Console executable. Install Rust from https://rustup.rs and run this launcher again." >&2; exit 2; }\nnode "$REPO/src/cli.js" build "$HERE/main.patch" --kind console --target native --name ${app} --out "$HERE/dist/${output}"`;
   }
-  return `#!/bin/sh\nset -eu\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nWORK=$(mktemp -d "${'${TMPDIR:-/tmp}'}/patch-local-build.XXXXXX")\ntrap 'rm -rf "$WORK"' EXIT INT TERM\ncommand -v node >/dev/null 2>&1 || { echo "Node.js 22 or newer is required. Install it from https://nodejs.org and run this launcher again." >&2; exit 2; }\nMAJOR=$(node -p "process.versions.node.split('.')[0]")\n[ "$MAJOR" -ge 22 ] || { echo "Node.js 22 or newer is required; found $(node --version)." >&2; exit 2; }\nARCHIVE="$WORK/patch.tar.gz"\nmkdir -p "$WORK/src" "$HERE/dist"\necho "Downloading the public Patch compiler source…"\n${fetchCommand}\ntar -xzf "$ARCHIVE" -C "$WORK/src"\nREPO=$(find "$WORK/src" -mindepth 1 -maxdepth 1 -type d | head -n 1)\n[ -n "$REPO" ] || { echo "Could not locate the downloaded Patch source." >&2; exit 2; }\necho "Building ${shellEcho(name)} locally…"\n${build}\necho\necho "Done. Output: $HERE/dist"\n`;
+
+  return `#!/bin/sh\nset -eu\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nWORK=$(mktemp -d "${'${TMPDIR:-/tmp}'}/patch-local-build.XXXXXX")\ntrap 'rm -rf "$WORK"' EXIT INT TERM\ncommand -v node >/dev/null 2>&1 || { echo "Node.js 22 or newer is required. Install it from https://nodejs.org and run this launcher again." >&2; exit 2; }\nMAJOR=$(node -p "process.versions.node.split('.')[0]")\n[ "$MAJOR" -ge 22 ] || { echo "Node.js 22 or newer is required; found $(node --version)." >&2; exit 2; }\nARCHIVE="$WORK/patch.tar.gz"\nmkdir -p "$WORK/src" "$HERE/dist"\necho "Downloading the public Patch compiler source…"\n${fetchCommand}\ntar -xzf "$ARCHIVE" -C "$WORK/src"\nREPO="$WORK/src/${ARCHIVE_DIR}"\n[ -d "$REPO" ] || { echo "Could not locate the downloaded Patch source." >&2; exit 2; }\necho "Building ${shellEcho(name)} locally…"\n${build}\necho\necho "Done. Output: $HERE/dist"\n`;
 }
 
 function readme(name, platform, kind) {
   const launcher = platform === 'windows' ? 'build.cmd' : platform === 'macos' ? 'build.command' : 'build.sh';
+  const launchHelp = platform === 'windows'
+    ? 'Double-click build.cmd.'
+    : platform === 'macos'
+      ? 'Double-click build.command. If macOS removes the executable bit while extracting, run: sh build.command'
+      : 'Run: sh build.sh';
   const extra = platform === 'freebsd'
     ? 'FreeBSD Console uses Patch portable C99 and requires the base-system C compiler (cc).'
     : kind === 'window'
       ? 'Window builds require Node.js 22+; Electron Packager is downloaded by npx during the build.'
       : 'Native Console builds require Node.js 22+ and Rust/Cargo because the current native host uses Wasmtime.';
-  return `Patch local native build kit\n============================\n\nApp: ${name}\nTarget: ${platform}\nProject type: ${kind}\nKit version: ${PATCH_LOCAL_NATIVE_KIT_VERSION}\n\nThis kit was generated entirely in Patch Studio. Your Patch source was not uploaded and no GitHub token is needed.\n\nHow to build\n------------\n1. Keep all files from this ZIP together.\n2. Run ${launcher}.\n3. The launcher downloads the public Patch compiler source from GitHub and writes the finished package to the dist folder.\n\n${extra}\n\nThe optional GitHub Actions mode in Patch Studio remains available when you prefer a cloud build and do not want to install a local toolchain.\n`;
+
+  return `Patch local native build kit\n============================\n\nApp: ${name}\nTarget: ${platform}\nProject type: ${kind}\nKit version: ${PATCH_LOCAL_NATIVE_KIT_VERSION}\n\nThis kit was generated entirely in Patch Studio. Your Patch source was not uploaded and no GitHub token is needed.\n\nHow to build\n------------\n1. Keep all files from this ZIP together.\n2. ${launchHelp}\n3. The launcher downloads the public Patch compiler source from GitHub and writes the finished package to the dist folder.\n\n${extra}\n\nThe optional GitHub Actions mode in Patch Studio remains available when you prefer a cloud build and do not want to install a local toolchain.\n`;
 }
 
 export function zipStore(files) {
   const encoder = new TextEncoder();
   const entries = files.map(file => {
-    const name = encoder.encode(file.name);
+    const nameBytes = encoder.encode(file.name);
     const data = file.content instanceof Uint8Array ? file.content : encoder.encode(String(file.content));
-    return { ...file, nameBytes: name, data, crc: crc32(data), offset: 0 };
+    return { ...file, nameBytes, data, crc: crc32(data), offset: 0 };
   });
+
   const localChunks = [];
   let offset = 0;
   const { time, date } = dosTimestamp(new Date());
@@ -170,7 +184,10 @@ function concatBytes(chunks) {
   const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
   const out = new Uint8Array(total);
   let offset = 0;
-  for (const chunk of chunks) { out.set(chunk, offset); offset += chunk.length; }
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
   return out;
 }
 
@@ -202,8 +219,18 @@ function normalizePlatform(platform) {
   if (['windows', 'macos', 'linux', 'freebsd'].includes(platform)) return platform;
   throw new LocalNativeKitError(`Unsupported local native target '${platform}'.`);
 }
-function safeName(name) { return String(name).trim().replace(/[^A-Za-z0-9 _.-]/g, '').replace(/\s+/g, ' ').slice(0, 80) || 'PatchApp'; }
-function safeFileName(name) { return safeName(name).replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp'; }
-function psQuote(text) { return String(text).replace(/'/g, "''"); }
-function shQuote(text) { return `'${String(text).replace(/'/g, `'\"'\"'`)}'`; }
-function shellEcho(text) { return String(text).replace(/[\\"`$]/g, '\\$&'); }
+function safeName(name) {
+  return String(name).trim().replace(/[^A-Za-z0-9 _.-]/g, '').replace(/\s+/g, ' ').slice(0, 80) || 'PatchApp';
+}
+function safeFileName(name) {
+  return safeName(name).replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp';
+}
+function psQuote(text) {
+  return String(text).replace(/'/g, "''");
+}
+function shQuote(text) {
+  return `'${String(text).replace(/'/g, `'\"'\"'`)}'`;
+}
+function shellEcho(text) {
+  return String(text).replace(/[\\"`$]/g, '\\$&');
+}
