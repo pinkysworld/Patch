@@ -7,6 +7,15 @@ const sourceWeb = path.join(root, 'web');
 const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
 
+const SITE_SRC_FILES = [
+  'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
+  'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
+  'source-validation.js','guard-validation.js','compiler.js','bundle.js','wasm.js','wasm-direct.js',
+  'c99.js','webapp.js','window-webapp.js','window-build.js','window-events.js','designer.js',
+  'prebuilt-native.js','local-native-kit.js','concrete-call-witness.js','concrete-call-certificate.js',
+  'concrete-call-body.js','concrete-call-body-certificate.js'
+];
+
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
@@ -21,6 +30,12 @@ for (const name of ['playground.js', 'native-build.js', 'sw.js']) {
   fs.writeFileSync(path.join(out, name), content);
 }
 
-fs.cpSync(sourceSrc, path.join(out, 'src'), { recursive: true });
+const siteSrc = path.join(out, 'src');
+fs.mkdirSync(siteSrc, { recursive: true });
+for (const name of SITE_SRC_FILES) {
+  const source = path.join(sourceSrc, name);
+  if (!fs.existsSync(source)) throw new Error(`Missing Patch Studio browser dependency: src/${name}`);
+  fs.copyFileSync(source, path.join(siteSrc, name));
+}
 
-console.log('built _site/ for Patch Studio');
+console.log(`built _site/ for Patch Studio with ${SITE_SRC_FILES.length} browser source modules`);

@@ -3,6 +3,41 @@ name: Deploy Patch Studio
 on:
   push:
     branches: [main]
+    paths:
+      - web/**
+      - scripts/build-site.js
+      - scripts/check-site.js
+      - package.json
+      - src/interpreter.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - src/change-analysis.js
+      - src/range-analysis.js
+      - src/formal-range.js
+      - src/formal-guard.js
+      - src/formal-calls.js
+      - src/formal-bridge.js
+      - src/formal-source.js
+      - src/source-validation.js
+      - src/guard-validation.js
+      - src/compiler.js
+      - src/bundle.js
+      - src/wasm.js
+      - src/wasm-direct.js
+      - src/c99.js
+      - src/webapp.js
+      - src/window-webapp.js
+      - src/window-build.js
+      - src/window-events.js
+      - src/designer.js
+      - src/prebuilt-native.js
+      - src/local-native-kit.js
+      - src/concrete-call-witness.js
+      - src/concrete-call-certificate.js
+      - src/concrete-call-body.js
+      - src/concrete-call-body-certificate.js
+      - .github/workflows/pages.yml
   workflow_dispatch:
   workflow_run:
     workflows: [Patch Studio Runtime Templates]

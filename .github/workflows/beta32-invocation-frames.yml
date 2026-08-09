@@ -3,6 +3,36 @@ name: Patch Beta32 Invocation Frames
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - formal/**
+      - src/compiler.js
+      - src/parser.js
+      - src/wasm-direct.js
+      - src/formal-calls.js
+      - src/formal-guard.js
+      - src/concrete-call-witness.js
+      - src/concrete-call-certificate.js
+      - src/concrete-call-body.js
+      - src/concrete-call-body-certificate.js
+      - src/transitive-call-body.js
+      - src/transitive-call-body-certificate.js
+      - src/direct-trace-validator.js
+      - src/direct-effect-validator.js
+      - src/transitive-runtime-correspondence.js
+      - src/transitive-runtime-certificate.js
+      - scripts/generate-transitive-call-body-certificate.js
+      - scripts/generate-transitive-runtime-certificate.js
+      - examples/formal-transitive-calls.patch
+      - examples/formal-transitive-calls-repeated.patch
+      - tests/direct-trace-validator.test.js
+      - tests/direct-effect-validator.test.js
+      - tests/direct-invocation-frame-effects.test.js
+      - tests/transitive-call-body.test.js
+      - tests/transitive-call-body-certificate.test.js
+      - tests/transitive-runtime-correspondence.test.js
+      - tests/transitive-runtime-certificate.test.js
+      - package.json
+      - .github/workflows/beta32-invocation-frames.yml
   workflow_dispatch:
 
 concurrency:
