@@ -1,0 +1,24 @@
+create number balance = 100
+create number points = 0
+create number cashback = 0
+
+make apply_discount(amount number 0..25):
+  change balance:
+    remove amount
+
+make grant_loyalty(amount number 0..10):
+  change points:
+    add amount
+
+allow checkout_extension:
+  balance may decrease up to 25
+  points may increase up to 10
+
+make checkout_extension(discount number 0..25, reward number 0..10):
+  do apply_discount(discount)
+  do grant_loyalty(reward)
+
+do checkout_extension(20, 8)
+show balance
+show points
+show cashback
