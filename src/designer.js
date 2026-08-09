@@ -16,7 +16,9 @@ export function addDesignerWindow(source, options = {}) {
   if (!titleExpr) throw new Error('Window title expression cannot be empty.');
   const width = windowDimension(options.width ?? DEFAULT_WINDOW.width, 'width');
   const height = windowDimension(options.height ?? DEFAULT_WINDOW.height, 'height');
-  lines.push(`window ${titleExpr} size ${width}, ${height}:`);
+  const id = Object.hasOwn(options, 'id') ? validateId(options.id) : nextFormId(lines);
+  if (windows.some(item => item.id === id)) throw new Error(`Form name '${id}' is already used.`);
+  lines.push(`window ${titleExpr} as ${id} size ${width}, ${height}:`);
   return tidy(lines.join('\n'));
 }
 
@@ -29,6 +31,7 @@ export function listDesignerWindows(source) {
     windows.push({
       windowIndex,
       line: node.line,
+      id: node.id ?? null,
       titleExpr: node.titleExpr,
       width: node.width ?? null,
       height: node.height ?? null
@@ -49,7 +52,14 @@ export function updateDesignerWindow(source, selector, changes = {}) {
   if (!titleExpr) throw new Error('Window title expression cannot be empty.');
   const width = windowDimension(Object.hasOwn(changes, 'width') ? changes.width : (window.width ?? DEFAULT_WINDOW.width), 'width');
   const height = windowDimension(Object.hasOwn(changes, 'height') ? changes.height : (window.height ?? DEFAULT_WINDOW.height), 'height');
-  lines[lineIndex] = `${indent}window ${titleExpr} size ${width}, ${height}:`;
+  let id = window.id;
+  if (Object.hasOwn(changes, 'id')) {
+    id = validateId(changes.id);
+    if (id !== window.id && windows.some(item => item.id === id)) throw new Error(`Form name '${id}' is already used.`);
+  }
+  const idPart = id ? ` as ${id}` : '';
+  lines[lineIndex] = `${indent}window ${titleExpr}${idPart} size ${width}, ${height}:`;
+  if (window.id && id && window.id !== id) renameFormActions(lines, window.id, id);
   return preserveTrailingNewline(source, lines.join('\n'));
 }
 
@@ -177,7 +187,7 @@ function findControl(controls, selector) {
 
 function validateId(value) {
   const id = String(value ?? '').trim();
-  if (!/^[A-Za-z_]\w*$/.test(id)) throw new Error(`'${id || '?'}' is not a valid Patch control id.`);
+  if (!/^[A-Za-z_]\w*$/.test(id)) throw new Error(`'${id || '?'}' is not a valid Patch name.`);
   return id;
 }
 
@@ -219,6 +229,15 @@ function renameEventHeaders(lines, oldId, nextId) {
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(pattern);
     if (match) lines[i] = `${match[1]}when ${nextId} ${match[2]}:`;
+  }
+}
+
+function renameFormActions(lines, oldId, nextId) {
+  const escapedId = escapeRegExp(oldId);
+  const pattern = new RegExp(`^(\\s*)(open|close)\\s+${escapedId}\\s*$`);
+  for (let i = 0; i < lines.length; i += 1) {
+    const match = lines[i].match(pattern);
+    if (match) lines[i] = `${match[1]}${match[2]} ${nextId}`;
   }
 }
 
@@ -266,6 +285,13 @@ function nextId(lines, base) {
   let i = 1;
   while (new RegExp(`\\b${base}_${i}\\b`).test(text)) i++;
   return `${base}_${i}`;
+}
+
+function nextFormId(lines) {
+  const text = lines.join('\n');
+  let i = 1;
+  while (new RegExp(`\\bas\\s+form_${i}\\b`).test(text)) i++;
+  return `form_${i}`;
 }
 
 function normalizeLines(source) {

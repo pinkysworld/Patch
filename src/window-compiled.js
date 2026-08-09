@@ -1,6 +1,7 @@
 import { buildFormLayoutManifest } from './form-layout.js';
+import { validateWindowRuntimeSupport } from './window-build.js';
 
-export const PATCH_COMPILED_WINDOW_VERSION = '0.1';
+export const PATCH_COMPILED_WINDOW_VERSION = '0.2';
 export const PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program';
 export const PATCH_COMPILED_WINDOW_IR_VERSION = '0.10';
 
@@ -16,6 +17,7 @@ export function buildCompiledWindowArtifact(compiled) {
   if (compiled.ir?.version !== PATCH_COMPILED_WINDOW_IR_VERSION) {
     throw new CompiledWindowError(`Compiled Window artifacts require Change IR ${PATCH_COMPILED_WINDOW_IR_VERSION}.`);
   }
+  validateWindowRuntimeSupport(compiled);
   const windows = compiled.ast.filter(node => node.kind === 'window');
   if (!windows.length) throw new CompiledWindowError('A Window artifact needs at least one Patch window.');
 

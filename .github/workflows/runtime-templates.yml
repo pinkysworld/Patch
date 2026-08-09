@@ -22,6 +22,7 @@ on:
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
       - examples/checkbox-window.patch
+      - examples/forms-navigation.patch
       - .github/workflows/runtime-templates.yml
   push:
     branches: [main]
@@ -43,6 +44,7 @@ on:
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
       - examples/checkbox-window.patch
+      - examples/forms-navigation.patch
       - .github/workflows/runtime-templates.yml
 
 concurrency:
@@ -144,10 +146,10 @@ jobs:
           PATCH_NATIVE_HEADLESS: '1'
         run: ./dist/PatchConsoleRuntime
 
-      - name: Prepare compiled Window smoke payload
+      - name: Prepare compiled Window navigation smoke payload
         shell: bash
         run: |
-          node --input-type=module -e "import fs from 'node:fs'; import { compile } from './src/compiler.js'; import { buildCompiledWindowArtifact } from './src/window-compiled.js'; const source=fs.readFileSync('examples/checkbox-window.patch','utf8'); const compiled=compile(source,{name:'Runtime Smoke',kind:'window',entry:'checkbox-window.patch'}); const artifact=buildCompiledWindowArtifact(compiled); fs.writeFileSync('dist/patch-app.json',JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.3',name:'Runtime Smoke',kind:'window',execution:'compiled-window-program',compiled:artifact,source}));"
+          node --input-type=module -e "import fs from 'node:fs'; import { compile } from './src/compiler.js'; import { validateWindowRuntimeSupport } from './src/window-build.js'; import { buildCompiledWindowArtifact } from './src/window-compiled.js'; const source=fs.readFileSync('examples/forms-navigation.patch','utf8'); const compiled=compile(source,{name:'Runtime Smoke',kind:'window',entry:'forms-navigation.patch'}); validateWindowRuntimeSupport(compiled); const artifact=buildCompiledWindowArtifact(compiled); fs.writeFileSync('dist/patch-app.json',JSON.stringify({format:'patch-prebuilt-native-payload',version:'0.4',name:'Runtime Smoke',kind:'window',execution:'compiled-window-program',compiled:artifact}));"
       - name: Configure Linux Electron sandbox helper
         if: matrix.platform == 'linux'
         shell: bash
@@ -167,7 +169,7 @@ jobs:
           $app = Get-ChildItem -Path dist -Recurse -Filter 'PatchWindowRuntime.exe' | Select-Object -First 1
           if (-not $app) { throw 'Generic Windows Window runtime executable was not found.' }
           & $app.FullName --patch-payload-smoke
-      - name: Smoke sandboxed compiled Window IPC on Windows
+      - name: Smoke sandboxed compiled Form navigation on Windows
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
@@ -182,7 +184,7 @@ jobs:
           test -n "$APP"
           cp dist/patch-app.json "$(dirname "$APP")/patch-app.json"
           "$APP/Contents/MacOS/PatchWindowRuntime" --patch-payload-smoke
-      - name: Smoke sandboxed compiled Window IPC on macOS
+      - name: Smoke sandboxed compiled Form navigation on macOS
         if: matrix.platform == 'macos'
         shell: bash
         run: |
@@ -196,7 +198,7 @@ jobs:
           APP=$(find dist -maxdepth 2 -type f -name 'PatchWindowRuntime' -perm -111 | head -1)
           test -n "$APP"
           xvfb-run -a "$APP" --patch-payload-smoke
-      - name: Smoke sandboxed compiled Window IPC on Linux
+      - name: Smoke sandboxed compiled Form navigation on Linux
         if: matrix.platform == 'linux'
         shell: bash
         run: |
@@ -263,8 +265,8 @@ jobs:
       - name: Publish compiled runtime assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: studio-runtime-v0.3
+          TAG: studio-runtime-v0.4
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.3' --notes 'Prebuilt Windows, macOS and Linux runtimes with compiled Patch Window program payload support and legacy v0.2 Window-source compatibility.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.4' --notes 'Prebuilt Windows, macOS and Linux GUI runtimes for compiled Window artifact v0.2 with named Form open/close lifecycle, plus legacy v0.3 compiled and v0.2 source compatibility.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

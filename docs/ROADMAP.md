@@ -95,8 +95,12 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] Checkbox `changed` exposes a typed transient Boolean `value`
 - [x] Checkbox persistence still requires explicit semantic `change`
 - [x] Boolean `clear` deterministically resets to `false`
+- [x] named Forms use beginner syntax `window ... as name`
+- [x] first named Form visible, additional named Forms hidden until `open name`
+- [x] simple `open name` / `close name` lifecycle is transient UI state, not persistent mutation
+- [x] Designer auto-names new Forms and exposes editable Form name
+- [x] build validation rejects unknown/duplicate Form names before packaging
 - [ ] richer controls/event editing: list, combo, tabs, menu, dialogs, table/grid
-- [ ] named Form navigation / show-close lifecycle
 - [ ] project tree and separate source files/forms
 - [ ] project import/export
 - [ ] alignment guides, multi-select, anchors/docking and keyboard layout editing
@@ -106,9 +110,11 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] ready Windows/macOS/Linux Window packages
 - [x] Window build produces `patch-compiled-window-program` before desktop packaging
 - [x] local/cloud Window apps execute the compiled artifact instead of reparsing `main.patch`
-- [x] token-free Ready App payload v0.3 links the same compiled Window artifact into the sandboxed runtime
-- [x] runtime-template release versioned separately as `studio-runtime-v0.3`
-- [x] packaged Window smoke starts the real renderer and requires a rendered compiled Patch Form
+- [x] compiled Window artifact v0.2 carries named Form lifecycle instructions while Change IR remains 0.10
+- [x] token-free Ready App payload v0.4 links the same source-free compiled Window artifact into the sandboxed runtime
+- [x] runtime-template release versioned separately as `studio-runtime-v0.4`
+- [x] project-specific Windows/macOS/Linux smoke builds the named-Forms example and exercises open/close in the packaged app
+- [x] independent runtime-template smoke exercises open, typed Checkbox change and close on all three desktop OSes
 - [x] FreeBSD Console via portable C99
 - [ ] native AppKit/Win32/portable Unix widget lowering
 - [ ] signing/notarization/installers
@@ -156,3 +162,4 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 10. Visual Form metadata remains source-backed UI structure and does not redefine semantic Change IR.
 11. GUI input widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.
 12. Desktop GUI apps must consume a build-time compiled Patch artifact; runtime reparsing is legacy compatibility only, not the current build path.
+13. Form lifecycle must stay simple and transient: no hidden persistent visibility variable and no framework-style Form object boilerplate.

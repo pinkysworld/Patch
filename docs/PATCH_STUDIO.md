@@ -4,11 +4,11 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 ## What works in 0.2 beta.32
 
-Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, source-backed Form layout with drag/resize, Checkbox controls with typed Boolean events, compiled Window program artifacts for desktop builds, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, source-backed Form layout with drag/resize, Checkbox controls with typed Boolean events, simple named Form open/close navigation, compiled Window program artifacts for desktop builds, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry is UI/source metadata rather than a new persistent-mutation semantics claim.
+Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry and Form visibility are UI/runtime structure rather than new persistent-mutation semantics claims.
 
 Research commands remain outside the beginner workflow:
 
@@ -42,9 +42,9 @@ Runtime capture and independent-validator/invocation-frame reconstruction correc
 
 ## Forms and RAD-style Designer
 
-Patch now has a source-backed Form layout path intended to provide the productive visual workflow associated with classic Delphi and Visual Basic while keeping Patch source as the reviewable truth.
+Patch has a source-backed Form layout path intended to provide the productive visual workflow associated with classic Delphi and Visual Basic while keeping Patch source as the reviewable truth.
 
-A form can carry an explicit design size:
+A Form can carry an explicit design size:
 
 ```patch
 window "Customer editor" size 640, 420:
@@ -64,7 +64,8 @@ In Studio:
 
 - select the active Form from the Form selector;
 - create additional blank Forms with **+ Form**;
-- edit source-backed Form title, width and height;
+- new Forms receive simple names such as `form_1`, `form_2` automatically;
+- edit source-backed Form name, title, width and height;
 - add Text, Button, Input and Checkbox controls to the selected Form;
 - select a control and edit X, Y, width and height in Properties;
 - edit source-backed id and label/text expressions where applicable;
@@ -76,6 +77,30 @@ In Studio:
 Legacy flow-layout source remains valid. A project is not required to use explicit pixel geometry.
 
 There is deliberately no hidden `.dfm`, `.frm` or second persistent form document. Future richer Form metadata should follow the same rule unless a separate artifact can be losslessly and visibly derived from Patch source.
+
+## Named Forms: deliberately simple navigation
+
+A Form only needs a short name after `as` if it should be opened or closed by the application:
+
+```patch
+window "Main" as main size 560, 340:
+  button "Settings" as open_settings at 24, 72 size 120, 36
+
+window "Settings" as settings size 480, 300:
+  button "Close" as close_settings at 24, 124 size 100, 36
+
+when open_settings clicked:
+  open settings
+
+when close_settings clicked:
+  close settings
+```
+
+There is no `Form.Create`, object-lifecycle boilerplate or framework API. The first named Form starts visible. Additional named Forms start hidden until `open <name>` is executed. `close <name>` hides that Form again. Existing un-named multiple-window programs keep their previous behavior and remain visible for compatibility.
+
+Form visibility is transient UI lifecycle. `open` and `close` do not modify Patch persistent state, create Change History entries or bypass semantic `change`. A misspelled or duplicate Form name is rejected during Window build validation rather than becoming a dead action in the packaged app.
+
+The Designer exposes the Form name directly. Renaming a Form through the source-backed Designer also rewrites matching `open` and `close` commands.
 
 ## Checkbox and typed GUI events
 
@@ -136,7 +161,7 @@ when name changed:
 
 ## Compiled desktop GUI build contract
 
-Window desktop builds now have an explicit compile/link boundary instead of relying on reparsing `main.patch` inside the packaged app.
+Window desktop builds have an explicit compile/link boundary instead of relying on reparsing `main.patch` inside the packaged app.
 
 Build flow:
 
@@ -144,22 +169,22 @@ Build flow:
 Patch source
   -> Patch parser/compiler
   -> validated Window runtime support
-  -> patch-compiled-window-program 0.1
-       - executable Patch AST
-       - Change IR version
+  -> patch-compiled-window-program 0.2
+       - executable Patch AST, including Form lifecycle nodes
+       - Change IR 0.10
        - project metadata
        - source-backed Form layout manifest
   -> link/package with platform desktop runtime
   -> Windows/macOS/Linux application
 ```
 
-Local/cloud Window builds serialize only the compiled Window program into the application project. The source is used during the build and is not required for execution. `patch-build.json` records the compiled artifact version, Change IR version, counts of Forms/controls/events and SHA-256 of the source used for the build.
+Local/cloud Window builds serialize only the compiled Window program into the application project. The source is used during the build and is not required for execution. `patch-build.json` records the compiled artifact version, Change IR version, counts of Forms/named Forms/controls/events/Form actions and SHA-256 of the source used for the build.
 
-The token-free Ready App path uses payload version **0.3** and links the same compiled Window artifact into the prebuilt sandboxed desktop runtime. The runtime accepts legacy v0.2 source payloads for backward compatibility, but current v0.3 apps execute `compiled.program` and do not recompile `main.patch` at startup.
+The token-free Ready App path uses payload version **0.4** and links the same compiled Window artifact into the prebuilt sandboxed desktop runtime. Current v0.4 Ready payloads contain no Patch source. Runtime v0.4 retains explicit compatibility with legacy v0.3 compiled payloads and older v0.2 source payloads.
 
-Runtime assets are published under **`studio-runtime-v0.3`** so the public Studio cannot intentionally combine the new compiled payload format with an older Window player.
+Runtime assets are published under **`studio-runtime-v0.4`** so the public Studio does not combine a Form-lifecycle artifact with an older Window player.
 
-The packaged Windows/macOS/Linux smoke test now creates the real Electron application, loads its renderer and verifies that the compiled Window artifact actually produced a visible Patch Form. The runtime-template smoke additionally exercises Checkbox geometry and a real Boolean `changed` event on each supported OS.
+The project-specific Windows/macOS/Linux smoke builds `examples/forms-navigation.patch`, starts the actual packaged application and, when the named Forms are present, requires Main to start visible, Settings hidden, Settings to open after its button click and Settings to close again. The independent runtime-template smoke performs the same open/change/close sequence with a compiled source-free Ready payload on each supported OS.
 
 This is a real Patch compile + runtime-link/package step, but it is **not yet direct Patch-to-x86/ARM GUI AOT compilation**. The platform shell and widgets are still supplied by Electron. Native Win32/AppKit/portable Unix widget lowering remains a later backend milestone.
 
@@ -173,18 +198,18 @@ FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-Console ready builds are project-specific sealed executables. Current Window ready builds contain a compiled Patch Window program linked into the hardened sandboxed desktop runtime. Local/cloud Window builders produce the same compiled-program execution model and package it with Electron for the target OS.
+Console ready builds are project-specific sealed executables. Current Window ready builds contain a source-free compiled Patch Window program linked into the hardened sandboxed desktop runtime. Local/cloud Window builders produce the same compiled-program execution model and package it with Electron for the target OS.
 
 ## PWA updates
 
-The beta.32 compiled-GUI cache key begins with `patch-studio-0.2-beta.32-compiled3`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
+The beta.32 Forms-v4 cache key begins with `patch-studio-0.2-beta.32-forms4`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
 
 ## Source remains truth
 
-The `.patch` file remains the reviewable representation of behavior and current GUI structure. Form dimensions, control geometry and Checkbox declarations live in that same source. The compiled Window artifact is a derived build product, not a second editable Form model.
+The `.patch` file remains the reviewable representation of behavior and current GUI structure. Form names, dimensions, control geometry and Checkbox declarations live in that same source. The compiled Window artifact is a derived build product, not a second editable Form model.
 
 ## Next work
 
-Product: named Form navigation/show-close lifecycle; List/Combo controls and selection events; tabs, menus, dialogs and table/grid; project tree/source files; alignment guides, anchors/docking and multi-select; project import/export; signing/notarization; eventually native AppKit/Win32/portable Unix widget lowering.
+Product: List/Combo controls and selection events; tabs, menus, dialogs and table/grid; project tree/source files; alignment guides, anchors/docking and multi-select; project import/export; signing/notarization; eventually native AppKit/Win32/portable Unix widget lowering.
 
 Research: controlled overhead measurements, systematic related work, broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.

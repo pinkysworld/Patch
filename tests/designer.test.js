@@ -14,9 +14,9 @@ test('designer adds controls inside the first window before event handlers', () 
   assert.match(next, /window "Counter":\n  text "Count"\n  button "Button" as button_1 at 24, 72 size 120, 36\n\nwhen add clicked:/);
 });
 
-test('designer can create a window when none exists', () => {
+test('designer can create an auto-named window when none exists', () => {
   const next = addDesignerControl('create number count = 0\n', 'input');
-  assert.match(next, /window "My App" size 640, 420:\n  input input_1 at 24, 24 size 220, 36/);
+  assert.match(next, /window "My App" as form_1 size 640, 420:\n  input input_1 at 24, 24 size 220, 36/);
 });
 
 test('designer generates unique control ids', () => {
@@ -59,7 +59,7 @@ test('designer rejects duplicate and invalid control ids', () => {
   );
   assert.throws(
     () => updateDesignerControl(source, { windowIndex: 0, controlIndex: 0 }, { id: 'not valid' }),
-    /not a valid Patch control id/
+    /not a valid Patch name/
   );
 });
 

@@ -43,6 +43,10 @@ on:
       - scripts/build-native-sea.js
       - scripts/build-native-window.js
       - src/native-app.js
+      - src/interpreter.js
+      - src/parser.js
+      - src/window-build.js
+      - src/window-compiled.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
@@ -52,12 +56,17 @@ on:
       - .github/workflows/native-apps.yml
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
+      - examples/forms-navigation.patch
   push:
     branches: [main]
     paths:
       - scripts/build-native-sea.js
       - scripts/build-native-window.js
       - src/native-app.js
+      - src/interpreter.js
+      - src/parser.js
+      - src/window-build.js
+      - src/window-compiled.js
       - src/webapp.js
       - src/wasm-direct.js
       - src/cli.js
@@ -65,6 +74,7 @@ on:
       - web/native-build.js
       - web/playground.js
       - .github/workflows/native-apps.yml
+      - examples/forms-navigation.patch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -127,29 +137,39 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Check Patch window source
+      - name: Check Patch named Forms source
         shell: bash
-        run: node src/cli.js check examples/counter-window.patch
-      - name: Build standalone Patch window application
+        run: node src/cli.js check examples/forms-navigation.patch
+      - name: Build standalone Patch named Forms application
         shell: bash
         run: |
           mkdir -p dist
-          node scripts/build-native-window.js examples/counter-window.patch "$PATCH_APP_NAME" dist
-      - name: Smoke check window application on Linux
+          node scripts/build-native-window.js examples/forms-navigation.patch "$PATCH_APP_NAME" dist
+      - name: Configure Linux Electron sandbox helper
         if: runner.os == 'Linux'
         shell: bash
         run: |
           APP=$(find dist -maxdepth 2 -type f -name "$PATCH_APP_NAME" -perm -111 | head -1)
           test -n "$APP"
-          xvfb-run -a "$APP" --no-sandbox --patch-smoke
-      - name: Smoke check window application on macOS
+          HELPER="$(dirname "$APP")/chrome-sandbox"
+          test -f "$HELPER"
+          sudo chown root:root "$HELPER"
+          sudo chmod 4755 "$HELPER"
+      - name: Smoke named Forms application on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          APP=$(find dist -maxdepth 2 -type f -name "$PATCH_APP_NAME" -perm -111 | head -1)
+          test -n "$APP"
+          xvfb-run -a "$APP" --patch-smoke
+      - name: Smoke named Forms application on macOS
         if: runner.os == 'macOS'
         shell: bash
         run: |
           APP=$(find dist -type f -path "*.app/Contents/MacOS/$PATCH_APP_NAME" | head -1)
           test -n "$APP"
           "$APP" --patch-smoke
-      - name: Smoke check window application on Windows
+      - name: Smoke named Forms application on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
