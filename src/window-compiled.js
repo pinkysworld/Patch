@@ -1,6 +1,6 @@
 import { buildFormLayoutManifest } from './form-layout.js';
 
-export const PATCH_COMPILED_WINDOW_VERSION = '0.1';
+export const PATCH_COMPILED_WINDOW_VERSION = '0.2';
 export const PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program';
 export const PATCH_COMPILED_WINDOW_IR_VERSION = '0.10';
 
