@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.25**
+Current development beta: **0.2.0-beta.26**
 
 Checked items are implemented and must pass the final exact-head pull-request gates before merge. Unchecked items are not presented as finished features.
 
@@ -44,40 +44,71 @@ Checked items are implemented and must pass the final exact-head pull-request ga
 - [x] portable event surface is button `clicked` + input `changed`
 
 ### beta.25: formal acyclic recipe-call composition
-
-Production artifact:
 - [x] Change IR **0.10** with separate `formalCalls` artifact
-- [x] finite per-recipe CallStmt environment
-- [x] safe-integer parameter intervals and formal argument-interval extraction
-- [x] rank assignment for the finite acyclic call graph
-- [x] duplicate recipes, unknown callees, unbounded parameters and recursion/cycles rejected conservatively
-- [x] direct semantic effects and imported callee signatures recorded separately
-
-Lean:
-- [x] `PatchCalls.lean`
-- [x] `CallStmt`, `RecipeDef`, `RecipeEnv`
-- [x] `ArgsFit` + `argsFitBool_sound`
-- [x] executable semantic effect/signature containment checks
-- [x] `BodyComposes` + `checkCallStmt_sound`
-- [x] `checkRecipeEnv` + `checkRecipeEnv_sound`
+- [x] finite per-recipe `CallStmt` environment
+- [x] safe-integer parameter/argument intervals
+- [x] finite acyclic call-graph rank assignment
+- [x] conservative rejection of duplicates, unknown calls, unbounded params and cycles
+- [x] `PatchCalls.lean`, `ArgsFit`, `BodyComposes`, `checkRecipeEnv`
 - [x] rank-decreasing `CallExec`
 - [x] `callSignatureSoundness`
 - [x] `checkedRecipeExecutionCannotEscape`
+- [x] generated `GeneratedCallCertificate.lean` accepted by pinned Lean
+- [x] cross-platform call-certificate producer + `patch call-certify`
+
+Beta.25 establishes **abstract interval/signature composition**, not concrete value substitution.
+
+### beta.26: concrete safe-integer call binding + direct leaf-effect refinement
+
+Concrete production evidence:
+- [x] `src/concrete-call-witness.js`
+- [x] proof-free caller bindings, formal argument expressions, exact values and expected callee bindings
+- [x] beta.25 abstract argument intervals carried alongside exact values
+- [x] conservative inter-recipe variable-pass-through subset
+- [x] branch-following witness generation for supported concrete calls
+- [x] out-of-range calls rejected no later than the normal compiler boundary
+
+Lean binding/refinement:
+- [x] `PatchCallSubstitution.lean`
+- [x] serializable `BindingList` + `envOfBindings` into the established functional `IntEnv`
+- [x] exact `evalCallArgs`
+- [x] exact positional `bindCallParams`
+- [x] `ConcreteArgsFit`
+- [x] `concreteCallBinding_sound`
+- [x] `PatchCallRefinement.lean`
+- [x] `valueFitsWithin`
+- [x] `concreteArgsFitThroughAbstract`
+- [x] `concreteThroughAbstractBool_sound`
+
+Direct concrete semantic effect:
+- [x] `PatchCallEffect.lean`
+- [x] exact singleton effect amount from a bound safe-integer variable
+- [x] `evalBoundQuantitativeEffect_sound` using existing `EffectRefines`
+- [x] executable `evalBoundQuantitativeEffectEqBool` without adding global `DecidableEq Effect`
+- [x] `checkedConcreteBoundEffectRefinesCallerSignature`
+- [x] concrete direct leaf effect composed with beta.25 callee-to-caller signature containment
 
 Production → Lean connection:
-- [x] `src/call-certificate.js`
-- [x] generated `GeneratedCallCertificate.lean`
-- [x] production-generated finite `RecipeEnv` accepted by Lean `native_decide`
-- [x] generated environment derives `EnvironmentChecked`
-- [x] Windows/macOS/Linux producer generation in normal CI
-- [x] CLI dispatcher exposes `patch call-certify`
+- [x] `src/concrete-call-certificate.js`
+- [x] generated `GeneratedConcreteCallCertificate.lean`
+- [x] Lean re-evaluates inter-recipe variable arguments and reconstructs exact positional bindings
+- [x] Lean checks exact values through beta.25 abstract intervals to declarations
+- [x] generated `reward -> add_points` leaf effects refine imported caller-signature effects
+- [x] focused beta.26 Lean gate green without `sorry`/`admit`
+- [x] standard Formal CI includes beta.26 modules/certificate
+- [x] normal Windows/macOS/Linux CI generates the concrete-call certificate
 
 Claim boundary:
-- [x] abstract argument interval fit and semantic-signature composition
-- [ ] **concrete argument expression evaluation + exact parameter binding/substitution semantics**
-- [ ] concrete call-runtime correspondence to the production Wasm execution
+- [x] concrete inter-recipe variable argument evaluation + exact parameter binding
+- [x] exact value → beta.25 interval → declared parameter composition
+- [x] conservative direct quantitative leaf effect → caller-signature refinement
+- [ ] root-program concrete call certification
+- [ ] richer arithmetic argument/substitution certification
+- [ ] arbitrary callee body/control-flow execution under exact bindings
+- [ ] full transitive concrete call trace correspondence
+- [ ] production direct-Wasm call execution equivalence
 
-Beta.25 therefore closes the first formal interprocedural composition gap without claiming that concrete value substitution is already verified.
+Beta.26 therefore closes a concrete binding/effect gap while explicitly stopping short of end-to-end call or compiler verification.
 
 ## Current product priorities
 
@@ -112,12 +143,15 @@ Completed:
 - [x] path-witnessed SourceExecutes/runtime refinement
 - [x] concrete runtime Change Capability containment
 - [x] guard-aware branch truth + independent GuardTree validation
-- [x] **finite rank-decreasing recipe-call semantic-signature composition**
-- [x] **production-generated call environment checked by Lean**
+- [x] finite rank-decreasing recipe-call semantic-signature composition
+- [x] production-generated abstract call environment checked by Lean
+- [x] **exact safe-integer inter-recipe variable binding checked by Lean**
+- [x] **direct bound quantitative leaf effect refined into caller semantic signature**
 
 Highest-value remaining research work:
-- [ ] **concrete recipe argument evaluation / parameter binding / substitution semantics**
-- [ ] compose concrete call substitution with the existing abstract call-signature theorem
+- [ ] richer concrete `RangeExpr` call argument certification
+- [ ] arbitrary structured callee-body execution under exact bindings
+- [ ] connect concrete call certificates to observed direct-Wasm call execution
 - [ ] semantic-security/plugin case studies
 - [ ] backend/source-validation/certificate/checker overhead evaluation
 - [ ] systematic related-work review
@@ -134,10 +168,13 @@ Highest-value remaining research work:
 - [x] branch/repeat/multi-invocation RuntimePath correspondence
 - [x] concrete runtime capability containment
 - [x] guard-aware branch truth correspondence for an explicit fragment
-- [x] **abstract acyclic recipe-call signature composition with generated Lean certificate**
+- [x] abstract acyclic recipe-call signature composition with generated Lean certificate
+- [x] concrete safe-integer nested call binding for an explicit subset
+- [x] exact direct leaf effect refinement through caller signature
 - [x] portable C99 evidence on Linux/macOS/FreeBSD
 - [x] GUI input path preserves explicit persistent `change`
-- [ ] concrete interprocedural parameter substitution correspondence
+- [ ] structured concrete callee execution beyond one direct leaf effect
+- [ ] call-aware direct-Wasm runtime correspondence
 - [ ] security/engineering case studies
 - [ ] overhead evaluation
 - [ ] systematic related-work review
@@ -152,10 +189,11 @@ Highest-value remaining research work:
 5. Unsupported assurance cases fail conservatively instead of silently weakening the claim.
 6. `why` is recorded provenance, not universal causality.
 7. Translation validation does not imply JavaScript parser correctness.
-8. RuntimePath, invocation environments and formalCalls are proof-free evidence; Lean checks the supported claims built from them.
+8. RuntimePath, invocation environments, formalCalls and concrete call witnesses are proof-free evidence; Lean checks only the explicitly supported claims built from them.
 9. Beta.23 guard-aware claims cover a safe-integer parameter fragment, not arbitrary persistent-state guards or floating-point semantics.
-10. Beta.25 call claims are interval/signature-level; concrete value substitution is future work.
-11. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
-12. Direct-Wasm/C99 support is narrower than the full Patch language.
-13. Window packages are standalone but not yet native-widget generation.
-14. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
+10. Beta.25 call claims are abstract interval/signature-level.
+11. Beta.26 concrete call claims cover variable pass-through binding and a direct quantitative leaf-effect subset, not arbitrary substitution/runtime equivalence.
+12. GUI control editing is transient; persistent GUI state changes only through semantic `change`.
+13. Direct-Wasm/C99 support is narrower than the full Patch language.
+14. Window packages are standalone but not yet native-widget generation.
+15. FreeBSD is Console-only; OpenBSD/NetBSD are not claimed until separately tested.
