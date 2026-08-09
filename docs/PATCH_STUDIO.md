@@ -2,53 +2,39 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.30
+## What works in 0.2 beta.31
 
-Patch Studio provides source editing/local autosave, Console and Window Run, the Designer toolbox plus source-backed control selection/property editing, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
+Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
-For Windows, macOS and Linux, the default desktop workflow is **Ready app download (no token)**. Patch Studio performs browser preflight, compiles the Console subset to direct Wasm when needed, loads a stable runtime asset for the selected OS and produces the current project package in the browser. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
+For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Console ready builds are project-specific sealed executables. Window projects use the hardened prebuilt desktop player with a checked source payload.
+Change IR **0.10** is unchanged. Beta.31 is a research assurance extension and does not add a second GUI/state model or alter normal Studio runtime semantics.
 
-Change IR **0.10** is unchanged. Beta.30 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
-
-Research commands remain outside the ordinary beginner workflow:
+Research commands remain outside the beginner workflow:
 
 ```bash
-patch formal program.patch
-patch certify program.patch
-patch runtime-certify program.patch
-patch call-certify program.patch
-npm run concrete-call-certify:example
-npm run arithmetic-call-certify:example
-npm run callee-trace-certify:example
-npm run guarded-callee-trace-certify:example
 npm run transitive-callee-trace-certify:example
+npm run transitive-runtime-certify:example
 ```
 
-The beta.30 command generates `GeneratedTransitiveCallBodyCertificate.lean` from `examples/formal-transitive-calls.patch`. Lean recursively re-evaluates exact nested call arguments/bindings, strict call-graph rank decrease, exact `GuardExpr` choices, static repeats and direct quantitative effects, then checks nested semantic-signature containment edge by edge.
+`GeneratedTransitiveCallBodyCertificate.lean` is the beta.30 exact call-tree certificate. `GeneratedTransitiveRuntimeCertificate.lean` is the beta.31 certificate generated only after the direct-Wasm example has actually executed and the complete transition trace has passed independent validation.
 
-`GeneratedConcreteCallBodyCertificate.lean` and `GeneratedGuardedCallBodyCertificate.lean` remain regression evidence for beta.28 and beta.29. This research machinery is intentionally invisible during normal editing, Run and Build.
+Beta.31 then asks Lean to re-evaluate the runtime-derived observed semantic-effect list against the beta.30 exact call tree. Runtime capture, independent-validator correctness and scoped-slice attribution remain explicit proof-free boundaries.
 
 ## Designer property inspector
 
-The Designer derives selectable controls from parsed Patch source instead of keeping a second form file or hidden GUI model.
+The Designer derives selectable controls from Patch source rather than a second form file:
 
-- click or keyboard-select Text, Button and Input controls on the Designer canvas;
-- inspect the control type and exact source location;
-- edit button/input control ids;
-- edit Text/Button text expressions directly as Patch expressions;
-- Apply writes the changed declaration back to `main.patch`;
-- renaming a control id updates matching `when ...` event headers;
-- invalid or duplicate control ids are rejected before source is changed;
-- Delete removes the control and its associated event-handler blocks;
-- Source jumps to the selected declaration in the editor.
+- select Text, Button and Input controls;
+- edit source-backed ids/text expressions;
+- propagate id renames to matching event headers;
+- reject invalid/duplicate ids;
+- Delete removes matching event-handler blocks;
+- Source jumps to the exact declaration.
 
-Selection uses parsed `(windowIndex, controlIndex)` coordinates, so even Text controls without ids remain selectable without inventing persistent designer metadata.
+Persistent GUI state still changes only through semantic `change`.
 
 ## Semantic input events
-
-Editable inputs preserve Patch's explicit persistent mutation route:
 
 ```patch
 create text name = ""
@@ -59,106 +45,44 @@ when name changed:
     set = value
 ```
 
-The current control text is event-local `value`. The browser/desktop edit does **not** write persistent Patch state by itself. Source must execute ordinary semantic `change` to commit it.
-
-Studio uses `src/window-events.js`; the standalone Window Web runtime and generated Windows/macOS/Linux desktop player implement the same contract.
-
-## Window builds
-
-The shared `src/window-build.js` **Window preflight** validates normalized Window IR before Web or desktop packaging:
-
-- control ids must be unique;
-- handlers must refer to existing controls;
-- button `clicked` is supported;
-- input `changed` is supported with transient `value`;
-- unsupported control/event combinations remain rejected.
+`value` is transient event-local data. Editing the input does not persist state by itself.
 
 ## Build matrix
 
 ```text
-Windows App (.exe)   Console or Window   ready download in Studio
-macOS App (.app)     Console or Window   ready download in Studio
-Linux App            Console or Window   ready download in Studio
-FreeBSD Console      Console only        local/cloud build path
+Windows App (.exe)   Console or Window   ready download
+macOS App (.app)     Console or Window   ready download
+Linux App            Console or Window   ready download
+FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-Console Web Apps use direct Patch Wasm. Window Web Apps use the generated browser Window runtime. Direct WebAssembly remains Console-only.
+Console ready builds are project-specific sealed executables. Window builds use the hardened sandboxed desktop player with a checked source payload.
 
-### Ready Console build
+## Beta.31 assurance in relation to Studio
 
-```text
-current editor source
-    -> browser direct-Wasm compilation
-    -> raw prebuilt OS runtime binary
-    -> append metadata + Wasm + versioned CRC footer
-    -> project-named executable/app bundle
-    -> ready ZIP download
-```
+The ordinary Studio does not need to run Lean or expose beta.31 proof machinery. The research artifact uses the same direct-Wasm compiler/runtime path exercised by Console programs, then performs offline/CI correspondence validation.
 
-The executable itself contains the project payload. There is no `app.wasm` or `patch-app.json` that the user must keep beside the program. This is sealed native packaging, not a claim that Patch IR is directly lowered to PE/COFF, Mach-O or ELF machine code in the browser.
-
-For macOS, Developer ID signing and notarization remain distribution concerns.
-
-### Ready Window build
+For the finite transitive example:
 
 ```text
-current editor source
-    -> browser compiler/preflight
-    -> prebuilt OS Window runtime template
-    -> browser inserts checked Patch source payload
-    -> ready ZIP download
+caller -> outer -> middle -> leaf
 ```
 
-The generic Window player uses an Electron sandbox with a minimal IPC payload bridge and strict payload validation. CI smoke-tests that sandboxed bridge on Windows, macOS and Linux. `src/prebuilt-native.js` performs sealed Console assembly and Window ZIP customization.
+beta.31 independently validates the complete direct-Wasm transition stream, reconstructs the exact scoped semantic effects, accepts the call-tree slice only if it is unique, and generates the Lean certificate.
 
-### Advanced build modes
-
-Studio still exposes two advanced alternatives:
-
-- **GitHub Actions cloud build**: builds a project-specific platform package and requires a fine-grained GitHub token with Actions read/write permission. Studio never saves the token.
-- **Local toolchain kit**: keeps source local but requires the relevant Node/Rust/C compiler toolchain.
-
-FreeBSD currently uses these advanced paths because a stable prebuilt FreeBSD runtime is not published yet.
-
-## Research assurance layers
-
-Beta.23 provides guard-aware direct-runtime correspondence for an explicit safe-integer fragment. Beta.25 adds abstract acyclic recipe-call interval/signature composition. Beta.26 adds exact positional call binding and direct quantitative leaf-effect refinement. Beta.27 carries the already mechanized integer `RangeExpr` grammar through concrete production certificates.
-
-Beta.28 adds exact complete sequence/static-repeat callee traces. Beta.29 adds exact `GuardExpr` branch selection under exact recipe-parameter bindings while requiring both branch arms to remain covered by the callee signature.
-
-Beta.30 adds `PatchCallTree.lean`. It preserves beta.29 bodies as call-free leaves and recursively checks finite nested calls. For the supported call-tree fragment Lean checks:
-
-- exact outer/nested bindings;
-- beta.25 abstract interval fit for the outer concrete call;
-- strict outer and nested rank decrease;
-- exact selected guards and static repeats;
-- direct quantitative effects;
-- nested body coverage by callee signatures;
-- edge-by-edge signature import into the caller;
-- exact equality of the complete selected transitive trace.
-
-Root-program certification, recursion/cycles, dynamic repeat, persistent-state exact guards, returns and production JavaScript/direct-Wasm call equivalence remain outside beta.30. These layers are not presented as full compiler verification.
-
-## iPhone and iPad
-
-Patch Studio can be installed from Safari with **Share → Add to Home Screen**. It can author/preview Window apps and produce browser-generated ready-app ZIPs for Windows/macOS/Linux. The downloaded desktop package is run on its target desktop OS, not on iOS.
+Repeated indistinguishable scoped traces are not guessed. They fail closed until independent invocation-frame reconstruction is added.
 
 ## PWA updates
 
-The beta.30 cache key begins with `patch-studio-0.2-beta.30`. The Studio cache includes the browser-side native packager, Designer property-inspector stylesheet and source editor helpers together with compiler, formal-call, guard-validation and Window-event modules. Large OS runtime assets are fetched only when a user asks for a native build.
+The beta.31 cache key begins with `patch-studio-0.2-beta.31`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
 
 ## Source remains truth
 
-The Designer edits ordinary Patch source rather than a hidden form format:
+The `.patch` file remains the reviewable representation of behavior and current GUI structure. No hidden persistent Designer model is introduced.
 
-```patch
-window "My App":
-  button "Button" as button_1
-```
+## Next work
 
-Selecting that button and changing its text or id updates this declaration directly. The `.patch` file remains the reviewable, diffable representation of both behavior and current GUI structure.
+Product: drag positioning/resizing, richer controls/events, signing/notarization and eventually native AppKit/Win32/portable Unix widget lowering.
 
-## Next product work
-
-Next GUI work is drag positioning/resizing, richer controls and event editing while keeping source as truth. Desktop work should focus on signing/notarization, project-specific Window package metadata, and eventually a direct-native AOT backend plus native AppKit/Win32/portable Unix widget lowering. The normal Studio path no longer needs a personal GitHub token or a user-installed build toolchain.
+Research: replace beta.31's unique **scoped-slice attribution** with independently reconstructed concrete invocation frames so repeated identical calls can be certified without compiler-emitted trusted call events.
