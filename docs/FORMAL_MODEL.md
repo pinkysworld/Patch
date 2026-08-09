@@ -1,232 +1,158 @@
 # Patch Core Formal Model
 
-Status: **beta.30: mechanized semantic-change contracts, guard-aware runtime correspondence, finite acyclic recipe-call signature composition, exact safe-integer call binding, guard-aware structured callee traces, and finite transitive exact call-tree traces**.
+Status: **beta.31: mechanized semantic-change contracts, finite transitive exact call trees, and conservative call-aware direct-Wasm correspondence for unambiguous validated scoped traces**.
 
-Patch is not a fully verified compiler. Lean covers explicit fragments; the JavaScript frontend, WebAssembly lowering/runtime and implementation-side evidence producers remain named trust or translation-validation boundaries.
+Patch is not a fully verified compiler. Lean covers explicit fragments; production parsing, JavaScript-to-Wasm lowering/runtime, independent JavaScript validators and evidence attribution remain named boundaries.
 
 ## Lean modules
 
-- `PatchFormal.lean`: semantic operations, changes, state, intervals, effects and policies.
-- `PatchSignature.lean`: effect-only execution and Change Signature Soundness.
-- `PatchChecker.lean`: executable verified semantic policy checker.
-- `PatchEvidence.lean`: proof-free evidence decoding/correspondence.
-- `PatchSource.lean`: source mutation normalization and `SourceExecutes`.
-- `PatchRange.lean`: integer `RangeExpr` evaluator/analyzer and `rangeAnalysisSound`.
-- `PatchRuntime.lean`: `EffectRefines`, `TraceRefines`, `RuntimePath` correspondence.
-- `PatchRuntimeCapability.lean`: concrete runtime capability containment.
-- `PatchGuarded.lean`: `GuardExpr`, `evalGuard`, guard truth and guard-aware RuntimePath validity.
-- `PatchCalls.lean`: finite recipe environments, argument-interval fit, rank-decreasing calls and call-aware signature soundness.
-- `PatchCallSubstitution.lean`: exact `RangeExpr` argument evaluation, `envOfBindings` and positional callee binding.
-- `PatchCallRefinement.lean`: exact concrete values transported through abstract argument intervals into declarations.
-- `PatchCallEffect.lean`: exact bound direct quantitative effects refined into imported caller-signature effects.
-- `PatchCallBody.lean`: beta.28/29 executable exact callee-body traces for direct emits, sequence, static repeat and exact formal-guard branches.
-- `PatchCallBodyImport.lean`: beta.28/29 selected whole-trace import from callee signature to caller signature.
-- `PatchCallTree.lean`: beta.30 finite recursive exact call-tree evaluation, nested exact binding, rank checks and edge-by-edge signature import.
+- `PatchFormal.lean`: semantic changes, state, intervals, effects and policies.
+- `PatchSignature.lean`: Change Signature Soundness.
+- `PatchChecker.lean`: verified semantic policy checker.
+- `PatchRange.lean`: exact integer `RangeExpr` evaluation and range soundness.
+- `PatchRuntime.lean` / `PatchRuntimeCapability.lean`: runtime effect refinement/capability containment.
+- `PatchGuarded.lean`: formal `GuardExpr` truth and guard-aware runtime correspondence.
+- `PatchCalls.lean`: finite ranked abstract recipe-call composition.
+- `PatchCallSubstitution.lean`: exact positional call binding.
+- `PatchCallRefinement.lean`: concrete values through beta.25 abstract intervals.
+- `PatchCallEffect.lean`: exact quantitative effect refinement.
+- `PatchCallBody.lean` / `PatchCallBodyImport.lean`: beta.28/29 exact structured/guarded callee traces.
+- `PatchCallTree.lean`: beta.30 finite recursive exact call-tree evaluation and edge-by-edge signature import.
+- **`PatchCallRuntime.lean`: beta.31 bridge from runtime-derived observed effects to beta.30 exact call-tree refinement.**
 
-Beta.30 does **not** introduce another arithmetic or guard language and does not change Change IR. It composes the existing `RangeExpr`, `GuardExpr`, exact binding and `SignatureCovers` layers into a finite nested-call certificate.
+Change IR remains **0.10**.
 
 ## Core containment
 
-For the effect-only structured core:
-
-```text
-Executes(stmt, runtime)
-=> RuntimeChanges(runtime) ⊆ inferSignature(stmt)
-```
-
-Combined with the verified semantic policy checker:
+For the structured semantic core:
 
 ```text
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-## Guard-aware direct runtime
+## Beta.30 finite transitive exact call trees
 
-The beta.23 path independently validates supported source/guard extraction and checks proof-free direct-Wasm effects and branch paths against formal source execution, guard truth and Change Capabilities. That theorem remains separate from the call-aware certificate layers.
+`CallTreeStmt` preserves beta.29 bodies as call-free leaves and adds sequence, literal/static repeat, exact `GuardExpr` branches and ranked nested calls.
 
-`PatchGuarded.lean` provides the formal guard language reused by beta.29 and beta.30:
-
-```text
-GuardExpr.bool
-GuardExpr.eq
-GuardExpr.lt
-GuardExpr.le
-GuardExpr.and
-GuardExpr.or
-GuardExpr.not
-```
-
-`evalGuard` evaluates these guards over an `IntEnv` using the exact integer `RangeExpr` evaluator.
-
-## Beta.25 abstract call layer
-
-`PatchCalls.lean` models finite structured `CallStmt` bodies with direct effects, sequence, branches, literal repeats and calls carrying abstract argument intervals. A `RecipeEnv` stores parameter intervals, a well-founded rank, semantic signature and body.
-
-`checkRecipeEnv` verifies direct-effect membership, lower-rank call resolution, `ArgsFit` and callee-to-caller `SignatureCovers`. `callSignatureSoundness` proves effects from modeled rank-decreasing call execution remain in the caller signature.
-
-## Beta.26–27 exact binding and arithmetic coverage
-
-Serializable production bindings are represented as `BindingList := List (Name × Int)`. `envOfBindings` bridges them to `IntEnv`. `concreteCallBinding_sound` checks exact argument evaluation, declared-range fit and positional binding.
-
-`PatchCallRefinement.lean` connects exact values through beta.25 abstract intervals into declarations. The exact arithmetic fragment is:
+Each nested call carries:
 
 ```text
-RangeExpr.lit Int
-RangeExpr.var Name
-RangeExpr.add left right
-RangeExpr.sub left right
-RangeExpr.neg expr
-RangeExpr.scale Nat expr
+callerRank
+calleeRank
+RangeExpr arguments
+parameter names
+declared intervals
+callee semantic signature
+nested CallTreeStmt body
 ```
 
-`PatchCallEffect.lean` re-evaluates direct quantitative leaf amounts under exact bindings and uses `EffectRefines` to connect them to caller-signature effects.
+Lean independently checks exact nested argument evaluation/binding, strict rank decrease, selected guard/repeat/direct-effect execution, nested body coverage and one `SignatureCovers` import per call edge.
 
-## Beta.28 exact structured callee traces
-
-Beta.28 established the branch-free `BoundStmt` fragment with `skip`, quantitative `emit`, `seq` and literal/static `repeat`.
-
-`BoundExec bindings stmt trace` is the relational semantics. `evalBoundStmt` is executable, `evalBoundStmt_sound` recovers the relational witness, and `evalBoundStmtEqBool_sound` validates proof-free claimed traces through the verified `effectEqBool` checker.
-
-`BoundBodyCovered` requires every formal expected effect in the body to be represented by the callee signature. `checkedConcreteCallBodyRefinesCallerSignature` composes exact binding, exact body execution, static coverage and beta.25 signature import.
-
-`GeneratedConcreteCallBodyCertificate.lean` remains beta.28 regression evidence.
-
-## Beta.29 guard-aware exact structured callee traces
-
-Beta.29 extends the same `BoundStmt` semantics with:
-
-```text
-branch GuardExpr thenBranch elseBranch
-```
-
-No JavaScript Boolean is trusted as the branch fact. Lean evaluates:
-
-```text
-evalGuard guard (envOfBindings bindings)
-```
-
-and executes only the selected branch. Static `BoundBodyCovered` deliberately remains stronger: **both branch arms** must be represented in the callee signature.
-
-`GeneratedGuardedCallBodyCertificate.lean` exercises both true and false branch choices and remains a required regression certificate for beta.30.
-
-## Beta.30 finite transitive exact call-tree traces
-
-Beta.30 keeps beta.29 `BoundStmt` unchanged as the call-free leaf layer and adds:
-
-```text
-CallTreeStmt.base BoundStmt
-CallTreeStmt.seq
-CallTreeStmt.repeat Nat
-CallTreeStmt.branch GuardExpr
-CallTreeStmt.call callerRank calleeRank argExprs params declared calleeSignature body
-```
-
-### Indexed execution environment
-
-`CallTreeExec` is indexed by `BindingList`. This is essential because a nested call intentionally changes the active exact environment:
-
-```text
-current bindings
-  -> evaluate nested RangeExpr arguments
-  -> concreteCallBinding
-  -> new callee BindingList
-  -> recursively evaluate nested body
-```
-
-The executable `evalCallTreeStmt` follows the same structure. `evalCallTreeStmt_sound` proves successful executable evaluation yields the relational `CallTreeExec` witness.
-
-### Indexed signature coverage
-
-`CallTreeCovered` is indexed by semantic signature. A nested call is accepted only when:
-
-1. `calleeRank < callerRank`;
-2. the nested body is covered by the nested callee signature; and
-3. `SignatureCovers calleeSignature enclosingSignature`.
-
-`callTreeCoveredBool` checks these obligations recursively. Therefore the generated certificate does not rely on the JavaScript producer merely asserting that a nested tree is finite or rank-decreasing.
-
-### Exact transitive trace
-
-For each nested call, Lean re-evaluates the call arguments using the existing safe-integer `RangeExpr` semantics and reconstructs the next positional `BindingList` with `concreteCallBinding`. Direct effects remain grounded in beta.26/27 quantitative refinement. Branches reuse `evalGuard`; repeats remain literal/static.
-
-`callTreeExecRefinesSignature` proves that every effect occurrence in the recursively evaluated selected trace refines the enclosing signature. A nested trace is first checked against its own callee signature and then imported **one signature edge at a time**.
-
-The certificate-facing theorem is:
+The certificate theorem is:
 
 ```text
 checkedConcreteTransitiveCallTreeRefinesCallerSignature
 ```
 
-The generated certificate additionally exports:
-
-- strict beta.25 rank decrease for the **outer** certified call edge;
-- `ConcreteArgsFit` obtained through `concreteThroughAbstractBool_sound` for the outer concrete values and beta.25 abstract intervals;
-- exact outer `ConcreteCallBindingSpec`;
-- complete selected `TraceRefinesSignature` for the finite transitive trace.
-
-### Generated beta.30 evidence
-
-`GeneratedTransitiveCallBodyCertificate.lean` is regenerated from `examples/formal-transitive-calls.patch` in CI. The example contains:
+The depth-2 example is:
 
 ```text
 caller -> outer -> middle -> leaf
 ```
 
-The strongest certificate has two nested call levels. For the concrete example the exact selected transitive trace is:
+with exact selected trace:
 
 ```text
 score increase [4,4]
 coins increase [3,3]
 ```
 
-Pinned Lean independently checks the outer binding, abstract interval fit, outer rank decrease, every nested argument/binding, every nested rank decrease, selected guards/repeats/effects, nested signature coverage and edge-by-edge signature import.
+## Beta.31 call-aware direct-Wasm correspondence
 
-## Exact beta.30 boundary
+Beta.31 does not modify the direct-Wasm backend to emit trusted call-enter/call-exit markers. The existing backend executes normally and returns its raw transition stream:
 
-Covered:
+```text
+target / before / after
+```
 
-- finite beta.25-supported acyclic/rank-decreasing recipe environments;
-- bounded safe-integer `RangeExpr` arguments;
-- exact positional outer and nested bindings;
-- direct quantitative `add`/`remove` effects;
-- sequence;
-- literal/static repeat;
-- formal `GuardExpr` over exact recipe parameters;
-- exact selected branch paths;
-- complete finite selected transitive semantic-effect traces;
-- strict rank decrease checked for the outer certified edge and every nested edge;
-- beta.25 abstract interval fit for outer concrete arguments;
-- nested callee-signature coverage and edge-by-edge caller-signature import.
+`src/direct-trace-validator.js` independently executes the supported Change IR and validates the **complete** raw transition sequence. `src/direct-effect-validator.js` then reconstructs semantic operation identity and recipe scope from that independent execution model.
 
-Still outside:
+`src/transitive-runtime-correspondence.js` compares the beta.30 exact scoped trace with the validated runtime semantic-effect stream. A candidate is accepted only if the same **scope + exact semantic-effect sequence** occurs once. Zero matches fail; repeated indistinguishable matches are marked ambiguous and fail closed.
 
-- root-program concrete call certification;
-- recursive/cyclic call trees;
-- dynamic repeat counts;
-- persistent-state variables inside exact guard certificates;
-- returns;
-- expressions outside the supported safe-integer `RangeExpr` / Boolean `GuardExpr` fragments;
-- floating-point call semantics;
-- equivalence to production JavaScript/direct-Wasm call execution;
-- full compiler correctness.
+For the depth-2 example the validated scoped sequence is:
 
-Unsupported assurance cases fail closed rather than being flattened into a stronger claim.
+```text
+leaf   : score increase [4,4]
+middle : coins increase [3,3]
+```
 
-## Trust boundaries
+Site ids, source operation lines and raw before/after transitions are retained as audit metadata, but beta.31's attribution criterion is the unique scoped exact-effect sequence.
 
-Still not machine proved:
+### Lean bridge
 
-- production or independent JavaScript parser correctness;
-- correctness/completeness of the proof-free AST/formalCalls/call-tree extraction producers;
-- JavaScript → Wasm lowering correctness;
-- Wasm engine correctness;
-- runtime observation completeness;
-- production JavaScript/direct-Wasm call execution equivalence.
+`PatchCallRuntime.lean` proves:
 
-The production witnesses remain proof-free inputs. For beta.30, Lean independently recomputes exact bindings, rank obligations, guard truth, structured/nested body evaluation, exact trace equality and signature-containment obligations for the supported fragment.
+```text
+checkedObservedTransitiveRuntimeRefinesCallerSignature
+```
+
+Its critical premise is:
+
+```text
+evalCallTreeStmtEqBool calleeBindings body observed = true
+```
+
+where `observed` is the semantic-effect list reconstructed from the validated direct-Wasm execution.
+
+Therefore the observed runtime list is not trusted as already equal to the beta.30 trace. `evalCallTreeStmtEqBool_sound` causes Lean to re-evaluate the exact nested call tree against that runtime-derived list before the beta.30 caller-signature theorem is reused.
+
+The generated `GeneratedTransitiveRuntimeCertificate.lean` embeds the full beta.30 generated call-tree definitions/proofs and adds runtime-derived observed effects, scope/site audit metadata and the beta.31 theorem.
+
+Standard Formal CI runs the Wasm program, generates the certificate and verifies it with pinned Lean. Standard Windows/macOS/Linux CI also executes the direct-Wasm example and regenerates beta.31 evidence.
+
+## Exact beta.31 boundary
+
+Mechanically/formally checked after evidence generation:
+
+- beta.30 exact outer and nested bindings;
+- beta.30 outer/nested rank decrease;
+- beta.30 exact guarded/static-repeat/direct-effect semantics;
+- beta.30 nested signature coverage and edge-by-edge import;
+- exact equality between the runtime-derived observed effect list and Lean's re-evaluated call-tree trace;
+- observed-list refinement into the caller semantic signature.
+
+Runtime evidence established by JavaScript before Lean:
+
+- real direct-Wasm module execution;
+- complete raw transition validation against independent Change-IR execution;
+- semantic operation reconstruction;
+- recipe-scope reconstruction;
+- unique contiguous scoped-effect sequence attribution.
+
+Still explicit proof-free/trust boundaries:
+
+- **runtime capture**;
+- correctness/completeness of the independent JavaScript validator;
+- **scoped-slice attribution** from the validated effect stream to a concrete invocation;
+- production parser/extractor correctness;
+- JavaScript-to-Wasm lowering correctness;
+- Wasm engine correctness.
+
+Beta.31 is therefore not a full forward/backward simulation theorem for the compiler/runtime. In particular, repeated identical scoped traces are rejected rather than disambiguated.
+
+## Earlier assurance layers
+
+- Beta.23: conservative guard-aware direct-runtime/capability correspondence.
+- Beta.25: abstract finite ranked call composition.
+- Beta.26-27: exact safe-integer binding and integer `RangeExpr` coverage.
+- Beta.28: exact direct quantitative sequence/static-repeat callee traces.
+- Beta.29: exact formal-guard branch selection with both-arm static coverage.
+- Beta.30: finite transitive exact call-tree traces.
 
 ## Research boundary
 
-Procedure-call semantics, substitution, arithmetic expression evaluation, structured execution traces, guard evaluation, interprocedural effect summaries, interval analysis, effect refinement, proof-carrying evidence, translation validation and verified checkers all have extensive prior art. Beta.30 finite transitive exact call trees are **supporting assurance**, not a standalone firstness claim.
+Procedure-call semantics, transitive traces, runtime validation, effect refinement, translation validation and proof-carrying evidence all have extensive prior art. Beta.31 is **supporting assurance**, not a new firstness claim.
 
 The primary candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from that same mutation substrate**.
+
+The next formal hardening target is independent concrete invocation-frame reconstruction so repeated identical calls can be mapped without relying on globally unique scoped slices or adding trusted compiler-emitted call events.

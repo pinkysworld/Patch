@@ -19,7 +19,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: Lean 4 proofs + generated certificates
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -42,6 +42,8 @@ jobs:
         run: npm run guarded-callee-trace-certify:example
       - name: Generate finite transitive exact call-tree certificate
         run: npm run transitive-callee-trace-certify:example
+      - name: Execute direct Wasm and generate call-aware transitive runtime certificate
+        run: npm run transitive-runtime-certify:example
       - name: Install Elan and pinned Lean
         shell: bash
         run: |
@@ -49,62 +51,41 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
-      - name: Build Lean formalization and call-tree assurance boundaries
+      - name: Build Lean formalization and call-aware runtime assurance boundaries
         working-directory: formal
         shell: bash
         run: |
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport PatchCallTree
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport PatchCallTree PatchCallRuntime
       - name: Verify generated production certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedCertificate.lean
+        run: lake env lean GeneratedCertificate.lean
       - name: Verify generated direct-runtime correspondence certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedRuntimeCertificate.lean
+        run: lake env lean GeneratedRuntimeCertificate.lean
       - name: Verify generated recipe-call composition certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedCallCertificate.lean
+        run: lake env lean GeneratedCallCertificate.lean
       - name: Verify generated concrete recipe-call certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedConcreteCallCertificate.lean
+        run: lake env lean GeneratedConcreteCallCertificate.lean
       - name: Verify generated arithmetic concrete-call certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedArithmeticCallCertificate.lean
+        run: lake env lean GeneratedArithmeticCallCertificate.lean
       - name: Verify generated structured callee trace certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedConcreteCallBodyCertificate.lean
+        run: lake env lean GeneratedConcreteCallBodyCertificate.lean
       - name: Verify generated guard-aware callee trace certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedGuardedCallBodyCertificate.lean
+        run: lake env lean GeneratedGuardedCallBodyCertificate.lean
       - name: Verify generated finite transitive exact call-tree certificate
         working-directory: formal
-        shell: bash
-        run: |
-          set -euo pipefail
-          lake env lean GeneratedTransitiveCallBodyCertificate.lean
+        run: lake env lean GeneratedTransitiveCallBodyCertificate.lean
+      - name: Verify generated call-aware direct-Wasm correspondence certificate
+        working-directory: formal
+        run: lake env lean GeneratedTransitiveRuntimeCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |

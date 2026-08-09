@@ -10,7 +10,7 @@ test('transitive witness reconstructs two nested exact call levels without flatt
   const compiled = compile(source, { name: 'TransitiveCalls' });
   const artifact = buildTransitiveCallBodyWitnesses(compiled.ast, compiled.ir.formalCalls);
   assert.equal(artifact.format, 'patch-transitive-call-body');
-  assert.equal(artifact.version, '0.1');
+  assert.equal(artifact.version, '0.2');
   assert.equal(artifact.summary.unsupported, 0);
   assert.equal(artifact.summary.maxNestedCallDepth, 2);
 
@@ -30,6 +30,10 @@ test('transitive witness reconstructs two nested exact call levels without flatt
     { target: 'score', field: null, operation: 'increase', amountRange: { min: 4, max: 4 } },
     { target: 'coins', field: null, operation: 'increase', amountRange: { min: 3, max: 3 } }
   ]);
+  assert.deepEqual(outer.claimedScopedTrace, [
+    { scope: 'leaf', effect: { target: 'score', field: null, operation: 'increase', amountRange: { min: 4, max: 4 } } },
+    { scope: 'middle', effect: { target: 'coins', field: null, operation: 'increase', amountRange: { min: 3, max: 3 } } }
+  ]);
 });
 
 test('transitive witness preserves shallower nested edges as exact witnesses too', () => {
@@ -47,9 +51,11 @@ test('transitive witness preserves shallower nested edges as exact witnesses too
     { target: 'score', field: null, operation: 'increase', amountRange: { min: 4, max: 4 } },
     { target: 'coins', field: null, operation: 'increase', amountRange: { min: 3, max: 3 } }
   ]);
+  assert.deepEqual(middle.claimedScopedTrace.map(item => item.scope), ['leaf', 'middle']);
   assert.deepEqual(leaf.claimedTrace, [
     { target: 'score', field: null, operation: 'increase', amountRange: { min: 4, max: 4 } }
   ]);
+  assert.deepEqual(leaf.claimedScopedTrace.map(item => item.scope), ['leaf']);
 });
 
 test('transitive certification pipeline fails closed at the earliest range boundary', () => {
