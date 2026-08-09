@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.27** · Change IR **0.10**
+Status: **0.2.0-beta.28** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.27 strengthens research certificate coverage and does **not** change package formats, Change IR or the Window runtime contract.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.28 strengthens research certificate coverage and does **not** change package formats, Change IR or the Window runtime contract.
 
 ## Build matrix
 
@@ -52,11 +52,14 @@ Concrete call research artifacts are reproducible with:
 ```bash
 npm run concrete-call-certify:example
 npm run arithmetic-call-certify:example
+npm run callee-trace-certify:example
 ```
 
-Beta.26's exact-binding certificate is checked through `PatchCallSubstitution.lean`, `PatchCallRefinement.lean` and `PatchCallEffect.lean`. Beta.27 preserves the already mechanized integer `RangeExpr` grammar through that production certificate path, so arguments such as `bonus + 1` and direct leaf amounts such as `amount * 2` are re-evaluated by Lean instead of reduced to trusted JavaScript constants.
+Beta.26 checks exact binding and direct quantitative leaf refinement. Beta.27 preserves formal arithmetic such as `bonus + 1` and `amount * 2` through the production certificate path. Beta.28 extends the exact call layer to a complete semantic-effect trace for direct quantitative sequence/static-repeat callee bodies.
 
-This assurance does **not** alter executable packages and does not yet prove arbitrary structured callee execution or production-Wasm call equivalence.
+`GeneratedConcreteCallBodyCertificate.lean` is generated from `examples/formal-callee-trace.patch`. Lean checks exact caller-to-callee binding, evaluates the supported structured callee body, checks the full claimed effect trace, checks callee signature coverage and imports that trace into the caller signature.
+
+This assurance does **not** alter executable packages and does not yet prove branch-aware or nested-call concrete callee execution, complete transitive call traces, or production-Wasm call equivalence.
 
 ## Portable C99
 
