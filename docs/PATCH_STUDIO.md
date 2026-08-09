@@ -6,7 +6,9 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
-For Windows, macOS and Linux, the default desktop workflow is now **Ready app download (no token)**. Patch Studio performs the relevant browser preflight, compiles the Console subset to direct Wasm when needed, loads a prebuilt generic runtime for the selected OS and inserts the current project payload into that runtime package in the browser. The downloaded ZIP is ready to unzip and run. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
+For Windows, macOS and Linux, the default desktop workflow is **Ready app download (no token)**. Patch Studio performs browser preflight, compiles the Console subset to direct Wasm when needed, loads a stable runtime asset for the selected OS and produces the current project package in the browser. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
+
+Console ready builds are now project-specific sealed executables. Studio appends the checked direct-Wasm payload and project metadata to the raw runtime executable and emits a project-named `.exe`, Linux executable or macOS `.app`. Window projects continue to use the prebuilt desktop-player package with a checked source payload.
 
 Change IR **0.10** is unchanged. Beta.28 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
 
@@ -65,23 +67,40 @@ Standalone Web App   Console or Window   browser-local build
 
 Console Web Apps use direct Patch Wasm. Window Web Apps use the generated browser Window runtime. Direct WebAssembly remains Console-only.
 
-### Ready app download
+### Ready Console build
 
-The default Windows/macOS/Linux path does not start a per-project remote build:
+The default Console path produces a fresh project-specific executable assembly without starting a remote build:
 
 ```text
 current editor source
-    -> browser preflight
-    -> Console: direct Wasm payload
-       Window: validated Patch source payload
-    -> prebuilt OS runtime template
-    -> browser inserts payload into runtime ZIP
-    -> ready-to-run download
+    -> browser direct-Wasm compilation
+    -> raw prebuilt OS runtime binary
+    -> append metadata + Wasm + versioned CRC footer
+    -> project-named executable/app bundle
+    -> ready ZIP download
 ```
 
-The prebuilt runtime templates are built and smoke-tested on Windows, macOS and Linux by `.github/workflows/runtime-templates.yml`, then published as stable project runtime assets and copied into the Patch Studio Pages deployment. `src/prebuilt-native.js` customizes the ZIP without decompressing or recompiling the runtime.
+The executable itself contains the project payload. There is no `app.wasm` or `patch-app.json` that the user must keep beside the program. Legacy sidecar loading remains supported only for compatibility with earlier runtime downloads.
 
-This keeps user source out of GitHub Actions for the default path. The generic desktop runtime name is currently visible inside the downloaded package; the project name is carried in the payload and used by the running app. App signing/notarization and project-specific outer package naming remain later polish work.
+This is intentionally described as **sealed native packaging**, not as a full Patch-to-machine-code AOT compiler. The platform runtime machine code is a stable prebuilt component; the current Patch program is compiled to direct Wasm in Studio and sealed into it. A true direct-native backend would lower Patch IR itself to target x86/ARM instructions and produce/link PE/COFF, Mach-O and ELF objects. That remains a separate compiler milestone rather than a marketing rename of packaging.
+
+For macOS, the sealed Console runtime asset is unsigned before browser assembly because changing an already-signed Mach-O would invalidate its code signature. Developer ID signing and notarization therefore remain a distribution/signing service concern.
+
+### Ready Window build
+
+Window projects retain the desktop-player architecture:
+
+```text
+current editor source
+    -> browser compiler/preflight
+    -> prebuilt OS Window runtime template
+    -> browser inserts checked Patch source payload
+    -> ready ZIP download
+```
+
+The prebuilt runtime templates are built and smoke-tested on Windows, macOS and Linux by `.github/workflows/runtime-templates.yml`. CI now executes a sealed Console binary on every target OS before raw runtime assets are published. Window payload loading is also smoke-tested on every target platform. `src/prebuilt-native.js` performs sealed Console assembly and Window ZIP customization.
+
+This keeps user source out of GitHub Actions for the default path. App signing/notarization and native AppKit/Win32/portable Unix widget lowering remain later platform work.
 
 ### Advanced build modes
 
@@ -108,7 +127,7 @@ Patch Studio can be installed from Safari with **Share → Add to Home Screen**.
 
 ## PWA updates
 
-The beta.28 cache key begins with `patch-studio-0.2-beta.28`. The Studio cache includes the browser-side prebuilt native packager together with compiler, formal-call, guard-validation and Window-event modules. The large OS runtime ZIPs are fetched only when a user asks for a native build rather than being forced into the offline PWA cache.
+The beta.28 cache key begins with `patch-studio-0.2-beta.28`. The Studio cache includes the browser-side prebuilt native packager together with compiler, formal-call, guard-validation and Window-event modules. Large OS runtime assets are fetched only when a user asks for a native build rather than being forced into the offline PWA cache.
 
 ## Source remains truth
 
@@ -121,4 +140,4 @@ window "My App":
 
 ## Next product work
 
-Next GUI work is richer Designer interaction: control selection/properties, event editing and positioning/resizing while keeping source as truth. Desktop packaging work should focus on project-specific outer package naming, signing/notarization and eventually native AppKit/Win32/portable Unix widget lowering. The normal Studio path no longer needs a personal GitHub token or a user-installed build toolchain.
+Next GUI work is richer Designer interaction: control selection/properties, event editing and positioning/resizing while keeping source as truth. Desktop work should focus on signing/notarization, project-specific Window package metadata, and eventually a direct-native AOT backend plus native AppKit/Win32/portable Unix widget lowering. The normal Studio path no longer needs a personal GitHub token or a user-installed build toolchain.
