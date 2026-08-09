@@ -1,16 +1,71 @@
 import { parse } from './parser.js';
 
-export function addDesignerControl(source, type) {
-  const normalized = source.replace(/\r\n/g, '\n');
-  const lines = normalized.split('\n');
-  let windowIndex = lines.findIndex(line => /^\s*window\s+".*"\s*:\s*$/.test(line));
+const DEFAULT_WINDOW = { width: 640, height: 420 };
+const CONTROL_DEFAULTS = {
+  text: { width: 200, height: 30 },
+  button: { width: 120, height: 36 },
+  input: { width: 220, height: 36 }
+};
 
-  if (windowIndex < 0) {
-    if (lines.length && lines[lines.length - 1].trim() !== '') lines.push('');
-    windowIndex = lines.length;
-    lines.push('window "My App":');
+export function addDesignerWindow(source, options = {}) {
+  const lines = normalizeLines(source);
+  if (lines.length && lines[lines.length - 1].trim() !== '') lines.push('');
+  const windows = listDesignerWindows(source);
+  const titleExpr = String(options.titleExpr ?? JSON.stringify(`Form ${windows.length + 1}`)).trim();
+  if (!titleExpr) throw new Error('Window title expression cannot be empty.');
+  const width = windowDimension(options.width ?? DEFAULT_WINDOW.width, 'width');
+  const height = windowDimension(options.height ?? DEFAULT_WINDOW.height, 'height');
+  lines.push(`window ${titleExpr} size ${width}, ${height}:`);
+  return tidy(lines.join('\n'));
+}
+
+export function listDesignerWindows(source) {
+  const ast = parse(source);
+  const windows = [];
+  let windowIndex = 0;
+  for (const node of ast) {
+    if (node.kind !== 'window') continue;
+    windows.push({
+      windowIndex,
+      line: node.line,
+      titleExpr: node.titleExpr,
+      width: node.width ?? null,
+      height: node.height ?? null
+    });
+    windowIndex += 1;
+  }
+  return windows;
+}
+
+export function updateDesignerWindow(source, selector, changes = {}) {
+  const windows = listDesignerWindows(source);
+  const window = findWindow(windows, selector);
+  const lines = normalizeLines(source);
+  const lineIndex = window.line - 1;
+  if (lineIndex < 0 || lineIndex >= lines.length) throw new Error('Designer window selection no longer matches Patch source.');
+  const indent = indentOf(lines[lineIndex]);
+  const titleExpr = Object.hasOwn(changes, 'titleExpr') ? String(changes.titleExpr ?? '').trim() : window.titleExpr;
+  if (!titleExpr) throw new Error('Window title expression cannot be empty.');
+  const width = windowDimension(Object.hasOwn(changes, 'width') ? changes.width : (window.width ?? DEFAULT_WINDOW.width), 'width');
+  const height = windowDimension(Object.hasOwn(changes, 'height') ? changes.height : (window.height ?? DEFAULT_WINDOW.height), 'height');
+  lines[lineIndex] = `${indent}window ${titleExpr} size ${width}, ${height}:`;
+  return preserveTrailingNewline(source, lines.join('\n'));
+}
+
+export function addDesignerControl(source, type, options = {}) {
+  let normalized = String(source).replace(/\r\n/g, '\n');
+  let windows = listDesignerWindows(normalized);
+  if (!windows.length) {
+    normalized = addDesignerWindow(normalized, { titleExpr: '"My App"' });
+    windows = listDesignerWindows(normalized);
   }
 
+  const requestedWindow = Number.isInteger(options.windowIndex) ? options.windowIndex : 0;
+  const targetWindow = windows.find(item => item.windowIndex === requestedWindow);
+  if (!targetWindow) throw new Error(`Designer cannot find form ${requestedWindow + 1}.`);
+
+  const lines = normalizeLines(normalized);
+  const windowIndex = targetWindow.line - 1;
   const baseIndent = indentOf(lines[windowIndex]);
   const childIndent = `${baseIndent}  `;
   let insertAt = windowIndex + 1;
@@ -21,7 +76,8 @@ export function addDesignerControl(source, type) {
     insertAt++;
   }
 
-  const control = makeControl(type, lines);
+  const existing = listDesignerControls(normalized).filter(item => item.windowIndex === requestedWindow);
+  const control = makeControl(type, lines, existing.length);
   lines.splice(insertAt, 0, `${childIndent}${control}`);
   return tidy(lines.join('\n'));
 }
@@ -41,7 +97,11 @@ export function listDesignerControls(source) {
         line: child.line,
         type: child.control,
         id: child.id ?? null,
-        textExpr: child.textExpr ?? null
+        textExpr: child.textExpr ?? null,
+        x: child.layout?.x ?? null,
+        y: child.layout?.y ?? null,
+        width: child.layout?.width ?? null,
+        height: child.layout?.height ?? null
       });
       controlIndex += 1;
     }
@@ -72,11 +132,9 @@ export function updateDesignerControl(source, selector, changes = {}) {
     if (!nextTextExpr) throw new Error('Text expression cannot be empty.');
   }
 
+  const layout = normalizeControlLayout(control, changes);
   const indent = indentOf(lines[lineIndex]);
-  if (control.type === 'text') lines[lineIndex] = `${indent}text ${nextTextExpr}`;
-  else if (control.type === 'button') lines[lineIndex] = `${indent}button ${nextTextExpr} as ${nextId}`;
-  else if (control.type === 'input') lines[lineIndex] = `${indent}input ${nextId}`;
-  else throw new Error(`Designer cannot edit '${control.type}' controls yet.`);
+  lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout)}`;
 
   if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
   return preserveTrailingNewline(source, lines.join('\n'));
@@ -97,6 +155,14 @@ export function renameDesignerButton(source, id, newText) {
   return updateDesignerControl(source, control, { textExpr: JSON.stringify(String(newText)) });
 }
 
+function findWindow(windows, selector) {
+  const windowIndex = Number.isInteger(selector) ? selector : selector?.windowIndex;
+  if (!Number.isInteger(windowIndex)) throw new Error('Designer window selection is invalid.');
+  const window = windows.find(item => item.windowIndex === windowIndex);
+  if (!window) throw new Error('Designer window selection no longer exists in Patch source.');
+  return window;
+}
+
 function findControl(controls, selector) {
   if (!selector || !Number.isInteger(selector.windowIndex) || !Number.isInteger(selector.controlIndex)) {
     throw new Error('Designer selection is invalid.');
@@ -110,6 +176,38 @@ function validateId(value) {
   const id = String(value ?? '').trim();
   if (!/^[A-Za-z_]\w*$/.test(id)) throw new Error(`'${id || '?'}' is not a valid Patch control id.`);
   return id;
+}
+
+function normalizeControlLayout(control, changes) {
+  const defaults = CONTROL_DEFAULTS[control.type] ?? { width: 120, height: 36 };
+  const touched = ['x','y','width','height'].some(key => Object.hasOwn(changes, key));
+  const existing = control.x !== null || control.y !== null || control.width !== null || control.height !== null;
+  if (!touched && !existing) return null;
+  return {
+    x: coordinate(Object.hasOwn(changes, 'x') ? changes.x : (control.x ?? 24), 'x'),
+    y: coordinate(Object.hasOwn(changes, 'y') ? changes.y : (control.y ?? 24), 'y'),
+    width: controlDimension(Object.hasOwn(changes, 'width') ? changes.width : (control.width ?? defaults.width), 'width'),
+    height: controlDimension(Object.hasOwn(changes, 'height') ? changes.height : (control.height ?? defaults.height), 'height')
+  };
+}
+
+function coordinate(value, name) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 0) throw new Error(`Control ${name} must be a whole number zero or greater.`);
+  return number;
+}
+
+function controlDimension(value, name) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 16) throw new Error(`Control ${name} must be a whole number of at least 16.`);
+  return number;
+}
+
+function windowDimension(value, name) {
+  const number = Number(value);
+  const minimum = name === 'width' ? 120 : 80;
+  if (!Number.isInteger(number) || number < minimum) throw new Error(`Window ${name} must be a whole number of at least ${minimum}.`);
+  return number;
 }
 
 function renameEventHeaders(lines, oldId, nextId) {
@@ -138,11 +236,24 @@ function removeEventBlocks(lines, id) {
   }
 }
 
-function makeControl(type, lines) {
-  if (type === 'text') return 'text "Text"';
-  if (type === 'button') return `button "Button" as ${nextId(lines, 'button')}`;
-  if (type === 'input') return `input ${nextId(lines, 'input')}`;
+function makeControl(type, lines, index) {
+  const defaults = CONTROL_DEFAULTS[type];
+  if (!defaults) throw new Error(`Designer cannot add '${type}' yet.`);
+  const layout = { x: 24, y: 24 + (index * 48), width: defaults.width, height: defaults.height };
+  if (type === 'text') return formatControl(type, null, '"Text"', layout);
+  if (type === 'button') return formatControl(type, nextId(lines, 'button'), '"Button"', layout);
+  if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
   throw new Error(`Designer cannot add '${type}' yet.`);
+}
+
+function formatControl(type, id, textExpr, layout) {
+  let core;
+  if (type === 'text') core = `text ${textExpr}`;
+  else if (type === 'button') core = `button ${textExpr} as ${id}`;
+  else if (type === 'input') core = `input ${id}`;
+  else throw new Error(`Designer cannot edit '${type}' controls yet.`);
+  if (!layout) return core;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
 }
 
 function nextId(lines, base) {
