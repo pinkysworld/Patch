@@ -16,55 +16,58 @@ const files = {
   formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
+  directTrace: read('src/direct-trace-validator.js'), directEffect: read('src/direct-effect-validator.js'),
   transitiveBody: read('src/transitive-call-body.js'), transitiveCertificate: read('src/transitive-call-body-certificate.js'),
   runtimeCorrespondence: read('src/transitive-runtime-correspondence.js'),
   runtimeCertificate: read('src/transitive-runtime-certificate.js'),
   runtimeGenerator: read('scripts/generate-transitive-runtime-certificate.js'),
+  repeatedExample: read('examples/formal-transitive-calls-repeated.patch'),
   callTree: read('formal/PatchCallTree.lean'), callRuntime: read('formal/PatchCallRuntime.lean'), lakefile: read('formal/lakefile.lean'),
   formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'),
-  beta31Workflow: read('.github/workflows/beta31-call-aware-wasm-correspondence.yml'),
-  beta30Workflow: read('.github/workflows/beta30-transitive-callee-traces.yml'),
-  beta29Workflow: read('.github/workflows/beta29-guarded-callee-traces.yml'),
-  beta28Workflow: read('.github/workflows/beta28-callee-traces.yml')
+  beta32Workflow: read('.github/workflows/beta32-invocation-frames.yml')
 };
 
 if (pkg.scripts?.['transitive-runtime-certify:example'] !==
     'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveRuntimeCertificate.lean') {
-  throw new Error('package.json is missing the canonical beta.31 runtime certificate command.');
+  throw new Error('package.json is missing the canonical beta.32 single-call runtime certificate command.');
+}
+if (pkg.scripts?.['transitive-runtime-certify:repeated'] !==
+    'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean') {
+  throw new Error('package.json is missing the canonical beta.32 repeated-call runtime certificate command.');
 }
 
 requireAll('README.md', files.readme, [
   `Current development beta: \`${version}\``, 'Change IR: `0.10`',
-  'Beta.31', 'call-aware direct-Wasm correspondence', 'PatchCallRuntime.lean',
-  'GeneratedTransitiveRuntimeCertificate.lean', 'npm run transitive-runtime-certify:example'
+  'Beta.32', 'invocation-frame', 'PatchCallRuntime.lean',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean'
 ]);
 requireAll('web/index.html', files.website, [
   `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.10',
-  'Beta.31', 'call-aware direct-Wasm correspondence'
+  'Beta.32', 'invocation-frame'
 ]);
 requireAll('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, 'Change IR **0.10**', 'GeneratedTransitiveRuntimeCertificate.lean', cacheVersion
+  `What works in 0.2 beta.${beta}`, 'Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', cacheVersion
 ]);
 requireAll('docs/NATIVE_APPS.md', files.native, [
-  `Status: **${version}**`, 'Change IR **0.10**', 'GeneratedTransitiveRuntimeCertificate.lean'
+  `Status: **${version}**`, 'Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean'
 ]);
 requireAll('docs/ROADMAP.md', files.roadmap, [
-  `Current development beta: **${version}**`, '### beta.31:', 'PatchCallRuntime.lean',
-  'scoped-slice attribution'
+  `Current development beta: **${version}**`, '### beta.32:', 'invocation frames',
+  'repeated identical calls'
 ]);
 requireAll('docs/COMPILER.md', files.compiler, [
-  `Status: **${version}**`, 'Change IR **0.10**', 'Beta.31', 'PatchCallRuntime.lean',
-  'GeneratedTransitiveRuntimeCertificate.lean'
+  `Status: **${version}**`, 'Change IR **0.10**', 'Beta.32', 'invocation-frame',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean'
 ]);
 requireAll('docs/FORMAL_MODEL.md', files.formal, [
-  'Status: **beta.31', 'Beta.31', 'checkedObservedTransitiveRuntimeRefinesCallerSignature',
-  'runtime capture', 'scoped-slice attribution'
+  'Status: **beta.32', 'Beta.32', 'checkedObservedTransitiveRuntimeRefinesCallerSignature',
+  'invocation-frame', 'runtime capture'
 ]);
 requireAll('docs/NOVELTY.md', files.novelty, [
-  'Beta.31', 'call-aware direct-Wasm correspondence', 'supporting assurance'
+  'Beta.32', 'invocation-frame', 'supporting assurance'
 ]);
 requireAll('paper/README.md', files.paper, [
-  `Patch ${version} / Change IR 0.10`, 'Beta.31', 'GeneratedTransitiveRuntimeCertificate.lean',
+  `Patch ${version} / Change IR 0.10`, 'Beta.32', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
   'PatchCallRuntime.lean'
 ]);
 requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
@@ -73,6 +76,10 @@ requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
 
 requireAll('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", "'./formal-calls.js'", 'formalCalls']);
 requireAll('src/formal-calls.js', files.formalCalls, ['buildFormalCalls', 'patch-formal-calls', 'rank-decreasing']);
+requireAll('src/direct-trace-validator.js', files.directTrace, [
+  "PATCH_DIRECT_INVOCATION_FRAME_VERSION = '0.1'", 'invocationFrames', 'activeFrameIds', 'parentFrameId'
+]);
+requireAll('src/direct-effect-validator.js', files.directEffect, ['frameIds', 'invocationFrames', 'invocationFrameVersion']);
 requireAll('src/transitive-call-body.js', files.transitiveBody, [
   "PATCH_TRANSITIVE_CALL_BODY_VERSION = '0.2'", 'claimedScopedTrace', 'nestedCallDepth', 'buildNestedCall'
 ]);
@@ -81,17 +88,18 @@ requireAll('src/transitive-call-body-certificate.js', files.transitiveCertificat
   'checkedConcreteTransitiveCallTreeRefinesCallerSignature'
 ]);
 requireAll('src/transitive-runtime-correspondence.js', files.runtimeCorrespondence, [
-  "PATCH_TRANSITIVE_RUNTIME_CORRESPONDENCE_VERSION = '0.1'", 'compileToDirectWasm', 'runDirectWasm',
-  'validateDirectSemanticEffects', 'findScopedMatches', 'matches.length !== 1', 'runtimeTraceSha256'
+  "PATCH_TRANSITIVE_RUNTIME_CORRESPONDENCE_VERSION = '0.2'", 'compileToDirectWasm', 'runDirectWasm',
+  'validateDirectSemanticEffects', 'matchingFrames', 'sameBindings', 'frameIds.includes', 'runtimeTraceSha256'
 ]);
 requireAll('src/transitive-runtime-certificate.js', files.runtimeCertificate, [
-  "PATCH_TRANSITIVE_RUNTIME_CERTIFICATE_VERSION = '0.1'", 'generateTransitiveCallBodyCertificate',
+  "PATCH_TRANSITIVE_RUNTIME_CERTIFICATE_VERSION = '0.2'", 'frameBindings', 'frame_binding_checked',
   'buildTransitiveRuntimeCorrespondence', 'evalCallTreeStmtEqBool',
-  'checkedObservedTransitiveRuntimeRefinesCallerSignature', 'directWasmTraceSha256'
+  'checkedObservedTransitiveRuntimeRefinesCallerSignature', 'invocationFrameVersion'
 ]);
 requireAll('scripts/generate-transitive-runtime-certificate.js', files.runtimeGenerator, [
-  'generateTransitiveRuntimeCertificate', 'GeneratedTransitiveRuntimeCertificate.lean', 'direct-Wasm trace sha256'
+  'generateTransitiveRuntimeCertificate', 'direct-Wasm trace sha256', 'invocation frame'
 ]);
+requireAll('examples/formal-transitive-calls-repeated.patch', files.repeatedExample, ['do caller(1)\ndo caller(1)']);
 requireAll('formal/PatchCallTree.lean', files.callTree, [
   'inductive CallTreeStmt', 'theorem checkedConcreteTransitiveCallTreeRefinesCallerSignature'
 ]);
@@ -102,24 +110,16 @@ requireAll('formal/PatchCallRuntime.lean', files.callRuntime, [
 requireAll('formal/lakefile.lean', files.lakefile, ['lean_lib PatchCallTree', 'lean_lib PatchCallRuntime']);
 
 requireAll('.github/workflows/formal.yml', files.formalWorkflow, [
-  'transitive-runtime-certify:example', 'PatchCallRuntime', 'GeneratedTransitiveRuntimeCertificate.lean'
+  'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated', 'PatchCallRuntime',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean'
 ]);
 requireAll('.github/workflows/ci.yml', files.ciWorkflow, [
-  'transitive-runtime-certify:example', 'src/transitive-runtime-correspondence.js',
-  'src/transitive-runtime-certificate.js', 'scripts/generate-transitive-runtime-certificate.js'
+  'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated',
+  'src/transitive-runtime-correspondence.js', 'src/transitive-runtime-certificate.js'
 ]);
-requireAll('.github/workflows/beta31-call-aware-wasm-correspondence.yml', files.beta31Workflow, [
-  'Patch Beta31 Call-Aware Wasm Correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
-  'GeneratedTransitiveCallBodyCertificate.lean', 'PatchCallRuntime', 'cancel-in-progress: true'
-]);
-requireAll('.github/workflows/beta30-transitive-callee-traces.yml', files.beta30Workflow, [
-  'Patch Beta30 Transitive Callee Traces', 'GeneratedTransitiveCallBodyCertificate.lean'
-]);
-requireAll('.github/workflows/beta29-guarded-callee-traces.yml', files.beta29Workflow, [
-  'Patch Beta29 Guarded Callee Traces', 'GeneratedGuardedCallBodyCertificate.lean'
-]);
-requireAll('.github/workflows/beta28-callee-traces.yml', files.beta28Workflow, [
-  'Patch Beta28 Callee Traces', 'GeneratedConcreteCallBodyCertificate.lean'
+requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflow, [
+  'Patch Beta32 Invocation Frames', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
+  'PatchCallRuntime', 'cancel-in-progress: true'
 ]);
 requireAll('web/sw.js', files.serviceWorker, [cacheVersion, "'../src/formal-calls.js'", 'freshFirst']);
 
