@@ -13,6 +13,7 @@ export class PatchInterpreter {
     this.state=new Map(); this.types=new Map(); this.versions=new Map(); this.history=[]; this.redoStack=[];
     this.watchers=new Set(); this.functions=new Map(); this.output=[]; this.changeCounter=0;
     this.windows=[]; this.events=[]; this.causeStack=[];
+    this.formVisibility=new Map(); this.namedFormCount=0;
   }
   run(source,{reset=true}={}) {
     if(reset)this.reset(); else this.output=[];
@@ -36,8 +37,10 @@ export class PatchInterpreter {
       switch(node.kind){
         case 'create': return this.create(node,locals);
         case 'createThing': return this.createThing(node,locals);
-        case 'window': this.windows.push(node); return;
+        case 'window': return this.registerWindow(node);
         case 'event': this.events.push(node); return;
+        case 'openForm': return this.setFormVisible(node.form,true,node.line);
+        case 'closeForm': return this.setFormVisible(node.form,false,node.line);
         case 'allow': return;
         case 'show': this.output.push(formatValue(evaluateExpression(node.expr,this.env(locals)))); return;
         case 'why': return this.explainWhy(node.expr,node.line);
@@ -63,6 +66,18 @@ export class PatchInterpreter {
         default: throw new PatchRuntimeError(`Unknown instruction ${node.kind}.`,node.line);
       }
     } catch(err){ if(err instanceof PatchRuntimeError)throw err; if(err instanceof ExpressionError)throw new PatchRuntimeError(err.message,node.line); throw err; }
+  }
+  registerWindow(node){
+    if(node.id){
+      if(this.formVisibility.has(node.id))throw new PatchRuntimeError(`Form '${node.id}' is declared more than once.`,node.line);
+      this.formVisibility.set(node.id,this.namedFormCount===0);
+      this.namedFormCount+=1;
+    }
+    this.windows.push(node);
+  }
+  setFormVisible(form,visible,line){
+    if(!this.formVisibility.has(form))throw new PatchRuntimeError(`I cannot find a Form called '${form}'. Add 'as ${form}' to a window.`,line);
+    this.formVisibility.set(form,Boolean(visible));
   }
   create(node,locals){
     if(this.state.has(node.name))throw new PatchRuntimeError(`'${node.name}' already exists. Use change to modify it.`,node.line);
@@ -123,9 +138,9 @@ export class PatchInterpreter {
     const change=this.redoStack.pop();const currentVersion=this.versions.get(change.target);if(currentVersion!==change.baseVersion)throw new PatchRuntimeError('That change can no longer be redone because the target changed.',line);this.commit(change,{fromRedo:true});
   }
   preview(body,locals){
-    const snapshot={state:cloneMap(this.state),types:new Map(this.types),versions:new Map(this.versions),history:clone(this.history),redo:clone(this.redoStack),watchers:new Set(this.watchers),outputLength:this.output.length,counter:this.changeCounter};
+    const snapshot={state:cloneMap(this.state),types:new Map(this.types),versions:new Map(this.versions),history:clone(this.history),redo:clone(this.redoStack),watchers:new Set(this.watchers),outputLength:this.output.length,counter:this.changeCounter,formVisibility:new Map(this.formVisibility),namedFormCount:this.namedFormCount};
     const beforeState=Object.fromEntries([...this.state].map(([k,v])=>[k,clone(v)]));this.executeBlock(body,locals);const afterState=Object.fromEntries([...this.state].map(([k,v])=>[k,clone(v)]));
-    const previewOutput=this.output.splice(snapshot.outputLength);this.state=snapshot.state;this.types=snapshot.types;this.versions=snapshot.versions;this.history=snapshot.history;this.redoStack=snapshot.redo;this.watchers=snapshot.watchers;this.changeCounter=snapshot.counter;
+    const previewOutput=this.output.splice(snapshot.outputLength);this.state=snapshot.state;this.types=snapshot.types;this.versions=snapshot.versions;this.history=snapshot.history;this.redoStack=snapshot.redo;this.watchers=snapshot.watchers;this.changeCounter=snapshot.counter;this.formVisibility=snapshot.formVisibility;this.namedFormCount=snapshot.namedFormCount;
     const diffs=[];for(const key of new Set([...Object.keys(beforeState),...Object.keys(afterState)]))if(JSON.stringify(beforeState[key])!==JSON.stringify(afterState[key]))diffs.push(`${key}: ${formatValue(beforeState[key])} -> ${formatValue(afterState[key])}`);
     this.output.push(diffs.length?`preview ${diffs.join(' | ')}`:'preview no changes');this.output.push(...previewOutput.map(x=>`preview output: ${x}`));
   }
@@ -179,7 +194,8 @@ export class PatchInterpreter {
   withCause(cause,fn){this.causeStack.push(cause);try{return fn();}finally{this.causeStack.pop();}}
   buildUIModel(){
     return this.windows.map((windowNode,index)=>({
-      id:`window${index+1}`,
+      id:windowNode.id??`window${index+1}`,
+      visible:windowNode.id?this.formVisibility.get(windowNode.id)!==false:true,
       title:this.uiText(windowNode.titleExpr),
       controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({type:node.control,id:node.id,text:node.textExpr?this.uiText(node.textExpr):'',value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''}))
     }));
