@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.26** · Change IR **0.10**
+Status: **0.2.0-beta.27** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.26 strengthens research certificates and does **not** change package formats, Change IR or the Window runtime contract.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.27 strengthens research certificate coverage and does **not** change package formats, Change IR or the Window runtime contract.
 
 ## Build matrix
 
@@ -17,23 +17,21 @@ Console
 Window / GUI
   Web     -> Standalone Window Web App with generated browser runtime
   Windows -> standalone packaged GUI application
-  macOS   -> standalone packaged GUI application
-  Linux   -> standalone packaged GUI application
+  macOS   -> standalone .app package
+  Linux   -> standalone GUI application
   FreeBSD -> not yet supported
 ```
 
 ## Window preflight and semantic events
 
-The shared **Window preflight** compiles source and checks normalized `code == "WINDOW"` IR, then validates the common runtime contract before cloud dispatch and again inside the target-side desktop packager.
-
-Current cross-target event support is deliberately conservative:
+The shared **Window preflight** validates normalized Window IR before Web or desktop packaging. Current cross-target event support is deliberately conservative:
 
 - button `clicked`;
-- input `changed`, with the current control text exposed as event-local `value`.
+- input `changed`, with current control text exposed as transient event-local `value`.
 
-The input edit itself does not write persistent Patch state. Source must use an ordinary semantic `change` to commit it. Duplicate control ids, handlers for nonexistent controls and unsupported event/control pairs are rejected at build time.
+The input edit itself does not write persistent Patch state. Source must use ordinary semantic `change` to commit it. Duplicate control ids, missing controls and unsupported event/control pairs are rejected before packaging.
 
-Generated Window Web HTML is executed in regression tests, including observation-only input and explicit semantic persistence. The Windows/macOS/Linux desktop player uses the shared `src/window-events.js` adapter used by Studio preview.
+Generated Window Web HTML is executed in regression tests. Windows/macOS/Linux desktop players use the shared `src/window-events.js` semantic adapter.
 
 ## Browser and WebAssembly
 
@@ -43,21 +41,22 @@ patch build window.patch --target web --out Window.html
 patch build console.patch --target wasm-direct --out Console.direct.wasm
 ```
 
-Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the validated Patch Window AST plus a generated browser runtime. Raw direct Wasm is Console-only, imports `patch.show_number` / `patch.change_number`, and is **not yet a standalone WASI command module**.
+Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the validated Patch Window AST plus a generated browser runtime. Raw direct Wasm is Console-only, imports the small Patch host ABI, and is **not yet a standalone WASI command module**.
 
 ## Formal assurance is separate from packaging
 
 `patch runtime-certify` covers the beta.23 guard-aware direct-runtime fragment. `patch call-certify` covers beta.25 abstract finite acyclic recipe composition.
 
-Beta.26 adds the reproducible concrete-call research artifact:
+Concrete call research artifacts are reproducible with:
 
 ```bash
 npm run concrete-call-certify:example
+npm run arithmetic-call-certify:example
 ```
 
-The generated certificate is checked through `PatchCallSubstitution.lean`, `PatchCallRefinement.lean` and `PatchCallEffect.lean`. It re-evaluates supported inter-recipe variable arguments, reconstructs exact positional callee bindings and, for a conservative direct quantitative leaf Change, proves the exact concrete effect refines an effect represented by the caller semantic signature.
+Beta.26's exact-binding certificate is checked through `PatchCallSubstitution.lean`, `PatchCallRefinement.lean` and `PatchCallEffect.lean`. Beta.27 preserves the already mechanized integer `RangeExpr` grammar through that production certificate path, so arguments such as `bonus + 1` and direct leaf amounts such as `amount * 2` are re-evaluated by Lean instead of reduced to trusted JavaScript constants.
 
-This assurance does **not** alter the executable package and does not yet prove arbitrary call substitution or production-Wasm call equivalence.
+This assurance does **not** alter executable packages and does not yet prove arbitrary structured callee execution or production-Wasm call equivalence.
 
 ## Portable C99
 

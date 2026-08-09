@@ -1,0 +1,11 @@
+create number score = 0
+
+make leaf(amount number 1..6):
+  change score:
+    add amount * 2
+
+make caller(bonus number 0..5):
+  do leaf(bonus + 1)
+
+do caller(4)
+show score

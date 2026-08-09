@@ -2,11 +2,11 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/Visual-Basic-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.26
+## What works in 0.2 beta.27
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
-Change IR **0.10** remains unchanged from beta.25. The compiler still carries `formalCalls` alongside source/range/guard assurance artifacts. Beta.26 adds a separate concrete-call certificate path rather than expanding beginner-facing syntax or the IR schema.
+Change IR **0.10** is unchanged. Beta.27 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
 
 Research commands remain outside the ordinary beginner workflow:
 
@@ -16,11 +16,12 @@ patch certify program.patch
 patch runtime-certify program.patch
 patch call-certify program.patch
 npm run concrete-call-certify:example
+npm run arithmetic-call-certify:example
 ```
 
-The beta.26 concrete-call certificate re-evaluates supported safe-integer inter-recipe variable arguments in Lean, checks exact positional parameter binding and, for a conservative direct quantitative leaf Change, proves the exact bound effect refines an effect represented by the caller semantic signature.
+The arithmetic command generates a concrete call certificate from `examples/formal-calls-arithmetic.patch`. Lean re-evaluates supported `RangeExpr` argument arithmetic, reconstructs exact positional bindings and checks a direct quantitative leaf effect through the existing caller-signature refinement theorem.
 
-This research layer is intentionally invisible during normal editing/running/building.
+This research machinery is intentionally invisible during normal editing, Run and Build.
 
 ## Semantic input events
 
@@ -28,17 +29,14 @@ Editable inputs preserve Patch's explicit persistent mutation route:
 
 ```patch
 create text name = ""
-
 window "Hello":
   input name
-  text "Hello {name}"
-
 when name changed:
   change name:
     set = value
 ```
 
-The current control text is event-local `value`. The browser/desktop edit does **not** write persistent Patch state by itself. Source must execute an ordinary semantic `change` to commit it.
+The current control text is event-local `value`. The browser/desktop edit does **not** write persistent Patch state by itself. Source must execute ordinary semantic `change` to commit it.
 
 Studio uses `src/window-events.js`; the standalone Window Web runtime and generated Windows/macOS/Linux desktop player implement the same contract. Generated HTML is executed in regression tests to distinguish observation-only input from explicit persistence.
 
@@ -68,13 +66,11 @@ For cloud desktop builds, Studio performs browser preflight, sends the current s
 
 ## Research assurance layers
 
-The beta.23 guard-aware layer checks eligible direct-Wasm branch witnesses against normalized source guards and concrete safe-integer recipe parameter environments before composing runtime effects with Change Capabilities.
+Beta.23 provides guard-aware direct-runtime correspondence for an explicit safe-integer fragment. Beta.25 adds abstract acyclic recipe-call interval/signature composition. Beta.26 adds exact positional call binding and direct quantitative leaf-effect refinement.
 
-Beta.25 adds abstract acyclic recipe-call interval/signature composition through `formalCalls` and `PatchCalls.lean`.
+Beta.27 carries the already mechanized integer `RangeExpr` grammar through the concrete production certificate boundary: literals, variables, addition, subtraction, unary negation and non-negative constant scaling. The generated `GeneratedArithmeticCallCertificate.lean` is checked under pinned Lean.
 
-Beta.26 adds `PatchCallSubstitution.lean`, `PatchCallRefinement.lean` and `PatchCallEffect.lean`. The supported concrete subset is inter-recipe variable pass-through binding plus direct quantitative leaf-effect refinement. Root-program concrete calls, richer arithmetic substitution, arbitrary callee-body execution and production-Wasm call equivalence remain outside the theorem.
-
-These layers do not alter normal Studio syntax and are not presented as full compiler verification.
+Division, decimals, variable-by-variable multiplication, root-program concrete calls, arbitrary structured callee-body execution and production-Wasm call equivalence remain outside the concrete certificate claim. These layers are not presented as full compiler verification.
 
 ## iPhone and iPad
 
@@ -82,7 +78,7 @@ Patch Studio can be installed from Safari with **Share → Add to Home Screen**.
 
 ## PWA updates
 
-The beta.26 cache key is `patch-studio-0.2-beta.26`. The browser compiler dependencies remain the same because beta.26's concrete-call certificate modules are Node/Lean research tooling rather than Studio runtime imports. The cache continues to include `formal-calls.js`, source/guard compiler modules and `window-events.js` for consistent offline Studio compilation with Change IR 0.10.
+The beta.27 cache key is `patch-studio-0.2-beta.27`. Beta.27's concrete certificate changes are Node/Lean research tooling, so browser compiler dependencies remain the same. The cache still includes `formal-calls.js`, source/guard compiler modules and `window-events.js` for consistent offline Studio compilation with Change IR 0.10.
 
 ## Source remains truth
 

@@ -22,10 +22,10 @@ for (const needle of ['./style.css','./manifest.webmanifest','./native-build.js'
 for (const id of ['code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus']) requireText('index', html, `id="${id}"`);
 for (const phrase of [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10', 'Change Contract', 'Standalone Window Web App',
-  'Concrete recipe calls', 'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'GeneratedConcreteCallCertificate.lean', 'checkedConcreteBoundEffectRefinesCallerSignature', 'variable pass-through',
-  'production JavaScript/direct-Wasm call equivalence', 'Semantic input events', 'event-local', 'Window preflight',
-  'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
+  'Arithmetic concrete calls', 'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add', 'amount * 2',
+  'checkedConcreteBoundEffectRefinesCallerSignature', 'production JavaScript/direct-Wasm call equivalence',
+  'Semantic input events', 'event-local', 'Window preflight', 'Windows App', 'macOS App', 'Linux App',
+  'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
 ]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
 
@@ -49,8 +49,8 @@ for (const [file, phrases] of [
   ['_site/src/formal-range.js',['buildFormalRangeExpression','inferFormalRange','division']],
   ['_site/src/formal-guard.js',['buildFormalGuardExpression']],
   ['_site/src/formal-calls.js',['buildFormalCalls','patch-formal-calls','rank-decreasing','recursive/cyclic call graph']],
-  ['_site/src/concrete-call-witness.js',['buildConcreteCallWitnesses','patch-concrete-call-witness','expectedCalleeEnv','abstractArgRanges']],
-  ['_site/src/concrete-call-certificate.js',['generateConcreteCallCertificate','PATCH_CONCRETE_CALL_CERTIFICATE_VERSION','checkedConcreteBoundEffectRefinesCallerSignature','certifiedEffects']],
+  ['_site/src/concrete-call-witness.js',['buildConcreteCallWitnesses','patch-concrete-call-witness','expectedCalleeEnv','abstractArgRanges','duplicate parameter names outside concrete binding certification']],
+  ['_site/src/concrete-call-certificate.js',['generateConcreteCallCertificate',"PATCH_CONCRETE_CALL_CERTIFICATE_VERSION = '0.3'",'RangeExpr.add','RangeExpr.sub','RangeExpr.neg','RangeExpr.scale','evaluateFormalRangeExprExact','checkedConcreteBoundEffectRefinesCallerSignature']],
   ['_site/src/wasm-direct.js',['compileToDirectWasm']],
   ['_site/src/c99.js',['compileToC99','PATCH_C99_VERSION','portable C99']],
   ['_site/src/webapp.js',['buildStandaloneWebApp','buildStandaloneWindowWebApp','WASM_BASE64']],

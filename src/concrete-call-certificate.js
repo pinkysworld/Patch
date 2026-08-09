@@ -3,18 +3,24 @@ import { compile } from './compiler.js';
 import { buildConcreteCallWitnesses } from './concrete-call-witness.js';
 import { buildFormalRangeExpression } from './formal-range.js';
 
-export const PATCH_CONCRETE_CALL_CERTIFICATE_VERSION = '0.2';
+export const PATCH_CONCRETE_CALL_CERTIFICATE_VERSION = '0.3';
 
 const EFFECT_KINDS = new Set(['increase', 'decrease', 'set', 'clear']);
 
 /**
- * Generate Lean checks for concrete inter-recipe parameter binding. Beta.26's
- * first production-connected slice certifies variable pass-through call
- * arguments. For a still narrower direct-leaf subset, it also evaluates one
- * quantitative callee Change amount under the exact bound environment and
- * composes the resulting concrete effect with beta.25 signature containment.
- * Root-program calls, richer arithmetic substitution and production-Wasm call
- * equivalence remain explicit boundaries.
+ * Generate Lean checks for concrete inter-recipe parameter binding. Beta.27
+ * carries the full already-mechanized integer RangeExpr fragment across the
+ * production-to-Lean certificate boundary: literals, variables, addition,
+ * subtraction, negation and multiplication by a non-negative integer literal.
+ *
+ * Direct quantitative leaf Changes use the same RangeExpr encoder for their
+ * amount expression. JavaScript computes a proof-free claimed singleton effect;
+ * Lean re-evaluates the encoded expression under the exact bound environment
+ * and rejects a mismatching claim.
+ *
+ * Root-program calls, division, general variable multiplication, decimals,
+ * arbitrary callee-body execution and production-Wasm call equivalence remain
+ * explicit boundaries.
  */
 export function generateConcreteCallCertificate(source, options = {}) {
   const compiled = compile(source, options);
@@ -72,7 +78,7 @@ export function generateConcreteCallCertificate(source, options = {}) {
   }
 
   const sourceSha256 = crypto.createHash('sha256').update(source, 'utf8').digest('hex');
-  const lean = `import PatchCallEffect\n\nopen PatchFormal\n\nnamespace PatchGeneratedConcreteCallCertificate\n\n/-- Proof-free production call witnesses checked against beta.26 exact argument\n    evaluation/binding and beta.25 abstract argument intervals. For direct leaf\n    quantitative Changes, Lean also evaluates the callee amount expression in\n    the exact bound environment, constructs the singleton concrete effect, and\n    checks that it refines an imported caller-signature effect. The source hash\n    binds this file to exact Patch source bytes. This is not yet arbitrary body\n    execution or production-Wasm call equivalence. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef concreteCallWitnessVersion : String := ${leanString(witnessArtifact.version)}\ndef concreteCallCertificateVersion : String := ${leanString(PATCH_CONCRETE_CALL_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedConcreteCallCertificate\n`;
+  const lean = `import PatchCallEffect\n\nopen PatchFormal\n\nnamespace PatchGeneratedConcreteCallCertificate\n\n/-- Proof-free production call witnesses checked against exact argument\n    evaluation/binding and beta.25 abstract argument intervals. Beta.27 carries\n    the already-mechanized integer RangeExpr fragment across this certificate\n    boundary. For direct quantitative leaf Changes, Lean also re-evaluates the\n    amount expression in the exact bound environment and checks singleton-effect\n    refinement into the caller signature. The source hash binds this file to\n    exact Patch source bytes. This is not arbitrary body execution or\n    production-Wasm call equivalence. -/\ndef sourceSha256 : String := ${leanString(sourceSha256)}\ndef patchIrVersion : String := ${leanString(compiled.ir.version)}\ndef concreteCallWitnessVersion : String := ${leanString(witnessArtifact.version)}\ndef concreteCallCertificateVersion : String := ${leanString(PATCH_CONCRETE_CALL_CERTIFICATE_VERSION)}\n\n${blocks.join('\n\n')}\n\nend PatchGeneratedConcreteCallCertificate\n`;
 
   return {
     lean,
@@ -100,13 +106,13 @@ function directQuantitativeEffectEvidence(witness, compiled, recipes) {
   const requiredOperation = operation.op === 'add' ? 'increase' : 'decrease';
   if (expected?.operation !== requiredOperation || !expected.amountRange) return null;
 
-  const bindings = {};
-  for (const item of calleeEntry.paramRanges ?? []) bindings[item.name] = item.range;
-  const formalAmount = buildFormalRangeExpression(operation.expr ?? '', bindings);
-  if (!formalAmount.supported || formalAmount.expr?.kind !== 'var' || formalAmount.range?.min < 0) return null;
+  const rangeBindings = {};
+  for (const item of calleeEntry.paramRanges ?? []) rangeBindings[item.name] = item.range;
+  const formalAmount = buildFormalRangeExpression(operation.expr ?? '', rangeBindings);
+  if (!formalAmount.supported || formalAmount.range?.min < 0) return null;
 
   const boundValues = Object.fromEntries((witness.expectedCalleeEnv ?? []).map(item => [item.name, item.value]));
-  const concreteValue = boundValues[formalAmount.expr.name];
+  const concreteValue = evaluateFormalRangeExprExact(formalAmount.expr, boundValues);
   if (!Number.isSafeInteger(concreteValue) || concreteValue < 0) return null;
 
   const actual = {
@@ -126,18 +132,49 @@ function directQuantitativeEffectEvidence(witness, compiled, recipes) {
 }
 
 function leanConcreteRangeExpr(expr) {
-  if (expr?.kind === 'var') return `RangeExpr.var ${leanString(expr.name)}`;
-  throw new Error(`Concrete beta.26 certificate currently supports variable pass-through arguments only; got '${expr?.kind ?? 'missing'}'.`);
+  switch (expr?.kind) {
+    case 'lit':
+      if (!Number.isSafeInteger(expr.value)) throw new Error('Concrete RangeExpr literal exceeds the safe-integer certificate boundary.');
+      return `RangeExpr.lit ${leanInt(expr.value)}`;
+    case 'var':
+      return `RangeExpr.var ${leanString(expr.name)}`;
+    case 'add':
+      return `RangeExpr.add (${leanConcreteRangeExpr(expr.left)}) (${leanConcreteRangeExpr(expr.right)})`;
+    case 'sub':
+      return `RangeExpr.sub (${leanConcreteRangeExpr(expr.left)}) (${leanConcreteRangeExpr(expr.right)})`;
+    case 'neg':
+      return `RangeExpr.neg (${leanConcreteRangeExpr(expr.expr)})`;
+    case 'scale':
+      if (!Number.isSafeInteger(expr.factor) || expr.factor < 0) throw new Error('Concrete RangeExpr scale factor must be a non-negative safe integer.');
+      return `RangeExpr.scale ${expr.factor} (${leanConcreteRangeExpr(expr.expr)})`;
+    default:
+      throw new Error(`Concrete call certificate does not encode RangeExpr kind '${expr?.kind ?? 'missing'}'.`);
+  }
+}
+
+function evaluateFormalRangeExprExact(expr, values) {
+  let result;
+  switch (expr?.kind) {
+    case 'lit': result = expr.value; break;
+    case 'var': result = values[expr.name]; break;
+    case 'add': result = evaluateFormalRangeExprExact(expr.left, values) + evaluateFormalRangeExprExact(expr.right, values); break;
+    case 'sub': result = evaluateFormalRangeExprExact(expr.left, values) - evaluateFormalRangeExprExact(expr.right, values); break;
+    case 'neg': result = -evaluateFormalRangeExprExact(expr.expr, values); break;
+    case 'scale': result = expr.factor * evaluateFormalRangeExprExact(expr.expr, values); break;
+    default: throw new Error(`Cannot evaluate RangeExpr kind '${expr?.kind ?? 'missing'}' for concrete effect evidence.`);
+  }
+  if (!Number.isSafeInteger(result)) throw new Error('Concrete RangeExpr evaluation exceeds the JavaScript safe-integer certificate boundary.');
+  return result;
 }
 
 function leanEffect(effect) {
-  if (!EFFECT_KINDS.has(effect?.operation)) throw new Error(`Unsupported beta.26 semantic effect '${effect?.operation}'.`);
+  if (!EFFECT_KINDS.has(effect?.operation)) throw new Error(`Unsupported concrete-call semantic effect '${effect?.operation}'.`);
   let amount = 'none';
   if (effect.operation === 'increase' || effect.operation === 'decrease') {
-    if (!effect.amountRange) throw new Error(`Quantitative beta.26 effect '${effect.operation}' is missing an interval.`);
+    if (!effect.amountRange) throw new Error(`Quantitative concrete-call effect '${effect.operation}' is missing an interval.`);
     amount = `some ${leanInterval(effect.amountRange.min, effect.amountRange.max)}`;
   } else if (effect.amountRange) {
-    throw new Error(`Non-quantitative beta.26 effect '${effect.operation}' unexpectedly has an interval.`);
+    throw new Error(`Non-quantitative concrete-call effect '${effect.operation}' unexpectedly has an interval.`);
   }
   return `({ target := ${leanString(effect.target)}, field := ${leanOptionString(effect.field)}, kind := .${effect.operation}, amount := ${amount} } : Effect)`;
 }

@@ -1,8 +1,8 @@
 # Patch Compiler Architecture
 
-Status: **0.2.0-beta.26** · Change IR **0.10**
+Status: **0.2.0-beta.27** · Change IR **0.10**
 
-Patch combines a working compiler frontend, semantic Change analysis, independent source/guard translation validation, Lean-checkable static/runtime/abstract-call/concrete-call certificates, direct Wasm/C99 Console backends, Standalone Window Web Apps and cross-platform packaging.
+Patch combines a working compiler frontend, semantic Change analysis, independent source/guard translation validation, Lean-checkable static/runtime/call certificates, direct Wasm/C99 Console backends, Standalone Window Web Apps and cross-platform packaging.
 
 ## Architecture
 
@@ -20,13 +20,13 @@ exact Patch source
                                                   ↓
                                            Change IR 0.10
                                                   ↓
-       ┌─────────────┬───────────┬──────────┬────────────┬─────────────┐
-    .patchapp     bootstrap    direct      C99       Window Web    certificates
-                  Wasm         Wasm                 generated runtime
-                                                               ├─ static
-                                                               ├─ runtime/guard
-                                                               ├─ abstract calls
-                                                               └─ concrete calls
+       ┌─────────────┬───────────┬──────────┬────────────┬──────────────────┐
+    .patchapp     bootstrap    direct      C99       Window Web       certificates
+                  Wasm         Wasm                 generated runtime      ├─ static
+                                                                         ├─ runtime/guard
+                                                                         ├─ abstract calls
+                                                                         ├─ exact calls
+                                                                         └─ arithmetic calls
 ```
 
 ## Change IR 0.10
@@ -43,144 +43,113 @@ sourceValidation
 guardValidation
 ```
 
-Beta.26 does **not** change this schema. Concrete call witnesses/certificates are deliberately separate proof-free research artifacts derived from the existing AST plus `formalCalls` boundary.
+Beta.27 does **not** change this schema. Concrete/arithmetic call witnesses and certificates remain separate research artifacts derived from the existing AST + `formalCalls` boundary.
 
-## Beta.25 abstract `formalCalls`
+## Abstract calls: beta.25
 
-`src/formal-calls.js` emits a conservative finite per-recipe representation with parameter intervals, rank, semantic signature and a small `CallStmt` body. Unknown calls, duplicate recipes, recursion/cycles, unbounded parameters and unsupported constructs fail conservatively.
+`src/formal-calls.js` emits a conservative finite per-recipe representation with parameter intervals, rank, semantic signature and a small `CallStmt` body. `formal/PatchCalls.lean` checks call resolution, strict rank decrease, positional `ArgsFit`, direct-effect membership and callee-to-caller `SignatureCovers`. `callSignatureSoundness` proves modeled rank-decreasing call effects remain in the caller semantic signature.
 
-The Lean module `PatchCalls.lean`, stored at `formal/PatchCalls.lean`, checks:
+## Exact concrete binding: beta.26
 
-```text
-callee exists
-callee.rank < caller.rank
-actual argument intervals fit callee parameter intervals
-callee.signature ⊆ caller.signature
-direct effect ∈ caller signature
-```
+`src/concrete-call-witness.js` records proof-free caller environments, formal argument `RangeExpr`s, exact integer values, expected callee bindings, declarations and beta.25 abstract argument intervals.
 
-The production-generated `GeneratedCallCertificate.lean` requires `checkRecipeEnv callEnv = true`. `callSignatureSoundness` proves modeled rank-decreasing call effects remain inside the caller semantic signature.
+`formal/PatchCallSubstitution.lean` re-evaluates those expressions through the established functional `IntEnv`, constructs exact positional `BindingList`s and proves `concreteCallBinding_sound`. `formal/PatchCallRefinement.lean` transports exact values through beta.25 intervals to declarations.
 
-## Beta.26 concrete call witness
+`formal/PatchCallEffect.lean` evaluates a direct quantitative leaf Change under the exact bound environment. `checkedConcreteBoundEffectRefinesCallerSignature` combines exact binding/effect evaluation, callee effect membership and beta.25 callee-to-caller signature containment.
 
-`src/concrete-call-witness.js` executes the supported safe-integer call-argument fragment over concrete local environments and records proof-free data:
+Duplicate parameter names are explicitly rejected at the concrete binding producer boundary so `BindingList → IntEnv` cannot depend on ambiguous shadowing order.
+
+## Arithmetic certificate coverage: beta.27
+
+The formal range semantics already supported:
 
 ```text
-caller
-callee
-callerEnv
-formal argument RangeExprs
-exact concrete argument values
-expected positional callee bindings
-declared callee parameter intervals
-beta.25 abstract argument intervals
+RangeExpr.lit Int
+RangeExpr.var Name
+RangeExpr.add left right
+RangeExpr.sub left right
+RangeExpr.neg expr
+RangeExpr.scale Nat expr
 ```
 
-The JavaScript witness is not treated as a proof. `src/concrete-call-certificate.js` encodes the data into `GeneratedConcreteCallCertificate.lean`, where Lean re-evaluates supported arguments and reconstructs the binding.
+Beta.26's certificate encoder exposed only `RangeExpr.var`. Beta.27 recursively encodes the full grammar above in `src/concrete-call-certificate.js` version **0.3**. This is a production-to-formal coverage extension, not a new arithmetic analyzer.
 
-The first concrete production-connected subset is intentionally restricted to **inter-recipe variable pass-through** calls such as:
+Example:
 
 ```patch
-make add_points(amount number 0..5):
+create number score = 0
+
+make leaf(amount number 1..6):
   change score:
-    add amount
+    add amount * 2
 
-make reward(bonus number 0..5):
-  do add_points(bonus)
+make caller(bonus number 0..5):
+  do leaf(bonus + 1)
+
+do caller(4)
 ```
 
-Root-program calls and richer arithmetic call arguments remain outside the current concrete certificate.
-
-## Concrete parameter binding
-
-`formal/PatchCallSubstitution.lean` keeps serializable evidence separate from the existing evaluator environment:
+The generated certificate preserves:
 
 ```text
-BindingList = List (Name × Int)
-IntEnv      = Name → Option Int
+RangeExpr.add (RangeExpr.var "bonus") (RangeExpr.lit 1)
+RangeExpr.scale 2 (RangeExpr.var "amount")
 ```
 
-`envOfBindings` converts the serializable binding list into `IntEnv`. `evalCallArgs` evaluates formal `RangeExpr` arguments; `bindCallParams` constructs exact positional callee bindings. `concreteCallBinding_sound` proves successful executable binding satisfies `ConcreteCallBindingSpec`.
+instead of replacing them with JavaScript-computed constants. Lean re-evaluates the call argument to `5`, reconstructs `amount = 5`, checks it through the abstract/declaration intervals, evaluates the direct leaf amount to `10`, and validates the singleton effect through the existing effect-refinement/caller-signature theorem.
 
-## Concrete-to-abstract interval bridge
+For direct leaf effects JavaScript still emits a proof-free claimed singleton effect. The helper `evaluateFormalRangeExprExact` exists only to form that claim; generated Lean independently checks it through `evalBoundQuantitativeEffectEqBool` and `evalBoundQuantitativeEffectEqBool_sound`.
 
-`formal/PatchCallRefinement.lean` composes exact values with beta.25 intervals:
+## Generated certificates
 
-```text
-ConcreteArgsFit values actual
-ArgsFit actual declared
------------------------------
-ConcreteArgsFit values declared
-```
-
-The certificate-facing executable check is `concreteThroughAbstractBool`; its soundness theorem is `concreteThroughAbstractBool_sound`.
-
-## Bound direct semantic effect
-
-`formal/PatchCallEffect.lean` handles a narrower direct quantitative leaf Change. `evalBoundQuantitativeEffect` evaluates the amount expression in the exact callee environment and constructs a singleton concrete amount interval.
-
-For example:
+Standard Formal CI now generates and checks:
 
 ```text
-amount = 4
-expected: score increase [0,5]
-actual:   score increase [4,4]
-```
-
-`evalBoundQuantitativeEffect_sound` proves the concrete effect satisfies the existing `PatchRuntime.EffectRefines` relation.
-
-Generated certificates use `evalBoundQuantitativeEffectEqBool` rather than adding a global `DecidableEq Effect`; its theorem `evalBoundQuantitativeEffectEqBool_sound` recovers the exact equality from beta.25's verified `effectEqBool`.
-
-The main executable composition theorem is:
-
-```text
-checkedConcreteBoundEffectRefinesCallerSignature
-```
-
-It combines exact binding, exact amount evaluation, callee effect membership and beta.25 callee-to-caller signature containment. The conclusion contains both `ConcreteCallBindingSpec` and `RefinesSignature concreteEffect callerSignature`.
-
-## Generated concrete certificate
-
-The cross-platform JS CI generates:
-
-```text
+GeneratedCertificate.lean
+GeneratedRuntimeCertificate.lean
+GeneratedCallCertificate.lean
 GeneratedConcreteCallCertificate.lean
+GeneratedArithmeticCallCertificate.lean
 ```
 
-Standard Formal CI and the beta.26 focused gate both compile it with pinned Lean. For the current `formal-calls.patch` example, concrete bindings are checked for the nested call chain, and the two `reward -> add_points` leaf invocations additionally receive direct bound-effect refinement proofs.
+The arithmetic file comes from `examples/formal-calls-arithmetic.patch`. The dedicated `Patch Beta27 Arithmetic Calls` workflow separately generates and checks that exact file under the pinned Lean version.
 
-## Exact beta.26 boundary
+Cross-platform Node CI generates both the beta.26 concrete certificate and beta.27 arithmetic certificate on Windows, macOS and Linux before continuing with normal build/site gates.
 
-Proved/checked in the concrete-call slice:
+## Exact beta.27 boundary
 
-- inter-recipe safe-integer variable argument evaluation;
-- exact positional parameter binding;
-- exact value fit through beta.25 abstract intervals to declarations;
-- one direct quantitative leaf `add`/`remove` effect whose amount is a bound variable;
-- refinement of the exact singleton effect into an effect imported by the caller signature.
+Concrete certificate coverage now includes:
+
+- bounded safe-integer inter-recipe arguments using integer literals, variables, `+`, `-`, unary `-`, and multiplication by a non-negative integer literal;
+- exact positional callee binding;
+- exact-value fit through beta.25 abstract intervals into declarations;
+- a single direct quantitative leaf `add`/`remove` Change whose amount uses the same formal integer expression fragment;
+- singleton concrete effect refinement into an effect represented by the caller signature.
 
 Still outside:
 
 ```text
+division
+general variable-by-variable multiplication
+decimal/floating-point call expressions
 root-program concrete call certification
-richer arithmetic call substitution
-arbitrary callee-body/control-flow execution under exact bindings
-full transitive concrete call traces
+arbitrary structured callee-body execution under exact bindings
+complete transitive concrete call traces
 production JavaScript/direct-Wasm call equivalence
-recursive/floating-point/full-language call semantics
+recursive/full-language call semantics
 ```
 
-These are explicit limits, not silent fallbacks.
+Unsupported cases fail rather than silently weakening the certificate.
 
 ## Source, guard and runtime assurance
 
-Independent `source-validation.js` and `guard-validation.js` continue to validate supported source/range and GuardTree extraction. `PatchGuarded` checks concrete branch witnesses for the safe-integer parameter fragment and composes accepted direct-runtime evidence with Change Capabilities. beta.26 does not conflate this existing runtime theorem with the newer call certificate.
+Independent `source-validation.js` and `guard-validation.js` continue to validate supported source/range and GuardTree extraction. `PatchGuarded` checks branch witnesses for the safe-integer guard fragment and composes accepted direct-runtime evidence with Change Capabilities. Beta.27 does not claim that this older runtime theorem already proves call-aware Wasm execution.
 
 ## Window and backend boundaries
 
 The shared Window preflight supports button `clicked` and input `changed`; input edits remain transient until Patch source performs explicit `change`.
 
-Direct Wasm supports the conservative numeric Console subset including acyclic recipes. Raw direct Wasm still uses Patch's small host ABI and is not a standalone WASI command. Portable C99 is compile/run tested on Linux, macOS and FreeBSD 15.1.
+Direct Wasm supports the conservative numeric Console subset including acyclic recipes. Raw direct Wasm uses Patch's small host ABI and is not yet a standalone WASI command. Portable C99 is compile/run tested on Linux, macOS and FreeBSD 15.1.
 
 ## Trust boundaries
 
@@ -189,12 +158,11 @@ Not machine proved:
 ```text
 production parser correctness
 independent raw source/guard parser correctness
-formalCalls JavaScript extractor correctness
-concrete-call JavaScript witness extractor correctness
+formalCalls/concrete-witness JavaScript extractor correctness
 JavaScript -> Wasm lowering correctness
 Wasm engine correctness
 runtime observation completeness
-arbitrary source-call expression -> concrete certificate correspondence
+arbitrary structured call execution correspondence
 production call execution == formal concrete call semantics
 full floating-point/full-language semantics
 ```
@@ -203,11 +171,10 @@ Proof-free production data is accepted only where the relevant Lean checker can 
 
 ## Quality gates
 
-- Windows/macOS/Linux Node 22/24 tests;
-- concrete call witness/certificate tests;
-- generated static/runtime/abstract-call/concrete-call certificates;
-- `PatchCalls`, `PatchCallSubstitution`, `PatchCallRefinement`, `PatchCallEffect` under pinned Lean;
-- generated `GeneratedConcreteCallCertificate.lean` checked by Lean;
+- Windows/macOS/Linux Node 22/24 tests and certificate generation;
+- generated static/runtime/abstract-call/exact-call/arithmetic-call certificates;
+- pinned-Lean verification of all generated certificates;
+- dedicated arithmetic concrete-call workflow;
 - no `sorry`/`admit`;
 - direct-Wasm/C99/Window build and execution gates;
 - native Windows/macOS/Linux Console + Window smoke builds;

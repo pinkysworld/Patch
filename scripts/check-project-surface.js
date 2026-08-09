@@ -15,114 +15,106 @@ const files = {
   native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
   formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
-  compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'), callCertificate: read('src/call-certificate.js'),
+  compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
   concreteWitness: read('src/concrete-call-witness.js'), concreteCertificate: read('src/concrete-call-certificate.js'),
-  concreteGenerator: read('scripts/generate-concrete-call-certificate.js'),
-  cliEntry: read('src/cli-entry.js'), windowEvents: read('src/window-events.js'), windowBuild: read('src/window-build.js'),
-  windowWeb: read('src/window-webapp.js'), playground: read('web/playground.js'), desktopBuilder: read('scripts/build-native-window.js'),
+  concreteGenerator: read('scripts/generate-concrete-call-certificate.js'), arithmeticExample: read('examples/formal-calls-arithmetic.patch'),
+  windowEvents: read('src/window-events.js'), windowBuild: read('src/window-build.js'), windowWeb: read('src/window-webapp.js'),
+  playground: read('web/playground.js'), desktopBuilder: read('scripts/build-native-window.js'),
   patchCalls: read('formal/PatchCalls.lean'), substitution: read('formal/PatchCallSubstitution.lean'),
   refinement: read('formal/PatchCallRefinement.lean'), callEffect: read('formal/PatchCallEffect.lean'),
-  formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml')
+  formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'),
+  arithmeticWorkflow: read('.github/workflows/beta27-arithmetic-calls.yml')
 };
 
 mustInclude('README.md', files.readme, [
-  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.26: concrete recipe binding and direct effect refinement',
-  'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'checkedConcreteBoundEffectRefinesCallerSignature', 'GeneratedConcreteCallCertificate.lean',
-  'variable pass-through', 'production JavaScript/direct-Wasm', 'input `changed`', 'Standalone Window Web App',
-  'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'not yet a standalone WASI command module'
+  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.27: arithmetic concrete call certificates',
+  'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add', 'RangeExpr.scale', 'bonus + 1', 'amount * 2',
+  'checkedConcreteBoundEffectRefinesCallerSignature', 'production JavaScript/direct-Wasm',
+  'input `changed`', 'Standalone Window Web App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1',
+  'not yet a standalone WASI command module'
 ]);
 
 mustInclude('web/index.html', files.website, [
   `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.10',
-  'Concrete recipe calls', 'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'GeneratedConcreteCallCertificate.lean', 'checkedConcreteBoundEffectRefinesCallerSignature',
-  'variable pass-through', 'production JavaScript/direct-Wasm call equivalence',
-  'Semantic input events', 'Window preflight', 'Windows App (.exe)', 'macOS App (.app)', 'Linux App',
-  'FreeBSD Console', 'portable C99', 'FreeBSD 15.1'
+  'Arithmetic concrete calls', 'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add',
+  'amount * 2', 'checkedConcreteBoundEffectRefinesCallerSignature',
+  'production JavaScript/direct-Wasm call equivalence', 'Semantic input events', 'Window preflight',
+  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1'
 ]);
 
 mustInclude('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, 'Change IR **0.10**', 'formalCalls', 'npm run concrete-call-certify:example',
-  'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'variable pass-through', cacheVersion, 'FreeBSD Console builds through the portable C99 backend'
+  `What works in 0.2 beta.${beta}`, 'Change IR **0.10**', 'npm run arithmetic-call-certify:example',
+  'GeneratedArithmeticCallCertificate.lean', 'RangeExpr', 'production-Wasm call equivalence', cacheVersion,
+  'FreeBSD Console builds through the portable C99 backend'
 ]);
 
 mustInclude('docs/NATIVE_APPS.md', files.native, [
-  `Status: **${version}**`, 'Change IR **0.10**', 'npm run concrete-call-certify:example',
-  'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'production-Wasm call equivalence', 'Window preflight', 'Portable C99', 'FreeBSD 15.1'
+  `Status: **${version}**`, 'Change IR **0.10**', 'npm run arithmetic-call-certify:example',
+  'bonus + 1', 'amount * 2', 'production-Wasm call equivalence', 'Window preflight', 'Portable C99', 'FreeBSD 15.1'
 ]);
 
 mustInclude('docs/ROADMAP.md', files.roadmap, [
-  `Current development beta: **${version}**`, '### beta.26: concrete safe-integer call binding + direct leaf-effect refinement',
-  'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'concreteCallBinding_sound', 'checkedConcreteBoundEffectRefinesCallerSignature',
-  'GeneratedConcreteCallCertificate.lean', 'production direct-Wasm call execution equivalence'
+  `Current development beta: **${version}**`, '### beta.27: arithmetic concrete-call certificate coverage',
+  'certificate version **0.3**', 'RangeExpr.add', 'RangeExpr.sub', 'RangeExpr.neg', 'RangeExpr.scale',
+  'GeneratedArithmeticCallCertificate.lean', 'structured callee-body execution under exact bindings'
 ]);
 
 mustInclude('docs/COMPILER.md', files.compiler, [
-  `Status: **${version}**`, 'Change IR **0.10**', '`formalCalls`', '`PatchCalls.lean`',
-  '`src/concrete-call-witness.js`', '`src/concrete-call-certificate.js`',
-  '`formal/PatchCallSubstitution.lean`', '`formal/PatchCallRefinement.lean`', '`formal/PatchCallEffect.lean`',
-  'concreteCallBinding_sound', 'checkedConcreteBoundEffectRefinesCallerSignature', 'GeneratedConcreteCallCertificate.lean'
+  `Status: **${version}**`, 'Change IR **0.10**', 'Arithmetic certificate coverage: beta.27',
+  'version **0.3**', 'RangeExpr.add', 'RangeExpr.sub', 'RangeExpr.neg', 'RangeExpr.scale',
+  'GeneratedArithmeticCallCertificate.lean', 'production JavaScript/direct-Wasm call equivalence'
 ]);
 
 mustInclude('docs/FORMAL_MODEL.md', files.formal, [
-  'Status: **beta.26', 'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'concreteCallBinding_sound', 'concreteArgsFitThroughAbstract', 'evalBoundQuantitativeEffectEqBool_sound',
-  'evalBoundQuantitativeEffect_sound', 'checkedConcreteBoundEffectRefinesCallerSignature',
-  'GeneratedConcreteCallCertificate.lean', 'production JavaScript/direct-Wasm call execution'
+  'Status: **beta.27', 'Beta.27 arithmetic certificate coverage', 'RangeExpr.lit', 'RangeExpr.add', 'RangeExpr.scale',
+  'GeneratedArithmeticCallCertificate.lean', 'evalBoundQuantitativeEffectEqBool',
+  'production JavaScript/direct-Wasm call execution'
 ]);
 
 mustInclude('docs/NOVELTY.md', files.novelty, [
-  'Beta.26', 'procedure-call substitution', 'effect refinement', 'checkedConcreteBoundEffectRefinesCallerSignature',
-  'not a new novelty headline', 'production-Wasm call equivalence'
+  'Beta.27', 'arithmetic expression evaluation', 'certificate coverage of an existing mechanized arithmetic fragment',
+  'GeneratedArithmeticCallCertificate.lean', 'not a new novelty headline', 'production-Wasm call equivalence'
 ]);
 
 mustInclude('paper/README.md', files.paper, [
-  `Patch ${version} / Change IR 0.10`, 'Beta.26 concrete-call milestone',
-  'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
-  'checkedConcreteBoundEffectRefinesCallerSignature', 'GeneratedConcreteCallCertificate.lean',
+  `Patch ${version} / Change IR 0.10`, 'Beta.27 arithmetic concrete-call milestone',
+  'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add', 'RangeExpr.scale',
   'production-Wasm call equivalence', 'full compiler verification'
 ]);
 
-// Runtime correspondence remains the beta.23 concrete direct-runtime layer.
+// Runtime correspondence remains the beta.23 direct-runtime layer.
 mustInclude('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, [
   'Status: **0.2.0-beta.23**', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape'
 ]);
 
 mustInclude('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", "'./formal-calls.js'", 'formalCalls']);
 mustInclude('src/formal-calls.js', files.formalCalls, ['buildFormalCalls', 'patch-formal-calls', 'rank-decreasing', 'recursive/cyclic call graph']);
-mustInclude('src/call-certificate.js', files.callCertificate, ['generateLeanCallCertificate', 'checkRecipeEnv', 'abstract call-aware signature composition']);
-mustInclude('src/concrete-call-witness.js', files.concreteWitness, ['buildConcreteCallWitnesses', 'patch-concrete-call-witness', 'expectedCalleeEnv', 'abstractArgRanges']);
+mustInclude('src/concrete-call-witness.js', files.concreteWitness, [
+  'buildConcreteCallWitnesses', 'patch-concrete-call-witness', 'expectedCalleeEnv', 'abstractArgRanges', 'duplicate parameter names outside concrete binding certification'
+]);
 mustInclude('src/concrete-call-certificate.js', files.concreteCertificate, [
-  'generateConcreteCallCertificate', "PATCH_CONCRETE_CALL_CERTIFICATE_VERSION = '0.2'", 'evalBoundQuantitativeEffectEqBool',
-  'checkedConcreteBoundEffectRefinesCallerSignature', 'certifiedEffects', 'variable pass-through arguments only'
+  'generateConcreteCallCertificate', "PATCH_CONCRETE_CALL_CERTIFICATE_VERSION = '0.3'", 'RangeExpr.add', 'RangeExpr.sub',
+  'RangeExpr.neg', 'RangeExpr.scale', 'evaluateFormalRangeExprExact', 'evalBoundQuantitativeEffectEqBool',
+  'checkedConcreteBoundEffectRefinesCallerSignature'
 ]);
 mustInclude('scripts/generate-concrete-call-certificate.js', files.concreteGenerator, [
   'generateConcreteCallCertificate', 'certified concrete binding(s)', 'certified direct bound effect(s)', 'production-Wasm call equivalence'
 ]);
+mustInclude('examples/formal-calls-arithmetic.patch', files.arithmeticExample, ['bonus + 1', 'amount * 2']);
 
-mustInclude('formal/PatchCalls.lean', files.patchCalls, [
-  'inductive CallStmt', 'def checkRecipeEnv', 'theorem checkRecipeEnv_sound', 'theorem callSignatureSoundness', 'theorem checkedRecipeExecutionCannotEscape'
-]);
-mustInclude('formal/PatchCallSubstitution.lean', files.substitution, [
-  'abbrev BindingList', 'def envOfBindings', 'def evalCallArgs', 'def bindCallParams', 'def concreteCallBinding', 'theorem concreteCallBinding_sound'
-]);
-mustInclude('formal/PatchCallRefinement.lean', files.refinement, [
-  'theorem valueFitsWithin', 'theorem concreteArgsFitThroughAbstract', 'def concreteThroughAbstractBool', 'theorem concreteThroughAbstractBool_sound'
-]);
-mustInclude('formal/PatchCallEffect.lean', files.callEffect, [
-  'def evalBoundQuantitativeEffect', 'def evalBoundQuantitativeEffectEqBool', 'theorem evalBoundQuantitativeEffectEqBool_sound',
-  'theorem evalBoundQuantitativeEffect_sound', 'def RefinesSignature', 'theorem checkedConcreteBoundEffectRefinesCallerSignature'
-]);
+mustInclude('formal/PatchCalls.lean', files.patchCalls, ['theorem callSignatureSoundness', 'theorem checkedRecipeExecutionCannotEscape']);
+mustInclude('formal/PatchCallSubstitution.lean', files.substitution, ['def evalCallArgs', 'def concreteCallBinding', 'theorem concreteCallBinding_sound']);
+mustInclude('formal/PatchCallRefinement.lean', files.refinement, ['theorem concreteArgsFitThroughAbstract', 'theorem concreteThroughAbstractBool_sound']);
+mustInclude('formal/PatchCallEffect.lean', files.callEffect, ['theorem evalBoundQuantitativeEffect_sound', 'theorem checkedConcreteBoundEffectRefinesCallerSignature']);
 
 mustInclude('.github/workflows/formal.yml', files.formalWorkflow, [
-  'concrete-call-certify:example', 'PatchCallSubstitution PatchCallRefinement PatchCallEffect', 'GeneratedConcreteCallCertificate.lean'
+  'arithmetic-call-certify:example', 'GeneratedArithmeticCallCertificate.lean', 'GeneratedConcreteCallCertificate.lean'
 ]);
 mustInclude('.github/workflows/ci.yml', files.ciWorkflow, [
-  'src/concrete-call-witness.js', 'src/concrete-call-certificate.js', 'scripts/generate-concrete-call-certificate.js', 'concrete-call-certify:example'
+  'arithmetic-call-certify:example', 'concrete-call-certify:example', 'src/concrete-call-certificate.js'
+]);
+mustInclude('.github/workflows/beta27-arithmetic-calls.yml', files.arithmeticWorkflow, [
+  'Patch Beta27 Arithmetic Calls', 'formal-calls-arithmetic.patch', 'GeneratedArithmeticCallCertificate.lean', 'lake env lean'
 ]);
 
 // Preserve beta.24 Window mutation-path guarantees.
