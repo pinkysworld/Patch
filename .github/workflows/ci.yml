@@ -40,6 +40,8 @@ jobs:
         run: npm run call-certify:example
       - name: Generate Lean concrete recipe-call binding/effect certificate
         run: npm run concrete-call-certify:example
+      - name: Generate Lean arithmetic concrete-call certificate
+        run: npm run arithmetic-call-certify:example
       - name: Portable application build
         run: npm run build:example
       - name: Bootstrap WebAssembly application build
