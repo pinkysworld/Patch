@@ -33,6 +33,33 @@ def evalBoundQuantitativeEffect
           else
             none
 
+/-- Executable equality boundary for generated evidence. `Effect` intentionally
+    has no global DecidableEq instance, so certificates compare a successfully
+    evaluated bound effect using beta.25's already-verified `effectEqBool`. -/
+def evalBoundQuantitativeEffectEqBool
+    (expected : Effect) (amountExpr : RangeExpr) (bound : BindingList)
+    (claimed : Effect) : Bool :=
+  match evalBoundQuantitativeEffect expected amountExpr bound with
+  | none => false
+  | some actual => effectEqBool actual claimed
+
+/-- A successful executable effect-equality check recovers the exact Option
+    equality needed by the relational beta.26 theorem. -/
+theorem evalBoundQuantitativeEffectEqBool_sound
+    {expected : Effect} {amountExpr : RangeExpr} {bound : BindingList}
+    {claimed : Effect}
+    (h : evalBoundQuantitativeEffectEqBool expected amountExpr bound claimed = true) :
+    evalBoundQuantitativeEffect expected amountExpr bound = some claimed := by
+  unfold evalBoundQuantitativeEffectEqBool at h
+  cases hEval : evalBoundQuantitativeEffect expected amountExpr bound with
+  | none =>
+      simp [hEval] at h
+  | some actual =>
+      have hEqBool : effectEqBool actual claimed = true := by
+        simpa [hEval] using h
+      have hSame : actual = claimed := effectEqBool_sound hEqBool
+      simpa [hSame] using hEval
+
 /-- A successfully instantiated exact quantitative effect refines the formal
     semantic effect whose amount interval admitted the concrete value. -/
 theorem evalBoundQuantitativeEffect_sound
