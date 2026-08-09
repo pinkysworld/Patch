@@ -18,68 +18,78 @@ const files = {
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
   concreteWitness: read('src/concrete-call-witness.js'), concreteCertificate: read('src/concrete-call-certificate.js'),
   concreteGenerator: read('scripts/generate-concrete-call-certificate.js'), arithmeticExample: read('examples/formal-calls-arithmetic.patch'),
+  concreteBody: read('src/concrete-call-body.js'), concreteBodyCertificate: read('src/concrete-call-body-certificate.js'),
+  concreteBodyGenerator: read('scripts/generate-concrete-call-body-certificate.js'), calleeTraceExample: read('examples/formal-callee-trace.patch'),
   windowEvents: read('src/window-events.js'), windowBuild: read('src/window-build.js'), windowWeb: read('src/window-webapp.js'),
   playground: read('web/playground.js'), desktopBuilder: read('scripts/build-native-window.js'),
   patchCalls: read('formal/PatchCalls.lean'), substitution: read('formal/PatchCallSubstitution.lean'),
   refinement: read('formal/PatchCallRefinement.lean'), callEffect: read('formal/PatchCallEffect.lean'),
+  callBody: read('formal/PatchCallBody.lean'), callBodyImport: read('formal/PatchCallBodyImport.lean'),
   formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'),
-  arithmeticWorkflow: read('.github/workflows/beta27-arithmetic-calls.yml')
+  beta28Workflow: read('.github/workflows/beta28-callee-traces.yml'), beta27Workflow: read('.github/workflows/beta27-arithmetic-calls.yml'),
+  beta26Workflow: read('.github/workflows/beta26-concrete-calls.yml')
 };
 
 mustInclude('README.md', files.readme, [
-  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.27: arithmetic concrete call certificates',
-  'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add', 'RangeExpr.scale', 'bonus + 1', 'amount * 2',
-  'checkedConcreteBoundEffectRefinesCallerSignature', 'production JavaScript/direct-Wasm',
-  'input `changed`', 'Standalone Window Web App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1',
-  'not yet a standalone WASI command module'
+  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.28: exact structured callee traces',
+  'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBody.lean', 'PatchCallBodyImport.lean',
+  'evalBoundStmtEqBool_sound', 'checkedConcreteCallBodyRefinesCallerSignature', 'whole concrete callee trace',
+  'branches and guard choices', 'nested recipe calls', 'production JavaScript/direct-Wasm call equivalence',
+  'npm run callee-trace-certify:example', 'input `changed`', 'Standalone Window Web App',
+  'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'not yet a standalone WASI command module'
 ]);
 
 mustInclude('web/index.html', files.website, [
   `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `Beta ${version}`, 'Change IR 0.10',
-  'Arithmetic concrete calls', 'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add',
-  'amount * 2', 'checkedConcreteBoundEffectRefinesCallerSignature',
+  'Beta.28 exact structured callee traces', 'GeneratedConcreteCallBodyCertificate.lean',
+  'PatchCallBody.lean', 'PatchCallBodyImport.lean', 'checkedConcreteCallBodyRefinesCallerSignature',
   'production JavaScript/direct-Wasm call equivalence', 'Semantic input events', 'Window preflight',
   'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1'
 ]);
 
 mustInclude('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, 'Change IR **0.10**', 'npm run arithmetic-call-certify:example',
-  'GeneratedArithmeticCallCertificate.lean', 'RangeExpr', 'production-Wasm call equivalence', cacheVersion,
+  `What works in 0.2 beta.${beta}`, 'Change IR **0.10**', 'npm run callee-trace-certify:example',
+  'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBody.lean', 'PatchCallBodyImport.lean',
+  'production JavaScript/direct-Wasm call equivalence', cacheVersion,
   'FreeBSD Console builds through the portable C99 backend'
 ]);
 
 mustInclude('docs/NATIVE_APPS.md', files.native, [
-  `Status: **${version}**`, 'Change IR **0.10**', 'npm run arithmetic-call-certify:example',
-  'bonus + 1', 'amount * 2', 'production-Wasm call equivalence', 'Window preflight', 'Portable C99', 'FreeBSD 15.1'
+  `Status: **${version}**`, 'Change IR **0.10**', 'npm run callee-trace-certify:example',
+  'GeneratedConcreteCallBodyCertificate.lean', 'sequence/static-repeat', 'production-Wasm call equivalence',
+  'Window preflight', 'Portable C99', 'FreeBSD 15.1'
 ]);
 
 mustInclude('docs/ROADMAP.md', files.roadmap, [
-  `Current development beta: **${version}**`, '### beta.27: arithmetic concrete-call certificate coverage',
-  'certificate version **0.3**', 'RangeExpr.add', 'RangeExpr.sub', 'RangeExpr.neg', 'RangeExpr.scale',
-  'GeneratedArithmeticCallCertificate.lean', 'structured callee-body execution under exact bindings'
+  `Current development beta: **${version}**`, '### beta.28: exact structured callee traces',
+  'PatchCallBody.lean', 'PatchCallBodyImport.lean', 'evalBoundStmtEqBool_sound',
+  'checkedConcreteCallBodyRefinesCallerSignature', 'GeneratedConcreteCallBodyCertificate.lean',
+  'branch/guard-aware exact callee traces', 'nested-call and complete transitive concrete call-trace semantics'
 ]);
 
 mustInclude('docs/COMPILER.md', files.compiler, [
-  `Status: **${version}**`, 'Change IR **0.10**', 'Arithmetic certificate coverage: beta.27',
-  'version **0.3**', 'RangeExpr.add', 'RangeExpr.sub', 'RangeExpr.neg', 'RangeExpr.scale',
-  'GeneratedArithmeticCallCertificate.lean', 'production JavaScript/direct-Wasm call equivalence'
+  `Status: **${version}**`, 'Change IR **0.10**', 'Structured callee traces: beta.28',
+  'evalBoundStmt', 'evalBoundStmtEqBool_sound', 'PatchCallBodyImport.lean',
+  'GeneratedConcreteCallBodyCertificate.lean', 'checkedConcreteCallBodyRefinesCallerSignature',
+  'production JavaScript/direct-Wasm call equivalence'
 ]);
 
 mustInclude('docs/FORMAL_MODEL.md', files.formal, [
-  'Status: **beta.27', 'Beta.27 arithmetic certificate coverage', 'RangeExpr.lit', 'RangeExpr.add', 'RangeExpr.scale',
-  'GeneratedArithmeticCallCertificate.lean', 'evalBoundQuantitativeEffectEqBool',
-  'production JavaScript/direct-Wasm call execution'
+  'Status: **beta.28', 'Beta.28 exact structured callee traces', 'BoundStmt', 'evalBoundStmt_sound',
+  'effectListEqBool_sound', 'evalBoundStmtEqBool_sound', 'boundExecRefinesSignature',
+  'checkedConcreteCallBodyRefinesCallerSignature', 'production JavaScript/direct-Wasm call execution'
 ]);
 
 mustInclude('docs/NOVELTY.md', files.novelty, [
-  'Beta.27', 'arithmetic expression evaluation', 'certificate coverage of an existing mechanized arithmetic fragment',
-  'GeneratedArithmeticCallCertificate.lean', 'not a new novelty headline', 'production-Wasm call equivalence'
+  'Beta.28', 'structured execution traces', 'whole concrete callee trace refines caller semantic signature',
+  'GeneratedConcreteCallBodyCertificate.lean', 'not a new novelty headline', 'production JavaScript/direct-Wasm call equivalence'
 ]);
 
 mustInclude('paper/README.md', files.paper, [
-  `Patch ${version} / Change IR 0.10`, 'Beta.27 arithmetic concrete-call milestone',
-  'GeneratedArithmeticCallCertificate.lean', 'RangeExpr.add', 'RangeExpr.scale',
-  'production-Wasm call equivalence', 'full compiler verification'
+  `Patch ${version} / Change IR 0.10`, 'Beta.28 exact structured callee-trace milestone',
+  'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBody.lean', 'PatchCallBodyImport.lean',
+  'TraceRefinesSignature exactTrace callerSignature', 'production JavaScript/direct-Wasm call equivalence',
+  'full compiler verification'
 ]);
 
 // Runtime correspondence remains the beta.23 direct-runtime layer.
@@ -102,20 +112,46 @@ mustInclude('scripts/generate-concrete-call-certificate.js', files.concreteGener
 ]);
 mustInclude('examples/formal-calls-arithmetic.patch', files.arithmeticExample, ['bonus + 1', 'amount * 2']);
 
+mustInclude('src/concrete-call-body.js', files.concreteBody, [
+  'buildConcreteCallBodyWitnesses', 'patch-concrete-call-body', "case 'repeat'", 'claimedTrace',
+  'branches, nested calls', 'sameEffect'
+]);
+mustInclude('src/concrete-call-body-certificate.js', files.concreteBodyCertificate, [
+  'generateConcreteCallBodyCertificate', 'GeneratedConcreteCallBodyCertificate', 'evalBoundStmtEqBool',
+  'boundBodyCoveredBool', 'signatureCoversBool', 'checkedConcreteCallBodyRefinesCallerSignature'
+]);
+mustInclude('scripts/generate-concrete-call-body-certificate.js', files.concreteBodyGenerator, [
+  'generateConcreteCallBodyCertificate', 'certified structured call(s)', 'complete supported callee semantic-effect body'
+]);
+mustInclude('examples/formal-callee-trace.patch', files.calleeTraceExample, ['bonus + 1', 'repeat 2', 'amount * 2']);
+
 mustInclude('formal/PatchCalls.lean', files.patchCalls, ['theorem callSignatureSoundness', 'theorem checkedRecipeExecutionCannotEscape']);
 mustInclude('formal/PatchCallSubstitution.lean', files.substitution, ['def evalCallArgs', 'def concreteCallBinding', 'theorem concreteCallBinding_sound']);
 mustInclude('formal/PatchCallRefinement.lean', files.refinement, ['theorem concreteArgsFitThroughAbstract', 'theorem concreteThroughAbstractBool_sound']);
 mustInclude('formal/PatchCallEffect.lean', files.callEffect, ['theorem evalBoundQuantitativeEffect_sound', 'theorem checkedConcreteBoundEffectRefinesCallerSignature']);
+mustInclude('formal/PatchCallBody.lean', files.callBody, [
+  'inductive BoundStmt', 'inductive BoundExec', 'def evalBoundStmt', 'theorem evalBoundStmt_sound',
+  'def effectListEqBool', 'theorem evalBoundStmtEqBool_sound', 'def TraceRefinesSignature',
+  'theorem boundExecRefinesSignature', 'theorem checkedEvaluatedBoundBodyRefinesSignature'
+]);
+mustInclude('formal/PatchCallBodyImport.lean', files.callBodyImport, [
+  'theorem traceRefinesSignature_import', 'theorem checkedConcreteCallBodyRefinesCallerSignature'
+]);
 
 mustInclude('.github/workflows/formal.yml', files.formalWorkflow, [
-  'arithmetic-call-certify:example', 'GeneratedArithmeticCallCertificate.lean', 'GeneratedConcreteCallCertificate.lean'
+  'callee-trace-certify:example', 'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBodyImport',
+  "github.event.pull_request.draft == false", 'cancel-in-progress: true'
 ]);
 mustInclude('.github/workflows/ci.yml', files.ciWorkflow, [
-  'arithmetic-call-certify:example', 'concrete-call-certify:example', 'src/concrete-call-certificate.js'
+  'callee-trace-certify:example', 'src/concrete-call-body-certificate.js',
+  "github.event.pull_request.draft == false", 'cancel-in-progress: true'
 ]);
-mustInclude('.github/workflows/beta27-arithmetic-calls.yml', files.arithmeticWorkflow, [
-  'Patch Beta27 Arithmetic Calls', 'formal-calls-arithmetic.patch', 'GeneratedArithmeticCallCertificate.lean', 'lake env lean'
+mustInclude('.github/workflows/beta28-callee-traces.yml', files.beta28Workflow, [
+  'Patch Beta28 Callee Traces', 'GeneratedConcreteCallBodyCertificate.lean', 'PatchCallBodyImport',
+  "github.event.pull_request.draft == false", 'cancel-in-progress: true'
 ]);
+mustInclude('.github/workflows/beta27-arithmetic-calls.yml', files.beta27Workflow, ['Patch Beta27 Arithmetic Calls', 'workflow_dispatch']);
+mustInclude('.github/workflows/beta26-concrete-calls.yml', files.beta26Workflow, ['Patch Beta26 Concrete Calls', 'workflow_dispatch']);
 
 // Preserve beta.24 Window mutation-path guarantees.
 mustInclude('src/window-events.js', files.windowEvents, ['triggerWindowEvent', 'event-local value', 'PATCH_WINDOW_EVENTS_VERSION']);
