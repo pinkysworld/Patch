@@ -1,0 +1,20 @@
+create boolean notifications = false
+
+window "Main" as main size 560, 340:
+  text "My App" at 24, 24 size 220, 30
+  button "Settings" as open_settings at 24, 72 size 120, 36
+
+window "Settings" as settings size 480, 300:
+  text "Settings" at 24, 24 size 220, 30
+  checkbox "Notifications" as notifications at 24, 72 size 220, 36
+  button "Close" as close_settings at 24, 124 size 100, 36
+
+when open_settings clicked:
+  open settings
+
+when close_settings clicked:
+  close settings
+
+when notifications changed:
+  change notifications:
+    set = value
