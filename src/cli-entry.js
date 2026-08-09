@@ -4,9 +4,17 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { generateLeanCallCertificate } from './call-certificate.js';
+import { collectDoctorReport, formatDoctorReport } from './doctor.js';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
+
+if (command === 'doctor') {
+  const report = collectDoctorReport();
+  if (argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
+  else console.log(formatDoctorReport(report));
+  process.exit(report.status === 'error' ? 2 : 0);
+}
 
 if (command !== 'call-certify') {
   const cliPath = fileURLToPath(new URL('./cli.js', import.meta.url));
@@ -37,7 +45,7 @@ try {
   console.log(`  recipe environment entries: ${certificate.environmentSize}`);
   console.log(`  certified recipe(s): ${certificate.certifiedRecipes.join(', ')}`);
   console.log('  assurance: Lean checks direct effects, rank-decreasing call resolution, safe-integer argument interval fit, and callee-signature containment in each caller signature.');
-  console.log('  boundary: this is abstract call composition; concrete runtime argument-value substitution remains outside this certificate.');
+  console.log('  boundary: this is abstract call composition; stronger concrete-call certificates use their dedicated beta.26/beta.27 generators.');
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
   process.exit(2);
