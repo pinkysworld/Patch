@@ -1,0 +1,40 @@
+name: Patch Beta28 Callee Traces
+
+on:
+  pull_request:
+  push:
+    branches: [feature/beta28-concrete-callee-traces]
+
+permissions:
+  contents: read
+
+jobs:
+  callee-traces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+      - name: Check structured exact callee-body trace theorem
+        working-directory: formal
+        shell: bash
+        run: |
+          set -euo pipefail
+          elan override set leanprover/lean4:v4.30.0
+          lake update
+          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody
+      - name: Reject unfinished beta.28 proofs
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallBody.lean || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            exit 1
+          fi
