@@ -5,13 +5,16 @@ namespace PatchFormal
 /-- Beta.30 call-tree layer. A `base` node embeds any already-proved beta.29
     `BoundStmt` subtree that contains no nested recipe call. Structural nodes
     allow nested calls to appear between effects, inside static repeats and on
-    exact GuardExpr branches without weakening beta.29's regression semantics. -/
+    exact GuardExpr branches without weakening beta.29's regression semantics.
+    Nested call nodes also carry the beta.25 caller/callee ranks so the generated
+    certificate can mechanically check finite rank decrease at every edge. -/
 inductive CallTreeStmt where
   | base (body : BoundStmt)
   | seq (first second : CallTreeStmt)
   | repeat (count : Nat) (body : CallTreeStmt)
   | branch (guard : GuardExpr) (thenBranch elseBranch : CallTreeStmt)
-  | call (argExprs : List RangeExpr) (params : List Name)
+  | call (callerRank calleeRank : Nat)
+      (argExprs : List RangeExpr) (params : List Name)
       (declared : List Interval) (calleeSignature : List Effect)
       (body : CallTreeStmt)
   deriving Repr
@@ -45,15 +48,15 @@ inductive CallTreeExec : BindingList → CallTreeStmt → List Effect → Prop w
       evalGuard guard (envOfBindings bindings) = some false →
       CallTreeExec bindings elseBranch trace →
       CallTreeExec bindings (.branch guard thenBranch elseBranch) trace
-  | call {bindings : BindingList} {argExprs : List RangeExpr}
-      {params : List Name} {declared : List Interval}
-      {calleeSignature : List Effect} {body : CallTreeStmt}
-      {calleeBindings : BindingList} {trace : List Effect} :
+  | call {bindings : BindingList} {callerRank calleeRank : Nat}
+      {argExprs : List RangeExpr} {params : List Name}
+      {declared : List Interval} {calleeSignature : List Effect}
+      {body : CallTreeStmt} {calleeBindings : BindingList} {trace : List Effect} :
       concreteCallBinding argExprs (envOfBindings bindings) params declared =
         some calleeBindings →
       CallTreeExec calleeBindings body trace →
       CallTreeExec bindings
-        (.call argExprs params declared calleeSignature body) trace
+        (.call callerRank calleeRank argExprs params declared calleeSignature body) trace
 
 /-- Static-repeat trace shared with the beta.29 body evaluator. -/
 def callTreeRepeatTrace (count : Nat) (trace : List Effect) : List Effect :=
@@ -78,7 +81,8 @@ theorem callTreeExec_repeat_of_body
       simpa [callTreeRepeatTrace] using hStep
 
 /-- Executable exact call-tree evaluator. Unsupported binding/guard/base-body
-    cases fail closed with `none`. -/
+    cases fail closed with `none`. Rank evidence is a static coverage obligation;
+    execution itself depends only on the exact call binding and nested body. -/
 def evalCallTreeStmt (bindings : BindingList) : CallTreeStmt → Option (List Effect)
   | .base body => evalBoundStmt bindings body
   | .seq first second => do
@@ -93,7 +97,7 @@ def evalCallTreeStmt (bindings : BindingList) : CallTreeStmt → Option (List Ef
       | none => none
       | some true => evalCallTreeStmt bindings thenBranch
       | some false => evalCallTreeStmt bindings elseBranch
-  | .call argExprs params declared _ body =>
+  | .call _ _ argExprs params declared _ body =>
       match concreteCallBinding argExprs (envOfBindings bindings) params declared with
       | none => none
       | some calleeBindings => evalCallTreeStmt calleeBindings body
@@ -140,7 +144,7 @@ theorem evalCallTreeStmt_sound
               have hThen : evalCallTreeStmt bindings thenBranch = some trace := by
                 simpa [evalCallTreeStmt, hGuard] using h
               exact CallTreeExec.branchThen hGuard (ihThen hThen)
-  | call argExprs params declared calleeSignature body ih =>
+  | call callerRank calleeRank argExprs params declared calleeSignature body ih =>
       cases hBinding :
           concreteCallBinding argExprs (envOfBindings bindings) params declared with
       | none => simp [evalCallTreeStmt, hBinding] at h
@@ -151,7 +155,9 @@ theorem evalCallTreeStmt_sound
 
 /-- Static transitive body coverage. `signature` is an index because nested
     bodies are checked against the nested callee signature before that signature
-    is imported into the enclosing signature. -/
+    is imported into the enclosing signature. Nested calls additionally require
+    their supplied beta.25 callee rank to be strictly smaller than the caller
+    rank. -/
 inductive CallTreeCovered : List Effect → CallTreeStmt → Prop where
   | base {signature : List Effect} {body : BoundStmt} :
       BoundBodyCovered signature body →
@@ -168,13 +174,15 @@ inductive CallTreeCovered : List Effect → CallTreeStmt → Prop where
       CallTreeCovered signature thenBranch →
       CallTreeCovered signature elseBranch →
       CallTreeCovered signature (.branch guard thenBranch elseBranch)
-  | call {signature : List Effect} {argExprs : List RangeExpr}
-      {params : List Name} {declared : List Interval}
-      {calleeSignature : List Effect} {body : CallTreeStmt} :
+  | call {signature : List Effect} {callerRank calleeRank : Nat}
+      {argExprs : List RangeExpr} {params : List Name}
+      {declared : List Interval} {calleeSignature : List Effect}
+      {body : CallTreeStmt} :
+      calleeRank < callerRank →
       CallTreeCovered calleeSignature body →
       SignatureCovers calleeSignature signature →
       CallTreeCovered signature
-        (.call argExprs params declared calleeSignature body)
+        (.call callerRank calleeRank argExprs params declared calleeSignature body)
 
 /-- Executable certificate-facing transitive coverage checker. -/
 def callTreeCoveredBool (signature : List Effect) : CallTreeStmt → Bool
@@ -186,9 +194,10 @@ def callTreeCoveredBool (signature : List Effect) : CallTreeStmt → Bool
   | .branch _ thenBranch elseBranch =>
       callTreeCoveredBool signature thenBranch &&
       callTreeCoveredBool signature elseBranch
-  | .call _ _ _ calleeSignature body =>
-      callTreeCoveredBool calleeSignature body &&
-      signatureCoversBool calleeSignature signature
+  | .call callerRank calleeRank _ _ _ calleeSignature body =>
+      decide (calleeRank < callerRank) &&
+      (callTreeCoveredBool calleeSignature body &&
+       signatureCoversBool calleeSignature signature)
 
 theorem callTreeCoveredBool_sound
     {signature : List Effect} {stmt : CallTreeStmt}
@@ -212,14 +221,20 @@ theorem callTreeCoveredBool_sound
           callTreeCoveredBool signature elseBranch = true := by
         simpa [callTreeCoveredBool, Bool.and_eq_true] using h
       exact CallTreeCovered.branch (ihThen hBoth.1) (ihElse hBoth.2)
-  | call argExprs params declared calleeSignature body ih =>
-      have hBoth :
+  | call callerRank calleeRank argExprs params declared calleeSignature body ih =>
+      have hRankAndRest :
+          decide (calleeRank < callerRank) = true ∧
+          (callTreeCoveredBool calleeSignature body &&
+           signatureCoversBool calleeSignature signature) = true := by
+        simpa [callTreeCoveredBool, Bool.and_eq_true] using h
+      have hRest :
           callTreeCoveredBool calleeSignature body = true ∧
           signatureCoversBool calleeSignature signature = true := by
-        simpa [callTreeCoveredBool, Bool.and_eq_true] using h
+        simpa [Bool.and_eq_true] using hRankAndRest.2
       exact CallTreeCovered.call
-        (ih hBoth.1)
-        (signatureCoversBool_sound hBoth.2)
+        (of_decide_eq_true hRankAndRest.1)
+        (ih hRest.1)
+        (signatureCoversBool_sound hRest.2)
 
 /-- Import exact trace refinement through one nested semantic-signature edge. -/
 theorem traceRefinesSignature_coverTree
@@ -270,11 +285,11 @@ theorem callTreeExecRefinesSignature
       intro signature hCovered
       cases hCovered with
       | branch hThenCovered hElseCovered => exact ihElse hElseCovered
-  | @call bindings argExprs params declared calleeSignature body calleeBindings trace
-      hBinding hBody ihBody =>
+  | @call bindings callerRank calleeRank argExprs params declared calleeSignature body
+      calleeBindings trace hBinding hBody ihBody =>
       intro signature hCovered
       cases hCovered with
-      | call hNestedCovered hCovers =>
+      | call hRank hNestedCovered hCovers =>
           exact traceRefinesSignature_coverTree
             (ihBody hNestedCovered)
             hCovers
