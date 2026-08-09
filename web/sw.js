@@ -1,6 +1,6 @@
-const CACHE = 'patch-studio-0.2-beta.28-ready-native-1';
+const CACHE = 'patch-studio-0.2-beta.28-designer-inspector-1';
 const CORE = [
-  './', './index.html', './style.css', './playground.js', './native-build.js', './manifest.webmanifest', './icon.svg',
+  './', './index.html', './style.css', './designer-inspector.css', './playground.js', './native-build.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
   '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/bundle.js', '../src/wasm.js',
@@ -19,7 +19,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  const codeAsset = url.origin === self.location.origin && /\.(?:js|html)$/.test(url.pathname);
+  const codeAsset = url.origin === self.location.origin && /\.(?:js|html|css)$/.test(url.pathname);
   const freshFirst = event.request.mode === 'navigate' || codeAsset;
 
   if (freshFirst) {
