@@ -4,7 +4,8 @@ const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_DEFAULTS = {
   text: { width: 200, height: 30 },
   button: { width: 120, height: 36 },
-  input: { width: 220, height: 36 }
+  input: { width: 220, height: 36 },
+  checkbox: { width: 220, height: 36 }
 };
 
 export function addDesignerWindow(source, options = {}) {
@@ -245,6 +246,7 @@ function makeControl(type, lines, index) {
   if (type === 'text') return formatControl(type, null, '"Text"', layout);
   if (type === 'button') return formatControl(type, nextId(lines, 'button'), '"Button"', layout);
   if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
+  if (type === 'checkbox') return formatControl(type, nextId(lines, 'checkbox'), '"Checkbox"', layout);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
@@ -253,6 +255,7 @@ function formatControl(type, id, textExpr, layout) {
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
   else if (type === 'input') core = `input ${id}`;
+  else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
   if (!layout) return core;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
