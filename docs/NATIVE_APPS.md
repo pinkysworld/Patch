@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.25** · Change IR **0.10**
+Status: **0.2.0-beta.26** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.25 adds the `formalCalls` assurance artifact and does **not** change package formats or the Window runtime contract.
+Patch keeps Console and Window build paths explicit. Direct Wasm is a Console backend; Window Web/Desktop packages use the Window runtime/player path. Beta.26 strengthens research certificates and does **not** change package formats, Change IR or the Window runtime contract.
 
 ## Build matrix
 
@@ -47,13 +47,17 @@ Console Web Apps embed direct Wasm. A **Standalone Window Web App** embeds the v
 
 ## Formal assurance is separate from packaging
 
-`patch runtime-certify` covers the beta.23 guard-aware direct-runtime fragment. Beta.25 adds a separate static/interprocedural command:
+`patch runtime-certify` covers the beta.23 guard-aware direct-runtime fragment. `patch call-certify` covers beta.25 abstract finite acyclic recipe composition.
+
+Beta.26 adds the reproducible concrete-call research artifact:
 
 ```bash
-patch call-certify examples/formal-calls.patch --out Calls.patchcert.lean
+npm run concrete-call-certify:example
 ```
 
-This certificate checks a finite acyclic recipe environment through `PatchCalls.lean`: call resolution, strict rank decrease, safe-integer argument-interval fit and callee-to-caller semantic-signature containment. It does not change the executable package and does not yet prove concrete call argument substitution.
+The generated certificate is checked through `PatchCallSubstitution.lean`, `PatchCallRefinement.lean` and `PatchCallEffect.lean`. It re-evaluates supported inter-recipe variable arguments, reconstructs exact positional callee bindings and, for a conservative direct quantitative leaf Change, proves the exact concrete effect refines an effect represented by the caller semantic signature.
+
+This assurance does **not** alter the executable package and does not yet prove arbitrary call substitution or production-Wasm call equivalence.
 
 ## Portable C99
 

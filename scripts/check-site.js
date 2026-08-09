@@ -12,7 +12,8 @@ const required = [
   '_site/src/interpreter.js','_site/src/parser.js','_site/src/expression.js','_site/src/change.js','_site/src/change-analysis.js','_site/src/range-analysis.js',
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
-  '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js'
+  '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js',
+  '_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js'
 ];
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
@@ -21,9 +22,10 @@ for (const needle of ['./style.css','./manifest.webmanifest','./native-build.js'
 for (const id of ['code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus']) requireText('index', html, `id="${id}"`);
 for (const phrase of [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10', 'Change Contract', 'Standalone Window Web App',
-  'Formal recipe calls', 'formalCalls', 'PatchCalls.lean', 'checkRecipeEnv', 'callSignatureSoundness', 'Concrete call substitution',
-  'Semantic input events', 'event-local', 'Window preflight', 'GuardTree', 'RuntimePath', 'Windows App', 'macOS App', 'Linux App',
-  'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
+  'Concrete recipe calls', 'PatchCallSubstitution.lean', 'PatchCallRefinement.lean', 'PatchCallEffect.lean',
+  'GeneratedConcreteCallCertificate.lean', 'checkedConcreteBoundEffectRefinesCallerSignature', 'variable pass-through',
+  'production JavaScript/direct-Wasm call equivalence', 'Semantic input events', 'event-local', 'Window preflight',
+  'Windows App', 'macOS App', 'Linux App', 'FreeBSD Console', 'portable C99', 'FreeBSD 15.1', 'Project Type', 'Roadmap'
 ]) requireText('public site', html, phrase);
 for (const option of ['value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"','value="wasm-direct"','value="wasm-bootstrap"']) requireText('build selector', html, option);
 
@@ -41,17 +43,14 @@ for (const mod of ["'./formal-bridge.js'","'./formal-source.js'","'./formal-call
 requireText('compiler', compiler, "PATCH_IR_VERSION = '0.10'");
 for (const phrase of ['formalCalls','sourceValidation','guardValidation']) requireText('compiler', compiler, phrase);
 
-const sourceValidation = read('_site/src/source-validation.js');
-for (const phrase of ['validateFormalSourceExtraction','buildRawSourceWitness','raw-source-independent-parser','does not import parser.js']) requireText('source validation', sourceValidation, phrase);
-const guardValidation = read('_site/src/guard-validation.js');
-for (const phrase of ['validateFormalGuardExtraction','buildRawGuardWitness']) requireText('guard validation', guardValidation, phrase);
-
 for (const [file, phrases] of [
   ['_site/src/formal-bridge.js',['patch-formal-bridge','signatureMatchesProduction','buildFormalBridge']],
   ['_site/src/formal-source.js',['patch-formal-source','buildFormalSource','guardTree','rangeClaims']],
   ['_site/src/formal-range.js',['buildFormalRangeExpression','inferFormalRange','division']],
   ['_site/src/formal-guard.js',['buildFormalGuardExpression']],
   ['_site/src/formal-calls.js',['buildFormalCalls','patch-formal-calls','rank-decreasing','recursive/cyclic call graph']],
+  ['_site/src/concrete-call-witness.js',['buildConcreteCallWitnesses','patch-concrete-call-witness','expectedCalleeEnv','abstractArgRanges']],
+  ['_site/src/concrete-call-certificate.js',['generateConcreteCallCertificate','PATCH_CONCRETE_CALL_CERTIFICATE_VERSION','checkedConcreteBoundEffectRefinesCallerSignature','certifiedEffects']],
   ['_site/src/wasm-direct.js',['compileToDirectWasm']],
   ['_site/src/c99.js',['compileToC99','PATCH_C99_VERSION','portable C99']],
   ['_site/src/webapp.js',['buildStandaloneWebApp','buildStandaloneWindowWebApp','WASM_BASE64']],
@@ -59,6 +58,11 @@ for (const [file, phrases] of [
   ['_site/src/window-build.js',['countWindowInstructions','validateWindowBuild','validateWindowRuntimeSupport',"code === 'WINDOW'","'changed' on inputs",'Control ids must be unique']],
   ['_site/src/window-events.js',['triggerWindowEvent','event-local value','PATCH_WINDOW_EVENTS_VERSION']]
 ]) { const content=read(file); for (const phrase of phrases) requireText(file,content,phrase); }
+
+const sourceValidation = read('_site/src/source-validation.js');
+for (const phrase of ['validateFormalSourceExtraction','buildRawSourceWitness','raw-source-independent-parser','does not import parser.js']) requireText('source validation', sourceValidation, phrase);
+const guardValidation = read('_site/src/guard-validation.js');
+for (const phrase of ['validateFormalGuardExtraction','buildRawGuardWitness']) requireText('guard validation', guardValidation, phrase);
 
 const sw = read('_site/sw.js');
 if (sw.includes("'../src/")) throw new Error('Generated service worker still points outside the deployed site.');

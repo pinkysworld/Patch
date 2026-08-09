@@ -1,6 +1,6 @@
 # Novelty Boundary
 
-Patch is **not** novel merely because it has patches, first-class changes, undo/history, effects, capabilities, range analysis, provenance, source calculi, guard semantics, refinement relations, execution witnesses, translation validation, proof-carrying evidence, verified checkers, interprocedural effect summaries, ranked/well-founded call graphs, WebAssembly/C generation or GUI packaging. All have substantial prior art.
+Patch is **not** novel merely because it has patches, first-class changes, undo/history, effects, capabilities, range analysis, provenance, source calculi, procedure-call substitution, guard semantics, refinement relations, execution witnesses, translation validation, proof-carrying evidence, verified checkers, interprocedural effect summaries, ranked/well-founded call graphs, WebAssembly/C generation or GUI packaging. All have substantial prior art.
 
 The research hypothesis remains centered on two linked ideas:
 
@@ -8,42 +8,40 @@ The research hypothesis remains centered on two linked ideas:
 
 > **Semantic Change Contracts:** Patch derives operation- and magnitude-aware summaries and authority policies from that same mandatory mutation substrate.
 
-**Beta.25 strengthens interprocedural assurance for an explicit acyclic recipe fragment; it is supporting evidence for the primary design claim, not a new novelty headline.**
+**Beta.26 strengthens concrete interprocedural assurance for an explicit safe-integer subset; it is supporting evidence for the primary design claim, not a new novelty headline.**
 
 ## Prior-art discipline
 
-Patch must continue to compare against Plaid/first-class state change, Worlds/scoped state, classical/graded/quantitative/refinement effect systems, capability/permission/typestate work, abstract interpretation, interprocedural effect analysis, call-graph analyses, well-founded/ranked termination restrictions, translation validation (including Necula), Proof-Carrying Code/certifying compilation, verified compiler/refinement/simulation work, operational semantics for control flow and procedure calls, ChEOPS/COPE/Edit Transactions, event sourcing, edit lenses, patch theory, reversible languages, CRDTs and provenance/Whyline-style debugging.
+Patch must continue to compare against Plaid/first-class state change, Worlds/scoped state, classical/graded/quantitative/refinement effect systems, capability/permission/typestate work, abstract interpretation, interprocedural effect analysis, procedure-call operational semantics/substitution, call-graph analyses, well-founded/ranked restrictions, translation validation (including Necula), Proof-Carrying Code/certifying compilation, verified compiler/refinement/simulation work, ChEOPS/COPE/Edit Transactions, event sourcing, edit lenses, patch theory, reversible languages, CRDTs and provenance/Whyline-style debugging.
 
-Do not claim invention of effect inference, quantitative effects, effect+capability combinations, interprocedural effect composition, call-graph ranking, runtime path witnesses, guard-aware operational semantics, translation validation, refinement checking or proof-carrying evidence.
+Do not claim invention of effect inference, quantitative effects, effect+capability combinations, concrete parameter binding, interprocedural effect composition, effect refinement, call-graph ranking, runtime path witnesses, translation validation, refinement checking or proof-carrying evidence.
 
 ## Machine-checked status
 
-Current formal results include:
+Current formal results include, among others:
 
 ```text
 State-Change Factorization
 Mutation Transparency
 Change Signature Soundness
-formal runtime-signature-policy containment
 verified semantic policy checker
-EvidenceStmt / SourceStmt correspondence
 integer rangeAnalysisSound
 EffectRefines / TraceRefines soundness
-RuntimePath -> Executes soundness
-checkSourceRuntimeEvidence_sound
-allowsRefinedEffect
-traceRefinesPreservesPolicy
 checkedConcreteRuntimeCannotEscape
-GuardShape / checkGuardShape_sound
-GuardPathValid / checkGuardPath_sound
-checkGuardedSourceRuntimeEvidence_sound
+GuardShape / GuardPathValid
 checkedGuardedConcreteRuntimeCannotEscape
 ArgsFit / argsFitBool_sound
 signatureCoversBool_sound
-BodyComposes / checkCallStmt_sound
 checkRecipeEnv_sound
 callSignatureSoundness
 checkedRecipeExecutionCannotEscape
+concreteCallBinding_sound
+valueFitsWithin
+concreteArgsFitThroughAbstract
+concreteThroughAbstractBool_sound
+evalBoundQuantitativeEffectEqBool_sound
+evalBoundQuantitativeEffect_sound
+checkedConcreteBoundEffectRefinesCallerSignature
 ```
 
 For the effect-only structured core:
@@ -52,50 +50,48 @@ For the effect-only structured core:
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-For the beta.25 call-aware core, schematically:
+For beta.25 abstract calls:
 
 ```text
 checked finite recipe environment
 + modeled rank-decreasing call execution
-+ caller compositional obligations
 ------------------------------------------------
-runtime effect trace ⊆ caller semantic signature
+effect trace ⊆ caller semantic signature
+```
+
+For beta.26's supported direct leaf case:
+
+```text
+exact caller argument evaluation
++ exact positional callee binding
++ concrete value through abstract/declaration intervals
++ exact bound quantitative effect
++ beta.25 callee → caller signature containment
+------------------------------------------------
+concrete effect refines an effect in caller semantic signature
 ```
 
 ## Beta.23 guard-aware assurance
 
-Beta.23 adds a parallel GuardTree to the effect-only source core. For the explicit safe-integer recipe-parameter fragment, proof-free `branchThen`/`branchElse` witnesses must agree with normalized guard evaluation in Lean before concrete runtime effects are composed with Change Capabilities.
+For the explicit safe-integer recipe-parameter guard fragment, proof-free branch witnesses must agree with normalized guard evaluation in Lean before concrete direct-runtime effects are composed with Change Capabilities. This remains restricted correspondence, not end-to-end compiler verification.
 
-This is stronger than structural path correspondence, but it is still **not end-to-end compiler verification**. JavaScript parsing/lowering, the Wasm engine, runtime observation, semantic reconstruction and correct binding of proof-free invocation values to machine parameters remain implementation/trust boundaries.
+## Beta.25 abstract recipe-call assurance
 
-## Beta.25 recipe-call assurance
+Beta.25 introduced a separate finite call-aware effect layer. `PatchCalls.lean` independently checks call resolution, strict rank decrease, argument-interval fit, direct-effect membership and callee-to-caller semantic-signature containment. `callSignatureSoundness` proves modeled transitive call effects remain within the caller signature.
 
-Beta.25 adds a separate call-aware effect layer rather than pretending the older SourceStmt/runtime theorem already models procedure calls.
+This layer is abstract: call arguments are intervals, not exact values.
 
-Production source is conservatively mapped to a finite `formalCalls` environment containing:
+## Beta.26 concrete recipe-call assurance
 
-```text
-recipe name
-safe-integer parameter intervals
-rank
-semantic Change Signature
-CallStmt body
-```
+Beta.26 closes part of that explicit gap without changing the language syntax or Change IR.
 
-For each call the generated proof-free artifact records the callee name and statically established argument intervals. `PatchCalls.lean` independently checks:
+For supported inter-recipe variable-pass-through calls, a proof-free production witness records caller bindings, a formal `RangeExpr`, exact argument values, expected callee bindings and beta.25 abstract intervals. Lean independently re-evaluates the argument and checks exact positional parameter binding through `concreteCallBinding_sound`.
 
-```text
-callee exists
-callee.rank < caller.rank
-actual argument intervals fit declared parameter intervals
-callee semantic signature ⊆ caller semantic signature
-```
+`PatchCallRefinement.lean` connects the exact value to beta.25's abstract interval and the declared callee interval. Thus the concrete value is not accepted merely because JavaScript says it fits.
 
-Direct emitted semantic effects must also occur in the caller signature. The finite environment passes only if every recipe satisfies these obligations.
+For a narrower direct quantitative leaf Change, `PatchCallEffect.lean` evaluates the amount expression under the exact bound callee environment, constructs a singleton concrete effect such as `increase [4,4]`, proves `EffectRefines` against the formal callee effect such as `increase [0,5]`, and composes that with beta.25's callee-to-caller signature containment.
 
-`callSignatureSoundness` then proves that effects produced by the modeled finite rank-decreasing call execution remain in the caller signature. A production-generated `GeneratedCallCertificate.lean` is accepted by `native_decide` only when `checkRecipeEnv callEnv = true`.
-
-This is useful assurance composition, but it is **not concrete parameter substitution correctness**. Beta.25 does not prove that a particular production caller expression evaluates to an exact integer, that this exact value is bound to the callee parameter, or that the production runtime's callee execution matches a concrete Lean value-environment execution. Those are explicit next-step gaps.
+The generated `GeneratedConcreteCallCertificate.lean` checks the running production example under pinned Lean. This is stronger than beta.25's interval-only composition, but it still does **not** establish arbitrary substitution semantics, arbitrary callee-body execution or production-Wasm call equivalence.
 
 ## Primary vs supporting contribution
 
@@ -105,24 +101,22 @@ Primary candidate claim:
 
 Supporting assurance/evaluation mechanisms, not novelty headlines:
 
-- independent SourceStmt/range translation validation;
-- independent GuardTree/control-flow translation validation;
-- production/formal bridge;
-- verified policy checker;
-- machine-checked range fragment;
-- RuntimePath/GuardPath checking;
-- concrete runtime capability containment;
+- independent SourceStmt/range and GuardTree translation validation;
+- verified semantic policy checker and machine-checked range fragment;
+- RuntimePath/GuardPath checking and concrete runtime capability containment;
 - finite rank-decreasing recipe-call signature composition;
-- production-generated Lean call certificates;
+- exact safe-integer variable call binding for an explicit subset;
+- direct bound quantitative effect refinement into the caller signature;
+- production-generated Lean certificates;
 - independent runtime transition/effect validation;
 - C99/FreeBSD and Window platform artifacts;
 - provenance/undo/preview/replay tooling.
 
-## Candidate beta.25 paper claim
+## Candidate beta.26 paper claim
 
 A defensible working claim is:
 
-> We present Patch, an experimental language in which post-creation persistent mutation is factored through structured semantic Changes and operation-/magnitude-aware Semantic Change Contracts are derived from that mandatory mutation substrate. For mechanized fragments we prove Change Signature Soundness, semantic policy containment, source/evidence correspondence and integer range-analysis soundness. Conservative source/control-flow artifacts are checked by translation-validation paths, and supported protected direct-WebAssembly invocations receive guard-aware runtime/capability correspondence. Separately, for a finite acyclic recipe fragment, a production-generated proof-free recipe environment records safe-integer argument intervals and semantic signatures; Lean checks rank decrease, argument-interval fit, direct-effect membership and callee-to-caller signature containment, and proves modeled transitive call effects remain within the caller signature. These results do not constitute full compiler verification or concrete parameter-substitution correctness.
+> We present Patch, an experimental language in which post-creation persistent mutation is factored through structured semantic Changes and operation-/magnitude-aware Semantic Change Contracts are derived from that mandatory mutation substrate. For mechanized fragments we prove Change Signature Soundness, semantic policy containment, source/evidence correspondence and integer range-analysis soundness. Conservative source/control-flow and runtime artifacts are checked through explicit validation/certificate boundaries. For a finite acyclic recipe fragment, Lean checks abstract argument-interval and semantic-signature composition. For a narrower safe-integer inter-recipe variable-passing subset, generated proof-free evidence is re-evaluated by Lean to establish exact positional parameter binding; for direct quantitative leaf Changes, the resulting exact effect is proved to refine an effect admitted by the caller semantic signature. These results do not constitute full compiler verification, arbitrary parameter-substitution correctness or production-Wasm call equivalence.
 
 This is a contribution hypothesis, not a firstness assertion.
 
@@ -131,9 +125,9 @@ This is a contribution hypothesis, not a firstness assertion.
 Highest-value next work:
 
 1. retain State-Change Factorization + quantitative semantic authority as the primary claim;
-2. add **concrete recipe argument evaluation, parameter binding and substitution semantics**, then connect them to the beta.25 abstract call theorem;
-3. build semantic-security/plugin cases where bounded semantic authority matters;
-4. measure analysis, translation-validation, certificate generation/checking and backend overhead;
-5. conduct systematic related-work and reproducibility passes.
+2. expand concrete call certification to useful arithmetic `RangeExpr` arguments and structured callee bodies;
+3. connect concrete call certificates to observed direct-Wasm call execution;
+4. build semantic-security/plugin cases where bounded semantic authority matters;
+5. measure analysis/validation/certificate/checker/backend overhead and complete systematic related-work/reproducibility passes.
 
-Patch remains plausible as an OOPSLA/ECOOP-style direction, but is not yet submission-ready. The next gains should come from concrete call correspondence and evaluation rather than unrelated feature accumulation.
+Patch remains plausible as an OOPSLA/ECOOP-style direction, but is not yet submission-ready. The next gains should come from broader concrete call/runtime correspondence and evaluation rather than unrelated feature accumulation.
