@@ -76,7 +76,7 @@ mustInclude('docs/FORMAL_MODEL.md', files.formal, [
 ]);
 
 mustInclude('docs/NOVELTY.md', files.novelty, [
-  'Beta.26', 'parameter substitution', 'effect refinement', 'checkedConcreteBoundEffectRefinesCallerSignature',
+  'Beta.26', 'procedure-call substitution', 'effect refinement', 'checkedConcreteBoundEffectRefinesCallerSignature',
   'not a new novelty headline', 'production-Wasm call equivalence'
 ]);
 
