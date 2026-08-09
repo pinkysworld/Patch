@@ -55,7 +55,7 @@ export function applySemanticOperations(value,operations) {
     else if(op.op==='removeAt'){next=[...old];next.splice(op.index,1);}
     else if(op.op==='insertAt'){next=[...old];next.splice(op.index,0,clone(op.value));}
     else if(op.op==='clear'){
-      if(Array.isArray(old))next=[]; else if(typeof old==='string')next=''; else if(typeof old==='number')next=0; else if(old&&typeof old==='object')next={}; else next=null;
+      if(Array.isArray(old))next=[]; else if(typeof old==='string')next=''; else if(typeof old==='number')next=0; else if(typeof old==='boolean')next=false; else if(old&&typeof old==='object')next={}; else next=null;
     } else throw new Error(`Unknown semantic operation ${op.op}`);
     if(hasField) current={...current,[op.field]:next}; else current=next;
   }
