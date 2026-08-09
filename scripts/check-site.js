@@ -44,7 +44,7 @@ requireAll('playground imports', playground, [
 requireAll('playground Designer/runtime contract', playground, [
   'triggerWindowEvent','listDesignerControls','updateDesignerControl','removeDesignerControl','designerInspectorApply',
   "control.type === 'checkbox'", "input.type = 'checkbox'", 'value: input.checked',
-  "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
+  'model.visible === false', "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
 ]);
 
 const inspectorCss = read('_site/designer-inspector.css');
@@ -55,7 +55,7 @@ rejectOutsideSiteImport('forms designer', formsDesigner);
 requireAll('forms designer contract', formsDesigner, [
   './src/designer.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl',
   'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']",
-  'patchFormSelect','patchAddForm','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
+  'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
 ]);
 const formsCss = read('_site/forms-designer.css');
 requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
@@ -64,17 +64,26 @@ requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION
 const webapp = read('_site/src/webapp.js');
 requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
 const windowWebapp = read('_site/src/window-webapp.js');
-requireAll('Window Web checkbox runtime', windowWebapp, [
-  "PATCH_WINDOW_WEB_VERSION = '0.4'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked'
+requireAll('Window Web Form lifecycle runtime', windowWebapp, [
+  "PATCH_WINDOW_WEB_VERSION = '0.5'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked',
+  "case 'openForm'", "case 'closeForm'", 'formVisibility', 'shell.hidden=model.visible===false'
 ]);
 const windowEvents = read('_site/src/window-events.js');
 requireAll('typed Window changed events', windowEvents, [
   "PATCH_WINDOW_EVENTS_VERSION = '0.2'", "controlType === 'checkbox'", 'Boolean event-local value'
 ]);
 
+const designer = read('_site/src/designer.js');
+requireAll('named Form Designer source contract', designer, [
+  'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close'
+]);
+const windowBuild = read('_site/src/window-build.js');
+requireAll('Window Form lifecycle build validation', windowBuild, [
+  'openForm','closeForm','namedForms','formActions', "Form name '${node.id}' is declared more than once"
+]);
 const compiledWindow = read('_site/src/window-compiled.js');
 requireAll('compiled Window artifact contract', compiledWindow, [
-  "PATCH_COMPILED_WINDOW_VERSION = '0.1'", "PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program'",
+  "PATCH_COMPILED_WINDOW_VERSION = '0.2'", "PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program'",
   "PATCH_COMPILED_WINDOW_IR_VERSION = '0.10'", 'buildCompiledWindowArtifact','validateCompiledWindowArtifact','runCompiledWindow','formLayout'
 ]);
 
@@ -98,7 +107,7 @@ requireAll('prebuilt native packager', prebuilt, [
 ]);
 const prebuiltWindow = read('_site/src/prebuilt-window.js');
 requireAll('compiled prebuilt Window packager', prebuiltWindow, [
-  "PATCH_PREBUILT_WINDOW_PAYLOAD_VERSION = '0.3'", 'buildPrebuiltCompiledWindowPackage',
+  "PATCH_PREBUILT_WINDOW_PAYLOAD_VERSION = '0.4'", 'buildPrebuiltCompiledWindowPackage',
   "execution: 'compiled-window-program'", 'validateCompiledWindowArtifact'
 ]);
 
@@ -110,15 +119,15 @@ requireAll('guarded concrete-call body producer', concreteBody, [
   "PATCH_CONCRETE_CALL_BODY_VERSION = '0.2'", 'buildFormalGuardExpression', "kind: 'branch'", 'evalGuardExact'
 ]);
 const compiler = read('_site/src/compiler.js');
-requireAll('compiler assurance modules', compiler, [
+requireAll('compiler assurance and UI lifecycle modules', compiler, [
   "'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'",
-  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation'
+  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle'
 ]);
 
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-compiled3`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms4`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 
