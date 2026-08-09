@@ -11,26 +11,26 @@ import {
 test('designer adds controls inside the first window before event handlers', () => {
   const source = `create number count = 0\n\nwindow "Counter":\n  text "Count"\n\nwhen add clicked:\n  change count:\n    add 1\n`;
   const next = addDesignerControl(source, 'button');
-  assert.match(next, /window "Counter":\n  text "Count"\n\n  button "Button" as button_1\nwhen add clicked:/);
+  assert.match(next, /window "Counter":\n  text "Count"\n\n  button "Button" as button_1 at 24, 72 size 120, 36\nwhen add clicked:/);
 });
 
 test('designer can create a window when none exists', () => {
   const next = addDesignerControl('create number count = 0\n', 'input');
-  assert.match(next, /window "My App":\n  input input_1/);
+  assert.match(next, /window "My App" size 640, 420:\n  input input_1 at 24, 24 size 220, 36/);
 });
 
 test('designer generates unique control ids', () => {
   let source = `window "App":\n  button "One" as button_1\n`;
   source = addDesignerControl(source, 'button');
-  assert.match(source, /button "Button" as button_2/);
+  assert.match(source, /button "Button" as button_2 at 24, 72 size 120, 36/);
 });
 
 test('designer lists source-backed controls with stable window/control coordinates', () => {
   const source = `window "One":\n  text "Hello"\n  button "Save" as save_button\n\nwindow "Two":\n  input name_input\n`;
   assert.deepEqual(listDesignerControls(source), [
-    { windowIndex: 0, controlIndex: 0, line: 2, type: 'text', id: null, textExpr: '"Hello"' },
-    { windowIndex: 0, controlIndex: 1, line: 3, type: 'button', id: 'save_button', textExpr: '"Save"' },
-    { windowIndex: 1, controlIndex: 0, line: 6, type: 'input', id: 'name_input', textExpr: null }
+    { windowIndex: 0, controlIndex: 0, line: 2, type: 'text', id: null, textExpr: '"Hello"', x: null, y: null, width: null, height: null },
+    { windowIndex: 0, controlIndex: 1, line: 3, type: 'button', id: 'save_button', textExpr: '"Save"', x: null, y: null, width: null, height: null },
+    { windowIndex: 1, controlIndex: 0, line: 6, type: 'input', id: 'name_input', textExpr: null, x: null, y: null, width: null, height: null }
   ]);
 });
 
