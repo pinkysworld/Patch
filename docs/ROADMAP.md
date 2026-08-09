@@ -87,9 +87,14 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 ### Studio / Designer
 - [x] semantic input `changed` without hidden persistent assignment
 - [x] source-backed control selection/property inspector
-- [ ] drag positioning/resizing
-- [ ] richer controls/event editing
+- [x] source-backed Form dimensions and multiple-Form selection/properties
+- [x] source-backed control `at X, Y size W, H` geometry
+- [x] drag positioning and resize handle rewrite `main.patch`
+- [x] Standalone Web and Windows/macOS/Linux Window runtimes preserve Form geometry
+- [ ] richer controls/event editing: checkbox, list, combo, tabs, menu, dialogs, table/grid
+- [ ] project tree and separate source files/forms
 - [ ] project import/export
+- [ ] alignment guides, multi-select, anchors/docking and keyboard layout editing
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
@@ -138,3 +143,4 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 7. Benchmark infrastructure is not a performance claim until controlled results exist.
 8. Security ablations and application cases must not be presented as claims about unnamed or named prior systems.
 9. Direct-Wasm/C99 support remains narrower than the full language.
+10. Visual Form metadata remains source-backed UI structure and does not redefine semantic Change IR.
