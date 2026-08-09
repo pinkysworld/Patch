@@ -250,6 +250,8 @@ function applyLayouts(container, designer) {
   const windows = listDesignerWindows(code.value);
   const controls = listDesignerControls(code.value);
   const shells = [...container.querySelectorAll('.patch-window')];
+  let selectedForm = null;
+
   shells.forEach((shell, windowIndex) => {
     const model = windows.find(item => item.windowIndex === windowIndex);
     const body = shell.querySelector('.patch-window-body');
@@ -259,16 +261,25 @@ function applyLayouts(container, designer) {
       shell.style.maxWidth = '100%';
     }
     if (model.height) body.style.minHeight = `${model.height}px`;
+
     const windowControls = controls.filter(item => item.windowIndex === windowIndex);
-    if (!windowControls.some(item => item.x !== null || item.y !== null)) return;
-    body.classList.add('patch-form-layout');
     const elements = [...body.children].filter(el => !el.classList.contains('patch-form-resize-handle'));
+    elements.forEach((el, controlIndex) => {
+      el.dataset.windowIndex = String(windowIndex);
+      el.dataset.controlIndex = String(controlIndex);
+    });
+
+    const sourceHasLayout = Boolean(
+      model.width || model.height ||
+      windowControls.some(item => item.x !== null || item.y !== null || item.width !== null || item.height !== null)
+    );
+    if (!designer && !sourceHasLayout) return;
+
+    body.classList.add('patch-form-layout');
     windowControls.forEach((control, controlIndex) => {
       const el = elements[controlIndex];
       if (!el) return;
       const layout = effectiveLayout(control, controlIndex);
-      el.dataset.windowIndex = String(windowIndex);
-      el.dataset.controlIndex = String(controlIndex);
       el.classList.add('patch-form-positioned');
       Object.assign(el.style, {
         position: 'absolute',
@@ -280,20 +291,27 @@ function applyLayouts(container, designer) {
         margin: '0'
       });
       if (designer && el.classList.contains('designer-selected')) {
-        activeForm = windowIndex;
+        selectedForm = windowIndex;
         addResizeHandle(body, el, { windowIndex, controlIndex });
       }
     });
   });
+
+  if (designer && selectedForm !== null && selectedForm !== activeForm) {
+    activeForm = selectedForm;
+    syncFormTools();
+  }
 }
 
 function addResizeHandle(body, target, selector) {
-  body.querySelectorAll('.patch-form-resize-handle').forEach(handle => handle.remove());
-  const handle = document.createElement('span');
-  handle.className = 'patch-form-resize-handle';
+  let handle = body.querySelector('.patch-form-resize-handle');
+  if (!handle) {
+    handle = document.createElement('span');
+    handle.className = 'patch-form-resize-handle';
+    body.appendChild(handle);
+  }
   handle.dataset.windowIndex = String(selector.windowIndex);
   handle.dataset.controlIndex = String(selector.controlIndex);
-  body.appendChild(handle);
   positionResizeHandle(target, selector);
 }
 
