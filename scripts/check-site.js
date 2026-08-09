@@ -13,8 +13,8 @@ const required = [
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
   '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js','_site/src/form-layout.js',
-  '_site/src/prebuilt-native.js','_site/src/local-native-kit.js','_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js',
-  '_site/src/concrete-call-body.js','_site/src/concrete-call-body-certificate.js'
+  '_site/src/window-compiled.js','_site/src/prebuilt-native.js','_site/src/prebuilt-window.js','_site/src/local-native-kit.js',
+  '_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js','_site/src/concrete-call-body.js','_site/src/concrete-call-body-certificate.js'
 ];
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
@@ -72,14 +72,22 @@ requireAll('typed Window changed events', windowEvents, [
   "PATCH_WINDOW_EVENTS_VERSION = '0.2'", "controlType === 'checkbox'", 'Boolean event-local value'
 ]);
 
+const compiledWindow = read('_site/src/window-compiled.js');
+requireAll('compiled Window artifact contract', compiledWindow, [
+  "PATCH_COMPILED_WINDOW_VERSION = '0.1'", "PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program'",
+  'buildCompiledWindowArtifact','validateCompiledWindowArtifact','runCompiledWindow','formLayout'
+]);
+
 const nativeBuild = read('_site/native-build.js');
 rejectOutsideSiteImport('native builder', nativeBuild);
 requireAll('native builder imports', nativeBuild, [
-  './src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','./src/prebuilt-native.js'
+  './src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','./src/window-compiled.js',
+  './src/prebuilt-native.js','./src/prebuilt-window.js'
 ]);
 requireAll('native builder modes', nativeBuild, [
   'native-windows','native-macos','native-linux','native-freebsd','validateWindowRuntimeSupport','compileToC99',
-  'buildPrebuiltNativePackage','prebuiltNativeTemplateUrl','Ready app download (no token)','workflow_dispatch','source_b64'
+  'buildCompiledWindowArtifact','buildPrebuiltCompiledWindowPackage','prebuiltNativeTemplateUrl',
+  'Ready app download (no token)','compiled-window-program','workflow_dispatch','source_b64'
 ]);
 
 const prebuilt = read('_site/src/prebuilt-native.js');
@@ -87,6 +95,11 @@ requireAll('prebuilt native packager', prebuilt, [
   'PATCH_PREBUILT_NATIVE_VERSION','PATCH_SEALED_CONSOLE_VERSION','buildPrebuiltNativePackage','sealConsoleRuntimeBinary',
   'decodeSealedConsolePayload','appendStoredFilesToZip','patch-windows-console-runtime.bin','patch-macos-console-runtime.bin',
   'patch-linux-console-runtime.bin','patch-windows-window-runtime.zip','patch-macos-window-runtime.zip','patch-linux-window-runtime.zip'
+]);
+const prebuiltWindow = read('_site/src/prebuilt-window.js');
+requireAll('compiled prebuilt Window packager', prebuiltWindow, [
+  "PATCH_PREBUILT_WINDOW_PAYLOAD_VERSION = '0.3'", 'buildPrebuiltCompiledWindowPackage',
+  "execution: 'compiled-window-program'", 'validateCompiledWindowArtifact'
 ]);
 
 // Beta.32 remains a research/CI certificate layer. Ordinary Studio deploys the
@@ -105,8 +118,8 @@ requireAll('compiler assurance modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-controls2`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/compiler.js'", "'./src/formal-calls.js'",
-  "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
+  `patch-studio-0.2-beta.${beta}-compiled3`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 
 const manifest = JSON.parse(read('_site/manifest.webmanifest'));
