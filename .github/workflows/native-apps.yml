@@ -38,6 +38,7 @@ on:
         required: false
         default: manual
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - scripts/build-native-sea.js
       - scripts/build-native-window.js
@@ -65,12 +66,16 @@ on:
       - web/playground.js
       - .github/workflows/native-apps.yml
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   smoke-native:
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name != 'workflow_dispatch' && github.event.pull_request.draft == false
     name: ${{ matrix.os }} console smoke
     strategy:
       fail-fast: false
@@ -106,7 +111,7 @@ jobs:
         run: "& ./dist/$env:PATCH_APP_NAME.exe"
 
   smoke-window:
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name != 'workflow_dispatch' && github.event.pull_request.draft == false
     name: ${{ matrix.os }} window smoke
     strategy:
       fail-fast: false
