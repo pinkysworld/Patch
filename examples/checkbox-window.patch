@@ -1,0 +1,10 @@
+create boolean subscribed = false
+
+window "Preferences" size 520, 300:
+  text "Notification settings" at 24, 24 size 260, 30
+  checkbox "Receive updates" as subscribed at 24, 72 size 220, 36
+  text "Subscribed: {subscribed}" at 24, 124 size 260, 30
+
+when subscribed changed:
+  change subscribed:
+    set = value
