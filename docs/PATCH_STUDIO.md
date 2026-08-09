@@ -6,6 +6,8 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 Patch Studio provides source editing/local autosave, Console and Window Run, the first Designer toolbox, Change Contract/IR views, portable `.patchapp`, bootstrap/direct Wasm where compatible, Console and **Standalone Window Web App** builds, Windows/macOS/Linux Console and Window builds, and **FreeBSD Console builds through the portable C99 backend**.
 
+For Windows, macOS and Linux, the default desktop workflow is now **Ready app download (no token)**. Patch Studio performs the relevant browser preflight, compiles the Console subset to direct Wasm when needed, loads a prebuilt generic runtime for the selected OS and inserts the current project payload into that runtime package in the browser. The downloaded ZIP is ready to unzip and run. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
+
 Change IR **0.10** is unchanged. Beta.28 extends research certificate coverage rather than beginner-facing syntax, Studio runtime semantics or the IR schema.
 
 Research commands remain outside the ordinary beginner workflow:
@@ -54,16 +56,41 @@ The shared `src/window-build.js` preflight validates normalized Window IR before
 ## Build matrix
 
 ```text
-Windows App (.exe)   Console or Window
-macOS App (.app)     Console or Window
-Linux App            Console or Window
-FreeBSD Console      Console only
-Standalone Web App   Console or Window
+Windows App (.exe)   Console or Window   ready download in Studio
+macOS App (.app)     Console or Window   ready download in Studio
+Linux App            Console or Window   ready download in Studio
+FreeBSD Console      Console only        local/cloud build path
+Standalone Web App   Console or Window   browser-local build
 ```
 
 Console Web Apps use direct Patch Wasm. Window Web Apps use the generated browser Window runtime. Direct WebAssembly remains Console-only.
 
-For cloud desktop builds, Studio performs browser preflight, sends the current source to GitHub Actions, and the target-side packager repeats validation. The current workflow requires a fine-grained GitHub token with Actions read/write permission; Studio does not save it.
+### Ready app download
+
+The default Windows/macOS/Linux path does not start a per-project remote build:
+
+```text
+current editor source
+    -> browser preflight
+    -> Console: direct Wasm payload
+       Window: validated Patch source payload
+    -> prebuilt OS runtime template
+    -> browser inserts payload into runtime ZIP
+    -> ready-to-run download
+```
+
+The prebuilt runtime templates are built and smoke-tested on Windows, macOS and Linux by `.github/workflows/runtime-templates.yml`, then published as stable project runtime assets and copied into the Patch Studio Pages deployment. `src/prebuilt-native.js` customizes the ZIP without decompressing or recompiling the runtime.
+
+This keeps user source out of GitHub Actions for the default path. The generic desktop runtime name is currently visible inside the downloaded package; the project name is carried in the payload and used by the running app. App signing/notarization and project-specific outer package naming remain later polish work.
+
+### Advanced build modes
+
+Studio still exposes two advanced alternatives:
+
+- **GitHub Actions cloud build**: builds a project-specific platform package and requires a fine-grained GitHub token with Actions read/write permission. Studio never saves the token.
+- **Local toolchain kit**: keeps source local but requires the relevant Node/Rust/C compiler toolchain.
+
+FreeBSD currently uses these advanced paths because a stable prebuilt FreeBSD runtime is not published yet.
 
 ## Research assurance layers
 
@@ -77,11 +104,11 @@ Branches/guard choices, nested calls, dynamic repeats, complete transitive call 
 
 ## iPhone and iPad
 
-Patch Studio can be installed from Safari with **Share → Add to Home Screen**. It can author/preview Window apps, build local Web/portable artifacts and dispatch supported desktop builds remotely.
+Patch Studio can be installed from Safari with **Share → Add to Home Screen**. It can author/preview Window apps and produce the same browser-generated ready-app ZIPs for Windows/macOS/Linux. The downloaded desktop package is of course run on its target desktop OS, not on iOS.
 
 ## PWA updates
 
-The beta.28 cache key is `patch-studio-0.2-beta.28`. Beta.28's structured certificate changes are Node/Lean research tooling, so browser compiler dependencies remain the same. The cache still includes `formal-calls.js`, source/guard compiler modules and `window-events.js` for consistent offline Studio compilation with Change IR 0.10.
+The beta.28 cache key begins with `patch-studio-0.2-beta.28`. The Studio cache includes the browser-side prebuilt native packager together with compiler, formal-call, guard-validation and Window-event modules. The large OS runtime ZIPs are fetched only when a user asks for a native build rather than being forced into the offline PWA cache.
 
 ## Source remains truth
 
@@ -94,4 +121,4 @@ window "My App":
 
 ## Next product work
 
-Next GUI work is richer Designer interaction: control selection/properties, event editing and positioning/resizing while keeping source as truth. Longer-term work includes native AppKit/Win32/portable Unix GUI lowering, signing/notarization and a build service that does not require a personal GitHub token.
+Next GUI work is richer Designer interaction: control selection/properties, event editing and positioning/resizing while keeping source as truth. Desktop packaging work should focus on project-specific outer package naming, signing/notarization and eventually native AppKit/Win32/portable Unix widget lowering. The normal Studio path no longer needs a personal GitHub token or a user-installed build toolchain.
