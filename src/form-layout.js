@@ -1,14 +1,24 @@
 export const PATCH_FORM_LAYOUT_VERSION = '0.1';
 
+const CONTROL_DEFAULTS = {
+  text: { width: 200, height: 30 },
+  button: { width: 120, height: 36 },
+  input: { width: 220, height: 36 }
+};
+
 export function buildFormLayoutManifest(ast) {
   return {
     format: 'patch-source-backed-form-layout',
     version: PATCH_FORM_LAYOUT_VERSION,
-    windows: (ast ?? []).filter(node => node.kind === 'window').map(node => ({
-      width: node.width ?? null,
-      height: node.height ?? null,
-      controls: (node.body ?? []).filter(child => child.kind === 'uiControl').map(child => child.layout ?? null)
-    }))
+    windows: (ast ?? []).filter(node => node.kind === 'window').map(node => {
+      const controls = (node.body ?? []).filter(child => child.kind === 'uiControl');
+      const positioned = node.width !== undefined || node.height !== undefined || controls.some(child => child.layout);
+      return {
+        width: node.width ?? null,
+        height: node.height ?? null,
+        controls: controls.map((child, index) => positioned ? effectiveControlLayout(child, index) : null)
+      };
+    })
   };
 }
 
@@ -42,10 +52,20 @@ export function applyFormLayout(root, manifest, options = {}) {
       el.style.position = 'absolute';
       el.style.left = `${layout.x}px`;
       el.style.top = `${layout.y}px`;
-      if (layout.width !== null) el.style.width = `${layout.width}px`;
-      if (layout.height !== null) el.style.height = `${layout.height}px`;
+      el.style.width = `${layout.width}px`;
+      el.style.height = `${layout.height}px`;
       el.style.maxWidth = 'none';
       el.style.margin = '0';
     });
   });
+}
+
+function effectiveControlLayout(control, index) {
+  const defaults = CONTROL_DEFAULTS[control.control] ?? { width: 120, height: 36 };
+  return {
+    x: control.layout?.x ?? 24,
+    y: control.layout?.y ?? (24 + index * 48),
+    width: control.layout?.width ?? defaults.width,
+    height: control.layout?.height ?? defaults.height
+  };
 }
