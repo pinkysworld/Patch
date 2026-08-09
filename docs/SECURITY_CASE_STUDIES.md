@@ -44,7 +44,7 @@ The evaluator loads `case-studies/security/cases.json`, evaluates each source fi
 | `wallet-direction-escalation` | semantic operation | reject | accept | same target, but increase is not authorized by a decrease capability |
 | `campaign-transitive-safe` | transitive helper | accept | accept | helper contributes an increase of 8 within outer capability |
 | `campaign-transitive-escalation` | transitive magnitude | reject | accept | helper contributes an increase of 50 beyond outer capability |
-| `dynamic-unbounded` | fail-closed proof obligation | reject | accept | target is permitted but Patch cannot prove the dynamic amount stays within 10 |
+| `dynamic-unbounded` | fail-closed proof obligation | reject | accept | `add` is authorized but Patch cannot prove the dynamic amount stays within 10 |
 | `target-escape` | target authority control | reject | reject | both models reject a write to an undeclared state path |
 
 The expected differential is therefore:
@@ -87,9 +87,16 @@ This demonstrates that the evaluation is not limited to direct syntactic mutatio
 
 ## Case 4: fail closed on unknown magnitude
 
-An unbounded recipe parameter still targets an allowed path and uses an allowed increase operation. A target-only baseline accepts it. Patch rejects it because a bounded capability of 10 requires proof that the concrete/inferred magnitude cannot escape 10.
+The policy deliberately uses the source-operation form:
 
-This case is important for claim discipline: Patch does not silently reinterpret missing range evidence as authorization.
+```patch
+allow extension:
+  points may add up to 10
+```
+
+The unbounded recipe parameter still targets an allowed path and uses an explicitly allowed `add` operation. A target-only baseline accepts it. Patch reaches the bounded-amount proof obligation and rejects the program because it cannot prove that `amount` remains within 10.
+
+This case isolates **missing magnitude evidence**, rather than accidentally failing earlier because an unclassified dynamic `add` did not match an `increase` rule. It is important for claim discipline: Patch does not silently reinterpret missing range evidence as authorization.
 
 ## What these cases support
 
