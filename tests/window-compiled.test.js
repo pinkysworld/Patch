@@ -54,7 +54,7 @@ function storedEntry(bytes, wanted) {
 test('compiled Window artifact contains executable AST and source-backed layout', () => {
   const artifact = compiled();
   assert.equal(artifact.format, 'patch-compiled-window-program');
-  assert.equal(artifact.version, '0.1');
+  assert.equal(artifact.version, '0.2');
   assert.equal(artifact.irVersion, '0.10');
   assert.equal(artifact.project.kind, 'window');
   assert.ok(artifact.program.some(node => node.kind === 'window'));
@@ -91,9 +91,10 @@ test('ready Window package links compiled program payload into runtime ZIP', () 
   assert.equal(built.compiled, true);
   assert.equal(built.filename, 'Compiled_Demo-windows-window.zip');
   const payload = JSON.parse(new TextDecoder().decode(storedEntry(built.bytes, 'patch-app.json')));
-  assert.equal(payload.version, '0.3');
+  assert.equal(payload.version, '0.4');
   assert.equal(payload.execution, 'compiled-window-program');
   assert.equal(payload.compiled.format, 'patch-compiled-window-program');
+  assert.equal(payload.compiled.version, '0.2');
   assert.equal(payload.compiled.program.some(node => node.kind === 'window'), true);
   assert.equal(payload.compiled.formLayout.windows[0].width, 520);
 });
