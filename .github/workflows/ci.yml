@@ -25,9 +25,11 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - name: Syntax check
-        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/cli.js && node --check src/cli-entry.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-range.js && node --check src/formal-guard.js && node --check src/formal-calls.js && node --check src/formal-bridge.js && node --check src/formal-source.js && node --check src/source-validation.js && node --check src/guard-validation.js && node --check src/certificate.js && node --check src/runtime-certificate.js && node --check src/call-certificate.js && node --check src/concrete-call-witness.js && node --check src/concrete-call-certificate.js && node --check src/runtime-path-witness.js && node --check src/wasm.js && node --check src/wasm-direct.js && node --check src/c99.js && node --check src/webapp.js && node --check src/window-webapp.js && node --check src/window-build.js && node --check src/window-events.js && node --check src/native-app.js && node --check src/direct-trace-validator.js && node --check src/direct-effect-validator.js && node --check src/designer.js && node --check scripts/generate-call-certificate.js && node --check scripts/generate-concrete-call-certificate.js && node --check scripts/build-native-sea.js && node --check scripts/build-native-window.js && node --check scripts/validate-direct-trace.js && node --check scripts/check-project-surface.js && node --check scripts/check-site.js && node --check web/native-build.js && node --check web/playground.js && node --check web/sw.js
+        run: node --check src/parser.js && node --check src/interpreter.js && node --check src/cli.js && node --check src/cli-entry.js && node --check src/doctor.js && node --check src/compiler.js && node --check src/change-analysis.js && node --check src/range-analysis.js && node --check src/formal-range.js && node --check src/formal-guard.js && node --check src/formal-calls.js && node --check src/formal-bridge.js && node --check src/formal-source.js && node --check src/source-validation.js && node --check src/guard-validation.js && node --check src/certificate.js && node --check src/runtime-certificate.js && node --check src/call-certificate.js && node --check src/concrete-call-witness.js && node --check src/concrete-call-certificate.js && node --check src/runtime-path-witness.js && node --check src/wasm.js && node --check src/wasm-direct.js && node --check src/c99.js && node --check src/webapp.js && node --check src/window-webapp.js && node --check src/window-build.js && node --check src/window-events.js && node --check src/native-app.js && node --check src/direct-trace-validator.js && node --check src/direct-effect-validator.js && node --check src/designer.js && node --check scripts/generate-call-certificate.js && node --check scripts/generate-concrete-call-certificate.js && node --check scripts/build-native-sea.js && node --check scripts/build-native-window.js && node --check scripts/release-manifest.js && node --check scripts/validate-direct-trace.js && node --check scripts/check-project-surface.js && node --check scripts/check-site.js && node --check web/native-build.js && node --check web/playground.js && node --check web/sw.js
       - name: Language, compiler, formal, source/runtime/call/concrete-call certificate, direct-Wasm, C99, app-build, validator, designer and bootstrap-Wasm tests
         run: npm test
+      - name: Patch doctor diagnostics
+        run: npm run doctor
       - name: Example smoke tests
         run: npm run check
       - name: Formal correspondence, source-validation and range-coverage smoke test
@@ -54,6 +56,8 @@ jobs:
         run: npm run build:web
       - name: Standalone single-file Window Web App build
         run: node src/cli.js build examples/counter-window.patch --target web --out CounterWindow.html
+      - name: Generate deterministic release integrity manifest
+        run: npm run release:manifest:example
       - name: Execute direct WebAssembly application
         run: npm run run:wasm-direct
       - name: Independently validate direct WebAssembly transition trace
