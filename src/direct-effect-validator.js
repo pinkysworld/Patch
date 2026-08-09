@@ -10,8 +10,9 @@ export class DirectEffectValidationError extends Error {}
  * Capabilities embedded in Change IR.
  *
  * The observed Wasm trace contains only target/before/after. Semantic operation
- * identity is reconstructed by direct-trace-validator from IR source operations
- * and concrete runtime values, rather than accepted as a label from the lowerer.
+ * identity, recipe scope and beta.32 concrete invocation-frame membership are
+ * reconstructed by direct-trace-validator from IR execution rather than accepted
+ * as labels from the lowerer.
  */
 export function validateDirectSemanticEffects(ir, observedTrace) {
   const traceValidation = validateDirectTrace(ir, observedTrace);
@@ -51,6 +52,7 @@ export function validateDirectSemanticEffects(ir, observedTrace) {
         scope: transition.scope,
         line: transition.line,
         target: transition.target,
+        frameIds: [...(transition.frameIds ?? [])],
         transition: {
           before: transition.before,
           after: transition.after
@@ -68,10 +70,13 @@ export function validateDirectSemanticEffects(ir, observedTrace) {
     format: 'patch-direct-effect-validation',
     version: PATCH_DIRECT_EFFECT_VALIDATION_VERSION,
     traceValidation,
+    invocationFrameVersion: traceValidation.invocationFrameVersion ?? null,
+    invocationFrames: traceValidation.invocationFrames ?? [],
     occurrences,
     summary: {
       transitions: traceValidation.expectedTrace.length,
       effects: occurrences.length,
+      invocationFrames: traceValidation.invocationFrames?.length ?? 0,
       protectedEffects: occurrences.filter(item => item.protected).length,
       unprotectedEffects: occurrences.filter(item => !item.protected).length
     }
@@ -95,7 +100,6 @@ export function signatureCoversRuntimeEffect(candidate, effect) {
     return Object.is(Math.abs(candidate.amount), effect.amount);
   }
 
-  // Some static literal effects carry an amount without the helper flag.
   if (!candidate.unproven && Number.isFinite(candidate.amount)) {
     return Object.is(Math.abs(candidate.amount), effect.amount);
   }
