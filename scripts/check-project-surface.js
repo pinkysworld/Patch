@@ -114,7 +114,7 @@ mustInclude('examples/formal-calls-arithmetic.patch', files.arithmeticExample, [
 
 mustInclude('src/concrete-call-body.js', files.concreteBody, [
   'buildConcreteCallBodyWitnesses', 'patch-concrete-call-body', "case 'repeat'", 'claimedTrace',
-  'branches, nested calls', 'sameEffect'
+  'Branches, nested calls', 'sameEffect'
 ]);
 mustInclude('src/concrete-call-body-certificate.js', files.concreteBodyCertificate, [
   'generateConcreteCallBodyCertificate', 'GeneratedConcreteCallBodyCertificate', 'evalBoundStmtEqBool',
