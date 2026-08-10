@@ -1,0 +1,229 @@
+name: Agent Native ListBox v0.3 Patcher
+
+on:
+  push:
+    branches: [agent/native-listbox-v03]
+    paths:
+      - .github/workflows/agent-native-listbox-v03-patcher.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/native-listbox-v03
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Apply surgical AOT backend changes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def once(s, old, new, label):
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected one match, got {n}")
+              return s.replace(old, new, 1)
+
+          def regex_once(s, pattern, repl, label, flags=0):
+              out, n = re.subn(pattern, repl, s, count=1, flags=flags)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected one regex match, got {n}")
+              return out
+
+          # Win32 AOT
+          p = Path('src/win32-gui.js')
+          s = p.read_text()
+          s = once(s, "PATCH_WIN32_GUI_BACKEND_VERSION = '0.2'", "PATCH_WIN32_GUI_BACKEND_VERSION = '0.3'", 'win version')
+          s = once(s, "CK_CHECKBOX=4, CK_COMBO=5 };", "CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6 };", 'win enum')
+          marker = 'static void SetWindowTextIfDifferent(HWND hwnd'
+          helper = r'''static std::wstring ListBoxText(HWND hwnd) {\n  const LRESULT selected = SendMessageW(hwnd, LB_GETCURSEL, 0, 0);\n  if (selected == LB_ERR) return L"";\n  const LRESULT len = SendMessageW(hwnd, LB_GETTEXTLEN, (WPARAM)selected, 0);\n  if (len == LB_ERR || len < 0) return L"";\n  std::wstring value((size_t)len + 1, L'\\0');\n  const LRESULT copied = SendMessageW(hwnd, LB_GETTEXT, (WPARAM)selected, (LPARAM)value.data());\n  value.resize(copied > 0 ? (size_t)copied : 0);\n  return value;\n}\nstatic void SetListBoxSelection(HWND hwnd, const std::wstring& value) {\n  const LRESULT current = SendMessageW(hwnd, LB_GETCURSEL, 0, 0);\n  if (current != LB_ERR && ListBoxText(hwnd) == value) return;\n  const LRESULT found = SendMessageW(hwnd, LB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)value.c_str());\n  SendMessageW(hwnd, LB_SETCURSEL, found == LB_ERR ? (WPARAM)-1 : (WPARAM)found, 0);\n}\n'''
+          s = once(s, marker, helper + marker, 'win list helpers')
+          s = once(s,
+              "const notify = control.type === 'button' ? 'BN_CLICKED' : control.type === 'checkbox' ? 'BN_CLICKED' : control.type === 'combo' ? 'CBN_SELCHANGE' : 'EN_CHANGE';",
+              "const notify = control.type === 'button' ? 'BN_CLICKED' : control.type === 'checkbox' ? 'BN_CLICKED' : control.type === 'combo' ? 'CBN_SELCHANGE' : control.type === 'listbox' ? 'LBN_SELCHANGE' : 'EN_CHANGE';",
+              'win notify')
+          s = once(s,
+              "else if (event.valueType === 'text') call = control.type === 'combo' ? `Event_${index}(ComboText(controlHwnd));` : `Event_${index}(WindowText(controlHwnd));`;",
+              "else if (event.valueType === 'text') call = control.type === 'combo' ? `Event_${index}(ComboText(controlHwnd));` : control.type === 'listbox' ? `Event_${index}(ListBoxText(controlHwnd));` : `Event_${index}(WindowText(controlHwnd));`;",
+              'win text dispatch')
+          s = regex_once(s,
+              r"(  if \(control\.type === 'combo'\) \{\n    const state = states\.get\(control\.binding\);\n    return `  if \(gControls\[\$\{index\}\]\) SetComboSelection\(gControls\[\$\{index\}\], \$\{stateName\(state\.name\)\}\);`;\n  \}\n)(  return '';)",
+              r"\1  if (control.type === 'listbox') {\n    const state = states.get(control.binding);\n    return `  if (gControls[${index}]) SetListBoxSelection(gControls[${index}], ${stateName(state.name)});`;\n  }\n\2",
+              'win refresh')
+          s = once(s,
+              ": control.type === 'combo'\n          ? 'WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST'\n          : 'WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX';",
+              ": control.type === 'combo'\n          ? 'WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST'\n          : control.type === 'listbox'\n            ? 'WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | WS_BORDER | LBS_NOTIFY'\n            : 'WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX';",
+              'win style')
+          s = once(s,
+              "const klass = control.type === 'text' ? 'L\"STATIC\"' : control.type === 'input' ? 'L\"EDIT\"' : control.type === 'combo' ? 'L\"COMBOBOX\"' : 'L\"BUTTON\"';",
+              "const klass = control.type === 'text' ? 'L\"STATIC\"' : control.type === 'input' ? 'L\"EDIT\"' : control.type === 'combo' ? 'L\"COMBOBOX\"' : control.type === 'listbox' ? 'L\"LISTBOX\"' : 'L\"BUTTON\"';",
+              'win class')
+          s = regex_once(s,
+              r"const options = control\.type === 'combo'\n    \? control\.options\.map\(option => `    SendMessageW\(gControls\[\$\{index\}\], CB_ADDSTRING, 0, \(LPARAM\)L\$\{cppString\(option\)\}\);`\)\.join\('\\n'\)\n    : '';",
+              "const options = control.type === 'combo'\n    ? control.options.map(option => `    SendMessageW(gControls[${index}], CB_ADDSTRING, 0, (LPARAM)L${cppString(option)});`).join('\\n')\n    : control.type === 'listbox'\n      ? control.options.map(option => `    SendMessageW(gControls[${index}], LB_ADDSTRING, 0, (LPARAM)L${cppString(option)});`).join('\\n')\n      : '';",
+              'win options')
+          s = once(s,
+              "combo: 'CK_COMBO' })[type]",
+              "combo: 'CK_COMBO', listbox: 'CK_LISTBOX' })[type]",
+              'win control kind')
+          s = regex_once(s,
+              r"(  const combo = controls\.get\('size'\);\n  const comboState = states\.get\('size'\);)",
+              r"\1\n  const listbox = controls.get('fruit');\n  const listboxState = states.get('fruit');",
+              'win smoke vars')
+          list_smoke = r'''  if (listbox && listboxState?.type === 'text' && listbox.options.length) {
+    const last = listbox.options.length - 1;
+    const expected = listbox.options[last];
+    lines.push(`  SendMessageW(gControls[${listbox.handleIndex}], LB_SETCURSEL, ${last}, 0);`);
+    lines.push(`  SendMessageW(gForms[${listbox.formIndex}], WM_COMMAND, MAKEWPARAM(${listbox.commandId}, LBN_SELCHANGE), (LPARAM)gControls[${listbox.handleIndex}]);`);
+    lines.push(`  if (${stateName(listboxState.name)} != L${cppString(expected)}) return 76;`);
+  }
+'''
+          s = regex_once(s,
+              r"(  if \(combo && comboState\?\.type === 'text' && combo\.options\.length\) \{.*?\n  \}\n)(  if \(close)",
+              lambda m: m.group(1) + list_smoke + m.group(2),
+              'win smoke block', re.S)
+          p.write_text(s)
+
+          # GTK AOT using GtkListBox.
+          p = Path('src/gtk-gui.js')
+          s = p.read_text()
+          s = once(s, "PATCH_GTK_GUI_BACKEND_VERSION = '0.2'", "PATCH_GTK_GUI_BACKEND_VERSION = '0.3'", 'gtk version')
+          s = once(s, "CK_CHECKBOX=4, CK_COMBO=5 };", "CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6 };", 'gtk enum')
+          s = once(s,
+              "const comboDispatch = ir.events.map((event, index) => emitComboDispatch(event, index, controlById)).filter(Boolean).join('\\n');",
+              "const comboDispatch = ir.events.map((event, index) => emitComboDispatch(event, index, controlById)).filter(Boolean).join('\\n');\n  const listDispatch = ir.events.map((event, index) => emitListDispatch(event, index, controlById)).filter(Boolean).join('\\n');",
+              'gtk dispatch variable')
+          marker = r'''static gboolean OnDelete(GtkWidget *widget, GdkEvent *, gpointer data) {'''
+          callback = r'''static void OnListChanged(GtkListBox *box, GtkListBoxRow *row, gpointer data) {\n  if (gRefreshing) return;\n  int commandId = GPOINTER_TO_INT(data);\n${listDispatch || '  (void)commandId; (void)box; (void)row;'}\n}\n\n'''
+          s = once(s, marker, callback + marker, 'gtk list callback')
+          combo_fn = "function emitComboDispatch(event, index, controls) {\n  const control = controls.get(event.control);\n  if (!control || control.type !== 'combo') return '';\n  return `  if (commandId == ${control.commandId}) { gchar *value = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo)); Event_${index}(value ? std::string(value) : std::string()); if (value) g_free(value); return; }`;\n}\n"
+          list_fn = combo_fn + "function emitListDispatch(event, index, controls) {\n  const control = controls.get(event.control);\n  if (!control || control.type !== 'listbox') return '';\n  return `  if (commandId == ${control.commandId}) { if (!row) { Event_${index}(std::string()); return; } GtkWidget *child = gtk_bin_get_child(GTK_BIN(row)); const char *value = child ? gtk_label_get_text(GTK_LABEL(child)) : \"\"; Event_${index}(value ? std::string(value) : std::string()); return; }`;\n}\n"
+          s = once(s, combo_fn, list_fn, 'gtk list dispatch fn')
+          s = regex_once(s,
+              r"(  if \(control\.type === 'combo'\) \{\n    const state = states\.get\(control\.binding\);\n    const checks = control\.options\.map\(\(option, optionIndex\) => `if \(\$\{stateName\(state\.name\)\} == \$\{cString\(option\)\}\) selected = \$\{optionIndex\};`\)\.join\(' else '\);\n    return `  if \(gControls\[\$\{index\}\]\) \{ int selected = -1; \$\{checks\} gtk_combo_box_set_active\(GTK_COMBO_BOX\(gControls\[\$\{index\}\]\), selected\); \}`;\n  \}\n)(  return '';)",
+              r"\1  if (control.type === 'listbox') {\n    const state = states.get(control.binding);\n    const checks = control.options.map((option, optionIndex) => `if (${stateName(state.name)} == ${cString(option)}) selected = ${optionIndex};`).join(' else ');\n    return `  if (gControls[${index}]) { int selected = -1; ${checks} GtkListBoxRow *row = selected >= 0 ? gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${index}]), selected) : nullptr; gtk_list_box_select_row(GTK_LIST_BOX(gControls[${index}]), row); }`;\n  }\n\2",
+              'gtk refresh')
+          s = once(s,
+              "else if (control.type === 'combo') create = `GtkWidget *control = gtk_combo_box_text_new(); ${control.options.map(option => `gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(control), ${cString(option)});`).join(' ')}`;",
+              "else if (control.type === 'combo') create = `GtkWidget *control = gtk_combo_box_text_new(); ${control.options.map(option => `gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(control), ${cString(option)});`).join(' ')}`;\n  else if (control.type === 'listbox') create = `GtkWidget *control = gtk_list_box_new(); gtk_list_box_set_selection_mode(GTK_LIST_BOX(control), GTK_SELECTION_SINGLE); ${control.options.map(option => `GtkWidget *row_label = gtk_label_new(${cString(option)}); gtk_widget_set_halign(row_label, GTK_ALIGN_START); gtk_widget_set_margin_start(row_label, 8); gtk_widget_set_margin_end(row_label, 8); gtk_widget_set_margin_top(row_label, 5); gtk_widget_set_margin_bottom(row_label, 5); gtk_list_box_insert(GTK_LIST_BOX(control), row_label, -1);`).join(' ')}`;",
+              'gtk create list')
+          s = once(s,
+              ": control.type === 'combo'\n          ? `g_signal_connect(control, \"changed\", G_CALLBACK(OnComboChanged), GINT_TO_POINTER(${control.commandId}));`\n          : '';",
+              ": control.type === 'combo'\n          ? `g_signal_connect(control, \"changed\", G_CALLBACK(OnComboChanged), GINT_TO_POINTER(${control.commandId}));`\n          : control.type === 'listbox'\n            ? `g_signal_connect(control, \"row-selected\", G_CALLBACK(OnListChanged), GINT_TO_POINTER(${control.commandId}));`\n            : '';",
+              'gtk signal')
+          s = once(s,
+              "combo: 'CK_COMBO' })[type]",
+              "combo: 'CK_COMBO', listbox: 'CK_LISTBOX' })[type]",
+              'gtk control kind')
+          s = regex_once(s,
+              r"(  const combo = controls\.get\('size'\);\n  const comboState = states\.get\('size'\);)",
+              r"\1\n  const listbox = controls.get('fruit');\n  const listboxState = states.get('fruit');",
+              'gtk smoke vars')
+          list_smoke = r'''  if (listbox && listboxState?.type === 'text' && listbox.options.length) {
+    const last = listbox.options.length - 1;
+    lines.push(`  GtkListBoxRow *row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${listbox.handleIndex}]), ${last});`);
+    lines.push(`  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${listbox.handleIndex}]), row);`);
+    lines.push(`  if (${stateName(listboxState.name)} != ${cString(listbox.options[last])}) return 76;`);
+  }
+'''
+          s = regex_once(s,
+              r"(  if \(combo && comboState\?\.type === 'text' && combo\.options\.length\) \{.*?\n  \}\n)(  if \(close)",
+              lambda m: m.group(1) + list_smoke + m.group(2),
+              'gtk smoke block', re.S)
+          p.write_text(s)
+
+          # AppKit AOT using NSTableView in an NSScrollView.
+          p = Path('src/appkit-gui.js')
+          s = p.read_text()
+          s = once(s, "PATCH_APPKIT_GUI_BACKEND_VERSION = '0.2'", "PATCH_APPKIT_GUI_BACKEND_VERSION = '0.3'", 'appkit version')
+          s = once(s, "CK_CHECKBOX=4, CK_COMBO=5 };", "CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6 };", 'appkit enum')
+          s = once(s,
+              "const textFunctions = controlRecords.map((control, index) => emitControlTextFunction(control, index, stateByName)).join('\\n\\n');",
+              "const textFunctions = controlRecords.map((control, index) => emitControlTextFunction(control, index, stateByName)).join('\\n\\n');\n  const listCountCases = controlRecords.filter(control => control.type === 'listbox').map(control => `    case ${control.commandId}: return ${control.options.length};`).join('\\n');\n  const listValueCases = controlRecords.filter(control => control.type === 'listbox').map(control => `    case ${control.commandId}: switch (row) { ${control.options.map((option, optionIndex) => `case ${optionIndex}: return ${objcLiteral(option)};`).join(' ')} default: return @\"\"; }`).join('\\n');",
+              'appkit list data vars')
+          marker = r'''${textFunctions}\n\nstatic void RefreshUI();'''
+          helpers = r'''${textFunctions}\n\nstatic NSInteger PatchListOptionCount(NSInteger commandId) {\n  switch (commandId) {\n${listCountCases}\n    default: return 0;\n  }\n}\nstatic NSString *PatchListOptionValue(NSInteger commandId, NSInteger row) {\n  switch (commandId) {\n${listValueCases}\n    default: return @"";\n  }\n}\n\nstatic void RefreshUI();'''
+          s = once(s, marker, helpers, 'appkit list helpers')
+          s = once(s,
+              '@interface PatchEventTarget : NSObject <NSTextFieldDelegate>',
+              '@interface PatchEventTarget : NSObject <NSTextFieldDelegate, NSTableViewDataSource, NSTableViewDelegate>',
+              'appkit protocols')
+          event_end = r'''- (void)controlTextDidChange:(NSNotification *)notification {\n  if (gRefreshing) return;\n  NSTextField *field = (NSTextField *)notification.object;\n  NSInteger commandId = field.tag;\n${inputDispatch || '  (void)commandId;'}\n}\n@end'''
+          event_new = r'''- (void)controlTextDidChange:(NSNotification *)notification {\n  if (gRefreshing) return;\n  NSTextField *field = (NSTextField *)notification.object;\n  NSInteger commandId = field.tag;\n${inputDispatch || '  (void)commandId;'}\n}\n- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView { return PatchListOptionCount(tableView.tag); }\n- (NSView *)tableView:(NSTableView *)tableView viewForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row {\n  (void)tableColumn;\n  NSTextField *label = [NSTextField labelWithString:PatchListOptionValue(tableView.tag, row)];\n  label.lineBreakMode = NSLineBreakByTruncatingTail;\n  return label;\n}\n- (void)tableViewSelectionDidChange:(NSNotification *)notification {\n  if (gRefreshing) return;\n  [self handleControl:notification.object];\n}\n@end'''
+          s = once(s, event_end, event_new, 'appkit table delegate')
+          s = once(s,
+              "if (!control || !['button', 'checkbox', 'combo'].includes(control.type)) return '';",
+              "if (!control || !['button', 'checkbox', 'combo', 'listbox'].includes(control.type)) return '';",
+              'appkit action types')
+          s = once(s,
+              "if (control.type === 'combo' && event.valueType === 'text') return `  if (commandId == ${control.commandId}) { Event_${index}([(NSPopUpButton *)sender titleOfSelectedItem] ?: @\"\"); return; }`;",
+              "if (control.type === 'combo' && event.valueType === 'text') return `  if (commandId == ${control.commandId}) { Event_${index}([(NSPopUpButton *)sender titleOfSelectedItem] ?: @\"\"); return; }`;\n  if (control.type === 'listbox' && event.valueType === 'text') return `  if (commandId == ${control.commandId}) { NSInteger row = [(NSTableView *)sender selectedRow]; Event_${index}(row >= 0 ? PatchListOptionValue(commandId, row) : @\"\"); return; }`;",
+              'appkit list dispatch')
+          s = regex_once(s,
+              r"(  if \(control\.type === 'combo'\) \{\n    const state = states\.get\(control\.binding\);\n    return `  if \(gControls\[\$\{index\}\]\) \[\(NSPopUpButton \*\)gControls\[\$\{index\}\] selectItemWithTitle:\$\{stateName\(state\.name\)\}\];`;\n  \}\n)(  return '';)",
+              r"\1  if (control.type === 'listbox') {\n    const state = states.get(control.binding);\n    const checks = control.options.map((option, optionIndex) => `if ([${stateName(state.name)} isEqualToString:${objcLiteral(option)}]) selected = ${optionIndex};`).join(' else ');\n    return `  if (gControls[${index}]) { NSInteger selected = -1; ${checks} if (selected >= 0) [(NSTableView *)gControls[${index}] selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)selected] byExtendingSelection:NO]; else [(NSTableView *)gControls[${index}] deselectAll:nil]; }`;\n  }\n\2",
+              'appkit refresh')
+          combo_create_pattern = r"(  if \(control\.type === 'combo'\) \{\n    const options = control\.options\.map\(objcLiteral\)\.join\(', '\);\n    return `.*?\n  \}\n)(  const buttonType)"
+          list_create = r'''  if (control.type === 'listbox') {
+    return `  if (${control.formIndex} == index) {\n    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:${rect}];\n    scroll.hasVerticalScroller = YES; scroll.autohidesScrollers = YES; scroll.borderType = NSBezelBorder;\n    NSTableView *control = [[NSTableView alloc] initWithFrame:scroll.bounds];\n    NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"value"]; column.width = ${positiveInt(control.layout?.width, 120)};\n    [control addTableColumn:column]; control.headerView = nil; control.allowsMultipleSelection = NO; control.allowsEmptySelection = YES;\n    control.tag = ${control.commandId}; control.dataSource = gEventTarget; control.delegate = gEventTarget;\n    scroll.documentView = control;\n    gControls[${index}] = control;\n    [window.contentView addSubview:scroll];\n  }`;
+  }
+'''
+          s = regex_once(s, combo_create_pattern, lambda m: m.group(1) + list_create + m.group(2), 'appkit create list', re.S)
+          s = once(s,
+              "combo: 'CK_COMBO' })[type]",
+              "combo: 'CK_COMBO', listbox: 'CK_LISTBOX' })[type]",
+              'appkit control kind')
+          s = regex_once(s,
+              r"(  const combo = controls\.get\('size'\);\n  const comboState = states\.get\('size'\);)",
+              r"\1\n  const listbox = controls.get('fruit');\n  const listboxState = states.get('fruit');",
+              'appkit smoke vars')
+          list_smoke = r'''  if (listbox && listboxState?.type === 'text' && listbox.options.length) {
+    const last = listbox.options.length - 1;
+    lines.push(`  [(NSTableView *)gControls[${listbox.handleIndex}] selectRowIndexes:[NSIndexSet indexSetWithIndex:${last}] byExtendingSelection:NO];`);
+    lines.push(`  [gEventTarget handleControl:gControls[${listbox.handleIndex}]];`);
+    lines.push(`  if (![${stateName(listboxState.name)} isEqualToString:${objcLiteral(listbox.options[last])}]) return 76;`);
+  }
+'''
+          s = regex_once(s,
+              r"(  if \(combo && comboState\?\.type === 'text' && combo\.options\.length\) \{.*?\n  \}\n)(  if \(close)",
+              lambda m: m.group(1) + list_smoke + m.group(2),
+              'appkit smoke block', re.S)
+          p.write_text(s)
+          PY
+      - name: Validate patched JavaScript emitters
+        run: |
+          node --check src/win32-gui.js
+          node --check src/gtk-gui.js
+          node --check src/appkit-gui.js
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIR } from './src/native-gui-ir.js';
+          import { emitWin32GuiCpp } from './src/win32-gui.js';
+          import { emitGtkGuiCpp } from './src/gtk-gui.js';
+          import { emitAppKitGuiObjCpp } from './src/appkit-gui.js';
+          const source=fs.readFileSync('examples/listbox-window.patch','utf8');
+          const ir=buildNativeGuiIR(compile(source,{name:'NativeListBox',kind:'window'}));
+          if(ir.version!=='0.3') throw new Error('expected Native GUI IR 0.3');
+          const win=emitWin32GuiCpp(ir), gtk=emitGtkGuiCpp(ir), mac=emitAppKitGuiObjCpp(ir);
+          if(!win.includes('LISTBOX')||!win.includes('LBN_SELCHANGE')) throw new Error('Win32 ListBox lowering missing');
+          if(!gtk.includes('gtk_list_box_new')||!gtk.includes('row-selected')) throw new Error('GTK ListBox lowering missing');
+          if(!mac.includes('NSTableView')||!mac.includes('NSScrollView')) throw new Error('AppKit ListBox lowering missing');
+          NODE
+      - name: Commit patched AOT backends
+        shell: bash
+        run: |
+          git config user.name 'patch-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/win32-gui.js src/gtk-gui.js src/appkit-gui.js
+          git commit -m 'feat: add native ListBox AOT backends'
+          git push origin HEAD:agent/native-listbox-v03
