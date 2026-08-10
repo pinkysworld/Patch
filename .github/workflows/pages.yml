@@ -44,6 +44,7 @@ on:
       - src/concrete-call-body.js
       - src/concrete-call-body-certificate.js
       - .github/workflows/pages.yml
+      - .github/workflows/runtime-templates.yml
       - .github/workflows/native-win32-runtime.yml
       - .github/workflows/native-linux-runtime.yml
       - .github/workflows/native-macos-runtime.yml
@@ -82,7 +83,7 @@ jobs:
       - name: Add compiled prebuilt native runtime templates
         env:
           GH_TOKEN: ${{ github.token }}
-          RUNTIME_TAG: studio-runtime-v0.5
+          RUNTIME_TAG: studio-runtime-v0.6
           WIN32_RUNTIME_TAG: native-win32-runtime-v0.2
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.2
           MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.2
