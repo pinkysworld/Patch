@@ -65,7 +65,7 @@ jobs:
           if ($meta.shell -ne 'native-win32') { throw "Unexpected native shell: $($meta.shell)" }
           if ($meta.crt -ne 'static') { throw "Native Win32 smoke must use the static C/C++ runtime." }
           if ($meta.forms -ne 2 -or $meta.events -ne 3) { throw 'Native Forms smoke metadata is incomplete.' }
-          if (Test-Path dist-native/resources -or Test-Path dist-native/node_modules) { throw 'Native Win32 output unexpectedly contains a web/Electron runtime tree.' }
+          if ((Test-Path dist-native/resources) -or (Test-Path dist-native/node_modules)) { throw 'Native Win32 output unexpectedly contains a web/Electron runtime tree.' }
           Write-Host "Native exe size: $($exe.Length) bytes"
       - name: Upload native compiler evidence
         uses: actions/upload-artifact@v4
