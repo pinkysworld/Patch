@@ -120,7 +120,7 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] direct-native AOT GUI backend for the supported Native GUI IR v0.1 subset on Windows, macOS and Linux
 - [x] token-free sealed native Win32 Studio Window download
 - [x] token-free sealed native GTK3 Studio Window download
-- [ ] token-free sealed native AppKit Studio Window download
+- [x] token-free sealed native AppKit Studio Window download using an unsigned universal Mach-O runtime
 - [ ] richer native controls: list/combo, radio, tabs, menus, dialogs, table/grid
 - [ ] signing/notarization/installers
 - [ ] portable Linux distribution bundle with GTK dependencies or equivalent packaging
