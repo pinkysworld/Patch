@@ -33,6 +33,8 @@ on:
       - src/designer.js
       - src/form-layout.js
       - src/window-compiled.js
+      - src/native-gui-ir.js
+      - src/sealed-native-gui.js
       - src/prebuilt-native.js
       - src/prebuilt-window.js
       - src/local-native-kit.js
@@ -41,9 +43,10 @@ on:
       - src/concrete-call-body.js
       - src/concrete-call-body-certificate.js
       - .github/workflows/pages.yml
+      - .github/workflows/native-win32-runtime.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime]
     types: [completed]
 
 permissions:
@@ -77,14 +80,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.4
+          WIN32_RUNTIME_TAG: native-win32-runtime-v0.1
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
-            ls -lh _site/runtimes
           else
             echo "Runtime release $RUNTIME_TAG is not published yet. Runtime-template completion will trigger a second Pages deployment after publishing it."
           fi
+          if gh release view "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
+          else
+            echo "Native Win32 runtime $WIN32_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
+          fi
+          ls -lh _site/runtimes || true
       - name: Validate public site
         run: npm run check:site
       - uses: actions/upload-pages-artifact@v5
