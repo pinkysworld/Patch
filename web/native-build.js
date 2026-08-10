@@ -12,6 +12,7 @@ import { buildPrebuiltCompiledWindowPackage } from '../src/prebuilt-window.js';
 const REPOSITORY = 'pinkysworld/Patch';
 const NATIVE_WORKFLOW = 'native-apps.yml';
 const WINDOWS_SINGLE_EXE_WORKFLOW = 'windows-single-exe.yml';
+const NATIVE_WINDOW_AOT_WORKFLOW = 'native-window-aot.yml';
 const FREEBSD_WORKFLOW = 'freebsd-c99.yml';
 const WINDOWS_NATIVE_GUI_RUNTIME = './runtimes/patch-windows-native-gui-runtime.exe';
 const API = 'https://api.github.com';
@@ -65,7 +66,8 @@ buildButton.addEventListener('click', async event => {
       const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
       const support = validateWindowRuntimeSupport(preflight);
       compiledWindow = buildCompiledWindowArtifact(preflight);
-      const needsNativeGui = platform === 'windows' && (nativeBuildMode.value === 'prebuilt' || nativeBuildMode.value === 'cloud');
+      const needsNativeGui = (platform === 'windows' && nativeBuildMode.value === 'prebuilt')
+        || (nativeBuildMode.value === 'cloud' && ['windows', 'macos', 'linux'].includes(platform));
       if (needsNativeGui) nativeGui = buildNativeGuiIR(preflight);
       preflightText = `compiled Window ${compiledWindow.version}, Change IR ${compiledWindow.irVersion}, ${support.windows} form${support.windows === 1 ? '' : 's'}, ${support.controls} control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
       if (nativeGui) preflightText += `; Native GUI IR ${nativeGui.version} lowered`;
@@ -134,7 +136,9 @@ buildButton.addEventListener('click', async event => {
     if (!token) {
       const nativeHint = platform === 'windows' && kind === 'window'
         ? 'Native AOT EXE uses GitHub Actions and therefore needs a fine-grained GitHub token with Actions read/write access. Choose “Native single EXE (no token, recommended)” to build directly in Patch Studio without credentials.'
-        : 'Cloud build mode needs a fine-grained GitHub token with Actions read/write access. The token is not saved.';
+        : kind === 'window' && (platform === 'macos' || platform === 'linux')
+          ? `Native ${platformLabel(platform)} AOT uses GitHub Actions and therefore needs a fine-grained GitHub token with Actions read/write access. The token is not saved.`
+          : 'Cloud build mode needs a fine-grained GitHub token with Actions read/write access. The token is not saved.';
       throw new Error(nativeHint);
     }
     const sourceBase64 = utf8Base64(code.value);
@@ -143,9 +147,11 @@ buildButton.addEventListener('click', async event => {
     const requestId = makeRequestId();
     const workflow = workflowFor(platform, kind);
     const directWin32 = platform === 'windows' && kind === 'window';
-    setBusy(true, directWin32 ? 'Starting native Windows AOT build…' : `Starting ${platformLabel(platform)} ${kindLabel} cloud build…`);
-    output.textContent = `${directWin32 ? 'Windows native AOT single-EXE' : `${platformLabel(platform)} ${kindLabel} cloud`} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to GitHub Actions…`;
-    const inputs = directWin32
+    const directNativeWindow = kind === 'window' && ['windows', 'macos', 'linux'].includes(platform);
+    const nativeWindowLabel = directWin32 ? 'Windows native AOT single-EXE' : directNativeWindow ? `${platformLabel(platform)} native AOT Window` : `${platformLabel(platform)} ${kindLabel} cloud`;
+    setBusy(true, directNativeWindow ? `Starting native ${platformLabel(platform)} AOT build…` : `Starting ${platformLabel(platform)} ${kindLabel} cloud build…`);
+    output.textContent = `${nativeWindowLabel} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to GitHub Actions…`;
+    const inputs = directNativeWindow
       ? { source_b64: sourceBase64, source_path: '', app_name: name, request_id: requestId }
       : { source_b64: sourceBase64, source_path: '', app_name: name, kind, request_id: requestId };
     if (!directWin32 && platform !== 'freebsd') inputs.platform = platform;
@@ -164,7 +170,9 @@ buildButton.addEventListener('click', async event => {
     output.textContent = `Built ${name} for ${platformLabel(platform)} ✓\n\nType: ${kindLabel}\n${artifactDescription(platform, kind, name)}\n\nBuild run: ${run.html_url}`;
     status.textContent = directWin32
       ? `Windows native AOT EXE downloaded · artifact ZIP contains only ${name}.exe`
-      : `${platformLabel(platform)} ${kindLabel} cloud build downloaded`;
+      : directNativeWindow
+        ? `${platformLabel(platform)} native AOT Window build downloaded · no Electron`
+        : `${platformLabel(platform)} ${kindLabel} cloud build downloaded`;
   } catch (error) {
     output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
     status.textContent = 'Native build stopped';
@@ -206,6 +214,8 @@ function refreshNativePanel() {
     status.textContent = 'Recommended: native Win32 single EXE with no token. Studio compiles Native GUI IR in your browser and seals it into the native Win32 runtime. The download is the .exe itself.';
   } else if (platform === 'windows' && kind === 'window' && nativeBuildMode.value === 'cloud') {
     status.textContent = 'Optional AOT build: GitHub Actions runs MSVC and returns an artifact ZIP containing only your project-specific .exe. A token is needed only for this Actions route.';
+  } else if ((platform === 'macos' || platform === 'linux') && kind === 'window' && nativeBuildMode.value === 'cloud') {
+    status.textContent = `Native ${platformLabel(platform)} AOT: GitHub Actions runs the direct ${platform === 'macos' ? 'AppKit' : 'GTK3'} backend and returns the native app with Electron/Chromium excluded.`;
   } else if (nativeBuildMode.value === 'compat') {
     status.textContent = 'Compatibility only: this Windows GUI path uses the old Electron runtime and is not a single EXE.';
   } else if (nativeBuildMode.value === 'prebuilt') {
@@ -220,7 +230,7 @@ function refreshNativePanel() {
       : `${platformLabel(platform)} ${kindLabel}: advanced local toolchain kit.`;
   } else {
     status.textContent = kind === 'window'
-      ? `${platformLabel(platform)} ${kindLabel}: cloud compatibility build currently uses the legacy desktop packager on this platform.`
+      ? `${platformLabel(platform)} ${kindLabel}: direct native AOT cloud build.`
       : `${platformLabel(platform)} ${kindLabel}: advanced GitHub Actions build. Token is never saved.`;
   }
 }
@@ -240,7 +250,7 @@ function updateNativeModeLabels(platform, kind) {
   }
   if (kind === 'window') {
     prebuilt.textContent = 'Compatibility package (Electron, no token)';
-    cloud.textContent = 'Cloud compatibility build (Electron, advanced)';
+    cloud.textContent = 'Native AOT app (GitHub Actions)';
     local.textContent = 'Local compatibility kit (advanced)';
     return;
   }
@@ -301,12 +311,14 @@ function showOutput() {
 function setBusy(busy, message = null) { buildButton.disabled = busy; nativeBuildMode.disabled = busy; if (message) status.textContent = message; if (!busy) refreshNativePanel(); }
 function workflowFor(platform, kind) {
   if (platform === 'windows' && kind === 'window') return WINDOWS_SINGLE_EXE_WORKFLOW;
+  if ((platform === 'macos' || platform === 'linux') && kind === 'window') return NATIVE_WINDOW_AOT_WORKFLOW;
   return platform === 'freebsd' ? FREEBSD_WORKFLOW : NATIVE_WORKFLOW;
 }
 function artifactDescription(platform, kind, name) {
   if (platform === 'freebsd') return 'FreeBSD native Console package';
   if (platform === 'windows' && kind === 'window') return `Direct Win32/MSVC AOT GUI build. The GitHub artifact ZIP contains exactly one file: ${name}.exe. No patch-app.json, Electron, Chromium or Node runtime is shipped.`;
-  if (kind === 'window') return `${platformLabel(platform)} compatibility GUI package using the current desktop runtime.`;
+  if (platform === 'macos' && kind === 'window') return `Direct AppKit AOT GUI build. The artifact contains the project-specific ${name}.app bundle built with clang/Cocoa. No Electron or Chromium runtime is shipped.`;
+  if (platform === 'linux' && kind === 'window') return `Direct GTK3 AOT GUI build. The artifact contains the project-specific native ELF executable and build metadata. No Electron, Chromium, Node runtime or patch-app.json is shipped; a compatible GTK3 runtime is required on the target Linux system.`;
   return `${platformLabel(platform)} native Console package`;
 }
 function readyPackageNote(kind, platform) {
@@ -315,7 +327,7 @@ function readyPackageNote(kind, platform) {
   }
   const nativeAlternative = platform === 'windows'
     ? 'For Windows, choose “Native single EXE (no token, recommended)” for the native sealed-runtime build, “Native AOT EXE” for project-specific MSVC codegen, or use patch-app locally.'
-    : 'Direct AppKit/GTK backends exist in the Patch compiler, but Studio integration for those native GUI paths is still pending.';
+    : 'Choose “Native AOT app (GitHub Actions)” for the direct AppKit/GTK backend. Token-free native sealing for macOS/Linux is separate follow-on work.';
   return `Compatibility path: Studio links the compiled Patch Window artifact into the prebuilt Electron desktop runtime, which can include patch-app.json and multiple runtime files. This is not the direct native GUI backend. ${nativeAlternative}`;
 }
 function prebuiltLauncher(platform, kind, name) {
