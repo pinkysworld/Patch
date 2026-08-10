@@ -9,7 +9,7 @@ const emitOnly = process.argv.includes('--emit-only');
 const smoke = process.argv.includes('--smoke');
 
 if (!sourcePath) {
-  console.error('Use: patch-native-gui program.patch [AppName] [output-directory]');
+  console.error('Use: patch-app program.patch [AppName] [output-directory]');
   process.exit(2);
 }
 
