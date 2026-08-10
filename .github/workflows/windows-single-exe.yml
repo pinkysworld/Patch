@@ -42,13 +42,16 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: windows-latest
     timeout-minutes: 20
+    env:
+      INPUT_SOURCE_PATH: ${{ inputs.source_path }}
+      INPUT_APP_NAME: ${{ inputs.app_name }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -59,9 +62,9 @@ jobs:
       - name: Select Patch source and app name
         shell: pwsh
         run: |
-          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
-            $source = '${{ inputs.source_path }}'
-            $name = '${{ inputs.app_name }}'
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            $source = $env:INPUT_SOURCE_PATH
+            $name = $env:INPUT_APP_NAME
           } else {
             $source = 'examples/forms-navigation.patch'
             $name = 'PatchFormsDemo'
@@ -70,6 +73,7 @@ jobs:
           if ($safe.Length -gt 64) { $safe = $safe.Substring(0, 64) }
           if ([string]::IsNullOrWhiteSpace($safe)) { $safe = 'PatchApp' }
           if (-not (Test-Path $source -PathType Leaf)) { throw "Patch source '$source' does not exist in this checkout." }
+          if ([System.IO.Path]::GetExtension($source) -ne '.patch') { throw 'Windows Single EXE source must be a .patch file.' }
           "PATCH_SOURCE=$source" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "PATCH_SAFE_NAME=$safe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -113,21 +117,36 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: patch-windows-single-exe-${{ github.event.pull_request.number || github.run_number }}
+          name: patch-windows-single-exe
           path: deliverable/*.exe
           if-no-files-found: error
           retention-days: 30
 
+  publish-preview:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: patch-windows-single-exe
+          path: deliverable
+      - name: Verify release payload remains one EXE
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem deliverable -File)
+          if ($files.Count -ne 1 -or $files[0].Extension -ne '.exe') { throw 'Release payload must contain exactly one .exe file.' }
+          "PATCH_RELEASE_EXE=$($files[0].FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Publish preview EXE release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: native-win32-preview-v0.1
         run: |
-          $exe = Join-Path 'deliverable' ($env:PATCH_SAFE_NAME + '.exe')
           gh release view $env:TAG --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:TAG --repo $env:GITHUB_REPOSITORY --title 'Patch Native Win32 Preview v0.1' --notes 'Direct Win32 Patch GUI preview. The Windows download is one statically linked application EXE with no patch-app.json, Electron, Chromium, Node.js, or sidecar runtime.'
           }
-          gh release upload $env:TAG $exe --repo $env:GITHUB_REPOSITORY --clobber
+          gh release upload $env:TAG $env:PATCH_RELEASE_EXE --repo $env:GITHUB_REPOSITORY --clobber
