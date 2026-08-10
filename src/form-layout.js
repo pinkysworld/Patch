@@ -1,4 +1,4 @@
-export const PATCH_FORM_LAYOUT_VERSION = '0.2';
+export const PATCH_FORM_LAYOUT_VERSION = '0.1';
 
 const CONTROL_DEFAULTS = {
   text: { width: 200, height: 30 },
