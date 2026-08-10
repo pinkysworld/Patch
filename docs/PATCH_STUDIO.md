@@ -4,81 +4,53 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 ## What works in 0.2 beta.32
 
-Patch Studio provides source editing/local autosave, Console and Window Run, source-backed Designer selection/property editing, source-backed Form layout with drag/resize, Checkbox controls with typed Boolean events, simple named Form open/close navigation, compiled Window program artifacts for desktop builds, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing/local autosave, Console and Window Run, a source-backed visual Designer, named Forms, drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox controls, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry and Form visibility are UI/runtime structure rather than new persistent-mutation semantics claims.
-
-Research commands remain outside the beginner workflow:
-
-```bash
-npm run transitive-callee-trace-certify:example
-npm run transitive-runtime-certify:example
-npm run transitive-runtime-certify:repeated
-```
-
-`GeneratedTransitiveCallBodyCertificate.lean` is the beta.30 exact call-tree certificate. `GeneratedTransitiveRuntimeCertificate.lean` is the single-call runtime certificate. `GeneratedRepeatedTransitiveRuntimeCertificate.lean` exercises repeated identical invocation-frame correspondence.
+Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry, Form visibility and widget selection are UI/runtime structure rather than new persistent-mutation semantics claims.
 
 ## Beta.32 invocation-frame assurance
 
 The ordinary Studio does not need Lean or expose beta.32 proof machinery. The research artifact uses the same direct-Wasm compiler/runtime path exercised by Console programs, then performs offline/CI correspondence validation.
 
-The direct-Wasm backend is unchanged and emits no trusted call-enter/call-exit markers. The independent Change-IR validator reconstructs concrete invocation frames containing caller/callee identity, dynamic invocation ordinal, parent/depth information, exact arguments/bindings and transition ranges.
+The direct-Wasm backend emits no trusted call-enter/call-exit markers. The independent Change-IR validator reconstructs concrete invocation frames containing caller/callee identity, dynamic invocation ordinal, parent/depth information, exact arguments/bindings and transition ranges.
 
-For each accepted beta.30 call witness, beta.32 selects observed effects by concrete frame identity. The generated Lean certificate then checks:
-
-```text
-independently reconstructed frame BindingList
-=
-beta.30 exact callee BindingList
-```
-
-and re-evaluates the frame-selected observed semantic effects against the beta.30 exact call tree.
-
-`examples/formal-transitive-calls-repeated.patch` contains two identical `do caller(1)` invocations. Beta.32 certifies them as separate invocation frames instead of rejecting them as beta.31 ambiguity.
+For each accepted beta.30 call witness, beta.32 selects observed effects by concrete frame identity. Generated Lean evidence checks the independently reconstructed frame binding equals the beta.30 exact callee binding and re-evaluates frame-selected observed semantic effects against the exact call tree.
 
 Runtime capture and independent-validator/invocation-frame reconstruction correctness remain explicit proof-free boundaries.
 
-## Forms and RAD-style Designer
+## Forms and source-backed Designer
 
-Patch has a source-backed Form layout path intended to provide the productive visual workflow associated with classic Delphi and Visual Basic while keeping Patch source as the reviewable truth.
-
-A Form can carry an explicit design size:
+Forms and controls remain ordinary Patch source:
 
 ```patch
-window "Customer editor" size 640, 420:
+create boolean subscribed = false
+create text size = "Medium"
+create text fruit = "Banana"
+
+window "Preferences" as main size 640, 420:
+  text "Preferences" at 24, 24 size 220, 30
+  checkbox "Receive updates" as subscribed at 24, 72 size 220, 36
+  combo "Small", "Medium", "Large" as size at 24, 124 size 220, 36
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruit at 280, 72 size 220, 120
 ```
 
-Controls can carry position and dimensions:
+In Studio you can:
 
-```patch
-window "Customer editor" size 640, 420:
-  text "Customer name" at 24, 24 size 180, 30
-  input customer_name at 24, 64 size 260, 36
-  checkbox "Active customer" as active at 24, 112 size 220, 36
-  button "Save" as save_button at 24, 164 size 120, 36
-```
-
-In Studio:
-
-- select the active Form from the Form selector;
-- create additional blank Forms with **+ Form**;
-- new Forms receive simple names such as `form_1`, `form_2` automatically;
-- edit source-backed Form name, title, width and height;
-- add Text, Button, Input and Checkbox controls to the selected Form;
-- select a control and edit X, Y, width and height in Properties;
-- edit source-backed id and label/text expressions where applicable;
+- select the active Form and create additional Forms with **+ Form**;
+- edit Form name, title, width and height;
+- add Text, Button, Input, Checkbox, ComboBox and ListBox controls;
+- edit source-backed ids, labels and option expressions where applicable;
+- edit X/Y/width/height;
 - drag a selected control directly on the Form;
 - resize it from the bottom-right handle;
-- every visual edit rewrites the corresponding declaration in `main.patch`;
-- Standalone Window Web builds and Windows/macOS/Linux Window players preserve the same geometry.
+- delete a control and its matching event block;
+- jump from the inspector to the exact source declaration.
 
-Legacy flow-layout source remains valid. A project is not required to use explicit pixel geometry.
+Every visual edit rewrites `main.patch`. There is no hidden `.dfm`, `.frm` or second persistent form document.
 
-There is deliberately no hidden `.dfm`, `.frm` or second persistent form document. Future richer Form metadata should follow the same rule unless a separate artifact can be losslessly and visibly derived from Patch source.
-
-## Named Forms: deliberately simple navigation
+## Named Forms
 
 A Form only needs a short name after `as` if it should be opened or closed by the application:
 
@@ -96,97 +68,66 @@ when close_settings clicked:
   close settings
 ```
 
-There is no `Form.Create`, object-lifecycle boilerplate or framework API. The first named Form starts visible. Additional named Forms start hidden until `open <name>` is executed. `close <name>` hides that Form again. Existing un-named multiple-window programs keep their previous behavior and remain visible for compatibility.
+The first named Form starts visible. Additional named Forms start hidden until `open <name>`. `close <name>` hides them again. Form visibility is transient UI lifecycle and does not create Change History entries.
 
-Form visibility is transient UI lifecycle. `open` and `close` do not modify Patch persistent state, create Change History entries or bypass semantic `change`. A misspelled or duplicate Form name is rejected during Window build validation rather than becoming a dead action in the packaged app.
+## Typed transient GUI values
 
-The Designer exposes the Form name directly. Renaming a Form through the source-backed Designer also rewrites matching `open` and `close` commands.
+GUI interaction does not implicitly persist state. Controls expose transient event-local `value`; persistent state changes only if Patch source executes an ordinary semantic `change`.
 
-## Checkbox and typed GUI events
-
-A Checkbox can read a Boolean state value when its control id matches that state name:
+Checkbox exposes Boolean `value`:
 
 ```patch
-create boolean subscribed = false
-
-window "Preferences" size 520, 300:
-  checkbox "Receive updates" as subscribed at 24, 72 size 220, 36
-
 when subscribed changed:
   change subscribed:
     set = value
 ```
 
-The `changed` event exposes transient event-local `value` as a real Boolean. The Window event adapter rejects non-Boolean Checkbox values. Clicking the Checkbox does **not** silently assign persistent state. Persistence happens only because the handler explicitly executes `change subscribed`.
-
-A handler may observe the transient value without storing it:
+Input, ComboBox and single-selection ListBox expose text `value`:
 
 ```patch
-when subscribed changed:
-  show value
-```
-
-In that case the Checkbox interaction does not change persistent `subscribed` state. `clear` on Boolean state deterministically resets it to `false`.
-
-This same Checkbox event contract is used by Studio Run, Standalone Window Web and the sandboxed Windows/macOS/Linux desktop Window player.
-
-## Designer property inspector
-
-The Designer derives selectable controls from Patch source rather than a second form file:
-
-- select Text, Button, Input and Checkbox controls;
-- edit source-backed ids/text expressions;
-- propagate id renames to matching event headers;
-- edit X/Y/width/height for positioned controls;
-- reject invalid/duplicate ids and invalid geometry;
-- Delete removes matching event-handler blocks;
-- Source jumps to the exact declaration.
-
-Persistent GUI state still changes only through semantic `change`.
-
-## Semantic input events
-
-Text input follows the same transient-value rule:
-
-```patch
-create text name = ""
-window "Hello":
-  input name
-when name changed:
-  change name:
+when fruit changed:
+  change fruit:
     set = value
 ```
 
-`value` is transient event-local data. Editing the input does not persist state by itself.
+A handler may inspect `value` without storing it. The Window event adapter rejects a value with the wrong event type.
 
-## Compiled desktop GUI build contract
+ListBox is intentionally single-selection in this stage. Multi-selection will require an explicit list-valued event contract rather than overloading the text contract.
 
-Window desktop builds have an explicit compile/link boundary instead of relying on reparsing `main.patch` inside the packaged app.
+## Standalone Window Web
 
-Build flow:
+Standalone Window Web runtime **v0.7** supports the current Form lifecycle plus Text, Button, Input, Checkbox, ComboBox and ListBox. ComboBox and ListBox preserve source-backed option expressions and dispatch text selection values through the same event path used by Studio.
 
-```text
-Patch source
-  -> Patch parser/compiler
-  -> validated Window runtime support
-  -> patch-compiled-window-program 0.2
-       - executable Patch AST, including Form lifecycle nodes
-       - Change IR 0.10
-       - project metadata
-       - source-backed Form layout manifest
-  -> link/package with platform desktop runtime
-  -> Windows/macOS/Linux application
-```
+## Direct native desktop path
 
-Local/cloud Window builds serialize only the compiled Window program into the application project. The source is used during the build and is not required for execution. `patch-build.json` records the compiled artifact version, Change IR version, counts of Forms/named Forms/controls/events/Form actions and SHA-256 of the source used for the build.
+Native GUI IR **v0.2** is the checked platform-neutral contract used by the recommended native Window build path.
 
-The token-free Ready App path uses payload version **0.4** and links the same compiled Window artifact into the prebuilt sandboxed desktop runtime. Current v0.4 Ready payloads contain no Patch source. Runtime v0.4 retains explicit compatibility with legacy v0.3 compiled payloads and older v0.2 source payloads.
+Current direct-native mappings include:
 
-Runtime assets are published under **`studio-runtime-v0.4`** so the public Studio does not combine a Form-lifecycle artifact with an older Window player.
+- Text/Button/Input/Checkbox on Win32, AppKit and GTK3;
+- ComboBox as Win32 `COMBOBOX`, AppKit `NSPopUpButton` and GTK3 `GtkComboBoxText`;
+- named Form open/close lifecycle;
+- typed changed values and explicit semantic changes.
 
-The project-specific Windows/macOS/Linux smoke builds `examples/forms-navigation.patch`, starts the actual packaged application and, when the named Forms are present, requires Main to start visible, Settings hidden, Settings to open after its button click and Settings to close again. The independent runtime-template smoke performs the same open/change/close sequence with a compiled source-free Ready payload on each supported OS.
+Token-free Studio builds use precompiled native runtime templates with checked sealed payload **v2**:
 
-This is a real Patch compile + runtime-link/package step, but it is **not yet direct Patch-to-x86/ARM GUI AOT compilation**. The platform shell and widgets are still supplied by Electron. Native Win32/AppKit/portable Unix widget lowering remains a later backend milestone.
+- Windows: one native Win32 `.exe`;
+- Linux: native GTK3 ELF executable in a ZIP;
+- macOS: unsigned universal AppKit `.app` ZIP with arm64 and x86_64 slices.
+
+ListBox is **not yet in Native GUI IR v0.2**. A project containing ListBox fails closed during native preflight instead of silently dropping the control or silently switching to Electron.
+
+The macOS no-token app remains unsigned because sealing the project payload changes the executable after the generic runtime is compiled. Signing/notarization is a separate packaging milestone.
+
+## Explicit compatibility desktop path
+
+Patch retains an Electron-based compatibility backend as an explicit fallback, not the recommended native Window path.
+
+Compatibility desktop builds consume a source-free `patch-compiled-window-program` **v0.2** artifact carrying Change IR 0.10 and source-backed Form layout. The Ready compatibility payload format remains **v0.4**.
+
+Compatibility runtime template **`studio-runtime-v0.5`** renders Text, Button, Input, Checkbox, ComboBox and ListBox plus named Form lifecycle. v0.5 specifically closes the older renderer gap where ComboBox could pass shared validation but be omitted by the compatibility UI.
+
+The compatibility runtime remains sandboxed and does not reparse `main.patch` for current compiled payloads.
 
 ## Build matrix
 
@@ -198,18 +139,18 @@ FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-Console ready builds are project-specific sealed executables. Current Window ready builds contain a source-free compiled Patch Window program linked into the hardened sandboxed desktop runtime. Local/cloud Window builders produce the same compiled-program execution model and package it with Electron for the target OS.
+For Window projects, the recommended path is direct native when the program fits Native GUI IR v0.2. Unsupported native controls fail closed. The explicit compatibility mode covers the broader Studio/Web control surface while native parity is extended.
 
 ## PWA updates
 
-The beta.32 Forms-v4 cache key begins with `patch-studio-0.2-beta.32-forms4`. Large OS runtime assets remain on-demand rather than part of the core offline cache.
+The beta.32 ListBox cache key begins with `patch-studio-0.2-beta.32-forms5`. Large OS runtime assets remain on demand rather than part of the core offline cache.
 
 ## Source remains truth
 
-The `.patch` file remains the reviewable representation of behavior and current GUI structure. Form names, dimensions, control geometry and Checkbox declarations live in that same source. The compiled Window artifact is a derived build product, not a second editable Form model.
+The `.patch` file remains the reviewable representation of behavior and GUI structure. Form names, dimensions, control geometry, labels and selection options live in that same source. Compiled Window artifacts and Native GUI IR are derived build products, not second editable models.
 
 ## Next work
 
-Product: List/Combo controls and selection events; tabs, menus, dialogs and table/grid; project tree/source files; alignment guides, anchors/docking and multi-select; project import/export; signing/notarization; eventually native AppKit/Win32/portable Unix widget lowering.
+Product priorities include native ListBox parity, radio buttons, tabs, menus, dialogs, table/grid, project tree/source files, alignment guides, anchors/docking, multi-select, project import/export, signing/notarization and a more portable Linux distribution bundle.
 
-Research: controlled overhead measurements, systematic related work, broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
+Research priorities remain controlled overhead measurements, systematic related work, a broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
