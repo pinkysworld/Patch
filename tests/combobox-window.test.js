@@ -7,9 +7,13 @@ import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 import { addDesignerControl, listDesignerControls, updateDesignerControl } from '../src/designer.js';
+import { buildStandaloneWebApp } from '../src/webapp.js';
 import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 
 const source = fs.readFileSync('examples/combo-window.patch', 'utf8');
+const studioIndex = fs.readFileSync('web/index.html', 'utf8');
+const studio = fs.readFileSync('web/playground.js', 'utf8');
+const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 
 test('parser records ComboBox options, id and source-backed geometry', () => {
   const ast = parse(source);
@@ -60,19 +64,49 @@ test('ComboBox event-local value does not persist without an explicit change', (
   assert.deepEqual(result.output, ['Large']);
 });
 
-test('Designer can add, move and rename ComboBox while preserving options', () => {
+test('Designer can add, move, rename and edit ComboBox options in source', () => {
   let edited = addDesignerControl('window "Demo" as main size 480, 240:\n', 'combo');
   let combo = listDesignerControls(edited)[0];
   assert.equal(combo.type, 'combo');
   assert.deepEqual(combo.options, ['"Option 1"', '"Option 2"', '"Option 3"']);
 
   edited += `\nwhen ${combo.id} changed:\n  show value\n`;
-  edited = updateDesignerControl(edited, combo, { id: 'size', x: 40, y: 80, width: 260, height: 38 });
+  edited = updateDesignerControl(edited, combo, {
+    id: 'size',
+    options: ['"Small"', '"Medium"', '"Large"'],
+    x: 40,
+    y: 80,
+    width: 260,
+    height: 38
+  });
   combo = listDesignerControls(edited)[0];
   assert.equal(combo.id, 'size');
-  assert.deepEqual(combo.options, ['"Option 1"', '"Option 2"', '"Option 3"']);
-  assert.match(edited, /combo "Option 1", "Option 2", "Option 3" as size at 40, 80 size 260, 38/);
+  assert.deepEqual(combo.options, ['"Small"', '"Medium"', '"Large"']);
+  assert.match(edited, /combo "Small", "Medium", "Large" as size at 40, 80 size 260, 38/);
   assert.match(edited, /when size changed:/);
+});
+
+test('Patch Studio toolbox and preview expose source-backed ComboBox editing', () => {
+  assert.match(studioIndex, /id="addCombo"/);
+  assert.match(studio, /addControl\('combo'\)/);
+  assert.match(studio, /control\.type === 'combo'/);
+  assert.match(studio, /document\.createElement\('select'\)/);
+  assert.match(studio, /designerInspectorOptions/);
+  assert.match(studio, /changes\.options = splitOptionExpressions/);
+  assert.match(formsDesigner, /\['#addCombo', 'combo'\]/);
+  assert.match(formsDesigner, /control\.type === 'combo'/);
+});
+
+test('Standalone Window Web App renders ComboBox and emits a text changed payload', () => {
+  const built = buildStandaloneWebApp(source, { name: 'ComboDemo', kind: 'window' });
+  assert.equal(built.metadata.version, '0.6');
+  assert.match(built.html, /document\.createElement\('select'\)/);
+  assert.match(built.html, /node\.options\.map\(uiOption\)/);
+  assert.match(built.html, /type==='combo'&&typeof payload\.value!=='string'/);
+  assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
+  assert.match(built.html, /"Small"/);
+  assert.match(built.html, /"Medium"/);
+  assert.match(built.html, /"Large"/);
 });
 
 test('native GUI v0.1 fails closed on ComboBox until native parity lands', () => {
