@@ -4,11 +4,11 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 ## What works in 0.2 beta.32
 
-Patch Studio provides source editing/local autosave, Console and Window Run, a source-backed visual Designer, named Forms, drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox controls, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing/local autosave, Console and Window Run, a source-backed visual Designer, named Forms, drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox controls, Tabs Stage 1, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
-Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry, Form visibility and widget selection are UI/runtime structure rather than new persistent-mutation semantics claims.
+Change IR **0.10** is unchanged. Beta.32 is a research assurance extension and does not alter normal Studio runtime semantics. Form geometry, Form visibility, widget selection and Tabs page selection are UI/runtime structure rather than new persistent-mutation semantics claims.
 
 ## Beta.32 invocation-frame assurance
 
@@ -40,12 +40,12 @@ In Studio you can:
 
 - select the active Form and create additional Forms with **+ Form**;
 - edit Form name, title, width and height;
-- add Text, Button, Input, Checkbox, ComboBox and ListBox controls;
+- add Text, Button, Input, Checkbox, ComboBox, ListBox and Tabs containers;
 - edit source-backed ids, labels and option expressions where applicable;
 - edit X/Y/width/height;
-- drag a selected control directly on the Form;
+- drag a selected top-level control/container directly on the Form;
 - resize it from the bottom-right handle;
-- delete a control and its matching event block;
+- delete a control/container;
 - jump from the inspector to the exact source declaration.
 
 Every visual edit rewrites `main.patch`. There is no hidden `.dfm`, `.frm` or second persistent form document.
@@ -69,6 +69,26 @@ when close_settings clicked:
 ```
 
 The first named Form starts visible. Additional named Forms start hidden until `open <name>`. `close <name>` hides them again. Form visibility is transient UI lifecycle and does not create Change History entries.
+
+## Tabs Stage 1
+
+Tabs are nested UI containers rather than persistent selection controls:
+
+```patch
+window "Settings" as main size 620, 380:
+  tabs as settings at 24, 24 size 540, 280:
+    tab "General":
+      text "General settings"
+      input name
+    tab "Advanced":
+      checkbox "Notifications" as notifications
+```
+
+The active page is renderer-local transient UI state. Switching from one page to another does not create a Patch variable and does not add a Change History entry.
+
+Controls inside pages are still ordinary Patch controls. Their events use the existing semantic paths, so an input or checkbox can persist a value only through an explicit `change`.
+
+Stage 1 requires at least two pages, uses flow layout for controls inside a page, and does not expose an event on the Tabs container itself. The Tabs container id and top-level geometry remain source-backed and editable in the Designer.
 
 ## Typed transient GUI values
 
@@ -96,26 +116,29 @@ ListBox is intentionally single-selection in this stage. Multi-selection will re
 
 ## Standalone Window Web
 
-Standalone Window Web runtime **v0.7** supports the current Form lifecycle plus Text, Button, Input, Checkbox, ComboBox and ListBox. ComboBox and ListBox preserve source-backed option expressions and dispatch text selection values through the same event path used by Studio.
+Standalone Window Web runtime **v0.8** supports named Form lifecycle, Text, Button, Input, Checkbox, ComboBox, ListBox and Tabs Stage 1. Nested page controls use the same event/change semantics as controls outside Tabs.
+
+Tabs page selection lives only in a browser-local `Map`; it is not added to Patch application state.
 
 ## Direct native desktop path
 
-Native GUI IR **v0.2** is the checked platform-neutral contract used by the recommended native Window build path.
+Native GUI IR **v0.3** is the checked platform-neutral contract used by the recommended native Window build path.
 
 Current direct-native mappings include:
 
 - Text/Button/Input/Checkbox on Win32, AppKit and GTK3;
 - ComboBox as Win32 `COMBOBOX`, AppKit `NSPopUpButton` and GTK3 `GtkComboBoxText`;
+- ListBox as Win32 `LISTBOX`, AppKit `NSTableView` and GTK3 `GtkListBox`;
 - named Form open/close lifecycle;
 - typed changed values and explicit semantic changes.
 
-Token-free Studio builds use precompiled native runtime templates with checked sealed payload **v2**:
+Token-free Studio builds use precompiled native runtime templates with checked sealed payload **v3**:
 
 - Windows: one native Win32 `.exe`;
 - Linux: native GTK3 ELF executable in a ZIP;
 - macOS: unsigned universal AppKit `.app` ZIP with arm64 and x86_64 slices.
 
-ListBox is **not yet in Native GUI IR v0.2**. A project containing ListBox fails closed during native preflight instead of silently dropping the control or silently switching to Electron.
+Tabs is deliberately **not** in Native GUI IR v0.3. A project containing Tabs fails closed during native preflight instead of silently dropping the container or silently switching to Electron. Native Tabs parity is a separate versioned container stage.
 
 The macOS no-token app remains unsigned because sealing the project payload changes the executable after the generic runtime is compiled. Signing/notarization is a separate packaging milestone.
 
@@ -125,7 +148,7 @@ Patch retains an Electron-based compatibility backend as an explicit fallback, n
 
 Compatibility desktop builds consume a source-free `patch-compiled-window-program` **v0.2** artifact carrying Change IR 0.10 and source-backed Form layout. The Ready compatibility payload format remains **v0.4**.
 
-Compatibility runtime template **`studio-runtime-v0.5`** renders Text, Button, Input, Checkbox, ComboBox and ListBox plus named Form lifecycle. v0.5 specifically closes the older renderer gap where ComboBox could pass shared validation but be omitted by the compatibility UI.
+Compatibility runtime template **`studio-runtime-v0.6`** renders named Forms, Text, Button, Input, Checkbox, ComboBox, ListBox and Tabs. Tabs page selection is renderer-local here too, so the compatibility layer does not invent hidden Patch state.
 
 The compatibility runtime remains sandboxed and does not reparse `main.patch` for current compiled payloads.
 
@@ -139,18 +162,18 @@ FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-For Window projects, the recommended path is direct native when the program fits Native GUI IR v0.2. Unsupported native controls fail closed. The explicit compatibility mode covers the broader Studio/Web control surface while native parity is extended.
+For Window projects, the recommended path is direct native when the program fits Native GUI IR v0.3. Unsupported native controls/containers fail closed. The explicit compatibility mode covers the broader Studio/Web surface while native parity is extended.
 
 ## PWA updates
 
-The beta.32 ListBox cache key begins with `patch-studio-0.2-beta.32-forms5`. Large OS runtime assets remain on demand rather than part of the core offline cache.
+The beta.32 Tabs cache key begins with `patch-studio-0.2-beta.32-forms6`. Large OS runtime assets remain on demand rather than part of the core offline cache.
 
 ## Source remains truth
 
-The `.patch` file remains the reviewable representation of behavior and GUI structure. Form names, dimensions, control geometry, labels and selection options live in that same source. Compiled Window artifacts and Native GUI IR are derived build products, not second editable models.
+The `.patch` file remains the reviewable representation of behavior and GUI structure. Form names, dimensions, top-level control/container geometry, labels, selection options and Tabs page structure live in that same source. Compiled Window artifacts and Native GUI IR are derived build products, not second editable models.
 
 ## Next work
 
-Product priorities include native ListBox parity, radio buttons, tabs, menus, dialogs, table/grid, project tree/source files, alignment guides, anchors/docking, multi-select, project import/export, signing/notarization and a more portable Linux distribution bundle.
+Product priorities include native Tabs parity, radio buttons, menus, dialogs, table/grid, project tree/source files, alignment guides, anchors/docking, multi-select, project import/export, signing/notarization and a more portable Linux distribution bundle.
 
 Research priorities remain controlled overhead measurements, systematic related work, a broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
