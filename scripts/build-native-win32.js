@@ -63,7 +63,7 @@ const clArgs = [
 ];
 const result = compiler.kind === 'direct'
   ? spawnSync(compiler.command, clArgs, { stdio: 'inherit', windowsHide: true })
-  : spawnSync('cmd.exe', ['/d', '/s', '/c', `call ${cmdQuote(compiler.vsDevCmd)} -arch=x64 -host_arch=x64 && cl.exe ${clArgs.map(cmdQuote).join(' ')}`], { stdio: 'inherit', windowsHide: true });
+  : runThroughVsDevCmd(compiler.vsDevCmd, clArgs);
 
 if (result.error) throw result.error;
 if (result.status !== 0) throw new Error(`MSVC native Win32 build exited with status ${result.status}.`);
@@ -77,6 +77,24 @@ if (smoke) {
   if (run.error) throw run.error;
   if (run.status !== 0) throw new Error(`Native Patch Win32 GUI smoke exited with status ${run.status}.`);
   console.log('Native Patch Win32 GUI smoke passed.');
+}
+
+function runThroughVsDevCmd(vsDevCmd, args) {
+  const scriptPath = path.join(outDir, `${appName}.msvc-build.cmd`);
+  const script = [
+    '@echo off',
+    `call "${vsDevCmd.replace(/"/g, '""')}" -arch=x64 -host_arch=x64`,
+    'if errorlevel 1 exit /b %errorlevel%',
+    `cl.exe ${args.map(batchQuote).join(' ')}`,
+    'exit /b %errorlevel%',
+    ''
+  ].join('\r\n');
+  fs.writeFileSync(scriptPath, script, 'utf8');
+  try {
+    return spawnSync('cmd.exe', ['/d', '/c', scriptPath], { stdio: 'inherit', windowsHide: true });
+  } finally {
+    fs.rmSync(scriptPath, { force: true });
+  }
 }
 
 function resolveMsvc() {
@@ -101,4 +119,4 @@ function safeName(name) {
   const cleaned = String(name).trim().replace(/[^A-Za-z0-9_-]/g, '_').replace(/_+/g, '_').slice(0, 64);
   return cleaned || 'PatchNativeWindow';
 }
-function cmdQuote(value) { return `"${String(value).replace(/"/g, '""')}"`; }
+function batchQuote(value) { return `"${String(value).replace(/"/g, '""')}"`; }
