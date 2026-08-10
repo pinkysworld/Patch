@@ -1,0 +1,75 @@
+name: Patch Native GTK GUI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/native-gui-ir.js
+      - src/gtk-gui.js
+      - scripts/build-native-gtk.js
+      - tests/gtk-gui.test.js
+      - examples/forms-navigation.patch
+      - .github/workflows/native-gtk-gui.yml
+  push:
+    branches: [main]
+    paths:
+      - src/native-gui-ir.js
+      - src/gtk-gui.js
+      - scripts/build-native-gtk.js
+      - tests/gtk-gui.test.js
+      - examples/forms-navigation.patch
+      - .github/workflows/native-gtk-gui.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-gtk:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build/runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Check GTK backend JavaScript
+        run: |
+          node --check src/gtk-gui.js
+          node --check scripts/build-native-gtk.js
+          node --check tests/gtk-gui.test.js
+      - name: Run GTK lowering tests
+        run: node --test tests/gtk-gui.test.js
+      - name: Compile, link and run native Patch GTK application
+        run: |
+          mkdir -p dist-native-gtk
+          node scripts/build-native-gtk.js examples/forms-navigation.patch PatchNativeGtkSmoke dist-native-gtk --smoke
+      - name: Verify native GTK output contract
+        run: |
+          test -x dist-native-gtk/PatchNativeGtkSmoke
+          size=$(stat -c%s dist-native-gtk/PatchNativeGtkSmoke)
+          test "$size" -lt 10485760
+          node -e "const m=require('./dist-native-gtk/PatchNativeGtkSmoke.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.forms!==2||m.events!==3) process.exit(1)"
+          test ! -d dist-native-gtk/node_modules
+          ! find dist-native-gtk -iname '*Electron*' -print -quit | grep -q .
+          echo "Native GTK executable size: $size bytes"
+          ldd dist-native-gtk/PatchNativeGtkSmoke
+      - name: Upload native GTK compiler evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-native-gtk-gui
+          path: |
+            dist-native-gtk/PatchNativeGtkSmoke
+            dist-native-gtk/PatchNativeGtkSmoke.gtk.cpp
+            dist-native-gtk/PatchNativeGtkSmoke.gtk-build.json
+          if-no-files-found: error
