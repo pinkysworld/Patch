@@ -63,6 +63,8 @@ export class PatchInterpreter {
         case 'changeOp': throw new PatchRuntimeError('Change operations only belong inside change.',node.line);
         case 'capRule': throw new PatchRuntimeError('Change capability rules only belong inside allow.',node.line);
         case 'uiControl': throw new PatchRuntimeError('UI controls belong inside a window.',node.line);
+        case 'tabs': throw new PatchRuntimeError('Tabs containers belong inside a window.',node.line);
+        case 'tabPage': throw new PatchRuntimeError('Tab pages belong inside a tabs block.',node.line);
         default: throw new PatchRuntimeError(`Unknown instruction ${node.kind}.`,node.line);
       }
     } catch(err){ if(err instanceof PatchRuntimeError)throw err; if(err instanceof ExpressionError)throw new PatchRuntimeError(err.message,node.line); throw err; }
@@ -197,14 +199,32 @@ export class PatchInterpreter {
       id:windowNode.id??`window${index+1}`,
       visible:windowNode.id?this.formVisibility.get(windowNode.id)!==false:true,
       title:this.uiText(windowNode.titleExpr),
-      controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({
-        type:node.control,
-        id:node.id,
-        text:node.textExpr?this.uiText(node.textExpr):'',
-        options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
-        value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
-      }))
+      controls:this.buildUIItems(windowNode.body)
     }));
+  }
+  buildUIItems(nodes){
+    const items=[];
+    for(const node of nodes??[]){
+      if(node.kind==='uiControl'){
+        items.push({
+          type:node.control,
+          id:node.id,
+          text:node.textExpr?this.uiText(node.textExpr):'',
+          options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
+          value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
+        });
+      } else if(node.kind==='tabs'){
+        items.push({
+          type:'tabs',
+          id:node.id,
+          pages:(node.body??[]).map(page=>({
+            title:this.uiText(page.titleExpr),
+            controls:this.buildUIItems(page.body)
+          }))
+        });
+      }
+    }
+    return items;
   }
   uiText(expr){
     let value;try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
