@@ -1,7 +1,9 @@
 #import <Cocoa/Cocoa.h>
 #include <mach-o/dyld.h>
+#include <algorithm>
 #include <cstdint>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -10,11 +12,11 @@
 #include <vector>
 
 static const char PATCH_MAGIC[8] = {'P','C','H','G','U','I','0','1'};
-static const uint32_t PATCH_PAYLOAD_VERSION = 1;
+static const uint32_t PATCH_PAYLOAD_VERSION = 2;
 static bool gRefreshing = false;
 
 enum StateType : uint8_t { ST_NUMBER=1, ST_TEXT=2, ST_BOOLEAN=3 };
-enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4 };
+enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5 };
 enum EventKind : uint8_t { EV_CLICKED=1, EV_CHANGED=2 };
 enum ActionKind : uint8_t { ACT_OPEN=1, ACT_CLOSE=2, ACT_CHANGE=3 };
 enum OpKind : uint8_t { OP_SET=1, OP_ADD=2, OP_REMOVE=3, OP_CLEAR=4 };
@@ -33,6 +35,7 @@ struct Control {
   std::string id;
   std::string text;
   std::string binding;
+  std::vector<std::string> options;
   int x = 0, y = 0, width = 0, height = 0;
   int formIndex = -1;
   NSControl* widget = nil;
@@ -209,12 +212,16 @@ static bool ParsePayload(const std::vector<uint8_t>& bytes) {
         control.id = reader.text();
         control.text = reader.text();
         control.binding = reader.text();
+        const uint32_t optionCount = reader.u32();
+        if (optionCount > 10000) return false;
+        for (uint32_t o = 0; o < optionCount; ++o) control.options.push_back(reader.text());
         control.x = reader.i32();
         control.y = reader.i32();
         control.width = reader.i32();
         control.height = reader.i32();
         control.formIndex = formIndex;
-        if (control.kind < CK_TEXT || control.kind > CK_CHECKBOX || control.width <= 0 || control.height <= 0 || control.width > 10000 || control.height > 10000) return false;
+        if (control.kind < CK_TEXT || control.kind > CK_COMBO || control.width <= 0 || control.height <= 0 || control.width > 10000 || control.height > 10000) return false;
+        if (control.kind == CK_COMBO && control.options.size() < 2) return false;
         if (!control.id.empty()) {
           if (gControlById.count(control.id)) return false;
           gControlById[control.id] = (int)gControls.size();
@@ -273,7 +280,7 @@ static bool ParsePayload(const std::vector<uint8_t>& bytes) {
     if (!reader.done()) return false;
 
     for (const Control& control : gControls) {
-      if (control.kind == CK_INPUT) {
+      if (control.kind == CK_INPUT || control.kind == CK_COMBO) {
         auto it = gStateByName.find(control.binding);
         if (it == gStateByName.end() || gStates[it->second].type != ST_TEXT) return false;
       } else if (control.kind == CK_CHECKBOX) {
@@ -365,7 +372,12 @@ static void DispatchControl(int controlIndex, uint8_t kind) {
       eventBool = [(NSButton*)control.widget state] == NSControlStateValueOn;
     } else if (event.valueType == 2 && control.kind == CK_INPUT) {
       NSString* value = [(NSTextField*)control.widget stringValue];
-      eventText = value ? std::string([value UTF8String] ?: "") : std::string();
+      const char* utf8 = value ? [value UTF8String] : nullptr;
+      eventText = utf8 ? utf8 : "";
+    } else if (event.valueType == 2 && control.kind == CK_COMBO) {
+      NSString* value = [(NSPopUpButton*)control.widget titleOfSelectedItem];
+      const char* utf8 = value ? [value UTF8String] : nullptr;
+      eventText = utf8 ? utf8 : "";
     }
     ExecuteEvent(event, eventBool, eventText);
   }
@@ -380,7 +392,7 @@ static void DispatchControl(int controlIndex, uint8_t kind) {
   NSInteger index = [sender tag] - 1000;
   if (index < 0 || index >= (NSInteger)gControls.size()) return;
   Control& control = gControls[(size_t)index];
-  DispatchControl((int)index, control.kind == CK_CHECKBOX ? EV_CHANGED : EV_CLICKED);
+  DispatchControl((int)index, (control.kind == CK_CHECKBOX || control.kind == CK_COMBO) ? EV_CHANGED : EV_CLICKED);
 }
 - (void)controlTextDidChange:(NSNotification*)notification {
   NSInteger index = [(NSTextField*)notification.object tag] - 1000;
@@ -423,6 +435,8 @@ static void RefreshUI() {
     } else if (control.kind == CK_CHECKBOX) {
       SetText(control, RenderText(control.text));
       [(NSButton*)control.widget setState:gStates[gStateByName[control.binding]].boolean ? NSControlStateValueOn : NSControlStateValueOff];
+    } else if (control.kind == CK_COMBO) {
+      [(NSPopUpButton*)control.widget selectItemWithTitle:NS(gStates[gStateByName[control.binding]].text)];
     }
   }
   gRefreshing = false;
@@ -446,6 +460,13 @@ static NSControl* CreateControl(int index) {
     field.tag = 1000 + index;
     field.delegate = gEventTarget;
     widget = field;
+  } else if (control.kind == CK_COMBO) {
+    NSPopUpButton* combo = [[NSPopUpButton alloc] initWithFrame:rect pullsDown:NO];
+    for (const auto& option : control.options) [combo addItemWithTitle:NS(option)];
+    combo.tag = 1000 + index;
+    combo.target = gEventTarget;
+    combo.action = @selector(handleControl:);
+    widget = combo;
   } else {
     NSButton* button = [[NSButton alloc] initWithFrame:rect];
     button.tag = 1000 + index;
@@ -521,6 +542,16 @@ static int RunSmoke() {
     [(NSButton*)control.widget performClick:nil];
     PumpAppKit();
     if (gStates[stateIt->second].boolean == before) return 73;
+  }
+  if (gControlById.count("size")) {
+    Control& control = gControls[gControlById["size"]];
+    auto stateIt = gStateByName.find("size");
+    if (!control.widget || control.kind != CK_COMBO || control.options.empty() || stateIt == gStateByName.end()) return 75;
+    const NSInteger last = (NSInteger)control.options.size() - 1;
+    [(NSPopUpButton*)control.widget selectItemAtIndex:last];
+    [gEventTarget handleControl:control.widget];
+    PumpAppKit();
+    if (gStates[stateIt->second].text != control.options[(size_t)last]) return 76;
   }
   if (gControlById.count("close_settings") && settingsIt != gFormById.end()) {
     if (!Click("close_settings") || [gForms[settingsIt->second].window isVisible]) return 74;
