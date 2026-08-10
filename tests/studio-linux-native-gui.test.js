@@ -35,7 +35,7 @@ test('Studio defaults Linux Window downloads to native GTK sealing without token
   assert.ok(studio.includes("platform === 'linux' && kind === 'window'"));
   assert.ok(studio.includes('Native GTK app (no token, recommended)'));
   assert.ok(studio.includes('Linux native GTK app downloaded · no token · no Electron'));
-  assert.ok(studio.includes("['windows', 'linux'].includes(platform)"));
+  assert.ok(studio.includes("['windows', 'macos', 'linux'].includes(platform)"));
 });
 
 test('Linux compatibility packaging remains explicit and AOT route remains available', () => {
