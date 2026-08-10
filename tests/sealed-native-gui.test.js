@@ -16,9 +16,11 @@ const compiled = compile(source, { name: 'SealedTest', kind: 'window', entry: 'f
 const gui = buildNativeGuiIR(compiled);
 const comboSource = fs.readFileSync('examples/combo-window.patch', 'utf8');
 const comboGui = buildNativeGuiIR(compile(comboSource, { name: 'SealedComboTest', kind: 'window', entry: 'combo-window.patch' }));
+const listboxSource = fs.readFileSync('examples/listbox-window.patch', 'utf8');
+const listboxGui = buildNativeGuiIR(compile(listboxSource, { name: 'SealedListBoxTest', kind: 'window', entry: 'listbox-window.patch' }));
 
-test('sealed native GUI payload v2 is deterministic and round-trips from a Windows executable overlay', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 2);
+test('sealed native GUI payload v3 is deterministic and round-trips from a Windows executable overlay', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 3);
   const payload = encodeNativeGuiPayload(gui);
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4, 5, 6]);
   const sealed = sealNativeGuiRuntime(fakePe, gui);
@@ -44,7 +46,7 @@ test('same sealed native GUI payload round-trips from a macOS Mach-O overlay', (
   assert.deepEqual(sealed.subarray(0, fakeMachO.length), fakeMachO);
 });
 
-test('sealed native GUI v2 serializes ComboBox options and text changed semantics without Patch source', () => {
+test('sealed native GUI v3 serializes ComboBox options and text changed semantics without Patch source', () => {
   const payload = encodeNativeGuiPayload(comboGui);
   const text = new TextDecoder().decode(payload);
   assert.match(text, /size/);
@@ -57,6 +59,22 @@ test('sealed native GUI v2 serializes ComboBox options and text changed semantic
   assert.deepEqual(combo.options, ['Small', 'Medium', 'Large']);
   assert.equal(combo.binding, 'size');
   assert.equal(comboGui.events[0].valueType, 'text');
+});
+
+test('sealed native GUI v3 serializes ListBox options and text changed semantics without Patch source', () => {
+  const payload = encodeNativeGuiPayload(listboxGui);
+  const text = new TextDecoder().decode(payload);
+  assert.match(text, /fruit/);
+  assert.match(text, /Apple/);
+  assert.match(text, /Banana/);
+  assert.match(text, /Cherry/);
+  assert.match(text, /Mango/);
+  assert.doesNotMatch(text, /create text fruit/);
+  assert.doesNotMatch(text, /when fruit changed/);
+  const listbox = listboxGui.forms[0].controls.find(control => control.id === 'fruit');
+  assert.deepEqual(listbox.options, ['Apple', 'Banana', 'Cherry', 'Mango']);
+  assert.equal(listbox.binding, 'fruit');
+  assert.equal(listboxGui.events[0].valueType, 'text');
 });
 
 test('sealed native GUI payload contains forms, controls, events and state without Patch source', () => {
