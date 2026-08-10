@@ -5,7 +5,7 @@ import { validateWindowRuntimeSupport } from '../src/window-build.js';
 import { buildCompiledWindowArtifact } from '../src/window-compiled.js';
 import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 import { sealNativeGuiRuntime } from '../src/sealed-native-gui.js';
-import { buildLinuxNativeGuiPackage } from '../src/sealed-native-package.js';
+import { buildLinuxNativeGuiPackage, buildMacosNativeGuiPackage } from '../src/sealed-native-package.js';
 import { buildLocalNativeKit } from '../src/local-native-kit.js';
 import { buildPrebuiltNativePackage, prebuiltNativeTemplateUrl } from '../src/prebuilt-native.js';
 import { buildPrebuiltCompiledWindowPackage } from '../src/prebuilt-window.js';
@@ -17,6 +17,7 @@ const NATIVE_WINDOW_AOT_WORKFLOW = 'native-window-aot.yml';
 const FREEBSD_WORKFLOW = 'freebsd-c99.yml';
 const WINDOWS_NATIVE_GUI_RUNTIME = './runtimes/patch-windows-native-gui-runtime.exe';
 const LINUX_NATIVE_GUI_RUNTIME = './runtimes/patch-linux-native-gui-runtime.bin';
+const MACOS_NATIVE_GUI_RUNTIME = './runtimes/patch-macos-native-gui-runtime.bin';
 const API = 'https://api.github.com';
 const code = document.querySelector('#code');
 const projectName = document.querySelector('#projectName');
@@ -68,7 +69,7 @@ buildButton.addEventListener('click', async event => {
       const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
       const support = validateWindowRuntimeSupport(preflight);
       compiledWindow = buildCompiledWindowArtifact(preflight);
-      const needsNativeGui = (nativeBuildMode.value === 'prebuilt' && ['windows', 'linux'].includes(platform))
+      const needsNativeGui = (nativeBuildMode.value === 'prebuilt' && ['windows', 'macos', 'linux'].includes(platform))
         || (nativeBuildMode.value === 'cloud' && ['windows', 'macos', 'linux'].includes(platform));
       if (needsNativeGui) nativeGui = buildNativeGuiIR(preflight);
       preflightText = `compiled Window ${compiledWindow.version}, Change IR ${compiledWindow.irVersion}, ${support.windows} form${support.windows === 1 ? '' : 's'}, ${support.controls} control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
@@ -100,6 +101,19 @@ buildButton.addEventListener('click', async event => {
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
       output.textContent = `Native Linux app built ✓\n\nTarget: Linux\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR in this browser and sealed it into a native GTK3 ELF runtime.\n\nUnzip the package and run ${ready.executable}. The ZIP preserves the executable bit. The target Linux system needs a compatible GTK3 runtime and its normal system libraries. Choose “Native AOT app” if you specifically want project-specific g++ machine-code generation in GitHub Actions.`;
       status.textContent = `Linux native GTK app downloaded · no token · no Electron`;
+      return;
+    }
+
+    if (nativeBuildMode.value === 'prebuilt' && platform === 'macos' && kind === 'window') {
+      setBusy(true, 'Building native macOS AppKit app in this browser…');
+      output.textContent = `macOS native AppKit build\n\nPreflight passed: ${preflightText}.\nLoading the native AppKit runtime template…`;
+      const response = await fetch(MACOS_NATIVE_GUI_RUNTIME, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`The native macOS AppKit runtime template is not available yet (${response.status}).`);
+      const runtimeBytes = new Uint8Array(await response.arrayBuffer());
+      const ready = buildMacosNativeGuiPackage(runtimeBytes, nativeGui, { name });
+      downloadBytes(ready.bytes, ready.filename, 'application/zip');
+      output.textContent = `Native macOS app built ✓\n\nTarget: macOS\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR in this browser, sealed it into a native AppKit Mach-O runtime, and packaged ${ready.bundle}.\n\nImportant: this token-free app is unsigned because browser-side sealing changes the executable after the runtime template was built. macOS Gatekeeper may therefore require Control-click → Open on first launch. Choose “Native AOT app” for project-specific clang code generation; signing/notarization remains a separate packaging stage.`;
+      status.textContent = `macOS native AppKit app downloaded · unsigned · no token · no Electron`;
       return;
     }
 
@@ -153,8 +167,8 @@ buildButton.addEventListener('click', async event => {
         ? 'Native AOT EXE uses GitHub Actions and therefore needs a fine-grained GitHub token with Actions read/write access. Choose “Native single EXE (no token, recommended)” to build directly in Patch Studio without credentials.'
         : platform === 'linux' && kind === 'window'
           ? 'Native Linux AOT uses GitHub Actions and therefore needs a fine-grained GitHub token with Actions read/write access. Choose “Native GTK app (no token, recommended)” to build directly in Patch Studio without credentials.'
-          : kind === 'window' && platform === 'macos'
-            ? 'Native macOS AOT uses GitHub Actions and therefore needs a fine-grained GitHub token with Actions read/write access. The token is not saved.'
+          : platform === 'macos' && kind === 'window'
+            ? 'Native macOS AOT uses GitHub Actions and therefore needs a fine-grained GitHub token with Actions read/write access. Choose “Native AppKit app (no token, unsigned)” to build directly in Patch Studio without credentials.'
             : 'Cloud build mode needs a fine-grained GitHub token with Actions read/write access. The token is not saved.';
       throw new Error(nativeHint);
     }
@@ -219,7 +233,7 @@ function refreshNativePanel() {
   const profile = `${platform ?? 'none'}:${kind}`;
   if (profile !== nativeBuildProfile) {
     nativeBuildProfile = profile;
-    if ((platform === 'windows' || platform === 'linux') && kind === 'window') nativeBuildMode.value = 'prebuilt';
+    if (['windows', 'macos', 'linux'].includes(platform) && kind === 'window') nativeBuildMode.value = 'prebuilt';
   }
   updateNativeModeLabels(platform, kind);
   tokenLabel.hidden = nativeBuildMode.value !== 'cloud';
@@ -231,6 +245,8 @@ function refreshNativePanel() {
     status.textContent = 'Recommended: native Win32 single EXE with no token. Studio compiles Native GUI IR in your browser and seals it into the native Win32 runtime. The download is the .exe itself.';
   } else if (platform === 'linux' && kind === 'window' && nativeBuildMode.value === 'prebuilt') {
     status.textContent = 'Recommended: native GTK3 application with no token. Studio compiles Native GUI IR in your browser, seals it into the native Linux runtime, and downloads a ZIP containing one executable.';
+  } else if (platform === 'macos' && kind === 'window' && nativeBuildMode.value === 'prebuilt') {
+    status.textContent = 'Recommended: native AppKit application with no token. Studio seals Native GUI IR into the native macOS runtime and creates an unsigned .app ZIP. Gatekeeper may require Control-click → Open on first launch.';
   } else if (platform === 'windows' && kind === 'window' && nativeBuildMode.value === 'cloud') {
     status.textContent = 'Optional AOT build: GitHub Actions runs MSVC and returns an artifact ZIP containing only your project-specific .exe. A token is needed only for this Actions route.';
   } else if ((platform === 'macos' || platform === 'linux') && kind === 'window' && nativeBuildMode.value === 'cloud') {
@@ -259,7 +275,7 @@ function updateNativeModeLabels(platform, kind) {
   const cloud = nativeBuildMode.querySelector('option[value="cloud"]');
   const local = nativeBuildMode.querySelector('option[value="local"]');
   const compat = nativeBuildMode.querySelector('option[value="compat"]');
-  compat.hidden = !(kind === 'window' && (platform === 'windows' || platform === 'linux'));
+  compat.hidden = !(kind === 'window' && ['windows', 'macos', 'linux'].includes(platform));
   if (platform === 'windows' && kind === 'window') {
     prebuilt.textContent = 'Native single EXE (no token, recommended)';
     cloud.textContent = 'Native AOT EXE (GitHub Actions)';
@@ -269,6 +285,13 @@ function updateNativeModeLabels(platform, kind) {
   }
   if (platform === 'linux' && kind === 'window') {
     prebuilt.textContent = 'Native GTK app (no token, recommended)';
+    cloud.textContent = 'Native AOT app (GitHub Actions)';
+    local.textContent = 'Local compatibility kit (advanced)';
+    compat.textContent = 'Compatibility package (Electron, no token)';
+    return;
+  }
+  if (platform === 'macos' && kind === 'window') {
+    prebuilt.textContent = 'Native AppKit app (no token, unsigned)';
     cloud.textContent = 'Native AOT app (GitHub Actions)';
     local.textContent = 'Local compatibility kit (advanced)';
     compat.textContent = 'Compatibility package (Electron, no token)';
@@ -355,7 +378,7 @@ function readyPackageNote(kind, platform) {
     ? 'For Windows, choose “Native single EXE (no token, recommended)” for the native sealed-runtime build, “Native AOT EXE” for project-specific MSVC codegen, or use patch-app locally.'
     : platform === 'linux'
       ? 'For Linux, choose “Native GTK app (no token, recommended)” for the native sealed-runtime build or “Native AOT app” for project-specific g++ code generation.'
-      : 'Choose “Native AOT app (GitHub Actions)” for the direct AppKit backend. Token-free native sealing for macOS is separate follow-on work.';
+      : 'For macOS, choose “Native AppKit app (no token, unsigned)” for the native sealed-runtime build or “Native AOT app” for project-specific clang code generation.';
   return `Compatibility path: Studio links the compiled Patch Window artifact into the prebuilt Electron desktop runtime, which can include patch-app.json and multiple runtime files. This is not the direct native GUI backend. ${nativeAlternative}`;
 }
 function prebuiltLauncher(platform, kind, name) {
