@@ -33,19 +33,33 @@ node scripts/build-native-win32.js myapp.patch MyApp dist
 
 The direct backend currently supports the Native GUI IR 0.1 subset documented in `docs/NATIVE_GUI.md`.
 
+## Patch Studio Windows GUI build
+
+For **Windows + Window / GUI**, Patch Studio now treats the direct native compiler as the recommended cloud path.
+
+The build-mode selector shows:
+
+- **Native single EXE (GitHub Actions, recommended)**: sends the current editor source to the dedicated Windows compiler workflow, generates Win32 C++, links it with MSVC, executes the native GUI smoke and downloads a GitHub artifact ZIP containing exactly `AppName.exe`.
+- **Compatibility package (Electron, no token)**: keeps the older browser-only runtime-template path for GUI features not yet covered by Native GUI IR. This path can contain `patch-app.json` and multiple Electron runtime files and is not a single-EXE build.
+- **Local compatibility kit (advanced)**: retains the older local desktop packager. For direct native local compilation, use `patch-app` on Windows with the C++ Build Tools installed.
+
+When the Studio profile changes to Windows + Window / GUI, the native single-EXE cloud mode is selected by default. The GitHub token is used only to dispatch and retrieve the Actions build and is not saved by Patch Studio.
+
+The Studio request uses the same `Patch Windows Single EXE` workflow as the repository build. The editor source is Base64-encoded in memory and sent through the workflow-dispatch input; it does not need to be committed to the repository first.
+
+GitHub wraps Actions artifacts in a ZIP for transport, but the Windows native artifact contains exactly one user deliverable: `AppName.exe`.
+
 ## GitHub Actions single-EXE build
 
-The **Patch Windows Single EXE** workflow provides a compiler without requiring Visual Studio on the developer's PC.
+The **Patch Windows Single EXE** workflow also provides a compiler directly from the GitHub Actions page without requiring Visual Studio on the developer's PC.
 
-From the GitHub Actions page:
+A manual workflow run can either receive Studio `source_b64` or use a `.patch` file already committed to the repository. For a repository source:
 
 1. Open **Patch Windows Single EXE**.
 2. Choose **Run workflow**.
-3. Enter a `.patch` file already committed to the repository, for example `examples/forms-navigation.patch`.
+3. Enter the `.patch` source path, for example `examples/forms-navigation.patch`.
 4. Enter the application name.
 5. Download the completed workflow artifact.
-
-GitHub wraps Actions artifacts in a ZIP for transport, but the artifact itself contains exactly one application file: `AppName.exe`.
 
 The workflow verifies that:
 
@@ -58,19 +72,13 @@ The workflow verifies that:
 
 On `main`, the canonical Forms demo is also uploaded directly to the GitHub release tag `native-win32-preview-v0.1` as `PatchFormsDemo.exe`.
 
-## Legacy Ready compatibility package
+## Legacy compatibility package
 
-Patch Studio's older no-token Window "Ready app" mechanism is a different architecture. It downloads a generic Electron-based runtime and links a compiled Patch payload into that runtime. Such packages can contain a `patch-app.json` payload and multiple runtime files.
+Patch Studio's no-token Window compatibility mechanism is a different architecture. It downloads a generic Electron-based runtime and links a compiled Patch payload into that runtime. Such packages can contain a `patch-app.json` payload and multiple runtime files.
 
-That compatibility package is **not** the direct native Win32 single-EXE build. It remains useful only while the native backend does not cover every Patch GUI feature.
+That compatibility package is **not** the direct native Win32 single-EXE build. It remains available only while the native backend does not cover every Patch GUI feature.
 
-A static browser page cannot perform a fresh MSVC link for arbitrary local source by itself. For arbitrary source, use one of these direct-native routes:
-
-- local `patch-app` with Windows C++ Build Tools;
-- the GitHub Actions compiler workflow for source committed to the repository;
-- Patch Studio cloud build once its Window target is switched to the direct native compiler path.
-
-The compatibility package should not be described as a native single-EXE application.
+A static browser page cannot perform a fresh MSVC link by itself, which is why Studio's recommended native Windows GUI path uses the GitHub Actions compiler service. The direct local alternative is `patch-app` with Windows C++ Build Tools installed.
 
 ## Signing
 
