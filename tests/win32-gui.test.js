@@ -111,6 +111,8 @@ test('Win32 build script can emit auditable native source and metadata on every 
     const cpp = fs.readFileSync(path.join(temp, 'NativeSmoke.win32.cpp'), 'utf8');
     const meta = JSON.parse(fs.readFileSync(path.join(temp, 'NativeSmoke.win32-build.json'), 'utf8'));
     assert.match(cpp, /PatchNativeWindowV1/);
+    assert.equal(cpp.includes('\0'), false, 'emitted C++ must not contain embedded NUL bytes');
+    assert.match(cpp, /L'\\0'/);
     assert.equal(meta.shell, 'native-win32');
     assert.equal(meta.electron, false);
     assert.equal(meta.crt, 'static');
