@@ -1,0 +1,78 @@
+name: Patch Native Win32 GUI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/native-gui-ir.js
+      - src/win32-gui.js
+      - scripts/build-native-win32.js
+      - tests/win32-gui.test.js
+      - examples/forms-navigation.patch
+      - .github/workflows/native-win32-gui.yml
+  push:
+    branches: [main]
+    paths:
+      - src/native-gui-ir.js
+      - src/win32-gui.js
+      - scripts/build-native-win32.js
+      - tests/win32-gui.test.js
+      - examples/forms-navigation.patch
+      - .github/workflows/native-win32-gui.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-win32:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Check native GUI backend JavaScript
+        shell: pwsh
+        run: |
+          node --check src/native-gui-ir.js
+          node --check src/win32-gui.js
+          node --check scripts/build-native-win32.js
+          node --check tests/win32-gui.test.js
+      - name: Run native GUI lowering tests
+        shell: pwsh
+        run: node --test tests/win32-gui.test.js
+      - name: Compile and link native Patch Win32 Forms application
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-native | Out-Null
+          node scripts/build-native-win32.js examples/forms-navigation.patch PatchNativeWin32Smoke dist-native --smoke
+      - name: Verify native output contract
+        shell: pwsh
+        run: |
+          $exe = Get-Item dist-native/PatchNativeWin32Smoke.exe
+          if (-not $exe) { throw 'Native Patch Win32 executable was not produced.' }
+          if ($exe.Length -gt 10MB) { throw "Native Patch Win32 executable is unexpectedly large: $($exe.Length) bytes" }
+          $meta = Get-Content dist-native/PatchNativeWin32Smoke.win32-build.json | ConvertFrom-Json
+          if ($meta.electron -ne $false) { throw 'Native Win32 build metadata must explicitly record electron=false.' }
+          if ($meta.shell -ne 'native-win32') { throw "Unexpected native shell: $($meta.shell)" }
+          if ($meta.crt -ne 'static') { throw "Native Win32 smoke must use the static C/C++ runtime." }
+          if ($meta.forms -ne 2 -or $meta.events -ne 3) { throw 'Native Forms smoke metadata is incomplete.' }
+          if ((Test-Path dist-native/resources) -or (Test-Path dist-native/node_modules)) { throw 'Native Win32 output unexpectedly contains a web/Electron runtime tree.' }
+          Write-Host "Native exe size: $($exe.Length) bytes"
+      - name: Upload native compiler evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-native-win32-gui
+          path: |
+            dist-native/PatchNativeWin32Smoke.exe
+            dist-native/PatchNativeWin32Smoke.win32.cpp
+            dist-native/PatchNativeWin32Smoke.win32-build.json
+          if-no-files-found: error
