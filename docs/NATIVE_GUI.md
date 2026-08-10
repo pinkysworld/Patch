@@ -109,11 +109,11 @@ The separate generic Win32 sealed runtime reads the `PCHGUI01` payload from its 
 
 The macOS AOT backend emits Objective-C++ against Cocoa/AppKit. It creates native `NSWindow`, `NSButton` and `NSTextField` objects, uses target/action events plus the text-field delegate, and translates Patch top-left geometry to AppKit coordinates. `clang++` links a normal `.app` bundle.
 
-The existing project-specific AOT CI executable passed the Forms/Checkbox lifecycle smoke and links only Apple platform frameworks/libraries rather than Electron/Chromium.
+The project-specific AOT CI executable passes the Forms/Checkbox lifecycle smoke and links Apple platform frameworks/libraries rather than Electron/Chromium.
 
 The token-free Studio path uses a generic AppKit runtime. It reads the same `PCHGUI01` payload used by Windows and Linux, creates native controls, dispatches typed events, applies Patch changes and Form lifecycle actions, and refreshes bound controls. The release workflow builds the runtime as a universal Mach-O with both `arm64` and `x86_64` slices and smoke-runs the sealed canonical application on the Apple Silicon GitHub runner.
 
-The initial pre-universal validation run produced a 103,888-byte ARM64 runtime and a 104,411-byte sealed Forms executable. Those values are engineering artifact sizes from CI, not benchmark or research-performance claims. The final universal artifact is expected to be larger and is validated separately before release.
+The validated universal AppKit runtime is **209,008 bytes**, and the canonical sealed Forms executable is **209,531 bytes**. `file` verifies both x86_64 and arm64 Mach-O slices. These are engineering artifact sizes from CI, not benchmark or research-performance claims.
 
 ## Linux: direct GTK3 and sealed runtime
 
