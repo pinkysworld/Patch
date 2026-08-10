@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { compile } from '../src/compiler.js';
+import { buildNativeGuiIR } from '../src/native-gui-ir.js';
+import { emitAppKitGuiObjCpp, PATCH_APPKIT_GUI_BACKEND_VERSION } from '../src/appkit-gui.js';
+
+const sourcePath = process.argv[2];
+const appName = safeName(process.argv[3] ?? 'PatchNativeMac');
+const outDir = path.resolve(process.argv[4] ?? 'dist');
+const emitOnly = process.argv.includes('--emit-only');
+const smoke = process.argv.includes('--smoke');
+
+if (!sourcePath) {
+  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke]');
+  process.exit(2);
+}
+
+const absoluteSource = path.resolve(sourcePath);
+const source = fs.readFileSync(absoluteSource, 'utf8');
+const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
+const gui = buildNativeGuiIR(compiled);
+const objCpp = emitAppKitGuiObjCpp(gui);
+
+fs.mkdirSync(outDir, { recursive: true });
+const sourceOut = path.join(outDir, `${appName}.appkit.mm`);
+const metadataPath = path.join(outDir, `${appName}.appkit-build.json`);
+const appPath = path.join(outDir, `${appName}.app`);
+const contentsPath = path.join(appPath, 'Contents');
+const macOSPath = path.join(contentsPath, 'MacOS');
+const executablePath = path.join(macOSPath, appName);
+const plistPath = path.join(contentsPath, 'Info.plist');
+
+fs.writeFileSync(sourceOut, objCpp);
+fs.writeFileSync(metadataPath, JSON.stringify({
+  format: 'patch-native-appkit-build',
+  version: '0.1',
+  backendVersion: PATCH_APPKIT_GUI_BACKEND_VERSION,
+  appName,
+  nativeGuiIrVersion: gui.version,
+  changeIrVersion: compiled.ir?.version ?? null,
+  forms: gui.forms.length,
+  controls: gui.forms.reduce((sum, form) => sum + form.controls.length, 0),
+  events: gui.events.length,
+  sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
+  shell: 'native-appkit',
+  electron: false,
+  framework: 'AppKit'
+}, null, 2));
+
+if (emitOnly) {
+  console.log(`Emitted native AppKit Objective-C++ source: ${sourceOut}`);
+  process.exit(0);
+}
+if (process.platform !== 'darwin') {
+  console.error('Direct AppKit linking currently runs on macOS. Use --emit-only to inspect generated Objective-C++ elsewhere.');
+  process.exit(3);
+}
+
+fs.rmSync(appPath, { recursive: true, force: true });
+fs.mkdirSync(macOSPath, { recursive: true });
+fs.writeFileSync(plistPath, buildInfoPlist(appName));
+
+const clang = spawnSync('xcrun', [
+  '--sdk', 'macosx', 'clang++',
+  '-std=c++17', '-O2', '-fobjc-arc',
+  '-framework', 'Cocoa',
+  '-Wl,-dead_strip',
+  sourceOut,
+  '-o', executablePath
+], { stdio: 'inherit' });
+
+if (clang.error) throw clang.error;
+if (clang.status !== 0) throw new Error(`AppKit native build exited with status ${clang.status}.`);
+if (!fs.existsSync(executablePath)) throw new Error('clang++ completed without producing the native AppKit executable.');
+fs.chmodSync(executablePath, 0o755);
+
+console.log(`Built native Patch AppKit GUI: ${appPath}`);
+console.log(`Native GUI IR ${gui.version}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
+
+if (smoke) {
+  const run = spawnSync(executablePath, ['--patch-smoke'], {
+    stdio: 'inherit',
+    timeout: 30000,
+    env: { ...process.env, NSUnbufferedIO: 'YES' }
+  });
+  if (run.error) throw run.error;
+  if (run.status !== 0) throw new Error(`Native Patch AppKit GUI smoke exited with status ${run.status}.`);
+  console.log('Native Patch AppKit GUI smoke passed.');
+}
+
+function buildInfoPlist(name) {
+  const escaped = xmlEscape(name);
+  const identifier = `org.patchlang.${name.toLowerCase().replace(/[^a-z0-9.-]/g, '-')}`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n  <key>CFBundleDevelopmentRegion</key><string>en</string>\n  <key>CFBundleExecutable</key><string>${escaped}</string>\n  <key>CFBundleIdentifier</key><string>${xmlEscape(identifier)}</string>\n  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>\n  <key>CFBundleName</key><string>${escaped}</string>\n  <key>CFBundlePackageType</key><string>APPL</string>\n  <key>CFBundleShortVersionString</key><string>0.1</string>\n  <key>CFBundleVersion</key><string>1</string>\n  <key>LSMinimumSystemVersion</key><string>11.0</string>\n  <key>NSHighResolutionCapable</key><true/>\n</dict>\n</plist>\n`;
+}
+
+function safeName(name) {
+  const cleaned = String(name).trim().replace(/[^A-Za-z0-9_-]/g, '_').replace(/_+/g, '_').slice(0, 64);
+  return cleaned || 'PatchNativeMac';
+}
+function xmlEscape(value) {
+  return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
