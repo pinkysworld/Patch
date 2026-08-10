@@ -8,8 +8,8 @@ export class NativeGuiError extends Error {}
 
 /**
  * Lower the deliberately small, beginner-facing Patch Forms surface into a
- * platform-neutral GUI IR. Backends must fail closed rather than silently
- * dropping Patch behavior they do not understand.
+ * platform-neutral GUI IR. Backends fail closed instead of silently dropping
+ * Patch behavior they do not understand.
  */
 export function buildNativeGuiIR(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
@@ -23,33 +23,39 @@ export function buildNativeGuiIR(compiled) {
   const forms = [];
   const controls = new Map();
   const events = [];
-  let namedFormIndex = 0;
+  const eventKeys = new Set();
 
+  // State is collected first so a visual declaration can bind to state even
+  // when the user places the create line later in the source file.
   for (const node of compiled.ast) {
-    if (node.kind === 'create') {
-      if (!['number', 'text', 'boolean'].includes(node.valueType)) {
-        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 supports number, text and boolean state.`);
-      }
-      const initial = parseInitialLiteral(node);
-      const state = { name: node.name, type: node.valueType, initial };
-      states.push(state);
-      stateByName.set(node.name, state);
-      continue;
+    if (node.kind !== 'create') continue;
+    if (!['number', 'text', 'boolean'].includes(node.valueType)) {
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 supports number, text and boolean state.`);
     }
+    if (stateByName.has(node.name)) {
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native state '${node.name}' is declared more than once.`);
+    }
+    const state = { name: node.name, type: node.valueType, initial: parseInitialLiteral(node) };
+    states.push(state);
+    stateByName.set(node.name, state);
+  }
+
+  let namedFormIndex = 0;
+  for (const node of compiled.ast) {
+    if (node.kind === 'create') continue;
 
     if (node.kind === 'window') {
       const windowIndex = forms.length;
       const formLayout = layout.windows[windowIndex];
       const formId = node.id ?? `__window_${windowIndex + 1}`;
       const isNamed = Boolean(node.id);
-      const visible = isNamed ? namedFormIndex++ === 0 : true;
       const form = {
         id: formId,
         sourceId: node.id ?? null,
         title: requireTextLiteral(node.titleExpr, node.line, 'Form title'),
         width: node.width ?? 640,
         height: node.height ?? 420,
-        visible,
+        visible: isNamed ? namedFormIndex++ === 0 : true,
         controls: []
       };
 
@@ -67,24 +73,13 @@ export function buildNativeGuiIR(compiled) {
           binding: child.id ?? null,
           layout: effective ?? defaultLayout(child.control, controlIndex)
         };
+
         if ((child.control === 'input' || child.control === 'checkbox') && !child.id) {
           throw new NativeGuiError(`line ${child.line ?? '?'}: native ${child.control} controls need a simple Patch name after 'as'.`);
         }
-        if (child.control === 'checkbox') {
-          const state = stateByName.get(child.id);
-          if (!state || state.type !== 'boolean') {
-            throw new NativeGuiError(`line ${child.line ?? '?'}: native Checkbox '${child.id}' must bind to boolean state with the same name.`);
-          }
-        }
-        if (child.control === 'input') {
-          const state = stateByName.get(child.id);
-          if (!state || state.type !== 'text') {
-            throw new NativeGuiError(`line ${child.line ?? '?'}: native Input '${child.id}' must bind to text state with the same name.`);
-          }
-        }
-        if (child.id) {
-          controls.set(child.id, { ...control, formId });
-        }
+        if (child.control === 'checkbox') requireBindingType(child, stateByName, 'boolean', 'Checkbox');
+        if (child.control === 'input') requireBindingType(child, stateByName, 'text', 'Input');
+        if (child.id) controls.set(child.id, { ...control, formId });
         form.controls.push(control);
         controlIndex += 1;
       }
@@ -97,6 +92,11 @@ export function buildNativeGuiIR(compiled) {
       if (!control) {
         throw new NativeGuiError(`line ${node.line ?? '?'}: native event '${node.control}' refers to an unknown control.`);
       }
+      const key = `${node.control}\u0000${node.event}`;
+      if (eventKeys.has(key)) {
+        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 requires one '${node.event}' handler for '${node.control}'.`);
+      }
+      eventKeys.add(key);
       const valueType = control.type === 'checkbox' ? 'boolean' : control.type === 'input' ? 'text' : null;
       events.push({
         control: node.control,
@@ -111,10 +111,10 @@ export function buildNativeGuiIR(compiled) {
     if (['openForm', 'closeForm'].includes(node.kind)) {
       throw new NativeGuiError(`line ${node.line ?? '?'}: open/close belongs inside a GUI event for native GUI v0.1.`);
     }
-    if (!['createThing'].includes(node.kind)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 cannot lower top-level '${node.kind}' yet.`);
+    if (node.kind === 'createThing') {
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 does not support thing state yet.`);
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 does not support thing state yet.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.1 cannot lower top-level '${node.kind}' yet.`);
   }
 
   if (!forms.length) throw new NativeGuiError('Native GUI lowering needs at least one Patch Form.');
@@ -155,9 +155,7 @@ function lowerNativeActions(nodes, states, event) {
       const ops = [];
       for (const op of node.ops ?? []) {
         if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.1 does not support field mutation yet.`);
-        if (!['set', 'add', 'remove', 'clear'].includes(op.op)) {
-          throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.1 cannot lower change operation '${op.op}'.`);
-        }
+        validateTypedOperation(state, op);
         if (op.op === 'clear') {
           ops.push({ op: 'clear' });
           continue;
@@ -167,6 +165,8 @@ function lowerNativeActions(nodes, states, event) {
           if (!event || event.event !== 'changed') {
             throw new NativeGuiError(`line ${op.line ?? '?'}: event-local value is only available in changed handlers.`);
           }
+          const eventType = event.control ? null : null;
+          void eventType;
           ops.push({ op: op.op, value: { kind: 'eventValue' } });
           continue;
         }
@@ -180,6 +180,24 @@ function lowerNativeActions(nodes, states, event) {
   return actions;
 }
 
+function validateTypedOperation(state, op) {
+  const allowed = state.type === 'number'
+    ? new Set(['set', 'add', 'remove', 'clear'])
+    : state.type === 'text'
+      ? new Set(['set', 'add', 'clear'])
+      : new Set(['set', 'clear']);
+  if (!allowed.has(op.op)) {
+    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.1 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
+  }
+}
+
+function requireBindingType(control, states, expected, label) {
+  const state = states.get(control.id);
+  if (!state || state.type !== expected) {
+    throw new NativeGuiError(`line ${control.line ?? '?'}: native ${label} '${control.id}' must bind to ${expected} state with the same name.`);
+  }
+}
+
 function parseInitialLiteral(node) {
   return parseTypedLiteral(String(node.expr ?? '').trim(), node.valueType, node.line);
 }
@@ -188,7 +206,7 @@ function parseTypedLiteral(expr, type, line) {
   if (type === 'boolean') {
     if (expr === 'true') return true;
     if (expr === 'false') return false;
-    throw new NativeGuiError(`line ${line ?? '?'}: native boolean state currently needs a literal true/false initial or assigned value.`);
+    throw new NativeGuiError(`line ${line ?? '?'}: native boolean state currently needs a literal true/false value.`);
   }
   if (type === 'number') {
     const value = Number(expr);
