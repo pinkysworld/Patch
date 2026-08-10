@@ -109,7 +109,29 @@ test('Standalone Window Web App renders ComboBox and emits a text changed payloa
   assert.match(built.html, /Large/);
 });
 
-test('native GUI v0.1 fails closed on ComboBox until native parity lands', () => {
+test('native GUI v0.2 carries ComboBox options, text binding and changed event semantics', () => {
   const compiled = compile(source, { name: 'ComboDemo', kind: 'window' });
-  assert.throws(() => buildNativeGuiIR(compiled), /does not support 'combo'/);
+  const ir = buildNativeGuiIR(compiled);
+  assert.equal(ir.version, '0.2');
+  assert.deepEqual(ir.states, [{ name: 'size', type: 'text', initial: 'Medium' }]);
+  const combo = ir.forms[0].controls.find(control => control.id === 'size');
+  assert.deepEqual(combo, {
+    type: 'combo',
+    id: 'size',
+    text: '',
+    binding: 'size',
+    options: ['Small', 'Medium', 'Large'],
+    layout: { x: 24, y: 72, width: 220, height: 36 }
+  });
+  assert.deepEqual(ir.events, [{
+    control: 'size',
+    event: 'changed',
+    valueType: 'text',
+    actions: [{
+      kind: 'change',
+      target: 'size',
+      stateType: 'text',
+      ops: [{ op: 'set', value: { kind: 'eventValue' } }]
+    }]
+  }]);
 });
