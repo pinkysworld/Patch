@@ -18,6 +18,10 @@ on:
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
+      - tests/sealed-native-gui.test.js
+      - tests/studio-linux-native-gui.test.js
+      - docs/NATIVE_GUI.md
+      - docs/ROADMAP.md
       - .github/workflows/pages.yml
   push:
     branches: [main]
@@ -36,6 +40,10 @@ on:
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
+      - tests/sealed-native-gui.test.js
+      - tests/studio-linux-native-gui.test.js
+      - docs/NATIVE_GUI.md
+      - docs/ROADMAP.md
       - .github/workflows/pages.yml
 
 concurrency:
