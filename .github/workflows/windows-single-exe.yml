@@ -1,17 +1,25 @@
 name: Patch Windows Single EXE
-run-name: Windows Single EXE ${{ inputs.app_name || 'PatchFormsDemo' }}
+run-name: Windows Single EXE ${{ inputs.request_id || inputs.app_name || 'PatchFormsDemo' }}
 
 on:
   workflow_dispatch:
     inputs:
+      source_b64:
+        description: Base64-encoded Patch source from Patch Studio; leave empty to use source_path
+        required: false
+        default: ''
       source_path:
-        description: Patch source file already committed in this repository
-        required: true
+        description: Patch source file already committed in this repository when source_b64 is empty
+        required: false
         default: examples/forms-navigation.patch
       app_name:
         description: Application name
         required: true
         default: PatchFormsDemo
+      request_id:
+        description: Studio request identifier
+        required: false
+        default: manual
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
@@ -23,6 +31,8 @@ on:
       - src/parser.js
       - src/expression.js
       - src/change.js
+      - web/native-build.js
+      - tests/studio-windows-single-exe.test.js
       - examples/forms-navigation.patch
   push:
     branches: [main]
@@ -50,6 +60,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     env:
+      INPUT_SOURCE_B64: ${{ inputs.source_b64 }}
       INPUT_SOURCE_PATH: ${{ inputs.source_path }}
       INPUT_APP_NAME: ${{ inputs.app_name }}
     steps:
@@ -63,7 +74,17 @@ jobs:
         shell: pwsh
         run: |
           if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
-            $source = $env:INPUT_SOURCE_PATH
+            if (-not [string]::IsNullOrWhiteSpace($env:INPUT_SOURCE_B64)) {
+              try {
+                $bytes = [Convert]::FromBase64String($env:INPUT_SOURCE_B64)
+              } catch {
+                throw 'Studio source_b64 is not valid Base64.'
+              }
+              [System.IO.File]::WriteAllBytes((Join-Path $PWD 'studio.patch'), $bytes)
+              $source = 'studio.patch'
+            } else {
+              $source = $env:INPUT_SOURCE_PATH
+            }
             $name = $env:INPUT_APP_NAME
           } else {
             $source = 'examples/forms-navigation.patch'
