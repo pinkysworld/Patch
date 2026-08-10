@@ -16,7 +16,7 @@ The ordinary Studio does not need Lean or expose beta.32 proof machinery. The re
 
 The direct-Wasm backend emits no trusted call-enter/call-exit markers. The independent Change-IR validator reconstructs concrete invocation frames containing caller/callee identity, dynamic invocation ordinal, parent/depth information, exact arguments/bindings and transition ranges.
 
-For each accepted beta.30 call witness, beta.32 selects observed effects by concrete frame identity. Generated Lean evidence checks the independently reconstructed frame binding equals the beta.30 exact callee binding and re-evaluates frame-selected observed semantic effects against the exact call tree.
+For each accepted beta.30 call witness, beta.32 selects observed effects by concrete frame identity. `GeneratedTransitiveRuntimeCertificate.lean` records the canonical transitive case and `GeneratedRepeatedTransitiveRuntimeCertificate.lean` records repeated identical-call evidence. Generated Lean evidence checks the independently reconstructed frame binding equals the beta.30 exact callee binding and re-evaluates frame-selected observed semantic effects against the exact call tree.
 
 Runtime capture and independent-validator/invocation-frame reconstruction correctness remain explicit proof-free boundaries.
 
