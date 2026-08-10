@@ -1,0 +1,74 @@
+name: Patch Native GUI Unified Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/native-gui-host.js
+      - scripts/build-native-gui.js
+      - tests/native-gui-host.test.js
+      - package.json
+      - docs/NATIVE_GUI.md
+      - .github/workflows/native-gui-unified.yml
+  push:
+    branches: [main]
+    paths:
+      - src/native-gui-host.js
+      - scripts/build-native-gui.js
+      - tests/native-gui-host.test.js
+      - package.json
+      - docs/NATIVE_GUI.md
+      - .github/workflows/native-gui-unified.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-app:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install Linux native GUI dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Check unified native builder
+        run: |
+          node --check src/native-gui-host.js
+          node --check scripts/build-native-gui.js
+          node --check tests/native-gui-host.test.js
+          node --test tests/native-gui-host.test.js
+      - name: Build and execute native app through one command
+        shell: bash
+        run: |
+          node scripts/build-native-gui.js examples/forms-navigation.patch UnifiedPatchApp dist-unified --smoke
+      - name: Verify selected backend metadata
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const files = fs.readdirSync('dist-unified').filter(name => name.endsWith('-build.json'));
+          if (files.length !== 1) throw new Error(`Expected one build metadata file, got: ${files.join(', ')}`);
+          const meta = JSON.parse(fs.readFileSync(path.join('dist-unified', files[0]), 'utf8'));
+          const expected = process.platform === 'win32' ? 'native-win32' : process.platform === 'darwin' ? 'native-appkit' : 'native-gtk3';
+          if (meta.shell !== expected) throw new Error(`Expected ${expected}, got ${meta.shell}`);
+          if (meta.electron !== false) throw new Error('Unified native build must record electron=false.');
+          console.log(`Unified host selected ${meta.shell}`);
+          NODE
