@@ -19,7 +19,9 @@ test('Studio defaults Windows Window builds to token-free native single EXE seal
 test('Studio keeps project-specific MSVC codegen as optional Native AOT route', () => {
   assert.match(studio, /const WINDOWS_SINGLE_EXE_WORKFLOW = 'windows-single-exe\.yml'/);
   assert.match(studio, /Native AOT EXE \(GitHub Actions\)/);
-  assert.match(studio, /directWin32\s*\? \{ source_b64: sourceBase64, source_path: '', app_name: name, request_id: requestId \}/);
+  assert.match(studio, /const directWin32 = platform === 'windows' && kind === 'window'/);
+  assert.match(studio, /const directNativeWindow = kind === 'window' && \['windows', 'macos', 'linux'\]\.includes\(platform\)/);
+  assert.match(studio, /const inputs = directNativeWindow\s*\? \{ source_b64: sourceBase64, source_path: '', app_name: name, request_id: requestId \}/);
   assert.match(studio, /const expectedName = directWin32 \? 'patch-windows-single-exe'/);
 });
 
