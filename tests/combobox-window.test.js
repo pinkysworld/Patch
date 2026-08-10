@@ -109,10 +109,10 @@ test('Standalone Window Web App renders ComboBox and emits a text changed payloa
   assert.match(built.html, /Large/);
 });
 
-test('native GUI v0.2 carries ComboBox options, text binding and changed event semantics', () => {
+test('native GUI v0.3 carries ComboBox options, text binding and changed event semantics', () => {
   const compiled = compile(source, { name: 'ComboDemo', kind: 'window' });
   const ir = buildNativeGuiIR(compiled);
-  assert.equal(ir.version, '0.2');
+  assert.equal(ir.version, '0.3');
   assert.deepEqual(ir.states, [{ name: 'size', type: 'text', initial: 'Medium' }]);
   const combo = ir.forms[0].controls.find(control => control.id === 'size');
   assert.deepEqual(combo, {

@@ -11,11 +11,12 @@ import { emitAppKitGuiObjCpp } from '../src/appkit-gui.js';
 const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', import.meta.url), 'utf8');
 const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
 const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', import.meta.url), 'utf8');
+const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch', import.meta.url), 'utf8');
 
-test('AppKit backend consumes Native GUI IR v0.2', () => {
+test('AppKit backend consumes Native GUI IR v0.3', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeMacNavigation' }));
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.2');
+  assert.equal(ir.version, '0.3');
   assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
   const mm = emitAppKitGuiObjCpp(ir);
   assert.match(mm, /NSWindow/);
@@ -37,6 +38,24 @@ test('AppKit backend lowers native ComboBox selection to text changed events', (
   assert.match(mm, /titleOfSelectedItem/);
   assert.match(mm, /selectItemWithTitle:patch_state_size/);
   assert.match(mm, /patch_state_size = \[eventValue copy\]/);
+});
+
+test('AppKit backend lowers native ListBox selection to text changed events', () => {
+  const ir = buildNativeGuiIR(compile(listboxSource, { kind: 'window', name: 'NativeMacListBox' }));
+  const mm = emitAppKitGuiObjCpp(ir);
+  assert.match(mm, /NSScrollView/);
+  assert.match(mm, /NSTableView/);
+  assert.match(mm, /NSTableViewDataSource/);
+  assert.match(mm, /NSTableViewDelegate/);
+  assert.match(mm, /allowsMultipleSelection = NO/);
+  assert.match(mm, /@"Apple"/);
+  assert.match(mm, /@"Banana"/);
+  assert.match(mm, /@"Cherry"/);
+  assert.match(mm, /@"Mango"/);
+  assert.match(mm, /tableViewSelectionDidChange/);
+  assert.match(mm, /selectedRow/);
+  assert.match(mm, /selectRowIndexes/);
+  assert.match(mm, /patch_state_fruit = \[eventValue copy\]/);
 });
 
 test('AppKit backend lowers numeric Patch change and text interpolation', () => {
@@ -65,7 +84,7 @@ test('AppKit build script emits auditable native source and metadata on every de
     assert.equal(meta.shell, 'native-appkit');
     assert.equal(meta.electron, false);
     assert.equal(meta.framework, 'AppKit');
-    assert.equal(meta.nativeGuiIrVersion, '0.2');
+    assert.equal(meta.nativeGuiIrVersion, '0.3');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 2);
     assert.equal(meta.events, 3);

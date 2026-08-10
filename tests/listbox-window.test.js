@@ -119,10 +119,29 @@ test('compatibility desktop renderer cannot silently omit ComboBox or ListBox', 
   assert.match(compatibilityBuilder, /trigger\(control\.id,'changed',\{value:el\.value\}\)/);
 });
 
-test('Native GUI v0.2 fails closed on ListBox until native parity is implemented', () => {
+test('Native GUI v0.3 carries ListBox options, text binding and changed event semantics', () => {
   const compiled = compile(source, { name: 'ListBoxDemo', kind: 'window' });
-  assert.throws(
-    () => buildNativeGuiIR(compiled),
-    /native GUI v0\.2 does not support 'listbox' controls yet/
-  );
+  const ir = buildNativeGuiIR(compiled);
+  assert.equal(ir.version, '0.3');
+  assert.deepEqual(ir.states, [{ name: 'fruit', type: 'text', initial: 'Banana' }]);
+  const listbox = ir.forms[0].controls.find(control => control.id === 'fruit');
+  assert.deepEqual(listbox, {
+    type: 'listbox',
+    id: 'fruit',
+    text: '',
+    binding: 'fruit',
+    options: ['Apple', 'Banana', 'Cherry', 'Mango'],
+    layout: { x: 24, y: 72, width: 220, height: 120 }
+  });
+  assert.deepEqual(ir.events, [{
+    control: 'fruit',
+    event: 'changed',
+    valueType: 'text',
+    actions: [{
+      kind: 'change',
+      target: 'fruit',
+      stateType: 'text',
+      ops: [{ op: 'set', value: { kind: 'eventValue' } }]
+    }]
+  }]);
 });

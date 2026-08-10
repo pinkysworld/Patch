@@ -11,12 +11,13 @@ import { emitGtkGuiCpp } from '../src/gtk-gui.js';
 const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', import.meta.url), 'utf8');
 const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
 const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', import.meta.url), 'utf8');
+const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch', import.meta.url), 'utf8');
 const inputSource = `create text name = ""\n\nwindow "Input" as main size 420, 180:\n  input name at 24, 24 size 240, 36\n\nwhen name changed:\n  change name:\n    set = value\n`;
 
-test('GTK backend consumes Native GUI IR v0.2', () => {
+test('GTK backend consumes Native GUI IR v0.3', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeGtkNavigation' }));
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.2');
+  assert.equal(ir.version, '0.3');
   assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
   const cpp = emitGtkGuiCpp(ir);
   assert.match(cpp, /gtk_window_new/);
@@ -51,6 +52,21 @@ test('GTK backend lowers native ComboBox selection to text changed events', () =
   assert.match(cpp, /patch_state_size = eventValue/);
 });
 
+test('GTK backend lowers native ListBox selection to text changed events', () => {
+  const ir = buildNativeGuiIR(compile(listboxSource, { kind: 'window', name: 'NativeGtkListBox' }));
+  const cpp = emitGtkGuiCpp(ir);
+  assert.match(cpp, /gtk_list_box_new/);
+  assert.match(cpp, /GTK_SELECTION_SINGLE/);
+  assert.match(cpp, /gtk_label_new\("Apple"\)/);
+  assert.match(cpp, /gtk_label_new\("Banana"\)/);
+  assert.match(cpp, /gtk_label_new\("Cherry"\)/);
+  assert.match(cpp, /gtk_label_new\("Mango"\)/);
+  assert.match(cpp, /"row-selected"/);
+  assert.match(cpp, /gtk_list_box_get_row_at_index/);
+  assert.match(cpp, /gtk_list_box_select_row/);
+  assert.match(cpp, /patch_state_fruit = eventValue/);
+});
+
 test('GTK backend lowers numeric Patch change and text interpolation', () => {
   const ir = buildNativeGuiIR(compile(counterSource, { kind: 'window', name: 'NativeGtkCounter' }));
   const cpp = emitGtkGuiCpp(ir);
@@ -77,7 +93,7 @@ test('GTK build script emits auditable native source and metadata on every devel
     assert.equal(meta.shell, 'native-gtk3');
     assert.equal(meta.electron, false);
     assert.equal(meta.toolkit, 'GTK3');
-    assert.equal(meta.nativeGuiIrVersion, '0.2');
+    assert.equal(meta.nativeGuiIrVersion, '0.3');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 2);
     assert.equal(meta.events, 3);

@@ -15,8 +15,10 @@ on:
       - src/change.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
+      - examples/listbox-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
+      - tests/listbox-window.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -34,8 +36,10 @@ on:
       - src/change.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
+      - examples/listbox-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
+      - tests/listbox-window.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -77,34 +81,37 @@ jobs:
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
           if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
-      - name: Seal canonical Patch Forms app into runtime
+      - name: Seal and smoke canonical Forms app
         shell: pwsh
         run: |
           node scripts/seal-native-win32.js examples/forms-navigation.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedForms.exe PatchSealedForms
-      - name: Smoke run sealed native GUI executable
-        shell: pwsh
-        run: |
           $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedForms.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Sealed native GUI smoke failed with exit code $($process.ExitCode)." }
+          if ($process.ExitCode -ne 0) { throw "Sealed native Forms smoke failed with exit code $($process.ExitCode)." }
       - name: Seal and smoke native ComboBox application
         shell: pwsh
         run: |
           node scripts/seal-native-win32.js examples/combo-window.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedCombo.exe PatchSealedCombo
           $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedCombo.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Sealed native ComboBox smoke failed with exit code $($process.ExitCode)." }
+      - name: Seal and smoke native ListBox application
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/listbox-window.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedListBox.exe PatchSealedListBox
+          $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedListBox.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed native ListBox smoke failed with exit code $($process.ExitCode)." }
       - name: Verify template and sealed executable contract
         shell: pwsh
         run: |
           $runtime = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/patch-windows-native-gui-runtime.exe'))
-          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedCombo.exe'))
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedListBox.exe'))
           if ($runtime.Length -lt 2 -or $runtime[0] -ne 0x4d -or $runtime[1] -ne 0x5a) { throw 'Runtime is not a PE executable.' }
           if ($sealed.Length -le $runtime.Length) { throw 'Sealed application did not append a payload.' }
           $magic = [Text.Encoding]::ASCII.GetString($sealed, $sealed.Length - 20, 8)
           if ($magic -ne 'PCHGUI01') { throw 'Sealed executable footer magic is missing.' }
           $version = [BitConverter]::ToUInt32($sealed, $sealed.Length - 12)
-          if ($version -ne 2) { throw "Expected sealed native GUI payload v2, got v$version." }
+          if ($version -ne 3) { throw "Expected sealed native GUI payload v3, got v$version." }
           if ($runtime.Length -gt 2097152) { throw "Generic native runtime unexpectedly exceeds 2 MiB: $($runtime.Length) bytes." }
-          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed ComboBox app: $($sealed.Length) bytes"
+          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed ListBox app: $($sealed.Length) bytes"
       - uses: actions/upload-artifact@v4
         with:
           name: patch-windows-native-gui-runtime
@@ -126,9 +133,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-win32-runtime-v0.2
+          TAG: native-win32-runtime-v0.3
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.2' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v2 adds native ComboBox option arrays and text changed events while preserving explicit Patch change semantics. No Electron, Chromium, Node.js or sidecar payload is used.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.3' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v3 adds native single-selection ListBox support while preserving ComboBox, Forms and explicit Patch change semantics. No Electron, Chromium, Node.js or sidecar payload is used.'
           fi
           gh release upload "$TAG" runtime/patch-windows-native-gui-runtime.exe --repo "$GITHUB_REPOSITORY" --clobber
