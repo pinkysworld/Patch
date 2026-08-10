@@ -10,11 +10,12 @@ import { emitAppKitGuiObjCpp } from '../src/appkit-gui.js';
 
 const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', import.meta.url), 'utf8');
 const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
+const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', import.meta.url), 'utf8');
 
-test('AppKit backend consumes the same Native GUI IR used by Windows', () => {
+test('AppKit backend consumes Native GUI IR v0.2', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeMacNavigation' }));
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.1');
+  assert.equal(ir.version, '0.2');
   assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
   const mm = emitAppKitGuiObjCpp(ir);
   assert.match(mm, /NSWindow/);
@@ -26,6 +27,16 @@ test('AppKit backend consumes the same Native GUI IR used by Windows', () => {
   assert.match(mm, /orderOut:nil/);
   assert.match(mm, /NSControlStateValueOn/);
   assert.doesNotMatch(mm, /BrowserWindow|require\(['"]electron['"]\)|<html|document\.querySelector/);
+});
+
+test('AppKit backend lowers native ComboBox selection to text changed events', () => {
+  const ir = buildNativeGuiIR(compile(comboSource, { kind: 'window', name: 'NativeMacCombo' }));
+  const mm = emitAppKitGuiObjCpp(ir);
+  assert.match(mm, /NSPopUpButton/);
+  assert.match(mm, /addItemsWithTitles:@\[@"Small", @"Medium", @"Large"\]/);
+  assert.match(mm, /titleOfSelectedItem/);
+  assert.match(mm, /selectItemWithTitle:patch_state_size/);
+  assert.match(mm, /patch_state_size = \[eventValue copy\]/);
 });
 
 test('AppKit backend lowers numeric Patch change and text interpolation', () => {
@@ -54,7 +65,7 @@ test('AppKit build script emits auditable native source and metadata on every de
     assert.equal(meta.shell, 'native-appkit');
     assert.equal(meta.electron, false);
     assert.equal(meta.framework, 'AppKit');
-    assert.equal(meta.nativeGuiIrVersion, '0.1');
+    assert.equal(meta.nativeGuiIrVersion, '0.2');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 2);
     assert.equal(meta.events, 3);

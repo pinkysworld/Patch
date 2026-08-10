@@ -9,15 +9,15 @@
 #include <unordered_map>
 #include <sstream>
 
-static const wchar_t* PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV1";
+static const wchar_t* PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV2";
 static const char PATCH_MAGIC[8] = {'P','C','H','G','U','I','0','1'};
-static const uint32_t PATCH_PAYLOAD_VERSION = 1;
+static const uint32_t PATCH_PAYLOAD_VERSION = 2;
 static HINSTANCE gInstance = nullptr;
 static HFONT gGuiFont = nullptr;
 static bool gRefreshing = false;
 
 enum StateType : uint8_t { ST_NUMBER=1, ST_TEXT=2, ST_BOOLEAN=3 };
-enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4 };
+enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5 };
 enum EventKind : uint8_t { EV_CLICKED=1, EV_CHANGED=2 };
 enum ActionKind : uint8_t { ACT_OPEN=1, ACT_CLOSE=2, ACT_CHANGE=3 };
 enum OpKind : uint8_t { OP_SET=1, OP_ADD=2, OP_REMOVE=3, OP_CLEAR=4 };
@@ -35,6 +35,7 @@ struct Control {
   std::wstring id;
   std::wstring text;
   std::wstring binding;
+  std::vector<std::wstring> options;
   int x = 0, y = 0, width = 0, height = 0;
   int formIndex = -1;
   int commandId = 0;
@@ -173,8 +174,12 @@ static bool ParsePayload(const std::vector<uint8_t>& bytes) {
       const int formIndex = (int)gForms.size();
       for (uint32_t c = 0; c < controlCount; ++c) {
         Control control; control.kind = r.u8(); control.id = r.text(); control.text = r.text(); control.binding = r.text();
+        const uint32_t optionCount = r.u32();
+        if (optionCount > 10000) return false;
+        for (uint32_t o = 0; o < optionCount; ++o) control.options.push_back(r.text());
         control.x = r.i32(); control.y = r.i32(); control.width = r.i32(); control.height = r.i32(); control.formIndex = formIndex; control.commandId = nextCommand++;
-        if (control.kind < CK_TEXT || control.kind > CK_CHECKBOX || control.width <= 0 || control.height <= 0 || control.width > 10000 || control.height > 10000) return false;
+        if (control.kind < CK_TEXT || control.kind > CK_COMBO || control.width <= 0 || control.height <= 0 || control.width > 10000 || control.height > 10000) return false;
+        if (control.kind == CK_COMBO && control.options.size() < 2) return false;
         if (!control.id.empty()) { if (gControlById.count(control.id)) return false; gControlById[control.id] = (int)gControls.size(); }
         form.controls.push_back((int)gControls.size()); gControls.push_back(std::move(control));
       }
@@ -212,7 +217,7 @@ static bool ParsePayload(const std::vector<uint8_t>& bytes) {
     if (!r.done()) return false;
 
     for (const Control& control : gControls) {
-      if (control.kind == CK_INPUT) {
+      if (control.kind == CK_INPUT || control.kind == CK_COMBO) {
         auto it = gStateByName.find(control.binding); if (it == gStateByName.end() || gStates[it->second].type != ST_TEXT) return false;
       } else if (control.kind == CK_CHECKBOX) {
         auto it = gStateByName.find(control.binding); if (it == gStateByName.end() || gStates[it->second].type != ST_BOOLEAN) return false;
@@ -252,7 +257,17 @@ static std::wstring WindowText(HWND hwnd) {
   const int len = GetWindowTextLengthW(hwnd); if (len <= 0) return L"";
   std::wstring value((size_t)len + 1, L'\0'); const int copied = GetWindowTextW(hwnd, value.data(), len + 1); value.resize(copied > 0 ? (size_t)copied : 0); return value;
 }
+static std::wstring ComboText(HWND hwnd) {
+  const LRESULT selected = SendMessageW(hwnd, CB_GETCURSEL, 0, 0); if (selected == CB_ERR) return L"";
+  const LRESULT len = SendMessageW(hwnd, CB_GETLBTEXTLEN, (WPARAM)selected, 0); if (len == CB_ERR || len < 0) return L"";
+  std::wstring value((size_t)len + 1, L'\0'); const LRESULT copied = SendMessageW(hwnd, CB_GETLBTEXT, (WPARAM)selected, (LPARAM)value.data()); value.resize(copied > 0 ? (size_t)copied : 0); return value;
+}
 static void SetWindowTextIfDifferent(HWND hwnd, const std::wstring& value) { if (WindowText(hwnd) != value) SetWindowTextW(hwnd, value.c_str()); }
+static void SetComboSelection(HWND hwnd, const std::wstring& value) {
+  if (ComboText(hwnd) == value) return;
+  const LRESULT found = SendMessageW(hwnd, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)value.c_str());
+  SendMessageW(hwnd, CB_SETCURSEL, found == CB_ERR ? (WPARAM)-1 : (WPARAM)found, 0);
+}
 static void RefreshUI();
 
 static void ApplyOperation(State& state, const Operation& op, bool eventBool, const std::wstring& eventText) {
@@ -286,13 +301,13 @@ static void DispatchControl(int commandId, int notification, HWND controlHwnd) {
   Control* control = nullptr;
   for (Control& candidate : gControls) if (candidate.commandId == commandId) { control = &candidate; break; }
   if (!control) return;
-  const bool fired = (control->kind == CK_BUTTON || control->kind == CK_CHECKBOX) ? notification == BN_CLICKED : control->kind == CK_INPUT ? notification == EN_CHANGE : false;
+  const bool fired = (control->kind == CK_BUTTON || control->kind == CK_CHECKBOX) ? notification == BN_CLICKED : control->kind == CK_INPUT ? notification == EN_CHANGE : control->kind == CK_COMBO ? notification == CBN_SELCHANGE : false;
   if (!fired) return;
   for (const Event& event : gEvents) {
     if (event.control != control->id) continue;
     bool eventBool = false; std::wstring eventText;
     if (event.valueType == 1) eventBool = SendMessageW(controlHwnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
-    else if (event.valueType == 2) eventText = WindowText(controlHwnd);
+    else if (event.valueType == 2) eventText = control->kind == CK_COMBO ? ComboText(controlHwnd) : WindowText(controlHwnd);
     ExecuteEvent(event, eventBool, eventText);
   }
 }
@@ -306,7 +321,7 @@ static void RefreshUI() {
     else if (control.kind == CK_CHECKBOX) {
       SetWindowTextIfDifferent(control.hwnd, RenderText(control.text));
       SendMessageW(control.hwnd, BM_SETCHECK, gStates[gStateByName[control.binding]].boolean ? BST_CHECKED : BST_UNCHECKED, 0);
-    }
+    } else if (control.kind == CK_COMBO) SetComboSelection(control.hwnd, gStates[gStateByName[control.binding]].text);
   }
   gRefreshing = false;
 }
@@ -325,12 +340,15 @@ static LRESULT CALLBACK PatchWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 static HWND CreateControlWindow(Control& control, HWND parent) {
   DWORD style = WS_CHILD | WS_VISIBLE;
   const wchar_t* klass = L"STATIC";
+  int height = control.height;
   if (control.kind == CK_BUTTON) { klass = L"BUTTON"; style |= WS_TABSTOP | BS_PUSHBUTTON; }
   else if (control.kind == CK_INPUT) { klass = L"EDIT"; style |= WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL; }
   else if (control.kind == CK_CHECKBOX) { klass = L"BUTTON"; style |= WS_TABSTOP | BS_AUTOCHECKBOX; }
+  else if (control.kind == CK_COMBO) { klass = L"COMBOBOX"; style |= WS_TABSTOP | WS_VSCROLL | CBS_DROPDOWNLIST; height = control.height + 140; }
   else style |= SS_LEFT;
-  HWND hwnd = CreateWindowExW(0, klass, L"", style, control.x, control.y, control.width, control.height, parent, (HMENU)(INT_PTR)control.commandId, gInstance, nullptr);
+  HWND hwnd = CreateWindowExW(0, klass, L"", style, control.x, control.y, control.width, height, parent, (HMENU)(INT_PTR)control.commandId, gInstance, nullptr);
   if (hwnd && gGuiFont) SendMessageW(hwnd, WM_SETFONT, (WPARAM)gGuiFont, TRUE);
+  if (hwnd && control.kind == CK_COMBO) for (const auto& option : control.options) SendMessageW(hwnd, CB_ADDSTRING, 0, (LPARAM)option.c_str());
   control.hwnd = hwnd; return hwnd;
 }
 
@@ -352,6 +370,12 @@ static int RunSmoke() {
   if (settingsIt != gFormById.end() && IsWindowVisible(gForms[settingsIt->second].hwnd)) return 70;
   if (gControlById.count(L"open_settings") && settingsIt != gFormById.end()) { if (!Click(L"open_settings") || !IsWindowVisible(gForms[settingsIt->second].hwnd)) return 71; }
   if (gControlById.count(L"notifications")) { if (!Click(L"notifications")) return 72; auto s = gStateByName.find(L"notifications"); if (s != gStateByName.end() && !gStates[s->second].boolean) return 73; }
+  if (gControlById.count(L"size")) {
+    Control& c = gControls[gControlById[L"size"]]; auto s = gStateByName.find(L"size");
+    if (c.kind != CK_COMBO || c.options.empty() || s == gStateByName.end()) return 75;
+    const int last = (int)c.options.size() - 1; SendMessageW(c.hwnd, CB_SETCURSEL, last, 0); DispatchControl(c.commandId, CBN_SELCHANGE, c.hwnd);
+    if (gStates[s->second].text != c.options[(size_t)last]) return 76;
+  }
   if (gControlById.count(L"close_settings") && settingsIt != gFormById.end()) { if (!Click(L"close_settings") || IsWindowVisible(gForms[settingsIt->second].hwnd)) return 74; }
   return 0;
 }

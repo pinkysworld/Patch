@@ -14,8 +14,11 @@ import {
 const source = fs.readFileSync('examples/forms-navigation.patch', 'utf8');
 const compiled = compile(source, { name: 'SealedTest', kind: 'window', entry: 'forms-navigation.patch' });
 const gui = buildNativeGuiIR(compiled);
+const comboSource = fs.readFileSync('examples/combo-window.patch', 'utf8');
+const comboGui = buildNativeGuiIR(compile(comboSource, { name: 'SealedComboTest', kind: 'window', entry: 'combo-window.patch' }));
 
-test('sealed native GUI payload is deterministic and round-trips from a Windows executable overlay', () => {
+test('sealed native GUI payload v2 is deterministic and round-trips from a Windows executable overlay', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 2);
   const payload = encodeNativeGuiPayload(gui);
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4, 5, 6]);
   const sealed = sealNativeGuiRuntime(fakePe, gui);
@@ -39,6 +42,21 @@ test('same sealed native GUI payload round-trips from a macOS Mach-O overlay', (
   const sealed = sealNativeGuiRuntime(fakeMachO, gui, { platform: 'macos' });
   assert.deepEqual(decodeNativeGuiPayload(sealed), payload);
   assert.deepEqual(sealed.subarray(0, fakeMachO.length), fakeMachO);
+});
+
+test('sealed native GUI v2 serializes ComboBox options and text changed semantics without Patch source', () => {
+  const payload = encodeNativeGuiPayload(comboGui);
+  const text = new TextDecoder().decode(payload);
+  assert.match(text, /size/);
+  assert.match(text, /Small/);
+  assert.match(text, /Medium/);
+  assert.match(text, /Large/);
+  assert.doesNotMatch(text, /create text size/);
+  assert.doesNotMatch(text, /when size changed/);
+  const combo = comboGui.forms[0].controls.find(control => control.id === 'size');
+  assert.deepEqual(combo.options, ['Small', 'Medium', 'Large']);
+  assert.equal(combo.binding, 'size');
+  assert.equal(comboGui.events[0].valueType, 'text');
 });
 
 test('sealed native GUI payload contains forms, controls, events and state without Patch source', () => {
