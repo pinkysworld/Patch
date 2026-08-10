@@ -21,6 +21,13 @@ test('native GUI host plan hides platform backend details behind one operation',
   assert.throws(() => nativeGuiHostPlan('freebsd'), error => error instanceof NativeGuiHostError && /Windows, macOS and Linux/.test(error.message));
 });
 
+test('package exposes one beginner-facing patch-app command', () => {
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(pkg.bin.patch, './src/cli-entry.js');
+  assert.equal(pkg.bin['patch-app'], './scripts/build-native-gui.js');
+  assert.match(pkg.scripts['build:native-gui'], /build-native-gui\.js/);
+});
+
 test('unified native GUI dispatcher can emit host backend source without changing Patch syntax', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-native-gui-host-'));
   try {
