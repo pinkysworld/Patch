@@ -1,0 +1,73 @@
+name: Patch Native AppKit GUI
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/native-gui-ir.js
+      - src/appkit-gui.js
+      - scripts/build-native-appkit.js
+      - tests/appkit-gui.test.js
+      - examples/forms-navigation.patch
+      - .github/workflows/native-appkit-gui.yml
+  push:
+    branches: [main]
+    paths:
+      - src/native-gui-ir.js
+      - src/appkit-gui.js
+      - scripts/build-native-appkit.js
+      - tests/appkit-gui.test.js
+      - examples/forms-navigation.patch
+      - .github/workflows/native-appkit-gui.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-appkit:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Check AppKit backend JavaScript
+        run: |
+          node --check src/appkit-gui.js
+          node --check scripts/build-native-appkit.js
+          node --check tests/appkit-gui.test.js
+      - name: Run AppKit lowering tests
+        run: node --test tests/appkit-gui.test.js
+      - name: Compile, link and bundle native Patch AppKit application
+        run: |
+          mkdir -p dist-native-mac
+          node scripts/build-native-appkit.js examples/forms-navigation.patch PatchNativeMacSmoke dist-native-mac --smoke
+      - name: Verify native AppKit output contract
+        run: |
+          test -x dist-native-mac/PatchNativeMacSmoke.app/Contents/MacOS/PatchNativeMacSmoke
+          test -f dist-native-mac/PatchNativeMacSmoke.app/Contents/Info.plist
+          size=$(stat -f%z dist-native-mac/PatchNativeMacSmoke.app/Contents/MacOS/PatchNativeMacSmoke)
+          test "$size" -lt 10485760
+          node -e "const m=require('./dist-native-mac/PatchNativeMacSmoke.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.forms!==2||m.events!==3) process.exit(1)"
+          test ! -d dist-native-mac/PatchNativeMacSmoke.app/Contents/Frameworks/Electron\ Framework.framework
+          test ! -d dist-native-mac/node_modules
+          ! find dist-native-mac/PatchNativeMacSmoke.app -iname '*Electron*' -print -quit | grep -q .
+          echo "Native AppKit executable size: $size bytes"
+          otool -L dist-native-mac/PatchNativeMacSmoke.app/Contents/MacOS/PatchNativeMacSmoke
+      - name: Upload native AppKit compiler evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-native-appkit-gui
+          path: |
+            dist-native-mac/PatchNativeMacSmoke.app
+            dist-native-mac/PatchNativeMacSmoke.appkit.mm
+            dist-native-mac/PatchNativeMacSmoke.appkit-build.json
+          if-no-files-found: error
