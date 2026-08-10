@@ -56,7 +56,7 @@ if (process.platform !== 'win32') {
 const compiler = resolveMsvc();
 const objectPath = path.join(outDir, `${appName}.obj`);
 const clArgs = [
-  '/nologo', '/EHsc', '/std:c++17', '/O2', '/MT', '/utf-8', '/DUNICODE', '/D_UNICODE',
+  '/nologo', '/EHsc', '/std:c++17', '/O2', '/MT', '/utf-8',
   `/Fo${objectPath}`, cppPath,
   'user32.lib', 'gdi32.lib',
   '/link', '/SUBSYSTEM:WINDOWS', `/OUT:${exePath}`
@@ -73,7 +73,10 @@ console.log(`Built native Patch Win32 GUI: ${exePath}`);
 console.log(`Native GUI IR ${gui.version}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
 
 if (smoke) {
-  const run = spawnSync(exePath, ['--patch-smoke'], { stdio: 'inherit', windowsHide: true, timeout: 30000 });
+  // Do not request a hidden child process here. Windows may honor STARTUPINFO
+  // over the first ShowWindow call, which would make a real GUI appear hidden
+  // even though native Form visibility is correct.
+  const run = spawnSync(exePath, ['--patch-smoke'], { stdio: 'inherit', windowsHide: false, timeout: 30000 });
   if (run.error) throw run.error;
   if (run.status !== 0) throw new Error(`Native Patch Win32 GUI smoke exited with status ${run.status}.`);
   console.log('Native Patch Win32 GUI smoke passed.');
