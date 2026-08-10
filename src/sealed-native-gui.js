@@ -99,6 +99,12 @@ function validateRuntimeHeader(runtime, platform) {
     }
     return;
   }
+  if (platform === 'macos') {
+    const magic = runtime.length >= 4 ? Array.from(runtime.subarray(0, 4)).map(byte => byte.toString(16).padStart(2, '0')).join('') : '';
+    const machOMagics = new Set(['cffaedfe', 'feedfacf', 'cefaedfe', 'feedface', 'cafebabe', 'bebafeca', 'cafebabf', 'bfbafeca']);
+    if (!machOMagics.has(magic)) throw new SealedNativeGuiError('Native GUI runtime template is not a macOS Mach-O executable.');
+    return;
+  }
   throw new SealedNativeGuiError(`Native GUI runtime platform '${platform}' is unsupported.`);
 }
 
