@@ -14,6 +14,7 @@ const source = fs.readFileSync('examples/listbox-window.patch', 'utf8');
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
 const studio = fs.readFileSync('web/playground.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
+const compatibilityBuilder = fs.readFileSync('scripts/build-native-window-template.js', 'utf8');
 
 test('parser records ListBox options, id and taller source-backed geometry', () => {
   const ast = parse(source);
@@ -108,6 +109,14 @@ test('Standalone Window Web App renders ListBox and emits a text changed payload
   assert.match(built.html, /Apple/);
   assert.match(built.html, /Banana/);
   assert.match(built.html, /Cherry/);
+});
+
+test('compatibility desktop renderer cannot silently omit ComboBox or ListBox', () => {
+  assert.match(compatibilityBuilder, /control\.type==='combo'\|\|control\.type==='listbox'/);
+  assert.match(compatibilityBuilder, /document\.createElement\('select'\)/);
+  assert.match(compatibilityBuilder, /el\.dataset\.controlId=control\.id/);
+  assert.match(compatibilityBuilder, /if\(control\.type==='listbox'\)el\.size=Math\.min/);
+  assert.match(compatibilityBuilder, /trigger\(control\.id,'changed',\{value:el\.value\}\)/);
 });
 
 test('Native GUI v0.2 fails closed on ListBox until native parity is implemented', () => {
