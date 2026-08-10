@@ -1,6 +1,6 @@
 import { validateNativeGuiIR } from './native-gui-ir.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 2;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 3;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -122,8 +122,8 @@ function validateTextBindings(ir) {
       while ((match = re.exec(text))) {
         if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
       }
-      if (control.type === 'combo' && (!Array.isArray(control.options) || control.options.length < 2)) {
-        throw new SealedNativeGuiError('Native ComboBox payload needs at least two options.');
+      if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
+        throw new SealedNativeGuiError(`Native ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} payload needs at least two options.`);
       }
     }
   }
@@ -166,6 +166,7 @@ function controlTypeCode(type) {
   if (type === 'input') return 3;
   if (type === 'checkbox') return 4;
   if (type === 'combo') return 5;
+  if (type === 'listbox') return 6;
   throw new SealedNativeGuiError(`Unsupported native control '${type}'.`);
 }
 function opCode(op) {
