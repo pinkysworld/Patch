@@ -108,17 +108,22 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
 - [x] ready Windows/macOS/Linux Window packages
-- [x] Window build produces `patch-compiled-window-program` before desktop packaging
-- [x] local/cloud Window apps execute the compiled artifact instead of reparsing `main.patch`
+- [x] Window build produces `patch-compiled-window-program` before compatibility desktop packaging
+- [x] local/cloud compatibility Window apps execute the compiled artifact instead of reparsing `main.patch`
 - [x] compiled Window artifact v0.2 carries named Form lifecycle instructions while Change IR remains 0.10
-- [x] token-free Ready App payload v0.4 links the same source-free compiled Window artifact into the sandboxed runtime
+- [x] token-free compatibility payload v0.4 links the same source-free compiled Window artifact into the sandboxed runtime
 - [x] runtime-template release versioned separately as `studio-runtime-v0.4`
 - [x] project-specific Windows/macOS/Linux smoke builds the named-Forms example and exercises open/close in the packaged app
-- [x] independent runtime-template smoke exercises open, typed Checkbox change and close on all three desktop OSes
+- [x] independent compatibility runtime-template smoke exercises open, typed Checkbox change and close on all three desktop OSes
 - [x] FreeBSD Console via portable C99
-- [ ] native AppKit/Win32/portable Unix widget lowering
+- [x] Native GUI IR v0.1 lowers Text, Button, Input and Checkbox plus Form lifecycle to Win32, AppKit and GTK3
+- [x] direct-native AOT GUI backend for the supported Native GUI IR v0.1 subset on Windows, macOS and Linux
+- [x] token-free sealed native Win32 Studio Window download
+- [x] token-free sealed native GTK3 Studio Window download
+- [ ] token-free sealed native AppKit Studio Window download
+- [ ] richer native controls: list/combo, radio, tabs, menus, dialogs, table/grid
 - [ ] signing/notarization/installers
-- [ ] direct-native AOT backend
+- [ ] portable Linux distribution bundle with GTK dependencies or equivalent packaging
 
 ## Highest-value remaining research work
 
@@ -161,5 +166,5 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 9. Direct-Wasm/C99 support remains narrower than the full language.
 10. Visual Form metadata remains source-backed UI structure and does not redefine semantic Change IR.
 11. GUI input widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.
-12. Desktop GUI apps must consume a build-time compiled Patch artifact; runtime reparsing is legacy compatibility only, not the current build path.
+12. Desktop GUI apps must consume a build-time compiled Patch artifact or checked Native GUI IR; runtime reparsing is legacy compatibility only, not the native build path.
 13. Form lifecycle must stay simple and transient: no hidden persistent visibility variable and no framework-style Form object boilerplate.

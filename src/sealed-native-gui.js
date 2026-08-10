@@ -55,11 +55,10 @@ export function encodeNativeGuiPayload(input) {
   return bytes;
 }
 
-export function sealNativeGuiRuntime(runtimeBytes, input) {
+export function sealNativeGuiRuntime(runtimeBytes, input, options = {}) {
   const runtime = toBytes(runtimeBytes);
-  if (runtime.length < 2 || runtime[0] !== 0x4d || runtime[1] !== 0x5a) {
-    throw new SealedNativeGuiError('Native GUI runtime template is not a Windows PE executable.');
-  }
+  const platform = options.platform ?? 'windows';
+  validateRuntimeHeader(runtime, platform);
   if (hasFooter(runtime)) throw new SealedNativeGuiError('Native GUI runtime template is already sealed.');
   const payload = encodeNativeGuiPayload(input);
   const footer = new Uint8Array(FOOTER_SIZE);
@@ -85,6 +84,22 @@ export function decodeNativeGuiPayload(binaryBytes) {
   const payload = bytes.subarray(footerOffset - length, footerOffset);
   if (crc32(payload) !== view.getUint32(16, true)) throw new SealedNativeGuiError('Sealed native GUI payload CRC mismatch.');
   return new Uint8Array(payload);
+}
+
+function validateRuntimeHeader(runtime, platform) {
+  if (platform === 'windows') {
+    if (runtime.length < 2 || runtime[0] !== 0x4d || runtime[1] !== 0x5a) {
+      throw new SealedNativeGuiError('Native GUI runtime template is not a Windows PE executable.');
+    }
+    return;
+  }
+  if (platform === 'linux') {
+    if (runtime.length < 4 || runtime[0] !== 0x7f || runtime[1] !== 0x45 || runtime[2] !== 0x4c || runtime[3] !== 0x46) {
+      throw new SealedNativeGuiError('Native GUI runtime template is not a Linux ELF executable.');
+    }
+    return;
+  }
+  throw new SealedNativeGuiError(`Native GUI runtime platform '${platform}' is unsupported.`);
 }
 
 function validateTextBindings(ir) {

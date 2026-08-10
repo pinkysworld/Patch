@@ -12,7 +12,7 @@ const SITE_SRC_FILES = [
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','compiler.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-build.js','window-events.js','designer.js','form-layout.js',
-  'window-compiled.js','native-gui-ir.js','sealed-native-gui.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
+  'window-compiled.js','native-gui-ir.js','sealed-native-gui.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
