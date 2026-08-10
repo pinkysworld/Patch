@@ -62,6 +62,11 @@ export function parse(source) {
     if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
     if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'button',textExpr:m[1],id:m[2],line:row.line},ui.layout);
     if ((m = ui.core.match(/^checkbox\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'checkbox',textExpr:m[1],id:m[2],line:row.line},ui.layout);
+    if ((m = ui.core.match(/^combo\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
+      const options=splitArgs(m[1]);
+      if(options.length<2)throw new PatchSyntaxError('A combo needs at least two options.',row.line);
+      return uiControl({control:'combo',textExpr:null,options,id:m[2],line:row.line},ui.layout);
+    }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^open\s+([A-Za-z_]\w*)$/))) return {kind:'openForm',form:m[1],line:row.line};
