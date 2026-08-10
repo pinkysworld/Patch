@@ -11,12 +11,13 @@ import { emitWin32GuiCpp } from '../src/win32-gui.js';
 const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', import.meta.url), 'utf8');
 const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
 const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', import.meta.url), 'utf8');
+const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch', import.meta.url), 'utf8');
 
-test('native GUI IR v0.2 lowers simple Patch Forms without changing source syntax', () => {
+test('native GUI IR v0.3 lowers simple Patch Forms without changing source syntax', () => {
   const compiled = compile(source, { kind: 'window', name: 'NativeNavigation', entry: 'forms-navigation.patch' });
   const ir = buildNativeGuiIR(compiled);
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.2');
+  assert.equal(ir.version, '0.3');
   assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
   assert.deepEqual(ir.states, [{ name: 'notifications', type: 'boolean', initial: false }]);
   assert.equal(ir.forms[1].controls.find(control => control.id === 'notifications').type, 'checkbox');
@@ -61,6 +62,23 @@ test('Win32 backend lowers native ComboBox selection to text changed events', ()
   assert.match(cpp, /patch_state_size = eventValue/);
 });
 
+test('Win32 backend lowers native ListBox selection to text changed events', () => {
+  const ir = buildNativeGuiIR(compile(listboxSource, { kind: 'window', name: 'NativeWinListBox' }));
+  const cpp = emitWin32GuiCpp(ir);
+  assert.match(cpp, /L"LISTBOX"/);
+  assert.match(cpp, /LBS_NOTIFY/);
+  assert.match(cpp, /LB_ADDSTRING/);
+  assert.match(cpp, /L"Apple"/);
+  assert.match(cpp, /L"Banana"/);
+  assert.match(cpp, /L"Cherry"/);
+  assert.match(cpp, /L"Mango"/);
+  assert.match(cpp, /LBN_SELCHANGE/);
+  assert.match(cpp, /LB_GETCURSEL/);
+  assert.match(cpp, /LB_GETTEXT/);
+  assert.match(cpp, /LB_SETCURSEL/);
+  assert.match(cpp, /patch_state_fruit = eventValue/);
+});
+
 test('Win32 backend lowers numeric Patch change and interpolation directly', () => {
   const ir = buildNativeGuiIR(compile(counterSource, { kind: 'window', name: 'NativeCounter' }));
   const cpp = emitWin32GuiCpp(ir);
@@ -96,7 +114,7 @@ test('Win32 build script can emit auditable native source and metadata on every 
     assert.equal(meta.shell, 'native-win32');
     assert.equal(meta.electron, false);
     assert.equal(meta.crt, 'static');
-    assert.equal(meta.nativeGuiIrVersion, '0.2');
+    assert.equal(meta.nativeGuiIrVersion, '0.3');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 2);
     assert.equal(meta.events, 3);
