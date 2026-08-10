@@ -5,7 +5,8 @@ const CONTROL_DEFAULTS = {
   text: { width: 200, height: 30 },
   button: { width: 120, height: 36 },
   input: { width: 220, height: 36 },
-  checkbox: { width: 220, height: 36 }
+  checkbox: { width: 220, height: 36 },
+  combo: { width: 220, height: 36 }
 };
 
 export function addDesignerWindow(source, options = {}) {
@@ -111,6 +112,7 @@ export function listDesignerControls(source) {
         type: child.control,
         id: child.id ?? null,
         textExpr: child.textExpr ?? null,
+        options: Array.isArray(child.options) ? [...child.options] : null,
         x: child.layout?.x ?? null,
         y: child.layout?.y ?? null,
         width: child.layout?.width ?? null,
@@ -140,14 +142,21 @@ export function updateDesignerControl(source, selector, changes = {}) {
   }
 
   let nextTextExpr = control.textExpr;
-  if (control.type !== 'input' && Object.hasOwn(changes, 'textExpr')) {
+  if (['text', 'button', 'checkbox'].includes(control.type) && Object.hasOwn(changes, 'textExpr')) {
     nextTextExpr = String(changes.textExpr ?? '').trim();
     if (!nextTextExpr) throw new Error('Text expression cannot be empty.');
   }
 
+  let nextOptions = control.options;
+  if (control.type === 'combo' && Object.hasOwn(changes, 'options')) {
+    if (!Array.isArray(changes.options) || changes.options.length < 2) throw new Error('A combo needs at least two options.');
+    nextOptions = changes.options.map(option => String(option ?? '').trim()).filter(Boolean);
+    if (nextOptions.length < 2) throw new Error('A combo needs at least two options.');
+  }
+
   const layout = normalizeControlLayout(control, changes);
   const indent = indentOf(lines[lineIndex]);
-  lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout)}`;
+  lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions)}`;
 
   if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
   return preserveTrailingNewline(source, lines.join('\n'));
@@ -266,15 +275,17 @@ function makeControl(type, lines, index) {
   if (type === 'button') return formatControl(type, nextId(lines, 'button'), '"Button"', layout);
   if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
   if (type === 'checkbox') return formatControl(type, nextId(lines, 'checkbox'), '"Checkbox"', layout);
+  if (type === 'combo') return formatControl(type, nextId(lines, 'combo'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
-function formatControl(type, id, textExpr, layout) {
+function formatControl(type, id, textExpr, layout, options = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
   else if (type === 'input') core = `input ${id}`;
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
+  else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
   if (!layout) return core;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
