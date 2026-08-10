@@ -28,6 +28,17 @@ patch-app myapp.patch MyApp dist-native
 
 The backend names are implementation details. Normal Patch programs do not import or mention Win32, Cocoa/AppKit or GTK.
 
+## Patch Studio native builds
+
+Patch Studio exposes the same direct native backends without changing Patch source:
+
+- **Windows Window / GUI:** the recommended no-token path compiles Native GUI IR in the browser and seals it into the prebuilt native Win32 runtime, producing one `.exe`. An optional GitHub Actions route performs project-specific MSVC AOT code generation.
+- **macOS Window / GUI:** the GitHub Actions **Native AOT app** route compiles the current editor source through the direct AppKit backend and returns a project-specific `.app` bundle. Electron/Chromium is excluded from this artifact.
+- **Linux Window / GUI:** the GitHub Actions **Native AOT app** route compiles through the direct GTK3 backend and returns a project-specific ELF executable plus build metadata. Electron/Chromium/Node and `patch-app.json` are excluded from this artifact.
+- **macOS/Linux no-token Window package:** this remains the explicit Electron compatibility route for now. Token-free native runtime sealing on these two platforms is separate follow-on work.
+
+Studio performs Native GUI IR preflight before dispatching any direct native Window AOT build, so unsupported native behavior fails before a cloud build is submitted.
+
 ## User syntax stays simple
 
 The same Patch source is accepted by every current native backend:
@@ -121,12 +132,14 @@ Each platform has a focused CI gate that compiles and links the canonical `examp
 
 The native smoke requires Main to start visible, Settings to start hidden, the native Settings button to open the second Form, the native Checkbox event to commit its Patch Boolean change, and Close to hide Settings again. Each gate also rejects an Electron/Node runtime tree in the produced output.
 
+Patch Studio additionally has a dedicated macOS/Linux AOT workflow that exercises this same direct native builder and preserves Studio artifact naming for dispatched builds.
+
 ## Compatibility backend
 
-The existing Electron desktop backend remains available as a compatibility/reference backend while Native GUI IR coverage is incomplete. The native backend should become the normal production path only after it covers the ordinary Patch Studio GUI surface without semantic fallback.
+The existing Electron desktop backend remains available as an explicit compatibility/reference backend while Native GUI IR coverage is incomplete. It is no longer the macOS/Linux **cloud AOT** path, but it still backs the current no-token ready Window package on those two platforms.
 
-The next parity work should add richer controls through Native GUI IR once, then implement the same contract in all three backends. High-value controls are ComboBox/ListBox, radio buttons, tabs, dialogs, menus and tables/grids.
+The next parity work should add richer controls through Native GUI IR once, then implement the same contract in all three backends. High-value controls are ComboBox/ListBox, radio buttons, tabs, dialogs, menus and tables/grids. A separate packaging milestone should bring the Windows-style token-free native sealed-runtime path to macOS and Linux.
 
 ## Claim boundary
 
-This is real direct native GUI code generation and native platform linking on Windows, macOS and Linux. It is **not yet** a full native implementation of every Patch language or Studio feature. Linux is not yet a self-contained distribution bundle. The native GUI work does not change Change IR 0.10 or the beta.32 research assurance claims.
+This is real direct native GUI code generation and native platform linking on Windows, macOS and Linux. It is **not yet** a full native implementation of every Patch language or Studio feature. Linux is not yet a self-contained distribution bundle. macOS/Linux token-free GUI downloads still use the compatibility runtime until native sealed-runtime templates are implemented for those platforms. The native GUI work does not change Change IR 0.10 or the beta.32 research assurance claims.
