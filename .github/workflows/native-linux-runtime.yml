@@ -15,10 +15,12 @@ on:
       - src/expression.js
       - src/change.js
       - examples/forms-navigation.patch
+      - examples/combo-window.patch
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
       - tests/sealed-native-gui.test.js
+      - tests/combobox-window.test.js
       - tests/studio-linux-native-gui.test.js
       - docs/NATIVE_GUI.md
       - docs/ROADMAP.md
@@ -37,10 +39,12 @@ on:
       - src/expression.js
       - src/change.js
       - examples/forms-navigation.patch
+      - examples/combo-window.patch
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
       - tests/sealed-native-gui.test.js
+      - tests/combobox-window.test.js
       - tests/studio-linux-native-gui.test.js
       - docs/NATIVE_GUI.md
       - docs/ROADMAP.md
@@ -88,21 +92,32 @@ jobs:
       - name: Smoke run sealed native GTK executable
         shell: bash
         run: xvfb-run -a dist-runtime/PatchSealedForms --patch-smoke
+      - name: Seal and smoke native ComboBox application
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js \
+            examples/combo-window.patch \
+            dist-runtime/patch-linux-native-gui-runtime.bin \
+            dist-runtime/PatchSealedCombo \
+            PatchSealedCombo
+          xvfb-run -a dist-runtime/PatchSealedCombo --patch-smoke
       - name: Verify ELF and sealed runtime contract
         shell: bash
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const runtime = fs.readFileSync('dist-runtime/patch-linux-native-gui-runtime.bin');
-          const sealed = fs.readFileSync('dist-runtime/PatchSealedForms');
+          const sealed = fs.readFileSync('dist-runtime/PatchSealedCombo');
           const elf = [0x7f, 0x45, 0x4c, 0x46];
           if (!elf.every((value, index) => runtime[index] === value)) throw new Error('Runtime is not an ELF executable.');
           if (sealed.length <= runtime.length) throw new Error('Sealed application did not append a payload.');
           if (sealed.subarray(sealed.length - 20, sealed.length - 12).toString('ascii') !== 'PCHGUI01') throw new Error('Sealed executable footer magic is missing.');
+          const version = sealed.readUInt32LE(sealed.length - 12);
+          if (version !== 2) throw new Error(`Expected sealed native GUI payload v2, got v${version}.`);
           if (runtime.length > 2 * 1024 * 1024) throw new Error(`Generic native GTK runtime unexpectedly exceeds 2 MiB: ${runtime.length} bytes.`);
-          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed Forms app: ${sealed.length} bytes`);
+          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed ComboBox app: ${sealed.length} bytes`);
           NODE
-          test -x dist-runtime/PatchSealedForms
+          test -x dist-runtime/PatchSealedCombo
           if find dist-runtime -iname '*electron*' -o -iname '*chromium*' -o -iname 'patch-app.json' | grep -q .; then
             echo 'Electron/Chromium/patch-app.json content must not be shipped in the sealed native GTK runtime.' >&2
             exit 1
@@ -132,9 +147,9 @@ jobs:
       - name: Publish native GTK runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-linux-runtime-v0.1
+          TAG: native-linux-runtime-v0.2
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.1' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Studio appends checked Native GUI IR to this ELF executable. No Electron, Chromium, Node.js or sidecar payload is used. Target systems require a compatible GTK3 runtime.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.2' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Payload v2 adds native ComboBox option arrays and text changed events while preserving explicit Patch change semantics. No Electron, Chromium, Node.js or sidecar payload is used. Target systems require a compatible GTK3 runtime.'
           fi
           gh release upload "$TAG" runtime/patch-linux-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber
