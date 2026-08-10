@@ -13,7 +13,7 @@ const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 
 test('browser package seals Native GUI IR into a minimal macOS app bundle ZIP', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 2);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 3);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 10, 20, 30, 40]);
   const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App' });
   assert.equal(ready.filename, 'My_Mac_App-macos-window.zip');
@@ -54,7 +54,7 @@ test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatib
   assert.ok(studio.includes('Native AOT app (GitHub Actions)'));
 });
 
-test('macOS native runtime workflow builds universal AppKit runtime, smokes ComboBox and publishes v0.2', () => {
+test('macOS native runtime workflow builds universal AppKit runtime, smokes ListBox and publishes v0.3', () => {
   assert.ok(workflow.includes('native-runtime/appkit-sealed-gui.mm'));
   assert.ok(workflow.includes('scripts/seal-native-macos.js'));
   assert.ok(workflow.includes('-arch arm64 -arch x86_64'));
@@ -62,10 +62,12 @@ test('macOS native runtime workflow builds universal AppKit runtime, smokes Comb
   assert.ok(workflow.includes('dist-runtime/PatchSealedForms --patch-smoke'));
   assert.ok(workflow.includes('examples/combo-window.patch'));
   assert.ok(workflow.includes('dist-runtime/PatchSealedCombo --patch-smoke'));
-  assert.ok(workflow.includes('Expected sealed native GUI payload v2'));
+  assert.ok(workflow.includes('examples/listbox-window.patch'));
+  assert.ok(workflow.includes('dist-runtime/PatchSealedListBox --patch-smoke'));
+  assert.ok(workflow.includes('Expected sealed native GUI payload v3'));
   assert.ok(workflow.includes('patch-macos-native-gui-runtime.bin'));
-  assert.ok(workflow.includes('native-macos-runtime-v0.2'));
-  assert.equal(workflow.includes('native-macos-runtime-v0.1'), false);
+  assert.ok(workflow.includes('native-macos-runtime-v0.3'));
+  assert.equal(workflow.includes('native-macos-runtime-v0.2'), false);
   assert.match(workflow, /unsigned universal AppKit/i);
   assert.ok(workflow.includes('Signing/notarization is separate'));
   assert.equal(workflow.includes('build-native-window.js'), false);
