@@ -2,7 +2,7 @@
 
 Status: **0.2.0-beta.32** · Change IR **0.10**
 
-Patch keeps Console and Window build paths explicit. Beta.32 strengthens research assurance around actually executed direct-Wasm Console programs. Product GUI work stays separate from those research claims.
+Patch keeps Console, direct-native Window and explicit compatibility Window paths separate. Product GUI work does not expand the beta.32 research assurance claims.
 
 ## Build matrix
 
@@ -15,33 +15,78 @@ Console
   FreeBSD -> portable C99 + native cc
 
 Window / GUI
-  Web     -> Standalone Window Web App
-  Windows -> compiled Patch Window program + packaged desktop runtime
-  macOS   -> compiled Patch Window program + .app desktop runtime
-  Linux   -> compiled Patch Window program + packaged desktop runtime
+  Web     -> Standalone Window Web App v0.7
+  Windows -> recommended native Win32 build; compatibility desktop fallback available
+  macOS   -> recommended native AppKit build; compatibility desktop fallback available
+  Linux   -> recommended native GTK3 build; compatibility desktop fallback available
   FreeBSD -> not yet supported
 ```
 
-Windows/macOS/Linux ordinary Studio builds are **Ready app download (no token)**. Console apps use sealed project-specific executables. Window apps compile the current Patch source first and link the resulting source-free compiled Window artifact into the hardened sandboxed desktop runtime.
+Windows/macOS/Linux ordinary Studio builds use **Ready app download (no token)**. The direct native path does not require a personal GitHub token, Node.js, Rust/Cargo or a local compiler.
 
-## Compiled Window application path
+## Direct native Window path
 
-Current Window build flow:
+Patch lowers the supported GUI surface once into checked platform-neutral **Native GUI IR v0.2** and then targets the host GUI toolkit.
+
+```text
+.patch source
+  -> Patch parser/compiler
+  -> Window support validation
+  -> Native GUI IR 0.2
+  -> Win32 / AppKit / GTK3 backend
+  -> finished native GUI application
+```
+
+Current Native GUI IR v0.2 supports:
+
+- simple number/text/Boolean state;
+- source-backed Form geometry;
+- Text, Button, Input and Checkbox;
+- ComboBox with source-backed option arrays;
+- Button `clicked` and typed Input/Checkbox/ComboBox `changed` events;
+- explicit scalar `change` actions;
+- named Form `open` / `close` lifecycle.
+
+ComboBox maps to native controls on all three platforms:
+
+- Windows: `COMBOBOX` with selection-change notification;
+- macOS: `NSPopUpButton`;
+- Linux: `GtkComboBoxText`.
+
+Unsupported native behavior fails closed during Native GUI IR lowering. **ListBox is not yet native in v0.2**, so a direct native build containing ListBox stops instead of silently omitting it or switching to Electron.
+
+## Token-free sealed native runtimes
+
+Patch Studio can build native GUI downloads entirely in the browser by sealing checked Native GUI IR payload **v2** into precompiled native runtime templates.
+
+- Windows produces one native Win32 `.exe`.
+- Linux produces a GTK3 ELF executable in a ZIP with executable mode preserved.
+- macOS produces an unsigned universal AppKit `.app` ZIP with arm64 and x86_64 slices.
+
+The sealed payload format is shared across the three native runtimes. ComboBox option arrays and typed selection events are encoded in payload v2.
+
+The macOS no-token bundle is intentionally unsigned because browser-side sealing modifies the executable after the generic runtime was compiled. Developer ID signing/notarization remains separate packaging work.
+
+## Explicit compatibility Window path
+
+Patch also retains an Electron-based compatibility backend for features not yet covered by Native GUI IR.
+
+Compatibility build flow:
 
 ```text
 .patch source
   -> Patch parser/compiler
   -> Window support validation
   -> patch-compiled-window-program 0.2 / Change IR 0.10
-  -> desktop runtime link/package
-  -> finished Windows/macOS/Linux GUI application
+  -> sandboxed compatibility runtime
+  -> Windows/macOS/Linux application
 ```
 
-The current compiled artifact contains executable Patch AST, project metadata and the source-backed Form layout manifest. Current Ready GUI payload version **0.4** contains this compiled artifact and does **not** contain Patch source. The runtime executes the compiled program directly instead of reparsing `main.patch` when the app starts.
+Current Ready compatibility payload **v0.4** contains the source-free compiled Window artifact and does not require `main.patch` at application startup.
 
-`patch-build.json` in local/cloud application projects records the artifact/IR versions, Form/control/event/Form-action counts and SHA-256 of the source used during the build.
+Compatibility runtime template **`studio-runtime-v0.5`** renders Text, Button, Input, Checkbox, ComboBox and single-selection ListBox plus named Form lifecycle. v0.5 closes an older gap where ComboBox could pass shared validation but the compatibility renderer did not draw it.
 
-The current prebuilt runtime release is **`studio-runtime-v0.4`**. It accepts current compiled artifact v0.2 and retains explicit backward compatibility with legacy v0.3 compiled payloads and v0.2 source payloads.
+The compatibility player uses sandboxing, context isolation, strict payload validation and a minimal IPC bridge.
 
 ## Named Forms and simple lifecycle
 
@@ -61,73 +106,37 @@ when close_settings clicked:
   close settings
 ```
 
-The first named Form starts visible; later named Forms start hidden. `open name` and `close name` change transient UI visibility only. They do not create persistent Patch state or Change History entries. Legacy un-named Window programs keep their previous visibility behavior.
+The first named Form starts visible; later named Forms start hidden. `open name` and `close name` modify transient UI visibility only. They do not create persistent Patch state or Change History entries.
 
-Window preflight rejects duplicate Form names and unknown `open`/`close` targets before packaging.
+## Selection and input semantics
+
+Persistent GUI state never changes merely because a widget changed.
+
+- Input `changed` exposes transient text `value`.
+- Checkbox `changed` exposes transient Boolean `value`.
+- ComboBox `changed` exposes transient text `value`.
+- single-selection ListBox `changed` exposes transient text `value` in Studio/Web/compatibility desktop.
+
+Patch source must perform an ordinary semantic `change` to persist that value.
 
 ## Cross-platform executable tests
 
-Two separate CI paths exercise GUI output on **Windows, macOS and Linux**:
+CI exercises native and compatibility applications separately.
 
-1. The project-specific Native Patch smoke builds `examples/forms-navigation.patch` through `scripts/build-native-window.js`, starts the resulting packaged application, verifies compiled-artifact execution, checks initial Main/Settings visibility, clicks the Settings button and then closes Settings again.
-2. The Runtime Templates smoke creates a source-free Ready payload v0.4, launches the prebuilt sandboxed runtime, performs the same open/close navigation and also changes the Checkbox inside the opened Settings Form.
+Direct-native gates compile/link and execute real Win32, AppKit and GTK3 programs. Native GUI v0.2 ComboBox is also executed through the unified three-OS AOT matrix and through all three sealed-runtime workflows.
 
-These are renderer-level application starts, not static package-presence checks.
-
-The platform application shell and widgets are still supplied by Electron. This build path is therefore a real Patch compile + runtime-link/package pipeline, but **not** direct Patch-to-x86/ARM GUI AOT compilation and not yet native Win32/AppKit/Unix widget lowering.
+The compatibility Runtime Templates workflow builds the Windows/macOS/Linux sandboxed desktop templates and smoke-tests source-free compiled named-Form payloads on each OS. Source-level regression tests also require the compatibility renderer to contain real ComboBox/ListBox selection branches so those controls cannot regress to silent omission.
 
 ## Beta.32 invocation-frame direct-Wasm assurance
 
-The research artifacts can be regenerated with:
+Beta.32 remains a separate research layer over the existing direct-Wasm Console backend. It reconstructs concrete invocation frames independently of trusted call-enter/call-exit markers and generates Lean-checkable evidence relating runtime-selected effects to the beta.30 exact call tree.
 
-```bash
-npm run transitive-runtime-certify:example
-npm run transitive-runtime-certify:repeated
-```
-
-These create:
-
-```text
-GeneratedTransitiveRuntimeCertificate.lean
-GeneratedRepeatedTransitiveRuntimeCertificate.lean
-```
-
-The existing direct-Wasm backend remains unchanged and emits no trusted call-enter/call-exit markers. The independent Change-IR validator executes the expected IR path, validates the complete raw target/before/after transition stream, reconstructs semantic operations/recipe scopes, and also reconstructs every concrete invocation frame.
-
-A frame contains caller/callee identity, dynamic invocation ordinal, parent/depth data, exact parameter bindings and the transition interval dominated by the call. Every validated transition/effect carries the active frame stack.
-
-For an accepted beta.30 witness, beta.32 selects effects by concrete frame identity. The generated Lean certificate then checks the reconstructed frame `BindingList` equals the beta.30 exact callee `BindingList` and re-evaluates the frame-selected effect list through `evalCallTreeStmtEqBool` before caller-signature refinement.
-
-`examples/formal-transitive-calls-repeated.patch` executes two identical `do caller(1)` calls. Beta.32 reconstructs distinct invocation frames and certifies the repeated calls separately.
-
-### Explicit boundary
-
-Beta.32 does not make the direct-Wasm backend a verified compiler. Remaining proof-free/trust boundaries include:
-
-- runtime capture;
-- correctness/completeness of the independent JavaScript validator and invocation-frame reconstruction;
-- parser/extractor correctness;
-- JavaScript-to-Wasm lowering correctness;
-- Wasm engine correctness.
-
-`GeneratedTransitiveCallBodyCertificate.lean` remains the beta.30 runtime-independent exact call-tree certificate. The two beta.32 runtime certificates add observed execution/frame evidence.
-
-## Window semantics
-
-The shared Window preflight supports button `clicked` and input/Checkbox `changed`. Input editing exposes transient event-local `value`; source must perform semantic `change` to persist it. Named Form `open`/`close` is also transient UI lifecycle.
-
-The prebuilt Window player uses `sandbox: true`, context isolation, strict payload validation and a minimal IPC bridge. CI smoke-tests the runtime on Windows, macOS and Linux.
-
-## Direct Wasm
-
-Direct Wasm remains a Console backend for the conservative numeric/control-flow/acyclic-recipe subset. Raw direct Wasm imports Patch's small host ABI and is not yet a standalone WASI command module.
-
-Beta.32 uses this existing backend unchanged.
+This does not make Patch an end-to-end verified compiler. Runtime capture, independent-validator/frame reconstruction, parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine remain explicit trust/proof-free boundaries.
 
 ## Portable C99
 
-Portable C99 covers the conservative numeric Console subset and is compile/run tested on Linux, macOS and FreeBSD 15.1.
+Portable C99 covers the conservative numeric Console subset and is compile/run tested on Linux, macOS and FreeBSD.
 
 ## Distribution boundary
 
-macOS Developer ID signing/notarization and polished installers remain future distribution work. Window packages are standalone but are not yet native AppKit, Win32 or portable Unix widget lowering.
+Remaining distribution work includes macOS signing/notarization, polished installers and a more portable/self-contained Linux GUI distribution. Remaining native GUI parity includes ListBox, radio buttons, tabs, menus, dialogs and table/grid.
