@@ -5,7 +5,8 @@ const CONTROL_DEFAULTS = {
   button: { width: 120, height: 36 },
   input: { width: 220, height: 36 },
   checkbox: { width: 220, height: 36 },
-  combo: { width: 220, height: 36 }
+  combo: { width: 220, height: 36 },
+  listbox: { width: 220, height: 120 }
 };
 
 export function buildFormLayoutManifest(ast) {
