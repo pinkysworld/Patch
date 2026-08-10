@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -41,7 +40,8 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   events: gui.events.length,
   sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
   shell: 'native-win32',
-  electron: false
+  electron: false,
+  crt: 'static'
 }, null, 2));
 
 if (emitOnly) {
@@ -56,7 +56,7 @@ if (process.platform !== 'win32') {
 const compiler = resolveMsvc();
 const objectPath = path.join(outDir, `${appName}.obj`);
 const clArgs = [
-  '/nologo', '/EHsc', '/std:c++17', '/O2', '/utf-8', '/DUNICODE', '/D_UNICODE',
+  '/nologo', '/EHsc', '/std:c++17', '/O2', '/MT', '/utf-8', '/DUNICODE', '/D_UNICODE',
   `/Fo${objectPath}`, cppPath,
   'user32.lib', 'gdi32.lib',
   '/link', '/SUBSYSTEM:WINDOWS', `/OUT:${exePath}`
