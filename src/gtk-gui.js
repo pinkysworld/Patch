@@ -1,50 +1,163 @@
 import { validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
 
-export const PATCH_GTK_GUI_BACKEND_VERSION = '0.2';
+export const PATCH_GTK_GUI_BACKEND_VERSION = '0.3';
 
 export function emitGtkGuiCpp(input) {
   const ir = validateNativeGuiIR(input);
-  const formIndex = new Map(ir.forms.map((form, index) => [form.id, index]));
-  const controlRecords = [];
-  let nextCommandId = 1000;
-
-  for (let f = 0; f < ir.forms.length; f++) {
-    for (const control of ir.forms[f].controls) {
-      controlRecords.push({ ...control, formIndex: f, commandId: nextCommandId++, handleIndex: controlRecords.length });
-    }
-  }
-
-  const controlById = new Map(controlRecords.filter(control => control.id).map(control => [control.id, control]));
-  const stateByName = new Map(ir.states.map(state => [state.name, state]));
-  for (const event of ir.events) {
-    if (!controlById.has(event.control)) throw new NativeGuiError(`GTK event control '${event.control}' is missing.`);
-    for (const action of event.actions) {
-      if ((action.kind === 'openForm' || action.kind === 'closeForm') && !formIndex.has(action.form)) {
-        throw new NativeGuiError(`GTK Form '${action.form}' is missing.`);
-      }
-    }
-  }
+  const forms = new Map(ir.forms.map((form, index) => [form.id, index]));
+  const controls = flattenControls(ir.forms);
+  const controlsById = new Map(controls.filter(control => control.id).map(control => [control.id, control]));
+  const states = new Map(ir.states.map(state => [state.name, state]));
+  validateReferences(ir, forms, controlsById);
 
   const stateDecls = ir.states.map(stateDeclaration).join('\n');
   const formDefs = ir.forms.map((form, index) =>
     `  {${cString(form.id)}, ${cString(form.title)}, ${positiveInt(form.width, 640)}, ${positiveInt(form.height, 420)}, ${form.visible ? 'true' : 'false'}}${index + 1 === ir.forms.length ? '' : ','}`
   ).join('\n');
-  const controlDefs = controlRecords.map((control, index) =>
-    `  {${control.commandId}, ${control.formIndex}, ${controlKind(control.type)}, ${cString(control.id ?? '')}, ${layoutInt(control.layout?.x, 24)}, ${layoutInt(control.layout?.y, 24)}, ${positiveInt(control.layout?.width, 120)}, ${positiveInt(control.layout?.height, 36)}}${index + 1 === controlRecords.length ? '' : ','}`
+  const controlDefs = controls.map((control, index) =>
+    `  {${control.commandId}, ${control.formIndex}, ${controlKind(control.type)}, ${cString(control.id ?? '')}, ${layoutInt(control.layout?.x, 24)}, ${layoutInt(control.layout?.y, 24)}, ${positiveInt(control.layout?.width, 120)}, ${positiveInt(control.layout?.height, 36)}}${index + 1 === controls.length ? '' : ','}`
   ).join('\n');
-  const textFunctions = controlRecords.map((control, index) => emitControlTextFunction(control, index, stateByName)).join('\n\n');
-  const eventFunctions = ir.events.map((event, index) => emitEventFunction(event, index, formIndex, stateByName)).join('\n\n');
-  const clickedDispatch = ir.events.map((event, index) => emitClickedDispatch(event, index, controlById)).filter(Boolean).join('\n');
-  const toggledDispatch = ir.events.map((event, index) => emitToggledDispatch(event, index, controlById)).filter(Boolean).join('\n');
-  const changedDispatch = ir.events.map((event, index) => emitChangedDispatch(event, index, controlById)).filter(Boolean).join('\n');
-  const comboDispatch = ir.events.map((event, index) => emitComboDispatch(event, index, controlById)).filter(Boolean).join('\n');
-  const refreshCases = controlRecords.map((control, index) => emitRefresh(control, index, stateByName)).join('\n');
-  const createCases = controlRecords.map((control, index) => emitCreateControl(control, index)).join('\n');
-  const smoke = emitSmoke(formIndex, controlById, stateByName);
+  const textFunctions = controls.map((control, index) => emitControlTextFunction(control, index, states)).join('\n\n');
+  const eventFunctions = ir.events.map((event, index) => emitEventFunction(event, index, forms, states)).join('\n\n');
+  const clickedDispatch = ir.events.map((event, index) => emitClickedDispatch(event, index, controlsById)).filter(Boolean).join('\n');
+  const toggledDispatch = ir.events.map((event, index) => emitToggledDispatch(event, index, controlsById)).filter(Boolean).join('\n');
+  const changedDispatch = ir.events.map((event, index) => emitChangedDispatch(event, index, controlsById)).filter(Boolean).join('\n');
+  const comboDispatch = ir.events.map((event, index) => emitComboDispatch(event, index, controlsById)).filter(Boolean).join('\n');
+  const listDispatch = ir.events.map((event, index) => emitListDispatch(event, index, controlsById)).filter(Boolean).join('\n');
+  const refresh = controls.map((control, index) => emitRefresh(control, index, states)).filter(Boolean).join('\n');
+  const create = controls.map((control, index) => emitCreateControl(control, index)).join('\n');
+  const smoke = emitSmoke(forms, controlsById, states);
 
-  return `// Generated by Patch GTK GUI backend ${PATCH_GTK_GUI_BACKEND_VERSION}.\n// Direct native GTK controls: no Electron/Chromium runtime.\n#include <gtk/gtk.h>\n#include <cmath>\n#include <cstring>\n#include <sstream>\n#include <string>\n\nstatic bool gRefreshing = false;\n\nenum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5 };\nstruct FormDef { const char *formId; const char *title; int width; int height; bool visible; };\nstruct ControlDef { int commandId; int formIndex; ControlKind kind; const char *name; int x; int y; int width; int height; };\n\n${stateDecls}\n\nstatic const FormDef FORMS[] = {\n${formDefs}\n};\nstatic const int FORM_COUNT = ${ir.forms.length};\nstatic GtkWidget *gForms[${Math.max(1, ir.forms.length)}] = {};\nstatic GtkWidget *gFixed[${Math.max(1, ir.forms.length)}] = {};\n\nstatic const ControlDef CONTROLS[] = {\n${controlDefs || '  {0,0,CK_TEXT,"",0,0,0,0}'}\n};\nstatic const int CONTROL_COUNT = ${controlRecords.length};\nstatic GtkWidget *gControls[${Math.max(1, controlRecords.length)}] = {};\n\nstatic std::string PatchNumber(double value) {\n  if (std::isfinite(value) && std::floor(value) == value) return std::to_string((long long)value);\n  std::ostringstream out; out.precision(15); out << value; return out.str();\n}\nstatic std::string PatchBoolean(bool value) { return value ? "true" : "false"; }\n\n${textFunctions}\n\nstatic void RefreshUI();\n\n${eventFunctions}\n\nstatic void OnClicked(GtkWidget *, gpointer data) {\n  if (gRefreshing) return;\n  int commandId = GPOINTER_TO_INT(data);\n${clickedDispatch || '  (void)commandId;'}\n}\n\nstatic void OnToggled(GtkToggleButton *button, gpointer data) {\n  if (gRefreshing) return;\n  int commandId = GPOINTER_TO_INT(data);\n${toggledDispatch || '  (void)commandId; (void)button;'}\n}\n\nstatic void OnChanged(GtkEditable *editable, gpointer data) {\n  if (gRefreshing) return;\n  int commandId = GPOINTER_TO_INT(data);\n${changedDispatch || '  (void)commandId; (void)editable;'}\n}\n\nstatic void OnComboChanged(GtkComboBox *combo, gpointer data) {\n  if (gRefreshing) return;\n  int commandId = GPOINTER_TO_INT(data);\n${comboDispatch || '  (void)commandId; (void)combo;'}\n}\n\nstatic gboolean OnDelete(GtkWidget *widget, GdkEvent *, gpointer data) {\n  int formIndex = GPOINTER_TO_INT(data);\n  if (formIndex == 0) {\n    gtk_main_quit();\n    return FALSE;\n  }\n  gtk_widget_hide(widget);\n  return TRUE;\n}\n\nstatic void RefreshUI() {\n  gRefreshing = true;\n${refreshCases}\n  gRefreshing = false;\n}\n\nstatic GtkWidget *CreatePatchForm(int index) {\n  GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);\n  gtk_window_set_title(GTK_WINDOW(window), FORMS[index].title);\n  gtk_window_set_default_size(GTK_WINDOW(window), FORMS[index].width, FORMS[index].height);\n  gtk_window_set_resizable(GTK_WINDOW(window), TRUE);\n  g_signal_connect(window, "delete-event", G_CALLBACK(OnDelete), GINT_TO_POINTER(index));\n  GtkWidget *fixed = gtk_fixed_new();\n  gtk_container_add(GTK_CONTAINER(window), fixed);\n  gForms[index] = window;\n  gFixed[index] = fixed;\n${createCases}\n  return window;\n}\n\nstatic bool HasArg(int argc, char *argv[], const char *value) {\n  for (int i = 1; i < argc; ++i) if (strcmp(argv[i], value) == 0) return true;\n  return false;\n}\n\n${smoke}\n\nint main(int argc, char *argv[]) {\n  bool smoke = HasArg(argc, argv, "--patch-smoke");\n  gtk_init(&argc, &argv);\n  for (int i = 0; i < FORM_COUNT; ++i) {\n    if (!CreatePatchForm(i)) return 10 + i;\n  }\n  RefreshUI();\n  for (int i = 0; i < FORM_COUNT; ++i) {\n    if (FORMS[i].visible) gtk_widget_show_all(gForms[i]);\n  }\n  if (smoke) return RunPatchSmoke();\n  gtk_main();\n  return 0;\n}\n`;
+  return `// Generated by Patch GTK GUI backend ${PATCH_GTK_GUI_BACKEND_VERSION}.
+// Direct native GTK controls: no Electron/Chromium runtime.
+#include <gtk/gtk.h>
+#include <cmath>
+#include <cstring>
+#include <sstream>
+#include <string>
+
+static bool gRefreshing = false;
+
+enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6 };
+struct FormDef { const char *formId; const char *title; int width; int height; bool visible; };
+struct ControlDef { int commandId; int formIndex; ControlKind kind; const char *name; int x; int y; int width; int height; };
+
+${stateDecls}
+
+static const FormDef FORMS[] = {
+${formDefs}
+};
+static const int FORM_COUNT = ${ir.forms.length};
+static GtkWidget *gForms[${Math.max(1, ir.forms.length)}] = {};
+static GtkWidget *gFixed[${Math.max(1, ir.forms.length)}] = {};
+
+static const ControlDef CONTROLS[] = {
+${controlDefs || '  {0,0,CK_TEXT,"",0,0,0,0}'}
+};
+static const int CONTROL_COUNT = ${controls.length};
+static GtkWidget *gControls[${Math.max(1, controls.length)}] = {};
+
+static std::string PatchNumber(double value) {
+  if (std::isfinite(value) && std::floor(value) == value) return std::to_string((long long)value);
+  std::ostringstream out; out.precision(15); out << value; return out.str();
+}
+static std::string PatchBoolean(bool value) { return value ? "true" : "false"; }
+
+${textFunctions}
+
+static void RefreshUI();
+
+${eventFunctions}
+
+static void OnClicked(GtkWidget *, gpointer data) {
+  if (gRefreshing) return;
+  int commandId = GPOINTER_TO_INT(data);
+${clickedDispatch || '  (void)commandId;'}
+}
+static void OnToggled(GtkToggleButton *button, gpointer data) {
+  if (gRefreshing) return;
+  int commandId = GPOINTER_TO_INT(data);
+${toggledDispatch || '  (void)commandId; (void)button;'}
+}
+static void OnChanged(GtkEditable *editable, gpointer data) {
+  if (gRefreshing) return;
+  int commandId = GPOINTER_TO_INT(data);
+${changedDispatch || '  (void)commandId; (void)editable;'}
+}
+static void OnComboChanged(GtkComboBox *combo, gpointer data) {
+  if (gRefreshing) return;
+  int commandId = GPOINTER_TO_INT(data);
+${comboDispatch || '  (void)commandId; (void)combo;'}
+}
+static void OnListChanged(GtkListBox *box, GtkListBoxRow *row, gpointer data) {
+  if (gRefreshing) return;
+  int commandId = GPOINTER_TO_INT(data);
+${listDispatch || '  (void)commandId; (void)box; (void)row;'}
 }
 
+static gboolean OnDelete(GtkWidget *widget, GdkEvent *, gpointer data) {
+  int formIndex = GPOINTER_TO_INT(data);
+  if (formIndex == 0) { gtk_main_quit(); return FALSE; }
+  gtk_widget_hide(widget);
+  return TRUE;
+}
+
+static void RefreshUI() {
+  gRefreshing = true;
+${refresh}
+  gRefreshing = false;
+}
+
+static GtkWidget *CreatePatchForm(int index) {
+  GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(window), FORMS[index].title);
+  gtk_window_set_default_size(GTK_WINDOW(window), FORMS[index].width, FORMS[index].height);
+  gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
+  g_signal_connect(window, "delete-event", G_CALLBACK(OnDelete), GINT_TO_POINTER(index));
+  GtkWidget *fixed = gtk_fixed_new();
+  gtk_container_add(GTK_CONTAINER(window), fixed);
+  gForms[index] = window;
+  gFixed[index] = fixed;
+${create}
+  return window;
+}
+
+static bool HasArg(int argc, char *argv[], const char *value) {
+  for (int i = 1; i < argc; ++i) if (strcmp(argv[i], value) == 0) return true;
+  return false;
+}
+
+${smoke}
+
+int main(int argc, char *argv[]) {
+  bool smoke = HasArg(argc, argv, "--patch-smoke");
+  gtk_init(&argc, &argv);
+  for (int i = 0; i < FORM_COUNT; ++i) if (!CreatePatchForm(i)) return 10 + i;
+  RefreshUI();
+  for (int i = 0; i < FORM_COUNT; ++i) if (FORMS[i].visible) gtk_widget_show_all(gForms[i]);
+  if (smoke) return RunPatchSmoke();
+  gtk_main();
+  return 0;
+}
+`;
+}
+
+function flattenControls(forms) {
+  const out = [];
+  let commandId = 1000;
+  for (let formIndex = 0; formIndex < forms.length; formIndex += 1) {
+    for (const control of forms[formIndex].controls ?? []) out.push({ ...control, formIndex, commandId: commandId++, handleIndex: out.length });
+  }
+  return out;
+}
+function validateReferences(ir, forms, controls) {
+  for (const event of ir.events) {
+    if (!controls.has(event.control)) throw new NativeGuiError(`GTK event control '${event.control}' is missing.`);
+    for (const action of event.actions ?? []) {
+      if ((action.kind === 'openForm' || action.kind === 'closeForm') && !forms.has(action.form)) throw new NativeGuiError(`GTK Form '${action.form}' is missing.`);
+    }
+  }
+}
 function stateDeclaration(state) {
   const name = stateName(state.name);
   if (state.type === 'boolean') return `static bool ${name} = ${state.initial ? 'true' : 'false'};`;
@@ -52,7 +165,6 @@ function stateDeclaration(state) {
   if (state.type === 'text') return `static std::string ${name} = ${cString(state.initial)};`;
   throw new NativeGuiError(`GTK state type '${state.type}' is unsupported.`);
 }
-
 function emitControlTextFunction(control, index, states) {
   const text = String(control.text ?? '');
   const lines = ['  std::string out;'];
@@ -72,28 +184,25 @@ function emitControlTextFunction(control, index, states) {
   lines.push('  return out;');
   return `static std::string ControlText_${index}() {\n${lines.join('\n')}\n}`;
 }
-
 function emitEventFunction(event, index, forms, states) {
   const param = event.valueType === 'boolean' ? 'bool eventValue' : event.valueType === 'text' ? 'const std::string& eventValue' : '';
-  const actions = event.actions.map(action => emitAction(action, event, forms, states)).join('\n');
+  const actions = (event.actions ?? []).map(action => emitAction(action, event, forms, states)).join('\n');
   return `static void Event_${index}(${param}) {\n${actions || '  // no-op'}\n  RefreshUI();\n}`;
 }
-
 function emitAction(action, event, forms, states) {
   if (action.kind === 'openForm') return `  gtk_widget_show_all(gForms[${forms.get(action.form)}]); gtk_window_present(GTK_WINDOW(gForms[${forms.get(action.form)}]));`;
   if (action.kind === 'closeForm') return `  gtk_widget_hide(gForms[${forms.get(action.form)}]);`;
   if (action.kind !== 'change') throw new NativeGuiError(`GTK action '${action.kind}' is unsupported.`);
   const state = states.get(action.target);
   if (!state) throw new NativeGuiError(`GTK change target '${action.target}' is missing.`);
-  return action.ops.map(op => emitOperation(state, op, event)).join('\n');
+  return (action.ops ?? []).map(op => emitOperation(state, op, event)).join('\n');
 }
-
 function emitOperation(state, op, event) {
   const target = stateName(state.name);
   if (op.op === 'clear') {
     if (state.type === 'boolean') return `  ${target} = false;`;
     if (state.type === 'number') return `  ${target} = 0.0;`;
-    if (state.type === 'text') return `  ${target}.clear();`;
+    return `  ${target}.clear();`;
   }
   const value = emitNativeValue(state, op.value, event);
   if (op.op === 'set') return `  ${target} = ${value};`;
@@ -102,40 +211,37 @@ function emitOperation(state, op, event) {
   if (op.op === 'add' && state.type === 'text') return `  ${target} += ${value};`;
   throw new NativeGuiError(`GTK native GUI cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
 }
-
 function emitNativeValue(state, value, event) {
   if (value?.kind === 'eventValue') {
     if (state.type !== event.valueType) throw new NativeGuiError(`GTK event value type ${event.valueType ?? 'none'} cannot be assigned to ${state.type} state '${state.name}'.`);
     return 'eventValue';
   }
-  const literal = value?.value;
-  if (state.type === 'boolean') return literal ? 'true' : 'false';
-  if (state.type === 'number') return String(Number(literal));
-  if (state.type === 'text') return `std::string(${cString(literal)})`;
+  if (state.type === 'boolean') return value?.value ? 'true' : 'false';
+  if (state.type === 'number') return String(Number(value?.value));
+  if (state.type === 'text') return `std::string(${cString(value?.value)})`;
   throw new NativeGuiError(`GTK literal type '${state.type}' is unsupported.`);
 }
-
 function emitClickedDispatch(event, index, controls) {
   const control = controls.get(event.control);
-  if (!control || control.type !== 'button') return '';
-  return `  if (commandId == ${control.commandId}) { Event_${index}(); return; }`;
+  return control?.type === 'button' ? `  if (commandId == ${control.commandId}) { Event_${index}(); return; }` : '';
 }
 function emitToggledDispatch(event, index, controls) {
   const control = controls.get(event.control);
-  if (!control || control.type !== 'checkbox') return '';
-  return `  if (commandId == ${control.commandId}) { Event_${index}(gtk_toggle_button_get_active(button)); return; }`;
+  return control?.type === 'checkbox' ? `  if (commandId == ${control.commandId}) { Event_${index}(gtk_toggle_button_get_active(button)); return; }` : '';
 }
 function emitChangedDispatch(event, index, controls) {
   const control = controls.get(event.control);
-  if (!control || control.type !== 'input') return '';
-  return `  if (commandId == ${control.commandId}) { Event_${index}(gtk_entry_get_text(GTK_ENTRY(editable))); return; }`;
+  return control?.type === 'input' ? `  if (commandId == ${control.commandId}) { Event_${index}(gtk_entry_get_text(GTK_ENTRY(editable))); return; }` : '';
 }
 function emitComboDispatch(event, index, controls) {
   const control = controls.get(event.control);
-  if (!control || control.type !== 'combo') return '';
-  return `  if (commandId == ${control.commandId}) { gchar *value = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo)); Event_${index}(value ? std::string(value) : std::string()); if (value) g_free(value); return; }`;
+  return control?.type === 'combo' ? `  if (commandId == ${control.commandId}) { gchar *value = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo)); Event_${index}(value ? std::string(value) : std::string()); if (value) g_free(value); return; }` : '';
 }
-
+function emitListDispatch(event, index, controls) {
+  const control = controls.get(event.control);
+  if (control?.type !== 'listbox') return '';
+  return `  if (commandId == ${control.commandId}) { if (!row) { Event_${index}(std::string()); return; } GtkWidget *child = gtk_bin_get_child(GTK_BIN(row)); const char *value = child ? gtk_label_get_text(GTK_LABEL(child)) : ""; Event_${index}(value ? std::string(value) : std::string()); return; }`;
+}
 function emitRefresh(control, index, states) {
   if (control.type === 'text') return `  if (gControls[${index}]) { auto value = ControlText_${index}(); if (value != gtk_label_get_text(GTK_LABEL(gControls[${index}]))) gtk_label_set_text(GTK_LABEL(gControls[${index}]), value.c_str()); }`;
   if (control.type === 'button') return `  if (gControls[${index}]) { auto value = ControlText_${index}(); const char *old = gtk_button_get_label(GTK_BUTTON(gControls[${index}])); if (!old || value != old) gtk_button_set_label(GTK_BUTTON(gControls[${index}]), value.c_str()); }`;
@@ -152,65 +258,56 @@ function emitRefresh(control, index, states) {
     const checks = control.options.map((option, optionIndex) => `if (${stateName(state.name)} == ${cString(option)}) selected = ${optionIndex};`).join(' else ');
     return `  if (gControls[${index}]) { int selected = -1; ${checks} gtk_combo_box_set_active(GTK_COMBO_BOX(gControls[${index}]), selected); }`;
   }
+  if (control.type === 'listbox') {
+    const state = states.get(control.binding);
+    const checks = control.options.map((option, optionIndex) => `if (${stateName(state.name)} == ${cString(option)}) selected = ${optionIndex};`).join(' else ');
+    return `  if (gControls[${index}]) { int selected = -1; ${checks} GtkListBoxRow *row = selected >= 0 ? gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${index}]), selected) : nullptr; gtk_list_box_select_row(GTK_LIST_BOX(gControls[${index}]), row); }`;
+  }
   return '';
 }
-
 function emitCreateControl(control, index) {
   const x = layoutInt(control.layout?.x, 24);
   const y = layoutInt(control.layout?.y, 24);
   const width = positiveInt(control.layout?.width, 120);
   const height = positiveInt(control.layout?.height, 36);
-  let create;
+  let create = '';
   if (control.type === 'text') create = 'GtkWidget *control = gtk_label_new(""); gtk_label_set_xalign(GTK_LABEL(control), 0.0f);';
   else if (control.type === 'button') create = 'GtkWidget *control = gtk_button_new_with_label("");';
   else if (control.type === 'input') create = 'GtkWidget *control = gtk_entry_new();';
+  else if (control.type === 'checkbox') create = 'GtkWidget *control = gtk_check_button_new_with_label("");';
   else if (control.type === 'combo') create = `GtkWidget *control = gtk_combo_box_text_new(); ${control.options.map(option => `gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(control), ${cString(option)});`).join(' ')}`;
-  else create = 'GtkWidget *control = gtk_check_button_new_with_label("");';
-  const signal = control.type === 'button'
-    ? `g_signal_connect(control, "clicked", G_CALLBACK(OnClicked), GINT_TO_POINTER(${control.commandId}));`
-    : control.type === 'checkbox'
-      ? `g_signal_connect(control, "toggled", G_CALLBACK(OnToggled), GINT_TO_POINTER(${control.commandId}));`
-      : control.type === 'input'
-        ? `g_signal_connect(control, "changed", G_CALLBACK(OnChanged), GINT_TO_POINTER(${control.commandId}));`
-        : control.type === 'combo'
-          ? `g_signal_connect(control, "changed", G_CALLBACK(OnComboChanged), GINT_TO_POINTER(${control.commandId}));`
-          : '';
+  else if (control.type === 'listbox') create = `GtkWidget *control = gtk_list_box_new(); gtk_list_box_set_selection_mode(GTK_LIST_BOX(control), GTK_SELECTION_SINGLE); ${control.options.map(option => `GtkWidget *label_${index}_${Math.abs(option.length)} = gtk_label_new(${cString(option)}); gtk_widget_set_halign(label_${index}_${Math.abs(option.length)}, GTK_ALIGN_START); gtk_widget_set_margin_start(label_${index}_${Math.abs(option.length)}, 8); gtk_widget_set_margin_end(label_${index}_${Math.abs(option.length)}, 8); gtk_widget_set_margin_top(label_${index}_${Math.abs(option.length)}, 5); gtk_widget_set_margin_bottom(label_${index}_${Math.abs(option.length)}, 5); gtk_list_box_insert(GTK_LIST_BOX(control), label_${index}_${Math.abs(option.length)}, -1);`).join(' ')}`;
+  else throw new NativeGuiError(`GTK control '${control.type}' is unsupported.`);
+  let signal = '';
+  if (control.type === 'button') signal = `g_signal_connect(control, "clicked", G_CALLBACK(OnClicked), GINT_TO_POINTER(${control.commandId}));`;
+  if (control.type === 'checkbox') signal = `g_signal_connect(control, "toggled", G_CALLBACK(OnToggled), GINT_TO_POINTER(${control.commandId}));`;
+  if (control.type === 'input') signal = `g_signal_connect(control, "changed", G_CALLBACK(OnChanged), GINT_TO_POINTER(${control.commandId}));`;
+  if (control.type === 'combo') signal = `g_signal_connect(control, "changed", G_CALLBACK(OnComboChanged), GINT_TO_POINTER(${control.commandId}));`;
+  if (control.type === 'listbox') signal = `g_signal_connect(control, "row-selected", G_CALLBACK(OnListChanged), GINT_TO_POINTER(${control.commandId}));`;
   return `  if (${control.formIndex} == index) {\n    ${create}\n    gtk_widget_set_size_request(control, ${width}, ${height});\n    gtk_fixed_put(GTK_FIXED(fixed), control, ${x}, ${y});\n    ${signal}\n    gControls[${index}] = control;\n  }`;
 }
-
 function emitSmoke(forms, controls, states) {
   const mainIndex = forms.has('main') ? forms.get('main') : 0;
   const settingsIndex = forms.get('settings');
   const open = controls.get('open_settings');
   const close = controls.get('close_settings');
   const checkbox = controls.get('notifications');
-  const notifications = states.get('notifications');
+  const checkboxState = states.get('notifications');
   const combo = controls.get('size');
   const comboState = states.get('size');
+  const listbox = controls.get('fruit');
+  const listboxState = states.get('fruit');
   const lines = ['static int RunPatchSmoke() {', `  if (!gForms[${mainIndex}] || !gtk_widget_get_visible(gForms[${mainIndex}])) return 70;`];
   if (settingsIndex !== undefined) lines.push(`  if (gtk_widget_get_visible(gForms[${settingsIndex}])) return 71;`);
-  if (open && settingsIndex !== undefined) {
-    lines.push(`  gtk_button_clicked(GTK_BUTTON(gControls[${open.handleIndex}]));`);
-    lines.push(`  if (!gtk_widget_get_visible(gForms[${settingsIndex}])) return 72;`);
-  }
-  if (checkbox && notifications?.type === 'boolean') {
-    lines.push(`  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(gControls[${checkbox.handleIndex}]), TRUE);`);
-    lines.push(`  if (!${stateName(notifications.name)}) return 73;`);
-  }
-  if (combo && comboState?.type === 'text' && combo.options.length) {
-    const last = combo.options.length - 1;
-    lines.push(`  gtk_combo_box_set_active(GTK_COMBO_BOX(gControls[${combo.handleIndex}]), ${last});`);
-    lines.push(`  if (${stateName(comboState.name)} != ${cString(combo.options[last])}) return 75;`);
-  }
-  if (close && settingsIndex !== undefined) {
-    lines.push(`  gtk_button_clicked(GTK_BUTTON(gControls[${close.handleIndex}]));`);
-    lines.push(`  if (gtk_widget_get_visible(gForms[${settingsIndex}])) return 74;`);
-  }
+  if (open && settingsIndex !== undefined) { lines.push(`  gtk_button_clicked(GTK_BUTTON(gControls[${open.handleIndex}]));`); lines.push(`  if (!gtk_widget_get_visible(gForms[${settingsIndex}])) return 72;`); }
+  if (checkbox && checkboxState?.type === 'boolean') { lines.push(`  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(gControls[${checkbox.handleIndex}]), TRUE);`); lines.push(`  if (!${stateName(checkboxState.name)}) return 73;`); }
+  if (combo && comboState?.type === 'text' && combo.options.length) { const last = combo.options.length - 1; lines.push(`  gtk_combo_box_set_active(GTK_COMBO_BOX(gControls[${combo.handleIndex}]), ${last});`); lines.push(`  if (${stateName(comboState.name)} != ${cString(combo.options[last])}) return 75;`); }
+  if (listbox && listboxState?.type === 'text' && listbox.options.length) { const last = listbox.options.length - 1; lines.push(`  GtkListBoxRow *listRow = gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${listbox.handleIndex}]), ${last});`); lines.push(`  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${listbox.handleIndex}]), listRow);`); lines.push(`  if (${stateName(listboxState.name)} != ${cString(listbox.options[last])}) return 76;`); }
+  if (close && settingsIndex !== undefined) { lines.push(`  gtk_button_clicked(GTK_BUTTON(gControls[${close.handleIndex}]));`); lines.push(`  if (gtk_widget_get_visible(gForms[${settingsIndex}])) return 74;`); }
   lines.push(`  gtk_widget_destroy(gForms[${mainIndex}]);`, '  return 0;', '}');
   return lines.join('\n');
 }
-
-function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO' })[type] ?? 'CK_TEXT'; }
+function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX' })[type] ?? 'CK_TEXT'; }
 function stateName(name) { return `patch_state_${identifier(name)}`; }
 function identifier(value) { return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&'); }
 function layoutInt(value, fallback) { return Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : fallback; }
