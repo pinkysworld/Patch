@@ -35,6 +35,7 @@ on:
       - src/window-compiled.js
       - src/native-gui-ir.js
       - src/sealed-native-gui.js
+      - src/sealed-native-package.js
       - src/prebuilt-native.js
       - src/prebuilt-window.js
       - src/local-native-kit.js
@@ -44,9 +45,10 @@ on:
       - src/concrete-call-body-certificate.js
       - .github/workflows/pages.yml
       - .github/workflows/native-win32-runtime.yml
+      - .github/workflows/native-linux-runtime.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime]
     types: [completed]
 
 permissions:
@@ -81,6 +83,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.4
           WIN32_RUNTIME_TAG: native-win32-runtime-v0.1
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.1
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -92,6 +95,11 @@ jobs:
             gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
           else
             echo "Native Win32 runtime $WIN32_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
+          fi
+          if gh release view "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
+          else
+            echo "Native Linux runtime $LINUX_NATIVE_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
           fi
           ls -lh _site/runtimes || true
       - name: Validate public site
