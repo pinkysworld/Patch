@@ -140,6 +140,7 @@ document.querySelector('#addText').addEventListener('click', () => addControl('t
 document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
 document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
 document.querySelector('#addCombo')?.addEventListener('click', () => addControl('combo'));
+document.querySelector('#addListbox')?.addEventListener('click', () => addControl('listbox'));
 designerInspector.apply.addEventListener('click', applyDesignerProperties);
 designerInspector.remove.addEventListener('click', removeSelectedDesignerControl);
 designerInspector.source.addEventListener('click', revealSelectedDesignerSource);
@@ -225,7 +226,7 @@ function applyDesignerProperties() {
     const changes = {};
     if (selected.type !== 'text') changes.id = designerInspector.idInput.value;
     if (['text', 'button', 'checkbox'].includes(selected.type)) changes.textExpr = designerInspector.textInput.value;
-    if (selected.type === 'combo') changes.options = splitOptionExpressions(designerInspector.optionsInput.value);
+    if (['combo', 'listbox'].includes(selected.type)) changes.options = splitOptionExpressions(designerInspector.optionsInput.value);
     code.value = updateDesignerControl(code.value, designerSelection, changes);
     saveProject();
     refreshDesigner();
@@ -394,9 +395,10 @@ function renderWindows(container, windows, interactive) {
         el.append(input, text);
         if (interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: input.checked }));
         else input.disabled = true;
-      } else if (control.type === 'combo') {
+      } else if (control.type === 'combo' || control.type === 'listbox') {
         el = document.createElement('select');
-        el.className = 'patch-input patch-combo';
+        el.className = control.type === 'listbox' ? 'patch-input patch-listbox' : 'patch-input patch-combo';
+        if (control.type === 'listbox') el.size = Math.min(8, Math.max(2, (control.options ?? []).length));
         for (const option of control.options ?? []) {
           const item = document.createElement('option');
           item.value = option;
@@ -458,8 +460,8 @@ function renderDesignerInspector() {
   designerInspector.type.textContent = selected.type[0].toUpperCase() + selected.type.slice(1);
   designerInspector.location.textContent = `Window ${selected.windowIndex + 1} · control ${selected.controlIndex + 1} · line ${selected.line}`;
   designerInspector.idField.hidden = selected.type === 'text';
-  designerInspector.textField.hidden = selected.type === 'input' || selected.type === 'combo';
-  designerInspector.optionsField.hidden = selected.type !== 'combo';
+  designerInspector.textField.hidden = selected.type === 'input' || selected.type === 'combo' || selected.type === 'listbox';
+  designerInspector.optionsField.hidden = !['combo', 'listbox'].includes(selected.type);
   designerInspector.idInput.value = selected.id ?? '';
   designerInspector.textInput.value = selected.textExpr ?? '';
   designerInspector.optionsInput.value = selected.options?.join(', ') ?? '';
