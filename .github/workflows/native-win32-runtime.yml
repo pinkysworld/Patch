@@ -1,0 +1,120 @@
+name: Patch Native Win32 Runtime
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/native-win32-runtime.yml
+      - native-runtime/win32-sealed-gui.cpp
+      - scripts/seal-native-win32.js
+      - src/sealed-native-gui.js
+      - src/native-gui-ir.js
+      - src/compiler.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - examples/forms-navigation.patch
+      - web/native-build.js
+      - scripts/build-site.js
+      - scripts/check-site.js
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/native-win32-runtime.yml
+      - native-runtime/win32-sealed-gui.cpp
+      - scripts/seal-native-win32.js
+      - src/sealed-native-gui.js
+      - src/native-gui-ir.js
+      - src/compiler.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - examples/forms-navigation.patch
+      - web/native-build.js
+      - scripts/build-site.js
+      - scripts/check-site.js
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Compile generic native Win32 GUI runtime
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-runtime | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $script = Join-Path $PWD 'dist-runtime\build-runtime.cmd'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui.cpp user32.lib gdi32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime\patch-windows-native-gui-runtime.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content -Path $script -Encoding ascii
+          & cmd.exe /d /c $script
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal canonical Patch Forms app into runtime
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/forms-navigation.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedForms.exe PatchSealedForms
+      - name: Smoke run sealed native GUI executable
+        shell: pwsh
+        run: |
+          & ./dist-runtime/PatchSealedForms.exe --patch-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Sealed native GUI smoke failed with exit code $LASTEXITCODE." }
+      - name: Verify template and sealed executable contract
+        shell: pwsh
+        run: |
+          $runtime = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/patch-windows-native-gui-runtime.exe'))
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedForms.exe'))
+          if ($runtime.Length -lt 2 -or $runtime[0] -ne 0x4d -or $runtime[1] -ne 0x5a) { throw 'Runtime is not a PE executable.' }
+          if ($sealed.Length -le $runtime.Length) { throw 'Sealed application did not append a payload.' }
+          $magic = [Text.Encoding]::ASCII.GetString($sealed, $sealed.Length - 20, 8)
+          if ($magic -ne 'PCHGUI01') { throw 'Sealed executable footer magic is missing.' }
+          if ($runtime.Length -gt 2097152) { throw "Generic native runtime unexpectedly exceeds 2 MiB: $($runtime.Length) bytes." }
+          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed Forms app: $($sealed.Length) bytes"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-windows-native-gui-runtime
+          path: dist-runtime/patch-windows-native-gui-runtime.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: patch-windows-native-gui-runtime
+          path: runtime
+      - name: Publish native runtime template
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: native-win32-runtime-v0.1
+        run: |
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.1' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Studio appends checked Native GUI IR to this PE executable; no Electron, Chromium, Node.js or sidecar payload is used.'
+          fi
+          gh release upload "$TAG" runtime/patch-windows-native-gui-runtime.exe --repo "$GITHUB_REPOSITORY" --clobber
