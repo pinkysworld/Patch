@@ -1,12 +1,36 @@
-# Patch Native GUI backend preview
+# Patch Native GUI
 
-Status: **experimental backend preview**
+Status: **experimental native backend preview, working on Windows, macOS and Linux**
 
-Patch is beginning to lower the same source-backed Forms syntax used by Patch Studio into operating-system-native GUI code. The first backend is Win32 on Windows.
+Patch can lower the same source-backed Forms syntax used by Patch Studio into operating-system-native GUI code. User-facing Patch syntax is independent of Win32, AppKit and GTK.
+
+## One simple build command
+
+After installing Patch, a GUI program can use:
+
+```bash
+patch-app myapp.patch
+```
+
+Patch selects the backend from the host operating system:
+
+```text
+Windows  -> Win32  -> .exe
+macOS    -> AppKit -> .app
+Linux    -> GTK3   -> ELF executable
+```
+
+Optional arguments are only needed when a custom name or output folder is wanted:
+
+```bash
+patch-app myapp.patch MyApp dist-native
+```
+
+The backend names are implementation details. Normal Patch programs do not import or mention Win32, Cocoa/AppKit or GTK.
 
 ## User syntax stays simple
 
-Native output does not introduce a second GUI language or framework API. Existing Patch source remains the input:
+The same Patch source is accepted by every current native backend:
 
 ```patch
 create boolean notifications = false
@@ -30,50 +54,79 @@ when notifications changed:
     set = value
 ```
 
-No `Form.Create`, widget handles, message-loop code or framework imports are required in Patch source.
+No `Form.Create`, widget handles, message-loop code, framework imports or backend conditionals are required in Patch source.
 
-## Native Windows pipeline
+## Shared architecture
 
 ```text
 .patch source
-  -> Patch compiler
-  -> validated Native GUI IR 0.1
-  -> Win32 C++ generation
-  -> MSVC compile + link (/SUBSYSTEM:WINDOWS, static CRT)
-  -> native Windows .exe
+     |
+Patch compiler
+     |
+validated Native GUI IR 0.1
+     |
+     +-------------------+------------------+
+     |                   |                  |
+ Win32 C++          AppKit ObjC++        GTK3 C++
+     |                   |                  |
+   MSVC             clang + Cocoa       g++ + GTK
+     |                   |                  |
+Windows .exe          macOS .app        Linux ELF
 ```
 
-The generated Win32 application uses native `HWND` Forms and Windows `STATIC`, `BUTTON`, `EDIT` and auto-checkbox controls. Events are dispatched through the Windows message loop and `WM_COMMAND`. The generated application does not embed Electron, Chromium, Node.js or an HTML/DOM renderer.
+Native GUI IR is the platform-neutral contract. Backend implementations fail closed when the source uses behavior the current native subset cannot lower faithfully. Patch does not silently switch an unsupported native build back to Electron.
 
-Build metadata explicitly records `shell: native-win32` and `electron: false` together with the Native GUI IR version, Change IR version and SHA-256 of the Patch build input.
+## Windows: direct Win32
+
+The Windows backend emits C++17 using native `HWND` Forms and Windows `STATIC`, `BUTTON`, `EDIT` and auto-checkbox controls. Events use the Windows message loop and `WM_COMMAND`. MSVC compiles and links a `/SUBSYSTEM:WINDOWS` executable with the C/C++ runtime statically linked using `/MT`.
+
+The exact-head CI application built from `examples/forms-navigation.patch` was **132,096 bytes** and executed the full Main -> open Settings -> Checkbox change -> close Settings smoke. Build metadata records `shell: native-win32`, `electron: false` and `crt: static`.
+
+## macOS: direct AppKit
+
+The macOS backend emits Objective-C++ against Cocoa/AppKit. It creates native `NSWindow`, `NSButton` and `NSTextField` objects, uses target/action events plus the text-field delegate, and translates Patch top-left geometry to AppKit coordinates. `clang++` links a normal `.app` bundle.
+
+The exact-head CI executable inside the generated `.app` was **56,784 bytes** and passed the same Forms/Checkbox lifecycle smoke. `otool` showed Apple system frameworks/libraries such as Cocoa, AppKit and Foundation, with no Electron/Chromium framework. Build metadata records `shell: native-appkit`, `framework: AppKit` and `electron: false`.
+
+## Linux: direct GTK3
+
+The Linux backend emits C++17 using native GTK3 `GtkWindow`, `GtkLabel`, `GtkButton`, `GtkEntry` and `GtkCheckButton` controls. GTK signals implement clicked/toggled/changed events, while Patch geometry maps directly into the current `GtkFixed` v0.1 layout backend.
+
+The exact-head Ubuntu CI executable was **22,832 bytes** and passed the same Forms/Checkbox smoke under Xvfb. Build metadata records `shell: native-gtk3`, `toolkit: GTK3` and `electron: false`.
+
+The current Linux binary is **dynamically linked**. A compatible GTK3 runtime and its system libraries must be present on the target Linux installation. The tiny ELF size therefore must not be interpreted as a fully self-contained Linux package. Packaging GTK dependencies or a portable Linux bundle is later work.
 
 ## v0.1 supported subset
 
-The preview intentionally fails closed outside the subset it can lower faithfully. Native GUI v0.1 supports:
+Native GUI v0.1 currently supports:
 
 - simple `number`, `text` and `boolean` persistent state with literal initial values;
 - source-backed Form size and control geometry;
 - Text, Button, Input and Checkbox controls;
 - Button `clicked` and Input/Checkbox `changed` events;
 - scalar `change` operations supported for the target type;
-- event-local `value` with type checking;
+- typed event-local `value`;
 - named Form `open` / `close` lifecycle;
 - simple `{state}` interpolation in Text/Button/Checkbox labels.
 
-Unsupported event behavior, object/thing state, unsupported expressions or unsupported mutations stop native lowering with an error rather than being silently omitted.
+Unsupported event behavior, object/thing state, unsupported expressions or unsupported mutations stop native lowering with a clear error rather than being silently omitted.
 
 ## Executable evidence
 
-The focused Windows CI gate builds `examples/forms-navigation.patch` into a real native `.exe` with MSVC and executes its built-in smoke path. The smoke verifies that Main starts visible, Settings starts hidden, the native Settings button opens the second Form, the native Checkbox event commits its Patch Boolean change, and the Close button hides Settings again.
+Each platform has a focused CI gate that compiles and links the canonical `examples/forms-navigation.patch` with the real platform toolchain and then executes the generated GUI program:
 
-The gate also checks that the output does not contain an Electron/Node runtime tree and keeps the executable below a conservative size ceiling.
+- Windows: MSVC + Win32 `.exe`;
+- macOS: clang/Cocoa + AppKit `.app`;
+- Linux: g++/GTK3 + ELF under Xvfb.
+
+The native smoke requires Main to start visible, Settings to start hidden, the native Settings button to open the second Form, the native Checkbox event to commit its Patch Boolean change, and Close to hide Settings again. Each gate also rejects an Electron/Node runtime tree in the produced output.
 
 ## Compatibility backend
 
-The existing Electron desktop backend remains available while the native backend is incomplete. It is a compatibility/reference backend, not the intended final GUI architecture.
+The existing Electron desktop backend remains available as a compatibility/reference backend while Native GUI IR coverage is incomplete. The native backend should become the normal production path only after it covers the ordinary Patch Studio GUI surface without semantic fallback.
 
-Windows native output should become the default only after the native backend covers the normal Patch Studio GUI surface without semantic fallback. macOS AppKit and a native Linux backend should reuse the same Native GUI IR so user-facing Patch syntax remains identical across platforms.
+The next parity work should add richer controls through Native GUI IR once, then implement the same contract in all three backends. High-value controls are ComboBox/ListBox, radio buttons, tabs, dialogs, menus and tables/grids.
 
 ## Claim boundary
 
-This preview is direct native GUI code generation and native Windows linking, but it is not yet a full native implementation of every Patch language feature. It also does not change Change IR 0.10 or the beta.32 research assurance claims.
+This is real direct native GUI code generation and native platform linking on Windows, macOS and Linux. It is **not yet** a full native implementation of every Patch language or Studio feature. Linux is not yet a self-contained distribution bundle. The native GUI work does not change Change IR 0.10 or the beta.32 research assurance claims.
