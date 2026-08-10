@@ -24,7 +24,9 @@ on:
       - examples/checkbox-window.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
+      - examples/tabs-window.patch
       - examples/forms-navigation.patch
+      - tests/tabs-window.test.js
       - .github/workflows/runtime-templates.yml
   push:
     branches: [main]
@@ -48,7 +50,9 @@ on:
       - examples/checkbox-window.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
+      - examples/tabs-window.patch
       - examples/forms-navigation.patch
+      - tests/tabs-window.test.js
       - .github/workflows/runtime-templates.yml
 
 concurrency:
@@ -269,8 +273,8 @@ jobs:
       - name: Publish compiled runtime assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: studio-runtime-v0.5
+          TAG: studio-runtime-v0.6
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.5' --notes 'Prebuilt Windows, macOS and Linux compatibility GUI runtimes for compiled Window artifact v0.2, now rendering ComboBox and ListBox selection controls plus named Form lifecycle. Payload format remains v0.4.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.6' --notes 'Prebuilt Windows, macOS and Linux compatibility GUI runtimes for compiled Window artifact v0.2. This release renders named Forms, ComboBox, ListBox and Tabs containers. Tabs page selection stays renderer-local and does not create hidden Patch state. Payload format remains v0.4.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
