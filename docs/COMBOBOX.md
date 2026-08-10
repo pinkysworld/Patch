@@ -1,6 +1,6 @@
 # Patch ComboBox
 
-Status: **language, Studio, Standalone Window Web and direct native GUI support implemented**
+Status: **language, Studio, Standalone Window Web, compatibility desktop and direct native GUI support implemented**
 
 Patch keeps ComboBox syntax small and uses the same explicit-persistence rule as Input and Checkbox controls.
 
@@ -20,9 +20,7 @@ when size changed:
 
 A ComboBox selection produces a transient event-local text value named `value` inside `when ... changed:`.
 
-Selecting an item does **not** silently mutate persistent Patch state. To persist the selection, source code must use an ordinary semantic `change`, such as `set = value`. That change is recorded in the normal Patch history and remains visible to Change Contract analysis.
-
-This is the same model used by the other semantic GUI inputs:
+Selecting an item does **not** silently mutate persistent Patch state. To persist the selection, source code must use an ordinary semantic `change`, such as `set = value`. That change is recorded in normal Patch history and remains visible to Change Contract analysis.
 
 - Input `changed` exposes transient text `value`.
 - Checkbox `changed` exposes transient Boolean `value`.
@@ -40,18 +38,13 @@ At least two options are required. Window IR preserves the option expressions. N
 
 ## Designer
 
-Patch Studio can create ComboBox controls from the Toolbox. The source-backed inspector can edit:
+Patch Studio can create ComboBox controls from the Toolbox. The source-backed inspector can edit control id, option expressions and X/Y/width/height. All edits rewrite `main.patch`; there is no hidden form database.
 
-- control id;
-- option expressions;
-- X/Y position;
-- width/height.
+## Standalone Web and compatibility desktop
 
-All edits rewrite `main.patch`; there is no hidden form database.
+Standalone Window Web runtime v0.7 renders ComboBox as a browser `<select>` and dispatches the selected option as text `value` through the shared semantic Window event path.
 
-## Standalone Web
-
-Standalone Window Web runtime v0.6 renders ComboBox as a browser `<select>` and dispatches the selected option as a text `value` through the same semantic Window event path.
+Compatibility desktop runtime template `studio-runtime-v0.5` also renders ComboBox. v0.5 closes an older renderer gap where shared Window validation could accept ComboBox while the compatibility player omitted it.
 
 ## Native GUI v0.2
 
@@ -62,7 +55,7 @@ Native GUI IR v0.2 carries ComboBox options, the text-state binding, geometry an
 - Linux GTK3 `GtkComboBoxText`;
 - the three sealed native runtimes used by token-free Patch Studio downloads.
 
-The sealed native payload is now version 2. Each control record carries an option count followed by UTF-8 option strings. Windows, macOS and Linux runtime templates reject malformed ComboBox payloads before creating UI.
+The sealed native payload is version 2. Each control record carries an option count followed by UTF-8 option strings. Windows, macOS and Linux runtime templates reject malformed ComboBox payloads before creating UI.
 
 ## Native execution evidence
 
