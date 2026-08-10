@@ -1,0 +1,64 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { compile } from '../src/compiler.js';
+import { buildNativeGuiIR } from '../src/native-gui-ir.js';
+import { emitAppKitGuiObjCpp } from '../src/appkit-gui.js';
+
+const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', import.meta.url), 'utf8');
+const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
+
+test('AppKit backend consumes the same Native GUI IR used by Windows', () => {
+  const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeMacNavigation' }));
+  assert.equal(ir.format, 'patch-native-gui-ir');
+  assert.equal(ir.version, '0.1');
+  assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
+  const mm = emitAppKitGuiObjCpp(ir);
+  assert.match(mm, /NSWindow/);
+  assert.match(mm, /NSButton/);
+  assert.match(mm, /NSTextField/);
+  assert.match(mm, /handleControl:/);
+  assert.match(mm, /controlTextDidChange:/);
+  assert.match(mm, /makeKeyAndOrderFront/);
+  assert.match(mm, /orderOut:nil/);
+  assert.match(mm, /NSControlStateValueOn/);
+  assert.doesNotMatch(mm, /BrowserWindow|require\(['"]electron['"]\)|<html|document\.querySelector/);
+});
+
+test('AppKit backend lowers numeric Patch change and text interpolation', () => {
+  const ir = buildNativeGuiIR(compile(counterSource, { kind: 'window', name: 'NativeMacCounter' }));
+  const mm = emitAppKitGuiObjCpp(ir);
+  assert.match(mm, /static double patch_state_count = 0/);
+  assert.match(mm, /patch_state_count \+= 1/);
+  assert.match(mm, /PatchNumber\(patch_state_count\)/);
+  assert.match(mm, /@"Count: "/);
+});
+
+test('AppKit build script emits auditable native source and metadata on every development OS', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-appkit-emit-'));
+  try {
+    const result = spawnSync(process.execPath, [
+      'scripts/build-native-appkit.js',
+      'examples/forms-navigation.patch',
+      'NativeMacSmoke',
+      temp,
+      '--emit-only'
+    ], { cwd: path.resolve('.'), encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const mm = fs.readFileSync(path.join(temp, 'NativeMacSmoke.appkit.mm'), 'utf8');
+    const meta = JSON.parse(fs.readFileSync(path.join(temp, 'NativeMacSmoke.appkit-build.json'), 'utf8'));
+    assert.match(mm, /Direct native AppKit controls/);
+    assert.equal(meta.shell, 'native-appkit');
+    assert.equal(meta.electron, false);
+    assert.equal(meta.framework, 'AppKit');
+    assert.equal(meta.nativeGuiIrVersion, '0.1');
+    assert.equal(meta.changeIrVersion, '0.10');
+    assert.equal(meta.forms, 2);
+    assert.equal(meta.events, 3);
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
