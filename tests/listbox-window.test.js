@@ -101,7 +101,7 @@ test('Patch Studio toolbox and preview expose a real multi-row ListBox', () => {
 
 test('Standalone Window Web App renders ListBox and emits a text changed payload', () => {
   const built = buildStandaloneWebApp(source, { name: 'ListBoxDemo', kind: 'window' });
-  assert.equal(built.metadata.version, '0.7');
+  assert.equal(built.metadata.version, '0.8');
   assert.match(built.html, /type==='combo'\|\|control\.type==='listbox'/);
   assert.match(built.html, /el\.size=Math\.min/);
   assert.match(built.html, /type==='combo'\|\|type==='listbox'/);
