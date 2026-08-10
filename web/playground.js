@@ -139,10 +139,11 @@ document.querySelector('#run').addEventListener('click', runProject);
 document.querySelector('#addText').addEventListener('click', () => addControl('text'));
 document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
 document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
+document.querySelector('#addCombo')?.addEventListener('click', () => addControl('combo'));
 designerInspector.apply.addEventListener('click', applyDesignerProperties);
 designerInspector.remove.addEventListener('click', removeSelectedDesignerControl);
 designerInspector.source.addEventListener('click', revealSelectedDesignerSource);
-for (const field of [designerInspector.idInput, designerInspector.textInput]) {
+for (const field of [designerInspector.idInput, designerInspector.textInput, designerInspector.optionsInput]) {
   field.addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); applyDesignerProperties(); }
   });
@@ -223,7 +224,8 @@ function applyDesignerProperties() {
   try {
     const changes = {};
     if (selected.type !== 'text') changes.id = designerInspector.idInput.value;
-    if (selected.type !== 'input') changes.textExpr = designerInspector.textInput.value;
+    if (['text', 'button', 'checkbox'].includes(selected.type)) changes.textExpr = designerInspector.textInput.value;
+    if (selected.type === 'combo') changes.options = splitOptionExpressions(designerInspector.optionsInput.value);
     code.value = updateDesignerControl(code.value, designerSelection, changes);
     saveProject();
     refreshDesigner();
@@ -392,6 +394,17 @@ function renderWindows(container, windows, interactive) {
         el.append(input, text);
         if (interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: input.checked }));
         else input.disabled = true;
+      } else if (control.type === 'combo') {
+        el = document.createElement('select');
+        el.className = 'patch-input patch-combo';
+        for (const option of control.options ?? []) {
+          const item = document.createElement('option');
+          item.value = option;
+          item.textContent = option;
+          el.appendChild(item);
+        }
+        el.value = String(control.value ?? '');
+        if (interactive) el.addEventListener('change', () => trigger(control.id, 'changed', { value: el.value }));
       }
       if (!el) return;
       if (!interactive) decorateDesignerControl(el, windowIndex, controlIndex, control);
@@ -407,7 +420,7 @@ function decorateDesignerControl(el, windowIndex, controlIndex, control) {
   if (designerSelection?.windowIndex === windowIndex && designerSelection?.controlIndex === controlIndex) {
     el.classList.add('designer-selected');
   }
-  if (el.tagName !== 'BUTTON' && el.tagName !== 'INPUT') el.tabIndex = 0;
+  if (!['BUTTON', 'INPUT', 'SELECT'].includes(el.tagName)) el.tabIndex = 0;
   el.setAttribute('aria-label', `Select ${control.type} control ${control.id ?? controlIndex + 1}`);
   const select = event => {
     event.preventDefault();
@@ -445,9 +458,11 @@ function renderDesignerInspector() {
   designerInspector.type.textContent = selected.type[0].toUpperCase() + selected.type.slice(1);
   designerInspector.location.textContent = `Window ${selected.windowIndex + 1} · control ${selected.controlIndex + 1} · line ${selected.line}`;
   designerInspector.idField.hidden = selected.type === 'text';
-  designerInspector.textField.hidden = selected.type === 'input';
+  designerInspector.textField.hidden = selected.type === 'input' || selected.type === 'combo';
+  designerInspector.optionsField.hidden = selected.type !== 'combo';
   designerInspector.idInput.value = selected.id ?? '';
   designerInspector.textInput.value = selected.textExpr ?? '';
+  designerInspector.optionsInput.value = selected.options?.join(', ') ?? '';
 }
 
 function installDesignerInspector() {
@@ -469,6 +484,7 @@ function installDesignerInspector() {
       <label class="inspector-field">Type <span id="designerInspectorType" class="inspector-readonly"></span></label>
       <label id="designerInspectorIdField" class="inspector-field">Control id <input id="designerInspectorId" autocomplete="off" spellcheck="false"></label>
       <label id="designerInspectorTextField" class="inspector-field">Text expression <input id="designerInspectorText" autocomplete="off" spellcheck="false"></label>
+      <label id="designerInspectorOptionsField" class="inspector-field" hidden>Options <input id="designerInspectorOptions" autocomplete="off" spellcheck="false" placeholder='"Small", "Medium", "Large"'></label>
       <p id="designerInspectorError" class="inspector-hint" hidden></p>
       <div class="inspector-actions">
         <button id="designerInspectorApply" type="button">Apply</button>
@@ -488,6 +504,8 @@ function installDesignerInspector() {
     idInput: aside.querySelector('#designerInspectorId'),
     textField: aside.querySelector('#designerInspectorTextField'),
     textInput: aside.querySelector('#designerInspectorText'),
+    optionsField: aside.querySelector('#designerInspectorOptionsField'),
+    optionsInput: aside.querySelector('#designerInspectorOptions'),
     error: aside.querySelector('#designerInspectorError'),
     apply: aside.querySelector('#designerInspectorApply'),
     source: aside.querySelector('#designerInspectorSource'),
@@ -514,6 +532,31 @@ function trigger(control, event, payload = {}) {
     output.textContent = `Patch stopped:\n${err.message}`;
     showTab('output');
   }
+}
+
+function splitOptionExpressions(text) {
+  const out = [];
+  let current = '';
+  let quote = null;
+  let depth = 0;
+  for (const ch of String(text ?? '')) {
+    if (quote) {
+      current += ch;
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
+    if (ch === '(' || ch === '[') depth += 1;
+    if (ch === ')' || ch === ']') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      if (current.trim()) out.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
 }
 
 function showTab(name) {
