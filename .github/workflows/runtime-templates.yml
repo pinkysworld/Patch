@@ -22,6 +22,8 @@ on:
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
       - examples/checkbox-window.patch
+      - examples/combo-window.patch
+      - examples/listbox-window.patch
       - examples/forms-navigation.patch
       - .github/workflows/runtime-templates.yml
   push:
@@ -44,6 +46,8 @@ on:
       - examples/direct-wasm-recipes.patch
       - examples/counter-window.patch
       - examples/checkbox-window.patch
+      - examples/combo-window.patch
+      - examples/listbox-window.patch
       - examples/forms-navigation.patch
       - .github/workflows/runtime-templates.yml
 
@@ -265,8 +269,8 @@ jobs:
       - name: Publish compiled runtime assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: studio-runtime-v0.4
+          TAG: studio-runtime-v0.5
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.4' --notes 'Prebuilt Windows, macOS and Linux GUI runtimes for compiled Window artifact v0.2 with named Form open/close lifecycle, plus legacy v0.3 compiled and v0.2 source compatibility.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Runtime v0.5' --notes 'Prebuilt Windows, macOS and Linux compatibility GUI runtimes for compiled Window artifact v0.2, now rendering ComboBox and ListBox selection controls plus named Form lifecycle. Payload format remains v0.4.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

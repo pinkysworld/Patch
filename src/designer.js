@@ -6,7 +6,8 @@ const CONTROL_DEFAULTS = {
   button: { width: 120, height: 36 },
   input: { width: 220, height: 36 },
   checkbox: { width: 220, height: 36 },
-  combo: { width: 220, height: 36 }
+  combo: { width: 220, height: 36 },
+  listbox: { width: 220, height: 120 }
 };
 
 export function addDesignerWindow(source, options = {}) {
@@ -148,10 +149,11 @@ export function updateDesignerControl(source, selector, changes = {}) {
   }
 
   let nextOptions = control.options;
-  if (control.type === 'combo' && Object.hasOwn(changes, 'options')) {
-    if (!Array.isArray(changes.options) || changes.options.length < 2) throw new Error('A combo needs at least two options.');
+  if (['combo', 'listbox'].includes(control.type) && Object.hasOwn(changes, 'options')) {
+    const label = control.type === 'combo' ? 'combo' : 'listbox';
+    if (!Array.isArray(changes.options) || changes.options.length < 2) throw new Error(`A ${label} needs at least two options.`);
     nextOptions = changes.options.map(option => String(option ?? '').trim()).filter(Boolean);
-    if (nextOptions.length < 2) throw new Error('A combo needs at least two options.');
+    if (nextOptions.length < 2) throw new Error(`A ${label} needs at least two options.`);
   }
 
   const layout = normalizeControlLayout(control, changes);
@@ -276,6 +278,7 @@ function makeControl(type, lines, index) {
   if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
   if (type === 'checkbox') return formatControl(type, nextId(lines, 'checkbox'), '"Checkbox"', layout);
   if (type === 'combo') return formatControl(type, nextId(lines, 'combo'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
+  if (type === 'listbox') return formatControl(type, nextId(lines, 'listbox'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
@@ -286,6 +289,7 @@ function formatControl(type, id, textExpr, layout, options = null) {
   else if (type === 'input') core = `input ${id}`;
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
+  else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
   if (!layout) return core;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;

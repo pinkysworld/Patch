@@ -99,10 +99,10 @@ test('Patch Studio toolbox and preview expose source-backed ComboBox editing', (
 
 test('Standalone Window Web App renders ComboBox and emits a text changed payload', () => {
   const built = buildStandaloneWebApp(source, { name: 'ComboDemo', kind: 'window' });
-  assert.equal(built.metadata.version, '0.6');
+  assert.equal(built.metadata.version, '0.7');
   assert.match(built.html, /document\.createElement\('select'\)/);
   assert.match(built.html, /node\.options\.map\(uiOption\)/);
-  assert.match(built.html, /type==='combo'&&typeof payload\.value!=='string'/);
+  assert.match(built.html, /type==='combo'\|\|type==='listbox'/);
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
   assert.match(built.html, /Small/);
   assert.match(built.html, /Medium/);

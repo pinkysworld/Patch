@@ -1,0 +1,10 @@
+create text fruit = "Banana"
+
+window "ListBox demo" as main size 480, 300:
+  text "Choose a fruit" at 24, 24 size 220, 30
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruit at 24, 72 size 220, 120
+  text "Selected: {fruit}" at 24, 212 size 260, 30
+
+when fruit changed:
+  change fruit:
+    set = value
