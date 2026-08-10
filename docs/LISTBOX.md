@@ -60,7 +60,7 @@ Native GUI IR v0.2 currently supports ComboBox but not ListBox. A direct native 
 The next native ListBox stage should add one platform-neutral Native GUI IR contract and lower it to:
 
 - Win32 `LISTBOX`;
-- AppKit `NSListView` or an equivalent native single-selection list surface;
+- AppKit `NSTableView` configured for a single selectable column/list;
 - GTK3 `GtkTreeView`/list model or an equivalent native single-selection list surface;
 - the Windows, macOS and Linux sealed runtimes used by token-free Patch Studio downloads.
 
