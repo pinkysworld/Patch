@@ -33,9 +33,7 @@ test('AppKit backend lowers native ComboBox selection to text changed events', (
   const ir = buildNativeGuiIR(compile(comboSource, { kind: 'window', name: 'NativeMacCombo' }));
   const mm = emitAppKitGuiObjCpp(ir);
   assert.match(mm, /NSPopUpButton/);
-  assert.match(mm, /addItemWithTitle:@"Small"/);
-  assert.match(mm, /addItemWithTitle:@"Medium"/);
-  assert.match(mm, /addItemWithTitle:@"Large"/);
+  assert.match(mm, /addItemsWithTitles:@\[@"Small", @"Medium", @"Large"\]/);
   assert.match(mm, /titleOfSelectedItem/);
   assert.match(mm, /selectItemWithTitle:patch_state_size/);
   assert.match(mm, /patch_state_size = \[eventValue copy\]/);
