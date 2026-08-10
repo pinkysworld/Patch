@@ -101,7 +101,8 @@ function interceptToolbox() {
     ['#addText', 'text'],
     ['#addButton', 'button'],
     ['#addInput', 'input'],
-    ['#addCheckbox', 'checkbox']
+    ['#addCheckbox', 'checkbox'],
+    ['#addCombo', 'combo']
   ];
   for (const [selector, type] of buttons) {
     const button = document.querySelector(selector);
@@ -375,7 +376,7 @@ function geometryFields() {
 function effectiveLayout(control, index = control.controlIndex ?? 0) {
   const defaults = control.type === 'text'
     ? { width: 200, height: 30 }
-    : (control.type === 'input' || control.type === 'checkbox')
+    : (control.type === 'input' || control.type === 'checkbox' || control.type === 'combo')
       ? { width: 220, height: 36 }
       : { width: 120, height: 36 };
   return {
