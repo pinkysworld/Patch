@@ -1,13 +1,14 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-export const PATCH_WINDOW_EVENTS_VERSION = '0.2';
+export const PATCH_WINDOW_EVENTS_VERSION = '0.3';
 
 /**
  * Execute one Patch Window event with transient event-local data.
  *
  * Persistent state is never updated by this adapter. For `changed` events the
  * control value is exposed only as local `value`; source must use an ordinary
- * semantic `change` to commit it. Checkbox `value` is required to be Boolean.
+ * semantic `change` to commit it. Checkbox `value` is Boolean. ComboBox `value`
+ * is text.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -21,6 +22,9 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
   const controlType = findControlType(runtime, control);
   if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
     throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
+  }
+  if (controlType === 'combo' && typeof payload.value !== 'string') {
+    throw new PatchRuntimeError(`The 'changed' action for combo '${control}' needs a text event-local value.`);
   }
 
   try {
