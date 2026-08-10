@@ -1,0 +1,214 @@
+name: Patch Native Window AOT
+run-name: Native Window AOT ${{ inputs.request_id || github.run_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_b64:
+        description: Base64-encoded Patch source from Patch Studio (leave empty to use source_path)
+        required: false
+        default: ''
+      source_path:
+        description: Patch source file in this repository when source_b64 is empty
+        required: false
+        default: examples/forms-navigation.patch
+      app_name:
+        description: Application name
+        required: true
+        default: PatchNativeWindow
+      platform:
+        description: Native desktop target
+        required: true
+        type: choice
+        options:
+          - macos
+          - linux
+        default: macos
+      request_id:
+        description: Studio request identifier
+        required: false
+        default: manual
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/native-window-aot.yml
+      - scripts/build-native-gui.js
+      - scripts/build-native-appkit.js
+      - scripts/build-native-gtk.js
+      - src/native-gui-host.js
+      - src/native-gui-ir.js
+      - src/appkit-gui.js
+      - src/gtk-gui.js
+      - src/compiler.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - examples/forms-navigation.patch
+      - web/native-build.js
+      - tests/studio-native-window-aot.test.js
+      - docs/NATIVE_GUI.md
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/native-window-aot.yml
+      - scripts/build-native-gui.js
+      - scripts/build-native-appkit.js
+      - scripts/build-native-gtk.js
+      - src/native-gui-host.js
+      - src/native-gui-ir.js
+      - src/appkit-gui.js
+      - src/gtk-gui.js
+      - src/compiler.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - examples/forms-navigation.patch
+      - web/native-build.js
+      - tests/studio-native-window-aot.test.js
+      - docs/NATIVE_GUI.md
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  native-window-smoke:
+    if: github.event_name != 'workflow_dispatch' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install Linux GTK dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Build and execute direct native Window app
+        shell: bash
+        run: |
+          node scripts/build-native-gui.js examples/forms-navigation.patch PatchNativeWindowAot dist-native-window --smoke
+      - name: Verify direct native metadata
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const files = fs.readdirSync('dist-native-window').filter(name => name.endsWith('-build.json'));
+          if (files.length !== 1) throw new Error(`Expected one build metadata file, got ${files.join(', ')}`);
+          const meta = JSON.parse(fs.readFileSync(path.join('dist-native-window', files[0]), 'utf8'));
+          const expected = process.platform === 'darwin' ? 'native-appkit' : 'native-gtk3';
+          if (meta.shell !== expected) throw new Error(`Expected ${expected}, got ${meta.shell}`);
+          if (meta.electron !== false) throw new Error('Native Window AOT must record electron=false.');
+          NODE
+
+  studio-macos:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'macos'
+    runs-on: macos-latest
+    timeout-minutes: 25
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Prepare Patch Studio source
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
+      - name: Check Patch source
+        shell: bash
+        run: node src/cli.js check studio.patch
+      - name: Build direct native AppKit application
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-gui.js studio.patch "$PATCH_SAFE_NAME" dist --smoke
+      - name: Verify AppKit output contract
+        shell: bash
+        run: |
+          test -d "dist/$PATCH_SAFE_NAME.app"
+          test -x "dist/$PATCH_SAFE_NAME.app/Contents/MacOS/$PATCH_SAFE_NAME"
+          test -f "dist/$PATCH_SAFE_NAME.appkit-build.json"
+          node -e "const m=require('./dist/' + process.env.PATCH_SAFE_NAME + '.appkit-build.json'); if(m.shell!=='native-appkit'||m.electron!==false) process.exit(1);"
+          if find dist -iname '*electron*' -o -iname '*chromium*' | grep -q .; then
+            echo 'Electron/Chromium content must not be shipped in a native AppKit build.' >&2
+            exit 1
+          fi
+      - name: Package macOS native application
+        shell: bash
+        run: ditto -c -k --sequesterRsrc --keepParent "dist/$PATCH_SAFE_NAME.app" "dist/$PATCH_SAFE_NAME-macos-native.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-macos-${{ inputs.request_id }}
+          path: dist/*-macos-native.zip
+          if-no-files-found: error
+
+  studio-linux:
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'linux'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Prepare Patch Studio source
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const raw=process.env.PATCH_SOURCE_B64; if(raw){fs.writeFileSync('studio.patch',Buffer.from(raw,'base64'));}else{fs.copyFileSync(process.env.PATCH_SOURCE_PATH,'studio.patch');} const name=(process.env.PATCH_APP_INPUT||'PatchApp').replace(/[^A-Za-z0-9_-]/g,'_').slice(0,64)||'PatchApp'; fs.appendFileSync(process.env.GITHUB_ENV,'PATCH_SAFE_NAME='+name+'\n');"
+      - name: Check Patch source
+        shell: bash
+        run: node src/cli.js check studio.patch
+      - name: Build direct native GTK application
+        shell: bash
+        run: |
+          mkdir -p dist
+          node scripts/build-native-gui.js studio.patch "$PATCH_SAFE_NAME" dist --smoke
+      - name: Verify GTK output contract
+        shell: bash
+        run: |
+          test -x "dist/$PATCH_SAFE_NAME"
+          test -f "dist/$PATCH_SAFE_NAME.gtk-build.json"
+          node -e "const m=require('./dist/' + process.env.PATCH_SAFE_NAME + '.gtk-build.json'); if(m.shell!=='native-gtk3'||m.electron!==false) process.exit(1);"
+          if find dist -iname '*electron*' -o -iname '*chromium*' -o -iname 'patch-app.json' | grep -q .; then
+            echo 'Electron/Chromium/patch-app.json content must not be shipped in a native GTK build.' >&2
+            exit 1
+          fi
+      - name: Package Linux native application
+        shell: bash
+        run: |
+          mkdir -p "dist/package-$PATCH_SAFE_NAME"
+          cp "dist/$PATCH_SAFE_NAME" "dist/package-$PATCH_SAFE_NAME/$PATCH_SAFE_NAME"
+          cp "dist/$PATCH_SAFE_NAME.gtk-build.json" "dist/package-$PATCH_SAFE_NAME/build.json"
+          tar -czf "dist/$PATCH_SAFE_NAME-linux-native.tar.gz" -C "dist/package-$PATCH_SAFE_NAME" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-linux-${{ inputs.request_id }}
+          path: dist/*-linux-native.tar.gz
+          if-no-files-found: error
