@@ -61,7 +61,8 @@ test('macOS native runtime workflow builds universal AppKit runtime, seals, smok
   assert.ok(workflow.includes('dist-runtime/PatchSealedForms --patch-smoke'));
   assert.ok(workflow.includes('patch-macos-native-gui-runtime.bin'));
   assert.ok(workflow.includes('native-macos-runtime-v0.1'));
-  assert.ok(workflow.includes('unsigned universal AppKit'));
+  assert.match(workflow, /unsigned universal AppKit/i);
+  assert.ok(workflow.includes('Signing/notarization is separate'));
   assert.equal(workflow.includes('build-native-window.js'), false);
 });
 
