@@ -10,6 +10,7 @@ import { emitGtkGuiCpp } from '../src/gtk-gui.js';
 
 const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', import.meta.url), 'utf8');
 const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
+const inputSource = `create text name = ""\n\nwindow "Input" as main size 420, 180:\n  input name at 24, 24 size 240, 36\n\nwhen name changed:\n  change name:\n    set = value\n`;
 
 test('GTK backend consumes the same Native GUI IR used by Windows and macOS', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeGtkNavigation' }));
@@ -20,12 +21,21 @@ test('GTK backend consumes the same Native GUI IR used by Windows and macOS', ()
   assert.match(cpp, /gtk_window_new/);
   assert.match(cpp, /gtk_button_new_with_label/);
   assert.match(cpp, /gtk_check_button_new_with_label/);
-  assert.match(cpp, /gtk_entry_new/);
   assert.match(cpp, /gtk_widget_show_all/);
   assert.match(cpp, /gtk_widget_hide/);
   assert.match(cpp, /gtk_toggle_button_get_active/);
   assert.match(cpp, /g_signal_connect/);
   assert.doesNotMatch(cpp, /BrowserWindow|require\(['"]electron['"]\)|<html|document\.querySelector/);
+});
+
+test('GTK backend lowers native Input changed events with typed event-local value', () => {
+  const ir = buildNativeGuiIR(compile(inputSource, { kind: 'window', name: 'NativeGtkInput' }));
+  const cpp = emitGtkGuiCpp(ir);
+  assert.deepEqual(ir.states, [{ name: 'name', type: 'text', initial: '' }]);
+  assert.match(cpp, /gtk_entry_new/);
+  assert.match(cpp, /g_signal_connect\(control, "changed"/);
+  assert.match(cpp, /gtk_entry_get_text\(GTK_ENTRY\(editable\)\)/);
+  assert.match(cpp, /patch_state_name = eventValue/);
 });
 
 test('GTK backend lowers numeric Patch change and text interpolation', () => {
