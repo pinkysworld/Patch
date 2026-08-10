@@ -65,7 +65,8 @@ buildButton.addEventListener('click', async event => {
       const preflight = compile(code.value, { name, kind: 'window', entry: 'main.patch' });
       const support = validateWindowRuntimeSupport(preflight);
       compiledWindow = buildCompiledWindowArtifact(preflight);
-      if (platform === 'windows') nativeGui = buildNativeGuiIR(preflight);
+      const needsNativeGui = platform === 'windows' && (nativeBuildMode.value === 'prebuilt' || nativeBuildMode.value === 'cloud');
+      if (needsNativeGui) nativeGui = buildNativeGuiIR(preflight);
       preflightText = `compiled Window ${compiledWindow.version}, Change IR ${compiledWindow.irVersion}, ${support.windows} form${support.windows === 1 ? '' : 's'}, ${support.controls} control${support.controls === 1 ? '' : 's'} and ${support.events} event handler${support.events === 1 ? '' : 's'} validated`;
       if (nativeGui) preflightText += `; Native GUI IR ${nativeGui.version} lowered`;
     }
