@@ -33,6 +33,14 @@ test('same sealed native GUI payload round-trips from a Linux ELF overlay', () =
   assert.deepEqual(sealed.subarray(0, fakeElf.length), fakeElf);
 });
 
+test('same sealed native GUI payload round-trips from a macOS Mach-O overlay', () => {
+  const payload = encodeNativeGuiPayload(gui);
+  const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 7, 6, 5, 4]);
+  const sealed = sealNativeGuiRuntime(fakeMachO, gui, { platform: 'macos' });
+  assert.deepEqual(decodeNativeGuiPayload(sealed), payload);
+  assert.deepEqual(sealed.subarray(0, fakeMachO.length), fakeMachO);
+});
+
 test('sealed native GUI payload contains forms, controls, events and state without Patch source', () => {
   const payload = encodeNativeGuiPayload(gui);
   assert.ok(payload.length > 64);
@@ -54,7 +62,9 @@ test('sealer rejects an already sealed runtime template', () => {
 test('sealer rejects a runtime whose binary format does not match the requested platform', () => {
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4]);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0]);
+  const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1]);
   assert.throws(() => sealNativeGuiRuntime(fakePe, gui, { platform: 'linux' }), /not a Linux ELF/);
   assert.throws(() => sealNativeGuiRuntime(fakeElf, gui), /not a Windows PE/);
-  assert.throws(() => sealNativeGuiRuntime(fakeElf, gui, { platform: 'plan9' }), /unsupported/);
+  assert.throws(() => sealNativeGuiRuntime(fakeElf, gui, { platform: 'macos' }), /not a macOS Mach-O/);
+  assert.throws(() => sealNativeGuiRuntime(fakeMachO, gui, { platform: 'plan9' }), /unsupported/);
 });
