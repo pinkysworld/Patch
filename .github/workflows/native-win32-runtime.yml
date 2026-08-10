@@ -78,8 +78,8 @@ jobs:
       - name: Smoke run sealed native GUI executable
         shell: pwsh
         run: |
-          & ./dist-runtime/PatchSealedForms.exe --patch-smoke
-          if ($LASTEXITCODE -ne 0) { throw "Sealed native GUI smoke failed with exit code $LASTEXITCODE." }
+          $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedForms.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed native GUI smoke failed with exit code $($process.ExitCode)." }
       - name: Verify template and sealed executable contract
         shell: pwsh
         run: |
