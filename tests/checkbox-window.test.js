@@ -68,7 +68,7 @@ test('Designer can create a positioned checkbox in Patch source', () => {
 
 test('Standalone Window Web build renders checkbox and emits Boolean changed payload', () => {
   const built = buildStandaloneWebApp(source, { kind: 'window', name: 'CheckboxApp' });
-  assert.equal(built.metadata.version, '0.5');
+  assert.equal(built.metadata.version, '0.6');
   assert.match(built.html, /control\.type==='checkbox'/);
   assert.match(built.html, /el\.type='checkbox'/);
   assert.match(built.html, /value:el\.checked/);
