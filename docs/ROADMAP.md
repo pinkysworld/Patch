@@ -101,8 +101,10 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] Designer auto-names new Forms and exposes editable Form name
 - [x] build validation rejects unknown/duplicate Form names before packaging
 - [x] ComboBox with source-backed options, typed transient text `value`, Studio/Web rendering and native v0.2 parity
-- [x] single-selection ListBox with source-backed options, typed transient text `value`, Studio/Web rendering and compatibility desktop rendering
-- [ ] richer controls/event editing: radio, tabs, menu, dialogs, table/grid
+- [x] single-selection ListBox with source-backed options, typed transient text `value`, Studio/Web rendering and native v0.3 parity
+- [x] Tabs Stage 1 with nested pages, transient renderer-local page selection, Studio/Standalone Web/compatibility rendering and source-backed container geometry
+- [ ] native Tabs parity through a versioned Native GUI container contract
+- [ ] richer controls/event editing: radio, menu, dialogs, table/grid
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] project tree and separate source files/forms
 - [ ] project import/export
@@ -115,19 +117,20 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] local/cloud compatibility Window apps execute the compiled artifact instead of reparsing `main.patch`
 - [x] compiled Window artifact v0.2 carries named Form lifecycle instructions while Change IR remains 0.10
 - [x] token-free compatibility payload v0.4 links the same source-free compiled Window artifact into the sandboxed runtime
-- [x] compatibility runtime-template release `studio-runtime-v0.5` renders ComboBox/ListBox and retains payload v0.4
+- [x] compatibility runtime-template release `studio-runtime-v0.6` renders named Forms, ComboBox, ListBox and Tabs while retaining payload v0.4
 - [x] project-specific Windows/macOS/Linux smoke builds the named-Forms example and exercises open/close in the packaged app
 - [x] independent compatibility runtime-template smoke exercises open, typed Checkbox change and close on all three desktop OSes
 - [x] FreeBSD Console via portable C99
-- [x] Native GUI IR v0.2 lowers Text, Button, Input, Checkbox and ComboBox plus Form lifecycle to Win32, AppKit and GTK3
-- [x] direct-native AOT GUI backend for the supported Native GUI IR v0.2 subset on Windows, macOS and Linux
+- [x] Native GUI IR v0.3 lowers Text, Button, Input, Checkbox, ComboBox and ListBox plus Form lifecycle to Win32, AppKit and GTK3
+- [x] direct-native AOT GUI backend for the supported Native GUI IR v0.3 subset on Windows, macOS and Linux
 - [x] native ComboBox parity: Win32 `COMBOBOX`, AppKit `NSPopUpButton`, GTK3 `GtkComboBoxText`
-- [x] sealed native GUI payload v2 carries ComboBox option arrays and is checked by all three native runtime workflows
+- [x] native ListBox parity: Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`
+- [x] sealed native GUI payload v3 carries ListBox option arrays and is checked by all three native runtime workflows
 - [x] token-free sealed native Win32 Studio Window download
 - [x] token-free sealed native GTK3 Studio Window download
 - [x] token-free sealed native AppKit Studio Window download using an unsigned universal Mach-O runtime
-- [ ] native ListBox parity through Native GUI IR and all six native AOT/sealed implementations
-- [ ] richer native controls: radio, tabs, menus, dialogs, table/grid
+- [ ] native Tabs parity through Native GUI IR and all six native AOT/sealed implementations
+- [ ] richer native controls: radio, menus, dialogs, table/grid
 - [ ] signing/notarization/installers
 - [ ] portable Linux distribution bundle with GTK dependencies or equivalent packaging
 
@@ -174,4 +177,5 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 11. GUI input/selection widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.
 12. Desktop GUI apps must consume a build-time compiled Patch artifact or checked Native GUI IR; runtime reparsing is legacy compatibility only, not the native build path.
 13. Form lifecycle must stay simple and transient: no hidden persistent visibility variable and no framework-style Form object boilerplate.
-14. Unsupported native controls fail closed during Native GUI IR preflight rather than being dropped or triggering an implicit Electron fallback.
+14. Unsupported native controls and containers fail closed during Native GUI IR preflight rather than being dropped or triggering an implicit Electron fallback.
+15. Tabs page selection is transient renderer state unless a future explicit language contract deliberately exposes it.
