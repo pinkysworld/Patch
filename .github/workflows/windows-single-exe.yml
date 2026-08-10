@@ -31,6 +31,8 @@ on:
       - src/parser.js
       - src/expression.js
       - src/change.js
+      - web/native-build.js
+      - tests/studio-windows-single-exe.test.js
       - examples/forms-navigation.patch
   push:
     branches: [main]
