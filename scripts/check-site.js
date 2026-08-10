@@ -21,14 +21,14 @@ for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new 
 const html = read('_site/index.html');
 requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./forms-designer.js','./icon.svg']);
 for (const id of [
-  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addCombo','addListbox',
+  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addCombo','addListbox','addTabs',
   'projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10',
   'Beta.32 invocation-frame direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
   'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'invocation-frame',
-  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console'
+  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'value="tabsWindow"'
 ]);
 for (const option of [
   'value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"',
@@ -45,6 +45,7 @@ requireAll('playground Designer/runtime contract', playground, [
   'triggerWindowEvent','listDesignerControls','updateDesignerControl','removeDesignerControl','designerInspectorApply',
   "control.type === 'checkbox'", "input.type = 'checkbox'", 'value: input.checked',
   "control.type === 'combo'", "control.type === 'listbox'", "document.createElement('select')", 'patch-listbox', 'el.size = Math.min',
+  "control.type === 'tabs'", 'patch-tabs-list', 'patch-tab-button', 'patch-tab-panel', 'aria-selected', "addControl('tabs')",
   'designerInspectorOptions', 'splitOptionExpressions',
   'model.visible === false', "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
 ]);
@@ -56,19 +57,20 @@ const formsDesigner = read('_site/forms-designer.js');
 rejectOutsideSiteImport('forms designer', formsDesigner);
 requireAll('forms designer contract', formsDesigner, [
   './src/designer.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl',
-  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']", "['#addCombo', 'combo']", "['#addListbox', 'listbox']",
-  "control.type === 'listbox'", 'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
+  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']", "['#addCombo', 'combo']", "['#addListbox', 'listbox']", "['#addTabs', 'tabs']",
+  "control.type === 'listbox'", "control.type === 'tabs'", 'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
 ]);
 const formsCss = read('_site/forms-designer.css');
 requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
 const formLayout = read('_site/src/form-layout.js');
-requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','combo','listbox']);
+requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','combo','listbox','tabs']);
 const webapp = read('_site/src/webapp.js');
 requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
 const windowWebapp = read('_site/src/window-webapp.js');
 requireAll('Window Web Form lifecycle/runtime controls', windowWebapp, [
-  "PATCH_WINDOW_WEB_VERSION = '0.7'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked',
+  "PATCH_WINDOW_WEB_VERSION = '0.8'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked',
   "control.type==='combo'||control.type==='listbox'", 'el.size=Math.min', "document.createElement('select')", 'node.options.map(uiOption)', "value:el.value",
+  "control.type==='tabs'", 'tabSelections=new Map', 'patch-tabs-list', 'patch-tab-panel', 'function buildUIItems', 'function findControl',
   "case 'openForm'", "case 'closeForm'", 'formVisibility', 'shell.hidden=model.visible===false'
 ]);
 const windowEvents = read('_site/src/window-events.js');
@@ -80,11 +82,12 @@ requireAll('typed Window changed events', windowEvents, [
 const designer = read('_site/src/designer.js');
 requireAll('named Form Designer source contract', designer, [
   'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close', "['combo', 'listbox'].includes(control.type)",
-  'A ${label} needs at least two options', "type === 'listbox'"
+  'A ${label} needs at least two options', "type === 'listbox'", "type === 'tabs'", 'tab "General"', 'tab "Advanced"'
 ]);
 const windowBuild = read('_site/src/window-build.js');
 requireAll('Window Form lifecycle build validation', windowBuild, [
-  'openForm','closeForm','namedForms','formActions', "Form name '${node.id}' is declared more than once", "controlType === 'combo'", "controlType === 'listbox'"
+  'openForm','closeForm','namedForms','formActions','tabs: tabs.size', 'transient page selection',
+  "Form name '${node.id}' is declared more than once", "controlType === 'combo'", "controlType === 'listbox'"
 ]);
 const compiledWindow = read('_site/src/window-compiled.js');
 requireAll('compiled Window artifact contract', compiledWindow, [
@@ -116,9 +119,6 @@ requireAll('compiled prebuilt Window packager', prebuiltWindow, [
   "execution: 'compiled-window-program'", 'validateCompiledWindowArtifact'
 ]);
 
-// Beta.32 remains a research/CI certificate layer. Ordinary Studio deploys the
-// stable compiler/runtime modules it actually imports; it does not ship Lean or
-// the Node-only invocation-frame runtime-certificate generator.
 const concreteBody = read('_site/src/concrete-call-body.js');
 requireAll('guarded concrete-call body producer', concreteBody, [
   "PATCH_CONCRETE_CALL_BODY_VERSION = '0.2'", 'buildFormalGuardExpression', "kind: 'branch'", 'evalGuardExact'
@@ -126,13 +126,13 @@ requireAll('guarded concrete-call body producer', concreteBody, [
 const compiler = read('_site/src/compiler.js');
 requireAll('compiler assurance and UI lifecycle modules', compiler, [
   "'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'",
-  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','fields.options'
+  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','ui.tabs','TABS','TAB_PAGE','fields.options'
 ]);
 
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms5`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms6`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 

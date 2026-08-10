@@ -58,6 +58,23 @@ export function parse(source) {
     }
     if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return windowNode(row,indent,m[1],null);
 
+    if ((m = row.text.match(/^tabs\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
+      const pages = childBlock(indent,row);
+      if (pages.length < 2) throw new PatchSyntaxError('Tabs needs at least two tab pages.',row.line);
+      for (const page of pages) if (page.kind !== 'tabPage') throw new PatchSyntaxError('A tabs block can only contain pages like tab "General":.',page.line);
+      const fields = {kind:'tabs',id:m[1],body:pages,line:row.line};
+      if (m[2] !== undefined) fields.layout = parseLayoutNumbers(m[2],m[3],m[4],m[5],row.line);
+      return fields;
+    }
+    if ((m = row.text.match(/^tab\s+(.+)\s*:\s*$/))) {
+      const body = childBlock(indent,row);
+      for (const child of body) {
+        if (child.kind !== 'uiControl') throw new PatchSyntaxError('A tab page can only contain window controls in Tabs Stage 1.',child.line);
+        if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
+      }
+      return {kind:'tabPage',titleExpr:m[1],body,line:row.line};
+    }
+
     const ui=parseUILayout(row.text,row.line);
     if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
     if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'button',textExpr:m[1],id:m[2],line:row.line},ui.layout);
@@ -125,11 +142,15 @@ function uiControl(fields,layout) {
 function parseUILayout(text,line) {
   const m=String(text).match(/^(.*?)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?$/);
   if(!m||m[2]===undefined)return {core:String(text),layout:null};
-  const x=Number(m[2]); const y=Number(m[3]);
-  const width=m[4]===undefined?null:Number(m[4]); const height=m[5]===undefined?null:Number(m[5]);
+  return {core:m[1],layout:parseLayoutNumbers(m[2],m[3],m[4],m[5],line)};
+}
+
+function parseLayoutNumbers(xText,yText,widthText,heightText,line) {
+  const x=Number(xText); const y=Number(yText);
+  const width=widthText===undefined?null:Number(widthText); const height=heightText===undefined?null:Number(heightText);
   if(x<0||y<0)throw new PatchSyntaxError('Control positions must be zero or greater.',line);
   if((width!==null&&width<16)||(height!==null&&height<16))throw new PatchSyntaxError('Control sizes must be at least 16 by 16.',line);
-  return {core:m[1],layout:{x,y,width,height}};
+  return {x,y,width,height};
 }
 
 function parseParams(text,line) {

@@ -63,6 +63,10 @@ function lowerNode(node) {
       if (node.id) fields.id = node.id;
       return op('WINDOW', node, fields);
     }
+    case 'tabs':
+      return op('TABS', node, { id: node.id, body: lowerBlock(node.body ?? []) });
+    case 'tabPage':
+      return op('TAB_PAGE', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body ?? []) });
     case 'uiControl': {
       const fields = { control: node.control, id: node.id, textExpr: node.textExpr };
       if (Array.isArray(node.options)) fields.options = [...node.options];
@@ -107,7 +111,8 @@ function inferRuntimeCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
-    if (node.kind === 'window' || node.kind === 'uiControl' || node.kind === 'event' || node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.window');
+    if (['window', 'uiControl', 'tabs', 'tabPage', 'event', 'openForm', 'closeForm'].includes(node.kind)) caps.add('ui.window');
+    if (node.kind === 'tabs' || node.kind === 'tabPage') caps.add('ui.tabs');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
     if (node.kind === 'why') caps.add('change.provenance');

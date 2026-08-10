@@ -22,7 +22,7 @@ const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
 const gui = buildNativeGuiIR(compiled);
-const cpp = emitWin32GuiCpp(gui);
+const cpp = normalizeGeneratedCpp(emitWin32GuiCpp(gui));
 fs.mkdirSync(outDir, { recursive: true });
 const cppPath = path.join(outDir, `${appName}.win32.cpp`);
 const exePath = path.join(outDir, `${appName}.exe`);
@@ -80,6 +80,13 @@ if (smoke) {
   if (run.error) throw run.error;
   if (run.status !== 0) throw new Error(`Native Patch Win32 GUI smoke exited with status ${run.status}.`);
   console.log('Native Patch Win32 GUI smoke passed.');
+}
+
+function normalizeGeneratedCpp(text) {
+  // JavaScript template literals interpret \0 before MSVC sees the generated
+  // source. Convert embedded NUL bytes back into the intended C++ escape so
+  // generated std::wstring fill characters remain L'\0'.
+  return String(text).replaceAll('\0', '\\0');
 }
 
 function runThroughVsDevCmd(vsDevCmd, args) {

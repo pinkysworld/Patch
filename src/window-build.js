@@ -30,9 +30,42 @@ export function validateWindowBuild(compiled) {
 export function validateWindowRuntimeSupport(compiled) {
   validateWindowBuild(compiled);
   const controls = new Map();
+  const tabs = new Map();
   const forms = new Map();
   const events = [];
   const formActions = [];
+
+  const registerControl = child => {
+    if (!child?.id) return;
+    if (controls.has(child.id) || tabs.has(child.id)) {
+      throw new WindowBuildError(
+        `line ${child.line ?? '?'}: Window UI id '${child.id}' is declared more than once. ` +
+        'Control and Tabs ids must be unique across the current application.'
+      );
+    }
+    controls.set(child.id, child.control);
+  };
+
+  const registerTabs = node => {
+    if (controls.has(node.id) || tabs.has(node.id)) {
+      throw new WindowBuildError(
+        `line ${node.line ?? '?'}: Window UI id '${node.id}' is declared more than once. ` +
+        'Control and Tabs ids must be unique across the current application.'
+      );
+    }
+    tabs.set(node.id, node);
+    for (const page of node.body ?? []) {
+      if (page.kind !== 'tabPage') {
+        throw new WindowBuildError(`line ${page.line ?? '?'}: Tabs '${node.id}' contains an invalid page node.`);
+      }
+      for (const child of page.body ?? []) {
+        if (child.kind !== 'uiControl') {
+          throw new WindowBuildError(`line ${child.line ?? '?'}: Tabs Stage 1 pages support window controls only.`);
+        }
+        registerControl(child);
+      }
+    }
+  };
 
   const walk = nodes => {
     for (const node of nodes ?? []) {
@@ -47,21 +80,15 @@ export function validateWindowRuntimeSupport(compiled) {
           forms.set(node.id, node);
         }
         for (const child of node.body ?? []) {
-          if (child.kind !== 'uiControl' || !child.id) continue;
-          if (controls.has(child.id)) {
-            throw new WindowBuildError(
-              `line ${child.line ?? '?'}: Window control id '${child.id}' is declared more than once. ` +
-              'Control ids must be unique across the current application.'
-            );
-          }
-          controls.set(child.id, child.control);
+          if (child.kind === 'uiControl') registerControl(child);
+          else if (child.kind === 'tabs') registerTabs(child);
         }
       } else if (node.kind === 'event') {
         events.push(node);
       } else if (node.kind === 'openForm' || node.kind === 'closeForm') {
         formActions.push(node);
       }
-      if (node.body && node.kind !== 'window') walk(node.body);
+      if (node.body && !['window', 'tabs', 'tabPage'].includes(node.kind)) walk(node.body);
       if (node.thenBody) walk(node.thenBody);
       if (node.elseBody) walk(node.elseBody);
     }
@@ -71,6 +98,11 @@ export function validateWindowRuntimeSupport(compiled) {
   for (const event of events) {
     const controlType = controls.get(event.control);
     if (!controlType) {
+      if (tabs.has(event.control)) {
+        throw new WindowBuildError(
+          `line ${event.line ?? '?'}: Tabs '${event.control}' has transient page selection and does not expose Patch events in Tabs Stage 1.`
+        );
+      }
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: event '${event.control} ${event.event}' refers to a control that is not defined in a Patch window.`
       );
@@ -99,6 +131,7 @@ export function validateWindowRuntimeSupport(compiled) {
     windows: countWindowInstructions(compiled?.ir?.instructions),
     namedForms: forms.size,
     controls: controls.size,
+    tabs: tabs.size,
     events: events.length,
     formActions: formActions.length
   };

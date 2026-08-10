@@ -22,6 +22,29 @@ window "Counter":
 when add_button clicked:
   change count:
     add 1`,
+  tabsWindow: `create text name = "Mia"
+create boolean notifications = false
+
+window "Settings" as main size 620, 380:
+  tabs as settings at 24, 24 size 540, 280:
+    tab "General":
+      text "Welcome {name}"
+      input name
+    tab "Advanced":
+      checkbox "Notifications" as notifications
+      button "Reset name" as reset_name
+
+when name changed:
+  change name:
+    set = value
+
+when notifications changed:
+  change notifications:
+    set = value
+
+when reset_name clicked:
+  change name:
+    set = "Mia"`,
   capabilities: `create thing player:
   name = "Mia"
   score = 0
@@ -122,7 +145,7 @@ projectKind.value = saved?.kind ?? (saved ? 'console' : 'window');
 
 sample.addEventListener('change', () => {
   code.value = samples[sample.value];
-  projectKind.value = sample.value === 'counterWindow' ? 'window' : 'console';
+  projectKind.value = ['counterWindow', 'tabsWindow'].includes(sample.value) ? 'window' : 'console';
   designerSelection = null;
   saveProject();
   refreshDesigner();
@@ -141,6 +164,7 @@ document.querySelector('#addButton').addEventListener('click', () => addControl(
 document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
 document.querySelector('#addCombo')?.addEventListener('click', () => addControl('combo'));
 document.querySelector('#addListbox')?.addEventListener('click', () => addControl('listbox'));
+document.querySelector('#addTabs')?.addEventListener('click', () => addControl('tabs'));
 designerInspector.apply.addEventListener('click', applyDesignerProperties);
 designerInspector.remove.addEventListener('click', removeSelectedDesignerControl);
 designerInspector.source.addEventListener('click', revealSelectedDesignerSource);
@@ -351,6 +375,7 @@ function scheduleDesigner() {
 }
 
 function renderWindows(container, windows, interactive) {
+  const tabSelections = container.__patchTabSelections ??= new Map();
   container.innerHTML = '';
   if (!windows?.length) {
     container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
@@ -366,48 +391,16 @@ function renderWindows(container, windows, interactive) {
     const body = document.createElement('div');
     body.className = 'patch-window-body';
     model.controls.forEach((control, controlIndex) => {
-      let el;
-      if (control.type === 'text') {
-        el = document.createElement('p');
-        el.className = 'patch-text';
-        el.textContent = control.text;
-      } else if (control.type === 'button') {
-        el = document.createElement('button');
-        el.className = 'patch-button';
-        el.textContent = control.text;
-        if (interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
-        else el.type = 'button';
-      } else if (control.type === 'input') {
-        el = document.createElement('input');
-        el.className = 'patch-input';
-        el.value = control.value ?? '';
-        el.placeholder = control.id ?? '';
-        if (interactive) el.addEventListener('input', () => trigger(control.id, 'changed', { value: el.value }));
-        else el.readOnly = true;
-      } else if (control.type === 'checkbox') {
-        el = document.createElement('label');
-        el.className = 'patch-checkbox';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.checked = control.value === true;
-        const text = document.createElement('span');
-        text.textContent = control.text;
-        el.append(input, text);
-        if (interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: input.checked }));
-        else input.disabled = true;
-      } else if (control.type === 'combo' || control.type === 'listbox') {
-        el = document.createElement('select');
-        el.className = control.type === 'listbox' ? 'patch-input patch-listbox' : 'patch-input patch-combo';
-        if (control.type === 'listbox') el.size = Math.min(8, Math.max(2, (control.options ?? []).length));
-        for (const option of control.options ?? []) {
-          const item = document.createElement('option');
-          item.value = option;
-          item.textContent = option;
-          el.appendChild(item);
-        }
-        el.value = String(control.value ?? '');
-        if (interactive) el.addEventListener('change', () => trigger(control.id, 'changed', { value: el.value }));
-      }
+      const el = createControlElement(control, {
+        interactive,
+        container,
+        windows,
+        tabSelections,
+        windowIndex,
+        controlIndex,
+        windowId: model.id,
+        topLevel: true
+      });
       if (!el) return;
       if (!interactive) decorateDesignerControl(el, windowIndex, controlIndex, control);
       body.appendChild(el);
@@ -415,6 +408,95 @@ function renderWindows(container, windows, interactive) {
     shell.append(title, body);
     container.appendChild(shell);
   });
+}
+
+function createControlElement(control, context) {
+  if (control.type === 'tabs') return createTabsElement(control, context);
+  let el;
+  if (control.type === 'text') {
+    el = document.createElement('p');
+    el.className = 'patch-text';
+    el.textContent = control.text;
+  } else if (control.type === 'button') {
+    el = document.createElement('button');
+    el.className = 'patch-button';
+    el.textContent = control.text;
+    el.type = 'button';
+    if (context.interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
+  } else if (control.type === 'input') {
+    el = document.createElement('input');
+    el.className = 'patch-input';
+    el.value = control.value ?? '';
+    el.placeholder = control.id ?? '';
+    if (context.interactive) el.addEventListener('input', () => trigger(control.id, 'changed', { value: el.value }));
+    else el.readOnly = true;
+  } else if (control.type === 'checkbox') {
+    el = document.createElement('label');
+    el.className = 'patch-checkbox';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = control.value === true;
+    const text = document.createElement('span');
+    text.textContent = control.text;
+    el.append(input, text);
+    if (context.interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: input.checked }));
+    else input.disabled = true;
+  } else if (control.type === 'combo' || control.type === 'listbox') {
+    el = document.createElement('select');
+    el.className = control.type === 'listbox' ? 'patch-input patch-listbox' : 'patch-input patch-combo';
+    if (control.type === 'listbox') el.size = Math.min(8, Math.max(2, (control.options ?? []).length));
+    for (const option of control.options ?? []) {
+      const item = document.createElement('option');
+      item.value = option;
+      item.textContent = option;
+      el.appendChild(item);
+    }
+    el.value = String(control.value ?? '');
+    if (context.interactive) el.addEventListener('change', () => trigger(control.id, 'changed', { value: el.value }));
+    else el.disabled = true;
+  }
+  return el ?? null;
+}
+
+function createTabsElement(control, context) {
+  const root = document.createElement('div');
+  root.className = 'patch-tabs';
+  root.dataset.tabsId = control.id ?? '';
+  const pages = control.pages ?? [];
+  const key = `${context.windowId}:${control.id ?? context.controlIndex}`;
+  let selected = context.tabSelections.get(key) ?? 0;
+  if (!Number.isInteger(selected) || selected < 0 || selected >= pages.length) selected = 0;
+  context.tabSelections.set(key, selected);
+
+  const list = document.createElement('div');
+  list.className = 'patch-tabs-list';
+  list.setAttribute('role', 'tablist');
+  pages.forEach((page, pageIndex) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'patch-tab-button';
+    button.textContent = page.title;
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', pageIndex === selected ? 'true' : 'false');
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      context.tabSelections.set(key, pageIndex);
+      renderWindows(context.container, context.windows, context.interactive);
+    });
+    list.appendChild(button);
+  });
+
+  const panel = document.createElement('div');
+  panel.className = 'patch-tab-panel';
+  panel.setAttribute('role', 'tabpanel');
+  const active = pages[selected];
+  for (const nested of active?.controls ?? []) {
+    const nestedEl = createControlElement(nested, { ...context, topLevel: false });
+    if (nestedEl) panel.appendChild(nestedEl);
+  }
+  root.append(list, panel);
+  return root;
 }
 
 function decorateDesignerControl(el, windowIndex, controlIndex, control) {
@@ -460,7 +542,7 @@ function renderDesignerInspector() {
   designerInspector.type.textContent = selected.type[0].toUpperCase() + selected.type.slice(1);
   designerInspector.location.textContent = `Window ${selected.windowIndex + 1} · control ${selected.controlIndex + 1} · line ${selected.line}`;
   designerInspector.idField.hidden = selected.type === 'text';
-  designerInspector.textField.hidden = selected.type === 'input' || selected.type === 'combo' || selected.type === 'listbox';
+  designerInspector.textField.hidden = ['input', 'combo', 'listbox', 'tabs'].includes(selected.type);
   designerInspector.optionsField.hidden = !['combo', 'listbox'].includes(selected.type);
   designerInspector.idInput.value = selected.id ?? '';
   designerInspector.textInput.value = selected.textExpr ?? '';

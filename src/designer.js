@@ -7,7 +7,8 @@ const CONTROL_DEFAULTS = {
   input: { width: 220, height: 36 },
   checkbox: { width: 220, height: 36 },
   combo: { width: 220, height: 36 },
-  listbox: { width: 220, height: 120 }
+  listbox: { width: 220, height: 120 },
+  tabs: { width: 420, height: 240 }
 };
 
 export function addDesignerWindow(source, options = {}) {
@@ -92,6 +93,20 @@ export function addDesignerControl(source, type, options = {}) {
   }
 
   const existing = listDesignerControls(normalized).filter(item => item.windowIndex === requestedWindow);
+  if (type === 'tabs') {
+    const defaults = CONTROL_DEFAULTS.tabs;
+    const layout = { x: 24, y: 24 + (existing.length * 48), width: defaults.width, height: defaults.height };
+    const id = nextId(lines, 'tabs');
+    lines.splice(insertAt, 0,
+      `${childIndent}${formatControl('tabs', id, null, layout)}`,
+      `${childIndent}  tab "General":`,
+      `${childIndent}    text "General"`,
+      `${childIndent}  tab "Advanced":`,
+      `${childIndent}    text "Advanced"`
+    );
+    return tidy(lines.join('\n'));
+  }
+
   const control = makeControl(type, lines, existing.length);
   lines.splice(insertAt, 0, `${childIndent}${control}`);
   return tidy(lines.join('\n'));
@@ -105,15 +120,16 @@ export function listDesignerControls(source) {
     if (node.kind !== 'window') continue;
     let controlIndex = 0;
     for (const child of node.body ?? []) {
-      if (child.kind !== 'uiControl') continue;
+      if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
       controls.push({
         windowIndex,
         controlIndex,
         line: child.line,
-        type: child.control,
+        type: child.kind === 'tabs' ? 'tabs' : child.control,
         id: child.id ?? null,
         textExpr: child.textExpr ?? null,
         options: Array.isArray(child.options) ? [...child.options] : null,
+        pages: child.kind === 'tabs' ? (child.body ?? []).map(page => page.titleExpr) : null,
         x: child.layout?.x ?? null,
         y: child.layout?.y ?? null,
         width: child.layout?.width ?? null,
@@ -160,7 +176,7 @@ export function updateDesignerControl(source, selector, changes = {}) {
   const indent = indentOf(lines[lineIndex]);
   lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions)}`;
 
-  if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
+  if (oldId && nextId !== oldId && control.type !== 'tabs') renameEventHeaders(lines, oldId, nextId);
   return preserveTrailingNewline(source, lines.join('\n'));
 }
 
@@ -168,8 +184,20 @@ export function removeDesignerControl(source, selector) {
   const controls = listDesignerControls(source);
   const control = findControl(controls, selector);
   const lines = normalizeLines(source);
-  lines.splice(control.line - 1, 1);
-  if (control.id) removeEventBlocks(lines, control.id);
+  const lineIndex = control.line - 1;
+  if (control.type === 'tabs') {
+    const baseIndent = indentOf(lines[lineIndex]).length;
+    let end = lineIndex + 1;
+    while (end < lines.length) {
+      if (!lines[end].trim()) { end += 1; continue; }
+      if (indentOf(lines[end]).length <= baseIndent) break;
+      end += 1;
+    }
+    lines.splice(lineIndex, end - lineIndex);
+  } else {
+    lines.splice(lineIndex, 1);
+    if (control.id) removeEventBlocks(lines, control.id);
+  }
   return tidy(lines.join('\n'));
 }
 
@@ -290,9 +318,11 @@ function formatControl(type, id, textExpr, layout, options = null) {
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
+  else if (type === 'tabs') core = `tabs as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
-  if (!layout) return core;
-  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
+  if (!layout) return type === 'tabs' ? `${core}:` : core;
+  const positioned = `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
+  return type === 'tabs' ? `${positioned}:` : positioned;
 }
 
 function nextId(lines, base) {

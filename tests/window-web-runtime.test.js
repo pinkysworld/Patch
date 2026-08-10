@@ -156,13 +156,13 @@ when missing clicked:
   );
 });
 
-test('Window builds reject duplicate control ids before target packaging', () => {
+test('Window builds reject duplicate UI ids before target packaging', () => {
   const source = `window "Duplicate":
   button "One" as action
   button "Two" as action`;
 
   assert.throws(
     () => buildStandaloneWebApp(source, { name: 'DuplicateIds', kind: 'window' }),
-    /control id 'action' is declared more than once/
+    /UI id 'action' is declared more than once/
   );
 });

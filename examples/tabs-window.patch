@@ -1,0 +1,23 @@
+create text name = "Mia"
+create boolean notifications = false
+
+window "Settings" as main size 620, 380:
+  tabs as settings at 24, 24 size 540, 280:
+    tab "General":
+      text "Welcome {name}"
+      input name
+    tab "Advanced":
+      checkbox "Notifications" as notifications
+      button "Reset name" as reset_name
+
+when name changed:
+  change name:
+    set = value
+
+when notifications changed:
+  change notifications:
+    set = value
+
+when reset_name clicked:
+  change name:
+    set = "Mia"

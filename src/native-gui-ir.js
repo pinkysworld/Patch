@@ -59,6 +59,12 @@ export function buildNativeGuiIR(compiled) {
 
       let controlIndex = 0;
       for (const child of node.body ?? []) {
+        if (child.kind === 'tabs') {
+          throw new NativeGuiError(
+            `line ${child.line ?? '?'}: native GUI v0.3 does not support Tabs containers yet. ` +
+            'Use Studio or Standalone Web for Tabs until the native container stage is implemented.'
+          );
+        }
         if (child.kind !== 'uiControl') continue;
         if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(child.control)) {
           throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.3 does not support '${child.control}' controls yet.`);

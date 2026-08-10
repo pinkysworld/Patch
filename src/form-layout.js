@@ -6,7 +6,8 @@ const CONTROL_DEFAULTS = {
   input: { width: 220, height: 36 },
   checkbox: { width: 220, height: 36 },
   combo: { width: 220, height: 36 },
-  listbox: { width: 220, height: 120 }
+  listbox: { width: 220, height: 120 },
+  tabs: { width: 420, height: 240 }
 };
 
 export function buildFormLayoutManifest(ast) {
@@ -14,7 +15,7 @@ export function buildFormLayoutManifest(ast) {
     format: 'patch-source-backed-form-layout',
     version: PATCH_FORM_LAYOUT_VERSION,
     windows: (ast ?? []).filter(node => node.kind === 'window').map(node => {
-      const controls = (node.body ?? []).filter(child => child.kind === 'uiControl');
+      const controls = (node.body ?? []).filter(child => child.kind === 'uiControl' || child.kind === 'tabs');
       const positioned = node.width !== undefined || node.height !== undefined || controls.some(child => child.layout);
       return {
         width: node.width ?? null,
@@ -64,7 +65,8 @@ export function applyFormLayout(root, manifest, options = {}) {
 }
 
 function effectiveControlLayout(control, index) {
-  const defaults = CONTROL_DEFAULTS[control.control] ?? { width: 120, height: 36 };
+  const type = control.kind === 'tabs' ? 'tabs' : control.control;
+  const defaults = CONTROL_DEFAULTS[type] ?? { width: 120, height: 36 };
   return {
     x: control.layout?.x ?? 24,
     y: control.layout?.y ?? (24 + index * 48),

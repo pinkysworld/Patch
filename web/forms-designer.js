@@ -103,7 +103,8 @@ function interceptToolbox() {
     ['#addInput', 'input'],
     ['#addCheckbox', 'checkbox'],
     ['#addCombo', 'combo'],
-    ['#addListbox', 'listbox']
+    ['#addListbox', 'listbox'],
+    ['#addTabs', 'tabs']
   ];
   for (const [selector, type] of buttons) {
     const button = document.querySelector(selector);
@@ -379,9 +380,11 @@ function effectiveLayout(control, index = control.controlIndex ?? 0) {
     ? { width: 200, height: 30 }
     : control.type === 'listbox'
       ? { width: 220, height: 120 }
-      : (control.type === 'input' || control.type === 'checkbox' || control.type === 'combo')
-        ? { width: 220, height: 36 }
-        : { width: 120, height: 36 };
+      : control.type === 'tabs'
+        ? { width: 420, height: 240 }
+        : (control.type === 'input' || control.type === 'checkbox' || control.type === 'combo')
+          ? { width: 220, height: 36 }
+          : { width: 120, height: 36 };
   return {
     x: control.x ?? 24,
     y: control.y ?? (24 + index * 48),

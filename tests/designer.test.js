@@ -28,9 +28,9 @@ test('designer generates unique control ids', () => {
 test('designer lists source-backed controls with stable window/control coordinates', () => {
   const source = `window "One":\n  text "Hello"\n  button "Save" as save_button\n\nwindow "Two":\n  input name_input\n`;
   assert.deepEqual(listDesignerControls(source), [
-    { windowIndex: 0, controlIndex: 0, line: 2, type: 'text', id: null, textExpr: '"Hello"', options: null, x: null, y: null, width: null, height: null },
-    { windowIndex: 0, controlIndex: 1, line: 3, type: 'button', id: 'save_button', textExpr: '"Save"', options: null, x: null, y: null, width: null, height: null },
-    { windowIndex: 1, controlIndex: 0, line: 6, type: 'input', id: 'name_input', textExpr: null, options: null, x: null, y: null, width: null, height: null }
+    { windowIndex: 0, controlIndex: 0, line: 2, type: 'text', id: null, textExpr: '"Hello"', options: null, pages: null, x: null, y: null, width: null, height: null },
+    { windowIndex: 0, controlIndex: 1, line: 3, type: 'button', id: 'save_button', textExpr: '"Save"', options: null, pages: null, x: null, y: null, width: null, height: null },
+    { windowIndex: 1, controlIndex: 0, line: 6, type: 'input', id: 'name_input', textExpr: null, options: null, pages: null, x: null, y: null, width: null, height: null }
   ]);
 });
 
