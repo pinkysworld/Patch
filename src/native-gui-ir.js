@@ -102,7 +102,7 @@ export function buildNativeGuiIR(compiled) {
         control: node.control,
         event: node.event,
         valueType,
-        actions: lowerNativeActions(node.body ?? [], stateByName, node)
+        actions: lowerNativeActions(node.body ?? [], stateByName, { ...node, valueType })
       });
       continue;
     }
@@ -162,11 +162,12 @@ function lowerNativeActions(nodes, states, event) {
         }
         const expr = String(op.expr ?? '').trim();
         if (expr === 'value') {
-          if (!event || event.event !== 'changed') {
-            throw new NativeGuiError(`line ${op.line ?? '?'}: event-local value is only available in changed handlers.`);
+          if (!event || event.event !== 'changed' || !event.valueType) {
+            throw new NativeGuiError(`line ${op.line ?? '?'}: event-local value is only available in typed changed handlers.`);
           }
-          const eventType = event.control ? null : null;
-          void eventType;
+          if (state.type !== event.valueType) {
+            throw new NativeGuiError(`line ${op.line ?? '?'}: ${event.valueType} event value cannot be assigned to ${state.type} state '${state.name}'.`);
+          }
           ops.push({ op: op.op, value: { kind: 'eventValue' } });
           continue;
         }
