@@ -51,11 +51,11 @@ test('Change IR preserves Tabs and page structure without changing Change IR 0.1
   assert.equal(tabs.body[0].body[1].id, 'name');
 });
 
-test('Window validation sees nested controls while Tabs selection itself exposes no event', () => {
+test('Window validation sees named nested controls while Tabs selection itself exposes no event', () => {
   const compiled = compile(source, { name: 'TabsDemo', kind: 'window' });
   const summary = validateWindowRuntimeSupport(compiled);
   assert.equal(summary.tabs, 1);
-  assert.equal(summary.controls, 4);
+  assert.equal(summary.controls, 3);
   assert.equal(summary.events, 3);
 
   const invalid = compile(`window "Demo" as main:\n  tabs as settings:\n    tab "One":\n      text "One"\n    tab "Two":\n      text "Two"\n\nwhen settings changed:\n  show value\n`, { name: 'InvalidTabsEvent', kind: 'window' });
