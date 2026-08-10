@@ -53,13 +53,15 @@ test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatib
   assert.ok(studio.includes('Native AOT app (GitHub Actions)'));
 });
 
-test('macOS native runtime workflow compiles, seals, smokes and publishes AppKit runtime', () => {
+test('macOS native runtime workflow builds universal AppKit runtime, seals, smokes and publishes it', () => {
   assert.ok(workflow.includes('native-runtime/appkit-sealed-gui.mm'));
   assert.ok(workflow.includes('scripts/seal-native-macos.js'));
+  assert.ok(workflow.includes('-arch arm64 -arch x86_64'));
+  assert.ok(workflow.includes('lipo -archs'));
   assert.ok(workflow.includes('dist-runtime/PatchSealedForms --patch-smoke'));
   assert.ok(workflow.includes('patch-macos-native-gui-runtime.bin'));
   assert.ok(workflow.includes('native-macos-runtime-v0.1'));
-  assert.ok(workflow.includes('unsigned'));
+  assert.ok(workflow.includes('unsigned universal AppKit'));
   assert.equal(workflow.includes('build-native-window.js'), false);
 });
 
