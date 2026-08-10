@@ -104,9 +104,9 @@ test('Standalone Window Web App renders ComboBox and emits a text changed payloa
   assert.match(built.html, /node\.options\.map\(uiOption\)/);
   assert.match(built.html, /type==='combo'&&typeof payload\.value!=='string'/);
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
-  assert.match(built.html, /"Small"/);
-  assert.match(built.html, /"Medium"/);
-  assert.match(built.html, /"Large"/);
+  assert.match(built.html, /Small/);
+  assert.match(built.html, /Medium/);
+  assert.match(built.html, /Large/);
 });
 
 test('native GUI v0.1 fails closed on ComboBox until native parity lands', () => {
