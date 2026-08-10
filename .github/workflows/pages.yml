@@ -46,9 +46,10 @@ on:
       - .github/workflows/pages.yml
       - .github/workflows/native-win32-runtime.yml
       - .github/workflows/native-linux-runtime.yml
+      - .github/workflows/native-macos-runtime.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime]
     types: [completed]
 
 permissions:
@@ -84,6 +85,7 @@ jobs:
           RUNTIME_TAG: studio-runtime-v0.4
           WIN32_RUNTIME_TAG: native-win32-runtime-v0.1
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.1
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.1
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -100,6 +102,11 @@ jobs:
             gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
           else
             echo "Native Linux runtime $LINUX_NATIVE_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
+          fi
+          if gh release view "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir _site/runtimes --clobber
+          else
+            echo "Native macOS runtime $MACOS_NATIVE_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
           fi
           ls -lh _site/runtimes || true
       - name: Validate public site
