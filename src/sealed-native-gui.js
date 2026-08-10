@@ -3,11 +3,13 @@ import { validateNativeGuiIR } from './native-gui-ir.js';
 export const PATCH_SEALED_NATIVE_GUI_VERSION = 1;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
+const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 
 export class SealedNativeGuiError extends Error {}
 
 export function encodeNativeGuiPayload(input) {
   const ir = validateNativeGuiIR(input);
+  validateTextBindings(ir);
   const writer = new Writer();
 
   writer.u32(ir.states.length);
@@ -46,11 +48,18 @@ export function encodeNativeGuiPayload(input) {
     writer.u32(event.actions.length);
     for (const action of event.actions) writeAction(writer, action);
   }
-  return writer.bytes();
+  const bytes = writer.bytes();
+  if (!bytes.length || bytes.length > MAX_PAYLOAD_BYTES) {
+    throw new SealedNativeGuiError(`Native GUI payload exceeds the ${MAX_PAYLOAD_BYTES}-byte safety limit.`);
+  }
+  return bytes;
 }
 
 export function sealNativeGuiRuntime(runtimeBytes, input) {
   const runtime = toBytes(runtimeBytes);
+  if (runtime.length < 2 || runtime[0] !== 0x4d || runtime[1] !== 0x5a) {
+    throw new SealedNativeGuiError('Native GUI runtime template is not a Windows PE executable.');
+  }
   if (hasFooter(runtime)) throw new SealedNativeGuiError('Native GUI runtime template is already sealed.');
   const payload = encodeNativeGuiPayload(input);
   const footer = new Uint8Array(FOOTER_SIZE);
@@ -72,10 +81,25 @@ export function decodeNativeGuiPayload(binaryBytes) {
   const view = new DataView(footer.buffer, footer.byteOffset, footer.byteLength);
   if (view.getUint32(8, true) !== PATCH_SEALED_NATIVE_GUI_VERSION) throw new SealedNativeGuiError('Unsupported sealed native GUI version.');
   const length = view.getUint32(12, true);
-  if (!length || length > footerOffset) throw new SealedNativeGuiError('Invalid sealed native GUI payload length.');
+  if (!length || length > MAX_PAYLOAD_BYTES || length > footerOffset) throw new SealedNativeGuiError('Invalid sealed native GUI payload length.');
   const payload = bytes.subarray(footerOffset - length, footerOffset);
   if (crc32(payload) !== view.getUint32(16, true)) throw new SealedNativeGuiError('Sealed native GUI payload CRC mismatch.');
   return new Uint8Array(payload);
+}
+
+function validateTextBindings(ir) {
+  const states = new Set(ir.states.map(state => state.name));
+  const re = /\{([A-Za-z_]\w*)\}/g;
+  for (const form of ir.forms) {
+    for (const control of form.controls) {
+      const text = String(control.text ?? '');
+      re.lastIndex = 0;
+      let match;
+      while ((match = re.exec(text))) {
+        if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
+      }
+    }
+  }
 }
 
 function writeAction(writer, action) {
