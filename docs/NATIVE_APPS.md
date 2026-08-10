@@ -131,6 +131,8 @@ The compatibility Runtime Templates workflow builds the Windows/macOS/Linux sand
 
 Beta.32 remains a separate research layer over the existing direct-Wasm Console backend. It reconstructs concrete invocation frames independently of trusted call-enter/call-exit markers and generates Lean-checkable evidence relating runtime-selected effects to the beta.30 exact call tree.
 
+The canonical single-call evidence is emitted as `GeneratedTransitiveRuntimeCertificate.lean`; repeated identical invocation frames are covered by `GeneratedRepeatedTransitiveRuntimeCertificate.lean`.
+
 This does not make Patch an end-to-end verified compiler. Runtime capture, independent-validator/frame reconstruction, parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine remain explicit trust/proof-free boundaries.
 
 ## Portable C99
