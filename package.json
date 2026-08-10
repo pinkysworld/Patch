@@ -3,7 +3,10 @@
   "version": "0.2.0-beta.32",
   "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, Lean-checked finite transitive exact call trees, invocation-frame-aware direct-Wasm correspondence, semantic Window input events, cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
   "type": "module",
-  "bin": { "patch": "./src/cli-entry.js" },
+  "bin": {
+    "patch": "./src/cli-entry.js",
+    "patch-app": "./scripts/build-native-gui.js"
+  },
   "scripts": {
     "test": "node --test",
     "run": "node src/cli.js run",
@@ -34,6 +37,7 @@
     "build:web": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target web --out DirectRecipes.html",
     "build:native": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target native --name DirectRecipes",
     "build:app": "node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target app --name DirectRecipes",
+    "build:native-gui": "node scripts/build-native-gui.js examples/forms-navigation.patch NativeForms dist-native",
     "build:site": "node scripts/build-site.js",
     "check:site": "node scripts/check-site.js"
   },
