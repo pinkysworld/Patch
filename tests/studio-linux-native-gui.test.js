@@ -13,7 +13,7 @@ const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 
 test('browser package seals Native GUI IR into one Linux ELF executable', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 2);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 3);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 10, 20, 30, 40]);
   const ready = buildLinuxNativeGuiPackage(fakeElf, gui, { name: 'My Linux App' });
   assert.equal(ready.filename, 'My_Linux_App-linux-window.zip');
@@ -45,16 +45,18 @@ test('Linux compatibility packaging remains explicit and AOT route remains avail
   assert.ok(studio.includes("return NATIVE_WINDOW_AOT_WORKFLOW"));
 });
 
-test('Linux native runtime workflow compiles, seals, smokes ComboBox and publishes GTK runtime v0.2', () => {
+test('Linux native runtime workflow compiles, seals, smokes ListBox and publishes GTK runtime v0.3', () => {
   assert.ok(workflow.includes('native-runtime/gtk-sealed-gui.cpp'));
   assert.ok(workflow.includes('scripts/seal-native-linux.js'));
   assert.ok(workflow.includes('xvfb-run -a dist-runtime/PatchSealedForms --patch-smoke'));
   assert.ok(workflow.includes('examples/combo-window.patch'));
   assert.ok(workflow.includes('xvfb-run -a dist-runtime/PatchSealedCombo --patch-smoke'));
-  assert.ok(workflow.includes('Expected sealed native GUI payload v2'));
+  assert.ok(workflow.includes('examples/listbox-window.patch'));
+  assert.ok(workflow.includes('xvfb-run -a dist-runtime/PatchSealedListBox --patch-smoke'));
+  assert.ok(workflow.includes('Expected sealed native GUI payload v3'));
   assert.ok(workflow.includes('patch-linux-native-gui-runtime.bin'));
-  assert.ok(workflow.includes('native-linux-runtime-v0.2'));
-  assert.equal(workflow.includes('native-linux-runtime-v0.1'), false);
+  assert.ok(workflow.includes('native-linux-runtime-v0.3'));
+  assert.equal(workflow.includes('native-linux-runtime-v0.2'), false);
   assert.equal(workflow.includes('build-native-window.js'), false);
 });
 
