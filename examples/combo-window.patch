@@ -1,0 +1,10 @@
+create text size = "Medium"
+
+window "Combo demo" as main size 480, 240:
+  text "Choose a size" at 24, 24 size 220, 30
+  combo "Small", "Medium", "Large" as size at 24, 72 size 220, 36
+  text "Selected: {size}" at 24, 124 size 260, 30
+
+when size changed:
+  change size:
+    set = value

@@ -21,7 +21,7 @@ for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new 
 const html = read('_site/index.html');
 requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./forms-designer.js','./icon.svg']);
 for (const id of [
-  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput',
+  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addCombo',
   'projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
@@ -44,6 +44,7 @@ requireAll('playground imports', playground, [
 requireAll('playground Designer/runtime contract', playground, [
   'triggerWindowEvent','listDesignerControls','updateDesignerControl','removeDesignerControl','designerInspectorApply',
   "control.type === 'checkbox'", "input.type = 'checkbox'", 'value: input.checked',
+  "control.type === 'combo'", "document.createElement('select')", 'designerInspectorOptions', 'splitOptionExpressions',
   'model.visible === false', "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
 ]);
 
@@ -54,32 +55,34 @@ const formsDesigner = read('_site/forms-designer.js');
 rejectOutsideSiteImport('forms designer', formsDesigner);
 requireAll('forms designer contract', formsDesigner, [
   './src/designer.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl',
-  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']",
+  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']", "['#addCombo', 'combo']",
   'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
 ]);
 const formsCss = read('_site/forms-designer.css');
 requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
 const formLayout = read('_site/src/form-layout.js');
-requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox']);
+requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','combo']);
 const webapp = read('_site/src/webapp.js');
 requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
 const windowWebapp = read('_site/src/window-webapp.js');
 requireAll('Window Web Form lifecycle runtime', windowWebapp, [
-  "PATCH_WINDOW_WEB_VERSION = '0.5'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked',
+  "PATCH_WINDOW_WEB_VERSION = '0.6'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked',
+  "control.type==='combo'", "document.createElement('select')", 'node.options.map(uiOption)', "value:el.value",
   "case 'openForm'", "case 'closeForm'", 'formVisibility', 'shell.hidden=model.visible===false'
 ]);
 const windowEvents = read('_site/src/window-events.js');
 requireAll('typed Window changed events', windowEvents, [
-  "PATCH_WINDOW_EVENTS_VERSION = '0.2'", "controlType === 'checkbox'", 'Boolean event-local value'
+  "PATCH_WINDOW_EVENTS_VERSION = '0.3'", "controlType === 'checkbox'", 'Boolean event-local value',
+  "controlType === 'combo'", 'text event-local value'
 ]);
 
 const designer = read('_site/src/designer.js');
 requireAll('named Form Designer source contract', designer, [
-  'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close'
+  'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close', "type === 'combo'", 'A combo needs at least two options'
 ]);
 const windowBuild = read('_site/src/window-build.js');
 requireAll('Window Form lifecycle build validation', windowBuild, [
-  'openForm','closeForm','namedForms','formActions', "Form name '${node.id}' is declared more than once"
+  'openForm','closeForm','namedForms','formActions', "Form name '${node.id}' is declared more than once", "controlType === 'combo'"
 ]);
 const compiledWindow = read('_site/src/window-compiled.js');
 requireAll('compiled Window artifact contract', compiledWindow, [
@@ -121,7 +124,7 @@ requireAll('guarded concrete-call body producer', concreteBody, [
 const compiler = read('_site/src/compiler.js');
 requireAll('compiler assurance and UI lifecycle modules', compiler, [
   "'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'",
-  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle'
+  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','fields.options'
 ]);
 
 const sw = read('_site/sw.js');

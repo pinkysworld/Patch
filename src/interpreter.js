@@ -197,12 +197,22 @@ export class PatchInterpreter {
       id:windowNode.id??`window${index+1}`,
       visible:windowNode.id?this.formVisibility.get(windowNode.id)!==false:true,
       title:this.uiText(windowNode.titleExpr),
-      controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({type:node.control,id:node.id,text:node.textExpr?this.uiText(node.textExpr):'',value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''}))
+      controls:windowNode.body.filter(node=>node.kind==='uiControl').map(node=>({
+        type:node.control,
+        id:node.id,
+        text:node.textExpr?this.uiText(node.textExpr):'',
+        options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
+        value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
+      }))
     }));
   }
   uiText(expr){
     let value;try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
     return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>this.state.has(name)?formatValue(this.state.get(name)):`{${name}}`);
+  }
+  uiOption(expr){
+    let value;try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
+    return String(value);
   }
 }
 function cloneMap(map){return new Map([...map].map(([k,v])=>[k,clone(v)]));}

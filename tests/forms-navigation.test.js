@@ -105,7 +105,7 @@ test('compiled Window artifact keeps Form lifecycle executable without source pa
 
 test('Standalone Window Web build contains named Form lifecycle runtime', () => {
   const built = buildStandaloneWebApp(source, { kind: 'window', name: 'Navigation' });
-  assert.equal(built.metadata.version, '0.5');
+  assert.equal(built.metadata.version, '0.6');
   assert.match(built.html, /case 'openForm'/);
   assert.match(built.html, /case 'closeForm'/);
   assert.match(built.html, /shell\.hidden=model\.visible===false/);

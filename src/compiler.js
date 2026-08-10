@@ -63,8 +63,11 @@ function lowerNode(node) {
       if (node.id) fields.id = node.id;
       return op('WINDOW', node, fields);
     }
-    case 'uiControl':
-      return op('UI_CONTROL', node, { control: node.control, id: node.id, textExpr: node.textExpr });
+    case 'uiControl': {
+      const fields = { control: node.control, id: node.id, textExpr: node.textExpr };
+      if (Array.isArray(node.options)) fields.options = [...node.options];
+      return op('UI_CONTROL', node, fields);
+    }
     case 'event':
       return op('EVENT', node, { control: node.control, event: node.event, body: lowerBlock(node.body) });
     case 'openForm': return op('OPEN_FORM', node, { form: node.form });
