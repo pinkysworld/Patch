@@ -1,0 +1,132 @@
+name: Patch Native Linux Runtime
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/native-linux-runtime.yml
+      - native-runtime/gtk-sealed-gui.cpp
+      - scripts/seal-native-linux.js
+      - src/sealed-native-gui.js
+      - src/sealed-native-package.js
+      - src/native-gui-ir.js
+      - src/compiler.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - examples/forms-navigation.patch
+      - web/native-build.js
+      - scripts/build-site.js
+      - scripts/check-site.js
+      - .github/workflows/pages.yml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/native-linux-runtime.yml
+      - native-runtime/gtk-sealed-gui.cpp
+      - scripts/seal-native-linux.js
+      - src/sealed-native-gui.js
+      - src/sealed-native-package.js
+      - src/native-gui-ir.js
+      - src/compiler.js
+      - src/parser.js
+      - src/expression.js
+      - src/change.js
+      - examples/forms-navigation.patch
+      - web/native-build.js
+      - scripts/build-site.js
+      - scripts/check-site.js
+      - .github/workflows/pages.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK build and headless runtime dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Compile generic native GTK GUI runtime
+        shell: bash
+        run: |
+          mkdir -p dist-runtime
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui.cpp \
+            -o dist-runtime/patch-linux-native-gui-runtime.bin \
+            $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x dist-runtime/patch-linux-native-gui-runtime.bin
+      - name: Seal canonical Patch Forms app into runtime
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js \
+            examples/forms-navigation.patch \
+            dist-runtime/patch-linux-native-gui-runtime.bin \
+            dist-runtime/PatchSealedForms \
+            PatchSealedForms
+      - name: Smoke run sealed native GTK executable
+        shell: bash
+        run: xvfb-run -a dist-runtime/PatchSealedForms --patch-smoke
+      - name: Verify ELF and sealed runtime contract
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const runtime = fs.readFileSync('dist-runtime/patch-linux-native-gui-runtime.bin');
+          const sealed = fs.readFileSync('dist-runtime/PatchSealedForms');
+          const elf = [0x7f, 0x45, 0x4c, 0x46];
+          if (!elf.every((value, index) => runtime[index] === value)) throw new Error('Runtime is not an ELF executable.');
+          if (sealed.length <= runtime.length) throw new Error('Sealed application did not append a payload.');
+          if (sealed.subarray(sealed.length - 20, sealed.length - 12).toString('ascii') !== 'PCHGUI01') throw new Error('Sealed executable footer magic is missing.');
+          if (runtime.length > 2 * 1024 * 1024) throw new Error(`Generic native GTK runtime unexpectedly exceeds 2 MiB: ${runtime.length} bytes.`);
+          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed Forms app: ${sealed.length} bytes`);
+          NODE
+          test -x dist-runtime/PatchSealedForms
+          if find dist-runtime -iname '*electron*' -o -iname '*chromium*' -o -iname 'patch-app.json' | grep -q .; then
+            echo 'Electron/Chromium/patch-app.json content must not be shipped in the sealed native GTK runtime.' >&2
+            exit 1
+          fi
+          if ldd dist-runtime/patch-linux-native-gui-runtime.bin | grep -Ei 'electron|chromium|node' ; then
+            echo 'Native GTK runtime unexpectedly links an Electron/Chromium/Node library.' >&2
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-linux-native-gui-runtime
+          path: dist-runtime/patch-linux-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: patch-linux-native-gui-runtime
+          path: runtime
+      - name: Publish native GTK runtime template
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: native-linux-runtime-v0.1
+        run: |
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.1' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Studio appends checked Native GUI IR to this ELF executable. No Electron, Chromium, Node.js or sidecar payload is used. Target systems require a compatible GTK3 runtime.'
+          fi
+          gh release upload "$TAG" runtime/patch-linux-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber
