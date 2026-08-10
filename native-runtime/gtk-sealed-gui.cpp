@@ -11,11 +11,11 @@
 #include <vector>
 
 static const char PATCH_MAGIC[8] = {'P','C','H','G','U','I','0','1'};
-static const uint32_t PATCH_PAYLOAD_VERSION = 1;
+static const uint32_t PATCH_PAYLOAD_VERSION = 2;
 static bool gRefreshing = false;
 
 enum StateType : uint8_t { ST_NUMBER=1, ST_TEXT=2, ST_BOOLEAN=3 };
-enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4 };
+enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5 };
 enum EventKind : uint8_t { EV_CLICKED=1, EV_CHANGED=2 };
 enum ActionKind : uint8_t { ACT_OPEN=1, ACT_CLOSE=2, ACT_CHANGE=3 };
 enum OpKind : uint8_t { OP_SET=1, OP_ADD=2, OP_REMOVE=3, OP_CLEAR=4 };
@@ -34,6 +34,7 @@ struct Control {
   std::string id;
   std::string text;
   std::string binding;
+  std::vector<std::string> options;
   int x = 0, y = 0, width = 0, height = 0;
   int formIndex = -1;
   GtkWidget* widget = nullptr;
@@ -211,12 +212,16 @@ static bool ParsePayload(const std::vector<uint8_t>& bytes) {
         control.id = reader.text();
         control.text = reader.text();
         control.binding = reader.text();
+        const uint32_t optionCount = reader.u32();
+        if (optionCount > 10000) return false;
+        for (uint32_t o = 0; o < optionCount; ++o) control.options.push_back(reader.text());
         control.x = reader.i32();
         control.y = reader.i32();
         control.width = reader.i32();
         control.height = reader.i32();
         control.formIndex = formIndex;
-        if (control.kind < CK_TEXT || control.kind > CK_CHECKBOX || control.width <= 0 || control.height <= 0 || control.width > 10000 || control.height > 10000) return false;
+        if (control.kind < CK_TEXT || control.kind > CK_COMBO || control.width <= 0 || control.height <= 0 || control.width > 10000 || control.height > 10000) return false;
+        if (control.kind == CK_COMBO && control.options.size() < 2) return false;
         if (!control.id.empty()) {
           if (gControlById.count(control.id)) return false;
           gControlById[control.id] = (int)gControls.size();
@@ -275,7 +280,7 @@ static bool ParsePayload(const std::vector<uint8_t>& bytes) {
     if (!reader.done()) return false;
 
     for (const Control& control : gControls) {
-      if (control.kind == CK_INPUT) {
+      if (control.kind == CK_INPUT || control.kind == CK_COMBO) {
         auto it = gStateByName.find(control.binding);
         if (it == gStateByName.end() || gStates[it->second].type != ST_TEXT) return false;
       } else if (control.kind == CK_CHECKBOX) {
@@ -378,6 +383,10 @@ static void DispatchControl(Control& control, uint8_t eventKind) {
     } else if (event.valueType == 2 && control.kind == CK_INPUT) {
       const char* value = gtk_entry_get_text(GTK_ENTRY(control.widget));
       eventText = value ? value : "";
+    } else if (event.valueType == 2 && control.kind == CK_COMBO) {
+      gchar* value = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(control.widget));
+      eventText = value ? value : "";
+      if (value) g_free(value);
     }
     ExecuteEvent(event, eventBool, eventText);
   }
@@ -394,6 +403,11 @@ static void OnToggled(GtkToggleButton*, gpointer data) {
 }
 
 static void OnChanged(GtkEditable*, gpointer data) {
+  auto* control = static_cast<Control*>(data);
+  if (control) DispatchControl(*control, EV_CHANGED);
+}
+
+static void OnComboChanged(GtkComboBox*, gpointer data) {
   auto* control = static_cast<Control*>(data);
   if (control) DispatchControl(*control, EV_CHANGED);
 }
@@ -429,6 +443,11 @@ static void RefreshUI() {
       const char* old = gtk_button_get_label(GTK_BUTTON(control.widget));
       if (!old || value != old) gtk_button_set_label(GTK_BUTTON(control.widget), value.c_str());
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(control.widget), gStates[gStateByName[control.binding]].boolean ? TRUE : FALSE);
+    } else if (control.kind == CK_COMBO) {
+      const std::string& value = gStates[gStateByName[control.binding]].text;
+      int selected = -1;
+      for (size_t i = 0; i < control.options.size(); ++i) if (control.options[i] == value) { selected = (int)i; break; }
+      gtk_combo_box_set_active(GTK_COMBO_BOX(control.widget), selected);
     }
   }
   gRefreshing = false;
@@ -445,12 +464,16 @@ static GtkWidget* CreateControlWidget(Control& control) {
     widget = gtk_entry_new();
   } else if (control.kind == CK_CHECKBOX) {
     widget = gtk_check_button_new_with_label("");
+  } else if (control.kind == CK_COMBO) {
+    widget = gtk_combo_box_text_new();
+    for (const auto& option : control.options) gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), option.c_str());
   }
   if (!widget) return nullptr;
   gtk_widget_set_size_request(widget, control.width, control.height);
   if (control.kind == CK_BUTTON) g_signal_connect(widget, "clicked", G_CALLBACK(OnClicked), &control);
   else if (control.kind == CK_INPUT) g_signal_connect(widget, "changed", G_CALLBACK(OnChanged), &control);
   else if (control.kind == CK_CHECKBOX) g_signal_connect(widget, "toggled", G_CALLBACK(OnToggled), &control);
+  else if (control.kind == CK_COMBO) g_signal_connect(widget, "changed", G_CALLBACK(OnComboChanged), &control);
   control.widget = widget;
   return widget;
 }
@@ -510,6 +533,15 @@ static int RunSmoke() {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(control.widget), target ? TRUE : FALSE);
     PumpGtk();
     if (gStates[stateIt->second].boolean != target) return 73;
+  }
+  if (gControlById.count("size")) {
+    Control& control = gControls[gControlById["size"]];
+    auto stateIt = gStateByName.find("size");
+    if (!control.widget || control.kind != CK_COMBO || control.options.empty() || stateIt == gStateByName.end()) return 75;
+    const int last = (int)control.options.size() - 1;
+    gtk_combo_box_set_active(GTK_COMBO_BOX(control.widget), last);
+    PumpGtk();
+    if (gStates[stateIt->second].text != control.options[(size_t)last]) return 76;
   }
   if (gControlById.count("close_settings") && settingsIt != gFormById.end()) {
     if (!Click("close_settings") || gtk_widget_get_visible(gForms[settingsIt->second].window)) return 74;
