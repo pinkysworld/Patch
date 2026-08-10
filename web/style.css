@@ -207,6 +207,12 @@ pre {
 .patch-text { margin: 0; font-size: 18px; }
 .patch-button { padding: 8px 15px; }
 .patch-input { width: 100%; max-width: 280px; }
+.patch-tabs { width: 100%; min-height: 180px; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); }
+.patch-tabs-list { display: flex; align-items: center; gap: 2px; min-height: 39px; padding: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); background: var(--soft); }
+.patch-tab-button { min-height: 30px; padding: 5px 10px; background: transparent; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.patch-tab-button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-strong); }
+.patch-tab-panel { min-height: 138px; padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; overflow: auto; }
+.patch-tab-panel > .patch-input { max-width: 280px; }
 
 .designer-view { height: calc(100% - 42px); min-height: 566px; display: flex; flex-direction: column; }
 .designer-toolbar {
@@ -375,4 +381,8 @@ details[open] summary::after { content: "−"; }
   button { background: #f4f4f5; color: #18181b; }
   .patch-window { background: #f7f7f8; color: #18181b; }
   .patch-window-title { background: #ececee; border-color: #d4d4d8; }
+  .patch-tabs { background: #f7f7f8; color: #18181b; border-color: #d4d4d8; }
+  .patch-tabs-list { background: #ececee; border-color: #d4d4d8; }
+  .patch-tab-button { color: #71717a; }
+  .patch-tab-button[aria-selected="true"] { background: #fff; color: #18181b; }
 }
