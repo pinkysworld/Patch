@@ -20,13 +20,16 @@ on:
       - tests/gtk-gui.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
+      - tests/menu-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
+      - examples/menu-dialog-window.patch
       - package.json
       - docs/NATIVE_GUI.md
+      - docs/MENUS_DIALOGS.md
       - .github/workflows/native-gui-unified.yml
   push:
     branches: [main]
@@ -46,13 +49,16 @@ on:
       - tests/gtk-gui.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
+      - tests/menu-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
+      - examples/menu-dialog-window.patch
       - package.json
       - docs/NATIVE_GUI.md
+      - docs/MENUS_DIALOGS.md
       - .github/workflows/native-gui-unified.yml
 
 concurrency:
@@ -103,6 +109,9 @@ jobs:
       - name: Build and execute native Radio app through one command
         shell: bash
         run: node scripts/build-native-gui.js examples/radio-window.patch UnifiedPatchRadio dist-unified-radio --smoke
+      - name: Build and execute native Menu Dialog app through one command
+        shell: bash
+        run: node scripts/build-native-gui.js examples/menu-dialog-window.patch UnifiedPatchMenuDialog dist-unified-menu-dialog --smoke
       - name: Verify selected backend metadata
         shell: bash
         run: |
@@ -110,13 +119,13 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const expected = process.platform === 'win32' ? 'native-win32' : process.platform === 'darwin' ? 'native-appkit' : 'native-gtk3';
-          for (const dir of ['dist-unified','dist-unified-combo','dist-unified-listbox','dist-unified-tabs','dist-unified-radio']) {
+          for (const dir of ['dist-unified','dist-unified-combo','dist-unified-listbox','dist-unified-tabs','dist-unified-radio','dist-unified-menu-dialog']) {
             const files = fs.readdirSync(dir).filter(name => name.endsWith('-build.json'));
             if (files.length !== 1) throw new Error(`Expected one build metadata file in ${dir}, got: ${files.join(', ')}`);
             const meta = JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
             if (meta.shell !== expected) throw new Error(`Expected ${expected}, got ${meta.shell}`);
             if (meta.electron !== false) throw new Error('Unified native build must record electron=false.');
-            if (meta.nativeGuiIrVersion !== '0.5') throw new Error(`Expected Native GUI IR 0.5, got ${meta.nativeGuiIrVersion}`);
+            if (meta.nativeGuiIrVersion !== '0.6') throw new Error(`Expected Native GUI IR 0.6, got ${meta.nativeGuiIrVersion}`);
           }
-          console.log(`Unified host selected ${expected} for Forms, ComboBox, ListBox, Tabs and Radio`);
+          console.log(`Unified host selected ${expected} for Forms, ComboBox, ListBox, Tabs, Radio and Menu/Dialog`);
           NODE
