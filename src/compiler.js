@@ -67,6 +67,12 @@ function lowerNode(node) {
       return op('TABS', node, { id: node.id, body: lowerBlock(node.body ?? []) });
     case 'tabPage':
       return op('TAB_PAGE', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body ?? []) });
+    case 'menu':
+      return op('MENU', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body ?? []) });
+    case 'menuItem':
+      return op('MENU_ITEM', node, { id: node.id, textExpr: node.textExpr });
+    case 'dialog':
+      return op('DIALOG', node, { titleExpr: node.titleExpr, messageExpr: node.messageExpr });
     case 'uiControl': {
       const fields = { control: node.control, id: node.id, textExpr: node.textExpr };
       if (Array.isArray(node.options)) fields.options = [...node.options];
@@ -111,8 +117,10 @@ function inferRuntimeCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
-    if (['window', 'uiControl', 'tabs', 'tabPage', 'event', 'openForm', 'closeForm'].includes(node.kind)) caps.add('ui.window');
+    if (['window', 'uiControl', 'tabs', 'tabPage', 'menu', 'menuItem', 'dialog', 'event', 'openForm', 'closeForm'].includes(node.kind)) caps.add('ui.window');
     if (node.kind === 'tabs' || node.kind === 'tabPage') caps.add('ui.tabs');
+    if (node.kind === 'menu' || node.kind === 'menuItem') caps.add('ui.menu');
+    if (node.kind === 'dialog') caps.add('ui.dialog');
     if (node.kind === 'uiControl' && node.control === 'radio') caps.add('ui.radio');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
