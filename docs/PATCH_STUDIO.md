@@ -2,7 +2,7 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal remains QuickBASIC/Visual-Basic/Delphi-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## Current beta.32 product surface
+## What works in 0.2 beta.32
 
 Patch Studio provides source editing/local autosave, Console and Window Run, a source-backed visual Designer, named Forms, drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
@@ -78,7 +78,7 @@ The current beta.32 native Menu/Dialog cache key is `patch-studio-0.2-beta.32-fo
 
 The ordinary Studio does not need Lean or expose beta.32 proof machinery. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
 
-Native UI product work does not expand those assurance claims. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+The reproducible evidence set still includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`; native UI product work does not expand those assurance claims. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
 
 ## Next work
 
