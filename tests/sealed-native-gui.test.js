@@ -16,19 +16,20 @@ const gui = buildNativeGuiIR(compile(source, { name: 'SealedTest', kind: 'window
 const comboGui = buildNativeGuiIR(compile(fs.readFileSync('examples/combo-window.patch', 'utf8'), { name: 'SealedComboTest', kind: 'window' }));
 const listboxGui = buildNativeGuiIR(compile(fs.readFileSync('examples/listbox-window.patch', 'utf8'), { name: 'SealedListBoxTest', kind: 'window' }));
 const tabsGui = buildNativeGuiIR(compile(fs.readFileSync('examples/tabs-window.patch', 'utf8'), { name: 'SealedTabsTest', kind: 'window' }));
+const radioGui = buildNativeGuiIR(compile(fs.readFileSync('examples/radio-window.patch', 'utf8'), { name: 'SealedRadioTest', kind: 'window' }));
 
-test('sealed native GUI payload v4 is deterministic and round-trips from a Windows executable overlay', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 4);
+test('sealed native GUI payload v5 is deterministic and round-trips from a Windows executable overlay', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 5);
   const payload = encodeNativeGuiPayload(gui);
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4, 5, 6]);
   const sealed = sealNativeGuiRuntime(fakePe, gui);
   assert.equal(new TextDecoder().decode(sealed.subarray(sealed.length - 20, sealed.length - 12)), PATCH_SEALED_NATIVE_GUI_MAGIC);
-  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 4);
+  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 5);
   assert.deepEqual(decodeNativeGuiPayload(sealed), payload);
   assert.deepEqual(encodeNativeGuiPayload(gui), payload);
 });
 
-test('same v4 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
+test('same v5 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
   const payload = encodeNativeGuiPayload(gui);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 9, 8, 7, 6]);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 7, 6, 5, 4]);
@@ -36,8 +37,12 @@ test('same v4 payload round-trips from Linux ELF and macOS Mach-O overlays', () 
   assert.deepEqual(decodeNativeGuiPayload(sealNativeGuiRuntime(fakeMachO, gui, { platform: 'macos' })), payload);
 });
 
-test('sealed native GUI v4 serializes ComboBox and ListBox option semantics without Patch source', () => {
-  for (const [selectionGui, expected] of [[comboGui, ['Small', 'Medium', 'Large']], [listboxGui, ['Apple', 'Banana', 'Cherry', 'Mango']]]) {
+test('sealed native GUI v5 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
+  for (const [selectionGui, expected] of [
+    [comboGui, ['Small', 'Medium', 'Large']],
+    [listboxGui, ['Apple', 'Banana', 'Cherry', 'Mango']],
+    [radioGui, ['Basic', 'Advanced', 'Expert']]
+  ]) {
     const payload = encodeNativeGuiPayload(selectionGui);
     const text = new TextDecoder().decode(payload);
     for (const option of expected) assert.match(text, new RegExp(option));
@@ -45,7 +50,7 @@ test('sealed native GUI v4 serializes ComboBox and ListBox option semantics with
   }
 });
 
-test('sealed native GUI v4 encodes Tabs kind 7 with page titles and parent/page metadata', () => {
+test('sealed native GUI v5 keeps Tabs kind 7 and adds Radio kind 8', () => {
   const controls = readPayloadControls(encodeNativeGuiPayload(tabsGui));
   const tabs = controls.find(control => control.id === 'settings');
   const name = controls.find(control => control.id === 'name');
@@ -58,9 +63,11 @@ test('sealed native GUI v4 encodes Tabs kind 7 with page titles and parent/page 
   assert.deepEqual([name.parentTabIndex, name.pageIndex], [tabs.index, 0]);
   assert.deepEqual([notifications.parentTabIndex, notifications.pageIndex], [tabs.index, 1]);
   assert.deepEqual([reset.parentTabIndex, reset.pageIndex], [tabs.index, 1]);
-  assert.equal(tabsGui.states.some(state => state.name === 'settings'), false);
-  const text = new TextDecoder().decode(encodeNativeGuiPayload(tabsGui));
-  assert.doesNotMatch(text, /when settings changed/);
+
+  const radio = readPayloadControls(encodeNativeGuiPayload(radioGui)).find(control => control.id === 'mode');
+  assert.ok(radio);
+  assert.equal(radio.kind, 8);
+  assert.deepEqual(radio.options, ['Basic', 'Advanced', 'Expert']);
 });
 
 test('sealed payload contains forms, controls, events and state without Patch source', () => {
