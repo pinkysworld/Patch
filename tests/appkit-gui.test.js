@@ -14,10 +14,10 @@ const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', im
 const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch', import.meta.url), 'utf8');
 const tabsSource = fs.readFileSync(new URL('../examples/tabs-window.patch', import.meta.url), 'utf8');
 
-test('AppKit backend consumes Native GUI IR v0.4', () => {
+test('AppKit backend consumes Native GUI IR v0.5', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeMacNavigation' }));
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.4');
+  assert.equal(ir.version, '0.5');
   const mm = emitAppKitGuiObjCpp(ir);
   assert.match(mm, /NSWindow/);
   assert.match(mm, /NSButton/);
@@ -54,7 +54,7 @@ test('AppKit backend lowers numeric Patch change and text interpolation', () => 
   assert.match(mm, /patch_state_count \+= 1/);
 });
 
-test('AppKit build script emits auditable v0.4 native source and metadata', () => {
+test('AppKit build script emits auditable v0.5 native source and metadata', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-appkit-emit-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/build-native-appkit.js', 'examples/tabs-window.patch', 'NativeMacTabs', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
@@ -65,7 +65,7 @@ test('AppKit build script emits auditable v0.4 native source and metadata', () =
     assert.equal(meta.shell, 'native-appkit');
     assert.equal(meta.electron, false);
     assert.equal(meta.framework, 'AppKit');
-    assert.equal(meta.nativeGuiIrVersion, '0.4');
+    assert.equal(meta.nativeGuiIrVersion, '0.5');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 1);
     assert.equal(meta.events, 3);
