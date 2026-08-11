@@ -6,6 +6,7 @@ const CONTROL_DEFAULTS = {
   button: { width: 120, height: 36 },
   input: { width: 220, height: 36 },
   checkbox: { width: 220, height: 36 },
+  radio: { width: 220, height: 84 },
   combo: { width: 220, height: 36 },
   listbox: { width: 220, height: 120 },
   tabs: { width: 420, height: 240 }
@@ -165,8 +166,8 @@ export function updateDesignerControl(source, selector, changes = {}) {
   }
 
   let nextOptions = control.options;
-  if (['combo', 'listbox'].includes(control.type) && Object.hasOwn(changes, 'options')) {
-    const label = control.type === 'combo' ? 'combo' : 'listbox';
+  if (['combo', 'listbox', 'radio'].includes(control.type) && Object.hasOwn(changes, 'options')) {
+    const label = control.type === 'radio' ? 'radio group' : control.type;
     if (!Array.isArray(changes.options) || changes.options.length < 2) throw new Error(`A ${label} needs at least two options.`);
     nextOptions = changes.options.map(option => String(option ?? '').trim()).filter(Boolean);
     if (nextOptions.length < 2) throw new Error(`A ${label} needs at least two options.`);
@@ -220,7 +221,7 @@ function findControl(controls, selector) {
     throw new Error('Designer selection is invalid.');
   }
   const control = controls.find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
-  if (!control) throw new Error('Designer selection no longer exists in Patch source.');
+  if (!control) throw new Error('Designer window selection no longer exists in Patch source.');
   return control;
 }
 
@@ -305,6 +306,7 @@ function makeControl(type, lines, index) {
   if (type === 'button') return formatControl(type, nextId(lines, 'button'), '"Button"', layout);
   if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
   if (type === 'checkbox') return formatControl(type, nextId(lines, 'checkbox'), '"Checkbox"', layout);
+  if (type === 'radio') return formatControl(type, nextId(lines, 'radio'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'combo') return formatControl(type, nextId(lines, 'combo'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'listbox') return formatControl(type, nextId(lines, 'listbox'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   throw new Error(`Designer cannot add '${type}' yet.`);
@@ -316,6 +318,7 @@ function formatControl(type, id, textExpr, layout, options = null) {
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
   else if (type === 'input') core = `input ${id}`;
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
+  else if (type === 'radio') core = `radio ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
