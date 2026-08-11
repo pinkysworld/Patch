@@ -1,6 +1,6 @@
 import { flattenNativeGuiControls, validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
 
-export const PATCH_GTK_GUI_BACKEND_VERSION = '0.4';
+export const PATCH_GTK_GUI_BACKEND_VERSION = '0.5';
 
 export function emitGtkGuiCpp(input) {
   const ir = validateNativeGuiIR(input);
@@ -25,6 +25,7 @@ export function emitGtkGuiCpp(input) {
   const eventFunctions = ir.events.map((event, index) => emitEventFunction(event, index, forms, states)).join('\n\n');
   const clickedDispatch = ir.events.map((event, index) => emitClickedDispatch(event, index, controlsById)).filter(Boolean).join('\n');
   const toggledDispatch = ir.events.map((event, index) => emitToggledDispatch(event, index, controlsById)).filter(Boolean).join('\n');
+  const radioDispatch = ir.events.map((event, index) => emitRadioDispatch(event, index, controlsById)).filter(Boolean).join('\n');
   const changedDispatch = ir.events.map((event, index) => emitChangedDispatch(event, index, controlsById)).filter(Boolean).join('\n');
   const comboDispatch = ir.events.map((event, index) => emitComboDispatch(event, index, controlsById)).filter(Boolean).join('\n');
   const listDispatch = ir.events.map((event, index) => emitListDispatch(event, index, controlsById)).filter(Boolean).join('\n');
@@ -43,7 +44,7 @@ export function emitGtkGuiCpp(input) {
 
 static bool gRefreshing = false;
 
-enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7 };
+enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7, CK_RADIO=8 };
 struct FormDef { const char *formId; const char *title; int width; int height; bool visible; };
 struct ControlDef { int commandId; int formIndex; ControlKind kind; const char *name; int x; int y; int width; int height; int parentTabIndex; int pageIndex; };
 
@@ -62,6 +63,7 @@ ${controlDefs || '  {0,0,CK_TEXT,"",0,0,0,0,-1,-1}'}
 static const int CONTROL_COUNT = ${controls.length};
 static GtkWidget *gControls[${Math.max(1, controls.length)}] = {};
 static std::vector<GtkWidget*> gTabPages[${Math.max(1, controls.length)}];
+static std::vector<GtkWidget*> gRadioItems[${Math.max(1, controls.length)}];
 
 static std::string PatchNumber(double value) {
   if (std::isfinite(value) && std::floor(value) == value) return std::to_string((long long)value);
@@ -84,6 +86,11 @@ static void OnToggled(GtkToggleButton *button, gpointer data) {
   if (gRefreshing) return;
   int commandId = GPOINTER_TO_INT(data);
 ${toggledDispatch || '  (void)commandId; (void)button;'}
+}
+static void OnRadioToggled(GtkToggleButton *button, gpointer data) {
+  if (gRefreshing || !gtk_toggle_button_get_active(button)) return;
+  int commandId = GPOINTER_TO_INT(data);
+${radioDispatch || '  (void)commandId; (void)button;'}
 }
 static void OnChanged(GtkEditable *editable, gpointer data) {
   if (gRefreshing) return;
@@ -227,6 +234,11 @@ function emitToggledDispatch(event, index, controls) {
   const control = controls.get(event.control);
   return control?.type === 'checkbox' ? `  if (commandId == ${control.commandId}) { Event_${index}(gtk_toggle_button_get_active(button)); return; }` : '';
 }
+function emitRadioDispatch(event, index, controls) {
+  const control = controls.get(event.control);
+  if (control?.type !== 'radio') return '';
+  return `  if (commandId == ${control.commandId}) { const char *value = gtk_button_get_label(GTK_BUTTON(button)); Event_${index}(value ? std::string(value) : std::string()); return; }`;
+}
 function emitChangedDispatch(event, index, controls) {
   const control = controls.get(event.control);
   return control?.type === 'input' ? `  if (commandId == ${control.commandId}) { Event_${index}(gtk_entry_get_text(GTK_ENTRY(editable))); return; }` : '';
@@ -262,6 +274,10 @@ function emitRefresh(control, index, states) {
     const checks = control.options.map((option, optionIndex) => `if (${stateName(state.name)} == ${cString(option)}) selected = ${optionIndex};`).join(' else ');
     return `  if (gControls[${index}]) { int selected = -1; ${checks} GtkListBoxRow *row = selected >= 0 ? gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${index}]), selected) : nullptr; gtk_list_box_select_row(GTK_LIST_BOX(gControls[${index}]), row); }`;
   }
+  if (control.type === 'radio') {
+    const state = states.get(control.binding);
+    return `  for (GtkWidget *item : gRadioItems[${index}]) { const char *label = gtk_button_get_label(GTK_BUTTON(item)); gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(item), label && ${stateName(state.name)} == label ? TRUE : FALSE); }`;
+  }
   return '';
 }
 function emitCreateControl(control, index) {
@@ -274,6 +290,15 @@ function emitCreateControl(control, index) {
       `    { GtkWidget *page = gtk_fixed_new(); GtkWidget *label = gtk_label_new(${cString(title)}); gtk_notebook_append_page(GTK_NOTEBOOK(control), page, label); gTabPages[${index}].push_back(page); }`
     ).join('\n');
     return `  if (${control.formIndex} == index) {\n    GtkWidget *control = gtk_notebook_new();\n    gtk_widget_set_size_request(control, ${width}, ${height});\n    gtk_fixed_put(GTK_FIXED(fixed), control, ${x}, ${y});\n${pages}\n    gtk_notebook_set_current_page(GTK_NOTEBOOK(control), 0);\n    gControls[${index}] = control;\n  }`;
+  }
+  if (control.type === 'radio') {
+    const target = control.parentTabIndex >= 0
+      ? `GtkWidget *parent = gTabPages[${control.parentTabIndex}].at(${control.pageIndex}); gtk_fixed_put(GTK_FIXED(parent), control, ${x}, ${y});`
+      : `gtk_fixed_put(GTK_FIXED(fixed), control, ${x}, ${y});`;
+    const items = control.options.map((option, optionIndex) =>
+      `    GtkWidget *radio_${index}_${optionIndex} = gtk_radio_button_new_with_label(group, ${cString(option)}); group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radio_${index}_${optionIndex})); gtk_box_pack_start(GTK_BOX(control), radio_${index}_${optionIndex}, FALSE, FALSE, 0); g_signal_connect(radio_${index}_${optionIndex}, "toggled", G_CALLBACK(OnRadioToggled), GINT_TO_POINTER(${control.commandId})); gRadioItems[${index}].push_back(radio_${index}_${optionIndex});`
+    ).join('\n');
+    return `  if (${control.formIndex} == index) {\n    GtkWidget *control = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0); GSList *group = nullptr;\n${items}\n    gtk_widget_set_size_request(control, ${width}, ${height});\n    ${target}\n    gControls[${index}] = control;\n  }`;
   }
   let create = '';
   if (control.type === 'text') create = 'GtkWidget *control = gtk_label_new(""); gtk_label_set_xalign(GTK_LABEL(control), 0.0f);';
@@ -305,6 +330,8 @@ function emitSmoke(forms, controls, states) {
   const comboState = states.get('size');
   const listbox = controls.get('fruit');
   const listboxState = states.get('fruit');
+  const radio = controls.get('mode');
+  const radioState = states.get('mode');
   const tabs = controls.get('settings');
   const lines = ['static int RunPatchSmoke() {', `  if (!gForms[${mainIndex}] || !gtk_widget_get_visible(gForms[${mainIndex}])) return 70;`];
   if (settingsIndex !== undefined) lines.push(`  if (gtk_widget_get_visible(gForms[${settingsIndex}])) return 71;`);
@@ -312,6 +339,7 @@ function emitSmoke(forms, controls, states) {
   if (checkbox && checkboxState?.type === 'boolean') { lines.push(`  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(gControls[${checkbox.handleIndex}]), TRUE);`); lines.push(`  if (!${stateName(checkboxState.name)}) return 73;`); }
   if (combo && comboState?.type === 'text' && combo.options.length) { const last = combo.options.length - 1; lines.push(`  gtk_combo_box_set_active(GTK_COMBO_BOX(gControls[${combo.handleIndex}]), ${last});`); lines.push(`  if (${stateName(comboState.name)} != ${cString(combo.options[last])}) return 75;`); }
   if (listbox && listboxState?.type === 'text' && listbox.options.length) { const last = listbox.options.length - 1; lines.push(`  GtkListBoxRow *listRow = gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${listbox.handleIndex}]), ${last});`); lines.push(`  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${listbox.handleIndex}]), listRow);`); lines.push(`  if (${stateName(listboxState.name)} != ${cString(listbox.options[last])}) return 76;`); }
+  if (radio && radioState?.type === 'text' && radio.options.length) { const last = radio.options.length - 1; lines.push(`  if ((int)gRadioItems[${radio.handleIndex}].size() != ${radio.options.length}) return 81;`); lines.push(`  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(gRadioItems[${radio.handleIndex}][${last}]), TRUE);`); lines.push(`  if (${stateName(radioState.name)} != ${cString(radio.options[last])}) return 82;`); }
   if (tabs?.type === 'tabs' && tabs.pageTitles.length > 1) {
     lines.push(`  if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(gControls[${tabs.handleIndex}])) != ${tabs.pageTitles.length}) return 77;`);
     lines.push(`  gtk_notebook_set_current_page(GTK_NOTEBOOK(gControls[${tabs.handleIndex}]), 1);`);
@@ -321,7 +349,7 @@ function emitSmoke(forms, controls, states) {
   lines.push(`  gtk_widget_destroy(gForms[${mainIndex}]);`, '  return 0;', '}');
   return lines.join('\n');
 }
-function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS' })[type] ?? 'CK_TEXT'; }
+function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS', radio: 'CK_RADIO' })[type] ?? 'CK_TEXT'; }
 function stateName(name) { return `patch_state_${identifier(name)}`; }
 function identifier(value) { return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&'); }
 function layoutInt(value, fallback) { return Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : fallback; }
