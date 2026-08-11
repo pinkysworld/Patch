@@ -79,6 +79,11 @@ export function parse(source) {
     if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
     if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'button',textExpr:m[1],id:m[2],line:row.line},ui.layout);
     if ((m = ui.core.match(/^checkbox\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'checkbox',textExpr:m[1],id:m[2],line:row.line},ui.layout);
+    if ((m = ui.core.match(/^radio\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
+      const options=splitArgs(m[1]);
+      if(options.length<2)throw new PatchSyntaxError('A radio group needs at least two options.',row.line);
+      return uiControl({control:'radio',textExpr:null,options,id:m[2],line:row.line},ui.layout);
+    }
     if ((m = ui.core.match(/^combo\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
       const options=splitArgs(m[1]);
       if(options.length<2)throw new PatchSyntaxError('A combo needs at least two options.',row.line);
