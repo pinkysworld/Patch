@@ -4,7 +4,7 @@ Patch Studio is the browser-first IDE for Patch. The product goal is QuickBASIC/
 
 ## What works in 0.2 beta.32
 
-Patch Studio provides source editing/local autosave, Console and Window Run, a source-backed visual Designer, named Forms, drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox controls, Tabs Stage 1, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing/local autosave, Console and Window Run, a source-backed visual Designer, named Forms, drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required.
 
@@ -70,7 +70,7 @@ when close_settings clicked:
 
 The first named Form starts visible. Additional named Forms start hidden until `open <name>`. `close <name>` hides them again. Form visibility is transient UI lifecycle and does not create Change History entries.
 
-## Tabs Stage 1
+## Tabs
 
 Tabs are nested UI containers rather than persistent selection controls:
 
@@ -84,11 +84,17 @@ window "Settings" as main size 620, 380:
       checkbox "Notifications" as notifications
 ```
 
-The active page is renderer-local transient UI state. Switching from one page to another does not create a Patch variable and does not add a Change History entry.
+The active page is transient UI state. Switching pages does not create a Patch variable and does not add a Change History entry. Tabs itself exposes no Patch `changed` event.
 
-Controls inside pages are still ordinary Patch controls. Their events use the existing semantic paths, so an input or checkbox can persist a value only through an explicit `change`.
+Controls inside pages are ordinary Patch controls. Their events use the existing semantic paths, so an Input, Checkbox, Button, ComboBox or ListBox can persist state only through an explicit `change`.
 
-Stage 1 requires at least two pages, uses flow layout for controls inside a page, and does not expose an event on the Tabs container itself. The Tabs container id and top-level geometry remain source-backed and editable in the Designer.
+Patch Studio and Standalone Window Web use renderer-local page selection. Native GUI IR 0.4 preserves the actual page hierarchy and maps it to real native containers on all three desktop platforms:
+
+- Windows: `WC_TABCONTROLW` with `TCN_SELCHANGE`;
+- macOS: `NSTabView` with native `NSTabViewItem` page views;
+- Linux: `GtkNotebook` with native page containers.
+
+The Tabs container id and top-level geometry remain source-backed and editable in the Designer. Controls inside a page use flow layout in the current language contract, and nested Tabs are not yet supported.
 
 ## Typed transient GUI values
 
@@ -116,31 +122,32 @@ ListBox is intentionally single-selection in this stage. Multi-selection will re
 
 ## Standalone Window Web
 
-Standalone Window Web runtime **v0.8** supports named Form lifecycle, Text, Button, Input, Checkbox, ComboBox, ListBox and Tabs Stage 1. Nested page controls use the same event/change semantics as controls outside Tabs.
+Standalone Window Web runtime **v0.8** supports named Form lifecycle, Text, Button, Input, Checkbox, ComboBox, ListBox and Tabs. Nested page controls use the same event/change semantics as controls outside Tabs.
 
 Tabs page selection lives only in a browser-local `Map`; it is not added to Patch application state.
 
 ## Direct native desktop path
 
-Native GUI IR **v0.3** is the checked platform-neutral contract used by the recommended native Window build path.
+Native GUI IR **v0.4** is the checked platform-neutral contract used by the recommended native Window build path.
 
 Current direct-native mappings include:
 
 - Text/Button/Input/Checkbox on Win32, AppKit and GTK3;
 - ComboBox as Win32 `COMBOBOX`, AppKit `NSPopUpButton` and GTK3 `GtkComboBoxText`;
 - ListBox as Win32 `LISTBOX`, AppKit `NSTableView` and GTK3 `GtkListBox`;
+- Tabs as Win32 `WC_TABCONTROLW`, AppKit `NSTabView` and GTK3 `GtkNotebook`;
 - named Form open/close lifecycle;
 - typed changed values and explicit semantic changes.
 
-Token-free Studio builds use precompiled native runtime templates with checked sealed payload **v3**:
+Token-free Studio builds use precompiled native runtime templates with checked sealed payload **v4**:
 
 - Windows: one native Win32 `.exe`;
 - Linux: native GTK3 ELF executable in a ZIP;
 - macOS: unsigned universal AppKit `.app` ZIP with arm64 and x86_64 slices.
 
-Tabs is deliberately **not** in Native GUI IR v0.3. A project containing Tabs fails closed during native preflight instead of silently dropping the container or silently switching to Electron. Native Tabs parity is a separate versioned container stage.
+Payload v4 serializes Tabs page titles and implementation-only parent/page placement metadata so the tiny native runtimes reconstruct the same hierarchy. It deliberately does not serialize a selected-page Patch value.
 
-The macOS no-token app remains unsigned because sealing the project payload changes the executable after the generic runtime is compiled. Signing/notarization is a separate packaging milestone.
+The native runtime releases are `native-win32-runtime-v0.4`, `native-linux-runtime-v0.4` and `native-macos-runtime-v0.4`. The macOS no-token app remains unsigned because sealing the project payload changes the executable after the generic runtime is compiled. Signing/notarization is a separate packaging milestone.
 
 ## Explicit compatibility desktop path
 
@@ -162,7 +169,7 @@ FreeBSD Console      Console only        portable C99 path
 Standalone Web App   Console or Window   browser-local build
 ```
 
-For Window projects, the recommended path is direct native when the program fits Native GUI IR v0.3. Unsupported native controls/containers fail closed. The explicit compatibility mode covers the broader Studio/Web surface while native parity is extended.
+For supported Window programs, the recommended path is direct native through Native GUI IR v0.4. Unsupported native behavior fails closed. The explicit compatibility mode remains available for the broader Studio/Web surface while native parity continues to expand.
 
 ## PWA updates
 
@@ -174,6 +181,6 @@ The `.patch` file remains the reviewable representation of behavior and GUI stru
 
 ## Next work
 
-Product priorities include native Tabs parity, radio buttons, menus, dialogs, table/grid, project tree/source files, alignment guides, anchors/docking, multi-select, project import/export, signing/notarization and a more portable Linux distribution bundle.
+Product priorities include radio buttons, menus, dialogs, table/grid, project tree/source files, alignment guides, anchors/docking, multi-select, project import/export, signing/notarization and a more portable Linux distribution bundle.
 
 Research priorities remain controlled overhead measurements, systematic related work, a broader application/security corpus, reproducibility, and further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
