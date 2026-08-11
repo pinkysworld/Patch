@@ -82,7 +82,7 @@ static void ShowInfoDialog(int formIndex, const char *title, const char *message
   if (gSmokeMode) { gLastDialogTitle = title ? title : ""; gLastDialogMessage = message ? message : ""; return; }
   GtkWidget *dialog = gtk_message_dialog_new(
     formIndex >= 0 && formIndex < FORM_COUNT ? GTK_WINDOW(gForms[formIndex]) : nullptr,
-    GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+    static_cast<GtkDialogFlags>(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
     GTK_MESSAGE_INFO,
     GTK_BUTTONS_OK,
     "%s", message ? message : "");
