@@ -4,8 +4,7 @@ import fs from 'node:fs';
 import { parse } from '../src/parser.js';
 import { compile } from '../src/compiler.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
-import { buildNativeGuiIR, flattenNativeGuiMenuItems } from '../src/native-gui-ir.js';
-import { encodeNativeGuiPayload, PATCH_SEALED_NATIVE_GUI_VERSION } from '../src/sealed-native-gui.js';
+import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 
 const source = fs.readFileSync('examples/menu-dialog-window.patch', 'utf8');
 
@@ -40,33 +39,14 @@ test('Change IR keeps menu/dialog explicit without changing Change IR 0.10', () 
   assert.equal(event.body[0].code, 'DIALOG');
 });
 
-test('Window validation registers menu item ids and permits clicked -> dialog only', () => {
+test('Window runtimes fail closed until Menu/Dialog native parity is implemented', () => {
   const compiled = compile(source, { name: 'MenuDialogDemo', kind: 'window' });
-  const summary = validateWindowRuntimeSupport(compiled);
-  assert.equal(summary.menuItems, 1);
-  assert.equal(summary.events, 1);
-  const invalid = compile('window "Demo":\n  menu "Help":\n    item "About" as about_item\n\nwhen about_item changed:\n  dialog "About", "No"\n', { kind: 'window' });
-  assert.throws(() => validateWindowRuntimeSupport(invalid), /does not support 'changed' on menuItem/);
-});
-
-test('Native GUI IR v0.6 stores menus outside geometric controls and lowers dialog action', () => {
-  const ir = buildNativeGuiIR(compile(source, { name: 'MenuDialogDemo', kind: 'window' }));
-  assert.equal(ir.version, '0.6');
-  assert.equal(ir.forms.length, 1);
-  assert.equal(ir.forms[0].controls.length, 1);
-  assert.deepEqual(ir.forms[0].menus, [{ title: 'Help', items: [{ type: 'menuItem', id: 'about_item', text: 'About' }] }]);
-  const items = flattenNativeGuiMenuItems(ir);
-  assert.deepEqual(items.map(item => [item.id, item.menuTitle, item.formIndex]), [['about_item', 'Help', 0]]);
-  assert.deepEqual(ir.events, [{
-    control: 'about_item', event: 'clicked', valueType: null, form: 'main', actions: [{ kind: 'dialog', form: 'main', title: 'About Patch', message: 'Native menus and informational dialogs' }]
-  }]);
-});
-
-test('sealed native GUI payload v6 carries menu/item/dialog text without Patch source', () => {
-  const ir = buildNativeGuiIR(compile(source, { name: 'MenuDialogDemo', kind: 'window' }));
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
-  const payload = encodeNativeGuiPayload(ir);
-  const text = new TextDecoder().decode(payload);
-  for (const marker of ['Help', 'about_item', 'About', 'About Patch', 'Native menus and informational dialogs']) assert.match(text, new RegExp(marker));
-  assert.doesNotMatch(text, /when about_item clicked/);
+  assert.throws(
+    () => validateWindowRuntimeSupport(compiled),
+    /about_item.*not defined|event .*about_item.*refers to a control/i
+  );
+  assert.throws(
+    () => buildNativeGuiIR(compiled),
+    /about_item.*not defined|event .*about_item.*refers to a control/i
+  );
 });
