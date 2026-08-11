@@ -1,0 +1,9 @@
+create text mode = "Basic"
+
+window "Radio demo" as main size 480, 280:
+  text "Mode" at 24, 24 size 220, 30
+  radio "Basic", "Advanced", "Expert" as mode at 24, 72 size 240, 90
+
+when mode changed:
+  change mode:
+    set = value
