@@ -49,14 +49,18 @@ export function parse(source) {
       const fields = childBlock(indent,row).map(n=>{ if(n.kind!=='field') throw new PatchSyntaxError('A thing can only contain fields like name = "Sam".',n.line); return n; });
       return {kind:'createThing',name:m[1],fields,line:row.line};
     }
-    if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
-      return windowNode(row,indent,m[1],m[2],Number(m[3]),Number(m[4]));
-    }
+    if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) return windowNode(row,indent,m[1],m[2],Number(m[3]),Number(m[4]));
     if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*:\s*$/))) return windowNode(row,indent,m[1],m[2]);
-    if ((m = row.text.match(/^window\s+(.+?)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
-      return windowNode(row,indent,m[1],null,Number(m[2]),Number(m[3]));
-    }
+    if ((m = row.text.match(/^window\s+(.+?)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) return windowNode(row,indent,m[1],null,Number(m[2]),Number(m[3]));
     if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return windowNode(row,indent,m[1],null);
+
+    if ((m = row.text.match(/^menu\s+(.+)\s*:\s*$/))) {
+      const items = childBlock(indent,row);
+      if (!items.length) throw new PatchSyntaxError('A menu needs at least one item.',row.line);
+      for (const item of items) if (item.kind !== 'menuItem') throw new PatchSyntaxError('A menu can only contain items like item "About" as about_item.',item.line);
+      return {kind:'menu',titleExpr:m[1],body:items,line:row.line};
+    }
+    if ((m = row.text.match(/^item\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) return {kind:'menuItem',textExpr:m[1],id:m[2],line:row.line};
 
     if ((m = row.text.match(/^tabs\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       const pages = childBlock(indent,row);
@@ -98,6 +102,11 @@ export function parse(source) {
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^open\s+([A-Za-z_]\w*)$/))) return {kind:'openForm',form:m[1],line:row.line};
     if ((m = row.text.match(/^close\s+([A-Za-z_]\w*)$/))) return {kind:'closeForm',form:m[1],line:row.line};
+    if ((m = row.text.match(/^dialog\s+(.+)$/))) {
+      const parts=splitArgs(m[1]);
+      if(parts.length!==2)throw new PatchSyntaxError('A dialog needs exactly a title and message, for example dialog "About", "Hello".',row.line);
+      return {kind:'dialog',titleExpr:parts[0],messageExpr:parts[1],line:row.line};
+    }
     if ((m = row.text.match(/^allow\s+([A-Za-z_]\w*)\s*:\s*$/))) {
       const rules=childBlock(indent,row); for(const rule of rules) if(rule.kind!=='capRule') throw new PatchSyntaxError('An allow block can only contain rules like player.score may increase up to 10.',rule.line);
       return {kind:'allow',name:m[1],rules,line:row.line};
@@ -140,16 +149,12 @@ export function parse(source) {
   return block(0);
 }
 
-function uiControl(fields,layout) {
-  return layout ? {kind:'uiControl',...fields,layout} : {kind:'uiControl',...fields};
-}
-
+function uiControl(fields,layout) { return layout ? {kind:'uiControl',...fields,layout} : {kind:'uiControl',...fields}; }
 function parseUILayout(text,line) {
   const m=String(text).match(/^(.*?)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?$/);
   if(!m||m[2]===undefined)return {core:String(text),layout:null};
   return {core:m[1],layout:parseLayoutNumbers(m[2],m[3],m[4],m[5],line)};
 }
-
 function parseLayoutNumbers(xText,yText,widthText,heightText,line) {
   const x=Number(xText); const y=Number(yText);
   const width=widthText===undefined?null:Number(widthText); const height=heightText===undefined?null:Number(heightText);
@@ -157,7 +162,6 @@ function parseLayoutNumbers(xText,yText,widthText,heightText,line) {
   if((width!==null&&width<16)||(height!==null&&height<16))throw new PatchSyntaxError('Control sizes must be at least 16 by 16.',line);
   return {x,y,width,height};
 }
-
 function parseParams(text,line) {
   if(!text.trim())return {names:[],ranges:{}};
   const names=[]; const ranges={};
@@ -176,7 +180,6 @@ function parseParams(text,line) {
   }
   return {names,ranges};
 }
-
 function splitArgs(text) {
   if(!text.trim()) return [];
   const out=[]; let current=''; let quote=null; let depth=0;
