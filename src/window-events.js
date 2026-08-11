@@ -1,14 +1,14 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-export const PATCH_WINDOW_EVENTS_VERSION = '0.4';
+export const PATCH_WINDOW_EVENTS_VERSION = '0.5';
 
 /**
  * Execute one Patch Window event with transient event-local data.
  *
  * Persistent state is never updated by this adapter. For `changed` events the
  * control value is exposed only as local `value`; source must use an ordinary
- * semantic `change` to commit it. Checkbox `value` is Boolean. ComboBox and
- * ListBox `value` are text.
+ * semantic `change` to commit it. Checkbox `value` is Boolean. Input, ComboBox,
+ * ListBox and Radio `value` are text.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -23,7 +23,7 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
   if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
     throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
   }
-  if ((controlType === 'combo' || controlType === 'listbox') && typeof payload.value !== 'string') {
+  if (['input', 'combo', 'listbox', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
     throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
   }
 
@@ -47,9 +47,21 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
 }
 
 function findControlType(runtime, id) {
+  const find = nodes => {
+    for (const node of nodes ?? []) {
+      if (node.kind === 'uiControl' && node.id === id) return node.control;
+      if (node.kind === 'tabs') {
+        for (const page of node.body ?? []) {
+          const nested = find(page.body);
+          if (nested) return nested;
+        }
+      }
+    }
+    return null;
+  };
   for (const windowNode of runtime.windows ?? []) {
-    const control = (windowNode.body ?? []).find(node => node.kind === 'uiControl' && node.id === id);
-    if (control) return control.control;
+    const type = find(windowNode.body);
+    if (type) return type;
   }
   return null;
 }

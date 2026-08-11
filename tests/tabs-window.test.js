@@ -29,14 +29,8 @@ test('parser records a source-backed Tabs container with nested tab pages', () =
 });
 
 test('Tabs Stage 1 requires at least two pages and flow-layout page controls', () => {
-  assert.throws(
-    () => parse('window "Demo":\n  tabs as settings:\n    tab "Only":\n      text "One"\n'),
-    /Tabs needs at least two tab pages/
-  );
-  assert.throws(
-    () => parse('window "Demo":\n  tabs as settings:\n    tab "One":\n      text "One" at 10, 10\n    tab "Two":\n      text "Two"\n'),
-    /Controls inside a tab page use flow layout/
-  );
+  assert.throws(() => parse('window "Demo":\n  tabs as settings:\n    tab "Only":\n      text "One"\n'), /Tabs needs at least two tab pages/);
+  assert.throws(() => parse('window "Demo":\n  tabs as settings:\n    tab "One":\n      text "One" at 10, 10\n    tab "Two":\n      text "Two"\n'), /Controls inside a tab page use flow layout/);
 });
 
 test('Change IR preserves Tabs and page structure without changing Change IR 0.10', () => {
@@ -57,12 +51,8 @@ test('Window validation sees named nested controls while Tabs selection itself e
   assert.equal(summary.tabs, 1);
   assert.equal(summary.controls, 3);
   assert.equal(summary.events, 3);
-
   const invalid = compile(`window "Demo" as main:\n  tabs as settings:\n    tab "One":\n      text "One"\n    tab "Two":\n      text "Two"\n\nwhen settings changed:\n  show value\n`, { name: 'InvalidTabsEvent', kind: 'window' });
-  assert.throws(
-    () => validateWindowRuntimeSupport(invalid),
-    /transient page selection and does not expose Patch events in Tabs Stage 1/
-  );
+  assert.throws(() => validateWindowRuntimeSupport(invalid), /transient page selection and does not expose Patch events in Tabs Stage 1/);
 });
 
 test('interpreter UI model exposes nested pages but stores no persistent selected-tab state', () => {
@@ -85,11 +75,9 @@ test('controls nested in Tabs remain normal Patch event controls with explicit m
   assert.equal(renamed.state.name, 'Ada');
   assert.equal(renamed.history.length, 1);
   assert.equal(renamed.history[0].target, 'name');
-
   const notified = triggerWindowEvent(runtime, 'notifications', 'changed', { value: true });
   assert.equal(notified.state.notifications, true);
   assert.equal(notified.history.length, 2);
-
   const reset = triggerWindowEvent(runtime, 'reset_name', 'clicked');
   assert.equal(reset.state.name, 'Mia');
   assert.equal(reset.history.length, 3);
@@ -103,14 +91,12 @@ test('Designer inserts, selects, moves, renames and removes Tabs without rewriti
   assert.deepEqual(tabs.pages, ['"General"', '"Advanced"']);
   assert.match(edited, /tabs as tabs_1 at 24, 24 size 420, 240:/);
   assert.match(edited, /tab "General":\n      text "General"/);
-
   edited = updateDesignerControl(edited, tabs, { id: 'settings', x: 40, y: 56, width: 500, height: 260 });
   tabs = listDesignerControls(edited)[0];
   assert.equal(tabs.id, 'settings');
   assert.deepEqual([tabs.x, tabs.y, tabs.width, tabs.height], [40, 56, 500, 260]);
   assert.match(edited, /tabs as settings at 40, 56 size 500, 260:/);
   assert.match(edited, /tab "Advanced":\n      text "Advanced"/);
-
   edited = removeDesignerControl(edited, tabs);
   assert.equal(listDesignerControls(edited).length, 0);
   assert.doesNotMatch(edited, /tabs as settings/);
@@ -151,20 +137,18 @@ test('compatibility desktop renderer cannot silently omit Tabs', () => {
   assert.match(compatibilityBuilder, /runtime\.result\(\)\.ui/);
 });
 
-test('Native GUI IR v0.4 keeps real Tabs hierarchy and transient selection out of Patch state', () => {
+test('Native GUI IR v0.5 keeps real Tabs hierarchy and transient selection out of Patch state', () => {
   const compiled = compile(source, { name: 'TabsDemo', kind: 'window' });
   const native = buildNativeGuiIR(compiled);
-  assert.equal(native.version, '0.4');
+  assert.equal(native.version, '0.5');
   assert.deepEqual(native.states.map(state => state.name), ['name', 'notifications']);
   assert.equal(native.states.some(state => state.name === 'settings'), false);
-
   const tabs = native.forms[0].controls.find(control => control.type === 'tabs');
   assert.ok(tabs);
   assert.equal(tabs.id, 'settings');
   assert.deepEqual(tabs.pages.map(page => page.title), ['General', 'Advanced']);
   assert.deepEqual(tabs.pages[0].controls.map(control => control.type), ['text', 'input']);
   assert.deepEqual(tabs.pages[1].controls.map(control => control.type), ['checkbox', 'button']);
-
   const flat = flattenNativeGuiControls(native);
   const tabFlat = flat.find(control => control.type === 'tabs' && control.id === 'settings');
   const name = flat.find(control => control.id === 'name');

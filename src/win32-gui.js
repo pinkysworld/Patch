@@ -1,6 +1,6 @@
 import { flattenNativeGuiControls, validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
 
-export const PATCH_WIN32_GUI_BACKEND_VERSION = '0.4';
+export const PATCH_WIN32_GUI_BACKEND_VERSION = '0.5';
 
 export function emitWin32GuiCpp(input) {
   const ir = validateNativeGuiIR(input);
@@ -36,6 +36,7 @@ export function emitWin32GuiCpp(input) {
 #include <commctrl.h>
 #include <string>
 #include <sstream>
+#include <vector>
 #include <cwchar>
 #include <cmath>
 #pragma comment(lib, "comctl32.lib")
@@ -45,7 +46,7 @@ static HINSTANCE gInstance = nullptr;
 static HFONT gGuiFont = nullptr;
 static bool gRefreshing = false;
 
-enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7 };
+enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7, CK_RADIO=8 };
 struct FormDef { const wchar_t* id; const wchar_t* title; int width; int height; bool visible; };
 struct ControlDef { int commandId; int formIndex; ControlKind kind; const wchar_t* name; int x; int y; int width; int height; int parentTabIndex; int pageIndex; };
 
@@ -63,6 +64,7 @@ ${controlDefs || '  {0,0,CK_TEXT,L"",0,0,0,0,-1,-1}'}
 static const int CONTROL_COUNT = ${controls.length};
 static HWND gControls[${Math.max(1, controls.length)}] = {};
 static int gTabSelection[${Math.max(1, controls.length)}] = {};
+static std::vector<std::vector<HWND>> gRadioItems(CONTROL_COUNT);
 
 static std::wstring PatchNumber(double value) {
   if (std::isfinite(value) && std::floor(value) == value) return std::to_wstring((long long)value);
@@ -110,12 +112,23 @@ static void SetListBoxSelection(HWND hwnd, const std::wstring& value) {
   const LRESULT found = SendMessageW(hwnd, LB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)value.c_str());
   SendMessageW(hwnd, LB_SETCURSEL, found == LB_ERR ? (WPARAM)-1 : (WPARAM)found, 0);
 }
+static void SetRadioSelection(int index, const std::wstring& value) {
+  if (index < 0 || index >= CONTROL_COUNT) return;
+  for (HWND item : gRadioItems[(size_t)index]) {
+    if (!item) continue;
+    SendMessageW(item, BM_SETCHECK, WindowText(item) == value ? BST_CHECKED : BST_UNCHECKED, 0);
+  }
+}
 static void RefreshTabVisibility() {
   for (int i = 0; i < CONTROL_COUNT; ++i) {
     const int parent = CONTROLS[i].parentTabIndex;
-    if (parent < 0 || !gControls[i]) continue;
+    if (parent < 0) continue;
     const bool visible = parent < CONTROL_COUNT && gTabSelection[parent] == CONTROLS[i].pageIndex;
-    ShowWindow(gControls[i], visible ? SW_SHOW : SW_HIDE);
+    if (CONTROLS[i].kind == CK_RADIO) {
+      for (HWND item : gRadioItems[(size_t)i]) if (item) ShowWindow(item, visible ? SW_SHOW : SW_HIDE);
+    } else if (gControls[i]) {
+      ShowWindow(gControls[i], visible ? SW_SHOW : SW_HIDE);
+    }
   }
 }
 static bool HandleTabNotify(NMHDR *header) {
@@ -306,7 +319,7 @@ function emitNativeValue(state, value, event) {
 function emitDispatch(event, index, controls) {
   const control = controls.get(event.control);
   if (!control) return '';
-  const notification = control.type === 'button' || control.type === 'checkbox'
+  const notification = control.type === 'button' || control.type === 'checkbox' || control.type === 'radio'
     ? 'BN_CLICKED'
     : control.type === 'combo'
       ? 'CBN_SELCHANGE'
@@ -342,6 +355,10 @@ function emitRefresh(control, index, states) {
     const state = states.get(control.binding);
     return `  if (gControls[${index}]) SetListBoxSelection(gControls[${index}], ${stateName(state.name)});`;
   }
+  if (control.type === 'radio') {
+    const state = states.get(control.binding);
+    return `  SetRadioSelection(${index}, ${stateName(state.name)});`;
+  }
   return '';
 }
 
@@ -355,6 +372,16 @@ function emitCreateControl(control, index, controls) {
       `    { TCITEMW item{}; item.mask = TCIF_TEXT; item.pszText = const_cast<wchar_t*>(L${cppString(title)}); SendMessageW(gControls[${index}], TCM_INSERTITEMW, ${pageIndex}, (LPARAM)&item); }`
     ).join('\n');
     return `  if (${control.formIndex} == index) {\n    gControls[${index}] = CreateWindowExW(0, WC_TABCONTROLW, L"", WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_CLIPSIBLINGS, ${position.x}, ${position.y}, ${width}, ${height}, hwnd, reinterpret_cast<HMENU>((INT_PTR)${control.commandId}), gInstance, nullptr);\n    if (gControls[${index}] && gGuiFont) SendMessageW(gControls[${index}], WM_SETFONT, (WPARAM)gGuiFont, TRUE);\n${pages}\n    SendMessageW(gControls[${index}], TCM_SETCURSEL, 0, 0);\n    gTabSelection[${index}] = 0;\n  }`;
+  }
+  if (control.type === 'radio') {
+    const count = Math.max(1, control.options.length);
+    const itemHeight = Math.max(22, Math.min(30, Math.floor(sourceHeight / count) || 26));
+    const items = control.options.map((option, optionIndex) => {
+      const group = optionIndex === 0 ? ' | WS_GROUP' : '';
+      const y = position.y + optionIndex * itemHeight;
+      return `    { HWND item = CreateWindowExW(0, L"BUTTON", L${cppString(option)}, WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTORADIOBUTTON${group}, ${position.x}, ${y}, ${width}, ${itemHeight}, hwnd, reinterpret_cast<HMENU>((INT_PTR)${control.commandId}), gInstance, nullptr); if (!item) return nullptr; if (gGuiFont) SendMessageW(item, WM_SETFONT, (WPARAM)gGuiFont, TRUE); gRadioItems[${index}].push_back(item); if (!gControls[${index}]) gControls[${index}] = item; }`;
+    }).join('\n');
+    return `  if (${control.formIndex} == index) {\n${items}\n  }`;
   }
   const style = control.type === 'text'
     ? 'WS_CHILD | WS_VISIBLE | SS_LEFT'
@@ -407,6 +434,8 @@ function emitSmoke(forms, controls, states, allControls) {
   const comboState = states.get('size');
   const listbox = controls.get('fruit');
   const listboxState = states.get('fruit');
+  const radio = controls.get('mode');
+  const radioState = states.get('mode');
   const tabs = controls.get('settings');
   const lines = ['static int RunPatchSmoke() {', `  if (!gForms[${mainIndex}] || !IsWindowVisible(gForms[${mainIndex}])) return 70;`];
   if (settingsIndex !== undefined) lines.push(`  if (IsWindowVisible(gForms[${settingsIndex}])) return 71;`);
@@ -431,6 +460,12 @@ function emitSmoke(forms, controls, states, allControls) {
     lines.push(`  SendMessageW(gForms[${listbox.formIndex}], WM_COMMAND, MAKEWPARAM(${listbox.commandId}, LBN_SELCHANGE), (LPARAM)gControls[${listbox.handleIndex}]);`);
     lines.push(`  if (${stateName(listboxState.name)} != L${cppString(listbox.options[last])}) return 76;`);
   }
+  if (radio && radioState?.type === 'text' && radio.options.length) {
+    const last = radio.options.length - 1;
+    lines.push(`  if (gRadioItems[${radio.handleIndex}].size() != ${radio.options.length}) return 81;`);
+    lines.push(`  SendMessageW(gRadioItems[${radio.handleIndex}][${last}], BM_CLICK, 0, 0);`);
+    lines.push(`  if (${stateName(radioState.name)} != L${cppString(radio.options[last])}) return 82;`);
+  }
   if (tabs?.type === 'tabs' && tabs.pageTitles.length > 1) {
     const first = allControls.find(control => control.parentTabIndex === tabs.handleIndex && control.pageIndex === 0);
     const second = allControls.find(control => control.parentTabIndex === tabs.handleIndex && control.pageIndex === 1);
@@ -450,7 +485,7 @@ function emitSmoke(forms, controls, states, allControls) {
 }
 
 function controlKind(type) {
-  return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS' })[type] ?? 'CK_TEXT';
+  return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS', radio: 'CK_RADIO' })[type] ?? 'CK_TEXT';
 }
 function stateName(name) { return `patch_state_${cppIdentifier(name)}`; }
 function cppIdentifier(value) { return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&'); }

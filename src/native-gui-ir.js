@@ -2,7 +2,7 @@ import { buildFormLayoutManifest } from './form-layout.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 
 export const PATCH_NATIVE_GUI_IR_FORMAT = 'patch-native-gui-ir';
-export const PATCH_NATIVE_GUI_IR_VERSION = '0.4';
+export const PATCH_NATIVE_GUI_IR_VERSION = '0.5';
 
 export class NativeGuiError extends Error {}
 
@@ -11,10 +11,10 @@ export class NativeGuiError extends Error {}
  * platform-neutral GUI IR. Backends fail closed instead of silently dropping
  * Patch behavior they do not understand.
  *
- * Native GUI IR v0.4 adds real Tabs containers. A Tabs control owns pages and
- * each page owns ordinary Patch controls. Which page is selected is deliberately
- * absent from this IR because selection is transient renderer state, not Patch
- * application state and not a semantic Change History entry.
+ * Native GUI IR v0.5 adds grouped Radio controls. Radio options are text and a
+ * changed event exposes the selected option as transient text `value`. Persistent
+ * state still changes only through an explicit Patch change action. Tabs remain
+ * real nested containers with renderer-local page selection.
  */
 export function buildNativeGuiIR(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
@@ -33,7 +33,7 @@ export function buildNativeGuiIR(compiled) {
   for (const node of compiled.ast) {
     if (node.kind !== 'create') continue;
     if (!['number', 'text', 'boolean'].includes(node.valueType)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 supports number, text and boolean state.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 supports number, text and boolean state.`);
     }
     if (stateByName.has(node.name)) {
       throw new NativeGuiError(`line ${node.line ?? '?'}: native state '${node.name}' is declared more than once.`);
@@ -100,12 +100,12 @@ export function buildNativeGuiIR(compiled) {
       }
       const key = `${node.control}\u0000${node.event}`;
       if (eventKeys.has(key)) {
-        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 requires one '${node.event}' handler for '${node.control}'.`);
+        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 requires one '${node.event}' handler for '${node.control}'.`);
       }
       eventKeys.add(key);
       const valueType = control.type === 'checkbox'
         ? 'boolean'
-        : ['input', 'combo', 'listbox'].includes(control.type) ? 'text' : null;
+        : ['input', 'combo', 'listbox', 'radio'].includes(control.type) ? 'text' : null;
       events.push({
         control: node.control,
         event: node.event,
@@ -117,12 +117,12 @@ export function buildNativeGuiIR(compiled) {
 
     if (['allow', 'function'].includes(node.kind)) continue;
     if (['openForm', 'closeForm'].includes(node.kind)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: open/close belongs inside a GUI event for native GUI v0.4.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: open/close belongs inside a GUI event for native GUI v0.5.`);
     }
     if (node.kind === 'createThing') {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 does not support thing state yet.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 does not support thing state yet.`);
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 cannot lower top-level '${node.kind}' yet.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 cannot lower top-level '${node.kind}' yet.`);
   }
 
   if (!forms.length) throw new NativeGuiError('Native GUI lowering needs at least one Patch Form.');
@@ -214,7 +214,7 @@ function lowerTabsControl(node, context) {
     let childIndex = 0;
     for (const child of page.body ?? []) {
       if (child.kind === 'tabs') {
-        throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.4 does not support nested Tabs.`);
+        throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.5 does not support nested Tabs.`);
       }
       if (child.kind !== 'uiControl') {
         throw new NativeGuiError(`line ${child.line ?? '?'}: native Tabs pages currently contain UI controls only.`);
@@ -234,10 +234,10 @@ function lowerTabsControl(node, context) {
 }
 
 function lowerLeafControl(child, context) {
-  if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(child.control)) {
-    throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.4 does not support '${child.control}' controls yet.`);
+  if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox', 'radio'].includes(child.control)) {
+    throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.5 does not support '${child.control}' controls yet.`);
   }
-  const selectionControl = ['combo', 'listbox'].includes(child.control);
+  const selectionControl = ['combo', 'listbox', 'radio'].includes(child.control);
   const control = {
     type: child.control,
     id: child.id ?? context.generatedId,
@@ -247,19 +247,20 @@ function lowerLeafControl(child, context) {
     layout: context.layout ?? defaultLayout(child.control, 0)
   };
 
-  if (['input', 'checkbox', 'combo', 'listbox'].includes(child.control) && !child.id) {
+  if (['input', 'checkbox', 'combo', 'listbox', 'radio'].includes(child.control) && !child.id) {
     throw new NativeGuiError(`line ${child.line ?? '?'}: native ${child.control} controls need a simple Patch name after 'as'.`);
   }
   if (child.control === 'checkbox') requireBindingType(child, context.stateByName, 'boolean', 'Checkbox');
   if (child.control === 'input') requireBindingType(child, context.stateByName, 'text', 'Input');
   if (child.control === 'combo') requireBindingType(child, context.stateByName, 'text', 'ComboBox');
   if (child.control === 'listbox') requireBindingType(child, context.stateByName, 'text', 'ListBox');
+  if (child.control === 'radio') requireBindingType(child, context.stateByName, 'text', 'Radio');
   return control;
 }
 
 function validateControl(control, insideTabs) {
   if (control.type === 'tabs') {
-    if (insideTabs) throw new NativeGuiError('Native GUI IR v0.4 does not allow nested Tabs.');
+    if (insideTabs) throw new NativeGuiError('Native GUI IR v0.5 does not allow nested Tabs.');
     if (!control.id || !Array.isArray(control.pages) || control.pages.length < 2) {
       throw new NativeGuiError('Native GUI IR Tabs needs an id and at least two pages.');
     }
@@ -271,11 +272,12 @@ function validateControl(control, insideTabs) {
     }
     return;
   }
-  if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(control.type)) {
+  if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox', 'radio'].includes(control.type)) {
     throw new NativeGuiError(`Native GUI IR control '${control.type}' is unsupported.`);
   }
-  if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
-    throw new NativeGuiError(`Native GUI IR ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} needs at least two options.`);
+  if (['combo', 'listbox', 'radio'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
+    const label = control.type === 'combo' ? 'ComboBox' : control.type === 'listbox' ? 'ListBox' : 'Radio';
+    throw new NativeGuiError(`Native GUI IR ${label} needs at least two options.`);
   }
 }
 
@@ -295,7 +297,7 @@ function lowerNativeActions(nodes, states, event) {
       if (!state) throw new NativeGuiError(`line ${node.line ?? '?'}: native change target '${node.target}' is not simple state.`);
       const ops = [];
       for (const op of node.ops ?? []) {
-        if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.4 does not support field mutation yet.`);
+        if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.5 does not support field mutation yet.`);
         validateTypedOperation(state, op);
         if (op.op === 'clear') {
           ops.push({ op: 'clear' });
@@ -317,7 +319,7 @@ function lowerNativeActions(nodes, states, event) {
       actions.push({ kind: 'change', target: node.target, stateType: state.type, ops });
       continue;
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 event handlers support change, open and close only.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 event handlers support change, open and close only.`);
   }
   return actions;
 }
@@ -329,7 +331,7 @@ function validateTypedOperation(state, op) {
       ? new Set(['set', 'add', 'clear'])
       : new Set(['set', 'clear']);
   if (!allowed.has(op.op)) {
-    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.4 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
+    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.5 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
   }
 }
 
@@ -342,7 +344,7 @@ function requireBindingType(control, states, expected, label) {
 
 function requireSelectionOptions(control) {
   const options = control.options ?? [];
-  const label = control.control === 'combo' ? 'ComboBox' : 'ListBox';
+  const label = control.control === 'combo' ? 'ComboBox' : control.control === 'listbox' ? 'ListBox' : 'Radio';
   if (options.length < 2) throw new NativeGuiError(`line ${control.line ?? '?'}: native ${label} needs at least two options.`);
   return options.map((expr, index) => requireTextLiteral(expr, control.line, `${label} option ${index + 1}`));
 }
@@ -369,7 +371,7 @@ function parseTypedLiteral(expr, type, line) {
 function requireTextLiteral(expr, line, label) {
   const text = String(expr ?? '').trim();
   if (!(text.startsWith('"') && text.endsWith('"'))) {
-    throw new NativeGuiError(`line ${line ?? '?'}: ${label} must currently be simple text in quotes for native GUI v0.4.`);
+    throw new NativeGuiError(`line ${line ?? '?'}: ${label} must currently be simple text in quotes for native GUI v0.5.`);
   }
   try {
     const value = JSON.parse(text);
@@ -386,6 +388,7 @@ function defaultLayout(type, index) {
     button: [120, 36],
     input: [220, 36],
     checkbox: [220, 36],
+    radio: [220, 84],
     combo: [220, 36],
     listbox: [220, 120],
     tabs: [420, 240]
@@ -400,6 +403,7 @@ function defaultTabPageLayout(type, index) {
     button: [120, 36],
     input: [220, 36],
     checkbox: [220, 36],
+    radio: [220, 84],
     combo: [220, 36],
     listbox: [220, 120]
   };

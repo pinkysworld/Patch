@@ -109,10 +109,10 @@ export function validateWindowRuntimeSupport(compiled) {
     }
     const supported =
       (controlType === 'button' && event.event === 'clicked') ||
-      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox') && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons and 'changed' on inputs/checkboxes/combos/listboxes. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons and 'changed' on inputs/checkboxes/combos/listboxes/radios. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }

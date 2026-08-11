@@ -11,15 +11,15 @@
 #include <sstream>
 #pragma comment(lib, "comctl32.lib")
 
-static const wchar_t* PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV4";
+static const wchar_t* PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV5";
 static const char PATCH_MAGIC[8] = {'P','C','H','G','U','I','0','1'};
-static const uint32_t PATCH_PAYLOAD_VERSION = 4;
+static const uint32_t PATCH_PAYLOAD_VERSION = 5;
 static HINSTANCE gInstance = nullptr;
 static HFONT gGuiFont = nullptr;
 static bool gRefreshing = false;
 
 enum StateType : uint8_t { ST_NUMBER=1, ST_TEXT=2, ST_BOOLEAN=3 };
-enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7 };
+enum ControlKind : uint8_t { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7, CK_RADIO=8 };
 enum EventKind : uint8_t { EV_CLICKED=1, EV_CHANGED=2 };
 enum ActionKind : uint8_t { ACT_OPEN=1, ACT_CLOSE=2, ACT_CHANGE=3 };
 enum OpKind : uint8_t { OP_SET=1, OP_ADD=2, OP_REMOVE=3, OP_CLEAR=4 };
@@ -39,6 +39,7 @@ struct Control {
   int x=0,y=0,width=0,height=0,formIndex=-1,commandId=0;
   int parentTabIndex=-1,pageIndex=-1,selectedPage=0;
   HWND hwnd=nullptr;
+  std::vector<HWND> radioItems;
 };
 struct Form { std::wstring id,title; int width=640,height=420; bool visible=false; HWND hwnd=nullptr; std::vector<int> controls; };
 struct Operation { uint8_t op=0,valueKind=0; double number=0.0; std::wstring text; bool boolean=false; };
@@ -119,8 +120,8 @@ static bool ParsePayload(const std::vector<uint8_t>&bytes){
         control.x=r.i32();control.y=r.i32();control.width=r.i32();control.height=r.i32();
         control.parentTabIndex=r.i32();control.pageIndex=r.i32();
         control.formIndex=formIndex;control.commandId=nextCommand++;
-        if(control.kind<CK_TEXT||control.kind>CK_TABS||control.width<=0||control.height<=0||control.width>10000||control.height>10000)return false;
-        if((control.kind==CK_COMBO||control.kind==CK_LISTBOX||control.kind==CK_TABS)&&control.options.size()<2)return false;
+        if(control.kind<CK_TEXT||control.kind>CK_RADIO||control.width<=0||control.height<=0||control.width>10000||control.height>10000)return false;
+        if((control.kind==CK_COMBO||control.kind==CK_LISTBOX||control.kind==CK_TABS||control.kind==CK_RADIO)&&control.options.size()<2)return false;
         if(!control.id.empty()){if(gControlById.count(control.id))return false;gControlById[control.id]=(int)gControls.size();}
         form.controls.push_back((int)gControls.size());gControls.push_back(std::move(control));
       }
@@ -158,7 +159,7 @@ static bool ParsePayload(const std::vector<uint8_t>&bytes){
     }
     if(!r.done())return false;
     for(const auto&c:gControls){
-      if(c.kind==CK_INPUT||c.kind==CK_COMBO||c.kind==CK_LISTBOX){auto it=gStateByName.find(c.binding);if(it==gStateByName.end()||gStates[it->second].type!=ST_TEXT)return false;}
+      if(c.kind==CK_INPUT||c.kind==CK_COMBO||c.kind==CK_LISTBOX||c.kind==CK_RADIO){auto it=gStateByName.find(c.binding);if(it==gStateByName.end()||gStates[it->second].type!=ST_TEXT)return false;}
       else if(c.kind==CK_CHECKBOX){auto it=gStateByName.find(c.binding);if(it==gStateByName.end()||gStates[it->second].type!=ST_BOOLEAN)return false;}
     }
     return true;
@@ -183,8 +184,9 @@ static std::wstring ListBoxText(HWND hwnd){LRESULT selected=SendMessageW(hwnd,LB
 static void SetText(HWND hwnd,const std::wstring&v){if(WindowText(hwnd)!=v)SetWindowTextW(hwnd,v.c_str());}
 static void SetCombo(HWND hwnd,const std::wstring&v){if(ComboText(hwnd)==v)return;LRESULT found=SendMessageW(hwnd,CB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)v.c_str());SendMessageW(hwnd,CB_SETCURSEL,found==CB_ERR?(WPARAM)-1:(WPARAM)found,0);}
 static void SetList(HWND hwnd,const std::wstring&v){if(ListBoxText(hwnd)==v)return;LRESULT found=SendMessageW(hwnd,LB_FINDSTRINGEXACT,(WPARAM)-1,(LPARAM)v.c_str());SendMessageW(hwnd,LB_SETCURSEL,found==LB_ERR?(WPARAM)-1:(WPARAM)found,0);}
+static void SetRadio(Control&control,const std::wstring&v){for(HWND item:control.radioItems)if(item)SendMessageW(item,BM_SETCHECK,WindowText(item)==v?BST_CHECKED:BST_UNCHECKED,0);}
 static void RefreshTabVisibility(){
-  for(int i=0;i<(int)gControls.size();++i){auto&c=gControls[i];if(c.parentTabIndex<0||!c.hwnd)continue;const auto&tab=gControls[c.parentTabIndex];ShowWindow(c.hwnd,tab.selectedPage==c.pageIndex?SW_SHOW:SW_HIDE);}
+  for(int i=0;i<(int)gControls.size();++i){auto&c=gControls[i];if(c.parentTabIndex<0)continue;const auto&tab=gControls[c.parentTabIndex];bool visible=tab.selectedPage==c.pageIndex;if(c.kind==CK_RADIO){for(HWND item:c.radioItems)if(item)ShowWindow(item,visible?SW_SHOW:SW_HIDE);}else if(c.hwnd)ShowWindow(c.hwnd,visible?SW_SHOW:SW_HIDE);}
 }
 static bool HandleTabNotify(NMHDR*header){
   if(!header||header->code!=TCN_SELCHANGE)return false;
@@ -208,7 +210,7 @@ static void ExecuteEvent(const Event&event,bool eventBool,const std::wstring&eve
   }
   RefreshUI();
 }
-static void DispatchControl(int controlIndex,uint8_t kind){
+static void DispatchControl(int controlIndex,uint8_t kind,HWND eventHwnd=nullptr){
   if(gRefreshing||controlIndex<0||controlIndex>=(int)gControls.size())return;
   Control&control=gControls[controlIndex];if(control.id.empty())return;
   for(const auto&event:gEvents){
@@ -218,12 +220,14 @@ static void DispatchControl(int controlIndex,uint8_t kind){
     else if(event.valueType==2&&control.kind==CK_INPUT)eventText=WindowText(control.hwnd);
     else if(event.valueType==2&&control.kind==CK_COMBO)eventText=ComboText(control.hwnd);
     else if(event.valueType==2&&control.kind==CK_LISTBOX)eventText=ListBoxText(control.hwnd);
+    else if(event.valueType==2&&control.kind==CK_RADIO)eventText=WindowText(eventHwnd?eventHwnd:control.hwnd);
     ExecuteEvent(event,eventBool,eventText);
   }
 }
 static void RefreshUI(){
   gRefreshing=true;
   for(auto&control:gControls){
+    if(control.kind==CK_RADIO){SetRadio(control,gStates[gStateByName[control.binding]].text);continue;}
     if(!control.hwnd)continue;
     if(control.kind==CK_TEXT||control.kind==CK_BUTTON)SetText(control.hwnd,RenderText(control.text));
     else if(control.kind==CK_INPUT)SetText(control.hwnd,gStates[gStateByName[control.binding]].text);
@@ -239,13 +243,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
   int formIndex=(int)(INT_PTR)GetWindowLongPtrW(hwnd,GWLP_USERDATA);
   if(msg==WM_NCCREATE){auto*cs=reinterpret_cast<CREATESTRUCTW*>(lParam);formIndex=(int)(INT_PTR)cs->lpCreateParams;SetWindowLongPtrW(hwnd,GWLP_USERDATA,(LONG_PTR)formIndex);}
   if(msg==WM_COMMAND){
-    int id=LOWORD(wParam),notification=HIWORD(wParam);
+    int id=LOWORD(wParam),notification=HIWORD(wParam);HWND eventHwnd=reinterpret_cast<HWND>(lParam);
     for(int i=0;i<(int)gControls.size();++i){auto&c=gControls[i];if(c.commandId!=id)continue;
-      if(c.kind==CK_BUTTON&&notification==BN_CLICKED)DispatchControl(i,EV_CLICKED);
-      else if(c.kind==CK_CHECKBOX&&notification==BN_CLICKED)DispatchControl(i,EV_CHANGED);
-      else if(c.kind==CK_INPUT&&notification==EN_CHANGE)DispatchControl(i,EV_CHANGED);
-      else if(c.kind==CK_COMBO&&notification==CBN_SELCHANGE)DispatchControl(i,EV_CHANGED);
-      else if(c.kind==CK_LISTBOX&&notification==LBN_SELCHANGE)DispatchControl(i,EV_CHANGED);
+      if(c.kind==CK_BUTTON&&notification==BN_CLICKED)DispatchControl(i,EV_CLICKED,eventHwnd);
+      else if(c.kind==CK_CHECKBOX&&notification==BN_CLICKED)DispatchControl(i,EV_CHANGED,eventHwnd);
+      else if(c.kind==CK_RADIO&&notification==BN_CLICKED)DispatchControl(i,EV_CHANGED,eventHwnd);
+      else if(c.kind==CK_INPUT&&notification==EN_CHANGE)DispatchControl(i,EV_CHANGED,eventHwnd);
+      else if(c.kind==CK_COMBO&&notification==CBN_SELCHANGE)DispatchControl(i,EV_CHANGED,eventHwnd);
+      else if(c.kind==CK_LISTBOX&&notification==LBN_SELCHANGE)DispatchControl(i,EV_CHANGED,eventHwnd);
       break;
     }
     return 0;
@@ -258,6 +263,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 static bool CreateControl(int index){
   auto&c=gControls[index];HWND parent=gForms[c.formIndex].hwnd;DWORD style=WS_CHILD|WS_VISIBLE;const wchar_t*klass=L"STATIC";int height=c.height;int x=c.x,y=c.y;
   if(c.parentTabIndex>=0){const auto&tab=gControls[c.parentTabIndex];x=tab.x+10+c.x;y=tab.y+30+c.y;}
+  if(c.kind==CK_RADIO){int count=(int)c.options.size();int itemHeight=count?c.height/count:26;if(itemHeight<22)itemHeight=22;if(itemHeight>30)itemHeight=30;for(int o=0;o<count;++o){DWORD radioStyle=WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_AUTORADIOBUTTON|(o==0?WS_GROUP:0);HWND item=CreateWindowExW(0,L"BUTTON",c.options[o].c_str(),radioStyle,x,y+o*itemHeight,c.width,itemHeight,parent,reinterpret_cast<HMENU>((INT_PTR)c.commandId),gInstance,nullptr);if(!item)return false;if(gGuiFont)SendMessageW(item,WM_SETFONT,(WPARAM)gGuiFont,TRUE);c.radioItems.push_back(item);if(!c.hwnd)c.hwnd=item;}return !c.radioItems.empty();}
   if(c.kind==CK_TEXT)style|=SS_LEFT;
   else if(c.kind==CK_BUTTON){klass=L"BUTTON";style|=WS_TABSTOP|BS_PUSHBUTTON;}
   else if(c.kind==CK_INPUT){klass=L"EDIT";style|=WS_TABSTOP|WS_BORDER|ES_AUTOHSCROLL;}
@@ -289,6 +295,7 @@ static int RunSmoke(){
   if(gControlById.count(L"notifications")){auto&c=gControls[gControlById[L"notifications"]];auto s=gStateByName.find(L"notifications");if(c.kind!=CK_CHECKBOX||s==gStateByName.end())return 76;bool before=gStates[s->second].boolean;SendMessageW(c.hwnd,BM_SETCHECK,before?BST_UNCHECKED:BST_CHECKED,0);SendMessageW(gForms[c.formIndex].hwnd,WM_COMMAND,MAKEWPARAM(c.commandId,BN_CLICKED),(LPARAM)c.hwnd);if(gStates[s->second].boolean==before)return 77;}
   if(gControlById.count(L"size")){auto&c=gControls[gControlById[L"size"]];auto s=gStateByName.find(L"size");if(c.kind!=CK_COMBO||c.options.empty()||s==gStateByName.end())return 78;int last=(int)c.options.size()-1;SendMessageW(c.hwnd,CB_SETCURSEL,last,0);SendMessageW(gForms[c.formIndex].hwnd,WM_COMMAND,MAKEWPARAM(c.commandId,CBN_SELCHANGE),(LPARAM)c.hwnd);if(gStates[s->second].text!=c.options[last])return 79;}
   if(gControlById.count(L"fruit")){auto&c=gControls[gControlById[L"fruit"]];auto s=gStateByName.find(L"fruit");if(c.kind!=CK_LISTBOX||c.options.empty()||s==gStateByName.end())return 80;int last=(int)c.options.size()-1;SendMessageW(c.hwnd,LB_SETCURSEL,last,0);SendMessageW(gForms[c.formIndex].hwnd,WM_COMMAND,MAKEWPARAM(c.commandId,LBN_SELCHANGE),(LPARAM)c.hwnd);if(gStates[s->second].text!=c.options[last])return 81;}
+  if(gControlById.count(L"mode")){auto&c=gControls[gControlById[L"mode"]];auto s=gStateByName.find(L"mode");if(c.kind!=CK_RADIO||c.options.empty()||c.radioItems.size()!=c.options.size()||s==gStateByName.end())return 83;int last=(int)c.options.size()-1;SendMessageW(c.radioItems[last],BM_CLICK,0,0);if(gStates[s->second].text!=c.options[last])return 84;}
   if(gControlById.count(L"close_settings")&&settingsForm!=gFormById.end()){if(!Click(L"close_settings")||IsWindowVisible(gForms[settingsForm->second].hwnd))return 82;}
   return 0;
 }

@@ -17,10 +17,12 @@ on:
       - examples/combo-window.patch
       - examples/listbox-window.patch
       - examples/tabs-window.patch
+      - examples/radio-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
+      - tests/radio-window.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -40,10 +42,12 @@ on:
       - examples/combo-window.patch
       - examples/listbox-window.patch
       - examples/tabs-window.patch
+      - examples/radio-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
+      - tests/radio-window.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -109,19 +113,25 @@ jobs:
           node scripts/seal-native-win32.js examples/tabs-window.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedTabs.exe PatchSealedTabs
           $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedTabs.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Sealed native Tabs smoke failed with exit code $($process.ExitCode)." }
-      - name: Verify template and payload-v4 contract
+      - name: Seal and smoke native Radio application
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/radio-window.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedRadio.exe PatchSealedRadio
+          $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedRadio.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed native Radio smoke failed with exit code $($process.ExitCode)." }
+      - name: Verify template and payload-v5 contract
         shell: pwsh
         run: |
           $runtime = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/patch-windows-native-gui-runtime.exe'))
-          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedTabs.exe'))
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedRadio.exe'))
           if ($runtime.Length -lt 2 -or $runtime[0] -ne 0x4d -or $runtime[1] -ne 0x5a) { throw 'Runtime is not a PE executable.' }
           if ($sealed.Length -le $runtime.Length) { throw 'Sealed application did not append a payload.' }
           $magic = [Text.Encoding]::ASCII.GetString($sealed, $sealed.Length - 20, 8)
           if ($magic -ne 'PCHGUI01') { throw 'Sealed executable footer magic is missing.' }
           $version = [BitConverter]::ToUInt32($sealed, $sealed.Length - 12)
-          if ($version -ne 4) { throw "Expected sealed native GUI payload v4, got v$version." }
+          if ($version -ne 5) { throw "Expected sealed native GUI payload v5, got v$version." }
           if ($runtime.Length -gt 2097152) { throw "Generic native runtime unexpectedly exceeds 2 MiB: $($runtime.Length) bytes." }
-          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed Tabs app: $($sealed.Length) bytes"
+          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed Radio app: $($sealed.Length) bytes"
       - uses: actions/upload-artifact@v4
         with:
           name: patch-windows-native-gui-runtime
@@ -143,9 +153,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-win32-runtime-v0.4
+          TAG: native-win32-runtime-v0.5
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.4' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v4 adds real native Tabs via the Windows common-controls tab control. Page selection remains transient native UI state and never becomes hidden Patch state or Change History. Nested Patch controls keep their ordinary explicit-change event semantics. No Electron, Chromium, Node.js or sidecar payload is used.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.5' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v5 adds grouped native Radio controls using Win32 radio buttons while preserving explicit Patch change semantics, native Tabs and the existing control set. No Electron, Chromium, Node.js or sidecar payload is used.'
           fi
           gh release upload "$TAG" runtime/patch-windows-native-gui-runtime.exe --repo "$GITHUB_REPOSITORY" --clobber
