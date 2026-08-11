@@ -85,8 +85,8 @@ requireAll('named Form Designer source contract', designer, [
   'A ${label} needs at least two options', "type === 'radio'", "type === 'listbox'", "type === 'tabs'", 'tab "General"', 'tab "Advanced"'
 ]);
 const windowBuild = read('_site/src/window-build.js');
-requireAll('Window Form lifecycle build validation', windowBuild, [
-  'openForm','closeForm','namedForms','formActions','tabs: tabs.size', 'transient page selection',
+requireAll('Window Form/Menu lifecycle build validation', windowBuild, [
+  'openForm','closeForm','namedForms','formActions','tabs: tabs.size','menuItems: menuItems.size','registerMenu','menuItem', 'transient page selection',
   "Form name '${node.id}' is declared more than once", "controlType === 'combo'", "controlType === 'listbox'", "controlType === 'radio'"
 ]);
 const compiledWindow = read('_site/src/window-compiled.js');
@@ -109,12 +109,14 @@ requireAll('native builder modes', nativeBuild, [
   'Ready app download (no token)','workflow_dispatch','source_b64'
 ]);
 const nativeGui = read('_site/src/native-gui-ir.js');
-requireAll('Native GUI IR v0.5 Radio/Tabs contract', nativeGui, [
-  "PATCH_NATIVE_GUI_IR_VERSION = '0.5'", 'flattenNativeGuiControls', "type: 'tabs'", "['combo', 'listbox', 'radio'].includes(control.type)", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
+requireAll('Native GUI IR v0.6 Menu/Dialog/Radio/Tabs contract', nativeGui, [
+  "PATCH_NATIVE_GUI_IR_VERSION = '0.6'", 'flattenNativeGuiControls','flattenNativeGuiMenuItems', "type: 'tabs'", "type: 'menuItem'", 'menus: []', "kind: 'dialog'",
+  "['combo', 'listbox', 'radio'].includes(control.type)", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
 ]);
 const sealedNative = read('_site/src/sealed-native-gui.js');
-requireAll('sealed native GUI payload v5 Radio/Tabs contract', sealedNative, [
-  'PATCH_SEALED_NATIVE_GUI_VERSION = 5', "if (type === 'tabs') return 7", "if (type === 'radio') return 8", 'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles', 'Native Radio payload needs at least two options'
+requireAll('sealed native GUI payload v6 Menu/Dialog/Radio/Tabs contract', sealedNative, [
+  'PATCH_SEALED_NATIVE_GUI_VERSION = 6', 'writer.u32(form.menus.length)', "writer.u8(4)", "if (type === 'tabs') return 7", "if (type === 'radio') return 8",
+  'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles', 'Native Radio payload needs at least two options'
 ]);
 
 const prebuilt = read('_site/src/prebuilt-native.js');
@@ -136,13 +138,13 @@ requireAll('guarded concrete-call body producer', concreteBody, [
 const compiler = read('_site/src/compiler.js');
 requireAll('compiler assurance and UI lifecycle modules', compiler, [
   "'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'",
-  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','ui.tabs','ui.radio','TABS','TAB_PAGE','fields.options'
+  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','ui.tabs','ui.radio','ui.menu','ui.dialog','TABS','TAB_PAGE','MENU','MENU_ITEM','DIALOG','fields.options'
 ]);
 
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms6`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms7`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 
