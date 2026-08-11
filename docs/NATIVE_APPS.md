@@ -26,49 +26,59 @@ Windows/macOS/Linux ordinary Studio builds use **Ready app download (no token)**
 
 ## Direct native Window path
 
-Patch lowers the supported GUI surface once into checked platform-neutral **Native GUI IR v0.3** and then targets the host GUI toolkit.
+Patch lowers the supported GUI surface once into checked platform-neutral **Native GUI IR v0.4** and then targets the host GUI toolkit.
 
 ```text
 .patch source
   -> Patch parser/compiler
   -> Window support validation
-  -> Native GUI IR 0.3
+  -> Native GUI IR 0.4
   -> Win32 / AppKit / GTK3 backend
   -> finished native GUI application
 ```
 
-Current Native GUI IR v0.3 supports:
+Current Native GUI IR v0.4 supports:
 
 - simple number/text/Boolean state;
 - source-backed Form geometry;
 - Text, Button, Input and Checkbox;
 - ComboBox and single-selection ListBox with source-backed option arrays;
+- real nested Tabs containers with two or more pages;
 - Button `clicked` and typed Input/Checkbox/ComboBox/ListBox `changed` events;
 - explicit scalar `change` actions;
 - named Form `open` / `close` lifecycle.
 
-Selection controls map to native widgets on all three platforms:
+Native mappings include:
 
 - ComboBox: Win32 `COMBOBOX`, AppKit `NSPopUpButton`, GTK3 `GtkComboBoxText`;
-- ListBox: Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`.
+- ListBox: Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`;
+- Tabs: Win32 `WC_TABCONTROLW`, AppKit `NSTabView`, GTK3 `GtkNotebook`.
 
-Unsupported native behavior fails closed during Native GUI IR lowering. **Tabs is not yet native in v0.3**, so a direct native build containing Tabs stops instead of silently omitting it or switching to Electron.
+Tabs page selection is transient native UI state. It is not represented as Patch state, is not added to Change History, and Tabs itself exposes no Patch `changed` event. Controls inside a tab page remain normal Patch controls and retain their ordinary event semantics.
+
+Unsupported native behavior still fails closed during Native GUI IR lowering instead of silently omitting UI or switching to Electron.
 
 ## Token-free sealed native runtimes
 
-Patch Studio can build native GUI downloads entirely in the browser by sealing checked Native GUI IR payload **v3** into precompiled native runtime templates.
+Patch Studio can build native GUI downloads entirely in the browser by sealing checked Native GUI IR payload **v4** into precompiled native runtime templates.
 
 - Windows produces one native Win32 `.exe`.
 - Linux produces a GTK3 ELF executable in a ZIP with executable mode preserved.
 - macOS produces an unsigned universal AppKit `.app` ZIP with arm64 and x86_64 slices.
 
-The sealed payload format is shared across the three native runtimes. ComboBox/ListBox option arrays and typed selection events are encoded in payload v3.
+Payload v4 is shared across all three native runtimes. It carries Forms, state, ordinary controls, selection option arrays, Tabs page titles, and implementation-only parent/page placement metadata. The currently selected tab page is deliberately not serialized.
+
+The native runtime releases used by Patch Studio are:
+
+- `native-win32-runtime-v0.4`;
+- `native-linux-runtime-v0.4`;
+- `native-macos-runtime-v0.4`.
 
 The macOS no-token bundle is intentionally unsigned because browser-side sealing modifies the executable after the generic runtime was compiled. Developer ID signing/notarization remains separate packaging work.
 
 ## Explicit compatibility Window path
 
-Patch also retains an Electron-based compatibility backend for features not yet covered by Native GUI IR.
+Patch also retains an Electron-based compatibility backend for broader product coverage.
 
 Compatibility build flow:
 
@@ -87,9 +97,7 @@ Compatibility runtime template **`studio-runtime-v0.6`** renders Text, Button, I
 
 The compatibility player uses sandboxing, context isolation, strict payload validation and a minimal IPC bridge.
 
-## Tabs Stage 1
-
-Tabs is currently supported in Patch Studio, Standalone Window Web v0.8 and the explicit compatibility desktop runtime:
+## Tabs
 
 ```patch
 window "Settings" as main:
@@ -100,9 +108,9 @@ window "Settings" as main:
       text "Advanced settings"
 ```
 
-Tab page selection is transient UI state. It does not create a Change History entry and Tabs does not expose a Patch event in Stage 1. Controls inside a page remain ordinary controls and can use their normal typed events.
+Tab page selection is transient UI state on Web, compatibility desktop and all three native platforms. It does not create a Change History entry. Controls inside a page remain ordinary controls and can use their normal typed events.
 
-Direct-native builds fail closed on Tabs until a versioned Native GUI container contract is implemented.
+Native GUI IR v0.4 preserves the real page hierarchy. The AOT and sealed native implementations may use `parentTabIndex` and `pageIndex` metadata internally, but this metadata is not Patch state.
 
 ## Named Forms and simple lifecycle
 
@@ -132,7 +140,7 @@ Persistent GUI state never changes merely because a widget changed.
 - Checkbox `changed` exposes transient Boolean `value`.
 - ComboBox `changed` exposes transient text `value`.
 - single-selection ListBox `changed` exposes transient text `value`.
-- Tabs page selection has no persistent event value in Stage 1.
+- Tabs page selection remains transient UI state and has no persistent event value.
 
 Patch source must perform an ordinary semantic `change` to persist widget input/selection values.
 
@@ -140,9 +148,11 @@ Patch source must perform an ordinary semantic `change` to persist widget input/
 
 CI exercises native and compatibility applications separately.
 
-Direct-native gates compile/link and execute real Win32, AppKit and GTK3 programs. Native GUI v0.3 ListBox is executed through the unified three-OS AOT matrix and through all three sealed-runtime workflows.
+The unified direct-native matrix compiles, links and executes Forms, ComboBox, ListBox and Tabs applications on Windows, macOS and Linux. Separate sealed-runtime workflows compile each generic platform runtime, seal the same progression including `tabs-window.patch`, execute it, and verify payload v4.
 
-The compatibility Runtime Templates workflow builds the Windows/macOS/Linux sandboxed desktop templates and smoke-tests source-free compiled named-Form payloads on each OS. Source-level regression tests require the compatibility renderer to contain real ComboBox/ListBox/Tabs branches so those UI structures cannot regress to silent omission.
+Tabs native smoke coverage does more than check a header: it exercises actual native page switching and nested state-changing controls.
+
+The compatibility Runtime Templates workflow independently builds Windows/macOS/Linux sandboxed desktop templates and smoke-tests source-free compiled payloads on each OS.
 
 ## Beta.32 invocation-frame direct-Wasm assurance
 
@@ -158,4 +168,4 @@ Portable C99 covers the conservative numeric Console subset and is compile/run t
 
 ## Distribution boundary
 
-Remaining distribution work includes macOS signing/notarization, polished installers and a more portable/self-contained Linux GUI distribution. Remaining native GUI parity includes Tabs, radio buttons, menus, dialogs and table/grid.
+Remaining distribution work includes macOS signing/notarization, polished installers and a more portable/self-contained Linux GUI distribution. Remaining richer native GUI work includes radio buttons, menus, dialogs and table/grid controls.
