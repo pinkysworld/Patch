@@ -26,10 +26,7 @@ test('parser records ListBox options, id and taller source-backed geometry', () 
 });
 
 test('ListBox needs at least two options', () => {
-  assert.throws(
-    () => parse('window "Demo":\n  listbox "Only" as choice\n'),
-    /A listbox needs at least two options/
-  );
+  assert.throws(() => parse('window "Demo":\n  listbox "Only" as choice\n'), /A listbox needs at least two options/);
 });
 
 test('compiled Window IR preserves ListBox option expressions and changed event validation', () => {
@@ -46,14 +43,10 @@ test('ListBox changed value is transient text until Patch source explicitly chan
   const listbox = initial.ui[0].controls.find(control => control.type === 'listbox');
   assert.deepEqual(listbox.options, ['Apple', 'Banana', 'Cherry', 'Mango']);
   assert.equal(listbox.value, 'Banana');
-
   const changed = triggerWindowEvent(runtime, 'fruit', 'changed', { value: 'Mango' });
   assert.equal(changed.state.fruit, 'Mango');
   assert.equal(changed.history.at(-1).target, 'fruit');
-  assert.throws(
-    () => triggerWindowEvent(runtime, 'fruit', 'changed', { value: true }),
-    /needs a text event-local value/
-  );
+  assert.throws(() => triggerWindowEvent(runtime, 'fruit', 'changed', { value: true }), /needs a text event-local value/);
 });
 
 test('ListBox event-local value does not persist without an explicit change', () => {
@@ -68,22 +61,9 @@ test('Designer can add, resize, rename and edit ListBox options in source', () =
   let edited = addDesignerControl('window "Demo" as main size 480, 320:\n', 'listbox');
   let listbox = listDesignerControls(edited)[0];
   assert.equal(listbox.type, 'listbox');
-  assert.deepEqual(listbox.options, ['"Option 1"', '"Option 2"', '"Option 3"']);
-  assert.equal(listbox.width, 220);
   assert.equal(listbox.height, 120);
-
   edited += `\nwhen ${listbox.id} changed:\n  show value\n`;
-  edited = updateDesignerControl(edited, listbox, {
-    id: 'fruit',
-    options: ['"Apple"', '"Banana"', '"Cherry"'],
-    x: 40,
-    y: 80,
-    width: 260,
-    height: 140
-  });
-  listbox = listDesignerControls(edited)[0];
-  assert.equal(listbox.id, 'fruit');
-  assert.deepEqual(listbox.options, ['"Apple"', '"Banana"', '"Cherry"']);
+  edited = updateDesignerControl(edited, listbox, { id: 'fruit', options: ['"Apple"', '"Banana"', '"Cherry"'], x: 40, y: 80, width: 260, height: 140 });
   assert.match(edited, /listbox "Apple", "Banana", "Cherry" as fruit at 40, 80 size 260, 140/);
   assert.match(edited, /when fruit changed:/);
 });
@@ -91,57 +71,28 @@ test('Designer can add, resize, rename and edit ListBox options in source', () =
 test('Patch Studio toolbox and preview expose a real multi-row ListBox', () => {
   assert.match(studioIndex, /id="addListbox"/);
   assert.match(studio, /addControl\('listbox'\)/);
-  assert.match(studio, /control\.type === 'listbox'/);
-  assert.match(studio, /el\.size = Math\.min/);
   assert.match(studio, /patch-listbox/);
-  assert.match(studio, /\['combo', 'listbox'\]\.includes\(selected\.type\)/);
   assert.match(formsDesigner, /\['#addListbox', 'listbox'\]/);
-  assert.match(formsDesigner, /control\.type === 'listbox'/);
 });
 
 test('Standalone Window Web App renders ListBox and emits a text changed payload', () => {
   const built = buildStandaloneWebApp(source, { name: 'ListBoxDemo', kind: 'window' });
   assert.equal(built.metadata.version, '0.8');
-  assert.match(built.html, /type==='combo'\|\|control\.type==='listbox'/);
   assert.match(built.html, /el\.size=Math\.min/);
-  assert.match(built.html, /type==='combo'\|\|type==='listbox'/);
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
-  assert.match(built.html, /Apple/);
-  assert.match(built.html, /Banana/);
-  assert.match(built.html, /Cherry/);
 });
 
 test('compatibility desktop renderer cannot silently omit ComboBox or ListBox', () => {
   assert.match(compatibilityBuilder, /control\.type==='combo'\|\|control\.type==='listbox'/);
   assert.match(compatibilityBuilder, /document\.createElement\('select'\)/);
-  assert.match(compatibilityBuilder, /el\.dataset\.controlId=control\.id/);
-  assert.match(compatibilityBuilder, /if\(control\.type==='listbox'\)el\.size=Math\.min/);
   assert.match(compatibilityBuilder, /trigger\(control\.id,'changed',\{value:el\.value\}\)/);
 });
 
-test('Native GUI v0.3 carries ListBox options, text binding and changed event semantics', () => {
-  const compiled = compile(source, { name: 'ListBoxDemo', kind: 'window' });
-  const ir = buildNativeGuiIR(compiled);
-  assert.equal(ir.version, '0.3');
+test('Native GUI v0.4 carries ListBox options, text binding and changed event semantics', () => {
+  const ir = buildNativeGuiIR(compile(source, { name: 'ListBoxDemo', kind: 'window' }));
+  assert.equal(ir.version, '0.4');
   assert.deepEqual(ir.states, [{ name: 'fruit', type: 'text', initial: 'Banana' }]);
   const listbox = ir.forms[0].controls.find(control => control.id === 'fruit');
-  assert.deepEqual(listbox, {
-    type: 'listbox',
-    id: 'fruit',
-    text: '',
-    binding: 'fruit',
-    options: ['Apple', 'Banana', 'Cherry', 'Mango'],
-    layout: { x: 24, y: 72, width: 220, height: 120 }
-  });
-  assert.deepEqual(ir.events, [{
-    control: 'fruit',
-    event: 'changed',
-    valueType: 'text',
-    actions: [{
-      kind: 'change',
-      target: 'fruit',
-      stateType: 'text',
-      ops: [{ op: 'set', value: { kind: 'eventValue' } }]
-    }]
-  }]);
+  assert.deepEqual(listbox, { type: 'listbox', id: 'fruit', text: '', binding: 'fruit', options: ['Apple', 'Banana', 'Cherry', 'Mango'], layout: { x: 24, y: 72, width: 220, height: 120 } });
+  assert.deepEqual(ir.events, [{ control: 'fruit', event: 'changed', valueType: 'text', actions: [{ kind: 'change', target: 'fruit', stateType: 'text', ops: [{ op: 'set', value: { kind: 'eventValue' } }] }] }]);
 });

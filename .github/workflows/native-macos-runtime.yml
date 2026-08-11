@@ -17,12 +17,14 @@ on:
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
+      - examples/tabs-window.patch
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
+      - tests/tabs-window.test.js
       - tests/studio-macos-native-gui.test.js
       - docs/NATIVE_GUI.md
       - docs/ROADMAP.md
@@ -43,12 +45,14 @@ on:
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
+      - examples/tabs-window.patch
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
+      - tests/tabs-window.test.js
       - tests/studio-macos-native-gui.test.js
       - docs/NATIVE_GUI.md
       - docs/ROADMAP.md
@@ -88,50 +92,41 @@ jobs:
       - name: Seal canonical Patch Forms app into runtime
         shell: bash
         run: |
-          node scripts/seal-native-macos.js \
-            examples/forms-navigation.patch \
-            dist-runtime/patch-macos-native-gui-runtime.bin \
-            dist-runtime/PatchSealedForms \
-            PatchSealedForms
-      - name: Smoke run sealed native AppKit executable
-        shell: bash
-        run: dist-runtime/PatchSealedForms --patch-smoke
+          node scripts/seal-native-macos.js examples/forms-navigation.patch dist-runtime/patch-macos-native-gui-runtime.bin dist-runtime/PatchSealedForms PatchSealedForms
+          dist-runtime/PatchSealedForms --patch-smoke
       - name: Seal and smoke native ComboBox application
         shell: bash
         run: |
-          node scripts/seal-native-macos.js \
-            examples/combo-window.patch \
-            dist-runtime/patch-macos-native-gui-runtime.bin \
-            dist-runtime/PatchSealedCombo \
-            PatchSealedCombo
+          node scripts/seal-native-macos.js examples/combo-window.patch dist-runtime/patch-macos-native-gui-runtime.bin dist-runtime/PatchSealedCombo PatchSealedCombo
           dist-runtime/PatchSealedCombo --patch-smoke
       - name: Seal and smoke native ListBox application
         shell: bash
         run: |
-          node scripts/seal-native-macos.js \
-            examples/listbox-window.patch \
-            dist-runtime/patch-macos-native-gui-runtime.bin \
-            dist-runtime/PatchSealedListBox \
-            PatchSealedListBox
+          node scripts/seal-native-macos.js examples/listbox-window.patch dist-runtime/patch-macos-native-gui-runtime.bin dist-runtime/PatchSealedListBox PatchSealedListBox
           dist-runtime/PatchSealedListBox --patch-smoke
-      - name: Verify universal Mach-O and payload-v3 contract
+      - name: Seal and smoke native Tabs application
+        shell: bash
+        run: |
+          node scripts/seal-native-macos.js examples/tabs-window.patch dist-runtime/patch-macos-native-gui-runtime.bin dist-runtime/PatchSealedTabs PatchSealedTabs
+          dist-runtime/PatchSealedTabs --patch-smoke
+      - name: Verify universal Mach-O and payload-v4 contract
         shell: bash
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const runtime = fs.readFileSync('dist-runtime/patch-macos-native-gui-runtime.bin');
-          const sealed = fs.readFileSync('dist-runtime/PatchSealedListBox');
+          const sealed = fs.readFileSync('dist-runtime/PatchSealedTabs');
           const magic = runtime.subarray(0, 4).toString('hex');
           const allowed = new Set(['cffaedfe','feedfacf','cefaedfe','feedface','cafebabe','bebafeca','cafebabf','bfbafeca']);
           if (!allowed.has(magic)) throw new Error(`Runtime is not a recognized Mach-O binary: ${magic}`);
           if (sealed.length <= runtime.length) throw new Error('Sealed application did not append a payload.');
           if (sealed.subarray(sealed.length - 20, sealed.length - 12).toString('ascii') !== 'PCHGUI01') throw new Error('Sealed executable footer magic is missing.');
           const version = sealed.readUInt32LE(sealed.length - 12);
-          if (version !== 3) throw new Error(`Expected sealed native GUI payload v3, got v${version}.`);
+          if (version !== 4) throw new Error(`Expected sealed native GUI payload v4, got v${version}.`);
           if (runtime.length > 4 * 1024 * 1024) throw new Error(`Universal native AppKit runtime unexpectedly exceeds 4 MiB: ${runtime.length} bytes.`);
-          console.log(`Universal AppKit runtime: ${runtime.length} bytes; sealed ListBox app: ${sealed.length} bytes`);
+          console.log(`Universal AppKit runtime: ${runtime.length} bytes; sealed Tabs app: ${sealed.length} bytes`);
           NODE
-          test -x dist-runtime/PatchSealedListBox
+          test -x dist-runtime/PatchSealedTabs
           file dist-runtime/patch-macos-native-gui-runtime.bin
           ARCHS="$(lipo -archs dist-runtime/patch-macos-native-gui-runtime.bin)"
           echo "$ARCHS" | grep -qw arm64
@@ -161,9 +156,9 @@ jobs:
       - name: Publish native AppKit runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-macos-runtime-v0.3
+          TAG: native-macos-runtime-v0.4
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native macOS Runtime v0.3' --notes 'Unsigned universal AppKit sealed-GUI runtime template for token-free Patch Studio builds. Payload v3 adds native single-selection ListBox support while preserving ComboBox, Forms and explicit Patch change semantics. The Mach-O runtime contains arm64 and x86_64 slices. No Electron, Chromium, Node.js or sidecar payload is used. Signing/notarization is separate because browser-side sealing changes the executable after template publication.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native macOS Runtime v0.4' --notes 'Unsigned universal AppKit sealed-GUI runtime template for token-free Patch Studio builds. Payload v4 adds real native Tabs through NSTabView. Page selection remains transient native UI state and never becomes hidden Patch state or Change History. Nested Patch controls preserve ordinary explicit-change semantics. The Mach-O runtime contains arm64 and x86_64 slices. No Electron, Chromium, Node.js or sidecar payload is used. Signing/notarization is separate because browser-side sealing changes the executable after template publication.'
           fi
           gh release upload "$TAG" runtime/patch-macos-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber

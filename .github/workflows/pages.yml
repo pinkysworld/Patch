@@ -84,9 +84,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v0.3
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.3
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.3
+          WIN32_RUNTIME_TAG: native-win32-runtime-v0.4
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.4
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.4
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then

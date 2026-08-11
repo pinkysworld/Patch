@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
-import { buildNativeGuiIR } from '../src/native-gui-ir.js';
+import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
 import { emitWin32GuiCpp, PATCH_WIN32_GUI_BACKEND_VERSION } from '../src/win32-gui.js';
 
 const sourcePath = process.argv[2];
@@ -36,7 +36,7 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   nativeGuiIrVersion: gui.version,
   changeIrVersion: compiled.ir?.version ?? null,
   forms: gui.forms.length,
-  controls: gui.forms.reduce((sum, form) => sum + form.controls.length, 0),
+  controls: flattenNativeGuiControls(gui).length,
   events: gui.events.length,
   sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
   shell: 'native-win32',
@@ -58,7 +58,7 @@ const objectPath = path.join(outDir, `${appName}.obj`);
 const clArgs = [
   '/nologo', '/EHsc', '/std:c++17', '/O2', '/MT', '/utf-8',
   `/Fo${objectPath}`, cppPath,
-  'user32.lib', 'gdi32.lib',
+  'user32.lib', 'gdi32.lib', 'comctl32.lib',
   '/link', '/SUBSYSTEM:WINDOWS', `/OUT:${exePath}`
 ];
 const result = compiler.kind === 'direct'

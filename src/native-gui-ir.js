@@ -2,7 +2,7 @@ import { buildFormLayoutManifest } from './form-layout.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 
 export const PATCH_NATIVE_GUI_IR_FORMAT = 'patch-native-gui-ir';
-export const PATCH_NATIVE_GUI_IR_VERSION = '0.3';
+export const PATCH_NATIVE_GUI_IR_VERSION = '0.4';
 
 export class NativeGuiError extends Error {}
 
@@ -10,6 +10,11 @@ export class NativeGuiError extends Error {}
  * Lower the deliberately small, beginner-facing Patch Forms surface into a
  * platform-neutral GUI IR. Backends fail closed instead of silently dropping
  * Patch behavior they do not understand.
+ *
+ * Native GUI IR v0.4 adds real Tabs containers. A Tabs control owns pages and
+ * each page owns ordinary Patch controls. Which page is selected is deliberately
+ * absent from this IR because selection is transient renderer state, not Patch
+ * application state and not a semantic Change History entry.
  */
 export function buildNativeGuiIR(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
@@ -28,7 +33,7 @@ export function buildNativeGuiIR(compiled) {
   for (const node of compiled.ast) {
     if (node.kind !== 'create') continue;
     if (!['number', 'text', 'boolean'].includes(node.valueType)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.3 supports number, text and boolean state.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 supports number, text and boolean state.`);
     }
     if (stateByName.has(node.name)) {
       throw new NativeGuiError(`line ${node.line ?? '?'}: native state '${node.name}' is declared more than once.`);
@@ -60,33 +65,26 @@ export function buildNativeGuiIR(compiled) {
       let controlIndex = 0;
       for (const child of node.body ?? []) {
         if (child.kind === 'tabs') {
-          throw new NativeGuiError(
-            `line ${child.line ?? '?'}: native GUI v0.3 does not support Tabs containers yet. ` +
-            'Use Studio or Standalone Web for Tabs until the native container stage is implemented.'
-          );
+          const effective = formLayout?.controls?.[controlIndex] ?? defaultLayout('tabs', controlIndex);
+          const tabs = lowerTabsControl(child, {
+            formId,
+            windowIndex,
+            controlIndex,
+            stateByName,
+            controls,
+            layout: effective
+          });
+          form.controls.push(tabs);
+          controlIndex += 1;
+          continue;
         }
         if (child.kind !== 'uiControl') continue;
-        if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(child.control)) {
-          throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.3 does not support '${child.control}' controls yet.`);
-        }
         const effective = formLayout?.controls?.[controlIndex] ?? defaultLayout(child.control, controlIndex);
-        const selectionControl = ['combo', 'listbox'].includes(child.control);
-        const control = {
-          type: child.control,
-          id: child.id ?? `__${child.control}_${windowIndex + 1}_${controlIndex + 1}`,
-          text: child.textExpr ? requireTextLiteral(child.textExpr, child.line, `${child.control} text`) : '',
-          binding: child.id ?? null,
-          options: selectionControl ? requireSelectionOptions(child) : [],
-          layout: effective ?? defaultLayout(child.control, controlIndex)
-        };
-
-        if (['input', 'checkbox', 'combo', 'listbox'].includes(child.control) && !child.id) {
-          throw new NativeGuiError(`line ${child.line ?? '?'}: native ${child.control} controls need a simple Patch name after 'as'.`);
-        }
-        if (child.control === 'checkbox') requireBindingType(child, stateByName, 'boolean', 'Checkbox');
-        if (child.control === 'input') requireBindingType(child, stateByName, 'text', 'Input');
-        if (child.control === 'combo') requireBindingType(child, stateByName, 'text', 'ComboBox');
-        if (child.control === 'listbox') requireBindingType(child, stateByName, 'text', 'ListBox');
+        const control = lowerLeafControl(child, {
+          stateByName,
+          layout: effective,
+          generatedId: `__${child.control}_${windowIndex + 1}_${controlIndex + 1}`
+        });
         if (child.id) controls.set(child.id, { ...control, formId });
         form.controls.push(control);
         controlIndex += 1;
@@ -102,7 +100,7 @@ export function buildNativeGuiIR(compiled) {
       }
       const key = `${node.control}\u0000${node.event}`;
       if (eventKeys.has(key)) {
-        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.3 requires one '${node.event}' handler for '${node.control}'.`);
+        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 requires one '${node.event}' handler for '${node.control}'.`);
       }
       eventKeys.add(key);
       const valueType = control.type === 'checkbox'
@@ -119,12 +117,12 @@ export function buildNativeGuiIR(compiled) {
 
     if (['allow', 'function'].includes(node.kind)) continue;
     if (['openForm', 'closeForm'].includes(node.kind)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: open/close belongs inside a GUI event for native GUI v0.3.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: open/close belongs inside a GUI event for native GUI v0.4.`);
     }
     if (node.kind === 'createThing') {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.3 does not support thing state yet.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 does not support thing state yet.`);
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.3 cannot lower top-level '${node.kind}' yet.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 cannot lower top-level '${node.kind}' yet.`);
   }
 
   if (!forms.length) throw new NativeGuiError('Native GUI lowering needs at least one Patch Form.');
@@ -146,16 +144,139 @@ export function validateNativeGuiIR(ir) {
   if (!Array.isArray(ir.forms) || !ir.forms.length) throw new NativeGuiError('Native GUI IR contains no Forms.');
   if (!Array.isArray(ir.states) || !Array.isArray(ir.events)) throw new NativeGuiError('Native GUI IR is incomplete.');
   for (const form of ir.forms) {
+    for (const control of form.controls ?? []) validateControl(control, false);
+  }
+  return ir;
+}
+
+/**
+ * Flatten nested native controls for backends and sealed payloads while keeping
+ * enough parent metadata to recreate real platform Tabs containers. `nativeIndex`
+ * and `parentTabIndex` are global across the application and are implementation
+ * metadata only.
+ */
+export function flattenNativeGuiControls(ir) {
+  validateNativeGuiIR(ir);
+  const out = [];
+  for (let formIndex = 0; formIndex < ir.forms.length; formIndex += 1) {
+    const form = ir.forms[formIndex];
     for (const control of form.controls ?? []) {
-      if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(control.type)) {
-        throw new NativeGuiError(`Native GUI IR control '${control.type}' is unsupported.`);
-      }
-      if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
-        throw new NativeGuiError(`Native GUI IR ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} needs at least two options.`);
+      const nativeIndex = out.length;
+      out.push({
+        ...control,
+        formIndex,
+        nativeIndex,
+        parentTabIndex: -1,
+        pageIndex: -1,
+        pageTitles: control.type === 'tabs' ? control.pages.map(page => page.title) : []
+      });
+      if (control.type !== 'tabs') continue;
+      for (let pageIndex = 0; pageIndex < control.pages.length; pageIndex += 1) {
+        for (const child of control.pages[pageIndex].controls ?? []) {
+          out.push({
+            ...child,
+            formIndex,
+            nativeIndex: out.length,
+            parentTabIndex: nativeIndex,
+            pageIndex,
+            pageTitles: []
+          });
+        }
       }
     }
   }
-  return ir;
+  return out;
+}
+
+function lowerTabsControl(node, context) {
+  if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native Tabs needs a simple Patch name after 'as'.`);
+  const pages = node.body ?? [];
+  if (pages.length < 2) throw new NativeGuiError(`line ${node.line ?? '?'}: native Tabs needs at least two pages.`);
+  const tabs = {
+    type: 'tabs',
+    id: node.id,
+    text: '',
+    binding: null,
+    options: [],
+    layout: context.layout ?? defaultLayout('tabs', context.controlIndex),
+    pages: []
+  };
+
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+    const page = pages[pageIndex];
+    if (page.kind !== 'tabPage') {
+      throw new NativeGuiError(`line ${page.line ?? '?'}: native Tabs contains an unsupported '${page.kind}' page node.`);
+    }
+    const nativePage = {
+      title: requireTextLiteral(page.titleExpr, page.line, `Tabs page ${pageIndex + 1} title`),
+      controls: []
+    };
+    let childIndex = 0;
+    for (const child of page.body ?? []) {
+      if (child.kind === 'tabs') {
+        throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.4 does not support nested Tabs.`);
+      }
+      if (child.kind !== 'uiControl') {
+        throw new NativeGuiError(`line ${child.line ?? '?'}: native Tabs pages currently contain UI controls only.`);
+      }
+      const control = lowerLeafControl(child, {
+        stateByName: context.stateByName,
+        layout: defaultTabPageLayout(child.control, childIndex),
+        generatedId: `__${child.control}_${context.windowIndex + 1}_tab_${context.controlIndex + 1}_${pageIndex + 1}_${childIndex + 1}`
+      });
+      if (child.id) context.controls.set(child.id, { ...control, formId: context.formId, tabsId: node.id, pageIndex });
+      nativePage.controls.push(control);
+      childIndex += 1;
+    }
+    tabs.pages.push(nativePage);
+  }
+  return tabs;
+}
+
+function lowerLeafControl(child, context) {
+  if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(child.control)) {
+    throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.4 does not support '${child.control}' controls yet.`);
+  }
+  const selectionControl = ['combo', 'listbox'].includes(child.control);
+  const control = {
+    type: child.control,
+    id: child.id ?? context.generatedId,
+    text: child.textExpr ? requireTextLiteral(child.textExpr, child.line, `${child.control} text`) : '',
+    binding: child.id ?? null,
+    options: selectionControl ? requireSelectionOptions(child) : [],
+    layout: context.layout ?? defaultLayout(child.control, 0)
+  };
+
+  if (['input', 'checkbox', 'combo', 'listbox'].includes(child.control) && !child.id) {
+    throw new NativeGuiError(`line ${child.line ?? '?'}: native ${child.control} controls need a simple Patch name after 'as'.`);
+  }
+  if (child.control === 'checkbox') requireBindingType(child, context.stateByName, 'boolean', 'Checkbox');
+  if (child.control === 'input') requireBindingType(child, context.stateByName, 'text', 'Input');
+  if (child.control === 'combo') requireBindingType(child, context.stateByName, 'text', 'ComboBox');
+  if (child.control === 'listbox') requireBindingType(child, context.stateByName, 'text', 'ListBox');
+  return control;
+}
+
+function validateControl(control, insideTabs) {
+  if (control.type === 'tabs') {
+    if (insideTabs) throw new NativeGuiError('Native GUI IR v0.4 does not allow nested Tabs.');
+    if (!control.id || !Array.isArray(control.pages) || control.pages.length < 2) {
+      throw new NativeGuiError('Native GUI IR Tabs needs an id and at least two pages.');
+    }
+    for (const page of control.pages) {
+      if (typeof page?.title !== 'string' || !Array.isArray(page.controls)) {
+        throw new NativeGuiError('Native GUI IR Tabs page is incomplete.');
+      }
+      for (const child of page.controls) validateControl(child, true);
+    }
+    return;
+  }
+  if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox'].includes(control.type)) {
+    throw new NativeGuiError(`Native GUI IR control '${control.type}' is unsupported.`);
+  }
+  if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
+    throw new NativeGuiError(`Native GUI IR ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} needs at least two options.`);
+  }
 }
 
 function lowerNativeActions(nodes, states, event) {
@@ -174,7 +295,7 @@ function lowerNativeActions(nodes, states, event) {
       if (!state) throw new NativeGuiError(`line ${node.line ?? '?'}: native change target '${node.target}' is not simple state.`);
       const ops = [];
       for (const op of node.ops ?? []) {
-        if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.3 does not support field mutation yet.`);
+        if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.4 does not support field mutation yet.`);
         validateTypedOperation(state, op);
         if (op.op === 'clear') {
           ops.push({ op: 'clear' });
@@ -196,7 +317,7 @@ function lowerNativeActions(nodes, states, event) {
       actions.push({ kind: 'change', target: node.target, stateType: state.type, ops });
       continue;
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.3 event handlers support change, open and close only.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.4 event handlers support change, open and close only.`);
   }
   return actions;
 }
@@ -208,7 +329,7 @@ function validateTypedOperation(state, op) {
       ? new Set(['set', 'add', 'clear'])
       : new Set(['set', 'clear']);
   if (!allowed.has(op.op)) {
-    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.3 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
+    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.4 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
   }
 }
 
@@ -248,7 +369,7 @@ function parseTypedLiteral(expr, type, line) {
 function requireTextLiteral(expr, line, label) {
   const text = String(expr ?? '').trim();
   if (!(text.startsWith('"') && text.endsWith('"'))) {
-    throw new NativeGuiError(`line ${line ?? '?'}: ${label} must currently be simple text in quotes for native GUI v0.3.`);
+    throw new NativeGuiError(`line ${line ?? '?'}: ${label} must currently be simple text in quotes for native GUI v0.4.`);
   }
   try {
     const value = JSON.parse(text);
@@ -266,8 +387,22 @@ function defaultLayout(type, index) {
     input: [220, 36],
     checkbox: [220, 36],
     combo: [220, 36],
-    listbox: [220, 120]
+    listbox: [220, 120],
+    tabs: [420, 240]
   };
   const [width, height] = sizes[type] ?? [120, 36];
   return { x: 24, y: 24 + index * 48, width, height };
+}
+
+function defaultTabPageLayout(type, index) {
+  const sizes = {
+    text: [200, 30],
+    button: [120, 36],
+    input: [220, 36],
+    checkbox: [220, 36],
+    combo: [220, 36],
+    listbox: [220, 120]
+  };
+  const [width, height] = sizes[type] ?? [120, 36];
+  return { x: 12, y: 12 + index * 48, width, height };
 }

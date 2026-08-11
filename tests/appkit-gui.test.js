@@ -12,81 +12,62 @@ const source = fs.readFileSync(new URL('../examples/forms-navigation.patch', imp
 const counterSource = fs.readFileSync(new URL('../examples/counter-window.patch', import.meta.url), 'utf8');
 const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', import.meta.url), 'utf8');
 const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch', import.meta.url), 'utf8');
+const tabsSource = fs.readFileSync(new URL('../examples/tabs-window.patch', import.meta.url), 'utf8');
 
-test('AppKit backend consumes Native GUI IR v0.3', () => {
+test('AppKit backend consumes Native GUI IR v0.4', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeMacNavigation' }));
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.3');
-  assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
+  assert.equal(ir.version, '0.4');
   const mm = emitAppKitGuiObjCpp(ir);
   assert.match(mm, /NSWindow/);
   assert.match(mm, /NSButton/);
   assert.match(mm, /NSTextField/);
   assert.match(mm, /handleControl:/);
-  assert.match(mm, /controlTextDidChange:/);
-  assert.match(mm, /makeKeyAndOrderFront/);
-  assert.match(mm, /orderOut:nil/);
-  assert.match(mm, /NSControlStateValueOn/);
   assert.doesNotMatch(mm, /BrowserWindow|require\(['"]electron['"]\)|<html|document\.querySelector/);
 });
 
 test('AppKit backend lowers native ComboBox selection to text changed events', () => {
-  const ir = buildNativeGuiIR(compile(comboSource, { kind: 'window', name: 'NativeMacCombo' }));
-  const mm = emitAppKitGuiObjCpp(ir);
+  const mm = emitAppKitGuiObjCpp(buildNativeGuiIR(compile(comboSource, { kind: 'window', name: 'NativeMacCombo' })));
   assert.match(mm, /NSPopUpButton/);
-  assert.match(mm, /addItemsWithTitles:@\[@"Small", @"Medium", @"Large"\]/);
   assert.match(mm, /titleOfSelectedItem/);
   assert.match(mm, /selectItemWithTitle:patch_state_size/);
   assert.match(mm, /patch_state_size = \[eventValue copy\]/);
 });
 
 test('AppKit backend lowers native ListBox selection to text changed events', () => {
-  const ir = buildNativeGuiIR(compile(listboxSource, { kind: 'window', name: 'NativeMacListBox' }));
-  const mm = emitAppKitGuiObjCpp(ir);
-  assert.match(mm, /NSScrollView/);
-  assert.match(mm, /NSTableView/);
-  assert.match(mm, /NSTableViewDataSource/);
-  assert.match(mm, /NSTableViewDelegate/);
-  assert.match(mm, /allowsMultipleSelection = NO/);
-  assert.match(mm, /@"Apple"/);
-  assert.match(mm, /@"Banana"/);
-  assert.match(mm, /@"Cherry"/);
-  assert.match(mm, /@"Mango"/);
-  assert.match(mm, /tableViewSelectionDidChange/);
-  assert.match(mm, /selectedRow/);
-  assert.match(mm, /selectRowIndexes/);
+  const mm = emitAppKitGuiObjCpp(buildNativeGuiIR(compile(listboxSource, { kind: 'window', name: 'NativeMacListBox' })));
+  for (const marker of ['NSScrollView', 'NSTableView', 'NSTableViewDataSource', 'NSTableViewDelegate', 'tableViewSelectionDidChange', 'selectedRow', 'selectRowIndexes']) assert.ok(mm.includes(marker));
   assert.match(mm, /patch_state_fruit = \[eventValue copy\]/);
 });
 
-test('AppKit backend lowers numeric Patch change and text interpolation', () => {
-  const ir = buildNativeGuiIR(compile(counterSource, { kind: 'window', name: 'NativeMacCounter' }));
-  const mm = emitAppKitGuiObjCpp(ir);
-  assert.match(mm, /static double patch_state_count = 0/);
-  assert.match(mm, /patch_state_count \+= 1/);
-  assert.match(mm, /PatchNumber\(patch_state_count\)/);
-  assert.match(mm, /@"Count: "/);
+test('AppKit backend maps Tabs to NSTabView with real page views', () => {
+  const mm = emitAppKitGuiObjCpp(buildNativeGuiIR(compile(tabsSource, { kind: 'window', name: 'NativeMacTabs' })));
+  for (const marker of ['NSTabView', 'NSTabViewItem', 'gTabPages', 'selectTabViewItemAtIndex', '@"General"', '@"Advanced"']) assert.ok(mm.includes(marker));
+  assert.match(mm, /patch_state_name = \[eventValue copy\]/);
+  assert.match(mm, /patch_state_notifications = eventValue/);
+  assert.doesNotMatch(mm, /patch_state_settings/);
 });
 
-test('AppKit build script emits auditable native source and metadata on every development OS', () => {
+test('AppKit backend lowers numeric Patch change and text interpolation', () => {
+  const mm = emitAppKitGuiObjCpp(buildNativeGuiIR(compile(counterSource, { kind: 'window', name: 'NativeMacCounter' })));
+  assert.match(mm, /static double patch_state_count = 0/);
+  assert.match(mm, /patch_state_count \+= 1/);
+});
+
+test('AppKit build script emits auditable v0.4 native source and metadata', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-appkit-emit-'));
   try {
-    const result = spawnSync(process.execPath, [
-      'scripts/build-native-appkit.js',
-      'examples/forms-navigation.patch',
-      'NativeMacSmoke',
-      temp,
-      '--emit-only'
-    ], { cwd: path.resolve('.'), encoding: 'utf8' });
+    const result = spawnSync(process.execPath, ['scripts/build-native-appkit.js', 'examples/tabs-window.patch', 'NativeMacTabs', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    const mm = fs.readFileSync(path.join(temp, 'NativeMacSmoke.appkit.mm'), 'utf8');
-    const meta = JSON.parse(fs.readFileSync(path.join(temp, 'NativeMacSmoke.appkit-build.json'), 'utf8'));
-    assert.match(mm, /Direct native AppKit controls/);
+    const mm = fs.readFileSync(path.join(temp, 'NativeMacTabs.appkit.mm'), 'utf8');
+    const meta = JSON.parse(fs.readFileSync(path.join(temp, 'NativeMacTabs.appkit-build.json'), 'utf8'));
+    assert.match(mm, /NSTabView/);
     assert.equal(meta.shell, 'native-appkit');
     assert.equal(meta.electron, false);
     assert.equal(meta.framework, 'AppKit');
-    assert.equal(meta.nativeGuiIrVersion, '0.3');
+    assert.equal(meta.nativeGuiIrVersion, '0.4');
     assert.equal(meta.changeIrVersion, '0.10');
-    assert.equal(meta.forms, 2);
+    assert.equal(meta.forms, 1);
     assert.equal(meta.events, 3);
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });

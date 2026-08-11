@@ -8,7 +8,7 @@ import { triggerWindowEvent } from '../src/window-events.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 import { addDesignerControl, listDesignerControls, updateDesignerControl, removeDesignerControl } from '../src/designer.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
-import { buildNativeGuiIR, NativeGuiError } from '../src/native-gui-ir.js';
+import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
 
 const source = fs.readFileSync('examples/tabs-window.patch', 'utf8');
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
@@ -151,10 +151,29 @@ test('compatibility desktop renderer cannot silently omit Tabs', () => {
   assert.match(compatibilityBuilder, /runtime\.result\(\)\.ui/);
 });
 
-test('direct native GUI v0.3 fails closed on Tabs until native container parity exists', () => {
+test('Native GUI IR v0.4 keeps real Tabs hierarchy and transient selection out of Patch state', () => {
   const compiled = compile(source, { name: 'TabsDemo', kind: 'window' });
-  assert.throws(
-    () => buildNativeGuiIR(compiled),
-    error => error instanceof NativeGuiError && /native GUI v0\.3 does not support Tabs containers yet/.test(error.message)
-  );
+  const native = buildNativeGuiIR(compiled);
+  assert.equal(native.version, '0.4');
+  assert.deepEqual(native.states.map(state => state.name), ['name', 'notifications']);
+  assert.equal(native.states.some(state => state.name === 'settings'), false);
+
+  const tabs = native.forms[0].controls.find(control => control.type === 'tabs');
+  assert.ok(tabs);
+  assert.equal(tabs.id, 'settings');
+  assert.deepEqual(tabs.pages.map(page => page.title), ['General', 'Advanced']);
+  assert.deepEqual(tabs.pages[0].controls.map(control => control.type), ['text', 'input']);
+  assert.deepEqual(tabs.pages[1].controls.map(control => control.type), ['checkbox', 'button']);
+
+  const flat = flattenNativeGuiControls(native);
+  const tabFlat = flat.find(control => control.type === 'tabs' && control.id === 'settings');
+  const name = flat.find(control => control.id === 'name');
+  const notifications = flat.find(control => control.id === 'notifications');
+  const reset = flat.find(control => control.id === 'reset_name');
+  assert.ok(tabFlat);
+  assert.deepEqual([tabFlat.parentTabIndex, tabFlat.pageIndex], [-1, -1]);
+  assert.deepEqual([name.parentTabIndex, name.pageIndex], [tabFlat.nativeIndex, 0]);
+  assert.deepEqual([notifications.parentTabIndex, notifications.pageIndex], [tabFlat.nativeIndex, 1]);
+  assert.deepEqual([reset.parentTabIndex, reset.pageIndex], [tabFlat.nativeIndex, 1]);
+  assert.deepEqual(native.events.map(event => event.control), ['name', 'notifications', 'reset_name']);
 });
