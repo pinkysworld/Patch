@@ -15,10 +15,10 @@ const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch'
 const tabsSource = fs.readFileSync(new URL('../examples/tabs-window.patch', import.meta.url), 'utf8');
 const inputSource = `create text name = ""\n\nwindow "Input" as main size 420, 180:\n  input name at 24, 24 size 240, 36\n\nwhen name changed:\n  change name:\n    set = value\n`;
 
-test('GTK backend consumes Native GUI IR v0.5', () => {
+test('GTK backend consumes Native GUI IR v0.6', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'NativeGtkNavigation' }));
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.5');
+  assert.equal(ir.version, '0.6');
   assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
   const cpp = emitGtkGuiCpp(ir);
   assert.match(cpp, /gtk_window_new/);
@@ -59,7 +59,7 @@ test('GTK backend lowers numeric Patch change and text interpolation', () => {
   assert.match(cpp, /patch_state_count \+= 1/);
 });
 
-test('GTK build script emits auditable v0.5 native source and metadata', () => {
+test('GTK build script emits auditable v0.6 native source and metadata', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-gtk-emit-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/build-native-gtk.js', 'examples/tabs-window.patch', 'NativeGtkTabs', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
@@ -70,7 +70,7 @@ test('GTK build script emits auditable v0.5 native source and metadata', () => {
     assert.equal(meta.shell, 'native-gtk3');
     assert.equal(meta.electron, false);
     assert.equal(meta.toolkit, 'GTK3');
-    assert.equal(meta.nativeGuiIrVersion, '0.5');
+    assert.equal(meta.nativeGuiIrVersion, '0.6');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 1);
     assert.equal(meta.events, 3);
