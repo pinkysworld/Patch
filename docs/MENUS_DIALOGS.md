@@ -1,6 +1,6 @@
-# Native menus and informational dialogs
+# Menus and informational dialogs
 
-Patch Native GUI 0.6 adds a deliberately small menu/dialog contract without introducing hidden persistent state.
+This stage introduces the Patch language and Change IR contract for menus and informational dialogs without claiming renderer support before the native backends implement it.
 
 ## Syntax
 
@@ -14,83 +14,38 @@ when about_item clicked:
   dialog "About Patch", "Native menus and informational dialogs"
 ```
 
-A `menu` is Window structure rather than a positioned Form control. It contains one or more named `item` entries. Menu item ids live in the same UI id namespace as ordinary named controls and Tabs.
+A `menu` is Window structure rather than a positioned Form control. It contains one or more named `item` entries. A menu item exposes `clicked` and carries no event value.
 
-A menu item exposes only `clicked` in Stage 1. It does not carry a value.
+`dialog "Title", "Message"` is deliberately informational. It has no result value and therefore cannot create hidden Boolean/text state or a Change History entry. Persistent Patch state still changes only through explicit `change` blocks.
 
-## Dialog semantics
+## Change IR 0.10
 
-`dialog "Title", "Message"` is an informational GUI action. It displays an OS-native message dialog and has no result value.
+The existing Change IR version is retained and gains explicit instructions within the existing extensible UI surface:
 
-This is intentional. A simple informational dialog does not create a hidden Boolean, text value, Change History entry, or framework object. Persistent Patch state changes only through ordinary explicit `change` blocks.
+- `MENU`
+- `MENU_ITEM`
+- `DIALOG`
 
-Confirmation dialogs, file pickers, text-input dialogs and other result-bearing modal APIs are not overloaded onto this Stage-1 action. They require a separate language contract because their result must be represented explicitly and type-safely.
+The compiler also advertises `ui.menu` and `ui.dialog` capabilities.
 
-## Native GUI IR 0.6
+This does not extend the beta.32 formal assurance boundary. Menu/dialog instructions remain product UI/runtime engineering.
 
-Menus are stored separately from geometrical controls:
+## Current runtime boundary
 
-```text
-Form
-  controls[]   -> positioned Text/Button/Input/.../Tabs/Radio
-  menus[]      -> Menu -> MenuItem[]
-```
+At this language-contract stage, Window runtimes fail closed rather than silently omitting menu items or dialogs. Native GUI IR, sealed native payloads, Win32/AppKit/GTK emitters and token-free runtime templates remain on their previous versions until the dedicated native-parity stage lands.
 
-A menu item is still an event source. A `clicked` handler may contain the same checked native actions as other GUI events plus the new informational `dialog` action.
+That separation is intentional: parsing or lowering syntax is not treated as evidence that a target renderer implements it.
 
-Dialog actions carry:
+## Next native-parity stage
 
-- owning Form id;
-- quoted title text;
-- quoted message text.
+The following stage will map the contract to real platform primitives:
 
-They do not carry an output/result field.
+- Windows: `HMENU` / `WM_COMMAND` and `MessageBoxW`
+- macOS: `NSMenu` / `NSMenuItem` and `NSAlert`
+- Linux: `GtkMenuBar` / `GtkMenuItem` and `GtkMessageDialog`
 
-## Native mappings
+It will also version Native GUI IR and the sealed native payload only when all AOT and token-free runtime paths can reconstruct and execute the same contract.
 
-### Windows
+## Result-bearing dialogs
 
-- `HMENU`
-- `CreateMenu`
-- `CreatePopupMenu`
-- `AppendMenuW`
-- `SetMenu`
-- menu selection through `WM_COMMAND`
-- informational dialog through `MessageBoxW`
-
-### macOS
-
-- `NSMenu`
-- `NSMenuItem`
-- target/action dispatch
-- informational dialog through `NSAlert`
-
-macOS exposes an application-wide menu bar, so Patch Form menu declarations are projected into the application menu structure while each MenuItem still retains its Patch event identity and owning Form for dialog parenting.
-
-### Linux
-
-- `GtkMenuBar`
-- `GtkMenu`
-- `GtkMenuItem`
-- `activate` signal dispatch
-- informational dialog through `GtkMessageDialog`
-
-## CI and modal dialogs
-
-The native smoke applications exercise the real menu-item event dispatch path. In `--patch-smoke` mode the dialog primitive records the requested title/message instead of opening a modal window, so unattended CI cannot deadlock waiting for a human click.
-
-Normal application execution uses the real OS-native dialog primitive. The smoke-mode substitution is test infrastructure only and does not alter the language contract.
-
-## Sealed native payload v6
-
-The token-free runtime format adds:
-
-- per-Form menu structures after the Form control list;
-- Menu title and MenuItem id/text;
-- action kind 4 for informational dialogs with Form/title/message.
-
-Menus are not encoded as fake control kind 9 because they are not Form-layout controls. Existing control kinds remain unchanged, including Tabs kind 7 and Radio kind 8.
-
-## Scope boundary
-
-This work changes neither Change IR 0.10 nor the beta.32 research assurance claims. Native GUI work remains product/runtime engineering and does not expand the formal proof boundary.
+Confirmation, Open/Save file pickers and input dialogs are intentionally not overloaded onto the informational `dialog` action. They need a separate typed result contract so results are explicit rather than framework-owned hidden state.
