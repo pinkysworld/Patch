@@ -110,7 +110,7 @@ requireAll('native builder modes', nativeBuild, [
 ]);
 const nativeGui = read('_site/src/native-gui-ir.js');
 requireAll('Native GUI IR v0.5 Radio/Tabs contract', nativeGui, [
-  "PATCH_NATIVE_GUI_IR_VERSION = '0.5'", 'flattenNativeGuiControls', "type: 'tabs'", "control.type === 'radio'", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
+  "PATCH_NATIVE_GUI_IR_VERSION = '0.5'", 'flattenNativeGuiControls', "type: 'tabs'", "['combo', 'listbox', 'radio'].includes(control.type)", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
 ]);
 const sealedNative = read('_site/src/sealed-native-gui.js');
 requireAll('sealed native GUI payload v5 Radio/Tabs contract', sealedNative, [
