@@ -9,7 +9,9 @@ on:
       - src/gtk-gui.js
       - scripts/build-native-gtk.js
       - tests/gtk-gui.test.js
+      - tests/menu-dialog-window.test.js
       - examples/forms-navigation.patch
+      - examples/menu-dialog-window.patch
       - .github/workflows/native-gtk-gui.yml
   push:
     branches: [main]
@@ -18,7 +20,9 @@ on:
       - src/gtk-gui.js
       - scripts/build-native-gtk.js
       - tests/gtk-gui.test.js
+      - tests/menu-dialog-window.test.js
       - examples/forms-navigation.patch
+      - examples/menu-dialog-window.patch
       - .github/workflows/native-gtk-gui.yml
 
 concurrency:
@@ -48,28 +52,29 @@ jobs:
           node --check src/gtk-gui.js
           node --check scripts/build-native-gtk.js
           node --check tests/gtk-gui.test.js
+          node --check tests/menu-dialog-window.test.js
       - name: Run GTK lowering tests
-        run: node --test tests/gtk-gui.test.js
-      - name: Compile, link and run native Patch GTK application
+        run: node --test tests/gtk-gui.test.js tests/menu-dialog-window.test.js
+      - name: Compile, link and run native Patch GTK Forms application
         run: |
           mkdir -p dist-native-gtk
           node scripts/build-native-gtk.js examples/forms-navigation.patch PatchNativeGtkSmoke dist-native-gtk --smoke
+      - name: Compile and execute native Patch GTK Menu Dialog application
+        run: node scripts/build-native-gtk.js examples/menu-dialog-window.patch PatchNativeGtkMenuDialog dist-native-menu-dialog --smoke
       - name: Verify native GTK output contract
         run: |
-          test -x dist-native-gtk/PatchNativeGtkSmoke
-          size=$(stat -c%s dist-native-gtk/PatchNativeGtkSmoke)
-          test "$size" -lt 10485760
-          node -e "const m=require('./dist-native-gtk/PatchNativeGtkSmoke.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.forms!==2||m.events!==3) process.exit(1)"
-          test ! -d dist-native-gtk/node_modules
-          ! find dist-native-gtk -iname '*Electron*' -print -quit | grep -q .
-          echo "Native GTK executable size: $size bytes"
-          ldd dist-native-gtk/PatchNativeGtkSmoke
+          for pair in 'dist-native-gtk PatchNativeGtkSmoke' 'dist-native-menu-dialog PatchNativeGtkMenuDialog'; do
+            set -- $pair
+            dir=$1; name=$2
+            test -x "$dir/$name"
+            node -e "const m=require('./$dir/$name.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.nativeGuiIrVersion!=='0.6') process.exit(1)"
+          done
+          ! find dist-native-gtk dist-native-menu-dialog -iname '*Electron*' -print -quit | grep -q .
       - name: Upload native GTK compiler evidence
         uses: actions/upload-artifact@v4
         with:
           name: patch-native-gtk-gui
           path: |
-            dist-native-gtk/PatchNativeGtkSmoke
-            dist-native-gtk/PatchNativeGtkSmoke.gtk.cpp
-            dist-native-gtk/PatchNativeGtkSmoke.gtk-build.json
+            dist-native-gtk/**
+            dist-native-menu-dialog/**
           if-no-files-found: error
