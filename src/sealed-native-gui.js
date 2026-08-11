@@ -1,16 +1,23 @@
-import { validateNativeGuiIR } from './native-gui-ir.js';
+import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 3;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 4;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 
 export class SealedNativeGuiError extends Error {}
 
+/**
+ * Payload v4 keeps controls flat for the tiny prebuilt native runtimes while
+ * preserving real Tabs hierarchy through parentTabIndex/pageIndex metadata.
+ * Tabs page titles are carried in the existing option-vector slot. Selection
+ * is intentionally not serialized because it is transient native UI state.
+ */
 export function encodeNativeGuiPayload(input) {
   const ir = validateNativeGuiIR(input);
   validateTextBindings(ir);
   const writer = new Writer();
+  const flatControls = flattenNativeGuiControls(ir);
 
   writer.u32(ir.states.length);
   for (const state of ir.states) {
@@ -21,25 +28,31 @@ export function encodeNativeGuiPayload(input) {
   }
 
   writer.u32(ir.forms.length);
-  for (const form of ir.forms) {
+  for (let formIndex = 0; formIndex < ir.forms.length; formIndex += 1) {
+    const form = ir.forms[formIndex];
+    const controls = flatControls.filter(control => control.formIndex === formIndex);
     writer.text(form.id);
     writer.text(form.title);
     writer.u32(form.width);
     writer.u32(form.height);
     writer.u8(form.visible ? 1 : 0);
-    writer.u32(form.controls.length);
-    for (const control of form.controls) {
+    writer.u32(controls.length);
+    for (const control of controls) {
       writer.u8(controlTypeCode(control.type));
       writer.text(control.id ?? '');
       writer.text(control.text ?? '');
       writer.text(control.binding ?? '');
-      const options = Array.isArray(control.options) ? control.options : [];
+      const options = control.type === 'tabs'
+        ? control.pageTitles
+        : Array.isArray(control.options) ? control.options : [];
       writer.u32(options.length);
       for (const option of options) writer.text(option);
       writer.i32(control.layout?.x ?? 24);
       writer.i32(control.layout?.y ?? 24);
       writer.i32(control.layout?.width ?? 120);
       writer.i32(control.layout?.height ?? 36);
+      writer.i32(control.parentTabIndex ?? -1);
+      writer.i32(control.pageIndex ?? -1);
     }
   }
 
@@ -114,17 +127,18 @@ function validateRuntimeHeader(runtime, platform) {
 function validateTextBindings(ir) {
   const states = new Set(ir.states.map(state => state.name));
   const re = /\{([A-Za-z_]\w*)\}/g;
-  for (const form of ir.forms) {
-    for (const control of form.controls) {
-      const text = String(control.text ?? '');
-      re.lastIndex = 0;
-      let match;
-      while ((match = re.exec(text))) {
-        if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
-      }
-      if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
-        throw new SealedNativeGuiError(`Native ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} payload needs at least two options.`);
-      }
+  for (const control of flattenNativeGuiControls(ir)) {
+    const text = String(control.text ?? '');
+    re.lastIndex = 0;
+    let match;
+    while ((match = re.exec(text))) {
+      if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
+    }
+    if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
+      throw new SealedNativeGuiError(`Native ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} payload needs at least two options.`);
+    }
+    if (control.type === 'tabs' && (!Array.isArray(control.pageTitles) || control.pageTitles.length < 2)) {
+      throw new SealedNativeGuiError('Native Tabs payload needs at least two page titles.');
     }
   }
 }
@@ -167,6 +181,7 @@ function controlTypeCode(type) {
   if (type === 'checkbox') return 4;
   if (type === 'combo') return 5;
   if (type === 'listbox') return 6;
+  if (type === 'tabs') return 7;
   throw new SealedNativeGuiError(`Unsupported native control '${type}'.`);
 }
 function opCode(op) {
