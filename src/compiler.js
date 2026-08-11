@@ -113,6 +113,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'show') caps.add('console.output');
     if (['window', 'uiControl', 'tabs', 'tabPage', 'event', 'openForm', 'closeForm'].includes(node.kind)) caps.add('ui.window');
     if (node.kind === 'tabs' || node.kind === 'tabPage') caps.add('ui.tabs');
+    if (node.kind === 'uiControl' && node.control === 'radio') caps.add('ui.radio');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
     if (node.kind === 'why') caps.add('change.provenance');
