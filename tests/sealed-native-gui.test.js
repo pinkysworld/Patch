@@ -17,19 +17,20 @@ const comboGui = buildNativeGuiIR(compile(fs.readFileSync('examples/combo-window
 const listboxGui = buildNativeGuiIR(compile(fs.readFileSync('examples/listbox-window.patch', 'utf8'), { name: 'SealedListBoxTest', kind: 'window' }));
 const tabsGui = buildNativeGuiIR(compile(fs.readFileSync('examples/tabs-window.patch', 'utf8'), { name: 'SealedTabsTest', kind: 'window' }));
 const radioGui = buildNativeGuiIR(compile(fs.readFileSync('examples/radio-window.patch', 'utf8'), { name: 'SealedRadioTest', kind: 'window' }));
+const menuGui = buildNativeGuiIR(compile(fs.readFileSync('examples/menu-dialog-window.patch', 'utf8'), { name: 'SealedMenuDialogTest', kind: 'window' }));
 
-test('sealed native GUI payload v5 is deterministic and round-trips from a Windows executable overlay', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 5);
+test('sealed native GUI payload v6 is deterministic and round-trips from a Windows executable overlay', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
   const payload = encodeNativeGuiPayload(gui);
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4, 5, 6]);
   const sealed = sealNativeGuiRuntime(fakePe, gui);
   assert.equal(new TextDecoder().decode(sealed.subarray(sealed.length - 20, sealed.length - 12)), PATCH_SEALED_NATIVE_GUI_MAGIC);
-  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 5);
+  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 6);
   assert.deepEqual(decodeNativeGuiPayload(sealed), payload);
   assert.deepEqual(encodeNativeGuiPayload(gui), payload);
 });
 
-test('same v5 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
+test('same v6 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
   const payload = encodeNativeGuiPayload(gui);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 9, 8, 7, 6]);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 7, 6, 5, 4]);
@@ -37,7 +38,7 @@ test('same v5 payload round-trips from Linux ELF and macOS Mach-O overlays', () 
   assert.deepEqual(decodeNativeGuiPayload(sealNativeGuiRuntime(fakeMachO, gui, { platform: 'macos' })), payload);
 });
 
-test('sealed native GUI v5 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
+test('sealed native GUI v6 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
   for (const [selectionGui, expected] of [
     [comboGui, ['Small', 'Medium', 'Large']],
     [listboxGui, ['Apple', 'Banana', 'Cherry', 'Mango']],
@@ -50,8 +51,8 @@ test('sealed native GUI v5 serializes ComboBox, ListBox and Radio option semanti
   }
 });
 
-test('sealed native GUI v5 keeps Tabs kind 7 and adds Radio kind 8', () => {
-  const controls = readPayloadControls(encodeNativeGuiPayload(tabsGui));
+test('sealed native GUI v6 keeps Tabs kind 7 and Radio kind 8', () => {
+  const controls = readPayload(encodeNativeGuiPayload(tabsGui)).controls;
   const tabs = controls.find(control => control.id === 'settings');
   const name = controls.find(control => control.id === 'name');
   const notifications = controls.find(control => control.id === 'notifications');
@@ -64,10 +65,19 @@ test('sealed native GUI v5 keeps Tabs kind 7 and adds Radio kind 8', () => {
   assert.deepEqual([notifications.parentTabIndex, notifications.pageIndex], [tabs.index, 1]);
   assert.deepEqual([reset.parentTabIndex, reset.pageIndex], [tabs.index, 1]);
 
-  const radio = readPayloadControls(encodeNativeGuiPayload(radioGui)).find(control => control.id === 'mode');
+  const radio = readPayload(encodeNativeGuiPayload(radioGui)).controls.find(control => control.id === 'mode');
   assert.ok(radio);
   assert.equal(radio.kind, 8);
   assert.deepEqual(radio.options, ['Basic', 'Advanced', 'Expert']);
+});
+
+test('sealed native GUI v6 serializes structural menus and informational dialog action kind 4', () => {
+  const decoded = readPayload(encodeNativeGuiPayload(menuGui));
+  assert.deepEqual(decoded.menus, [{ form: 'main', title: 'Help', items: [{ id: 'about_item', text: 'About' }] }]);
+  assert.deepEqual(decoded.events, [{
+    control: 'about_item', eventKind: 1, valueType: 0,
+    actions: [{ kind: 4, form: 'main', title: 'About Patch', message: 'Native menus and informational dialogs' }]
+  }]);
 });
 
 test('sealed payload contains forms, controls, events and state without Patch source', () => {
@@ -95,7 +105,7 @@ test('sealer rejects a runtime whose binary format does not match the requested 
   assert.throws(() => sealNativeGuiRuntime(fakeMachO, gui, { platform: 'plan9' }), /unsupported/);
 });
 
-function readPayloadControls(bytes) {
+function readPayload(bytes) {
   let offset = 0;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const u8 = () => view.getUint8(offset++);
@@ -109,20 +119,42 @@ function readPayloadControls(bytes) {
   for (let i = 0; i < stateCount; i += 1) { text(); skipValue(u8()); }
   const forms = u32();
   const controls = [];
+  const menus = [];
   for (let f = 0; f < forms; f += 1) {
-    text(); text(); u32(); u32(); u8();
+    const formId = text(); text(); u32(); u32(); u8();
     const count = u32();
     for (let c = 0; c < count; c += 1) {
-      const kind = u8();
-      const id = text();
-      text(); text();
-      const optionCount = u32();
-      const options = Array.from({ length: optionCount }, () => text());
-      i32(); i32(); i32(); i32();
-      const parentTabIndex = i32();
-      const pageIndex = i32();
+      const kind = u8(); const id = text(); text(); text();
+      const optionCount = u32(); const options = Array.from({ length: optionCount }, () => text());
+      i32(); i32(); i32(); i32(); const parentTabIndex = i32(); const pageIndex = i32();
       controls.push({ index: controls.length, kind, id, options, parentTabIndex, pageIndex });
     }
+    const menuCount = u32();
+    for (let m = 0; m < menuCount; m += 1) {
+      const title = text(); const itemCount = u32(); const items = [];
+      for (let i = 0; i < itemCount; i += 1) items.push({ id: text(), text: text() });
+      menus.push({ form: formId, title, items });
+    }
   }
-  return controls;
+  const eventCount = u32();
+  const events = [];
+  for (let e = 0; e < eventCount; e += 1) {
+    const control = text(); const eventKind = u8(); const valueType = u8(); const actionCount = u32(); const actions = [];
+    for (let a = 0; a < actionCount; a += 1) {
+      const kind = u8();
+      if (kind === 1 || kind === 2) actions.push({ kind, form: text() });
+      else if (kind === 4) actions.push({ kind, form: text(), title: text(), message: text() });
+      else if (kind === 3) {
+        const target = text(); const stateType = u8(); const opCount = u32();
+        for (let o = 0; o < opCount; o += 1) {
+          const op = u8(); const valueKind = u8();
+          if (op !== 4 && valueKind === 1) skipValue(stateType);
+        }
+        actions.push({ kind, target });
+      } else throw new Error(`bad action ${kind}`);
+    }
+    events.push({ control, eventKind, valueType, actions });
+  }
+  assert.equal(offset, bytes.length);
+  return { controls, menus, events };
 }
