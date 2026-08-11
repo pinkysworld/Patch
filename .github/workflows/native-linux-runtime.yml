@@ -16,9 +16,12 @@ on:
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
+      - examples/tabs-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
+      - tests/tabs-window.test.js
+      - tests/studio-linux-native-gui.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -37,9 +40,12 @@ on:
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
+      - examples/tabs-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
+      - tests/tabs-window.test.js
+      - tests/studio-linux-native-gui.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -90,22 +96,28 @@ jobs:
           node scripts/seal-native-linux.js examples/listbox-window.patch dist-runtime/patch-linux-native-gui-runtime.bin dist-runtime/PatchSealedListBox PatchSealedListBox
           chmod +x dist-runtime/PatchSealedListBox
           xvfb-run -a dist-runtime/PatchSealedListBox --patch-smoke
-      - name: Verify ELF and payload-v3 contract
+      - name: Seal and smoke native Tabs application
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js examples/tabs-window.patch dist-runtime/patch-linux-native-gui-runtime.bin dist-runtime/PatchSealedTabs PatchSealedTabs
+          chmod +x dist-runtime/PatchSealedTabs
+          xvfb-run -a dist-runtime/PatchSealedTabs --patch-smoke
+      - name: Verify ELF and payload-v4 contract
         shell: bash
         run: |
           file dist-runtime/patch-linux-native-gui-runtime.bin
-          file dist-runtime/PatchSealedListBox
+          file dist-runtime/PatchSealedTabs
           node - <<'NODE'
           const fs=require('fs');
           const runtime=fs.readFileSync('dist-runtime/patch-linux-native-gui-runtime.bin');
-          const sealed=fs.readFileSync('dist-runtime/PatchSealedListBox');
+          const sealed=fs.readFileSync('dist-runtime/PatchSealedTabs');
           if(runtime[0]!==0x7f||runtime[1]!==0x45||runtime[2]!==0x4c||runtime[3]!==0x46) throw new Error('Runtime is not ELF.');
           if(sealed.length<=runtime.length) throw new Error('Sealed application did not append a payload.');
           if(sealed.subarray(sealed.length-20,sealed.length-12).toString('ascii')!=='PCHGUI01') throw new Error('Footer magic missing.');
-          if(sealed.readUInt32LE(sealed.length-12)!==3) throw new Error('Expected sealed native GUI payload v3.');
+          if(sealed.readUInt32LE(sealed.length-12)!==4) throw new Error('Expected sealed native GUI payload v4.');
           const text=sealed.toString('latin1');
           for(const forbidden of ['Electron','Chromium','node_modules']) if(text.includes(forbidden)) throw new Error(`Unexpected compatibility runtime marker: ${forbidden}`);
-          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed ListBox app: ${sealed.length} bytes`);
+          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed Tabs app: ${sealed.length} bytes`);
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -128,9 +140,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-linux-runtime-v0.3
+          TAG: native-linux-runtime-v0.4
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.3' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Payload v3 adds native single-selection ListBox support while preserving ComboBox, Forms and explicit Patch change semantics.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.4' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Payload v4 adds real native Tabs through GtkNotebook. Page selection remains transient native UI state and never becomes hidden Patch state or Change History. Nested Patch controls preserve ordinary explicit-change semantics. No Electron, Chromium, Node.js or sidecar payload is used.'
           fi
           gh release upload "$TAG" runtime/patch-linux-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber
