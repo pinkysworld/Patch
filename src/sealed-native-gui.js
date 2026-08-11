@@ -134,8 +134,11 @@ function validateTextBindings(ir) {
     while ((match = re.exec(text))) {
       if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
     }
-    if (['combo', 'listbox', 'radio'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
-      const label = control.type === 'combo' ? 'ComboBox' : control.type === 'listbox' ? 'ListBox' : 'Radio';
+    if (control.type === 'radio' && (!Array.isArray(control.options) || control.options.length < 2)) {
+      throw new SealedNativeGuiError('Native Radio payload needs at least two options.');
+    }
+    if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
+      const label = control.type === 'combo' ? 'ComboBox' : 'ListBox';
       throw new SealedNativeGuiError(`Native ${label} payload needs at least two options.`);
     }
     if (control.type === 'tabs' && (!Array.isArray(control.pageTitles) || control.pageTitles.length < 2)) {
