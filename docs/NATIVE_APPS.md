@@ -136,9 +136,9 @@ Smoke mode suppresses only the blocking modal presentation. It records the dialo
 
 ## Research boundary
 
-Beta.32 remains a separate invocation-frame-aware direct-Wasm research layer. Native product GUI work does not make Patch an end-to-end verified compiler and does not expand the beta.32 formal fragment.
+Beta.32 remains a separate invocation-frame-aware direct-Wasm research layer over the supported finite safe-integer call-tree fragment. Its reproducible evidence still includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`.
 
-Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine remain explicit trust/proof-free boundaries.
+Native product GUI work does not make Patch an end-to-end verified compiler and does not expand the beta.32 formal fragment. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine remain explicit trust/proof-free boundaries.
 
 ## Remaining product work
 
