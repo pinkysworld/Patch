@@ -1,11 +1,15 @@
-import { validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
+import { flattenNativeGuiControls, validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
 
-export const PATCH_APPKIT_GUI_BACKEND_VERSION = '0.3';
+export const PATCH_APPKIT_GUI_BACKEND_VERSION = '0.4';
 
 export function emitAppKitGuiObjCpp(input) {
   const ir = validateNativeGuiIR(input);
   const forms = new Map(ir.forms.map((form, index) => [form.id, index]));
-  const controls = flattenControls(ir.forms);
+  const controls = flattenNativeGuiControls(ir).map(control => ({
+    ...control,
+    commandId: 1000 + control.nativeIndex,
+    handleIndex: control.nativeIndex
+  }));
   const controlsById = new Map(controls.filter(control => control.id).map(control => [control.id, control]));
   const states = new Map(ir.states.map(state => [state.name, state]));
   validateReferences(ir, forms, controlsById);
@@ -15,14 +19,14 @@ export function emitAppKitGuiObjCpp(input) {
     `  {${objcLiteral(form.id)}, ${objcLiteral(form.title)}, ${positiveInt(form.width, 640)}, ${positiveInt(form.height, 420)}, ${form.visible ? 'true' : 'false'}}${index + 1 === ir.forms.length ? '' : ','}`
   ).join('\n');
   const controlDefs = controls.map((control, index) =>
-    `  {${control.commandId}, ${control.formIndex}, ${controlKind(control.type)}, ${objcLiteral(control.id ?? '')}, ${layoutInt(control.layout?.x, 24)}, ${layoutInt(control.layout?.y, 24)}, ${positiveInt(control.layout?.width, 120)}, ${positiveInt(control.layout?.height, 36)}}${index + 1 === controls.length ? '' : ','}`
+    `  {${control.commandId}, ${control.formIndex}, ${controlKind(control.type)}, ${objcLiteral(control.id ?? '')}, ${layoutInt(control.layout?.x, 24)}, ${layoutInt(control.layout?.y, 24)}, ${positiveInt(control.layout?.width, 120)}, ${positiveInt(control.layout?.height, 36)}, ${control.parentTabIndex ?? -1}, ${control.pageIndex ?? -1}}${index + 1 === controls.length ? '' : ','}`
   ).join('\n');
   const textFunctions = controls.map((control, index) => emitControlTextFunction(control, index, states)).join('\n\n');
   const eventFunctions = ir.events.map((event, index) => emitEventFunction(event, index, forms, states)).join('\n\n');
   const actionDispatch = ir.events.map((event, index) => emitActionDispatch(event, index, controlsById)).filter(Boolean).join('\n');
   const inputDispatch = ir.events.map((event, index) => emitInputDispatch(event, index, controlsById)).filter(Boolean).join('\n');
   const refresh = controls.map((control, index) => emitRefresh(control, index, states)).filter(Boolean).join('\n');
-  const create = controls.map((control, index) => emitCreateControl(control, index, ir.forms[control.formIndex])).join('\n');
+  const create = controls.map((control, index) => emitCreateControl(control, index, ir.forms[control.formIndex], controls)).join('\n');
   const listCountCases = controls.filter(control => control.type === 'listbox').map(control => `    case ${control.commandId}: return ${control.options.length};`).join('\n');
   const listValueCases = controls.filter(control => control.type === 'listbox').map(control =>
     `    case ${control.commandId}: switch (row) { ${control.options.map((option, optionIndex) => `case ${optionIndex}: return ${objcLiteral(option)};`).join(' ')} default: return @""; }`
@@ -37,9 +41,9 @@ export function emitAppKitGuiObjCpp(input) {
 
 static bool gRefreshing = false;
 
-enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6 };
+enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7 };
 struct FormDef { NSString *formId; NSString *title; int width; int height; bool visible; };
-struct ControlDef { NSInteger commandId; int formIndex; ControlKind kind; NSString *name; int x; int y; int width; int height; };
+struct ControlDef { NSInteger commandId; int formIndex; ControlKind kind; NSString *name; int x; int y; int width; int height; int parentTabIndex; int pageIndex; };
 
 ${stateDecls}
 
@@ -51,10 +55,11 @@ static NSWindow *gForms[${Math.max(1, ir.forms.length)}] = {};
 static NSMutableArray *gFormDelegates = nil;
 
 static const ControlDef CONTROLS[] = {
-${controlDefs || '  {0,0,CK_TEXT,@"",0,0,0,0}'}
+${controlDefs || '  {0,0,CK_TEXT,@"",0,0,0,0,-1,-1}'}
 };
 static const int CONTROL_COUNT = ${controls.length};
-static NSControl *gControls[${Math.max(1, controls.length)}] = {};
+static NSView *gControls[${Math.max(1, controls.length)}] = {};
+static NSMutableArray *gTabPages[${Math.max(1, controls.length)}] = {};
 
 static NSString *PatchNumber(double value) {
   if (std::isfinite(value) && std::floor(value) == value) return [NSString stringWithFormat:@"%lld", (long long)value];
@@ -174,14 +179,6 @@ int main(int argc, const char *argv[]) {
 `;
 }
 
-function flattenControls(forms) {
-  const out = [];
-  let commandId = 1000;
-  for (let formIndex = 0; formIndex < forms.length; formIndex += 1) {
-    for (const control of forms[formIndex].controls ?? []) out.push({ ...control, formIndex, commandId: commandId++, handleIndex: out.length });
-  }
-  return out;
-}
 function validateReferences(ir, forms, controls) {
   for (const event of ir.events) {
     if (!controls.has(event.control)) throw new NativeGuiError(`AppKit event control '${event.control}' is missing.`);
@@ -266,14 +263,15 @@ function emitInputDispatch(event, index, controls) {
   return control?.type === 'input' ? `  if (commandId == ${control.commandId}) { Event_${index}([field stringValue]); return; }` : '';
 }
 function emitRefresh(control, index, states) {
-  if (control.type === 'text' || control.type === 'button') return `  if (gControls[${index}]) SetStringIfDifferent(gControls[${index}], ControlText_${index}());`;
+  if (control.type === 'tabs') return '';
+  if (control.type === 'text' || control.type === 'button') return `  if (gControls[${index}]) SetStringIfDifferent((NSControl *)gControls[${index}], ControlText_${index}());`;
   if (control.type === 'checkbox') {
     const state = states.get(control.binding);
-    return `  if (gControls[${index}]) { SetStringIfDifferent(gControls[${index}], ControlText_${index}()); [(NSButton *)gControls[${index}] setState:${stateName(state.name)} ? NSControlStateValueOn : NSControlStateValueOff]; }`;
+    return `  if (gControls[${index}]) { SetStringIfDifferent((NSControl *)gControls[${index}], ControlText_${index}()); [(NSButton *)gControls[${index}] setState:${stateName(state.name)} ? NSControlStateValueOn : NSControlStateValueOff]; }`;
   }
   if (control.type === 'input') {
     const state = states.get(control.binding);
-    return `  if (gControls[${index}]) SetStringIfDifferent(gControls[${index}], ${stateName(state.name)});`;
+    return `  if (gControls[${index}]) SetStringIfDifferent((NSControl *)gControls[${index}], ${stateName(state.name)});`;
   }
   if (control.type === 'combo') {
     const state = states.get(control.binding);
@@ -286,21 +284,45 @@ function emitRefresh(control, index, states) {
   }
   return '';
 }
-function emitCreateControl(control, index, form) {
+function emitCreateControl(control, index, form, controls) {
   const width = positiveInt(control.layout?.width, 120);
   const height = positiveInt(control.layout?.height, 36);
-  const y = Math.max(0, positiveInt(form.height, 420) - layoutInt(control.layout?.y, 24) - height);
-  const rect = `NSMakeRect(${layoutInt(control.layout?.x, 24)}, ${y}, ${width}, ${height})`;
-  if (control.type === 'text') return `  if (${control.formIndex} == index) {\n    NSTextField *control = [[NSTextField alloc] initWithFrame:${rect}]; control.editable = NO; control.selectable = NO; control.bezeled = NO; control.drawsBackground = NO; gControls[${index}] = control; [window.contentView addSubview:control];\n  }`;
-  if (control.type === 'input') return `  if (${control.formIndex} == index) {\n    NSTextField *control = [[NSTextField alloc] initWithFrame:${rect}]; control.tag = ${control.commandId}; control.delegate = gEventTarget; gControls[${index}] = control; [window.contentView addSubview:control];\n  }`;
+  const rect = appKitRect(control, form, controls);
+  if (control.type === 'tabs') {
+    const pageHeight = Math.max(1, height - 30);
+    const pages = control.pageTitles.map(title =>
+      `    { NSTabViewItem *item = [[NSTabViewItem alloc] initWithIdentifier:nil]; item.label = ${objcLiteral(title)}; NSView *pageView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, ${width}, ${pageHeight})]; item.view = pageView; [control addTabViewItem:item]; [gTabPages[${index}] addObject:pageView]; }`
+    ).join('\n');
+    return `  if (${control.formIndex} == index) {\n    NSTabView *control = [[NSTabView alloc] initWithFrame:${rect}]; gTabPages[${index}] = [NSMutableArray arrayWithCapacity:${control.pageTitles.length}];\n${pages}\n    [control selectTabViewItemAtIndex:0]; gControls[${index}] = control; [window.contentView addSubview:control];\n  }`;
+  }
+  const target = control.parentTabIndex >= 0
+    ? `(NSView *)[gTabPages[${control.parentTabIndex}] objectAtIndex:${control.pageIndex}]`
+    : 'window.contentView';
+  if (control.type === 'text') return `  if (${control.formIndex} == index) {\n    NSTextField *control = [[NSTextField alloc] initWithFrame:${rect}]; control.editable = NO; control.selectable = NO; control.bezeled = NO; control.drawsBackground = NO; gControls[${index}] = control; [${target} addSubview:control];\n  }`;
+  if (control.type === 'input') return `  if (${control.formIndex} == index) {\n    NSTextField *control = [[NSTextField alloc] initWithFrame:${rect}]; control.tag = ${control.commandId}; control.delegate = gEventTarget; gControls[${index}] = control; [${target} addSubview:control];\n  }`;
   if (control.type === 'combo') {
     const options = control.options.map(objcLiteral).join(', ');
-    return `  if (${control.formIndex} == index) {\n    NSPopUpButton *control = [[NSPopUpButton alloc] initWithFrame:${rect} pullsDown:NO]; [control addItemsWithTitles:@[${options}]]; control.tag = ${control.commandId}; control.target = gEventTarget; control.action = @selector(handleControl:); gControls[${index}] = control; [window.contentView addSubview:control];\n  }`;
+    return `  if (${control.formIndex} == index) {\n    NSPopUpButton *control = [[NSPopUpButton alloc] initWithFrame:${rect} pullsDown:NO]; [control addItemsWithTitles:@[${options}]]; control.tag = ${control.commandId}; control.target = gEventTarget; control.action = @selector(handleControl:); gControls[${index}] = control; [${target} addSubview:control];\n  }`;
   }
-  if (control.type === 'listbox') return `  if (${control.formIndex} == index) {\n    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:${rect}]; scroll.hasVerticalScroller = YES; scroll.autohidesScrollers = YES; scroll.borderType = NSBezelBorder; NSTableView *control = [[NSTableView alloc] initWithFrame:scroll.bounds]; NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"value"]; column.width = ${width}; [control addTableColumn:column]; control.headerView = nil; control.allowsMultipleSelection = NO; control.allowsEmptySelection = YES; control.tag = ${control.commandId}; control.dataSource = gEventTarget; control.delegate = gEventTarget; scroll.documentView = control; gControls[${index}] = control; [window.contentView addSubview:scroll];\n  }`;
+  if (control.type === 'listbox') return `  if (${control.formIndex} == index) {\n    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:${rect}]; scroll.hasVerticalScroller = YES; scroll.autohidesScrollers = YES; scroll.borderType = NSBezelBorder; NSTableView *control = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, ${width}, ${height})]; NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"value"]; column.width = ${width}; [control addTableColumn:column]; control.headerView = nil; control.allowsMultipleSelection = NO; control.allowsEmptySelection = YES; control.tag = ${control.commandId}; control.dataSource = gEventTarget; control.delegate = gEventTarget; scroll.documentView = control; gControls[${index}] = control; [${target} addSubview:scroll];\n  }`;
   const buttonType = control.type === 'checkbox' ? 'NSButtonTypeSwitch' : 'NSButtonTypeMomentaryPushIn';
   const bezel = control.type === 'button' ? 'control.bezelStyle = NSBezelStyleRounded;' : '';
-  return `  if (${control.formIndex} == index) {\n    NSButton *control = [[NSButton alloc] initWithFrame:${rect}]; control.buttonType = ${buttonType}; ${bezel} control.tag = ${control.commandId}; control.target = gEventTarget; control.action = @selector(handleControl:); gControls[${index}] = control; [window.contentView addSubview:control];\n  }`;
+  return `  if (${control.formIndex} == index) {\n    NSButton *control = [[NSButton alloc] initWithFrame:${rect}]; control.buttonType = ${buttonType}; ${bezel} control.tag = ${control.commandId}; control.target = gEventTarget; control.action = @selector(handleControl:); gControls[${index}] = control; [${target} addSubview:control];\n  }`;
+}
+function appKitRect(control, form, controls) {
+  const width = positiveInt(control.layout?.width, 120);
+  const height = positiveInt(control.layout?.height, 36);
+  const x = layoutInt(control.layout?.x, control.parentTabIndex >= 0 ? 12 : 24);
+  const sourceY = layoutInt(control.layout?.y, control.parentTabIndex >= 0 ? 12 : 24);
+  if (control.parentTabIndex < 0) {
+    const y = Math.max(0, positiveInt(form.height, 420) - sourceY - height);
+    return `NSMakeRect(${x}, ${y}, ${width}, ${height})`;
+  }
+  const tab = controls[control.parentTabIndex];
+  if (!tab || tab.type !== 'tabs') throw new NativeGuiError(`AppKit child control '${control.id}' has an invalid Tabs parent.`);
+  const pageHeight = Math.max(1, positiveInt(tab.layout?.height, 240) - 30);
+  const y = Math.max(0, pageHeight - sourceY - height);
+  return `NSMakeRect(${x}, ${y}, ${width}, ${height})`;
 }
 function emitSmoke(forms, controls, states) {
   const mainIndex = forms.has('main') ? forms.get('main') : 0;
@@ -313,17 +335,23 @@ function emitSmoke(forms, controls, states) {
   const comboState = states.get('size');
   const listbox = controls.get('fruit');
   const listboxState = states.get('fruit');
+  const tabs = controls.get('settings');
   const lines = ['static int RunPatchSmoke() {', `  if (!gForms[${mainIndex}] || !gForms[${mainIndex}].visible) return 70;`];
   if (settingsIndex !== undefined) lines.push(`  if (gForms[${settingsIndex}].visible) return 71;`);
   if (open && settingsIndex !== undefined) { lines.push(`  [(NSButton *)gControls[${open.handleIndex}] performClick:nil];`); lines.push(`  if (!gForms[${settingsIndex}].visible) return 72;`); }
   if (checkbox && checkboxState?.type === 'boolean') { lines.push(`  [(NSButton *)gControls[${checkbox.handleIndex}] performClick:nil];`); lines.push(`  if (!${stateName(checkboxState.name)}) return 73;`); }
   if (combo && comboState?.type === 'text' && combo.options.length) { const last = combo.options.length - 1; lines.push(`  [(NSPopUpButton *)gControls[${combo.handleIndex}] selectItemAtIndex:${last}];`); lines.push(`  [gEventTarget handleControl:gControls[${combo.handleIndex}]];`); lines.push(`  if (![${stateName(comboState.name)} isEqualToString:${objcLiteral(combo.options[last])}]) return 75;`); }
   if (listbox && listboxState?.type === 'text' && listbox.options.length) { const last = listbox.options.length - 1; lines.push(`  [(NSTableView *)gControls[${listbox.handleIndex}] selectRowIndexes:[NSIndexSet indexSetWithIndex:${last}] byExtendingSelection:NO];`); lines.push(`  [gEventTarget handleControl:gControls[${listbox.handleIndex}]];`); lines.push(`  if (![${stateName(listboxState.name)} isEqualToString:${objcLiteral(listbox.options[last])}]) return 76;`); }
+  if (tabs?.type === 'tabs' && tabs.pageTitles.length > 1) {
+    lines.push(`  if ([(NSTabView *)gControls[${tabs.handleIndex}] numberOfTabViewItems] != ${tabs.pageTitles.length}) return 77;`);
+    lines.push(`  [(NSTabView *)gControls[${tabs.handleIndex}] selectTabViewItemAtIndex:1];`);
+    lines.push(`  if (![[[(NSTabView *)gControls[${tabs.handleIndex}] selectedTabViewItem] label] isEqualToString:${objcLiteral(tabs.pageTitles[1])}]) return 78;`);
+  }
   if (close && settingsIndex !== undefined) { lines.push(`  [(NSButton *)gControls[${close.handleIndex}] performClick:nil];`); lines.push(`  if (gForms[${settingsIndex}].visible) return 74;`); }
   lines.push('  [NSApp stop:nil];', '  return 0;', '}');
   return lines.join('\n');
 }
-function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX' })[type] ?? 'CK_TEXT'; }
+function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS' })[type] ?? 'CK_TEXT'; }
 function stateName(name) { return `patch_state_${identifier(name)}`; }
 function identifier(value) { return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&'); }
 function layoutInt(value, fallback) { return Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : fallback; }
