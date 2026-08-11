@@ -63,7 +63,7 @@ requireAll('forms designer contract', formsDesigner, [
 const formsCss = read('_site/forms-designer.css');
 requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
 const formLayout = read('_site/src/form-layout.js');
-requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','combo','listbox','tabs']);
+requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','radio','combo','listbox','tabs']);
 const webapp = read('_site/src/webapp.js');
 requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
 const windowWebapp = read('_site/src/window-webapp.js');
@@ -75,19 +75,19 @@ requireAll('Window Web Form lifecycle/runtime controls', windowWebapp, [
 ]);
 const windowEvents = read('_site/src/window-events.js');
 requireAll('typed Window changed events', windowEvents, [
-  "PATCH_WINDOW_EVENTS_VERSION = '0.4'", "controlType === 'checkbox'", 'Boolean event-local value',
-  "controlType === 'combo' || controlType === 'listbox'", 'text event-local value'
+  "PATCH_WINDOW_EVENTS_VERSION = '0.5'", "controlType === 'checkbox'", 'Boolean event-local value',
+  "['input', 'combo', 'listbox', 'radio'].includes(controlType)", 'text event-local value', 'function findControlType'
 ]);
 
 const designer = read('_site/src/designer.js');
 requireAll('named Form Designer source contract', designer, [
-  'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close', "['combo', 'listbox'].includes(control.type)",
-  'A ${label} needs at least two options', "type === 'listbox'", "type === 'tabs'", 'tab "General"', 'tab "Advanced"'
+  'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close', "['combo', 'listbox', 'radio'].includes(control.type)",
+  'A ${label} needs at least two options', "type === 'radio'", "type === 'listbox'", "type === 'tabs'", 'tab "General"', 'tab "Advanced"'
 ]);
 const windowBuild = read('_site/src/window-build.js');
 requireAll('Window Form lifecycle build validation', windowBuild, [
   'openForm','closeForm','namedForms','formActions','tabs: tabs.size', 'transient page selection',
-  "Form name '${node.id}' is declared more than once", "controlType === 'combo'", "controlType === 'listbox'"
+  "Form name '${node.id}' is declared more than once", "controlType === 'combo'", "controlType === 'listbox'", "controlType === 'radio'"
 ]);
 const compiledWindow = read('_site/src/window-compiled.js');
 requireAll('compiled Window artifact contract', compiledWindow, [
@@ -109,12 +109,12 @@ requireAll('native builder modes', nativeBuild, [
   'Ready app download (no token)','workflow_dispatch','source_b64'
 ]);
 const nativeGui = read('_site/src/native-gui-ir.js');
-requireAll('Native GUI IR v0.4 Tabs contract', nativeGui, [
-  "PATCH_NATIVE_GUI_IR_VERSION = '0.4'", 'flattenNativeGuiControls', "type: 'tabs'", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
+requireAll('Native GUI IR v0.5 Radio/Tabs contract', nativeGui, [
+  "PATCH_NATIVE_GUI_IR_VERSION = '0.5'", 'flattenNativeGuiControls', "type: 'tabs'", "control.type === 'radio'", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
 ]);
 const sealedNative = read('_site/src/sealed-native-gui.js');
-requireAll('sealed native GUI payload v4 Tabs contract', sealedNative, [
-  'PATCH_SEALED_NATIVE_GUI_VERSION = 4', "if (type === 'tabs') return 7", 'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles'
+requireAll('sealed native GUI payload v5 Radio/Tabs contract', sealedNative, [
+  'PATCH_SEALED_NATIVE_GUI_VERSION = 5', "if (type === 'tabs') return 7", "if (type === 'radio') return 8", 'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles', 'Native Radio payload needs at least two options'
 ]);
 
 const prebuilt = read('_site/src/prebuilt-native.js');
@@ -136,7 +136,7 @@ requireAll('guarded concrete-call body producer', concreteBody, [
 const compiler = read('_site/src/compiler.js');
 requireAll('compiler assurance and UI lifecycle modules', compiler, [
   "'./formal-bridge.js'","'./formal-source.js'","'./formal-calls.js'","'./source-validation.js'","'./guard-validation.js'",
-  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','ui.tabs','TABS','TAB_PAGE','fields.options'
+  "PATCH_IR_VERSION = '0.10'", 'formalCalls','sourceValidation','guardValidation', 'OPEN_FORM','CLOSE_FORM','ui.form-lifecycle','ui.tabs','ui.radio','TABS','TAB_PAGE','fields.options'
 ]);
 
 const sw = read('_site/sw.js');
