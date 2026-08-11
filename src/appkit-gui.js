@@ -1,6 +1,6 @@
 import { flattenNativeGuiControls, validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
 
-export const PATCH_APPKIT_GUI_BACKEND_VERSION = '0.4';
+export const PATCH_APPKIT_GUI_BACKEND_VERSION = '0.5';
 
 export function emitAppKitGuiObjCpp(input) {
   const ir = validateNativeGuiIR(input);
@@ -41,7 +41,7 @@ export function emitAppKitGuiObjCpp(input) {
 
 static bool gRefreshing = false;
 
-enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7 };
+enum ControlKind { CK_TEXT=1, CK_BUTTON=2, CK_INPUT=3, CK_CHECKBOX=4, CK_COMBO=5, CK_LISTBOX=6, CK_TABS=7, CK_RADIO=8 };
 struct FormDef { NSString *formId; NSString *title; int width; int height; bool visible; };
 struct ControlDef { NSInteger commandId; int formIndex; ControlKind kind; NSString *name; int x; int y; int width; int height; int parentTabIndex; int pageIndex; };
 
@@ -60,6 +60,7 @@ ${controlDefs || '  {0,0,CK_TEXT,@"",0,0,0,0,-1,-1}'}
 static const int CONTROL_COUNT = ${controls.length};
 static NSView *gControls[${Math.max(1, controls.length)}] = {};
 static NSMutableArray *gTabPages[${Math.max(1, controls.length)}] = {};
+static NSMutableArray *gRadioItems[${Math.max(1, controls.length)}] = {};
 
 static NSString *PatchNumber(double value) {
   if (std::isfinite(value) && std::floor(value) == value) return [NSString stringWithFormat:@"%lld", (long long)value];
@@ -68,6 +69,12 @@ static NSString *PatchNumber(double value) {
 static NSString *PatchBoolean(bool value) { return value ? @"true" : @"false"; }
 static void SetStringIfDifferent(NSControl *control, NSString *value) {
   if (![control.stringValue isEqualToString:value]) control.stringValue = value;
+}
+static void SetRadioSelection(NSInteger index, NSString *value) {
+  if (index < 0 || index >= CONTROL_COUNT || !gRadioItems[index]) return;
+  for (NSButton *item in gRadioItems[index]) {
+    item.state = [item.title isEqualToString:value] ? NSControlStateValueOn : NSControlStateValueOff;
+  }
 }
 static NSInteger PatchListOptionCount(NSInteger commandId) {
   switch (commandId) {
@@ -252,10 +259,11 @@ function emitNativeValue(state, value, event) {
 }
 function emitActionDispatch(event, index, controls) {
   const control = controls.get(event.control);
-  if (!control || !['button', 'checkbox', 'combo', 'listbox'].includes(control.type)) return '';
+  if (!control || !['button', 'checkbox', 'combo', 'listbox', 'radio'].includes(control.type)) return '';
   if (event.valueType === 'boolean') return `  if (commandId == ${control.commandId}) { Event_${index}([(NSButton *)sender state] == NSControlStateValueOn); return; }`;
   if (control.type === 'combo' && event.valueType === 'text') return `  if (commandId == ${control.commandId}) { Event_${index}([(NSPopUpButton *)sender titleOfSelectedItem] ?: @""); return; }`;
   if (control.type === 'listbox' && event.valueType === 'text') return `  if (commandId == ${control.commandId}) { NSInteger row = [(NSTableView *)sender selectedRow]; Event_${index}(row >= 0 ? PatchListOptionValue(commandId, row) : @""); return; }`;
+  if (control.type === 'radio' && event.valueType === 'text') return `  if (commandId == ${control.commandId}) { for (NSButton *item in gRadioItems[${control.handleIndex}]) item.state = (item == sender) ? NSControlStateValueOn : NSControlStateValueOff; Event_${index}([(NSButton *)sender title] ?: @""); return; }`;
   return `  if (commandId == ${control.commandId}) { Event_${index}(); return; }`;
 }
 function emitInputDispatch(event, index, controls) {
@@ -282,6 +290,10 @@ function emitRefresh(control, index, states) {
     const checks = control.options.map((option, optionIndex) => `if ([${stateName(state.name)} isEqualToString:${objcLiteral(option)}]) selected = ${optionIndex};`).join(' else ');
     return `  if (gControls[${index}]) { NSInteger selected = -1; ${checks} if (selected >= 0) [(NSTableView *)gControls[${index}] selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)selected] byExtendingSelection:NO]; else [(NSTableView *)gControls[${index}] deselectAll:nil]; }`;
   }
+  if (control.type === 'radio') {
+    const state = states.get(control.binding);
+    return `  SetRadioSelection(${index}, ${stateName(state.name)});`;
+  }
   return '';
 }
 function emitCreateControl(control, index, form, controls) {
@@ -305,6 +317,14 @@ function emitCreateControl(control, index, form, controls) {
     return `  if (${control.formIndex} == index) {\n    NSPopUpButton *control = [[NSPopUpButton alloc] initWithFrame:${rect} pullsDown:NO]; [control addItemsWithTitles:@[${options}]]; control.tag = ${control.commandId}; control.target = gEventTarget; control.action = @selector(handleControl:); gControls[${index}] = control; [${target} addSubview:control];\n  }`;
   }
   if (control.type === 'listbox') return `  if (${control.formIndex} == index) {\n    NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:${rect}]; scroll.hasVerticalScroller = YES; scroll.autohidesScrollers = YES; scroll.borderType = NSBezelBorder; NSTableView *control = [[NSTableView alloc] initWithFrame:NSMakeRect(0, 0, ${width}, ${height})]; NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"value"]; column.width = ${width}; [control addTableColumn:column]; control.headerView = nil; control.allowsMultipleSelection = NO; control.allowsEmptySelection = YES; control.tag = ${control.commandId}; control.dataSource = gEventTarget; control.delegate = gEventTarget; scroll.documentView = control; gControls[${index}] = control; [${target} addSubview:scroll];\n  }`;
+  if (control.type === 'radio') {
+    const count = Math.max(1, control.options.length);
+    const itemHeight = Math.max(22, Math.min(30, Math.floor(height / count) || 26));
+    const items = control.options.map((option, optionIndex) =>
+      `    { NSButton *item = [[NSButton alloc] initWithFrame:NSMakeRect(groupRect.origin.x, groupRect.origin.y + ${count - 1 - optionIndex} * ${itemHeight}, groupRect.size.width, ${itemHeight})]; item.buttonType = NSButtonTypeRadio; item.title = ${objcLiteral(option)}; item.tag = ${control.commandId}; item.target = gEventTarget; item.action = @selector(handleControl:); [gRadioItems[${index}] addObject:item]; if (!gControls[${index}]) gControls[${index}] = item; [${target} addSubview:item]; }`
+    ).join('\n');
+    return `  if (${control.formIndex} == index) {\n    NSRect groupRect = ${rect}; gRadioItems[${index}] = [NSMutableArray arrayWithCapacity:${count}];\n${items}\n  }`;
+  }
   const buttonType = control.type === 'checkbox' ? 'NSButtonTypeSwitch' : 'NSButtonTypeMomentaryPushIn';
   const bezel = control.type === 'button' ? 'control.bezelStyle = NSBezelStyleRounded;' : '';
   return `  if (${control.formIndex} == index) {\n    NSButton *control = [[NSButton alloc] initWithFrame:${rect}]; control.buttonType = ${buttonType}; ${bezel} control.tag = ${control.commandId}; control.target = gEventTarget; control.action = @selector(handleControl:); gControls[${index}] = control; [${target} addSubview:control];\n  }`;
@@ -335,6 +355,8 @@ function emitSmoke(forms, controls, states) {
   const comboState = states.get('size');
   const listbox = controls.get('fruit');
   const listboxState = states.get('fruit');
+  const radio = controls.get('mode');
+  const radioState = states.get('mode');
   const tabs = controls.get('settings');
   const lines = ['static int RunPatchSmoke() {', `  if (!gForms[${mainIndex}] || !gForms[${mainIndex}].visible) return 70;`];
   if (settingsIndex !== undefined) lines.push(`  if (gForms[${settingsIndex}].visible) return 71;`);
@@ -342,6 +364,7 @@ function emitSmoke(forms, controls, states) {
   if (checkbox && checkboxState?.type === 'boolean') { lines.push(`  [(NSButton *)gControls[${checkbox.handleIndex}] performClick:nil];`); lines.push(`  if (!${stateName(checkboxState.name)}) return 73;`); }
   if (combo && comboState?.type === 'text' && combo.options.length) { const last = combo.options.length - 1; lines.push(`  [(NSPopUpButton *)gControls[${combo.handleIndex}] selectItemAtIndex:${last}];`); lines.push(`  [gEventTarget handleControl:gControls[${combo.handleIndex}]];`); lines.push(`  if (![${stateName(comboState.name)} isEqualToString:${objcLiteral(combo.options[last])}]) return 75;`); }
   if (listbox && listboxState?.type === 'text' && listbox.options.length) { const last = listbox.options.length - 1; lines.push(`  [(NSTableView *)gControls[${listbox.handleIndex}] selectRowIndexes:[NSIndexSet indexSetWithIndex:${last}] byExtendingSelection:NO];`); lines.push(`  [gEventTarget handleControl:gControls[${listbox.handleIndex}]];`); lines.push(`  if (![${stateName(listboxState.name)} isEqualToString:${objcLiteral(listbox.options[last])}]) return 76;`); }
+  if (radio && radioState?.type === 'text' && radio.options.length) { const last = radio.options.length - 1; lines.push(`  if ([gRadioItems[${radio.handleIndex}] count] != ${radio.options.length}) return 81;`); lines.push(`  [(NSButton *)[gRadioItems[${radio.handleIndex}] objectAtIndex:${last}] performClick:nil];`); lines.push(`  if (![${stateName(radioState.name)} isEqualToString:${objcLiteral(radio.options[last])}]) return 82;`); }
   if (tabs?.type === 'tabs' && tabs.pageTitles.length > 1) {
     lines.push(`  if ([(NSTabView *)gControls[${tabs.handleIndex}] numberOfTabViewItems] != ${tabs.pageTitles.length}) return 77;`);
     lines.push(`  [(NSTabView *)gControls[${tabs.handleIndex}] selectTabViewItemAtIndex:1];`);
@@ -351,7 +374,7 @@ function emitSmoke(forms, controls, states) {
   lines.push('  [NSApp stop:nil];', '  return 0;', '}');
   return lines.join('\n');
 }
-function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS' })[type] ?? 'CK_TEXT'; }
+function controlKind(type) { return ({ text: 'CK_TEXT', button: 'CK_BUTTON', input: 'CK_INPUT', checkbox: 'CK_CHECKBOX', combo: 'CK_COMBO', listbox: 'CK_LISTBOX', tabs: 'CK_TABS', radio: 'CK_RADIO' })[type] ?? 'CK_TEXT'; }
 function stateName(name) { return `patch_state_${identifier(name)}`; }
 function identifier(value) { return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&'); }
 function layoutInt(value, fallback) { return Number.isFinite(Number(value)) ? Math.max(0, Math.round(Number(value))) : fallback; }
