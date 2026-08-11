@@ -1,0 +1,7 @@
+window "Menu demo" as main size 560, 320:
+  menu "Help":
+    item "About" as about_item
+  text "Choose Help > About" at 24, 48 size 320, 30
+
+when about_item clicked:
+  dialog "About Patch", "Native menus and informational dialogs"
