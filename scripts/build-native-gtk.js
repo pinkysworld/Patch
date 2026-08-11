@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
-import { buildNativeGuiIR } from '../src/native-gui-ir.js';
+import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
 import { emitGtkGuiCpp, PATCH_GTK_GUI_BACKEND_VERSION } from '../src/gtk-gui.js';
 
 const sourcePath = process.argv[2];
@@ -37,7 +37,7 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   nativeGuiIrVersion: gui.version,
   changeIrVersion: compiled.ir?.version ?? null,
   forms: gui.forms.length,
-  controls: gui.forms.reduce((sum, form) => sum + form.controls.length, 0),
+  controls: flattenNativeGuiControls(gui).length,
   events: gui.events.length,
   sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
   shell: 'native-gtk3',
@@ -57,13 +57,7 @@ if (process.platform !== 'linux') {
 const cflags = pkgConfig(['--cflags', 'gtk+-3.0']);
 const libs = pkgConfig(['--libs', 'gtk+-3.0']);
 const compiler = findCompiler();
-const build = spawnSync(compiler, [
-  '-std=c++17', '-O2', '-s',
-  ...cflags,
-  sourceOut,
-  '-o', executablePath,
-  ...libs
-], { stdio: 'inherit' });
+const build = spawnSync(compiler, ['-std=c++17', '-O2', '-s', ...cflags, sourceOut, '-o', executablePath, ...libs], { stdio: 'inherit' });
 if (build.error) throw build.error;
 if (build.status !== 0) throw new Error(`GTK native build exited with status ${build.status}.`);
 if (!fs.existsSync(executablePath)) throw new Error('C++ compiler completed without producing the native GTK executable.');
@@ -89,18 +83,14 @@ function pkgConfig(args) {
   return result.stdout.trim().split(/\s+/).filter(Boolean);
 }
 function findCompiler() {
-  for (const command of ['g++', 'clang++']) {
-    if (commandExists(command)) return command;
-  }
+  for (const command of ['g++', 'clang++']) if (commandExists(command)) return command;
   throw new Error('A C++17 compiler (g++ or clang++) is required for native GTK builds.');
 }
 function commandExists(command) {
   const result = spawnSync('sh', ['-c', `command -v ${shellQuote(command)} >/dev/null 2>&1`]);
   return result.status === 0;
 }
-function shellQuote(value) {
-  return `'${String(value).replace(/'/g, `'"'"'`)}'`;
-}
+function shellQuote(value) { return `'${String(value).replace(/'/g, `'"'"'`)}'`; }
 function safeName(name) {
   const cleaned = String(name).trim().replace(/[^A-Za-z0-9_-]/g, '_').replace(/_+/g, '_').slice(0, 64);
   return cleaned || 'PatchNativeGtk';
