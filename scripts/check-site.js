@@ -13,7 +13,7 @@ const required = [
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
   '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js','_site/src/form-layout.js',
-  '_site/src/window-compiled.js','_site/src/prebuilt-native.js','_site/src/prebuilt-window.js','_site/src/local-native-kit.js',
+  '_site/src/window-compiled.js','_site/src/native-gui-ir.js','_site/src/sealed-native-gui.js','_site/src/sealed-native-package.js','_site/src/prebuilt-native.js','_site/src/prebuilt-window.js','_site/src/local-native-kit.js',
   '_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js','_site/src/concrete-call-body.js','_site/src/concrete-call-body-certificate.js'
 ];
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
@@ -99,12 +99,22 @@ const nativeBuild = read('_site/native-build.js');
 rejectOutsideSiteImport('native builder', nativeBuild);
 requireAll('native builder imports', nativeBuild, [
   './src/compiler.js','./src/wasm-direct.js','./src/c99.js','./src/window-build.js','./src/window-compiled.js',
+  './src/native-gui-ir.js','./src/sealed-native-gui.js','./src/sealed-native-package.js',
   './src/prebuilt-native.js','./src/prebuilt-window.js'
 ]);
 requireAll('native builder modes', nativeBuild, [
   'native-windows','native-macos','native-linux','native-freebsd','validateWindowRuntimeSupport','compileToC99',
+  'buildNativeGuiIR','sealNativeGuiRuntime','buildLinuxNativeGuiPackage','buildMacosNativeGuiPackage',
   'buildCompiledWindowArtifact','buildPrebuiltCompiledWindowPackage','prebuiltNativeTemplateUrl',
   'Ready app download (no token)','workflow_dispatch','source_b64'
+]);
+const nativeGui = read('_site/src/native-gui-ir.js');
+requireAll('Native GUI IR v0.4 Tabs contract', nativeGui, [
+  "PATCH_NATIVE_GUI_IR_VERSION = '0.4'", 'flattenNativeGuiControls', "type: 'tabs'", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
+]);
+const sealedNative = read('_site/src/sealed-native-gui.js');
+requireAll('sealed native GUI payload v4 Tabs contract', sealedNative, [
+  'PATCH_SEALED_NATIVE_GUI_VERSION = 4', "if (type === 'tabs') return 7", 'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles'
 ]);
 
 const prebuilt = read('_site/src/prebuilt-native.js');
