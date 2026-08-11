@@ -5,6 +5,7 @@ const CONTROL_DEFAULTS = {
   button: { width: 120, height: 36 },
   input: { width: 220, height: 36 },
   checkbox: { width: 220, height: 36 },
+  radio: { width: 220, height: 84 },
   combo: { width: 220, height: 36 },
   listbox: { width: 220, height: 120 },
   tabs: { width: 420, height: 240 }
