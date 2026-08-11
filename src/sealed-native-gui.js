@@ -1,6 +1,6 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 4;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 5;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -8,10 +8,10 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v4 keeps controls flat for the tiny prebuilt native runtimes while
+ * Payload v5 keeps controls flat for the tiny prebuilt native runtimes while
  * preserving real Tabs hierarchy through parentTabIndex/pageIndex metadata.
- * Tabs page titles are carried in the existing option-vector slot. Selection
- * is intentionally not serialized because it is transient native UI state.
+ * Radio reuses the option-vector slot and adds native control kind 8. Selection
+ * is represented by ordinary bound Patch text state, never hidden runtime state.
  */
 export function encodeNativeGuiPayload(input) {
   const ir = validateNativeGuiIR(input);
@@ -134,8 +134,9 @@ function validateTextBindings(ir) {
     while ((match = re.exec(text))) {
       if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
     }
-    if (['combo', 'listbox'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
-      throw new SealedNativeGuiError(`Native ${control.type === 'combo' ? 'ComboBox' : 'ListBox'} payload needs at least two options.`);
+    if (['combo', 'listbox', 'radio'].includes(control.type) && (!Array.isArray(control.options) || control.options.length < 2)) {
+      const label = control.type === 'combo' ? 'ComboBox' : control.type === 'listbox' ? 'ListBox' : 'Radio';
+      throw new SealedNativeGuiError(`Native ${label} payload needs at least two options.`);
     }
     if (control.type === 'tabs' && (!Array.isArray(control.pageTitles) || control.pageTitles.length < 2)) {
       throw new SealedNativeGuiError('Native Tabs payload needs at least two page titles.');
@@ -182,6 +183,7 @@ function controlTypeCode(type) {
   if (type === 'combo') return 5;
   if (type === 'listbox') return 6;
   if (type === 'tabs') return 7;
+  if (type === 'radio') return 8;
   throw new SealedNativeGuiError(`Unsupported native control '${type}'.`);
 }
 function opCode(op) {
