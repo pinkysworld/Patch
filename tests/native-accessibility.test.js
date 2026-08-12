@@ -54,7 +54,7 @@ test('backend v0.8 labels unnamed input and Tabs controls on all three native pl
   assert.match(gtk, /SetPatchAccessibleName\(gControls\[2\], "Name"\)/);
 });
 
-test('Win32 uses Microsoft Active Accessibility dynamic Name annotation and clears it before close', () => {
+test('Win32 uses Microsoft Active Accessibility annotation and reads it back in native smoke', () => {
   const win = emitWin32GuiCpp(nativeIr('examples/input-window.patch', 'WinA11y'));
   for (const marker of [
     '#include <oleacc.h>',
@@ -62,27 +62,34 @@ test('Win32 uses Microsoft Active Accessibility dynamic Name annotation and clea
     'CoCreateInstance(CLSID_AccPropServices',
     'SetHwndPropStr(hwnd, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, name)',
     'ClearHwndProps(hwnd, OBJID_CLIENT, CHILDID_SELF',
+    'AccessibleObjectFromWindow(hwnd, OBJID_CLIENT, IID_IAccessible',
+    'accessible->get_accName(child, &value)',
+    'PatchAccessibleName(gControls[0]) != L"Name"',
     'PatchComScope patchCom',
     'ApplyPatchAccessibility();',
     'ClearPatchAccessibleNames(); DestroyWindow(hwnd)'
   ]) assert.ok(win.includes(marker), marker);
 });
 
-test('AppKit uses method-based accessibility labels on standard controls', () => {
+test('AppKit uses method-based accessibility labels and reads them back in native smoke', () => {
   const mac = emitAppKitGuiObjCpp(nativeIr('examples/input-window.patch', 'MacA11y'));
   assert.match(mac, /\[gControls\[0\] setAccessibilityLabel:@"Name"\]/);
+  assert.match(mac, /\[gControls\[0\] accessibilityLabel\]/);
+  assert.match(mac, /isEqualToString:@"Name"/);
   assert.match(mac, /ApplyPatchAccessibility\(\);/);
 });
 
-test('GTK3 uses the widget AtkObject accessible name', () => {
+test('GTK3 uses the widget AtkObject name and reads it back in native smoke', () => {
   const gtk = emitGtkGuiCpp(nativeIr('examples/input-window.patch', 'GtkA11y'));
   assert.match(gtk, /#include <atk\/atk\.h>/);
   assert.match(gtk, /gtk_widget_get_accessible\(widget\)/);
   assert.match(gtk, /atk_object_set_name\(accessible, name\)/);
-  assert.match(gtk, /SetPatchAccessibleName\(gControls\[0\], "Name"\)/);
+  assert.match(gtk, /atk_object_get_name\(accessible\)/);
+  assert.match(gtk, /PatchAccessibleName\(gControls\[0\]\)/);
+  assert.match(gtk, /std::string\(name\) != "Name"/);
 });
 
-test('Radio options preserve their visible option while adding group context', () => {
+test('Radio options preserve their visible option while adding group context and smoke checks it', () => {
   const ir = nativeIr('examples/radio-window.patch', 'RadioAccessibility');
   const win = emitWin32GuiCpp(ir);
   const mac = emitAppKitGuiObjCpp(ir);
@@ -92,6 +99,9 @@ test('Radio options preserve their visible option while adding group context', (
     assert.ok(mac.includes(`@"${expected}"`), `AppKit ${expected}`);
     assert.ok(gtk.includes(`"${expected}"`), `GTK ${expected}`);
   }
+  assert.match(win, /PatchAccessibleName\(gRadioItems/);
+  assert.match(mac, /\.accessibilityLabel isEqualToString:@"Mode: Advanced"/);
+  assert.match(gtk, /PatchAccessibleName\(gRadioItems/);
 });
 
 test('combo and listbox receive explicit names while native buttons keep their built-in visible labels', () => {
