@@ -7,6 +7,7 @@ import {
   parseStudioProjectBundle,
   serializeRecoverySnapshots,
   serializeStudioProjectBundle,
+  studioProjectFileStem,
   studioStateFromBundle
 } from '../src/studio-project.js';
 
@@ -103,7 +104,7 @@ function exportProject() {
   try {
     const bundle = bundleFromDom();
     persistBundle(bundle, { snapshot: 'interval' });
-    const filename = `${safeFileName(bundle.project.name)}.patchproject`;
+    const filename = `${studioProjectFileStem(bundle.project.name)}.patchproject`;
     download(filename, serializeStudioProjectBundle(bundle), 'application/json');
     setStatus(`Exported ${filename}`);
   } catch (error) {
@@ -253,11 +254,6 @@ function updateRecoveryControl(known = null) {
 
 function sameBundle(a, b) {
   return serializeStudioProjectBundle(a) === serializeStudioProjectBundle(b);
-}
-
-function safeFileName(name) {
-  const cleaned = String(name ?? '').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 64);
-  return cleaned || 'PatchApp';
 }
 
 function formatTime(value) {
