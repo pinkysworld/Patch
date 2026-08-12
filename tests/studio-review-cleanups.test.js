@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
 import { formControlDefaultLayout } from '../src/form-layout.js';
 import { buildNativeGuiIR } from '../src/native-gui-ir.js';
+import { patchArtifactFilename, patchArtifactStem } from '../src/artifact-name.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 
 test('Studio artifact names are safe, deterministic and never empty', () => {
@@ -12,13 +13,18 @@ test('Studio artifact names are safe, deterministic and never empty', () => {
   assert.equal(studioProjectFileStem('___'), 'PatchApp');
   assert.equal(studioProjectFileStem('A  B///C'), 'A_B_C');
   assert.equal(studioProjectFileStem('x'.repeat(100)).length, 64);
+  assert.equal(studioProjectFileStem('A  B///C'), patchArtifactStem('A  B///C'));
 });
 
-test('Studio build and project export share one artifact-name normalizer', () => {
+test('Studio build and project export share the central artifact-name contract', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const lifecycle = fs.readFileSync('web/project-lifecycle.js', 'utf8');
+  const studioProject = fs.readFileSync('src/studio-project.js', 'utf8');
   assert.match(playground, /studioProjectFileStem/);
-  assert.match(lifecycle, /studioProjectFileStem/);
+  assert.match(studioProject, /return patchArtifactStem\(name\)/);
+  assert.match(lifecycle, /patchArtifactFilename/);
+  assert.match(lifecycle, /patchArtifactStem/);
+  assert.equal(patchArtifactFilename('A  B///C', 'project'), 'A_B_C.patchproject');
   assert.doesNotMatch(playground, /function safeName\s*\(/);
   assert.doesNotMatch(lifecycle, /function safeFileName\s*\(/);
 });

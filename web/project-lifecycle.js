@@ -7,14 +7,16 @@ import {
   parseStudioProjectBundle,
   serializeRecoverySnapshots,
   serializeStudioProjectBundle,
-  studioProjectFileStem,
   studioStateFromBundle
 } from '../src/studio-project.js';
+import { patchArtifactFilename, patchArtifactStem } from '../src/artifact-name.js';
 
-const CURRENT_KEY = 'patchStudio.project.v1';
-const PENDING_KEY = 'patchStudio.project.pending.v1';
+const CURRENT_KEY = 'patchStudio.project.v2';
+const PENDING_KEY = 'patchStudio.project.pending.v2';
+const LEGACY_CURRENT_KEY = 'patchStudio.project.v1';
+const LEGACY_PENDING_KEY = 'patchStudio.project.pending.v1';
 const RECOVERY_KEY = 'patchStudio.recovery.v1';
-const CORRUPT_KEY = 'patchStudio.project.corrupt.v1';
+const CORRUPT_KEY = 'patchStudio.project.corrupt.v2';
 const LEGACY_KEY = 'patchStudio.project';
 const RECOVERY_INTERVAL_MS = 60_000;
 const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_SOURCE_BYTES * 8;
@@ -25,6 +27,8 @@ installStylesheet();
 const code = document.querySelector('#code');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
+const buildTarget = document.querySelector('#buildTarget');
+const nativeBuildMode = document.querySelector('#nativeBuildMode');
 const saveState = document.querySelector('#saveState');
 const exportButton = document.querySelector('#exportProject');
 const importButton = document.querySelector('#importProject');
@@ -40,28 +44,36 @@ updateRecoveryControl();
 function bootstrapProjectStorage() {
   try {
     const warnings = [];
-    const pending = readBundleAttempt(PENDING_KEY);
-    if (pending.bundle) {
-      writeCanonicalBundle(pending.bundle);
-      localStorage.removeItem(PENDING_KEY);
-      writeLegacyCompatibility(pending.bundle);
-      setStatus('Recovered interrupted local save');
-      return;
-    }
-    if (pending.error) {
-      quarantineCorruptStore(PENDING_KEY, pending.raw);
-      warnings.push(`Pending save was invalid: ${pending.error.message}`);
+    for (const key of [PENDING_KEY, LEGACY_PENDING_KEY]) {
+      const pending = readBundleAttempt(key);
+      if (pending.bundle) {
+        writeCanonicalBundle(pending.bundle);
+        localStorage.removeItem(key);
+        if (key === LEGACY_PENDING_KEY) localStorage.removeItem(LEGACY_CURRENT_KEY);
+        writeLegacyCompatibility(pending.bundle);
+        setStatus(key === PENDING_KEY ? 'Recovered interrupted local save' : 'Migrated interrupted v1 save');
+        return;
+      }
+      if (pending.error) {
+        quarantineCorruptStore(key, pending.raw);
+        warnings.push(`Pending save '${key}' was invalid: ${pending.error.message}`);
+      }
     }
 
-    const current = readBundleAttempt(CURRENT_KEY);
-    if (current.bundle) {
-      writeLegacyCompatibility(current.bundle);
-      if (warnings.length) setStatus('Saved project restored', warnings.join(' '));
-      return;
-    }
-    if (current.error) {
-      quarantineCorruptStore(CURRENT_KEY, current.raw);
-      warnings.push(`Canonical project was invalid: ${current.error.message}`);
+    for (const key of [CURRENT_KEY, LEGACY_CURRENT_KEY]) {
+      const current = readBundleAttempt(key);
+      if (current.bundle) {
+        writeCanonicalBundle(current.bundle);
+        if (key === LEGACY_CURRENT_KEY) localStorage.removeItem(LEGACY_CURRENT_KEY);
+        writeLegacyCompatibility(current.bundle);
+        if (key === LEGACY_CURRENT_KEY) setStatus('Migrated Studio project v1 to v2');
+        else if (warnings.length) setStatus('Saved project restored', warnings.join(' '));
+        return;
+      }
+      if (current.error) {
+        quarantineCorruptStore(key, current.raw);
+        warnings.push(`Canonical project '${key}' was invalid: ${current.error.message}`);
+      }
     }
 
     const legacyRaw = localStorage.getItem(LEGACY_KEY);
@@ -93,7 +105,7 @@ function installProjectActions() {
     window.dispatchEvent(new CustomEvent('patch:open-recovery-manager'));
   });
 
-  for (const input of [code, projectName, projectKind]) {
+  for (const input of [code, projectName, projectKind, buildTarget, nativeBuildMode]) {
     input?.addEventListener('input', () => {
       if (!applyingBundle) persistDomProject({ snapshot: 'interval' });
     });
@@ -107,7 +119,7 @@ function exportProject() {
   try {
     const bundle = bundleFromDom();
     persistBundle(bundle, { snapshot: 'interval' });
-    const filename = `${studioProjectFileStem(bundle.project.name)}.patchproject`;
+    const filename = patchArtifactFilename(bundle.project.name, 'project');
     download(filename, serializeStudioProjectBundle(bundle), 'application/json');
     setStatus(`Exported ${filename}`);
   } catch (error) {
@@ -140,6 +152,7 @@ export function getRecoverySnapshotSummaries() {
       savedAt: snapshot.savedAt,
       name: state.name,
       kind: state.kind,
+      buildTarget: state.buildTarget,
       sourceBytes: encoder.encode(state.code).length
     };
   });
@@ -167,7 +180,7 @@ export function exportRecoverySnapshot(index) {
   const selected = recoveryAt(readRecoverySnapshots(), index);
   const state = studioStateFromBundle(selected.project);
   const stamp = selected.savedAt.replace(/[:.]/g, '-');
-  const filename = `${studioProjectFileStem(state.name)}-recovery-${stamp}.patchproject`;
+  const filename = `${patchArtifactStem(state.name)}-recovery-${stamp}.patchproject`;
   download(filename, serializeStudioProjectBundle(selected.project), 'application/json');
   setStatus(`Exported ${filename}`);
   return filename;
@@ -201,6 +214,10 @@ function applyBundleToDom(bundle) {
     projectName.value = state.name;
     projectKind.value = state.kind;
     code.value = state.code;
+    if (buildTarget) buildTarget.value = state.buildTarget;
+    if (nativeBuildMode) nativeBuildMode.value = state.nativeBuildMode;
+    buildTarget?.dispatchEvent(new Event('change', { bubbles: true }));
+    nativeBuildMode?.dispatchEvent(new Event('change', { bubbles: true }));
     code.dispatchEvent(new Event('input', { bubbles: true }));
     code.dispatchEvent(new Event('change', { bubbles: true }));
   } finally {
@@ -235,6 +252,8 @@ function persistBundle(bundle, options = {}) {
   localStorage.setItem(CURRENT_KEY, serialized);
   writeLegacyCompatibility(normalized);
   localStorage.removeItem(PENDING_KEY);
+  localStorage.removeItem(LEGACY_CURRENT_KEY);
+  localStorage.removeItem(LEGACY_PENDING_KEY);
   updateRecoveryControl();
 }
 
@@ -251,7 +270,9 @@ function bundleFromDom() {
   return buildStudioProjectBundle({
     name: projectName?.value ?? 'PatchApp',
     kind: projectKind?.value ?? 'console',
-    code: code?.value ?? ''
+    code: code?.value ?? '',
+    buildTarget: buildTarget?.value ?? 'web',
+    nativeBuildMode: nativeBuildMode?.value ?? 'prebuilt'
   });
 }
 

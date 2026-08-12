@@ -7,6 +7,7 @@ const html = fs.readFileSync('web/index.html', 'utf8');
 const browser = fs.readFileSync('web/studio-diagnostics.js', 'utf8');
 const css = fs.readFileSync('web/studio-diagnostics.css', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 test('Studio diagnostics modules are valid JavaScript', () => {
   execFileSync(process.execPath, ['--check', 'src/studio-diagnostics.js'], { stdio: 'pipe' });
@@ -18,7 +19,7 @@ test('Studio exposes local copy and report controls with live status', () => {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /class="support-actions"/);
-  assert.match(html, /data-patch-version="0\.2\.0-beta\.32"/);
+  assert.ok(html.includes(`data-patch-version="${pkg.version}"`));
   assert.match(html, /Diagnostics stay local\./);
   assert.ok(html.indexOf('./studio-diagnostics.js') > html.indexOf('./playground.js'));
 });

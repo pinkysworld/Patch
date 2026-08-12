@@ -12,7 +12,7 @@ import {
 test('Studio diagnostic report hashes source without embedding it', async () => {
   const source = 'create text secret = "private project words"\nshow secret';
   const report = await buildStudioDiagnosticReport({
-    patchVersion: '0.2.0-beta.32',
+    patchVersion: '0.2.0-beta.33',
     source,
     projectKind: 'console',
     buildTarget: 'web',
@@ -32,9 +32,7 @@ test('Studio diagnostic report hashes source without embedding it', async () => 
 test('Studio diagnostics redact tokens email addresses and home directory users', () => {
   const raw = 'Bearer abc123 github_pat_SECRET_123 ghp_ABCDEF mail me@example.com /Users/michel/project /home/michel/project C:\\Users\\michel\\Patch';
   const redacted = redactDiagnosticText(raw);
-  for (const secret of ['abc123','github_pat_SECRET_123','ghp_ABCDEF','me@example.com','/Users/michel','/home/michel','C:\\Users\\michel']) {
-    assert.ok(!redacted.includes(secret), secret);
-  }
+  for (const secret of ['abc123','github_pat_SECRET_123','ghp_ABCDEF','me@example.com','/Users/michel','/home/michel','C:\\Users\\michel']) assert.ok(!redacted.includes(secret), secret);
   assert.match(redacted, /\[redacted-token\]/);
   assert.match(redacted, /\[redacted-email\]/);
   assert.match(redacted, /\[redacted-user\]/);
@@ -73,7 +71,7 @@ test('compiler errors include stable code and exact line/column without source t
 test('plain-text diagnostics remain useful without carrying source', async () => {
   const source = 'create number value = 1\nshow value';
   const report = await buildStudioDiagnosticReport({
-    patchVersion: '0.2.0-beta.32',
+    patchVersion: '0.2.0-beta.33',
     source,
     projectKind: 'console',
     buildTarget: 'wasm-direct',
@@ -83,7 +81,7 @@ test('plain-text diagnostics remain useful without carrying source', async () =>
     }
   });
   const text = formatStudioDiagnosticReport(report);
-  assert.match(text, /Patch Studio diagnostics 0\.2\.0-beta\.32/);
+  assert.match(text, /Patch Studio diagnostics 0\.2\.0-beta\.33/);
   assert.match(text, /Build target: wasm-direct/);
   assert.match(text, /source omitted/);
   assert.doesNotMatch(text, /create number value/);

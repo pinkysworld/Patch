@@ -1,6 +1,6 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.32",
+  "version": "0.2.0-beta.33",
   "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, Lean-checked finite transitive exact call trees, invocation-frame-aware direct-Wasm correspondence, semantic Window input events, cross-platform builds, direct WebAssembly, portable C99/FreeBSD execution, and Patch Studio",
   "type": "module",
   "bin": {
