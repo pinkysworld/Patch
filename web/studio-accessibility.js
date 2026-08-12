@@ -8,6 +8,7 @@ const buildButton = document.querySelector('#build');
 installSkipLink();
 installResultTabKeyboard();
 installStudioShortcuts();
+installServiceWorkerRefresh();
 syncResultTabs();
 
 if (resultTabList && typeof MutationObserver !== 'undefined') {
@@ -55,6 +56,35 @@ function installStudioShortcuts() {
     if (event.shiftKey) buildButton?.click();
     else runButton?.click();
   });
+}
+
+function installServiceWorkerRefresh() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const reloadGuardKey = 'patch-studio-sw-reload-guard';
+  let reloadedForActivation = false;
+  try {
+    reloadedForActivation = sessionStorage.getItem(reloadGuardKey) === '1';
+    if (reloadedForActivation) sessionStorage.removeItem(reloadGuardKey);
+  } catch {}
+
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloadRequested = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloadedForActivation || reloadRequested) return;
+    reloadRequested = true;
+    try { sessionStorage.setItem(reloadGuardKey, '1'); } catch {}
+    window.location.reload();
+  });
+
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      await registration.update();
+    } catch {
+      // Offline Studio operation remains valid when an update check cannot reach the network.
+    }
+  }, { once: true });
 }
 
 function syncResultTabs() {
