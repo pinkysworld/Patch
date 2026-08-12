@@ -41,7 +41,7 @@ rejectOutsideSiteImport('project lifecycle', projectLifecycle);
 requireAll('project lifecycle', projectLifecycle, [
   './src/studio-project.js','patchStudio.project.v1','patchStudio.project.pending.v1','patchStudio.recovery.v1','patchStudio.project',
   'bootstrapProjectStorage','persistBundle','addRecoverySnapshot','serializeRecoverySnapshots','parseStudioProjectBundle',
-  'Exported ${filename}','Imported ${file.name}','Recover the Patch Studio snapshot','project-lifecycle.css','safeFileName'
+  'Exported ${filename}','Imported ${file.name}','Recover the Patch Studio snapshot','project-lifecycle.css','studioProjectFileStem'
 ]);
 const projectCss = read('_site/project-lifecycle.css');
 requireAll('project lifecycle stylesheet', projectCss, ['.project-actions','#saveState','button:disabled','@media (max-width: 720px)']);
@@ -49,7 +49,7 @@ const studioProject = read('_site/src/studio-project.js');
 requireAll('Studio project schema', studioProject, [
   "PATCH_STUDIO_PROJECT_FORMAT = 'patch-studio-project'", 'PATCH_STUDIO_PROJECT_VERSION = 1',
   "PATCH_STUDIO_RECOVERY_FORMAT = 'patch-studio-recovery'", 'PATCH_STUDIO_RECOVERY_VERSION = 1',
-  'buildStudioProjectBundle','validateStudioProjectBundle','parseStudioProjectBundle','parseStoredStudioProject',
+  'buildStudioProjectBundle','validateStudioProjectBundle','parseStudioProjectBundle','parseStoredStudioProject','studioProjectFileStem',
   'createRecoverySnapshot','addRecoverySnapshot','STUDIO_PROJECT_FUTURE_VERSION','main.patch'
 ]);
 
@@ -57,7 +57,7 @@ const playground = read('_site/playground.js');
 rejectOutsideSiteImport('playground', playground);
 requireAll('playground imports', playground, [
   './src/interpreter.js','./src/compiler.js','./src/bundle.js','./src/wasm.js','./src/wasm-direct.js','./src/webapp.js',
-  './src/window-events.js','./src/designer.js'
+  './src/window-events.js','./src/designer.js','./src/studio-project.js'
 ]);
 requireAll('playground Designer/runtime contract', playground, [
   'triggerWindowEvent','listDesignerControls','updateDesignerControl','removeDesignerControl','designerInspectorApply',
@@ -66,7 +66,7 @@ requireAll('playground Designer/runtime contract', playground, [
   "control.type === 'combo'", "control.type === 'listbox'", "document.createElement('select')", 'patch-listbox', 'el.size = Math.min',
   "control.type === 'tabs'", 'patch-tabs-list', 'patch-tab-button', 'patch-tab-panel', 'aria-selected', "addControl('tabs')",
   'designerInspectorOptions', 'splitOptionExpressions', "['combo', 'listbox', 'radio']", 'Local save unavailable',
-  'model.visible === false', "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
+  'changeContractTimer','studioProjectFileStem','model.visible === false', "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
 ]);
 
 const inspectorCss = read('_site/designer-inspector.css');
@@ -136,7 +136,7 @@ requireAll('native builder modes', nativeBuild, [
 ]);
 const nativeGui = read('_site/src/native-gui-ir.js');
 requireAll('Native GUI IR v0.7 Menu/Dialog/Radio/Tabs contract', nativeGui, [
-  "PATCH_NATIVE_GUI_IR_VERSION = '0.7'", 'flattenNativeGuiControls','flattenNativeGuiMenuItems', "type: 'tabs'", "type: 'menuItem'", 'menus: []', "kind: 'dialog'",
+  "PATCH_NATIVE_GUI_IR_VERSION = '0.7'", 'formControlDefaultLayout','flattenNativeGuiControls','flattenNativeGuiMenuItems', "type: 'tabs'", "type: 'menuItem'", 'menus: []', "kind: 'dialog'",
   "['combo', 'listbox', 'radio'].includes(control.type)", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
 ]);
 const sealedNative = read('_site/src/sealed-native-gui.js');
