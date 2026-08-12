@@ -1,0 +1,41 @@
+name: Patch CodeQL Security
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.js'
+      - package.json
+      - .github/workflows/codeql.yml
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '**/*.js'
+      - package.json
+      - .github/workflows/codeql.yml
+  schedule:
+    - cron: '37 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+jobs:
+  analyze:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    name: JavaScript security analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript

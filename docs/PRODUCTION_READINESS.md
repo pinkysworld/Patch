@@ -50,10 +50,12 @@ Ready Windows, macOS and Linux application downloads can already be consumed wit
 
 ### Security and maintenance
 - [x] security reporting policy
-- [ ] dependency/toolchain update policy
-- [ ] automated dependency/security scanning for build-time tooling
-- [ ] security-sensitive code review checklist
-- [ ] threat model for Studio, remote builds and generated desktop apps
+- [x] dependency/toolchain update policy
+- [x] automated dependency/security scanning for build-time tooling
+- [x] security-sensitive code review checklist
+- [x] threat model for Studio, remote builds and generated desktop apps
+
+GitHub Actions are monitored weekly through Dependabot and JavaScript/TypeScript is scanned by a scheduled and change-triggered CodeQL `security-extended` workflow. The normal CI also executes `scripts/security-policy-check.js`, which rejects `pull_request_target`, `permissions: write-all`, network-download-to-shell patterns, branch-like/floating Action refs, and npm dependencies without a lockfile. Patch currently has no external npm dependencies, so no synthetic lockfile is maintained. `docs/SECURITY_MAINTENANCE.md`, `docs/THREAT_MODEL.md` and `docs/SECURITY_REVIEW_CHECKLIST.md` define the maintenance cadence, trust boundaries, residual risks and required review evidence.
 
 ## P1 — strongly recommended for serious users
 
