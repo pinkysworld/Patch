@@ -70,21 +70,27 @@ function normalize(value) { return value.split(path.sep).join('/'); }
 function parseCli(argv) {
   const inputs = [];
   let outDir = 'release-meta';
+  let baseDir = process.cwd();
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--out-dir') {
       outDir = argv[++i];
       if (!outDir) throw new Error('--out-dir needs a directory.');
       continue;
     }
+    if (argv[i] === '--base-dir') {
+      baseDir = argv[++i];
+      if (!baseDir) throw new Error('--base-dir needs a directory.');
+      continue;
+    }
     inputs.push(argv[i]);
   }
-  return { inputs, outDir };
+  return { inputs, outDir, baseDir };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const { inputs, outDir } = parseCli(process.argv.slice(2));
-    const manifest = writeReleaseManifest(inputs, { outDir });
+    const { inputs, outDir, baseDir } = parseCli(process.argv.slice(2));
+    const manifest = writeReleaseManifest(inputs, { outDir, baseDir });
     console.log(`Wrote ${manifest.artifacts.length} artifact hash(es) to ${outDir}`);
   } catch (error) {
     console.error(`Patch release manifest stopped: ${error.message}`);
