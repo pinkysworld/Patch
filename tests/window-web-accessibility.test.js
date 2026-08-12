@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import vm from 'node:vm';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION } from '../src/window-web-accessibility.js';
@@ -54,6 +55,7 @@ test('generated accessibility runtime restores missing standalone Radio renderin
       this.value = '';
       this.checked = false;
       this.tabIndex = 0;
+      this.id = '';
     }
     append(...nodes) { this.children.push(...nodes); }
     appendChild(node) { this.children.push(node); return node; }
@@ -85,6 +87,9 @@ function safeTrigger(control,event,payload) { triggered.push({ control, event, p
   const rendered = context.rendered;
   assert.equal(rendered.tagName, 'FIELDSET');
   assert.equal(rendered.attributes.get('role'), 'radiogroup');
+  const legend = rendered.children.find(child => child.tagName === 'LEGEND');
+  assert.ok(legend);
+  assert.equal(rendered.attributes.get('aria-labelledby'), legend.id);
   const labels = rendered.children.filter(child => child.tagName === 'LABEL');
   assert.equal(labels.length, 3);
   const advanced = labels[1].children.find(child => child.tagName === 'INPUT');
@@ -119,4 +124,14 @@ test('Standalone Console Web output also exposes a live status and keyboard focu
   assert.match(built.html, /button:focus-visible/);
   assert.match(built.html, /forced-colors:active/);
   assert.match(built.html, /prefers-reduced-motion:reduce/);
+});
+
+test('Window accessibility module is part of content-addressed site builds and offline cache', () => {
+  const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
+  const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
+  const webapp = fs.readFileSync('src/webapp.js', 'utf8');
+  assert.match(buildSite, /'window-web-accessibility\.js'/);
+  assert.match(serviceWorker, /'\.\.\/src\/window-web-accessibility\.js'/);
+  assert.match(webapp, /from '\.\/window-web-accessibility\.js'/);
+  assert.match(webapp, /enhanceStandaloneWindowWebApp/);
 });
