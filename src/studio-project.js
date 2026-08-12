@@ -7,6 +7,16 @@ export const PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS = 5;
 
 const encoder = new TextEncoder();
 
+export function studioProjectFileStem(name) {
+  const cleaned = String(name ?? '')
+    .trim()
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  return cleaned || 'PatchApp';
+}
+
 export class StudioProjectError extends Error {
   constructor(message, code = 'STUDIO_PROJECT_INVALID') {
     super(message);
