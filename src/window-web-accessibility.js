@@ -44,10 +44,12 @@ function accessibilityRuntime() {
       const group=document.createElement('fieldset');
       group.className='patch-radio-group';
       group.setAttribute?.('role','radiogroup');
-      group.setAttribute?.('aria-label',patchControlName(control,'Options'));
       const legend=document.createElement('legend');
+      const legendId='patch-radio-legend-'+windowId+'-'+(control.id||controlIndex);
+      legend.id=legendId;
       legend.className='patch-radio-legend';
       legend.textContent=patchControlName(control,'Options');
+      group.setAttribute?.('aria-labelledby',legendId);
       group.appendChild(legend);
       const radioName='patch-radio-'+windowId+'-'+(control.id||controlIndex);
       for(const option of control.options||[]){
