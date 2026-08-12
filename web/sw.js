@@ -1,9 +1,9 @@
-const CACHE = 'patch-studio-0.2-beta.32-forms8-ux14-a11y1';
+const CACHE = 'patch-studio-0.2-beta.32-forms8-ux15-diagnostic2';
 const CORE = [
   './', './index.html', './style.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css', './playground.js', './forms-designer.js', './native-build.js', './project-lifecycle.js', './recovery-manager.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
-  '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/bundle.js', '../src/wasm.js',
+  '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/diagnostics.js', '../src/bundle.js', '../src/wasm.js',
   '../src/wasm-direct.js', '../src/c99.js', '../src/webapp.js', '../src/window-webapp.js', '../src/window-build.js',
   '../src/window-events.js', '../src/designer.js', '../src/form-layout.js', '../src/studio-project.js', '../src/studio-diagnostics.js', '../src/window-compiled.js', '../src/native-gui-ir.js', '../src/sealed-native-gui.js',
   '../src/sealed-native-package.js', '../src/local-native-kit.js', '../src/prebuilt-native.js', '../src/prebuilt-window.js'
