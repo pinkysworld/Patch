@@ -1,0 +1,4 @@
+create number score = 1
+change score:
+  add 4
+show score

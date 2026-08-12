@@ -12,9 +12,11 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 - [x] checksums attached beside every distributed tagged-release artifact
 - [x] release manifest includes source commit and Patch version
 - [x] release notes generated from reviewed changes
-- [ ] reproducibility check: rebuilding the same source/toolchain produces equivalent logical payloads where platform packaging permits
+- [x] reproducibility check: rebuilding the same source/toolchain produces equivalent logical payloads where platform packaging permits
 
 Tagged releases are fail-closed. `v<package version>` must point at the checked-out `GITHUB_SHA`; the workflow tests that exact source, builds the portable/Web/Wasm/C99/npm release bundle, generates `release-manifest.json` and `SHA256SUMS.txt`, independently re-hashes every artifact, verifies the recorded Patch version and source commit, and only then calls `gh release create --verify-tag --generate-notes`. Beta/pre-release package versions are published as GitHub prereleases.
+
+Logical reproducibility is tested separately from native toolchain reproducibility. `scripts/logical-release-fingerprint.js` rebuilds portable PatchApp, bootstrap/direct Wasm, C99 and Console/Window Web artifacts. The regression suite launches two separate Node processes and requires identical byte-length/SHA-256 fingerprint documents. `docs/REPRODUCIBILITY.md` explicitly excludes final PE/Mach-O/ELF/signing/toolchain metadata from this claim.
 
 ### Compatibility and project lifecycle
 - [x] document pre-1.0 compatibility policy
@@ -22,9 +24,11 @@ Tagged releases are fail-closed. `v<package version>` must point at the checked-
 - [x] project import/export
 - [ ] migrations for old project bundle schema versions
 - [x] explicit refusal for unsupported future schema versions
-- [ ] source-language compatibility regression corpus
+- [x] source-language compatibility regression corpus
 
 Patch Studio project bundle v1 is intentionally a single-file `main.patch` project. The Studio also migrates the earlier unversioned local-storage state into v1 automatically. The unchecked migration item above is reserved for real bundle-version migrations once a v2 or later schema exists.
+
+`compat/source-0.2/` is the executable compatibility baseline for source forms Patch has deliberately retained. Its versioned manifest covers core numeric change, Thing fields, loose List syntax, recipes with Undo/Redo, legacy flow-layout Windows and multiple unnamed Windows. Current compilers must keep those fixtures compiling with the recorded observable result unless a future compatibility change is handled explicitly.
 
 ### Diagnostics and supportability
 - [x] `patch doctor` structured diagnostics core
@@ -84,14 +88,18 @@ Optional GitHub Actions builds now have a 15-minute Studio deadline, exact-run c
 
 ### Testing
 - [x] deterministic parser/compiler grammar fuzzing
-- [ ] property-based change/history/undo tests
+- [x] property-based change/history/undo tests
 - [x] differential interpreter ↔ direct-Wasm ↔ executable C99 tests for every currently documented shared numeric semantic subset
-- [ ] golden release artifact tests
+- [x] golden release artifact tests
 - [ ] upgrade/migration tests across project schema versions
 
 CI runs 500 deterministic generated valid programs plus 500 paired guaranteed-invalid programs. Valid cases reach the parser, compiler, direct-Wasm lowering/validation and independent C99 lowering; invalid cases must fail with the expected stable diagnostic family. The seed and failing source are printed for exact replay.
 
 The executable differential corpus compares interpreter output/state against direct Wasm, then compiles generated C99 with the host C compiler and compares native-process output against the interpreter. The corpus is coupled to the C99 backend's documented `metadata.supported` list, so adding a new shared capability without adding a differential case makes CI fail. This is deterministic grammar fuzzing and differential testing, not a claim of coverage-guided fuzzing or compiler correctness proof.
+
+The Change/History property suite deterministically generates 240 mixed numeric mutation histories and checks forward operations, stored inverses, `invertChange`, full composed changes, complete Undo and complete Redo. Additional generated cases require any new commit after Undo to invalidate the redo stack. Seed and case number are included in every failure context.
+
+`compat/release-golden-v1.json` pins the logical artifact format/version boundaries for PatchApp, bootstrap/direct Wasm, C99 and Console/Window Web. Golden tests validate those contracts and the independent-process logical reproducibility fingerprint. Golden format expectations are kept separate from permanent byte hashes so reviewed deterministic code-generation changes do not masquerade as nondeterminism.
 
 ## P2 — polish and ecosystem
 

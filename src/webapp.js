@@ -37,20 +37,22 @@ function addSourceBackedWindowLayout(built) {
 
 function buildStandaloneConsoleWebApp(source, options) {
   const { name, entry } = options;
-  const { module, metadata, compiled } = compileToDirectWasm(source, {
+  const { module, metadata: directWasmMetadata, compiled } = compileToDirectWasm(source, {
     name,
     kind: 'console',
     entry
   });
   const wasmBase64 = bytesToBase64(module);
-  const meta = JSON.stringify({
+  const metadata = {
     format: 'patch-standalone-web',
     version: PATCH_STANDALONE_WEB_VERSION,
-    directWasmVersion: metadata.version,
-    irVersion: metadata.irVersion,
-    stateTargets: metadata.stateTargets,
-    projectKind: 'console'
-  });
+    directWasmVersion: directWasmMetadata.version,
+    irVersion: directWasmMetadata.irVersion,
+    stateTargets: directWasmMetadata.stateTargets,
+    projectKind: 'console',
+    execution: 'embedded-direct-wasm'
+  };
+  const meta = JSON.stringify(metadata);
 
   const html = `<!doctype html>
 <html lang="en">
@@ -92,7 +94,7 @@ document.getElementById('run').addEventListener('click',run); run();
 </body>
 </html>`;
 
-  return { html, module, metadata, compiled, name };
+  return { html, module, metadata, directWasmMetadata, compiled, name };
 }
 
 function bytesToBase64(bytes) {
