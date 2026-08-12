@@ -83,9 +83,9 @@ test('Standalone Window Web App renders ComboBox and emits a text changed payloa
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
 });
 
-test('native GUI v0.6 carries ComboBox options, text binding and changed event semantics', () => {
+test('native GUI v0.7 carries ComboBox options, text binding and changed event semantics', () => {
   const ir = buildNativeGuiIR(compile(source, { name: 'ComboDemo', kind: 'window' }));
-  assert.equal(ir.version, '0.6');
+  assert.equal(ir.version, '0.7');
   assert.deepEqual(ir.states, [{ name: 'size', type: 'text', initial: 'Medium' }]);
   const combo = ir.forms[0].controls.find(control => control.id === 'size');
   assert.deepEqual(combo, { type: 'combo', id: 'size', text: '', binding: 'size', options: ['Small', 'Medium', 'Large'], layout: { x: 24, y: 72, width: 220, height: 36 } });
