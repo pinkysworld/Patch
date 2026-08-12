@@ -47,8 +47,8 @@ test('Radio changed value is transient text and persists only through explicit P
   assert.throws(() => triggerWindowEvent(runtime, 'mode', 'changed', { value: true }), /needs a text event-local value/);
 });
 
-test('Window event adapter v0.5 type-checks controls nested inside Tabs recursively', () => {
-  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.5');
+test('Window event adapter v0.6 type-checks controls nested inside Tabs recursively', () => {
+  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.6');
   const nested = `create text mode = "A"\n\nwindow "Nested" as main:\n  tabs as settings:\n    tab "One":\n      radio "A", "B" as mode\n    tab "Two":\n      text "Two"\n\nwhen mode changed:\n  change mode:\n    set = value\n`;
   const runtime = new PatchInterpreter();
   runtime.run(nested);
@@ -73,9 +73,9 @@ test('Designer can add, resize, rename and edit Radio options in source', () => 
   assert.match(edited, /when mode changed:/);
 });
 
-test('Native GUI IR v0.6 carries Radio options, text binding and changed event semantics', () => {
+test('Native GUI IR v0.7 carries Radio options, text binding and changed event semantics', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'RadioDemo' }));
-  assert.equal(ir.version, '0.6');
+  assert.equal(ir.version, '0.7');
   assert.deepEqual(ir.states, [{ name: 'mode', type: 'text', initial: 'Basic' }]);
   const radio = ir.forms[0].controls.find(control => control.id === 'mode');
   assert.equal(radio.type, 'radio');
@@ -85,9 +85,9 @@ test('Native GUI IR v0.6 carries Radio options, text binding and changed event s
   assert.deepEqual(ir.events[0].actions[0].ops, [{ op: 'set', value: { kind: 'eventValue' } }]);
 });
 
-test('sealed native GUI payload v6 contains Radio kind/options without Patch source', () => {
+test('sealed native GUI payload v7 contains Radio kind/options without Patch source', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'RadioDemo' }));
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const payload = encodeNativeGuiPayload(ir);
   const text = new TextDecoder().decode(payload);
   assert.match(text, /Basic/);
