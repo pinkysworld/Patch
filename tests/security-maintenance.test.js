@@ -8,6 +8,17 @@ const codeql = fs.readFileSync('.github/workflows/codeql.yml', 'utf8');
 const maintenance = fs.readFileSync('docs/SECURITY_MAINTENANCE.md', 'utf8');
 const threatModel = fs.readFileSync('docs/THREAT_MODEL.md', 'utf8');
 const checklist = fs.readFileSync('docs/SECURITY_REVIEW_CHECKLIST.md', 'utf8');
+const leanBootstrap = fs.readFileSync('scripts/install-pinned-lean.sh', 'utf8');
+
+const leanWorkflows = [
+  '.github/workflows/formal.yml',
+  '.github/workflows/assurance-evaluation.yml',
+  '.github/workflows/beta26-concrete-calls.yml',
+  '.github/workflows/beta27-arithmetic-calls.yml',
+  '.github/workflows/beta28-callee-traces.yml',
+  '.github/workflows/beta29-guarded-callee-traces.yml',
+  '.github/workflows/beta32-invocation-frames.yml'
+].map(file => [file, fs.readFileSync(file, 'utf8')]);
 
 test('repository security policy checker is valid and passes current workflows', () => {
   execFileSync(process.execPath, ['--check', 'scripts/security-policy-check.js'], { stdio: 'pipe' });
@@ -32,6 +43,19 @@ test('CodeQL uses least-privilege JavaScript security scanning on v4 actions', (
   assert.match(codeql, /schedule:/);
   assert.match(codeql, /github\.event\.pull_request\.draft == false/);
   assert.doesNotMatch(codeql, /pull_request_target/);
+});
+
+test('Lean bootstrap downloads before execution and every formal workflow reuses it', () => {
+  assert.match(leanBootstrap, /--output "\$INSTALLER"/);
+  assert.match(leanBootstrap, /test -s "\$INSTALLER"/);
+  assert.match(leanBootstrap, /sh "\$INSTALLER" -y --default-toolchain none/);
+  assert.match(leanBootstrap, /leanprover\/lean4:v4\.30\.0/);
+  assert.match(leanBootstrap, /elan" run "\$LEAN_TOOLCHAIN" lean --version/);
+  assert.doesNotMatch(leanBootstrap, /curl[^\n|]*\|\s*(?:sh|bash)/i);
+  for (const [file, workflow] of leanWorkflows) {
+    assert.ok(workflow.includes('bash scripts/install-pinned-lean.sh'), file);
+    assert.doesNotMatch(workflow, /curl[^\n|]*\|\s*(?:sh|bash)/i, file);
+  }
 });
 
 test('maintenance policy defines dependency Action and native-toolchain response', () => {
