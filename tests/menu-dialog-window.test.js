@@ -43,12 +43,12 @@ test('Change IR keeps menu/dialog explicit without changing Change IR 0.10', () 
   assert.equal(event.body[0].code, 'DIALOG');
 });
 
-test('Window validation and Native GUI IR 0.6 model Menu/Dialog parity explicitly', () => {
+test('Window validation and Native GUI IR 0.7 model Menu/Dialog parity explicitly', () => {
   const compiled = compile(source, { name: 'MenuDialogDemo', kind: 'window' });
   const support = validateWindowRuntimeSupport(compiled);
   assert.equal(support.menuItems, 1);
   const ir = buildNativeGuiIR(compiled);
-  assert.equal(ir.version, '0.6');
+  assert.equal(ir.version, '0.7');
   assert.deepEqual(ir.forms[0].menus, [{ title: 'Help', items: [{ type: 'menuItem', id: 'about_item', text: 'About' }] }]);
   assert.deepEqual(flattenNativeGuiMenuItems(ir).map(item => [item.id, item.formIndex, item.menuIndex, item.itemIndex]), [['about_item', 0, 0, 0]]);
   assert.deepEqual(ir.events, [{
@@ -60,9 +60,9 @@ test('Window validation and Native GUI IR 0.6 model Menu/Dialog parity explicitl
   }]);
 });
 
-test('sealed native payload advances to v6 and includes menu/dialog strings', () => {
+test('sealed native payload v7 includes menu/dialog strings', () => {
   const ir = buildNativeGuiIR(compile(source, { name: 'MenuDialogDemo', kind: 'window' }));
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const payload = encodeNativeGuiPayload(ir);
   const text = new TextDecoder().decode(payload);
   for (const marker of ['Help', 'about_item', 'About', 'About Patch', 'Native menus and informational dialogs']) assert.ok(text.includes(marker));
