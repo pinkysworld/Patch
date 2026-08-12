@@ -1,0 +1,46 @@
+{
+  "schema": "patch-release-golden-contract",
+  "version": 1,
+  "consoleSource": "compat/source-0.2/core-number.patch",
+  "windowSource": "compat/source-0.2/legacy-window-flow.patch",
+  "project": {
+    "name": "PatchGolden",
+    "entry": "main.patch"
+  },
+  "artifacts": {
+    "patchapp": {
+      "format": "patchapp",
+      "version": "0.1",
+      "irVersion": "0.10"
+    },
+    "bootstrapWasm": {
+      "format": "patch-wasm-bootstrap",
+      "version": "0.1-bootstrap",
+      "irVersion": "0.10",
+      "magicHex": "0061736d01000000"
+    },
+    "directWasm": {
+      "format": "patch-wasm-direct",
+      "version": "0.4-trace",
+      "irVersion": "0.10",
+      "magicHex": "0061736d01000000"
+    },
+    "c99": {
+      "format": "patch-c99",
+      "version": "0.1",
+      "irVersion": "0.10"
+    },
+    "consoleWeb": {
+      "format": "patch-standalone-web",
+      "version": "0.2",
+      "projectKind": "console",
+      "execution": "embedded-direct-wasm"
+    },
+    "windowWeb": {
+      "format": "patch-standalone-window-web",
+      "version": "0.8",
+      "projectKind": "window",
+      "irVersion": "0.10"
+    }
+  }
+}
