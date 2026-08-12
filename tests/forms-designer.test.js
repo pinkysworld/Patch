@@ -9,8 +9,20 @@ import {
   updateDesignerControl,
   updateDesignerWindow
 } from '../src/designer.js';
-import { buildFormLayoutManifest } from '../src/form-layout.js';
+import {
+  PATCH_FORM_CONTROL_DEFAULTS,
+  buildFormLayoutManifest,
+  formControlDefaultLayout
+} from '../src/form-layout.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
+
+test('shared Form defaults cover every source-backed Studio control', () => {
+  assert.deepEqual(Object.keys(PATCH_FORM_CONTROL_DEFAULTS), [
+    'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'tabs'
+  ]);
+  assert.deepEqual(formControlDefaultLayout('radio', 2), { x: 24, y: 120, width: 220, height: 84 });
+  assert.deepEqual(formControlDefaultLayout('tabs', 1), { x: 24, y: 72, width: 420, height: 240 });
+});
 
 test('parser keeps optional source-backed form and control geometry', () => {
   const ast = parse(`window "Main" size 640, 420:\n  text "Hello" at 24, 20 size 180, 30\n  button "Save" as save_button at 24, 64 size 120, 36\n`);
