@@ -11,8 +11,9 @@ const gui = buildNativeGuiIR(compile(source, { name: 'LinuxNativeTest', kind: 'w
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 
-test('browser package seals Native GUI IR v0.6 into one Linux ELF executable', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
+test('browser package seals Native GUI IR v0.7 payload v7 into one Linux ELF executable', () => {
+  assert.equal(gui.version, '0.7');
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 10, 20, 30, 40]);
   const ready = buildLinuxNativeGuiPackage(fakeElf, gui, { name: 'My Linux App' });
   assert.equal(ready.filename, 'My_Linux_App-linux-window.zip');
@@ -38,19 +39,21 @@ test('Linux compatibility packaging remains explicit and AOT route remains avail
   assert.ok(studio.includes('return NATIVE_WINDOW_AOT_WORKFLOW'));
 });
 
-test('Linux native runtime workflow smokes Menu/Dialog and publishes GTK runtime v0.6', () => {
+test('Linux native runtime workflow smokes Result Dialogs and publishes GTK runtime v0.7', () => {
   for (const marker of [
-    'native-runtime/gtk-sealed-gui.cpp',
+    'native-runtime/gtk-sealed-gui-v07.cpp',
     'scripts/seal-native-linux.js',
     'examples/radio-window.patch',
     'PatchSealedRadio',
     'examples/menu-dialog-window.patch',
     'PatchSealedMenuDialog',
-    'Expected sealed native GUI payload v6',
+    'examples/result-dialog-window.patch',
+    'PatchSealedResultDialog',
+    'Expected sealed native GUI payload v7',
     'patch-linux-native-gui-runtime.bin',
-    'native-linux-runtime-v0.6'
+    'native-linux-runtime-v0.7'
   ]) assert.ok(workflow.includes(marker), marker);
-  assert.equal(workflow.includes('native-linux-runtime-v0.5'), false);
+  assert.equal(workflow.includes('native-linux-runtime-v0.6'), false);
   assert.equal(workflow.includes('build-native-window.js'), false);
 });
 
