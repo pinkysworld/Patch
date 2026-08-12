@@ -18,17 +18,11 @@ const argv = process.argv.slice(2);
 const known = new Set(['run', 'run-wasm', 'check', 'changes', 'formal', 'certify', 'runtime-certify', 'build']);
 const command = known.has(argv[0]) ? argv.shift() : 'run';
 const jsonCommands = new Set(['check', 'formal', 'certify', 'build']);
-const jsonIndex = argv.indexOf('--json');
-const jsonRequested = jsonIndex >= 0;
-if (jsonRequested) argv.splice(jsonIndex, 1);
-const json = jsonRequested && jsonCommands.has(command);
+const jsonIndex = jsonCommands.has(command) ? argv.indexOf('--json') : -1;
+const json = jsonIndex >= 0;
+if (json) argv.splice(jsonIndex, 1);
 const args = argv;
 const file = args.shift();
-
-if (jsonRequested && !jsonCommands.has(command)) {
-  console.error("Patch CLI usage: --json is supported for check, formal, certify, and build.");
-  process.exit(PATCH_CLI_EXIT.USAGE);
-}
 
 if (!file) {
   if (json) {
