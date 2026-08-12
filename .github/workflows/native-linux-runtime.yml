@@ -9,6 +9,7 @@ on:
       - scripts/seal-native-linux.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
+      - src/window-build.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js
@@ -18,11 +19,13 @@ on:
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
+      - examples/menu-dialog-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
+      - tests/menu-dialog-window.test.js
       - tests/studio-linux-native-gui.test.js
       - web/native-build.js
       - scripts/build-site.js
@@ -35,6 +38,7 @@ on:
       - scripts/seal-native-linux.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
+      - src/window-build.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js
@@ -44,11 +48,13 @@ on:
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
+      - examples/menu-dialog-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
+      - tests/menu-dialog-window.test.js
       - tests/studio-linux-native-gui.test.js
       - web/native-build.js
       - scripts/build-site.js
@@ -112,22 +118,28 @@ jobs:
           node scripts/seal-native-linux.js examples/radio-window.patch dist-runtime/patch-linux-native-gui-runtime.bin dist-runtime/PatchSealedRadio PatchSealedRadio
           chmod +x dist-runtime/PatchSealedRadio
           xvfb-run -a dist-runtime/PatchSealedRadio --patch-smoke
-      - name: Verify ELF and payload-v5 contract
+      - name: Seal and smoke native Menu Dialog application
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js examples/menu-dialog-window.patch dist-runtime/patch-linux-native-gui-runtime.bin dist-runtime/PatchSealedMenuDialog PatchSealedMenuDialog
+          chmod +x dist-runtime/PatchSealedMenuDialog
+          xvfb-run -a dist-runtime/PatchSealedMenuDialog --patch-smoke
+      - name: Verify ELF and payload-v6 contract
         shell: bash
         run: |
           file dist-runtime/patch-linux-native-gui-runtime.bin
-          file dist-runtime/PatchSealedRadio
+          file dist-runtime/PatchSealedMenuDialog
           node - <<'NODE'
           const fs=require('fs');
           const runtime=fs.readFileSync('dist-runtime/patch-linux-native-gui-runtime.bin');
-          const sealed=fs.readFileSync('dist-runtime/PatchSealedRadio');
+          const sealed=fs.readFileSync('dist-runtime/PatchSealedMenuDialog');
           if(runtime[0]!==0x7f||runtime[1]!==0x45||runtime[2]!==0x4c||runtime[3]!==0x46) throw new Error('Runtime is not ELF.');
           if(sealed.length<=runtime.length) throw new Error('Sealed application did not append a payload.');
           if(sealed.subarray(sealed.length-20,sealed.length-12).toString('ascii')!=='PCHGUI01') throw new Error('Footer magic missing.');
-          if(sealed.readUInt32LE(sealed.length-12)!==5) throw new Error('Expected sealed native GUI payload v5.');
+          if(sealed.readUInt32LE(sealed.length-12)!==6) throw new Error('Expected sealed native GUI payload v6.');
           const text=sealed.toString('latin1');
           for(const forbidden of ['Electron','Chromium','node_modules']) if(text.includes(forbidden)) throw new Error(`Unexpected compatibility runtime marker: ${forbidden}`);
-          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed Radio app: ${sealed.length} bytes`);
+          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed Menu/Dialog app: ${sealed.length} bytes`);
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -150,9 +162,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-linux-runtime-v0.5
+          TAG: native-linux-runtime-v0.6
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.5' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Payload v5 adds grouped native Radio controls using GtkRadioButton while preserving explicit Patch change semantics, native Tabs and the existing control set. No Electron, Chromium, Node.js or sidecar payload is used.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.6' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Payload v6 adds structural native menus and informational dialogs using GtkMenuBar/GtkMenuItem and GtkMessageDialog while preserving explicit Patch change semantics, Radio, Tabs and the existing control set.'
           fi
           gh release upload "$TAG" runtime/patch-linux-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber

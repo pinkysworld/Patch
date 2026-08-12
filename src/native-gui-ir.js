@@ -2,19 +2,19 @@ import { buildFormLayoutManifest } from './form-layout.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 
 export const PATCH_NATIVE_GUI_IR_FORMAT = 'patch-native-gui-ir';
-export const PATCH_NATIVE_GUI_IR_VERSION = '0.5';
+export const PATCH_NATIVE_GUI_IR_VERSION = '0.6';
 
 export class NativeGuiError extends Error {}
 
 /**
  * Lower the deliberately small, beginner-facing Patch Forms surface into a
  * platform-neutral GUI IR. Backends fail closed instead of silently dropping
- * Patch behavior they do not understand.
+ * behavior they do not understand.
  *
- * Native GUI IR v0.5 adds grouped Radio controls. Radio options are text and a
- * changed event exposes the selected option as transient text `value`. Persistent
- * state still changes only through an explicit Patch change action. Tabs remain
- * real nested containers with renderer-local page selection.
+ * Native GUI IR v0.6 adds Window menus and informational dialog actions. Menus
+ * are structural Form UI rather than positioned controls. Menu-item clicks carry
+ * no value. Informational dialogs carry no result and never create hidden Patch
+ * state or Change History entries.
  */
 export function buildNativeGuiIR(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
@@ -26,14 +26,14 @@ export function buildNativeGuiIR(compiled) {
   const states = [];
   const stateByName = new Map();
   const forms = [];
-  const controls = new Map();
+  const sources = new Map();
   const events = [];
   const eventKeys = new Set();
 
   for (const node of compiled.ast) {
     if (node.kind !== 'create') continue;
     if (!['number', 'text', 'boolean'].includes(node.valueType)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 supports number, text and boolean state.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.6 supports number, text and boolean state.`);
     }
     if (stateByName.has(node.name)) {
       throw new NativeGuiError(`line ${node.line ?? '?'}: native state '${node.name}' is declared more than once.`);
@@ -59,11 +59,16 @@ export function buildNativeGuiIR(compiled) {
         width: node.width ?? 640,
         height: node.height ?? 420,
         visible: isNamed ? namedFormIndex++ === 0 : true,
-        controls: []
+        controls: [],
+        menus: []
       };
 
       let controlIndex = 0;
       for (const child of node.body ?? []) {
+        if (child.kind === 'menu') {
+          form.menus.push(lowerMenu(child, formId, sources));
+          continue;
+        }
         if (child.kind === 'tabs') {
           const effective = formLayout?.controls?.[controlIndex] ?? defaultLayout('tabs', controlIndex);
           const tabs = lowerTabsControl(child, {
@@ -71,7 +76,7 @@ export function buildNativeGuiIR(compiled) {
             windowIndex,
             controlIndex,
             stateByName,
-            controls,
+            sources,
             layout: effective
           });
           form.controls.push(tabs);
@@ -85,7 +90,7 @@ export function buildNativeGuiIR(compiled) {
           layout: effective,
           generatedId: `__${child.control}_${windowIndex + 1}_${controlIndex + 1}`
         });
-        if (child.id) controls.set(child.id, { ...control, formId });
+        if (child.id) sources.set(child.id, { ...control, formId });
         form.controls.push(control);
         controlIndex += 1;
       }
@@ -94,35 +99,36 @@ export function buildNativeGuiIR(compiled) {
     }
 
     if (node.kind === 'event') {
-      const control = controls.get(node.control);
-      if (!control) {
-        throw new NativeGuiError(`line ${node.line ?? '?'}: native event '${node.control}' refers to an unknown control.`);
+      const source = sources.get(node.control);
+      if (!source) {
+        throw new NativeGuiError(`line ${node.line ?? '?'}: native event '${node.control}' refers to an unknown control or menu item.`);
       }
       const key = `${node.control}\u0000${node.event}`;
       if (eventKeys.has(key)) {
-        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 requires one '${node.event}' handler for '${node.control}'.`);
+        throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.6 requires one '${node.event}' handler for '${node.control}'.`);
       }
       eventKeys.add(key);
-      const valueType = control.type === 'checkbox'
+      const valueType = source.type === 'checkbox'
         ? 'boolean'
-        : ['input', 'combo', 'listbox', 'radio'].includes(control.type) ? 'text' : null;
+        : ['input', 'combo', 'listbox', 'radio'].includes(source.type) ? 'text' : null;
       events.push({
         control: node.control,
         event: node.event,
         valueType,
-        actions: lowerNativeActions(node.body ?? [], stateByName, { ...node, valueType })
+        form: source.formId,
+        actions: lowerNativeActions(node.body ?? [], stateByName, { ...node, valueType, formId: source.formId })
       });
       continue;
     }
 
     if (['allow', 'function'].includes(node.kind)) continue;
-    if (['openForm', 'closeForm'].includes(node.kind)) {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: open/close belongs inside a GUI event for native GUI v0.5.`);
+    if (['openForm', 'closeForm', 'dialog'].includes(node.kind)) {
+      throw new NativeGuiError(`line ${node.line ?? '?'}: ${node.kind} belongs inside a GUI event for native GUI v0.6.`);
     }
     if (node.kind === 'createThing') {
-      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 does not support thing state yet.`);
+      throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.6 does not support thing state yet.`);
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 cannot lower top-level '${node.kind}' yet.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.6 cannot lower top-level '${node.kind}' yet.`);
   }
 
   if (!forms.length) throw new NativeGuiError('Native GUI lowering needs at least one Patch Form.');
@@ -143,8 +149,31 @@ export function validateNativeGuiIR(ir) {
   }
   if (!Array.isArray(ir.forms) || !ir.forms.length) throw new NativeGuiError('Native GUI IR contains no Forms.');
   if (!Array.isArray(ir.states) || !Array.isArray(ir.events)) throw new NativeGuiError('Native GUI IR is incomplete.');
-  for (const form of ir.forms) {
-    for (const control of form.controls ?? []) validateControl(control, false);
+
+  const sources = new Map();
+  for (let formIndex = 0; formIndex < ir.forms.length; formIndex += 1) {
+    const form = ir.forms[formIndex];
+    if (!Array.isArray(form.controls) || !Array.isArray(form.menus)) throw new NativeGuiError('Native GUI IR Form is incomplete.');
+    for (const control of form.controls) {
+      validateControl(control, false);
+      registerValidatedControlSources(control, form.id, sources);
+    }
+    for (const menu of form.menus) validateMenu(menu, form.id, formIndex, sources);
+  }
+
+  for (const event of ir.events) {
+    const source = sources.get(event.control);
+    if (!source) throw new NativeGuiError(`Native GUI IR event source '${event.control}' is missing.`);
+    const allowed = source.type === 'menuItem' || source.type === 'button'
+      ? event.event === 'clicked' && event.valueType === null
+      : source.type === 'checkbox'
+        ? event.event === 'changed' && event.valueType === 'boolean'
+        : ['input', 'combo', 'listbox', 'radio'].includes(source.type)
+          ? event.event === 'changed' && event.valueType === 'text'
+          : false;
+    if (!allowed) throw new NativeGuiError(`Native GUI IR event '${event.control} ${event.event}' has an incompatible source/value contract.`);
+    if (event.form !== source.formId) throw new NativeGuiError(`Native GUI IR event '${event.control}' has the wrong owning Form.`);
+    for (const action of event.actions ?? []) validateNativeAction(action, ir.forms);
   }
   return ir;
 }
@@ -188,6 +217,46 @@ export function flattenNativeGuiControls(ir) {
   return out;
 }
 
+/** Flatten structural menu items for native backend command/target dispatch. */
+export function flattenNativeGuiMenuItems(ir) {
+  validateNativeGuiIR(ir);
+  const out = [];
+  for (let formIndex = 0; formIndex < ir.forms.length; formIndex += 1) {
+    const form = ir.forms[formIndex];
+    for (let menuIndex = 0; menuIndex < form.menus.length; menuIndex += 1) {
+      const menu = form.menus[menuIndex];
+      for (let itemIndex = 0; itemIndex < menu.items.length; itemIndex += 1) {
+        out.push({
+          ...menu.items[itemIndex],
+          formIndex,
+          menuIndex,
+          itemIndex,
+          menuTitle: menu.title,
+          nativeIndex: out.length
+        });
+      }
+    }
+  }
+  return out;
+}
+
+function lowerMenu(node, formId, sources) {
+  const title = requireTextLiteral(node.titleExpr, node.line, 'Menu title');
+  if (!Array.isArray(node.body) || !node.body.length) throw new NativeGuiError(`line ${node.line ?? '?'}: native Menu needs at least one item.`);
+  const items = node.body.map((item, index) => {
+    if (item.kind !== 'menuItem' || !item.id) throw new NativeGuiError(`line ${item.line ?? '?'}: native Menu entries need named items.`);
+    if (sources.has(item.id)) throw new NativeGuiError(`line ${item.line ?? '?'}: native UI id '${item.id}' is duplicated.`);
+    const lowered = {
+      type: 'menuItem',
+      id: item.id,
+      text: requireTextLiteral(item.textExpr, item.line, `Menu item ${index + 1} text`)
+    };
+    sources.set(item.id, { ...lowered, formId });
+    return lowered;
+  });
+  return { title, items };
+}
+
 function lowerTabsControl(node, context) {
   if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native Tabs needs a simple Patch name after 'as'.`);
   const pages = node.body ?? [];
@@ -214,7 +283,7 @@ function lowerTabsControl(node, context) {
     let childIndex = 0;
     for (const child of page.body ?? []) {
       if (child.kind === 'tabs') {
-        throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.5 does not support nested Tabs.`);
+        throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.6 does not support nested Tabs.`);
       }
       if (child.kind !== 'uiControl') {
         throw new NativeGuiError(`line ${child.line ?? '?'}: native Tabs pages currently contain UI controls only.`);
@@ -224,7 +293,7 @@ function lowerTabsControl(node, context) {
         layout: defaultTabPageLayout(child.control, childIndex),
         generatedId: `__${child.control}_${context.windowIndex + 1}_tab_${context.controlIndex + 1}_${pageIndex + 1}_${childIndex + 1}`
       });
-      if (child.id) context.controls.set(child.id, { ...control, formId: context.formId, tabsId: node.id, pageIndex });
+      if (child.id) context.sources.set(child.id, { ...control, formId: context.formId, tabsId: node.id, pageIndex });
       nativePage.controls.push(control);
       childIndex += 1;
     }
@@ -235,7 +304,7 @@ function lowerTabsControl(node, context) {
 
 function lowerLeafControl(child, context) {
   if (!['text', 'button', 'input', 'checkbox', 'combo', 'listbox', 'radio'].includes(child.control)) {
-    throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.5 does not support '${child.control}' controls yet.`);
+    throw new NativeGuiError(`line ${child.line ?? '?'}: native GUI v0.6 does not support '${child.control}' controls yet.`);
   }
   const selectionControl = ['combo', 'listbox', 'radio'].includes(child.control);
   const control = {
@@ -260,7 +329,7 @@ function lowerLeafControl(child, context) {
 
 function validateControl(control, insideTabs) {
   if (control.type === 'tabs') {
-    if (insideTabs) throw new NativeGuiError('Native GUI IR v0.5 does not allow nested Tabs.');
+    if (insideTabs) throw new NativeGuiError('Native GUI IR v0.6 does not allow nested Tabs.');
     if (!control.id || !Array.isArray(control.pages) || control.pages.length < 2) {
       throw new NativeGuiError('Native GUI IR Tabs needs an id and at least two pages.');
     }
@@ -281,6 +350,41 @@ function validateControl(control, insideTabs) {
   }
 }
 
+function registerValidatedControlSources(control, formId, sources) {
+  if (control.id) {
+    if (sources.has(control.id)) throw new NativeGuiError(`Native GUI IR UI id '${control.id}' is duplicated.`);
+    sources.set(control.id, { type: control.type, formId });
+  }
+  if (control.type !== 'tabs') return;
+  for (const page of control.pages) for (const child of page.controls) registerValidatedControlSources(child, formId, sources);
+}
+
+function validateMenu(menu, formId, formIndex, sources) {
+  if (typeof menu?.title !== 'string' || !Array.isArray(menu.items) || !menu.items.length) {
+    throw new NativeGuiError(`Native GUI IR menu on Form ${formIndex + 1} is incomplete.`);
+  }
+  for (const item of menu.items) {
+    if (item?.type !== 'menuItem' || !item.id || typeof item.text !== 'string') {
+      throw new NativeGuiError(`Native GUI IR menu '${menu.title}' contains an invalid item.`);
+    }
+    if (sources.has(item.id)) throw new NativeGuiError(`Native GUI IR UI id '${item.id}' is duplicated.`);
+    sources.set(item.id, { type: 'menuItem', formId });
+  }
+}
+
+function validateNativeAction(action, forms) {
+  if (action.kind === 'dialog') {
+    if (typeof action.form !== 'string' || typeof action.title !== 'string' || typeof action.message !== 'string') {
+      throw new NativeGuiError('Native GUI IR dialog action is incomplete.');
+    }
+    if (!forms.some(form => form.id === action.form)) throw new NativeGuiError(`Native GUI IR dialog Form '${action.form}' is missing.`);
+    return;
+  }
+  if (action.kind === 'openForm' || action.kind === 'closeForm') return;
+  if (action.kind === 'change' && Array.isArray(action.ops)) return;
+  throw new NativeGuiError(`Native GUI IR action '${action.kind}' is unsupported.`);
+}
+
 function lowerNativeActions(nodes, states, event) {
   const actions = [];
   for (const node of nodes) {
@@ -292,12 +396,21 @@ function lowerNativeActions(nodes, states, event) {
       actions.push({ kind: 'closeForm', form: node.form });
       continue;
     }
+    if (node.kind === 'dialog') {
+      actions.push({
+        kind: 'dialog',
+        form: event.formId,
+        title: requireTextLiteral(node.titleExpr, node.line, 'Dialog title'),
+        message: requireTextLiteral(node.messageExpr, node.line, 'Dialog message')
+      });
+      continue;
+    }
     if (node.kind === 'change') {
       const state = states.get(node.target);
       if (!state) throw new NativeGuiError(`line ${node.line ?? '?'}: native change target '${node.target}' is not simple state.`);
       const ops = [];
       for (const op of node.ops ?? []) {
-        if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.5 does not support field mutation yet.`);
+        if (op.field) throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.6 does not support field mutation yet.`);
         validateTypedOperation(state, op);
         if (op.op === 'clear') {
           ops.push({ op: 'clear' });
@@ -319,7 +432,7 @@ function lowerNativeActions(nodes, states, event) {
       actions.push({ kind: 'change', target: node.target, stateType: state.type, ops });
       continue;
     }
-    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.5 event handlers support change, open and close only.`);
+    throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI v0.6 event handlers support change, open, close and informational dialog only.`);
   }
   return actions;
 }
@@ -331,7 +444,7 @@ function validateTypedOperation(state, op) {
       ? new Set(['set', 'add', 'clear'])
       : new Set(['set', 'clear']);
   if (!allowed.has(op.op)) {
-    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.5 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
+    throw new NativeGuiError(`line ${op.line ?? '?'}: native GUI v0.6 cannot apply '${op.op}' to ${state.type} state '${state.name}'.`);
   }
 }
 
@@ -371,7 +484,7 @@ function parseTypedLiteral(expr, type, line) {
 function requireTextLiteral(expr, line, label) {
   const text = String(expr ?? '').trim();
   if (!(text.startsWith('"') && text.endsWith('"'))) {
-    throw new NativeGuiError(`line ${line ?? '?'}: ${label} must currently be simple text in quotes for native GUI v0.5.`);
+    throw new NativeGuiError(`line ${line ?? '?'}: ${label} must currently be simple text in quotes for native GUI v0.6.`);
   }
   try {
     const value = JSON.parse(text);

@@ -10,6 +10,7 @@ on:
       - src/sealed-native-gui.js
       - src/sealed-native-package.js
       - src/native-gui-ir.js
+      - src/window-build.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js
@@ -19,6 +20,7 @@ on:
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
+      - examples/menu-dialog-window.patch
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -27,8 +29,10 @@ on:
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
+      - tests/menu-dialog-window.test.js
       - tests/studio-macos-native-gui.test.js
       - docs/NATIVE_GUI.md
+      - docs/MENUS_DIALOGS.md
       - docs/ROADMAP.md
       - .github/workflows/pages.yml
   push:
@@ -40,6 +44,7 @@ on:
       - src/sealed-native-gui.js
       - src/sealed-native-package.js
       - src/native-gui-ir.js
+      - src/window-build.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js
@@ -49,6 +54,7 @@ on:
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
+      - examples/menu-dialog-window.patch
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -57,8 +63,10 @@ on:
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
+      - tests/menu-dialog-window.test.js
       - tests/studio-macos-native-gui.test.js
       - docs/NATIVE_GUI.md
+      - docs/MENUS_DIALOGS.md
       - docs/ROADMAP.md
       - .github/workflows/pages.yml
 
@@ -118,24 +126,29 @@ jobs:
         run: |
           node scripts/seal-native-macos.js examples/radio-window.patch dist-runtime/patch-macos-native-gui-runtime.bin dist-runtime/PatchSealedRadio PatchSealedRadio
           dist-runtime/PatchSealedRadio --patch-smoke
-      - name: Verify universal Mach-O and payload-v5 contract
+      - name: Seal and smoke native Menu Dialog application
+        shell: bash
+        run: |
+          node scripts/seal-native-macos.js examples/menu-dialog-window.patch dist-runtime/patch-macos-native-gui-runtime.bin dist-runtime/PatchSealedMenuDialog PatchSealedMenuDialog
+          dist-runtime/PatchSealedMenuDialog --patch-smoke
+      - name: Verify universal Mach-O and payload-v6 contract
         shell: bash
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const runtime = fs.readFileSync('dist-runtime/patch-macos-native-gui-runtime.bin');
-          const sealed = fs.readFileSync('dist-runtime/PatchSealedRadio');
+          const sealed = fs.readFileSync('dist-runtime/PatchSealedMenuDialog');
           const magic = runtime.subarray(0, 4).toString('hex');
           const allowed = new Set(['cffaedfe','feedfacf','cefaedfe','feedface','cafebabe','bebafeca','cafebabf','bfbafeca']);
           if (!allowed.has(magic)) throw new Error(`Runtime is not a recognized Mach-O binary: ${magic}`);
           if (sealed.length <= runtime.length) throw new Error('Sealed application did not append a payload.');
           if (sealed.subarray(sealed.length - 20, sealed.length - 12).toString('ascii') !== 'PCHGUI01') throw new Error('Sealed executable footer magic is missing.');
           const version = sealed.readUInt32LE(sealed.length - 12);
-          if (version !== 5) throw new Error(`Expected sealed native GUI payload v5, got v${version}.`);
+          if (version !== 6) throw new Error(`Expected sealed native GUI payload v6, got v${version}.`);
           if (runtime.length > 4 * 1024 * 1024) throw new Error(`Universal native AppKit runtime unexpectedly exceeds 4 MiB: ${runtime.length} bytes.`);
-          console.log(`Universal AppKit runtime: ${runtime.length} bytes; sealed Radio app: ${sealed.length} bytes`);
+          console.log(`Universal AppKit runtime: ${runtime.length} bytes; sealed Menu/Dialog app: ${sealed.length} bytes`);
           NODE
-          test -x dist-runtime/PatchSealedRadio
+          test -x dist-runtime/PatchSealedMenuDialog
           file dist-runtime/patch-macos-native-gui-runtime.bin
           ARCHS="$(lipo -archs dist-runtime/patch-macos-native-gui-runtime.bin)"
           echo "$ARCHS" | grep -qw arm64
@@ -165,9 +178,9 @@ jobs:
       - name: Publish native AppKit runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-macos-runtime-v0.5
+          TAG: native-macos-runtime-v0.6
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native macOS Runtime v0.5' --notes 'Unsigned universal AppKit sealed-GUI runtime template for token-free Patch Studio builds. Payload v5 adds grouped native Radio controls using NSButton radio buttons while preserving explicit Patch change semantics, native Tabs and the existing control set. The Mach-O runtime contains arm64 and x86_64 slices. No Electron, Chromium, Node.js or sidecar payload is used. Signing/notarization is separate because browser-side sealing changes the executable after template publication.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native macOS Runtime v0.6' --notes 'Unsigned universal AppKit sealed-GUI runtime template for token-free Patch Studio builds. Payload v6 adds structural native menus and informational dialogs using NSMenu/NSMenuItem and NSAlert while preserving explicit Patch change semantics, Radio, Tabs and the existing control set. The Mach-O runtime contains arm64 and x86_64 slices. Signing/notarization is separate because browser-side sealing changes the executable after template publication.'
           fi
           gh release upload "$TAG" runtime/patch-macos-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber

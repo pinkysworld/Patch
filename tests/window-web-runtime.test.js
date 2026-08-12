@@ -139,7 +139,7 @@ when bad changed:
 
   assert.throws(
     () => buildStandaloneWebApp(source, { name: 'BadEventPair', kind: 'window' }),
-    /support 'clicked' on buttons and 'changed' on inputs/
+    /support 'clicked' on buttons\/menu items and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios/
   );
 });
 
@@ -152,7 +152,7 @@ when missing clicked:
 
   assert.throws(
     () => buildStandaloneWebApp(source, { name: 'BrokenEvent', kind: 'window' }),
-    /refers to a control that is not defined/
+    /refers to a control or menu item that is not defined/
   );
 });
 

@@ -80,6 +80,6 @@ when close_button changed:
   show 1`, { kind: 'window' });
   assert.throws(
     () => validateWindowRuntimeSupport(unsupported),
-    /support 'clicked' on buttons and 'changed' on inputs/
+    /support 'clicked' on buttons\/menu items and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios/
   );
 });

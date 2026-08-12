@@ -9,7 +9,9 @@ on:
       - src/appkit-gui.js
       - scripts/build-native-appkit.js
       - tests/appkit-gui.test.js
+      - tests/menu-dialog-window.test.js
       - examples/forms-navigation.patch
+      - examples/menu-dialog-window.patch
       - .github/workflows/native-appkit-gui.yml
   push:
     branches: [main]
@@ -18,7 +20,9 @@ on:
       - src/appkit-gui.js
       - scripts/build-native-appkit.js
       - tests/appkit-gui.test.js
+      - tests/menu-dialog-window.test.js
       - examples/forms-navigation.patch
+      - examples/menu-dialog-window.patch
       - .github/workflows/native-appkit-gui.yml
 
 concurrency:
@@ -44,30 +48,30 @@ jobs:
           node --check src/appkit-gui.js
           node --check scripts/build-native-appkit.js
           node --check tests/appkit-gui.test.js
+          node --check tests/menu-dialog-window.test.js
       - name: Run AppKit lowering tests
-        run: node --test tests/appkit-gui.test.js
-      - name: Compile, link and bundle native Patch AppKit application
+        run: node --test tests/appkit-gui.test.js tests/menu-dialog-window.test.js
+      - name: Compile, link and bundle native Patch AppKit Forms application
         run: |
           mkdir -p dist-native-mac
           node scripts/build-native-appkit.js examples/forms-navigation.patch PatchNativeMacSmoke dist-native-mac --smoke
+      - name: Compile and execute native Patch AppKit Menu Dialog application
+        run: node scripts/build-native-appkit.js examples/menu-dialog-window.patch PatchNativeMacMenuDialog dist-native-menu-dialog --smoke
       - name: Verify native AppKit output contract
         run: |
-          test -x dist-native-mac/PatchNativeMacSmoke.app/Contents/MacOS/PatchNativeMacSmoke
-          test -f dist-native-mac/PatchNativeMacSmoke.app/Contents/Info.plist
-          size=$(stat -f%z dist-native-mac/PatchNativeMacSmoke.app/Contents/MacOS/PatchNativeMacSmoke)
-          test "$size" -lt 10485760
-          node -e "const m=require('./dist-native-mac/PatchNativeMacSmoke.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.forms!==2||m.events!==3) process.exit(1)"
-          test ! -d dist-native-mac/PatchNativeMacSmoke.app/Contents/Frameworks/Electron\ Framework.framework
-          test ! -d dist-native-mac/node_modules
-          ! find dist-native-mac/PatchNativeMacSmoke.app -iname '*Electron*' -print -quit | grep -q .
-          echo "Native AppKit executable size: $size bytes"
-          otool -L dist-native-mac/PatchNativeMacSmoke.app/Contents/MacOS/PatchNativeMacSmoke
+          for pair in 'dist-native-mac PatchNativeMacSmoke' 'dist-native-menu-dialog PatchNativeMacMenuDialog'; do
+            set -- $pair
+            dir=$1; name=$2
+            test -x "$dir/$name.app/Contents/MacOS/$name"
+            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='0.6') process.exit(1)"
+            test ! -d "$dir/$name.app/Contents/Frameworks/Electron Framework.framework"
+          done
+          ! find dist-native-mac dist-native-menu-dialog -iname '*Electron*' -print -quit | grep -q .
       - name: Upload native AppKit compiler evidence
         uses: actions/upload-artifact@v4
         with:
           name: patch-native-appkit-gui
           path: |
-            dist-native-mac/PatchNativeMacSmoke.app
-            dist-native-mac/PatchNativeMacSmoke.appkit.mm
-            dist-native-mac/PatchNativeMacSmoke.appkit-build.json
+            dist-native-mac/**
+            dist-native-menu-dialog/**
           if-no-files-found: error

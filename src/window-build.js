@@ -31,29 +31,26 @@ export function validateWindowRuntimeSupport(compiled) {
   validateWindowBuild(compiled);
   const controls = new Map();
   const tabs = new Map();
+  const menuItems = new Map();
   const forms = new Map();
   const events = [];
   const formActions = [];
 
-  const registerControl = child => {
+  const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id);
+  const duplicateId = node => new WindowBuildError(
+    `line ${node.line ?? '?'}: Window UI id '${node.id}' is declared more than once. ` +
+    'Control, Tabs and MenuItem ids must be unique across the current application.'
+  );
+
+  const registerControl = (child, formId) => {
     if (!child?.id) return;
-    if (controls.has(child.id) || tabs.has(child.id)) {
-      throw new WindowBuildError(
-        `line ${child.line ?? '?'}: Window UI id '${child.id}' is declared more than once. ` +
-        'Control and Tabs ids must be unique across the current application.'
-      );
-    }
-    controls.set(child.id, child.control);
+    if (idTaken(child.id)) throw duplicateId(child);
+    controls.set(child.id, { type: child.control, formId });
   };
 
-  const registerTabs = node => {
-    if (controls.has(node.id) || tabs.has(node.id)) {
-      throw new WindowBuildError(
-        `line ${node.line ?? '?'}: Window UI id '${node.id}' is declared more than once. ` +
-        'Control and Tabs ids must be unique across the current application.'
-      );
-    }
-    tabs.set(node.id, node);
+  const registerTabs = (node, formId) => {
+    if (idTaken(node.id)) throw duplicateId(node);
+    tabs.set(node.id, { node, formId });
     for (const page of node.body ?? []) {
       if (page.kind !== 'tabPage') {
         throw new WindowBuildError(`line ${page.line ?? '?'}: Tabs '${node.id}' contains an invalid page node.`);
@@ -62,14 +59,30 @@ export function validateWindowRuntimeSupport(compiled) {
         if (child.kind !== 'uiControl') {
           throw new WindowBuildError(`line ${child.line ?? '?'}: Tabs Stage 1 pages support window controls only.`);
         }
-        registerControl(child);
+        registerControl(child, formId);
       }
     }
   };
 
+  const registerMenu = (node, formId) => {
+    if (!Array.isArray(node.body) || !node.body.length) {
+      throw new WindowBuildError(`line ${node.line ?? '?'}: Window menu needs at least one item.`);
+    }
+    for (const item of node.body) {
+      if (item.kind !== 'menuItem') {
+        throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu can only contain menu items.`);
+      }
+      if (!item.id) throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu item needs a name after 'as'.`);
+      if (idTaken(item.id)) throw duplicateId(item);
+      menuItems.set(item.id, { type: 'menuItem', formId, node: item });
+    }
+  };
+
+  let unnamedFormIndex = 0;
   const walk = nodes => {
     for (const node of nodes ?? []) {
       if (node.kind === 'window') {
+        const formId = node.id ?? `__window_${++unnamedFormIndex}`;
         if (node.id) {
           if (forms.has(node.id)) {
             throw new WindowBuildError(
@@ -80,15 +93,16 @@ export function validateWindowRuntimeSupport(compiled) {
           forms.set(node.id, node);
         }
         for (const child of node.body ?? []) {
-          if (child.kind === 'uiControl') registerControl(child);
-          else if (child.kind === 'tabs') registerTabs(child);
+          if (child.kind === 'uiControl') registerControl(child, formId);
+          else if (child.kind === 'tabs') registerTabs(child, formId);
+          else if (child.kind === 'menu') registerMenu(child, formId);
         }
       } else if (node.kind === 'event') {
         events.push(node);
       } else if (node.kind === 'openForm' || node.kind === 'closeForm') {
         formActions.push(node);
       }
-      if (node.body && !['window', 'tabs', 'tabPage'].includes(node.kind)) walk(node.body);
+      if (node.body && !['window', 'tabs', 'tabPage', 'menu'].includes(node.kind)) walk(node.body);
       if (node.thenBody) walk(node.thenBody);
       if (node.elseBody) walk(node.elseBody);
     }
@@ -96,23 +110,25 @@ export function validateWindowRuntimeSupport(compiled) {
   walk(compiled?.ast);
 
   for (const event of events) {
-    const controlType = controls.get(event.control);
-    if (!controlType) {
+    const control = controls.get(event.control);
+    const menuItem = menuItems.get(event.control);
+    if (!control && !menuItem) {
       if (tabs.has(event.control)) {
         throw new WindowBuildError(
           `line ${event.line ?? '?'}: Tabs '${event.control}' has transient page selection and does not expose Patch events in Tabs Stage 1.`
         );
       }
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: event '${event.control} ${event.event}' refers to a control that is not defined in a Patch window.`
+        `line ${event.line ?? '?'}: event '${event.control} ${event.event}' refers to a control or menu item that is not defined in a Patch window.`
       );
     }
+    const controlType = menuItem ? 'menuItem' : control.type;
     const supported =
-      (controlType === 'button' && event.event === 'clicked') ||
+      ((controlType === 'button' || controlType === 'menuItem') && event.event === 'clicked') ||
       ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons and 'changed' on inputs/checkboxes/combos/listboxes/radios. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
@@ -132,6 +148,7 @@ export function validateWindowRuntimeSupport(compiled) {
     namedForms: forms.size,
     controls: controls.size,
     tabs: tabs.size,
+    menuItems: menuItems.size,
     events: events.length,
     formActions: formActions.length
   };

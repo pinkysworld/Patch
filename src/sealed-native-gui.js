@@ -1,6 +1,6 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 5;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 6;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -8,10 +8,10 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v5 keeps controls flat for the tiny prebuilt native runtimes while
+ * Payload v6 keeps controls flat for the tiny prebuilt native runtimes while
  * preserving real Tabs hierarchy through parentTabIndex/pageIndex metadata.
- * Radio reuses the option-vector slot and adds native control kind 8. Selection
- * is represented by ordinary bound Patch text state, never hidden runtime state.
+ * Per-Form menus follow each Form control vector. Informational dialog actions
+ * use action kind 4 and carry owning Form/title/message without a result value.
  */
 export function encodeNativeGuiPayload(input) {
   const ir = validateNativeGuiIR(input);
@@ -53,6 +53,16 @@ export function encodeNativeGuiPayload(input) {
       writer.i32(control.layout?.height ?? 36);
       writer.i32(control.parentTabIndex ?? -1);
       writer.i32(control.pageIndex ?? -1);
+    }
+
+    writer.u32(form.menus.length);
+    for (const menu of form.menus) {
+      writer.text(menu.title);
+      writer.u32(menu.items.length);
+      for (const item of menu.items) {
+        writer.text(item.id);
+        writer.text(item.text);
+      }
     }
   }
 
@@ -151,6 +161,13 @@ function writeAction(writer, action) {
   if (action.kind === 'openForm' || action.kind === 'closeForm') {
     writer.u8(action.kind === 'openForm' ? 1 : 2);
     writer.text(action.form);
+    return;
+  }
+  if (action.kind === 'dialog') {
+    writer.u8(4);
+    writer.text(action.form);
+    writer.text(action.title);
+    writer.text(action.message);
     return;
   }
   if (action.kind !== 'change') throw new SealedNativeGuiError(`Unsupported native action '${action.kind}'.`);
