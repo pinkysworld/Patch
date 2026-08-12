@@ -44,7 +44,7 @@ Successful and failed JSON commands write one JSON document to stdout with this 
 
 `format` and `version` are the compatibility boundary. New optional fields may be added within command-specific `data` objects without changing version 1, but existing fields must not silently change meaning. An incompatible envelope change requires a new result version.
 
-For a processing failure, `ok` is false, `exitCode` is `2`, and `diagnostic` contains the versioned `patch-diagnostic` object and stable `PATCHxxxx` code. Source locations use the source filename plus one-based line/column where available. The source body is not echoed into the envelope.
+For a processing failure, `ok` is false, `exitCode` is `2`, and `diagnostic` contains the versioned `patch-diagnostic` object and stable `PATCHxxxx` code. Source locations use the source filename plus one-based line/column where available. No complete source body is serialized as a JSON field. Standard diagnostic messages may still name the offending statement or expression, just as the human-readable CLI does; the separately downloadable Studio `.patchreport` keeps its stricter source-echo redaction contract.
 
 A missing required source argument in JSON mode returns exit `1`, `diagnostic: null`, and a command-specific usage string in `data.usage`, because no Patch source has been processed yet.
 
