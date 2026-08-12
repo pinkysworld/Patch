@@ -25,12 +25,7 @@ jobs:
       - name: Generate proof-free structured callee trace certificate
         run: node scripts/generate-concrete-call-body-certificate.js examples/formal-callee-trace.patch --out formal/GeneratedConcreteCallBodyCertificate.lean
       - name: Install pinned Lean
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+        run: bash scripts/install-pinned-lean.sh
       - name: Check structured exact callee-body and caller-import theorems
         working-directory: formal
         shell: bash
