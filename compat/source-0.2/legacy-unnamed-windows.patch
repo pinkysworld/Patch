@@ -1,0 +1,4 @@
+window "One":
+  text "First"
+window "Two":
+  text "Second"
