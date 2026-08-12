@@ -21,8 +21,9 @@ test('Studio keeps project-specific MSVC codegen as optional Native AOT route', 
   assert.match(studio, /Native AOT EXE \(GitHub Actions\)/);
   assert.match(studio, /const directWin32 = platform === 'windows' && kind === 'window'/);
   assert.match(studio, /const directNativeWindow = kind === 'window' && \['windows', 'macos', 'linux'\]\.includes\(platform\)/);
-  assert.match(studio, /const inputs = directNativeWindow\s*\? \{ source_b64: sourceBase64, source_path: '', app_name: name, request_id: requestId \}/);
-  assert.match(studio, /const expectedName = directWin32 \? 'patch-windows-single-exe'/);
+  assert.match(studio, /const requestId = makeRequestId\(\)/);
+  assert.match(studio, /const inputs = snapshot\.directNativeWindow\s*\? \{ source_b64: snapshot\.sourceBase64, source_path: '', app_name: snapshot\.name, request_id: requestId \}/);
+  assert.match(studio, /const expectedName = snapshot\.directWin32 \? 'patch-windows-single-exe'/);
 });
 
 test('Studio keeps Electron Window packaging explicitly compatibility-only', () => {
