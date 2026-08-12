@@ -1,4 +1,4 @@
-const CACHE = 'patch-studio-0.2-beta.32-forms7';
+const CACHE = 'patch-studio-0.2-beta.32-forms8';
 const CORE = [
   './', './index.html', './style.css', './designer-inspector.css', './forms-designer.css', './playground.js', './forms-designer.js', './native-build.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
