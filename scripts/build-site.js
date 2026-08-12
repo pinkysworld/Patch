@@ -23,7 +23,7 @@ for (const name of ['index.html', 'style.css', 'designer-inspector.css', 'forms-
   fs.copyFileSync(path.join(sourceWeb, name), path.join(out, name));
 }
 
-for (const name of ['playground.js', 'forms-designer.js', 'native-build.js', 'sw.js']) {
+for (const name of ['playground.js', 'forms-designer.js', 'native-build.js', 'project-lifecycle.js', 'sw.js']) {
   const content = fs.readFileSync(path.join(sourceWeb, name), 'utf8')
     .replaceAll("'../src/", "'./src/")
     .replaceAll('"../src/', '"./src/');
