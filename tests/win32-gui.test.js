@@ -14,11 +14,11 @@ const comboSource = fs.readFileSync(new URL('../examples/combo-window.patch', im
 const listboxSource = fs.readFileSync(new URL('../examples/listbox-window.patch', import.meta.url), 'utf8');
 const tabsSource = fs.readFileSync(new URL('../examples/tabs-window.patch', import.meta.url), 'utf8');
 
-test('native GUI IR v0.6 lowers simple Patch Forms without changing source syntax', () => {
+test('native GUI IR v0.7 lowers simple Patch Forms without changing source syntax', () => {
   const compiled = compile(source, { kind: 'window', name: 'NativeNavigation', entry: 'forms-navigation.patch' });
   const ir = buildNativeGuiIR(compiled);
   assert.equal(ir.format, 'patch-native-gui-ir');
-  assert.equal(ir.version, '0.6');
+  assert.equal(ir.version, '0.7');
   assert.deepEqual(ir.forms.map(form => [form.id, form.visible]), [['main', true], ['settings', false]]);
   assert.deepEqual(ir.states, [{ name: 'notifications', type: 'boolean', initial: false }]);
   assert.equal(ir.forms[1].controls.find(control => control.id === 'notifications').type, 'checkbox');
@@ -64,10 +64,10 @@ test('Win32 backend lowers numeric Patch change and interpolation directly', () 
 
 test('native GUI lowering fails closed on event behavior the backend does not implement', () => {
   const unsupported = `window "Main" as main:\n  button "Go" as go\nwhen go clicked:\n  show "hello"\n`;
-  assert.throws(() => buildNativeGuiIR(compile(unsupported, { kind: 'window', name: 'Unsupported' })), error => error instanceof NativeGuiError && /support change, open, close and informational dialog only/.test(error.message));
+  assert.throws(() => buildNativeGuiIR(compile(unsupported, { kind: 'window', name: 'Unsupported' })), error => error instanceof NativeGuiError && /support change, open, close and dialog actions only/.test(error.message));
 });
 
-test('Win32 build script emits auditable v0.6 source and metadata on every development OS', () => {
+test('Win32 build script emits auditable v0.7 source and metadata on every development OS', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-win32-emit-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/build-native-win32.js', 'examples/tabs-window.patch', 'NativeTabsSmoke', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
@@ -80,7 +80,8 @@ test('Win32 build script emits auditable v0.6 source and metadata on every devel
     assert.equal(meta.shell, 'native-win32');
     assert.equal(meta.electron, false);
     assert.equal(meta.crt, 'static');
-    assert.equal(meta.nativeGuiIrVersion, '0.6');
+    assert.equal(meta.nativeGuiIrVersion, '0.7');
+    assert.equal(meta.backendVersion, '0.7');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 1);
     assert.equal(meta.controls, 5);
