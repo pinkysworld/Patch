@@ -100,13 +100,15 @@
 #designer #addButton { top: 83px; }
 #designer #addInput { top: 117px; }
 #designer #addCheckbox { top: 151px; }
-#designer #addCombo { top: 185px; }
-#designer #addListbox { top: 219px; }
-#designer #addTabs { top: 253px; }
+#designer #addRadio { top: 185px; }
+#designer #addCombo { top: 219px; }
+#designer #addListbox { top: 253px; }
+#designer #addTabs { top: 287px; }
 #designer #addText::before { content: "T"; }
 #designer #addButton::before { content: "▭"; font-size: 18px; }
 #designer #addInput::before { content: "I"; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 #designer #addCheckbox::before { content: "✓"; }
+#designer #addRadio::before { content: "◉"; font-size: 16px; }
 #designer #addCombo::before { content: "⌄"; font-size: 19px; }
 #designer #addListbox::before { content: "≡"; font-size: 19px; }
 #designer #addTabs::before { content: "▤"; font-size: 17px; }
