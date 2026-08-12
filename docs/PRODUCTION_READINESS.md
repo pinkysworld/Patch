@@ -50,7 +50,7 @@ Patch Studio diagnostics are local-only. The report records Patch version, proje
 - [x] document Linux packaging expectations
 - [ ] fresh-build service that does not require users to paste a personal GitHub token
 
-`docs/LINUX_PACKAGING.md` now defines the current GTK3/Console runtime assumptions, archive contents, ABI limitations, explicit unsigned status, user-space removal behavior and the formats Patch does **not** yet claim (`.deb`, `.rpm`, Flatpak, Snap, AppImage). This closes the documentation item without pretending that the separate installer/uninstall-format milestone is complete.
+`docs/LINUX_PACKAGING.md` defines the current GTK3/Console runtime assumptions, archive contents, ABI limitations, explicit unsigned status, user-space removal behavior and the formats Patch does **not** yet claim (`.deb`, `.rpm`, Flatpak, Snap, AppImage). This closes the documentation item without pretending that the separate installer/uninstall-format milestone is complete.
 
 The repository also contains fail-closed Windows Authenticode and macOS Developer ID/notarization gates for final project artifacts. Those two signing checkboxes remain open until real certificate credentials are configured and a final artifact passes the complete signing/verifying workflow. `PATCH-SIGNING.json` cannot claim required signing from the requested mode alone; platform verification evidence is required first.
 
@@ -90,7 +90,7 @@ Beta.33 centralizes Studio-facing file stems and target suffixes in `src/artifac
 
 The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and restore take an immediate protective snapshot before replacing the current project. The Recovery manager exposes all retained local restore points and supports manual snapshot creation, restoring any snapshot, exporting a snapshot as `.patchproject`, deleting one snapshot, or clearing the local ring after confirmation.
 
-Optional GitHub Actions builds now have a 15-minute Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent as soon as the request-specific run appears. Retry uses the captured source/build snapshot and generates a fresh request id instead of silently rebuilding later editor contents or rerunning the same request. Tokens and retry snapshots remain in page memory only. Recommended browser-local/no-token builds are unchanged.
+Optional GitHub Actions builds have a 15-minute Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent as soon as the request-specific run appears. Retry uses the captured source/build snapshot and generates a fresh request id instead of silently rebuilding later editor contents or rerunning the same request. Tokens and retry snapshots remain in page memory only. Recommended browser-local/no-token builds are unchanged.
 
 ### Testing
 - [x] deterministic parser/compiler grammar fuzzing
@@ -117,7 +117,7 @@ Project v1→v2 tests preserve source/name/kind and assert the documented defaul
 - [ ] FreeBSD native GUI backend
 - [x] Patch Studio keyboard/focus/responsive accessibility baseline
 - [x] generated standalone Window Web accessibility baseline
-- [ ] generated native Window app accessibility audit
+- [x] generated native Window app accessibility audit
 - [ ] manual assistive-technology/browser accessibility audit before a stable release
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
@@ -126,7 +126,7 @@ The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result
 
 Generated standalone Window Web apps add labelled Window regions, accessible names for otherwise-unlabelled Input/Combo/ListBox controls, grouped Radio semantics, polite output status, roving tab focus with Arrow/Home/End control, visible keyboard focus, reduced-motion handling and forced-colors focus treatment. The accessibility layer also renders Radio groups in standalone Window Web apps.
 
-The **AOT half** of the native accessibility audit is complete. AOT backend v0.8 derives stable accessible names for Input, ComboBox, ListBox and Tabs controls and adds Radio group context while preserving native visible labels on Button/Checkbox controls. Native smokes write and read those names through Microsoft Active Accessibility (`IAccPropServices` / `IAccessible`), AppKit accessibility labels and GTK3/ATK, and the Win32/AppKit/GTK cross-platform matrix passed. The overall native-app audit stays open because the separate token-free sealed runtime v0.7 implementations do not yet carry the equivalent naming/readback layer. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing is an additional open release gate and no WCAG conformance claim is made.
+The automated native-app accessibility audit now covers **both** direct-native paths. AOT backend v0.8 and sealed runtime v0.8 derive deterministic names for Input, ComboBox, ListBox and Tabs controls and add Radio group context while preserving native visible labels on Button/Checkbox controls. Windows uses Microsoft Active Accessibility (`IAccPropServices` / `IAccessible`), AppKit uses accessibility labels, and GTK3 uses ATK. The sealed-runtime workflows execute the existing semantic smoke first, then read accessibility names back through those native APIs, while continuing to assert `PCHGUI01` payload version 7. This checkbox is merged only if the final exact-head Windows/macOS/Linux runtime gates pass. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing remains a separate open release gate and no WCAG conformance claim is made.
 
 ## Release rule
 
