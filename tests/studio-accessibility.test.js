@@ -67,7 +67,8 @@ test('accessibility stylesheet covers focus touch reduced motion forced colors a
 
 test('PWA cache includes accessibility JS and CSS in the content-addressed cache', () => {
   assert.match(sw, /const REVISION = '__PATCH_SITE_REV__'/);
-  assert.match(sw, /const CACHE = `patch-studio-\$\{REVISION\}`/);
+  assert.match(sw, /const CACHE_PREFIX = 'patch-studio-'/);
+  assert.match(sw, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
   assert.match(sw, /\.map\(versioned\)/);
   for (const marker of ['./studio-accessibility.js','./studio-accessibility.css']) assert.ok(sw.includes(`'${marker}'`), marker);
 });
