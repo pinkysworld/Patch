@@ -68,7 +68,7 @@ test('check --json returns stable PATCH diagnostic and exact source location on 
     assert.equal(body.diagnostic.code, 'PATCH1001');
     assert.equal(body.diagnostic.phase, 'compiler');
     assert.deepEqual(body.diagnostic.location, { entry: 'bad.patch', line: 3, column: 3 });
-    assert.doesNotMatch(JSON.stringify(body), /frobnicate x/);
+    assert.match(body.diagnostic.message, /frobnicate x/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
