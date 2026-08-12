@@ -1,3 +1,5 @@
+import { diagnosticFromError } from './diagnostics.js';
+
 export const PATCH_STUDIO_DIAGNOSTICS_FORMAT = 'patch-studio-diagnostics';
 export const PATCH_STUDIO_DIAGNOSTICS_VERSION = 1;
 export const PATCH_STUDIO_DIAGNOSTICS_MAX_ERRORS = 10;
@@ -38,14 +40,16 @@ export function redactSourceEchoes(value, source) {
   return text;
 }
 
-export function normalizeStudioDiagnosticError(error, type = 'studio', source = '') {
+export function normalizeStudioDiagnosticError(error, type = 'studio', source = '', entry = 'main.patch') {
   if (!error) return null;
   const item = typeof error === 'object' ? error : { message: String(error) };
+  const diagnostic = diagnosticFromError(item, { source, entry, phase: type === 'compiler' ? 'compile' : type });
   return {
     type: redactDiagnosticText(type, 80),
     name: redactDiagnosticText(item.name ?? 'Error', 80),
-    code: item.code === undefined || item.code === null ? null : redactDiagnosticText(item.code, 120),
-    message: redactDiagnosticText(redactSourceEchoes(item.message ?? item, source), PATCH_STUDIO_DIAGNOSTICS_MAX_MESSAGE)
+    code: diagnostic.code,
+    message: redactDiagnosticText(redactSourceEchoes(diagnostic.message, source), PATCH_STUDIO_DIAGNOSTICS_MAX_MESSAGE),
+    location: diagnostic.location
   };
 }
 
@@ -66,7 +70,7 @@ export async function buildStudioDiagnosticReport(input = {}) {
   const source = String(input.source ?? '');
   const sourceBytes = encoder.encode(source).length;
   const sourceSha256 = await sha256Text(source);
-  const compilerError = normalizeStudioDiagnosticError(input.compilerError, 'compiler', source);
+  const compilerError = normalizeStudioDiagnosticError(input.compilerError, 'compiler', source, input.entry ?? 'main.patch');
   const environment = input.environment ?? {};
 
   return {
@@ -123,10 +127,17 @@ export function formatStudioDiagnosticReport(report) {
     `Standalone PWA: ${report.environment.standalone ? 'yes' : 'no'}`,
     `Service worker controlled: ${report.environment.serviceWorkerControlled ? 'yes' : 'no'}`
   ];
-  if (report.compiler.error) lines.push(`Compiler error: ${report.compiler.error.message}`);
+  if (report.compiler.error) {
+    const error = report.compiler.error;
+    const where = error.location ? ` ${error.location.entry}:${error.location.line}:${error.location.column}` : '';
+    lines.push(`Compiler error: ${error.code}${where} ${error.message}`);
+  }
   if (report.recentErrors.length) {
     lines.push('', 'Recent Studio errors:');
-    for (const error of report.recentErrors) lines.push(`- ${error.time} [${error.type}] ${error.message}`);
+    for (const error of report.recentErrors) {
+      const where = error.location ? ` ${error.location.entry}:${error.location.line}:${error.location.column}` : '';
+      lines.push(`- ${error.time} [${error.type}] ${error.code}${where} ${error.message}`);
+    }
   }
   lines.push('', 'Privacy: source omitted, source echoes and secrets redacted, nothing uploaded.');
   return lines.join('\n');
@@ -142,11 +153,22 @@ export function validateStudioDiagnosticReport(report) {
   if (!report.compiler || !['ok', 'error'].includes(report.compiler.status)) {
     throw new Error('Patch Studio diagnostics compiler summary is incomplete.');
   }
+  if (report.compiler.error) validateNormalizedError(report.compiler.error);
   if (!Array.isArray(report.recentErrors)) throw new Error('Patch Studio diagnostics recent error list is invalid.');
+  for (const error of report.recentErrors) validateNormalizedError(error);
   if (report.privacy?.sourceIncluded !== false || report.privacy?.uploaded !== false) {
     throw new Error('Patch Studio diagnostics privacy contract is invalid.');
   }
   return report;
+}
+
+function validateNormalizedError(error) {
+  if (!/^PATCH\d{4}$/.test(String(error?.code ?? ''))) throw new Error('Patch Studio diagnostic error code is invalid.');
+  if (error.location !== null && error.location !== undefined) {
+    if (!Number.isInteger(error.location.line) || error.location.line < 1) throw new Error('Patch Studio diagnostic line is invalid.');
+    if (!Number.isInteger(error.location.column) || error.location.column < 1) throw new Error('Patch Studio diagnostic column is invalid.');
+    if (typeof error.location.entry !== 'string' || !error.location.entry) throw new Error('Patch Studio diagnostic entry is invalid.');
+  }
 }
 
 function normalizeTime(value) {

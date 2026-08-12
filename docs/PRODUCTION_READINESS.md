@@ -27,10 +27,12 @@ Patch Studio project bundle v1 is intentionally a single-file `main.patch` proje
 ### Diagnostics and supportability
 - [x] `patch doctor` structured diagnostics core
 - [x] expose `patch doctor --json` through the installed CLI
-- [ ] stable machine-readable diagnostic/error codes for compiler/build failures
+- [x] stable machine-readable diagnostic/error codes for compiler/build failures
 - [x] one-click "Copy diagnostics" in Patch Studio
 - [x] crash/build report bundle with Patch version, target, diagnostics and redacted logs
 - [x] no telemetry by default; any future telemetry must be explicit opt-in
+
+Patch diagnostics use the versioned `patch-diagnostic` envelope and stable `PATCHxxxx` code families. Parser failures retain exact line numbers and normalized diagnostics derive an indentation-aware column without embedding the source line. Studio reports carry those code/location fields while preserving the existing local-only privacy boundary.
 
 Patch Studio diagnostics are local-only. The report records Patch version, project kind, selected build target, compiler status, source size/SHA-256, PWA/browser state and a bounded set of redacted recent errors. The source body is not included; source echoes, common token forms, email addresses and user-home path components are redacted. Neither Copy diagnostics nor `.patchreport` creation has a network upload path.
 
@@ -59,6 +61,8 @@ Ready Windows, macOS and Linux application downloads can already be consumed wit
 - [ ] source maps / line-accurate diagnostics across all backends
 - [ ] deterministic artifact naming
 - [ ] project-level configuration instead of target settings scattered through UI state
+
+The stable diagnostic envelope now covers compiler/build failure classes and parser source locations. The broader backend item remains open because Wasm/C99/native runtime and packaging failures do not yet all map back to source locations.
 
 ### Resilience
 - [x] atomic Studio saves and recovery snapshots
