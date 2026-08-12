@@ -22,7 +22,7 @@ export function diagnosticFromError(error, options = {}) {
   const phase = normalizePhase(options.phase);
   const rawMessage = String(item.message ?? item);
   const code = validPatchCode(item.code) ? item.code : classifyDiagnosticCode(item, phase, rawMessage);
-  const line = normalizePositiveInteger(item.line) ?? lineFromMessage(rawMessage);
+  const line = normalizePositiveInteger(item.line) ?? patchSourceLineFromMessage(rawMessage);
   const column = normalizePositiveInteger(item.column) ?? sourceColumn(options.source, line);
   const entry = normalizeEntry(options.entry ?? item.entry ?? 'main.patch');
 
@@ -32,7 +32,7 @@ export function diagnosticFromError(error, options = {}) {
     code,
     severity: 'error',
     phase,
-    message: stripLinePrefix(rawMessage),
+    message: stripParserLinePrefix(rawMessage),
     location: line === null ? null : { entry, line, column: column ?? 1 }
   };
 }
@@ -90,12 +90,19 @@ function sourceColumn(source, line) {
   return match ? match.index + 1 : 1;
 }
 
-function lineFromMessage(message) {
-  const match = String(message).match(/^line\s+(\d+):/i);
-  return match ? Number(match[1]) : null;
+function patchSourceLineFromMessage(message) {
+  const text = String(message);
+  const parserPrefix = text.match(/^line\s+(\d+):/i);
+  if (parserPrefix) return Number(parserPrefix[1]);
+
+  // Backend lowerers already report the original Patch line in this form.
+  // Keep the pattern deliberately narrow so generated C/C++/Rust compiler line
+  // numbers cannot accidentally be mistaken for Patch source locations.
+  const backendHint = text.match(/\bat\s+(?:Patch\s+|source\s+)?line\s+(\d+)\b/i);
+  return backendHint ? Number(backendHint[1]) : null;
 }
 
-function stripLinePrefix(message) {
+function stripParserLinePrefix(message) {
   return String(message).replace(/^line\s+\d+:\s*/i, '').trim() || 'Unknown error';
 }
 
