@@ -8,7 +8,7 @@ export const PATCH_SIGNING_STATUS_VERSION = 1;
 
 export function buildSigningStatus(options = {}) {
   const platform = normalizePlatform(options.platform);
-  const requested = options.requested === 'require' ? 'require' : 'unsigned';
+  const requested = normalizeRequested(options.requested);
   const verified = options.verified === true;
   const notarized = options.notarized === true;
 
@@ -16,6 +16,7 @@ export function buildSigningStatus(options = {}) {
   if (requested === 'require' && !verified) throw new Error(`Patch ${platform} signing was required but no verified platform signature was recorded.`);
   if (platform === 'macos' && requested === 'require' && !notarized) throw new Error('Patch macOS signing was required but notarization was not verified.');
   if (platform !== 'macos' && notarized) throw new Error('Notarization status is only valid for macOS artifacts.');
+  if (requested === 'unsigned' && (verified || notarized)) throw new Error('Unsigned Patch distribution status cannot claim verified signing or notarization.');
 
   return {
     format: PATCH_SIGNING_STATUS_FORMAT,
@@ -31,8 +32,28 @@ export function buildSigningStatus(options = {}) {
   };
 }
 
-export function serializeSigningStatus(status) {
-  return JSON.stringify(buildSigningStatus(status), null, 2) + '\n';
+export function validateSigningStatus(status) {
+  if (!status || typeof status !== 'object') throw new Error('Patch signing status must be an object.');
+  if (status.format !== PATCH_SIGNING_STATUS_FORMAT || status.version !== PATCH_SIGNING_STATUS_VERSION) {
+    throw new Error('Patch signing status format/version is unsupported.');
+  }
+  const canonical = buildSigningStatus({
+    platform: status.platform,
+    requested: status.requested,
+    verified: status.signatureVerified === true,
+    notarized: status.notarized === true
+  });
+  for (const key of ['format', 'version', 'platform', 'requested', 'signed', 'signatureVerified', 'notarized', 'distributionStatus']) {
+    if (status[key] !== canonical[key]) throw new Error(`Patch signing status field '${key}' is inconsistent.`);
+  }
+  return canonical;
+}
+
+export function serializeSigningStatus(value) {
+  const status = value?.format === PATCH_SIGNING_STATUS_FORMAT
+    ? validateSigningStatus(value)
+    : buildSigningStatus(value);
+  return JSON.stringify(status, null, 2) + '\n';
 }
 
 function normalizePlatform(value) {
@@ -41,27 +62,40 @@ function normalizePlatform(value) {
   return platform;
 }
 
+function normalizeRequested(value) {
+  const requested = value === undefined || value === null || value === '' ? 'unsigned' : String(value).toLowerCase();
+  if (!['unsigned', 'require'].includes(requested)) throw new Error(`Unsupported Patch signing mode '${value}'.`);
+  return requested;
+}
+
+function parseBooleanOption(name, value) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(`${name} must be 'true' or 'false'.`);
+}
+
 function parseArgs(argv) {
   const options = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--platform') options.platform = argv[++i];
     else if (arg === '--requested') options.requested = argv[++i];
-    else if (arg === '--verified') options.verified = argv[++i] === 'true';
-    else if (arg === '--notarized') options.notarized = argv[++i] === 'true';
+    else if (arg === '--verified') options.verified = parseBooleanOption('--verified', argv[++i]);
+    else if (arg === '--notarized') options.notarized = parseBooleanOption('--notarized', argv[++i]);
     else if (arg === '--out') options.out = argv[++i];
     else throw new Error(`Unknown signing-status option '${arg}'.`);
   }
   return options;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+if (isMain) {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (!options.out) throw new Error('Signing status output requires --out FILE.');
     const status = buildSigningStatus(options);
     fs.mkdirSync(path.dirname(path.resolve(options.out)), { recursive: true });
-    fs.writeFileSync(options.out, JSON.stringify(status, null, 2) + '\n');
+    fs.writeFileSync(options.out, serializeSigningStatus(status));
     console.log(`${status.platform}: ${status.distributionStatus}`);
   } catch (error) {
     console.error(error?.message ?? String(error));
