@@ -18,15 +18,18 @@ test('Studio exposes compact Export Import and Recovery controls', () => {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /class="project-actions"/);
+  assert.match(html, /id="recoverProject"[^>]*>Recovery</);
+  assert.doesNotMatch(html, /id="recoverProject"[^>]*disabled/);
   assert.match(css, /\.project-actions/);
-  assert.match(css, /button:disabled/);
 });
 
-test('project lifecycle bootstraps before playground reads legacy storage', () => {
+test('project lifecycle bootstraps before recovery manager and playground', () => {
   const lifecycleIndex = html.indexOf('./project-lifecycle.js');
+  const recoveryIndex = html.indexOf('./recovery-manager.js');
   const playgroundIndex = html.indexOf('./playground.js');
   assert.ok(lifecycleIndex > 0);
-  assert.ok(playgroundIndex > lifecycleIndex);
+  assert.ok(recoveryIndex > lifecycleIndex);
+  assert.ok(playgroundIndex > recoveryIndex);
 });
 
 test('project lifecycle keeps canonical pending recovery quarantine and legacy stores', () => {
@@ -52,18 +55,31 @@ test('import validates before replacement and always protects the current projec
   assert.ok(snapshotIndex > parseIndex);
   assert.ok(applyIndex > snapshotIndex);
   assert.match(lifecycle, /MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_SOURCE_BYTES \* 8/);
-  assert.match(lifecycle, /Recover the Patch Studio snapshot/);
 });
 
-test('recovery also protects current state and bundle application suppresses duplicate lifecycle writes', () => {
-  const recoveryStart = lifecycle.indexOf('function recoverLatestProject()');
-  const protection = lifecycle.indexOf('protectCurrentProject()', recoveryStart);
-  const apply = lifecycle.indexOf('applyBundleToDom(latest.project)', recoveryStart);
-  assert.ok(recoveryStart > 0);
-  assert.ok(protection > recoveryStart);
+test('managed recovery exports summary create restore export delete and clear operations', () => {
+  for (const marker of [
+    'export function getRecoverySnapshotSummaries()',
+    'export function createManualRecoverySnapshot()',
+    'export function restoreRecoverySnapshot(index)',
+    'export function exportRecoverySnapshot(index)',
+    'export function deleteRecoverySnapshot(index)',
+    'export function clearRecoverySnapshots()'
+  ]) assert.ok(lifecycle.includes(marker), marker);
+  const restoreStart = lifecycle.indexOf('export function restoreRecoverySnapshot(index)');
+  const protection = lifecycle.indexOf('protectCurrentProject()', restoreStart);
+  const apply = lifecycle.indexOf('applyBundleToDom(selected.project)', restoreStart);
+  assert.ok(protection > restoreStart);
   assert.ok(apply > protection);
   assert.match(lifecycle, /let applyingBundle = false/);
   assert.match(lifecycle, /if \(!applyingBundle\) persistDomProject/);
+});
+
+test('recovery control remains available even before the first snapshot', () => {
+  assert.match(lifecycle, /recoverButton\.disabled = false/);
+  assert.match(lifecycle, /Recovery \(\$\{count\}\)/);
+  assert.match(lifecycle, /patch:open-recovery-manager/);
+  assert.match(lifecycle, /patch:recovery-changed/);
 });
 
 test('corrupt pending or canonical stores are quarantined before legacy fallback continues', () => {
@@ -74,9 +90,9 @@ test('corrupt pending or canonical stores are quarantined before legacy fallback
   assert.match(bootstrap, /Recovered legacy local project/);
 });
 
-test('PWA cache advances and includes every project lifecycle asset', () => {
-  assert.match(sw, /forms8-ux12-diagnostics1/);
-  for (const marker of ['./project-lifecycle.js','./project-lifecycle.css','../src/studio-project.js']) {
+test('PWA cache contains project lifecycle and recovery manager assets', () => {
+  assert.match(sw, /patch-studio-0\.2-beta\.32-/);
+  for (const marker of ['./project-lifecycle.js','./project-lifecycle.css','./recovery-manager.js','./recovery-manager.css','../src/studio-project.js']) {
     assert.ok(sw.includes(`'${marker}'`), marker);
   }
 });
