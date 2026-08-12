@@ -107,12 +107,7 @@ jobs:
       - name: Execute repeated direct Wasm calls and generate invocation-frame certificate
         run: npm run transitive-runtime-certify:repeated
       - name: Install Elan and pinned Lean
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+        run: bash scripts/install-pinned-lean.sh
       - name: Build Lean formalization and invocation-frame runtime assurance boundaries
         working-directory: formal
         shell: bash
