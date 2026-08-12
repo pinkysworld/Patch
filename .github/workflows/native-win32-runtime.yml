@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/native-win32-runtime.yml
       - native-runtime/win32-sealed-gui-v07.cpp
+      - native-runtime/win32-sealed-gui-v08.cpp
       - scripts/seal-native-win32.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
@@ -23,6 +24,7 @@ on:
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
       - tests/sealed-native-gui.test.js
+      - tests/sealed-native-accessibility.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
@@ -35,6 +37,7 @@ on:
     paths:
       - .github/workflows/native-win32-runtime.yml
       - native-runtime/win32-sealed-gui-v07.cpp
+      - native-runtime/win32-sealed-gui-v08.cpp
       - scripts/seal-native-win32.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
@@ -52,6 +55,7 @@ on:
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
       - tests/sealed-native-gui.test.js
+      - tests/sealed-native-accessibility.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
@@ -78,7 +82,10 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Compile generic native Win32 GUI runtime v0.7
+      - name: Check sealed accessibility contract
+        shell: pwsh
+        run: node --test tests/sealed-native-accessibility.test.js
+      - name: Compile generic native Win32 GUI runtime v0.8
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist-runtime | Out-Null
@@ -92,7 +99,7 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui-v07.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime\patch-windows-native-gui-runtime.exe',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui-v08.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime\patch-windows-native-gui-runtime.exe',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
@@ -151,7 +158,7 @@ jobs:
           $version = [BitConverter]::ToUInt32($sealed, $sealed.Length - 12)
           if ($version -ne 7) { throw "Expected sealed native GUI payload v7, got v$version." }
           if ($runtime.Length -gt 2097152) { throw "Generic native runtime unexpectedly exceeds 2 MiB: $($runtime.Length) bytes." }
-          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed Result Dialog app: $($sealed.Length) bytes"
+          Write-Host "Generic runtime v0.8: $($runtime.Length) bytes; sealed Result Dialog app: $($sealed.Length) bytes"
       - uses: actions/upload-artifact@v4
         with:
           name: patch-windows-native-gui-runtime
@@ -173,9 +180,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-win32-runtime-v0.7
+          TAG: native-win32-runtime-v0.8
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.7' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v7 adds result-bearing Confirm/Open/Save dialogs via MessageBoxW and native common dialogs while preserving explicit Patch change semantics and the v0.6 Menu/Dialog, Radio, Tabs and control surface.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.8' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Runtime v0.8 preserves sealed payload v7 and adds Microsoft Active Accessibility names with executable smoke readback for Input, ComboBox, ListBox, Tabs and grouped Radio controls.'
           fi
           gh release upload "$TAG" runtime/patch-windows-native-gui-runtime.exe --repo "$GITHUB_REPOSITORY" --clobber
