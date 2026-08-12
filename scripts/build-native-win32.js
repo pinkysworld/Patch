@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
-import { emitWin32GuiCpp, PATCH_WIN32_GUI_BACKEND_VERSION } from '../src/win32-gui-v07.js';
+import { emitWin32GuiCpp, PATCH_WIN32_GUI_BACKEND_VERSION } from '../src/win32-gui-v08.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeWindow');

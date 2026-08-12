@@ -7,30 +7,38 @@ on:
     paths:
       - src/native-gui-ir.js
       - src/native-result-dialog-overlay.js
+      - src/native-accessibility.js
       - src/gtk-gui.js
       - src/gtk-gui-v07.js
+      - src/gtk-gui-v08.js
       - scripts/build-native-gtk.js
+      - tests/native-accessibility.test.js
       - tests/gtk-gui.test.js
       - tests/menu-dialog-window.test.js
       - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
+      - docs/NATIVE_ACCESSIBILITY.md
       - .github/workflows/native-gtk-gui.yml
   push:
     branches: [main]
     paths:
       - src/native-gui-ir.js
       - src/native-result-dialog-overlay.js
+      - src/native-accessibility.js
       - src/gtk-gui.js
       - src/gtk-gui-v07.js
+      - src/gtk-gui-v08.js
       - scripts/build-native-gtk.js
+      - tests/native-accessibility.test.js
       - tests/gtk-gui.test.js
       - tests/menu-dialog-window.test.js
       - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
+      - docs/NATIVE_ACCESSIBILITY.md
       - .github/workflows/native-gtk-gui.yml
 
 concurrency:
@@ -58,14 +66,17 @@ jobs:
       - name: Check GTK backend JavaScript
         run: |
           node --check src/native-result-dialog-overlay.js
+          node --check src/native-accessibility.js
           node --check src/gtk-gui.js
           node --check src/gtk-gui-v07.js
+          node --check src/gtk-gui-v08.js
           node --check scripts/build-native-gtk.js
+          node --check tests/native-accessibility.test.js
           node --check tests/gtk-gui.test.js
           node --check tests/menu-dialog-window.test.js
           node --check tests/result-dialog-window.test.js
-      - name: Run GTK lowering tests
-        run: node --test tests/gtk-gui.test.js tests/menu-dialog-window.test.js tests/result-dialog-window.test.js
+      - name: Run GTK lowering and accessibility tests
+        run: node --test tests/native-accessibility.test.js tests/gtk-gui.test.js tests/menu-dialog-window.test.js tests/result-dialog-window.test.js
       - name: Compile, link and run native Patch GTK Forms application
         run: |
           mkdir -p dist-native-gtk
@@ -80,7 +91,7 @@ jobs:
             set -- $pair
             dir=$1; name=$2
             test -x "$dir/$name"
-            node -e "const m=require('./$dir/$name.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.7') process.exit(1)"
+            node -e "const m=require('./$dir/$name.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.8') process.exit(1)"
           done
           ! find dist-native-gtk dist-native-menu-dialog dist-native-result-dialog -iname '*Electron*' -print -quit | grep -q .
       - name: Upload native GTK compiler evidence
