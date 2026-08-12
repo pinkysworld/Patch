@@ -77,20 +77,24 @@ test('signing status CLI fails closed on missing verification and invalid boolea
   }
 });
 
-test('Windows signing gate uses SHA-256 timestamping and verifies every executable', () => {
+test('Windows signing gate uses SHA-256 timestamping, verifies every executable and emits evidence last', () => {
   for (const marker of [
     'PATCH_WINDOWS_PFX_BASE64', 'PATCH_WINDOWS_PFX_PASSWORD', 'signtool.exe',
-    'sign /fd SHA256 /td SHA256 /tr', 'verify /pa /v', 'Remove-Item -LiteralPath $tempPfx'
+    'sign /fd SHA256 /td SHA256 /tr', 'verify /pa /v /tw', 'Remove-Item -LiteralPath $tempPfx',
+    '.patch-windows-signature-verified', 'windows-authenticode-v1'
   ]) assert.ok(windowsScript.includes(marker), marker);
+  assert.ok(windowsScript.indexOf("Set-Content -LiteralPath $verificationPath") > windowsScript.indexOf('verify /pa /v /tw'));
 });
 
-test('macOS gate verifies Developer ID signing notarization stapling and Gatekeeper', () => {
+test('macOS gate verifies Developer ID signing notarization stapling Gatekeeper and emits evidence last', () => {
   for (const marker of [
     'PATCH_MACOS_P12_BASE64', 'PATCH_MACOS_SIGN_IDENTITY', 'PATCH_APPLE_ID', 'PATCH_APPLE_TEAM_ID', 'PATCH_APPLE_APP_PASSWORD',
     'base64.b64decode', 'codesign --force --deep --options runtime --timestamp', 'codesign --verify --deep --strict',
     'xcrun notarytool submit', '--wait', '--output-format json', "status != 'Accepted'",
-    'xcrun stapler staple', 'xcrun stapler validate', 'spctl --assess --type execute', 'ORIGINAL_KEYCHAINS'
+    'xcrun stapler staple', 'xcrun stapler validate', 'spctl --assess --type execute', 'ORIGINAL_KEYCHAINS',
+    '.patch-macos-signature-verified', 'macos-developer-id-notarized-v1'
   ]) assert.ok(macScript.includes(marker), marker);
+  assert.ok(macScript.indexOf("printf '%s' 'macos-developer-id-notarized-v1'") > macScript.indexOf('spctl --assess --type execute'));
   execFileSync('bash', ['-n', 'scripts/sign-notarize-macos.sh']);
 });
 
@@ -104,6 +108,18 @@ test('native distribution workflow defaults unsigned and gates required signing 
   assert.match(workflow, /scripts\/write-signing-status\.js/);
   assert.match(workflow, /Refuse undefined Linux signing claims/);
   assert.match(workflow, /PATCH-SIGNING\.json/);
+});
+
+test('signed manifest claims are bound to platform verification evidence', () => {
+  for (const marker of [
+    'Required Windows signing evidence is missing.',
+    'windows-authenticode-v1',
+    'Required macOS signing evidence is missing.',
+    'macos-developer-id-notarized-v1',
+    'Remove-Item -LiteralPath $marker',
+    'rm -f "$MARKER"'
+  ]) assert.ok(workflow.includes(marker), marker);
+  assert.doesNotMatch(workflow, /\$verified = if \(\$env:PATCH_SIGNING_MODE -eq 'require'\)/);
 });
 
 test('native distribution PR smoke runs unsigned without exposing signing secrets to build steps', () => {
