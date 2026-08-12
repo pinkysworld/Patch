@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<main class="studio">
+<main class="studio" data-patch-version="0.2.0-beta.32">
   <header class="topbar">
     <div class="brand"><div class="brand-mark" aria-hidden="true">P</div><div><h1>Patch Studio <span>0.2 beta.32</span></h1><p>Write, run and build Patch.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
@@ -33,6 +33,11 @@
       <button id="importProject" class="secondary small" type="button">Import</button>
       <button id="recoverProject" class="secondary small" type="button" disabled>Recover</button>
       <input id="importProjectFile" type="file" accept=".patchproject,application/json" hidden>
+    </span>
+    <span class="support-actions" aria-label="Support diagnostics">
+      <button id="copyDiagnostics" class="secondary small" type="button" title="Copy a local privacy-redacted diagnostic summary">Copy diagnostics</button>
+      <button id="downloadDiagnostics" class="secondary small" type="button" title="Save a local .patchreport diagnostic bundle">Report</button>
+      <span id="diagnosticsState" aria-live="polite">Diagnostics stay local.</span>
     </span>
     <span id="saveState">Saved locally</span>
   </section>
@@ -66,7 +71,7 @@ show score</pre></article>
       <details open><summary><span>What works now</span><span class="summary-hint">Beta 0.2.0-beta.32 · Change IR 0.10</span></summary><div class="details-body"><p>Language/compiler, Change Contract, source-backed Designer, Standalone Window Web App, direct WebAssembly, portable C99, ready Windows/macOS/Linux apps, and FreeBSD Console.</p></div></details>
       <details open><summary><span>Beta.32 invocation-frame correspondence</span><span class="summary-hint">Executed runtime + independent frames + Lean</span></summary><div class="details-body two-column"><div><h3>Runtime evidence</h3><p>The direct-Wasm backend runs unchanged and emits no call-enter/call-exit markers. The independent Change-IR validator reconstructs concrete <strong>invocation-frame</strong> identities, exact parameter bindings, parent/depth information and active frame stacks while validating the complete raw transition trace.</p><p><code>GeneratedTransitiveRuntimeCertificate.lean</code> and <code>GeneratedRepeatedTransitiveRuntimeCertificate.lean</code> record single and repeated-call evidence.</p></div><div><h3>Formal check</h3><p><code>PatchCallRuntime.lean</code> re-evaluates the frame-selected observed effects using <code>evalCallTreeStmtEqBool</code>. The generated beta.32 certificate also checks the runtime frame <code>BindingList</code> equals the beta.30 exact callee binding.</p><p>Repeated identical calls can therefore be certified separately. Runtime capture and independent-validator/frame-reconstruction correctness remain proof-free boundaries.</p></div></div></details>
       <details><summary><span>Exact beta.32 boundary</span><span class="summary-hint">No full compiler claim</span></summary><div class="details-body"><p>Patch is not an end-to-end verified compiler. Parser/extractor correctness, JavaScript-to-Wasm lowering, Wasm-engine correctness, runtime capture and independent invocation-frame reconstruction remain outside Lean.</p></div></details>
-      <details><summary><span>Roadmap</span></summary><div class="details-body roadmap-list"><div><strong>Evaluation</strong><span>Security cases, certificate/checker overhead and reproducibility.</span></div><div><strong>Studio workflow</strong><span>Versioned project bundles, local recovery snapshots, accessibility and further Designer polish.</span></div><div><strong>Backend assurance</strong><span>Reduce remaining parser/lowering/runtime trust boundaries without overstating full verification.</span></div></div></details>
+      <details><summary><span>Roadmap</span></summary><div class="details-body roadmap-list"><div><strong>Evaluation</strong><span>Security cases, certificate/checker overhead and reproducibility.</span></div><div><strong>Studio workflow</strong><span>Versioned project bundles, recovery snapshots, local privacy-redacted diagnostics, accessibility and further Designer polish.</span></div><div><strong>Backend assurance</strong><span>Reduce remaining parser/lowering/runtime trust boundaries without overstating full verification.</span></div></div></details>
     </div>
 
     <footer class="site-footer"><span>Patch is experimental research software · 0.2.0-beta.32</span><nav><a href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md">Formal model</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md">Prior art</a><a href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md">Roadmap</a></nav></footer>
@@ -76,5 +81,6 @@ show score</pre></article>
 <script type="module" src="./project-lifecycle.js"></script>
 <script type="module" src="./playground.js"></script>
 <script type="module" src="./forms-designer.js"></script>
+<script type="module" src="./studio-diagnostics.js"></script>
 </body>
 </html>
