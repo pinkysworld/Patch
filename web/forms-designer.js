@@ -104,6 +104,7 @@ function interceptToolbox() {
     ['#addButton', 'button'],
     ['#addInput', 'input'],
     ['#addCheckbox', 'checkbox'],
+    ['#addRadio', 'radio'],
     ['#addCombo', 'combo'],
     ['#addListbox', 'listbox'],
     ['#addTabs', 'tabs']
