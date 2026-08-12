@@ -1,0 +1,240 @@
+name: Patch Native Distribution
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_b64:
+        description: Base64-encoded Patch source (leave empty to use source_path)
+        required: false
+        default: ''
+      source_path:
+        description: Patch source in this repository when source_b64 is empty
+        required: false
+        default: examples/forms-navigation.patch
+      app_name:
+        description: Application name
+        required: true
+        default: PatchDistributionApp
+      platform:
+        description: Distribution platform
+        required: true
+        type: choice
+        options: [windows, macos, linux]
+        default: windows
+      kind:
+        description: Patch application type
+        required: true
+        type: choice
+        options: [console, window]
+        default: window
+      signing_mode:
+        description: unsigned keeps normal builds; require fails unless signing/notarization verifies
+        required: true
+        type: choice
+        options: [unsigned, require]
+        default: unsigned
+
+concurrency:
+  group: patch-native-distribution-${{ github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    if: inputs.platform == 'windows'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_KIND: ${{ inputs.kind }}
+      PATCH_SIGNING_MODE: ${{ inputs.signing_mode }}
+      PATCH_WINDOWS_PFX_BASE64: ${{ secrets.PATCH_WINDOWS_PFX_BASE64 }}
+      PATCH_WINDOWS_PFX_PASSWORD: ${{ secrets.PATCH_WINDOWS_PFX_PASSWORD }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Prepare Patch source and safe app name
+        shell: pwsh
+        run: |
+          if ($env:PATCH_SOURCE_B64) {
+            [IO.File]::WriteAllBytes('distribution.patch', [Convert]::FromBase64String($env:PATCH_SOURCE_B64))
+          } else {
+            Copy-Item -LiteralPath $env:PATCH_SOURCE_PATH -Destination distribution.patch
+          }
+          $name = ($env:PATCH_APP_INPUT -replace '[^A-Za-z0-9_-]', '_') -replace '_+', '_'
+          $name = $name.Trim('_')
+          if (-not $name) { $name = 'PatchDistributionApp' }
+          if ($name.Length -gt 64) { $name = $name.Substring(0,64) }
+          "PATCH_SAFE_NAME=$name" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Check Patch source
+        run: node src/cli.js check distribution.patch
+      - name: Build final Windows artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          if ($env:PATCH_KIND -eq 'window') {
+            node scripts/build-native-gui.js distribution.patch $env:PATCH_SAFE_NAME dist --smoke
+          } else {
+            node scripts/build-native-sea.js distribution.patch --name $env:PATCH_SAFE_NAME --out "dist/$env:PATCH_SAFE_NAME"
+            & "dist/$env:PATCH_SAFE_NAME.exe"
+          }
+          if ($LASTEXITCODE -ne 0) { throw "Patch Windows build/smoke failed with exit code $LASTEXITCODE." }
+      - name: Require and verify Windows Authenticode signature
+        if: inputs.signing_mode == 'require'
+        shell: pwsh
+        run: ./scripts/sign-windows.ps1 -Root dist
+      - name: Write signing status
+        shell: pwsh
+        run: |
+          $verified = if ($env:PATCH_SIGNING_MODE -eq 'require') { 'true' } else { 'false' }
+          node scripts/write-signing-status.js --platform windows --requested $env:PATCH_SIGNING_MODE --verified $verified --out dist/PATCH-SIGNING.json
+      - name: Package Windows distribution
+        shell: pwsh
+        run: |
+          $files = @("dist/$env:PATCH_SAFE_NAME.exe", 'dist/PATCH-SIGNING.json')
+          $meta = "dist/$env:PATCH_SAFE_NAME.win32-build.json"
+          if (Test-Path $meta) { $files += $meta }
+          Compress-Archive -Path $files -DestinationPath "dist/$env:PATCH_SAFE_NAME-windows-distribution.zip" -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-windows-distribution-${{ github.run_id }}
+          path: dist/*-windows-distribution.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    if: inputs.platform == 'macos'
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_KIND: ${{ inputs.kind }}
+      PATCH_SIGNING_MODE: ${{ inputs.signing_mode }}
+      PATCH_MACOS_P12_BASE64: ${{ secrets.PATCH_MACOS_P12_BASE64 }}
+      PATCH_MACOS_P12_PASSWORD: ${{ secrets.PATCH_MACOS_P12_PASSWORD }}
+      PATCH_MACOS_SIGN_IDENTITY: ${{ secrets.PATCH_MACOS_SIGN_IDENTITY }}
+      PATCH_APPLE_ID: ${{ secrets.PATCH_APPLE_ID }}
+      PATCH_APPLE_TEAM_ID: ${{ secrets.PATCH_APPLE_TEAM_ID }}
+      PATCH_APPLE_APP_PASSWORD: ${{ secrets.PATCH_APPLE_APP_PASSWORD }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Prepare Patch source and safe app name
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$PATCH_SOURCE_B64" ]]; then printf '%s' "$PATCH_SOURCE_B64" | python3 -c 'import base64,sys;sys.stdout.buffer.write(base64.b64decode(sys.stdin.read(),validate=True))' > distribution.patch; else cp "$PATCH_SOURCE_PATH" distribution.patch; fi
+          NAME="$(printf '%s' "$PATCH_APP_INPUT" | sed -E 's/[^A-Za-z0-9_-]+/_/g;s/_+/_/g;s/^_+|_+$//g' | cut -c1-64)"
+          [[ -n "$NAME" ]] || NAME=PatchDistributionApp
+          echo "PATCH_SAFE_NAME=$NAME" >> "$GITHUB_ENV"
+      - name: Check Patch source
+        run: node src/cli.js check distribution.patch
+      - name: Build final macOS artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          if [[ "$PATCH_KIND" == window ]]; then
+            node scripts/build-native-gui.js distribution.patch "$PATCH_SAFE_NAME" dist --smoke
+          else
+            node scripts/build-native-sea.js distribution.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
+            "dist/$PATCH_SAFE_NAME.app/Contents/MacOS/$PATCH_SAFE_NAME"
+          fi
+          test -d "dist/$PATCH_SAFE_NAME.app"
+      - name: Require verify and notarize macOS signature
+        if: inputs.signing_mode == 'require'
+        shell: bash
+        run: ./scripts/sign-notarize-macos.sh "dist/$PATCH_SAFE_NAME.app"
+      - name: Write signing status
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERIFIED=false; NOTARIZED=false
+          if [[ "$PATCH_SIGNING_MODE" == require ]]; then VERIFIED=true; NOTARIZED=true; fi
+          mkdir -p dist/package
+          cp -R "dist/$PATCH_SAFE_NAME.app" "dist/package/$PATCH_SAFE_NAME.app"
+          node scripts/write-signing-status.js --platform macos --requested "$PATCH_SIGNING_MODE" --verified "$VERIFIED" --notarized "$NOTARIZED" --out dist/package/PATCH-SIGNING.json
+      - name: Package macOS distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd dist/package && ditto -c -k --sequesterRsrc . "../$PATCH_SAFE_NAME-macos-distribution.zip")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-macos-distribution-${{ github.run_id }}
+          path: dist/*-macos-distribution.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    if: inputs.platform == 'linux'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
+      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
+      PATCH_APP_INPUT: ${{ inputs.app_name }}
+      PATCH_KIND: ${{ inputs.kind }}
+      PATCH_SIGNING_MODE: ${{ inputs.signing_mode }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Refuse undefined Linux signing claims
+        if: inputs.signing_mode == 'require'
+        shell: bash
+        run: |
+          echo 'Patch does not currently define a Linux code-signing claim. Use unsigned and verify SHA-256/release provenance.' >&2
+          exit 2
+      - name: Prepare Patch source and safe app name
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "$PATCH_SOURCE_B64" ]]; then printf '%s' "$PATCH_SOURCE_B64" | base64 --decode > distribution.patch; else cp "$PATCH_SOURCE_PATH" distribution.patch; fi
+          NAME="$(printf '%s' "$PATCH_APP_INPUT" | sed -E 's/[^A-Za-z0-9_-]+/_/g;s/_+/_/g;s/^_+|_+$//g' | cut -c1-64)"
+          [[ -n "$NAME" ]] || NAME=PatchDistributionApp
+          echo "PATCH_SAFE_NAME=$NAME" >> "$GITHUB_ENV"
+      - name: Check Patch source
+        run: node src/cli.js check distribution.patch
+      - name: Build final Linux artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          if [[ "$PATCH_KIND" == window ]]; then
+            node scripts/build-native-gui.js distribution.patch "$PATCH_SAFE_NAME" dist --smoke
+          else
+            node scripts/build-native-sea.js distribution.patch --name "$PATCH_SAFE_NAME" --out "dist/$PATCH_SAFE_NAME"
+            "dist/$PATCH_SAFE_NAME"
+          fi
+      - name: Package explicitly unsigned Linux distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/package
+          if [[ "$PATCH_KIND" == window ]]; then cp "dist/$PATCH_SAFE_NAME" "dist/package/$PATCH_SAFE_NAME"; else cp "dist/$PATCH_SAFE_NAME" "dist/package/$PATCH_SAFE_NAME"; fi
+          node scripts/write-signing-status.js --platform linux --requested unsigned --verified false --out dist/package/PATCH-SIGNING.json
+          tar -czf "dist/$PATCH_SAFE_NAME-linux-distribution.tar.gz" -C dist/package .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-linux-distribution-${{ github.run_id }}
+          path: dist/*-linux-distribution.tar.gz
+          if-no-files-found: error
+          retention-days: 14
