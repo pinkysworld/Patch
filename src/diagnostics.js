@@ -1,3 +1,5 @@
+import { inferBackendPatchLine } from './backend-diagnostic-context.js';
+
 export const PATCH_DIAGNOSTIC_FORMAT = 'patch-diagnostic';
 export const PATCH_DIAGNOSTIC_VERSION = 1;
 
@@ -22,7 +24,9 @@ export function diagnosticFromError(error, options = {}) {
   const phase = normalizePhase(options.phase);
   const rawMessage = String(item.message ?? item);
   const code = validPatchCode(item.code) ? item.code : classifyDiagnosticCode(item, phase, rawMessage);
-  const line = normalizePositiveInteger(item.line) ?? patchSourceLineFromMessage(rawMessage);
+  const line = normalizePositiveInteger(item.line)
+    ?? patchSourceLineFromMessage(rawMessage)
+    ?? inferBackendPatchLine(rawMessage, options.source);
   const column = normalizePositiveInteger(item.column) ?? sourceColumn(options.source, line);
   const entry = normalizeEntry(options.entry ?? item.entry ?? 'main.patch');
 
