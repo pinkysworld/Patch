@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const PATCH_SIGNING_STATUS_FORMAT = 'patch-signing-status';
 export const PATCH_SIGNING_STATUS_VERSION = 1;
@@ -54,7 +55,7 @@ function parseArgs(argv) {
   return options;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   try {
     const options = parseArgs(process.argv.slice(2));
     if (!options.out) throw new Error('Signing status output requires --out FILE.');
