@@ -100,7 +100,7 @@ test('Radio options preserve their visible option while adding group context and
     assert.ok(gtk.includes(`"${expected}"`), `GTK ${expected}`);
   }
   assert.match(win, /PatchAccessibleName\(gRadioItems/);
-  assert.match(mac, /\.accessibilityLabel isEqualToString:@"Mode: Advanced"/);
+  assert.match(mac, /NSButton \*\).*accessibilityLabel.*Mode: Advanced/);
   assert.match(gtk, /PatchAccessibleName\(gRadioItems/);
 });
 
