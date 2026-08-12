@@ -44,4 +44,8 @@ test('GTK AOT v0.7 uses GtkMessageDialog and GtkFileChooserDialog', () => {
   assert.match(code, /GTK_FILE_CHOOSER_ACTION_SAVE/);
   assert.match(code, /PatchResult_open_result_chosen/);
   assert.match(code, /\/tmp\/patch-opened\.patch/);
+  const smokeClick = code.indexOf('gtk_button_clicked(GTK_BUTTON(gControls[');
+  const destroyForm = code.indexOf('gtk_widget_destroy(gForms[', smokeClick);
+  assert.ok(smokeClick >= 0, 'GTK result-dialog smoke must drive a live native button');
+  assert.ok(destroyForm > smokeClick, 'GTK result-dialog smoke must run before the form and its controls are destroyed');
 });
