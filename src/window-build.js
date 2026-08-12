@@ -32,14 +32,15 @@ export function validateWindowRuntimeSupport(compiled) {
   const controls = new Map();
   const tabs = new Map();
   const menuItems = new Map();
+  const resultDialogs = new Map();
   const forms = new Map();
   const events = [];
   const formActions = [];
 
-  const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id);
+  const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
     `line ${node.line ?? '?'}: Window UI id '${node.id}' is declared more than once. ` +
-    'Control, Tabs and MenuItem ids must be unique across the current application.'
+    'Control, Tabs, MenuItem and result-dialog ids must be unique across the current application.'
   );
 
   const registerControl = (child, formId) => {
@@ -78,6 +79,13 @@ export function validateWindowRuntimeSupport(compiled) {
     }
   };
 
+  const registerResultDialog = node => {
+    if (!node.id) throw new WindowBuildError(`line ${node.line ?? '?'}: Result dialog needs a name after 'as'.`);
+    if (idTaken(node.id)) throw duplicateId(node);
+    const type = node.kind === 'confirmDialog' ? 'confirmDialog' : node.kind === 'openFileDialog' ? 'openFileDialog' : 'saveFileDialog';
+    resultDialogs.set(node.id, { type, node });
+  };
+
   let unnamedFormIndex = 0;
   const walk = nodes => {
     for (const node of nodes ?? []) {
@@ -101,6 +109,8 @@ export function validateWindowRuntimeSupport(compiled) {
         events.push(node);
       } else if (node.kind === 'openForm' || node.kind === 'closeForm') {
         formActions.push(node);
+      } else if (node.kind === 'confirmDialog' || node.kind === 'openFileDialog' || node.kind === 'saveFileDialog') {
+        registerResultDialog(node);
       }
       if (node.body && !['window', 'tabs', 'tabPage', 'menu'].includes(node.kind)) walk(node.body);
       if (node.thenBody) walk(node.thenBody);
@@ -112,15 +122,28 @@ export function validateWindowRuntimeSupport(compiled) {
   for (const event of events) {
     const control = controls.get(event.control);
     const menuItem = menuItems.get(event.control);
-    if (!control && !menuItem) {
+    const resultDialog = resultDialogs.get(event.control);
+    if (!control && !menuItem && !resultDialog) {
       if (tabs.has(event.control)) {
         throw new WindowBuildError(
           `line ${event.line ?? '?'}: Tabs '${event.control}' has transient page selection and does not expose Patch events in Tabs Stage 1.`
         );
       }
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: event '${event.control} ${event.event}' refers to a control or menu item that is not defined in a Patch window.`
+        `line ${event.line ?? '?'}: event '${event.control} ${event.event}' refers to a control, menu item or result dialog that is not defined in a Patch window.`
       );
+    }
+    if (resultDialog) {
+      const supported = resultDialog.type === 'confirmDialog'
+        ? (event.event === 'confirmed' || event.event === 'cancelled')
+        : (event.event === 'chosen' || event.event === 'cancelled');
+      if (!supported) {
+        const expected = resultDialog.type === 'confirmDialog' ? "'confirmed' or 'cancelled'" : "'chosen' or 'cancelled'";
+        throw new WindowBuildError(
+          `line ${event.line ?? '?'}: ${resultDialog.type} '${event.control}' supports ${expected}, not '${event.event}'.`
+        );
+      }
+      continue;
     }
     const controlType = menuItem ? 'menuItem' : control.type;
     const supported =
@@ -149,6 +172,7 @@ export function validateWindowRuntimeSupport(compiled) {
     controls: controls.size,
     tabs: tabs.size,
     menuItems: menuItems.size,
+    resultDialogs: resultDialogs.size,
     events: events.length,
     formActions: formActions.length
   };
