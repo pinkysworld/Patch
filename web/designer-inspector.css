@@ -287,3 +287,56 @@
     padding-bottom: 10px;
   }
 }
+
+/* The canvas itself is the desktop Designer scrollport. The previous layout
+   allowed the grid track to grow with multiple Forms, so overflow never became
+   scrollable even though overflow:auto was set on the canvas. */
+@media (min-width: 1051px) {
+  .result-pane #designer.designer-view {
+    height: clamp(580px, 72vh, 780px);
+    min-height: 580px;
+    overflow: hidden;
+  }
+  .result-pane #designer .designer-surface {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .result-pane #designer .designer-surface .designer-canvas {
+    min-height: 0;
+    height: 100%;
+    max-height: none;
+    overflow-x: auto !important;
+    overflow-y: scroll !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+  }
+  .result-pane #designer .designer-inspector {
+    min-height: 0;
+    max-height: 100%;
+  }
+}
+
+@media (max-width: 1050px) {
+  .result-pane #designer.designer-view {
+    height: auto;
+    min-height: 0;
+  }
+  .result-pane #designer .designer-surface {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .result-pane #designer .designer-surface .designer-canvas {
+    height: clamp(420px, 60vh, 640px);
+    min-height: 420px;
+    max-height: none;
+    overflow-x: auto !important;
+    overflow-y: scroll !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+  }
+}
+
+.result-pane #designer .designer-canvas .patch-window:last-child {
+  margin-bottom: 48px;
+}
