@@ -109,13 +109,13 @@ requireAll('native builder modes', nativeBuild, [
   'Ready app download (no token)','workflow_dispatch','source_b64'
 ]);
 const nativeGui = read('_site/src/native-gui-ir.js');
-requireAll('Native GUI IR v0.6 Menu/Dialog/Radio/Tabs contract', nativeGui, [
-  "PATCH_NATIVE_GUI_IR_VERSION = '0.6'", 'flattenNativeGuiControls','flattenNativeGuiMenuItems', "type: 'tabs'", "type: 'menuItem'", 'menus: []', "kind: 'dialog'",
+requireAll('Native GUI IR v0.7 Menu/Dialog/Radio/Tabs contract', nativeGui, [
+  "PATCH_NATIVE_GUI_IR_VERSION = '0.7'", 'flattenNativeGuiControls','flattenNativeGuiMenuItems', "type: 'tabs'", "type: 'menuItem'", 'menus: []', "kind: 'dialog'",
   "['combo', 'listbox', 'radio'].includes(control.type)", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
 ]);
 const sealedNative = read('_site/src/sealed-native-gui.js');
-requireAll('sealed native GUI payload v6 Menu/Dialog/Radio/Tabs contract', sealedNative, [
-  'PATCH_SEALED_NATIVE_GUI_VERSION = 6', 'writer.u32(form.menus.length)', "writer.u8(4)", "if (type === 'tabs') return 7", "if (type === 'radio') return 8",
+requireAll('sealed native GUI payload v7 Menu/Dialog/Radio/Tabs contract', sealedNative, [
+  'PATCH_SEALED_NATIVE_GUI_VERSION = 7', 'writer.u32(form.menus.length)', "writer.u8(4)", "if (type === 'tabs') return 7", "if (type === 'radio') return 8",
   'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles', 'Native Radio payload needs at least two options'
 ]);
 
@@ -144,7 +144,7 @@ requireAll('compiler assurance and UI lifecycle modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms7`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms8`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 
