@@ -63,7 +63,7 @@ requireAll('forms designer contract', formsDesigner, [
   './src/designer.js','./src/form-layout.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl','formControlDefaultSize',
   'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']", "['#addRadio', 'radio']", "['#addCombo', 'combo']", "['#addListbox', 'listbox']", "['#addTabs', 'tabs']",
   'pendingReveal','revealPendingDesignerTarget','scrollIntoView','growFormForControl',
-  "control.type === 'listbox'", "control.type === 'tabs'", 'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
+  'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
 ]);
 const formsCss = read('_site/forms-designer.css');
 requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-radio','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
