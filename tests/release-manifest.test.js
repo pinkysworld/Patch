@@ -48,9 +48,9 @@ test('release verifier binds flat published asset names to checksums version and
     fs.mkdirSync(dist);
     fs.writeFileSync(path.join(dist, 'app.bin'), 'payload');
     writeReleaseManifest(['.'], { baseDir: dist, outDir: meta, commit: 'deadbeef' });
-    const verified = verifyRelease({ baseDir: dist, metaDir: '../release-meta', commit: 'deadbeef', version: '0.2.0-beta.32' });
+    const verified = verifyRelease({ baseDir: dist, metaDir: '../release-meta', commit: 'deadbeef', version: '0.2.0-beta.33' });
     assert.equal(verified.commit, 'deadbeef');
-    assert.equal(verified.patchVersion, '0.2.0-beta.32');
+    assert.equal(verified.patchVersion, '0.2.0-beta.33');
     assert.deepEqual(verified.artifacts.map(item => item.path), ['app.bin']);
     assert.match(fs.readFileSync(path.join(meta, 'SHA256SUMS.txt'), 'utf8'), /^[a-f0-9]{64}  app\.bin\n$/);
   } finally {
@@ -67,7 +67,7 @@ test('release verifier rejects changed bytes commit drift and checksum drift', (
     const artifact = path.join(dist, 'app.bin');
     fs.writeFileSync(artifact, 'payload');
     writeReleaseManifest(['.'], { baseDir: dist, outDir: meta, commit: 'deadbeef' });
-    const options = { baseDir: dist, metaDir: '../release-meta', version: '0.2.0-beta.32' };
+    const options = { baseDir: dist, metaDir: '../release-meta', version: '0.2.0-beta.33' };
     assert.throws(() => verifyRelease({ ...options, commit: 'other' }), /commit/);
     fs.writeFileSync(artifact, 'tampered');
     assert.throws(() => verifyRelease({ ...options, commit: 'deadbeef' }), /(size|hash) mismatch/);
