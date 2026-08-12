@@ -113,7 +113,7 @@ test('Patch Studio exposes Tabs in the toolbox and renders a real tablist/tabpan
   assert.match(studio, /aria-selected/);
   assert.match(studio, /patch-tab-panel/);
   assert.match(formsDesigner, /\['#addTabs', 'tabs'\]/);
-  assert.match(formsDesigner, /control\.type === 'tabs'/);
+  assert.match(formsDesigner, /formControlDefaultSize/);
 });
 
 test('Standalone Window Web runtime v0.8 renders Tabs and nested controls', () => {
