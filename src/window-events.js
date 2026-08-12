@@ -1,30 +1,38 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-export const PATCH_WINDOW_EVENTS_VERSION = '0.5';
+export const PATCH_WINDOW_EVENTS_VERSION = '0.6';
 
 /**
  * Execute one Patch Window event with transient event-local data.
  *
- * Persistent state is never updated by this adapter. For `changed` events the
- * control value is exposed only as local `value`; source must use an ordinary
- * semantic `change` to commit it. Checkbox `value` is Boolean. Input, ComboBox,
- * ListBox and Radio `value` are text.
+ * Persistent state is never updated by this adapter. `changed` control values
+ * and `chosen` file-dialog paths are exposed only as local `value`; source must
+ * use an ordinary semantic `change` to commit them. Checkbox `changed` values
+ * are Boolean. Input, ComboBox, ListBox, Radio and file-dialog `chosen` values
+ * are text.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
 
-  if (event !== 'changed') return runtime.trigger(control, event);
+  const carriesValue = event === 'changed' || event === 'chosen';
+  if (!carriesValue) return runtime.trigger(control, event);
 
   if (!Object.prototype.hasOwnProperty.call(payload ?? {}, 'value')) {
     throw new PatchRuntimeError(`The '${event}' action for '${control}' needs an event-local value.`);
   }
 
-  const controlType = findControlType(runtime, control);
-  if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
-    throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
+  if (event === 'chosen' && typeof payload.value !== 'string') {
+    throw new PatchRuntimeError(`The 'chosen' action for file dialog '${control}' needs a text event-local value.`);
   }
-  if (['input', 'combo', 'listbox', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
-    throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
+
+  if (event === 'changed') {
+    const controlType = findControlType(runtime, control);
+    if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
+      throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
+    }
+    if (['input', 'combo', 'listbox', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
+      throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
+    }
   }
 
   try {
