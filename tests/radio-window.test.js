@@ -73,6 +73,19 @@ test('Designer can add, resize, rename and edit Radio options in source', () => 
   assert.match(edited, /when mode changed:/);
 });
 
+test('Patch Studio exposes, previews and edits Radio groups instead of silently dropping them', () => {
+  const html = fs.readFileSync('web/index.html', 'utf8');
+  const playground = fs.readFileSync('web/playground.js', 'utf8');
+  const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
+  const css = fs.readFileSync('web/forms-designer.css', 'utf8');
+  assert.match(html, /id="addRadio"/);
+  assert.match(playground, /control\.type === 'radio'/);
+  assert.match(playground, /patch-radio/);
+  assert.match(playground, /\['combo', 'listbox', 'radio'\]/);
+  assert.match(forms, /\['#addRadio', 'radio'\]/);
+  assert.match(css, /\.patch-radio/);
+});
+
 test('Native GUI IR v0.7 carries Radio options, text binding and changed event semantics', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'RadioDemo' }));
   assert.equal(ir.version, '0.7');

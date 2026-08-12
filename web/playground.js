@@ -162,6 +162,7 @@ document.querySelector('#run').addEventListener('click', runProject);
 document.querySelector('#addText').addEventListener('click', () => addControl('text'));
 document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
 document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
+document.querySelector('#addRadio')?.addEventListener('click', () => addControl('radio'));
 document.querySelector('#addCombo')?.addEventListener('click', () => addControl('combo'));
 document.querySelector('#addListbox')?.addEventListener('click', () => addControl('listbox'));
 document.querySelector('#addTabs')?.addEventListener('click', () => addControl('tabs'));
@@ -250,7 +251,7 @@ function applyDesignerProperties() {
     const changes = {};
     if (selected.type !== 'text') changes.id = designerInspector.idInput.value;
     if (['text', 'button', 'checkbox'].includes(selected.type)) changes.textExpr = designerInspector.textInput.value;
-    if (['combo', 'listbox'].includes(selected.type)) changes.options = splitOptionExpressions(designerInspector.optionsInput.value);
+    if (['combo', 'listbox', 'radio'].includes(selected.type)) changes.options = splitOptionExpressions(designerInspector.optionsInput.value);
     code.value = updateDesignerControl(code.value, designerSelection, changes);
     saveProject();
     refreshDesigner();
@@ -441,6 +442,27 @@ function createControlElement(control, context) {
     el.append(input, text);
     if (context.interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: input.checked }));
     else input.disabled = true;
+  } else if (control.type === 'radio') {
+    el = document.createElement('div');
+    el.className = 'patch-radio';
+    const groupName = `patch-radio-${context.windowId ?? context.windowIndex}-${control.id ?? context.controlIndex}`;
+    for (const option of control.options ?? []) {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = groupName;
+      input.value = option;
+      input.checked = String(control.value ?? '') === String(option);
+      const text = document.createElement('span');
+      text.textContent = option;
+      label.append(input, text);
+      el.appendChild(label);
+      if (context.interactive) {
+        input.addEventListener('change', () => {
+          if (input.checked) trigger(control.id, 'changed', { value: input.value });
+        });
+      } else input.disabled = true;
+    }
   } else if (control.type === 'combo' || control.type === 'listbox') {
     el = document.createElement('select');
     el.className = control.type === 'listbox' ? 'patch-input patch-listbox' : 'patch-input patch-combo';
@@ -542,8 +564,8 @@ function renderDesignerInspector() {
   designerInspector.type.textContent = selected.type[0].toUpperCase() + selected.type.slice(1);
   designerInspector.location.textContent = `Window ${selected.windowIndex + 1} · control ${selected.controlIndex + 1} · line ${selected.line}`;
   designerInspector.idField.hidden = selected.type === 'text';
-  designerInspector.textField.hidden = ['input', 'combo', 'listbox', 'tabs'].includes(selected.type);
-  designerInspector.optionsField.hidden = !['combo', 'listbox'].includes(selected.type);
+  designerInspector.textField.hidden = ['input', 'combo', 'listbox', 'radio', 'tabs'].includes(selected.type);
+  designerInspector.optionsField.hidden = !['combo', 'listbox', 'radio'].includes(selected.type);
   designerInspector.idInput.value = selected.id ?? '';
   designerInspector.textInput.value = selected.textExpr ?? '';
   designerInspector.optionsInput.value = selected.options?.join(', ') ?? '';
@@ -622,16 +644,19 @@ function splitOptionExpressions(text) {
   const out = [];
   let current = '';
   let quote = null;
+  let escaped = false;
   let depth = 0;
   for (const ch of String(text ?? '')) {
     if (quote) {
       current += ch;
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
       if (ch === quote) quote = null;
       continue;
     }
     if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
     if (ch === '(' || ch === '[') depth += 1;
-    if (ch === ')' || ch === ']') depth -= 1;
+    if ((ch === ')' || ch === ']') && depth > 0) depth -= 1;
     if (ch === ',' && depth === 0) {
       if (current.trim()) out.push(current.trim());
       current = '';
@@ -656,8 +681,14 @@ function projectOptions() { return { name: safeName(projectName.value), kind: pr
 function safeName(name) { return (name || 'PatchApp').replace(/[^A-Za-z0-9_-]/g, '_'); }
 
 function saveProject() {
-  localStorage.setItem('patchStudio.project', JSON.stringify({ name: projectName.value, kind: projectKind.value, code: code.value }));
-  saveState.textContent = 'Saved locally';
+  try {
+    localStorage.setItem('patchStudio.project', JSON.stringify({ name: projectName.value, kind: projectKind.value, code: code.value }));
+    saveState.textContent = 'Saved locally';
+    saveState.removeAttribute('title');
+  } catch (error) {
+    saveState.textContent = 'Local save unavailable';
+    saveState.title = error?.message ?? 'Browser storage is unavailable.';
+  }
 }
 function loadProject() { try { return JSON.parse(localStorage.getItem('patchStudio.project')); } catch { return null; } }
 

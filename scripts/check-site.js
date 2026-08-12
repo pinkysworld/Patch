@@ -21,7 +21,7 @@ for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new 
 const html = read('_site/index.html');
 requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./forms-designer.js','./icon.svg']);
 for (const id of [
-  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addCombo','addListbox','addTabs',
+  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addRadio','addCombo','addListbox','addTabs',
   'projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
@@ -44,26 +44,34 @@ requireAll('playground imports', playground, [
 requireAll('playground Designer/runtime contract', playground, [
   'triggerWindowEvent','listDesignerControls','updateDesignerControl','removeDesignerControl','designerInspectorApply',
   "control.type === 'checkbox'", "input.type = 'checkbox'", 'value: input.checked',
+  "control.type === 'radio'", "input.type = 'radio'", 'patch-radio', "addControl('radio')",
   "control.type === 'combo'", "control.type === 'listbox'", "document.createElement('select')", 'patch-listbox', 'el.size = Math.min',
   "control.type === 'tabs'", 'patch-tabs-list', 'patch-tab-button', 'patch-tab-panel', 'aria-selected', "addControl('tabs')",
-  'designerInspectorOptions', 'splitOptionExpressions',
+  'designerInspectorOptions', 'splitOptionExpressions', "['combo', 'listbox', 'radio']", 'Local save unavailable',
   'model.visible === false', "addEventListener('input'", 'Direct WebAssembly currently supports Console projects only'
 ]);
 
 const inspectorCss = read('_site/designer-inspector.css');
-requireAll('Designer inspector stylesheet', inspectorCss, ['.designer-inspector','.designer-control','.designer-selected']);
+requireAll('Designer inspector stylesheet', inspectorCss, [
+  '.designer-inspector','.designer-control','.designer-selected','#designer #addRadio::before',
+  'height: clamp(580px, 72vh, 780px)','overflow-y: scroll !important','overscroll-behavior: contain'
+]);
 
 const formsDesigner = read('_site/forms-designer.js');
 rejectOutsideSiteImport('forms designer', formsDesigner);
 requireAll('forms designer contract', formsDesigner, [
-  './src/designer.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl',
-  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']", "['#addCombo', 'combo']", "['#addListbox', 'listbox']", "['#addTabs', 'tabs']",
-  "control.type === 'listbox'", "control.type === 'tabs'", 'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
+  './src/designer.js','./src/form-layout.js','addDesignerWindow','updateDesignerWindow','updateDesignerControl','formControlDefaultSize',
+  'installCheckboxTool','addCheckbox', "['#addCheckbox', 'checkbox']", "['#addRadio', 'radio']", "['#addCombo', 'combo']", "['#addListbox', 'listbox']", "['#addTabs', 'tabs']",
+  'pendingReveal','revealPendingDesignerTarget','scrollIntoView','growFormForControl',
+  'patchFormSelect','patchAddForm','patchFormName','patchControlX','patchControlWidth','pointerdown','patch-form-resize-handle'
 ]);
 const formsCss = read('_site/forms-designer.css');
-requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
+requireAll('forms designer stylesheet', formsCss, ['.forms-toolbar-group','.patch-checkbox','.patch-radio','.patch-form-layout','.patch-form-resize-handle','.forms-geometry-grid']);
 const formLayout = read('_site/src/form-layout.js');
-requireAll('shared form layout runtime', formLayout, ['PATCH_FORM_LAYOUT_VERSION','buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','radio','combo','listbox','tabs']);
+requireAll('shared form layout runtime', formLayout, [
+  'PATCH_FORM_LAYOUT_VERSION','PATCH_FORM_CONTROL_DEFAULTS','formControlDefaultSize','formControlDefaultLayout',
+  'buildFormLayoutManifest','applyFormLayout','patch-source-backed-form-layout','checkbox','radio','combo','listbox','tabs'
+]);
 const webapp = read('_site/src/webapp.js');
 requireAll('Window Web form layout bridge', webapp, ['./form-layout.js','data-patch-form-layout','patchApplyFormLayout','formLayoutVersion']);
 const windowWebapp = read('_site/src/window-webapp.js');
@@ -81,7 +89,7 @@ requireAll('typed Window changed events', windowEvents, [
 
 const designer = read('_site/src/designer.js');
 requireAll('named Form Designer source contract', designer, [
-  'nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close', "['combo', 'listbox', 'radio'].includes(control.type)",
+  './form-layout.js','formControlDefaultSize','nextControlLayout','growWindowToFit','nextFormId','renameFormActions','window ${titleExpr} as ${id}', 'open|close', "['combo', 'listbox', 'radio'].includes(control.type)",
   'A ${label} needs at least two options', "type === 'radio'", "type === 'listbox'", "type === 'tabs'", 'tab "General"', 'tab "Advanced"'
 ]);
 const windowBuild = read('_site/src/window-build.js');
@@ -144,7 +152,7 @@ requireAll('compiler assurance and UI lifecycle modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms8`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms8-ux10`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 

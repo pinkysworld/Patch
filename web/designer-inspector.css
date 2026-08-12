@@ -100,13 +100,15 @@
 #designer #addButton { top: 83px; }
 #designer #addInput { top: 117px; }
 #designer #addCheckbox { top: 151px; }
-#designer #addCombo { top: 185px; }
-#designer #addListbox { top: 219px; }
-#designer #addTabs { top: 253px; }
+#designer #addRadio { top: 185px; }
+#designer #addCombo { top: 219px; }
+#designer #addListbox { top: 253px; }
+#designer #addTabs { top: 287px; }
 #designer #addText::before { content: "T"; }
 #designer #addButton::before { content: "▭"; font-size: 18px; }
 #designer #addInput::before { content: "I"; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 #designer #addCheckbox::before { content: "✓"; }
+#designer #addRadio::before { content: "◉"; font-size: 16px; }
 #designer #addCombo::before { content: "⌄"; font-size: 19px; }
 #designer #addListbox::before { content: "≡"; font-size: 19px; }
 #designer #addTabs::before { content: "▤"; font-size: 17px; }
@@ -286,4 +288,57 @@
     padding-inline: 10px;
     padding-bottom: 10px;
   }
+}
+
+/* The canvas itself is the desktop Designer scrollport. The previous layout
+   allowed the grid track to grow with multiple Forms, so overflow never became
+   scrollable even though overflow:auto was set on the canvas. */
+@media (min-width: 1051px) {
+  .result-pane #designer.designer-view {
+    height: clamp(580px, 72vh, 780px);
+    min-height: 580px;
+    overflow: hidden;
+  }
+  .result-pane #designer .designer-surface {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .result-pane #designer .designer-surface .designer-canvas {
+    min-height: 0;
+    height: 100%;
+    max-height: none;
+    overflow-x: auto !important;
+    overflow-y: scroll !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+  }
+  .result-pane #designer .designer-inspector {
+    min-height: 0;
+    max-height: 100%;
+  }
+}
+
+@media (max-width: 1050px) {
+  .result-pane #designer.designer-view {
+    height: auto;
+    min-height: 0;
+  }
+  .result-pane #designer .designer-surface {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .result-pane #designer .designer-surface .designer-canvas {
+    height: clamp(420px, 60vh, 640px);
+    min-height: 420px;
+    max-height: none;
+    overflow-x: auto !important;
+    overflow-y: scroll !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+  }
+}
+
+.result-pane #designer .designer-canvas .patch-window:last-child {
+  margin-bottom: 48px;
 }
