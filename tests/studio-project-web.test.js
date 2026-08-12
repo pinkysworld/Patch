@@ -75,7 +75,7 @@ test('corrupt pending or canonical stores are quarantined before legacy fallback
 });
 
 test('PWA cache advances and includes every project lifecycle asset', () => {
-  assert.match(sw, /forms8-ux11-project1/);
+  assert.match(sw, /forms8-ux12-diagnostics1/);
   for (const marker of ['./project-lifecycle.js','./project-lifecycle.css','../src/studio-project.js']) {
     assert.ok(sw.includes(`'${marker}'`), marker);
   }
