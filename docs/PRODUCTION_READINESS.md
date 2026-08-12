@@ -117,14 +117,16 @@ Project v1→v2 tests preserve source/name/kind and assert the documented defaul
 - [ ] FreeBSD native GUI backend
 - [x] Patch Studio keyboard/focus/responsive accessibility baseline
 - [x] generated standalone Window Web accessibility baseline
-- [ ] generated native Window app accessibility audit
+- [x] generated native Window app accessibility audit
 - [ ] manual assistive-technology/browser accessibility audit before a stable release
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
 
 The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result tab relationships, arrow/Home/End result navigation, keyboard Run/Build shortcuts, visible keyboard focus, polite status announcements, coarse-pointer target sizing, reduced-motion handling, forced-colors affordances and responsive project/support/result layouts. This is an implementation baseline, not a WCAG conformance claim.
 
-Generated standalone Window Web apps now add labelled Window regions, accessible names for otherwise-unlabelled Input/Combo/ListBox controls, grouped Radio semantics, polite output status, roving tab focus with Arrow/Home/End control, visible keyboard focus, reduced-motion handling and forced-colors focus treatment. The accessibility layer also closes a real cross-target gap by rendering Radio groups in standalone Window Web apps. Native Win32/AppKit/GTK accessibility and manual screen-reader/browser testing remain separate open work; no WCAG conformance claim is made.
+Generated standalone Window Web apps add labelled Window regions, accessible names for otherwise-unlabelled Input/Combo/ListBox controls, grouped Radio semantics, polite output status, roving tab focus with Arrow/Home/End control, visible keyboard focus, reduced-motion handling and forced-colors focus treatment. The accessibility layer also renders Radio groups in standalone Window Web apps.
+
+Generated direct-native Window apps now have an automated platform-API accessibility audit baseline as well. AOT backend v0.8 derives stable accessible names for Input, ComboBox, ListBox and Tabs controls and adds Radio group context while preserving native visible labels on Button/Checkbox controls. Native smokes write and read those names through Microsoft Active Accessibility (`IAccPropServices` / `IAccessible`), AppKit accessibility labels and GTK3/ATK, and the final Win32/AppKit/GTK cross-platform matrix passed. This closes the automated native-app audit item, **not** a WCAG conformance claim. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing remains a separate open release gate.
 
 ## Release rule
 
