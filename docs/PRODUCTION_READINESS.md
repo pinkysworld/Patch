@@ -60,11 +60,13 @@ GitHub Actions are monitored weekly through Dependabot and JavaScript/TypeScript
 ## P1 — strongly recommended for serious users
 
 ### Stable developer experience
-- [ ] documented CLI exit-code contract
-- [ ] `--json` output for check/build/formal/certify commands
+- [x] documented CLI exit-code contract
+- [x] `--json` output for check/build/formal/certify commands
 - [ ] source maps / line-accurate diagnostics across all backends
 - [ ] deterministic artifact naming across every packaging path
 - [ ] project-level configuration instead of target settings scattered through UI state
+
+`docs/CLI_CONTRACT.md` freezes the existing coarse exit taxonomy as `0 = success`, `1 = CLI usage`, `2 = processing/build/validation failure`. `check`, `formal`, `certify` and `build` expose the versioned `patch-cli-result` v1 envelope. Successful commands return command-specific structured data; failures retain exit `2` and carry the existing `patch-diagnostic` v1 object with stable `PATCHxxxx` code and source location where available. Human-readable behavior remains the default without `--json`.
 
 The stable diagnostic envelope now covers compiler/build failure classes and parser source locations. The broader backend item remains open because Wasm/C99/native runtime and packaging failures do not yet all map back to source locations.
 
