@@ -21,8 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [22, 24]
+        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest","windows-latest","macos-latest"]') }}
+        node: ${{ github.event_name == 'pull_request' && fromJSON('["24"]') || fromJSON('["22","24"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 12
     steps:

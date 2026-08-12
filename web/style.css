@@ -123,9 +123,9 @@ button.small { min-height: 29px; padding: 5px 9px; font-size: 12px; }
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
-  gap: 10px;
-  min-height: 610px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
 }
 .pane {
   overflow: hidden;
@@ -170,6 +170,10 @@ textarea {
   line-height: 1.6;
   tab-size: 2;
 }
+.editor-pane textarea {
+  min-height: 360px;
+  height: clamp(360px, 42vh, 560px);
+}
 pre {
   margin: 0;
   min-height: 566px;
@@ -183,6 +187,11 @@ pre {
   font-size: 13px;
   line-height: 1.55;
 }
+.result-pane { min-height: 660px; }
+.result-pane pre {
+  min-height: 520px;
+  height: min(68vh, 760px);
+}
 
 .app-preview {
   min-height: 566px;
@@ -190,6 +199,11 @@ pre {
   overflow: auto;
   padding: 24px;
   background: var(--surface-subtle);
+}
+.result-pane .app-preview {
+  min-height: 610px;
+  height: auto;
+  max-height: 78vh;
 }
 .empty-preview { max-width: 330px; margin: 90px auto; color: var(--muted); text-align: center; line-height: 1.5; }
 .patch-window {
@@ -202,6 +216,7 @@ pre {
   color: var(--text);
   box-shadow: 0 18px 44px rgba(24, 24, 27, .12);
 }
+.result-pane .patch-window { max-width: min(100%, 920px); }
 .patch-window-title { padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--soft); font-size: 12px; font-weight: 750; }
 .patch-window-body { min-height: 180px; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
 .patch-text { margin: 0; font-size: 18px; }
@@ -215,6 +230,7 @@ pre {
 .patch-tab-panel > .patch-input { max-width: 280px; }
 
 .designer-view { height: calc(100% - 42px); min-height: 566px; display: flex; flex-direction: column; }
+.result-pane .designer-view { min-height: 620px; height: auto; }
 .designer-toolbar {
   min-height: 44px;
   padding: 7px 9px;
@@ -229,6 +245,9 @@ pre {
 .designer-toolbar strong { color: var(--text); }
 .designer-toolbar span { margin-left: auto; }
 .designer-canvas { flex: 1; min-height: 522px; height: auto; border-radius: 0; }
+.result-pane .designer-surface,
+.result-pane .designer-surface .designer-canvas { min-height: 575px; }
+.result-pane .designer-canvas { height: auto; max-height: 78vh; }
 .designer-control { cursor: default; outline: 2px dashed transparent; outline-offset: 3px; }
 .designer-control:hover { outline-color: var(--border-strong); }
 
@@ -328,9 +347,17 @@ details[open] summary::after { content: "−"; }
   .toolbar select { width: 100%; }
   .workspace { grid-template-columns: 1fr; min-height: 0; }
   textarea { min-height: 48vh; height: 48vh; font-size: 16px; }
+  .editor-pane textarea { min-height: 44vh; height: 44vh; }
   pre, .app-preview { min-height: 34vh; height: 34vh; }
+  .result-pane { min-height: 0; }
+  .result-pane pre,
+  .result-pane .app-preview,
+  .result-pane .designer-canvas { min-height: 42vh; height: auto; max-height: none; }
   .designer-view { min-height: 40vh; height: auto; }
   .designer-canvas { min-height: 34vh; height: 34vh; }
+  .result-pane .designer-view,
+  .result-pane .designer-surface,
+  .result-pane .designer-surface .designer-canvas { min-height: 42vh; }
   .intro-card { grid-template-columns: 1fr; gap: 20px; }
   .code-card { max-width: 620px; }
 }
