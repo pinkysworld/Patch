@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
-import { emitGtkGuiCpp, PATCH_GTK_GUI_BACKEND_VERSION } from '../src/gtk-gui-v07.js';
+import { emitGtkGuiCpp, PATCH_GTK_GUI_BACKEND_VERSION } from '../src/gtk-gui-v08.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeGtk');
