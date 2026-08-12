@@ -143,7 +143,7 @@ when bad changed:
   );
 });
 
-test('Window builds reject event handlers for controls that do not exist', () => {
+test('Window builds reject event handlers for sources that do not exist', () => {
   const source = `window "Broken":
   text "Hello"
 
@@ -152,7 +152,7 @@ when missing clicked:
 
   assert.throws(
     () => buildStandaloneWebApp(source, { name: 'BrokenEvent', kind: 'window' }),
-    /refers to a control or menu item that is not defined/
+    /refers to a control, menu item or result dialog that is not defined/
   );
 });
 

@@ -1,0 +1,37 @@
+create text selected_path = ""
+
+window "Result dialogs" as main size 720, 420:
+  text "Selected: {selected_path}"
+  button "Confirm reset" as reset_button
+  button "Open file" as open_button
+  button "Save file" as save_button
+
+when reset_button clicked:
+  confirm "Reset selection?", "Clear the selected path?" as reset_confirm
+
+when reset_confirm confirmed:
+  change selected_path:
+    set = ""
+
+when reset_confirm cancelled:
+  show "reset cancelled"
+
+when open_button clicked:
+  open file "Open Patch file" as open_result
+
+when open_result chosen:
+  change selected_path:
+    set = value
+
+when open_result cancelled:
+  show "open cancelled"
+
+when save_button clicked:
+  save file "Save Patch file" as save_result
+
+when save_result chosen:
+  change selected_path:
+    set = value
+
+when save_result cancelled:
+  show "save cancelled"
