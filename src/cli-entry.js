@@ -4,9 +4,17 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { generateLeanCallCertificate } from './call-certificate.js';
+import { collectDoctorReport, formatDoctorReport } from './doctor.js';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
+
+if (command === 'doctor') {
+  const report = collectDoctorReport();
+  if (argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
+  else console.log(formatDoctorReport(report));
+  process.exit(report.status === 'error' ? 2 : 0);
+}
 
 if (command !== 'call-certify') {
   const cliPath = fileURLToPath(new URL('./cli.js', import.meta.url));
