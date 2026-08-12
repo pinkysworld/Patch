@@ -26,7 +26,8 @@ test('Studio site build content-addresses browser assets and service-worker cach
 
   assert.equal(builtWorker.includes('__PATCH_SITE_REV__'), false);
   assert.ok(builtWorker.includes(`const REVISION = '${revision}'`));
-  assert.match(builtWorker, /const CACHE = `patch-studio-\$\{REVISION\}`/);
+  assert.match(builtWorker, /const CACHE_PREFIX = 'patch-studio-'/);
+  assert.match(builtWorker, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
 });
 
 test('Studio service worker bypasses stale HTTP cache but keeps offline fallback', () => {
@@ -35,6 +36,13 @@ test('Studio service worker bypasses stale HTTP cache but keeps offline fallback
   assert.match(serviceWorkerSource, /\.map\(versioned\)/);
   assert.match(serviceWorkerSource, /self\.skipWaiting\(\)/);
   assert.match(serviceWorkerSource, /self\.clients\.claim\(\)/);
+});
+
+test('Studio cache cleanup is scoped to Patch caches on the shared Pages origin', () => {
+  assert.match(serviceWorkerSource, /LEGACY_CACHE_ID = 'patch-studio-0\.2-beta\.32-forms8-ux14-a11y1'/);
+  assert.match(serviceWorkerSource, /key\.startsWith\(CACHE_PREFIX\)/);
+  assert.match(serviceWorkerSource, /key !== CACHE/);
+  assert.doesNotMatch(serviceWorkerSource, /keys\.filter\(k => k !== CACHE\)/);
 });
 
 test('Studio actively checks for a new worker and reloads once after activation', () => {
