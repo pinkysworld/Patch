@@ -11,13 +11,15 @@ const macWorkflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml'
 const linuxWorkflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 const pagesWorkflow = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 
-test('sealed runtime accessibility v0.8 deliberately preserves payload v7', () => {
+test('sealed runtime accessibility v0.8 deliberately preserves payload v7 and overlays v0.7 runtime logic', () => {
   assert.equal(PATCH_SEALED_NATIVE_GUI_MAGIC, 'PCHGUI01');
   assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
-  for (const source of [win, mac, gtk]) {
-    assert.match(source, /v0\.8/);
-    assert.match(source, /sealed.*v0\.7|v0\.7.*runtime/i);
-  }
+  assert.match(win, /v0\.8/);
+  assert.match(mac, /v0\.8/);
+  assert.match(gtk, /v0\.8/);
+  assert.match(win, /#include "win32-sealed-gui-v07\.cpp"/);
+  assert.match(mac, /#include "appkit-sealed-gui-v07\.mm"/);
+  assert.match(gtk, /#include "gtk-sealed-gui-v07\.cpp"/);
   for (const workflow of [winWorkflow, macWorkflow, linuxWorkflow]) {
     assert.match(workflow, /payload-v7|payload v7/i);
     assert.match(workflow, /version[^\n]*7|v7/);
