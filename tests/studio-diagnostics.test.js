@@ -59,7 +59,7 @@ test('compiler and recent errors redact source echoes before reporting', async (
 });
 
 test('compiler errors include stable code and exact line/column without source text', async () => {
-  const source = 'create number score = 0\n  nonsense command\nshow score';
+  const source = 'if true:\n  nonsense command\nshow 1';
   let compilerError;
   try { parse(source); } catch (error) { compilerError = error; }
   const report = await buildStudioDiagnosticReport({ source, compilerError, entry: '/secret/path/main.patch' });
@@ -67,7 +67,7 @@ test('compiler errors include stable code and exact line/column without source t
   assert.deepEqual(report.compiler.error.location, { entry: 'main.patch', line: 2, column: 3 });
   const text = formatStudioDiagnosticReport(report);
   assert.match(text, /Compiler error: PATCH1001 main\.patch:2:3/);
-  assert.doesNotMatch(text, /create number score/);
+  assert.doesNotMatch(text, /if true/);
 });
 
 test('plain-text diagnostics remain useful without carrying source', async () => {
