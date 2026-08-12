@@ -3,6 +3,8 @@
   position: relative;
   flex: 0 0 auto;
   max-width: none !important;
+  margin-left: 12px;
+  margin-right: 12px;
 }
 
 .patch-window-resize-handle {
