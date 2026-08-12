@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15171c">
+  <meta name="description" content="Patch Studio help for projects, Designer forms, builds, recovery and diagnostics.">
+  <title>Help · Patch</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./site-navigation.css">
+  <link rel="stylesheet" href="./site-pages.css">
+</head>
+<body>
+<nav class="site-tabs" aria-label="Patch website">
+  <a href="./index.html">Studio</a>
+  <a href="./language.html">Language</a>
+  <a href="./docs.html">Documentation</a>
+  <a href="./help.html" aria-current="page">Help</a>
+</nav>
+<main class="content-page" data-patch-version="0.2.0-beta.33">
+  <section class="page-hero">
+    <div>
+      <p class="page-eyebrow">Patch Studio help</p>
+      <h1>Build something without fighting the IDE.</h1>
+      <p>Quick help for the workflows that matter most: editing, visual form design, project recovery and desktop builds.</p>
+    </div>
+    <pre class="page-code">Run   Ctrl/Cmd + Enter
+Build Ctrl/Cmd + Shift + Enter
+
+Designer: select, drag and resize
+Recovery: local snapshots</pre>
+  </section>
+
+  <section class="page-section">
+    <h2>Design a Window app</h2>
+    <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open the Window example.</p></div>
+    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox or Tabs controls.</p></div>
+    <div class="help-step"><b>3</b><p>Select a control to move it. Drag its resize grip or edit X/Y/W/H in Properties to change its geometry.</p></div>
+    <div class="help-step"><b>4</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest.</p></div>
+  </section>
+
+  <section class="page-section">
+    <h2>Projects and recovery</h2>
+    <p>Patch Studio autosaves locally. Project bundles also preserve the project type and build configuration. Use <strong>Export</strong> for a portable <code>.patchproject</code> file, <strong>Import</strong> to restore one, and <strong>Recovery</strong> to manage local snapshots.</p>
+    <h3>If an import or restore goes wrong</h3>
+    <p>The Studio protects the current state with a recovery snapshot before replacement. Corrupt canonical storage is quarantined rather than silently trusted.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>Build targets</h2>
+    <div class="doc-links">
+      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Desktop apps</strong><span>Ready/no-token Windows, macOS and Linux paths plus local and cloud build options.</span></a>
+    </div>
+    <p>GitHub tokens are only used by the optional cloud/AOT path and are not saved by Patch Studio. The normal ready-app paths do not require a token.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>Troubleshooting</h2>
+    <h3>The website still looks old</h3>
+    <p>Patch Studio uses content-addressed web revisions. A browser session from before that update mechanism may need one reload, or an installed PWA may need to be closed and reopened once. Future site revisions should then update automatically.</p>
+    <h3>A control disappeared below the form</h3>
+    <p>The Designer scroll area supports vertical and horizontal scrolling, and newly added controls are revealed automatically. Controls that extend beyond a form also grow the form to fit.</p>
+    <h3>I need support information</h3>
+    <p>Use <strong>Copy diagnostics</strong> or <strong>Report</strong>. The Studio report remains local and omits source code while including version, target, compiler status and privacy-redacted errors.</p>
+  </section>
+
+  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.33</span><a href="./docs.html">Open full documentation</a></footer>
+</main>
+</body>
+</html>
