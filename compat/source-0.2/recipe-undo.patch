@@ -1,0 +1,8 @@
+create number score = 1
+make bump(amount):
+  change score called bump:
+    add amount
+do bump(4)
+undo bump
+redo
+show score
