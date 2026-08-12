@@ -42,7 +42,7 @@ test('Designer reveals newly added Forms and controls and grows moved controls i
     'revealTarget',
     'scrollIntoView',
     'growFormForControl',
-    "control.type === 'radio'"
+    'formControlDefaultSize'
   ]) assert.ok(formsJs.includes(marker), marker);
 });
 
