@@ -66,6 +66,7 @@ test('Designer presents toolbox controls as a left icon rail on desktop', () => 
     '#designer #addButton::before',
     '#designer #addInput::before',
     '#designer #addCheckbox::before',
+    '#designer #addRadio::before',
     '#designer #addCombo::before',
     '#designer #addListbox::before',
     '#designer #addTabs::before'
