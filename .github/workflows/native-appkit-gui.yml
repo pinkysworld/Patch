@@ -7,30 +7,38 @@ on:
     paths:
       - src/native-gui-ir.js
       - src/native-result-dialog-overlay.js
+      - src/native-accessibility.js
       - src/appkit-gui.js
       - src/appkit-gui-v07.js
+      - src/appkit-gui-v08.js
       - scripts/build-native-appkit.js
+      - tests/native-accessibility.test.js
       - tests/appkit-gui.test.js
       - tests/menu-dialog-window.test.js
       - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
+      - docs/NATIVE_ACCESSIBILITY.md
       - .github/workflows/native-appkit-gui.yml
   push:
     branches: [main]
     paths:
       - src/native-gui-ir.js
       - src/native-result-dialog-overlay.js
+      - src/native-accessibility.js
       - src/appkit-gui.js
       - src/appkit-gui-v07.js
+      - src/appkit-gui-v08.js
       - scripts/build-native-appkit.js
+      - tests/native-accessibility.test.js
       - tests/appkit-gui.test.js
       - tests/menu-dialog-window.test.js
       - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
+      - docs/NATIVE_ACCESSIBILITY.md
       - .github/workflows/native-appkit-gui.yml
 
 concurrency:
@@ -54,14 +62,17 @@ jobs:
       - name: Check AppKit backend JavaScript
         run: |
           node --check src/native-result-dialog-overlay.js
+          node --check src/native-accessibility.js
           node --check src/appkit-gui.js
           node --check src/appkit-gui-v07.js
+          node --check src/appkit-gui-v08.js
           node --check scripts/build-native-appkit.js
+          node --check tests/native-accessibility.test.js
           node --check tests/appkit-gui.test.js
           node --check tests/menu-dialog-window.test.js
           node --check tests/result-dialog-window.test.js
-      - name: Run AppKit lowering tests
-        run: node --test tests/appkit-gui.test.js tests/menu-dialog-window.test.js tests/result-dialog-window.test.js
+      - name: Run AppKit lowering and accessibility tests
+        run: node --test tests/native-accessibility.test.js tests/appkit-gui.test.js tests/menu-dialog-window.test.js tests/result-dialog-window.test.js
       - name: Compile, link and bundle native Patch AppKit Forms application
         run: |
           mkdir -p dist-native-mac
@@ -76,7 +87,7 @@ jobs:
             set -- $pair
             dir=$1; name=$2
             test -x "$dir/$name.app/Contents/MacOS/$name"
-            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.7') process.exit(1)"
+            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.8') process.exit(1)"
             test ! -d "$dir/$name.app/Contents/Frameworks/Electron Framework.framework"
           done
           ! find dist-native-mac dist-native-menu-dialog dist-native-result-dialog -iname '*Electron*' -print -quit | grep -q .
