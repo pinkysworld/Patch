@@ -13,6 +13,7 @@ const appView = document.querySelector('#app');
 const toolbar = document.querySelector('.designer-toolbar');
 let activeForm = 0;
 let scheduled = false;
+let pendingReveal = null;
 
 installStylesheet();
 installCheckboxTool();
@@ -61,14 +62,14 @@ function installFormTools() {
   select.addEventListener('change', () => {
     activeForm = Number(select.value) || 0;
     syncFormTools();
-    canvas?.querySelectorAll('.patch-window')[activeForm]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    revealTarget(canvas?.querySelectorAll('.patch-window')[activeForm], 'smooth');
   });
   add.addEventListener('click', () => {
     try {
       const next = addDesignerWindow(code.value);
-      setSource(next);
       activeForm = Math.max(0, listDesignerWindows(next).length - 1);
-      scheduleApply();
+      pendingReveal = { kind: 'form', windowIndex: activeForm };
+      setSource(next);
     } catch (error) { showDesignerError(error); }
   });
   apply.addEventListener('click', applyFormProperties);
@@ -114,6 +115,11 @@ function interceptToolbox() {
       event.stopImmediatePropagation();
       try {
         const next = addDesignerControl(code.value, type, { windowIndex: activeForm });
+        const controls = listDesignerControls(next).filter(item => item.windowIndex === activeForm);
+        const added = controls[controls.length - 1];
+        pendingReveal = added
+          ? { kind: 'control', windowIndex: added.windowIndex, controlIndex: added.controlIndex }
+          : { kind: 'form', windowIndex: activeForm };
         setSource(next);
       } catch (error) { showDesignerError(error); }
     }, { capture: true });
@@ -150,12 +156,14 @@ function applySelectedGeometry() {
   if (!selector) return;
   const fields = geometryFields();
   try {
-    const next = updateDesignerControl(code.value, selector, {
+    let next = updateDesignerControl(code.value, selector, {
       x: fields.x.value,
       y: fields.y.value,
       width: fields.width.value,
       height: fields.height.value
     });
+    next = growFormForControl(next, selector);
+    pendingReveal = { kind: 'control', ...selector };
     setSource(next);
   } catch (error) { showDesignerError(error); }
 }
@@ -213,12 +221,14 @@ function beginPointerEdit(event, element, mode) {
     const width = parseInt(target.style.width, 10);
     const height = parseInt(target.style.height, 10);
     try {
-      const next = updateDesignerControl(code.value, selector, {
+      let next = updateDesignerControl(code.value, selector, {
         x: Number.isFinite(left) ? left : startLayout.x,
         y: Number.isFinite(top) ? top : startLayout.y,
         width: Number.isFinite(width) ? width : startLayout.width,
         height: Number.isFinite(height) ? height : startLayout.height
       });
+      next = growFormForControl(next, selector);
+      pendingReveal = { kind: 'control', ...selector };
       setSource(next);
     } catch (error) { showDesignerError(error); }
     element.releasePointerCapture?.(finishEvent.pointerId);
@@ -243,6 +253,7 @@ function scheduleApply() {
       applyLayouts(canvas, true);
       applyLayouts(appView, false);
       syncGeometryInspector();
+      revealPendingDesignerTarget();
     } catch { /* normal while source is temporarily invalid */ }
   });
 }
@@ -382,15 +393,46 @@ function effectiveLayout(control, index = control.controlIndex ?? 0) {
       ? { width: 220, height: 120 }
       : control.type === 'tabs'
         ? { width: 420, height: 240 }
-        : (control.type === 'input' || control.type === 'checkbox' || control.type === 'combo')
-          ? { width: 220, height: 36 }
-          : { width: 120, height: 36 };
+        : control.type === 'radio'
+          ? { width: 220, height: 84 }
+          : (control.type === 'input' || control.type === 'checkbox' || control.type === 'combo')
+            ? { width: 220, height: 36 }
+            : { width: 120, height: 36 };
   return {
     x: control.x ?? 24,
     y: control.y ?? (24 + index * 48),
     width: control.width ?? defaults.width,
     height: control.height ?? defaults.height
   };
+}
+
+function growFormForControl(source, selector) {
+  const control = listDesignerControls(source).find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
+  const form = listDesignerWindows(source).find(item => item.windowIndex === selector.windowIndex);
+  if (!control || !form) return source;
+  const layout = effectiveLayout(control, control.controlIndex);
+  const width = Math.max(form.width ?? 640, layout.x + layout.width + 24);
+  const height = Math.max(form.height ?? 420, layout.y + layout.height + 24);
+  if (width === (form.width ?? 640) && height === (form.height ?? 420)) return source;
+  return updateDesignerWindow(source, selector.windowIndex, { width, height });
+}
+
+function revealPendingDesignerTarget() {
+  if (!pendingReveal || !canvas) return;
+  let target = null;
+  if (pendingReveal.kind === 'control') {
+    target = canvas.querySelector(`.designer-control[data-window-index="${pendingReveal.windowIndex}"][data-control-index="${pendingReveal.controlIndex}"]`);
+  } else {
+    target = canvas.querySelectorAll('.patch-window')[pendingReveal.windowIndex] ?? null;
+  }
+  if (!target) return;
+  pendingReveal = null;
+  revealTarget(target, 'smooth');
+}
+
+function revealTarget(target, behavior = 'auto') {
+  if (!target) return;
+  target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior });
 }
 
 function selectorFromElement(element) {
