@@ -117,7 +117,7 @@ Project v1→v2 tests preserve source/name/kind and assert the documented defaul
 - [ ] FreeBSD native GUI backend
 - [x] Patch Studio keyboard/focus/responsive accessibility baseline
 - [x] generated standalone Window Web accessibility baseline
-- [x] generated native Window app accessibility audit
+- [ ] generated native Window app accessibility audit
 - [ ] manual assistive-technology/browser accessibility audit before a stable release
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
@@ -126,7 +126,7 @@ The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result
 
 Generated standalone Window Web apps add labelled Window regions, accessible names for otherwise-unlabelled Input/Combo/ListBox controls, grouped Radio semantics, polite output status, roving tab focus with Arrow/Home/End control, visible keyboard focus, reduced-motion handling and forced-colors focus treatment. The accessibility layer also renders Radio groups in standalone Window Web apps.
 
-Generated direct-native Window apps now have an automated platform-API accessibility audit baseline as well. AOT backend v0.8 derives stable accessible names for Input, ComboBox, ListBox and Tabs controls and adds Radio group context while preserving native visible labels on Button/Checkbox controls. Native smokes write and read those names through Microsoft Active Accessibility (`IAccPropServices` / `IAccessible`), AppKit accessibility labels and GTK3/ATK, and the final Win32/AppKit/GTK cross-platform matrix passed. This closes the automated native-app audit item, **not** a WCAG conformance claim. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing remains a separate open release gate.
+The **AOT half** of the native accessibility audit is complete. AOT backend v0.8 derives stable accessible names for Input, ComboBox, ListBox and Tabs controls and adds Radio group context while preserving native visible labels on Button/Checkbox controls. Native smokes write and read those names through Microsoft Active Accessibility (`IAccPropServices` / `IAccessible`), AppKit accessibility labels and GTK3/ATK, and the Win32/AppKit/GTK cross-platform matrix passed. The overall native-app audit stays open because the separate token-free sealed runtime v0.7 implementations do not yet carry the equivalent naming/readback layer. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing is an additional open release gate and no WCAG conformance claim is made.
 
 ## Release rule
 
