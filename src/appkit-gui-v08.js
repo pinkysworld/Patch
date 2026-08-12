@@ -20,7 +20,7 @@ export function emitAppKitGuiObjCpp(input) {
     'for (int i = 0; i < FORM_COUNT; ++i) if (!CreatePatchForm(i)) return 10 + i;\n    ApplyPatchAccessibility();\n    RefreshUI();',
     'AppKit accessibility application'
   );
-  return source;
+  return injectAccessibilitySmoke(source, controls);
 }
 
 function appKitAccessibilityHelpers(controls) {
@@ -39,6 +39,30 @@ function appKitAccessibilityHelpers(controls) {
     lines.push(`  if (gControls[${control.nativeIndex}]) [gControls[${control.nativeIndex}] setAccessibilityLabel:${objcLiteral(name)}];`);
   }
   return `static void ApplyPatchAccessibility() {\n${lines.join('\n') || '  // Standard AppKit control names need no Patch override.'}\n}\n`;
+}
+
+function injectAccessibilitySmoke(source, controls) {
+  const checks = [];
+  let code = 130;
+  for (const control of controls) {
+    if (!needsExplicitNativeAccessibleName(control)) continue;
+    if (control.type === 'radio') {
+      for (let optionIndex = 0; optionIndex < control.options.length; optionIndex += 1) {
+        const expected = nativeRadioItemAccessibleName(control, control.options[optionIndex]);
+        checks.push(`  if ([gRadioItems[${control.nativeIndex}] count] <= ${optionIndex} || ![[gRadioItems[${control.nativeIndex}] objectAtIndex:${optionIndex}].accessibilityLabel isEqualToString:${objcLiteral(expected)}]) return ${code++};`);
+      }
+      continue;
+    }
+    const expected = nativeAccessibleName(control);
+    if (!expected) continue;
+    checks.push(`  if (![[gControls[${control.nativeIndex}] accessibilityLabel] isEqualToString:${objcLiteral(expected)}]) return ${code++};`);
+  }
+  if (!checks.length) return source;
+  const start = source.indexOf('static int RunPatchSmoke() {');
+  if (start < 0) throw new NativeGuiError('Generated AppKit source is missing RunPatchSmoke for accessibility verification.');
+  const stop = source.indexOf('  [NSApp stop:nil];', start);
+  if (stop < 0) throw new NativeGuiError('Generated AppKit smoke has an unexpected shape for accessibility verification.');
+  return source.slice(0, stop) + checks.join('\n') + '\n' + source.slice(stop);
 }
 
 function replaceRequired(source, marker, replacement, label) {
