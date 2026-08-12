@@ -1,7 +1,7 @@
 import { diagnosticFromError } from './diagnostics.js';
 
 export const PATCH_STUDIO_DIAGNOSTICS_FORMAT = 'patch-studio-diagnostics';
-export const PATCH_STUDIO_DIAGNOSTICS_VERSION = 2;
+export const PATCH_STUDIO_DIAGNOSTICS_VERSION = 1;
 export const PATCH_STUDIO_DIAGNOSTICS_MAX_ERRORS = 10;
 export const PATCH_STUDIO_DIAGNOSTICS_MAX_MESSAGE = 1000;
 
