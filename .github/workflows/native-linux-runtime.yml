@@ -31,8 +31,6 @@ on:
       - tests/result-dialog-window.test.js
       - tests/studio-linux-native-gui.test.js
       - web/native-build.js
-      - scripts/build-site.js
-      - scripts/check-site.js
   push:
     branches: [main]
     paths:
@@ -63,8 +61,6 @@ on:
       - tests/result-dialog-window.test.js
       - tests/studio-linux-native-gui.test.js
       - web/native-build.js
-      - scripts/build-site.js
-      - scripts/check-site.js
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
