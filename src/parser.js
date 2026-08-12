@@ -99,7 +99,14 @@ export function parse(source) {
       return uiControl({control:'listbox',textExpr:null,options,id:m[2],line:row.line},ui.layout);
     }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
-    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^confirm\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) {
+      const parts=splitArgs(m[1]);
+      if(parts.length!==2)throw new PatchSyntaxError('A confirm dialog needs exactly a title and message, for example confirm "Delete?", "This cannot be undone." as confirm_delete.',row.line);
+      return {kind:'confirmDialog',titleExpr:parts[0],messageExpr:parts[1],id:m[2],line:row.line};
+    }
+    if ((m = row.text.match(/^open\s+file\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) return {kind:'openFileDialog',titleExpr:m[1],id:m[2],line:row.line};
+    if ((m = row.text.match(/^save\s+file\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) return {kind:'saveFileDialog',titleExpr:m[1],id:m[2],line:row.line};
     if ((m = row.text.match(/^open\s+([A-Za-z_]\w*)$/))) return {kind:'openForm',form:m[1],line:row.line};
     if ((m = row.text.match(/^close\s+([A-Za-z_]\w*)$/))) return {kind:'closeForm',form:m[1],line:row.line};
     if ((m = row.text.match(/^dialog\s+(.+)$/))) {
