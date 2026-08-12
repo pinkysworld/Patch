@@ -1,8 +1,9 @@
 const REVISION = '__PATCH_SITE_REV__';
-const CACHE = `patch-studio-${REVISION}`;
-// Migration marker only: activation removes caches from the former beta-specific family too.
-// This value is never used as the active cache identity.
-const LEGACY_CACHE_PREFIX = 'patch-studio-0.2-beta.32';
+const CACHE_PREFIX = 'patch-studio-';
+const CACHE = `${CACHE_PREFIX}${REVISION}`;
+// Known previous cache id retained only so migration remains explicit and auditable.
+// It is never used as the active cache identity.
+const LEGACY_CACHE_ID = 'patch-studio-0.2-beta.32-forms8-ux14-a11y1';
 const versioned = path => /\.(?:js|css|webmanifest|svg)$/.test(path) ? `${path}?v=${REVISION}` : path;
 const CORE = [
   './', './index.html', './style.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css', './playground.js', './forms-designer.js', './native-build.js', './project-lifecycle.js', './recovery-manager.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
@@ -19,7 +20,9 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys
+    .filter(key => key !== CACHE && (key.startsWith(CACHE_PREFIX) || key === LEGACY_CACHE_ID))
+    .map(key => caches.delete(key)))));
   self.clients.claim();
 });
 self.addEventListener('fetch', event => {
