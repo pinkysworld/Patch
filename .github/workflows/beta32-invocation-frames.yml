@@ -22,6 +22,7 @@ on:
       - src/transitive-runtime-certificate.js
       - scripts/generate-transitive-call-body-certificate.js
       - scripts/generate-transitive-runtime-certificate.js
+      - scripts/install-pinned-lean.sh
       - examples/formal-transitive-calls.patch
       - examples/formal-transitive-calls-repeated.patch
       - tests/direct-trace-validator.test.js
