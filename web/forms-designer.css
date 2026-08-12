@@ -254,6 +254,35 @@ html {
   pointer-events: none;
 }
 
+.patch-radio {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: auto;
+}
+.patch-radio label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.patch-radio input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--text);
+}
+.designer-canvas .patch-radio input[type="radio"] {
+  pointer-events: none;
+}
+
 .patch-window-body.patch-form-layout {
   position: relative;
   display: block;
