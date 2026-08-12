@@ -79,11 +79,15 @@ The versioned Studio store uses a pending-write key before promoting the canonic
 Optional GitHub Actions builds now have a 15-minute Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent as soon as the request-specific run appears. Retry uses the captured source/build snapshot and generates a fresh request id instead of silently rebuilding later editor contents or rerunning the same request. Tokens and retry snapshots remain in page memory only. Recommended browser-local/no-token builds are unchanged.
 
 ### Testing
-- [ ] parser/compiler fuzzing
+- [x] deterministic parser/compiler grammar fuzzing
 - [ ] property-based change/history/undo tests
-- [ ] differential interpreter ↔ Wasm ↔ C99 tests for every shared semantic subset
+- [x] differential interpreter ↔ direct-Wasm ↔ executable C99 tests for every currently documented shared numeric semantic subset
 - [ ] golden release artifact tests
 - [ ] upgrade/migration tests across project schema versions
+
+CI runs 500 deterministic generated valid programs plus 500 paired guaranteed-invalid programs. Valid cases reach the parser, compiler, direct-Wasm lowering/validation and independent C99 lowering; invalid cases must fail with the expected stable diagnostic family. The seed and failing source are printed for exact replay.
+
+The executable differential corpus compares interpreter output/state against direct Wasm, then compiles generated C99 with the host C compiler and compares native-process output against the interpreter. The corpus is coupled to the C99 backend's documented `metadata.supported` list, so adding a new shared capability without adding a differential case makes CI fail. This is deterministic grammar fuzzing and differential testing, not a claim of coverage-guided fuzzing or compiler correctness proof.
 
 ## P2 — polish and ecosystem
 
