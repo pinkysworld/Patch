@@ -17,7 +17,7 @@ export function emitWin32GuiCpp(input) {
   source = replaceRequired(
     source,
     '#pragma comment(lib, "comctl32.lib")',
-    '#pragma comment(lib, "comctl32.lib")\n#pragma comment(lib, "oleacc.lib")\n#pragma comment(lib, "ole32.lib")',
+    '#pragma comment(lib, "comctl32.lib")\n#pragma comment(lib, "oleacc.lib")\n#pragma comment(lib, "ole32.lib")\n#pragma comment(lib, "oleaut32.lib")',
     'Win32 library block'
   );
   source = replaceRequired(source, 'static void RefreshTabVisibility() {', `${win32AccessibilityHelpers(controls)}\nstatic void RefreshTabVisibility() {`, 'Win32 accessibility helper insertion');
@@ -39,6 +39,7 @@ export function emitWin32GuiCpp(input) {
     'if (form == 0) { ClearPatchAccessibleNames(); DestroyWindow(hwnd); } else ShowWindow(hwnd, SW_HIDE);',
     'Win32 accessibility cleanup on close'
   );
+  source = injectAccessibilitySmoke(source, controls);
   source = source.replace(/  DestroyWindow\(gForms\[(\d+)\]\);/g, '  ClearPatchAccessibleNames();\n  DestroyWindow(gForms[$1]);');
   return source;
 }
@@ -62,7 +63,31 @@ function win32AccessibilityHelpers(controls) {
     clear.push(`  ClearPatchAccessibleName(gControls[${control.nativeIndex}]);`);
   }
 
-  return `struct PatchComScope {\n  HRESULT result;\n  PatchComScope() : result(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)) {}\n  ~PatchComScope() { if (SUCCEEDED(result)) CoUninitialize(); }\n};\nstatic void SetPatchAccessibleName(HWND hwnd, const wchar_t *name) {\n  if (!hwnd || !name || !*name) return;\n  IAccPropServices *service = nullptr;\n  const HRESULT created = CoCreateInstance(CLSID_AccPropServices, nullptr, CLSCTX_SERVER, IID_IAccPropServices, reinterpret_cast<void **>(&service));\n  if (SUCCEEDED(created) && service) {\n    service->SetHwndPropStr(hwnd, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, name);\n    service->Release();\n  }\n}\nstatic void ClearPatchAccessibleName(HWND hwnd) {\n  if (!hwnd) return;\n  IAccPropServices *service = nullptr;\n  const HRESULT created = CoCreateInstance(CLSID_AccPropServices, nullptr, CLSCTX_SERVER, IID_IAccPropServices, reinterpret_cast<void **>(&service));\n  if (SUCCEEDED(created) && service) {\n    MSAAPROPID property = PROPID_ACC_NAME;\n    service->ClearHwndProps(hwnd, OBJID_CLIENT, CHILDID_SELF, &property, 1);\n    service->Release();\n  }\n}\nstatic void ApplyPatchAccessibility() {\n${apply.join('\n') || '  // Standard native control names need no Patch annotation.'}\n}\nstatic void ClearPatchAccessibleNames() {\n${clear.join('\n') || '  // No Patch accessibility annotations to clear.'}\n}\n`;
+  return `struct PatchComScope {\n  HRESULT result;\n  PatchComScope() : result(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)) {}\n  ~PatchComScope() { if (SUCCEEDED(result)) CoUninitialize(); }\n};\nstatic void SetPatchAccessibleName(HWND hwnd, const wchar_t *name) {\n  if (!hwnd || !name || !*name) return;\n  IAccPropServices *service = nullptr;\n  const HRESULT created = CoCreateInstance(CLSID_AccPropServices, nullptr, CLSCTX_SERVER, IID_IAccPropServices, reinterpret_cast<void **>(&service));\n  if (SUCCEEDED(created) && service) {\n    service->SetHwndPropStr(hwnd, OBJID_CLIENT, CHILDID_SELF, PROPID_ACC_NAME, name);\n    service->Release();\n  }\n}\nstatic void ClearPatchAccessibleName(HWND hwnd) {\n  if (!hwnd) return;\n  IAccPropServices *service = nullptr;\n  const HRESULT created = CoCreateInstance(CLSID_AccPropServices, nullptr, CLSCTX_SERVER, IID_IAccPropServices, reinterpret_cast<void **>(&service));\n  if (SUCCEEDED(created) && service) {\n    MSAAPROPID property = PROPID_ACC_NAME;\n    service->ClearHwndProps(hwnd, OBJID_CLIENT, CHILDID_SELF, &property, 1);\n    service->Release();\n  }\n}\nstatic std::wstring PatchAccessibleName(HWND hwnd) {\n  if (!hwnd) return L\"\";\n  IAccessible *accessible = nullptr;\n  const HRESULT opened = AccessibleObjectFromWindow(hwnd, OBJID_CLIENT, IID_IAccessible, reinterpret_cast<void **>(&accessible));\n  if (FAILED(opened) || !accessible) return L\"\";\n  VARIANT child{}; child.vt = VT_I4; child.lVal = CHILDID_SELF;\n  BSTR value = nullptr;\n  const HRESULT read = accessible->get_accName(child, &value);\n  std::wstring result = SUCCEEDED(read) && value ? std::wstring(value) : std::wstring();\n  if (value) SysFreeString(value);\n  accessible->Release();\n  return result;\n}\nstatic void ApplyPatchAccessibility() {\n${apply.join('\n') || '  // Standard native control names need no Patch annotation.'}\n}\nstatic void ClearPatchAccessibleNames() {\n${clear.join('\n') || '  // No Patch accessibility annotations to clear.'}\n}\n`;
+}
+
+function injectAccessibilitySmoke(source, controls) {
+  const checks = [];
+  let code = 130;
+  for (const control of controls) {
+    if (!needsExplicitNativeAccessibleName(control)) continue;
+    if (control.type === 'radio') {
+      for (let optionIndex = 0; optionIndex < control.options.length; optionIndex += 1) {
+        const expected = nativeRadioItemAccessibleName(control, control.options[optionIndex]);
+        checks.push(`  if (gRadioItems[${control.nativeIndex}].size() <= ${optionIndex} || PatchAccessibleName(gRadioItems[${control.nativeIndex}][${optionIndex}]) != L${cppString(expected)}) return ${code++};`);
+      }
+      continue;
+    }
+    const expected = nativeAccessibleName(control);
+    if (!expected) continue;
+    checks.push(`  if (PatchAccessibleName(gControls[${control.nativeIndex}]) != L${cppString(expected)}) return ${code++};`);
+  }
+  if (!checks.length) return source;
+  const start = source.indexOf('static int RunPatchSmoke() {');
+  if (start < 0) throw new NativeGuiError('Generated Win32 source is missing RunPatchSmoke for accessibility verification.');
+  const destroy = source.indexOf('  DestroyWindow(gForms[', start);
+  if (destroy < 0) throw new NativeGuiError('Generated Win32 smoke has an unexpected shape for accessibility verification.');
+  return source.slice(0, destroy) + checks.join('\n') + '\n' + source.slice(destroy);
 }
 
 function replaceRequired(source, marker, replacement, label) {
