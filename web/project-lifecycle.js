@@ -13,9 +13,10 @@ import {
 const CURRENT_KEY = 'patchStudio.project.v1';
 const PENDING_KEY = 'patchStudio.project.pending.v1';
 const RECOVERY_KEY = 'patchStudio.recovery.v1';
+const CORRUPT_KEY = 'patchStudio.project.corrupt.v1';
 const LEGACY_KEY = 'patchStudio.project';
 const RECOVERY_INTERVAL_MS = 60_000;
-const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_SOURCE_BYTES + 64 * 1024;
+const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_SOURCE_BYTES * 8;
 
 installStylesheet();
 
@@ -28,6 +29,7 @@ const importButton = document.querySelector('#importProject');
 const recoverButton = document.querySelector('#recoverProject');
 const importFile = document.querySelector('#importProjectFile');
 let lastRecoveryAt = Date.now();
+let applyingBundle = false;
 
 bootstrapProjectStorage();
 installProjectActions();
@@ -35,28 +37,49 @@ updateRecoveryControl();
 
 function bootstrapProjectStorage() {
   try {
-    const pending = readBundle(PENDING_KEY);
-    if (pending) {
-      writeCanonicalBundle(pending);
+    const warnings = [];
+    const pending = readBundleAttempt(PENDING_KEY);
+    if (pending.bundle) {
+      writeCanonicalBundle(pending.bundle);
       localStorage.removeItem(PENDING_KEY);
-      writeLegacyCompatibility(pending);
+      writeLegacyCompatibility(pending.bundle);
+      setStatus('Recovered interrupted local save');
       return;
     }
+    if (pending.error) {
+      quarantineCorruptStore(PENDING_KEY, pending.raw);
+      warnings.push(`Pending save was invalid: ${pending.error.message}`);
+    }
 
-    const current = readBundle(CURRENT_KEY);
-    if (current) {
-      writeLegacyCompatibility(current);
+    const current = readBundleAttempt(CURRENT_KEY);
+    if (current.bundle) {
+      writeLegacyCompatibility(current.bundle);
+      if (warnings.length) setStatus('Saved project restored', warnings.join(' '));
       return;
+    }
+    if (current.error) {
+      quarantineCorruptStore(CURRENT_KEY, current.raw);
+      warnings.push(`Canonical project was invalid: ${current.error.message}`);
     }
 
     const legacyRaw = localStorage.getItem(LEGACY_KEY);
-    if (!legacyRaw) return;
-    const migrated = parseStoredStudioProject(legacyRaw);
-    if (!migrated) return;
-    writeCanonicalBundle(migrated);
-    writeLegacyCompatibility(migrated);
+    if (legacyRaw) {
+      try {
+        const migrated = parseStoredStudioProject(legacyRaw);
+        if (migrated) {
+          writeCanonicalBundle(migrated);
+          writeLegacyCompatibility(migrated);
+          setStatus(warnings.length ? 'Recovered legacy local project' : 'Migrated local project', warnings.join(' '));
+          return;
+        }
+      } catch (error) {
+        warnings.push(`Legacy project was invalid: ${error.message}`);
+      }
+    }
+
+    if (warnings.length) setStatus('Stored project needs recovery', warnings.join(' '));
   } catch (error) {
-    setStatus('Stored project needs recovery', error?.message);
+    setStatus('Local project storage unavailable', error?.message);
   }
 }
 
@@ -67,8 +90,12 @@ function installProjectActions() {
   recoverButton?.addEventListener('click', recoverLatestProject);
 
   for (const input of [code, projectName, projectKind]) {
-    input?.addEventListener('input', () => persistDomProject({ snapshot: 'interval' }));
-    input?.addEventListener('change', () => persistDomProject({ snapshot: 'interval' }));
+    input?.addEventListener('input', () => {
+      if (!applyingBundle) persistDomProject({ snapshot: 'interval' });
+    });
+    input?.addEventListener('change', () => {
+      if (!applyingBundle) persistDomProject({ snapshot: 'interval' });
+    });
   }
 }
 
@@ -90,7 +117,7 @@ async function importProjectFile() {
   try {
     if (file.size > MAX_IMPORT_BYTES) throw new Error(`Project file is too large. Maximum import size is ${MAX_IMPORT_BYTES} bytes.`);
     const bundle = parseStudioProjectBundle(await file.text());
-    persistDomProject({ snapshot: 'force' });
+    protectCurrentProject();
     applyBundleToDom(bundle);
     persistBundle(bundle, { snapshot: 'none' });
     setStatus(`Imported ${file.name}`);
@@ -108,7 +135,7 @@ function recoverLatestProject() {
     if (!latest) return;
     const when = formatTime(latest.savedAt);
     if (!window.confirm(`Recover the Patch Studio snapshot from ${when}? Your current project will be kept as a recovery snapshot first.`)) return;
-    persistDomProject({ snapshot: 'force' });
+    protectCurrentProject();
     applyBundleToDom(latest.project);
     persistBundle(latest.project, { snapshot: 'none' });
     setStatus(`Recovered snapshot from ${when}`);
@@ -117,13 +144,23 @@ function recoverLatestProject() {
   }
 }
 
+function protectCurrentProject() {
+  appendRecovery(bundleFromDom());
+  lastRecoveryAt = Date.now();
+}
+
 function applyBundleToDom(bundle) {
   const state = studioStateFromBundle(bundle);
-  projectName.value = state.name;
-  projectKind.value = state.kind;
-  code.value = state.code;
-  code.dispatchEvent(new Event('input', { bubbles: true }));
-  code.dispatchEvent(new Event('change', { bubbles: true }));
+  applyingBundle = true;
+  try {
+    projectName.value = state.name;
+    projectKind.value = state.kind;
+    code.value = state.code;
+    code.dispatchEvent(new Event('input', { bubbles: true }));
+    code.dispatchEvent(new Event('change', { bubbles: true }));
+  } finally {
+    applyingBundle = false;
+  }
 }
 
 function persistDomProject(options = {}) {
@@ -136,7 +173,9 @@ function persistDomProject(options = {}) {
 
 function persistBundle(bundle, options = {}) {
   const normalized = parseStudioProjectBundle(serializeStudioProjectBundle(bundle));
-  const previous = readBundle(CURRENT_KEY);
+  const previousAttempt = readBundleAttempt(CURRENT_KEY);
+  if (previousAttempt.error) quarantineCorruptStore(CURRENT_KEY, previousAttempt.raw);
+  const previous = previousAttempt.bundle;
   const mode = options.snapshot ?? 'interval';
   if (previous && !sameBundle(previous, normalized)) {
     const due = Date.now() - lastRecoveryAt >= RECOVERY_INTERVAL_MS;
@@ -171,9 +210,23 @@ function bundleFromDom() {
   });
 }
 
-function readBundle(key) {
+function readBundleAttempt(key) {
   const raw = localStorage.getItem(key);
-  return raw ? parseStoredStudioProject(raw) : null;
+  if (!raw) return { bundle: null, error: null, raw: null };
+  try {
+    return { bundle: parseStoredStudioProject(raw), error: null, raw };
+  } catch (error) {
+    return { bundle: null, error, raw };
+  }
+}
+
+function quarantineCorruptStore(key, raw) {
+  if (raw) {
+    try {
+      localStorage.setItem(CORRUPT_KEY, JSON.stringify({ key, capturedAt: new Date().toISOString(), raw }));
+    } catch { /* best-effort preservation only */ }
+  }
+  localStorage.removeItem(key);
 }
 
 function appendRecovery(bundle) {
