@@ -77,7 +77,8 @@ function injectSmoke(source, plan) {
   if (!checks.length) return source;
   const start = source.indexOf('static int RunPatchSmoke() {');
   if (start < 0) throw new NativeGuiError('Generated GTK source is missing RunPatchSmoke.');
-  const end = source.indexOf('  return 0;', start);
+  let end = source.indexOf('  gtk_widget_destroy(gForms[', start);
+  if (end < 0) end = source.indexOf('  return 0;', start);
   if (end < 0) throw new NativeGuiError('Generated GTK smoke has an unexpected shape.');
   return source.slice(0, end) + checks.join('\n') + '\n' + source.slice(end);
 }
