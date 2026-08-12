@@ -48,6 +48,8 @@ Parser errors already carry exact source line numbers. The normalized diagnostic
 
 Backend lowerers also report original Patch lines for a growing set of fail-closed errors. Diagnostic normalization recognizes the deliberately narrow `at line N`, `at Patch line N` and `at source line N` forms and maps those back to the original entry file. This immediately preserves source locations for existing direct-Wasm failures and the C99 failures that share the direct-Wasm conservative support validator.
 
+For C99-only errors that do not yet carry a line field, `backend-diagnostic-context` may infer a source line only from a narrowly recognized C99 error class and only when the original Patch source has **exactly one** matching location. Current mappings cover nested recipe definitions, unknown recipe calls, return-valued recipes, non-literal repeat counts and field-change context. If two Patch lines could match, the result stays `location:null` rather than guessing.
+
 The normalizer intentionally does **not** interpret arbitrary compiler/toolchain locations such as `generated.c:17:9` as Patch locations. Final C/C++/Rust/PE/Mach-O/ELF packaging errors still need an explicit source map before they can safely point back to Patch code.
 
 For example, a direct-Wasm build failure that already says `create text at line 3 ...` becomes a `PATCH2900` diagnostic with `main.patch:3:<indent-column>` in CLI `build --json` output instead of losing its source position.
