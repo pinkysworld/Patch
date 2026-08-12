@@ -26,21 +26,30 @@ export function redactDiagnosticText(value, maxLength = PATCH_STUDIO_DIAGNOSTICS
   return text.length <= limit ? text : `${text.slice(0, Math.max(0, limit - 1))}…`;
 }
 
-export function normalizeStudioDiagnosticError(error, type = 'studio') {
+export function redactSourceEchoes(value, source) {
+  let text = String(value ?? '');
+  const lines = [...new Set(String(source ?? '').split(/\r?\n/).map(line => line.trim()).filter(line => line.length >= 8))]
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 200);
+  for (const line of lines) text = text.split(line).join('[redacted-source]');
+  return text;
+}
+
+export function normalizeStudioDiagnosticError(error, type = 'studio', source = '') {
   if (!error) return null;
-  const source = typeof error === 'object' ? error : { message: String(error) };
+  const item = typeof error === 'object' ? error : { message: String(error) };
   return {
     type: redactDiagnosticText(type, 80),
-    name: redactDiagnosticText(source.name ?? 'Error', 80),
-    code: source.code === undefined || source.code === null ? null : redactDiagnosticText(source.code, 120),
-    message: redactDiagnosticText(source.message ?? source, PATCH_STUDIO_DIAGNOSTICS_MAX_MESSAGE)
+    name: redactDiagnosticText(item.name ?? 'Error', 80),
+    code: item.code === undefined || item.code === null ? null : redactDiagnosticText(item.code, 120),
+    message: redactDiagnosticText(redactSourceEchoes(item.message ?? item, source), PATCH_STUDIO_DIAGNOSTICS_MAX_MESSAGE)
   };
 }
 
-export function normalizeRecentStudioErrors(errors) {
+export function normalizeRecentStudioErrors(errors, source = '') {
   const out = [];
   for (const item of Array.isArray(errors) ? errors.slice(-PATCH_STUDIO_DIAGNOSTICS_MAX_ERRORS) : []) {
-    const error = normalizeStudioDiagnosticError(item?.error ?? item?.message ?? item, item?.type ?? 'studio');
+    const error = normalizeStudioDiagnosticError(item?.error ?? item?.message ?? item, item?.type ?? 'studio', source);
     if (!error) continue;
     out.push({
       time: normalizeTime(item?.time),
@@ -54,7 +63,7 @@ export async function buildStudioDiagnosticReport(input = {}) {
   const source = String(input.source ?? '');
   const sourceBytes = encoder.encode(source).length;
   const sourceSha256 = await sha256Text(source);
-  const compilerError = normalizeStudioDiagnosticError(input.compilerError, 'compiler');
+  const compilerError = normalizeStudioDiagnosticError(input.compilerError, 'compiler', source);
   const environment = input.environment ?? {};
 
   return {
@@ -81,11 +90,12 @@ export async function buildStudioDiagnosticReport(input = {}) {
       standalone: Boolean(environment.standalone),
       serviceWorkerControlled: Boolean(environment.serviceWorkerControlled)
     },
-    recentErrors: normalizeRecentStudioErrors(input.recentErrors),
+    recentErrors: normalizeRecentStudioErrors(input.recentErrors, source),
     privacy: {
       sourceIncluded: false,
       uploaded: false,
-      secretsRedacted: true
+      secretsRedacted: true,
+      sourceEchoesRedacted: true
     }
   };
 }
@@ -115,7 +125,7 @@ export function formatStudioDiagnosticReport(report) {
     lines.push('', 'Recent Studio errors:');
     for (const error of report.recentErrors) lines.push(`- ${error.time} [${error.type}] ${error.message}`);
   }
-  lines.push('', 'Privacy: source omitted, secrets redacted, nothing uploaded.');
+  lines.push('', 'Privacy: source omitted, source echoes and secrets redacted, nothing uploaded.');
   return lines.join('\n');
 }
 
