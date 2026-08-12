@@ -8,32 +8,50 @@ const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
 if (!beta) throw new Error(`Unexpected project version ${pkg.version}`);
 
 const required = [
-  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/forms-designer.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
+  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/forms-designer.css','_site/project-lifecycle.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/project-lifecycle.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
   '_site/src/interpreter.js','_site/src/parser.js','_site/src/expression.js','_site/src/change.js','_site/src/change-analysis.js','_site/src/range-analysis.js',
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
-  '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js','_site/src/form-layout.js',
+  '_site/src/c99.js','_site/src/webapp.js','_site/src/window-webapp.js','_site/src/window-build.js','_site/src/window-events.js','_site/src/designer.js','_site/src/form-layout.js','_site/src/studio-project.js',
   '_site/src/window-compiled.js','_site/src/native-gui-ir.js','_site/src/sealed-native-gui.js','_site/src/sealed-native-package.js','_site/src/prebuilt-native.js','_site/src/prebuilt-window.js','_site/src/local-native-kit.js',
   '_site/src/concrete-call-witness.js','_site/src/concrete-call-certificate.js','_site/src/concrete-call-body.js','_site/src/concrete-call-body-certificate.js'
 ];
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
 const html = read('_site/index.html');
-requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./playground.js','./forms-designer.js','./icon.svg']);
+requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./project-lifecycle.js','./playground.js','./forms-designer.js','./icon.svg']);
 for (const id of [
   'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addRadio','addCombo','addListbox','addTabs',
-  'projectName','projectKind','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
+  'projectName','projectKind','exportProject','importProject','recoverProject','importProjectFile','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, 'Change IR 0.10',
   'Beta.32 invocation-frame direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
   'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'invocation-frame',
-  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'value="tabsWindow"'
+  'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'value="tabsWindow"',
+  'Versioned project bundles', 'local recovery snapshots'
 ]);
 for (const option of [
   'value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"',
   'value="wasm-direct"','value="wasm-bootstrap"'
 ]) requireText('build selector', html, option);
+
+const projectLifecycle = read('_site/project-lifecycle.js');
+rejectOutsideSiteImport('project lifecycle', projectLifecycle);
+requireAll('project lifecycle', projectLifecycle, [
+  './src/studio-project.js','patchStudio.project.v1','patchStudio.project.pending.v1','patchStudio.recovery.v1','patchStudio.project',
+  'bootstrapProjectStorage','persistBundle','addRecoverySnapshot','serializeRecoverySnapshots','parseStudioProjectBundle',
+  'Exported ${filename}','Imported ${file.name}','Recover the Patch Studio snapshot','project-lifecycle.css','safeFileName'
+]);
+const projectCss = read('_site/project-lifecycle.css');
+requireAll('project lifecycle stylesheet', projectCss, ['.project-actions','#saveState','button:disabled','@media (max-width: 720px)']);
+const studioProject = read('_site/src/studio-project.js');
+requireAll('Studio project schema', studioProject, [
+  "PATCH_STUDIO_PROJECT_FORMAT = 'patch-studio-project'", 'PATCH_STUDIO_PROJECT_VERSION = 1',
+  "PATCH_STUDIO_RECOVERY_FORMAT = 'patch-studio-recovery'", 'PATCH_STUDIO_RECOVERY_VERSION = 1',
+  'buildStudioProjectBundle','validateStudioProjectBundle','parseStudioProjectBundle','parseStoredStudioProject',
+  'createRecoverySnapshot','addRecoverySnapshot','STUDIO_PROJECT_FUTURE_VERSION','main.patch'
+]);
 
 const playground = read('_site/playground.js');
 rejectOutsideSiteImport('playground', playground);
@@ -152,7 +170,7 @@ requireAll('compiler assurance and UI lifecycle modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms8-ux10`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms8-ux11-project1`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./project-lifecycle.js'", "'./project-lifecycle.css'", "'./src/studio-project.js'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 

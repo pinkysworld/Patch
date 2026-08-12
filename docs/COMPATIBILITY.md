@@ -38,9 +38,17 @@ Successful native compilation or a matching runtime version does not imply code 
 
 ## Patch Studio projects
 
-Patch Studio currently stores editor/project state locally, but a stable versioned project import/export bundle has not yet been declared. Until that schema exists, local Studio storage must not be treated as a long-term archival interchange format.
+Patch Studio now defines the `patch-studio-project` bundle format. Version `1` contains project metadata plus exactly one `main.patch` source file and is exported with the `.patchproject` extension.
 
-The production-readiness roadmap requires a versioned project bundle plus migrations before this becomes a compatibility promise.
+Project compatibility follows fail-closed rules:
+
+- Studio validates the declared format and exact schema version before replacing editor state;
+- unsupported future project versions are rejected rather than guessed;
+- bundle paths are validated and traversal/duplicate/missing-entry layouts are rejected;
+- the previous unversioned browser-storage shape is migrated into project bundle v1;
+- a future v2 or later bundle must add an explicit migration before older files are rewritten into the newer schema.
+
+Browser-local recovery snapshots are operational state, not a portable interchange format. Important projects should be exported as `.patchproject` files. The exact v1 contract and recovery behavior are documented in [STUDIO_PROJECTS.md](STUDIO_PROJECTS.md).
 
 ## Release channels
 

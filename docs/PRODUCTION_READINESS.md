@@ -16,11 +16,13 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 
 ### Compatibility and project lifecycle
 - [x] document pre-1.0 compatibility policy
-- [ ] versioned Patch Studio project bundle format
-- [ ] project import/export
+- [x] versioned Patch Studio project bundle format
+- [x] project import/export
 - [ ] migrations for old project bundle schema versions
-- [ ] explicit refusal for unsupported future schema versions
+- [x] explicit refusal for unsupported future schema versions
 - [ ] source-language compatibility regression corpus
+
+Patch Studio project bundle v1 is intentionally a single-file `main.patch` project. The Studio also migrates the earlier unversioned local-storage state into v1 automatically. The unchecked migration item above is reserved for real bundle-version migrations once a v2 or later schema exists.
 
 ### Diagnostics and supportability
 - [x] `patch doctor` structured diagnostics core
@@ -57,11 +59,13 @@ Ready Windows, macOS and Linux application downloads can already be consumed wit
 - [ ] project-level configuration instead of target settings scattered through UI state
 
 ### Resilience
-- [ ] atomic Studio saves and recovery snapshots
-- [ ] corrupted-project detection
-- [ ] rollback to last known-good project snapshot
+- [x] atomic Studio saves and recovery snapshots
+- [x] corrupted-project detection
+- [x] rollback to last known-good project snapshot
 - [ ] build cancellation and timeout UX
 - [ ] retry semantics for remote builds without duplicate artifacts
+
+The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and recovery take an immediate protective snapshot before replacing the current project.
 
 ### Testing
 - [ ] parser/compiler fuzzing
