@@ -11,6 +11,8 @@ const CONTROL_DEFAULTS = {
   listbox: { width: 220, height: 120 },
   tabs: { width: 420, height: 240 }
 };
+const CONTROL_MARGIN = 24;
+const CONTROL_GAP = 12;
 
 export function addDesignerWindow(source, options = {}) {
   const lines = normalizeLines(source);
@@ -94,9 +96,10 @@ export function addDesignerControl(source, type, options = {}) {
   }
 
   const existing = listDesignerControls(normalized).filter(item => item.windowIndex === requestedWindow);
+  const layout = nextControlLayout(existing, type);
+  growWindowToFit(lines, targetWindow, layout);
+
   if (type === 'tabs') {
-    const defaults = CONTROL_DEFAULTS.tabs;
-    const layout = { x: 24, y: 24 + (existing.length * 48), width: defaults.width, height: defaults.height };
     const id = nextId(lines, 'tabs');
     lines.splice(insertAt, 0,
       `${childIndent}${formatControl('tabs', id, null, layout)}`,
@@ -108,7 +111,7 @@ export function addDesignerControl(source, type, options = {}) {
     return tidy(lines.join('\n'));
   }
 
-  const control = makeControl(type, lines, existing.length);
+  const control = makeControl(type, lines, layout);
   lines.splice(insertAt, 0, `${childIndent}${control}`);
   return tidy(lines.join('\n'));
 }
@@ -237,11 +240,36 @@ function normalizeControlLayout(control, changes) {
   const existing = control.x !== null || control.y !== null || control.width !== null || control.height !== null;
   if (!touched && !existing) return null;
   return {
-    x: coordinate(Object.hasOwn(changes, 'x') ? changes.x : (control.x ?? 24), 'x'),
-    y: coordinate(Object.hasOwn(changes, 'y') ? changes.y : (control.y ?? 24), 'y'),
+    x: coordinate(Object.hasOwn(changes, 'x') ? changes.x : (control.x ?? CONTROL_MARGIN), 'x'),
+    y: coordinate(Object.hasOwn(changes, 'y') ? changes.y : (control.y ?? CONTROL_MARGIN), 'y'),
     width: controlDimension(Object.hasOwn(changes, 'width') ? changes.width : (control.width ?? defaults.width), 'width'),
     height: controlDimension(Object.hasOwn(changes, 'height') ? changes.height : (control.height ?? defaults.height), 'height')
   };
+}
+
+function nextControlLayout(existing, type) {
+  const defaults = CONTROL_DEFAULTS[type];
+  if (!defaults) throw new Error(`Designer cannot add '${type}' yet.`);
+  let y = CONTROL_MARGIN;
+  for (const [index, control] of existing.entries()) {
+    const currentDefaults = CONTROL_DEFAULTS[control.type] ?? { width: 120, height: 36 };
+    const currentY = control.y ?? (CONTROL_MARGIN + index * 48);
+    const currentHeight = control.height ?? currentDefaults.height;
+    y = Math.max(y, currentY + currentHeight + CONTROL_GAP);
+  }
+  return { x: CONTROL_MARGIN, y, width: defaults.width, height: defaults.height };
+}
+
+function growWindowToFit(lines, window, layout) {
+  const currentHeight = window.height ?? DEFAULT_WINDOW.height;
+  const requiredHeight = layout.y + layout.height + CONTROL_MARGIN;
+  if (requiredHeight <= currentHeight) return;
+  const lineIndex = window.line - 1;
+  if (lineIndex < 0 || lineIndex >= lines.length) throw new Error('Designer window selection no longer matches Patch source.');
+  const indent = indentOf(lines[lineIndex]);
+  const width = window.width ?? DEFAULT_WINDOW.width;
+  const idPart = window.id ? ` as ${window.id}` : '';
+  lines[lineIndex] = `${indent}window ${window.titleExpr}${idPart} size ${width}, ${requiredHeight}:`;
 }
 
 function coordinate(value, name) {
@@ -298,10 +326,8 @@ function removeEventBlocks(lines, id) {
   }
 }
 
-function makeControl(type, lines, index) {
-  const defaults = CONTROL_DEFAULTS[type];
-  if (!defaults) throw new Error(`Designer cannot add '${type}' yet.`);
-  const layout = { x: 24, y: 24 + (index * 48), width: defaults.width, height: defaults.height };
+function makeControl(type, lines, layout) {
+  if (!CONTROL_DEFAULTS[type]) throw new Error(`Designer cannot add '${type}' yet.`);
   if (type === 'text') return formatControl(type, null, '"Text"', layout);
   if (type === 'button') return formatControl(type, nextId(lines, 'button'), '"Button"', layout);
   if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
