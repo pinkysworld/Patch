@@ -1,4 +1,4 @@
-import { buildFormLayoutManifest } from './form-layout.js';
+import { buildFormLayoutManifest, formControlDefaultLayout } from './form-layout.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 
 export const PATCH_NATIVE_GUI_IR_FORMAT = 'patch-native-gui-ir';
@@ -573,30 +573,9 @@ function requireTextLiteral(expr, line, label) {
 }
 
 function defaultLayout(type, index) {
-  const sizes = {
-    text: [200, 30],
-    button: [120, 36],
-    input: [220, 36],
-    checkbox: [220, 36],
-    radio: [220, 84],
-    combo: [220, 36],
-    listbox: [220, 120],
-    tabs: [420, 240]
-  };
-  const [width, height] = sizes[type] ?? [120, 36];
-  return { x: 24, y: 24 + index * 48, width, height };
+  return formControlDefaultLayout(type, index);
 }
 
 function defaultTabPageLayout(type, index) {
-  const sizes = {
-    text: [200, 30],
-    button: [120, 36],
-    input: [220, 36],
-    checkbox: [220, 36],
-    radio: [220, 84],
-    combo: [220, 36],
-    listbox: [220, 120]
-  };
-  const [width, height] = sizes[type] ?? [120, 36];
-  return { x: 12, y: 12 + index * 48, width, height };
+  return formControlDefaultLayout(type, index, { x: 12, yStart: 12, yStep: 48 });
 }
