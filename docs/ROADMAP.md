@@ -119,12 +119,12 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] direct-native AOT Win32/AppKit/GTK backends for the Native GUI IR 0.7 surface
 - [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
 - [x] sealed native GUI payload **v7** with result-dialog actions/events
-- [x] token-free sealed native Win32 runtime `native-win32-runtime-v0.7`
-- [x] token-free sealed native GTK3 runtime `native-linux-runtime-v0.7`
-- [x] token-free sealed native AppKit runtime `native-macos-runtime-v0.7`
+- [x] token-free sealed native Win32 runtime `native-win32-runtime-v0.8`
+- [x] token-free sealed native GTK3 runtime `native-linux-runtime-v0.8`
+- [x] token-free sealed native AppKit runtime `native-macos-runtime-v0.8`
+- [x] sealed native runtime accessibility parity with AOT backend 0.8
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
-- [ ] sealed native runtime accessibility parity with AOT backend 0.8
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
@@ -132,6 +132,8 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] fresh remote native build service without a user-supplied GitHub token
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
+
+The v0.8 sealed-runtime item remains subject to the same exact-head release gate as every checked roadmap item: Windows/macOS/Linux runtime workflows must compile the runtime, seal the GUI corpus, execute semantic plus accessibility readback smoke checks and retain payload v7 before the branch is merged.
 
 ## Highest-value remaining research work
 
@@ -178,5 +180,5 @@ All current input/selection/result events expose transient values only. Persiste
 13. Form lifecycle must stay simple and transient: no hidden persistent visibility variable and no framework-style Form object boilerplate.
 14. Unsupported native controls and containers fail closed during Native GUI IR preflight rather than being dropped or triggering an implicit Electron fallback.
 15. Tabs page selection is transient renderer/native-toolkit state unless a future explicit language contract deliberately exposes it.
-16. Backend, Native GUI IR and sealed payload versions are independent contracts; an implementation-only backend change must not silently bump semantic/payload formats.
+16. Backend, Native GUI IR and sealed payload versions are independent contracts; an implementation-only backend/runtime change must not silently bump semantic/payload formats.
 17. Automated accessibility smoke evidence does not substitute for manual assistive-technology testing or imply WCAG conformance.
