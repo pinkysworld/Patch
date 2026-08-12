@@ -26,7 +26,7 @@ for (const id of [
 ]) requireText('index UI', html, `id="${id}"`);
 requireAll('index accessibility contract', html, [
   'class="skip-link" href="#code"','role="tablist" aria-label="Result views"','role="tab" data-tab="designer"','aria-controls="designer"','role="tabpanel" aria-labelledby="tabDesigner"',
-  'aria-keyshortcuts="Control+Enter Meta+Enter"','aria-keyshortcuts="Control+Shift+B Meta+Shift+B"','role="status" aria-live="polite"','aria-labelledby="editorTitle"'
+  'aria-keyshortcuts="Control+Enter Meta+Enter"','aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter"','role="status" aria-live="polite"','aria-labelledby="editorTitle"','tabindex="0"'
 ]);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, `data-patch-version="${pkg.version}"`, 'Change IR 0.10',
@@ -44,11 +44,11 @@ const accessibility = read('_site/studio-accessibility.js');
 rejectOutsideSiteImport('Studio accessibility', accessibility);
 requireAll('Studio accessibility behavior', accessibility, [
   'skipToEditor','resultTabs',"event.key === 'ArrowRight'", "event.key === 'ArrowLeft'", "event.key === 'Home'", "event.key === 'End'",'next.focus()','next.click()','syncResultTabs()',
-  'event.ctrlKey || event.metaKey',"event.key === 'Enter'","event.shiftKey && event.key.toLowerCase() === 'b'",'hasOpenDialog()','attributeFilter: [\'class\']'
+  'event.ctrlKey || event.metaKey',"event.key !== 'Enter'",'if (event.shiftKey) buildButton?.click()','else runButton?.click()','hasOpenDialog()','attributeFilter: [\'class\']'
 ]);
 const accessibilityCss = read('_site/studio-accessibility.css');
 requireAll('Studio accessibility stylesheet', accessibilityCss, [
-  '.skip-link',':focus-visible','@media (pointer: coarse)','min-height: 40px !important','@media (prefers-reduced-motion: reduce)','@media (forced-colors: active)','@media (max-width: 820px)','@media (max-width: 560px)','overscroll-behavior-inline: contain'
+  '.skip-link',':focus-visible','@media (pointer: coarse)','min-height: 40px !important','@media (pointer: coarse) and (max-width: 760px)','@media (prefers-reduced-motion: reduce)','@media (forced-colors: active)','@media (max-width: 820px)','@media (max-width: 560px)','overscroll-behavior-inline: contain'
 ]);
 
 const projectLifecycle = read('_site/project-lifecycle.js');
