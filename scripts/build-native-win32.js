@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
-import { emitWin32GuiCpp, PATCH_WIN32_GUI_BACKEND_VERSION } from '../src/win32-gui.js';
+import { emitWin32GuiCpp, PATCH_WIN32_GUI_BACKEND_VERSION } from '../src/win32-gui-v07.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeWindow');
@@ -58,7 +58,7 @@ const objectPath = path.join(outDir, `${appName}.obj`);
 const clArgs = [
   '/nologo', '/EHsc', '/std:c++17', '/O2', '/MT', '/utf-8',
   `/Fo${objectPath}`, cppPath,
-  'user32.lib', 'gdi32.lib', 'comctl32.lib',
+  'user32.lib', 'gdi32.lib', 'comctl32.lib', 'comdlg32.lib',
   '/link', '/SUBSYSTEM:WINDOWS', `/OUT:${exePath}`
 ];
 const result = compiler.kind === 'direct'
@@ -73,9 +73,6 @@ console.log(`Built native Patch Win32 GUI: ${exePath}`);
 console.log(`Native GUI IR ${gui.version}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
 
 if (smoke) {
-  // Do not request a hidden child process here. Windows may honor STARTUPINFO
-  // over the first ShowWindow call, which would make a real GUI appear hidden
-  // even though native Form visibility is correct.
   const run = spawnSync(exePath, ['--patch-smoke'], { stdio: 'inherit', windowsHide: false, timeout: 30000 });
   if (run.error) throw run.error;
   if (run.status !== 0) throw new Error(`Native Patch Win32 GUI smoke exited with status ${run.status}.`);
@@ -83,9 +80,6 @@ if (smoke) {
 }
 
 function normalizeGeneratedCpp(text) {
-  // JavaScript template literals interpret \0 before MSVC sees the generated
-  // source. Convert embedded NUL bytes back into the intended C++ escape so
-  // generated std::wstring fill characters remain L'\0'.
   return String(text).replaceAll('\0', '\\0');
 }
 
@@ -110,7 +104,6 @@ function runThroughVsDevCmd(vsDevCmd, args) {
 function resolveMsvc() {
   const direct = spawnSync('where.exe', ['cl.exe'], { encoding: 'utf8', windowsHide: true });
   if (direct.status === 0 && direct.stdout?.trim()) return { kind: 'direct', command: 'cl.exe' };
-
   const candidates = [
     path.join(process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)', 'Microsoft Visual Studio', 'Installer', 'vswhere.exe'),
     path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'Microsoft Visual Studio', 'Installer', 'vswhere.exe')

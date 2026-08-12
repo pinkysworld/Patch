@@ -1,6 +1,6 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 6;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 7;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -8,10 +8,10 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v6 keeps controls flat for the tiny prebuilt native runtimes while
- * preserving real Tabs hierarchy through parentTabIndex/pageIndex metadata.
- * Per-Form menus follow each Form control vector. Informational dialog actions
- * use action kind 4 and carry owning Form/title/message without a result value.
+ * Payload v7 preserves the v6 control/menu layout and extends the event/action
+ * contract with named result-bearing confirm/open/save dialogs. Result ids are
+ * serialized on the dialog action; chosen paths travel only as transient text
+ * event values and never become hidden persistent state.
  */
 export function encodeNativeGuiPayload(input) {
   const ir = validateNativeGuiIR(input);
@@ -69,7 +69,7 @@ export function encodeNativeGuiPayload(input) {
   writer.u32(ir.events.length);
   for (const event of ir.events) {
     writer.text(event.control);
-    writer.u8(event.event === 'clicked' ? 1 : event.event === 'changed' ? 2 : 0);
+    writer.u8(eventCode(event.event));
     writer.u8(event.valueType === 'boolean' ? 1 : event.valueType === 'text' ? 2 : 0);
     writer.u32(event.actions.length);
     for (const action of event.actions) writeAction(writer, action);
@@ -157,6 +157,15 @@ function validateTextBindings(ir) {
   }
 }
 
+function eventCode(event) {
+  if (event === 'clicked') return 1;
+  if (event === 'changed') return 2;
+  if (event === 'confirmed') return 3;
+  if (event === 'chosen') return 4;
+  if (event === 'cancelled') return 5;
+  throw new SealedNativeGuiError(`Unsupported native event '${event}'.`);
+}
+
 function writeAction(writer, action) {
   if (action.kind === 'openForm' || action.kind === 'closeForm') {
     writer.u8(action.kind === 'openForm' ? 1 : 2);
@@ -168,6 +177,21 @@ function writeAction(writer, action) {
     writer.text(action.form);
     writer.text(action.title);
     writer.text(action.message);
+    return;
+  }
+  if (action.kind === 'confirmDialog') {
+    writer.u8(5);
+    writer.text(action.form);
+    writer.text(action.id);
+    writer.text(action.title);
+    writer.text(action.message);
+    return;
+  }
+  if (action.kind === 'openFileDialog' || action.kind === 'saveFileDialog') {
+    writer.u8(action.kind === 'openFileDialog' ? 6 : 7);
+    writer.text(action.form);
+    writer.text(action.id);
+    writer.text(action.title);
     return;
   }
   if (action.kind !== 'change') throw new SealedNativeGuiError(`Unsupported native action '${action.kind}'.`);

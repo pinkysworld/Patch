@@ -18,19 +18,20 @@ const listboxGui = buildNativeGuiIR(compile(fs.readFileSync('examples/listbox-wi
 const tabsGui = buildNativeGuiIR(compile(fs.readFileSync('examples/tabs-window.patch', 'utf8'), { name: 'SealedTabsTest', kind: 'window' }));
 const radioGui = buildNativeGuiIR(compile(fs.readFileSync('examples/radio-window.patch', 'utf8'), { name: 'SealedRadioTest', kind: 'window' }));
 const menuGui = buildNativeGuiIR(compile(fs.readFileSync('examples/menu-dialog-window.patch', 'utf8'), { name: 'SealedMenuDialogTest', kind: 'window' }));
+const resultGui = buildNativeGuiIR(compile(fs.readFileSync('examples/result-dialog-window.patch', 'utf8'), { name: 'SealedResultDialogTest', kind: 'window' }));
 
-test('sealed native GUI payload v6 is deterministic and round-trips from a Windows executable overlay', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
+test('sealed native GUI payload v7 is deterministic and round-trips from a Windows executable overlay', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const payload = encodeNativeGuiPayload(gui);
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4, 5, 6]);
   const sealed = sealNativeGuiRuntime(fakePe, gui);
   assert.equal(new TextDecoder().decode(sealed.subarray(sealed.length - 20, sealed.length - 12)), PATCH_SEALED_NATIVE_GUI_MAGIC);
-  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 6);
+  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 7);
   assert.deepEqual(decodeNativeGuiPayload(sealed), payload);
   assert.deepEqual(encodeNativeGuiPayload(gui), payload);
 });
 
-test('same v6 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
+test('same v7 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
   const payload = encodeNativeGuiPayload(gui);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 9, 8, 7, 6]);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 7, 6, 5, 4]);
@@ -38,7 +39,7 @@ test('same v6 payload round-trips from Linux ELF and macOS Mach-O overlays', () 
   assert.deepEqual(decodeNativeGuiPayload(sealNativeGuiRuntime(fakeMachO, gui, { platform: 'macos' })), payload);
 });
 
-test('sealed native GUI v6 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
+test('sealed native GUI v7 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
   for (const [selectionGui, expected] of [
     [comboGui, ['Small', 'Medium', 'Large']],
     [listboxGui, ['Apple', 'Banana', 'Cherry', 'Mango']],
@@ -51,7 +52,7 @@ test('sealed native GUI v6 serializes ComboBox, ListBox and Radio option semanti
   }
 });
 
-test('sealed native GUI v6 keeps Tabs kind 7 and Radio kind 8', () => {
+test('sealed native GUI v7 keeps Tabs kind 7 and Radio kind 8', () => {
   const controls = readPayload(encodeNativeGuiPayload(tabsGui)).controls;
   const tabs = controls.find(control => control.id === 'settings');
   const name = controls.find(control => control.id === 'name');
@@ -71,13 +72,33 @@ test('sealed native GUI v6 keeps Tabs kind 7 and Radio kind 8', () => {
   assert.deepEqual(radio.options, ['Basic', 'Advanced', 'Expert']);
 });
 
-test('sealed native GUI v6 serializes structural menus and informational dialog action kind 4', () => {
+test('sealed native GUI v7 serializes structural menus and informational dialog action kind 4', () => {
   const decoded = readPayload(encodeNativeGuiPayload(menuGui));
   assert.deepEqual(decoded.menus, [{ form: 'main', title: 'Help', items: [{ id: 'about_item', text: 'About' }] }]);
   assert.deepEqual(decoded.events, [{
     control: 'about_item', eventKind: 1, valueType: 0,
     actions: [{ kind: 4, form: 'main', title: 'About Patch', message: 'Native menus and informational dialogs' }]
   }]);
+});
+
+test('sealed native GUI v7 structurally encodes result events and action kinds 5/6/7', () => {
+  const decoded = readPayload(encodeNativeGuiPayload(resultGui));
+  const resetClick = decoded.events.find(event => event.control === 'reset_button');
+  const openClick = decoded.events.find(event => event.control === 'open_button');
+  const saveClick = decoded.events.find(event => event.control === 'save_button');
+  const confirmed = decoded.events.find(event => event.control === 'reset_confirm' && event.eventKind === 3);
+  const chosen = decoded.events.find(event => event.control === 'open_result' && event.eventKind === 4);
+  const cancelled = decoded.events.find(event => event.control === 'open_result' && event.eventKind === 5);
+
+  assert.deepEqual(resetClick.actions, [{
+    kind: 5, form: 'main', id: 'reset_confirm', title: 'Reset selection?', message: 'Clear the selected path?'
+  }]);
+  assert.deepEqual(openClick.actions, [{ kind: 6, form: 'main', id: 'open_result', title: 'Open Patch file' }]);
+  assert.deepEqual(saveClick.actions, [{ kind: 7, form: 'main', id: 'save_result', title: 'Save Patch file' }]);
+  assert.equal(confirmed.valueType, 0);
+  assert.equal(chosen.valueType, 2);
+  assert.equal(cancelled.valueType, 0);
+  assert.deepEqual(chosen.actions, [{ kind: 3, target: 'selected_path', ops: [{ op: 1, valueKind: 2 }] }]);
 });
 
 test('sealed payload contains forms, controls, events and state without Patch source', () => {
@@ -144,13 +165,16 @@ function readPayload(bytes) {
       const kind = u8();
       if (kind === 1 || kind === 2) actions.push({ kind, form: text() });
       else if (kind === 4) actions.push({ kind, form: text(), title: text(), message: text() });
+      else if (kind === 5) actions.push({ kind, form: text(), id: text(), title: text(), message: text() });
+      else if (kind === 6 || kind === 7) actions.push({ kind, form: text(), id: text(), title: text() });
       else if (kind === 3) {
-        const target = text(); const stateType = u8(); const opCount = u32();
+        const target = text(); const stateType = u8(); const opCount = u32(); const ops = [];
         for (let o = 0; o < opCount; o += 1) {
           const op = u8(); const valueKind = u8();
           if (op !== 4 && valueKind === 1) skipValue(stateType);
+          ops.push({ op, valueKind });
         }
-        actions.push({ kind, target });
+        actions.push({ kind, target, ops });
       } else throw new Error(`bad action ${kind}`);
     }
     events.push({ control, eventKind, valueType, actions });

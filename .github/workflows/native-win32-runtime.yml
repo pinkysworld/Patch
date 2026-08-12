@@ -5,10 +5,11 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - .github/workflows/native-win32-runtime.yml
-      - native-runtime/win32-sealed-gui.cpp
+      - native-runtime/win32-sealed-gui-v07.cpp
       - scripts/seal-native-win32.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
+      - src/window-events.js
       - src/window-build.js
       - src/compiler.js
       - src/parser.js
@@ -20,12 +21,14 @@ on:
       - examples/tabs-window.patch
       - examples/radio-window.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -33,10 +36,11 @@ on:
     branches: [main]
     paths:
       - .github/workflows/native-win32-runtime.yml
-      - native-runtime/win32-sealed-gui.cpp
+      - native-runtime/win32-sealed-gui-v07.cpp
       - scripts/seal-native-win32.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
+      - src/window-events.js
       - src/window-build.js
       - src/compiler.js
       - src/parser.js
@@ -48,12 +52,14 @@ on:
       - examples/tabs-window.patch
       - examples/radio-window.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - web/native-build.js
       - scripts/build-site.js
       - scripts/check-site.js
@@ -76,7 +82,7 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Compile generic native Win32 GUI runtime
+      - name: Compile generic native Win32 GUI runtime v0.7
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist-runtime | Out-Null
@@ -90,7 +96,7 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui.cpp user32.lib gdi32.lib comctl32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime\patch-windows-native-gui-runtime.exe',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui-v07.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime\patch-windows-native-gui-runtime.exe',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
@@ -131,19 +137,25 @@ jobs:
           node scripts/seal-native-win32.js examples/menu-dialog-window.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedMenuDialog.exe PatchSealedMenuDialog
           $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedMenuDialog.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Sealed native Menu/Dialog smoke failed with exit code $($process.ExitCode)." }
-      - name: Verify template and payload-v6 contract
+      - name: Seal and smoke native Result Dialog application
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/result-dialog-window.patch dist-runtime/patch-windows-native-gui-runtime.exe dist-runtime/PatchSealedResultDialog.exe PatchSealedResultDialog
+          $process = Start-Process -FilePath (Resolve-Path 'dist-runtime/PatchSealedResultDialog.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed native Result Dialog smoke failed with exit code $($process.ExitCode)." }
+      - name: Verify template and payload-v7 contract
         shell: pwsh
         run: |
           $runtime = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/patch-windows-native-gui-runtime.exe'))
-          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedMenuDialog.exe'))
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-runtime/PatchSealedResultDialog.exe'))
           if ($runtime.Length -lt 2 -or $runtime[0] -ne 0x4d -or $runtime[1] -ne 0x5a) { throw 'Runtime is not a PE executable.' }
           if ($sealed.Length -le $runtime.Length) { throw 'Sealed application did not append a payload.' }
           $magic = [Text.Encoding]::ASCII.GetString($sealed, $sealed.Length - 20, 8)
           if ($magic -ne 'PCHGUI01') { throw 'Sealed executable footer magic is missing.' }
           $version = [BitConverter]::ToUInt32($sealed, $sealed.Length - 12)
-          if ($version -ne 6) { throw "Expected sealed native GUI payload v6, got v$version." }
+          if ($version -ne 7) { throw "Expected sealed native GUI payload v7, got v$version." }
           if ($runtime.Length -gt 2097152) { throw "Generic native runtime unexpectedly exceeds 2 MiB: $($runtime.Length) bytes." }
-          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed Menu/Dialog app: $($sealed.Length) bytes"
+          Write-Host "Generic runtime: $($runtime.Length) bytes; sealed Result Dialog app: $($sealed.Length) bytes"
       - uses: actions/upload-artifact@v4
         with:
           name: patch-windows-native-gui-runtime
@@ -165,9 +177,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-win32-runtime-v0.6
+          TAG: native-win32-runtime-v0.7
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.6' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v6 adds structural native menus and informational dialogs using HMENU/WM_COMMAND and MessageBoxW while preserving explicit Patch change semantics, Radio, Tabs and the existing control set.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Win32 Runtime v0.7' --notes 'Native Win32 sealed-GUI runtime template for token-free Patch Studio builds. Payload v7 adds result-bearing Confirm/Open/Save dialogs via MessageBoxW and native common dialogs while preserving explicit Patch change semantics and the v0.6 Menu/Dialog, Radio, Tabs and control surface.'
           fi
           gh release upload "$TAG" runtime/patch-windows-native-gui-runtime.exe --repo "$GITHUB_REPOSITORY" --clobber

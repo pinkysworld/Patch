@@ -6,23 +6,31 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - src/native-gui-ir.js
+      - src/native-result-dialog-overlay.js
       - src/appkit-gui.js
+      - src/appkit-gui-v07.js
       - scripts/build-native-appkit.js
       - tests/appkit-gui.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - .github/workflows/native-appkit-gui.yml
   push:
     branches: [main]
     paths:
       - src/native-gui-ir.js
+      - src/native-result-dialog-overlay.js
       - src/appkit-gui.js
+      - src/appkit-gui-v07.js
       - scripts/build-native-appkit.js
       - tests/appkit-gui.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - .github/workflows/native-appkit-gui.yml
 
 concurrency:
@@ -45,28 +53,33 @@ jobs:
           package-manager-cache: false
       - name: Check AppKit backend JavaScript
         run: |
+          node --check src/native-result-dialog-overlay.js
           node --check src/appkit-gui.js
+          node --check src/appkit-gui-v07.js
           node --check scripts/build-native-appkit.js
           node --check tests/appkit-gui.test.js
           node --check tests/menu-dialog-window.test.js
+          node --check tests/result-dialog-window.test.js
       - name: Run AppKit lowering tests
-        run: node --test tests/appkit-gui.test.js tests/menu-dialog-window.test.js
+        run: node --test tests/appkit-gui.test.js tests/menu-dialog-window.test.js tests/result-dialog-window.test.js
       - name: Compile, link and bundle native Patch AppKit Forms application
         run: |
           mkdir -p dist-native-mac
           node scripts/build-native-appkit.js examples/forms-navigation.patch PatchNativeMacSmoke dist-native-mac --smoke
       - name: Compile and execute native Patch AppKit Menu Dialog application
         run: node scripts/build-native-appkit.js examples/menu-dialog-window.patch PatchNativeMacMenuDialog dist-native-menu-dialog --smoke
+      - name: Compile and execute native Patch AppKit Result Dialog application
+        run: node scripts/build-native-appkit.js examples/result-dialog-window.patch PatchNativeMacResultDialog dist-native-result-dialog --smoke
       - name: Verify native AppKit output contract
         run: |
-          for pair in 'dist-native-mac PatchNativeMacSmoke' 'dist-native-menu-dialog PatchNativeMacMenuDialog'; do
+          for pair in 'dist-native-mac PatchNativeMacSmoke' 'dist-native-menu-dialog PatchNativeMacMenuDialog' 'dist-native-result-dialog PatchNativeMacResultDialog'; do
             set -- $pair
             dir=$1; name=$2
             test -x "$dir/$name.app/Contents/MacOS/$name"
-            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='0.6') process.exit(1)"
+            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.7') process.exit(1)"
             test ! -d "$dir/$name.app/Contents/Frameworks/Electron Framework.framework"
           done
-          ! find dist-native-mac dist-native-menu-dialog -iname '*Electron*' -print -quit | grep -q .
+          ! find dist-native-mac dist-native-menu-dialog dist-native-result-dialog -iname '*Electron*' -print -quit | grep -q .
       - name: Upload native AppKit compiler evidence
         uses: actions/upload-artifact@v4
         with:
@@ -74,4 +87,5 @@ jobs:
           path: |
             dist-native-mac/**
             dist-native-menu-dialog/**
+            dist-native-result-dialog/**
           if-no-files-found: error

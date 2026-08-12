@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { parse, PatchSyntaxError } from '../src/parser.js';
 import { compile, PATCH_IR_VERSION } from '../src/compiler.js';
+import { PatchInterpreter } from '../src/interpreter.js';
+import { triggerWindowEvent, PATCH_WINDOW_EVENTS_VERSION } from '../src/window-events.js';
 import { validateWindowRuntimeSupport, WindowBuildError } from '../src/window-build.js';
+import { buildNativeGuiIR, PATCH_NATIVE_GUI_IR_VERSION } from '../src/native-gui-ir.js';
+import { encodeNativeGuiPayload, PATCH_SEALED_NATIVE_GUI_VERSION } from '../src/sealed-native-gui.js';
 
 const example = fs.readFileSync(new URL('../examples/result-dialog-window.patch', import.meta.url), 'utf8');
 
@@ -95,4 +99,57 @@ test('result dialog ids share the application UI source namespace', () => {
     () => validateWindowRuntimeSupport(compiled),
     error => error instanceof WindowBuildError && /declared more than once/.test(error.message)
   );
+});
+
+test('Window event adapter v0.6 carries chosen path only as transient text value', () => {
+  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.6');
+  const runtime = new PatchInterpreter();
+  runtime.run(example);
+  const chosen = triggerWindowEvent(runtime, 'open_result', 'chosen', { value: '/tmp/demo.patch' });
+  assert.equal(chosen.state.selected_path, '/tmp/demo.patch');
+  assert.equal(chosen.history.length, 1);
+  assert.equal(chosen.history[0].target, 'selected_path');
+  assert.equal(chosen.history[0].before, '');
+  assert.equal(chosen.history[0].after, '/tmp/demo.patch');
+  assert.equal(chosen.history[0].cause[0].control, 'open_result');
+  assert.equal(chosen.history[0].cause[0].event, 'chosen');
+  assert.throws(() => triggerWindowEvent(runtime, 'open_result', 'chosen', { value: 12 }), /needs a text event-local value/);
+});
+
+test('Native GUI IR 0.7 models result dialog actions and typed synthetic result events', () => {
+  const ir = buildNativeGuiIR(compile(example, { kind: 'window', name: 'ResultDialogNative' }));
+  assert.equal(PATCH_NATIVE_GUI_IR_VERSION, '0.7');
+  assert.equal(ir.version, '0.7');
+  assert.deepEqual(ir.states, [{ name: 'selected_path', type: 'text', initial: '' }]);
+
+  const resetClick = ir.events.find(event => event.control === 'reset_button');
+  const openClick = ir.events.find(event => event.control === 'open_button');
+  const saveClick = ir.events.find(event => event.control === 'save_button');
+  assert.deepEqual(resetClick.actions[0], {
+    kind: 'confirmDialog', form: 'main', id: 'reset_confirm', title: 'Reset selection?', message: 'Clear the selected path?'
+  });
+  assert.deepEqual(openClick.actions[0], {
+    kind: 'openFileDialog', form: 'main', id: 'open_result', title: 'Open Patch file'
+  });
+  assert.deepEqual(saveClick.actions[0], {
+    kind: 'saveFileDialog', form: 'main', id: 'save_result', title: 'Save Patch file'
+  });
+
+  const chosen = ir.events.find(event => event.control === 'open_result' && event.event === 'chosen');
+  const cancelled = ir.events.find(event => event.control === 'open_result' && event.event === 'cancelled');
+  const confirmed = ir.events.find(event => event.control === 'reset_confirm' && event.event === 'confirmed');
+  assert.equal(chosen.valueType, 'text');
+  assert.equal(cancelled.valueType, null);
+  assert.equal(confirmed.valueType, null);
+  assert.deepEqual(chosen.actions[0].ops, [{ op: 'set', value: { kind: 'eventValue' } }]);
+});
+
+test('sealed native payload advances to v7 for result event/action contract', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
+  const payload = encodeNativeGuiPayload(buildNativeGuiIR(compile(example, { kind: 'window', name: 'ResultDialogNative' })));
+  const text = new TextDecoder().decode(payload);
+  for (const marker of ['reset_confirm', 'open_result', 'save_result', 'Reset selection?', 'Open Patch file', 'Save Patch file']) {
+    assert.match(text, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.doesNotMatch(text, /when open_result chosen/);
 });

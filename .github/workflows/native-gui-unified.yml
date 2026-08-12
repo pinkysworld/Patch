@@ -7,9 +7,13 @@ on:
     paths:
       - src/native-gui-host.js
       - src/native-gui-ir.js
+      - src/native-result-dialog-overlay.js
       - src/win32-gui.js
+      - src/win32-gui-v07.js
       - src/appkit-gui.js
+      - src/appkit-gui-v07.js
       - src/gtk-gui.js
+      - src/gtk-gui-v07.js
       - scripts/build-native-gui.js
       - scripts/build-native-win32.js
       - scripts/build-native-appkit.js
@@ -21,24 +25,31 @@ on:
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - package.json
       - docs/NATIVE_GUI.md
       - docs/MENUS_DIALOGS.md
+      - docs/RESULT_DIALOGS.md
       - .github/workflows/native-gui-unified.yml
   push:
     branches: [main]
     paths:
       - src/native-gui-host.js
       - src/native-gui-ir.js
+      - src/native-result-dialog-overlay.js
       - src/win32-gui.js
+      - src/win32-gui-v07.js
       - src/appkit-gui.js
+      - src/appkit-gui-v07.js
       - src/gtk-gui.js
+      - src/gtk-gui-v07.js
       - scripts/build-native-gui.js
       - scripts/build-native-win32.js
       - scripts/build-native-appkit.js
@@ -50,15 +61,18 @@ on:
       - tests/tabs-window.test.js
       - tests/radio-window.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
       - examples/tabs-window.patch
       - examples/radio-window.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - package.json
       - docs/NATIVE_GUI.md
       - docs/MENUS_DIALOGS.md
+      - docs/RESULT_DIALOGS.md
       - .github/workflows/native-gui-unified.yml
 
 concurrency:
@@ -112,6 +126,9 @@ jobs:
       - name: Build and execute native Menu Dialog app through one command
         shell: bash
         run: node scripts/build-native-gui.js examples/menu-dialog-window.patch UnifiedPatchMenuDialog dist-unified-menu-dialog --smoke
+      - name: Build and execute native Result Dialog app through one command
+        shell: bash
+        run: node scripts/build-native-gui.js examples/result-dialog-window.patch UnifiedPatchResultDialog dist-unified-result-dialog --smoke
       - name: Verify selected backend metadata
         shell: bash
         run: |
@@ -119,13 +136,14 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const expected = process.platform === 'win32' ? 'native-win32' : process.platform === 'darwin' ? 'native-appkit' : 'native-gtk3';
-          for (const dir of ['dist-unified','dist-unified-combo','dist-unified-listbox','dist-unified-tabs','dist-unified-radio','dist-unified-menu-dialog']) {
+          for (const dir of ['dist-unified','dist-unified-combo','dist-unified-listbox','dist-unified-tabs','dist-unified-radio','dist-unified-menu-dialog','dist-unified-result-dialog']) {
             const files = fs.readdirSync(dir).filter(name => name.endsWith('-build.json'));
             if (files.length !== 1) throw new Error(`Expected one build metadata file in ${dir}, got: ${files.join(', ')}`);
             const meta = JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
             if (meta.shell !== expected) throw new Error(`Expected ${expected}, got ${meta.shell}`);
             if (meta.electron !== false) throw new Error('Unified native build must record electron=false.');
-            if (meta.nativeGuiIrVersion !== '0.6') throw new Error(`Expected Native GUI IR 0.6, got ${meta.nativeGuiIrVersion}`);
+            if (meta.nativeGuiIrVersion !== '0.7') throw new Error(`Expected Native GUI IR 0.7, got ${meta.nativeGuiIrVersion}`);
+            if (meta.backendVersion !== '0.7') throw new Error(`Expected backend 0.7, got ${meta.backendVersion}`);
           }
-          console.log(`Unified host selected ${expected} for Forms, ComboBox, ListBox, Tabs, Radio and Menu/Dialog`);
+          console.log(`Unified host selected ${expected} for Forms, ComboBox, ListBox, Tabs, Radio, Menu/Dialog and Result Dialogs`);
           NODE

@@ -6,23 +6,31 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - src/native-gui-ir.js
+      - src/native-result-dialog-overlay.js
       - src/win32-gui.js
+      - src/win32-gui-v07.js
       - scripts/build-native-win32.js
       - tests/win32-gui.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - .github/workflows/native-win32-gui.yml
   push:
     branches: [main]
     paths:
       - src/native-gui-ir.js
+      - src/native-result-dialog-overlay.js
       - src/win32-gui.js
+      - src/win32-gui-v07.js
       - scripts/build-native-win32.js
       - tests/win32-gui.test.js
       - tests/menu-dialog-window.test.js
+      - tests/result-dialog-window.test.js
       - examples/forms-navigation.patch
       - examples/menu-dialog-window.patch
+      - examples/result-dialog-window.patch
       - .github/workflows/native-win32-gui.yml
 
 concurrency:
@@ -47,13 +55,16 @@ jobs:
         shell: pwsh
         run: |
           node --check src/native-gui-ir.js
+          node --check src/native-result-dialog-overlay.js
           node --check src/win32-gui.js
+          node --check src/win32-gui-v07.js
           node --check scripts/build-native-win32.js
           node --check tests/win32-gui.test.js
           node --check tests/menu-dialog-window.test.js
+          node --check tests/result-dialog-window.test.js
       - name: Run native GUI lowering tests
         shell: pwsh
-        run: node --test tests/win32-gui.test.js tests/menu-dialog-window.test.js
+        run: node --test tests/win32-gui.test.js tests/menu-dialog-window.test.js tests/result-dialog-window.test.js
       - name: Compile and link native Patch Win32 Forms application
         shell: pwsh
         run: |
@@ -62,17 +73,25 @@ jobs:
       - name: Compile and execute native Patch Win32 Menu Dialog application
         shell: pwsh
         run: node scripts/build-native-win32.js examples/menu-dialog-window.patch PatchNativeWin32MenuDialog dist-native-menu-dialog --smoke
+      - name: Compile and execute native Patch Win32 Result Dialog application
+        shell: pwsh
+        run: node scripts/build-native-win32.js examples/result-dialog-window.patch PatchNativeWin32ResultDialog dist-native-result-dialog --smoke
       - name: Verify native output contract
         shell: pwsh
         run: |
-          foreach ($name in @('PatchNativeWin32Smoke','PatchNativeWin32MenuDialog')) {
-            $dir = if ($name -eq 'PatchNativeWin32Smoke') { 'dist-native' } else { 'dist-native-menu-dialog' }
+          $apps = @(
+            @{ Name='PatchNativeWin32Smoke'; Dir='dist-native' },
+            @{ Name='PatchNativeWin32MenuDialog'; Dir='dist-native-menu-dialog' },
+            @{ Name='PatchNativeWin32ResultDialog'; Dir='dist-native-result-dialog' }
+          )
+          foreach ($app in $apps) {
+            $name = $app.Name; $dir = $app.Dir
             $exe = Get-Item "$dir/$name.exe"
             if (-not $exe) { throw "Native Patch Win32 executable $name was not produced." }
             if ($exe.Length -gt 10MB) { throw "Native Patch Win32 executable is unexpectedly large: $($exe.Length) bytes" }
             $meta = Get-Content "$dir/$name.win32-build.json" | ConvertFrom-Json
             if ($meta.electron -ne $false -or $meta.shell -ne 'native-win32' -or $meta.crt -ne 'static') { throw "Native Win32 metadata failed for $name." }
-            if ($meta.nativeGuiIrVersion -ne '0.6') { throw "Expected Native GUI IR 0.6 for $name." }
+            if ($meta.nativeGuiIrVersion -ne '0.7' -or $meta.backendVersion -ne '0.7') { throw "Expected Native GUI/backend 0.7 for $name." }
           }
           if ((Test-Path dist-native/resources) -or (Test-Path dist-native/node_modules)) { throw 'Native Win32 output unexpectedly contains a web/Electron runtime tree.' }
       - name: Upload native compiler evidence
@@ -82,4 +101,5 @@ jobs:
           path: |
             dist-native/**
             dist-native-menu-dialog/**
+            dist-native-result-dialog/**
           if-no-files-found: error

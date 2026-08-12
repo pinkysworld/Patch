@@ -11,8 +11,9 @@ const gui = buildNativeGuiIR(compile(source, { name: 'MacNativeTest', kind: 'win
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 
-test('browser package seals Native GUI IR v0.6 into a minimal macOS app bundle ZIP', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 6);
+test('browser package seals Native GUI IR v0.7 payload v7 into a minimal macOS app bundle ZIP', () => {
+  assert.equal(gui.version, '0.7');
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 10, 20, 30, 40]);
   const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App' });
   assert.equal(ready.filename, 'My_Mac_App-macos-window.zip');
@@ -44,9 +45,9 @@ test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatib
   assert.ok(studio.includes('Native AOT app (GitHub Actions)'));
 });
 
-test('macOS native runtime workflow smokes Menu/Dialog and publishes universal AppKit runtime v0.6', () => {
+test('macOS native runtime workflow smokes Result Dialogs and publishes universal AppKit runtime v0.7', () => {
   for (const marker of [
-    'native-runtime/appkit-sealed-gui.mm',
+    'native-runtime/appkit-sealed-gui-v07.mm',
     'scripts/seal-native-macos.js',
     '-arch arm64 -arch x86_64',
     'lipo -archs',
@@ -54,12 +55,14 @@ test('macOS native runtime workflow smokes Menu/Dialog and publishes universal A
     'PatchSealedRadio',
     'examples/menu-dialog-window.patch',
     'PatchSealedMenuDialog',
-    'Expected sealed native GUI payload v6',
+    'examples/result-dialog-window.patch',
+    'PatchSealedResultDialog',
+    'Expected sealed native GUI payload v7',
     'patch-macos-native-gui-runtime.bin',
-    'native-macos-runtime-v0.6',
-    'Signing/notarization is separate'
+    'native-macos-runtime-v0.7',
+    'Signing/notarization remains separate'
   ]) assert.ok(workflow.includes(marker), marker);
-  assert.equal(workflow.includes('native-macos-runtime-v0.5'), false);
+  assert.equal(workflow.includes('native-macos-runtime-v0.6'), false);
   assert.match(workflow, /unsigned universal AppKit/i);
   assert.equal(workflow.includes('build-native-window.js'), false);
 });

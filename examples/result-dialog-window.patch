@@ -14,7 +14,7 @@ when reset_confirm confirmed:
     set = ""
 
 when reset_confirm cancelled:
-  show "reset cancelled"
+  dialog "Reset", "Reset cancelled"
 
 when open_button clicked:
   open file "Open Patch file" as open_result
@@ -24,7 +24,7 @@ when open_result chosen:
     set = value
 
 when open_result cancelled:
-  show "open cancelled"
+  dialog "Open", "Open cancelled"
 
 when save_button clicked:
   save file "Save Patch file" as save_result
@@ -34,4 +34,4 @@ when save_result chosen:
     set = value
 
 when save_result cancelled:
-  show "save cancelled"
+  dialog "Save", "Save cancelled"
