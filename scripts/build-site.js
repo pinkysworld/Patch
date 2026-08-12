@@ -22,7 +22,7 @@ const SITE_WEB_STATIC_FILES = [
 ];
 
 const SITE_WEB_MODULE_FILES = [
-  'playground.js','forms-designer.js','native-build.js','project-lifecycle.js','recovery-manager.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
+  'playground.js','forms-designer.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
 ];
 
 const siteRevision = computeSiteRevision();
