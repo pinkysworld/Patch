@@ -53,8 +53,16 @@ Studio keeps a canonical v1 project in browser storage and maintains compatibili
 
 Canonical saves use a pending-write key before promotion to the current-project key. If a session stops between those writes, the next Studio load promotes the valid pending project.
 
-Studio also keeps up to five de-duplicated recovery snapshots. Normal editing periodically captures the previous project. Import and manual recovery capture the current project immediately before replacing it.
+Studio also keeps up to five de-duplicated recovery snapshots. Normal editing periodically captures the previous project. Import and restore capture the current project immediately before replacing it.
 
-The **Recover** action restores the newest snapshot after confirmation and first protects the current project as another recovery snapshot.
+The **Recovery** manager exposes those local snapshots instead of hiding the ring behind a one-shot newest-snapshot button. It shows the project name, timestamp, project kind and source size for each local restore point. From the manager you can:
+
+- create a snapshot immediately with **Snapshot now**;
+- **Restore** any retained snapshot, while first protecting the current project as another recovery snapshot;
+- **Export** an individual snapshot as a normal `.patchproject` file;
+- **Delete** one snapshot;
+- **Clear all** local recovery snapshots after confirmation.
+
+The manager does not read browser storage directly. Recovery mutation remains centralized in the project lifecycle module, so import, periodic autosave and manual recovery use the same validation and bounded snapshot rules.
 
 Recovery is a convenience feature, not a backup service. Export important projects to `.patchproject` files and retain them outside browser storage.

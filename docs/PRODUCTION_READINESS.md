@@ -64,10 +64,11 @@ Ready Windows, macOS and Linux application downloads can already be consumed wit
 - [x] atomic Studio saves and recovery snapshots
 - [x] corrupted-project detection
 - [x] rollback to last known-good project snapshot
+- [x] managed local snapshot list with manual create/export/delete/clear actions
 - [ ] build cancellation and timeout UX
 - [ ] retry semantics for remote builds without duplicate artifacts
 
-The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and recovery take an immediate protective snapshot before replacing the current project.
+The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and restore take an immediate protective snapshot before replacing the current project. The Recovery manager exposes all retained local restore points and supports manual snapshot creation, restoring any snapshot, exporting a snapshot as `.patchproject`, deleting one snapshot, or clearing the local ring after confirmation.
 
 ### Testing
 - [ ] parser/compiler fuzzing

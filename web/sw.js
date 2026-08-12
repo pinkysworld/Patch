@@ -1,6 +1,6 @@
-const CACHE = 'patch-studio-0.2-beta.32-forms8-ux12-diagnostics1';
+const CACHE = 'patch-studio-0.2-beta.32-forms8-ux13-recovery2';
 const CORE = [
-  './', './index.html', './style.css', './designer-inspector.css', './forms-designer.css', './project-lifecycle.css', './studio-diagnostics.css', './playground.js', './forms-designer.js', './native-build.js', './project-lifecycle.js', './studio-diagnostics.js', './manifest.webmanifest', './icon.svg',
+  './', './index.html', './style.css', './designer-inspector.css', './forms-designer.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css', './playground.js', './forms-designer.js', './native-build.js', './project-lifecycle.js', './recovery-manager.js', './studio-diagnostics.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
   '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/bundle.js', '../src/wasm.js',

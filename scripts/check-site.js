@@ -8,7 +8,7 @@ const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
 if (!beta) throw new Error(`Unexpected project version ${pkg.version}`);
 
 const required = [
-  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/forms-designer.css','_site/project-lifecycle.css','_site/studio-diagnostics.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/project-lifecycle.js','_site/studio-diagnostics.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
+  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/forms-designer.css','_site/project-lifecycle.css','_site/recovery-manager.css','_site/studio-diagnostics.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-diagnostics.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
   '_site/src/interpreter.js','_site/src/parser.js','_site/src/expression.js','_site/src/change.js','_site/src/change-analysis.js','_site/src/range-analysis.js',
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
@@ -19,7 +19,7 @@ const required = [
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
 const html = read('_site/index.html');
-requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./project-lifecycle.js','./playground.js','./forms-designer.js','./studio-diagnostics.js','./icon.svg']);
+requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./project-lifecycle.js','./recovery-manager.js','./playground.js','./forms-designer.js','./studio-diagnostics.js','./icon.svg']);
 for (const id of [
   'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addRadio','addCombo','addListbox','addTabs',
   'projectName','projectKind','exportProject','importProject','recoverProject','importProjectFile','copyDiagnostics','downloadDiagnostics','diagnosticsState','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
@@ -29,7 +29,7 @@ requireAll('index current release', html, [
   'Beta.32 invocation-frame direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
   'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'invocation-frame',
   'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'value="tabsWindow"',
-  'Versioned project bundles', 'recovery snapshots', 'privacy-redacted diagnostics'
+  'Versioned project bundles', 'managed recovery snapshots', 'privacy-redacted diagnostics'
 ]);
 for (const option of [
   'value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"',
@@ -41,7 +41,9 @@ rejectOutsideSiteImport('project lifecycle', projectLifecycle);
 requireAll('project lifecycle', projectLifecycle, [
   './src/studio-project.js','patchStudio.project.v1','patchStudio.project.pending.v1','patchStudio.recovery.v1','patchStudio.project',
   'bootstrapProjectStorage','persistBundle','addRecoverySnapshot','serializeRecoverySnapshots','parseStudioProjectBundle',
-  'Exported ${filename}','Imported ${file.name}','Recover the Patch Studio snapshot','project-lifecycle.css','studioProjectFileStem'
+  'Exported ${filename}','Imported ${file.name}','project-lifecycle.css','studioProjectFileStem',
+  'getRecoverySnapshotSummaries','createManualRecoverySnapshot','restoreRecoverySnapshot','exportRecoverySnapshot','deleteRecoverySnapshot','clearRecoverySnapshots',
+  'patch:open-recovery-manager','patch:recovery-changed','protectCurrentProject()'
 ]);
 const projectCss = read('_site/project-lifecycle.css');
 requireAll('project lifecycle stylesheet', projectCss, ['.project-actions','#saveState','button:disabled','@media (max-width: 720px)']);
@@ -52,6 +54,16 @@ requireAll('Studio project schema', studioProject, [
   'buildStudioProjectBundle','validateStudioProjectBundle','parseStudioProjectBundle','parseStoredStudioProject','studioProjectFileStem',
   'createRecoverySnapshot','addRecoverySnapshot','STUDIO_PROJECT_FUTURE_VERSION','main.patch'
 ]);
+
+const recoveryManager = read('_site/recovery-manager.js');
+rejectOutsideSiteImport('recovery manager', recoveryManager);
+requireAll('recovery manager', recoveryManager, [
+  './project-lifecycle.js','getRecoverySnapshotSummaries','createManualRecoverySnapshot','restoreRecoverySnapshot','exportRecoverySnapshot','deleteRecoverySnapshot','clearRecoverySnapshots',
+  'patch:open-recovery-manager','patch:recovery-changed','showModal','Snapshot now','Clear all','Restore','Export','Delete','aria-live="polite"','recovery-manager.css'
+]);
+if (/localStorage/.test(recoveryManager)) throw new Error('Recovery manager must use the project lifecycle API instead of reading browser storage directly.');
+const recoveryCss = read('_site/recovery-manager.css');
+requireAll('recovery manager stylesheet', recoveryCss, ['.recovery-dialog','.recovery-list','overflow: auto','scrollbar-gutter: stable','@media (max-width: 620px)']);
 
 const diagnostics = read('_site/studio-diagnostics.js');
 rejectOutsideSiteImport('Studio diagnostics', diagnostics);
@@ -189,7 +201,7 @@ requireAll('compiler assurance and UI lifecycle modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms8-ux12-diagnostics1`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./project-lifecycle.js'", "'./project-lifecycle.css'", "'./studio-diagnostics.js'", "'./studio-diagnostics.css'", "'./src/studio-project.js'", "'./src/studio-diagnostics.js'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms8-ux13-recovery2`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./project-lifecycle.js'", "'./project-lifecycle.css'", "'./recovery-manager.js'", "'./recovery-manager.css'", "'./studio-diagnostics.js'", "'./studio-diagnostics.css'", "'./src/studio-project.js'", "'./src/studio-diagnostics.js'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 
