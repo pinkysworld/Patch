@@ -165,6 +165,8 @@ Smoke mode suppresses only blocking user interaction. Normal applications use th
 
 Native product GUI work does not make Patch an end-to-end verified compiler and does not expand the current formal fragment. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JavaScript-to-Wasm lowering, native toolkit/compiler behavior and the Wasm engine remain explicit trust/proof-free boundaries where applicable.
 
+The beta.32 invocation-frame research evidence remains independently reproducible through `formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean`; native GUI product milestones do not replace or broaden that certificate boundary.
+
 ## Remaining product work
 
 The next native stages are versioned separately:
