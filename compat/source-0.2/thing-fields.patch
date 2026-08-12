@@ -1,0 +1,7 @@
+create thing player:
+  name = "Sam"
+  score = 1
+change player:
+  add 2 to score
+  set name = "Alex"
+show player
