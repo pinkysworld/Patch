@@ -45,7 +45,7 @@ try {
   console.log(`  recipe environment entries: ${certificate.environmentSize}`);
   console.log(`  certified recipe(s): ${certificate.certifiedRecipes.join(', ')}`);
   console.log('  assurance: Lean checks direct effects, rank-decreasing call resolution, safe-integer argument interval fit, and callee-signature containment in each caller signature.');
-  console.log('  boundary: this is abstract call composition; stronger concrete-call certificates use their dedicated beta.26/beta.27 generators.');
+  console.log('  boundary: this is abstract call composition; concrete runtime argument-value substitution remains outside this certificate.');
 } catch (err) {
   console.error(`Patch stopped: ${err.message}`);
   process.exit(2);
