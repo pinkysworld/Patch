@@ -6,9 +6,9 @@
 [![Formal Verification](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml)
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 
-**Current development beta: `0.2.0-beta.32`** · **Change IR: `0.10`**
+**Current development beta: `0.2.0-beta.33`** · **Change IR: `0.10`**
 
-[Open Patch Studio](https://pinkysworld.github.io/Patch/) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
+[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Help](https://minh.systems/Patch/help.html) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
 Patch is built around one rule:
 
@@ -31,8 +31,18 @@ This mandatory mutation substrate supports history, undo/redo, provenance, seman
 | Formal core | State-Change Factorization, signature soundness, policy containment, integer range soundness |
 | Calls | Exact safe-integer binding, guarded structured traces, finite transitive exact call trees |
 | **Beta.32 runtime bridge** | **Invocation-frame-aware direct-Wasm correspondence, including repeated identical calls** |
-| Studio | Browser IDE + source-backed Designer property editing |
+| **Beta.33 Studio** | **Project format v2, direct Form resizing, split Language/Documentation/Help pages, recovery/diagnostics/accessibility production work** |
 | Desktop | Ready Windows/macOS/Linux Console and Window downloads; FreeBSD Console via C99 |
+
+## Beta.33: Studio and production-readiness layer
+
+Beta.33 advances the product layer without widening the beta.32 formal runtime-correspondence claim. Patch Studio now has a version-2 project bundle that preserves the selected build target and native build mode alongside name, project kind and source. Version-1 projects migrate explicitly to v2 with documented defaults.
+
+The source-backed Designer can resize both controls and the Form window itself. A Form may grow beyond the visible Designer viewport and remains reachable through horizontal/vertical scrolling rather than being clamped back to the current pane width.
+
+The public site is split into focused **Studio**, **Language**, **Documentation** and **Help** pages. Studio remains an IDE instead of doubling as a long project landing page.
+
+Recent production work also includes stable `PATCHxxxx` diagnostics, versioned CLI JSON results, recovery snapshots, local privacy-redacted `.patchreport` diagnostics, build cancel/timeout/retry, tagged-release integrity manifests, CodeQL/security gates, deterministic grammar fuzzing, Interpreter/direct-Wasm/C99 differential testing, Change/Undo property tests and logical artifact reproducibility checks.
 
 ## Beta.32: independently reconstructed invocation frames
 
@@ -130,15 +140,15 @@ Beta.32 **does not claim full compiler/runtime simulation or full compiler verif
 
 ## Studio and builds
 
-Patch Studio provides source editing, Console/Window Run, Change Contract/IR views, source-backed Designer selection/property editing and ready desktop builds.
+Patch Studio provides source editing, Console/Window Run, Change Contract/IR views, source-backed Designer editing, project export/import/recovery and ready desktop builds. The Studio, Language, Documentation and Help surfaces are separate web pages sharing one navigation bar.
 
-Windows, macOS and Linux default to **Ready app download (no token)**. Console apps use project-specific sealed executables. Window apps use a hardened sandboxed desktop player. FreeBSD Console uses the portable C99 backend.
+Windows, macOS and Linux default to **Ready app download (no token)**. FreeBSD Console uses the portable C99 backend. The optional cloud/AOT route is explicitly separate and does not persist its GitHub token.
 
 GUI input remains semantic: an input edit exposes transient event-local `value`; persistent state changes only through explicit Patch `change`.
 
 ## Change IR 0.10
 
-Beta.32 does not change the production IR schema. Invocation frames and runtime certificates are separate assurance artifacts reconstructed from the existing Change IR execution model.
+Beta.33 does not change the production IR schema. Invocation frames and runtime certificates remain separate assurance artifacts reconstructed from the existing Change IR execution model.
 
 ## Research boundary
 
