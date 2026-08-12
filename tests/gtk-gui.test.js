@@ -59,7 +59,7 @@ test('GTK backend lowers numeric Patch change and text interpolation', () => {
   assert.match(cpp, /patch_state_count \+= 1/);
 });
 
-test('GTK build script emits auditable v0.7 native source and metadata', () => {
+test('GTK build script emits auditable Native GUI IR v0.7 / backend v0.8 source and metadata', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-gtk-emit-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/build-native-gtk.js', 'examples/tabs-window.patch', 'NativeGtkTabs', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
@@ -71,7 +71,7 @@ test('GTK build script emits auditable v0.7 native source and metadata', () => {
     assert.equal(meta.electron, false);
     assert.equal(meta.toolkit, 'GTK3');
     assert.equal(meta.nativeGuiIrVersion, '0.7');
-    assert.equal(meta.backendVersion, '0.7');
+    assert.equal(meta.backendVersion, '0.8');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 1);
     assert.equal(meta.events, 3);
