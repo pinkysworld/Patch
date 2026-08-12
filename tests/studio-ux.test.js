@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const base = fs.readFileSync('web/style.css', 'utf8');
 const ux = fs.readFileSync('web/forms-designer.css', 'utf8');
 const inspector = fs.readFileSync('web/designer-inspector.css', 'utf8');
+const formsJs = fs.readFileSync('web/forms-designer.js', 'utf8');
 
 test('Patch Studio keeps the Designer below the editor at full workspace width', () => {
   assert.match(base, /\.workspace\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
@@ -21,6 +22,28 @@ test('Patch Studio exposes visible scroll areas for code, results and Designer',
     'scrollbar-color: var(--border-strong) var(--surface-subtle)'
   ]) assert.ok(ux.includes(marker), marker);
   assert.ok(inspector.includes('.designer-inspector::-webkit-scrollbar'));
+});
+
+test('Designer canvas is a bounded vertical scrollport instead of growing with Forms', () => {
+  for (const marker of [
+    'height: clamp(580px, 72vh, 780px)',
+    'overflow-y: scroll !important',
+    'overscroll-behavior: contain',
+    'scrollbar-gutter: stable both-edges',
+    '.patch-window:last-child',
+    'margin-bottom: 48px'
+  ]) assert.ok(inspector.includes(marker), marker);
+});
+
+test('Designer reveals newly added Forms and controls and grows moved controls into view', () => {
+  for (const marker of [
+    'pendingReveal',
+    'revealPendingDesignerTarget',
+    'revealTarget',
+    'scrollIntoView',
+    'growFormForControl',
+    "control.type === 'radio'"
+  ]) assert.ok(formsJs.includes(marker), marker);
 });
 
 test('Designer toolbox and Form controls remain compact IDE-style controls', () => {
