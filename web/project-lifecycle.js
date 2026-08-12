@@ -17,6 +17,8 @@ const LEGACY_KEY = 'patchStudio.project';
 const RECOVERY_INTERVAL_MS = 60_000;
 const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_SOURCE_BYTES + 64 * 1024;
 
+installStylesheet();
+
 const code = document.querySelector('#code');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
@@ -215,6 +217,15 @@ function setStatus(text, detail = '') {
   saveState.textContent = text;
   if (detail) saveState.title = detail;
   else saveState.removeAttribute('title');
+}
+
+function installStylesheet() {
+  if (document.querySelector('link[data-patch-project-lifecycle]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = './project-lifecycle.css';
+  link.dataset.patchProjectLifecycle = '1';
+  document.head.appendChild(link);
 }
 
 function download(filename, data, type) {
