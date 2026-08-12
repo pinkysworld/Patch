@@ -37,6 +37,11 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - .github/workflows/native-distribution.yml
+      - src/native-gui-ir.js
+      - src/native-accessibility.js
+      - src/win32-gui-v08.js
+      - src/appkit-gui-v08.js
+      - src/gtk-gui-v08.js
       - scripts/sign-windows.ps1
       - scripts/sign-notarize-macos.sh
       - scripts/write-signing-status.js
@@ -46,8 +51,10 @@ on:
       - scripts/build-native-gtk.js
       - scripts/build-native-sea.js
       - tests/native-signing-policy.test.js
+      - tests/native-accessibility.test.js
       - docs/RELEASE_SIGNING.md
       - docs/LINUX_PACKAGING.md
+      - docs/NATIVE_ACCESSIBILITY.md
       - web/docs.html
       - examples/forms-navigation.patch
 
