@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { parse } from '../src/parser.js';
 import {
   buildStudioDiagnosticReport,
   formatStudioDiagnosticReport,
@@ -22,6 +23,7 @@ test('Studio diagnostic report hashes source without embedding it', async () => 
   assert.equal(report.privacy.sourceIncluded, false);
   assert.equal(report.privacy.uploaded, false);
   assert.equal(report.compiler.status, 'ok');
+  assert.equal(report.version, 2);
   const json = serializeStudioDiagnosticReport(report);
   assert.doesNotMatch(json, /private project words/);
   assert.doesNotMatch(json, /create text secret/);
@@ -52,6 +54,20 @@ test('compiler and recent errors redact source echoes before reporting', async (
   assert.doesNotMatch(json, /\/Users\/alice/);
   assert.match(report.compiler.error.message, /\[redacted-source\]/);
   assert.match(report.recentErrors[0].message, /\[redacted-token\]/);
+  assert.match(report.compiler.error.code, /^PATCH\d{4}$/);
+  assert.match(report.recentErrors[0].code, /^PATCH\d{4}$/);
+});
+
+test('compiler errors include stable code and exact line/column without source text', async () => {
+  const source = 'create number score = 0\n  nonsense command\nshow score';
+  let compilerError;
+  try { parse(source); } catch (error) { compilerError = error; }
+  const report = await buildStudioDiagnosticReport({ source, compilerError, entry: '/secret/path/main.patch' });
+  assert.equal(report.compiler.error.code, 'PATCH1001');
+  assert.deepEqual(report.compiler.error.location, { entry: 'main.patch', line: 2, column: 3 });
+  const text = formatStudioDiagnosticReport(report);
+  assert.match(text, /Compiler error: PATCH1001 main\.patch:2:3/);
+  assert.doesNotMatch(text, /create number score/);
 });
 
 test('plain-text diagnostics remain useful without carrying source', async () => {
