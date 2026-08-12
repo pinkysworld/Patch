@@ -33,27 +33,40 @@ on:
         type: choice
         options: [unsigned, require]
         default: unsigned
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/native-distribution.yml
+      - scripts/sign-windows.ps1
+      - scripts/sign-notarize-macos.sh
+      - scripts/write-signing-status.js
+      - scripts/build-native-gui.js
+      - scripts/build-native-win32.js
+      - scripts/build-native-appkit.js
+      - scripts/build-native-gtk.js
+      - scripts/build-native-sea.js
+      - tests/native-signing-policy.test.js
+      - docs/RELEASE_SIGNING.md
+      - examples/forms-navigation.patch
 
 concurrency:
-  group: patch-native-distribution-${{ github.run_id }}
-  cancel-in-progress: false
+  group: patch-native-distribution-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   windows:
-    if: inputs.platform == 'windows'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name == 'pull_request' || inputs.platform == 'windows')
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
-      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
-      PATCH_APP_INPUT: ${{ inputs.app_name }}
-      PATCH_KIND: ${{ inputs.kind }}
-      PATCH_SIGNING_MODE: ${{ inputs.signing_mode }}
-      PATCH_WINDOWS_PFX_BASE64: ${{ secrets.PATCH_WINDOWS_PFX_BASE64 }}
-      PATCH_WINDOWS_PFX_PASSWORD: ${{ secrets.PATCH_WINDOWS_PFX_PASSWORD }}
+      PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
+      PATCH_SOURCE_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/forms-navigation.patch' }}
+      PATCH_APP_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchDistributionSmoke' }}
+      PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'window' }}
+      PATCH_SIGNING_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_mode || 'unsigned' }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -88,8 +101,11 @@ jobs:
           }
           if ($LASTEXITCODE -ne 0) { throw "Patch Windows build/smoke failed with exit code $LASTEXITCODE." }
       - name: Require and verify Windows Authenticode signature
-        if: inputs.signing_mode == 'require'
+        if: github.event_name == 'workflow_dispatch' && inputs.signing_mode == 'require'
         shell: pwsh
+        env:
+          PATCH_WINDOWS_PFX_BASE64: ${{ secrets.PATCH_WINDOWS_PFX_BASE64 }}
+          PATCH_WINDOWS_PFX_PASSWORD: ${{ secrets.PATCH_WINDOWS_PFX_PASSWORD }}
         run: ./scripts/sign-windows.ps1 -Root dist
       - name: Write signing status
         shell: pwsh
@@ -111,21 +127,15 @@ jobs:
           retention-days: 14
 
   macos:
-    if: inputs.platform == 'macos'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name == 'pull_request' || inputs.platform == 'macos')
     runs-on: macos-latest
     timeout-minutes: 45
     env:
-      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
-      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
-      PATCH_APP_INPUT: ${{ inputs.app_name }}
-      PATCH_KIND: ${{ inputs.kind }}
-      PATCH_SIGNING_MODE: ${{ inputs.signing_mode }}
-      PATCH_MACOS_P12_BASE64: ${{ secrets.PATCH_MACOS_P12_BASE64 }}
-      PATCH_MACOS_P12_PASSWORD: ${{ secrets.PATCH_MACOS_P12_PASSWORD }}
-      PATCH_MACOS_SIGN_IDENTITY: ${{ secrets.PATCH_MACOS_SIGN_IDENTITY }}
-      PATCH_APPLE_ID: ${{ secrets.PATCH_APPLE_ID }}
-      PATCH_APPLE_TEAM_ID: ${{ secrets.PATCH_APPLE_TEAM_ID }}
-      PATCH_APPLE_APP_PASSWORD: ${{ secrets.PATCH_APPLE_APP_PASSWORD }}
+      PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
+      PATCH_SOURCE_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/forms-navigation.patch' }}
+      PATCH_APP_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchDistributionSmoke' }}
+      PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'window' }}
+      PATCH_SIGNING_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_mode || 'unsigned' }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -156,8 +166,15 @@ jobs:
           fi
           test -d "dist/$PATCH_SAFE_NAME.app"
       - name: Require verify and notarize macOS signature
-        if: inputs.signing_mode == 'require'
+        if: github.event_name == 'workflow_dispatch' && inputs.signing_mode == 'require'
         shell: bash
+        env:
+          PATCH_MACOS_P12_BASE64: ${{ secrets.PATCH_MACOS_P12_BASE64 }}
+          PATCH_MACOS_P12_PASSWORD: ${{ secrets.PATCH_MACOS_P12_PASSWORD }}
+          PATCH_MACOS_SIGN_IDENTITY: ${{ secrets.PATCH_MACOS_SIGN_IDENTITY }}
+          PATCH_APPLE_ID: ${{ secrets.PATCH_APPLE_ID }}
+          PATCH_APPLE_TEAM_ID: ${{ secrets.PATCH_APPLE_TEAM_ID }}
+          PATCH_APPLE_APP_PASSWORD: ${{ secrets.PATCH_APPLE_APP_PASSWORD }}
         run: ./scripts/sign-notarize-macos.sh "dist/$PATCH_SAFE_NAME.app"
       - name: Write signing status
         shell: bash
@@ -167,6 +184,8 @@ jobs:
           if [[ "$PATCH_SIGNING_MODE" == require ]]; then VERIFIED=true; NOTARIZED=true; fi
           mkdir -p dist/package
           cp -R "dist/$PATCH_SAFE_NAME.app" "dist/package/$PATCH_SAFE_NAME.app"
+          META="dist/$PATCH_SAFE_NAME.appkit-build.json"
+          if [[ -f "$META" ]]; then cp "$META" dist/package/; fi
           node scripts/write-signing-status.js --platform macos --requested "$PATCH_SIGNING_MODE" --verified "$VERIFIED" --notarized "$NOTARIZED" --out dist/package/PATCH-SIGNING.json
       - name: Package macOS distribution
         shell: bash
@@ -181,15 +200,15 @@ jobs:
           retention-days: 14
 
   linux:
-    if: inputs.platform == 'linux'
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft == false) && (github.event_name == 'pull_request' || inputs.platform == 'linux')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      PATCH_SOURCE_B64: ${{ inputs.source_b64 }}
-      PATCH_SOURCE_PATH: ${{ inputs.source_path }}
-      PATCH_APP_INPUT: ${{ inputs.app_name }}
-      PATCH_KIND: ${{ inputs.kind }}
-      PATCH_SIGNING_MODE: ${{ inputs.signing_mode }}
+      PATCH_SOURCE_B64: ${{ github.event_name == 'workflow_dispatch' && inputs.source_b64 || '' }}
+      PATCH_SOURCE_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.source_path || 'examples/forms-navigation.patch' }}
+      PATCH_APP_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_name || 'PatchDistributionSmoke' }}
+      PATCH_KIND: ${{ github.event_name == 'workflow_dispatch' && inputs.kind || 'window' }}
+      PATCH_SIGNING_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_mode || 'unsigned' }}
       PATCH_NATIVE_HEADLESS: '1'
     steps:
       - uses: actions/checkout@v7
@@ -198,7 +217,7 @@ jobs:
           node-version: 26
           package-manager-cache: false
       - name: Refuse undefined Linux signing claims
-        if: inputs.signing_mode == 'require'
+        if: github.event_name == 'workflow_dispatch' && inputs.signing_mode == 'require'
         shell: bash
         run: |
           echo 'Patch does not currently define a Linux code-signing claim. Use unsigned and verify SHA-256/release provenance.' >&2
@@ -213,6 +232,12 @@ jobs:
           echo "PATCH_SAFE_NAME=$NAME" >> "$GITHUB_ENV"
       - name: Check Patch source
         run: node src/cli.js check distribution.patch
+      - name: Install GTK3 build/runtime dependencies
+        if: env.PATCH_KIND == 'window'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
       - name: Build final Linux artifact
         shell: bash
         run: |
@@ -229,7 +254,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/package
-          if [[ "$PATCH_KIND" == window ]]; then cp "dist/$PATCH_SAFE_NAME" "dist/package/$PATCH_SAFE_NAME"; else cp "dist/$PATCH_SAFE_NAME" "dist/package/$PATCH_SAFE_NAME"; fi
+          cp "dist/$PATCH_SAFE_NAME" "dist/package/$PATCH_SAFE_NAME"
+          META="dist/$PATCH_SAFE_NAME.gtk-build.json"
+          if [[ -f "$META" ]]; then cp "$META" dist/package/; fi
           node scripts/write-signing-status.js --platform linux --requested unsigned --verified false --out dist/package/PATCH-SIGNING.json
           tar -czf "dist/$PATCH_SAFE_NAME-linux-distribution.tar.gz" -C dist/package .
       - uses: actions/upload-artifact@v4
