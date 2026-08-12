@@ -32,7 +32,9 @@ Lean certificate schemas are intentionally versioned by their producers/checkers
 
 Windows, macOS, Linux and FreeBSD artifacts are platform-specific. A native artifact should not be assumed portable to another OS or CPU architecture.
 
-Generated desktop Window packages currently depend on the documented generated-player architecture rather than native widget lowering. Signing/notarization is a distribution concern and is not implied by successful compilation.
+Patch now has dedicated native Window lowering/runtime paths for Win32, AppKit and GTK, plus sealed native payloads used by ready application downloads. These paths are versioned independently through the Native GUI IR, backend/runtime and sealed-payload contracts. Consumers should reject unsupported future native GUI or sealed-payload versions rather than guessing compatibility.
+
+Successful native compilation or a matching runtime version does not imply code signing, notarization, installer trust or cross-platform portability.
 
 ## Patch Studio projects
 
