@@ -8,11 +8,13 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 
 ### Release integrity
 - [x] deterministic SHA-256 release manifest tooling
-- [ ] versioned GitHub Release workflow that builds from an exact tag/commit
-- [ ] checksums attached beside every distributed artifact
-- [ ] release manifest includes source commit and Patch version
-- [ ] release notes / changelog generated from reviewed changes
+- [x] versioned GitHub Release workflow that builds from an exact tag/commit
+- [x] checksums attached beside every distributed tagged-release artifact
+- [x] release manifest includes source commit and Patch version
+- [x] release notes generated from reviewed changes
 - [ ] reproducibility check: rebuilding the same source/toolchain produces equivalent logical payloads where platform packaging permits
+
+Tagged releases are fail-closed. `v<package version>` must point at the checked-out `GITHUB_SHA`; the workflow tests that exact source, builds the portable/Web/Wasm/C99/npm release bundle, generates `release-manifest.json` and `SHA256SUMS.txt`, independently re-hashes every artifact, verifies the recorded Patch version and source commit, and only then calls `gh release create --verify-tag --generate-notes`. Beta/pre-release package versions are published as GitHub prereleases.
 
 ### Compatibility and project lifecycle
 - [x] document pre-1.0 compatibility policy
@@ -59,7 +61,7 @@ Ready Windows, macOS and Linux application downloads can already be consumed wit
 - [ ] documented CLI exit-code contract
 - [ ] `--json` output for check/build/formal/certify commands
 - [ ] source maps / line-accurate diagnostics across all backends
-- [ ] deterministic artifact naming
+- [ ] deterministic artifact naming across every packaging path
 - [ ] project-level configuration instead of target settings scattered through UI state
 
 The stable diagnostic envelope now covers compiler/build failure classes and parser source locations. The broader backend item remains open because Wasm/C99/native runtime and packaging failures do not yet all map back to source locations.
@@ -69,10 +71,12 @@ The stable diagnostic envelope now covers compiler/build failure classes and par
 - [x] corrupted-project detection
 - [x] rollback to last known-good project snapshot
 - [x] managed local snapshot list with manual create/export/delete/clear actions
-- [ ] build cancellation and timeout UX
-- [ ] retry semantics for remote builds without duplicate artifacts
+- [x] cloud-build cancellation and timeout UX
+- [x] retry semantics for remote builds without reusing a request
 
 The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and restore take an immediate protective snapshot before replacing the current project. The Recovery manager exposes all retained local restore points and supports manual snapshot creation, restoring any snapshot, exporting a snapshot as `.patchproject`, deleting one snapshot, or clearing the local ring after confirmation.
+
+Optional GitHub Actions builds now have a 15-minute Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent as soon as the request-specific run appears. Retry uses the captured source/build snapshot and generates a fresh request id instead of silently rebuilding later editor contents or rerunning the same request. Tokens and retry snapshots remain in page memory only. Recommended browser-local/no-token builds are unchanged.
 
 ### Testing
 - [ ] parser/compiler fuzzing

@@ -1,0 +1,92 @@
+name: Patch Tagged Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: patch-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build verify and publish tagged release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Verify exact tag and package version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          EXPECTED_TAG="v${VERSION}"
+          test "${GITHUB_REF_TYPE}" = "tag"
+          test "${GITHUB_REF_NAME}" = "${EXPECTED_TAG}"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          git tag --points-at "${GITHUB_SHA}" | grep -Fx "${EXPECTED_TAG}"
+          echo "PATCH_VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Test tagged source
+        run: npm test
+
+      - name: Check project surface
+        run: npm run check:project
+
+      - name: Build release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-dist release-meta
+          node src/cli.js build examples/score.patch --kind console --target portable --out release-dist/Score.patchapp
+          node src/cli.js build examples/score.patch --kind console --target wasm --out release-dist/Score-bootstrap.wasm
+          node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target wasm-direct --out release-dist/DirectRecipes.wasm
+          node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target c99 --out release-dist/DirectRecipes.c
+          node src/cli.js build examples/direct-wasm-recipes.patch --kind console --target web --out release-dist/DirectRecipes.html
+          node src/cli.js build examples/counter-window.patch --target web --out release-dist/CounterWindow.html
+          npm pack --pack-destination release-dist
+
+      - name: Generate release manifest and checksums
+        run: node scripts/release-manifest.js --base-dir release-dist --out-dir release-meta .
+
+      - name: Verify release bytes source commit and version
+        run: node scripts/verify-release.js --base-dir release-dist --meta-dir ../release-meta --commit "$GITHUB_SHA" --version "$PATCH_VERSION"
+
+      - name: Upload release bundle for audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: patch-${{ env.PATCH_VERSION }}-release-bundle
+          path: |
+            release-dist/*
+            release-meta/release-manifest.json
+            release-meta/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [[ "$PATCH_VERSION" == *-* ]]; then EXTRA+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" \
+            release-dist/* \
+            release-meta/release-manifest.json \
+            release-meta/SHA256SUMS.txt \
+            --verify-tag \
+            --generate-notes \
+            --title "Patch $PATCH_VERSION" \
+            "${EXTRA[@]}"
