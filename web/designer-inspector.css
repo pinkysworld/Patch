@@ -1,70 +1,210 @@
+.designer-view {
+  position: relative;
+}
+
 .designer-surface {
   flex: 1;
   min-height: 522px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: 52px minmax(0, 1fr) 248px;
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 .designer-surface .designer-canvas {
+  grid-column: 2;
   min-width: 0;
   min-height: 522px;
-}
-.designer-inspector {
-  padding: 14px;
   border-left: 1px solid var(--border);
-  background: var(--surface);
+}
+
+/* Desktop control palette. The buttons remain the original source-backed
+   toolbox controls, but are presented as a compact IDE rail. */
+.designer-view::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 39px;
+  bottom: 0;
+  width: 52px;
+  background: var(--surface-subtle);
+  border-right: 1px solid var(--border);
+  pointer-events: none;
+}
+#designer .designer-toolbar {
+  overflow: visible;
+}
+#designer .designer-toolbar > strong {
+  display: none;
+}
+#designer .designer-toolbar > button[id^="add"] {
+  position: absolute;
+  z-index: 20;
+  left: 9px;
+  width: 34px;
+  min-width: 34px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0;
+  line-height: 1;
+  box-shadow: none;
+  overflow: visible;
+}
+#designer .designer-toolbar > button[id^="add"]::before {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+#designer .designer-toolbar > button[id^="add"]::after {
+  content: attr(aria-label);
+  position: absolute;
+  z-index: 30;
+  left: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  width: max-content;
+  max-width: 150px;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+#designer .designer-toolbar > button[id^="add"]:hover,
+#designer .designer-toolbar > button[id^="add"]:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--soft);
+  color: var(--text);
+  opacity: 1;
+}
+#designer .designer-toolbar > button[id^="add"]:hover::after,
+#designer .designer-toolbar > button[id^="add"]:focus-visible::after {
+  display: block;
+}
+#designer #addText { top: 49px; }
+#designer #addButton { top: 83px; }
+#designer #addInput { top: 117px; }
+#designer #addCheckbox { top: 151px; }
+#designer #addCombo { top: 185px; }
+#designer #addListbox { top: 219px; }
+#designer #addTabs { top: 253px; }
+#designer #addText::before { content: "T"; }
+#designer #addButton::before { content: "▭"; font-size: 18px; }
+#designer #addInput::before { content: "I"; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+#designer #addCheckbox::before { content: "✓"; }
+#designer #addCombo::before { content: "⌄"; font-size: 19px; }
+#designer #addListbox::before { content: "≡"; font-size: 19px; }
+#designer #addTabs::before { content: "▤"; font-size: 17px; }
+
+.designer-inspector {
+  grid-column: 3;
+  min-width: 0;
+  padding: 12px;
+  border-left: 1px solid var(--border);
+  background: var(--surface-subtle);
   overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) var(--surface-subtle);
+}
+.designer-inspector::-webkit-scrollbar { width: 10px; height: 10px; }
+.designer-inspector::-webkit-scrollbar-track { background: var(--surface-subtle); }
+.designer-inspector::-webkit-scrollbar-thumb {
+  border: 2px solid var(--surface-subtle);
+  border-radius: 999px;
+  background: var(--border-strong);
 }
 .designer-inspector h3 {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 3px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 .designer-inspector .inspector-hint {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 10px;
+  line-height: 1.4;
 }
 .designer-inspector .inspector-field {
   display: grid;
-  gap: 5px;
-  margin: 0 0 12px;
+  gap: 4px;
+  margin: 0 0 9px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 750;
 }
 .designer-inspector .inspector-field input {
   width: 100%;
   min-width: 0;
+  min-height: 30px;
+  height: 30px;
+  padding: 5px 7px;
+  border-radius: 7px;
   color: var(--text);
+  font-size: 11px;
   font-weight: 500;
 }
 .designer-inspector .inspector-readonly {
-  min-height: 34px;
+  min-height: 30px;
   display: flex;
   align-items: center;
-  padding: 7px 9px;
+  width: fit-content;
+  min-width: 66px;
+  padding: 4px 8px;
   border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-subtle);
+  border-radius: 999px;
+  background: var(--surface);
   color: var(--text);
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 750;
 }
 .designer-inspector .inspector-actions {
-  display: flex;
-  gap: 7px;
-  margin-top: 14px;
+  position: sticky;
+  bottom: -12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 5px;
+  margin: 10px -12px -12px;
+  padding: 9px 12px 12px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-subtle) 94%, transparent);
+  backdrop-filter: blur(8px);
 }
-.designer-inspector .inspector-actions button { flex: 1; }
+.designer-inspector .inspector-actions button {
+  min-height: 29px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+}
 .designer-inspector .danger {
+  min-width: 31px;
+  padding-inline: 7px;
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border-strong);
 }
 .designer-inspector-empty {
-  margin: 42px 4px;
+  margin: 38px 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.5;
   text-align: center;
 }
@@ -80,15 +220,70 @@
   outline-color: var(--text);
 }
 
-@media (max-width: 1180px) {
-  .designer-surface { grid-template-columns: 1fr; overflow: visible; }
+@media (max-width: 1050px) {
+  .designer-surface {
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: minmax(420px, auto) auto;
+  }
+  .designer-surface .designer-canvas { grid-column: 2; grid-row: 1; }
   .designer-inspector {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-height: 360px;
     border-left: 0;
     border-top: 1px solid var(--border);
+  }
+  .designer-inspector .inspector-actions {
+    bottom: -12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .designer-view::before { display: none; }
+  .designer-surface {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  .designer-surface .designer-canvas {
+    grid-column: 1;
+    grid-row: 1;
+    border-left: 0;
+  }
+  .designer-inspector {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  #designer .designer-toolbar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+  #designer .designer-toolbar > button[id^="add"] {
+    position: static;
+    flex: 0 0 30px;
+    width: 30px;
+    min-width: 30px;
+    height: 28px;
+    min-height: 28px;
+  }
+  #designer .designer-toolbar > button[id^="add"]::after {
+    display: none !important;
+  }
+  #designer .designer-toolbar > button[id^="add"]::before {
+    font-size: 13px;
+  }
+  #designer .forms-toolbar-group {
+    flex: 1 0 100%;
+    order: 10;
   }
 }
 
 @media (max-width: 640px) {
-  .designer-inspector { padding: 12px; }
-  .designer-inspector .inspector-actions { flex-direction: column; }
+  .designer-inspector { padding: 10px; }
+  .designer-inspector .inspector-actions {
+    margin-inline: -10px;
+    margin-bottom: -10px;
+    padding-inline: 10px;
+    padding-bottom: 10px;
+  }
 }
