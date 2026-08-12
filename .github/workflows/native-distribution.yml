@@ -47,6 +47,8 @@ on:
       - scripts/build-native-sea.js
       - tests/native-signing-policy.test.js
       - docs/RELEASE_SIGNING.md
+      - docs/LINUX_PACKAGING.md
+      - web/docs.html
       - examples/forms-navigation.patch
 
 concurrency:
@@ -107,11 +109,18 @@ jobs:
           PATCH_WINDOWS_PFX_BASE64: ${{ secrets.PATCH_WINDOWS_PFX_BASE64 }}
           PATCH_WINDOWS_PFX_PASSWORD: ${{ secrets.PATCH_WINDOWS_PFX_PASSWORD }}
         run: ./scripts/sign-windows.ps1 -Root dist
-      - name: Write signing status
+      - name: Write signing status from verification evidence
         shell: pwsh
         run: |
-          $verified = if ($env:PATCH_SIGNING_MODE -eq 'require') { 'true' } else { 'false' }
+          $verified = 'false'
+          $marker = 'dist/.patch-windows-signature-verified'
+          if ($env:PATCH_SIGNING_MODE -eq 'require') {
+            if (-not (Test-Path -LiteralPath $marker)) { throw 'Required Windows signing evidence is missing.' }
+            if ((Get-Content -LiteralPath $marker -Raw) -ne 'windows-authenticode-v1') { throw 'Required Windows signing evidence is invalid.' }
+            $verified = 'true'
+          }
           node scripts/write-signing-status.js --platform windows --requested $env:PATCH_SIGNING_MODE --verified $verified --out dist/PATCH-SIGNING.json
+          Remove-Item -LiteralPath $marker -Force -ErrorAction SilentlyContinue
       - name: Package Windows distribution
         shell: pwsh
         run: |
@@ -176,17 +185,23 @@ jobs:
           PATCH_APPLE_TEAM_ID: ${{ secrets.PATCH_APPLE_TEAM_ID }}
           PATCH_APPLE_APP_PASSWORD: ${{ secrets.PATCH_APPLE_APP_PASSWORD }}
         run: ./scripts/sign-notarize-macos.sh "dist/$PATCH_SAFE_NAME.app"
-      - name: Write signing status
+      - name: Write signing status from verification evidence
         shell: bash
         run: |
           set -euo pipefail
           VERIFIED=false; NOTARIZED=false
-          if [[ "$PATCH_SIGNING_MODE" == require ]]; then VERIFIED=true; NOTARIZED=true; fi
+          MARKER=dist/.patch-macos-signature-verified
+          if [[ "$PATCH_SIGNING_MODE" == require ]]; then
+            [[ -f "$MARKER" ]] || { echo 'Required macOS signing evidence is missing.' >&2; exit 2; }
+            [[ "$(cat "$MARKER")" == macos-developer-id-notarized-v1 ]] || { echo 'Required macOS signing evidence is invalid.' >&2; exit 2; }
+            VERIFIED=true; NOTARIZED=true
+          fi
           mkdir -p dist/package
           cp -R "dist/$PATCH_SAFE_NAME.app" "dist/package/$PATCH_SAFE_NAME.app"
           META="dist/$PATCH_SAFE_NAME.appkit-build.json"
           if [[ -f "$META" ]]; then cp "$META" dist/package/; fi
           node scripts/write-signing-status.js --platform macos --requested "$PATCH_SIGNING_MODE" --verified "$VERIFIED" --notarized "$NOTARIZED" --out dist/package/PATCH-SIGNING.json
+          rm -f "$MARKER"
       - name: Package macOS distribution
         shell: bash
         run: |
