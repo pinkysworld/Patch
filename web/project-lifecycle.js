@@ -18,6 +18,7 @@ const CORRUPT_KEY = 'patchStudio.project.corrupt.v1';
 const LEGACY_KEY = 'patchStudio.project';
 const RECOVERY_INTERVAL_MS = 60_000;
 const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_SOURCE_BYTES * 8;
+const encoder = new TextEncoder();
 
 installStylesheet();
 
@@ -88,7 +89,9 @@ function installProjectActions() {
   exportButton?.addEventListener('click', exportProject);
   importButton?.addEventListener('click', () => importFile?.click());
   importFile?.addEventListener('change', importProjectFile);
-  recoverButton?.addEventListener('click', recoverLatestProject);
+  recoverButton?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('patch:open-recovery-manager'));
+  });
 
   for (const input of [code, projectName, projectKind]) {
     input?.addEventListener('input', () => {
@@ -129,20 +132,61 @@ async function importProjectFile() {
   }
 }
 
-function recoverLatestProject() {
-  try {
-    const snapshots = readRecoverySnapshots();
-    const latest = snapshots[0];
-    if (!latest) return;
-    const when = formatTime(latest.savedAt);
-    if (!window.confirm(`Recover the Patch Studio snapshot from ${when}? Your current project will be kept as a recovery snapshot first.`)) return;
-    protectCurrentProject();
-    applyBundleToDom(latest.project);
-    persistBundle(latest.project, { snapshot: 'none' });
-    setStatus(`Recovered snapshot from ${when}`);
-  } catch (error) {
-    setStatus('Recovery stopped', error?.message);
-  }
+export function getRecoverySnapshotSummaries() {
+  return readRecoverySnapshots().map((snapshot, index) => {
+    const state = studioStateFromBundle(snapshot.project);
+    return {
+      index,
+      savedAt: snapshot.savedAt,
+      name: state.name,
+      kind: state.kind,
+      sourceBytes: encoder.encode(state.code).length
+    };
+  });
+}
+
+export function createManualRecoverySnapshot() {
+  appendRecovery(bundleFromDom());
+  lastRecoveryAt = Date.now();
+  setStatus('Recovery snapshot saved');
+  return getRecoverySnapshotSummaries();
+}
+
+export function restoreRecoverySnapshot(index) {
+  const snapshots = readRecoverySnapshots();
+  const selected = recoveryAt(snapshots, index);
+  const when = formatTime(selected.savedAt);
+  protectCurrentProject();
+  applyBundleToDom(selected.project);
+  persistBundle(selected.project, { snapshot: 'none' });
+  setStatus(`Recovered snapshot from ${when}`);
+  return getRecoverySnapshotSummaries();
+}
+
+export function exportRecoverySnapshot(index) {
+  const selected = recoveryAt(readRecoverySnapshots(), index);
+  const state = studioStateFromBundle(selected.project);
+  const stamp = selected.savedAt.replace(/[:.]/g, '-');
+  const filename = `${studioProjectFileStem(state.name)}-recovery-${stamp}.patchproject`;
+  download(filename, serializeStudioProjectBundle(selected.project), 'application/json');
+  setStatus(`Exported ${filename}`);
+  return filename;
+}
+
+export function deleteRecoverySnapshot(index) {
+  const snapshots = readRecoverySnapshots();
+  const selected = recoveryAt(snapshots, index);
+  snapshots.splice(selected.index, 1);
+  writeRecoverySnapshots(snapshots);
+  setStatus(`Deleted recovery snapshot from ${formatTime(selected.snapshot.savedAt)}`);
+  return getRecoverySnapshotSummaries();
+}
+
+export function clearRecoverySnapshots() {
+  localStorage.removeItem(RECOVERY_KEY);
+  updateRecoveryControl([]);
+  setStatus('Recovery snapshots cleared');
+  return [];
 }
 
 function protectCurrentProject() {
@@ -232,12 +276,25 @@ function quarantineCorruptStore(key, raw) {
 
 function appendRecovery(bundle) {
   const next = addRecoverySnapshot(readRecoverySnapshots(), bundle, new Date());
-  localStorage.setItem(RECOVERY_KEY, serializeRecoverySnapshots(next));
-  updateRecoveryControl(next);
+  writeRecoverySnapshots(next);
 }
 
 function readRecoverySnapshots() {
   return parseRecoverySnapshots(localStorage.getItem(RECOVERY_KEY));
+}
+
+function writeRecoverySnapshots(snapshots) {
+  if (snapshots.length) localStorage.setItem(RECOVERY_KEY, serializeRecoverySnapshots(snapshots));
+  else localStorage.removeItem(RECOVERY_KEY);
+  updateRecoveryControl(snapshots);
+}
+
+function recoveryAt(snapshots, index) {
+  const normalizedIndex = Number(index);
+  if (!Number.isInteger(normalizedIndex) || normalizedIndex < 0 || normalizedIndex >= snapshots.length) {
+    throw new Error('Recovery snapshot selection is no longer available.');
+  }
+  return { index: normalizedIndex, snapshot: snapshots[normalizedIndex], ...snapshots[normalizedIndex] };
 }
 
 function updateRecoveryControl(known = null) {
@@ -246,10 +303,15 @@ function updateRecoveryControl(known = null) {
   if (!snapshots) {
     try { snapshots = readRecoverySnapshots(); } catch { snapshots = []; }
   }
-  recoverButton.disabled = snapshots.length === 0;
-  recoverButton.title = snapshots[0]
-    ? `Recover latest snapshot from ${formatTime(snapshots[0].savedAt)}. ${snapshots.length} snapshot${snapshots.length === 1 ? '' : 's'} stored.`
-    : 'No recovery snapshots stored yet.';
+  const count = snapshots.length;
+  recoverButton.disabled = false;
+  recoverButton.textContent = count ? `Recovery (${count})` : 'Recovery';
+  recoverButton.title = count
+    ? `${count} local recovery snapshot${count === 1 ? '' : 's'}. Open recovery manager.`
+    : 'Open recovery manager and create a snapshot.';
+  window.dispatchEvent(new CustomEvent('patch:recovery-changed', {
+    detail: { count, latestSavedAt: snapshots[0]?.savedAt ?? null }
+  }));
 }
 
 function sameBundle(a, b) {
