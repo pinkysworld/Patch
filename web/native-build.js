@@ -19,6 +19,8 @@ const WINDOWS_NATIVE_GUI_RUNTIME = './runtimes/patch-windows-native-gui-runtime.
 const LINUX_NATIVE_GUI_RUNTIME = './runtimes/patch-linux-native-gui-runtime.bin';
 const MACOS_NATIVE_GUI_RUNTIME = './runtimes/patch-macos-native-gui-runtime.bin';
 const API = 'https://api.github.com';
+const CLOUD_BUILD_TIMEOUT_MS = 15 * 60 * 1000;
+const CLOUD_BUILD_POLL_MS = 5000;
 const code = document.querySelector('#code');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
@@ -30,7 +32,10 @@ const tokenLabel = tokenInput.closest('label');
 const status = document.querySelector('#nativeBuildStatus');
 const output = document.querySelector('#output');
 const nativeBuildMode = installNativeModeControls();
+const cloudControls = installCloudBuildControls();
 let nativeBuildProfile = '';
+let activeCloudBuild = null;
+let lastCloudBuildSnapshot = null;
 
 const nativeTargets = new Map([
   ['native-windows', 'windows'],
@@ -42,6 +47,8 @@ const nativeTargets = new Map([
 buildTarget.addEventListener('change', refreshNativePanel);
 projectKind.addEventListener('change', refreshNativePanel);
 nativeBuildMode.addEventListener('change', refreshNativePanel);
+cloudControls.cancel.addEventListener('click', cancelActiveCloudBuild);
+cloudControls.retry.addEventListener('click', retryLastCloudBuild);
 refreshNativePanel();
 
 buildButton.addEventListener('click', async event => {
@@ -53,6 +60,7 @@ buildButton.addEventListener('click', async event => {
 
   const name = safeName(projectName.value);
   const kind = projectKind.value === 'window' ? 'window' : 'console';
+  let cloudSnapshot = null;
   try {
     let preflightText;
     let directWasm = null;
@@ -132,18 +140,8 @@ buildButton.addEventListener('click', async event => {
         : `Linking compiled Patch Window program into the Electron compatibility runtime…`;
       const templateBytes = new Uint8Array(await response.arrayBuffer());
       const ready = kind === 'window'
-        ? buildPrebuiltCompiledWindowPackage(templateBytes, {
-            platform,
-            name,
-            compiledWindow,
-            source: code.value
-          })
-        : buildPrebuiltNativePackage(templateBytes, {
-            platform,
-            kind,
-            name,
-            wasm: directWasm?.module ?? null
-          });
+        ? buildPrebuiltCompiledWindowPackage(templateBytes, { platform, name, compiledWindow, source: code.value })
+        : buildPrebuiltNativePackage(templateBytes, { platform, kind, name, wasm: directWasm?.module ?? null });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
       output.textContent = `${kind === 'window' ? 'Compatibility package' : 'Ready app'} built ✓\n\nTarget: ${platformLabel(platform)}\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token was used. No local compiler is required. Unzip the download and open ${prebuiltLauncher(platform, kind, name)}.\n\n${readyPackageNote(kind, platform)}`;
       status.textContent = kind === 'window'
@@ -175,39 +173,35 @@ buildButton.addEventListener('click', async event => {
     const sourceBase64 = utf8Base64(code.value);
     if (sourceBase64.length > 60000) throw new Error('This source is too large for the GitHub Actions dispatch channel. Use the local build path.');
 
-    const requestId = makeRequestId();
     const workflow = workflowFor(platform, kind);
     const directWin32 = platform === 'windows' && kind === 'window';
     const directNativeWindow = kind === 'window' && ['windows', 'macos', 'linux'].includes(platform);
-    const nativeWindowLabel = directWin32 ? 'Windows native AOT single-EXE' : directNativeWindow ? `${platformLabel(platform)} native AOT Window` : `${platformLabel(platform)} ${kindLabel} cloud`;
-    setBusy(true, directNativeWindow ? `Starting native ${platformLabel(platform)} AOT build…` : `Starting ${platformLabel(platform)} ${kindLabel} cloud build…`);
-    output.textContent = `${nativeWindowLabel} build\n\nPreflight passed: ${preflightText}.\nSubmitting the current editor source to GitHub Actions…`;
-    const inputs = directNativeWindow
-      ? { source_b64: sourceBase64, source_path: '', app_name: name, request_id: requestId }
-      : { source_b64: sourceBase64, source_path: '', app_name: name, kind, request_id: requestId };
-    if (!directWin32 && platform !== 'freebsd') inputs.platform = platform;
-    await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${workflow}/dispatches`, token, {
-      method: 'POST', body: JSON.stringify({ ref: 'main', inputs })
-    });
-    const run = await waitForRun(token, requestId, platform, kindLabel, workflow);
-    if (run.conclusion !== 'success') throw new Error(`GitHub build finished with '${run.conclusion}'. Open ${run.html_url} for the build log.`);
-    status.textContent = 'Cloud build complete. Preparing download…';
-    const artifacts = await apiJson(`${API}/repos/${REPOSITORY}/actions/runs/${run.id}/artifacts`, token);
-    const expectedName = directWin32 ? 'patch-windows-single-exe' : `patch-${platform}-${requestId}`;
-    const artifact = (artifacts.artifacts ?? []).find(item => item.name === expectedName && !item.expired);
-    if (!artifact) throw new Error(`The build succeeded but artifact '${expectedName}' was not found.`);
-    const downloadName = directWin32 ? `${name}-windows-aot-single-exe.zip` : `${name}-${platform}-${kind}-build.zip`;
-    await downloadArtifact(artifact, token, downloadName);
-    output.textContent = `Built ${name} for ${platformLabel(platform)} ✓\n\nType: ${kindLabel}\n${artifactDescription(platform, kind, name)}\n\nBuild run: ${run.html_url}`;
-    status.textContent = directWin32
-      ? `Windows native AOT EXE downloaded · artifact ZIP contains only ${name}.exe`
-      : directNativeWindow
-        ? `${platformLabel(platform)} native AOT Window build downloaded · no Electron`
-        : `${platformLabel(platform)} ${kindLabel} cloud build downloaded`;
+    cloudSnapshot = {
+      token,
+      sourceBase64,
+      name,
+      kind,
+      platform,
+      kindLabel,
+      preflightText,
+      workflow,
+      directWin32,
+      directNativeWindow
+    };
+    lastCloudBuildSnapshot = cloudSnapshot;
+    await runCloudBuild(cloudSnapshot);
   } catch (error) {
     output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
-    status.textContent = 'Native build stopped';
+    status.textContent = error?.name === 'PatchBuildCancelledError'
+      ? 'Cloud build cancelled'
+      : error?.name === 'PatchBuildTimeoutError'
+        ? 'Cloud build timed out'
+        : 'Native build stopped';
+    if (cloudSnapshot || lastCloudBuildSnapshot) showRetryControl();
   } finally {
+    activeCloudBuild = null;
+    cloudControls.cancel.hidden = true;
+    cloudControls.cancel.disabled = false;
     setBusy(false);
   }
 }, true);
@@ -226,6 +220,27 @@ function installNativeModeControls() {
   return select;
 }
 
+function installCloudBuildControls() {
+  const group = document.createElement('span');
+  group.className = 'native-build-actions';
+  group.setAttribute('aria-label', 'Cloud build actions');
+  const cancel = document.createElement('button');
+  cancel.id = 'cancelNativeBuild';
+  cancel.type = 'button';
+  cancel.className = 'secondary small';
+  cancel.textContent = 'Cancel';
+  cancel.hidden = true;
+  const retry = document.createElement('button');
+  retry.id = 'retryNativeBuild';
+  retry.type = 'button';
+  retry.className = 'secondary small';
+  retry.textContent = 'Retry';
+  retry.hidden = true;
+  group.append(cancel, retry);
+  panel.insertBefore(group, status);
+  return { group, cancel, retry };
+}
+
 function refreshNativePanel() {
   const platform = nativeTargets.get(buildTarget.value);
   const kind = projectKind.value === 'window' ? 'window' : 'console';
@@ -237,6 +252,7 @@ function refreshNativePanel() {
   }
   updateNativeModeLabels(platform, kind);
   tokenLabel.hidden = nativeBuildMode.value !== 'cloud';
+  cloudControls.group.hidden = nativeBuildMode.value !== 'cloud' && cloudControls.retry.hidden;
   if (!platform || buildButton.disabled) return;
   const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
   if (platform === 'freebsd' && kind === 'window') {
@@ -308,21 +324,150 @@ function updateNativeModeLabels(platform, kind) {
   local.textContent = 'Local toolchain kit (advanced)';
 }
 
-async function waitForRun(token, requestId, platform, kindLabel, workflow) {
+async function runCloudBuild(snapshot) {
+  if (activeCloudBuild) throw new Error('A cloud build is already active.');
+  const requestId = makeRequestId();
+  const nativeWindowLabel = snapshot.directWin32
+    ? 'Windows native AOT single-EXE'
+    : snapshot.directNativeWindow
+      ? `${platformLabel(snapshot.platform)} native AOT Window`
+      : `${platformLabel(snapshot.platform)} ${snapshot.kindLabel} cloud`;
+  const state = {
+    requestId,
+    token: snapshot.token,
+    runId: null,
+    runUrl: null,
+    cancelRequested: false,
+    cancelSent: false,
+    deadline: Date.now() + CLOUD_BUILD_TIMEOUT_MS
+  };
+  activeCloudBuild = state;
+  cloudControls.group.hidden = false;
+  cloudControls.cancel.hidden = false;
+  cloudControls.cancel.disabled = false;
+  cloudControls.retry.hidden = true;
+  setBusy(true, snapshot.directNativeWindow ? `Starting native ${platformLabel(snapshot.platform)} AOT build…` : `Starting ${platformLabel(snapshot.platform)} ${snapshot.kindLabel} cloud build…`);
+  output.textContent = `${nativeWindowLabel} build\n\nPreflight passed: ${snapshot.preflightText}.\nSubmitting the captured project snapshot to GitHub Actions…\nTimeout: ${Math.round(CLOUD_BUILD_TIMEOUT_MS / 60000)} minutes.`;
+
+  const inputs = snapshot.directNativeWindow
+    ? { source_b64: snapshot.sourceBase64, source_path: '', app_name: snapshot.name, request_id: requestId }
+    : { source_b64: snapshot.sourceBase64, source_path: '', app_name: snapshot.name, kind: snapshot.kind, request_id: requestId };
+  if (!snapshot.directWin32 && snapshot.platform !== 'freebsd') inputs.platform = snapshot.platform;
+  await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${snapshot.workflow}/dispatches`, snapshot.token, {
+    method: 'POST', body: JSON.stringify({ ref: 'main', inputs })
+  });
+
+  const run = await waitForRun(snapshot, state);
+  if (run.conclusion !== 'success') throw new Error(`GitHub build finished with '${run.conclusion}'. Open ${run.html_url} for the build log.`);
+  status.textContent = 'Cloud build complete. Preparing download…';
+  const artifacts = await apiJson(`${API}/repos/${REPOSITORY}/actions/runs/${run.id}/artifacts`, snapshot.token);
+  const expectedName = snapshot.directWin32 ? 'patch-windows-single-exe' : `patch-${snapshot.platform}-${requestId}`;
+  const artifact = (artifacts.artifacts ?? []).find(item => item.name === expectedName && !item.expired);
+  if (!artifact) throw new Error(`The build succeeded but artifact '${expectedName}' was not found.`);
+  const downloadName = snapshot.directWin32
+    ? `${snapshot.name}-windows-aot-single-exe.zip`
+    : `${snapshot.name}-${snapshot.platform}-${snapshot.kind}-build.zip`;
+  await downloadArtifact(artifact, snapshot.token, downloadName);
+  output.textContent = `Built ${snapshot.name} for ${platformLabel(snapshot.platform)} ✓\n\nType: ${snapshot.kindLabel}\n${artifactDescription(snapshot.platform, snapshot.kind, snapshot.name)}\n\nRequest: ${requestId}\nBuild run: ${run.html_url}`;
+  status.textContent = snapshot.directWin32
+    ? `Windows native AOT EXE downloaded · artifact ZIP contains only ${snapshot.name}.exe`
+    : snapshot.directNativeWindow
+      ? `${platformLabel(snapshot.platform)} native AOT Window build downloaded · no Electron`
+      : `${platformLabel(snapshot.platform)} ${snapshot.kindLabel} cloud build downloaded`;
+  cloudControls.retry.hidden = true;
+}
+
+async function waitForRun(snapshot, state) {
   let seen = null;
-  for (let attempt = 0; attempt < 360; attempt += 1) {
-    const data = await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${workflow}/runs?event=workflow_dispatch&per_page=30`, token);
-    const run = (data.workflow_runs ?? []).find(item => String(item.display_title ?? item.name ?? '').includes(requestId));
+  while (Date.now() < state.deadline) {
+    const data = await apiJson(`${API}/repos/${REPOSITORY}/actions/workflows/${snapshot.workflow}/runs?event=workflow_dispatch&per_page=30`, snapshot.token);
+    const run = (data.workflow_runs ?? []).find(item => String(item.display_title ?? item.name ?? '').includes(state.requestId));
     if (run) {
       seen = run;
-      const state = run.status === 'completed' ? run.conclusion : run.status;
-      status.textContent = `${platformLabel(platform)} ${kindLabel} cloud build: ${state}…`;
-      output.textContent = `${platformLabel(platform)} ${kindLabel} cloud build\n\nGitHub Actions run: ${state}\n${run.html_url}`;
+      state.runId = run.id;
+      state.runUrl = run.html_url;
+      if (state.cancelRequested) {
+        await cancelCloudRun(state);
+        throw cancelledBuildError(run.html_url);
+      }
+      const runState = run.status === 'completed' ? run.conclusion : run.status;
+      status.textContent = `${platformLabel(snapshot.platform)} ${snapshot.kindLabel} cloud build: ${runState}…`;
+      output.textContent = `${platformLabel(snapshot.platform)} ${snapshot.kindLabel} cloud build\n\nRequest: ${state.requestId}\nGitHub Actions run: ${runState}\n${run.html_url}\n\nCancel remains available until the run completes.`;
       if (run.status === 'completed') return run;
+    } else if (state.cancelRequested) {
+      status.textContent = 'Cancellation requested. Waiting for GitHub to expose the dispatched run…';
     }
-    await sleep(5000);
+    await sleep(CLOUD_BUILD_POLL_MS);
   }
-  throw new Error(seen ? `Native build did not finish in time. Open ${seen.html_url}.` : 'Patch Studio could not find the dispatched build run.');
+
+  if (seen && seen.status !== 'completed') await cancelCloudRun(state).catch(() => {});
+  const error = new Error(seen
+    ? `Cloud build exceeded the ${Math.round(CLOUD_BUILD_TIMEOUT_MS / 60000)} minute Studio timeout. Patch Studio requested cancellation. Open ${seen.html_url} for final GitHub status.`
+    : `Patch Studio could not find the dispatched build run within ${Math.round(CLOUD_BUILD_TIMEOUT_MS / 60000)} minutes.`);
+  error.name = 'PatchBuildTimeoutError';
+  throw error;
+}
+
+async function cancelActiveCloudBuild() {
+  const state = activeCloudBuild;
+  if (!state || state.cancelRequested) return;
+  state.cancelRequested = true;
+  cloudControls.cancel.disabled = true;
+  status.textContent = state.runId ? 'Cancelling GitHub Actions run…' : 'Cancellation requested…';
+  if (state.runId) {
+    try {
+      await cancelCloudRun(state);
+      status.textContent = 'Cancellation sent to GitHub Actions…';
+    } catch (error) {
+      status.textContent = `Cancellation requested; GitHub replied: ${error?.message ?? String(error)}`;
+    }
+  }
+}
+
+async function cancelCloudRun(state) {
+  if (!state?.runId || state.cancelSent) return;
+  state.cancelSent = true;
+  try {
+    await apiJson(`${API}/repos/${REPOSITORY}/actions/runs/${state.runId}/cancel`, state.token, { method: 'POST' });
+  } catch (error) {
+    state.cancelSent = false;
+    throw error;
+  }
+}
+
+async function retryLastCloudBuild() {
+  const snapshot = lastCloudBuildSnapshot;
+  if (!snapshot || activeCloudBuild) return;
+  showOutput();
+  cloudControls.retry.hidden = true;
+  try {
+    await runCloudBuild(snapshot);
+  } catch (error) {
+    output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
+    status.textContent = error?.name === 'PatchBuildCancelledError'
+      ? 'Cloud build cancelled'
+      : error?.name === 'PatchBuildTimeoutError'
+        ? 'Cloud build timed out'
+        : 'Native build stopped';
+    showRetryControl();
+  } finally {
+    activeCloudBuild = null;
+    cloudControls.cancel.hidden = true;
+    cloudControls.cancel.disabled = false;
+    setBusy(false);
+  }
+}
+
+function showRetryControl() {
+  if (!lastCloudBuildSnapshot) return;
+  cloudControls.group.hidden = false;
+  cloudControls.retry.hidden = false;
+}
+
+function cancelledBuildError(url = '') {
+  const error = new Error(`Cloud build cancelled by user.${url ? ` GitHub run: ${url}` : ''}`);
+  error.name = 'PatchBuildCancelledError';
+  return error;
 }
 
 async function apiJson(url, token, options = {}) {
@@ -357,7 +502,12 @@ function showOutput() {
   for (const tab of document.querySelectorAll('.tab')) tab.classList.toggle('active', tab.dataset.tab === 'output');
   document.querySelector('#designer').hidden = true; document.querySelector('#app').hidden = true; document.querySelector('#changes').hidden = true; document.querySelector('#ir').hidden = true; output.hidden = false;
 }
-function setBusy(busy, message = null) { buildButton.disabled = busy; nativeBuildMode.disabled = busy; if (message) status.textContent = message; if (!busy) refreshNativePanel(); }
+function setBusy(busy, message = null) {
+  buildButton.disabled = busy;
+  nativeBuildMode.disabled = busy;
+  if (message) status.textContent = message;
+  if (!busy) refreshNativePanel();
+}
 function workflowFor(platform, kind) {
   if (platform === 'windows' && kind === 'window') return WINDOWS_SINGLE_EXE_WORKFLOW;
   if ((platform === 'macos' || platform === 'linux') && kind === 'window') return NATIVE_WINDOW_AOT_WORKFLOW;
