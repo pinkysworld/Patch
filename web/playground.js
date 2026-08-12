@@ -11,6 +11,7 @@ import {
   updateDesignerControl
 } from '../src/designer.js';
 import { triggerWindowEvent } from '../src/window-events.js';
+import { studioProjectFileStem } from '../src/studio-project.js';
 
 const samples = {
   counterWindow: `create number count = 0
@@ -135,6 +136,7 @@ const buildTarget = document.querySelector('#buildTarget');
 const saveState = document.querySelector('#saveState');
 let runtime = null;
 let designerTimer = null;
+let changeContractTimer = null;
 let designerSelection = null;
 let designerControls = [];
 
@@ -177,7 +179,7 @@ for (const field of [designerInspector.idInput, designerInspector.textInput, des
 
 document.querySelector('#build').addEventListener('click', () => {
   try {
-    const name = safeName(projectName.value);
+    const name = studioProjectFileStem(projectName.value);
     if (buildTarget.value === 'web') {
       const built = buildStandaloneWebApp(code.value, projectOptions());
       download(`${name}.html`, built.html, 'text/html');
@@ -308,6 +310,8 @@ function runProject() {
 }
 
 function refreshChangeContract() {
+  clearTimeout(changeContractTimer);
+  changeContractTimer = null;
   try {
     const compiled = compile(code.value, projectOptions());
     changesView.textContent = formatChangeAnalysis(compiled.ir);
@@ -316,7 +320,10 @@ function refreshChangeContract() {
   }
 }
 
-function scheduleChangeContract() { setTimeout(refreshChangeContract, 220); }
+function scheduleChangeContract() {
+  clearTimeout(changeContractTimer);
+  changeContractTimer = setTimeout(refreshChangeContract, 220);
+}
 
 function formatChangeAnalysis(ir) {
   const lines = [];
@@ -677,8 +684,7 @@ function showTab(name) {
   irView.hidden = name !== 'ir';
 }
 
-function projectOptions() { return { name: safeName(projectName.value), kind: projectKind.value, entry: 'main.patch' }; }
-function safeName(name) { return (name || 'PatchApp').replace(/[^A-Za-z0-9_-]/g, '_'); }
+function projectOptions() { return { name: studioProjectFileStem(projectName.value), kind: projectKind.value, entry: 'main.patch' }; }
 
 function saveProject() {
   try {
