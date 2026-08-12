@@ -45,9 +45,10 @@ test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatib
   assert.ok(studio.includes('Native AOT app (GitHub Actions)'));
 });
 
-test('macOS native runtime workflow smokes Result Dialogs and publishes universal AppKit runtime v0.7', () => {
+test('macOS native runtime workflow smokes Result Dialogs and publishes universal accessible AppKit runtime v0.8', () => {
   for (const marker of [
-    'native-runtime/appkit-sealed-gui-v07.mm',
+    'native-runtime/appkit-sealed-gui-v08.mm',
+    'tests/sealed-native-accessibility.test.js',
     'scripts/seal-native-macos.js',
     '-arch arm64 -arch x86_64',
     'lipo -archs',
@@ -59,8 +60,8 @@ test('macOS native runtime workflow smokes Result Dialogs and publishes universa
     'PatchSealedResultDialog',
     'Expected sealed native GUI payload v7',
     'patch-macos-native-gui-runtime.bin',
-    'native-macos-runtime-v0.7',
-    'Signing/notarization remains separate'
+    'native-macos-runtime-v0.8',
+    'final signing/notarization remains separate'
   ]) assert.ok(workflow.includes(marker), marker);
   assert.equal(workflow.includes('native-macos-runtime-v0.6'), false);
   assert.match(workflow, /unsigned universal AppKit/i);

@@ -39,9 +39,10 @@ test('Linux compatibility packaging remains explicit and AOT route remains avail
   assert.ok(studio.includes('return NATIVE_WINDOW_AOT_WORKFLOW'));
 });
 
-test('Linux native runtime workflow smokes Result Dialogs and publishes GTK runtime v0.7', () => {
+test('Linux native runtime workflow smokes Result Dialogs and publishes accessible GTK runtime v0.8', () => {
   for (const marker of [
-    'native-runtime/gtk-sealed-gui-v07.cpp',
+    'native-runtime/gtk-sealed-gui-v08.cpp',
+    'tests/sealed-native-accessibility.test.js',
     'scripts/seal-native-linux.js',
     'examples/radio-window.patch',
     'PatchSealedRadio',
@@ -51,7 +52,7 @@ test('Linux native runtime workflow smokes Result Dialogs and publishes GTK runt
     'PatchSealedResultDialog',
     'Expected sealed native GUI payload v7',
     'patch-linux-native-gui-runtime.bin',
-    'native-linux-runtime-v0.7'
+    'native-linux-runtime-v0.8'
   ]) assert.ok(workflow.includes(marker), marker);
   assert.equal(workflow.includes('native-linux-runtime-v0.6'), false);
   assert.equal(workflow.includes('build-native-window.js'), false);
