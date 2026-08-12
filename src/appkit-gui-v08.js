@@ -49,7 +49,7 @@ function injectAccessibilitySmoke(source, controls) {
     if (control.type === 'radio') {
       for (let optionIndex = 0; optionIndex < control.options.length; optionIndex += 1) {
         const expected = nativeRadioItemAccessibleName(control, control.options[optionIndex]);
-        checks.push(`  if ([gRadioItems[${control.nativeIndex}] count] <= ${optionIndex} || ![[gRadioItems[${control.nativeIndex}] objectAtIndex:${optionIndex}].accessibilityLabel isEqualToString:${objcLiteral(expected)}]) return ${code++};`);
+        checks.push(`  if ([gRadioItems[${control.nativeIndex}] count] <= ${optionIndex} || ![[((NSButton *)[gRadioItems[${control.nativeIndex}] objectAtIndex:${optionIndex}]) accessibilityLabel] isEqualToString:${objcLiteral(expected)}]) return ${code++};`);
       }
       continue;
     }
