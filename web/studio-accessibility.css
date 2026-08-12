@@ -103,7 +103,8 @@
 
 @media (max-width: 560px) {
   .studio {
-    padding-inline: max(10px, env(safe-area-inset-left));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
   }
 
   .toolbar {
@@ -152,7 +153,6 @@
 @media (pointer: coarse) {
   button.small,
   .tab,
-  #designer .designer-toolbar > button[id^="add"],
   .designer-inspector .inspector-actions button,
   .recovery-actions button,
   .recovery-footer button {
@@ -163,6 +163,16 @@
   input,
   .designer-inspector .inspector-field input {
     min-height: 42px !important;
+  }
+}
+
+@media (pointer: coarse) and (max-width: 760px) {
+  #designer .designer-toolbar > button[id^="add"] {
+    min-height: 40px !important;
+    height: 40px !important;
+    flex-basis: 40px;
+    width: 40px;
+    min-width: 40px;
   }
 }
 
