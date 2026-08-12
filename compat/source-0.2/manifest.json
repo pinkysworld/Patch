@@ -1,0 +1,45 @@
+{
+  "schema": "patch-source-compatibility-corpus",
+  "version": 1,
+  "languageLine": "0.2",
+  "cases": [
+    {
+      "file": "core-number.patch",
+      "mode": "run",
+      "expectedOutput": ["5"],
+      "expectedState": { "score": 5 }
+    },
+    {
+      "file": "thing-fields.patch",
+      "mode": "run",
+      "expectedOutput": ["name=Alex, score=3"],
+      "expectedState": { "player": { "name": "Alex", "score": 3 } }
+    },
+    {
+      "file": "list-loose.patch",
+      "mode": "run",
+      "expectedOutput": ["apple, orange"],
+      "expectedState": { "fruits": ["apple", "orange"] }
+    },
+    {
+      "file": "recipe-undo.patch",
+      "mode": "run",
+      "expectedOutput": ["5"],
+      "expectedState": { "score": 5 }
+    },
+    {
+      "file": "legacy-window-flow.patch",
+      "mode": "compile-window",
+      "expectedWindows": 1,
+      "expectedControls": 2,
+      "expectedPositionedControls": 0
+    },
+    {
+      "file": "legacy-unnamed-windows.patch",
+      "mode": "compile-window",
+      "expectedWindows": 2,
+      "expectedControls": 2,
+      "expectedPositionedControls": 0
+    }
+  ]
+}
