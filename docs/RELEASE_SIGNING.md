@@ -13,6 +13,17 @@ Patch treats signing as a property of the **final project artifact**, not of a r
 
 The workflow does not silently downgrade `require` to unsigned.
 
+Pull requests run an unsigned Windows/macOS/Linux distribution smoke on the direct native backends. Signing secrets are scoped only to the manually dispatched `require` signing steps, not to the normal build/smoke environment. Draft pull requests skip those native distribution jobs so iterative development does not repeatedly trigger the full platform matrix.
+
+## Verification evidence
+
+The final signing manifest is not inferred from `signing_mode=require` alone. Each signing script removes any stale internal marker before it begins and writes a platform-specific verification marker **only after** all required platform verification has succeeded:
+
+- Windows: `windows-authenticode-v1`
+- macOS: `macos-developer-id-notarized-v1`
+
+The packaging step requires the exact marker before it may pass `verified=true` to the signing-status manifest builder. Missing or altered evidence stops the workflow. The internal marker is then removed and is not shipped as user-facing signing proof; `PATCH-SIGNING.json` is the normalized package status.
+
 ## Windows
 
 Required repository secrets when `signing_mode=require`:
@@ -20,9 +31,9 @@ Required repository secrets when `signing_mode=require`:
 - `PATCH_WINDOWS_PFX_BASE64` — base64-encoded Authenticode PFX/PKCS#12 certificate.
 - `PATCH_WINDOWS_PFX_PASSWORD` — password for the PFX.
 
-`scripts/sign-windows.ps1` finds Windows SDK `signtool.exe`, signs every final `.exe` under the distribution directory with SHA-256 and an RFC3161 timestamp, then runs `signtool verify /pa /v` for every executable. The temporary PFX is deleted in a `finally` block.
+`scripts/sign-windows.ps1` finds Windows SDK `signtool.exe`, signs every final `.exe` under the distribution directory with SHA-256 and an RFC3161 timestamp, then runs `signtool verify /pa /v /tw` for every executable. The temporary PFX is deleted in a `finally` block. The Windows verification marker is created only after every executable passes verification.
 
-A Windows distribution is marked `signed` only after that verification step succeeds.
+A Windows distribution is marked `signed` only after that verification evidence is present.
 
 ## macOS
 
@@ -35,13 +46,15 @@ Required repository secrets when `signing_mode=require`:
 - `PATCH_APPLE_TEAM_ID` — Apple Developer Team ID.
 - `PATCH_APPLE_APP_PASSWORD` — app-specific password for `notarytool`.
 
-`scripts/sign-notarize-macos.sh` creates a temporary keychain, imports the certificate, signs the final `.app` with hardened runtime and secure timestamping, verifies it with `codesign`, submits the app to Apple notarization with `notarytool --wait`, staples the ticket, validates the staple, re-verifies the code signature, and finally assesses the application with Gatekeeper `spctl`.
+`scripts/sign-notarize-macos.sh` creates a temporary keychain, imports the certificate, signs the final `.app` with hardened runtime and secure timestamping, and verifies it with `codesign`. It submits the app to Apple notarization with `notarytool --wait --output-format json` and explicitly requires the returned status to be `Accepted`. The workflow then staples and validates the ticket, re-verifies the code signature, requires Gatekeeper `spctl` assessment to pass, and only then emits macOS verification evidence. The original user keychain search list is restored during cleanup.
 
-A macOS distribution is marked `signed-and-notarized` only after all required verification steps succeed.
+A macOS distribution is marked `signed-and-notarized` only after all required verification evidence succeeds.
 
 ## Linux
 
 Patch currently packages Linux distributions as explicitly unsigned artifacts. `PATCH-SIGNING.json` records that state. SHA-256/release provenance remains the integrity mechanism. `signing_mode=require` fails intentionally until Patch defines and documents a concrete Linux signing/distribution policy.
+
+See `docs/LINUX_PACKAGING.md` for the current GTK3/Console ABI, archive, installation/removal and integrity boundaries.
 
 ## Signing status manifest
 
@@ -60,7 +73,7 @@ Every Native Distribution package includes `PATCH-SIGNING.json` using `patch-sig
 }
 ```
 
-The manifest builder refuses to serialize a required Windows/macOS signature unless verification was recorded, and refuses required macOS distribution unless notarization was also recorded.
+The manifest builder refuses invalid signing modes, contradictory unsigned/signed claims, a required Windows/macOS signature without verified evidence, and required macOS distribution without notarization. Re-serializing an already normalized signed status preserves the signed state instead of rebuilding it as unsigned.
 
 ## Current boundary
 
