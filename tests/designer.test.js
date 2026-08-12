@@ -11,7 +11,7 @@ import {
 test('designer adds controls inside the first window before event handlers', () => {
   const source = `create number count = 0\n\nwindow "Counter":\n  text "Count"\n\nwhen add clicked:\n  change count:\n    add 1\n`;
   const next = addDesignerControl(source, 'button');
-  assert.match(next, /window "Counter":\n  text "Count"\n  button "Button" as button_1 at 24, 72 size 120, 36\n\nwhen add clicked:/);
+  assert.match(next, /window "Counter":\n  text "Count"\n  button "Button" as button_1 at 24, 66 size 120, 36\n\nwhen add clicked:/);
 });
 
 test('designer can create an auto-named window when none exists', () => {
@@ -23,6 +23,24 @@ test('designer generates unique control ids', () => {
   let source = `window "App":\n  button "One" as button_1\n`;
   source = addDesignerControl(source, 'button');
   assert.match(source, /button "Button" as button_2 at 24, 72 size 120, 36/);
+});
+
+test('designer places new controls below tall existing controls instead of overlapping them', () => {
+  let source = `window "App" as form_1 size 640, 420:\n`;
+  source = addDesignerControl(source, 'listbox');
+  source = addDesignerControl(source, 'button');
+  const controls = listDesignerControls(source);
+  assert.equal(controls[0].type, 'listbox');
+  assert.deepEqual({ y: controls[0].y, height: controls[0].height }, { y: 24, height: 120 });
+  assert.equal(controls[1].y, 156);
+});
+
+test('designer grows a form when a newly added control would otherwise be clipped', () => {
+  let source = `window "Compact" as form_1 size 640, 180:\n`;
+  source = addDesignerControl(source, 'listbox');
+  source = addDesignerControl(source, 'tabs');
+  assert.match(source, /window "Compact" as form_1 size 640, 420:/);
+  assert.match(source, /tabs as tabs_1 at 24, 156 size 420, 240:/);
 });
 
 test('designer lists source-backed controls with stable window/control coordinates', () => {
