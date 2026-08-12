@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15171c">
+  <meta name="description" content="Patch programming language: explicit semantic change, Change Contracts and cross-platform execution.">
+  <title>Patch Language · Patch</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./site-navigation.css">
+  <link rel="stylesheet" href="./site-pages.css">
+</head>
+<body>
+<nav class="site-tabs" aria-label="Patch website">
+  <a href="./index.html">Studio</a>
+  <a href="./language.html" aria-current="page">Language</a>
+  <a href="./docs.html">Documentation</a>
+  <a href="./help.html">Help</a>
+</nav>
+<main class="content-page" data-patch-version="0.2.0-beta.33">
+  <section class="page-hero">
+    <div>
+      <p class="page-eyebrow">Patch programming language · 0.2 beta.33</p>
+      <h1>Small syntax. Visible changes.</h1>
+      <p>Patch is a change-oriented programming language where persistent mutation is expressed through explicit semantic <code>change</code> operations. The compiler derives operation- and magnitude-aware Change Contracts from the same source-level substrate.</p>
+    </div>
+    <pre class="page-code">create number score = 0
+
+change score:
+  add 1
+
+show score</pre>
+  </section>
+
+  <section class="page-grid" aria-label="Patch language highlights">
+    <article class="page-card"><h2>Explicit mutation</h2><p>Persistent state changes are visible in source instead of being hidden inside arbitrary assignment expressions.</p></article>
+    <article class="page-card"><h2>Change Contracts</h2><p>Recipes expose which paths they may change, in which direction, and where provable, by what bounded amount.</p></article>
+    <article class="page-card"><h2>Multiple backends</h2><p>Patch currently targets its interpreter, direct WebAssembly, portable C99, standalone web apps and native desktop application paths.</p></article>
+  </section>
+
+  <section class="page-section">
+    <h2>Why Patch exists</h2>
+    <p>Patch explores whether mutation can be made easier to inspect, constrain, replay and validate by treating change itself as a first-class semantic object. The project combines a small language, Change IR, source-backed GUI design, capability-style constraints and reproducible assurance tooling.</p>
+    <h3>Current formal boundary</h3>
+    <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. Patch does not claim a fully verified compiler: parsing, JavaScript-to-Wasm lowering, runtime capture and independent frame reconstruction remain outside the Lean-checked boundary.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>Try it</h2>
+    <p>The quickest path is the browser Studio. Start from an example, edit the source, inspect the Change Contract or IR, and build a web or desktop artifact.</p>
+    <div class="doc-links">
+      <a class="doc-link" href="./index.html"><strong>Open Patch Studio</strong><span>Write, design, run and build in the browser.</span></a>
+      <a class="doc-link" href="./docs.html"><strong>Read the documentation</strong><span>Language, compiler, formal model, native apps and project format.</span></a>
+    </div>
+  </section>
+
+  <footer class="page-footer"><span>Patch is experimental research software · 0.2.0-beta.33</span><a href="https://github.com/pinkysworld/Patch">GitHub repository</a></footer>
+</main>
+</body>
+</html>
