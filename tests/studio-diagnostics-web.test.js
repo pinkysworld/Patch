@@ -43,8 +43,10 @@ test('diagnostics controls stay compact and responsive', () => {
   assert.match(css, /@media \(max-width: 720px\)/);
 });
 
-test('PWA cache includes all diagnostics assets', () => {
-  assert.match(sw, /patch-studio-0\.2-beta\.32-/);
+test('PWA cache includes all diagnostics assets in the content-addressed cache', () => {
+  assert.match(sw, /const REVISION = '__PATCH_SITE_REV__'/);
+  assert.match(sw, /const CACHE = `patch-studio-\$\{REVISION\}`/);
+  assert.match(sw, /\.map\(versioned\)/);
   for (const marker of ['./studio-diagnostics.js','./studio-diagnostics.css','../src/studio-diagnostics.js']) {
     assert.ok(sw.includes(`'${marker}'`), marker);
   }
