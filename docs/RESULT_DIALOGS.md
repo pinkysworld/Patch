@@ -87,17 +87,19 @@ The current AOT toolkit backend is **0.8**. The 0.8 accessibility layer does not
 
 ### Token-free sealed runtimes
 
-Sealed payload **v7** and runtime release **v0.7** carry the same result-dialog actions/events in the `PCHGUI01` envelope:
+Sealed payload **v7** and runtime release **v0.8** carry the same result-dialog actions/events in the `PCHGUI01` envelope:
 
-- `native-win32-runtime-v0.7`
-- `native-macos-runtime-v0.7`
-- `native-linux-runtime-v0.7`
+- `native-win32-runtime-v0.8`
+- `native-macos-runtime-v0.8`
+- `native-linux-runtime-v0.8`
 
-Each runtime workflow seals and executes `examples/result-dialog-window.patch` and verifies payload version 7.
+Runtime v0.8 retains the proven v0.7 result-dialog implementation and adds native accessibility naming/readback around the same decoded payload. Each runtime workflow seals and executes `examples/result-dialog-window.patch` and continues to verify payload version 7.
 
 ## Smoke behavior
 
 Normal applications show the operating-system dialog. `--patch-smoke` avoids blocking CI by returning deterministic confirmation/file results while still dispatching the actual Patch result event path. Tests verify that a `chosen` event value reaches an explicit `change` when the example asks it to, rather than being persisted implicitly by the dialog itself.
+
+The v0.8 sealed-runtime smoke executes the ordinary result-dialog semantic checks first and only then performs native accessibility readback. Accessibility therefore cannot hide a regression in the result-dialog behavior it overlays.
 
 ## Current boundary
 
