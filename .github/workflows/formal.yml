@@ -28,6 +28,7 @@ on:
       - src/transitive-runtime-certificate.js
       - src/wasm-direct.js
       - scripts/generate-*-certificate.js
+      - scripts/install-pinned-lean.sh
       - examples/range-soundness.patch
       - examples/runtime-correspondence.patch
       - examples/formal-*.patch
@@ -60,6 +61,7 @@ on:
       - src/transitive-runtime-certificate.js
       - src/wasm-direct.js
       - scripts/generate-*-certificate.js
+      - scripts/install-pinned-lean.sh
       - examples/range-soundness.patch
       - examples/runtime-correspondence.patch
       - examples/formal-*.patch
