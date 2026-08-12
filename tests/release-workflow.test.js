@@ -7,6 +7,7 @@ const workflow = fs.readFileSync('.github/workflows/release.yml', 'utf8');
 
 test('release verifier script is valid JavaScript', () => {
   execFileSync(process.execPath, ['--check', 'scripts/verify-release.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'scripts/release-manifest.js'], { stdio: 'pipe' });
 });
 
 test('tagged release workflow publishes only from exact version tags', () => {
@@ -18,13 +19,13 @@ test('tagged release workflow publishes only from exact version tags', () => {
   assert.match(workflow, /git tag --points-at "\$\{GITHUB_SHA\}"/);
 });
 
-test('tagged release workflow generates and verifies manifest and checksums before publishing', () => {
+test('tagged release workflow generates flat checksums and verifies them before publishing', () => {
   const manifest = workflow.indexOf('Generate release manifest and checksums');
   const verify = workflow.indexOf('Verify release bytes source commit and version');
   const publish = workflow.indexOf('Publish GitHub Release');
   assert.ok(manifest > 0 && verify > manifest && publish > verify);
-  assert.match(workflow, /scripts\/release-manifest\.js --out-dir release-meta release-dist/);
-  assert.match(workflow, /scripts\/verify-release\.js --commit "\$GITHUB_SHA" --version "\$PATCH_VERSION"/);
+  assert.match(workflow, /scripts\/release-manifest\.js --base-dir release-dist --out-dir release-meta \./);
+  assert.match(workflow, /scripts\/verify-release\.js --base-dir release-dist --meta-dir \.\.\/release-meta --commit "\$GITHUB_SHA" --version "\$PATCH_VERSION"/);
   assert.match(workflow, /release-meta\/release-manifest\.json/);
   assert.match(workflow, /release-meta\/SHA256SUMS\.txt/);
 });
