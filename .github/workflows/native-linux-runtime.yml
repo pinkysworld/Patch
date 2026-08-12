@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/native-linux-runtime.yml
       - native-runtime/gtk-sealed-gui-v07.cpp
+      - native-runtime/gtk-sealed-gui-v08.cpp
       - scripts/seal-native-linux.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
@@ -23,6 +24,7 @@ on:
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
       - tests/sealed-native-gui.test.js
+      - tests/sealed-native-accessibility.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
@@ -36,6 +38,7 @@ on:
     paths:
       - .github/workflows/native-linux-runtime.yml
       - native-runtime/gtk-sealed-gui-v07.cpp
+      - native-runtime/gtk-sealed-gui-v08.cpp
       - scripts/seal-native-linux.js
       - src/sealed-native-gui.js
       - src/native-gui-ir.js
@@ -53,6 +56,7 @@ on:
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
       - tests/sealed-native-gui.test.js
+      - tests/sealed-native-accessibility.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
       - tests/tabs-window.test.js
@@ -84,11 +88,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
-      - name: Compile generic native GTK3 GUI runtime v0.7
+      - name: Check sealed accessibility contract
+        run: node --test tests/sealed-native-accessibility.test.js
+      - name: Compile generic native GTK3 GUI runtime v0.8
         shell: bash
         run: |
           mkdir -p dist-runtime
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v07.cpp -o dist-runtime/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v08.cpp -o dist-runtime/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x dist-runtime/patch-linux-native-gui-runtime.bin
       - name: Seal and smoke canonical Forms app
         shell: bash
@@ -147,7 +153,7 @@ jobs:
           if(sealed.readUInt32LE(sealed.length-12)!==7) throw new Error('Expected sealed native GUI payload v7.');
           const text=sealed.toString('latin1');
           for(const forbidden of ['Electron','Chromium','node_modules']) if(text.includes(forbidden)) throw new Error(`Unexpected compatibility runtime marker: ${forbidden}`);
-          console.log(`Generic GTK runtime: ${runtime.length} bytes; sealed Result Dialog app: ${sealed.length} bytes`);
+          console.log(`Generic GTK runtime v0.8: ${runtime.length} bytes; sealed Result Dialog app: ${sealed.length} bytes`);
           NODE
       - uses: actions/upload-artifact@v4
         with:
@@ -170,9 +176,9 @@ jobs:
       - name: Publish native runtime template
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: native-linux-runtime-v0.7
+          TAG: native-linux-runtime-v0.8
         run: |
           if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.7' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Payload v7 adds result-bearing Confirm/Open/Save dialogs with transient chosen values while preserving explicit Patch change semantics and the v0.6 Menu/Dialog, Radio, Tabs and control surface.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Native Linux Runtime v0.8' --notes 'Native GTK3 sealed-GUI runtime template for token-free Patch Studio builds. Runtime v0.8 preserves sealed payload v7 and adds GTK3/ATK accessibility names with executable smoke readback for Input, ComboBox, ListBox, Tabs and grouped Radio controls.'
           fi
           gh release upload "$TAG" runtime/patch-linux-native-gui-runtime.bin --repo "$GITHUB_REPOSITORY" --clobber
