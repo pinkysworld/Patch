@@ -21,4 +21,4 @@ else
   export PATH="$HOME/.elan/bin:$PATH"
 fi
 "$HOME/.elan/bin/elan" toolchain install "$LEAN_TOOLCHAIN"
-"$HOME/.elan/bin/lean" --version
+"$HOME/.elan/bin/elan" run "$LEAN_TOOLCHAIN" lean --version
