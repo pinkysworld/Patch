@@ -77,12 +77,7 @@ jobs:
           npm run transitive-runtime-certify:repeated
 
       - name: Install pinned Lean
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --proto '=https' --tlsv1.2 -sSf https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.30.0
+        run: bash scripts/install-pinned-lean.sh
 
       - name: Build Lean dependencies outside measured certificate checks
         working-directory: formal
