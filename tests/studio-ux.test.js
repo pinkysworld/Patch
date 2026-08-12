@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const base = fs.readFileSync('web/style.css', 'utf8');
 const ux = fs.readFileSync('web/forms-designer.css', 'utf8');
+const inspector = fs.readFileSync('web/designer-inspector.css', 'utf8');
 
 test('Patch Studio keeps the Designer below the editor at full workspace width', () => {
   assert.match(base, /\.workspace\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
@@ -19,6 +20,7 @@ test('Patch Studio exposes visible scroll areas for code, results and Designer',
     '.designer-canvas::-webkit-scrollbar',
     'scrollbar-color: var(--border-strong) var(--surface-subtle)'
   ]) assert.ok(ux.includes(marker), marker);
+  assert.ok(inspector.includes('.designer-inspector::-webkit-scrollbar'));
 });
 
 test('Designer toolbox and Form controls remain compact IDE-style controls', () => {
@@ -31,4 +33,29 @@ test('Designer toolbox and Form controls remain compact IDE-style controls', () 
     '#patchApplyForm::before',
     'content: "✓"'
   ]) assert.ok(ux.includes(marker), marker);
+});
+
+test('Designer presents toolbox controls as a left icon rail on desktop', () => {
+  for (const marker of [
+    'grid-template-columns: 52px minmax(0, 1fr) 248px',
+    '.designer-view::before',
+    '#designer #addText::before',
+    '#designer #addButton::before',
+    '#designer #addInput::before',
+    '#designer #addCheckbox::before',
+    '#designer #addCombo::before',
+    '#designer #addListbox::before',
+    '#designer #addTabs::before'
+  ]) assert.ok(inspector.includes(marker), marker);
+});
+
+test('Designer Properties panel stays compact and responsive', () => {
+  for (const marker of [
+    'grid-column: 3',
+    'min-height: 30px',
+    'position: sticky',
+    'grid-template-columns: 1fr 1fr auto',
+    '@media (max-width: 1050px)',
+    '@media (max-width: 760px)'
+  ]) assert.ok(inspector.includes(marker), marker);
 });
