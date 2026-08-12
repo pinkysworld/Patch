@@ -6,6 +6,7 @@ import {
   updateDesignerControl,
   updateDesignerWindow
 } from '../src/designer.js';
+import { formControlDefaultSize } from '../src/form-layout.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -387,17 +388,7 @@ function geometryFields() {
 }
 
 function effectiveLayout(control, index = control.controlIndex ?? 0) {
-  const defaults = control.type === 'text'
-    ? { width: 200, height: 30 }
-    : control.type === 'listbox'
-      ? { width: 220, height: 120 }
-      : control.type === 'tabs'
-        ? { width: 420, height: 240 }
-        : control.type === 'radio'
-          ? { width: 220, height: 84 }
-          : (control.type === 'input' || control.type === 'checkbox' || control.type === 'combo')
-            ? { width: 220, height: 36 }
-            : { width: 120, height: 36 };
+  const defaults = formControlDefaultSize(control.type);
   return {
     x: control.x ?? 24,
     y: control.y ?? (24 + index * 48),
