@@ -22,11 +22,11 @@ Logical reproducibility is tested separately from native toolchain reproducibili
 - [x] document pre-1.0 compatibility policy
 - [x] versioned Patch Studio project bundle format
 - [x] project import/export
-- [ ] migrations for old project bundle schema versions
+- [x] migrations for old project bundle schema versions
 - [x] explicit refusal for unsupported future schema versions
 - [x] source-language compatibility regression corpus
 
-Patch Studio project bundle v1 is intentionally a single-file `main.patch` project. The Studio also migrates the earlier unversioned local-storage state into v1 automatically. The unchecked migration item above is reserved for real bundle-version migrations once a v2 or later schema exists.
+Patch Studio project bundle v2 stores `main.patch`, project identity, Console/Window kind, selected build target and selected native-build mode. Version-1 bundles, v1 browser storage and the older unversioned local state migrate explicitly to v2. V1 recovery snapshots also normalize to v2 while preserving their saved source. Unknown future bundle versions remain fail-closed.
 
 `compat/source-0.2/` is the executable compatibility baseline for source forms Patch has deliberately retained. Its versioned manifest covers core numeric change, Thing fields, loose List syntax, recipes with Undo/Redo, legacy flow-layout Windows and multiple unnamed Windows. Current compilers must keep those fixtures compiling with the recorded observable result unless a future compatibility change is handled explicitly.
 
@@ -67,12 +67,14 @@ GitHub Actions are monitored weekly through Dependabot and JavaScript/TypeScript
 - [x] documented CLI exit-code contract
 - [x] `--json` output for check/build/formal/certify commands
 - [ ] source maps / line-accurate diagnostics across all backends
-- [ ] deterministic artifact naming across every packaging path
-- [ ] project-level configuration instead of target settings scattered through UI state
+- [x] deterministic artifact naming across Studio/project packaging paths
+- [x] project-level build configuration instead of target settings scattered through UI state
 
 `docs/CLI_CONTRACT.md` freezes the existing coarse exit taxonomy as `0 = success`, `1 = CLI usage`, `2 = processing/build/validation failure`. `check`, `formal`, `certify` and `build` expose the versioned `patch-cli-result` v1 envelope. Successful commands return command-specific structured data; failures retain exit `2` and carry the existing `patch-diagnostic` v1 object with stable `PATCHxxxx` code and source location where available. Human-readable behavior remains the default without `--json`.
 
 The stable diagnostic envelope now covers compiler/build failure classes and parser source locations. The broader backend item remains open because Wasm/C99/native runtime and packaging failures do not yet all map back to source locations.
+
+Beta.33 centralizes Studio-facing file stems and target suffixes in `src/artifact-name.js`, and project format v2 stores the selected build target/native mode in the project/recovery lifecycle. Platform toolchains may still impose their own internal bundle/executable naming rules, but the user-facing Studio packaging names are deterministic and regression-tested.
 
 ### Resilience
 - [x] atomic Studio saves and recovery snapshots
@@ -91,7 +93,7 @@ Optional GitHub Actions builds now have a 15-minute Studio deadline, exact-run c
 - [x] property-based change/history/undo tests
 - [x] differential interpreter ↔ direct-Wasm ↔ executable C99 tests for every currently documented shared numeric semantic subset
 - [x] golden release artifact tests
-- [ ] upgrade/migration tests across project schema versions
+- [x] upgrade/migration tests across project schema versions
 
 CI runs 500 deterministic generated valid programs plus 500 paired guaranteed-invalid programs. Valid cases reach the parser, compiler, direct-Wasm lowering/validation and independent C99 lowering; invalid cases must fail with the expected stable diagnostic family. The seed and failing source are printed for exact replay.
 
@@ -101,6 +103,8 @@ The Change/History property suite deterministically generates 240 mixed numeric 
 
 `compat/release-golden-v1.json` pins the logical artifact format/version boundaries for PatchApp, bootstrap/direct Wasm, C99 and Console/Window Web. Golden tests validate those contracts and the independent-process logical reproducibility fingerprint. Golden format expectations are kept separate from permanent byte hashes so reviewed deterministic code-generation changes do not masquerade as nondeterminism.
 
+Project v1→v2 tests preserve source/name/kind and assert the documented default build configuration. The suite also rejects unknown future project versions and unsupported v2 build-mode values rather than silently guessing.
+
 ## P2 — polish and ecosystem
 
 - [ ] extension/plugin capability model
@@ -108,12 +112,15 @@ The Change/History property suite deterministically generates 240 mixed numeric 
 - [x] native Win32/AppKit/GTK GUI lowering and sealed runtime paths
 - [ ] FreeBSD native GUI backend
 - [x] Patch Studio keyboard/focus/responsive accessibility baseline
-- [ ] generated Window app accessibility audit
+- [x] generated standalone Window Web accessibility baseline
+- [ ] generated native Window app accessibility audit
 - [ ] manual assistive-technology/browser accessibility audit before a stable release
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
 
-The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result tab relationships, arrow/Home/End result navigation, keyboard Run/Build shortcuts, visible keyboard focus, polite status announcements, coarse-pointer target sizing, reduced-motion handling, forced-colors affordances and responsive project/support/result layouts. This is an implementation baseline, not a WCAG conformance claim. Generated Window applications and manual screen-reader/browser testing remain separate work.
+The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result tab relationships, arrow/Home/End result navigation, keyboard Run/Build shortcuts, visible keyboard focus, polite status announcements, coarse-pointer target sizing, reduced-motion handling, forced-colors affordances and responsive project/support/result layouts. This is an implementation baseline, not a WCAG conformance claim.
+
+Generated standalone Window Web apps now add labelled Window regions, accessible names for otherwise-unlabelled Input/Combo/ListBox controls, grouped Radio semantics, polite output status, roving tab focus with Arrow/Home/End control, visible keyboard focus, reduced-motion handling and forced-colors focus treatment. The accessibility layer also closes a real cross-target gap by rendering Radio groups in standalone Window Web apps. Native Win32/AppKit/GTK accessibility and manual screen-reader/browser testing remain separate open work; no WCAG conformance claim is made.
 
 ## Release rule
 

@@ -1,6 +1,7 @@
 import { compile } from './compiler.js';
 import { compileToDirectWasm } from './wasm-direct.js';
 import { buildStandaloneWindowWebApp } from './window-webapp.js';
+import { enhanceStandaloneWindowWebApp } from './window-web-accessibility.js';
 import { PATCH_FORM_LAYOUT_VERSION, buildFormLayoutManifest } from './form-layout.js';
 
 export const PATCH_STANDALONE_WEB_VERSION = '0.2';
@@ -12,12 +13,14 @@ export function buildStandaloneWebApp(source, options = {}) {
 
   if (requestedKind === 'window') {
     const compiled = compile(source, { ...options, name, kind: 'window', entry });
-    return addSourceBackedWindowLayout(buildStandaloneWindowWebApp(compiled, name));
+    return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(buildStandaloneWindowWebApp(compiled, name)));
   }
 
   if (!requestedKind) {
     const inferred = compile(source, { ...options, name, entry });
-    if (inferred.project.kind === 'window') return addSourceBackedWindowLayout(buildStandaloneWindowWebApp(inferred, name));
+    if (inferred.project.kind === 'window') {
+      return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(buildStandaloneWindowWebApp(inferred, name)));
+    }
   }
 
   return buildStandaloneConsoleWebApp(source, { ...options, name, kind: 'console', entry });
@@ -61,12 +64,12 @@ function buildStandaloneConsoleWebApp(source, options) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(name)}</title>
 <style>
-:root{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111318;color:#f6f7f9}.app{width:min(720px,calc(100% - 32px));background:#1a1d24;border:1px solid #30343d;border-radius:16px;box-shadow:0 20px 60px #0007;overflow:hidden}.bar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30343d}.bar strong{font-size:15px}.bar span{font-size:12px;color:#9da5b4}.body{padding:20px}pre{margin:0;min-height:120px;white-space:pre-wrap;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}button{margin-top:18px;border:0;border-radius:9px;padding:9px 14px;font-weight:700;cursor:pointer}small{display:block;margin-top:16px;color:#8992a3}</style>
+:root{font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111318;color:#f6f7f9}.app{width:min(720px,calc(100% - 32px));background:#1a1d24;border:1px solid #30343d;border-radius:16px;box-shadow:0 20px 60px #0007;overflow:hidden}.bar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #30343d}.bar strong{font-size:15px}.bar span{font-size:12px;color:#9da5b4}.body{padding:20px}pre{margin:0;min-height:120px;white-space:pre-wrap;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}button{margin-top:18px;border:0;border-radius:9px;padding:9px 14px;font-weight:700;cursor:pointer}button:focus-visible{outline:3px solid #60a5fa;outline-offset:3px}small{display:block;margin-top:16px;color:#8992a3}@media(forced-colors:active){button:focus-visible{outline:3px solid Highlight}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}</style>
 </head>
 <body>
 <main class="app">
   <div class="bar"><strong>${escapeHtml(name)}</strong><span>Built with Patch</span></div>
-  <div class="body"><pre id="output">Starting…</pre><button id="run">Run again</button><small>Standalone single-file Patch Console Web App</small></div>
+  <div class="body"><pre id="output" role="status" aria-live="polite" aria-atomic="true">Starting…</pre><button id="run">Run again</button><small>Standalone single-file Patch Console Web App</small></div>
 </main>
 <script>
 const PATCH_META=${meta};
