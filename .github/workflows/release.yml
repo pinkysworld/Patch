@@ -58,10 +58,10 @@ jobs:
           npm pack --pack-destination release-dist
 
       - name: Generate release manifest and checksums
-        run: node scripts/release-manifest.js --out-dir release-meta release-dist
+        run: node scripts/release-manifest.js --base-dir release-dist --out-dir release-meta .
 
       - name: Verify release bytes source commit and version
-        run: node scripts/verify-release.js --commit "$GITHUB_SHA" --version "$PATCH_VERSION"
+        run: node scripts/verify-release.js --base-dir release-dist --meta-dir ../release-meta --commit "$GITHUB_SHA" --version "$PATCH_VERSION"
 
       - name: Upload release bundle for audit
         uses: actions/upload-artifact@v4
