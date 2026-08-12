@@ -31,10 +31,10 @@ The local `patch-app` command instead selects the host AOT toolkit backend and c
 The current native stack intentionally separates three versions:
 
 - **Native GUI IR 0.7**: platform-neutral Forms/control/event/result contract.
-- **AOT backend 0.8**: current Win32/AppKit/GTK code generator. Backend 0.8 adds native accessibility naming/readback while retaining IR 0.7.
-- **sealed payload v7 / runtime v0.7**: token-free browser-sealing contract.
+- **AOT backend 0.8**: current Win32/AppKit/GTK code generator with native accessibility naming/readback.
+- **sealed payload v7 / runtime v0.8**: token-free browser-sealing contract. Runtime v0.8 adds accessibility parity while payload v7 stays unchanged.
 
-A backend implementation change therefore does not silently redefine the IR or sealed payload format.
+A backend/runtime implementation change therefore does not silently redefine the IR or sealed payload format.
 
 ## Direct AOT Window path
 
@@ -89,19 +89,17 @@ GUI interaction alone does not persist Patch state.
 
 Patch source must execute an ordinary semantic `change` to persist a value and create Change History.
 
-## AOT accessibility baseline
+## Native accessibility baseline
 
-Backend 0.8 adds deterministic native accessible names for otherwise-unlabelled Input, ComboBox, ListBox and Tabs controls and adds group context to Radio options. Button/Checkbox native visible-label semantics are preserved.
+Both direct-native paths implement the same deterministic naming contract for otherwise-unlabelled Input, ComboBox, ListBox and Tabs controls and add group context to Radio options. Button/Checkbox native visible-label semantics are preserved.
 
-The AOT smoke path writes and reads those names through the platform accessibility API:
+The AOT backend v0.8 and sealed runtime v0.8 both write and read names through the platform accessibility API:
 
 - Windows: Microsoft Active Accessibility `IAccPropServices` / `IAccessible`;
 - macOS: AppKit accessibility labels;
 - Linux: GTK3/ATK accessible names.
 
-Win32, AppKit and GTK cross-platform CI compiles and executes the readback assertions. This is an automated engineering baseline, not a WCAG conformance claim. Manual Narrator/VoiceOver/Orca testing remains open.
-
-The token-free sealed v0.7 runtimes do **not yet** have equivalent explicit accessibility naming/readback, so overall native accessibility parity is not yet complete.
+The executable smoke path fails when a platform API exposes a different name from the Patch naming contract. This is an automated engineering baseline, not a WCAG conformance claim. Manual Narrator/VoiceOver/Orca testing remains open.
 
 ## Token-free sealed native runtimes
 
@@ -116,13 +114,15 @@ Current sealed payload **v7** carries:
 - informational dialogs;
 - Confirm/Open/Save actions and their transient result event sources.
 
-The native runtime releases are:
+The runtime releases are:
 
-- `native-win32-runtime-v0.7`;
-- `native-linux-runtime-v0.7`;
-- `native-macos-runtime-v0.7`.
+- `native-win32-runtime-v0.8`;
+- `native-linux-runtime-v0.8`;
+- `native-macos-runtime-v0.8`.
 
-Those tags are published from `main` only after their native runtime workflows compile, seal and execute the GUI progression through `result-dialog-window.patch` and verify payload v7. Pages pins the exact runtime versions.
+Runtime v0.8 reuses the proven v0.7 payload parser/control/event implementation and adds the accessibility layer after native controls are created. No new payload field is required, so Studio continues to emit payload v7.
+
+Those tags are published from `main` only after their native runtime workflows compile the OS runtime, seal the GUI example progression through `result-dialog-window.patch`, execute the normal semantic smoke and accessibility readback, and verify payload v7. Pages pins the exact runtime versions.
 
 The macOS browser-sealed bundle remains unsigned because project sealing changes the executable after the generic runtime template was compiled. Final-artifact signing/notarization remains separate distribution work.
 
@@ -153,11 +153,12 @@ The unified AOT matrix builds and executes Forms, ComboBox, ListBox, Tabs, Radio
 
 Each sealed-runtime workflow independently:
 
-1. compiles the generic OS runtime v0.7;
+1. compiles the generic OS runtime v0.8;
 2. seals the canonical progression of GUI examples;
 3. seals and executes `result-dialog-window.patch`;
 4. verifies the real native event/result path under `--patch-smoke`;
-5. verifies sealed payload v7.
+5. reads accessibility names back through the native platform API;
+6. verifies sealed payload v7.
 
 Smoke mode suppresses only blocking user interaction. Normal applications use the real OS dialogs.
 
@@ -171,7 +172,7 @@ The beta.32 invocation-frame research evidence remains independently reproducibl
 
 The next native stages are versioned separately:
 
-- sealed-runtime accessibility parity with AOT backend 0.8;
+- manual assistive-technology validation;
 - Menu separators, shortcuts and source-backed enabled/checked state;
 - Table/Grid;
 - ListBox multi-selection with an explicit list-valued event contract;
