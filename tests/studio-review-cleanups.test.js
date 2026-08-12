@@ -31,14 +31,14 @@ test('Change Contract refresh is truly debounced while typing', () => {
 });
 
 test('Native GUI top-level fallback geometry comes from shared Form defaults', () => {
-  const source = `window "Demo":\n  text "Hello"\n  button "Go" as go\n\nwhen go clicked:\n  dialog "Done" message "OK"\n`;
+  const source = `window "Demo":\n  text "Hello"\n  button "Go" as go\n\nwhen go clicked:\n  dialog "Done", "OK"\n`;
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'Demo' }));
   assert.deepEqual(ir.forms[0].controls[0].layout, formControlDefaultLayout('text', 0));
   assert.deepEqual(ir.forms[0].controls[1].layout, formControlDefaultLayout('button', 1));
 });
 
 test('Native GUI Tabs page fallback geometry also uses shared Form defaults', () => {
-  const source = `window "Demo":\n  tabs as sections:\n    tab "One":\n      text "Hello"\n    tab "Two":\n      button "Go" as go\n\nwhen go clicked:\n  dialog "Done" message "OK"\n`;
+  const source = `window "Demo":\n  tabs as sections:\n    tab "One":\n      text "Hello"\n    tab "Two":\n      button "Go" as go\n\nwhen go clicked:\n  dialog "Done", "OK"\n`;
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'Demo' }));
   const tabs = ir.forms[0].controls[0];
   assert.deepEqual(tabs.layout, formControlDefaultLayout('tabs', 0));
