@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { buildReleaseManifest, formatSha256Sums, writeReleaseManifest } from '../scripts/release-manifest.js';
+import { verifyRelease } from '../scripts/verify-release.js';
 
 test('release manifest is deterministic, sorted and content-addressed', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-release-manifest-'));
@@ -34,6 +35,39 @@ test('release manifest writer emits JSON and SHA256SUMS', () => {
     assert.equal(json.artifacts.length, 1);
     assert.equal(json.artifacts[0].path, 'artifacts/app.bin');
     assert.match(fs.readFileSync(path.join(dir, 'meta', 'SHA256SUMS.txt'), 'utf8'), /artifacts\/app\.bin/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('release verifier binds manifest checksums version and exact source commit', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-release-verify-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'release-dist'));
+    fs.writeFileSync(path.join(dir, 'release-dist', 'app.bin'), 'payload');
+    writeReleaseManifest(['release-dist'], { baseDir: dir, outDir: path.join(dir, 'release-meta'), commit: 'deadbeef' });
+    const verified = verifyRelease({ baseDir: dir, commit: 'deadbeef', version: '0.2.0-beta.32' });
+    assert.equal(verified.commit, 'deadbeef');
+    assert.equal(verified.patchVersion, '0.2.0-beta.32');
+    assert.equal(verified.artifacts.length, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('release verifier rejects changed bytes commit drift and checksum drift', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-release-tamper-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'release-dist'));
+    const artifact = path.join(dir, 'release-dist', 'app.bin');
+    fs.writeFileSync(artifact, 'payload');
+    writeReleaseManifest(['release-dist'], { baseDir: dir, outDir: path.join(dir, 'release-meta'), commit: 'deadbeef' });
+    assert.throws(() => verifyRelease({ baseDir: dir, commit: 'other', version: '0.2.0-beta.32' }), /commit/);
+    fs.writeFileSync(artifact, 'tampered');
+    assert.throws(() => verifyRelease({ baseDir: dir, commit: 'deadbeef', version: '0.2.0-beta.32' }), /(size|hash) mismatch/);
+    fs.writeFileSync(artifact, 'payload');
+    fs.writeFileSync(path.join(dir, 'release-meta', 'SHA256SUMS.txt'), `${'0'.repeat(64)}  release-dist/app.bin\n`);
+    assert.throws(() => verifyRelease({ baseDir: dir, commit: 'deadbeef', version: '0.2.0-beta.32' }), /SHA256SUMS mismatch/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
