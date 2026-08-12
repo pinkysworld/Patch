@@ -5,12 +5,17 @@ import vm from 'node:vm';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION } from '../src/window-web-accessibility.js';
 
-const windowSource = `create text mode = "Basic"
+const windowSource = `create text name = "Mia"
+create text mode = "Basic"
+create text choice = "One"
+create text item = "One"
 
-window "Settings" as main size 640, 420:
-  input mode
+window "Settings" as main size 640, 520:
+  input name
   radio "Basic", "Advanced", "Expert" as mode at 24, 72 size 240, 90
-  tabs as pages at 24, 180 size 420, 180:
+  combo "One", "Two", "Three" as choice at 300, 72 size 180, 34
+  listbox "One", "Two", "Three" as item at 300, 120 size 180, 100
+  tabs as pages at 24, 250 size 456, 190:
     tab "General":
       text "General settings"
     tab "Advanced":
