@@ -21,7 +21,7 @@ export function emitGtkGuiCpp(input) {
     'for (int i = 0; i < FORM_COUNT; ++i) if (!CreatePatchForm(i)) return 10 + i;\n  ApplyPatchAccessibility();\n  RefreshUI();',
     'GTK accessibility application'
   );
-  return source;
+  return injectAccessibilitySmoke(source, controls);
 }
 
 function gtkAccessibilityHelpers(controls) {
@@ -39,7 +39,32 @@ function gtkAccessibilityHelpers(controls) {
     if (!name) continue;
     lines.push(`  SetPatchAccessibleName(gControls[${control.nativeIndex}], ${cString(name)});`);
   }
-  return `static void SetPatchAccessibleName(GtkWidget *widget, const char *name) {\n  if (!widget || !name || !*name) return;\n  AtkObject *accessible = gtk_widget_get_accessible(widget);\n  if (accessible) atk_object_set_name(accessible, name);\n}\nstatic void ApplyPatchAccessibility() {\n${lines.join('\n') || '  // Standard GTK control names need no Patch override.'}\n}\n`;
+  return `static void SetPatchAccessibleName(GtkWidget *widget, const char *name) {\n  if (!widget || !name || !*name) return;\n  AtkObject *accessible = gtk_widget_get_accessible(widget);\n  if (accessible) atk_object_set_name(accessible, name);\n}\nstatic const char *PatchAccessibleName(GtkWidget *widget) {\n  if (!widget) return nullptr;\n  AtkObject *accessible = gtk_widget_get_accessible(widget);\n  return accessible ? atk_object_get_name(accessible) : nullptr;\n}\nstatic void ApplyPatchAccessibility() {\n${lines.join('\n') || '  // Standard GTK control names need no Patch override.'}\n}\n`;
+}
+
+function injectAccessibilitySmoke(source, controls) {
+  const checks = [];
+  let code = 130;
+  for (const control of controls) {
+    if (!needsExplicitNativeAccessibleName(control)) continue;
+    if (control.type === 'radio') {
+      for (let optionIndex = 0; optionIndex < control.options.length; optionIndex += 1) {
+        const expected = nativeRadioItemAccessibleName(control, control.options[optionIndex]);
+        checks.push(`  { const char *name = gRadioItems[${control.nativeIndex}].size() > ${optionIndex} ? PatchAccessibleName(gRadioItems[${control.nativeIndex}][${optionIndex}]) : nullptr; if (!name || std::string(name) != ${cString(expected)}) return ${code++}; }`);
+      }
+      continue;
+    }
+    const expected = nativeAccessibleName(control);
+    if (!expected) continue;
+    checks.push(`  { const char *name = PatchAccessibleName(gControls[${control.nativeIndex}]); if (!name || std::string(name) != ${cString(expected)}) return ${code++}; }`);
+  }
+  if (!checks.length) return source;
+  const start = source.indexOf('static int RunPatchSmoke() {');
+  if (start < 0) throw new NativeGuiError('Generated GTK source is missing RunPatchSmoke for accessibility verification.');
+  let stop = source.indexOf('  gtk_widget_destroy(gForms[', start);
+  if (stop < 0) stop = source.indexOf('  return 0;', start);
+  if (stop < 0) throw new NativeGuiError('Generated GTK smoke has an unexpected shape for accessibility verification.');
+  return source.slice(0, stop) + checks.join('\n') + '\n' + source.slice(stop);
 }
 
 function replaceRequired(source, marker, replacement, label) {
