@@ -28,9 +28,11 @@ Patch Studio project bundle v1 is intentionally a single-file `main.patch` proje
 - [x] `patch doctor` structured diagnostics core
 - [x] expose `patch doctor --json` through the installed CLI
 - [ ] stable machine-readable diagnostic/error codes for compiler/build failures
-- [ ] one-click "Copy diagnostics" in Patch Studio
-- [ ] crash/build report bundle with Patch version, target, diagnostics and redacted logs
-- [ ] no telemetry by default; any future telemetry must be explicit opt-in
+- [x] one-click "Copy diagnostics" in Patch Studio
+- [x] crash/build report bundle with Patch version, target, diagnostics and redacted logs
+- [x] no telemetry by default; any future telemetry must be explicit opt-in
+
+Patch Studio diagnostics are local-only. The report records Patch version, project kind, selected build target, compiler status, source size/SHA-256, PWA/browser state and a bounded set of redacted recent errors. The source body is not included; source echoes, common token forms, email addresses and user-home path components are redacted. Neither Copy diagnostics nor `.patchreport` creation has a network upload path.
 
 ### Distribution safety
 - [ ] Windows code signing
