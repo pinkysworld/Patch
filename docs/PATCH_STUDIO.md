@@ -72,7 +72,9 @@ Native GUI 0.6 does not silently change compatibility semantics. Unsupported Men
 
 ## PWA updates
 
-The current beta.32 native Menu/Dialog cache key is `patch-studio-0.2-beta.32-forms7`. Large OS runtime assets remain on demand rather than part of the core offline cache.
+Patch Studio Pages builds now derive a deterministic content revision from every browser-facing Studio asset and browser compiler/runtime module. Generated CSS, JavaScript, manifest and icon references carry that revision, and the Service Worker uses the same revision as its active cache identity. The worker bypasses the browser HTTP cache when checking code/UI assets and an already-controlled Studio page reloads once when a newly activated worker takes control.
+
+The former beta-specific cache family used the prefix `patch-studio-0.2-beta.32`; it is retained only as a migration marker while old caches are removed during activation. It is no longer the active cache key. Large OS runtime assets remain on demand rather than part of the core offline cache.
 
 ## Beta.32 research boundary
 

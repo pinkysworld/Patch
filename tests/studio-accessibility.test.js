@@ -65,7 +65,10 @@ test('accessibility stylesheet covers focus touch reduced motion forced colors a
   for (const marker of [':focus-visible','@media (pointer: coarse)','min-height: 40px !important','@media (pointer: coarse) and (max-width: 760px)','@media (prefers-reduced-motion: reduce)','@media (forced-colors: active)','@media (max-width: 820px)','@media (max-width: 560px)','overscroll-behavior-inline: contain']) assert.ok(css.includes(marker), marker);
 });
 
-test('PWA cache includes accessibility JS and CSS', () => {
-  assert.match(sw, /patch-studio-0\.2-beta\.32-/);
+test('PWA cache includes accessibility JS and CSS in the content-addressed cache', () => {
+  assert.match(sw, /const REVISION = '__PATCH_SITE_REV__'/);
+  assert.match(sw, /const CACHE_PREFIX = 'patch-studio-'/);
+  assert.match(sw, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
+  assert.match(sw, /\.map\(versioned\)/);
   for (const marker of ['./studio-accessibility.js','./studio-accessibility.css']) assert.ok(sw.includes(`'${marker}'`), marker);
 });

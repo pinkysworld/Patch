@@ -90,8 +90,11 @@ test('corrupt pending or canonical stores are quarantined before legacy fallback
   assert.match(bootstrap, /Recovered legacy local project/);
 });
 
-test('PWA cache contains project lifecycle and recovery manager assets', () => {
-  assert.match(sw, /patch-studio-0\.2-beta\.32-/);
+test('PWA cache contains project lifecycle and recovery manager assets in the content-addressed cache', () => {
+  assert.match(sw, /const REVISION = '__PATCH_SITE_REV__'/);
+  assert.match(sw, /const CACHE_PREFIX = 'patch-studio-'/);
+  assert.match(sw, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
+  assert.match(sw, /\.map\(versioned\)/);
   for (const marker of ['./project-lifecycle.js','./project-lifecycle.css','./recovery-manager.js','./recovery-manager.css','../src/studio-project.js']) {
     assert.ok(sw.includes(`'${marker}'`), marker);
   }
