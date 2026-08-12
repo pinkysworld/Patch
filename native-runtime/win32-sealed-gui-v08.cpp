@@ -12,6 +12,7 @@
 
 #pragma comment(lib, "oleacc.lib")
 #pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "oleaut32.lib")
 
 struct PatchComScopeV08 {
   HRESULT result;
