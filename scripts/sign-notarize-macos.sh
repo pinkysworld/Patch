@@ -14,6 +14,9 @@ fi
 : "${PATCH_APPLE_TEAM_ID:?PATCH_APPLE_TEAM_ID is required when macOS notarization is required}"
 : "${PATCH_APPLE_APP_PASSWORD:?PATCH_APPLE_APP_PASSWORD is required when macOS notarization is required}"
 
+VERIFICATION_PATH="$(dirname "$APP_PATH")/.patch-macos-signature-verified"
+rm -f "$VERIFICATION_PATH"
+
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/patch-signing.XXXXXX")"
 KEYCHAIN="$WORK/patch-signing.keychain-db"
 P12="$WORK/signing.p12"
@@ -67,5 +70,6 @@ xcrun stapler staple "$APP_PATH"
 xcrun stapler validate "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 spctl --assess --type execute --verbose=2 "$APP_PATH"
+printf '%s' 'macos-developer-id-notarized-v1' > "$VERIFICATION_PATH"
 
 printf 'Verified Developer ID signature, notarization and Gatekeeper assessment for %s\n' "$APP_PATH"
