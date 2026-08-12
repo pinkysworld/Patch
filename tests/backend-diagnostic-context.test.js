@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { inferBackendPatchLine, PATCH_BACKEND_DIAGNOSTIC_CONTEXT_VERSION } from '../src/backend-diagnostic-context.js';
 import { diagnosticFromError } from '../src/diagnostics.js';
 
@@ -45,4 +46,11 @@ test('non-C99 toolchain errors never use source-context inference', () => {
   const source = `make helper():\n  return 1\n`;
   assert.equal(inferBackendPatchLine("clang: nested recipe 'helper' is unsupported at generated.c:12", source), null);
   assert.equal(inferBackendPatchLine('link.exe: return-valued recipes are outside the portable subset.', source), null);
+});
+
+test('backend diagnostic context ships with the content-addressed Studio bundle', () => {
+  const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
+  const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
+  assert.match(buildSite, /'backend-diagnostic-context\.js'/);
+  assert.match(serviceWorker, /'\.\.\/src\/backend-diagnostic-context\.js'/);
 });
