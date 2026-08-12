@@ -137,10 +137,10 @@ test('compatibility desktop renderer cannot silently omit Tabs', () => {
   assert.match(compatibilityBuilder, /runtime\.result\(\)\.ui/);
 });
 
-test('Native GUI IR v0.6 keeps real Tabs hierarchy and transient selection out of Patch state', () => {
+test('Native GUI IR v0.7 keeps real Tabs hierarchy and transient selection out of Patch state', () => {
   const compiled = compile(source, { name: 'TabsDemo', kind: 'window' });
   const native = buildNativeGuiIR(compiled);
-  assert.equal(native.version, '0.6');
+  assert.equal(native.version, '0.7');
   assert.deepEqual(native.states.map(state => state.name), ['name', 'notifications']);
   assert.equal(native.states.some(state => state.name === 'settings'), false);
   const tabs = native.forms[0].controls.find(control => control.type === 'tabs');
