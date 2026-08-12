@@ -28,10 +28,13 @@ export function redactDiagnosticText(value, maxLength = PATCH_STUDIO_DIAGNOSTICS
 
 export function redactSourceEchoes(value, source) {
   let text = String(value ?? '');
-  const lines = [...new Set(String(source ?? '').split(/\r?\n/).map(line => line.trim()).filter(line => line.length >= 8))]
-    .sort((a, b) => b.length - a.length)
-    .slice(0, 200);
-  for (const line of lines) text = text.split(line).join('[redacted-source]');
+  const seen = new Set();
+  for (const rawLine of String(source ?? '').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (line.length < 8 || line.length > text.length || seen.has(line)) continue;
+    seen.add(line);
+    if (text.includes(line)) text = text.split(line).join('[redacted-source]');
+  }
   return text;
 }
 
