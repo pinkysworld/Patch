@@ -24,7 +24,7 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 
 ### Diagnostics and supportability
 - [x] `patch doctor` structured diagnostics core
-- [ ] expose `patch doctor --json` through the installed CLI
+- [x] expose `patch doctor --json` through the installed CLI
 - [ ] stable machine-readable diagnostic/error codes for compiler/build failures
 - [ ] one-click "Copy diagnostics" in Patch Studio
 - [ ] crash/build report bundle with Patch version, target, diagnostics and redacted logs
@@ -36,7 +36,9 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 - [ ] installer/package formats with uninstall path
 - [ ] verify release signatures/checksums before update/install
 - [ ] document Linux packaging expectations
-- [ ] build service that does not require users to paste a personal GitHub token
+- [ ] fresh-build service that does not require users to paste a personal GitHub token
+
+Ready Windows, macOS and Linux application downloads can already be consumed without a personal GitHub token. The remaining item above is specifically about requesting new/fresh remote builds without user-supplied credentials.
 
 ### Security and maintenance
 - [x] security reporting policy
@@ -72,7 +74,8 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 
 - [ ] extension/plugin capability model
 - [ ] package/library story
-- [ ] native AppKit/Win32/Linux/BSD GUI backends
+- [x] native Win32/AppKit/GTK GUI lowering and sealed runtime paths
+- [ ] FreeBSD native GUI backend
 - [ ] accessibility audit for Patch Studio and generated Window apps
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
