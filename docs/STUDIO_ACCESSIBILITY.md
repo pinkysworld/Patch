@@ -13,7 +13,7 @@ The Studio exposes a visible-on-focus **Skip to editor** link. The main result v
 Studio-level shortcuts currently include:
 
 - `Ctrl/Cmd + Enter`: Run the current project;
-- `Ctrl/Cmd + Shift + B`: Build the selected target.
+- `Ctrl/Cmd + Shift + Enter`: Build the selected target.
 
 Global Studio shortcuts are suppressed while a modal dialog is open so they do not bypass Recovery or other modal workflows.
 
@@ -25,7 +25,7 @@ Local save state, diagnostics state and native build status are polite status re
 
 ## Result tabs
 
-The Designer, App, Output, Changes and IR buttons use `role="tab"`, stable ids, `aria-controls`, `aria-selected` and roving `tabindex`. Their corresponding views use `role="tabpanel"` and `aria-labelledby`. JavaScript synchronizes accessibility state with the Studio's existing active/hidden view state, including programmatic view switches after Run or Build.
+The Designer, App, Output, Changes and IR buttons use `role="tab"`, stable ids, `aria-controls`, `aria-selected` and roving `tabindex`. Their corresponding views use `role="tabpanel"`, `aria-labelledby` and a focus target for moving from the tablist into the active result. JavaScript synchronizes accessibility state with the Studio's existing active/hidden view state, including programmatic view switches after Run or Build.
 
 ## Responsive and alternative display modes
 
@@ -39,7 +39,7 @@ The accessibility stylesheet adds:
 - explicit selected/focus affordances in forced-colors mode;
 - small-screen toolbar, project bar, app preview and Window spacing adjustments.
 
-The existing Designer responsive rules remain responsible for moving the Properties inspector below the canvas and turning the desktop palette rail into a horizontal toolbar on narrower screens.
+The existing Designer responsive rules remain responsible for moving the Properties inspector below the canvas and turning the desktop palette rail into a horizontal toolbar on narrower screens. The coarse-pointer override increases palette button size only after that responsive transformation, avoiding overlap in the fixed desktop palette rail.
 
 ## Scope
 
