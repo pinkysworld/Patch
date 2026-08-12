@@ -23,9 +23,10 @@ Patch intentionally distinguishes language-level guarantees from platform/runtim
 - Lean certificates cover only the explicitly documented formal subsets.
 - Translation validation is not a proof of the JavaScript parser/compiler.
 - Direct Wasm and C99 backends support narrower language subsets than the full interpreter.
-- Desktop Window packages currently use a generated Electron player. The renderer is configured with `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`.
-- Patch Studio remote native builds use GitHub Actions and therefore inherit GitHub token, workflow, runner, and artifact trust boundaries.
-- Personal build tokens entered in Patch Studio are not intended to be persisted by Patch, but users should still scope tokens to the minimum repository/actions permissions necessary.
+- Direct and sealed native Window paths use dedicated Win32, AppKit and GTK runtimes and are Electron-free on those paths. Their platform APIs, generated native code, toolchains and runtime libraries remain trusted components.
+- Native GUI IR, sealed native payloads and Window event adapters are versioned contracts, but versioning does not by itself prove the platform lowering or runtime implementation.
+- Patch Studio can consume ready Windows, macOS and Linux application artifacts without requiring a personal GitHub token. Cloud/fresh-build paths that use GitHub Actions inherit GitHub workflow, runner, artifact and credential trust boundaries.
+- If a personal build token is used for an optional GitHub Actions path, it should be scoped to the minimum repository/actions permissions necessary and must not be committed or persisted as project data.
 
 ## Security-sensitive changes
 
@@ -34,7 +35,7 @@ Changes to any of the following should receive explicit security review and regr
 - parsing or expression evaluation
 - persistent state mutation paths
 - capability/policy checking
-- generated HTML or Electron player code
+- generated HTML, native GUI lowering or sealed native runtime code
 - shell/process invocation and native packaging
 - remote build token handling
 - release/update mechanisms
