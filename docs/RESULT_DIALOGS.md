@@ -2,7 +2,7 @@
 
 Patch result dialogs extend the Window language with explicit, named result sources while keeping persistent mutation inside ordinary semantic `change` blocks.
 
-## Stage 1 language contract
+## Language contract
 
 ```patch
 create text selected_path = ""
@@ -45,13 +45,13 @@ The result contract is:
 - `confirm ... as id` can emit `confirmed` or `cancelled`.
 - `open file ... as id` can emit `chosen` or `cancelled`.
 - `save file ... as id` can emit `chosen` or `cancelled`.
-- `chosen` carries one transient text `value`, which will be supplied by a renderer/runtime in the native-parity stage.
+- `chosen` carries one transient text `value` supplied by the renderer/runtime.
 - `cancelled` is a distinct event. It is not represented by an empty path.
 - Dialog result ids share the application UI event-source namespace with controls, Tabs and menu items.
 
 ## Mutation boundary
 
-A result dialog does not create a Patch variable and does not write persistent state. In particular, choosing a file does not assign a path automatically.
+A result dialog does not create a Patch variable and does not write persistent state. Choosing a file therefore does not assign a path automatically.
 
 To retain a selected path, source must use an explicit semantic change:
 
@@ -61,26 +61,53 @@ when open_result chosen:
     set = value
 ```
 
-That keeps the same change history, provenance and capability model used by other Patch mutations.
+That keeps the same Change History, provenance and capability model used by other Patch mutations.
 
-## Change IR
+## Change IR and Native GUI IR
 
-Stage 1 keeps Change IR at **0.10** and lowers dialog invocations explicitly as:
+Result dialogs keep Change IR at **0.10** and lower explicitly as:
 
 - `CONFIRM_DIALOG`
 - `OPEN_FILE_DIALOG`
 - `SAVE_FILE_DIALOG`
 
-The feature adds runtime capability markers for result dialogs but does not expand the beta.32 formal-verification claim.
+Native GUI IR **0.7** carries the named result sources and their transient result events. The feature adds runtime capability markers for result dialogs but does not expand the formal-verification claim.
 
-## Current implementation boundary
+## Native implementation
 
-This stage defines and validates the source/AST/Change-IR event contract only. It does **not** yet claim renderer or desktop parity.
+Result-dialog parity is implemented on both direct-native paths.
 
-The follow-up Native GUI 0.7 stage is responsible for producing real result events from platform dialogs:
+### AOT backends
 
-- Windows: confirmation plus native Open/Save common dialogs.
+- Windows: `MessageBoxW` confirmation plus `GetOpenFileNameW` / `GetSaveFileNameW`.
 - macOS: `NSAlert`, `NSOpenPanel` and `NSSavePanel`.
 - Linux: GTK confirmation and file chooser dialogs.
 
-Until that native stage lands, targets must not silently invent a result or mutate state on behalf of a dialog.
+The current AOT toolkit backend is **0.8**. The 0.8 accessibility layer does not change the result-dialog event contract introduced by backend 0.7.
+
+### Token-free sealed runtimes
+
+Sealed payload **v7** and runtime release **v0.7** carry the same result-dialog actions/events in the `PCHGUI01` envelope:
+
+- `native-win32-runtime-v0.7`
+- `native-macos-runtime-v0.7`
+- `native-linux-runtime-v0.7`
+
+Each runtime workflow seals and executes `examples/result-dialog-window.patch` and verifies payload version 7.
+
+## Smoke behavior
+
+Normal applications show the operating-system dialog. `--patch-smoke` avoids blocking CI by returning deterministic confirmation/file results while still dispatching the actual Patch result event path. Tests verify that a `chosen` event value reaches an explicit `change` when the example asks it to, rather than being persisted implicitly by the dialog itself.
+
+## Current boundary
+
+The current result contract is intentionally small:
+
+- one confirmation result with confirmed/cancelled;
+- one selected file path for Open/Save with chosen/cancelled;
+- no multi-file result;
+- no folder chooser contract;
+- no filter/type schema yet;
+- no hidden persistent dialog state.
+
+Targets must fail closed when they cannot implement this contract. They must not invent a result, collapse cancellation into an empty string or mutate Patch state on behalf of a dialog.

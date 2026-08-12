@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.32**
+Current development beta: **0.2.0-beta.33**
 
 Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features or measured results.
 
@@ -85,54 +85,53 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 ## Product priorities
 
 ### Studio / Designer
-- [x] semantic input `changed` without hidden persistent assignment
+- [x] semantic Input `changed` without hidden persistent assignment
 - [x] source-backed control selection/property inspector
 - [x] source-backed Form dimensions and multiple-Form selection/properties
 - [x] source-backed control `at X, Y size W, H` geometry
 - [x] drag positioning and resize handle rewrite `main.patch`
 - [x] Standalone Web and Windows/macOS/Linux Window runtimes preserve Form geometry
-- [x] Checkbox control with source-backed label/id/layout
-- [x] Checkbox `changed` exposes a typed transient Boolean `value`
-- [x] Checkbox persistence still requires explicit semantic `change`
-- [x] Boolean `clear` deterministically resets to `false`
-- [x] named Forms use beginner syntax `window ... as name`
-- [x] first named Form visible, additional named Forms hidden until `open name`
-- [x] simple `open name` / `close name` lifecycle is transient UI state, not persistent mutation
-- [x] Designer auto-names new Forms and exposes editable Form name
-- [x] build validation rejects unknown/duplicate Form names before packaging
-- [x] ComboBox with source-backed options, typed transient text `value`, Studio/Web rendering and native v0.2 parity
-- [x] single-selection ListBox with source-backed options, typed transient text `value`, Studio/Web rendering and native v0.3 parity
-- [x] Tabs Stage 1 with nested pages, transient renderer-local page selection, Studio/Standalone Web/compatibility rendering and source-backed container geometry
-- [x] native Tabs parity through Native GUI IR v0.4, sealed payload v4 and all six AOT/sealed platform implementations
-- [ ] richer controls/event editing: radio, menu, dialogs, table/grid
+- [x] Checkbox control with source-backed label/id/layout and transient Boolean `value`
+- [x] named Forms with simple transient `open name` / `close name` lifecycle
+- [x] ComboBox with source-backed options and transient text `value`
+- [x] single-selection ListBox with source-backed options and transient text `value`
+- [x] grouped Radio with source-backed options and transient text `value`
+- [x] Tabs with nested pages, transient renderer-local selection and source-backed container geometry
+- [x] structural Window menus with named MenuItems and informational dialogs
+- [x] named Confirm/Open/Save result dialogs with confirmed/chosen/cancelled events
+- [x] project import/export with versioned project bundle migrations
+- [x] Studio keyboard/focus/responsive accessibility baseline
+- [ ] Table/Grid and richer data controls
 - [ ] ListBox multi-selection with an explicit list-valued event contract
+- [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
-- [ ] project import/export
 - [ ] alignment guides, multi-select, anchors/docking and keyboard layout editing
+
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
 - [x] ready Windows/macOS/Linux Window packages
-- [x] Window build produces `patch-compiled-window-program` before compatibility desktop packaging
-- [x] local/cloud compatibility Window apps execute the compiled artifact instead of reparsing `main.patch`
-- [x] compiled Window artifact v0.2 carries named Form lifecycle instructions while Change IR remains 0.10
-- [x] token-free compatibility payload v0.4 links the same source-free compiled Window artifact into the sandboxed runtime
-- [x] compatibility runtime-template release `studio-runtime-v0.6` renders named Forms, ComboBox, ListBox and Tabs while retaining payload v0.4
-- [x] project-specific Windows/macOS/Linux smoke builds the named-Forms example and exercises open/close in the packaged app
-- [x] independent compatibility runtime-template smoke exercises open, typed Checkbox change and close on all three desktop OSes
+- [x] explicit compatibility Window backend consumes a source-free compiled Window artifact instead of reparsing `main.patch`
+- [x] token-free compatibility payload v0.4 with `studio-runtime-v0.6`
 - [x] FreeBSD Console via portable C99
-- [x] Native GUI IR v0.4 lowers Text, Button, Input, Checkbox, ComboBox, ListBox and Tabs plus Form lifecycle to Win32, AppKit and GTK3
-- [x] direct-native AOT GUI backend for the supported Native GUI IR v0.4 subset on Windows, macOS and Linux
-- [x] native ComboBox parity: Win32 `COMBOBOX`, AppKit `NSPopUpButton`, GTK3 `GtkComboBoxText`
-- [x] native ListBox parity: Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`
-- [x] native Tabs parity: Win32 `WC_TABCONTROLW`, AppKit `NSTabView`, GTK3 `GtkNotebook`
-- [x] sealed native GUI payload v4 carries Tabs page titles and parent/page placement metadata without selected-page Patch state
-- [x] token-free sealed native Win32 Studio Window download
-- [x] token-free sealed native GTK3 Studio Window download
-- [x] token-free sealed native AppKit Studio Window download using an unsigned universal Mach-O runtime
-- [ ] richer native controls: radio, menus, dialogs, table/grid
-- [ ] signing/notarization/installers
-- [ ] portable Linux distribution bundle with GTK dependencies or equivalent packaging
+- [x] Native GUI IR **0.7** for Forms, Text/Button/Input/Checkbox, ComboBox/ListBox/Radio, Tabs, menus, informational dialogs and result-bearing Confirm/Open/Save dialogs
+- [x] direct-native AOT Win32/AppKit/GTK backends for the Native GUI IR 0.7 surface
+- [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
+- [x] sealed native GUI payload **v7** with result-dialog actions/events
+- [x] token-free sealed native Win32 runtime `native-win32-runtime-v0.7`
+- [x] token-free sealed native GTK3 runtime `native-linux-runtime-v0.7`
+- [x] token-free sealed native AppKit runtime `native-macos-runtime-v0.7`
+- [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
+- [x] Linux packaging expectations documented
+- [ ] sealed native runtime accessibility parity with AOT backend 0.8
+- [ ] real credentialed Windows signing evidence
+- [ ] real credentialed macOS signing/notarization evidence
+- [ ] installer/package formats with explicit uninstall path
+- [ ] verify release integrity before install/update
+- [ ] fresh remote native build service without a user-supplied GitHub token
+- [ ] FreeBSD native GUI backend
+- [ ] more self-contained Linux distribution formats where justified
 
 ## Highest-value remaining research work
 
@@ -174,8 +173,10 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 8. Security ablations and application cases must not be presented as claims about unnamed or named prior systems.
 9. Direct-Wasm/C99 support remains narrower than the full language.
 10. Visual Form metadata remains source-backed UI structure and does not redefine semantic Change IR.
-11. GUI input/selection widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.
+11. GUI input/selection/result widgets expose transient event values; persistent application state changes only through ordinary semantic `change`.
 12. Desktop GUI apps must consume a build-time compiled Patch artifact or checked Native GUI IR; runtime reparsing is legacy compatibility only, not the native build path.
 13. Form lifecycle must stay simple and transient: no hidden persistent visibility variable and no framework-style Form object boilerplate.
 14. Unsupported native controls and containers fail closed during Native GUI IR preflight rather than being dropped or triggering an implicit Electron fallback.
 15. Tabs page selection is transient renderer/native-toolkit state unless a future explicit language contract deliberately exposes it.
+16. Backend, Native GUI IR and sealed payload versions are independent contracts; an implementation-only backend change must not silently bump semantic/payload formats.
+17. Automated accessibility smoke evidence does not substitute for manual assistive-technology testing or imply WCAG conformance.
