@@ -49,18 +49,11 @@ function installStudioShortcuts() {
   window.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.isComposing || hasOpenDialog()) return;
     const command = event.ctrlKey || event.metaKey;
-    if (!command) return;
+    if (!command || event.key !== 'Enter') return;
 
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      runButton?.click();
-      return;
-    }
-
-    if (event.shiftKey && event.key.toLowerCase() === 'b') {
-      event.preventDefault();
-      buildButton?.click();
-    }
+    event.preventDefault();
+    if (event.shiftKey) buildButton?.click();
+    else runButton?.click();
   });
 }
 
