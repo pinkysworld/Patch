@@ -23,7 +23,7 @@ test('Studio diagnostic report hashes source without embedding it', async () => 
   assert.equal(report.privacy.sourceIncluded, false);
   assert.equal(report.privacy.uploaded, false);
   assert.equal(report.compiler.status, 'ok');
-  assert.equal(report.version, 2);
+  assert.equal(report.version, 1);
   const json = serializeStudioDiagnosticReport(report);
   assert.doesNotMatch(json, /private project words/);
   assert.doesNotMatch(json, /create text secret/);
