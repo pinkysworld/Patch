@@ -1,20 +1,22 @@
+import { patchArtifactStem } from './artifact-name.js';
+
 export const PATCH_STUDIO_PROJECT_FORMAT = 'patch-studio-project';
-export const PATCH_STUDIO_PROJECT_VERSION = 1;
+export const PATCH_STUDIO_PROJECT_VERSION = 2;
 export const PATCH_STUDIO_RECOVERY_FORMAT = 'patch-studio-recovery';
 export const PATCH_STUDIO_RECOVERY_VERSION = 1;
 export const PATCH_STUDIO_MAX_SOURCE_BYTES = 2 * 1024 * 1024;
 export const PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS = 5;
+export const PATCH_STUDIO_BUILD_TARGETS = Object.freeze([
+  'web', 'native-windows', 'native-macos', 'native-linux', 'native-freebsd', 'portable', 'wasm-direct', 'wasm-bootstrap'
+]);
+export const PATCH_STUDIO_NATIVE_BUILD_MODES = Object.freeze(['prebuilt', 'cloud', 'local', 'compat']);
+export const PATCH_STUDIO_DEFAULT_BUILD_TARGET = 'web';
+export const PATCH_STUDIO_DEFAULT_NATIVE_BUILD_MODE = 'prebuilt';
 
 const encoder = new TextEncoder();
 
 export function studioProjectFileStem(name) {
-  const cleaned = String(name ?? '')
-    .trim()
-    .replace(/[^A-Za-z0-9_-]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 64);
-  return cleaned || 'PatchApp';
+  return patchArtifactStem(name).slice(0, 64) || 'PatchApp';
 }
 
 export class StudioProjectError extends Error {
@@ -33,7 +35,11 @@ export function buildStudioProjectBundle(state) {
     project: {
       name: normalized.name,
       kind: normalized.kind,
-      entry: 'main.patch'
+      entry: 'main.patch',
+      build: {
+        target: normalized.buildTarget,
+        nativeMode: normalized.nativeBuildMode
+      }
     },
     files: [{ path: 'main.patch', content: normalized.code }]
   };
@@ -71,13 +77,19 @@ export function validateStudioProjectBundle(value) {
   }
   if (!seen.has(entry)) throw new StudioProjectError(`Project entry '${entry}' is not present in the bundle.`);
   if (entry !== 'main.patch' || files.length !== 1) {
-    throw new StudioProjectError('Patch Studio project version 1 supports exactly one main.patch source file.', 'STUDIO_PROJECT_UNSUPPORTED_LAYOUT');
+    throw new StudioProjectError(`Patch Studio project version ${version} supports exactly one main.patch source file.`, 'STUDIO_PROJECT_UNSUPPORTED_LAYOUT');
   }
+
+  const migratedBuild = version === 1
+    ? { target: PATCH_STUDIO_DEFAULT_BUILD_TARGET, nativeMode: PATCH_STUDIO_DEFAULT_NATIVE_BUILD_MODE }
+    : validateBuildSettings(value.project.build);
 
   return buildStudioProjectBundle({
     name: value.project.name,
     kind: value.project.kind,
-    code: files[0].content
+    code: files[0].content,
+    buildTarget: migratedBuild.target,
+    nativeBuildMode: migratedBuild.nativeMode
   });
 }
 
@@ -100,7 +112,9 @@ export function studioStateFromBundle(bundle) {
   return {
     name: normalized.project.name,
     kind: normalized.project.kind,
-    code: normalized.files[0].content
+    code: normalized.files[0].content,
+    buildTarget: normalized.project.build.target,
+    nativeBuildMode: normalized.project.build.nativeMode
   };
 }
 
@@ -114,7 +128,13 @@ export function parseStoredStudioProject(text) {
   }
   if (value?.format === PATCH_STUDIO_PROJECT_FORMAT) return validateStudioProjectBundle(value);
   if (isRecord(value) && typeof value.code === 'string') {
-    return buildStudioProjectBundle({ name: value.name, kind: value.kind, code: value.code });
+    return buildStudioProjectBundle({
+      name: value.name,
+      kind: value.kind,
+      code: value.code,
+      buildTarget: value.buildTarget,
+      nativeBuildMode: value.nativeBuildMode
+    });
   }
   throw new StudioProjectError('Stored Patch Studio project has an unknown format.', 'STUDIO_PROJECT_STORAGE_FORMAT');
 }
@@ -196,7 +216,32 @@ function normalizeStudioState(state) {
   if (encoder.encode(state.code).length > PATCH_STUDIO_MAX_SOURCE_BYTES) {
     throw new StudioProjectError(`Project source exceeds the ${PATCH_STUDIO_MAX_SOURCE_BYTES} byte Studio limit.`, 'STUDIO_PROJECT_TOO_LARGE');
   }
-  return { name, kind, code: state.code };
+  const buildTarget = normalizeBuildTarget(state.buildTarget);
+  const nativeBuildMode = normalizeNativeBuildMode(state.nativeBuildMode);
+  return { name, kind, code: state.code, buildTarget, nativeBuildMode };
+}
+
+function validateBuildSettings(value) {
+  if (!isRecord(value)) throw new StudioProjectError('Project build settings are missing.', 'STUDIO_PROJECT_BUILD_SETTINGS');
+  if (typeof value.target !== 'string' || !PATCH_STUDIO_BUILD_TARGETS.includes(value.target)) {
+    throw new StudioProjectError(`Unsupported Studio build target '${String(value.target ?? '?')}'.`, 'STUDIO_PROJECT_BUILD_TARGET');
+  }
+  if (typeof value.nativeMode !== 'string' || !PATCH_STUDIO_NATIVE_BUILD_MODES.includes(value.nativeMode)) {
+    throw new StudioProjectError(`Unsupported Studio native build mode '${String(value.nativeMode ?? '?')}'.`, 'STUDIO_PROJECT_NATIVE_MODE');
+  }
+  return { target: value.target, nativeMode: value.nativeMode };
+}
+
+function normalizeBuildTarget(value) {
+  if (value === undefined || value === null || value === '') return PATCH_STUDIO_DEFAULT_BUILD_TARGET;
+  if (!PATCH_STUDIO_BUILD_TARGETS.includes(value)) throw new StudioProjectError(`Unsupported Studio build target '${String(value)}'.`, 'STUDIO_PROJECT_BUILD_TARGET');
+  return value;
+}
+
+function normalizeNativeBuildMode(value) {
+  if (value === undefined || value === null || value === '') return PATCH_STUDIO_DEFAULT_NATIVE_BUILD_MODE;
+  if (!PATCH_STUDIO_NATIVE_BUILD_MODES.includes(value)) throw new StudioProjectError(`Unsupported Studio native build mode '${String(value)}'.`, 'STUDIO_PROJECT_NATIVE_MODE');
+  return value;
 }
 
 function normalizedPath(value, label) {
