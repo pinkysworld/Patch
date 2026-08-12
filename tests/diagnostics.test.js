@@ -10,7 +10,7 @@ import {
 } from '../src/diagnostics.js';
 
 test('unknown statements receive a stable syntax code and exact source line', () => {
-  const source = 'create number score = 0\n  nonsense command\nshow score';
+  const source = 'if true:\n  nonsense command\nshow 1';
   let error;
   try { parse(source); } catch (caught) { error = caught; }
   const diagnostic = diagnosticFromError(error, { source, entry: '/private/project/main.patch', phase: 'compile' });
