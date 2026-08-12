@@ -26,7 +26,7 @@ Tabs page selection remains transient renderer/toolkit state and creates no Patc
 
 Patch Studio project bundles use `patch-studio-project` **version 2**.
 
-The canonical project bundle stores:
+Patch Studio v2 is a canonical project bundle that stores:
 
 - project name;
 - Console/Window kind;
