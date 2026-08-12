@@ -1,12 +1,13 @@
 export const PATCH_ARTIFACT_NAMING_VERSION = 1;
 
 export function patchArtifactStem(name) {
-  return String(name ?? 'PatchApp')
+  const cleaned = String(name ?? '')
     .trim()
-    .replace(/[^A-Za-z0-9 _.-]/g, '')
-    .replace(/\s+/g, ' ')
-    .slice(0, 80)
-    .replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp';
+    .replace(/[^A-Za-z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  return cleaned || 'PatchApp';
 }
 
 export function patchArtifactFilename(name, target, options = {}) {
