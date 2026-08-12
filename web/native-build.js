@@ -126,9 +126,7 @@ buildButton.addEventListener('click', async event => {
     }
 
     if (nativeBuildMode.value === 'prebuilt' || nativeBuildMode.value === 'compat') {
-      if (platform === 'freebsd') {
-        throw new Error('Ready-app downloads are currently available for Windows, macOS and Linux. For FreeBSD, choose the local or cloud build mode.');
-      }
+      if (platform === 'freebsd') throw new Error('Ready-app downloads are currently available for Windows, macOS and Linux. For FreeBSD, choose the local or cloud build mode.');
       if (nativeBuildMode.value === 'compat' && kind !== 'window') throw new Error('Compatibility packaging is only used for Window / GUI projects.');
       setBusy(true, `Building ${kind === 'window' ? 'compatibility' : 'ready'} ${platformLabel(platform)} ${kindLabel} app…`);
       output.textContent = `${platformLabel(platform)} ${kindLabel} ${kind === 'window' ? 'compatibility' : 'ready-app'} build\n\nPreflight passed: ${preflightText}.\nLoading the Patch runtime asset…`;
@@ -176,18 +174,7 @@ buildButton.addEventListener('click', async event => {
     const workflow = workflowFor(platform, kind);
     const directWin32 = platform === 'windows' && kind === 'window';
     const directNativeWindow = kind === 'window' && ['windows', 'macos', 'linux'].includes(platform);
-    cloudSnapshot = {
-      token,
-      sourceBase64,
-      name,
-      kind,
-      platform,
-      kindLabel,
-      preflightText,
-      workflow,
-      directWin32,
-      directNativeWindow
-    };
+    cloudSnapshot = { token, sourceBase64, name, kind, platform, kindLabel, preflightText, workflow, directWin32, directNativeWindow };
     lastCloudBuildSnapshot = cloudSnapshot;
     await runCloudBuild(cloudSnapshot);
   } catch (error) {
@@ -197,7 +184,7 @@ buildButton.addEventListener('click', async event => {
       : error?.name === 'PatchBuildTimeoutError'
         ? 'Cloud build timed out'
         : 'Native build stopped';
-    if (cloudSnapshot || lastCloudBuildSnapshot) showRetryControl();
+    if (cloudSnapshot || (nativeBuildMode.value === 'cloud' && lastCloudBuildSnapshot)) showRetryControl();
   } finally {
     activeCloudBuild = null;
     cloudControls.cancel.hidden = true;
@@ -252,7 +239,7 @@ function refreshNativePanel() {
   }
   updateNativeModeLabels(platform, kind);
   tokenLabel.hidden = nativeBuildMode.value !== 'cloud';
-  cloudControls.group.hidden = nativeBuildMode.value !== 'cloud' && cloudControls.retry.hidden;
+  cloudControls.group.hidden = nativeBuildMode.value !== 'cloud';
   if (!platform || buildButton.disabled) return;
   const kindLabel = kind === 'window' ? 'Window / GUI' : 'Console';
   if (platform === 'freebsd' && kind === 'window') {
@@ -428,7 +415,16 @@ async function cancelCloudRun(state) {
   if (!state?.runId || state.cancelSent) return;
   state.cancelSent = true;
   try {
-    await apiJson(`${API}/repos/${REPOSITORY}/actions/runs/${state.runId}/cancel`, state.token, { method: 'POST' });
+    const response = await fetch(`${API}/repos/${REPOSITORY}/actions/runs/${state.runId}/cancel`, {
+      method: 'POST',
+      headers: githubHeaders(state.token)
+    });
+    if (response.status === 202 || response.status === 204 || response.status === 409) return;
+    if (!response.ok) {
+      let detail = '';
+      try { detail = (await response.json()).message ?? ''; } catch { detail = await response.text(); }
+      throw new Error(`GitHub cancel API ${response.status}: ${detail || response.statusText}`);
+    }
   } catch (error) {
     state.cancelSent = false;
     throw error;
@@ -459,7 +455,7 @@ async function retryLastCloudBuild() {
 }
 
 function showRetryControl() {
-  if (!lastCloudBuildSnapshot) return;
+  if (!lastCloudBuildSnapshot || nativeBuildMode.value !== 'cloud') return;
   cloudControls.group.hidden = false;
   cloudControls.retry.hidden = false;
 }
@@ -473,10 +469,7 @@ function cancelledBuildError(url = '') {
 async function apiJson(url, token, options = {}) {
   const response = await fetch(url, {
     ...options,
-    headers: {
-      Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers ?? {})
-    }
+    headers: { ...githubHeaders(token), ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers ?? {}) }
   });
   if (response.status === 204) return null;
   if (!response.ok) {
@@ -488,8 +481,12 @@ async function apiJson(url, token, options = {}) {
   return response.json();
 }
 
+function githubHeaders(token) {
+  return { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' };
+}
+
 async function downloadArtifact(artifact, token, filename) {
-  const response = await fetch(artifact.archive_download_url, { headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' } });
+  const response = await fetch(artifact.archive_download_url, { headers: githubHeaders(token) });
   if (!response.ok) throw new Error(`Could not download native build artifact (${response.status}).`);
   downloadBlob(await response.blob(), filename);
 }
@@ -521,9 +518,7 @@ function artifactDescription(platform, kind, name) {
   return `${platformLabel(platform)} native Console package`;
 }
 function readyPackageNote(kind, platform) {
-  if (kind === 'console') {
-    return 'Studio compiled this Console project to direct Wasm and sealed that checked payload inside a project-specific executable. The platform runtime machine code is prebuilt; this is sealed native packaging, not a claim of direct Patch-to-x86/ARM AOT compilation.';
-  }
+  if (kind === 'console') return 'Studio compiled this Console project to direct Wasm and sealed that checked payload inside a project-specific executable. The platform runtime machine code is prebuilt; this is sealed native packaging, not a claim of direct Patch-to-x86/ARM AOT compilation.';
   const nativeAlternative = platform === 'windows'
     ? 'For Windows, choose “Native single EXE (no token, recommended)” for the native sealed-runtime build, “Native AOT EXE” for project-specific MSVC codegen, or use patch-app locally.'
     : platform === 'linux'
