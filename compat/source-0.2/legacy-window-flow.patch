@@ -1,0 +1,3 @@
+window "Legacy Window":
+  text "Hello"
+  button "OK" as ok
