@@ -8,7 +8,7 @@ const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
 if (!beta) throw new Error(`Unexpected project version ${pkg.version}`);
 
 const required = [
-  '_site/index.html','_site/style.css','_site/designer-inspector.css','_site/forms-designer.css','_site/project-lifecycle.css','_site/recovery-manager.css','_site/studio-diagnostics.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-diagnostics.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
+  '_site/index.html','_site/style.css','_site/studio-accessibility.css','_site/designer-inspector.css','_site/forms-designer.css','_site/project-lifecycle.css','_site/recovery-manager.css','_site/studio-diagnostics.css','_site/playground.js','_site/forms-designer.js','_site/native-build.js','_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-diagnostics.js','_site/studio-accessibility.js','_site/sw.js','_site/manifest.webmanifest','_site/icon.svg',
   '_site/src/interpreter.js','_site/src/parser.js','_site/src/expression.js','_site/src/change.js','_site/src/change-analysis.js','_site/src/range-analysis.js',
   '_site/src/formal-range.js','_site/src/formal-guard.js','_site/src/formal-calls.js','_site/src/formal-bridge.js','_site/src/formal-source.js',
   '_site/src/source-validation.js','_site/src/guard-validation.js','_site/src/compiler.js','_site/src/bundle.js','_site/src/wasm.js','_site/src/wasm-direct.js',
@@ -19,22 +19,37 @@ const required = [
 for (const rel of required) if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 
 const html = read('_site/index.html');
-requireAll('index assets', html, ['./style.css','./manifest.webmanifest','./native-build.js','./project-lifecycle.js','./recovery-manager.js','./playground.js','./forms-designer.js','./studio-diagnostics.js','./icon.svg']);
+requireAll('index assets', html, ['./style.css','./studio-accessibility.css','./manifest.webmanifest','./native-build.js','./project-lifecycle.js','./recovery-manager.js','./playground.js','./forms-designer.js','./studio-diagnostics.js','./studio-accessibility.js','./icon.svg']);
 for (const id of [
-  'code','run','build','buildTarget','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addRadio','addCombo','addListbox','addTabs',
+  'skipToEditor','code','run','build','buildTarget','resultTabs','tabDesigner','tabApp','tabOutput','tabChanges','tabIr','output','changes','ir','app','designer','designerCanvas','addText','addButton','addInput','addRadio','addCombo','addListbox','addTabs',
   'projectName','projectKind','exportProject','importProject','recoverProject','importProjectFile','copyDiagnostics','downloadDiagnostics','diagnosticsState','nativeBuildPanel','nativeBuildToken','nativeBuildStatus'
 ]) requireText('index UI', html, `id="${id}"`);
+requireAll('index accessibility contract', html, [
+  'class="skip-link" href="#code"','role="tablist" aria-label="Result views"','role="tab" data-tab="designer"','aria-controls="designer"','role="tabpanel" aria-labelledby="tabDesigner"',
+  'aria-keyshortcuts="Control+Enter Meta+Enter"','aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter"','role="status" aria-live="polite"','aria-labelledby="editorTitle"','tabindex="0"'
+]);
 requireAll('index current release', html, [
   `0.2 beta.${beta}`, `Beta ${pkg.version}`, `data-patch-version="${pkg.version}"`, 'Change IR 0.10',
   'Beta.32 invocation-frame direct-Wasm correspondence', 'GeneratedTransitiveRuntimeCertificate.lean',
   'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'invocation-frame',
   'Windows App (.exe)', 'macOS App (.app)', 'Linux App', 'FreeBSD Console', 'value="tabsWindow"',
-  'Versioned project bundles', 'managed recovery snapshots', 'privacy-redacted diagnostics'
+  'Versioned project bundles', 'managed recovery snapshots', 'privacy-redacted diagnostics', 'keyboard/focus accessibility'
 ]);
 for (const option of [
   'value="web"','value="native-windows"','value="native-macos"','value="native-linux"','value="native-freebsd"',
   'value="wasm-direct"','value="wasm-bootstrap"'
 ]) requireText('build selector', html, option);
+
+const accessibility = read('_site/studio-accessibility.js');
+rejectOutsideSiteImport('Studio accessibility', accessibility);
+requireAll('Studio accessibility behavior', accessibility, [
+  'skipToEditor','resultTabs',"event.key === 'ArrowRight'", "event.key === 'ArrowLeft'", "event.key === 'Home'", "event.key === 'End'",'next.focus()','next.click()','syncResultTabs()',
+  'event.ctrlKey || event.metaKey',"event.key !== 'Enter'",'if (event.shiftKey) buildButton?.click()','else runButton?.click()','hasOpenDialog()','attributeFilter: [\'class\']'
+]);
+const accessibilityCss = read('_site/studio-accessibility.css');
+requireAll('Studio accessibility stylesheet', accessibilityCss, [
+  '.skip-link',':focus-visible','@media (pointer: coarse)','min-height: 40px !important','@media (pointer: coarse) and (max-width: 760px)','@media (prefers-reduced-motion: reduce)','@media (forced-colors: active)','@media (max-width: 820px)','@media (max-width: 560px)','overscroll-behavior-inline: contain'
+]);
 
 const projectLifecycle = read('_site/project-lifecycle.js');
 rejectOutsideSiteImport('project lifecycle', projectLifecycle);
@@ -201,7 +216,7 @@ requireAll('compiler assurance and UI lifecycle modules', compiler, [
 const sw = read('_site/sw.js');
 rejectOutsideSiteImport('service worker', sw);
 requireAll('service worker current release', sw, [
-  `patch-studio-0.2-beta.${beta}-forms8-ux13-recovery2`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./project-lifecycle.js'", "'./project-lifecycle.css'", "'./recovery-manager.js'", "'./recovery-manager.css'", "'./studio-diagnostics.js'", "'./studio-diagnostics.css'", "'./src/studio-project.js'", "'./src/studio-diagnostics.js'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
+  `patch-studio-0.2-beta.${beta}-forms8-ux14-a11y1`, "'./native-build.js'", "'./forms-designer.js'", "'./forms-designer.css'", "'./project-lifecycle.js'", "'./project-lifecycle.css'", "'./recovery-manager.js'", "'./recovery-manager.css'", "'./studio-diagnostics.js'", "'./studio-diagnostics.css'", "'./studio-accessibility.js'", "'./studio-accessibility.css'", "'./src/studio-project.js'", "'./src/studio-diagnostics.js'", "'./src/form-layout.js'", "'./src/window-compiled.js'",
   "'./src/prebuilt-window.js'", "'./src/compiler.js'", "'./src/formal-calls.js'", "'./src/formal-guard.js'", "'./src/guard-validation.js'", "'./src/window-events.js'", "'./src/prebuilt-native.js'", 'freshFirst'
 ]);
 

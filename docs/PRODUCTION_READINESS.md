@@ -83,9 +83,13 @@ The versioned Studio store uses a pending-write key before promoting the canonic
 - [ ] package/library story
 - [x] native Win32/AppKit/GTK GUI lowering and sealed runtime paths
 - [ ] FreeBSD native GUI backend
-- [ ] accessibility audit for Patch Studio and generated Window apps
+- [x] Patch Studio keyboard/focus/responsive accessibility baseline
+- [ ] generated Window app accessibility audit
+- [ ] manual assistive-technology/browser accessibility audit before a stable release
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
+
+The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result tab relationships, arrow/Home/End result navigation, keyboard Run/Build shortcuts, visible keyboard focus, polite status announcements, coarse-pointer target sizing, reduced-motion handling, forced-colors affordances and responsive project/support/result layouts. This is an implementation baseline, not a WCAG conformance claim. Generated Window applications and manual screen-reader/browser testing remain separate work.
 
 ## Release rule
 
