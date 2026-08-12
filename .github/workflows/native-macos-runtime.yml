@@ -24,8 +24,6 @@ on:
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
       - web/native-build.js
-      - scripts/build-site.js
-      - scripts/check-site.js
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
@@ -38,7 +36,6 @@ on:
       - docs/MENUS_DIALOGS.md
       - docs/RESULT_DIALOGS.md
       - docs/ROADMAP.md
-      - .github/workflows/pages.yml
   push:
     branches: [main]
     paths:
@@ -62,8 +59,6 @@ on:
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
       - web/native-build.js
-      - scripts/build-site.js
-      - scripts/check-site.js
       - tests/sealed-native-gui.test.js
       - tests/combobox-window.test.js
       - tests/listbox-window.test.js
@@ -76,7 +71,6 @@ on:
       - docs/MENUS_DIALOGS.md
       - docs/RESULT_DIALOGS.md
       - docs/ROADMAP.md
-      - .github/workflows/pages.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
