@@ -1,15 +1,27 @@
 export const PATCH_FORM_LAYOUT_VERSION = '0.1';
 
-const CONTROL_DEFAULTS = {
-  text: { width: 200, height: 30 },
-  button: { width: 120, height: 36 },
-  input: { width: 220, height: 36 },
-  checkbox: { width: 220, height: 36 },
-  radio: { width: 220, height: 84 },
-  combo: { width: 220, height: 36 },
-  listbox: { width: 220, height: 120 },
-  tabs: { width: 420, height: 240 }
-};
+export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
+  text: Object.freeze({ width: 200, height: 30 }),
+  button: Object.freeze({ width: 120, height: 36 }),
+  input: Object.freeze({ width: 220, height: 36 }),
+  checkbox: Object.freeze({ width: 220, height: 36 }),
+  radio: Object.freeze({ width: 220, height: 84 }),
+  combo: Object.freeze({ width: 220, height: 36 }),
+  listbox: Object.freeze({ width: 220, height: 120 }),
+  tabs: Object.freeze({ width: 420, height: 240 })
+});
+
+export function formControlDefaultSize(type) {
+  return PATCH_FORM_CONTROL_DEFAULTS[type] ?? { width: 120, height: 36 };
+}
+
+export function formControlDefaultLayout(type, index, options = {}) {
+  const { width, height } = formControlDefaultSize(type);
+  const x = options.x ?? 24;
+  const yStart = options.yStart ?? 24;
+  const yStep = options.yStep ?? 48;
+  return { x, y: yStart + index * yStep, width, height };
+}
 
 export function buildFormLayoutManifest(ast) {
   return {
@@ -67,11 +79,11 @@ export function applyFormLayout(root, manifest, options = {}) {
 
 function effectiveControlLayout(control, index) {
   const type = control.kind === 'tabs' ? 'tabs' : control.control;
-  const defaults = CONTROL_DEFAULTS[type] ?? { width: 120, height: 36 };
+  const fallback = formControlDefaultLayout(type, index);
   return {
-    x: control.layout?.x ?? 24,
-    y: control.layout?.y ?? (24 + index * 48),
-    width: control.layout?.width ?? defaults.width,
-    height: control.layout?.height ?? defaults.height
+    x: control.layout?.x ?? fallback.x,
+    y: control.layout?.y ?? fallback.y,
+    width: control.layout?.width ?? fallback.width,
+    height: control.layout?.height ?? fallback.height
   };
 }
