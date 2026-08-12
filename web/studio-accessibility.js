@@ -12,7 +12,7 @@ syncResultTabs();
 
 if (resultTabList && typeof MutationObserver !== 'undefined') {
   const observer = new MutationObserver(syncResultTabs);
-  observer.observe(resultTabList, { attributes: true, subtree: true, attributeFilter: ['class', 'aria-selected'] });
+  observer.observe(resultTabList, { attributes: true, subtree: true, attributeFilter: ['class'] });
 }
 
 function installSkipLink() {
