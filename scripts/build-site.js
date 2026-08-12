@@ -12,7 +12,7 @@ const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
-  'source-validation.js','guard-validation.js','compiler.js','diagnostics.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
+  'source-validation.js','guard-validation.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','window-events.js','designer.js','form-layout.js','studio-project.js','studio-diagnostics.js',
   'window-compiled.js','native-gui-ir.js','sealed-native-gui.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
