@@ -47,10 +47,14 @@ Patch Studio diagnostics are local-only. The report records Patch version, proje
 - [ ] macOS signing + notarization
 - [ ] installer/package formats with uninstall path
 - [ ] verify release signatures/checksums before update/install
-- [ ] document Linux packaging expectations
+- [x] document Linux packaging expectations
 - [ ] fresh-build service that does not require users to paste a personal GitHub token
 
-Ready Windows, macOS and Linux application downloads can already be consumed without a personal GitHub token. The remaining item above is specifically about requesting new/fresh remote builds without user-supplied credentials.
+`docs/LINUX_PACKAGING.md` now defines the current GTK3/Console runtime assumptions, archive contents, ABI limitations, explicit unsigned status, user-space removal behavior and the formats Patch does **not** yet claim (`.deb`, `.rpm`, Flatpak, Snap, AppImage). This closes the documentation item without pretending that the separate installer/uninstall-format milestone is complete.
+
+The repository also contains fail-closed Windows Authenticode and macOS Developer ID/notarization gates for final project artifacts. Those two signing checkboxes remain open until real certificate credentials are configured and a final artifact passes the complete signing/verifying workflow. `PATCH-SIGNING.json` cannot claim required signing from the requested mode alone; platform verification evidence is required first.
+
+Ready Windows, macOS and Linux application downloads can already be consumed without a personal GitHub token. The remaining fresh-build item above is specifically about requesting new/fresh remote builds without user-supplied credentials.
 
 ### Security and maintenance
 - [x] security reporting policy
@@ -72,7 +76,7 @@ GitHub Actions are monitored weekly through Dependabot and JavaScript/TypeScript
 
 `docs/CLI_CONTRACT.md` freezes the existing coarse exit taxonomy as `0 = success`, `1 = CLI usage`, `2 = processing/build/validation failure`. `check`, `formal`, `certify` and `build` expose the versioned `patch-cli-result` v1 envelope. Successful commands return command-specific structured data; failures retain exit `2` and carry the existing `patch-diagnostic` v1 object with stable `PATCHxxxx` code and source location where available. Human-readable behavior remains the default without `--json`.
 
-The stable diagnostic envelope now covers compiler/build failure classes and parser source locations. The broader backend item remains open because Wasm/C99/native runtime and packaging failures do not yet all map back to source locations.
+Backend source mapping is now incremental rather than parser-only. Direct-Wasm fail-closed errors preserve their original Patch `at line N` hints through the normalized diagnostic envelope. C99 failures that share that validator retain the same locations, and a second fail-closed C99 context layer maps several C99-only errors only when the original source has exactly one unambiguous matching location. Generated C/C++/Rust compiler/linker locations are deliberately **not** reinterpreted as Patch source lines. The P1 item therefore remains open for the remaining native/toolchain/runtime/packaging error classes.
 
 Beta.33 centralizes Studio-facing file stems and target suffixes in `src/artifact-name.js`, and project format v2 stores the selected build target/native mode in the project/recovery lifecycle. Platform toolchains may still impose their own internal bundle/executable naming rules, but the user-facing Studio packaging names are deterministic and regression-tested.
 
