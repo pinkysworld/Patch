@@ -25,7 +25,10 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-printf '%s' "$PATCH_MACOS_P12_BASE64" | base64 --decode > "$P12"
+python3 - "$P12" <<'PY'
+import base64, os, pathlib, sys
+pathlib.Path(sys.argv[1]).write_bytes(base64.b64decode(os.environ['PATCH_MACOS_P12_BASE64'], validate=True))
+PY
 security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
 security set-keychain-settings -lut 21600 "$KEYCHAIN"
 security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
@@ -35,7 +38,6 @@ security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
 
 codesign --force --deep --options runtime --timestamp --sign "$PATCH_MACOS_SIGN_IDENTITY" "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-spctl --assess --type execute --verbose=2 "$APP_PATH" || true
 
 ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$NOTARY_ZIP"
 xcrun notarytool submit "$NOTARY_ZIP" \
@@ -46,5 +48,6 @@ xcrun notarytool submit "$NOTARY_ZIP" \
 xcrun stapler staple "$APP_PATH"
 xcrun stapler validate "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+spctl --assess --type execute --verbose=2 "$APP_PATH"
 
 printf 'Verified Developer ID signature and notarization for %s\n' "$APP_PATH"
