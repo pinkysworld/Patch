@@ -42,15 +42,17 @@ test('alignment snapping leaves distant controls alone', () => {
   assert.deepEqual(result, { x: 20, y: 20, width: 40, height: 20, guideX: null, guideY: null });
 });
 
-test('Studio alignment assistance stays web-only, syntax-valid and offline-cached', () => {
+test('Studio alignment assistance stays web-only, group-aware, syntax-valid and offline-cached', () => {
   execFileSync(process.execPath, ['--check', 'web/designer-alignment.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/designer-alignment-guides.js'], { stdio: 'pipe' });
-  assert.match(html, /forms-designer\.js[\s\S]*designer-alignment-guides\.js[\s\S]*form-window-resize\.js/);
+  assert.match(html, /forms-designer\.js[\s\S]*designer-alignment-guides\.js[\s\S]*designer-multiselect\.js[\s\S]*form-window-resize\.js/);
   assert.match(sw, /\.\/designer-alignment\.js/);
   assert.match(sw, /\.\/designer-alignment-guides\.js/);
   assert.match(moduleSource, /from '\.\/designer-alignment\.js'/);
   assert.match(moduleSource, /moveEvent\.altKey/);
   assert.match(moduleSource, /snapFormControlAlignment/);
+  assert.match(moduleSource, /designer-control\.designer-multi-selected/);
+  assert.match(moduleSource, /!grouped\.has\(selectorKey\(item\)\)/);
   assert.match(moduleSource, /document\.body\.appendChild\(guide\)/);
   assert.match(moduleSource, /pointercancel/);
   assert.doesNotMatch(helperSource, /\.\.\/src\//);
