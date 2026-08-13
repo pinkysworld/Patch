@@ -14,6 +14,7 @@ test('public site build carries Designer alignment modules referenced by Studio 
   const html = fs.readFileSync('_site/index.html', 'utf8');
   const sw = fs.readFileSync('_site/sw.js', 'utf8');
   assert.match(html, /\.\/designer-alignment-guides\.js\?v=[a-f0-9]+/);
-  assert.match(sw, /\.\/designer-alignment\.js\?v=[a-f0-9]+/);
-  assert.match(sw, /\.\/designer-alignment-guides\.js\?v=[a-f0-9]+/);
+  assert.match(sw, /const REVISION = '[a-f0-9]+'/);
+  assert.match(sw, /'\.\/designer-alignment\.js'/);
+  assert.match(sw, /'\.\/designer-alignment-guides\.js'/);
 });
