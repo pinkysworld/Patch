@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const zlib = require('node:zlib');
-const { pathToFileURL } = require('node:url');
+const { spawnSync } = require('node:child_process');
 const { getAsset, getAssetKeys } = require('node:sea');
 
 const manifest = JSON.parse(getAsset('patch-offline-manifest.json', 'utf8'));
@@ -14,22 +14,32 @@ if (args[0] === '--version' || args[0] === 'version') {
   process.exit(0);
 }
 
-main().catch(error => {
+try {
+  const status = runExtractedCompiler();
+  process.exitCode = status;
+} catch (error) {
   console.error(`Patch offline compiler stopped: ${error?.stack || error?.message || String(error)}`);
   process.exitCode = 2;
-});
+}
 
-async function main() {
+function runExtractedCompiler() {
   const root = extractCompiler();
   const cliEntry = path.join(root, 'src', 'cli-entry.js');
+  const nodeRuntime = extractRuntime('runtime/node.bin.gz', manifest.nodeExecutable || defaultNodeExecutable(), root);
   const consoleRuntime = extractRuntime('runtime/console.bin.gz', 'runtime/console.bin', root);
   const guiRuntime = extractRuntime('runtime/gui.bin.gz', 'runtime/gui.bin', root);
-  if (consoleRuntime) process.env.PATCH_OFFLINE_CONSOLE_RUNTIME = consoleRuntime;
-  if (guiRuntime) process.env.PATCH_OFFLINE_GUI_RUNTIME = guiRuntime;
-  process.env.PATCH_OFFLINE_COMPILER_IN_PROCESS = '1';
-  process.env.PATCH_OFFLINE_COMPILER_PLATFORM = manifest.platform;
-  process.argv = [process.execPath, cliEntry, ...args];
-  await import(pathToFileURL(cliEntry).href);
+  if (!nodeRuntime) throw new Error('Embedded Node execution runtime is missing.');
+
+  const env = {
+    ...process.env,
+    PATCH_OFFLINE_COMPILER_PLATFORM: manifest.platform
+  };
+  if (consoleRuntime) env.PATCH_OFFLINE_CONSOLE_RUNTIME = consoleRuntime;
+  if (guiRuntime) env.PATCH_OFFLINE_GUI_RUNTIME = guiRuntime;
+
+  const result = spawnSync(nodeRuntime, [cliEntry, ...args], { stdio: 'inherit', env });
+  if (result.error) throw new Error(`Could not start embedded Node runtime: ${result.error.message}`);
+  return Number.isInteger(result.status) ? result.status : 2;
 }
 
 function normalizeUserArgs(argv) {
@@ -42,6 +52,10 @@ function sameExecutable(value, executable) {
   if (!value) return false;
   try { return path.resolve(value) === path.resolve(executable); }
   catch { return value === executable; }
+}
+
+function defaultNodeExecutable() {
+  return manifest.platform === 'windows' ? 'runtime/node.exe' : 'runtime/node';
 }
 
 function extractCompiler() {
@@ -73,7 +87,7 @@ function extractRuntime(assetKey, outputKey, root) {
     const embedded = Buffer.from(getAsset(assetKey));
     const raw = manifest.runtimeEncoding === 'gzip' ? zlib.gunzipSync(embedded) : embedded;
     fs.writeFileSync(target, raw);
-    if (process.platform !== 'win32') fs.chmodSync(target, 0o755);
+    if (manifest.platform !== 'windows') fs.chmodSync(target, 0o755);
   }
   return target;
 }
