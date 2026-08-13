@@ -5,6 +5,7 @@ import { buildFormalSource } from './formal-source.js';
 import { buildFormalCalls } from './formal-calls.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
+import { buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
@@ -21,6 +22,7 @@ export function compile(source, options = {}) {
   const formalCalls = buildFormalCalls(ast, changeAnalysis);
   const sourceValidation = validateFormalSourceExtraction(source, formalSource);
   const guardValidation = validateFormalGuardExtraction(source, formalSource);
+  const windowLayoutPolicy = buildWindowLayoutPolicyManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -39,7 +41,7 @@ export function compile(source, options = {}) {
 
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
-    sourceValidation, guardValidation
+    sourceValidation, guardValidation, windowLayoutPolicy
   };
 }
 
