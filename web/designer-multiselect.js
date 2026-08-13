@@ -106,7 +106,6 @@ function applySelectionClasses() {
     const key = selectorKey(selector);
     live.add(key);
     element.classList.toggle('designer-multi-selected', selectionKeys.has(key));
-    element.setAttribute('aria-selected', selectionKeys.has(key) ? 'true' : 'false');
   }
   selectionKeys = new Set([...selectionKeys].filter(key => live.has(key)));
   selectionKeys.add(primaryKey);
