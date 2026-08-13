@@ -73,15 +73,17 @@ macOS development compiler binaries are ad-hoc signed by the build workflow. Thi
 
 ## Single-executable implementation
 
-The Windows/macOS/Linux compiler uses Node's single-executable application support. `scripts/build-offline-compiler.js` embeds the Patch `src/*.js` module graph plus platform runtime templates as SEA assets. `scripts/offline-compiler-runner.cjs` extracts the versioned compiler graph into a content-addressed temporary cache and imports the ordinary `src/cli-entry.js` in-process.
+The Windows/macOS/Linux download uses Node's single-executable application support as a small launcher. `scripts/build-offline-compiler.js` embeds the exact Patch `src/*.js` graph plus gzip-compressed copies of a plain Node runtime and the platform runtime templates as SEA assets. `scripts/offline-compiler-runner.cjs` extracts those assets into a source/runtime-content-addressed temporary cache and starts the ordinary `src/cli-entry.js` with that embedded plain Node runtime.
 
-This means the offline compiler does **not** maintain a second parser, compiler, Change IR implementation or native linker model.
+This launcher arrangement is intentional: Node's SEA main module may load built-ins and embedded assets but does not directly import arbitrary modules from the filesystem. The extracted ordinary Node runtime therefore executes the normal Patch ESM module graph without requiring Node to be installed on the user's machine.
+
+The offline compiler does **not** maintain a second parser, compiler, Change IR implementation or native linker model.
 
 ## Runtime inputs
 
 The distribution build binds to the existing published runtime lines:
 
-- Console runtime: `studio-runtime-v0.6`
+- Console runtime: host-built generic Patch SEA runtime compatible with the current compiler
 - Win32 GUI runtime: `native-win32-runtime-v0.8`
 - AppKit GUI runtime: `native-macos-runtime-v0.8`
 - GTK3 GUI runtime: `native-linux-runtime-v0.8`
@@ -90,6 +92,6 @@ The runtime versions and the offline compiler distribution version are independe
 
 ## Security and trust boundary
 
-The offline compiler removes the GitHub-token/cloud-build requirement from normal local compilation and supported native linking. It does not remove the ordinary trust boundary in the JavaScript parser/compiler, Native GUI IR lowering, native runtime implementations, Node SEA packaging or local FreeBSD C compiler.
+The offline compiler removes the GitHub-token/cloud-build requirement from normal local compilation and supported native linking. It does not remove the ordinary trust boundary in the JavaScript parser/compiler, Native GUI IR lowering, native runtime implementations, Node SEA packaging, the embedded Node runtime or local FreeBSD C compiler.
 
 No claim of a fully verified compiler is implied by the offline distribution.
