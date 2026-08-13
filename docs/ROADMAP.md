@@ -103,11 +103,12 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] Studio keyboard/focus/responsive accessibility baseline
 - [x] keyboard arrow-key positioning for selected controls with source-backed X/Y updates
 - [x] drag alignment guides with edge/center snapping and an Alt bypass
+- [x] source-backed Designer multi-select with shared pointer/keyboard movement and primary-relative alignment commands
 - [ ] Table/Grid and richer data controls
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
-- [ ] multi-select and anchors/docking
+- [ ] anchors/docking
 
 All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`.
 
@@ -127,6 +128,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] sealed native runtime accessibility parity with AOT backend 0.8
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
+- [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path

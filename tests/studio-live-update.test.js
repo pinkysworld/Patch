@@ -11,6 +11,7 @@ test('Patch site build content-addresses every public page and service-worker ca
   assert.match(buildSite, /createHash\('sha256'\)/);
   assert.match(buildSite, /computeSiteRevision\(\)/);
   assert.match(buildSite, /SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','help\.html'\]/);
+  assert.match(buildSite, /SITE_HTML_FILES\.splice\(3, 0, 'downloads\.html'\)/);
   assert.match(buildSite, /for \(const name of SITE_HTML_FILES\)/);
   assert.match(buildSite, /versionLocalAssetReferences\(source, siteRevision\)/);
   assert.match(buildSite, /replaceAll\('__PATCH_SITE_REV__', siteRevision\)/);
@@ -22,12 +23,13 @@ test('Patch site build content-addresses every public page and service-worker ca
   assert.ok(revision, 'generated Studio HTML should expose a 16-hex content revision');
 
   for (const asset of [
-    'site-navigation.css', 'studio-accessibility.css', 'form-window-resize.css', 'manifest.webmanifest',
+    'site-navigation.css', 'studio-accessibility.css', 'designer-multiselect.css', 'form-window-resize.css', 'manifest.webmanifest',
     'native-build.js', 'project-lifecycle.js', 'project-config-restore.js', 'recovery-manager.js',
-    'playground.js', 'forms-designer.js', 'form-window-resize.js', 'studio-diagnostics.js', 'studio-accessibility.js'
+    'playground.js', 'forms-designer.js', 'designer-alignment-guides.js', 'designer-multiselect.js',
+    'form-window-resize.js', 'studio-diagnostics.js', 'studio-accessibility.js'
   ]) assert.ok(html.includes(`./${asset}?v=${revision}`), asset);
 
-  for (const page of ['language.html','docs.html','help.html']) {
+  for (const page of ['language.html','docs.html','downloads.html','help.html']) {
     const content = fs.readFileSync(`_site/${page}`, 'utf8');
     assert.ok(content.includes(`./style.css?v=${revision}`), `${page} style revision`);
     assert.ok(content.includes(`./site-navigation.css?v=${revision}`), `${page} navigation revision`);

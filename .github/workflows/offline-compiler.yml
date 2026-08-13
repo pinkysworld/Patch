@@ -1,0 +1,272 @@
+name: Patch Offline Compiler
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/**
+      - scripts/build-offline-compiler.js
+      - scripts/offline-compiler-runner.cjs
+      - scripts/build-native-sea-template.js
+      - docs/OFFLINE_COMPILER.md
+      - web/downloads.html
+      - .github/workflows/offline-compiler.yml
+  push:
+    branches: [main]
+    paths:
+      - src/**
+      - scripts/build-offline-compiler.js
+      - scripts/offline-compiler-runner.cjs
+      - scripts/build-native-sea-template.js
+      - docs/OFFLINE_COMPILER.md
+      - web/downloads.html
+      - .github/workflows/offline-compiler.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    name: ${{ matrix.asset }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            asset: patch-windows-x64.exe
+            gui_tag: native-win32-runtime-v0.8
+            gui_asset: patch-windows-native-gui-runtime.exe
+          - os: ubuntu-latest
+            platform: linux
+            asset: patch-linux-x64
+            gui_tag: native-linux-runtime-v0.8
+            gui_asset: patch-linux-native-gui-runtime.bin
+          - os: macos-15
+            platform: macos
+            asset: patch-macos-arm64
+            gui_tag: native-macos-runtime-v0.8
+            gui_asset: patch-macos-native-gui-runtime.bin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build host Console runtime
+        shell: bash
+        run: |
+          mkdir -p offline-runtime dist-offline dist-smoke
+          node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
+      - name: Download checked native GUI runtime
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download '${{ matrix.gui_tag }}' --repo "$GITHUB_REPOSITORY" --pattern '${{ matrix.gui_asset }}' --dir offline-runtime --clobber
+          mv "offline-runtime/${{ matrix.gui_asset }}" offline-runtime/gui.bin
+      - name: Build standalone Patch compiler
+        shell: bash
+        run: |
+          node scripts/build-offline-compiler.js --platform '${{ matrix.platform }}' --console-runtime offline-runtime/console.bin --gui-runtime offline-runtime/gui.bin --out "dist-offline/${{ matrix.asset }}"
+      - name: Smoke compiler and local Console linking
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          "dist-offline/${{ matrix.asset }}" --version
+          "dist-offline/${{ matrix.asset }}" check examples/direct-wasm-recipes.patch
+          "dist-offline/${{ matrix.asset }}" build examples/direct-wasm-recipes.patch --kind console --target web --out dist-smoke/OfflineSmoke.html
+          "dist-offline/${{ matrix.asset }}" link examples/direct-wasm-recipes.patch --name OfflineLinked --out dist-smoke/OfflineLinked
+          test -s dist-smoke/OfflineSmoke.html
+      - name: Smoke linked Console app on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          & ./dist-smoke/OfflineLinked.exe
+          if ($LASTEXITCODE -ne 0) { throw "Linked Console smoke failed with exit code $LASTEXITCODE." }
+      - name: Smoke linked Console app on Linux
+        if: matrix.platform == 'linux'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          chmod +x dist-smoke/OfflineLinked
+          ./dist-smoke/OfflineLinked
+      - name: Smoke linked Console app on macOS
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          APP=dist-smoke/OfflineLinked.app/Contents/MacOS/OfflineLinked
+          test -x "$APP"
+          "$APP"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-${{ matrix.platform }}-${{ matrix.asset }}
+          path: dist-offline/${{ matrix.asset }}
+          if-no-files-found: error
+          retention-days: 14
+
+  macos-intel-kit:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: macos-15-intel
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build portable Intel macOS compiler kit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ROOT=dist-intel/patch-macos-x64
+          mkdir -p "$ROOT/src" "$ROOT/runtime" dist-smoke
+          cp -R src/. "$ROOT/src/"
+          cp package.json LICENSE "$ROOT/"
+          cp "$(command -v node)" "$ROOT/runtime/node"
+          chmod +x "$ROOT/runtime/node"
+          gh release download 'native-macos-runtime-v0.8' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
+          mv "$ROOT/runtime/patch-macos-native-gui-runtime.bin" "$ROOT/runtime/gui.bin"
+          cat > "$ROOT/patch" <<'EOF'
+          #!/bin/sh
+          set -eu
+          ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+          export PATCH_OFFLINE_NODE_RUNTIME="$ROOT/runtime/node"
+          export PATCH_OFFLINE_GUI_RUNTIME="$ROOT/runtime/gui.bin"
+          exec "$ROOT/runtime/node" "$ROOT/src/cli-entry.js" "$@"
+          EOF
+          chmod +x "$ROOT/patch"
+          cat > "$ROOT/README.txt" <<'EOF'
+          Patch macOS Intel offline compiler kit
+          No installed Node.js runtime is required. The Intel Node runtime is included.
+          Use: ./patch check app.patch
+               ./patch run app.patch
+               ./patch build app.patch --target web --out App.html
+               ./patch link app.patch --out App
+          Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
+          Window link seals the checked AppKit runtime into a normal .app bundle.
+          EOF
+          (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
+          test -s dist-intel/patch-macos-x64.tar.gz
+      - name: Smoke Intel kit and both link paths
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          KIT=dist-intel/patch-macos-x64
+          "$KIT/patch" check examples/direct-wasm-recipes.patch
+          "$KIT/patch" build examples/direct-wasm-recipes.patch --kind console --target web --out dist-smoke/IntelSmoke.html
+          "$KIT/patch" link examples/direct-wasm-recipes.patch --name IntelConsole --out dist-smoke/IntelConsole
+          test -s dist-smoke/IntelSmoke.html
+          CONSOLE_APP=dist-smoke/IntelConsole.app/Contents/MacOS/IntelConsole
+          test -x "$CONSOLE_APP"
+          actual="$("$CONSOLE_APP")"
+          test "$actual" = "8"
+          "$KIT/patch" link examples/forms-navigation.patch --name IntelWindow --out dist-smoke/IntelWindow
+          test -x dist-smoke/IntelWindow.app/Contents/MacOS/IntelWindow
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-macos-intel
+          path: dist-intel/patch-macos-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  freebsd-kit:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Build portable FreeBSD offline kit
+        shell: bash
+        run: |
+          mkdir -p dist-freebsd/patch-freebsd-x64/src
+          cp -R src/. dist-freebsd/patch-freebsd-x64/src/
+          cp package.json LICENSE dist-freebsd/patch-freebsd-x64/
+          cat > dist-freebsd/patch-freebsd-x64/patch <<'EOF'
+          #!/bin/sh
+          set -eu
+          ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+          exec node "$ROOT/src/cli-entry.js" "$@"
+          EOF
+          chmod +x dist-freebsd/patch-freebsd-x64/patch
+          cat > dist-freebsd/patch-freebsd-x64/README.txt <<'EOF'
+          Patch FreeBSD offline compiler kit
+          Requires Node.js 22+ and a C99-compatible cc on the FreeBSD host.
+          After download no network access is required.
+          Use: ./patch check app.patch
+               ./patch run app.patch
+               ./patch build app.patch --target web --out App.html
+               ./patch link app.patch --out App
+          Window/GUI linking is not supported on FreeBSD yet.
+          EOF
+          (cd dist-freebsd && tar -czf patch-freebsd-x64.tar.gz patch-freebsd-x64)
+          test -s dist-freebsd/patch-freebsd-x64.tar.gz
+          node --test tests/offline-linker.test.js
+      - name: Smoke portable kit inside FreeBSD 15.1
+        uses: vmactions/freebsd-vm@v1.5.3
+        with:
+          release: '15.1'
+          usesh: true
+          run: |
+            pkg install -y node24
+            node --version
+            cc --version | head -1
+            tar -xzf dist-freebsd/patch-freebsd-x64.tar.gz -C dist-freebsd
+            dist-freebsd/patch-freebsd-x64/patch check examples/direct-wasm-recipes.patch
+            dist-freebsd/patch-freebsd-x64/patch link examples/direct-wasm-recipes.patch --name OfflineFreeBSD --out dist-freebsd/OfflineFreeBSD
+            actual="$(dist-freebsd/OfflineFreeBSD)"
+            test "$actual" = "8"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-freebsd
+          path: dist-freebsd/patch-freebsd-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: [build, macos-intel-kit, freebsd-kit]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: offline-compiler-*
+          path: release
+          merge-multiple: true
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd release
+          sha256sum patch-windows-x64.exe patch-macos-arm64 patch-macos-x64.tar.gz patch-linux-x64 patch-freebsd-x64.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish stable offline compiler release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: offline-compiler-v0.1
+        shell: bash
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Supported run/build/link workflows work locally without a GitHub token.'
+          gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

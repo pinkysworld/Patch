@@ -26,6 +26,10 @@ const SITE_WEB_MODULE_FILES = [
   'playground.js','forms-designer.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
 ];
 
+SITE_HTML_FILES.splice(3, 0, 'downloads.html');
+SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css');
+SITE_WEB_MODULE_FILES.splice(4, 0, 'designer-multiselect.js');
+
 const siteRevision = computeSiteRevision();
 
 fs.rmSync(out, { recursive: true, force: true });

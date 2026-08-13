@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15171c">
+  <meta name="description" content="Download the Patch offline compiler for Windows, macOS, Linux and FreeBSD.">
+  <title>Downloads · Patch</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./site-navigation.css">
+  <link rel="stylesheet" href="./site-pages.css">
+</head>
+<body>
+<nav class="site-tabs" aria-label="Patch website">
+  <a href="./index.html">Studio</a>
+  <a href="./language.html">Language</a>
+  <a href="./docs.html">Documentation</a>
+  <a href="./downloads.html" aria-current="page">Downloads</a>
+  <a href="./help.html">Help</a>
+</nav>
+<main class="content-page" data-patch-version="0.2.0-beta.33">
+  <section class="page-hero">
+    <div>
+      <p class="page-eyebrow">Patch offline compiler · 0.2 beta.33</p>
+      <h1>Compile Patch without opening the browser.</h1>
+      <p>Download one local Patch compiler for your platform. Windows, macOS and Linux downloads contain the Patch compiler and the runtime pieces needed for local work, so <code>run</code>, <code>check</code>, normal build targets and supported <code>link</code> operations work without a GitHub token or network connection after download.</p>
+    </div>
+    <pre class="page-code">patch check app.patch
+patch run app.patch
+patch build app.patch --target web --out App.html
+patch link app.patch --out App</pre>
+  </section>
+
+  <section class="page-section">
+    <h2>Download Patch</h2>
+    <p>The offline compiler uses the same parser, compiler and native linking paths as Patch Studio. Apple Silicon uses a single standalone binary. Intel macOS uses a compact portable kit because Node SEA does not currently support macOS x64 reliably.</p>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-windows-x64.exe"><strong>Windows x64</strong><span>patch-windows-x64.exe · standalone compiler + Console/Win32 GUI linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-arm64"><strong>macOS Apple Silicon</strong><span>patch-macos-arm64 · standalone compiler + AppKit linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>patch-macos-x64.tar.gz · portable no-install kit with embedded Intel Node runtime + AppKit linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-linux-x64"><strong>Linux x64</strong><span>patch-linux-x64 · standalone compiler + native GTK3 linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-freebsd-x64.tar.gz"><strong>FreeBSD x64</strong><span>Portable offline compiler kit · Patch CLI + C99 linker path. Requires local Node 22+ and cc.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/SHA256SUMS"><strong>SHA256 checksums</strong><span>Verify downloaded compiler assets before use.</span></a>
+    </div>
+  </section>
+
+  <section class="page-grid" aria-label="Offline compiler capabilities">
+    <article class="page-card"><h2>Run locally</h2><p><code>patch run program.patch</code> executes Patch source locally. <code>patch check</code> validates it without producing an application.</p></article>
+    <article class="page-card"><h2>Compile locally</h2><p><code>patch build</code> retains the existing portable, WebAssembly, C99 and standalone Web targets without requiring Patch Studio.</p></article>
+    <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds a ready application for the current OS. Native Window apps keep the existing checked runtime-sealing path; Console linking uses the platform's supported local runtime path.</p></article>
+  </section>
+
+  <section class="page-section">
+    <h2>Platform notes</h2>
+    <h3>Windows</h3>
+    <p>The x64 compiler can link supported Window projects into a single native Win32 <code>.exe</code> and Console projects into a standalone executable.</p>
+    <h3>macOS Apple Silicon</h3>
+    <p>The Apple Silicon download is one standalone compiler binary. <code>patch link</code> writes normal <code>.app</code> bundles. Development compiler builds are ad-hoc signed, not Developer ID notarized.</p>
+    <h3>macOS Intel</h3>
+    <p>The Intel download is a portable tar.gz kit because Node's SEA path is not currently reliable on macOS x64. It already contains an Intel Node runtime, so no Node installation is required. Console linking creates a portable <code>.app</code> containing direct Patch Wasm and the embedded Node runtime; supported Window apps use the checked AppKit runtime.</p>
+    <h3>Linux</h3>
+    <p>The x64 compiler links supported Window projects against the embedded GTK3 runtime. The resulting GUI executable still expects the target system's normal compatible GTK3/system libraries.</p>
+    <h3>FreeBSD</h3>
+    <p>FreeBSD currently supports Console linking through Patch's portable C99 backend. The FreeBSD kit is offline after download but requires a locally installed Node runtime and C compiler. Native FreeBSD Window/GUI linking is not claimed yet.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>More commands</h2>
+    <pre class="page-code">patch changes app.patch
+patch formal app.patch
+patch build app.patch --target portable
+patch build app.patch --target wasm-direct
+patch build app.patch --target c99
+patch build app.patch --target web
+patch doctor</pre>
+    <p>The browser Studio remains useful for visual Form design. The downloaded compiler is for local source editing, checking, compilation and application linking.</p>
+  </section>
+
+  <footer class="page-footer"><span>Patch offline compiler · 0.2.0-beta.33</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.1">Open compiler release on GitHub</a></footer>
+</main>
+</body>
+</html>
