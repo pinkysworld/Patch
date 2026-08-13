@@ -106,7 +106,7 @@ jobs:
           }
           if ((Test-Path dist-native/resources) -or (Test-Path dist-native/node_modules)) { throw 'Native Win32 output unexpectedly contains a web/Electron runtime tree.' }
       - name: Upload native compiler evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: patch-native-win32-gui
           path: |

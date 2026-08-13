@@ -114,7 +114,7 @@ jobs:
             evaluation/results/GeneratedRepeatedTransitiveRuntimeCertificate.lean \
             > evaluation/results/certificate-sha256.txt
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-assurance-evaluation-${{ inputs.preset }}-${{ github.run_id }}
           path: evaluation/results/**

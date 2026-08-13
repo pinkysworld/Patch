@@ -153,7 +153,7 @@ jobs:
       - name: Package macOS native application
         shell: bash
         run: ditto -c -k --sequesterRsrc --keepParent "dist/$PATCH_SAFE_NAME.app" "dist/$PATCH_SAFE_NAME-macos-native.zip"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-macos-${{ inputs.request_id }}
           path: dist/*-macos-native.zip
@@ -207,7 +207,7 @@ jobs:
           cp "dist/$PATCH_SAFE_NAME" "dist/package-$PATCH_SAFE_NAME/$PATCH_SAFE_NAME"
           cp "dist/$PATCH_SAFE_NAME.gtk-build.json" "dist/package-$PATCH_SAFE_NAME/build.json"
           tar -czf "dist/$PATCH_SAFE_NAME-linux-native.tar.gz" -C "dist/package-$PATCH_SAFE_NAME" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-linux-${{ inputs.request_id }}
           path: dist/*-linux-native.tar.gz

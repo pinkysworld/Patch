@@ -172,7 +172,7 @@ jobs:
             echo 'Native AppKit runtime unexpectedly links an Electron/Chromium/Node library.' >&2
             exit 1
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-macos-native-gui-runtime
           path: dist-runtime/patch-macos-native-gui-runtime.bin

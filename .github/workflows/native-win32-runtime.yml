@@ -159,7 +159,7 @@ jobs:
           if ($version -ne 7) { throw "Expected sealed native GUI payload v7, got v$version." }
           if ($runtime.Length -gt 2097152) { throw "Generic native runtime unexpectedly exceeds 2 MiB: $($runtime.Length) bytes." }
           Write-Host "Generic runtime v0.8: $($runtime.Length) bytes; sealed Result Dialog app: $($sealed.Length) bytes"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-windows-native-gui-runtime
           path: dist-runtime/patch-windows-native-gui-runtime.exe

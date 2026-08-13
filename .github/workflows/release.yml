@@ -64,7 +64,7 @@ jobs:
         run: node scripts/verify-release.js --base-dir release-dist --meta-dir ../release-meta --commit "$GITHUB_SHA" --version "$PATCH_VERSION"
 
       - name: Upload release bundle for audit
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: patch-${{ env.PATCH_VERSION }}-release-bundle
           path: |
