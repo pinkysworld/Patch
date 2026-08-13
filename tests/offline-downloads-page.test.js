@@ -9,7 +9,7 @@ const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/help
 const assets = [
   'patch-windows-x64.exe',
   'patch-macos-arm64',
-  'patch-macos-x64',
+  'patch-macos-x64.tar.gz',
   'patch-linux-x64',
   'patch-freebsd-x64.tar.gz',
   'SHA256SUMS'
@@ -31,8 +31,11 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page clearly distinguishes standalone and FreeBSD portable-kit requirements', () => {
+test('downloads page clearly distinguishes standalone, Intel macOS kit and FreeBSD requirements', () => {
   assert.match(downloads, /without a GitHub token or network connection after download/);
+  assert.match(downloads, /macOS Intel/);
+  assert.match(downloads, /portable tar\.gz kit/);
+  assert.match(downloads, /no Node installation is required/);
   assert.match(downloads, /FreeBSD x64/);
   assert.match(downloads, /Requires local Node 22\+ and cc/);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
