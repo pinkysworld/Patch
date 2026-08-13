@@ -1,4 +1,5 @@
-import { listDesignerWindows, updateDesignerWindow } from '../src/designer.js';
+import { listDesignerControls, listDesignerWindows, updateDesignerControl, updateDesignerWindow } from '../src/designer.js';
+import { formControlDefaultSize } from '../src/form-layout.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -15,6 +16,7 @@ if (code && canvas) {
   code.addEventListener('change', scheduleDecorate);
   canvas.addEventListener('pointerdown', beginResizeFromPointer, { capture: true });
   canvas.addEventListener('keydown', resizeFromKeyboard, { capture: true });
+  canvas.addEventListener('keydown', moveControlFromKeyboard, { capture: true });
   scheduleDecorate();
 }
 
@@ -130,6 +132,70 @@ function resizeFromKeyboard(event) {
   commitWindowSize(windowIndex, width, height);
 }
 
+function moveControlFromKeyboard(event) {
+  const element = event.target.closest?.('.designer-control.designer-selected');
+  if (!element || !canvas.contains(element)) return;
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+  const windowIndex = Number(element.dataset.windowIndex);
+  const controlIndex = Number(element.dataset.controlIndex);
+  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return;
+  const control = listDesignerControls(code.value).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex);
+  if (!control) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const step = event.shiftKey ? 10 : 1;
+  const layout = effectiveControlLayout(control, controlIndex);
+  let x = layout.x;
+  let y = layout.y;
+  if (event.key === 'ArrowLeft') x = Math.max(0, x - step);
+  if (event.key === 'ArrowRight') x += step;
+  if (event.key === 'ArrowUp') y = Math.max(0, y - step);
+  if (event.key === 'ArrowDown') y += step;
+  commitControlPosition(element, windowIndex, controlIndex, x, y);
+}
+
+function commitControlPosition(element, windowIndex, controlIndex, x, y) {
+  try {
+    let next = updateDesignerControl(code.value, { windowIndex, controlIndex }, { x, y });
+    next = growWindowForControl(next, windowIndex, controlIndex);
+    code.value = next;
+    code.dispatchEvent(new Event('input', { bubbles: true }));
+    code.dispatchEvent(new Event('change', { bubbles: true }));
+    syncControlGeometry(windowIndex, controlIndex, x, y);
+    window.dispatchEvent(new CustomEvent('patch:control-moved', {
+      detail: { windowIndex, controlIndex, x, y }
+    }));
+    element.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    scheduleDecorate();
+  } catch {
+    scheduleDecorate();
+  }
+}
+
+function growWindowForControl(source, windowIndex, controlIndex) {
+  const control = listDesignerControls(source).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex);
+  const model = listDesignerWindows(source).find(item => item.windowIndex === windowIndex);
+  if (!control || !model) return source;
+  const layout = effectiveControlLayout(control, controlIndex);
+  const width = Math.max(model.width ?? DEFAULT_FORM_WIDTH, layout.x + layout.width + 24);
+  const height = Math.max(model.height ?? DEFAULT_FORM_HEIGHT, layout.y + layout.height + 24);
+  if (width === (model.width ?? DEFAULT_FORM_WIDTH) && height === (model.height ?? DEFAULT_FORM_HEIGHT)) return source;
+  return updateDesignerWindow(source, windowIndex, { width, height });
+}
+
+function effectiveControlLayout(control, controlIndex) {
+  const defaults = formControlDefaultSize(control.type);
+  return {
+    x: control.x ?? 24,
+    y: control.y ?? (24 + controlIndex * 48),
+    width: control.width ?? defaults.width,
+    height: control.height ?? defaults.height
+  };
+}
+
 function commitWindowSize(windowIndex, width, height) {
   try {
     const next = updateDesignerWindow(code.value, windowIndex, { width, height });
@@ -160,6 +226,15 @@ function syncToolbar(windowIndex, width, height) {
   const heightInput = document.querySelector('#patchFormHeight');
   if (widthInput) widthInput.value = String(width);
   if (heightInput) heightInput.value = String(height);
+}
+
+function syncControlGeometry(windowIndex, controlIndex, x, y) {
+  const selected = canvas.querySelector(`.designer-control.designer-selected[data-window-index="${windowIndex}"][data-control-index="${controlIndex}"]`);
+  if (!selected) return;
+  const xInput = document.querySelector('#patchControlX');
+  const yInput = document.querySelector('#patchControlY');
+  if (xInput) xInput.value = String(x);
+  if (yInput) yInput.value = String(y);
 }
 
 function keepGripVisible(handle) {
