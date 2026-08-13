@@ -96,6 +96,15 @@ function createGuide(axis) {
   const guide = document.createElement('div');
   guide.className = `patch-alignment-guide is-${axis}`;
   guide.setAttribute('aria-hidden', 'true');
+  Object.assign(guide.style, {
+    position: 'fixed',
+    zIndex: '100',
+    pointerEvents: 'none',
+    background: 'var(--text)',
+    opacity: '.65'
+  });
+  if (axis === 'vertical') guide.style.width = '1px';
+  else guide.style.height = '1px';
   guide.hidden = true;
   document.body.appendChild(guide);
   return guide;
