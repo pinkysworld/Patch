@@ -27,8 +27,8 @@ const SITE_WEB_MODULE_FILES = [
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');
-SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css');
-SITE_WEB_MODULE_FILES.splice(4, 0, 'designer-multiselect.js');
+SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css', 'designer-responsive-layout.css');
+SITE_WEB_MODULE_FILES.splice(4, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
 
 const siteRevision = computeSiteRevision();
 
