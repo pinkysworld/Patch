@@ -127,7 +127,7 @@ jobs:
   freebsd-kit:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -160,6 +160,20 @@ jobs:
           (cd dist-freebsd && tar -czf patch-freebsd-x64.tar.gz patch-freebsd-x64)
           test -s dist-freebsd/patch-freebsd-x64.tar.gz
           node --test tests/offline-linker.test.js
+      - name: Smoke portable kit inside FreeBSD 15.1
+        uses: vmactions/freebsd-vm@v1.5.3
+        with:
+          release: '15.1'
+          usesh: true
+          run: |
+            pkg install -y node24
+            node --version
+            cc --version | head -1
+            tar -xzf dist-freebsd/patch-freebsd-x64.tar.gz -C dist-freebsd
+            dist-freebsd/patch-freebsd-x64/patch check examples/direct-wasm-recipes.patch
+            dist-freebsd/patch-freebsd-x64/patch link examples/direct-wasm-recipes.patch --name OfflineFreeBSD --out dist-freebsd/OfflineFreeBSD
+            actual="$(dist-freebsd/OfflineFreeBSD)"
+            test "$actual" = "8"
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-freebsd
