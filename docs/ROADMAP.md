@@ -101,11 +101,12 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] named Confirm/Open/Save result dialogs with confirmed/chosen/cancelled events
 - [x] project import/export with versioned project bundle migrations
 - [x] Studio keyboard/focus/responsive accessibility baseline
+- [x] keyboard arrow-key positioning for selected controls with source-backed X/Y updates
 - [ ] Table/Grid and richer data controls
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
-- [ ] alignment guides, multi-select, anchors/docking and keyboard layout editing
+- [ ] alignment guides, multi-select and anchors/docking
 
 All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`.
 
