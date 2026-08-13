@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { listDesignerWindows, updateDesignerWindow } from '../src/designer.js';
+import { listDesignerControls, listDesignerWindows, updateDesignerControl, updateDesignerWindow } from '../src/designer.js';
 
 const moduleSource = fs.readFileSync('web/form-window-resize.js', 'utf8');
 const css = fs.readFileSync('web/form-window-resize.css', 'utf8');
@@ -26,6 +26,24 @@ test('direct form resize supports pointer and keyboard editing with explicit min
     'event.shiftKey ? 20 : 10',
     'patch:form-resized'
   ]) assert.ok(moduleSource.includes(marker), marker);
+});
+
+test('selected Designer controls support source-backed keyboard positioning', () => {
+  for (const marker of [
+    "canvas.addEventListener('keydown', moveControlFromKeyboard",
+    ".designer-control.designer-selected",
+    'event.shiftKey ? 10 : 1',
+    'updateDesignerControl',
+    'growWindowForControl',
+    'patch:control-moved'
+  ]) assert.ok(moduleSource.includes(marker), marker);
+
+  const source = 'window "Main" as main size 640, 420:\n  button "Move" as move at 24, 24 size 120, 34\n';
+  const next = updateDesignerControl(source, { windowIndex: 0, controlIndex: 0 }, { x: 35, y: 18 });
+  const [control] = listDesignerControls(next);
+  assert.equal(control.x, 35);
+  assert.equal(control.y, 18);
+  assert.match(next, /button "Move" as move at 35, 18 size 120, 34/);
 });
 
 test('form resize writes width and height back into Patch source', () => {
