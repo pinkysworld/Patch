@@ -141,7 +141,7 @@ requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflo
   'Patch Beta32 Invocation Frames', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'PatchCallRuntime', 'cancel-in-progress: true'
 ]);
 requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflow, [
-  'Patch Assurance Evaluation', 'workflow_dispatch:', 'benchmark-assurance.js', 'Measure Lean certificate checking', 'actions/upload-artifact@v4', 'retention-days: 30'
+  'Patch Assurance Evaluation', 'workflow_dispatch:', 'benchmark-assurance.js', 'Measure Lean certificate checking', 'actions/upload-artifact@v', 'retention-days: 30'
 ]);
 requireAll('web/sw.js', files.serviceWorker, [
   `const PATCH_RELEASE = '${version}'`, "const REVISION = '__PATCH_SITE_REV__'", "'./language.html'", "'./docs.html'", "'./help.html'",
