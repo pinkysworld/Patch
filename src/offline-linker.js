@@ -38,8 +38,11 @@ export function createOfflineLinkPlan(source, options = {}) {
   }
 
   if (kind === 'console') {
-    const runtime = requiredRuntime(options.consoleRuntime, `${platform} Console`);
     const direct = compileToDirectWasm(String(source ?? ''), { name, kind: 'console', entry });
+    if (platform === 'macos' && !options.consoleRuntime && options.nodeRuntime) {
+      return macNodeConsolePlan({ name, module: direct.module, nodeRuntime: requiredRuntime(options.nodeRuntime, 'macOS embedded Node') });
+    }
+    const runtime = requiredRuntime(options.consoleRuntime, `${platform} Console`);
     const sealed = sealConsoleRuntimeBinary(runtime, { name, wasm: direct.module });
     return binaryPlan({ platform, kind, name, sealed });
   }
@@ -104,12 +107,31 @@ function binaryPlan({ platform, kind, name, sealed }) {
       platform, kind, name, outputKind: 'macOS .app bundle', suggestedOutput: `${stem}.app`,
       files: [
         { path: `Contents/MacOS/${stem}`, bytes: sealed, mode: 0o755 },
-        { path: 'Contents/Info.plist', bytes: new TextEncoder().encode(macInfoPlist(name, stem)), mode: 0o644 },
-        { path: 'Contents/PkgInfo', bytes: new TextEncoder().encode('APPL????'), mode: 0o644 }
+        { path: 'Contents/Info.plist', bytes: textBytes(macInfoPlist(name, stem)), mode: 0o644 },
+        { path: 'Contents/PkgInfo', bytes: textBytes('APPL????'), mode: 0o644 }
       ]
     };
   }
   throw new OfflineLinkError(`Unsupported offline link platform '${platform}'.`);
+}
+
+function macNodeConsolePlan({ name, module, nodeRuntime }) {
+  const stem = fileStem(name);
+  const launcher = `#!/bin/sh\nset -eu\nDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$DIR/../Resources/node" "$DIR/../Resources/run.cjs" "$@"\n`;
+  const runner = `'use strict';\nconst fs=require('node:fs');\nconst path=require('node:path');\n(async()=>{\n  const wasm=fs.readFileSync(path.join(__dirname,'app.wasm'));\n  const instantiated=await WebAssembly.instantiate(wasm,{patch:{show_number(value){process.stdout.write(String(value)+'\\n');},change_number(){}}});\n  const instance=instantiated.instance||instantiated;\n  instance.exports.run();\n})().catch(error=>{console.error('Patch app stopped: '+(error?.stack||error?.message||String(error)));process.exitCode=2;});\n`;
+  return {
+    format: 'patch-offline-link-plan', version: PATCH_OFFLINE_LINKER_VERSION,
+    platform: 'macos', kind: 'console', name,
+    outputKind: 'macOS portable Console .app bundle', suggestedOutput: `${stem}.app`,
+    files: [
+      { path: `Contents/MacOS/${stem}`, bytes: textBytes(launcher), mode: 0o755 },
+      { path: 'Contents/Resources/node', bytes: nodeRuntime, mode: 0o755 },
+      { path: 'Contents/Resources/run.cjs', bytes: textBytes(runner), mode: 0o644 },
+      { path: 'Contents/Resources/app.wasm', bytes: module, mode: 0o644 },
+      { path: 'Contents/Info.plist', bytes: textBytes(macInfoPlist(name, stem)), mode: 0o644 },
+      { path: 'Contents/PkgInfo', bytes: textBytes('APPL????'), mode: 0o644 }
+    ]
+  };
 }
 
 function materializeFreeBsd(plan, options) {
@@ -165,6 +187,7 @@ function safeName(value) {
   return cleaned || 'PatchApp';
 }
 function fileStem(value) { return safeName(value).replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp'; }
+function textBytes(value) { return new TextEncoder().encode(String(value)); }
 function macInfoPlist(name, executable) {
   const bundlePart = fileStem(name).toLowerCase().replace(/_/g, '-');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>\n<key>CFBundleName</key><string>${xml(name)}</string>\n<key>CFBundleDisplayName</key><string>${xml(name)}</string>\n<key>CFBundleExecutable</key><string>${xml(executable)}</string>\n<key>CFBundleIdentifier</key><string>org.patchlang.offline.${xml(bundlePart)}</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>0.2</string>\n<key>CFBundleVersion</key><string>1</string>\n<key>LSMinimumSystemVersion</key><string>11.0</string>\n<key>NSHighResolutionCapable</key><true/>\n</dict></plist>\n`;
