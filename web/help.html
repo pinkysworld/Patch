@@ -16,6 +16,7 @@
   <a href="./index.html">Studio</a>
   <a href="./language.html">Language</a>
   <a href="./docs.html">Documentation</a>
+  <a href="./downloads.html">Downloads</a>
   <a href="./help.html" aria-current="page">Help</a>
 </nav>
 <main class="content-page" data-patch-version="0.2.0-beta.33">
@@ -54,8 +55,14 @@ Alt while dragging: bypass snap</pre>
     <div class="doc-links">
       <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Desktop apps</strong><span>Ready/no-token Windows, macOS and Linux paths plus local and cloud build options.</span></a>
+      <a class="doc-link" href="./downloads.html"><strong>Offline compiler downloads</strong><span>Run, compile and locally link Patch apps from Windows, macOS, Linux or FreeBSD without opening Studio.</span></a>
     </div>
-    <p>GitHub tokens are only used by the optional cloud/AOT path and are not saved by Patch Studio. The normal ready-app paths do not require a token.</p>
+    <p>GitHub tokens are only used by the optional cloud/AOT path and are not saved by Patch Studio. The normal ready-app paths and the downloaded offline compiler do not require a token.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>Offline compiler</h2>
+    <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, macOS and Linux compiler downloads include their native runtime templates. FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>.</p>
   </section>
 
   <section class="page-section">
@@ -68,7 +75,7 @@ Alt while dragging: bypass snap</pre>
     <p>Use <strong>Copy diagnostics</strong> or <strong>Report</strong>. The Studio report remains local and omits source code while including version, target, compiler status and privacy-redacted errors.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.33</span><a href="./docs.html">Open full documentation</a></footer>
+  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.33</span><a href="./downloads.html">Download the offline compiler</a></footer>
 </main>
 </body>
 </html>
