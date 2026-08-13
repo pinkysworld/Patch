@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
@@ -33,15 +34,16 @@ try {
     version: pkg.version,
     platform,
     arch: process.arch,
-    sourceHash
+    sourceHash,
+    runtimeEncoding: 'gzip'
   }, null, 2), 'utf8');
 
   const assets = {
     'patch-offline-manifest.json': manifestPath
   };
   for (const file of srcFiles) assets[file.replaceAll('\\', '/')] = path.resolve(file);
-  if (consoleRuntime) assets['runtime/console.bin'] = path.resolve(consoleRuntime);
-  if (guiRuntime) assets['runtime/gui.bin'] = path.resolve(guiRuntime);
+  if (consoleRuntime) assets['runtime/console.bin.gz'] = compressRuntime(consoleRuntime, path.join(temp, 'console.bin.gz'));
+  if (guiRuntime) assets['runtime/gui.bin.gz'] = compressRuntime(guiRuntime, path.join(temp, 'gui.bin.gz'));
 
   const configPath = path.join(temp, 'sea-config.json');
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -74,11 +76,17 @@ try {
   console.log(`  arch: ${process.arch}`);
   console.log(`  source sha256: ${sourceHash}`);
   console.log(`  embedded source modules: ${srcFiles.length}`);
-  console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : 'console + GUI'}`);
+  console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : 'gzip-compressed console + GUI'}`);
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }
 
+function compressRuntime(file, target) {
+  const raw = fs.readFileSync(file);
+  const compressed = zlib.gzipSync(raw, { level: 9 });
+  fs.writeFileSync(target, compressed);
+  return target;
+}
 function option(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : null;
