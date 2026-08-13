@@ -8,8 +8,8 @@ import { createOfflineLinkPlan, materializeOfflineLinkPlan } from '../src/offlin
 import { decodeSealedConsolePayload } from '../src/prebuilt-native.js';
 import { decodeNativeGuiPayload } from '../src/sealed-native-gui.js';
 
-const consoleSource = 'number score = 1\nchange score:\n  add 1\nshow score\n';
-const windowSource = 'window "Main" as main size 480, 320:\n  text "Hello" as hello at 24, 24 size 160, 30\n';
+const consoleSource = 'create number score = 1\nchange score:\n  add 1\nshow score\n';
+const windowSource = 'window "Main" as main size 480, 320:\n  text "Hello" at 24, 24 size 160, 30\n';
 
 test('offline linker seals Console source into a local Windows executable plan', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4]);
@@ -72,7 +72,7 @@ test('patch CLI exposes link using an injected offline Console runtime', () => {
       env: { ...process.env, PATCH_OFFLINE_CONSOLE_RUNTIME: runtime },
       encoding: 'utf8'
     });
-    const expected = process.platform === 'win32' ? `${out}.exe` : out;
+    const expected = process.platform === 'win32' ? `${out}.exe` : process.platform === 'darwin' ? `${out}.app` : out;
     if (process.platform === 'freebsd') assert.match(stdout, /backend: portable Patch C99/);
     else {
       assert.ok(fs.existsSync(expected));
