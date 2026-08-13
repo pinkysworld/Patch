@@ -10,7 +10,7 @@ const source = `window "Responsive" as main size 640, 420:
   # @layout anchor left right top
   button "Save" as save at 24, 24 size 120, 36
   # @layout anchor right bottom
-  input "Name" as name at 396, 350 size 220, 36
+  button "More" as more at 396, 350 size 220, 36
   # @layout dock bottom
   text "Status" at 24, 380 size 200, 30
 `;
