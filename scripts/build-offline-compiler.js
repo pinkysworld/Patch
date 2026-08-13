@@ -25,6 +25,8 @@ if (!srcFiles.includes('src/cli-entry.js') || !srcFiles.includes('src/offline-li
   fail('Offline compiler source graph is incomplete.');
 }
 const sourceHash = hashFiles(srcFiles);
+const runtimeFiles = [consoleRuntime, guiRuntime].filter(Boolean).map(file => path.resolve(file));
+const runtimeHash = runtimeFiles.length ? hashFiles(runtimeFiles) : 'portable-c99';
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-compiler-'));
 
 try {
@@ -35,6 +37,7 @@ try {
     platform,
     arch: process.arch,
     sourceHash,
+    runtimeHash,
     runtimeEncoding: 'gzip'
   }, null, 2), 'utf8');
 
@@ -75,6 +78,7 @@ try {
   console.log(`  platform: ${platform}`);
   console.log(`  arch: ${process.arch}`);
   console.log(`  source sha256: ${sourceHash}`);
+  console.log(`  runtime sha256: ${runtimeHash}`);
   console.log(`  embedded source modules: ${srcFiles.length}`);
   console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : 'gzip-compressed console + GUI'}`);
 } finally {
