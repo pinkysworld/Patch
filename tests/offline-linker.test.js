@@ -89,9 +89,11 @@ test('offline compiler builder and SEA runner remain dependency-free syntax-vali
   const builder = fs.readFileSync('scripts/build-offline-compiler.js', 'utf8');
   const runner = fs.readFileSync('scripts/offline-compiler-runner.cjs', 'utf8');
   assert.match(builder, /--build-sea/);
-  assert.match(builder, /runtime\/console\.bin/);
-  assert.match(builder, /runtime\/gui\.bin/);
+  assert.match(builder, /runtime\/node\.bin\.gz/);
+  assert.match(builder, /runtime\/console\.bin\.gz/);
+  assert.match(builder, /runtime\/gui\.bin\.gz/);
   assert.match(runner, /getAssetKeys/);
-  assert.match(runner, /PATCH_OFFLINE_COMPILER_IN_PROCESS/);
+  assert.match(runner, /spawnSync\(nodeRuntime/);
+  assert.doesNotMatch(runner, /import\(pathToFileURL/);
   assert.doesNotMatch(builder, /npm install|npx /);
 });
