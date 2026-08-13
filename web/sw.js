@@ -9,7 +9,7 @@ const versioned = path => /\.(?:js|css|webmanifest|svg)$/.test(path) ? `${path}?
 const CORE = [
   './', './index.html', './language.html', './docs.html', './help.html',
   './style.css', './site-navigation.css', './site-pages.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './form-window-resize.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css',
-  './playground.js', './forms-designer.js', './designer-alignment-guides.js', './form-window-resize.js', './native-build.js', './project-lifecycle.js', './project-config-restore.js', './recovery-manager.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
+  './playground.js', './forms-designer.js', './designer-alignment.js', './designer-alignment-guides.js', './form-window-resize.js', './native-build.js', './project-lifecycle.js', './project-config-restore.js', './recovery-manager.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
   '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/diagnostics.js', '../src/backend-diagnostic-context.js', '../src/artifact-name.js', '../src/bundle.js', '../src/wasm.js',
