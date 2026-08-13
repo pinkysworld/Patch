@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const zlib = require('node:zlib');
 const { pathToFileURL } = require('node:url');
 const { getAsset, getAssetKeys } = require('node:sea');
 
@@ -20,8 +21,8 @@ main().catch(error => {
 
 async function main() {
   const root = extractCompiler();
-  const consoleRuntime = extractRuntime('runtime/console.bin', root);
-  const guiRuntime = extractRuntime('runtime/gui.bin', root);
+  const consoleRuntime = extractRuntime('runtime/console.bin.gz', 'runtime/console.bin', root);
+  const guiRuntime = extractRuntime('runtime/gui.bin.gz', 'runtime/gui.bin', root);
   if (consoleRuntime) process.env.PATCH_OFFLINE_CONSOLE_RUNTIME = consoleRuntime;
   if (guiRuntime) process.env.PATCH_OFFLINE_GUI_RUNTIME = guiRuntime;
   process.env.PATCH_OFFLINE_COMPILER_IN_PROCESS = '1';
@@ -45,16 +46,18 @@ function extractCompiler() {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, new Uint8Array(getAsset(key)));
   }
-  fs.writeFileSync(marker, `${manifest.version}\n${manifest.sourceHash}\n`, 'utf8');
+  fs.writeFileSync(marker, `${manifest.version}\n${manifest.sourceHash}\n${manifest.runtimeEncoding || 'raw'}\n`, 'utf8');
   return root;
 }
 
-function extractRuntime(key, root) {
-  if (!assetKeys.has(key)) return null;
-  const target = safeAssetPath(root, key);
+function extractRuntime(assetKey, outputKey, root) {
+  if (!assetKeys.has(assetKey)) return null;
+  const target = safeAssetPath(root, outputKey);
   if (!fs.existsSync(target)) {
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, new Uint8Array(getAsset(key)));
+    const embedded = Buffer.from(getAsset(assetKey));
+    const raw = manifest.runtimeEncoding === 'gzip' ? zlib.gunzipSync(embedded) : embedded;
+    fs.writeFileSync(target, raw);
     if (process.platform !== 'win32') fs.chmodSync(target, 0o755);
   }
   return target;
