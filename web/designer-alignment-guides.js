@@ -1,5 +1,6 @@
 import { listDesignerControls } from '../src/designer.js';
-import { formControlDefaultSize, snapFormControlAlignment } from '../src/form-layout.js';
+import { formControlDefaultSize } from '../src/form-layout.js';
+import { snapFormControlAlignment } from './designer-alignment.js';
 
 const canvas = document.querySelector('#designerCanvas');
 const code = document.querySelector('#code');
