@@ -155,7 +155,7 @@ jobs:
           for(const forbidden of ['Electron','Chromium','node_modules']) if(text.includes(forbidden)) throw new Error(`Unexpected compatibility runtime marker: ${forbidden}`);
           console.log(`Generic GTK runtime v0.8: ${runtime.length} bytes; sealed Result Dialog app: ${sealed.length} bytes`);
           NODE
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-linux-native-gui-runtime
           path: dist-runtime/patch-linux-native-gui-runtime.bin

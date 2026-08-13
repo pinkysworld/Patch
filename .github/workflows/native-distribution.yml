@@ -135,7 +135,7 @@ jobs:
           $meta = "dist/$env:PATCH_SAFE_NAME.win32-build.json"
           if (Test-Path $meta) { $files += $meta }
           Compress-Archive -Path $files -DestinationPath "dist/$env:PATCH_SAFE_NAME-windows-distribution.zip" -Force
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-windows-distribution-${{ github.run_id }}
           path: dist/*-windows-distribution.zip
@@ -214,7 +214,7 @@ jobs:
         run: |
           set -euo pipefail
           (cd dist/package && ditto -c -k --sequesterRsrc . "../$PATCH_SAFE_NAME-macos-distribution.zip")
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-macos-distribution-${{ github.run_id }}
           path: dist/*-macos-distribution.zip
@@ -281,7 +281,7 @@ jobs:
           if [[ -f "$META" ]]; then cp "$META" dist/package/; fi
           node scripts/write-signing-status.js --platform linux --requested unsigned --verified false --out dist/package/PATCH-SIGNING.json
           tar -czf "dist/$PATCH_SAFE_NAME-linux-distribution.tar.gz" -C dist/package .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-linux-distribution-${{ github.run_id }}
           path: dist/*-linux-distribution.tar.gz

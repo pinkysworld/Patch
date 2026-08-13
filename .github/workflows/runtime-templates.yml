@@ -250,7 +250,7 @@ jobs:
           cp -a "$SOURCE" "$STAGE/PatchWindowRuntime"
           (cd "$STAGE" && zip -qry "$GITHUB_WORKSPACE/runtime/patch-linux-window-runtime.zip" PatchWindowRuntime)
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-studio-runtime-${{ matrix.platform }}
           path: runtime/*

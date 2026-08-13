@@ -235,7 +235,7 @@ jobs:
           $folder = Get-ChildItem -Path dist -Directory -Filter "$env:PATCH_SAFE_NAME-win32-*" | Select-Object -First 1
           if (-not $folder) { throw 'Packaged Patch Windows GUI folder was not found.' }
           Compress-Archive -Path $folder.FullName -DestinationPath "dist/$env:PATCH_SAFE_NAME-windows.zip" -Force
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-windows-${{ inputs.request_id }}
           path: dist/*-windows.zip
@@ -299,7 +299,7 @@ jobs:
           APP=$(find dist -type d -name "$PATCH_SAFE_NAME.app" | head -1)
           test -n "$APP"
           ditto -c -k --sequesterRsrc --keepParent "$APP" "dist/$PATCH_SAFE_NAME-macos.zip"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-macos-${{ inputs.request_id }}
           path: dist/*-macos.zip
@@ -363,7 +363,7 @@ jobs:
           APP_DIR=$(find dist -maxdepth 1 -type d -name "$PATCH_SAFE_NAME-linux-*" | head -1)
           test -n "$APP_DIR"
           tar -czf "dist/$PATCH_SAFE_NAME-linux.tar.gz" -C dist "$(basename "$APP_DIR")"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: patch-linux-${{ inputs.request_id }}
           path: dist/*-linux.tar.gz
