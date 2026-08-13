@@ -38,6 +38,22 @@ test('offline linker lowers Window source to Native GUI IR and seals platform ru
   }
 });
 
+test('macOS Console linking can fall back to a portable embedded-Node app when SEA is unavailable', () => {
+  const nodeRuntime = Uint8Array.from([1, 2, 3, 4, 5]);
+  const plan = createOfflineLinkPlan(consoleSource, {
+    platform: 'macos', name: 'IntelConsole', nodeRuntime
+  });
+  assert.equal(plan.outputKind, 'macOS portable Console .app bundle');
+  assert.equal(plan.suggestedOutput, 'IntelConsole.app');
+  assert.ok(plan.files.some(file => file.path === 'Contents/MacOS/IntelConsole'));
+  assert.ok(plan.files.some(file => file.path === 'Contents/Resources/app.wasm'));
+  const node = plan.files.find(file => file.path === 'Contents/Resources/node');
+  assert.deepEqual([...node.bytes], [...nodeRuntime]);
+  const runner = new TextDecoder().decode(plan.files.find(file => file.path === 'Contents/Resources/run.cjs').bytes);
+  assert.match(runner, /WebAssembly\.instantiate/);
+  assert.match(runner, /show_number/);
+});
+
 test('FreeBSD offline linker uses portable C99 and fails closed for Window projects', () => {
   const plan = createOfflineLinkPlan(consoleSource, { platform: 'freebsd', name: 'FreeDemo' });
   assert.equal(plan.outputKind, 'FreeBSD native executable via portable C99');
