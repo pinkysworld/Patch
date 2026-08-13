@@ -8,7 +8,7 @@ const LEGACY_CACHE_ID = 'patch-studio-0.2-beta.32-forms8-ux14-a11y1';
 const versioned = path => /\.(?:js|css|webmanifest|svg)$/.test(path) ? `${path}?v=${REVISION}` : path;
 const CORE = [
   './', './index.html', './language.html', './docs.html', './downloads.html', './help.html',
-  './style.css', './site-navigation.css', './site-pages.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './form-window-resize.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css',
+  './style.css', './site-navigation.css', './site-pages.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './designer-multiselect.css', './form-window-resize.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css',
   './playground.js', './forms-designer.js', './designer-alignment.js', './designer-alignment-guides.js', './designer-multiselect.js', './form-window-resize.js', './native-build.js', './project-lifecycle.js', './project-config-restore.js', './recovery-manager.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
