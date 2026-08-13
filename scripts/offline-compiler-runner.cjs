@@ -5,6 +5,7 @@ const { pathToFileURL } = require('node:url');
 const { getAsset, getAssetKeys } = require('node:sea');
 
 const manifest = JSON.parse(getAsset('patch-offline-manifest.json', 'utf8'));
+const assetKeys = new Set(getAssetKeys());
 const args = process.argv.slice(2);
 
 if (args[0] === '--version' || args[0] === 'version') {
@@ -12,7 +13,12 @@ if (args[0] === '--version' || args[0] === 'version') {
   process.exit(0);
 }
 
-try {
+main().catch(error => {
+  console.error(`Patch offline compiler stopped: ${error?.stack || error?.message || String(error)}`);
+  process.exitCode = 2;
+});
+
+async function main() {
   const root = extractCompiler();
   const consoleRuntime = extractRuntime('runtime/console.bin', root);
   const guiRuntime = extractRuntime('runtime/gui.bin', root);
@@ -20,10 +26,7 @@ try {
   if (guiRuntime) process.env.PATCH_OFFLINE_GUI_RUNTIME = guiRuntime;
   process.env.PATCH_OFFLINE_COMPILER_IN_PROCESS = '1';
   process.env.PATCH_OFFLINE_COMPILER_PLATFORM = manifest.platform;
-  awaitImport(path.join(root, 'src', 'cli-entry.js'));
-} catch (error) {
-  console.error(`Patch offline compiler stopped: ${error?.stack || error?.message || String(error)}`);
-  process.exitCode = 2;
+  await import(pathToFileURL(path.join(root, 'src', 'cli-entry.js')).href);
 }
 
 function extractCompiler() {
@@ -36,9 +39,9 @@ function extractCompiler() {
   fs.rmSync(root, { recursive: true, force: true });
   fs.mkdirSync(root, { recursive: true });
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'module' }), 'utf8');
-  for (const key of getAssetKeys()) {
+  for (const key of assetKeys) {
     if (!key.startsWith('src/')) continue;
-    const target = path.join(root, ...key.split('/'));
+    const target = safeAssetPath(root, key);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, new Uint8Array(getAsset(key)));
   }
@@ -47,8 +50,8 @@ function extractCompiler() {
 }
 
 function extractRuntime(key, root) {
-  if (!getAssetKeys().includes(key)) return null;
-  const target = path.join(root, ...key.split('/'));
+  if (!assetKeys.has(key)) return null;
+  const target = safeAssetPath(root, key);
   if (!fs.existsSync(target)) {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, new Uint8Array(getAsset(key)));
@@ -57,9 +60,13 @@ function extractRuntime(key, root) {
   return target;
 }
 
-function awaitImport(file) {
-  import(pathToFileURL(file).href).catch(error => {
-    console.error(`Patch offline compiler stopped: ${error?.stack || error?.message || String(error)}`);
-    process.exitCode = 2;
-  });
+function safeAssetPath(root, key) {
+  const normalized = path.posix.normalize(String(key));
+  if (normalized.startsWith('../') || normalized === '..' || path.posix.isAbsolute(normalized)) {
+    throw new Error(`Unsafe embedded asset path '${key}'.`);
+  }
+  const target = path.resolve(root, ...normalized.split('/'));
+  const resolvedRoot = path.resolve(root) + path.sep;
+  if (!target.startsWith(resolvedRoot)) throw new Error(`Embedded asset escapes compiler cache: '${key}'.`);
+  return target;
 }
