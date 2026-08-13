@@ -32,8 +32,9 @@ async function main() {
 
 function extractCompiler() {
   const safeVersion = String(manifest.version).replace(/[^A-Za-z0-9._-]/g, '_');
-  const safeHash = String(manifest.sourceHash).replace(/[^A-Fa-f0-9]/g, '').slice(0, 32);
-  const root = path.join(os.tmpdir(), `patch-offline-${safeVersion}-${manifest.platform}-${manifest.arch}-${safeHash}`);
+  const safeSourceHash = String(manifest.sourceHash).replace(/[^A-Fa-f0-9]/g, '').slice(0, 24);
+  const safeRuntimeHash = String(manifest.runtimeHash ?? 'runtime').replace(/[^A-Za-z0-9]/g, '').slice(0, 24);
+  const root = path.join(os.tmpdir(), `patch-offline-${safeVersion}-${manifest.platform}-${manifest.arch}-${safeSourceHash}-${safeRuntimeHash}`);
   const marker = path.join(root, '.ready');
   if (fs.existsSync(marker)) return root;
 
@@ -46,7 +47,7 @@ function extractCompiler() {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, new Uint8Array(getAsset(key)));
   }
-  fs.writeFileSync(marker, `${manifest.version}\n${manifest.sourceHash}\n${manifest.runtimeEncoding || 'raw'}\n`, 'utf8');
+  fs.writeFileSync(marker, `${manifest.version}\n${manifest.sourceHash}\n${manifest.runtimeHash || ''}\n${manifest.runtimeEncoding || 'raw'}\n`, 'utf8');
   return root;
 }
 
