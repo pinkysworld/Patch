@@ -7,7 +7,7 @@ const { getAsset, getAssetKeys } = require('node:sea');
 
 const manifest = JSON.parse(getAsset('patch-offline-manifest.json', 'utf8'));
 const assetKeys = new Set(getAssetKeys());
-const args = process.argv.slice(2);
+const args = normalizeUserArgs(process.argv);
 
 if (args[0] === '--version' || args[0] === 'version') {
   console.log(`Patch ${manifest.version} offline compiler (${manifest.platform}/${manifest.arch})`);
@@ -21,13 +21,27 @@ main().catch(error => {
 
 async function main() {
   const root = extractCompiler();
+  const cliEntry = path.join(root, 'src', 'cli-entry.js');
   const consoleRuntime = extractRuntime('runtime/console.bin.gz', 'runtime/console.bin', root);
   const guiRuntime = extractRuntime('runtime/gui.bin.gz', 'runtime/gui.bin', root);
   if (consoleRuntime) process.env.PATCH_OFFLINE_CONSOLE_RUNTIME = consoleRuntime;
   if (guiRuntime) process.env.PATCH_OFFLINE_GUI_RUNTIME = guiRuntime;
   process.env.PATCH_OFFLINE_COMPILER_IN_PROCESS = '1';
   process.env.PATCH_OFFLINE_COMPILER_PLATFORM = manifest.platform;
-  await import(pathToFileURL(path.join(root, 'src', 'cli-entry.js')).href);
+  process.argv = [process.execPath, cliEntry, ...args];
+  await import(pathToFileURL(cliEntry).href);
+}
+
+function normalizeUserArgs(argv) {
+  const rest = argv.slice(1);
+  if (rest.length && sameExecutable(rest[0], process.execPath)) return rest.slice(1);
+  return rest;
+}
+
+function sameExecutable(value, executable) {
+  if (!value) return false;
+  try { return path.resolve(value) === path.resolve(executable); }
+  catch { return value === executable; }
 }
 
 function extractCompiler() {
