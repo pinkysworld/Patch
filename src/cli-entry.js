@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { generateLeanCallCertificate } from './call-certificate.js';
 import { collectDoctorReport, formatDoctorReport } from './doctor.js';
+import { linkPatchSource } from './offline-linker.js';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -16,7 +17,43 @@ if (command === 'doctor') {
   process.exit(report.status === 'error' ? 2 : 0);
 }
 
+if (command === 'link') {
+  const args = argv.slice(1);
+  const file = args.shift();
+  if (!file) {
+    console.error('Use: patch link program.patch [--out App] [--name AppName]');
+    process.exit(1);
+  }
+  try {
+    const source = fs.readFileSync(file, 'utf8');
+    const name = option(args, '--name') ?? appName(file);
+    const out = option(args, '--out');
+    const linked = linkPatchSource(source, {
+      name,
+      entry: path.basename(file),
+      out,
+      consoleRuntime: readRuntime(process.env.PATCH_OFFLINE_CONSOLE_RUNTIME),
+      guiRuntime: readRuntime(process.env.PATCH_OFFLINE_GUI_RUNTIME)
+    });
+    console.log(`Linked ${linked.output}`);
+    console.log(`  type: ${linked.kind}`);
+    console.log(`  target: ${linked.platform}`);
+    console.log(`  format: ${linked.outputKind}`);
+    console.log(linked.platform === 'freebsd'
+      ? '  backend: portable Patch C99 + local system C compiler'
+      : '  backend: local Patch compilation + embedded native runtime sealing');
+    process.exit(0);
+  } catch (err) {
+    console.error(`Patch link stopped: ${err.message}`);
+    process.exit(2);
+  }
+}
+
 if (command !== 'call-certify') {
+  if (process.env.PATCH_OFFLINE_COMPILER_IN_PROCESS === '1') {
+    await import('./cli.js');
+    process.exit(0);
+  }
   const cliPath = fileURLToPath(new URL('./cli.js', import.meta.url));
   const result = spawnSync(process.execPath, [cliPath, ...argv], { stdio: 'inherit' });
   if (result.error) {
@@ -58,4 +95,10 @@ function option(args, name) {
 
 function appName(filePath) {
   return path.basename(filePath, path.extname(filePath)).replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp';
+}
+
+function readRuntime(filePath) {
+  if (!filePath) return undefined;
+  if (!fs.existsSync(filePath)) throw new Error(`Embedded runtime file is missing: ${filePath}`);
+  return new Uint8Array(fs.readFileSync(filePath));
 }
