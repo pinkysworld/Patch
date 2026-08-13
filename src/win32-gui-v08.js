@@ -20,7 +20,15 @@ export function emitWin32GuiCpp(input) {
     '#pragma comment(lib, "comctl32.lib")\n#pragma comment(lib, "oleacc.lib")\n#pragma comment(lib, "ole32.lib")\n#pragma comment(lib, "oleaut32.lib")',
     'Win32 library block'
   );
-  source = replaceRequired(source, 'static void RefreshTabVisibility() {', `${win32AccessibilityHelpers(controls)}\nstatic void RefreshTabVisibility() {`, 'Win32 accessibility helper insertion');
+  source = replaceRequired(source, 'static void RefreshTabVisibility() {', `${win32AccessibilityHelpers(controls)}\n${win32ResponsiveHelpers(input, controls)}\nstatic void RefreshTabVisibility() {`, 'Win32 accessibility/responsive helper insertion');
+  if (hasResponsiveLayout(controls)) {
+    source = replaceRequired(
+      source,
+      '  switch (msg) {\n    case WM_COMMAND:',
+      '  switch (msg) {\n    case WM_SIZE:\n      if (form >= 0 && form < FORM_COUNT) ApplyPatchResponsiveLayout(form, LOWORD(lParam), HIWORD(lParam));\n      return 0;\n    case WM_COMMAND:',
+      'Win32 WM_SIZE responsive dispatch'
+    );
+  }
   source = replaceRequired(
     source,
     'int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {\n  gInstance = instance;',
@@ -43,6 +51,61 @@ export function emitWin32GuiCpp(input) {
   source = source.replace(/  DestroyWindow\(gForms\[(\d+)\]\);/g, '  ClearPatchAccessibleNames();\n  DestroyWindow(gForms[$1]);');
   return source;
 }
+
+function win32ResponsiveHelpers(ir, controls) {
+  const responsive = controls.filter(control => control.parentTabIndex < 0 && isResponsive(control));
+  if (!responsive.length) return '';
+  const blocks = responsive.map(control => emitWin32ResponsiveControl(ir, control, controls)).join('\n');
+  return `static void ApplyPatchResponsiveLayout(int formIndex, int formWidth, int formHeight) {\n  if (formWidth <= 0 || formHeight <= 0) return;\n${blocks}\n}\n`;
+}
+
+function emitWin32ResponsiveControl(ir, control, controls) {
+  const form = ir.forms[control.formIndex];
+  const base = control.layout ?? {};
+  const policy = base.policy;
+  const x = int(base.x, 24); const y = int(base.y, 24); const width = int(base.width, 120); const height = int(base.height, 36);
+  const lines = [`  if (formIndex == ${control.formIndex}) {`, `    int x=${x}, y=${y}, width=${width}, height=${height};`, `    const int dw=formWidth-${int(form.width, 640)}, dh=formHeight-${int(form.height, 420)};`];
+  if (policy.kind === 'dock') {
+    if (policy.side === 'fill') lines.push('    x=0; y=0; width=formWidth; height=formHeight;');
+    if (policy.side === 'top') lines.push('    x=0; y=0; width=formWidth;');
+    if (policy.side === 'bottom') lines.push('    x=0; y=(formHeight-height>0?formHeight-height:0); width=formWidth;');
+    if (policy.side === 'left') lines.push('    x=0; y=0; height=formHeight;');
+    if (policy.side === 'right') lines.push('    x=(formWidth-width>0?formWidth-width:0); y=0; height=formHeight;');
+  } else if (policy.kind === 'anchor') {
+    const edges = new Set(policy.edges ?? []);
+    if (edges.has('left') && edges.has('right')) lines.push('    width=(width+dw>16?width+dw:16);');
+    else if (!edges.has('left') && edges.has('right')) lines.push('    x=(x+dw>0?x+dw:0);');
+    if (edges.has('top') && edges.has('bottom')) lines.push('    height=(height+dh>16?height+dh:16);');
+    else if (!edges.has('top') && edges.has('bottom')) lines.push('    y=(y+dh>0?y+dh:0);');
+  }
+  lines.push(...win32MoveLines(control, 'x', 'y', 'width', 'height'));
+  if (control.type === 'tabs') {
+    for (const child of controls.filter(item => item.parentTabIndex === control.nativeIndex)) {
+      const childX = int(child.layout?.x, 12); const childY = int(child.layout?.y, 12); const childW = int(child.layout?.width, 120); const childH = int(child.layout?.height, 36);
+      lines.push(`    { int cx=x+10+${childX}, cy=y+30+${childY}, cw=${childW}, ch=${childH};`);
+      lines.push(...win32MoveLines(child, 'cx', 'cy', 'cw', 'ch').map(line => `  ${line}`));
+      lines.push('    }');
+    }
+  }
+  lines.push('  }');
+  return lines.join('\n');
+}
+
+function win32MoveLines(control, x, y, width, height) {
+  if (control.type === 'radio') {
+    const count = Math.max(1, control.options?.length ?? 1);
+    return [
+      `    { int itemHeight=${height}/${count}; if(itemHeight<22)itemHeight=22; if(itemHeight>30)itemHeight=30;`,
+      `      for (size_t optionIndex=0; optionIndex<gRadioItems[${control.nativeIndex}].size(); ++optionIndex) MoveWindow(gRadioItems[${control.nativeIndex}][optionIndex], ${x}, ${y}+(int)optionIndex*itemHeight, ${width}, itemHeight, TRUE); }`
+    ];
+  }
+  const renderHeight = control.type === 'combo' ? `(${height}+120>160?${height}+120:160)` : height;
+  return [`    if (gControls[${control.nativeIndex}]) MoveWindow(gControls[${control.nativeIndex}], ${x}, ${y}, ${width}, ${renderHeight}, TRUE);`];
+}
+
+function hasResponsiveLayout(controls) { return controls.some(control => control.parentTabIndex < 0 && isResponsive(control)); }
+function isResponsive(control) { return control.layout?.policy?.kind && control.layout.policy.kind !== 'fixed'; }
+function int(value, fallback) { const number = Number(value); return Number.isFinite(number) ? Math.round(number) : fallback; }
 
 function win32AccessibilityHelpers(controls) {
   const apply = [];

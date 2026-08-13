@@ -80,10 +80,19 @@ export function applyFormLayout(root, manifest, options = {}) {
 function effectiveControlLayout(control, index) {
   const type = control.kind === 'tabs' ? 'tabs' : control.control;
   const fallback = formControlDefaultLayout(type, index);
-  return {
+  const layout = {
     x: control.layout?.x ?? fallback.x,
     y: control.layout?.y ?? fallback.y,
     width: control.layout?.width ?? fallback.width,
     height: control.layout?.height ?? fallback.height
   };
+  if (control.layoutPolicy) {
+    Object.defineProperty(layout, 'policy', {
+      value: control.layoutPolicy,
+      enumerable: false,
+      configurable: true,
+      writable: false
+    });
+  }
+  return layout;
 }

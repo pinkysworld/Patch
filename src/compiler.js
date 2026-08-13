@@ -5,7 +5,7 @@ import { buildFormalSource } from './formal-source.js';
 import { buildFormalCalls } from './formal-calls.js';
 import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
-import { buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
+import { attachWindowLayoutPolicies, buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
@@ -39,6 +39,7 @@ export function compile(source, options = {}) {
     guardValidation
   };
 
+  attachWindowLayoutPolicies(ast, windowLayoutPolicy);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
     sourceValidation, guardValidation, windowLayoutPolicy
