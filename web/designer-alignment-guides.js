@@ -19,9 +19,16 @@ function beginAlignmentAssist(event) {
   const selector = selectorFromElement(target);
   if (!selector) return;
 
+  const grouped = new Set(
+    [...canvas.querySelectorAll('.designer-control.designer-multi-selected')]
+      .map(selectorFromElement)
+      .filter(Boolean)
+      .map(selectorKey)
+  );
   const controls = listDesignerControls(code.value);
   const peers = controls
     .filter(item => item.windowIndex === selector.windowIndex && item.controlIndex !== selector.controlIndex)
+    .filter(item => !grouped.has(selectorKey(item)))
     .map(effectiveLayout);
   if (!peers.length) return;
 
@@ -132,3 +139,4 @@ function selectorFromElement(element) {
   if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
   return { windowIndex, controlIndex };
 }
+function selectorKey(selector) { return `${Number(selector.windowIndex)}:${Number(selector.controlIndex)}`; }
