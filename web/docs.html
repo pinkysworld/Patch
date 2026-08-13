@@ -16,6 +16,7 @@
   <a href="./index.html">Studio</a>
   <a href="./language.html">Language</a>
   <a href="./docs.html" aria-current="page">Documentation</a>
+  <a href="./downloads.html">Downloads</a>
   <a href="./help.html">Help</a>
 </nav>
 <main class="content-page" data-patch-version="0.2.0-beta.33">
@@ -27,6 +28,7 @@
     </div>
     <pre class="page-code">patch check app.patch --json
 patch build app.patch --target web
+patch link app.patch --out App
 patch doctor --json</pre>
   </section>
 
@@ -36,6 +38,7 @@ patch doctor --json</pre>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, examples, installation and current development status.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Browser IDE, Designer, project files, recovery, diagnostics and builds.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md"><strong>Compiler</strong><span>Compiler pipeline, Change IR and supported backend boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_COMPILER.md"><strong>Offline compiler</strong><span>Standalone compiler downloads, local <code>patch link</code>, platform outputs and trust boundaries.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CLI_CONTRACT.md"><strong>CLI contract</strong><span>Stable exit codes and the versioned machine-readable JSON result format.</span></a>
     </div>
   </section>
@@ -62,7 +65,7 @@ patch doctor --json</pre>
     </div>
   </section>
 
-  <footer class="page-footer"><span>Patch documentation · 0.2.0-beta.33</span><a href="./help.html">Need help using the Studio?</a></footer>
+  <footer class="page-footer"><span>Patch documentation · 0.2.0-beta.33</span><a href="./downloads.html">Download the offline compiler</a></footer>
 </main>
 </body>
 </html>
