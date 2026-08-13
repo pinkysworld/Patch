@@ -19,6 +19,24 @@ export function buildWindowLayoutPolicyManifest(source, ast) {
   return { format: PATCH_WINDOW_LAYOUT_POLICY_FORMAT, version: PATCH_WINDOW_LAYOUT_POLICY_VERSION, windows };
 }
 
+export function attachWindowLayoutPolicies(ast, manifest) {
+  validateWindowLayoutPolicyManifest(manifest);
+  let windowIndex = 0;
+  for (const node of ast ?? []) {
+    if (node.kind !== 'window') continue;
+    const policyForm = manifest.windows[windowIndex++];
+    if (!policyForm) throw new Error('Window layout policy manifest has fewer Forms than the compiled program.');
+    let controlIndex = 0;
+    for (const child of node.body ?? []) {
+      if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
+      const policy = normalizeWindowLayoutPolicy(policyForm.controls?.[controlIndex++]?.policy);
+      Object.defineProperty(child, 'layoutPolicy', { value: policy, enumerable: false, configurable: true, writable: false });
+    }
+  }
+  if (windowIndex !== manifest.windows.length) throw new Error('Window layout policy manifest has more Forms than the compiled program.');
+  return ast;
+}
+
 export function validateWindowLayoutPolicyManifest(manifest) {
   if (!manifest || manifest.format !== PATCH_WINDOW_LAYOUT_POLICY_FORMAT || manifest.version !== PATCH_WINDOW_LAYOUT_POLICY_VERSION) {
     throw new Error('Window layout policy manifest format/version is unsupported.');
