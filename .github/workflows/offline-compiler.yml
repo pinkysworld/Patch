@@ -53,11 +53,6 @@ jobs:
             asset: patch-macos-arm64
             gui_tag: native-macos-runtime-v0.8
             gui_asset: patch-macos-native-gui-runtime.bin
-          - os: macos-15-intel
-            platform: macos
-            asset: patch-macos-x64
-            gui_tag: native-macos-runtime-v0.8
-            gui_asset: patch-macos-native-gui-runtime.bin
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
@@ -124,6 +119,73 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  macos-intel-kit:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: macos-15-intel
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build portable Intel macOS compiler kit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ROOT=dist-intel/patch-macos-x64
+          mkdir -p "$ROOT/src" "$ROOT/runtime" dist-smoke
+          cp -R src/. "$ROOT/src/"
+          cp package.json LICENSE "$ROOT/"
+          cp "$(command -v node)" "$ROOT/runtime/node"
+          chmod +x "$ROOT/runtime/node"
+          gh release download 'native-macos-runtime-v0.8' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
+          mv "$ROOT/runtime/patch-macos-native-gui-runtime.bin" "$ROOT/runtime/gui.bin"
+          cat > "$ROOT/patch" <<'EOF'
+          #!/bin/sh
+          set -eu
+          ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+          export PATCH_OFFLINE_NODE_RUNTIME="$ROOT/runtime/node"
+          export PATCH_OFFLINE_GUI_RUNTIME="$ROOT/runtime/gui.bin"
+          exec "$ROOT/runtime/node" "$ROOT/src/cli-entry.js" "$@"
+          EOF
+          chmod +x "$ROOT/patch"
+          cat > "$ROOT/README.txt" <<'EOF'
+          Patch macOS Intel offline compiler kit
+          No installed Node.js runtime is required. The Intel Node runtime is included.
+          Use: ./patch check app.patch
+               ./patch run app.patch
+               ./patch build app.patch --target web --out App.html
+               ./patch link app.patch --out App
+          Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
+          Window link seals the checked AppKit runtime into a normal .app bundle.
+          EOF
+          (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
+          test -s dist-intel/patch-macos-x64.tar.gz
+      - name: Smoke Intel kit and both link paths
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          KIT=dist-intel/patch-macos-x64
+          "$KIT/patch" check examples/direct-wasm-recipes.patch
+          "$KIT/patch" build examples/direct-wasm-recipes.patch --kind console --target web --out dist-smoke/IntelSmoke.html
+          "$KIT/patch" link examples/direct-wasm-recipes.patch --name IntelConsole --out dist-smoke/IntelConsole
+          test -s dist-smoke/IntelSmoke.html
+          CONSOLE_APP=dist-smoke/IntelConsole.app/Contents/MacOS/IntelConsole
+          test -x "$CONSOLE_APP"
+          actual="$("$CONSOLE_APP")"
+          test "$actual" = "8"
+          "$KIT/patch" link examples/forms-navigation.patch --name IntelWindow --out dist-smoke/IntelWindow
+          test -x dist-smoke/IntelWindow.app/Contents/MacOS/IntelWindow
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-macos-intel
+          path: dist-intel/patch-macos-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
   freebsd-kit:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
@@ -183,7 +245,7 @@ jobs:
 
   publish:
     if: github.event_name != 'pull_request'
-    needs: [build, freebsd-kit]
+    needs: [build, macos-intel-kit, freebsd-kit]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -197,7 +259,7 @@ jobs:
         shell: bash
         run: |
           cd release
-          sha256sum patch-windows-x64.exe patch-macos-arm64 patch-macos-x64 patch-linux-x64 patch-freebsd-x64.tar.gz > SHA256SUMS
+          sha256sum patch-windows-x64.exe patch-macos-arm64 patch-macos-x64.tar.gz patch-linux-x64 patch-freebsd-x64.tar.gz > SHA256SUMS
           cat SHA256SUMS
       - name: Publish stable offline compiler release
         env:
@@ -206,5 +268,5 @@ jobs:
         shell: bash
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS and Linux plus the portable FreeBSD compiler kit. The desktop compiler embeds the existing Patch compiler and checked native runtime templates so supported run/build/link workflows work locally without a GitHub token.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Supported run/build/link workflows work locally without a GitHub token.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
