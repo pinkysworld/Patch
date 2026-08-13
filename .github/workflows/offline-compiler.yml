@@ -100,14 +100,23 @@ jobs:
         run: |
           & ./dist-smoke/OfflineLinked.exe
           if ($LASTEXITCODE -ne 0) { throw "Linked Console smoke failed with exit code $LASTEXITCODE." }
-      - name: Smoke linked Console app on Unix
-        if: matrix.platform != 'windows'
+      - name: Smoke linked Console app on Linux
+        if: matrix.platform == 'linux'
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
           chmod +x dist-smoke/OfflineLinked
           ./dist-smoke/OfflineLinked
+      - name: Smoke linked Console app on macOS
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          APP=dist-smoke/OfflineLinked.app/Contents/MacOS/OfflineLinked
+          test -x "$APP"
+          "$APP"
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-${{ matrix.platform }}-${{ matrix.asset }}
