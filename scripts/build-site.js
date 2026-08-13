@@ -19,7 +19,7 @@ const SITE_SRC_FILES = [
 ];
 
 const SITE_WEB_STATIC_FILES = [
-  'style.css','site-navigation.css','site-pages.css','studio-accessibility.css','designer-inspector.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
+  'style.css','site-navigation.css','site-pages.css','studio-accessibility.css','designer-inspector.css','forms-designer.css','designer-multiselect.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
 ];
 
 const SITE_WEB_MODULE_FILES = [
