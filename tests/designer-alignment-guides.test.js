@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { snapFormControlAlignment } from '../src/form-layout.js';
+import { snapFormControlAlignment } from '../web/designer-alignment.js';
 
 const moduleSource = fs.readFileSync('web/designer-alignment-guides.js', 'utf8');
+const helperSource = fs.readFileSync('web/designer-alignment.js', 'utf8');
 const html = fs.readFileSync('web/index.html', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
 
@@ -41,12 +42,16 @@ test('alignment snapping leaves distant controls alone', () => {
   assert.deepEqual(result, { x: 20, y: 20, width: 40, height: 20, guideX: null, guideY: null });
 });
 
-test('Studio alignment assistance is additive, syntax-valid and offline-cached', () => {
+test('Studio alignment assistance stays web-only, syntax-valid and offline-cached', () => {
+  execFileSync(process.execPath, ['--check', 'web/designer-alignment.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/designer-alignment-guides.js'], { stdio: 'pipe' });
   assert.match(html, /forms-designer\.js[\s\S]*designer-alignment-guides\.js[\s\S]*form-window-resize\.js/);
+  assert.match(sw, /\.\/designer-alignment\.js/);
   assert.match(sw, /\.\/designer-alignment-guides\.js/);
+  assert.match(moduleSource, /from '\.\/designer-alignment\.js'/);
   assert.match(moduleSource, /moveEvent\.altKey/);
   assert.match(moduleSource, /snapFormControlAlignment/);
   assert.match(moduleSource, /document\.body\.appendChild\(guide\)/);
   assert.match(moduleSource, /pointercancel/);
+  assert.doesNotMatch(helperSource, /\.\.\/src\//);
 });
