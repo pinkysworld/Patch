@@ -19,19 +19,25 @@ const tabsGui = buildNativeGuiIR(compile(fs.readFileSync('examples/tabs-window.p
 const radioGui = buildNativeGuiIR(compile(fs.readFileSync('examples/radio-window.patch', 'utf8'), { name: 'SealedRadioTest', kind: 'window' }));
 const menuGui = buildNativeGuiIR(compile(fs.readFileSync('examples/menu-dialog-window.patch', 'utf8'), { name: 'SealedMenuDialogTest', kind: 'window' }));
 const resultGui = buildNativeGuiIR(compile(fs.readFileSync('examples/result-dialog-window.patch', 'utf8'), { name: 'SealedResultDialogTest', kind: 'window' }));
+const responsiveGui = buildNativeGuiIR(compile(`window "Responsive" size 640, 420:
+  # @layout anchor left right top
+  button "Save" as save at 24, 24 size 120, 36
+  # @layout dock bottom
+  text "Status" at 24, 380 size 200, 30
+`, { name: 'SealedResponsiveTest', kind: 'window' }));
 
-test('sealed native GUI payload v7 is deterministic and round-trips from a Windows executable overlay', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
+test('sealed native GUI payload v8 is deterministic and round-trips from a Windows executable overlay', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
   const payload = encodeNativeGuiPayload(gui);
   const fakePe = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4, 5, 6]);
   const sealed = sealNativeGuiRuntime(fakePe, gui);
   assert.equal(new TextDecoder().decode(sealed.subarray(sealed.length - 20, sealed.length - 12)), PATCH_SEALED_NATIVE_GUI_MAGIC);
-  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 7);
+  assert.equal(new DataView(sealed.buffer, sealed.byteOffset + sealed.length - 12, 4).getUint32(0, true), 8);
   assert.deepEqual(decodeNativeGuiPayload(sealed), payload);
   assert.deepEqual(encodeNativeGuiPayload(gui), payload);
 });
 
-test('same v7 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
+test('same v8 payload round-trips from Linux ELF and macOS Mach-O overlays', () => {
   const payload = encodeNativeGuiPayload(gui);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 9, 8, 7, 6]);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 7, 6, 5, 4]);
@@ -39,7 +45,15 @@ test('same v7 payload round-trips from Linux ELF and macOS Mach-O overlays', () 
   assert.deepEqual(decodeNativeGuiPayload(sealNativeGuiRuntime(fakeMachO, gui, { platform: 'macos' })), payload);
 });
 
-test('sealed native GUI v7 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
+test('sealed native GUI v8 serializes responsive anchor and dock policies compactly', () => {
+  const controls = readPayload(encodeNativeGuiPayload(responsiveGui)).controls;
+  assert.deepEqual(controls.map(control => control.layoutPolicy), [
+    { kind: 1, value: 7 },
+    { kind: 2, value: 4 }
+  ]);
+});
+
+test('sealed native GUI v8 serializes ComboBox, ListBox and Radio option semantics without Patch source', () => {
   for (const [selectionGui, expected] of [
     [comboGui, ['Small', 'Medium', 'Large']],
     [listboxGui, ['Apple', 'Banana', 'Cherry', 'Mango']],
@@ -52,7 +66,7 @@ test('sealed native GUI v7 serializes ComboBox, ListBox and Radio option semanti
   }
 });
 
-test('sealed native GUI v7 keeps Tabs kind 7 and Radio kind 8', () => {
+test('sealed native GUI v8 keeps Tabs kind 7 and Radio kind 8', () => {
   const controls = readPayload(encodeNativeGuiPayload(tabsGui)).controls;
   const tabs = controls.find(control => control.id === 'settings');
   const name = controls.find(control => control.id === 'name');
@@ -72,7 +86,7 @@ test('sealed native GUI v7 keeps Tabs kind 7 and Radio kind 8', () => {
   assert.deepEqual(radio.options, ['Basic', 'Advanced', 'Expert']);
 });
 
-test('sealed native GUI v7 serializes structural menus and informational dialog action kind 4', () => {
+test('sealed native GUI v8 serializes structural menus and informational dialog action kind 4', () => {
   const decoded = readPayload(encodeNativeGuiPayload(menuGui));
   assert.deepEqual(decoded.menus, [{ form: 'main', title: 'Help', items: [{ id: 'about_item', text: 'About' }] }]);
   assert.deepEqual(decoded.events, [{
@@ -81,7 +95,7 @@ test('sealed native GUI v7 serializes structural menus and informational dialog 
   }]);
 });
 
-test('sealed native GUI v7 structurally encodes result events and action kinds 5/6/7', () => {
+test('sealed native GUI v8 structurally encodes result events and action kinds 5/6/7', () => {
   const decoded = readPayload(encodeNativeGuiPayload(resultGui));
   const resetClick = decoded.events.find(event => event.control === 'reset_button');
   const openClick = decoded.events.find(event => event.control === 'open_button');
@@ -147,8 +161,10 @@ function readPayload(bytes) {
     for (let c = 0; c < count; c += 1) {
       const kind = u8(); const id = text(); text(); text();
       const optionCount = u32(); const options = Array.from({ length: optionCount }, () => text());
-      i32(); i32(); i32(); i32(); const parentTabIndex = i32(); const pageIndex = i32();
-      controls.push({ index: controls.length, kind, id, options, parentTabIndex, pageIndex });
+      i32(); i32(); i32(); i32();
+      const layoutPolicy = { kind: u8(), value: u8() };
+      const parentTabIndex = i32(); const pageIndex = i32();
+      controls.push({ index: controls.length, kind, id, options, layoutPolicy, parentTabIndex, pageIndex });
     }
     const menuCount = u32();
     for (let m = 0; m < menuCount; m += 1) {
