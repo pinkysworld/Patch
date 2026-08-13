@@ -21,7 +21,8 @@ if (platform !== 'freebsd' && (!consoleRuntime || !guiRuntime)) {
 }
 
 const srcFiles = collectFiles('src', file => file.endsWith('.js'));
-if (!srcFiles.includes('src/cli-entry.js') || !srcFiles.includes('src/offline-linker.js')) {
+const srcKeys = srcFiles.map(file => file.replaceAll('\\', '/'));
+if (!srcKeys.includes('src/cli-entry.js') || !srcKeys.includes('src/offline-linker.js')) {
   fail('Offline compiler source graph is incomplete.');
 }
 const sourceHash = hashFiles(srcFiles);
@@ -47,7 +48,7 @@ try {
     'patch-offline-manifest.json': manifestPath,
     'runtime/node.bin.gz': compressRuntime(nodeRuntime, path.join(temp, 'node.bin.gz'))
   };
-  for (const file of srcFiles) assets[file.replaceAll('\\', '/')] = path.resolve(file);
+  srcFiles.forEach((file, index) => { assets[srcKeys[index]] = path.resolve(file); });
   if (consoleRuntime) assets['runtime/console.bin.gz'] = compressRuntime(consoleRuntime, path.join(temp, 'console.bin.gz'));
   if (guiRuntime) assets['runtime/gui.bin.gz'] = compressRuntime(guiRuntime, path.join(temp, 'gui.bin.gz'));
 
