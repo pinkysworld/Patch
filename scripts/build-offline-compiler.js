@@ -25,7 +25,8 @@ if (!srcFiles.includes('src/cli-entry.js') || !srcFiles.includes('src/offline-li
   fail('Offline compiler source graph is incomplete.');
 }
 const sourceHash = hashFiles(srcFiles);
-const runtimeFiles = [consoleRuntime, guiRuntime].filter(Boolean).map(file => path.resolve(file));
+const nodeRuntime = path.resolve(process.execPath);
+const runtimeFiles = [nodeRuntime, consoleRuntime, guiRuntime].filter(Boolean).map(file => path.resolve(file));
 const runtimeHash = runtimeFiles.length ? hashFiles(runtimeFiles) : 'portable-c99';
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-compiler-'));
 
@@ -38,11 +39,13 @@ try {
     arch: process.arch,
     sourceHash,
     runtimeHash,
-    runtimeEncoding: 'gzip'
+    runtimeEncoding: 'gzip',
+    nodeExecutable: platform === 'windows' ? 'runtime/node.exe' : 'runtime/node'
   }, null, 2), 'utf8');
 
   const assets = {
-    'patch-offline-manifest.json': manifestPath
+    'patch-offline-manifest.json': manifestPath,
+    'runtime/node.bin.gz': compressRuntime(nodeRuntime, path.join(temp, 'node.bin.gz'))
   };
   for (const file of srcFiles) assets[file.replaceAll('\\', '/')] = path.resolve(file);
   if (consoleRuntime) assets['runtime/console.bin.gz'] = compressRuntime(consoleRuntime, path.join(temp, 'console.bin.gz'));
@@ -80,6 +83,7 @@ try {
   console.log(`  source sha256: ${sourceHash}`);
   console.log(`  runtime sha256: ${runtimeHash}`);
   console.log(`  embedded source modules: ${srcFiles.length}`);
+  console.log(`  execution runtime: embedded Node ${process.version}`);
   console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : 'gzip-compressed console + GUI'}`);
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
