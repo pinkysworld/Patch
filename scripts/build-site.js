@@ -8,7 +8,7 @@ const sourceWeb = path.join(root, 'web');
 const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
 
-const SITE_HTML_FILES = ['index.html','language.html','docs.html','downloads.html','help.html'];
+const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
@@ -19,12 +19,16 @@ const SITE_SRC_FILES = [
 ];
 
 const SITE_WEB_STATIC_FILES = [
-  'style.css','site-navigation.css','site-pages.css','studio-accessibility.css','designer-inspector.css','forms-designer.css','designer-multiselect.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
+  'style.css','site-navigation.css','site-pages.css','studio-accessibility.css','designer-inspector.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
 ];
 
 const SITE_WEB_MODULE_FILES = [
-  'playground.js','forms-designer.js','designer-alignment.js','designer-alignment-guides.js','designer-multiselect.js','form-window-resize.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
+  'playground.js','forms-designer.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
 ];
+
+SITE_HTML_FILES.splice(3, 0, 'downloads.html');
+SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css');
+SITE_WEB_MODULE_FILES.splice(4, 0, 'designer-multiselect.js');
 
 const siteRevision = computeSiteRevision();
 
