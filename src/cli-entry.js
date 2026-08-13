@@ -32,6 +32,7 @@ if (command === 'link') {
       name,
       entry: path.basename(file),
       out,
+      nodeRuntime: readRuntime(process.env.PATCH_OFFLINE_NODE_RUNTIME),
       consoleRuntime: readRuntime(process.env.PATCH_OFFLINE_CONSOLE_RUNTIME),
       guiRuntime: readRuntime(process.env.PATCH_OFFLINE_GUI_RUNTIME)
     });
@@ -39,9 +40,9 @@ if (command === 'link') {
     console.log(`  type: ${linked.kind}`);
     console.log(`  target: ${linked.platform}`);
     console.log(`  format: ${linked.outputKind}`);
-    console.log(linked.platform === 'freebsd'
-      ? '  backend: portable Patch C99 + local system C compiler'
-      : '  backend: local Patch compilation + embedded native runtime sealing');
+    if (linked.platform === 'freebsd') console.log('  backend: portable Patch C99 + local system C compiler');
+    else if (linked.outputKind.includes('portable Console')) console.log('  backend: direct Patch Wasm + embedded Node app bundle');
+    else console.log('  backend: local Patch compilation + embedded native runtime sealing');
     process.exit(0);
   } catch (err) {
     console.error(`Patch link stopped: ${err.message}`);
@@ -50,10 +51,6 @@ if (command === 'link') {
 }
 
 if (command !== 'call-certify') {
-  if (process.env.PATCH_OFFLINE_COMPILER_IN_PROCESS === '1') {
-    await import('./cli.js');
-    process.exit(0);
-  }
   const cliPath = fileURLToPath(new URL('./cli.js', import.meta.url));
   const result = spawnSync(process.execPath, [cliPath, ...argv], { stdio: 'inherit' });
   if (result.error) {
