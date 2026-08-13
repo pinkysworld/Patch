@@ -8,7 +8,7 @@ const sourceWeb = path.join(root, 'web');
 const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
 
-const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
+const SITE_HTML_FILES = ['index.html','language.html','docs.html','downloads.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
