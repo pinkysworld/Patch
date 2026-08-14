@@ -21,6 +21,24 @@ test('compiler extracts parser-transparent layout policies into a separate runti
   validateWindowLayoutPolicyManifest(compiled.windowLayoutPolicy);
 });
 
+test('Table participates in the same source-backed layout policy resolution as other controls', () => {
+  const source = `window "Data" as main size 640, 420:
+  # @layout anchor left right top bottom
+  table "Name", "Role" as people at 24, 24 size 592, 330:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+`;
+  const compiled = compile(source);
+  assert.deepEqual(compiled.windowLayoutPolicy.windows[0].controls[0].policy, {
+    kind: 'anchor',
+    edges: ['left', 'right', 'top', 'bottom']
+  });
+  assert.deepEqual(compiled.ast[0].body[0].layoutPolicy, {
+    kind: 'anchor',
+    edges: ['left', 'right', 'top', 'bottom']
+  });
+});
+
 test('runtime anchor and dock math matches Designer resize behavior', () => {
   const layout = { x: 100, y: 60, width: 200, height: 40 };
   assert.deepEqual(
