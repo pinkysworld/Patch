@@ -1,0 +1,11 @@
+create text status = "idle"
+
+window "People" as main size 520, 320:
+  # @layout anchor left right top
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+
+when people changed:
+  change status:
+    set = "selected"
