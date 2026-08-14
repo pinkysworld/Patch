@@ -104,5 +104,5 @@ test('Table exposes no selection event in Stage 1 and native lowering fails clos
   const withEvent = `${source}\nwhen people changed:\n  show value\n`;
   assert.throws(() => buildStandaloneWebApp(withEvent, { kind: 'window' }), /table.*does not expose|does not expose.*table/i);
   const compiled = compile(source, { kind: 'window', name: 'PeopleTable' });
-  assert.throws(() => buildNativeGuiIR(compiled), /unsupported native GUI control 'table'/i);
+  assert.throws(() => buildNativeGuiIR(compiled), /does not support 'table' controls yet/i);
 });
