@@ -1,7 +1,7 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 8;
-export const PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 7;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 7;
+export const PATCH_SEALED_NATIVE_GUI_NEXT_VERSION = 8;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -9,13 +9,12 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v8 preserves the v7 state/Form/control/menu/event contract and adds
- * two bytes of explicit responsive layout policy after every control geometry:
- * kind 0=fixed, 1=anchor, 2=dock plus an anchor bit-mask or dock-side code.
- * The policy is UI metadata only and does not enter semantic Change IR.
- *
- * Version 7 remains explicitly encodable for the frozen runtime-v0.8 release
- * line. New callers should use the default v8 contract.
+ * Payload v7 remains the default contract for the published runtime-v0.8 line.
+ * Payload v8 is an explicit opt-in used by the staged runtime-v0.9 line. It
+ * preserves the v7 state/Form/control/menu/event contract and adds two bytes of
+ * responsive layout policy after every control geometry: kind 0=fixed,
+ * 1=anchor, 2=dock plus an anchor bit-mask or dock-side code. The policy is UI
+ * metadata only and does not enter semantic Change IR.
  */
 export function encodeNativeGuiPayload(input, options = {}) {
   const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
@@ -56,7 +55,7 @@ export function encodeNativeGuiPayload(input, options = {}) {
       writer.i32(control.layout?.y ?? 24);
       writer.i32(control.layout?.width ?? 120);
       writer.i32(control.layout?.height ?? 36);
-      if (version >= 8) writeLayoutPolicy(writer, control.layout?.policy);
+      if (version >= PATCH_SEALED_NATIVE_GUI_NEXT_VERSION) writeLayoutPolicy(writer, control.layout?.policy);
       writer.i32(control.parentTabIndex ?? -1);
       writer.i32(control.pageIndex ?? -1);
     }
@@ -121,7 +120,7 @@ export function decodeNativeGuiPayload(binaryBytes) {
 
 function payloadVersion(value) {
   const version = Number(value);
-  if (version !== PATCH_SEALED_NATIVE_GUI_VERSION && version !== PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION) {
+  if (version !== PATCH_SEALED_NATIVE_GUI_VERSION && version !== PATCH_SEALED_NATIVE_GUI_NEXT_VERSION) {
     throw new SealedNativeGuiError(`Unsupported sealed native GUI version '${value}'.`);
   }
   return version;
