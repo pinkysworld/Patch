@@ -109,7 +109,7 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] transient Table row-selection contract in shared Window events and Standalone Web, with list-valued `value` and no implicit persistent state
 - [x] opt-in Native GUI IR **0.8** Table representation with source-backed columns/rows and transient `text-list` event type
 - [x] direct AOT backend **0.9** native Table widgets on Win32/AppKit/GTK with real compile/runtime/selection smokes
-- [ ] Studio App-preview dispatch parity for Table row selection
+- [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
 - [ ] sealed Ready/offline Table payload/runtime contract and consumer switch
 - [ ] richer data controls beyond Table/Grid
 - [ ] ListBox multi-selection with an explicit list-valued event contract

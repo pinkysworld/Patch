@@ -18,7 +18,7 @@ Form dimensions, top-level geometry, labels, ids, options, Table rows, Tabs page
 
 A selected control can be moved and resized visually. A Form itself has a lower-right resize grip in the Designer. Pointer resizing and keyboard resizing both write the resulting `window ... size W, H:` values back into Patch source. Forms may grow beyond the currently visible Designer width; the Designer remains scrollable instead of clamping a Form back to the viewport.
 
-GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; Table `changed` exposes a transient row list where that event path is implemented. Persistent state changes only through an explicit Patch `change`.
+GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; Table `changed` exposes a transient row list in Studio App Preview, Standalone Web and the direct native AOT Table path. Persistent state changes only through an explicit Patch `change`.
 
 Tabs page selection remains transient renderer/toolkit state and creates no Patch variable or Change History entry.
 
@@ -41,7 +41,7 @@ Current Table support is deliberately split by surface:
 
 - Designer: add/select/move/resize/rename/remove while preserving row lines;
 - Standalone Web: real Table plus mouse/keyboard row selection and transient list-valued `value`;
-- Studio App preview: Table display is present, semantic Table row dispatch is still a follow-up;
+- Studio App preview: real Table plus mouse/keyboard row selection routed through the same shared semantic Window event adapter, with a copied transient row-list value and no implicit persistent state;
 - direct native AOT: Native GUI IR **0.8** / backend **0.9** maps Table to real Win32/AppKit/GTK widgets and is compiled/executed by a dedicated three-platform CI matrix;
 - Ready/no-token sealed apps and offline `patch link`: Table is not yet supported because those paths still carry the Native GUI IR **0.7** control surface in sealed payload **v8** / runtime **v0.9**.
 
@@ -127,4 +127,4 @@ The current Studio/repository also includes:
 
 ## Next work
 
-The next product stages include Studio App-preview Table event parity, a sealed Table payload/runtime contract for Ready/offline linking, distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer data controls and additional native packaging polish.
+The next product stages include a sealed Table payload/runtime contract for Ready/offline linking, distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer data controls and additional native packaging polish.

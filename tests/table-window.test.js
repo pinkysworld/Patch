@@ -22,6 +22,7 @@ const source = `window "People" as main size 520, 320:
 
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
 const studioTable = fs.readFileSync('web/table-stage1.js', 'utf8');
+const studioPlayground = fs.readFileSync('web/playground.js', 'utf8');
 const siteBuilder = fs.readFileSync('scripts/build-site.js', 'utf8');
 const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
 
@@ -85,6 +86,20 @@ test('Patch Studio exposes Table in Designer and App preview through an offline-
   assert.match(serviceWorker, /'\.\/table-stage1\.js'/);
 });
 
+test('Studio App preview Table selection is keyboard-accessible and uses the shared semantic Window event adapter', () => {
+  const playgroundChecked = spawnSync(process.execPath, ['--check', 'web/playground.js'], { encoding: 'utf8' });
+  assert.equal(playgroundChecked.status, 0, playgroundChecked.stderr);
+  assert.match(studioTable, /const appSelections = new Map\(\)/);
+  assert.match(studioTable, /tr\.setAttribute\('aria-selected'/);
+  assert.match(studioTable, /event\.key === 'Enter' \|\| event\.key === ' '/);
+  assert.match(studioTable, /new CustomEvent\('patch-studio-table-changed'/);
+  assert.match(studioTable, /detail: \{ control: node\.id, value: \[\.\.\.row\] \}/);
+  assert.match(studioTable, /if \(!options\.hasHandler \|\| !node\.id\) return/);
+  assert.match(studioPlayground, /appView\.addEventListener\('patch-studio-table-changed'/);
+  assert.match(studioPlayground, /trigger\(detail\.control, 'changed', \{ value: \[\.\.\.detail\.value\] \}\)/);
+  assert.match(studioPlayground, /import \{ triggerWindowEvent \} from '\.\.\/src\/window-events\.js'/);
+});
+
 test('Standalone Window Web renders a real Table and preserves later control ordering', () => {
   const built = buildStandaloneWebApp(source, { kind: 'window', name: 'PeopleTable' });
   assert.equal(built.metadata.tableStage, 2);
@@ -100,7 +115,7 @@ test('Standalone Window Web renders a real Table and preserves later control ord
   assert.match(built.html, /data-patch-form-layout/);
 });
 
-test('Table changed is supported in Web while native Table lowering remains fail closed until Stage 2b', () => {
+test('Table changed is supported in Web while the stable Native GUI IR 0.7 path remains fail closed', () => {
   const withEvent = `${source}\nwhen people changed:\n  show value\n`;
   const built = buildStandaloneWebApp(withEvent, { kind: 'window' });
   assert.equal(built.metadata.tableMode, 'transient-row-selection');

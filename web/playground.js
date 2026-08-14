@@ -161,6 +161,11 @@ for (const input of [code, projectName, projectKind]) {
 }
 
 document.querySelector('#run').addEventListener('click', runProject);
+appView.addEventListener('patch-studio-table-changed', event => {
+  const detail = event.detail ?? {};
+  if (typeof detail.control !== 'string' || !Array.isArray(detail.value) || !detail.value.every(cell => typeof cell === 'string')) return;
+  trigger(detail.control, 'changed', { value: [...detail.value] });
+});
 document.querySelector('#addText').addEventListener('click', () => addControl('text'));
 document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
 document.querySelector('#addInput').addEventListener('click', () => addControl('input'));

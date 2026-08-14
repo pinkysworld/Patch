@@ -96,7 +96,7 @@ Patch source -> Change IR -> Standalone Window Web runtime
 Patch source -> direct Wasm subset -> browser host
 ```
 
-Table/Grid display and transient row-selection events are implemented in Standalone Web. Studio App-preview Table event dispatch is tracked separately from Standalone Web support.
+Table/Grid display and transient row-selection events are implemented in Standalone Web. Patch Studio App Preview now exposes the same transient selected-row list through the shared semantic Window event adapter, with mouse and keyboard selection and no implicit persistent state.
 
 ## `.patchapp`
 

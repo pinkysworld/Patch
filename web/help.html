@@ -56,9 +56,9 @@ Alt while dragging: bypass snap</pre>
 
 when people changed:
   show value</pre>
-    <p>The source-backed Designer can add, select, move, resize, rename and remove a Table while preserving its row lines. The shared Window event contract and Standalone Web support row selection. <code>changed</code> exposes the selected row only as transient <code>value</code>, represented as a Patch list of display strings. Selecting a row does not create persistent Patch state or Change History by itself.</p>
+    <p>The source-backed Designer can add, select, move, resize, rename and remove a Table while preserving its row lines. The shared Window event contract, Studio App preview and Standalone Web support row selection. <code>changed</code> exposes the selected row only as transient <code>value</code>, represented as a Patch list of display strings. Selecting a row does not create persistent Patch state or Change History by itself.</p>
     <p><strong>Direct native AOT Table support is implemented in the staged Native GUI IR 0.8 / backend 0.9 path.</strong> CI compiles and executes real Win32 <code>WC_LISTVIEWW</code>, AppKit <code>NSTableView</code> and GTK3 <code>GtkTreeView</code> Table smokes, including native selection dispatch and responsive layout.</p>
-    <p>Studio App-preview Table event dispatch remains a separate follow-up. Token-free sealed Ready apps and offline <code>patch link</code> still use sealed payload v8/runtime v0.9 with the Native GUI IR 0.7 control surface, so Table is not yet claimed on those paths and must fail closed rather than be silently omitted.</p>
+    <p>Studio App-preview Table selection uses the same shared semantic Window event adapter as the other Studio controls, including mouse and keyboard selection with a copied transient row list. Token-free sealed Ready apps and offline <code>patch link</code> still use sealed payload v8/runtime v0.9 with the Native GUI IR 0.7 control surface, so Table is not yet claimed on those paths and must fail closed rather than be silently omitted.</p>
   </section>
 
   <section class="page-section">
