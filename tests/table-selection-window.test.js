@@ -4,6 +4,7 @@ import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
+import { buildStandaloneWebApp } from '../src/webapp.js';
 
 const source = `create list remembered = []
 
@@ -52,4 +53,24 @@ test('Table still rejects non-selection event kinds', () => {
     () => validateWindowRuntimeSupport(compiled),
     /Table 'people' exposes only 'changed'/i
   );
+});
+
+test('Standalone Web Table selection is keyboard-accessible and dispatches copied row values', () => {
+  const built = buildStandaloneWebApp(source, { kind: 'window', name: 'PeopleTable' });
+  assert.equal(built.metadata.tableStage, 2);
+  assert.equal(built.metadata.tableMode, 'transient-row-selection');
+  assert.match(built.html, /const tableSelections=new Map\(\)/);
+  assert.match(built.html, /tr\.setAttribute\('aria-selected'/);
+  assert.match(built.html, /event\.key==='Enter'\|\|event\.key===' '/);
+  assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:\[\.\.\.row\]\}\)/);
+  assert.match(built.html, /events\.some\(handler=>handler\.control===control\.id&&handler\.event==='changed'\)/);
+  assert.match(built.html, /patch-table-selected/);
+});
+
+test('Standalone Web Table remains selectable without requiring a Patch handler', () => {
+  const noHandler = source.replace(/\nwhen people changed:[\s\S]*$/, '\n');
+  const built = buildStandaloneWebApp(noHandler, { kind: 'window', name: 'PeopleTable' });
+  assert.equal(built.metadata.tableMode, 'transient-row-selection');
+  assert.match(built.html, /if\(hasHandler\)safeTrigger/);
+  assert.match(built.html, /else render\(\)/);
 });
