@@ -98,9 +98,9 @@ test('Native GUI IR v0.7 carries Radio options, text binding and changed event s
   assert.deepEqual(ir.events[0].actions[0].ops, [{ op: 'set', value: { kind: 'eventValue' } }]);
 });
 
-test('sealed native GUI payload v8 contains Radio kind/options without Patch source', () => {
+test('sealed native GUI payload v7 contains Radio kind/options without Patch source', () => {
   const ir = buildNativeGuiIR(compile(source, { kind: 'window', name: 'RadioDemo' }));
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const payload = encodeNativeGuiPayload(ir);
   const text = new TextDecoder().decode(payload);
   assert.match(text, /Basic/);
