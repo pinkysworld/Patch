@@ -14,17 +14,57 @@ export function buildStandaloneWebApp(source, options = {}) {
 
   if (requestedKind === 'window') {
     const compiled = compile(source, { ...options, name, kind: 'window', entry });
-    return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(buildStandaloneWindowWebApp(compiled, name)));
+    return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addReadOnlyWindowTables(buildStandaloneWindowWebApp(compiled, name))));
   }
 
   if (!requestedKind) {
     const inferred = compile(source, { ...options, name, entry });
     if (inferred.project.kind === 'window') {
-      return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(buildStandaloneWindowWebApp(inferred, name)));
+      return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addReadOnlyWindowTables(buildStandaloneWindowWebApp(inferred, name))));
     }
   }
 
   return buildStandaloneConsoleWebApp(source, { ...options, name, kind: 'console', entry });
+}
+
+function addReadOnlyWindowTables(built) {
+  const hasTable = (built.compiled?.ast ?? []).some(windowNode => windowNode.kind === 'window' && containsTable(windowNode.body));
+  if (!hasTable) return built;
+  let html = built.html;
+  const modelNeedle = "options:Array.isArray(node.options)?node.options.map(uiOption):[],value:";
+  const modelReplacement = "options:Array.isArray(node.options)?node.options.map(uiOption):[],columns:Array.isArray(node.columns)?node.columns.map(uiOption):[],rows:Array.isArray(node.rows)?node.rows.map(row=>row.map(uiOption)):[],value:";
+  if (!html.includes(modelNeedle)) throw new Error('Standalone Window table model hook is unavailable.');
+  html = html.replace(modelNeedle, modelReplacement);
+
+  const renderNeedle = "if(control.type==='tabs')return renderTabs(control,windowId,controlIndex);return null;}";
+  const renderReplacement = "if(control.type==='table')return renderTable(control);if(control.type==='tabs')return renderTabs(control,windowId,controlIndex);return null;}";
+  if (!html.includes(renderNeedle)) throw new Error('Standalone Window table renderer hook is unavailable.');
+  html = html.replace(renderNeedle, renderReplacement);
+
+  const tabsNeedle = 'function renderTabs(control,windowId,controlIndex){';
+  const tableRenderer = "function renderTable(control){const wrap=document.createElement('div');wrap.className='patch-table-wrap';const table=document.createElement('table');table.className='patch-table';const head=document.createElement('thead');const headRow=document.createElement('tr');for(const column of control.columns??[]){const th=document.createElement('th');th.scope='col';th.textContent=column;headRow.appendChild(th);}head.appendChild(headRow);const body=document.createElement('tbody');for(const row of control.rows??[]){const tr=document.createElement('tr');for(let index=0;index<(control.columns??[]).length;index+=1){const td=document.createElement('td');td.textContent=row[index]??'';tr.appendChild(td);}body.appendChild(tr);}table.append(head,body);wrap.appendChild(table);return wrap;}\n";
+  if (!html.includes(tabsNeedle)) throw new Error('Standalone Window table insertion hook is unavailable.');
+  html = html.replace(tabsNeedle, tableRenderer + tabsNeedle);
+
+  const cssNeedle = '.checkbox{display:flex;';
+  const cssReplacement = '.patch-table-wrap{width:100%;height:100%;overflow:auto;border:1px solid #d4d4d8;border-radius:9px;background:#fff}.patch-table{width:100%;border-collapse:collapse;font-size:13px}.patch-table th,.patch-table td{border-bottom:1px solid #e4e4e7;border-right:1px solid #e4e4e7;padding:7px 9px;text-align:left;vertical-align:top;white-space:nowrap}.patch-table th:last-child,.patch-table td:last-child{border-right:0}.patch-table th{position:sticky;top:0;background:#f4f4f5;font-weight:750}.patch-table tr:last-child td{border-bottom:0}.checkbox{display:flex;';
+  if (!html.includes(cssNeedle)) throw new Error('Standalone Window table stylesheet hook is unavailable.');
+  html = html.replace(cssNeedle, cssReplacement);
+  html = html.replace('.patch-tabs{background:#1b1d22;', '.patch-table-wrap{background:#1b1d22;border-color:#41444e}.patch-table th,.patch-table td{border-color:#34363e}.patch-table th{background:#24262d}.patch-tabs{background:#1b1d22;');
+
+  return {
+    ...built,
+    html,
+    metadata: { ...built.metadata, tableStage: 1, tableMode: 'read-only-source-backed' }
+  };
+}
+
+function containsTable(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'table') return true;
+    if (node.kind === 'tabs' && (node.body ?? []).some(page => containsTable(page.body))) return true;
+  }
+  return false;
 }
 
 function addSourceBackedWindowLayout(built) {
