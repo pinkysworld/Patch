@@ -17,8 +17,8 @@ window "People" as main size 520, 320:
     row "Grace", "Scientist"
 
 when people changed:
-  change status as "remember selection":
-    set "selected"
+  change status:
+    set = "selected"
 `;
 
 test('stable Native GUI IR entry point remains v0.7 and fails closed for Table', () => {
@@ -58,7 +58,7 @@ test('opt-in Native GUI IR 0.8 preserves Table columns rows layout and transient
 });
 
 test('Native GUI IR 0.8 rejects scalar assignment from list-valued Table event value', () => {
-  const invalid = source.replace('set "selected"', 'set value');
+  const invalid = source.replace('set = "selected"', 'set = value');
   const compiled = compile(invalid, { kind: 'window', name: 'PeopleTable' });
   assert.throws(
     () => buildNativeGuiIRV08(compiled),
