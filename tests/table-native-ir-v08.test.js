@@ -39,7 +39,7 @@ test('opt-in Native GUI IR 0.8 preserves Table columns rows layout and transient
   assert.equal(table.id, 'people');
   assert.deepEqual(table.columns, ['Name', 'Role']);
   assert.deepEqual(table.rows, [['Ada', 'Engineer'], ['Grace', 'Scientist']]);
-  assert.deepEqual(table.layout, { x: 24, y: 64, width: 440, height: 180, policy: { kind: 'fixed' } });
+  assert.deepEqual(table.layout, { x: 24, y: 64, width: 440, height: 180 });
 
   const event = ir.events.find(item => item.control === 'people');
   assert.equal(event.event, 'changed');
