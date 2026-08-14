@@ -323,7 +323,7 @@ function renameFormActions(lines, oldId, nextId) {
 
 function removeEventBlocks(lines, id) {
   const escapedId = escapeRegExp(id);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\s+(clicked|changed|closed)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed)\\s*:\\s*$`);
   for (let i = 0; i < lines.length;) {
     const match = lines[i].match(pattern);
     if (!match) { i += 1; continue; }
