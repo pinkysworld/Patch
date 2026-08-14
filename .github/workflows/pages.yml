@@ -30,7 +30,6 @@ on:
       - src/window-webapp.js
       - src/window-build.js
       - src/window-events.js
-      - src/window-layout-policy.js
       - src/designer.js
       - src/form-layout.js
       - src/window-compiled.js
@@ -49,10 +48,9 @@ on:
       - .github/workflows/native-win32-runtime.yml
       - .github/workflows/native-linux-runtime.yml
       - .github/workflows/native-macos-runtime.yml
-      - .github/workflows/native-responsive-runtime.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime]
     types: [completed]
 
 permissions:
@@ -63,7 +61,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -86,9 +84,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v0.9
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.9
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.9
+          WIN32_RUNTIME_TAG: native-win32-runtime-v0.8
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.8
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.8
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -99,17 +97,17 @@ jobs:
           if gh release view "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
           else
-            echo "Native Win32 runtime $WIN32_RUNTIME_TAG is not published yet. Responsive-runtime completion will trigger another Pages deployment."
+            echo "Native Win32 runtime $WIN32_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
           fi
           if gh release view "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
           else
-            echo "Native Linux runtime $LINUX_NATIVE_RUNTIME_TAG is not published yet. Responsive-runtime completion will trigger another Pages deployment."
+            echo "Native Linux runtime $LINUX_NATIVE_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
           fi
           if gh release view "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir _site/runtimes --clobber
           else
-            echo "Native macOS runtime $MACOS_NATIVE_RUNTIME_TAG is not published yet. Responsive-runtime completion will trigger another Pages deployment."
+            echo "Native macOS runtime $MACOS_NATIVE_RUNTIME_TAG is not published yet. Its workflow completion will trigger another Pages deployment."
           fi
           ls -lh _site/runtimes || true
       - name: Validate public site
