@@ -1,6 +1,7 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 
 export const PATCH_SEALED_NATIVE_GUI_VERSION = 7;
+export const PATCH_SEALED_NATIVE_GUI_NEXT_VERSION = 8;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -8,12 +9,15 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v7 preserves the v6 control/menu layout and extends the event/action
- * contract with named result-bearing confirm/open/save dialogs. Result ids are
- * serialized on the dialog action; chosen paths travel only as transient text
- * event values and never become hidden persistent state.
+ * Payload v7 remains the default contract for the published runtime-v0.8 line.
+ * Payload v8 is an explicit opt-in used by the staged runtime-v0.9 line. It
+ * preserves the v7 state/Form/control/menu/event contract and adds two bytes of
+ * responsive layout policy after every control geometry: kind 0=fixed,
+ * 1=anchor, 2=dock plus an anchor bit-mask or dock-side code. The policy is UI
+ * metadata only and does not enter semantic Change IR.
  */
-export function encodeNativeGuiPayload(input) {
+export function encodeNativeGuiPayload(input, options = {}) {
+  const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
   const ir = validateNativeGuiIR(input);
   validateTextBindings(ir);
   const writer = new Writer();
@@ -51,6 +55,7 @@ export function encodeNativeGuiPayload(input) {
       writer.i32(control.layout?.y ?? 24);
       writer.i32(control.layout?.width ?? 120);
       writer.i32(control.layout?.height ?? 36);
+      if (version >= PATCH_SEALED_NATIVE_GUI_NEXT_VERSION) writeLayoutPolicy(writer, control.layout?.policy);
       writer.i32(control.parentTabIndex ?? -1);
       writer.i32(control.pageIndex ?? -1);
     }
@@ -84,13 +89,14 @@ export function encodeNativeGuiPayload(input) {
 export function sealNativeGuiRuntime(runtimeBytes, input, options = {}) {
   const runtime = toBytes(runtimeBytes);
   const platform = options.platform ?? 'windows';
+  const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
   validateRuntimeHeader(runtime, platform);
   if (hasFooter(runtime)) throw new SealedNativeGuiError('Native GUI runtime template is already sealed.');
-  const payload = encodeNativeGuiPayload(input);
+  const payload = encodeNativeGuiPayload(input, { version });
   const footer = new Uint8Array(FOOTER_SIZE);
   footer.set(new TextEncoder().encode(PATCH_SEALED_NATIVE_GUI_MAGIC), 0);
   const view = new DataView(footer.buffer);
-  view.setUint32(8, PATCH_SEALED_NATIVE_GUI_VERSION, true);
+  view.setUint32(8, version, true);
   view.setUint32(12, payload.length, true);
   view.setUint32(16, crc32(payload), true);
   return concat([runtime, payload, footer]);
@@ -104,12 +110,20 @@ export function decodeNativeGuiPayload(binaryBytes) {
   const magic = new TextDecoder().decode(footer.subarray(0, 8));
   if (magic !== PATCH_SEALED_NATIVE_GUI_MAGIC) throw new SealedNativeGuiError('Executable does not contain a sealed native GUI payload.');
   const view = new DataView(footer.buffer, footer.byteOffset, footer.byteLength);
-  if (view.getUint32(8, true) !== PATCH_SEALED_NATIVE_GUI_VERSION) throw new SealedNativeGuiError('Unsupported sealed native GUI version.');
+  payloadVersion(view.getUint32(8, true));
   const length = view.getUint32(12, true);
   if (!length || length > MAX_PAYLOAD_BYTES || length > footerOffset) throw new SealedNativeGuiError('Invalid sealed native GUI payload length.');
   const payload = bytes.subarray(footerOffset - length, footerOffset);
   if (crc32(payload) !== view.getUint32(16, true)) throw new SealedNativeGuiError('Sealed native GUI payload CRC mismatch.');
   return new Uint8Array(payload);
+}
+
+function payloadVersion(value) {
+  const version = Number(value);
+  if (version !== PATCH_SEALED_NATIVE_GUI_VERSION && version !== PATCH_SEALED_NATIVE_GUI_NEXT_VERSION) {
+    throw new SealedNativeGuiError(`Unsupported sealed native GUI version '${value}'.`);
+  }
+  return version;
 }
 
 function validateRuntimeHeader(runtime, platform) {
@@ -155,6 +169,36 @@ function validateTextBindings(ir) {
       throw new SealedNativeGuiError('Native Tabs payload needs at least two page titles.');
     }
   }
+}
+
+function writeLayoutPolicy(writer, policy) {
+  if (!policy || policy.kind === 'fixed') {
+    writer.u8(0);
+    writer.u8(0);
+    return;
+  }
+  if (policy.kind === 'anchor') {
+    const edges = new Set(policy.edges ?? []);
+    const allowed = ['left', 'right', 'top', 'bottom'];
+    if (!edges.size || [...edges].some(edge => !allowed.includes(edge))) throw new SealedNativeGuiError('Invalid native anchor layout policy.');
+    let mask = 0;
+    if (edges.has('left')) mask |= 1;
+    if (edges.has('right')) mask |= 2;
+    if (edges.has('top')) mask |= 4;
+    if (edges.has('bottom')) mask |= 8;
+    writer.u8(1);
+    writer.u8(mask);
+    return;
+  }
+  if (policy.kind === 'dock') {
+    const codes = { left: 1, right: 2, top: 3, bottom: 4, fill: 5 };
+    const code = codes[policy.side];
+    if (!code) throw new SealedNativeGuiError(`Invalid native dock layout policy '${policy.side}'.`);
+    writer.u8(2);
+    writer.u8(code);
+    return;
+  }
+  throw new SealedNativeGuiError(`Unsupported native layout policy '${policy.kind}'.`);
 }
 
 function eventCode(event) {

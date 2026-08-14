@@ -1,0 +1,214 @@
+name: Patch Native Responsive Runtime
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/native-responsive-runtime.yml
+      - native-runtime/sealed-responsive-v09.hpp
+      - native-runtime/win32-sealed-gui-v09.cpp
+      - native-runtime/appkit-sealed-gui-v09.mm
+      - native-runtime/gtk-sealed-gui-v09.cpp
+      - native-runtime/win32-sealed-gui-v07.cpp
+      - native-runtime/appkit-sealed-gui-v07.mm
+      - native-runtime/gtk-sealed-gui-v07.cpp
+      - src/sealed-native-gui.js
+      - src/native-gui-ir.js
+      - src/compiler.js
+      - src/parser.js
+      - scripts/seal-native-win32.js
+      - scripts/seal-native-macos.js
+      - scripts/seal-native-linux.js
+      - examples/responsive-window.patch
+      - tests/sealed-native-gui.test.js
+      - tests/sealed-native-responsive.test.js
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/native-responsive-runtime.yml
+      - native-runtime/sealed-responsive-v09.hpp
+      - native-runtime/win32-sealed-gui-v09.cpp
+      - native-runtime/appkit-sealed-gui-v09.mm
+      - native-runtime/gtk-sealed-gui-v09.cpp
+      - src/sealed-native-gui.js
+      - scripts/seal-native-win32.js
+      - scripts/seal-native-macos.js
+      - scripts/seal-native-linux.js
+      - examples/responsive-window.patch
+      - tests/sealed-native-responsive.test.js
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PATCH_SEALED_GUI_VERSION: 8
+
+jobs:
+  windows:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test payload v8 contract
+        shell: pwsh
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js
+      - name: Build Win32 sealed runtime v0.9
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-responsive | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $script = Join-Path $PWD 'dist-responsive\build-runtime.cmd'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui-v09.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-responsive\patch-windows-native-gui-runtime.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content -Path $script -Encoding ascii
+          & cmd.exe /d /c $script
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal and smoke responsive Win32 app
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/responsive-window.patch dist-responsive/patch-windows-native-gui-runtime.exe dist-responsive/PatchResponsive.exe PatchResponsive
+          $process = Start-Process -FilePath (Resolve-Path 'dist-responsive/PatchResponsive.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Responsive Win32 smoke failed with exit code $($process.ExitCode)." }
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-responsive/PatchResponsive.exe'))
+          $version = [BitConverter]::ToUInt32($sealed, $sealed.Length - 12)
+          if ($version -ne 8) { throw "Expected sealed GUI payload v8, got v$version." }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-windows-native-gui-runtime-v09
+          path: dist-responsive/patch-windows-native-gui-runtime.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  macos:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test payload v8 contract
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js
+      - name: Build universal AppKit sealed runtime v0.9
+        shell: bash
+        run: |
+          mkdir -p dist-responsive
+          clang++ -std=c++17 -O2 -mmacosx-version-min=11.0 \
+            -arch arm64 -arch x86_64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v09.mm \
+            -o dist-responsive/patch-macos-native-gui-runtime.bin
+          chmod +x dist-responsive/patch-macos-native-gui-runtime.bin
+          ARCHS="$(lipo -archs dist-responsive/patch-macos-native-gui-runtime.bin)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal and smoke responsive AppKit app
+        shell: bash
+        run: |
+          node scripts/seal-native-macos.js examples/responsive-window.patch dist-responsive/patch-macos-native-gui-runtime.bin dist-responsive/PatchResponsive PatchResponsive
+          dist-responsive/PatchResponsive --patch-smoke
+          node - <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync('dist-responsive/PatchResponsive');
+          if(sealed.readUInt32LE(sealed.length-12)!==8) throw new Error('Expected sealed GUI payload v8.');
+          NODE
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-macos-native-gui-runtime-v09
+          path: dist-responsive/patch-macos-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  linux:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Test payload v8 contract
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js
+      - name: Build GTK3 sealed runtime v0.9
+        shell: bash
+        run: |
+          mkdir -p dist-responsive
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v09.cpp -o dist-responsive/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x dist-responsive/patch-linux-native-gui-runtime.bin
+      - name: Seal and smoke responsive GTK app
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js examples/responsive-window.patch dist-responsive/patch-linux-native-gui-runtime.bin dist-responsive/PatchResponsive PatchResponsive
+          chmod +x dist-responsive/PatchResponsive
+          xvfb-run -a dist-responsive/PatchResponsive --patch-smoke
+          node - <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync('dist-responsive/PatchResponsive');
+          if(sealed.readUInt32LE(sealed.length-12)!==8) throw new Error('Expected sealed GUI payload v8.');
+          NODE
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-linux-native-gui-runtime-v09
+          path: dist-responsive/patch-linux-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-windows-native-gui-runtime-v09
+          path: runtime/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-macos-native-gui-runtime-v09
+          path: runtime/macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-linux-native-gui-runtime-v09
+          path: runtime/linux
+      - name: Publish responsive native runtime templates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          publish_runtime() {
+            local tag="$1" title="$2" asset="$3" notes="$4"
+            if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$title" --notes "$notes"
+            fi
+            gh release upload "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --clobber
+          }
+          publish_runtime native-win32-runtime-v0.9 'Patch Native Win32 Runtime v0.9' runtime/windows/patch-windows-native-gui-runtime.exe 'Token-free Win32 sealed-GUI runtime. Runtime v0.9 consumes sealed payload v8, preserves the v0.8 accessibility contract, and applies source-backed Anchor/Dock policies during live WM_SIZE resizing.'
+          publish_runtime native-macos-runtime-v0.9 'Patch Native macOS Runtime v0.9' runtime/macos/patch-macos-native-gui-runtime.bin 'Unsigned universal AppKit sealed-GUI runtime. Runtime v0.9 consumes sealed payload v8, preserves the v0.8 accessibility contract, and applies source-backed Anchor/Dock policies during live window resizing.'
+          publish_runtime native-linux-runtime-v0.9 'Patch Native Linux Runtime v0.9' runtime/linux/patch-linux-native-gui-runtime.bin 'GTK3 sealed-GUI runtime. Runtime v0.9 consumes sealed payload v8, preserves the v0.8 ATK accessibility contract, and applies source-backed Anchor/Dock policies during live content resizing.'

@@ -219,6 +219,7 @@ jobs:
                ./patch link app.patch --out App
           Window/GUI linking is not supported on FreeBSD yet.
           EOF
+          chmod +x dist-freebsd/patch-freebsd-x64/patch
           (cd dist-freebsd && tar -czf patch-freebsd-x64.tar.gz patch-freebsd-x64)
           test -s dist-freebsd/patch-freebsd-x64.tar.gz
           node --test tests/offline-linker.test.js
