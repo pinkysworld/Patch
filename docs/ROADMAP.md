@@ -106,13 +106,15 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] source-backed Designer multi-select with shared pointer/keyboard movement and primary-relative alignment commands
 - [x] source-backed Anchor/Dock policies with Designer resizing and runtime reflow in Standalone Web, direct Win32/AppKit/GTK AOT and token-free sealed Ready Apps
 - [x] read-only source-backed Table/Grid Stage 1 in language, Designer, Studio preview and Standalone Web
-- [ ] Table row selection/editing with an explicit transient event contract and native Win32/AppKit/GTK parity
+- [x] transient Table row-selection contract in shared Window events and Standalone Web, with list-valued `value` and no implicit persistent state
+- [ ] Studio App-preview dispatch parity for Table row selection
+- [ ] Native GUI IR Table representation and Win32/AppKit/GTK Table widgets
 - [ ] richer data controls beyond Table/Grid
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
 
-All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table Stage 1 is read-only and intentionally exposes no selection event yet.
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings; renderer selection is UI state and does not itself mutate Patch state.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
