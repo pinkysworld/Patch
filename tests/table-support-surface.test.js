@@ -13,6 +13,8 @@ const offline = read('docs/OFFLINE_COMPILER.md');
 const targets = read('docs/TARGETS.md');
 const roadmap = read('docs/ROADMAP.md');
 const workflow = read('.github/workflows/native-table-v09.yml');
+const playground = read('web/playground.js');
+const studioTable = read('web/table-stage1.js');
 
 test('public Table surfaces agree on transient row-list semantics', () => {
   assert.match(help, /selected row only as transient <code>value<\/code>/);
@@ -46,9 +48,14 @@ test('Ready and offline surfaces consistently do not claim sealed Table support 
   assert.match(roadmap, /\[ \] sealed Ready\/offline Table payload\/runtime contract and consumer switch/);
 });
 
-test('Studio App preview Table event dispatch remains explicitly separate from display support', () => {
-  assert.match(help, /Studio App-preview Table event dispatch remains a separate follow-up/);
-  assert.match(studio, /Studio App preview: Table display is present, semantic Table row dispatch is still a follow-up/);
-  assert.match(nativeApps, /Studio App preview \| yes \| not yet wired to semantic Table dispatch/);
-  assert.match(roadmap, /\[ \] Studio App-preview dispatch parity for Table row selection/);
+test('Studio App preview Table event dispatch is implemented through the shared semantic adapter', () => {
+  assert.match(help, /Studio App-preview Table selection uses the same shared semantic Window event adapter/);
+  assert.match(studio, /Studio App preview: real Table plus mouse\/keyboard row selection routed through the same shared semantic Window event adapter/);
+  assert.match(nativeApps, /Studio App preview \| yes \| transient row list through shared Window event adapter \| implemented/);
+  assert.match(targets, /Patch Studio App Preview now exposes the same transient selected-row list through the shared semantic Window event adapter/);
+  assert.match(roadmap, /\[x\] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter/);
+  assert.match(playground, /appView\.addEventListener\('patch-studio-table-changed'/);
+  assert.match(playground, /trigger\(detail\.control, 'changed', \{ value: \[\.\.\.detail\.value\] \}\)/);
+  assert.match(studioTable, /new CustomEvent\('patch-studio-table-changed'/);
+  assert.match(studioTable, /detail: \{ control: node\.id, value: \[\.\.\.row\] \}/);
 });
