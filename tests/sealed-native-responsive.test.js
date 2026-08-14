@@ -5,7 +5,7 @@ import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
 import {
   PATCH_SEALED_NATIVE_GUI_VERSION,
-  PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION,
+  PATCH_SEALED_NATIVE_GUI_NEXT_VERSION,
   encodeNativeGuiPayload,
   sealNativeGuiRuntime
 } from '../src/sealed-native-gui.js';
@@ -21,12 +21,14 @@ const winSealer = fs.readFileSync('scripts/seal-native-win32.js', 'utf8');
 const macSealer = fs.readFileSync('scripts/seal-native-macos.js', 'utf8');
 const linuxSealer = fs.readFileSync('scripts/seal-native-linux.js', 'utf8');
 
-test('sealed GUI v8 advances only the layout transport while explicit v7 remains encodable', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
-  assert.equal(PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION, 7);
+test('sealed GUI v8 advances only the layout transport while v7 remains the default contract', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_NEXT_VERSION, 8);
   const controls = flattenNativeGuiControls(gui);
+  const defaultPayload = encodeNativeGuiPayload(gui);
   const v7 = encodeNativeGuiPayload(gui, { version: 7 });
   const v8 = encodeNativeGuiPayload(gui, { version: 8 });
+  assert.deepEqual(defaultPayload, v7);
   assert.equal(v8.length - v7.length, controls.length * 2);
   assert.throws(() => encodeNativeGuiPayload(gui, { version: 9 }), /unsupported sealed native gui version/i);
 
