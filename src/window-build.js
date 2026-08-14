@@ -146,17 +146,17 @@ export function validateWindowRuntimeSupport(compiled) {
       continue;
     }
     const controlType = menuItem ? 'menuItem' : control.type;
-    if (controlType === 'table') {
+    if (controlType === 'table' && event.event !== 'changed') {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Table '${event.control}' is read-only and does not expose Patch events in Table Stage 1.`
+        `line ${event.line ?? '?'}: Table '${event.control}' exposes only 'changed' for transient row selection, not '${event.event}'.`
       );
     }
     const supported =
       ((controlType === 'button' || controlType === 'menuItem') && event.event === 'clicked') ||
-      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio') && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
