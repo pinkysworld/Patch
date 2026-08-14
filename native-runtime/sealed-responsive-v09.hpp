@@ -68,7 +68,7 @@ private:
   }
 
   void need(size_t count) const {
-    if (count > source_.size() - offset_) throw 1;
+    if (offset_ > source_.size() || count > source_.size() - offset_) throw 1;
   }
 
   const std::vector<uint8_t>& source_;
