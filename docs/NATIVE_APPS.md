@@ -123,7 +123,7 @@ GUI interaction alone does not persist Patch state.
 - Input `changed` exposes transient text `value`.
 - Checkbox `changed` exposes transient Boolean `value`.
 - ComboBox/ListBox/Radio `changed` expose transient text `value`.
-- Table `changed` exposes the selected row as transient list-valued `value` on Web and the direct AOT 0.9 path.
+- Table `changed` exposes the selected row as transient list-valued `value` in Studio App Preview, Standalone Web and the direct AOT 0.9 path.
 - MenuItem `clicked` has no value.
 - Tabs page selection is renderer/toolkit-local and exposes no Patch event.
 - informational `dialog` has no result value.
@@ -138,7 +138,7 @@ Patch source must execute an ordinary semantic `change` to persist a value and c
 | --- | --- | --- | --- |
 | Designer | yes | Designer selection only | implemented |
 | Standalone Web | yes | transient row list | implemented |
-| Studio App preview | yes | not yet wired to semantic Table dispatch | follow-up |
+| Studio App preview | yes | transient row list through shared Window event adapter | implemented |
 | Direct Win32 AOT | `WC_LISTVIEWW` | transient row list | backend 0.9 smoke-tested |
 | Direct AppKit AOT | `NSTableView` | transient row list | backend 0.9 smoke-tested |
 | Direct GTK3 AOT | `GtkTreeView` | transient row list | backend 0.9 smoke-tested |
@@ -146,7 +146,7 @@ Patch source must execute an ordinary semantic `change` to persist a value and c
 | Offline `patch link` Window | no | no | not yet in sealed consumer contract |
 | FreeBSD Window | no | no | unsupported |
 
-The last two rows are intentionally conservative. Runtime v0.9 naming refers to responsive sealed runtime evolution and must not be confused with AOT backend 0.9 Table support.
+The sealed/offline rows are intentionally conservative. Runtime v0.9 naming refers to responsive sealed runtime evolution and must not be confused with AOT backend 0.9 Table support.
 
 ## Native accessibility baseline
 
@@ -225,6 +225,8 @@ The dedicated Table AOT workflow independently:
 6. triggers native row selection and checks dispatch;
 7. retains responsive policy and accessibility behavior inherited from backend 0.8.
 
+The Studio App Preview separately routes its browser-rendered Table row interaction through the same shared Window event adapter used by other Studio controls, so the preview does not own a second Table semantic implementation.
+
 The dedicated responsive-runtime workflow independently validates the sealed payload v8/runtime v0.9 line. The offline compiler matrix then downloads those published v0.9 runtimes and proves that its downloadable compiler can link and execute the supported responsive Window contract on Windows, Linux, Apple Silicon macOS and Intel macOS. FreeBSD remains Console-only.
 
 Smoke mode suppresses only blocking user interaction. Normal applications use the real OS dialogs.
@@ -239,7 +241,6 @@ The beta.32 invocation-frame research evidence remains independently reproducibl
 
 The next native stages are versioned separately:
 
-- Studio App-preview semantic dispatch parity for Table;
 - explicit sealed Table payload/runtime contract and Ready/offline-link consumer switch;
 - manual assistive-technology validation;
 - Menu separators, shortcuts and source-backed enabled/checked state;
