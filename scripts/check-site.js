@@ -180,7 +180,7 @@ const windowWebapp = read('_site/src/window-webapp.js');
 requireAll('Window Web Form lifecycle/runtime controls', windowWebapp, [
   "PATCH_WINDOW_WEB_VERSION = '0.8'", "control.type==='checkbox'", "el.type='checkbox'", 'value:el.checked',
   "control.type==='combo'||control.type==='listbox'", 'el.size=Math.min', "document.createElement('select')", 'node.options.map(uiOption)', "value:el.value",
-  "control.type==='tabs'", 'tabSelections=new Map', 'patch-tabs-list', 'patch-tab-panel', 'function buildUIItems', 'function findControl',
+  "control.type==='tabs'", 'tabSelections=new Map', 'patch-tabs-list', 'patch-tab-button', 'patch-tab-panel', 'function buildUIItems', 'function findControl',
   "case 'openForm'", "case 'closeForm'", 'formVisibility', 'shell.hidden=model.visible===false'
 ]);
 const windowEvents = read('_site/src/window-events.js');
@@ -224,8 +224,9 @@ requireAll('Native GUI IR v0.7 Menu/Dialog/Radio/Tabs contract', nativeGui, [
   "['combo', 'listbox', 'radio'].includes(control.type)", 'parentTabIndex', 'pageIndex', 'does not support nested Tabs'
 ]);
 const sealedNative = read('_site/src/sealed-native-gui.js');
-requireAll('sealed native GUI payload v7 Menu/Dialog/Radio/Tabs contract', sealedNative, [
-  'PATCH_SEALED_NATIVE_GUI_VERSION = 7', 'writer.u32(form.menus.length)', "writer.u8(4)", "if (type === 'tabs') return 7", "if (type === 'radio') return 8",
+requireAll('sealed native GUI payload v8 responsive compatibility contract', sealedNative, [
+  'PATCH_SEALED_NATIVE_GUI_VERSION = 8', 'PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 7', 'writeLayoutPolicy', "policy.kind === 'anchor'", "policy.kind === 'dock'",
+  'writer.u32(form.menus.length)', "writer.u8(4)", "if (type === 'tabs') return 7", "if (type === 'radio') return 8",
   'parentTabIndex', 'pageIndex', 'Native Tabs payload needs at least two page titles', 'Native Radio payload needs at least two options'
 ]);
 
