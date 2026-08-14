@@ -11,9 +11,9 @@ const gui = buildNativeGuiIR(compile(source, { name: 'MacNativeTest', kind: 'win
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 
-test('browser package seals Native GUI IR v0.7 payload v8 into a minimal macOS app bundle ZIP', () => {
+test('browser package seals Native GUI IR v0.7 payload v7 into a minimal macOS app bundle ZIP', () => {
   assert.equal(gui.version, '0.7');
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 10, 20, 30, 40]);
   const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App' });
   assert.equal(ready.filename, 'My_Mac_App-macos-window.zip');
