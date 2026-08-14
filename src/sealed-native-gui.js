@@ -13,8 +13,12 @@ export class SealedNativeGuiError extends Error {}
  * two bytes of explicit responsive layout policy after every control geometry:
  * kind 0=fixed, 1=anchor, 2=dock plus an anchor bit-mask or dock-side code.
  * The policy is UI metadata only and does not enter semantic Change IR.
+ *
+ * Version 7 remains explicitly encodable for the frozen runtime-v0.8 release
+ * line. New callers should use the default v8 contract.
  */
-export function encodeNativeGuiPayload(input) {
+export function encodeNativeGuiPayload(input, options = {}) {
+  const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
   const ir = validateNativeGuiIR(input);
   validateTextBindings(ir);
   const writer = new Writer();
@@ -52,7 +56,7 @@ export function encodeNativeGuiPayload(input) {
       writer.i32(control.layout?.y ?? 24);
       writer.i32(control.layout?.width ?? 120);
       writer.i32(control.layout?.height ?? 36);
-      writeLayoutPolicy(writer, control.layout?.policy);
+      if (version >= 8) writeLayoutPolicy(writer, control.layout?.policy);
       writer.i32(control.parentTabIndex ?? -1);
       writer.i32(control.pageIndex ?? -1);
     }
@@ -86,13 +90,14 @@ export function encodeNativeGuiPayload(input) {
 export function sealNativeGuiRuntime(runtimeBytes, input, options = {}) {
   const runtime = toBytes(runtimeBytes);
   const platform = options.platform ?? 'windows';
+  const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
   validateRuntimeHeader(runtime, platform);
   if (hasFooter(runtime)) throw new SealedNativeGuiError('Native GUI runtime template is already sealed.');
-  const payload = encodeNativeGuiPayload(input);
+  const payload = encodeNativeGuiPayload(input, { version });
   const footer = new Uint8Array(FOOTER_SIZE);
   footer.set(new TextEncoder().encode(PATCH_SEALED_NATIVE_GUI_MAGIC), 0);
   const view = new DataView(footer.buffer);
-  view.setUint32(8, PATCH_SEALED_NATIVE_GUI_VERSION, true);
+  view.setUint32(8, version, true);
   view.setUint32(12, payload.length, true);
   view.setUint32(16, crc32(payload), true);
   return concat([runtime, payload, footer]);
@@ -106,15 +111,20 @@ export function decodeNativeGuiPayload(binaryBytes) {
   const magic = new TextDecoder().decode(footer.subarray(0, 8));
   if (magic !== PATCH_SEALED_NATIVE_GUI_MAGIC) throw new SealedNativeGuiError('Executable does not contain a sealed native GUI payload.');
   const view = new DataView(footer.buffer, footer.byteOffset, footer.byteLength);
-  const version = view.getUint32(8, true);
-  if (version !== PATCH_SEALED_NATIVE_GUI_VERSION && version !== PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION) {
-    throw new SealedNativeGuiError('Unsupported sealed native GUI version.');
-  }
+  payloadVersion(view.getUint32(8, true));
   const length = view.getUint32(12, true);
   if (!length || length > MAX_PAYLOAD_BYTES || length > footerOffset) throw new SealedNativeGuiError('Invalid sealed native GUI payload length.');
   const payload = bytes.subarray(footerOffset - length, footerOffset);
   if (crc32(payload) !== view.getUint32(16, true)) throw new SealedNativeGuiError('Sealed native GUI payload CRC mismatch.');
   return new Uint8Array(payload);
+}
+
+function payloadVersion(value) {
+  const version = Number(value);
+  if (version !== PATCH_SEALED_NATIVE_GUI_VERSION && version !== PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION) {
+    throw new SealedNativeGuiError(`Unsupported sealed native GUI version '${value}'.`);
+  }
+  return version;
 }
 
 function validateRuntimeHeader(runtime, platform) {
