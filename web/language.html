@@ -37,7 +37,7 @@ show score</pre>
   <section class="page-grid" aria-label="Patch language highlights">
     <article class="page-card"><h2>Explicit mutation</h2><p>Persistent state changes are visible in source instead of being hidden inside arbitrary assignment expressions.</p></article>
     <article class="page-card"><h2>Change Contracts</h2><p>Recipes expose which paths they may change, in which direction, and where provable, by what bounded amount.</p></article>
-    <article class="page-card"><h2>Multiple backends</h2><p>Patch currently targets its interpreter, direct WebAssembly, portable C99, standalone web apps and native desktop application paths.</p></article>
+    <article class="page-card"><h2>Multiple backends</h2><p>Patch currently targets its interpreter, direct WebAssembly, portable C99, standalone web apps and explicit native desktop application paths.</p></article>
   </section>
 
   <section class="page-section">
@@ -47,9 +47,23 @@ show score</pre>
     <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. Patch does not claim a fully verified compiler: parsing, JavaScript-to-Wasm lowering, runtime capture and independent frame reconstruction remain outside the Lean-checked boundary.</p>
   </section>
 
+  <section class="page-section" data-table-language-support="transient-list">
+    <h2>Table / Grid stays change-oriented</h2>
+    <p>Table structure and rows live in Patch source. Selecting a row is transient UI interaction; it does not silently create or assign persistent application state.</p>
+    <pre class="page-code">window "People" as main size 520, 320:
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+
+when people changed:
+  show value</pre>
+    <p>Inside <code>changed</code>, <code>value</code> is the selected row as a list of display strings. Persistence still requires an ordinary explicit <code>change</code>. Standalone Web implements this contract, and the direct native AOT Native GUI IR 0.8/backend 0.9 path carries the same transient row-list semantics on Win32, AppKit and GTK3.</p>
+    <p>Build surfaces are intentionally versioned separately. Current token-free sealed Ready apps and offline Window linking still use the Native GUI IR 0.7 control surface, so they do not yet claim Table support.</p>
+  </section>
+
   <section class="page-section">
     <h2>Try it</h2>
-    <p>Use Patch Studio for the visual workflow, or download the offline compiler when you want to run, compile and link Patch applications directly from your own machine.</p>
+    <p>Use Patch Studio for the visual workflow, or download the offline compiler when you want to run, compile and link supported Patch applications directly from your own machine.</p>
     <div class="doc-links">
       <a class="doc-link" href="./index.html"><strong>Open Patch Studio</strong><span>Write, design, run and build in the browser.</span></a>
       <a class="doc-link" href="./downloads.html"><strong>Download the offline compiler</strong><span>Windows, macOS, Linux and FreeBSD downloads for local Patch development.</span></a>

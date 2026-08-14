@@ -10,6 +10,11 @@ import { decodeNativeGuiPayload } from '../src/sealed-native-gui.js';
 
 const consoleSource = 'create number score = 1\nchange score:\n  add 1\nshow score\n';
 const windowSource = 'window "Main" as main size 480, 320:\n  text "Hello" at 24, 24 size 160, 30\n';
+const tableWindowSource = `window "People" as main size 520, 320:
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+`;
 
 test('offline linker seals Console source into a local Windows executable plan', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4]);
@@ -35,6 +40,21 @@ test('offline linker lowers Window source to Native GUI IR and seals platform ru
     assert.equal(plan.suggestedOutput, suggestedOutput);
     const executable = platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
     assert.ok(decodeNativeGuiPayload(executable.bytes).length > 0);
+  }
+});
+
+test('offline Window linker fails closed for Table until the sealed Native GUI contract supports it', () => {
+  const cases = [
+    ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
+    ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
+    ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0])]
+  ];
+  for (const [platform, runtime] of cases) {
+    assert.throws(
+      () => createOfflineLinkPlan(tableWindowSource, { platform, name: 'NoSealedTableYet', guiRuntime: runtime }),
+      /Table|table|unsupported native GUI control/i,
+      `${platform} offline linking must reject Table rather than omit it`
+    );
   }
 });
 

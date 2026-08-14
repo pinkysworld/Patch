@@ -5,24 +5,29 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
+import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from '../src/native-gui-ir-v08.js';
 import { emitGtkGuiCpp, PATCH_GTK_GUI_BACKEND_VERSION } from '../src/gtk-gui-v08.js';
+import { emitGtkGuiCppV09, PATCH_GTK_GUI_BACKEND_V09_VERSION } from '../src/gtk-gui-v09.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeGtk');
 const outDir = path.resolve(process.argv[4] ?? 'dist');
 const emitOnly = process.argv.includes('--emit-only');
 const smoke = process.argv.includes('--smoke');
+const tableV09 = process.argv.includes('--table-v09');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke]');
+  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09]');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const gui = buildNativeGuiIR(compiled);
-const cpp = emitGtkGuiCpp(gui);
+const gui = tableV09 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
+const cpp = tableV09 ? emitGtkGuiCppV09(gui) : emitGtkGuiCpp(gui);
+const backendVersion = tableV09 ? PATCH_GTK_GUI_BACKEND_V09_VERSION : PATCH_GTK_GUI_BACKEND_VERSION;
+const controlCount = tableV09 ? flattenNativeGuiControlsV08(gui).length : flattenNativeGuiControls(gui).length;
 
 fs.mkdirSync(outDir, { recursive: true });
 const sourceOut = path.join(outDir, `${appName}.gtk.cpp`);
@@ -32,17 +37,18 @@ fs.writeFileSync(sourceOut, cpp);
 fs.writeFileSync(metadataPath, JSON.stringify({
   format: 'patch-native-gtk-build',
   version: '0.1',
-  backendVersion: PATCH_GTK_GUI_BACKEND_VERSION,
+  backendVersion,
   appName,
   nativeGuiIrVersion: gui.version,
   changeIrVersion: compiled.ir?.version ?? null,
   forms: gui.forms.length,
-  controls: flattenNativeGuiControls(gui).length,
+  controls: controlCount,
   events: gui.events.length,
   sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
   shell: 'native-gtk3',
   toolkit: 'GTK3',
-  electron: false
+  electron: false,
+  tableV09
 }, null, 2));
 
 if (emitOnly) {
@@ -64,7 +70,7 @@ if (!fs.existsSync(executablePath)) throw new Error('C++ compiler completed with
 fs.chmodSync(executablePath, 0o755);
 
 console.log(`Built native Patch GTK GUI: ${executablePath}`);
-console.log(`Native GUI IR ${gui.version}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
+console.log(`Native GUI IR ${gui.version}, backend ${backendVersion}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
 
 if (smoke) {
   const useXvfb = !process.env.DISPLAY && commandExists('xvfb-run');

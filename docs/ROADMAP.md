@@ -107,18 +107,20 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] source-backed Anchor/Dock policies with Designer resizing and runtime reflow in Standalone Web, direct Win32/AppKit/GTK AOT and token-free sealed Ready Apps
 - [x] read-only source-backed Table/Grid Stage 1 in language, Designer, Studio preview and Standalone Web
 - [x] transient Table row-selection contract in shared Window events and Standalone Web, with list-valued `value` and no implicit persistent state
+- [x] opt-in Native GUI IR **0.8** Table representation with source-backed columns/rows and transient `text-list` event type
+- [x] direct AOT backend **0.9** native Table widgets on Win32/AppKit/GTK with real compile/runtime/selection smokes
 - [ ] Studio App-preview dispatch parity for Table row selection
-- [ ] Native GUI IR Table representation and Win32/AppKit/GTK Table widgets
+- [ ] sealed Ready/offline Table payload/runtime contract and consumer switch
 - [ ] richer data controls beyond Table/Grid
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
 
-All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings; renderer selection is UI state and does not itself mutate Patch state.
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings; renderer/native-toolkit selection is UI state and does not itself mutate Patch state.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
-- [x] ready Windows/macOS/Linux Window packages
+- [x] ready Windows/macOS/Linux Window packages for the current sealed Native GUI IR 0.7 surface
 - [x] explicit compatibility Window backend consumes a source-free compiled Window artifact instead of reparsing `main.patch`
 - [x] token-free compatibility payload v0.4 with `studio-runtime-v0.6`
 - [x] FreeBSD Console via portable C99
@@ -126,6 +128,8 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] direct-native AOT Win32/AppKit/GTK backends for the Native GUI IR 0.7 surface
 - [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
 - [x] direct-native runtime-responsive Anchor/Dock handling on Win32/AppKit/GTK
+- [x] Native GUI IR **0.8** Table extension remains opt-in and does not redefine the stable sealed IR 0.7 contract
+- [x] AOT backend **0.9** Table widgets compile and execute on Windows/MSVC, macOS/AppKit and Linux/GTK3
 - [x] frozen sealed native GUI payload **v7** / runtime **v0.8** compatibility line with result dialogs and accessibility
 - [x] sealed native GUI payload **v8** with source-backed Anchor/Dock transport
 - [x] token-free responsive sealed Win32 runtime `native-win32-runtime-v0.9`
@@ -135,7 +139,8 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
-- [x] offline compiler embeds runtime v0.9 and executes responsive Window-link smokes on Windows/Linux/Apple Silicon/macOS Intel
+- [x] offline compiler embeds runtime v0.9 and executes responsive Window-link smokes on Windows/Linux/Apple Silicon/macOS Intel for the sealed Native GUI IR 0.7 surface
+- [ ] sealed payload/runtime Table representation and token-free Ready/offline Table linking
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
@@ -144,7 +149,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The v0.9 sealed-runtime item remains subject to the same exact-head release gate as every checked roadmap item: Windows/macOS/Linux must compile the v0.9 runtime, seal payload v8, execute semantic/accessibility plus responsive geometry smokes, publish the runtime from `main`, and the offline compiler must subsequently link and execute responsive Window apps with those published runtimes before the consumer switch is merged.
+The v0.9 sealed-runtime item and the backend-v0.9 Table item are different contracts. Runtime v0.9 is the responsive payload-v8 consumer for the Native GUI IR 0.7 control surface. Backend v0.9 is the direct-AOT Table extension over Native GUI IR 0.8. Table is not claimed for Ready/offline linking until an explicit sealed Table contract passes its own Windows/macOS/Linux link-and-run gate.
 
 ## Highest-value remaining research work
 
@@ -194,3 +199,4 @@ The v0.9 sealed-runtime item remains subject to the same exact-head release gate
 16. Backend, Native GUI IR and sealed payload versions are independent contracts; an implementation-only backend/runtime change must not silently bump semantic/payload formats.
 17. Automated accessibility smoke evidence does not substitute for manual assistive-technology testing or imply WCAG conformance.
 18. Responsive layout metadata remains non-semantic UI metadata; runtime resize must not create hidden persistent state or Change History.
+19. A direct-AOT control extension is not a sealed-runtime support claim until the payload format and token-free consumer independently encode and execute it.

@@ -5,24 +5,29 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
+import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from '../src/native-gui-ir-v08.js';
 import { emitAppKitGuiObjCpp, PATCH_APPKIT_GUI_BACKEND_VERSION } from '../src/appkit-gui-v08.js';
+import { emitAppKitGuiObjCppV09, PATCH_APPKIT_GUI_BACKEND_V09_VERSION } from '../src/appkit-gui-v09.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeMac');
 const outDir = path.resolve(process.argv[4] ?? 'dist');
 const emitOnly = process.argv.includes('--emit-only');
 const smoke = process.argv.includes('--smoke');
+const tableV09 = process.argv.includes('--table-v09');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke]');
+  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09]');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const gui = buildNativeGuiIR(compiled);
-const objCpp = emitAppKitGuiObjCpp(gui);
+const gui = tableV09 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
+const objCpp = tableV09 ? emitAppKitGuiObjCppV09(gui) : emitAppKitGuiObjCpp(gui);
+const backendVersion = tableV09 ? PATCH_APPKIT_GUI_BACKEND_V09_VERSION : PATCH_APPKIT_GUI_BACKEND_VERSION;
+const controlCount = tableV09 ? flattenNativeGuiControlsV08(gui).length : flattenNativeGuiControls(gui).length;
 
 fs.mkdirSync(outDir, { recursive: true });
 const sourceOut = path.join(outDir, `${appName}.appkit.mm`);
@@ -37,17 +42,18 @@ fs.writeFileSync(sourceOut, objCpp);
 fs.writeFileSync(metadataPath, JSON.stringify({
   format: 'patch-native-appkit-build',
   version: '0.1',
-  backendVersion: PATCH_APPKIT_GUI_BACKEND_VERSION,
+  backendVersion,
   appName,
   nativeGuiIrVersion: gui.version,
   changeIrVersion: compiled.ir?.version ?? null,
   forms: gui.forms.length,
-  controls: flattenNativeGuiControls(gui).length,
+  controls: controlCount,
   events: gui.events.length,
   sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
   shell: 'native-appkit',
   electron: false,
-  framework: 'AppKit'
+  framework: 'AppKit',
+  tableV09
 }, null, 2));
 
 if (emitOnly) {
@@ -78,7 +84,7 @@ if (!fs.existsSync(executablePath)) throw new Error('clang++ completed without p
 fs.chmodSync(executablePath, 0o755);
 
 console.log(`Built native Patch AppKit GUI: ${appPath}`);
-console.log(`Native GUI IR ${gui.version}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
+console.log(`Native GUI IR ${gui.version}, backend ${backendVersion}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
 
 if (smoke) {
   const run = spawnSync(executablePath, ['--patch-smoke'], {

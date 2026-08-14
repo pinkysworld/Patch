@@ -4,9 +4,9 @@ Patch Studio is the browser-first IDE for Patch. The product goal remains QuickB
 
 ## What works in 0.2 beta.33
 
-Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form and control drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form and control drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Table controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
-The public website is split into focused **Studio**, **Language**, **Documentation** and **Help** pages. The Studio page itself no longer carries the long language/research landing content underneath the IDE.
+The public website is split into focused **Studio**, **Language**, **Documentation**, **Downloads** and **Help** pages. The Studio page itself no longer carries the long language/research landing content underneath the IDE.
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required. The optional cloud/AOT route remains separate and does not persist its GitHub token.
 
@@ -14,13 +14,38 @@ Patch package **0.2.0-beta.33** keeps Change IR **0.10**. The beta.32 invocation
 
 ## Source-backed Forms and controls
 
-Form dimensions, top-level geometry, labels, ids, options, Tabs page structure and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent form document.
+Form dimensions, top-level geometry, labels, ids, options, Table rows, Tabs page structure and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent form document.
 
-A selected control can be moved and resized visually. A Form itself now has a lower-right resize grip in the Designer. Pointer resizing and keyboard resizing both write the resulting `window ... size W, H:` values back into Patch source. Forms may grow beyond the currently visible Designer width; the Designer remains scrollable instead of clamping a Form back to the viewport.
+A selected control can be moved and resized visually. A Form itself has a lower-right resize grip in the Designer. Pointer resizing and keyboard resizing both write the resulting `window ... size W, H:` values back into Patch source. Forms may grow beyond the currently visible Designer width; the Designer remains scrollable instead of clamping a Form back to the viewport.
 
-GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; persistent state changes only through an explicit Patch `change`.
+GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; Table `changed` exposes a transient row list where that event path is implemented. Persistent state changes only through an explicit Patch `change`.
 
 Tabs page selection remains transient renderer/toolkit state and creates no Patch variable or Change History entry.
+
+## Table / Grid
+
+Table is source-backed:
+
+```patch
+window "People" as main size 520, 320:
+  # @layout anchor left right top
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+
+when people changed:
+  show value
+```
+
+Current Table support is deliberately split by surface:
+
+- Designer: add/select/move/resize/rename/remove while preserving row lines;
+- Standalone Web: real Table plus mouse/keyboard row selection and transient list-valued `value`;
+- Studio App preview: Table display is present, semantic Table row dispatch is still a follow-up;
+- direct native AOT: Native GUI IR **0.8** / backend **0.9** maps Table to real Win32/AppKit/GTK widgets and is compiled/executed by a dedicated three-platform CI matrix;
+- Ready/no-token sealed apps and offline `patch link`: Table is not yet supported because those paths still carry the Native GUI IR **0.7** control surface in sealed payload **v8** / runtime **v0.9**.
+
+Unsupported Table build paths must fail closed rather than silently dropping the control.
 
 ## Project format v2
 
@@ -46,13 +71,13 @@ The Recovery manager keeps up to five deduplicated local snapshots. It supports 
 
 ## Menus and result-bearing dialogs
 
-Native GUI **0.7** includes menus, informational dialogs and result-bearing Confirm/Open/Save dialog flows with explicit transient result semantics. Native Window payload **v7** carries the corresponding menu/dialog/radio/tabs data needed by Win32, AppKit and GTK runtimes.
+Native GUI **0.7** includes menus, informational dialogs and result-bearing Confirm/Open/Save dialog flows with explicit transient result semantics. Current sealed native Window payload **v8** carries the corresponding menu/dialog/radio/tabs data plus responsive layout metadata needed by Win32, AppKit and GTK runtimes.
 
 Menus are Window structure, not positioned Designer controls. Transient dialog results do not create hidden persistent state; persistent changes still require explicit Patch `change` operations.
 
 ## Direct native desktop path
 
-The recommended native Window path uses checked **Native GUI IR 0.7**.
+The stable direct-native surface uses checked **Native GUI IR 0.7** / backend **0.8**. Table is the first opt-in Native GUI IR **0.8** / backend **0.9** extension.
 
 Current direct-native mappings include:
 
@@ -61,18 +86,19 @@ Current direct-native mappings include:
 - ListBox as Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`;
 - Radio as Win32 `BS_AUTORADIOBUTTON`, AppKit `NSButtonTypeRadio`, GTK3 `GtkRadioButton`;
 - Tabs as Win32 `WC_TABCONTROLW`, AppKit `NSTabView`, GTK3 `GtkNotebook`;
+- Table as Win32 report-mode `WC_LISTVIEWW`, AppKit multi-column `NSTableView`, GTK3 `GtkTreeView`/`GtkListStore` on backend 0.9;
 - Menu as Win32 `HMENU`, AppKit `NSMenu`, GTK3 `GtkMenuBar`;
 - native dialogs through each platform toolkit;
 - named Form open/close lifecycle;
 - typed transient values and explicit semantic changes.
 
-Unsupported native behavior fails closed. There is no implicit Electron fallback.
+The `Native Table v0.9` workflow compiles and runs the same Table app on Windows, macOS and Linux and checks native row-selection dispatch. Unsupported native behavior fails closed. There is no implicit Electron fallback.
 
 ## Native build resilience
 
 The optional GitHub Actions cloud/AOT path supports explicit Cancel, a 15-minute timeout and Retry. Retry uses the original in-memory build snapshot and a new request identity rather than silently rebuilding changed editor contents.
 
-The token-free ready-app path remains the default. The Windows Window path can seal Native GUI IR directly into a native Win32 runtime in the browser; Linux and macOS use corresponding GTK/AppKit runtime packaging. Signing/notarization remains a separate distribution concern.
+The token-free ready-app path remains the default. Windows, Linux and macOS Ready downloads currently seal the Native GUI IR 0.7 surface into responsive runtime v0.9. Table will not be advertised on that path until the sealed contract itself is upgraded and smoke-tested. Signing/notarization remains a separate distribution concern.
 
 ## PWA updates
 
@@ -92,7 +118,7 @@ The current Studio/repository also includes:
 
 - stable `PATCHxxxx` diagnostics with line/column locations;
 - versioned CLI JSON results while preserving existing exit codes;
-- deterministic tagged-release manifests and `SHA256SUMS.txt` verification;
+- deterministic tagged-release manifests and checksum verification;
 - CodeQL, Dependabot for GitHub Actions and repository security-policy checks;
 - deterministic parser/compiler fuzzing;
 - Interpreter/direct-Wasm/executable-C99 differential tests;
@@ -101,4 +127,4 @@ The current Studio/repository also includes:
 
 ## Next work
 
-The next product stages include distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, alignment/docking tools, Table/Grid controls and additional native packaging polish.
+The next product stages include Studio App-preview Table event parity, a sealed Table payload/runtime contract for Ready/offline linking, distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer data controls and additional native packaging polish.

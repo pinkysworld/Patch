@@ -4,6 +4,7 @@ import {
   validateNativeGuiIR,
   NativeGuiError
 } from './native-gui-ir.js';
+import { attachWindowLayoutPolicies } from './window-layout-policy.js';
 
 export const PATCH_NATIVE_GUI_IR_V08_VERSION = '0.8';
 
@@ -60,6 +61,10 @@ export function buildNativeGuiIRV08(compiled) {
   });
 
   cloned.ast = rewriteControls(cloned.ast);
+  // The Table rewrite above intentionally uses ordinary enumerable AST data.
+  // Responsive policies are non-enumerable by contract, so restore them only
+  // after the rewrite has produced the final v0.7-compatible control order.
+  if (cloned.windowLayoutPolicy) attachWindowLayoutPolicies(cloned.ast, cloned.windowLayoutPolicy);
 
   for (const spec of tableSpecs) {
     cloned.ast.unshift({
