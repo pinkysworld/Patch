@@ -127,7 +127,7 @@ export function listDesignerControls(source) {
     let controlIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      controls.push({
+      const item = {
         windowIndex,
         controlIndex,
         line: child.line,
@@ -135,14 +135,17 @@ export function listDesignerControls(source) {
         id: child.id ?? null,
         textExpr: child.textExpr ?? null,
         options: Array.isArray(child.options) ? [...child.options] : null,
-        columns: Array.isArray(child.columns) ? [...child.columns] : null,
-        rows: Array.isArray(child.rows) ? child.rows.map(row => [...row]) : null,
         pages: child.kind === 'tabs' ? (child.body ?? []).map(page => page.titleExpr) : null,
         x: child.layout?.x ?? null,
         y: child.layout?.y ?? null,
         width: child.layout?.width ?? null,
         height: child.layout?.height ?? null
-      });
+      };
+      if (child.kind === 'uiControl' && child.control === 'table') {
+        item.columns = Array.isArray(child.columns) ? [...child.columns] : [];
+        item.rows = Array.isArray(child.rows) ? child.rows.map(row => [...row]) : [];
+      }
+      controls.push(item);
       controlIndex += 1;
     }
     windowIndex += 1;
@@ -320,7 +323,7 @@ function renameFormActions(lines, oldId, nextId) {
 
 function removeEventBlocks(lines, id) {
   const escapedId = escapeRegExp(id);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\s+(clicked|changed|closed)\\s*:\\s*$`);
   for (let i = 0; i < lines.length;) {
     const match = lines[i].match(pattern);
     if (!match) { i += 1; continue; }
