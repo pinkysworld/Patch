@@ -28,13 +28,37 @@ The local `patch-app` command instead selects the host AOT toolkit backend and c
 
 ## Versioned native layers
 
-The current native stack intentionally separates three versions:
+The current native stack intentionally separates its contracts:
 
 - **Native GUI IR 0.7**: platform-neutral Forms/control/event/result contract.
-- **AOT backend 0.8**: current Win32/AppKit/GTK code generator with native accessibility naming/readback.
-- **sealed payload v7 / runtime v0.8**: token-free browser-sealing contract. Runtime v0.8 adds accessibility parity while payload v7 stays unchanged.
+- **AOT backend 0.8**: current Win32/AppKit/GTK code generator with native accessibility naming/readback and responsive Anchor/Dock handling.
+- **sealed payload v8 / runtime v0.9**: current token-free browser/offline sealing contract with native accessibility plus runtime-responsive Anchor/Dock layout.
+- **sealed payload v7 / runtime v0.8**: frozen compatibility release line retained for reproducibility.
 
 A backend/runtime implementation change therefore does not silently redefine the IR or sealed payload format.
+
+## Responsive Window layout
+
+Visual layout remains source-backed. Patch Studio writes ordinary comments next to controls, for example:
+
+```patch
+# @layout anchor left right top
+button "Save" as save at 24, 24 size 120, 36
+
+# @layout dock bottom
+text "Ready" at 24, 380 size 200, 30
+```
+
+The parser continues to treat those directives as comments. The compiler extracts them into a separate Window layout-policy manifest. Persistent application semantics and Change IR stay unchanged.
+
+The same policy is now honored by:
+
+- Standalone Window Web Apps while the browser Form is resized;
+- direct Win32/AppKit/GTK AOT apps during native window resizing;
+- token-free sealed Win32/AppKit/GTK runtime v0.9 apps using payload v8;
+- Window apps linked by the downloadable offline compiler.
+
+Anchor rules preserve the selected margins or stretch a control when opposite edges are anchored. Dock rules support `top`, `bottom`, `left`, `right` and `fill`. Fixed controls remain fixed. Nested Tabs controls keep their existing page-relative placement contract rather than being silently reinterpreted as top-level Form controls.
 
 ## Direct AOT Window path
 
@@ -50,7 +74,7 @@ A backend/runtime implementation change therefore does not silently redefine the
 The current native surface includes:
 
 - number/text/Boolean state;
-- source-backed Form geometry;
+- source-backed Form geometry and responsive Anchor/Dock metadata;
 - Text, Button, Input and Checkbox;
 - ComboBox and single-selection ListBox;
 - grouped Radio;
@@ -87,13 +111,13 @@ GUI interaction alone does not persist Patch state.
 - Confirm emits `confirmed` or `cancelled`.
 - Open/Save emit `chosen` with transient text `value`, or `cancelled`.
 
-Patch source must execute an ordinary semantic `change` to persist a value and create Change History.
+Patch source must execute an ordinary semantic `change` to persist a value and create Change History. Runtime layout reflow also does not create Patch state or Change History.
 
 ## Native accessibility baseline
 
 Both direct-native paths implement the same deterministic naming contract for otherwise-unlabelled Input, ComboBox, ListBox and Tabs controls and add group context to Radio options. Button/Checkbox native visible-label semantics are preserved.
 
-The AOT backend v0.8 and sealed runtime v0.8 both write and read names through the platform accessibility API:
+AOT backend 0.8, sealed runtime 0.8 and the current sealed runtime 0.9 write/read names through the platform accessibility API:
 
 - Windows: Microsoft Active Accessibility `IAccPropServices` / `IAccessible`;
 - macOS: AppKit accessibility labels;
@@ -105,24 +129,27 @@ The executable smoke path fails when a platform API exposes a different name fro
 
 Patch Studio can build native GUI downloads in the browser by sealing checked Native GUI IR into the `PCHGUI01` executable envelope.
 
-Current sealed payload **v7** carries:
+Current sealed payload **v8** carries the v7 GUI contract plus two bytes of explicit layout policy per control. The payload contains:
 
 - Forms and simple state;
 - ordinary and selection controls;
+- source-backed fixed/Anchor/Dock layout policy;
 - Tabs page titles and implementation-only parent/page placement metadata;
 - per-Form structural menus and MenuItem event sources;
 - informational dialogs;
 - Confirm/Open/Save actions and their transient result event sources.
 
-The runtime releases are:
+The current runtime releases are:
 
-- `native-win32-runtime-v0.8`;
-- `native-linux-runtime-v0.8`;
-- `native-macos-runtime-v0.8`.
+- `native-win32-runtime-v0.9`;
+- `native-linux-runtime-v0.9`;
+- `native-macos-runtime-v0.9`.
 
-Runtime v0.8 reuses the proven v0.7 payload parser/control/event implementation and adds the accessibility layer after native controls are created. No new payload field is required, so Studio continues to emit payload v7.
+Runtime v0.9 consumes payload v8, preserves the v0.8 accessibility contract and applies the source-backed layout policy during real platform window/content resizing: Win32 `WM_SIZE`, AppKit window-resize notification handling and GTK `size-allocate`.
 
-Those tags are published from `main` only after their native runtime workflows compile the OS runtime, seal the GUI example progression through `result-dialog-window.patch`, execute the normal semantic smoke and accessibility readback, and verify payload v7. Pages pins the exact runtime versions.
+Payload v7 and runtime v0.8 remain an explicit compatibility/reproducibility line. The compatibility sealer scripts still default to v7 unless a v0.9 workflow explicitly requests v8, so the old runtime release workflows continue to test their original contract.
+
+The v0.9 tags are published from `main` only after Windows/macOS/Linux compile the runtime, seal `responsive-window.patch` with payload v8, execute the normal semantic/accessibility plus responsive smoke and upload the runtime. Pages pins those published v0.9 assets.
 
 The macOS browser-sealed bundle remains unsigned because project sealing changes the executable after the generic runtime template was compiled. Final-artifact signing/notarization remains separate distribution work.
 
@@ -147,18 +174,21 @@ Where a newer Window node is unsupported by compatibility/Web paths, those targe
 
 ## Cross-platform executable evidence
 
-CI exercises AOT and token-free runtime paths separately.
+CI exercises AOT, token-free runtime and offline-linked paths separately.
 
-The unified AOT matrix builds and executes Forms, ComboBox, ListBox, Tabs, Radio, Menu/Dialog and Result Dialog applications on Windows, macOS and Linux. The accessibility layer adds platform-native readback assertions to that executable smoke path.
+The unified AOT matrix builds and executes Forms, ComboBox, ListBox, Tabs, Radio, Menu/Dialog and Result Dialog applications on Windows, macOS and Linux. The accessibility layer adds platform-native readback assertions to that executable smoke path. Responsive AOT tests additionally compile the native resize handlers.
 
-Each sealed-runtime workflow independently:
+The dedicated responsive-runtime workflow independently:
 
-1. compiles the generic OS runtime v0.8;
-2. seals the canonical progression of GUI examples;
-3. seals and executes `result-dialog-window.patch`;
-4. verifies the real native event/result path under `--patch-smoke`;
-5. reads accessibility names back through the native platform API;
-6. verifies sealed payload v7.
+1. compiles the generic Win32/AppKit/GTK runtime v0.9;
+2. encodes payload v8;
+3. seals `examples/responsive-window.patch`;
+4. executes it under `--patch-smoke` on the real target runner/toolkit;
+5. checks accessibility behavior inherited from v0.8;
+6. checks runtime Anchor/Dock geometry;
+7. publishes the three v0.9 runtime assets only after all platform jobs pass.
+
+The offline compiler matrix then downloads those published v0.9 runtimes and proves that its downloadable compiler can link and execute the same responsive Window contract on Windows, Linux, Apple Silicon macOS and Intel macOS. FreeBSD remains Console-only.
 
 Smoke mode suppresses only blocking user interaction. Normal applications use the real OS dialogs.
 
