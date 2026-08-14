@@ -39,11 +39,21 @@ Alt while dragging: bypass snap</pre>
   <section class="page-section">
     <h2>Design a Window app</h2>
     <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open the Window example.</p></div>
-    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox or Tabs controls.</p></div>
+    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table or Tabs controls.</p></div>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
     <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. The Left, Top, H center and V center commands align the other selected controls to the primary control and write the resulting positions back into Patch source.</p></div>
     <div class="help-step"><b>5</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive. Anchor supports left/right/top/bottom combinations; Dock supports top, bottom, left, right and fill.</p></div>
     <div class="help-step"><b>6</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is also honored when a built Standalone Web, direct native AOT or token-free Ready app is resized at runtime on Windows, macOS or Linux.</p></div>
+  </section>
+
+  <section class="page-section">
+    <h2>Read-only Table / Grid Stage 1</h2>
+    <p>Table data is written directly in Patch source. The header declares named columns and each indented <code>row</code> supplies exactly one value per column.</p>
+    <pre class="page-code">window "People" as main size 520, 320:
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"</pre>
+    <p>In Stage 1 the Designer can add, select, move, resize, rename and remove the Table while preserving its row lines. Studio App preview and Standalone Window Web render a real read-only table. Selection is deliberately not a Patch event yet, and direct native Win32/AppKit/GTK lowering fails closed for Table instead of silently dropping it. Row-selection events and native Table widgets are the next stage.</p>
   </section>
 
   <section class="page-section">

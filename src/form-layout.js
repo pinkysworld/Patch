@@ -8,6 +8,7 @@ export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
   radio: Object.freeze({ width: 220, height: 84 }),
   combo: Object.freeze({ width: 220, height: 36 }),
   listbox: Object.freeze({ width: 220, height: 120 }),
+  table: Object.freeze({ width: 400, height: 180 }),
   tabs: Object.freeze({ width: 420, height: 240 })
 });
 

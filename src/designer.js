@@ -102,6 +102,17 @@ export function addDesignerControl(source, type, options = {}) {
     return tidy(lines.join('\n'));
   }
 
+  if (type === 'table') {
+    const id = nextId(lines, 'table');
+    const columns = ['"Column 1"', '"Column 2"'];
+    lines.splice(insertAt, 0,
+      `${childIndent}${formatTableControl(id, columns, layout)}`,
+      `${childIndent}  row "Value 1", "Value 2"`,
+      `${childIndent}  row "Value 3", "Value 4"`
+    );
+    return tidy(lines.join('\n'));
+  }
+
   const control = makeControl(type, lines, layout);
   lines.splice(insertAt, 0, `${childIndent}${control}`);
   return tidy(lines.join('\n'));
@@ -116,7 +127,7 @@ export function listDesignerControls(source) {
     let controlIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      controls.push({
+      const item = {
         windowIndex,
         controlIndex,
         line: child.line,
@@ -129,7 +140,12 @@ export function listDesignerControls(source) {
         y: child.layout?.y ?? null,
         width: child.layout?.width ?? null,
         height: child.layout?.height ?? null
-      });
+      };
+      if (child.kind === 'uiControl' && child.control === 'table') {
+        item.columns = Array.isArray(child.columns) ? [...child.columns] : [];
+        item.rows = Array.isArray(child.rows) ? child.rows.map(row => [...row]) : [];
+      }
+      controls.push(item);
       controlIndex += 1;
     }
     windowIndex += 1;
@@ -169,7 +185,11 @@ export function updateDesignerControl(source, selector, changes = {}) {
 
   const layout = normalizeControlLayout(control, changes);
   const indent = indentOf(lines[lineIndex]);
-  lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions)}`;
+  if (control.type === 'table') {
+    lines[lineIndex] = `${indent}${formatTableControl(nextId, control.columns ?? [], layout)}`;
+  } else {
+    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions)}`;
+  }
 
   if (oldId && nextId !== oldId && control.type !== 'tabs') renameEventHeaders(lines, oldId, nextId);
   return preserveTrailingNewline(source, lines.join('\n'));
@@ -180,7 +200,7 @@ export function removeDesignerControl(source, selector) {
   const control = findControl(controls, selector);
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
-  if (control.type === 'tabs') {
+  if (control.type === 'tabs' || control.type === 'table') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
     while (end < lines.length) {
@@ -189,6 +209,7 @@ export function removeDesignerControl(source, selector) {
       end += 1;
     }
     lines.splice(lineIndex, end - lineIndex);
+    if (control.id) removeEventBlocks(lines, control.id);
   } else {
     lines.splice(lineIndex, 1);
     if (control.id) removeEventBlocks(lines, control.id);
@@ -343,6 +364,12 @@ function formatControl(type, id, textExpr, layout, options = null) {
   if (!layout) return type === 'tabs' ? `${core}:` : core;
   const positioned = `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
   return type === 'tabs' ? `${positioned}:` : positioned;
+}
+
+function formatTableControl(id, columns, layout) {
+  const core = `table ${(columns ?? []).join(', ')} as ${id}`;
+  if (!layout) return `${core}:`;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
 }
 
 function nextId(lines, base) {

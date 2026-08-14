@@ -41,6 +41,26 @@ export function parse(source) {
     if (width !== null) { fields.width = width; fields.height = height; }
     return fields;
   }
+  function tableNode(row, indent, columnsText, id, xText, yText, widthText, heightText) {
+    const columns = splitArgs(columnsText);
+    if (!columns.length) throw new PatchSyntaxError('A table needs at least one column.', row.line);
+    if (i >= lines.length || lines[i].indent <= indent) throw new PatchSyntaxError('A table needs at least one indented row.', row.line);
+    const rowIndent = lines[i].indent;
+    const rows = [];
+    while (i < lines.length && lines[i].indent >= rowIndent) {
+      const child = lines[i];
+      if (child.indent !== rowIndent) throw new PatchSyntaxError('Table rows must use one consistent indentation level.', child.line);
+      const match = child.text.match(/^row\s+(.+)$/);
+      if (!match) throw new PatchSyntaxError('A table can only contain rows like row "Ada", "Engineer".', child.line);
+      const values = splitArgs(match[1]);
+      if (values.length !== columns.length) throw new PatchSyntaxError(`Table row needs exactly ${columns.length} value${columns.length === 1 ? '' : 's'} to match its columns.`, child.line);
+      rows.push(values);
+      i += 1;
+    }
+    const fields = { control:'table', textExpr:null, columns, rows, id, line:row.line };
+    if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
+    return uiControl(fields, null);
+  }
   function statement(indent) {
     const row = lines[i++];
     let m;
@@ -77,6 +97,9 @@ export function parse(source) {
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
       return {kind:'tabPage',titleExpr:m[1],body,line:row.line};
+    }
+    if ((m = row.text.match(/^table\s+(.+?)\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
+      return tableNode(row, indent, m[1], m[2], m[3], m[4], m[5], m[6]);
     }
 
     const ui=parseUILayout(row.text,row.line);
