@@ -144,8 +144,8 @@ test('Native GUI IR 0.7 models result dialog actions and typed synthetic result 
   assert.deepEqual(chosen.actions[0].ops, [{ op: 'set', value: { kind: 'eventValue' } }]);
 });
 
-test('sealed native payload v8 keeps the result event/action contract', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+test('sealed native payload advances to v7 for result event/action contract', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const payload = encodeNativeGuiPayload(buildNativeGuiIR(compile(example, { kind: 'window', name: 'ResultDialogNative' })));
   const text = new TextDecoder().decode(payload);
   for (const marker of ['reset_confirm', 'open_result', 'save_result', 'Reset selection?', 'Open Patch file', 'Save Patch file']) {
