@@ -36,26 +36,30 @@ function addReadOnlyWindowTables(built) {
   if (!html.includes(modelNeedle)) throw new Error('Standalone Window table model hook is unavailable.');
   html = html.replace(modelNeedle, modelReplacement);
 
+  const selectionNeedle = 'const tabSelections=new Map();';
+  if (!html.includes(selectionNeedle)) throw new Error('Standalone Window table selection hook is unavailable.');
+  html = html.replace(selectionNeedle, `${selectionNeedle}\nconst tableSelections=new Map();`);
+
   const renderNeedle = "if(control.type==='tabs')return renderTabs(control,windowId,controlIndex);return null;}";
   const renderReplacement = "if(control.type==='table')return renderTable(control);if(control.type==='tabs')return renderTabs(control,windowId,controlIndex);return null;}";
   if (!html.includes(renderNeedle)) throw new Error('Standalone Window table renderer hook is unavailable.');
   html = html.replace(renderNeedle, renderReplacement);
 
   const tabsNeedle = 'function renderTabs(control,windowId,controlIndex){';
-  const tableRenderer = "function renderTable(control){const wrap=document.createElement('div');wrap.className='patch-table-wrap';const table=document.createElement('table');table.className='patch-table';const head=document.createElement('thead');const headRow=document.createElement('tr');for(const column of control.columns??[]){const th=document.createElement('th');th.scope='col';th.textContent=column;headRow.appendChild(th);}head.appendChild(headRow);const body=document.createElement('tbody');for(const row of control.rows??[]){const tr=document.createElement('tr');for(let index=0;index<(control.columns??[]).length;index+=1){const td=document.createElement('td');td.textContent=row[index]??'';tr.appendChild(td);}body.appendChild(tr);}table.append(head,body);wrap.appendChild(table);return wrap;}\n";
+  const tableRenderer = "function renderTable(control){const wrap=document.createElement('div');wrap.className='patch-table-wrap';const table=document.createElement('table');table.className='patch-table';const head=document.createElement('thead');const headRow=document.createElement('tr');for(const column of control.columns??[]){const th=document.createElement('th');th.scope='col';th.textContent=column;headRow.appendChild(th);}head.appendChild(headRow);const body=document.createElement('tbody');const key=control.id||'';const selected=tableSelections.get(key)??-1;for(let rowIndex=0;rowIndex<(control.rows??[]).length;rowIndex+=1){const row=control.rows[rowIndex];const tr=document.createElement('tr');tr.tabIndex=0;tr.setAttribute('aria-selected',rowIndex===selected?'true':'false');if(rowIndex===selected)tr.className='patch-table-selected';const selectRow=()=>{tableSelections.set(key,rowIndex);const hasHandler=events.some(handler=>handler.control===control.id&&handler.event==='changed');if(hasHandler)safeTrigger(control.id,'changed',{value:[...row]});else render();};tr.addEventListener('click',selectRow);tr.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRow();}});for(let index=0;index<(control.columns??[]).length;index+=1){const td=document.createElement('td');td.textContent=row[index]??'';tr.appendChild(td);}body.appendChild(tr);}table.append(head,body);wrap.appendChild(table);return wrap;}\n";
   if (!html.includes(tabsNeedle)) throw new Error('Standalone Window table insertion hook is unavailable.');
   html = html.replace(tabsNeedle, tableRenderer + tabsNeedle);
 
   const cssNeedle = '.checkbox{display:flex;';
-  const cssReplacement = '.patch-table-wrap{width:100%;height:100%;overflow:auto;border:1px solid #d4d4d8;border-radius:9px;background:#fff}.patch-table{width:100%;border-collapse:collapse;font-size:13px}.patch-table th,.patch-table td{border-bottom:1px solid #e4e4e7;border-right:1px solid #e4e4e7;padding:7px 9px;text-align:left;vertical-align:top;white-space:nowrap}.patch-table th:last-child,.patch-table td:last-child{border-right:0}.patch-table th{position:sticky;top:0;background:#f4f4f5;font-weight:750}.patch-table tr:last-child td{border-bottom:0}.checkbox{display:flex;';
+  const cssReplacement = '.patch-table-wrap{width:100%;height:100%;overflow:auto;border:1px solid #d4d4d8;border-radius:9px;background:#fff}.patch-table{width:100%;border-collapse:collapse;font-size:13px}.patch-table th,.patch-table td{border-bottom:1px solid #e4e4e7;border-right:1px solid #e4e4e7;padding:7px 9px;text-align:left;vertical-align:top;white-space:nowrap}.patch-table th:last-child,.patch-table td:last-child{border-right:0}.patch-table th{position:sticky;top:0;background:#f4f4f5;font-weight:750}.patch-table tbody tr{cursor:pointer}.patch-table tbody tr:focus-visible{outline:3px solid #2563eb;outline-offset:-3px}.patch-table tr.patch-table-selected td{background:#dbeafe}.patch-table tr:last-child td{border-bottom:0}.checkbox{display:flex;';
   if (!html.includes(cssNeedle)) throw new Error('Standalone Window table stylesheet hook is unavailable.');
   html = html.replace(cssNeedle, cssReplacement);
-  html = html.replace('.patch-tabs{background:#1b1d22;', '.patch-table-wrap{background:#1b1d22;border-color:#41444e}.patch-table th,.patch-table td{border-color:#34363e}.patch-table th{background:#24262d}.patch-tabs{background:#1b1d22;');
+  html = html.replace('.patch-tabs{background:#1b1d22;', '.patch-table-wrap{background:#1b1d22;border-color:#41444e}.patch-table th,.patch-table td{border-color:#34363e}.patch-table th{background:#24262d}.patch-table tr.patch-table-selected td{background:#1e3a5f}.patch-tabs{background:#1b1d22;');
 
   return {
     ...built,
     html,
-    metadata: { ...built.metadata, tableStage: 1, tableMode: 'read-only-source-backed' }
+    metadata: { ...built.metadata, tableStage: 2, tableMode: 'transient-row-selection' }
   };
 }
 

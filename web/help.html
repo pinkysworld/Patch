@@ -47,13 +47,17 @@ Alt while dragging: bypass snap</pre>
   </section>
 
   <section class="page-section">
-    <h2>Read-only Table / Grid Stage 1</h2>
+    <h2>Table / Grid</h2>
     <p>Table data is written directly in Patch source. The header declares named columns and each indented <code>row</code> supplies exactly one value per column.</p>
     <pre class="page-code">window "People" as main size 520, 320:
   table "Name", "Role" as people at 24, 64 size 440, 180:
     row "Ada", "Engineer"
-    row "Grace", "Scientist"</pre>
-    <p>In Stage 1 the Designer can add, select, move, resize, rename and remove the Table while preserving its row lines. Studio App preview and Standalone Window Web render a real read-only table. Selection is deliberately not a Patch event yet, and direct native Win32/AppKit/GTK lowering fails closed for Table instead of silently dropping it. Row-selection events and native Table widgets are the next stage.</p>
+    row "Grace", "Scientist"
+
+when people changed:
+  show value</pre>
+    <p>The source-backed Stage 1 Designer can add, select, move, resize, rename and remove a Table while preserving its row lines. Stage 2a adds row selection to the shared Window event contract and Standalone Web. <code>changed</code> exposes the selected row only as transient <code>value</code>, represented as a Patch list of display strings. Selecting a row does not create persistent Patch state or Change History by itself.</p>
+    <p>Standalone Web supports mouse and keyboard row selection and keeps <code>aria-selected</code> as renderer-local UI state. Studio App-preview event dispatch and direct native Win32/AppKit/GTK Table widgets are separate follow-ups; native Table lowering still fails closed rather than silently dropping the control.</p>
   </section>
 
   <section class="page-section">

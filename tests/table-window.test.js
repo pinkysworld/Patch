@@ -85,10 +85,10 @@ test('Patch Studio exposes Table in Designer and App preview through an offline-
   assert.match(serviceWorker, /'\.\/table-stage1\.js'/);
 });
 
-test('Standalone Window Web renders a real read-only HTML table and preserves later control ordering', () => {
+test('Standalone Window Web renders a real Table and preserves later control ordering', () => {
   const built = buildStandaloneWebApp(source, { kind: 'window', name: 'PeopleTable' });
-  assert.equal(built.metadata.tableStage, 1);
-  assert.equal(built.metadata.tableMode, 'read-only-source-backed');
+  assert.equal(built.metadata.tableStage, 2);
+  assert.equal(built.metadata.tableMode, 'transient-row-selection');
   assert.match(built.html, /function renderTable\(control\)/);
   assert.match(built.html, /document\.createElement\('table'\)/);
   assert.match(built.html, /document\.createElement\('thead'\)/);
@@ -100,9 +100,10 @@ test('Standalone Window Web renders a real read-only HTML table and preserves la
   assert.match(built.html, /data-patch-form-layout/);
 });
 
-test('Table exposes no selection event in Stage 1 and native lowering fails closed', () => {
+test('Table changed is supported in Web while native Table lowering remains fail closed until Stage 2b', () => {
   const withEvent = `${source}\nwhen people changed:\n  show value\n`;
-  assert.throws(() => buildStandaloneWebApp(withEvent, { kind: 'window' }), /table.*does not expose|does not expose.*table/i);
+  const built = buildStandaloneWebApp(withEvent, { kind: 'window' });
+  assert.equal(built.metadata.tableMode, 'transient-row-selection');
   const compiled = compile(source, { kind: 'window', name: 'PeopleTable' });
   assert.throws(() => buildNativeGuiIR(compiled), /does not support 'table' controls yet/i);
 });
