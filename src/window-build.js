@@ -146,6 +146,11 @@ export function validateWindowRuntimeSupport(compiled) {
       continue;
     }
     const controlType = menuItem ? 'menuItem' : control.type;
+    if (controlType === 'table') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: Table '${event.control}' is read-only and does not expose Patch events in Table Stage 1.`
+      );
+    }
     const supported =
       ((controlType === 'button' || controlType === 'menuItem') && event.event === 'clicked') ||
       ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio') && event.event === 'changed');
