@@ -62,6 +62,13 @@ export function emitWin32GuiCppV09(input) {
 }
 
 function win32TableHelpers(adapted, eventIndexes) {
+  const declaredEvents = [...new Set(adapted.tables
+    .map(table => eventIndexes.get(table.id))
+    .filter(index => index !== undefined))];
+  const forwardDeclarations = declaredEvents
+    .map(index => `static void Event_${index}(const std::vector<std::wstring>& eventValue);`)
+    .join('\n');
+
   const rowFunctions = adapted.tables.map(table => {
     const cases = table.rows.map((row, rowIndex) =>
       `    case ${rowIndex}: return {${row.map(value => `L${cppString(value)}`).join(', ')}};`
@@ -75,7 +82,7 @@ function win32TableHelpers(adapted, eventIndexes) {
     return `  if (gControls[${table.nativeIndex}] == header->hwndFrom && header->code == LVN_ITEMCHANGED) {\n    auto *change = reinterpret_cast<NMLISTVIEW*>(header);\n    if (change->iItem >= 0 && (change->uNewState & LVIS_SELECTED) && !(change->uOldState & LVIS_SELECTED)) { ++gPatchTableSelectionCount;${eventCall} }\n    return true;\n  }`;
   }).join('\n');
 
-  return `${rowFunctions}\nstatic int gPatchTableSelectionCount = 0;\nstatic bool HandleTableNotify(NMHDR *header) {\n  if (!header) return false;\n${notify}\n  return false;\n}`;
+  return `${forwardDeclarations}${forwardDeclarations ? '\n' : ''}${rowFunctions}\nstatic int gPatchTableSelectionCount = 0;\nstatic bool HandleTableNotify(NMHDR *header) {\n  if (!header) return false;\n${notify}\n  return false;\n}`;
 }
 
 function win32TableCreate(adapted, table) {
