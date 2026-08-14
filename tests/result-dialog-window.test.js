@@ -56,7 +56,7 @@ test('open file remains distinct from named Form navigation', () => {
 
 test('confirm requires exactly title and message before its result id', () => {
   assert.throws(
-    () => parse(`window "Main":\n  button "Ask" as ask\nwhen ask clicked:\n  confirm "Only title" as answer`),
+    () => parse(`window "Main":\n  button "Go" as go\nwhen go clicked:\n  confirm "Only title" as answer`),
     error => error instanceof PatchSyntaxError && /needs exactly a title and message/.test(error.message)
   );
 });
