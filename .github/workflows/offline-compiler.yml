@@ -11,7 +11,9 @@ on:
       - scripts/build-native-sea-template.js
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
+      - examples/responsive-window.patch
       - .github/workflows/offline-compiler.yml
+      - .github/workflows/native-responsive-runtime.yml
   push:
     branches: [main]
     paths:
@@ -21,7 +23,9 @@ on:
       - scripts/build-native-sea-template.js
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
+      - examples/responsive-window.patch
       - .github/workflows/offline-compiler.yml
+      - .github/workflows/native-responsive-runtime.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -41,17 +45,17 @@ jobs:
           - os: windows-latest
             platform: windows
             asset: patch-windows-x64.exe
-            gui_tag: native-win32-runtime-v0.8
+            gui_tag: native-win32-runtime-v0.9
             gui_asset: patch-windows-native-gui-runtime.exe
           - os: ubuntu-latest
             platform: linux
             asset: patch-linux-x64
-            gui_tag: native-linux-runtime-v0.8
+            gui_tag: native-linux-runtime-v0.9
             gui_asset: patch-linux-native-gui-runtime.bin
           - os: macos-15
             platform: macos
             asset: patch-macos-arm64
-            gui_tag: native-macos-runtime-v0.8
+            gui_tag: native-macos-runtime-v0.9
             gui_asset: patch-macos-native-gui-runtime.bin
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -61,12 +65,18 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
+      - name: Install Linux Window smoke dependencies
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-0 xvfb
       - name: Build host Console runtime
         shell: bash
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Download checked native GUI runtime
+      - name: Download checked responsive native GUI runtime
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -77,7 +87,7 @@ jobs:
         shell: bash
         run: |
           node scripts/build-offline-compiler.js --platform '${{ matrix.platform }}' --console-runtime offline-runtime/console.bin --gui-runtime offline-runtime/gui.bin --out "dist-offline/${{ matrix.asset }}"
-      - name: Smoke compiler and local Console linking
+      - name: Smoke compiler and local Console and Window linking
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
@@ -86,8 +96,9 @@ jobs:
           "dist-offline/${{ matrix.asset }}" check examples/direct-wasm-recipes.patch
           "dist-offline/${{ matrix.asset }}" build examples/direct-wasm-recipes.patch --kind console --target web --out dist-smoke/OfflineSmoke.html
           "dist-offline/${{ matrix.asset }}" link examples/direct-wasm-recipes.patch --name OfflineLinked --out dist-smoke/OfflineLinked
+          "dist-offline/${{ matrix.asset }}" link examples/responsive-window.patch --name OfflineResponsive --out dist-smoke/OfflineResponsive
           test -s dist-smoke/OfflineSmoke.html
-      - name: Smoke linked Console app on Windows
+      - name: Smoke linked Console and responsive Window apps on Windows
         if: matrix.platform == 'windows'
         shell: pwsh
         env:
@@ -95,23 +106,29 @@ jobs:
         run: |
           & ./dist-smoke/OfflineLinked.exe
           if ($LASTEXITCODE -ne 0) { throw "Linked Console smoke failed with exit code $LASTEXITCODE." }
-      - name: Smoke linked Console app on Linux
+          & ./dist-smoke/OfflineResponsive.exe --patch-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Linked responsive Window smoke failed with exit code $LASTEXITCODE." }
+      - name: Smoke linked Console and responsive Window apps on Linux
         if: matrix.platform == 'linux'
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          chmod +x dist-smoke/OfflineLinked
+          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive
           ./dist-smoke/OfflineLinked
-      - name: Smoke linked Console app on macOS
+          xvfb-run -a ./dist-smoke/OfflineResponsive --patch-smoke
+      - name: Smoke linked Console and responsive Window apps on macOS
         if: matrix.platform == 'macos'
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          APP=dist-smoke/OfflineLinked.app/Contents/MacOS/OfflineLinked
-          test -x "$APP"
-          "$APP"
+          CONSOLE_APP=dist-smoke/OfflineLinked.app/Contents/MacOS/OfflineLinked
+          WINDOW_APP=dist-smoke/OfflineResponsive.app/Contents/MacOS/OfflineResponsive
+          test -x "$CONSOLE_APP"
+          test -x "$WINDOW_APP"
+          "$CONSOLE_APP"
+          "$WINDOW_APP" --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-${{ matrix.platform }}-${{ matrix.asset }}
@@ -140,7 +157,7 @@ jobs:
           cp package.json LICENSE "$ROOT/"
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
-          gh release download 'native-macos-runtime-v0.8' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
+          gh release download 'native-macos-runtime-v0.9' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
           mv "$ROOT/runtime/patch-macos-native-gui-runtime.bin" "$ROOT/runtime/gui.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
@@ -159,7 +176,7 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals the checked AppKit runtime into a normal .app bundle.
+          Window link seals the responsive AppKit v0.9 runtime into a normal .app bundle.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
@@ -177,8 +194,10 @@ jobs:
           test -x "$CONSOLE_APP"
           actual="$("$CONSOLE_APP")"
           test "$actual" = "8"
-          "$KIT/patch" link examples/forms-navigation.patch --name IntelWindow --out dist-smoke/IntelWindow
-          test -x dist-smoke/IntelWindow.app/Contents/MacOS/IntelWindow
+          "$KIT/patch" link examples/responsive-window.patch --name IntelWindow --out dist-smoke/IntelWindow
+          WINDOW_APP=dist-smoke/IntelWindow.app/Contents/MacOS/IntelWindow
+          test -x "$WINDOW_APP"
+          "$WINDOW_APP" --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-macos-intel
@@ -219,7 +238,6 @@ jobs:
                ./patch link app.patch --out App
           Window/GUI linking is not supported on FreeBSD yet.
           EOF
-          chmod +x dist-freebsd/patch-freebsd-x64/patch
           (cd dist-freebsd && tar -czf patch-freebsd-x64.tar.gz patch-freebsd-x64)
           test -s dist-freebsd/patch-freebsd-x64.tar.gz
           node --test tests/offline-linker.test.js

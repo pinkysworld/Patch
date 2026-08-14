@@ -42,7 +42,8 @@ Alt while dragging: bypass snap</pre>
     <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox or Tabs controls.</p></div>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
     <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. The Left, Top, H center and V center commands align the other selected controls to the primary control and write the resulting positions back into Patch source.</p></div>
-    <div class="help-step"><b>5</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest.</p></div>
+    <div class="help-step"><b>5</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive. Anchor supports left/right/top/bottom combinations; Dock supports top, bottom, left, right and fill.</p></div>
+    <div class="help-step"><b>6</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is also honored when a built Standalone Web, direct native AOT or token-free Ready app is resized at runtime on Windows, macOS or Linux.</p></div>
   </section>
 
   <section class="page-section">
@@ -64,7 +65,7 @@ Alt while dragging: bypass snap</pre>
 
   <section class="page-section">
     <h2>Offline compiler</h2>
-    <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, macOS and Linux compiler downloads include their native runtime templates. FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>.</p>
+    <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, macOS and Linux compiler downloads include responsive native runtime v0.9 templates, so locally linked Window apps preserve Anchor/Dock behavior without a cloud build. FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>; native FreeBSD GUI linking is not yet claimed.</p>
   </section>
 
   <section class="page-section">

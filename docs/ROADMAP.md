@@ -104,13 +104,13 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] keyboard arrow-key positioning for selected controls with source-backed X/Y updates
 - [x] drag alignment guides with edge/center snapping and an Alt bypass
 - [x] source-backed Designer multi-select with shared pointer/keyboard movement and primary-relative alignment commands
+- [x] source-backed Anchor/Dock policies with Designer resizing and runtime reflow in Standalone Web, direct Win32/AppKit/GTK AOT and token-free sealed Ready Apps
 - [ ] Table/Grid and richer data controls
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
-- [ ] anchors/docking
 
-All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`.
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
@@ -121,14 +121,17 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] Native GUI IR **0.7** for Forms, Text/Button/Input/Checkbox, ComboBox/ListBox/Radio, Tabs, menus, informational dialogs and result-bearing Confirm/Open/Save dialogs
 - [x] direct-native AOT Win32/AppKit/GTK backends for the Native GUI IR 0.7 surface
 - [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
-- [x] sealed native GUI payload **v7** with result-dialog actions/events
-- [x] token-free sealed native Win32 runtime `native-win32-runtime-v0.8`
-- [x] token-free sealed native GTK3 runtime `native-linux-runtime-v0.8`
-- [x] token-free sealed native AppKit runtime `native-macos-runtime-v0.8`
-- [x] sealed native runtime accessibility parity with AOT backend 0.8
+- [x] direct-native runtime-responsive Anchor/Dock handling on Win32/AppKit/GTK
+- [x] frozen sealed native GUI payload **v7** / runtime **v0.8** compatibility line with result dialogs and accessibility
+- [x] sealed native GUI payload **v8** with source-backed Anchor/Dock transport
+- [x] token-free responsive sealed Win32 runtime `native-win32-runtime-v0.9`
+- [x] token-free responsive sealed GTK3 runtime `native-linux-runtime-v0.9`
+- [x] token-free responsive sealed AppKit runtime `native-macos-runtime-v0.9`
+- [x] sealed runtime v0.9 preserves v0.8 accessibility parity while adding runtime reflow
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
+- [x] offline compiler embeds runtime v0.9 and executes responsive Window-link smokes on Windows/Linux/Apple Silicon/macOS Intel
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
@@ -137,7 +140,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The v0.8 sealed-runtime item remains subject to the same exact-head release gate as every checked roadmap item: Windows/macOS/Linux runtime workflows must compile the runtime, seal the GUI corpus, execute semantic plus accessibility readback smoke checks and retain payload v7 before the branch is merged.
+The v0.9 sealed-runtime item remains subject to the same exact-head release gate as every checked roadmap item: Windows/macOS/Linux must compile the v0.9 runtime, seal payload v8, execute semantic/accessibility plus responsive geometry smokes, publish the runtime from `main`, and the offline compiler must subsequently link and execute responsive Window apps with those published runtimes before the consumer switch is merged.
 
 ## Highest-value remaining research work
 
@@ -186,3 +189,4 @@ The v0.8 sealed-runtime item remains subject to the same exact-head release gate
 15. Tabs page selection is transient renderer/native-toolkit state unless a future explicit language contract deliberately exposes it.
 16. Backend, Native GUI IR and sealed payload versions are independent contracts; an implementation-only backend/runtime change must not silently bump semantic/payload formats.
 17. Automated accessibility smoke evidence does not substitute for manual assistive-technology testing or imply WCAG conformance.
+18. Responsive layout metadata remains non-semantic UI metadata; runtime resize must not create hidden persistent state or Change History.

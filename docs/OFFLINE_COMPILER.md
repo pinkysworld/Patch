@@ -49,9 +49,11 @@ On macOS Intel, where Node SEA is not currently reliable, the portable kit inste
 
 ### Window / GUI
 
-On Windows, macOS and Linux the linker validates the current Window contract, lowers it to Native GUI IR and seals that checked GUI payload into the embedded native Win32, AppKit or GTK3 runtime. No Electron compatibility runtime is selected implicitly.
+On Windows, macOS and Linux the linker validates the current Window contract, lowers it to Native GUI IR and seals payload **v8** into the embedded native Win32, AppKit or GTK3 runtime **v0.9**. No Electron compatibility runtime is selected implicitly.
 
-Unsupported GUI behavior fails closed during the existing Native GUI IR/preflight stages.
+Source-backed `# @layout anchor ...` and `# @layout dock ...` policies are carried into payload v8. A linked native app therefore responds to real runtime window resizing with the same Anchor/Dock rules used by Standalone Web and direct AOT builds. Fixed controls remain fixed. Layout metadata does not create Patch state or Change History.
+
+The offline-compiler workflow proves this path by linking and executing a responsive Window smoke app on Windows, Linux, Apple Silicon macOS and Intel macOS. Unsupported GUI behavior still fails closed during the existing Native GUI IR/preflight stages.
 
 ### FreeBSD
 
@@ -66,10 +68,10 @@ Native FreeBSD Window/GUI linking is not claimed.
 
 | Host | Console output | Window output | Local runtime requirement |
 | --- | --- | --- | --- |
-| Windows x64 | `.exe` | native Win32 `.exe` | none for compiler; generated app uses Windows APIs |
-| macOS arm64 | `.app` | native AppKit `.app` | none |
-| macOS Intel | portable `.app` with embedded Node + Wasm | native AppKit `.app` | none; Intel Node ships in the kit |
-| Linux x64 | executable | native GTK3 executable | compatible system libraries; GUI output expects GTK3 |
+| Windows x64 | `.exe` | responsive native Win32 `.exe` | none for compiler; generated app uses Windows APIs |
+| macOS arm64 | `.app` | responsive native AppKit `.app` | none |
+| macOS Intel | portable `.app` with embedded Node + Wasm | responsive native AppKit `.app` | none; Intel Node ships in the kit |
+| Linux x64 | executable | responsive native GTK3 executable | compatible system libraries; GUI output expects GTK3 |
 | FreeBSD x64 | executable via C99 + `cc` | unsupported | Node 22+ and `cc` for the portable kit |
 
 The Apple Silicon compiler binary is ad-hoc signed by the build workflow. The Intel kit is an archive of ordinary executable/runtime files. Neither is claimed to be Developer ID notarized. Windows compiler releases are not claimed to be Authenticode-signed unless separate signing evidence is published.
@@ -89,11 +91,12 @@ The offline compiler does **not** maintain a second parser, compiler, Change IR 
 The distribution build binds to the existing published runtime lines:
 
 - Console runtime on SEA-supported hosts: host-built generic Patch SEA runtime compatible with the current compiler
-- Win32 GUI runtime: `native-win32-runtime-v0.8`
-- AppKit GUI runtime: `native-macos-runtime-v0.8`
-- GTK3 GUI runtime: `native-linux-runtime-v0.8`
+- Win32 GUI runtime: `native-win32-runtime-v0.9`
+- AppKit GUI runtime: `native-macos-runtime-v0.9`
+- GTK3 GUI runtime: `native-linux-runtime-v0.9`
+- sealed native GUI payload: **v8**
 
-The runtime versions and the offline compiler distribution version are independent contracts.
+Runtime v0.9 preserves the v0.8 accessibility behavior and adds live Anchor/Dock reflow. Payload v7 remains supported only for the frozen v0.8 runtime compatibility line. The runtime versions and the offline compiler distribution version are independent contracts.
 
 ## Security and trust boundary
 

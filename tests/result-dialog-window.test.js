@@ -36,13 +36,8 @@ test('parser records confirm/open/save result dialogs and their synthetic events
   assert.deepEqual(findNodes(ast, 'confirmDialog').map(node => node.id), ['reset_confirm']);
   assert.deepEqual(findNodes(ast, 'openFileDialog').map(node => node.id), ['open_result']);
   assert.deepEqual(findNodes(ast, 'saveFileDialog').map(node => node.id), ['save_result']);
-
   const events = findNodes(ast, 'event').map(node => `${node.control}:${node.event}`);
-  for (const expected of [
-    'reset_confirm:confirmed', 'reset_confirm:cancelled',
-    'open_result:chosen', 'open_result:cancelled',
-    'save_result:chosen', 'save_result:cancelled'
-  ]) assert.ok(events.includes(expected), `missing ${expected}`);
+  for (const expected of ['reset_confirm:confirmed','reset_confirm:cancelled','open_result:chosen','open_result:cancelled','save_result:chosen','save_result:cancelled']) assert.ok(events.includes(expected), `missing ${expected}`);
 });
 
 test('open file remains distinct from named Form navigation', () => {
@@ -55,10 +50,7 @@ test('open file remains distinct from named Form navigation', () => {
 });
 
 test('confirm requires exactly title and message before its result id', () => {
-  assert.throws(
-    () => parse(`window "Main":\n  button "Go" as go\nwhen go clicked:\n  confirm "Only title" as answer`),
-    error => error instanceof PatchSyntaxError && /needs exactly a title and message/.test(error.message)
-  );
+  assert.throws(() => parse(`window "Main":\n  button "Go" as go\nwhen go clicked:\n  confirm "Only title" as answer`), error => error instanceof PatchSyntaxError && /needs exactly a title and message/.test(error.message));
 });
 
 test('Change IR 0.10 keeps result dialog actions explicit without hidden state', () => {
@@ -79,26 +71,15 @@ test('Window validation accepts only the result events each dialog can actually 
   const summary = validateWindowRuntimeSupport(compiled);
   assert.equal(summary.resultDialogs, 3);
   assert.equal(summary.events, 9);
-
   const wrongConfirm = compile(`window "Main":\n  button "Ask" as ask\nwhen ask clicked:\n  confirm "Question", "Continue?" as answer\nwhen answer chosen:\n  show value`, { kind: 'window' });
-  assert.throws(
-    () => validateWindowRuntimeSupport(wrongConfirm),
-    error => error instanceof WindowBuildError && /supports 'confirmed' or 'cancelled'/.test(error.message)
-  );
-
+  assert.throws(() => validateWindowRuntimeSupport(wrongConfirm), error => error instanceof WindowBuildError && /supports 'confirmed' or 'cancelled'/.test(error.message));
   const wrongFile = compile(`window "Main":\n  button "Open" as open_button\nwhen open_button clicked:\n  open file "Open" as picker\nwhen picker confirmed:\n  show 1`, { kind: 'window' });
-  assert.throws(
-    () => validateWindowRuntimeSupport(wrongFile),
-    error => error instanceof WindowBuildError && /supports 'chosen' or 'cancelled'/.test(error.message)
-  );
+  assert.throws(() => validateWindowRuntimeSupport(wrongFile), error => error instanceof WindowBuildError && /supports 'chosen' or 'cancelled'/.test(error.message));
 });
 
 test('result dialog ids share the application UI source namespace', () => {
   const compiled = compile(`window "Main":\n  button "Ask" as answer\nwhen answer clicked:\n  confirm "Question", "Continue?" as answer\nwhen answer confirmed:\n  show 1`, { kind: 'window' });
-  assert.throws(
-    () => validateWindowRuntimeSupport(compiled),
-    error => error instanceof WindowBuildError && /declared more than once/.test(error.message)
-  );
+  assert.throws(() => validateWindowRuntimeSupport(compiled), error => error instanceof WindowBuildError && /declared more than once/.test(error.message));
 });
 
 test('Window event adapter v0.6 carries chosen path only as transient text value', () => {
@@ -121,20 +102,12 @@ test('Native GUI IR 0.7 models result dialog actions and typed synthetic result 
   assert.equal(PATCH_NATIVE_GUI_IR_VERSION, '0.7');
   assert.equal(ir.version, '0.7');
   assert.deepEqual(ir.states, [{ name: 'selected_path', type: 'text', initial: '' }]);
-
   const resetClick = ir.events.find(event => event.control === 'reset_button');
   const openClick = ir.events.find(event => event.control === 'open_button');
   const saveClick = ir.events.find(event => event.control === 'save_button');
-  assert.deepEqual(resetClick.actions[0], {
-    kind: 'confirmDialog', form: 'main', id: 'reset_confirm', title: 'Reset selection?', message: 'Clear the selected path?'
-  });
-  assert.deepEqual(openClick.actions[0], {
-    kind: 'openFileDialog', form: 'main', id: 'open_result', title: 'Open Patch file'
-  });
-  assert.deepEqual(saveClick.actions[0], {
-    kind: 'saveFileDialog', form: 'main', id: 'save_result', title: 'Save Patch file'
-  });
-
+  assert.deepEqual(resetClick.actions[0], { kind: 'confirmDialog', form: 'main', id: 'reset_confirm', title: 'Reset selection?', message: 'Clear the selected path?' });
+  assert.deepEqual(openClick.actions[0], { kind: 'openFileDialog', form: 'main', id: 'open_result', title: 'Open Patch file' });
+  assert.deepEqual(saveClick.actions[0], { kind: 'saveFileDialog', form: 'main', id: 'save_result', title: 'Save Patch file' });
   const chosen = ir.events.find(event => event.control === 'open_result' && event.event === 'chosen');
   const cancelled = ir.events.find(event => event.control === 'open_result' && event.event === 'cancelled');
   const confirmed = ir.events.find(event => event.control === 'reset_confirm' && event.event === 'confirmed');
@@ -144,12 +117,10 @@ test('Native GUI IR 0.7 models result dialog actions and typed synthetic result 
   assert.deepEqual(chosen.actions[0].ops, [{ op: 'set', value: { kind: 'eventValue' } }]);
 });
 
-test('sealed native payload advances to v7 for result event/action contract', () => {
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
+test('sealed native payload v8 preserves the result event/action contract', () => {
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
   const payload = encodeNativeGuiPayload(buildNativeGuiIR(compile(example, { kind: 'window', name: 'ResultDialogNative' })));
   const text = new TextDecoder().decode(payload);
-  for (const marker of ['reset_confirm', 'open_result', 'save_result', 'Reset selection?', 'Open Patch file', 'Save Patch file']) {
-    assert.match(text, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  }
+  for (const marker of ['reset_confirm', 'open_result', 'save_result', 'Reset selection?', 'Open Patch file', 'Save Patch file']) assert.match(text, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(text, /when open_result chosen/);
 });
