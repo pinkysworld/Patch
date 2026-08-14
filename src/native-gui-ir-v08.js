@@ -4,6 +4,7 @@ import {
   validateNativeGuiIR,
   NativeGuiError
 } from './native-gui-ir.js';
+import { attachWindowLayoutPolicies } from './window-layout-policy.js';
 
 export const PATCH_NATIVE_GUI_IR_V08_VERSION = '0.8';
 
@@ -21,6 +22,7 @@ export function buildNativeGuiIRV08(compiled) {
   }
 
   const cloned = structuredClone(compiled);
+  if (cloned.windowLayoutPolicy) attachWindowLayoutPolicies(cloned.ast, cloned.windowLayoutPolicy);
   const tableSpecs = [];
   const usedNames = collectNames(cloned.ast);
   let ordinal = 0;
