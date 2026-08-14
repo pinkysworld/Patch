@@ -22,7 +22,6 @@ export function buildNativeGuiIRV08(compiled) {
   }
 
   const cloned = structuredClone(compiled);
-  if (cloned.windowLayoutPolicy) attachWindowLayoutPolicies(cloned.ast, cloned.windowLayoutPolicy);
   const tableSpecs = [];
   const usedNames = collectNames(cloned.ast);
   let ordinal = 0;
@@ -62,6 +61,10 @@ export function buildNativeGuiIRV08(compiled) {
   });
 
   cloned.ast = rewriteControls(cloned.ast);
+  // The Table rewrite above intentionally uses ordinary enumerable AST data.
+  // Responsive policies are non-enumerable by contract, so restore them only
+  // after the rewrite has produced the final v0.7-compatible control order.
+  if (cloned.windowLayoutPolicy) attachWindowLayoutPolicies(cloned.ast, cloned.windowLayoutPolicy);
 
   for (const spec of tableSpecs) {
     cloned.ast.unshift({
