@@ -44,6 +44,6 @@ test('GTK backend v0.9 keeps accessibility and responsive wrapper behavior', () 
   assert.match(cpp, /atk_object_set_name/);
   assert.match(cpp, /gTableViews\[0\]/);
   assert.match(cpp, /ApplyPatchResponsiveLayout/);
-  assert.match(cpp, /gtk_fixed_move\(GTK_FIXED\(gFixed\[0\]\), gControls\[0\]/);
+  assert.match(cpp, /gtk_fixed_move\(GTK_FIXED\(gFixed\[formIndex\]\), gControls\[0\]/);
   assert.match(cpp, /gtk_widget_set_size_request\(gControls\[0\]/);
 });
