@@ -12,7 +12,6 @@ on:
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
       - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-responsive-runtime.yml
   push:
     branches: [main]
     paths:
@@ -23,7 +22,6 @@ on:
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
       - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-responsive-runtime.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -43,17 +41,17 @@ jobs:
           - os: windows-latest
             platform: windows
             asset: patch-windows-x64.exe
-            gui_tag: native-win32-runtime-v0.9
+            gui_tag: native-win32-runtime-v0.8
             gui_asset: patch-windows-native-gui-runtime.exe
           - os: ubuntu-latest
             platform: linux
             asset: patch-linux-x64
-            gui_tag: native-linux-runtime-v0.9
+            gui_tag: native-linux-runtime-v0.8
             gui_asset: patch-linux-native-gui-runtime.bin
           - os: macos-15
             platform: macos
             asset: patch-macos-arm64
-            gui_tag: native-macos-runtime-v0.9
+            gui_tag: native-macos-runtime-v0.8
             gui_asset: patch-macos-native-gui-runtime.bin
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -68,7 +66,7 @@ jobs:
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Download checked responsive native GUI runtime
+      - name: Download checked native GUI runtime
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -142,7 +140,7 @@ jobs:
           cp package.json LICENSE "$ROOT/"
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
-          gh release download 'native-macos-runtime-v0.9' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
+          gh release download 'native-macos-runtime-v0.8' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
           mv "$ROOT/runtime/patch-macos-native-gui-runtime.bin" "$ROOT/runtime/gui.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
@@ -161,7 +159,7 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals the checked responsive AppKit runtime into a normal .app bundle.
+          Window link seals the checked AppKit runtime into a normal .app bundle.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
@@ -221,6 +219,7 @@ jobs:
                ./patch link app.patch --out App
           Window/GUI linking is not supported on FreeBSD yet.
           EOF
+          chmod +x dist-freebsd/patch-freebsd-x64/patch
           (cd dist-freebsd && tar -czf patch-freebsd-x64.tar.gz patch-freebsd-x64)
           test -s dist-freebsd/patch-freebsd-x64.tar.gz
           node --test tests/offline-linker.test.js
