@@ -8,8 +8,9 @@ export const PATCH_WINDOW_EVENTS_VERSION = '0.6';
  * Persistent state is never updated by this adapter. `changed` control values
  * and `chosen` file-dialog paths are exposed only as local `value`; source must
  * use an ordinary semantic `change` to commit them. Checkbox `changed` values
- * are Boolean. Input, ComboBox, ListBox, Radio and file-dialog `chosen` values
- * are text.
+ * are Boolean. Input, ComboBox, ListBox and Radio `changed` plus file-dialog
+ * `chosen` values are text. Table `changed` carries the selected row as a
+ * transient list of display strings.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -33,6 +34,9 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
     if (['input', 'combo', 'listbox', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
       throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
     }
+    if (controlType === 'table' && (!Array.isArray(payload.value) || !payload.value.every(cell => typeof cell === 'string'))) {
+      throw new PatchRuntimeError(`The 'changed' action for table '${control}' needs a row list of text event-local values.`);
+    }
   }
 
   try {
@@ -40,7 +44,7 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
     const matches = (runtime.events ?? []).filter(handler => handler.control === control && handler.event === event);
     if (!matches.length) throw new PatchRuntimeError(`There is no '${event}' action for '${control}'.`);
 
-    const locals = { value: payload.value };
+    const locals = { value: structuredClone(payload.value) };
     for (const handler of matches) {
       runtime.withCause(
         { kind: 'event', control, event, line: handler.line },
