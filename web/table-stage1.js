@@ -12,6 +12,7 @@ const designerCanvas = document.querySelector('#designerCanvas');
 const appView = document.querySelector('#app');
 const addTable = document.querySelector('#addTable');
 const observed = new Map();
+const appSelections = new Map();
 let scheduled = false;
 let selectedTable = null;
 
@@ -111,7 +112,11 @@ function scheduleSync() {
 }
 
 function syncContainer(container, designer) {
-  const windows = parse(code.value).filter(node => node.kind === 'window');
+  const ast = parse(code.value);
+  const windows = ast.filter(node => node.kind === 'window');
+  const changedHandlers = new Set(ast
+    .filter(node => node.kind === 'event' && node.event === 'changed')
+    .map(node => node.control));
   const shells = [...container.querySelectorAll('.patch-window')];
   shells.forEach((shell, windowIndex) => {
     const body = shell.querySelector('.patch-window-body');
@@ -125,7 +130,12 @@ function syncContainer(container, designer) {
 
     sourceControls.forEach((node, controlIndex) => {
       if (node.kind === 'uiControl' && node.control === 'table') {
-        const element = createTable(node);
+        const key = `${windowIndex}:${node.id ?? controlIndex}`;
+        const element = createTable(node, {
+          interactive: !designer,
+          key,
+          hasHandler: Boolean(node.id && changedHandlers.has(node.id))
+        });
         element.dataset.windowIndex = String(windowIndex);
         element.dataset.controlIndex = String(controlIndex);
         const anchor = baseChildren[renderedIndex] ?? body.querySelector(':scope > .patch-form-resize-handle') ?? null;
@@ -146,12 +156,14 @@ function syncContainer(container, designer) {
   }
 }
 
-function createTable(node) {
+function createTable(node, options = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'patch-table-wrap patch-table-stage1-control';
   wrap.dataset.controlId = node.id ?? '';
+  if (options.interactive) wrap.dataset.patchInteractive = 'true';
   const table = document.createElement('table');
   table.className = 'patch-table';
+  if (node.id) table.setAttribute('aria-label', `${node.id} table`);
   const head = document.createElement('thead');
   const headRow = document.createElement('tr');
   for (const column of node.columns ?? []) {
@@ -162,18 +174,56 @@ function createTable(node) {
   }
   head.appendChild(headRow);
   const body = document.createElement('tbody');
-  for (const row of node.rows ?? []) {
+  const rows = (node.rows ?? []).map(row => row.map(cell => displayExpression(cell)));
+  let selectedIndex = options.interactive ? appSelections.get(options.key) : null;
+  if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= rows.length) selectedIndex = null;
+
+  rows.forEach((row, rowIndex) => {
     const tr = document.createElement('tr');
     for (let index = 0; index < (node.columns ?? []).length; index += 1) {
       const td = document.createElement('td');
-      td.textContent = displayExpression(row[index] ?? '');
+      td.textContent = row[index] ?? '';
       tr.appendChild(td);
     }
+    if (options.interactive) {
+      const selected = rowIndex === selectedIndex;
+      tr.setAttribute('aria-selected', selected ? 'true' : 'false');
+      tr.tabIndex = selected || (selectedIndex === null && rowIndex === 0) ? 0 : -1;
+      tr.classList.toggle('patch-table-selected', selected);
+      tr.addEventListener('click', () => selectAppRow(wrap, options, node, rowIndex, row));
+      tr.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectAppRow(wrap, options, node, rowIndex, row);
+          return;
+        }
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        const next = Math.max(0, Math.min(rows.length - 1, rowIndex + direction));
+        body.children[next]?.focus();
+      });
+    }
     body.appendChild(tr);
-  }
+  });
   table.append(head, body);
   wrap.appendChild(table);
   return wrap;
+}
+
+function selectAppRow(wrap, options, node, rowIndex, row) {
+  appSelections.set(options.key, rowIndex);
+  for (const [index, current] of [...wrap.querySelectorAll('tbody > tr')].entries()) {
+    const selected = index === rowIndex;
+    current.classList.toggle('patch-table-selected', selected);
+    current.setAttribute('aria-selected', selected ? 'true' : 'false');
+    current.tabIndex = selected ? 0 : -1;
+  }
+  if (!options.hasHandler || !node.id) return;
+  wrap.dispatchEvent(new CustomEvent('patch-studio-table-changed', {
+    bubbles: true,
+    detail: { control: node.id, value: [...row] }
+  }));
 }
 
 function decorateDesignerTable(element, node, selection) {
@@ -285,6 +335,9 @@ function installStyles() {
 .patch-table th:last-child,.patch-table td:last-child{border-right:0}
 .patch-table th{position:sticky;top:0;background:#f4f4f5;font-weight:750}
 .patch-table tr:last-child td{border-bottom:0}
+.patch-table-stage1-control[data-patch-interactive="true"] tbody tr{cursor:pointer;outline:none}
+.patch-table-stage1-control[data-patch-interactive="true"] tbody tr:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.patch-table-stage1-control[data-patch-interactive="true"] tbody tr.patch-table-selected td{background:color-mix(in srgb,currentColor 10%,transparent)}
 @media(prefers-color-scheme:dark){.patch-table-wrap{background:#1b1d22;color:#f4f4f5;border-color:#41444e}.patch-table th,.patch-table td{border-color:#34363e}.patch-table th{background:#24262d}}
 `;
   document.head.appendChild(style);
