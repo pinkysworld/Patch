@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { PATCH_SEALED_NATIVE_GUI_MAGIC, PATCH_SEALED_NATIVE_GUI_VERSION, PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION } from '../src/sealed-native-gui.js';
+import { PATCH_SEALED_NATIVE_GUI_MAGIC, PATCH_SEALED_NATIVE_GUI_VERSION } from '../src/sealed-native-gui.js';
 
 const win = fs.readFileSync('native-runtime/win32-sealed-gui-v08.cpp', 'utf8');
 const mac = fs.readFileSync('native-runtime/appkit-sealed-gui-v08.mm', 'utf8');
@@ -11,10 +11,9 @@ const macWorkflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml'
 const linuxWorkflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 const pagesWorkflow = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 
-test('sealed runtime accessibility v0.8 remains the frozen payload-v7 release line', () => {
+test('sealed runtime accessibility v0.8 deliberately preserves payload v7 and overlays v0.7 runtime logic', () => {
   assert.equal(PATCH_SEALED_NATIVE_GUI_MAGIC, 'PCHGUI01');
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
-  assert.equal(PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION, 7);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   assert.match(win, /v0\.8/);
   assert.match(mac, /v0\.8/);
   assert.match(gtk, /v0\.8/);
@@ -29,30 +28,45 @@ test('sealed runtime accessibility v0.8 remains the frozen payload-v7 release li
 
 test('sealed Win32 v0.8 writes and reads Microsoft Active Accessibility names', () => {
   for (const marker of [
-    'IAccPropServices', 'SetHwndPropStr', 'PROPID_ACC_NAME', 'AccessibleObjectFromWindow',
-    'IID_IAccessible', 'get_accName', 'oleaut32.lib', 'ApplyPatchAccessibilityV08',
-    'RunPatchAccessibilitySmokeV08', 'CK_INPUT', 'CK_COMBO', 'CK_LISTBOX', 'CK_TABS',
-    'CK_RADIO', 'PatchRadioNameV08'
+    'IAccPropServices',
+    'SetHwndPropStr',
+    'PROPID_ACC_NAME',
+    'AccessibleObjectFromWindow',
+    'IID_IAccessible',
+    'get_accName',
+    'oleaut32.lib',
+    'ApplyPatchAccessibilityV08',
+    'RunPatchAccessibilitySmokeV08',
+    'CK_INPUT', 'CK_COMBO', 'CK_LISTBOX', 'CK_TABS', 'CK_RADIO',
+    'PatchRadioNameV08'
   ]) assert.ok(win.includes(marker), marker);
 });
 
 test('sealed AppKit v0.8 writes and reads accessibility labels', () => {
   for (const marker of [
-    'setAccessibilityLabel', 'accessibilityLabel', 'ApplyPatchAccessibilityV08',
-    'RunPatchAccessibilitySmokeV08', 'CK_INPUT', 'CK_COMBO', 'CK_LISTBOX', 'CK_TABS',
-    'CK_RADIO', 'PatchRadioNameV08'
+    'setAccessibilityLabel',
+    'accessibilityLabel',
+    'ApplyPatchAccessibilityV08',
+    'RunPatchAccessibilitySmokeV08',
+    'CK_INPUT', 'CK_COMBO', 'CK_LISTBOX', 'CK_TABS', 'CK_RADIO',
+    'PatchRadioNameV08'
   ]) assert.ok(mac.includes(marker), marker);
 });
 
 test('sealed GTK3 v0.8 writes and reads ATK accessible names', () => {
   for (const marker of [
-    '#include <atk/atk.h>', 'gtk_widget_get_accessible', 'atk_object_set_name',
-    'atk_object_get_name', 'ApplyPatchAccessibilityV08', 'RunPatchAccessibilitySmokeV08',
-    'CK_INPUT', 'CK_COMBO', 'CK_LISTBOX', 'CK_TABS', 'CK_RADIO', 'PatchRadioNameV08'
+    '#include <atk/atk.h>',
+    'gtk_widget_get_accessible',
+    'atk_object_set_name',
+    'atk_object_get_name',
+    'ApplyPatchAccessibilityV08',
+    'RunPatchAccessibilitySmokeV08',
+    'CK_INPUT', 'CK_COMBO', 'CK_LISTBOX', 'CK_TABS', 'CK_RADIO',
+    'PatchRadioNameV08'
   ]) assert.ok(gtk.includes(marker), marker);
 });
 
-test('all frozen sealed runtime workflows still build v0.8 and assert payload version 7', () => {
+test('all sealed runtime workflows build v0.8 but still assert payload version 7', () => {
   assert.match(winWorkflow, /win32-sealed-gui-v08\.cpp/);
   assert.match(winWorkflow, /native-win32-runtime-v0\.8/);
   assert.match(winWorkflow, /\$version -ne 7/);
@@ -66,9 +80,9 @@ test('all frozen sealed runtime workflows still build v0.8 and assert payload ve
   assert.match(linuxWorkflow, /readUInt32LE\(sealed\.length-12\)!==7/);
 });
 
-test('Pages is expected to move from v0.8 to the dedicated responsive v0.9 release line in this product batch', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v0\.[89]/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0\.[89]/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0\.[89]/);
+test('Pages consumes only the accessibility-capable sealed runtime release line', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v0\.8/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0\.8/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0\.8/);
   assert.doesNotMatch(pagesWorkflow, /native-(?:win32|linux|macos)-runtime-v0\.7/);
 });
