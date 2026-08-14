@@ -58,3 +58,29 @@ test('Table backend adapter preserves flattened index and parent metadata', () =
   assert.equal(adapted.controls[0].parentTabIndex, -1);
   assert.equal(adapted.controls[0].pageIndex, -1);
 });
+
+test('Table backend adapter preserves non-serialized responsive policies for Table and sibling controls', () => {
+  const responsive = `create text status = "idle"
+
+window "People" as main size 520, 320:
+  # @layout anchor left right top
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+  # @layout anchor right bottom
+  button "Apply" as apply at 396, 260 size 100, 36
+
+when people changed:
+  change status:
+    set = "selected"
+`;
+  const ir = buildNativeGuiIRV08(compile(responsive, { kind: 'window', name: 'People' }));
+  assert.deepEqual(ir.forms[0].controls[0].layout.policy, { kind: 'anchor', edges: ['left', 'right', 'top'] });
+  assert.deepEqual(ir.forms[0].controls[1].layout.policy, { kind: 'anchor', edges: ['right', 'bottom'] });
+
+  const adapted = adaptNativeTablesForLegacyBackend(ir);
+  assert.deepEqual(adapted.tables[0].layout.policy, { kind: 'anchor', edges: ['left', 'right', 'top'] });
+  assert.deepEqual(adapted.legacyIr.forms[0].controls[0].layout.policy, { kind: 'anchor', edges: ['left', 'right', 'top'] });
+  assert.deepEqual(adapted.legacyIr.forms[0].controls[1].layout.policy, { kind: 'anchor', edges: ['right', 'bottom'] });
+  assert.doesNotMatch(JSON.stringify(adapted.legacyIr), /"policy"/);
+});
