@@ -11,9 +11,9 @@ const gui = buildNativeGuiIR(compile(source, { name: 'LinuxNativeTest', kind: 'w
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 
-test('browser package seals Native GUI IR v0.7 payload v8 into one Linux ELF executable', () => {
+test('browser package seals Native GUI IR v0.7 payload v7 into one Linux ELF executable', () => {
   assert.equal(gui.version, '0.7');
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 10, 20, 30, 40]);
   const ready = buildLinuxNativeGuiPackage(fakeElf, gui, { name: 'My Linux App' });
   assert.equal(ready.filename, 'My_Linux_App-linux-window.zip');
