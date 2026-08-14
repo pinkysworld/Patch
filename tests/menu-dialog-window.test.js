@@ -60,9 +60,9 @@ test('Window validation and Native GUI IR 0.7 model Menu/Dialog parity explicitl
   }]);
 });
 
-test('sealed native payload v8 includes menu/dialog strings', () => {
+test('sealed native payload v7 includes menu/dialog strings', () => {
   const ir = buildNativeGuiIR(compile(source, { name: 'MenuDialogDemo', kind: 'window' }));
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 7);
   const payload = encodeNativeGuiPayload(ir);
   const text = new TextDecoder().decode(payload);
   for (const marker of ['Help', 'about_item', 'About', 'About Patch', 'Native menus and informational dialogs']) assert.ok(text.includes(marker));
