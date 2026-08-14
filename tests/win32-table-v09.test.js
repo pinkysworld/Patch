@@ -33,7 +33,12 @@ test('Win32 backend v0.9 maps Native GUI IR 0.8 Table to report-mode ListView', 
   assert.match(cpp, /LVN_ITEMCHANGED/);
   assert.match(cpp, /HandleTableNotify/);
   assert.match(cpp, /std::vector<std::wstring> PatchTableRow_0/);
-  assert.match(cpp, /static void Event_0\(const std::vector<std::wstring>& eventValue\)/);
+  assert.match(cpp, /static void Event_0\(const std::vector<std::wstring>& eventValue\);/);
+  assert.match(cpp, /static void Event_0\(const std::vector<std::wstring>& eventValue\) \{/);
+  assert.ok(
+    cpp.indexOf('static void Event_0(const std::vector<std::wstring>& eventValue);') < cpp.indexOf('static bool HandleTableNotify'),
+    'Table event must be declared before Win32 notification dispatch'
+  );
   assert.match(cpp, /gPatchTableSelectionCount/);
   assert.doesNotMatch(cpp, /__patch_native_table_shadow_/);
   assert.doesNotMatch(cpp, /LBN_SELCHANGE\) \{ Event_0\(ListBoxText/);
