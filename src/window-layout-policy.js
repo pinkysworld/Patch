@@ -118,7 +118,7 @@ function resolveSourceLineIndex(rows, sourceLine) {
   return raw >= 1 && raw <= rows.length ? raw - 1 : -1;
 }
 
-function looksLikeControlLine(line) { return /^\s*(?:text|button|input|checkbox|radio|combo|listbox|tabs)\b/i.test(String(line)); }
+function looksLikeControlLine(line) { return /^\s*(?:text|button|input|checkbox|radio|combo|listbox|table|tabs)\b/i.test(String(line)); }
 function sourceRows(source) { return String(source ?? '').replace(/\r\n/g, '\n').split('\n'); }
 
 function dockLayout(layout, side, formWidth, formHeight) {
