@@ -1,6 +1,6 @@
 # Patch Build Targets
 
-Patch uses one source language and one compiler pipeline for console and window applications.
+Patch uses one source language and one compiler pipeline for console and window applications. Target support is versioned by language/compiler surface, Native GUI IR, AOT backend and sealed runtime rather than treating every desktop path as interchangeable.
 
 ## Current portable targets
 
@@ -8,88 +8,99 @@ Patch 0.2 beta currently builds:
 
 | Target | Status | Purpose |
 |---|---|---|
-| `.patchapp` | implemented | human-readable portable Patch application bundle containing manifest, source and Change IR |
-| `.wasm` bootstrap | implemented | valid WebAssembly module containing Patch source + Change IR for a Patch host |
-| browser/Patch Studio execution | implemented | interpreter/runtime path for console and current Patch UI programs |
-
-The bootstrap `.wasm` is intentionally distinguished from the next stage, **direct Change IR-to-Wasm execution**.
+| `.patchapp` | implemented | transparent portable Patch application bundle containing manifest, source and Change IR |
+| bootstrap `.wasm` | implemented | instantiable WebAssembly module carrying the compiled Patch payload for a Patch host |
+| direct `.wasm` | implemented subset | direct Change IR-to-Wasm execution for the supported numeric/formal subset |
+| C99 | implemented subset | portable console code generation and FreeBSD escape hatch |
+| standalone Web | implemented | single-file Console and Window web applications |
+| native desktop | implemented with explicit surfaces | Win32, AppKit and GTK3 direct AOT plus token-free sealed Ready apps for their documented control surfaces |
 
 ## Canonical target matrix
 
-| Application | Windows | macOS | Linux | BSD/Unix | Browser |
+| Application | Windows | macOS | Linux | FreeBSD | Browser |
 |---|---|---|---|---|---|
-| Console | `.exe` | native CLI | native CLI | native/C fallback | direct Wasm/runtime |
-| Window | GUI `.exe` | `.app` | graphical executable | SDL3 graphical executable | Web/Wasm app |
-| Portable | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` where runtime exists | `.patchapp` / `.wasm` |
-| IDE | browser/native shell | browser/native shell | browser/native shell | browser | browser/PWA |
+| Console | sealed `.exe` | native `.app`/CLI package | sealed executable | C99 + `cc` | direct Wasm/runtime |
+| Window, stable sealed surface | native Win32 `.exe` | AppKit `.app` | GTK3 executable | unsupported | Standalone Web |
+| Window, direct AOT Table extension | backend 0.9 | backend 0.9 | backend 0.9 | unsupported | Standalone Web |
+| Portable | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / C99 where applicable | `.patchapp` / `.wasm` |
+| IDE | browser/PWA | browser/PWA | browser/PWA | browser where available | browser/PWA |
+
+## Native Window contracts
+
+The stable direct and sealed desktop surfaces are intentionally separated.
+
+### Stable Native GUI IR 0.7 surface
+
+Native GUI IR **0.7** covers Forms, Text, Button, Input, Checkbox, ComboBox, ListBox, Radio, Tabs, menus, informational dialogs and Confirm/Open/Save result dialogs. Direct AOT backend **0.8** maps that surface to Win32, AppKit and GTK3. Token-free sealed payload **v8** / runtime **v0.9** carries the same control surface plus source-backed responsive Anchor/Dock metadata.
+
+### Table direct-AOT extension
+
+Native GUI IR **0.8** is an opt-in extension for Table/Grid. It preserves columns/rows and gives Table `changed` a transient `text-list` event value without adding persistent native list state.
+
+AOT backend **0.9** maps that Table contract to:
+
+- Windows: report-mode `WC_LISTVIEWW`;
+- macOS: multi-column `NSTableView` inside `NSScrollView`;
+- Linux: `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow`.
+
+The dedicated `Native Table v0.9` workflow compiles and executes the same Table source on Windows/MSVC, macOS/AppKit and Linux/GTK3 and checks native selection dispatch.
+
+**Table is not yet part of sealed payload v8/runtime v0.9 or offline `patch link`.** Those paths must fail closed for Table until an explicit sealed Table format and consumer are implemented and smoke-tested.
 
 ## Windows
 
-Patch distinguishes console and graphical application packaging.
+Current Windows paths include:
 
-Planned native outputs:
-
-- Console: PE executable with console behavior.
-- Window: PE graphical application without an unwanted terminal window.
-- Architectures: x86-64 first, ARM64 next.
-
-Patch UI should eventually have a native Windows backend for standard windows, controls, menus, dialogs, clipboard, drag/drop and OS integration.
+- Console: project-named sealed PE executable;
+- Window stable surface: direct Win32 AOT or token-free sealed Win32 runtime;
+- Table: direct Win32 AOT backend 0.9 only at the current stage;
+- architecture: x86-64 is the primary release target;
+- signing: machinery exists, but real credentialed signing evidence is still separate work.
 
 ## macOS
 
-Planned native outputs:
+Current macOS paths include:
 
-- Console: native command-line executable.
-- Window: normal `.app` application bundle.
-- Release packaging: code-signing/notarization hooks.
-- Architecture goal: Universal application/CLI packages when practical, covering Apple Silicon and Intel.
-
-Patch UI should eventually have a native AppKit/Cocoa backend.
+- Console: native package/CLI path;
+- Window stable surface: direct AppKit AOT or token-free sealed AppKit runtime;
+- Table: direct AppKit AOT backend 0.9 only at the current stage;
+- Apple Silicon offline compiler: standalone binary;
+- Intel offline compiler: portable kit with bundled Intel Node runtime;
+- Developer ID notarization is not claimed without separate evidence.
 
 ## Linux
 
-Planned native outputs:
+Current Linux paths include:
 
-- Console: native executable.
-- Window: graphical executable using the portable Patch UI backend initially.
-- Later packaging: AppImage and common distribution formats where useful.
+- Console: native executable;
+- Window stable surface: direct GTK3 AOT or token-free sealed GTK3 runtime;
+- Table: direct GTK3 AOT backend 0.9 only at the current stage;
+- generated GUI output expects compatible normal system GTK3 libraries.
 
-## BSD and other Unix-like systems
+Additional package formats such as AppImage remain future distribution work rather than a language requirement.
 
-Patch should not pretend that there is one universal Unix GUI API. The design therefore separates language UI from host UI.
+## FreeBSD and other Unix-like systems
 
-Strategy:
+Patch does not pretend that there is one universal Unix GUI API. FreeBSD currently has a tested Console path through portable C99 followed by local `cc`. Native FreeBSD Window/GUI output is not claimed.
 
-- SDL3-based Patch UI backend where supported;
-- Web/PWA Studio wherever a modern browser exists;
-- `.patchapp`/`.wasm` where a Patch host is available;
-- C99 code generation as a portability escape hatch, especially for console applications.
-
-Initial native runtime targets are FreeBSD, OpenBSD and NetBSD, followed by other systems as runtime/toolchain support permits.
+Future Unix GUI work can use a dedicated host backend where justified, while Web/PWA remains available wherever a suitable browser exists.
 
 ## Web
 
-The browser target uses the same Change IR and application semantics.
+The browser target uses the same Change IR/application semantics while mapping Patch UI to browser primitives.
 
-Current path:
-
-```text
-Patch source -> Change IR -> bootstrap .wasm payload / JS beta runtime
-```
-
-Target path:
+Current paths include:
 
 ```text
-Patch source -> typed Change IR -> direct WebAssembly -> Patch Web Runtime
+Patch source -> Change IR -> Standalone Window Web runtime
+Patch source -> direct Wasm subset -> browser host
 ```
 
-Window applications map Patch UI controls to browser primitives while preserving the Patch source model.
+Table/Grid display and transient row-selection events are implemented in Standalone Web. Studio App-preview Table event dispatch is tracked separately from Standalone Web support.
 
 ## `.patchapp`
 
-`.patchapp` is the canonical transparent portable application unit. It is intended to outlive individual native packaging formats.
-
-The logical bundle contains:
+`.patchapp` is the canonical transparent portable application unit. Its logical bundle contains:
 
 - manifest;
 - Patch language/version metadata;
@@ -98,22 +109,22 @@ The logical bundle contains:
 - assets;
 - declared runtime capabilities.
 
-The 0.2 format is JSON for transparency. A compact archive/container can be introduced later without changing the logical model.
+The 0.2 format remains JSON for transparency. A compact archive/container can be introduced later without changing the logical model.
 
 ## Bootstrap `.wasm`
 
-`patch build ... --target wasm` now emits an instantiable WebAssembly module with exported memory and metadata locating an embedded compiled Patch payload. Browser/native Patch hosts can recover the same project + Change IR representation from this artifact.
+`patch build ... --target wasm` emits an instantiable WebAssembly module with exported memory and metadata locating an embedded compiled Patch payload. Browser/native Patch hosts can recover the same project + Change IR representation from this artifact.
 
-This provides a real portable binary target and tests the Wasm delivery path, but it is not yet equivalent to executing all Patch operations directly as WebAssembly instructions.
+This is distinct from the narrower direct-Wasm backend, which executes supported operations directly as WebAssembly instructions and is used by the current assurance pipeline.
 
 ## Build from phones/tablets
 
-Patch Studio on iOS/Android can already run browser-compatible programs and generate `.patchapp` and bootstrap `.wasm` artifacts locally. Native desktop artifacts will be produced by remote builders:
+Patch Studio on iOS/Android can run browser-compatible programs and generate portable/Web artifacts locally. Token-free Ready desktop artifacts use published platform runtime templates. The optional direct AOT cloud path delegates compilation to the corresponding GitHub-hosted platform runner:
 
 ```text
-Build for Windows -> Windows CI runner
-Build for macOS   -> macOS CI runner
-Build for Linux   -> Linux CI runner
+Build for Windows -> Windows runner
+Build for macOS   -> macOS runner
+Build for Linux   -> Linux runner
 ```
 
-This keeps the IDE universal even when the native target toolchain is platform-specific.
+This keeps the IDE browser-first while platform-specific native toolchains remain isolated behind explicit build paths.
