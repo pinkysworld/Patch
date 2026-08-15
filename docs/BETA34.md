@@ -12,25 +12,26 @@ Beta.34 adds a browser DOM synchronization bridge. After source- or project-kind
 
 The same bridge fixes a related product-state issue: switching between Console and Window examples now propagates the programmatic Project Type change to native-build UI state instead of leaving the native build panel configured for the previous project kind.
 
-### Ready runtime integrity before browser sealing
+### Runtime integrity before browser packaging
 
-Token-free Windows, macOS and Linux Window builds use published native runtime templates plus checked Native GUI IR. Beta.34 adds a fail-closed integrity layer to this path.
+Patch Studio's no-token desktop paths consume published runtime templates. Current native Window builds use runtime v1.0; Console ready builds and the explicit compatibility Window path use the versioned `studio-runtime-v0.6` templates. Beta.34 adds one fail-closed byte-integrity layer across every runtime template that the browser may consume.
 
 The Pages deployment now:
 
-1. downloads the current native runtime v1.0 release assets;
-2. reads the SHA-256 digest that GitHub records for each exact release asset;
-3. independently hashes the downloaded bytes in `scripts/runtime-integrity-manifest.js`;
-4. refuses deployment when an expected digest and the downloaded bytes disagree;
-5. writes `_site/runtimes/runtime-manifest.json` containing the verified file, release tag and SHA-256 digest.
+1. requires the `studio-runtime-v0.6` release and all three native runtime v1.0 releases before replacing the deployed Studio;
+2. downloads the exact Console, compatibility Window and native GUI runtime assets used by Patch Studio;
+3. reads the SHA-256 digest that GitHub records for each exact release asset;
+4. independently hashes the downloaded bytes in `scripts/runtime-integrity-manifest.js`;
+5. refuses deployment when an expected digest and the downloaded bytes disagree;
+6. writes `_site/runtimes/runtime-manifest.json` containing the verified file, release tag and SHA-256 digest for every browser-consumed runtime template.
 
-Before Patch Studio seals a Ready Window app, `web/runtime-integrity.js` hashes the fetched native runtime with Web Crypto SHA-256 and compares it with that deployed manifest. A mismatch stops the build before the runtime bytes are used.
+`web/runtime-integrity.js` loads before the native builder. When Patch Studio fetches one of those known same-origin runtime files, the wrapper hashes the bytes with Web Crypto SHA-256 and compares them with the deployed manifest. A missing manifest entry or digest mismatch stops packaging before those bytes are used.
 
 This is an artifact-integrity consistency check. It does not claim Authenticode, Developer ID notarization, a separate transparency log or an independent trust root beyond the HTTPS/GitHub Pages and GitHub Release path already used by Patch Studio.
 
 ### Fresh runtime retrieval
 
-The Patch Studio service worker previously treated `.exe` and `.bin` runtime files as ordinary cache-first assets. That could leave an old native runtime in a browser cache after the website moved to a newer published runtime.
+The Patch Studio service worker previously treated runtime files as ordinary cache-first assets. That could leave an older runtime in a browser cache after the website moved to a newer published runtime.
 
 Beta.34 treats every same-origin `/runtimes/` request as fresh-first. Successful responses are still retained for offline fallback, but an online build asks the current deployment for the runtime and integrity manifest before falling back to cached bytes.
 
@@ -41,8 +42,8 @@ The Downloads page now makes the release model explicit:
 - the offline compiler is a rolling beta release channel whose assets are replaced only by successful release workflows;
 - the published `SHA256SUMS` file is the verification source for offline-compiler downloads;
 - platform-specific verification examples are documented;
-- the Ready Window runtime integrity path is documented separately from executable signing/notarization;
-- direct links to the runtime v1.0 release records are available for users who want to inspect the exact native templates used by Patch Studio.
+- Patch Studio runtime byte-integrity checking is documented separately from executable signing/notarization;
+- direct links to the native runtime v1.0 release records are available for users who want to inspect the exact native GUI templates used by current Ready Window builds.
 
 ## Compatibility
 
@@ -55,6 +56,7 @@ Beta.34 keeps the following boundaries unchanged:
 - direct native Table backend: **0.9**
 - token-free sealed Table payload: **v9**
 - token-free native Table runtime: **v1.0**
+- compatibility/Console Studio runtime release: **studio-runtime-v0.6**
 - project bundle: **v2**
 
 Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line.
@@ -65,6 +67,7 @@ Beta.34 adds regression coverage for:
 
 - programmatic Studio source/project-kind mutations reaching the shared event/persistence path;
 - runtime-integrity manifest generation and digest mismatch rejection;
+- complete browser-runtime manifest coverage for native GUI, Console and explicit compatibility templates;
 - runtime manifest production from GitHub Release asset digests in Pages;
 - fresh-first service-worker handling for `/runtimes/` assets;
 - the Pages concurrency rule that prevents runtime `workflow_run` events from cancelling a valid source-triggered deployment.
