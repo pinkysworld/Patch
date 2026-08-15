@@ -12,6 +12,7 @@ on:
       - src/formal-*.js
       - src/source-validation.js
       - src/guard-validation.js
+      - src/independent-guard-expression.js
       - src/certificate.js
       - src/runtime-certificate.js
       - src/runtime-path-witness.js
@@ -45,6 +46,7 @@ on:
       - src/formal-*.js
       - src/source-validation.js
       - src/guard-validation.js
+      - src/independent-guard-expression.js
       - src/certificate.js
       - src/runtime-certificate.js
       - src/runtime-path-witness.js
