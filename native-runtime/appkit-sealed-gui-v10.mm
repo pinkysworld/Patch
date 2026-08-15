@@ -4,9 +4,9 @@
 #import <Cocoa/Cocoa.h>
 #include <fstream>
 
-#define main PatchSealedRuntimeV09Main
+#define PATCH_APPKIT_RUNTIME_V09_ENTRY PatchSealedRuntimeV09Main
 #include "appkit-sealed-gui-v09.mm"
-#undef main
+#undef PATCH_APPKIT_RUNTIME_V09_ENTRY
 #include "sealed-table-v10.hpp"
 
 static std::vector<PatchTableV10> gPatchTablesV10;
