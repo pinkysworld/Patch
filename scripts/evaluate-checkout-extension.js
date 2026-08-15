@@ -2,135 +2,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluateSecurityCase } from '../src/security-case-study.js';
-import { compileToDirectWasm, runDirectWasm } from '../src/wasm-direct.js';
+import { evaluateRealisticExtensionCase, realisticExtensionReportMarkdown } from '../src/realistic-extension-case.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const caseRoot = path.join(root, 'case-studies', 'checkout-extension');
-const manifest = JSON.parse(fs.readFileSync(path.join(caseRoot, 'scenario.json'), 'utf8'));
 const options = parseArgs(process.argv.slice(2));
-
-const safeSource = fs.readFileSync(path.join(caseRoot, manifest.safe.file), 'utf8');
-const safeAnalysis = evaluateSecurityCase(safeSource, { name: `${manifest.name}-safe` });
-verifyDecision('safe', manifest.safe, safeAnalysis);
-const safeCompiled = compileToDirectWasm(safeSource, { name: 'CheckoutExtensionSafe', kind: 'console' });
-const safeExecution = await runDirectWasm(safeCompiled.module, safeCompiled.metadata);
-verifyState(manifest.safe.expectedState, safeExecution.state);
-verifyProtectedEffects(manifest.entryRecipe, manifest.safe.expectedProtectedEffects, safeAnalysis.patch.signatures);
-
-const variants = [];
-for (const variant of manifest.variants) {
-  const source = fs.readFileSync(path.join(caseRoot, variant.file), 'utf8');
-  const analysis = evaluateSecurityCase(source, { name: `${manifest.name}-${variant.id}` });
-  verifyDecision(variant.id, variant, analysis);
-  variants.push({
-    ...variant,
-    patchAccepted: analysis.patch.accepted,
-    patchError: analysis.patch.error,
-    coarseWriteAccepted: analysis.coarseTargetWrite.accepted,
-    coarsePolicies: analysis.coarseTargetWrite.policies,
-    differential: analysis.differential
-  });
-}
-
-const report = {
-  format: 'patch-realistic-extension-case-report',
-  version: '0.1',
-  scenario: manifest.name,
-  entryRecipe: manifest.entryRecipe,
-  generatedAt: reproducibleGeneratedAt(),
-  baselineBoundary: 'internal coarse target-path write-authority ablation; not a named prior system',
-  safe: {
-    file: manifest.safe.file,
-    patchAccepted: safeAnalysis.patch.accepted,
-    coarseWriteAccepted: safeAnalysis.coarseTargetWrite.accepted,
-    finalState: safeExecution.state,
-    runtimeTrace: safeExecution.trace,
-    protectedSignature: safeAnalysis.patch.signatures?.[manifest.entryRecipe] ?? null
-  },
-  variants,
-  summary: {
-    variants: variants.length,
-    patchRejectedVariants: variants.filter(item => !item.patchAccepted).length,
-    coarseAcceptedVariants: variants.filter(item => item.coarseWriteAccepted).length,
-    semanticAuthorityDifferentialRejects: variants.filter(item => item.coarseWriteAccepted && !item.patchAccepted).length,
-    bothReject: variants.filter(item => !item.coarseWriteAccepted && !item.patchAccepted).length
-  }
-};
-
+const report = await evaluateRealisticExtensionCase(caseRoot, { wasmName: 'CheckoutExtensionSafe' });
 const json = `${JSON.stringify(report, null, 2)}\n`;
 if (options.out) write(options.out, json);
 else process.stdout.write(json);
-if (options.markdown) write(options.markdown, toMarkdown(report));
+if (options.markdown) write(options.markdown, realisticExtensionReportMarkdown(report));
 if (options.out) console.log(`wrote ${options.out}`);
 if (options.markdown) console.log(`wrote ${options.markdown}`);
-
-function reproducibleGeneratedAt() {
-  const raw = process.env.SOURCE_DATE_EPOCH;
-  if (raw === undefined || raw === '') return new Date().toISOString();
-  if (!/^\d+$/.test(raw)) throw new Error(`SOURCE_DATE_EPOCH must be a non-negative integer, got '${raw}'.`);
-  const milliseconds = Number(raw) * 1000;
-  if (!Number.isSafeInteger(milliseconds)) throw new Error('SOURCE_DATE_EPOCH is outside the supported safe integer range.');
-  const value = new Date(milliseconds);
-  if (!Number.isFinite(value.getTime())) throw new Error('SOURCE_DATE_EPOCH is outside the supported date range.');
-  return value.toISOString();
-}
-
-function verifyDecision(id, expected, analysis) {
-  const expectedPatch = expected.patchExpected === 'accept';
-  if (analysis.patch.accepted !== expectedPatch) {
-    throw new Error(`${id}: expected Patch ${expected.patchExpected}, observed ${analysis.patch.accepted ? 'accept' : 'reject'}${analysis.patch.error ? ` (${analysis.patch.error.message})` : ''}.`);
-  }
-  if (analysis.coarseTargetWrite.accepted !== expected.coarseWriteExpected) {
-    throw new Error(`${id}: expected coarse target-write=${expected.coarseWriteExpected}, observed ${analysis.coarseTargetWrite.accepted}.`);
-  }
-  if (expected.errorContains && !analysis.patch.error?.message.includes(expected.errorContains)) {
-    throw new Error(`${id}: expected diagnostic '${expected.errorContains}', observed '${analysis.patch.error?.message ?? '<none>'}'.`);
-  }
-}
-
-function verifyState(expected, actual) {
-  for (const [name, value] of Object.entries(expected)) {
-    if (!Object.is(actual[name], value)) throw new Error(`safe execution: expected ${name}=${value}, observed ${actual[name]}.`);
-  }
-}
-
-function verifyProtectedEffects(recipe, expected, signatures) {
-  const effects = signatures?.[recipe]?.changes ?? [];
-  for (const wanted of expected) {
-    const match = effects.find(effect =>
-      effect.target === wanted.target &&
-      effect.operation === wanted.operation &&
-      effectMax(effect) === wanted.maxAmount &&
-      String(effect.via ?? '').includes(wanted.viaContains)
-    );
-    if (!match) {
-      throw new Error(`${recipe}: missing protected transitive effect ${wanted.target} ${wanted.operation} up to ${wanted.maxAmount} via ${wanted.viaContains}. Observed ${JSON.stringify(effects)}.`);
-    }
-  }
-}
-
-function effectMax(effect) {
-  if (Number.isFinite(effect.amountRange?.max)) return effect.amountRange.max;
-  if (Number.isFinite(effect.amount)) return Math.abs(effect.amount);
-  return null;
-}
-
-function toMarkdown(report) {
-  const lines = [
-    '# Checkout loyalty extension case',
-    '',
-    `Safe execution: \`balance=${report.safe.finalState.balance}\`, \`points=${report.safe.finalState.points}\`, \`cashback=${report.safe.finalState.cashback}\`.`,
-    '',
-    '| Variant | Mutation | Patch | Coarse target-write | Result |',
-    '|---|---|---:|---:|---|'
-  ];
-  for (const item of report.variants) {
-    lines.push(`| \`${item.id}\` | ${item.mutation} | ${item.patchAccepted ? 'accept' : 'reject'} | ${item.coarseWriteAccepted ? 'accept' : 'reject'} | ${item.coarseWriteAccepted && !item.patchAccepted ? 'semantic authority adds rejection' : 'same decision'} |`);
-  }
-  lines.push('', '> The coarse target-write baseline is an internal ablation, not a model of a named prior system.');
-  return `${lines.join('\n')}\n`;
-}
 
 function write(filename, content) {
   const target = path.resolve(filename);
