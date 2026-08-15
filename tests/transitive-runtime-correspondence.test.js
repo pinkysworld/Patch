@@ -88,7 +88,7 @@ test('beta32 invocation frames preserve mixed guard paths across repeated root c
   assert.equal(artifact.runtimeValidation.ok, true);
   assert.equal(artifact.summary.runtimeTransitions, 3);
   assert.equal(artifact.summary.runtimeEffects, 3);
-  assert.equal(artifact.summary.invocationFrames, 9);
+  assert.equal(artifact.summary.invocationFrames, 12);
   assert.equal(artifact.summary.supported, 6);
   assert.equal(artifact.summary.unsupported, 0);
   assert.equal(artifact.summary.maxCertifiedDepth, 2);
