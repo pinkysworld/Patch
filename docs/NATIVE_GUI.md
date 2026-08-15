@@ -4,15 +4,23 @@ Status: **experimental native backend preview, working on Windows, macOS and Lin
 
 Patch lowers the same source-backed Window syntax into operating-system-native GUI code. Patch source does not import Win32, AppKit or GTK.
 
-Three versioned layers are intentionally separate:
+## Versioned layers
 
-- **Native GUI IR 0.7** is the platform-neutral GUI/event contract.
-- **AOT backend 0.8** is the current Win32/AppKit/GTK source-generation layer.
-- **sealed payload v7 / runtime v0.8** is the token-free browser-sealing path. Runtime v0.8 adds native accessibility parity without changing payload v7.
+The native stack intentionally separates semantic IR, direct AOT generation and token-free sealed distribution:
+
+- **Native GUI IR 0.7**: base Forms/control/menu/dialog contract.
+- **Native GUI IR 0.8**: explicit Table/Grid extension with source-backed columns/rows and transient `text-list` Table events.
+- **AOT backend 0.8**: direct Win32/AppKit/GTK source-generation layer for the IR 0.7 base surface, including accessibility and responsive Anchor/Dock handling.
+- **AOT backend 0.9**: direct Table extension over Native GUI IR 0.8.
+- **sealed payload v9 / runtime v1.0**: current token-free Ready/offline Window contract, carrying Native GUI IR 0.8 Table metadata plus responsive layout.
+- **sealed payload v8 / runtime v0.9**: frozen responsive compatibility line for Native GUI IR 0.7.
+- **sealed payload v7 / runtime v0.8**: older frozen accessibility compatibility/reproducibility line.
+
+A backend or runtime version never silently redefines an older IR or payload format.
 
 ## Build paths
 
-The beginner-facing host-native command remains:
+The host-native command remains:
 
 ```bash
 patch-app myapp.patch
@@ -26,22 +34,9 @@ macOS   -> AppKit -> .app
 Linux   -> GTK3   -> executable
 ```
 
-Patch Studio also supports token-free browser-side sealing into precompiled native runtime templates. Project-specific remote AOT through GitHub Actions remains a separate optional route.
+Patch Studio also supports token-free browser-side sealing into precompiled native runtime templates. The downloadable offline compiler performs the same supported sealed linking locally. Project-specific remote AOT through GitHub Actions remains a separate optional route.
 
-## Native GUI IR 0.7
-
-```text
-.patch source
-     |
-Patch compiler
-     |
-Native GUI IR 0.7
-     |
- +---+----------------+---+
- |                    |   |
-Win32               AppKit GTK3
-AOT 0.8             AOT 0.8 AOT 0.8
-```
+## Native GUI IR 0.7 base
 
 Native GUI IR 0.7 supports:
 
@@ -57,37 +52,53 @@ Native GUI IR 0.7 supports:
 - Button/MenuItem `clicked`, typed control `changed`, Confirm `confirmed`/`cancelled`, and file `chosen`/`cancelled` events;
 - explicit scalar `change` operations;
 - named Form `open` / `close` lifecycle;
-- simple state interpolation in supported labels.
+- simple state interpolation in supported labels;
+- source-backed Anchor/Dock layout metadata outside persistent Change semantics.
 
 Unsupported native behavior fails closed. There is no implicit Electron fallback.
 
+## Native GUI IR 0.8 Table / Grid
+
+Table is an explicit IR extension rather than an implementation-only control alias:
+
+```patch
+window "People" as main size 520, 320:
+  # @layout anchor left right top
+  table "Name", "Role" as people at 24, 64 size 440, 180:
+    row "Ada", "Engineer"
+    row "Grace", "Scientist"
+
+when people changed:
+  show value
+```
+
+Table `changed` exposes the selected row as a transient list of display strings. Selection does not implicitly persist application state or create Change History. A normal Patch `change` is still required for persistence.
+
+Direct AOT backend 0.9 maps Table to:
+
+| Platform | Native Table |
+|---|---|
+| Windows | report-mode `WC_LISTVIEWW` |
+| macOS | multi-column `NSTableView` inside `NSScrollView` |
+| Linux | `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow` |
+
+The dedicated direct-AOT Table matrix compiles and executes the same Table program on Windows/MSVC, macOS/AppKit and Linux/GTK3 and checks real row-selection dispatch, accessibility and responsive layout.
+
+## Selection semantics
+
+GUI selection is transient unless Patch source explicitly persists it:
+
+```text
+native selection -> transient event value -> when <id> changed -> explicit Patch change
+```
+
+ComboBox, ListBox and Radio expose transient text. Table exposes a transient list of row strings. Checkbox exposes a transient Boolean. Tabs page selection remains toolkit-local and has no Patch event.
+
 ## Menus and dialogs
 
-Menus are Window structure, not positioned controls, so they do not consume source-backed control geometry slots.
+Menus are Window structure, not positioned controls. Informational `dialog` has no return value. Result-bearing Confirm/Open/Save dialogs create named transient event sources. Paths or answers become persistent only when Patch source explicitly changes state.
 
-```patch
-window "Menu demo" as main:
-  menu "Help":
-    item "About" as about_item
-
-when about_item clicked:
-  dialog "About Patch", "Native menus and informational dialogs"
-```
-
-Informational `dialog` has no return value. Result-bearing dialogs instead create named **transient event sources**:
-
-```patch
-when open_button clicked:
-  open file "Open Patch file" as open_result
-
-when open_result chosen:
-  change selected_path:
-    set = value
-```
-
-A result id is not Patch state. Choosing a path does not persist it automatically; only an ordinary semantic `change` does that and enters Change History.
-
-Current native mappings are:
+Current native mappings include:
 
 | Feature | Windows | macOS | Linux |
 |---|---|---|---|
@@ -97,87 +108,74 @@ Current native mappings are:
 | Open result | `GetOpenFileNameW` | `NSOpenPanel` | `GtkFileChooserDialog` |
 | Save result | `GetSaveFileNameW` | `NSSavePanel` | `GtkFileChooserDialog` |
 
-Under `--patch-smoke`, blocking dialogs return deterministic test results so CI cannot wait for user interaction. Normal applications use the real OS dialogs.
-
-See `docs/MENUS_DIALOGS.md` and `docs/RESULT_DIALOGS.md` for the detailed event contracts.
-
-## Selection semantics
-
-ComboBox, ListBox and Radio share one rule:
-
-```text
-native selection -> transient text value -> when <id> changed -> explicit Patch change
-```
-
-Selecting a Radio item does not itself mutate persistent Patch state. The selected option becomes event-local text `value`. Only an ordinary Patch `change` persists it and creates Change History.
-
-Radio mappings are:
-
-| Platform | Native control |
-|---|---|
-| Windows | grouped `BS_AUTORADIOBUTTON` buttons |
-| macOS | `NSButton` with `NSButtonTypeRadio` |
-| Linux | native `GtkRadioButton` group |
+Under `--patch-smoke`, blocking dialogs return deterministic test results so CI cannot wait for user interaction. Normal applications use real OS dialogs.
 
 ## Tabs
 
 Tabs remains a real native container:
 
-- Windows: `WC_TABCONTROLW` + `TCN_SELCHANGE`
-- macOS: `NSTabView` + `NSTabViewItem`
-- Linux: `GtkNotebook`
+- Windows: `WC_TABCONTROLW`;
+- macOS: `NSTabView`;
+- Linux: `GtkNotebook`.
 
-The selected page is transient renderer state. It is absent from Patch state and Change History. Child controls retain their normal event semantics inside a page.
+The selected page is transient renderer/toolkit state. It is absent from Patch state and Change History. Child controls retain normal event semantics inside a page.
 
-## Native accessibility v0.8
+## Accessibility
 
-Both native paths use the same naming contract while keeping Native GUI IR at 0.7:
+The native paths use one deterministic naming contract:
 
-- Input, ComboBox, ListBox and Tabs receive deterministic accessible names derived from static text or a humanized Patch id.
-- Radio items include their group context, for example `Mode: Advanced`.
-- Button and Checkbox controls retain their native visible-label naming behavior rather than receiving a stale static override.
+- Input, ComboBox, ListBox, Tabs and Table receive source-derived accessible names when a native visible label is insufficient.
+- Radio items include group context such as `Mode: Advanced`.
+- Button and Checkbox keep their native visible-label behavior.
 
-The AOT backend implements the contract in generated platform code. The sealed runtime v0.8 derives the same names from control metadata already present in payload v7.
+Platform APIs are:
 
-Platform mappings are:
+- Windows: Microsoft Active Accessibility `IAccPropServices`, read back through `IAccessible`;
+- AppKit: accessibility labels;
+- GTK3: ATK accessible names.
 
-- Windows: Microsoft Active Accessibility `IAccPropServices`, smoke-read through `IAccessible`.
-- AppKit: `setAccessibilityLabel:`, smoke-read through `accessibilityLabel`.
-- GTK3: ATK accessible names, smoke-read through `atk_object_get_name`.
+Direct AOT backend 0.8/0.9 and sealed runtime v1.0 execute platform-API readback smokes. This is an automated implementation baseline, not a WCAG conformance claim or a substitute for manual Narrator, VoiceOver or Orca testing.
 
-AOT and sealed runtime smokes verify the exposed names rather than only searching generated source. This is an automated implementation baseline, not a WCAG conformance claim or a substitute for Narrator, VoiceOver or Orca testing.
+## Token-free sealed runtime v1.0 / payload v9
 
-## Token-free sealed runtime v0.8 / payload v7
+All three current token-free Ready Window builds use the `PCHGUI01` envelope with payload **v9**. Payload v9 preserves the v8 Forms/state/control/menu/dialog/layout contract and adds:
 
-All three token-free native GUI builds use the `PCHGUI01` envelope. Payload **v7** carries Forms, state, events, controls, selection option vectors, Tabs parent/page metadata, per-Form menus, informational dialogs and result-bearing Confirm/Open/Save actions/events.
+- Table control kind `9`;
+- source-backed Table column and row vectors;
+- transient Table event type `text-list`;
+- Native GUI IR 0.8 Table metadata without persistent list state.
 
-Runtime v0.8 changes only native implementation behavior. It reuses the proven v0.7 parser/event/control runtime and adds accessibility after native controls are created. No new payload data is required.
+Runtime **v1.0** validates v9 and uses real native Table widgets. It reuses the established v0.9/v0.8 base parser path through a validated internal adapter instead of redefining the old payload. The implementation-only synthetic shadow state used by that adapter is not application-visible Table state.
 
-The runtime releases are:
+Runtime releases are:
 
-- `native-win32-runtime-v0.8`
-- `native-linux-runtime-v0.8`
-- `native-macos-runtime-v0.8`
+- `native-win32-runtime-v1.0`;
+- `native-linux-runtime-v1.0`;
+- `native-macos-runtime-v1.0`.
 
-They are published from `main` only after their native runtime workflows compile, seal and execute the full GUI progression and the v0.8 accessibility readback successfully. Patch Pages pins the exact runtime versions so a payload-v7 browser build is not paired with an incompatible template.
+The sealed-runtime workflow builds each runtime, seals the same Table program, executes the finished application and then repeats the operation through the ordinary offline `patch link` path. The offline compiler matrix additionally proves Table linking on Windows, Linux, Apple Silicon macOS and Intel macOS.
 
-The macOS browser-sealed app remains unsigned because browser-side sealing modifies the executable after the generic runtime was compiled. Final-artifact Developer ID signing/notarization is a separate distribution path.
+Patch Pages waits for all three v1.0 runtime assets before deploying the browser compiler that consumes payload v9. A release-order race therefore does not publish a mismatched Studio/runtime pair.
+
+Payload **v8** / runtime **v0.9** and payload **v7** / runtime **v0.8** remain explicit compatibility/reproducibility lines.
+
+The macOS browser-sealed app remains unsigned because browser-side sealing modifies the executable after the generic runtime was compiled. Final-artifact Developer ID signing/notarization is separate distribution work.
 
 ## Executable evidence
 
-Each supported platform has two independent native paths:
+Supported native behavior is covered by independent paths:
 
-1. project-specific AOT native code generation;
-2. generic sealed native runtime reconstruction.
+1. stable direct AOT base controls;
+2. direct AOT Table backend 0.9;
+3. sealed compatibility payload v8/runtime v0.9;
+4. sealed Table payload v9/runtime v1.0;
+5. ordinary offline `patch link` using runtime v1.0;
+6. downloadable offline compiler linking Table on Windows/Linux/Apple Silicon/macOS Intel.
 
-The unified AOT matrix builds and executes Forms, ComboBox, ListBox, Tabs, Radio, Menu/Dialog and Result Dialog examples on Windows, macOS and Linux, including platform-API accessibility readback.
-
-Each sealed-runtime workflow separately compiles its generic v0.8 runtime, seals and executes the same GUI progression through Result Dialogs, performs native accessibility readback after the ordinary smoke path, and verifies that the embedded payload remains v7.
-
-The native artifacts do not use Electron, Chromium or Node.js as their GUI runtime.
+The native GUI artifacts do not use Electron, Chromium or Node.js as their GUI runtime. The explicit compatibility package remains separate and labeled as Electron-based.
 
 ## Current boundary
 
-Native GUI IR 0.7 / native implementation v0.8 does not yet include menu separators/shortcuts/checkable or disabled items, table/grid, ListBox multi-select or nested Tabs. Linux still depends on GTK3 system libraries. Manual assistive-technology validation, stable installers, final signing/notarization evidence and FreeBSD native GUI support remain open product work.
+Native GUI still does not include Menu separators/shortcuts/checkable or disabled items, ListBox multi-select or nested Tabs. Linux depends on GTK3 system libraries. Manual assistive-technology validation, stable installers, final signing/notarization evidence and FreeBSD native GUI support remain open product work.
 
-None of this work changes Change IR 0.10 or expands the current research assurance claims. See `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md` and `docs/NATIVE_ACCESSIBILITY.md` for feature-specific contracts.
+None of this changes Change IR 0.10 or expands the current research assurance claims. See `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md` and `docs/NATIVE_APPS.md` for related contracts.
