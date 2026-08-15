@@ -6,14 +6,14 @@ Working manuscript:
 
 ## Current manuscript status
 
-The manuscript is now synchronized to the current research/product split:
+The manuscript is synchronized to the current research/product split:
 
 - product artifact: **Patch 0.2.0-beta.34**;
 - semantic IR: **Change IR 0.10**;
 - formal runtime-correspondence milestone: **beta.32**;
 - beta.33/beta.34: Studio, release, persistence and runtime-integrity engineering that does not widen the beta.32 Lean claim.
 
-`main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, semantic-authority evaluation, checkout/loyalty case, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
+`main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, repeated-identical and mixed-guard repeated-call evidence, semantic-authority evaluation, the checkout/loyalty and usage/quota application cases, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
 
 The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
 
@@ -36,9 +36,9 @@ This is not a unique-expressibility or firstness claim. Related systems provide 
 7. beta.28/29 structured and guard-selected exact callee traces;
 8. beta.30 finite transitive exact call-tree refinement;
 9. beta.31 production direct-Wasm execution connected to independently validated semantic observations;
-10. beta.32 independently reconstructed invocation frames, including repeated identical calls;
+10. beta.32 independently reconstructed invocation frames, including repeated identical calls and mixed concrete guard paths between repeated identities;
 11. generated Lean evidence checking runtime-frame bindings against beta.30 exact bindings and re-evaluating frame-selected observed effects;
-12. semantic-authority micro-case ablation and checkout/loyalty engineering case;
+12. semantic-authority micro-case ablation plus checkout/loyalty and usage/quota engineering cases;
 13. process-isolated controlled-measurement protocol;
 14. commit-bound reproducibility bundle.
 
@@ -58,17 +58,26 @@ and then lets Lean re-evaluate the frame-selected observed effects through the e
 checkedObservedTransitiveRuntimeRefinesCallerSignature
 ```
 
-The repeated-call regression source is:
+The repeated-identical-call regression source is:
 
 ```text
 examples/formal-transitive-calls-repeated.patch
 ```
+
+The stronger mixed-guard regression source is:
+
+```text
+examples/formal-transitive-calls-mixed-guards.patch
+```
+
+It executes `caller(1)`, `caller(4)`, `caller(1)` through `caller -> outer -> middle -> leaf`. The first and third calls are identical, while the middle call takes the opposite guard branch. The verified artifact reconstructs 12 dynamic frames, supports six transitive runtime correspondences with maximum certified nested depth 2, and preserves the three `caller -> outer` effect traces as `coins +4`, `score +5`, `coins +4`.
 
 Generated runtime certificates include:
 
 ```text
 GeneratedTransitiveRuntimeCertificate.lean
 GeneratedRepeatedTransitiveRuntimeCertificate.lean
+GeneratedMixedGuardTransitiveRuntimeCertificate.lean
 ```
 
 This is **not** an end-to-end compiler/runtime refinement theorem. Explicit proof-free/trust boundaries remain runtime capture, JavaScript validator/frame-reconstruction correctness, parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine.
@@ -98,7 +107,9 @@ npm run evaluate:security -- \
   --markdown evaluation/security/table.md
 ```
 
-## Checkout/loyalty extension case
+## Multi-domain application corpus
+
+### Checkout/loyalty
 
 The safe checkout extension executes through direct Wasm and must finish at:
 
@@ -118,7 +129,28 @@ npm run evaluate:checkout-extension -- \
   --markdown evaluation/checkout/report.md
 ```
 
-This is a larger motivating/engineering case, not a complete plugin sandbox or an empirical study of an external extension ecosystem.
+### Usage/quota
+
+The second application case uses a different domain and persistent state paths. Its safe execution must finish at:
+
+```text
+used = 35
+remaining = 85
+bonus = 5
+admin_credit = 0
+```
+
+Its protected entry signature carries bounded usage increase, remaining-quota decrease and bonus increase. Controlled variants exercise magnitude escalation, operation-direction reversal and unauthorized `admin_credit` state under the same internal target-only ablation.
+
+Reproduce:
+
+```bash
+npm run evaluate:quota-extension -- \
+  --out evaluation/quota/report.json \
+  --markdown evaluation/quota/report.md
+```
+
+Together these form a two-domain artifact corpus. They are larger motivating/engineering cases, not real third-party plugin integration, a complete plugin sandbox, or an empirical study of an external extension ecosystem.
 
 ## Controlled performance protocol
 
@@ -152,11 +184,12 @@ No overhead, scalability or asymptotic claim belongs in `main.tex` until an actu
 
 ## Reproducibility bundle
 
-The `Patch Reproducibility Bundle` workflow binds source/evidence to an exact Patch version and Git commit, regenerates the formal/runtime/security/checkout evidence, hashes every bundled source/evidence file and creates a deterministic archive envelope.
+The `Patch Reproducibility Bundle` workflow binds source/evidence to an exact Patch version and Git commit, regenerates the formal/runtime/security/checkout/quota evidence, hashes every bundled source/evidence file and creates a deterministic archive envelope. The formal evidence includes the single-call, repeated-identical-call and mixed-guard invocation-frame certificates.
 
 Reproduce locally:
 
 ```bash
+npm run transitive-runtime-certify:mixed-guards
 npm run bundle:reproducibility
 npm run verify:reproducibility
 ```
@@ -195,6 +228,7 @@ npm test
 npm run transitive-callee-trace-certify:example
 npm run transitive-runtime-certify:example
 npm run transitive-runtime-certify:repeated
+npm run transitive-runtime-certify:mixed-guards
 ```
 
 Evidence:
@@ -202,6 +236,7 @@ Evidence:
 ```bash
 npm run evaluate:security
 npm run evaluate:checkout-extension
+npm run evaluate:quota-extension
 npm run evaluate:assurance:isolated
 ```
 
@@ -216,9 +251,8 @@ npm run verify:reproducibility
 
 1. collect the fixed-machine controlled overhead/scaling dataset;
 2. analyze that dataset with explicit models, dispersion and plots, then synchronize measured results into `main.tex`;
-3. broaden the externally motivated application/extension corpus;
+3. validate Patch in a genuinely external or third-party extension/integration setting rather than another internally authored artifact case;
 4. reduce parser/lowering/runtime trust boundaries where the improvement materially strengthens the central claim;
-5. extend invocation-frame evidence to richer branching/repeated-call scenarios;
-6. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
+5. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
 
-Normal literature surveillance should continue before submission, but the targeted 2025–2026 dependent/state-sensitive effect follow-up for this paper iteration is complete.
+Normal literature surveillance should continue before submission, but the targeted 2025–2026 dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is now part of the reproducible beta.32 artifact rather than an open backlog item.
