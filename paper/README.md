@@ -6,7 +6,7 @@ Working manuscript:
 
 ## Current artifact status
 
-The implementation/research artifact is **Patch 0.2.0-beta.32 / Change IR 0.10**. The manuscript remains working research text, not yet a submission-ready top-venue paper.
+The current product/research codebase is **Patch 0.2.0-beta.34 / Change IR 0.10**. The current formal runtime-correspondence milestone remains **beta.32**. Beta.33 and beta.34 add Studio/release engineering without widening the beta.32 formal claim. The manuscript remains working research text, not yet a submission-ready top-venue paper.
 
 The assurance/evaluation stack now includes:
 
@@ -20,7 +20,9 @@ The assurance/evaluation stack now includes:
 8. beta.31 first call-aware direct-Wasm bridge;
 9. **Beta.32 invocation-frame-aware direct-Wasm correspondence, including repeated identical calls**;
 10. a reproducible assurance-overhead/scaling evaluation harness;
-11. a **mechanized semantic-authority security ablation suite** using the real Patch compiler plus an explicitly internal coarse target-write baseline.
+11. a **mechanized semantic-authority security ablation suite** using the real Patch compiler plus an explicitly internal coarse target-write baseline;
+12. a larger checkout/loyalty extension case with a real safe direct-Wasm execution plus magnitude, direction and target escalation variants;
+13. a **commit-bound reproducibility bundle** that packages the exact tracked source snapshot, regenerated formal/runtime evidence, semantic-authority case reports, environment provenance and per-file SHA-256 manifest.
 
 None is described as complete compiler verification, complete sandboxing, or evidence that named prior systems cannot express comparable restrictions.
 
@@ -105,7 +107,7 @@ npm run evaluate:security -- \
   --markdown evaluation/security/table.md
 ```
 
-`tests/security-case-studies.test.js` requires the exact case decisions, relevant diagnostics, transitive helper signature evidence, and JSON/CSV/Markdown report structure.
+`tests/security-case-studies.test.js` requires the exact case decisions, relevant diagnostics, transitive helper signature evidence, deterministic `SOURCE_DATE_EPOCH` handling, and JSON/CSV/Markdown report structure.
 
 ### Security-case claim boundary
 
@@ -114,6 +116,30 @@ The suite supports this narrow artifact statement:
 > In these controlled extension-style examples, Patch distinguishes semantic operation, magnitude, transitive helper effects and missing bound evidence that a target-only write-authority ablation intentionally ignores.
 
 It does **not** establish complete malicious-code containment, a general plugin sandbox, superiority over named prior systems, or novelty of quantitative/refinement effects and capabilities. A publication comparison against existing systems must come from systematic related work, not from this internal ablation.
+
+## Checkout/loyalty extension case
+
+`case-studies/checkout-extension/` provides a larger coherent application-level example instead of another isolated micro-case. The protected `checkout_extension` recipe composes discount and loyalty helpers over multiple state paths.
+
+The safe source is executed through the real direct-Wasm backend and must finish at:
+
+```text
+balance = 80
+points = 8
+cashback = 0
+```
+
+The protected semantic signature must include the transitive balance-decrease and points-increase effects with their expected bounds. Three controlled variants then exercise reward-magnitude escalation, balance-direction escalation and an unauthorized cashback target. The first two are accepted by the intentionally coarse target-only ablation but rejected by Patch semantic authority; the target escape is rejected by both.
+
+Reproduce the application report with:
+
+```bash
+npm run evaluate:checkout-extension -- \
+  --out evaluation/checkout/report.json \
+  --markdown evaluation/checkout/report.md
+```
+
+This is a realistic engineering/motivating case relative to the eight micro-cases, but it is still not a complete plugin sandbox or an empirical claim about an external extension ecosystem.
 
 ## Assurance overhead evaluation harness
 
@@ -129,6 +155,25 @@ A manual-only **Patch Assurance Evaluation** workflow records separate pinned-Le
 
 **No overhead, scalability or asymptotic claim is made yet.** Controlled paper-quality measurements on fixed hardware must be collected and analyzed before measured results are synchronized into `main.tex`.
 
+## Commit-bound reproducibility bundle
+
+`docs/REPRODUCIBILITY_BUNDLE.md` and `.github/workflows/reproducibility-bundle.yml` define the review artifact packaging path.
+
+For the exact checked-out commit, the workflow:
+
+1. resolves the Patch version, 40-character commit id and commit timestamp;
+2. regenerates the finite transitive call-tree certificate;
+3. executes direct Wasm and regenerates the transitive runtime certificate;
+4. regenerates repeated-call invocation-frame evidence;
+5. regenerates the eight-case semantic-authority report and checkout-extension report with `SOURCE_DATE_EPOCH` fixed to the commit timestamp;
+6. snapshots all Git-tracked source plus those explicit generated reports;
+7. records size and SHA-256 for every copied source/evidence file in `BUNDLE-MANIFEST.json`;
+8. verifies every bundled file plus the expected Patch version and source commit;
+9. creates a sorted commit-time tar/gzip envelope with numeric owner/group and `gzip -n`;
+10. uploads the archive and its SHA-256 as a 90-day Actions artifact.
+
+The bundle supports artifact identity and evidence reruns. It intentionally does **not** execute the paper benchmark or convert variable hosted-runner timings into manuscript results.
+
 ## Reproducibility
 
 Core assurance:
@@ -140,7 +185,7 @@ npm run transitive-runtime-certify:example
 npm run transitive-runtime-certify:repeated
 ```
 
-Evaluation:
+Evaluation/evidence:
 
 ```bash
 npm run evaluate:assurance -- --preset paper --iterations 10 --warmup 3 \
@@ -151,7 +196,20 @@ npm run evaluate:security -- \
   --out evaluation/security/report.json \
   --csv evaluation/security/report.csv \
   --markdown evaluation/security/table.md
+
+npm run evaluate:checkout-extension -- \
+  --out evaluation/checkout/report.json \
+  --markdown evaluation/checkout/report.md
 ```
+
+Commit-bound artifact:
+
+```bash
+npm run bundle:reproducibility
+npm run verify:reproducibility
+```
+
+For the full generated-evidence bundle, follow `docs/REPRODUCIBILITY_BUNDLE.md` or run the **Patch Reproducibility Bundle** workflow.
 
 Relevant formal modules:
 
@@ -164,21 +222,20 @@ PatchCallRuntime.lean
 
 ## Current claim boundary
 
-A defensible beta.32 artifact statement is:
+A defensible current artifact statement is:
 
-> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. The artifact also includes a controlled semantic-authority ablation showing operation-, magnitude-, transitive-effect- and proof-aware distinctions over an explicitly internal target-only write baseline. These results do not establish full compiler correctness, complete sandboxing or superiority over named prior systems.
+> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. The artifact also includes a controlled semantic-authority ablation and a larger checkout/loyalty extension case. A commit-bound bundle identifies and hashes the exact source/evidence snapshot used for review. These results do not establish full compiler correctness, complete sandboxing, reproducible performance numbers across machines or superiority over named prior systems.
 
 ## Prior-art discipline
 
-Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, quantitative/refinement effects, capabilities, proof-carrying code, benchmarking, WebAssembly or GUI packaging.
+Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, quantitative/refinement effects, capabilities, proof-carrying code, benchmarking, reproducibility packaging, WebAssembly or GUI packaging.
 
-The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32, the evaluation harness and the security ablation are supporting assurance/evaluation infrastructure, not standalone firstness assertions.
+The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32, the evaluation harness, security ablation, checkout case and reproducibility bundle are supporting assurance/evaluation infrastructure, not standalone firstness assertions.
 
 ## Remaining high-value gaps
 
 - controlled validation/certificate/checker/backend overhead measurements using the completed harness;
-- a larger realistic extension/plugin-style authority case beyond the synthetic ablation suite;
 - systematic related-work review and literature-grounded comparison dimensions;
-- reproducibility bundle;
 - controlled synchronization of measured results and current claims into `main.tex` before venue submission;
-- further reduction of parser/lowering/runtime trust boundaries without overstating full verification.
+- further reduction of parser/lowering/runtime trust boundaries without overstating full verification;
+- additional externally motivated application/extension cases if venue feedback indicates the current checkout case is not sufficient.
