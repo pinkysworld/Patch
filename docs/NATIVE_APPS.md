@@ -140,21 +140,22 @@ The v1.0 runtime release tags are:
 
 The dedicated **Patch Native Sealed Table Runtime** matrix builds each runtime from source, seals `examples/table-native-v09.patch` as payload v9, runs the finished application and separately runs the normal `patch link` path against the same runtime. Windows, macOS and Linux all execute real row-selection smokes.
 
-Pages waits until all three v1.0 release assets exist before deploying the Studio version that consumes them. If the initial source push reaches Pages first, that deployment exits successfully without replacing the current site; successful runtime publication triggers the later deployment. This avoids a browser-compiler/runtime mismatch and avoids turning release ordering into a failing Pages run.
+Pages waits until the required Studio runtime releases exist before deploying a Studio version that consumes them. If the initial source push reaches Pages first, that deployment exits successfully without replacing the current site; successful runtime publication triggers the later deployment. This avoids a browser-compiler/runtime mismatch and avoids turning release ordering into a failing Pages run.
 
 ### Beta.34 runtime-template integrity
 
-The browser Ready path now verifies the native runtime bytes before sealing a project into them.
+The browser Ready path now verifies every runtime template it can consume, not only the native GUI v1.0 files. This includes the three native GUI v1.0 runtimes and the Console/explicit compatibility Window templates from `studio-runtime-v0.6`.
 
 During Pages deployment:
 
-1. GitHub Release supplies each exact runtime-v1.0 asset and its recorded `sha256:` digest.
-2. `scripts/runtime-integrity-manifest.js` independently hashes the downloaded bytes and fails when they do not match that release digest.
-3. Pages writes `runtimes/runtime-manifest.json` containing only the verified runtime file name, release tag and SHA-256 digest.
+1. Pages requires `studio-runtime-v0.6` plus the three platform native runtime-v1.0 releases.
+2. GitHub Release supplies the exact runtime assets and their recorded `sha256:` digests.
+3. `scripts/runtime-integrity-manifest.js` independently hashes every downloaded runtime and fails when bytes do not match the recorded release digest.
+4. Pages writes `runtimes/runtime-manifest.json` containing the verified file name, release tag and SHA-256 digest for all browser-consumed runtime templates.
 
-In Patch Studio, `web/runtime-integrity.js` intercepts only the three same-origin native runtime-template fetches. It fetches the runtime manifest with `no-store`, hashes the runtime bytes using Web Crypto SHA-256 and fails closed on mismatch before `native-build.js` receives those bytes.
+In Patch Studio, `web/runtime-integrity.js` loads before `native-build.js` and intercepts only the known same-origin runtime-template fetches. It fetches the manifest with `no-store`, hashes runtime bytes using Web Crypto SHA-256 and fails closed when a runtime is missing from the manifest or its digest differs.
 
-The service worker treats all same-origin `/runtimes/` requests as fresh-first while online, including the manifest and native `.exe`/`.bin` templates. Successful responses remain available as offline fallback.
+The service worker treats all same-origin `/runtimes/` requests as fresh-first while online, including the manifest, native `.exe`/`.bin` templates and compatibility `.zip` templates. Successful responses remain available as offline fallback.
 
 This validates byte consistency across the existing GitHub Release -> Pages -> browser path. It does not claim Authenticode, Developer ID/notarization, an independent transparency log or a separate signing trust root.
 
