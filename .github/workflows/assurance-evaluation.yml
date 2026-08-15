@@ -12,12 +12,16 @@ on:
           - quick
           - paper
         default: quick
+      process_runs:
+        description: Independent fresh Node processes to aggregate
+        required: true
+        default: '3'
       iterations:
-        description: Measured JavaScript iterations per phase/scenario
+        description: Measured JavaScript iterations per phase/scenario/process
         required: true
         default: '5'
       warmup:
-        description: Warmup iterations per phase/scenario
+        description: Warmup iterations per phase/scenario/process
         required: true
         default: '1'
 
@@ -31,7 +35,7 @@ permissions:
 jobs:
   evaluate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -46,6 +50,7 @@ jobs:
           mkdir -p evaluation/results
           {
             echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "measurement_class=hosted-ci"
             echo "runner_os=$RUNNER_OS"
             echo "runner_arch=$RUNNER_ARCH"
             echo "node=$(node --version)"
@@ -56,20 +61,24 @@ jobs:
             echo "commit=$GITHUB_SHA"
           } > evaluation/results/environment.txt
 
-      - name: Run JavaScript assurance evaluation
+      - name: Run process-isolated JavaScript assurance evaluation
         shell: bash
         env:
           EVAL_PRESET: ${{ inputs.preset }}
+          EVAL_RUNS: ${{ inputs.process_runs }}
           EVAL_ITERATIONS: ${{ inputs.iterations }}
           EVAL_WARMUP: ${{ inputs.warmup }}
+          PATCH_EVAL_COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
-          node scripts/benchmark-assurance.js \
+          node scripts/run-controlled-assurance.js \
             --preset "$EVAL_PRESET" \
+            --runs "$EVAL_RUNS" \
             --iterations "$EVAL_ITERATIONS" \
             --warmup "$EVAL_WARMUP" \
-            --out evaluation/results/assurance.json \
-            --csv evaluation/results/assurance.csv
+            --measurement-class hosted-ci \
+            --label "github-actions-${GITHUB_RUN_ID}" \
+            --out-dir evaluation/results/process-isolated
 
       - name: Generate pinned beta32 Lean certificates
         run: |

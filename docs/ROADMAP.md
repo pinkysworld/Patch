@@ -49,12 +49,19 @@ Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the su
 - [x] source/Wasm/trace/frame/certificate metadata
 - [x] JSON/CSV and environment manifest
 - [x] separate manual-only Lean checker timing
+- [x] fresh-process outer runner for independent benchmark repetitions
+- [x] environment/commit/scenario consistency checks before cross-process aggregation
+- [x] robust across-process statistics: Q1/Q3, MAD and IQR in addition to median/mean/p95
+- [x] checksummed raw per-process JSON/CSV retained beside aggregate output
+- [x] explicit `development` / `hosted-ci` / `controlled` measurement classes
+- [x] fail closed when GitHub Actions timing is labelled `controlled`
+- [x] fixed-machine controlled measurement procedure in `docs/CONTROLLED_EVALUATION.md`
 - [x] `docs/EVALUATION.md`
 - [ ] **controlled paper-quality benchmark runs** on fixed hardware
-- [ ] statistical analysis / plots
+- [ ] statistical model/plots over the collected controlled dataset
 - [ ] measured results synchronized into manuscript
 
-No empirical performance result is claimed until controlled measurements are collected.
+No empirical performance result is claimed until controlled measurements are collected. The completed process-isolated protocol makes the future dataset auditable but is not itself a measured result.
 
 ### Semantic-authority security ablation
 - [x] eight reproducible micro cases under `case-studies/security/`
@@ -189,7 +196,7 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 
 ## Highest-value remaining research work
 
-1. [ ] collect controlled overhead/scaling measurements using the completed evaluation harness;
+1. [ ] collect controlled overhead/scaling measurements using the completed process-isolated fixed-machine protocol;
 2. [ ] systematic related-work review and literature-grounded comparison dimensions;
 3. [ ] broader externally motivated extension/security corpus beyond the checkout case;
 4. [x] reproducibility bundle;
@@ -208,6 +215,7 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 - [x] invocation frames for repeated identical calls
 - [x] portable C99 and semantic GUI input evidence
 - [x] **Assurance overhead/scaling harness**
+- [x] **process-isolated controlled-measurement protocol**
 - [x] **Semantic-authority security ablation**
 - [x] **realistic checkout/loyalty security/engineering case study**
 - [x] **commit-bound reproducibility bundle**
@@ -238,3 +246,4 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 19. A direct-AOT control extension is not a sealed-runtime support claim until the payload format and token-free consumer independently encode and execute it.
 20. Browser-side Ready packaging must fail closed if the deployed native runtime bytes do not match the deployment's verified release-integrity manifest.
 21. A reproducibility artifact may bind source and generated evidence to an exact commit without turning heterogeneous hosted-runner timing into a performance claim.
+22. Hosted CI timing and controlled fixed-machine timing are distinct evidence classes and must never be pooled or relabelled implicitly.
