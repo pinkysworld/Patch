@@ -25,7 +25,10 @@ test('related-work review preserves the narrow Patch contribution boundary', () 
   }
 
   assert.match(novelty, /Expressibility is not the novelty claim/i);
-  assert.match(novelty, /does \*\*not\*\* claim that `score may increase up to 10` is uniquely expressible/i);
+  assert.match(novelty, /does \*\*not\*\* claim that `score may increase up to 10`/i);
+  assert.match(novelty, /value-dependent effect/i);
+  assert.match(novelty, /state-sensitive capability/i);
+  assert.match(novelty, /uniquely expressible/i);
   assert.match(novelty, /contribution hypothesis, not a firstness assertion/i);
   assert.match(paperSection, /not claim unique expressibility/i);
   assert.match(paperSection, /value-dependent quantitative grades/i);
