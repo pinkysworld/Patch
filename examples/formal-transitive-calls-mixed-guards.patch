@@ -1,0 +1,25 @@
+create number score = 0
+create number coins = 0
+
+make leaf(amount number 1..5):
+  if amount >= 3:
+    change score:
+      add amount
+  else:
+    change coins:
+      add amount * 2
+
+make middle(seed number 0..4):
+  do leaf(seed + 1)
+
+make outer(seed number 0..4):
+  do middle(seed)
+
+make caller(seed number 0..4):
+  do outer(seed)
+
+do caller(1)
+do caller(4)
+do caller(1)
+show score
+show coins

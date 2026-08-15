@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { buildTransitiveRuntimeCorrespondence } from '../src/transitive-runtime-correspondence.js';
 
 const source = fs.readFileSync(new URL('../examples/formal-transitive-calls.patch', import.meta.url), 'utf8');
+const mixedGuardSource = fs.readFileSync(new URL('../examples/formal-transitive-calls-mixed-guards.patch', import.meta.url), 'utf8');
 
 test('validated direct-Wasm effects match the beta30 depth-2 frame-identified call-tree trace', async () => {
   const artifact = await buildTransitiveRuntimeCorrespondence(source, { name: 'TransitiveRuntime' });
@@ -80,4 +81,39 @@ test('beta32 independently reconstructed frames disambiguate repeated identical 
   assert.deepEqual(outerCalls.map(item => item.occurrenceIds), [[0, 1], [2, 3]]);
   assert.deepEqual(outerCalls.map(item => item.scopes), [['leaf', 'middle'], ['leaf', 'middle']]);
   assert.deepEqual(outerCalls[0].observedEffects, outerCalls[1].observedEffects);
+});
+
+test('beta32 invocation frames preserve mixed guard paths across repeated root calls', async () => {
+  const artifact = await buildTransitiveRuntimeCorrespondence(mixedGuardSource, { name: 'MixedGuardTransitiveRuntime' });
+  assert.equal(artifact.runtimeValidation.ok, true);
+  assert.equal(artifact.summary.runtimeTransitions, 3);
+  assert.equal(artifact.summary.runtimeEffects, 3);
+  assert.equal(artifact.summary.invocationFrames, 12);
+  assert.equal(artifact.summary.supported, 6);
+  assert.equal(artifact.summary.unsupported, 0);
+  assert.equal(artifact.summary.maxCertifiedDepth, 2);
+
+  const outerCalls = artifact.correspondences
+    .filter(item => item.caller === 'caller' && item.callee === 'outer')
+    .sort((a, b) => a.invocation - b.invocation);
+  assert.equal(outerCalls.length, 3);
+  assert.deepEqual(outerCalls.map(item => item.invocation), [1, 2, 3]);
+  assert.equal(new Set(outerCalls.map(item => item.frameId)).size, 3);
+  assert.deepEqual(outerCalls.map(item => item.frame.bindings), [
+    [{ name: 'seed', value: 1 }],
+    [{ name: 'seed', value: 4 }],
+    [{ name: 'seed', value: 1 }]
+  ]);
+  assert.deepEqual(outerCalls.map(item => item.occurrenceIds), [[0], [1], [2]]);
+  assert.deepEqual(outerCalls.map(item => item.scopes), [['leaf'], ['leaf'], ['leaf']]);
+  assert.deepEqual(outerCalls.map(item => item.observedEffects), [
+    [{ target: 'coins', field: null, operation: 'increase', amountRange: { min: 4, max: 4 } }],
+    [{ target: 'score', field: null, operation: 'increase', amountRange: { min: 5, max: 5 } }],
+    [{ target: 'coins', field: null, operation: 'increase', amountRange: { min: 4, max: 4 } }]
+  ]);
+  assert.deepEqual(outerCalls[0].observedEffects, outerCalls[0].beta30Trace);
+  assert.deepEqual(outerCalls[1].observedEffects, outerCalls[1].beta30Trace);
+  assert.deepEqual(outerCalls[2].observedEffects, outerCalls[2].beta30Trace);
+  assert.deepEqual(outerCalls[0].observedEffects, outerCalls[2].observedEffects);
+  assert.notDeepEqual(outerCalls[0].observedEffects, outerCalls[1].observedEffects);
 });

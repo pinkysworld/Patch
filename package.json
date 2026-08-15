@@ -29,6 +29,7 @@
     "transitive-callee-trace-certify:example": "node scripts/generate-transitive-call-body-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveCallBodyCertificate.lean",
     "transitive-runtime-certify:example": "node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveRuntimeCertificate.lean",
     "transitive-runtime-certify:repeated": "node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean",
+    "transitive-runtime-certify:mixed-guards": "node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-mixed-guards.patch --out formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean",
     "evaluate:assurance": "node scripts/benchmark-assurance.js",
     "evaluate:assurance:quick": "node scripts/benchmark-assurance.js --preset quick --iterations 3 --warmup 1",
     "evaluate:assurance:isolated": "node scripts/run-controlled-assurance.js --preset quick --runs 3 --iterations 3 --warmup 1 --measurement-class development",
