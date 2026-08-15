@@ -84,6 +84,8 @@ jobs:
         run: npm run transitive-runtime-certify:example
       - name: Regenerate repeated-call invocation-frame certificate
         run: npm run transitive-runtime-certify:repeated
+      - name: Regenerate mixed-guard invocation-frame certificate
+        run: npm run transitive-runtime-certify:mixed-guards
       - name: Regenerate semantic-authority security evidence
         run: |
           mkdir -p evaluation/reproducibility
@@ -110,6 +112,7 @@ jobs:
             --generated formal/GeneratedTransitiveCallBodyCertificate.lean \
             --generated formal/GeneratedTransitiveRuntimeCertificate.lean \
             --generated formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean \
+            --generated formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean \
             --generated evaluation/reproducibility/security.json \
             --generated evaluation/reproducibility/security.csv \
             --generated evaluation/reproducibility/security.md \
