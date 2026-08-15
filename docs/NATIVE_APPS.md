@@ -1,6 +1,6 @@
 # Application builds
 
-Status: **0.2.0-beta.33** · Change IR **0.10**
+Status: **0.2.0-beta.34** · Change IR **0.10**
 
 Patch keeps Console, direct-native Window, token-free sealed Window and explicit compatibility Window paths separate. Product GUI work does not expand the current research assurance claims.
 
@@ -142,6 +142,22 @@ The dedicated **Patch Native Sealed Table Runtime** matrix builds each runtime f
 
 Pages waits until all three v1.0 release assets exist before deploying the Studio version that consumes them. If the initial source push reaches Pages first, that deployment exits successfully without replacing the current site; successful runtime publication triggers the later deployment. This avoids a browser-compiler/runtime mismatch and avoids turning release ordering into a failing Pages run.
 
+### Beta.34 runtime-template integrity
+
+The browser Ready path now verifies the native runtime bytes before sealing a project into them.
+
+During Pages deployment:
+
+1. GitHub Release supplies each exact runtime-v1.0 asset and its recorded `sha256:` digest.
+2. `scripts/runtime-integrity-manifest.js` independently hashes the downloaded bytes and fails when they do not match that release digest.
+3. Pages writes `runtimes/runtime-manifest.json` containing only the verified runtime file name, release tag and SHA-256 digest.
+
+In Patch Studio, `web/runtime-integrity.js` intercepts only the three same-origin native runtime-template fetches. It fetches the runtime manifest with `no-store`, hashes the runtime bytes using Web Crypto SHA-256 and fails closed on mismatch before `native-build.js` receives those bytes.
+
+The service worker treats all same-origin `/runtimes/` requests as fresh-first while online, including the manifest and native `.exe`/`.bin` templates. Successful responses remain available as offline fallback.
+
+This validates byte consistency across the existing GitHub Release -> Pages -> browser path. It does not claim Authenticode, Developer ID/notarization, an independent transparency log or a separate signing trust root.
+
 ### Compatibility lines
 
 Payload **v8** / runtime **v0.9** remains the frozen responsive Native GUI IR 0.7 line. Payload **v7** / runtime **v0.8** remains the older compatibility/reproducibility line. Existing workflows continue to exercise those contracts independently.
@@ -157,6 +173,8 @@ The Windows, Linux, Apple Silicon macOS and Intel macOS offline compiler paths e
 3. the Table/Grid example with native row-selection smoke.
 
 The Intel macOS kit bundles its own Intel Node runtime for the CLI. FreeBSD remains Console-only through portable C99 + local `cc`.
+
+The rolling `offline-compiler-v0.1` release publishes a `SHA256SUMS` file beside its platform assets. The public Downloads page documents verification commands and explicitly separates checksum integrity from platform code-signing/notarization claims.
 
 ## Native accessibility baseline
 
@@ -210,5 +228,6 @@ The next native stages include:
 - Menu separators, shortcuts and source-backed enabled/checked state;
 - ListBox multi-selection with an explicit list-valued event contract;
 - signing/notarization evidence and install/update packaging;
+- broader installer/update integrity verification once those channels exist;
 - more self-contained Linux distribution packaging;
 - FreeBSD native GUI support.
