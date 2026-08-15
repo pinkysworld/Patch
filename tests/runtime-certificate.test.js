@@ -26,8 +26,10 @@ test('runtime certificate binds direct execution to guarded Lean correspondence 
   assert.equal(certificate.runtimeValidation.occurrences[0].effect.amount, 8);
   assert.match(certificate.runtimeTraceSha256, /^[a-f0-9]{64}$/);
   assert.equal(certificate.runtimePathWitnessVersion, '0.2');
-  assert.equal(certificate.guardValidationVersion, '0.1');
+  assert.equal(certificate.guardValidationVersion, '0.2');
+  assert.equal(certificate.guardValidation.independentGuardExpressionVersion, '0.1');
   assert.match(certificate.lean, /import PatchGuarded/);
+  assert.match(certificate.lean, /def guardValidationVersion : String := "0\.2"/);
   assert.match(certificate.lean, /checkGuardedSourceRuntimeEvidence runtime_reward_1_source runtime_reward_1_guard runtime_reward_1_env runtime_reward_1_observed runtime_reward_1_path = true/);
   assert.match(certificate.lean, /checkSourceProtected runtime_reward_1_source runtime_reward_1_policy = true/);
   assert.match(certificate.lean, /runtime_reward_1_guarded_concrete_policy_safe/);

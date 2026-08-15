@@ -1,7 +1,55 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
+import { buildFormalGuardExpression } from '../src/formal-guard.js';
+import { buildIndependentGuardExpression } from '../src/independent-guard-expression.js';
 import { validateFormalGuardExtraction, buildRawGuardWitness } from '../src/guard-validation.js';
+
+test('guard validation parser implementation stays independent from production guard parsing', () => {
+  const validatorSource = fs.readFileSync(new URL('../src/guard-validation.js', import.meta.url), 'utf8');
+  const independentSource = fs.readFileSync(new URL('../src/independent-guard-expression.js', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(validatorSource, /buildFormalGuardExpression/);
+  assert.doesNotMatch(independentSource, /from\s+['"]\.\/formal-guard\.js['"]/);
+  assert.doesNotMatch(independentSource, /from\s+['"]\.\/parser\.js['"]/);
+  assert.match(validatorSource, /buildIndependentGuardExpression/);
+  assert.match(independentSource, /class IndependentGuardParser/);
+  assert.match(independentSource, /function lex\(/);
+});
+
+test('independent guard expression parser agrees with production normalization on supported corpus', () => {
+  const allowed = new Set(['bonus', 'limit']);
+  const cases = [
+    'bonus > 0',
+    'bonus + 1 <= limit',
+    '(bonus + 1) > 0',
+    'bonus * 2 >= limit - 3',
+    '2 * bonus < 9',
+    'not bonus == 0',
+    'bonus != limit',
+    'bonus > 0 and limit >= bonus',
+    'bonus == 0 or not (limit < 2)',
+    'true and not false'
+  ];
+
+  for (const source of cases) {
+    const production = buildFormalGuardExpression(source, allowed);
+    const independent = buildIndependentGuardExpression(source, allowed);
+    assert.equal(production.supported, true, `production rejected ${source}: ${production.reason ?? ''}`);
+    assert.equal(independent.supported, true, `independent rejected ${source}: ${independent.reason ?? ''}`);
+    assert.deepEqual(independent.expr, production.expr, source);
+    assert.deepEqual(independent.variables, production.variables, source);
+  }
+});
+
+test('independent guard expression parser fails closed on unsupported variables, tokens and multiplication', () => {
+  const allowed = new Set(['bonus']);
+  for (const source of ['score > 0', 'bonus / 2 > 0', 'bonus * bonus > 0', 'bonus + 0']) {
+    const result = buildIndependentGuardExpression(source, allowed);
+    assert.equal(result.supported, false, source);
+  }
+});
 
 test('raw guard validator independently matches parameter branch structure', () => {
   const source = `create number score = 0
@@ -14,7 +62,10 @@ make reward(bonus number 0..5):
       add 1
 `;
   const compiled = compile(source);
-  const entry = compiled.ir.guardValidation.entries.reward;
+  const validation = compiled.ir.guardValidation;
+  const entry = validation.entries.reward;
+  assert.equal(validation.version, '0.2');
+  assert.equal(validation.independentGuardExpressionVersion, '0.1');
   assert.equal(entry.validated, true);
   assert.equal(entry.treeMatches, true);
   assert.equal(entry.claimsMatch, true);
@@ -34,6 +85,7 @@ test('raw guard witness preserves nested branch/repeat shape', () => {
 `;
   const witness = buildRawGuardWitness(source);
   const entry = witness.entries.choose;
+  assert.equal(witness.independentGuardExpressionVersion, '0.1');
   assert.equal(entry.supported, true);
   const json = JSON.stringify(entry.guardTree);
   assert.match(json, /"kind":"repeat"/);
