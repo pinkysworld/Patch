@@ -13,8 +13,16 @@ test('main manuscript reflects the beta32 assurance and beta34 artifact boundary
     'Beta 31 call-aware bridge',
     'Beta 32 invocation frames',
     'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
+    'GeneratedMixedGuardTransitiveRuntimeCertificate.lean',
+    'caller(1)',
+    'caller(4)',
+    'twelve invocation frames',
+    'six supported transitive correspondences',
     'Patch reject / coarse accept',
     'balance=80',
+    'used=35',
+    'remaining=85',
+    'admin\\_credit=0',
     'process isolation',
     'no controlled paper-quality timing dataset yet',
     'Patch Reproducibility Bundle',
@@ -42,11 +50,13 @@ test('all citation keys in the synchronized paper modules exist in references.bi
   }
 });
 
-test('paper claim boundary does not silently turn supporting evidence into performance or full-verification claims', () => {
+test('paper claim boundary does not silently turn supporting evidence into performance, external-validity or full-verification claims', () => {
   const tex = read('paper/main.tex');
   assert.match(tex, /not an end-to-end compiler refinement theorem/i);
   assert.match(tex, /no empirical overhead, scalability, or asymptotic-complexity claim/i);
   assert.match(tex, /not a claim of complete malicious-code containment/i);
+  assert.match(tex, /not a complete plugin sandbox/i);
+  assert.match(tex, /not evidence[^\n]*third-party plugin ecosystem/i);
   assert.match(tex, /candidate novelty is a conjunction of architectural choices/i);
 });
 
