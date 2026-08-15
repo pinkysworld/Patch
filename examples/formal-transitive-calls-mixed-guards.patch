@@ -9,8 +9,11 @@ make leaf(amount number 1..5):
     change coins:
       add amount * 2
 
-make outer(seed number 0..4):
+make middle(seed number 0..4):
   do leaf(seed + 1)
+
+make outer(seed number 0..4):
+  do middle(seed)
 
 make caller(seed number 0..4):
   do outer(seed)
