@@ -31,6 +31,8 @@
     "transitive-runtime-certify:repeated": "node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean",
     "evaluate:assurance": "node scripts/benchmark-assurance.js",
     "evaluate:assurance:quick": "node scripts/benchmark-assurance.js --preset quick --iterations 3 --warmup 1",
+    "evaluate:assurance:isolated": "node scripts/run-controlled-assurance.js --preset quick --runs 3 --iterations 3 --warmup 1 --measurement-class development",
+    "evaluate:assurance:controlled": "node scripts/run-controlled-assurance.js --measurement-class controlled",
     "evaluate:security": "node scripts/evaluate-security-cases.js",
     "evaluate:checkout-extension": "node scripts/evaluate-checkout-extension.js",
     "bundle:reproducibility": "node scripts/reproducibility-bundle.js build --out reproducibility/bundle",
