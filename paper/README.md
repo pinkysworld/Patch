@@ -19,7 +19,7 @@ The assurance/evaluation stack now includes:
 7. beta.30 finite transitive exact call-tree traces;
 8. beta.31 first call-aware direct-Wasm bridge;
 9. **Beta.32 invocation-frame-aware direct-Wasm correspondence, including repeated identical calls**;
-10. a reproducible assurance-overhead/scaling evaluation harness;
+10. a reproducible assurance-overhead/scaling evaluation harness plus a **fresh-process controlled-measurement protocol** that keeps development, hosted-CI and controlled timing evidence distinct;
 11. a **mechanized semantic-authority security ablation suite** using the real Patch compiler plus an explicitly internal coarse target-write baseline;
 12. a larger checkout/loyalty extension case with a real safe direct-Wasm execution plus magnitude, direction and target escalation variants;
 13. a **commit-bound reproducibility bundle** that packages the exact tracked source snapshot, regenerated formal/runtime evidence, semantic-authority case reports, environment provenance and per-file SHA-256 manifest.
@@ -143,17 +143,19 @@ This is a realistic engineering/motivating case relative to the eight micro-case
 
 ## Assurance overhead evaluation harness
 
-`src/evaluation-corpus.js`, `scripts/benchmark-assurance.js` and `docs/EVALUATION.md` define a deterministic evaluation methodology rather than hard-coded performance claims.
+`src/evaluation-corpus.js`, `scripts/benchmark-assurance.js`, `scripts/run-controlled-assurance.js`, `docs/EVALUATION.md` and `docs/CONTROLLED_EVALUATION.md` define the evaluation methodology rather than hard-coded performance claims.
 
-The corpus separates nested call depth, concrete invocation count, and combined depth/invocation scenarios. The benchmark records raw timing samples plus min/median/mean/p95/max for direct-Wasm compilation, precompiled execution, independent validation, end-to-end beta.32 correspondence and beta.30+32 Lean-source certificate generation.
+The corpus separates nested call depth, concrete invocation count, and combined depth/invocation scenarios. The phase benchmark records raw timing samples for direct-Wasm compilation, precompiled execution, independent validation, end-to-end beta.32 correspondence and beta.30+32 Lean-source certificate generation.
 
-It also records source/Wasm/certificate size, transition/effect/frame/correspondence counts and the CPU/OS/Node/V8 environment manifest.
+The outer controlled runner starts a fresh Node process for every independent run. Before pooling results it requires stable Patch/scenario/runtime/environment identity, retains each raw child JSON/CSV, and aggregates the median from each process with Q1/Q3, p95, MAD and IQR. It also writes a SHA-256 manifest over the measured dataset.
 
-A manual-only **Patch Assurance Evaluation** workflow records separate pinned-Lean certificate-checking wall time and memory. Hosted-runner timings are treated as reproducibility evidence rather than stable microbenchmark results.
+Timing evidence is explicitly classified as `development`, `hosted-ci` or `controlled`. GitHub Actions is hard-blocked from labelling its timing as `controlled`. A controlled run additionally requires a machine id and run label.
+
+A manual-only **Patch Assurance Evaluation** workflow exercises the process-isolated controller as `hosted-ci` and records separate pinned-Lean certificate-checking wall time and memory. Hosted-runner timings are reproducibility/regression evidence rather than stable microbenchmark results.
 
 ### Empirical-claim rule
 
-**No overhead, scalability or asymptotic claim is made yet.** Controlled paper-quality measurements on fixed hardware must be collected and analyzed before measured results are synchronized into `main.tex`.
+**No overhead, scalability or asymptotic claim is made yet.** The process-isolated/fixed-machine protocol is implemented, but the actual controlled paper-quality dataset has not yet been collected and reviewed. Measured results must be synchronized into `main.tex` only after that step.
 
 ## Commit-bound reproducibility bundle
 
@@ -192,6 +194,15 @@ npm run evaluate:assurance -- --preset paper --iterations 10 --warmup 3 \
   --out evaluation/results/assurance.json \
   --csv evaluation/results/assurance.csv
 
+npm run evaluate:assurance:controlled -- \
+  --preset paper \
+  --runs 10 \
+  --iterations 10 \
+  --warmup 3 \
+  --machine-id patch-lab-01 \
+  --label 2026-08-paper-baseline \
+  --out-dir evaluation/results/controlled
+
 npm run evaluate:security -- \
   --out evaluation/security/report.json \
   --csv evaluation/security/report.csv \
@@ -224,18 +235,18 @@ PatchCallRuntime.lean
 
 A defensible current artifact statement is:
 
-> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. The artifact also includes a controlled semantic-authority ablation and a larger checkout/loyalty extension case. A commit-bound bundle identifies and hashes the exact source/evidence snapshot used for review. These results do not establish full compiler correctness, complete sandboxing, reproducible performance numbers across machines or superiority over named prior systems.
+> For explicit mechanized fragments, Patch proves semantic Change Signature, policy, range and finite exact call-tree properties. For conservative transitive recipe examples, the production direct-Wasm module is executed and its complete transition stream is independently validated. The independent execution model reconstructs concrete invocation frames without backend call markers, including repeated identical calls. Generated evidence checks each runtime-frame binding against the beta.30 exact callee binding, and Lean re-evaluates the frame-selected observed effects against that exact call tree before deriving caller-signature refinement. The artifact also includes a controlled semantic-authority ablation, a larger checkout/loyalty extension case, a process-isolated protocol for future fixed-machine overhead measurement, and a commit-bound bundle identifying and hashing the exact source/evidence snapshot used for review. These results do not establish full compiler correctness, complete sandboxing, measured performance claims, reproducible timing across machines or superiority over named prior systems.
 
 ## Prior-art discipline
 
 Patch does not claim novelty for procedure-call semantics, invocation frames, transitive traces, runtime validation, quantitative/refinement effects, capabilities, proof-carrying code, benchmarking, reproducibility packaging, WebAssembly or GUI packaging.
 
-The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32, the evaluation harness, security ablation, checkout case and reproducibility bundle are supporting assurance/evaluation infrastructure, not standalone firstness assertions.
+The candidate contribution remains **mandatory semantic mutation factorization plus operation-/magnitude-aware semantic authority derived from the same representation**. Beta.32, the evaluation harness/protocol, security ablation, checkout case and reproducibility bundle are supporting assurance/evaluation infrastructure, not standalone firstness assertions.
 
 ## Remaining high-value gaps
 
-- controlled validation/certificate/checker/backend overhead measurements using the completed harness;
+- actual controlled validation/certificate/checker/backend overhead measurements on fixed documented hardware using the process-isolated protocol;
+- statistical analysis/plots over that controlled dataset and synchronization into `main.tex`;
 - systematic related-work review and literature-grounded comparison dimensions;
-- controlled synchronization of measured results and current claims into `main.tex` before venue submission;
 - further reduction of parser/lowering/runtime trust boundaries without overstating full verification;
 - additional externally motivated application/extension cases if venue feedback indicates the current checkout case is not sufficient.
