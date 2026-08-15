@@ -26,6 +26,7 @@ From a clean Patch checkout:
 npm run transitive-callee-trace-certify:example
 npm run transitive-runtime-certify:example
 npm run transitive-runtime-certify:repeated
+npm run transitive-runtime-certify:mixed-guards
 
 SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
   npm run evaluate:security -- \
@@ -49,6 +50,7 @@ node scripts/reproducibility-bundle.js build \
   --generated formal/GeneratedTransitiveCallBodyCertificate.lean \
   --generated formal/GeneratedTransitiveRuntimeCertificate.lean \
   --generated formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean \
+  --generated formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean \
   --generated evaluation/reproducibility/security.json \
   --generated evaluation/reproducibility/security.csv \
   --generated evaluation/reproducibility/security.md \
@@ -73,7 +75,7 @@ This makes security, checkout and quota evidence reproducible for the same sourc
 
 ## CI artifact
 
-`.github/workflows/reproducibility-bundle.yml` regenerates the formal/runtime evidence, security micro-case report, checkout-extension report and quota-extension report, builds the commit-bound bundle, verifies every manifest hash, and creates a deterministic `tar.gz` archive.
+`.github/workflows/reproducibility-bundle.yml` regenerates the formal/runtime evidence, including single-call, repeated-identical-call and mixed-guard repeated-call invocation-frame certificates, plus the security micro-case, checkout-extension and quota-extension reports. It then builds the commit-bound bundle, verifies every manifest hash, and creates a deterministic `tar.gz` archive.
 
 The archive uses:
 
@@ -88,7 +90,7 @@ The workflow publishes the archive plus a SHA-256 file as a GitHub Actions artif
 
 The bundle supports a narrow reproducibility statement:
 
-> A reviewer can identify the exact Patch version and source commit, verify the SHA-256 of every packaged source/evidence file, regenerate the current finite transitive call-tree/runtime certificates and semantic-authority/application reports, and rerun the documented checks from the same source snapshot.
+> A reviewer can identify the exact Patch version and source commit, verify the SHA-256 of every packaged source/evidence file, regenerate the current finite transitive call-tree/runtime certificates, including repeated and mixed-guard invocation-frame evidence, regenerate the semantic-authority/application reports, and rerun the documented checks from the same source snapshot.
 
 It also prevents accidental artifact drift between manuscript-supporting code and the evidence handed to reviewers.
 
