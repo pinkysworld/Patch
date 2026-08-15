@@ -165,7 +165,7 @@ The bundle deliberately excludes manuscript performance results from heterogeneo
 
 ## Related work
 
-`paper/related-work.tex` is included by `main.tex` and cites the expanded `references.bib`.
+`paper/related-work.tex` is now included by `main.tex` and cites the expanded `references.bib`.
 
 The structured comparison covers:
 
