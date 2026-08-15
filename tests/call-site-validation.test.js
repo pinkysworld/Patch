@@ -32,6 +32,7 @@ do middle(3)`;
   assert.equal(validation.summary.rawSites, 3);
   assert.equal(validation.summary.productionSites, 3);
   assert.equal(validation.summary.mismatches, 0);
+  assert.equal(compiled.ir.formalCalls.callSiteValidation, validation);
   assert.deepEqual(validation.rawSites, [
     { caller: 'middle', callee: 'leaf', line: 6, args: ['seed + 1', '(seed + 2) * 2'] },
     { caller: 'middle', callee: 'leaf', line: 8, args: ['0', '1'] },
@@ -82,13 +83,13 @@ do leaf(3)`;
   );
 });
 
-test('validated call-site provenance is carried by concrete witness artifact', () => {
+test('validated call-site provenance is inherited by concrete witness artifact', () => {
   const source = `make leaf(amount number 0..5):
   show amount
 
 do leaf(3)`;
   const compiled = compile(source);
-  const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls, compiled.ir.callSiteValidation);
+  const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls);
   assert.equal(artifact.version, '0.1');
   assert.equal(artifact.callSiteValidationVersion, '0.1');
   assert.equal(artifact.rawCallSitesValidated, true);
