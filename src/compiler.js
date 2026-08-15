@@ -24,6 +24,7 @@ export function compile(source, options = {}) {
   const sourceValidation = validateFormalSourceExtraction(source, formalSource);
   const guardValidation = validateFormalGuardExtraction(source, formalSource);
   const callSiteValidation = validateCallSites(source, ast);
+  formalCalls.callSiteValidation = callSiteValidation;
   const windowLayoutPolicy = buildWindowLayoutPolicyManifest(source, ast);
 
   const ir = {
