@@ -2,7 +2,13 @@ const MANIFEST_URL = './runtimes/runtime-manifest.json';
 const RUNTIME_FILES = new Set([
   'patch-windows-native-gui-runtime.exe',
   'patch-linux-native-gui-runtime.bin',
-  'patch-macos-native-gui-runtime.bin'
+  'patch-macos-native-gui-runtime.bin',
+  'patch-windows-console-runtime.bin',
+  'patch-macos-console-runtime.bin',
+  'patch-linux-console-runtime.bin',
+  'patch-windows-window-runtime.zip',
+  'patch-macos-window-runtime.zip',
+  'patch-linux-window-runtime.zip'
 ]);
 const baseFetch = window.fetch.bind(window);
 let manifestPromise = null;
@@ -57,15 +63,20 @@ function validateManifest(manifest) {
   if (!manifest || manifest.schema !== 'patch-studio-runtime-integrity' || manifest.schemaVersion !== 1 || !Array.isArray(manifest.assets)) {
     throw new Error('Patch Studio runtime integrity manifest is invalid.');
   }
+  const seen = new Set();
   for (const asset of manifest.assets) {
-    if (!RUNTIME_FILES.has(asset?.file) || typeof asset.releaseTag !== 'string' || !/^sha256:[a-f0-9]{64}$/.test(asset.sha256 ?? '')) {
+    if (!RUNTIME_FILES.has(asset?.file) || seen.has(asset.file) || typeof asset.releaseTag !== 'string' || !asset.releaseTag.trim() || !/^sha256:[a-f0-9]{64}$/.test(asset.sha256 ?? '')) {
       throw new Error('Patch Studio runtime integrity manifest contains an invalid runtime entry.');
     }
+    seen.add(asset.file);
+  }
+  for (const file of RUNTIME_FILES) {
+    if (!seen.has(file)) throw new Error(`Patch Studio runtime integrity manifest is missing ${file}.`);
   }
 }
 
 async function sha256Hex(bytes) {
-  if (!globalThis.crypto?.subtle) throw new Error('This browser cannot verify Patch native runtime integrity with SHA-256.');
+  if (!globalThis.crypto?.subtle) throw new Error('This browser cannot verify Patch runtime integrity with SHA-256.');
   const digest = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes));
   return [...digest].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
