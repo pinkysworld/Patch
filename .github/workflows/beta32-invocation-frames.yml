@@ -10,6 +10,7 @@ on:
       - src/wasm-direct.js
       - src/formal-calls.js
       - src/formal-guard.js
+      - src/call-site-validation.js
       - src/concrete-call-witness.js
       - src/concrete-call-certificate.js
       - src/concrete-call-body.js
