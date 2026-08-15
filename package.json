@@ -44,7 +44,7 @@
     "build:offline-compiler": "node scripts/build-offline-compiler.js",
     "release:manifest:example": "node scripts/release-manifest.js --out-dir release-meta Score.patchapp Score.wasm DirectRecipes.wasm DirectRecipes.c DirectRecipes.html CounterWindow.html",
     "build:site": "node scripts/build-site.js",
-    "check:site": "node scripts/check-site.js && node scripts/check-site-v10.js"
+    "check:site": "node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-beta34.js"
   },
   "engines": { "node": ">=22" },
   "license": "MIT",
