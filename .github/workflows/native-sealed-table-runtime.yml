@@ -14,8 +14,11 @@ on:
       - native-runtime/appkit-sealed-gui-v09.mm
       - native-runtime/gtk-sealed-gui-v09.cpp
       - src/sealed-native-gui.js
+      - src/sealed-native-package.js
       - src/native-gui-ir-v08.js
       - src/native-gui-ir.js
+      - src/offline-linker.js
+      - src/cli-entry.js
       - src/compiler.js
       - src/parser.js
       - scripts/seal-native-win32.js
@@ -25,6 +28,7 @@ on:
       - tests/sealed-native-table-v09.test.js
       - tests/sealed-native-gui.test.js
       - tests/sealed-native-responsive.test.js
+      - tests/offline-linker.test.js
   push:
     branches: [main]
     paths:
@@ -34,12 +38,16 @@ on:
       - native-runtime/appkit-sealed-gui-v10.mm
       - native-runtime/gtk-sealed-gui-v10.cpp
       - src/sealed-native-gui.js
+      - src/sealed-native-package.js
       - src/native-gui-ir-v08.js
+      - src/offline-linker.js
+      - src/cli-entry.js
       - scripts/seal-native-win32.js
       - scripts/seal-native-macos.js
       - scripts/seal-native-linux.js
       - examples/table-native-v09.patch
       - tests/sealed-native-table-v09.test.js
+      - tests/offline-linker.test.js
   workflow_dispatch:
 
 concurrency:
@@ -62,9 +70,9 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Test sealed payload contracts
+      - name: Test sealed and offline-link payload contracts
         shell: pwsh
-        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js tests/offline-linker.test.js
       - name: Build Win32 sealed Table runtime v1.0
         shell: pwsh
         run: |
@@ -93,6 +101,17 @@ jobs:
           if ($version -ne 9) { throw "Expected sealed GUI payload v9, got v$version." }
           $process = Start-Process -FilePath (Resolve-Path 'dist-table-runtime/PatchTable.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Sealed Table Win32 smoke failed with exit code $($process.ExitCode)." }
+      - name: Link Table through offline CLI and smoke Win32 result
+        shell: pwsh
+        run: |
+          $env:PATCH_OFFLINE_GUI_RUNTIME = (Resolve-Path 'dist-table-runtime/patch-windows-native-gui-runtime.exe')
+          node src/cli-entry.js link examples/table-native-v09.patch --name OfflineTable --out dist-table-runtime/OfflineTable
+          if ($LASTEXITCODE -ne 0) { throw "Offline Table link failed with exit code $LASTEXITCODE." }
+          $linked = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-table-runtime/OfflineTable.exe'))
+          $version = [BitConverter]::ToUInt32($linked, $linked.Length - 12)
+          if ($version -ne 9) { throw "Offline Table link did not emit sealed GUI payload v9." }
+          $process = Start-Process -FilePath (Resolve-Path 'dist-table-runtime/OfflineTable.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Offline-linked Table Win32 smoke failed with exit code $($process.ExitCode)." }
       - uses: actions/upload-artifact@v7
         with:
           name: patch-windows-native-gui-runtime-v10
@@ -109,8 +128,8 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Test sealed payload contracts
-        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js
+      - name: Test sealed and offline-link payload contracts
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js tests/offline-linker.test.js
       - name: Build universal AppKit sealed Table runtime v1.0
         shell: bash
         run: |
@@ -133,6 +152,19 @@ jobs:
           if(sealed.readUInt32LE(sealed.length-12)!==9) throw new Error('Expected sealed GUI payload v9.');
           NODE
           dist-table-runtime/PatchTable --patch-smoke
+      - name: Link Table through offline CLI and smoke AppKit result
+        shell: bash
+        run: |
+          PATCH_OFFLINE_GUI_RUNTIME="$PWD/dist-table-runtime/patch-macos-native-gui-runtime.bin" \
+            node src/cli-entry.js link examples/table-native-v09.patch --name OfflineTable --out dist-table-runtime/OfflineTable
+          LINKED=dist-table-runtime/OfflineTable.app/Contents/MacOS/OfflineTable
+          test -x "$LINKED"
+          node - "$LINKED" <<'NODE'
+          const fs=require('fs');
+          const linked=fs.readFileSync(process.argv[2]);
+          if(linked.readUInt32LE(linked.length-12)!==9) throw new Error('Offline Table link did not emit sealed GUI payload v9.');
+          NODE
+          "$LINKED" --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
           name: patch-macos-native-gui-runtime-v10
@@ -153,8 +185,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
-      - name: Test sealed payload contracts
-        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js
+      - name: Test sealed and offline-link payload contracts
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js tests/offline-linker.test.js
       - name: Build GTK3 sealed Table runtime v1.0
         shell: bash
         run: |
@@ -172,6 +204,18 @@ jobs:
           NODE
           chmod +x dist-table-runtime/PatchTable
           xvfb-run -a dist-table-runtime/PatchTable --patch-smoke
+      - name: Link Table through offline CLI and smoke GTK result
+        shell: bash
+        run: |
+          PATCH_OFFLINE_GUI_RUNTIME="$PWD/dist-table-runtime/patch-linux-native-gui-runtime.bin" \
+            node src/cli-entry.js link examples/table-native-v09.patch --name OfflineTable --out dist-table-runtime/OfflineTable
+          chmod +x dist-table-runtime/OfflineTable
+          node - <<'NODE'
+          const fs=require('fs');
+          const linked=fs.readFileSync('dist-table-runtime/OfflineTable');
+          if(linked.readUInt32LE(linked.length-12)!==9) throw new Error('Offline Table link did not emit sealed GUI payload v9.');
+          NODE
+          xvfb-run -a dist-table-runtime/OfflineTable --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
           name: patch-linux-native-gui-runtime-v10
