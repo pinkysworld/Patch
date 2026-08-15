@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.33**
+Current development beta: **0.2.0-beta.34**
 
 Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features or measured results.
 
@@ -82,6 +82,26 @@ The coarse baseline is an internal ablation, not a representation of any named p
 
 This case is a larger engineering/motivating example, not a complete plugin sandbox or malicious-code containment result.
 
+## Product milestones
+
+### beta.33: Studio and production-readiness layer
+- [x] versioned v2 project bundle with build target/native mode persistence and migrations
+- [x] managed recovery snapshots and privacy-redacted local diagnostics
+- [x] source-backed Form resizing, scrollable Designer and project-level build configuration
+- [x] split public Studio/Language/Documentation/Downloads/Help site
+- [x] stable diagnostics/CLI result contracts, security gates, fuzzing, differential tests and logical release reproducibility
+
+### beta.34: Studio correctness and runtime integrity
+- [x] programmatic sample/Designer source edits normalize into the same canonical v2 project-persistence signals as manual editing
+- [x] programmatic Project Type changes synchronize native-build UI state
+- [x] same-origin `/runtimes/` service-worker requests are fresh-first with offline fallback
+- [x] Pages derives a runtime integrity manifest from GitHub Release SHA-256 asset digests and independently verifies downloaded bytes
+- [x] Patch Studio re-hashes native runtime templates with Web Crypto before token-free browser-side sealing and fails closed on mismatch
+- [x] Downloads page documents SHA-256 verification and separates integrity checking from signing/notarization claims
+- [x] Pages concurrency prevents runtime `workflow_run` events from cancelling a valid source-triggered deploy
+
+Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 0.9 or sealed payload v9/runtime v1.0.
+
 ## Product priorities
 
 ### Studio / Designer
@@ -111,6 +131,7 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] direct AOT backend **0.9** native Table widgets on Win32/AppKit/GTK with real compile/runtime/selection smokes
 - [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
 - [x] sealed Ready/offline Table payload **v9** / runtime **v1.0** contract and Windows/macOS/Linux consumer switch with real seal/link/run smokes
+- [x] canonical v2 persistence synchronization for programmatic sample/Designer edits
 - [ ] richer data controls beyond Table/Grid
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
@@ -141,15 +162,16 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] Linux packaging expectations documented
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
 - [x] offline compiler builds/embeds runtime v1.0 and executes Console, responsive Window and Table Window link smokes on Windows/Linux/Apple Silicon/macOS Intel
+- [x] browser Ready Window runtime templates are SHA-256 verified against release-asset digests before sealing
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
-- [ ] verify release integrity before install/update
+- [ ] verify release integrity before install/update across future installer/update channels
 - [ ] fresh remote native build service without a user-supplied GitHub token
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts over Native GUI IR 0.8. Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the explicit Table-capable Ready/offline contract. The Windows/macOS/Linux sealed-runtime matrix and ordinary offline-linker matrix independently encode and execute the new payload before it is presented as supported.
+The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts over Native GUI IR 0.8. Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the explicit Table-capable Ready/offline contract. The Windows/macOS/Linux sealed-runtime matrix and ordinary offline-linker matrix independently encode and execute the new payload before it is presented as supported. Beta.34 additionally validates the byte identity of the native runtime templates used by the browser Ready path, without claiming platform code signing.
 
 ## Highest-value remaining research work
 
@@ -200,3 +222,4 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 17. Automated accessibility smoke evidence does not substitute for manual assistive-technology testing or imply WCAG conformance.
 18. Responsive layout metadata remains non-semantic UI metadata; runtime resize must not create hidden persistent state or Change History.
 19. A direct-AOT control extension is not a sealed-runtime support claim until the payload format and token-free consumer independently encode and execute it.
+20. Browser-side Ready packaging must fail closed if the deployed native runtime bytes do not match the deployment's verified release-integrity manifest.

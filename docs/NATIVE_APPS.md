@@ -1,6 +1,6 @@
 # Application builds
 
-Status: **0.2.0-beta.33** · Change IR **0.10**
+Status: **0.2.0-beta.34** · Change IR **0.10**
 
 Patch keeps Console, direct-native Window, token-free sealed Window and explicit compatibility Window paths separate. Product GUI work does not expand the current research assurance claims.
 
@@ -140,7 +140,24 @@ The v1.0 runtime release tags are:
 
 The dedicated **Patch Native Sealed Table Runtime** matrix builds each runtime from source, seals `examples/table-native-v09.patch` as payload v9, runs the finished application and separately runs the normal `patch link` path against the same runtime. Windows, macOS and Linux all execute real row-selection smokes.
 
-Pages waits until all three v1.0 release assets exist before deploying the Studio version that consumes them. If the initial source push reaches Pages first, that deployment exits successfully without replacing the current site; successful runtime publication triggers the later deployment. This avoids a browser-compiler/runtime mismatch and avoids turning release ordering into a failing Pages run.
+Pages waits until the required Studio runtime releases exist before deploying a Studio version that consumes them. If the initial source push reaches Pages first, that deployment exits successfully without replacing the current site; successful runtime publication triggers the later deployment. This avoids a browser-compiler/runtime mismatch and avoids turning release ordering into a failing Pages run.
+
+### Beta.34 runtime-template integrity
+
+The browser Ready path now verifies every runtime template it can consume, not only the native GUI v1.0 files. This includes the three native GUI v1.0 runtimes and the Console/explicit compatibility Window templates from `studio-runtime-v0.6`.
+
+During Pages deployment:
+
+1. Pages requires `studio-runtime-v0.6` plus the three platform native runtime-v1.0 releases.
+2. GitHub Release supplies the exact runtime assets and their recorded `sha256:` digests.
+3. `scripts/runtime-integrity-manifest.js` independently hashes every downloaded runtime and fails when bytes do not match the recorded release digest.
+4. Pages writes `runtimes/runtime-manifest.json` containing the verified file name, release tag and SHA-256 digest for all browser-consumed runtime templates.
+
+In Patch Studio, `web/runtime-integrity.js` loads before `native-build.js` and intercepts only the known same-origin runtime-template fetches. It fetches the manifest with `no-store`, hashes runtime bytes using Web Crypto SHA-256 and fails closed when a runtime is missing from the manifest or its digest differs.
+
+The service worker treats all same-origin `/runtimes/` requests as fresh-first while online, including the manifest, native `.exe`/`.bin` templates and compatibility `.zip` templates. Successful responses remain available as offline fallback.
+
+This validates byte consistency across the existing GitHub Release -> Pages -> browser path. It does not claim Authenticode, Developer ID/notarization, an independent transparency log or a separate signing trust root.
 
 ### Compatibility lines
 
@@ -157,6 +174,8 @@ The Windows, Linux, Apple Silicon macOS and Intel macOS offline compiler paths e
 3. the Table/Grid example with native row-selection smoke.
 
 The Intel macOS kit bundles its own Intel Node runtime for the CLI. FreeBSD remains Console-only through portable C99 + local `cc`.
+
+The rolling `offline-compiler-v0.1` release publishes a `SHA256SUMS` file beside its platform assets. The public Downloads page documents verification commands and explicitly separates checksum integrity from platform code-signing/notarization claims.
 
 ## Native accessibility baseline
 
@@ -210,5 +229,6 @@ The next native stages include:
 - Menu separators, shortcuts and source-backed enabled/checked state;
 - ListBox multi-selection with an explicit list-valued event contract;
 - signing/notarization evidence and install/update packaging;
+- broader installer/update integrity verification once those channels exist;
 - more self-contained Linux distribution packaging;
 - FreeBSD native GUI support.

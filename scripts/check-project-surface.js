@@ -10,11 +10,11 @@ const beta = match[1];
 const studioVersion = `0.2 beta.${beta}`;
 
 const files = {
-  readme: read('README.md'), website: read('web/index.html'), languagePage: read('web/language.html'), docsPage: read('web/docs.html'), helpPage: read('web/help.html'), studio: read('docs/PATCH_STUDIO.md'),
+  readme: read('README.md'), website: read('web/index.html'), languagePage: read('web/language.html'), docsPage: read('web/docs.html'), downloadsPage: read('web/downloads.html'), helpPage: read('web/help.html'), studio: read('docs/PATCH_STUDIO.md'), beta34: read('docs/BETA34.md'),
   native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
   formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
   evaluation: read('docs/EVALUATION.md'), securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
-  runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'),
+  runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'), runtimeIntegrity: read('web/runtime-integrity.js'), studioDomSync: read('web/studio-dom-sync.js'),
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
   directTrace: read('src/direct-trace-validator.js'), directEffect: read('src/direct-effect-validator.js'),
   transitiveBody: read('src/transitive-call-body.js'), transitiveCertificate: read('src/transitive-call-body-certificate.js'),
@@ -26,7 +26,7 @@ const files = {
   securityManifest: read('case-studies/security/cases.json'),
   repeatedExample: read('examples/formal-transitive-calls-repeated.patch'),
   callTree: read('formal/PatchCallTree.lean'), callRuntime: read('formal/PatchCallRuntime.lean'), lakefile: read('formal/lakefile.lean'),
-  formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'),
+  formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'), pagesWorkflow: read('.github/workflows/pages.yml'),
   beta32Workflow: read('.github/workflows/beta32-invocation-frames.yml'),
   evaluationWorkflow: read('.github/workflows/assurance-evaluation.yml')
 };
@@ -43,13 +43,13 @@ if (pkg.scripts?.['evaluate:assurance'] !== 'node scripts/benchmark-assurance.js
 if (pkg.scripts?.['evaluate:security'] !== 'node scripts/evaluate-security-cases.js') throw new Error('package.json is missing the canonical semantic-authority security evaluation command.');
 
 requireAll('README.md', files.readme, [
-  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.33: Studio and production-readiness layer',
+  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.34: Studio correctness and runtime integrity', 'Beta.33: Studio and production-readiness layer',
   'Beta.32', 'invocation-frame', 'PatchCallRuntime.lean', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
-  'https://minh.systems/Patch/', 'Documentation', 'Help'
+  'https://minh.systems/Patch/', 'Documentation', 'Downloads', 'Help', 'docs/BETA34.md'
 ]);
 requireAll('web/index.html', files.website, [
   `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `data-patch-version="${version}"`,
-  './language.html', './docs.html', './help.html', './form-window-resize.js'
+  './language.html', './docs.html', './downloads.html', './help.html', './runtime-integrity.js', './studio-dom-sync.js', './form-window-resize.js'
 ]);
 if (files.website.includes('class="site-info"') || files.website.includes('Small syntax. Visible changes. One Studio.')) {
   throw new Error('Studio page still contains the old combined language landing content.');
@@ -57,18 +57,19 @@ if (files.website.includes('class="site-info"') || files.website.includes('Small
 requireAll('web/language.html', files.languagePage, [
   `data-patch-version="${version}"`, studioVersion, 'Small syntax. Visible changes.', 'Beta.32 introduced invocation-frame-aware direct-Wasm correspondence'
 ]);
-requireAll('web/docs.html', files.docsPage, [`data-patch-version="${version}"`, 'Patch documentation', 'docs/FORMAL_MODEL.md', 'docs/NATIVE_APPS.md']);
-requireAll('web/help.html', files.helpPage, [`data-patch-version="${version}"`, 'Design a Window app', 'lower-right corner', 'Designer scrollbars']);
+requireAll('web/docs.html', files.docsPage, [`data-patch-version="${version}"`, 'Patch documentation', 'docs/BETA34.md', 'docs/FORMAL_MODEL.md', 'docs/NATIVE_APPS.md']);
+requireAll('web/downloads.html', files.downloadsPage, [`data-patch-version="${version}"`, 'SHA256SUMS', 'Get-FileHash', 'runtime-manifest.json', 'studio-runtime-v0.6', 'native-win32-runtime-v1.0']);
+requireAll('web/help.html', files.helpPage, [`data-patch-version="${version}"`, 'Design a Window app', 'lower-right corner', 'Designer scrollbars', 'runtime manifest', 'canonical v2']);
 requireAll('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, `Patch package **${version}**`, 'Change IR **0.10**', 'project bundle that stores',
-  'lower-right resize grip', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.32 research boundary'
+  `What works in 0.2 beta.${beta}`, `Patch package **${version}**`, 'Change IR **0.10**', 'One canonical Studio state', 'project bundle that stores',
+  'lower-right resize grip', 'runtime-manifest.json', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.32 research boundary'
 ]);
+requireAll('docs/BETA34.md', files.beta34, [version, 'One canonical Studio project state', 'Runtime integrity before browser packaging', 'studio-runtime-v0.6', 'runtime-manifest.json', 'fresh-first']);
 
-// These documents describe the beta.32 assurance milestone. They may retain beta.32 as a historical/formal label
-// even while the product package advances to beta.33.
-requireAll('docs/NATIVE_APPS.md', files.native, ['Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean']);
+// These documents retain beta.32 as the historical/formal assurance milestone even as the product beta advances.
+requireAll('docs/NATIVE_APPS.md', files.native, ['Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.34 runtime-template integrity']);
 requireAll('docs/ROADMAP.md', files.roadmap, [
-  '### beta.32:', 'invocation frames', 'repeated identical calls', 'Assurance overhead/scaling harness',
+  `Current development beta: **${version}**`, '### beta.34:', '### beta.32:', 'invocation frames', 'repeated identical calls', 'Assurance overhead/scaling harness',
   'controlled paper-quality benchmark runs', 'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject'
 ]);
 requireAll('docs/COMPILER.md', files.compiler, ['Change IR **0.10**', 'Beta.32', 'invocation-frame', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean']);
@@ -89,6 +90,9 @@ requireAll('docs/SECURITY_CASE_STUDIES.md', files.securityCasesDoc, [
   '1 case : Patch reject / coarse reject', 'not a claim about any named prior effect or capability system'
 ]);
 requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, ['Status: **0.2.0-beta.23**', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape']);
+
+requireAll('web/runtime-integrity.js', files.runtimeIntegrity, ['patch-studio-runtime-integrity', 'runtime-manifest.json', "crypto.subtle.digest('SHA-256'", 'failed SHA-256 verification']);
+requireAll('web/studio-dom-sync.js', files.studioDomSync, ["document.querySelector('#code')", "document.querySelector('#projectKind')", 'queueMicrotask', "new Event('input'", "new Event('change'"]);
 
 requireAll('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", "'./formal-calls.js'", 'formalCalls']);
 requireAll('src/formal-calls.js', files.formalCalls, ['buildFormalCalls', 'patch-formal-calls', 'rank-decreasing']);
@@ -135,8 +139,9 @@ requireAll('.github/workflows/formal.yml', files.formalWorkflow, [
 ]);
 requireAll('.github/workflows/ci.yml', files.ciWorkflow, [
   'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated', 'src/transitive-runtime-correspondence.js',
-  'src/transitive-runtime-certificate.js', 'web/form-window-resize.js', 'web/project-config-restore.js'
+  'src/transitive-runtime-certificate.js', 'web/form-window-resize.js', 'web/project-config-restore.js', 'web/runtime-integrity.js', 'web/studio-dom-sync.js'
 ]);
+requireAll('.github/workflows/pages.yml', files.pagesWorkflow, ['studio-runtime-v0.6', 'native-win32-runtime-v1.0', 'runtime-integrity-manifest.js', 'runtime-manifest.json', "cancel-in-progress: ${{ github.event_name == 'push' }}"]);
 requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflow, [
   'Patch Beta32 Invocation Frames', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'PatchCallRuntime', 'cancel-in-progress: true'
 ]);
@@ -144,8 +149,8 @@ requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflo
   'Patch Assurance Evaluation', 'workflow_dispatch:', 'benchmark-assurance.js', 'Measure Lean certificate checking', 'actions/upload-artifact@v', 'retention-days: 30'
 ]);
 requireAll('web/sw.js', files.serviceWorker, [
-  `const PATCH_RELEASE = '${version}'`, "const REVISION = '__PATCH_SITE_REV__'", "'./language.html'", "'./docs.html'", "'./help.html'",
-  "'./form-window-resize.js'", "'../src/formal-calls.js'", 'freshFirst'
+  `const PATCH_RELEASE = '${version}'`, "const REVISION = '__PATCH_SITE_REV__'", "'./language.html'", "'./docs.html'", "'./downloads.html'", "'./help.html'",
+  "'./runtime-integrity.js'", "'./studio-dom-sync.js'", "'./form-window-resize.js'", "'../src/formal-calls.js'", "url.pathname.includes('/runtimes/')", 'freshFirst'
 ]);
 
 console.log(`ok project surface is consistent at ${version}; beta.32 remains the formal assurance milestone`);

@@ -1,5 +1,5 @@
 const REVISION = '__PATCH_SITE_REV__';
-const PATCH_RELEASE = '0.2.0-beta.33';
+const PATCH_RELEASE = '0.2.0-beta.34';
 const CACHE_PREFIX = 'patch-studio-';
 const CACHE = `${CACHE_PREFIX}${REVISION}`;
 // Known previous cache id retained only so migration remains explicit and auditable.
@@ -9,7 +9,8 @@ const versioned = path => /\.(?:js|css|webmanifest|svg)$/.test(path) ? `${path}?
 const CORE = [
   './', './index.html', './language.html', './docs.html', './downloads.html', './help.html',
   './style.css', './site-navigation.css', './site-pages.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './designer-multiselect.css', './designer-responsive-layout.css', './form-window-resize.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css',
-  './playground.js', './forms-designer.js', './table-stage1.js', './designer-alignment.js', './designer-alignment-guides.js', './designer-multiselect.js', './designer-layout-policy.js', './designer-responsive-layout.js', './form-window-resize.js', './native-build.js', './project-lifecycle.js', './project-config-restore.js', './recovery-manager.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
+  './runtime-integrity.js', './native-build.js', './project-lifecycle.js', './project-config-restore.js', './recovery-manager.js',
+  './playground.js', './forms-designer.js', './table-stage1.js', './designer-alignment.js', './designer-alignment-guides.js', './designer-multiselect.js', './designer-layout-policy.js', './designer-responsive-layout.js', './form-window-resize.js', './studio-dom-sync.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
   '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/diagnostics.js', '../src/backend-diagnostic-context.js', '../src/artifact-name.js', '../src/bundle.js', '../src/wasm.js',
@@ -30,8 +31,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  const codeAsset = url.origin === self.location.origin && /\.(?:js|html|css|webmanifest|svg)$/.test(url.pathname);
-  const freshFirst = event.request.mode === 'navigate' || codeAsset;
+  const sameOrigin = url.origin === self.location.origin;
+  const codeAsset = sameOrigin && /\.(?:js|html|css|webmanifest|svg)$/.test(url.pathname);
+  const runtimeAsset = sameOrigin && url.pathname.includes('/runtimes/');
+  const freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset;
 
   if (freshFirst) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {

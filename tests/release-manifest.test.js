@@ -7,6 +7,8 @@ import test from 'node:test';
 import { buildReleaseManifest, formatSha256Sums, writeReleaseManifest } from '../scripts/release-manifest.js';
 import { verifyRelease } from '../scripts/verify-release.js';
 
+const packageVersion = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+
 test('release manifest is deterministic, sorted and content-addressed', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-release-manifest-'));
   try {
@@ -16,6 +18,7 @@ test('release manifest is deterministic, sorted and content-addressed', () => {
     const second = buildReleaseManifest(['a.txt', 'b.bin'], { baseDir: dir, commit: 'abc123' });
     assert.deepEqual(first, second);
     assert.deepEqual(first.artifacts.map(item => item.path), ['a.txt', 'b.bin']);
+    assert.equal(first.patchVersion, packageVersion);
     assert.equal(first.artifacts[0].sha256, crypto.createHash('sha256').update('Patch\n').digest('hex'));
     assert.match(formatSha256Sums(first), /^[a-f0-9]{64}  a\.txt\n[a-f0-9]{64}  b\.bin\n$/);
   } finally {
@@ -32,6 +35,7 @@ test('release manifest writer emits JSON and SHA256SUMS', () => {
     const json = JSON.parse(fs.readFileSync(path.join(dir, 'meta', 'release-manifest.json'), 'utf8'));
     assert.equal(json.schema, 'patch-release-manifest');
     assert.equal(json.schemaVersion, 1);
+    assert.equal(json.patchVersion, packageVersion);
     assert.equal(json.artifacts.length, 1);
     assert.equal(json.artifacts[0].path, 'artifacts/app.bin');
     assert.match(fs.readFileSync(path.join(dir, 'meta', 'SHA256SUMS.txt'), 'utf8'), /artifacts\/app\.bin/);
@@ -48,9 +52,9 @@ test('release verifier binds flat published asset names to checksums version and
     fs.mkdirSync(dist);
     fs.writeFileSync(path.join(dist, 'app.bin'), 'payload');
     writeReleaseManifest(['.'], { baseDir: dist, outDir: meta, commit: 'deadbeef' });
-    const verified = verifyRelease({ baseDir: dist, metaDir: '../release-meta', commit: 'deadbeef', version: '0.2.0-beta.33' });
+    const verified = verifyRelease({ baseDir: dist, metaDir: '../release-meta', commit: 'deadbeef', version: packageVersion });
     assert.equal(verified.commit, 'deadbeef');
-    assert.equal(verified.patchVersion, '0.2.0-beta.33');
+    assert.equal(verified.patchVersion, packageVersion);
     assert.deepEqual(verified.artifacts.map(item => item.path), ['app.bin']);
     assert.match(fs.readFileSync(path.join(meta, 'SHA256SUMS.txt'), 'utf8'), /^[a-f0-9]{64}  app\.bin\n$/);
   } finally {
@@ -67,7 +71,7 @@ test('release verifier rejects changed bytes commit drift and checksum drift', (
     const artifact = path.join(dist, 'app.bin');
     fs.writeFileSync(artifact, 'payload');
     writeReleaseManifest(['.'], { baseDir: dist, outDir: meta, commit: 'deadbeef' });
-    const options = { baseDir: dist, metaDir: '../release-meta', version: '0.2.0-beta.33' };
+    const options = { baseDir: dist, metaDir: '../release-meta', version: packageVersion };
     assert.throws(() => verifyRelease({ ...options, commit: 'other' }), /commit/);
     fs.writeFileSync(artifact, 'tampered');
     assert.throws(() => verifyRelease({ ...options, commit: 'deadbeef' }), /(size|hash) mismatch/);

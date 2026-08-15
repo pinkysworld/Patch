@@ -7,9 +7,9 @@
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 [![Sealed Table Runtime](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-table-runtime.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-table-runtime.yml)
 
-**Current development beta: `0.2.0-beta.33`** · **Change IR: `0.10`** · **Native GUI IR: `0.7` stable / `0.8` Table extension**
+**Current development beta: `0.2.0-beta.34`** · **Change IR: `0.10`** · **Native GUI IR: `0.7` stable / `0.8` Table extension**
 
-[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
+[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Beta.34 notes](docs/BETA34.md) · [Paper](paper/README.md)
 
 Patch is built around one rule:
 
@@ -32,10 +32,11 @@ This mandatory mutation substrate supports history, undo/redo, provenance, seman
 | Formal core | State-Change Factorization, signature soundness, policy containment, integer range soundness |
 | Calls | Exact safe-integer binding, guarded structured traces, finite transitive exact call trees |
 | Runtime assurance | Invocation-frame-aware direct-Wasm correspondence, including repeated identical calls |
-| Patch Studio | Browser IDE, source editor, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
+| Patch Studio | Browser IDE, canonical v2 project persistence, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
 | Window UI | Forms, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Tabs/Table, menus and result-bearing dialogs |
 | Native Table | Native GUI IR 0.8 / direct backend 0.9 with Win32 `WC_LISTVIEWW`, AppKit `NSTableView` and GTK3 `GtkTreeView` |
 | Ready Window ABI | Sealed payload v9 / runtime v1.0 on Windows, macOS and Linux; v8/runtime v0.9 remains a frozen compatibility line |
+| Ready runtime integrity | Pages verifies release SHA-256 digests and Patch Studio re-hashes every browser-consumed runtime template before packaging |
 | Desktop | Ready Windows/macOS/Linux Console and Window downloads; FreeBSD Console via C99 |
 
 ## Patch Studio and the native Table line
@@ -53,6 +54,18 @@ The current native Table path is deliberately versioned instead of silently rede
 - payload **v8** / runtime **v0.9** remains the frozen responsive Native GUI IR 0.7 compatibility line.
 
 The dedicated sealed-runtime workflow independently gates the shared payload contract and then compiles, seals, links and smoke-runs the Table example on Windows, macOS and Linux. The ordinary offline compiler matrix separately exercises local `patch link` output.
+
+## Beta.34: Studio correctness and runtime integrity
+
+Beta.34 hardens the product layer after the payload-v9/runtime-v1.0 switch. It does not widen the beta.32 formal assurance claim and does not change Change IR 0.10, Native GUI IR 0.8 or the native Table ABI.
+
+A code review found that some programmatic Patch Studio edits, especially sample switching and older Designer add/edit/delete paths, could change visible source while only updating the legacy unversioned browser key. Beta.34 normalizes programmatic source and Project Type mutations into the same DOM event path used by manual editing. The canonical v2 project lifecycle, recovery snapshots, Designer refresh, Change Contract refresh and native-build panel therefore observe one consistent project state.
+
+The browser no-token packaging path now adds a fail-closed runtime-integrity step for every runtime template it consumes. Pages requires `studio-runtime-v0.6` plus the Windows/macOS/Linux native runtime-v1.0 releases, downloads the exact Console, compatibility Window and native GUI assets used by Patch Studio, reads the SHA-256 digest recorded by GitHub for each asset and independently re-hashes those bytes before publishing a verified runtime manifest. Patch Studio then hashes the selected runtime again with Web Crypto before packaging. A missing manifest entry or mismatch stops the build instead of silently producing an application from unexpected runtime bytes.
+
+The service worker also treats same-origin `/runtimes/` requests as fresh-first. Online builds therefore ask the current deployment for the runtime and integrity manifest, while successfully fetched bytes remain available as an offline fallback.
+
+See [`docs/BETA34.md`](docs/BETA34.md) for the exact scope and trust boundary.
 
 ## Beta.33: Studio and production-readiness layer
 
@@ -162,13 +175,13 @@ Beta.32 **does not claim full compiler/runtime simulation or full compiler verif
 
 Patch Studio provides source editing, Console/Window Run, Change Contract/IR views, source-backed Designer editing, project export/import/recovery and ready desktop builds. The Studio, Language, Documentation, Downloads and Help surfaces are separate web pages sharing one navigation bar.
 
-Windows, macOS and Linux default to **Ready app download (no token)**. FreeBSD Console uses the portable C99 backend. The optional cloud/AOT route is explicitly separate and does not persist its GitHub token.
+Windows, macOS and Linux default to **Ready app download (no token)**. Every browser-consumed runtime template used by that path is SHA-256 verified before packaging. FreeBSD Console uses the portable C99 backend. The optional cloud/AOT route is explicitly separate and does not persist its GitHub token.
 
 GUI input remains semantic: Input/ComboBox/ListBox/Radio expose transient text `value`, Checkbox exposes transient Boolean `value`, and Table exposes the selected row as transient list-valued `value`. Persistent state changes only through explicit Patch `change`.
 
 ## Change IR 0.10
 
-Beta.33 and the Native GUI IR 0.8 Table extension do not change the production Change IR schema. Invocation frames and runtime certificates remain separate assurance artifacts reconstructed from the existing Change IR execution model.
+Beta.34, Beta.33 and the Native GUI IR 0.8 Table extension do not change the production Change IR schema. Invocation frames and runtime certificates remain separate assurance artifacts reconstructed from the existing Change IR execution model.
 
 ## Research boundary
 

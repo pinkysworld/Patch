@@ -8,6 +8,8 @@ on:
       - scripts/build-site.js
       - scripts/check-site.js
       - scripts/check-site-v10.js
+      - scripts/check-site-beta34.js
+      - scripts/runtime-integrity-manifest.js
       - package.json
       - src/interpreter.js
       - src/parser.js
@@ -85,17 +87,18 @@ jobs:
       - uses: actions/configure-pages@v6
       - name: Build public site
         run: npm run build:site
-      - name: Check Table-capable native runtime releases
+      - name: Check required Patch Studio runtime releases
         id: native_runtime
         env:
           GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: studio-runtime-v0.6
           WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
           MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
         shell: bash
         run: |
           missing=0
-          for tag in "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
+          for tag in "$RUNTIME_TAG" "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               echo "Found $tag"
             else
@@ -107,9 +110,9 @@ jobs:
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'Table-capable runtime v1.0 is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
+            echo 'A required Patch Studio runtime release is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
           fi
-      - name: Add compiled prebuilt native runtime templates
+      - name: Add and verify compiled native runtime templates
         if: steps.native_runtime.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -117,23 +120,64 @@ jobs:
           WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
           MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p _site/runtimes
-          if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
-          else
-            echo "Compatibility runtime release $RUNTIME_TAG is not published yet."
-          fi
-          gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
-          gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
-          gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir _site/runtimes --clobber
+
+          for file in \
+            patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \
+            patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
+            gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir _site/runtimes --clobber
+          done
+
+          WIN_FILE=patch-windows-native-gui-runtime.exe
+          LINUX_FILE=patch-linux-native-gui-runtime.bin
+          MACOS_FILE=patch-macos-native-gui-runtime.bin
+          gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$WIN_FILE" --dir _site/runtimes --clobber
+          gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$LINUX_FILE" --dir _site/runtimes --clobber
+          gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$MACOS_FILE" --dir _site/runtimes --clobber
+
+          release_digest() {
+            local tag="$1" asset="$2"
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \"$asset\") | .digest"
+          }
+
+          manifest_args=(
+            --dir _site/runtimes
+            --out _site/runtimes/runtime-manifest.json
+          )
+          add_verified_entry() {
+            local tag="$1" file="$2" digest
+            digest="$(release_digest "$tag" "$file")"
+            if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "GitHub release asset $tag/$file is missing a valid SHA-256 digest: $digest" >&2
+              exit 1
+            fi
+            manifest_args+=(--entry "$file|$tag|$digest")
+          }
+
+          add_verified_entry "$WIN32_RUNTIME_TAG" "$WIN_FILE"
+          add_verified_entry "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE"
+          add_verified_entry "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE"
+          for file in \
+            patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \
+            patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
+            add_verified_entry "$RUNTIME_TAG" "$file"
+          done
+
+          node scripts/runtime-integrity-manifest.js "${manifest_args[@]}"
+          cat _site/runtimes/runtime-manifest.json
           ls -lh _site/runtimes
       - name: Validate public site
         if: steps.native_runtime.outputs.ready == 'true'
-        run: npm run check:site
+        run: node scripts/check-site.js
       - name: Validate Table-ready Studio surface
         if: steps.native_runtime.outputs.ready == 'true'
         run: node scripts/check-site-v10.js
+      - name: Validate beta34 Studio hardening surface
+        if: steps.native_runtime.outputs.ready == 'true'
+        run: node scripts/check-site-beta34.js
       - uses: actions/upload-pages-artifact@v5
         if: steps.native_runtime.outputs.ready == 'true'
         with:

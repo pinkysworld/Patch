@@ -2,7 +2,7 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal remains QuickBASIC/Visual-Basic/Delphi-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.33
+## What works in 0.2 beta.34
 
 Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form and control drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Table controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
@@ -10,7 +10,15 @@ The public website is split into focused **Studio**, **Language**, **Documentati
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required. The optional cloud/AOT route remains separate and does not persist its GitHub token.
 
-Patch package **0.2.0-beta.33** keeps Change IR **0.10**. The beta.32 invocation-frame assurance result remains the current formal runtime-correspondence milestone; beta.33 is primarily a Studio, project-format and production-readiness release.
+Patch package **0.2.0-beta.34** keeps Change IR **0.10**. The beta.32 invocation-frame assurance result remains the current formal runtime-correspondence milestone; beta.34 is a Studio correctness, distribution-integrity and documentation release.
+
+## One canonical Studio state
+
+The canonical browser project is still the version-2 `patch-studio-project` bundle. Beta.34 fixes a code-review finding in older Studio integration code: some programmatic sample/Designer mutations could update visible `main.patch` and only the unversioned compatibility key, while the canonical v2 lifecycle was waiting for the same DOM `input`/`change` signals used by normal typing.
+
+`web/studio-dom-sync.js` now closes that gap. After Studio UI actions it checks whether source or Project Type changed without the normal shared signal. It emits only the missing signal, so modules that already behave correctly are not double-triggered. Programmatic source edits therefore reach the same canonical v2 persistence, recovery, Designer and Change Contract path as manual source editing.
+
+This also keeps the native build panel synchronized when sample switching changes a project from Console to Window or back.
 
 ## Source-backed Forms and controls
 
@@ -62,7 +70,7 @@ Patch Studio v2 is a canonical project bundle that stores:
 
 Version 1 bundles remain readable and are explicitly migrated to version 2 with the historical defaults `web` + `prebuilt`. Unknown future project versions are rejected rather than guessed.
 
-Local canonical storage moves to `patchStudio.project.v2`. Existing v1 and simple legacy stores are migration inputs. Recovery snapshots also normalize embedded v1 projects to v2. Import and restore protect the current project before replacement.
+Local canonical storage moves to `patchStudio.project.v2`. Existing v1 and simple legacy stores are migration inputs. Recovery snapshots also normalize embedded v1 projects to v2. Import and restore protect the current project before replacement. The unversioned `patchStudio.project` entry is retained only as a compatibility mirror for older Studio code and migration, not as the authoritative project state.
 
 ## Recovery and local diagnostics
 
@@ -95,23 +103,38 @@ Current direct-native mappings include:
 
 The `Native Table v0.9` workflow compiles and runs the same Table app on Windows, macOS and Linux and checks native row-selection dispatch. Unsupported native behavior fails closed. There is no implicit Electron fallback.
 
-## Native build resilience
+## Native build resilience and runtime integrity
 
 The optional GitHub Actions cloud/AOT path supports explicit Cancel, a 15-minute timeout and Retry. Retry uses the original in-memory build snapshot and a new request identity rather than silently rebuilding changed editor contents.
 
-The token-free Ready-app path remains the default. Windows, Linux and macOS Ready Window downloads now lower Native GUI IR 0.8 in the browser and seal payload v9 into runtime v1.0. The runtime uses real native Table widgets while retaining the runtime-v0.9 accessibility and responsive Anchor/Dock behavior. Pages waits for all three v1.0 runtime releases before replacing the deployed Studio, so a runtime-publication race does not publish a mismatched browser compiler/runtime set. Signing/notarization remains a separate distribution concern.
+The token-free Ready-app path remains the default. Windows, Linux and macOS Ready Window downloads lower Native GUI IR 0.8 in the browser and seal payload v9 into runtime v1.0. Console ready builds and the explicit compatibility Window path consume the separately versioned `studio-runtime-v0.6` templates.
+
+Beta.34 adds one fail-closed integrity gate across every runtime template that the browser packaging path consumes:
+
+1. Pages requires `studio-runtime-v0.6` plus all three native runtime-v1.0 releases before replacing the deployed Studio.
+2. It downloads the exact Console, compatibility Window and native GUI runtime assets used by Patch Studio.
+3. It reads each SHA-256 `digest` recorded by GitHub for the exact release asset.
+4. `scripts/runtime-integrity-manifest.js` independently hashes the downloaded file and rejects a mismatch.
+5. Pages publishes `runtimes/runtime-manifest.json` with the verified file name, release tag and digest for all browser-consumed runtime templates.
+6. `web/runtime-integrity.js` hashes a selected runtime again with Web Crypto before `native-build.js` can use it.
+
+A missing manifest entry or digest mismatch stops packaging. This is byte-integrity validation for the existing release/deployment trust path. It does not claim Authenticode, Developer ID/notarization or an independent signing authority.
+
+The release gate and Pages concurrency rule also prevent a runtime-publication race from replacing the deployed Studio with a browser/runtime combination whose required assets are incomplete.
 
 ## PWA updates
 
 Patch Studio Pages builds derive a deterministic content revision from every browser-facing page, Studio asset and browser compiler/runtime module. Generated CSS, JavaScript, manifest and icon references carry that revision, and the Service Worker uses the same revision as its active cache identity.
 
-The worker bypasses the browser HTTP cache when checking code/UI assets. An already-controlled Studio page reloads once when a newly activated worker takes control. Old beta-specific caches are migration inputs only; the active cache is content-addressed.
+The worker bypasses the browser HTTP cache when checking code/UI assets. Beta.34 extends the same fresh-first behavior to same-origin `/runtimes/` requests, including the runtime integrity manifest, native `.exe`/`.bin` templates and compatibility `.zip` templates. Successful runtime responses may still be retained for offline fallback, but an online Ready build does not silently prefer an old cached runtime.
+
+An already-controlled Studio page reloads once when a newly activated worker takes control. Old beta-specific caches are migration inputs only; the active cache is content-addressed.
 
 ## Beta.32 research boundary
 
 The ordinary Studio does not need Lean or expose beta.32 proof machinery. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
 
-The reproducible evidence set includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`. Beta.33 Studio/project work does not expand those assurance claims. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+The reproducible evidence set includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`. Beta.34 Studio/distribution work does not expand those assurance claims. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
 
 ## Production-readiness additions
 
@@ -120,6 +143,7 @@ The current Studio/repository also includes:
 - stable `PATCHxxxx` diagnostics with line/column locations;
 - versioned CLI JSON results while preserving existing exit codes;
 - deterministic tagged-release manifests and checksum verification;
+- SHA-256 verification for every runtime template consumed by browser-side no-token packaging;
 - CodeQL, Dependabot for GitHub Actions and repository security-policy checks;
 - deterministic parser/compiler fuzzing;
 - Interpreter/direct-Wasm/executable-C99 differential tests;

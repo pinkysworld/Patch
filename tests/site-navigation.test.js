@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
+if (!beta) throw new Error(`Unexpected Patch version ${pkg.version}`);
 const pages = new Map([
   ['Studio', fs.readFileSync('web/index.html', 'utf8')],
   ['Language', fs.readFileSync('web/language.html', 'utf8')],
@@ -29,7 +32,7 @@ test('every public page exposes the same five top-level navigation tabs', () => 
 
 test('Studio stays focused on the IDE instead of duplicating the language landing page', () => {
   const studio = pages.get('Studio');
-  assert.match(studio, /Patch Studio <span>0\.2 beta\.33<\/span>/);
+  assert.ok(studio.includes(`Patch Studio <span>0.2 beta.${beta}</span>`));
   assert.doesNotMatch(studio, /Small syntax\. Visible changes\./);
   assert.doesNotMatch(studio, /class="site-info"/);
 });
@@ -52,7 +55,9 @@ test('site navigation and content pages are responsive and keyboard visible', ()
   assert.match(pageCss, /grid-template-columns: 1fr/);
 });
 
-test('site builder and validator remain syntactically valid', () => {
+test('site builder and validators remain syntactically valid', () => {
   execFileSync(process.execPath, ['--check', 'scripts/build-site.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'scripts/check-site.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'scripts/check-site-v10.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'scripts/check-site-beta34.js'], { stdio: 'pipe' });
 });
