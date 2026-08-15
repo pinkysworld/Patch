@@ -13,7 +13,7 @@ const files = {
   readme: read('README.md'), website: read('web/index.html'), languagePage: read('web/language.html'), docsPage: read('web/docs.html'), downloadsPage: read('web/downloads.html'), helpPage: read('web/help.html'), studio: read('docs/PATCH_STUDIO.md'), beta34: read('docs/BETA34.md'),
   native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
   formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
-  evaluation: read('docs/EVALUATION.md'), securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
+  evaluation: read('docs/EVALUATION.md'), controlledEvaluation: read('docs/CONTROLLED_EVALUATION.md'), securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'), runtimeIntegrity: read('web/runtime-integrity.js'), studioDomSync: read('web/studio-dom-sync.js'),
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
   directTrace: read('src/direct-trace-validator.js'), directEffect: read('src/direct-effect-validator.js'),
@@ -21,7 +21,7 @@ const files = {
   runtimeCorrespondence: read('src/transitive-runtime-correspondence.js'),
   runtimeCertificate: read('src/transitive-runtime-certificate.js'),
   runtimeGenerator: read('scripts/generate-transitive-runtime-certificate.js'),
-  evaluationCorpus: read('src/evaluation-corpus.js'), evaluationBenchmark: read('scripts/benchmark-assurance.js'),
+  evaluationCorpus: read('src/evaluation-corpus.js'), evaluationBenchmark: read('scripts/benchmark-assurance.js'), controlledEvaluationRunner: read('scripts/run-controlled-assurance.js'),
   securityEvaluator: read('src/security-case-study.js'), securityScript: read('scripts/evaluate-security-cases.js'),
   securityManifest: read('case-studies/security/cases.json'),
   repeatedExample: read('examples/formal-transitive-calls-repeated.patch'),
@@ -40,6 +40,9 @@ if (pkg.scripts?.['transitive-runtime-certify:repeated'] !==
   throw new Error('package.json is missing the canonical beta.32 repeated-call runtime certificate command.');
 }
 if (pkg.scripts?.['evaluate:assurance'] !== 'node scripts/benchmark-assurance.js') throw new Error('package.json is missing the canonical assurance evaluation command.');
+if (pkg.scripts?.['evaluate:assurance:controlled'] !== 'node scripts/run-controlled-assurance.js --measurement-class controlled') {
+  throw new Error('package.json is missing the canonical process-isolated controlled assurance command.');
+}
 if (pkg.scripts?.['evaluate:security'] !== 'node scripts/evaluate-security-cases.js') throw new Error('package.json is missing the canonical semantic-authority security evaluation command.');
 
 requireAll('README.md', files.readme, [
@@ -70,19 +73,23 @@ requireAll('docs/BETA34.md', files.beta34, [version, 'One canonical Studio proje
 requireAll('docs/NATIVE_APPS.md', files.native, ['Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.34 runtime-template integrity']);
 requireAll('docs/ROADMAP.md', files.roadmap, [
   `Current development beta: **${version}**`, '### beta.34:', '### beta.32:', 'invocation frames', 'repeated identical calls', 'Assurance overhead/scaling harness',
-  'controlled paper-quality benchmark runs', 'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject'
+  'fresh-process outer runner', 'controlled paper-quality benchmark runs', 'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject'
 ]);
 requireAll('docs/COMPILER.md', files.compiler, ['Change IR **0.10**', 'Beta.32', 'invocation-frame', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean']);
 requireAll('docs/FORMAL_MODEL.md', files.formal, ['Beta.32', 'checkedObservedTransitiveRuntimeRefinesCallerSignature', 'invocation-frame', 'runtime capture']);
 requireAll('docs/NOVELTY.md', files.novelty, ['Beta.32', 'invocation-frame', 'supporting assurance']);
 requireAll('paper/README.md', files.paper, [
   'Beta.32', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'PatchCallRuntime.lean',
-  'reproducible assurance-overhead/scaling evaluation harness', 'No overhead, scalability or asymptotic claim is made yet',
+  'fresh-process controlled-measurement protocol', 'No overhead, scalability or asymptotic claim is made yet',
   'Semantic-authority security ablation', '4 cases  Patch reject / coarse target-write accept', 'not a model of any named effect system'
 ]);
 requireAll('docs/EVALUATION.md', files.evaluation, [
   'Call-tree depth', 'Concrete invocation count', 'compileMs', 'executeMs', 'validateMs', 'correspondenceMs', 'certificateGenerationMs',
-  'Patch Assurance Evaluation', 'hosted runner', 'raw JSON/CSV'
+  'Process-isolated aggregation', 'measurement-class', 'Patch Assurance Evaluation', 'hosted runner', 'SHA256SUMS'
+]);
+requireAll('docs/CONTROLLED_EVALUATION.md', files.controlledEvaluation, [
+  'Measurement classes', 'git HEAD', 'clean Git working tree', 'Refusing unsafe', 'median absolute deviation (MAD)', 'interquartile range (IQR)',
+  'Until an actual controlled dataset is collected and reviewed'
 ]);
 requireAll('docs/SECURITY_CASE_STUDIES.md', files.securityCasesDoc, [
   'coarse target-write baseline', 'internal ablation', '`loyalty-over-limit`', '`wallet-direction-escalation`', '`campaign-transitive-escalation`',
@@ -118,6 +125,10 @@ requireAll('scripts/benchmark-assurance.js', files.evaluationBenchmark, [
   "format: 'patch-assurance-evaluation'", 'performance.now()', 'compileToDirectWasm', 'runDirectWasm', 'validateDirectSemanticEffects',
   'buildTransitiveRuntimeCorrespondence', 'generateTransitiveRuntimeCertificate', 'certificateGenerationMs', 'toCsv', 'environmentManifest'
 ]);
+requireAll('scripts/run-controlled-assurance.js', files.controlledEvaluationRunner, [
+  'scripts/benchmark-assurance.js', "format: 'patch-controlled-assurance-evaluation'", "version: '0.2'", "'controlled', 'hosted-ci', 'development'",
+  'GITHUB_ACTIONS', 'git HEAD exactly', 'clean Git working tree', 'resolveSafeOutDir', 'stableScenarioSourceAndArtifacts', 'environmentFingerprintSha256', 'SHA256SUMS'
+]);
 requireAll('src/security-case-study.js', files.securityEvaluator, [
   "PATCH_SECURITY_CASE_STUDY_VERSION = '0.1'", 'evaluateSecurityCase', 'evaluateCoarseTargetWrite',
   'target-path-only; operation/magnitude/provability intentionally ignored', 'collectReachableTargets'
@@ -146,8 +157,12 @@ requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflo
   'Patch Beta32 Invocation Frames', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'PatchCallRuntime', 'cancel-in-progress: true'
 ]);
 requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflow, [
-  'Patch Assurance Evaluation', 'workflow_dispatch:', 'benchmark-assurance.js', 'Measure Lean certificate checking', 'actions/upload-artifact@v', 'retention-days: 30'
+  'Patch Assurance Evaluation', 'workflow_dispatch:', 'process_runs:', 'run-controlled-assurance.js', '--measurement-class hosted-ci',
+  'PATCH_EVAL_COMMIT', 'Measure Lean certificate checking', 'actions/upload-artifact@v', 'retention-days: 30'
 ]);
+if (files.evaluationWorkflow.includes('--measurement-class controlled')) {
+  throw new Error('.github/workflows/assurance-evaluation.yml must not label hosted GitHub Actions timing as controlled.');
+}
 requireAll('web/sw.js', files.serviceWorker, [
   `const PATCH_RELEASE = '${version}'`, "const REVISION = '__PATCH_SITE_REV__'", "'./language.html'", "'./docs.html'", "'./downloads.html'", "'./help.html'",
   "'./runtime-integrity.js'", "'./studio-dom-sync.js'", "'./form-window-resize.js'", "'../src/formal-calls.js'", "url.pathname.includes('/runtimes/')", 'freshFirst'
