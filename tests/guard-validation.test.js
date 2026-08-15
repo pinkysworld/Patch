@@ -1,9 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
 import { buildFormalGuardExpression } from '../src/formal-guard.js';
 import { buildIndependentGuardExpression } from '../src/independent-guard-expression.js';
 import { validateFormalGuardExtraction, buildRawGuardWitness } from '../src/guard-validation.js';
+
+test('guard validation parser implementation stays independent from production guard parsing', () => {
+  const validatorSource = fs.readFileSync(new URL('../src/guard-validation.js', import.meta.url), 'utf8');
+  const independentSource = fs.readFileSync(new URL('../src/independent-guard-expression.js', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(validatorSource, /buildFormalGuardExpression/);
+  assert.doesNotMatch(independentSource, /from\s+['"]\.\/formal-guard\.js['"]/);
+  assert.doesNotMatch(independentSource, /from\s+['"]\.\/parser\.js['"]/);
+  assert.match(validatorSource, /buildIndependentGuardExpression/);
+  assert.match(independentSource, /class IndependentGuardParser/);
+  assert.match(independentSource, /function lex\(/);
+});
 
 test('independent guard expression parser agrees with production normalization on supported corpus', () => {
   const allowed = new Set(['bonus', 'limit']);
