@@ -9,17 +9,16 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const options = parseArgs(process.argv.slice(2));
-const sourceCommit = resolveSourceCommit();
-validateMeasurementClass(options, sourceCommit);
+const sourceIdentity = resolveSourceIdentity();
+validateMeasurementClass(options, sourceIdentity);
 
-const outDir = path.resolve(options.outDir);
+const outDir = resolveSafeOutDir(options.outDir);
 const rawDir = path.join(outDir, 'raw');
-fs.rmSync(outDir, { recursive: true, force: true });
-fs.mkdirSync(rawDir, { recursive: true });
+prepareOutputDirectory(outDir, rawDir);
 
 const runs = [];
 let expectedEnvironment = null;
-let expectedScenarioShape = null;
+let expectedScenarioIdentity = null;
 
 for (let runIndex = 1; runIndex <= options.runs; runIndex += 1) {
   const jsonPath = path.join(rawDir, `run-${String(runIndex).padStart(2, '0')}.json`);
@@ -40,7 +39,7 @@ for (let runIndex = 1; runIndex <= options.runs; runIndex += 1) {
     encoding: 'utf8',
     env: {
       ...process.env,
-      PATCH_EVAL_COMMIT: sourceCommit,
+      PATCH_EVAL_COMMIT: sourceIdentity.commit,
       PATCH_EVAL_PROCESS_INDEX: String(runIndex),
       PATCH_EVAL_MEASUREMENT_CLASS: options.measurementClass
     },
@@ -55,17 +54,19 @@ for (let runIndex = 1; runIndex <= options.runs; runIndex += 1) {
   const environment = normalizeEnvironment(report.environment);
   if (expectedEnvironment === null) expectedEnvironment = environment;
   else if (stableJson(environment) !== stableJson(expectedEnvironment)) {
-    throw new Error(`Environment drift detected in process ${runIndex}. Controlled aggregation requires the same recorded machine/runtime identity for every process.`);
+    throw new Error(`Environment drift detected in process ${runIndex}. Aggregation requires the same recorded machine/runtime identity for every process.`);
   }
 
-  const scenarioShape = report.scenarios.map(scenario => ({
+  const scenarioIdentity = report.scenarios.map(scenario => ({
     name: scenario.name,
-    nestedDepth: scenario.parameters.nestedDepth,
-    invocations: scenario.parameters.invocations
+    parameters: scenario.parameters,
+    expected: scenario.expected,
+    source: scenario.source,
+    artifacts: scenario.artifacts
   }));
-  if (expectedScenarioShape === null) expectedScenarioShape = scenarioShape;
-  else if (stableJson(scenarioShape) !== stableJson(expectedScenarioShape)) {
-    throw new Error(`Scenario drift detected in process ${runIndex}.`);
+  if (expectedScenarioIdentity === null) expectedScenarioIdentity = scenarioIdentity;
+  else if (stableJson(scenarioIdentity) !== stableJson(expectedScenarioIdentity)) {
+    throw new Error(`Scenario/source/artifact drift detected in process ${runIndex}.`);
   }
 
   runs.push({
@@ -82,11 +83,15 @@ for (let runIndex = 1; runIndex <= options.runs; runIndex += 1) {
 
 const environmentFingerprint = sha256Text(stableJson(expectedEnvironment));
 const aggregates = aggregateRuns(runs);
+const sourceCommitVerifiedAgainstGit = /^[0-9a-f]{40}$/i.test(sourceIdentity.gitCommit ?? '')
+  && sourceIdentity.commit === sourceIdentity.gitCommit;
 const protocolChecks = {
   independentProcesses: runs.length === options.runs,
-  exactSourceCommit: /^[0-9a-f]{40}$/i.test(sourceCommit),
+  exactSourceCommit: /^[0-9a-f]{40}$/i.test(sourceIdentity.commit),
+  sourceCommitVerifiedAgainstGit,
+  workingTreeCleanAtStart: sourceIdentity.workingTreeClean,
   stableEnvironmentIdentity: true,
-  stableScenarioSet: true,
+  stableScenarioSourceAndArtifacts: true,
   rawReportsRetained: true,
   requestedRuns: options.runs,
   measuredIterationsPerPhasePerProcess: options.iterations,
@@ -95,9 +100,10 @@ const protocolChecks = {
 
 const summary = {
   format: 'patch-controlled-assurance-evaluation',
-  version: '0.1',
+  version: '0.2',
   patchVersion: pkg.version,
-  sourceCommit,
+  sourceCommit: sourceIdentity.commit,
+  gitHeadCommit: sourceIdentity.gitCommit,
   generatedAt: new Date().toISOString(),
   measurementClass: options.measurementClass,
   claimBoundary: options.measurementClass === 'controlled'
@@ -133,6 +139,7 @@ writeChecksums(outDir, summaryPath, csvPath, runs);
 console.log(`wrote ${summaryPath}`);
 console.log(`wrote ${csvPath}`);
 console.log(`measurement class: ${options.measurementClass}`);
+console.log(`source commit: ${sourceIdentity.commit}`);
 console.log(`environment fingerprint: ${environmentFingerprint}`);
 
 function validateChildReport(report, runIndex) {
@@ -249,23 +256,58 @@ function writeChecksums(directory, summaryPath, aggregateCsvPath, runEntries) {
   fs.writeFileSync(path.join(directory, 'SHA256SUMS'), `${lines.join('\n')}\n`);
 }
 
-function validateMeasurementClass(config, commit) {
+function prepareOutputDirectory(directory, childRawDir) {
+  fs.mkdirSync(directory, { recursive: true });
+  fs.rmSync(childRawDir, { recursive: true, force: true });
+  for (const name of ['controlled-summary.json', 'controlled-summary.csv', 'SHA256SUMS']) {
+    fs.rmSync(path.join(directory, name), { force: true });
+  }
+  fs.mkdirSync(childRawDir, { recursive: true });
+}
+
+function resolveSafeOutDir(value) {
+  const target = path.resolve(value);
+  const filesystemRoot = path.parse(target).root;
+  const home = path.resolve(os.homedir());
+  const cwd = path.resolve(process.cwd());
+  if (target === filesystemRoot || target === root || target === home || target === cwd || isParentOf(target, root)) {
+    throw new Error(`Refusing unsafe --out-dir '${target}'. Choose a dedicated evaluation results directory, not a filesystem/repository/home root or its parent.`);
+  }
+  return target;
+}
+
+function isParentOf(candidateParent, child) {
+  const relative = path.relative(candidateParent, child);
+  return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
+function validateMeasurementClass(config, identity) {
   const allowed = new Set(['controlled', 'hosted-ci', 'development']);
   if (!allowed.has(config.measurementClass)) throw new Error(`--measurement-class must be one of ${[...allowed].join(', ')}.`);
   if (config.measurementClass === 'controlled') {
     if (process.env.GITHUB_ACTIONS === 'true') throw new Error('Refusing to label GitHub-hosted Actions timing as controlled paper-quality measurement.');
     if (!config.machineId) throw new Error('--machine-id is required for --measurement-class controlled.');
     if (!config.label) throw new Error('--label is required for --measurement-class controlled.');
-    if (!/^[0-9a-f]{40}$/i.test(commit)) throw new Error('Controlled measurement requires an exact 40-character Git source commit.');
+    if (!/^[0-9a-f]{40}$/i.test(identity.commit)) throw new Error('Controlled measurement requires an exact 40-character Git source commit.');
+    if (!identity.gitCommit || identity.commit !== identity.gitCommit) throw new Error('Controlled measurement requires the recorded source commit to match git HEAD exactly.');
+    if (identity.workingTreeClean !== true) throw new Error('Controlled measurement requires a clean Git working tree before measurement starts.');
   }
 }
 
-function resolveSourceCommit() {
-  const supplied = process.env.PATCH_EVAL_COMMIT?.trim();
-  if (supplied) return supplied;
-  const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
-  if (result.status === 0) return result.stdout.trim();
-  return 'unknown';
+function resolveSourceIdentity() {
+  const supplied = process.env.PATCH_EVAL_COMMIT?.trim() || null;
+  const headResult = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
+  const gitCommit = headResult.status === 0 ? headResult.stdout.trim() : null;
+  if (supplied && gitCommit && supplied !== gitCommit) {
+    throw new Error(`PATCH_EVAL_COMMIT (${supplied}) does not match git HEAD (${gitCommit}).`);
+  }
+  const statusResult = spawnSync('git', ['status', '--porcelain', '--untracked-files=normal'], { cwd: root, encoding: 'utf8' });
+  const workingTreeClean = statusResult.status === 0 ? statusResult.stdout.trim() === '' : null;
+  return {
+    commit: supplied ?? gitCommit ?? 'unknown',
+    gitCommit,
+    workingTreeClean
+  };
 }
 
 function stableJson(value) {
