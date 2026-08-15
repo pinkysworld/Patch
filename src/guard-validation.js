@@ -1,12 +1,15 @@
-import { buildFormalGuardExpression, PATCH_FORMAL_GUARD_VERSION } from './formal-guard.js';
+import { PATCH_FORMAL_GUARD_VERSION } from './formal-guard.js';
+import { buildIndependentGuardExpression, PATCH_INDEPENDENT_GUARD_EXPRESSION_VERSION } from './independent-guard-expression.js';
 
-export const PATCH_GUARD_VALIDATION_VERSION = '0.1';
+export const PATCH_GUARD_VALIDATION_VERSION = '0.2';
 
 /**
  * Independently reconstruct beta.23 guard trees from raw Patch source.
- * This parser does not import parser.js and does not consume the production AST.
- * It shares only the small formal-guard expression normalizer, while validating
- * indentation/control-flow extraction independently.
+ *
+ * This validator does not import parser.js, consume the production AST, or use
+ * the production formal guard expression parser. Indentation/control-flow and
+ * Boolean/integer guard expressions are reconstructed through independent code,
+ * then compared with compiler-produced formalSource entries before certification.
  */
 export function validateFormalGuardExtraction(source, formalSource) {
   const witness = buildRawGuardWitness(source);
@@ -63,6 +66,7 @@ export function validateFormalGuardExtraction(source, formalSource) {
     format: 'patch-guard-extraction-validation',
     version: PATCH_GUARD_VALIDATION_VERSION,
     formalGuardVersion: PATCH_FORMAL_GUARD_VERSION,
+    independentGuardExpressionVersion: PATCH_INDEPENDENT_GUARD_EXPRESSION_VERSION,
     producer: 'raw-source-independent-guard-parser',
     comparedAgainst: formalSource?.format ?? 'patch-formal-source',
     entries,
@@ -91,6 +95,7 @@ export function buildRawGuardWitness(source) {
     format: 'patch-raw-guard-witness',
     version: PATCH_GUARD_VALIDATION_VERSION,
     formalGuardVersion: PATCH_FORMAL_GUARD_VERSION,
+    independentGuardExpressionVersion: PATCH_INDEPENDENT_GUARD_EXPRESSION_VERSION,
     entries
   };
 }
@@ -207,7 +212,7 @@ function rawGuardNode(node, context) {
     }));
   }
   if (node.kind === 'if') {
-    const formal = buildFormalGuardExpression(node.expr, context.allowedVariables);
+    const formal = buildIndependentGuardExpression(node.expr, context.allowedVariables);
     let guard = null;
     if (!formal.supported) {
       context.reasons.add(`line ${node.line}: condition is outside the beta.23 guard-aware fragment: ${formal.reason}`);
