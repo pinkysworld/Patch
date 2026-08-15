@@ -1,6 +1,6 @@
 # Patch offline compiler
 
-Current product version: **0.2.0-beta.33**  
+Current product version: **0.2.0-beta.34**  
 Offline compiler distribution contract: **0.1**
 
 The Patch offline compiler is the command-line counterpart to Patch Studio's token-free local build path. Windows, macOS and Linux downloads package the Patch source compiler with the runtime pieces needed for local development. Once downloaded, normal source checking/building and supported `patch link` operations do not require GitHub or Patch Studio. Windows, Linux and macOS Apple Silicon require no installed Node runtime; the macOS Intel kit includes its own Intel Node runtime. FreeBSD uses a portable kit with local Node and `cc` requirements.
@@ -9,7 +9,7 @@ The Patch offline compiler is the command-line counterpart to Patch Studio's tok
 
 The canonical download page is `https://minh.systems/Patch/downloads.html`.
 
-The release tag is `offline-compiler-v0.1`. Published asset names are stable:
+The release tag is `offline-compiler-v0.1`. It is a rolling beta channel whose named assets are replaced by successful offline-compiler workflows from `main`. Published asset names are stable:
 
 - `patch-windows-x64.exe`
 - `patch-macos-arm64`
@@ -18,7 +18,9 @@ The release tag is `offline-compiler-v0.1`. Published asset names are stable:
 - `patch-freebsd-x64.tar.gz`
 - `SHA256SUMS`
 
-Always compare a downloaded asset with `SHA256SUMS` when integrity matters.
+Always compare a downloaded asset with `SHA256SUMS` before first use or after replacing an older rolling-beta download. On Linux/macOS with `sha256sum`, use `sha256sum -c SHA256SUMS`. macOS also provides `shasum -a 256 <file>`. Windows PowerShell provides `Get-FileHash <file> -Algorithm SHA256`; compare the result with the matching line in `SHA256SUMS`.
+
+Checksum verification confirms that the bytes match the published release checksum. It does not imply Authenticode, Developer ID/notarization or an independent signing trust root.
 
 ## Main commands
 
@@ -96,7 +98,7 @@ The Apple Silicon compiler binary is ad-hoc signed by the build workflow. The In
 
 Windows, Linux and macOS Apple Silicon use Node's single-executable application support as a small launcher. `scripts/build-offline-compiler.js` embeds the exact Patch `src/*.js` graph plus gzip-compressed copies of a plain Node runtime and the platform runtime templates as SEA assets. `scripts/offline-compiler-runner.cjs` extracts those assets into a source/runtime-content-addressed temporary cache and starts the ordinary `src/cli-entry.js` with that embedded plain Node runtime.
 
-The offline compiler workflow now builds native Window runtime **v1.0 from the same repository source** on each target runner before embedding it. This avoids a release-tag ordering dependency while still publishing the same proven runtime contract.
+The offline compiler workflow builds native Window runtime **v1.0 from the same repository source** on each target runner before embedding it. This avoids a release-tag ordering dependency while still publishing the same proven runtime contract.
 
 macOS Intel deliberately uses a portable tar.gz kit instead of SEA. The kit contains the same Patch ESM graph, a plain Intel Node runtime and an x86-64 AppKit runtime v1.0 built in the Intel runner.
 
@@ -114,6 +116,12 @@ Current Window linking contracts are:
 - older compatibility line: payload **v7** / runtime **v0.8**.
 
 Runtime versions, AOT backend versions, Native GUI IR versions and offline compiler distribution versions remain independent contracts.
+
+## Relationship to Patch Studio runtime integrity
+
+The offline compiler is self-contained and does not fetch the browser Ready runtime templates while linking. Its release assets are covered by the rolling channel's published `SHA256SUMS` file.
+
+Patch Studio's browser Ready Window path has a separate beta.34 integrity gate: Pages verifies the native runtime-v1.0 release bytes against the SHA-256 digest recorded on each GitHub Release asset, publishes a small runtime manifest, and the browser re-hashes the runtime before sealing. This does not change the offline compiler distribution contract or the payload v9/runtime v1.0 ABI.
 
 ## Security and trust boundary
 
