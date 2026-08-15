@@ -34,7 +34,7 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Download Patch</h2>
-    <p>The offline compiler uses the same parser, compiler and native linking contracts as Patch Studio. Supported Window apps preserve source-backed Anchor/Dock behavior when the real native window is resized. Table/Grid is carried through sealed payload v9/runtime v1.0 on Windows, macOS and Linux. Apple Silicon uses a single standalone binary. Intel macOS uses a compact portable kit because Node SEA does not currently support macOS x64 reliably.</p>
+    <p>The offline compiler uses the same parser, compiler and native linking contracts as Patch Studio. Supported Window apps preserve source-backed Anchor/Dock behavior when the real native window is resized. Table/Grid is carried through sealed payload v9/runtime v1.0 on Windows, macOS and Linux. Apple Silicon uses a single standalone binary. Intel macOS uses a compact portable tar.gz kit because Node SEA does not currently support macOS x64 reliably.</p>
     <p><strong><code>offline-compiler-v0.1</code> is the rolling beta download channel.</strong> Its named assets are refreshed by the green offline-compiler workflow from <code>main</code>. Use the adjacent <code>SHA256SUMS</code> file to verify the exact bytes you downloaded.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-windows-x64.exe"><strong>Windows x64</strong><span>patch-windows-x64.exe · standalone compiler + Win32 GUI linker with Table/Grid and responsive layout.</span></a>
@@ -73,10 +73,12 @@ Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
   </section>
 
   <section class="page-section">
-    <h2>How Patch Studio verifies Ready Window runtimes</h2>
-    <p>Patch Studio's no-token Windows, macOS and Linux Window builds do not blindly seal into whatever runtime file a browser happens to have cached. The Pages deployment reads the SHA-256 digest recorded by GitHub for each runtime-v1.0 release asset, re-hashes the downloaded runtime bytes and publishes a verified <code>runtime-manifest.json</code>. The browser then re-hashes the selected native runtime with Web Crypto before sealing your Native GUI IR payload. A mismatch stops the build.</p>
-    <p>The service worker treats <code>/runtimes/</code> as fresh-first while online, with a previously verified successful fetch retained only as offline fallback. This closes the stale-runtime/cache inconsistency without changing the payload v9/runtime v1.0 ABI.</p>
+    <h2>How Patch Studio verifies Ready runtimes</h2>
+    <p>Patch Studio's no-token desktop builds do not blindly package whatever runtime file a browser happens to have cached. The Pages deployment requires the current <code>studio-runtime-v0.6</code> compatibility/Console release plus all three native runtime-v1.0 releases. It reads the SHA-256 digest recorded by GitHub for every runtime template the browser actually consumes, re-hashes the downloaded bytes and publishes a verified <code>runtime-manifest.json</code>.</p>
+    <p>The browser loads the integrity gate before the native builder and re-hashes the selected Console, compatibility Window or native GUI runtime with Web Crypto before use. A missing entry or mismatch stops the build. The service worker treats <code>/runtimes/</code> as fresh-first while online, with a successfully fetched copy retained only as offline fallback.</p>
+    <p>This closes stale-runtime and byte-mismatch inconsistencies without changing the payload v9/runtime v1.0 ABI. It verifies byte consistency inside the existing GitHub Release and Pages trust path; it is not a replacement for Authenticode or Developer ID/notarization.</p>
     <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/studio-runtime-v0.6"><strong>Studio compatibility/Console runtimes</strong><span>Inspect the exact runtime templates used by no-token Console and explicit compatibility Window packaging.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.0"><strong>Win32 runtime v1.0</strong><span>Inspect the exact native Windows runtime asset and GitHub-recorded digest used by Ready Window builds.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.0"><strong>macOS runtime v1.0</strong><span>Inspect the universal AppKit runtime asset used by browser-side sealing.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.0"><strong>Linux runtime v1.0</strong><span>Inspect the GTK3 runtime asset used by browser-side sealing.</span></a>
