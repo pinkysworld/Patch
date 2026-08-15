@@ -35,6 +35,7 @@ on:
       - src/form-layout.js
       - src/window-compiled.js
       - src/native-gui-ir.js
+      - src/native-gui-ir-v08.js
       - src/sealed-native-gui.js
       - src/sealed-native-package.js
       - src/prebuilt-native.js
@@ -50,9 +51,10 @@ on:
       - .github/workflows/native-linux-runtime.yml
       - .github/workflows/native-macos-runtime.yml
       - .github/workflows/native-responsive-runtime.yml
+      - .github/workflows/native-sealed-table-runtime.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime]
     types: [completed]
 
 permissions:
@@ -82,41 +84,57 @@ jobs:
       - uses: actions/configure-pages@v6
       - name: Build public site
         run: npm run build:site
+      - name: Check Table-capable native runtime releases
+        id: native_runtime
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
+        shell: bash
+        run: |
+          missing=0
+          for tag in "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "Found $tag"
+            else
+              echo "Waiting for $tag"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 0 ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'Table-capable runtime v1.0 is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
+          fi
       - name: Add compiled prebuilt native runtime templates
+        if: steps.native_runtime.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v0.9
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0.9
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0.9
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
         run: |
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
           else
-            echo "Runtime release $RUNTIME_TAG is not published yet. Runtime-template completion will trigger a second Pages deployment after publishing it."
+            echo "Compatibility runtime release $RUNTIME_TAG is not published yet."
           fi
-          if gh release view "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
-          else
-            echo "Native Win32 runtime $WIN32_RUNTIME_TAG is not published yet. Responsive-runtime completion will trigger another Pages deployment."
-          fi
-          if gh release view "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
-          else
-            echo "Native Linux runtime $LINUX_NATIVE_RUNTIME_TAG is not published yet. Responsive-runtime completion will trigger another Pages deployment."
-          fi
-          if gh release view "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir _site/runtimes --clobber
-          else
-            echo "Native macOS runtime $MACOS_NATIVE_RUNTIME_TAG is not published yet. Responsive-runtime completion will trigger another Pages deployment."
-          fi
-          ls -lh _site/runtimes || true
+          gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
+          gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
+          gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir _site/runtimes --clobber
+          ls -lh _site/runtimes
       - name: Validate public site
+        if: steps.native_runtime.outputs.ready == 'true'
         run: npm run check:site
       - uses: actions/upload-pages-artifact@v5
+        if: steps.native_runtime.outputs.ready == 'true'
         with:
           path: _site
       - name: Deploy
+        if: steps.native_runtime.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
