@@ -11,9 +11,12 @@ export const PATCH_CONCRETE_CALL_WITNESS_VERSION = '0.2';
  *
  * When a call-site validation artifact is supplied, witness generation fails
  * closed unless raw `do recipe(args)` source sites exactly match production AST
- * caller/callee/line/argument-text identity.
+ * caller/callee/line/argument-text identity. Compiler-produced formalCalls
+ * carries this artifact so existing higher-level certificate paths inherit the
+ * validation automatically.
  */
 export function buildConcreteCallWitnesses(ast, formalCalls, callSiteValidation = null) {
+  callSiteValidation ??= formalCalls?.callSiteValidation ?? null;
   if (callSiteValidation && callSiteValidation.validated !== true) {
     const why = callSiteValidation.reasons?.length
       ? callSiteValidation.reasons.join('; ')
