@@ -20,24 +20,26 @@ Patch 0.2 beta currently builds:
 | Application | Windows | macOS | Linux | FreeBSD | Browser |
 |---|---|---|---|---|---|
 | Console | sealed `.exe` | native `.app`/CLI package | sealed executable | C99 + `cc` | direct Wasm/runtime |
-| Window, stable sealed surface | native Win32 `.exe` | AppKit `.app` | GTK3 executable | unsupported | Standalone Web |
-| Window, direct AOT Table extension | backend 0.9 | backend 0.9 | backend 0.9 | unsupported | Standalone Web |
+| Window, token-free Ready/offline surface | payload v9 / runtime v1.0 | payload v9 / runtime v1.0 | payload v9 / runtime v1.0 | unsupported | Standalone Web |
+| Window, direct AOT | backend 0.8 base + backend 0.9 Table | backend 0.8 base + backend 0.9 Table | backend 0.8 base + backend 0.9 Table | unsupported | Standalone Web |
 | Portable | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / C99 where applicable | `.patchapp` / `.wasm` |
 | IDE | browser/PWA | browser/PWA | browser/PWA | browser where available | browser/PWA |
 
 ## Native Window contracts
 
-The stable direct and sealed desktop surfaces are intentionally separated.
+The direct and sealed desktop paths share language semantics but retain separate versioned artifacts.
 
-### Stable Native GUI IR 0.7 surface
+### Native GUI IR 0.7 base surface
 
-Native GUI IR **0.7** covers Forms, Text, Button, Input, Checkbox, ComboBox, ListBox, Radio, Tabs, menus, informational dialogs and Confirm/Open/Save result dialogs. Direct AOT backend **0.8** maps that surface to Win32, AppKit and GTK3. Token-free sealed payload **v8** / runtime **v0.9** carries the same control surface plus source-backed responsive Anchor/Dock metadata.
+Native GUI IR **0.7** covers Forms, Text, Button, Input, Checkbox, ComboBox, ListBox, Radio, Tabs, menus, informational dialogs and Confirm/Open/Save result dialogs. Direct AOT backend **0.8** maps that surface to Win32, AppKit and GTK3.
 
-### Table direct-AOT extension
+Sealed payload **v8** / runtime **v0.9** remains the frozen responsive compatibility line for this control surface. It carries source-backed Anchor/Dock metadata but intentionally does not grow Table retroactively.
 
-Native GUI IR **0.8** is an opt-in extension for Table/Grid. It preserves columns/rows and gives Table `changed` a transient `text-list` event value without adding persistent native list state.
+### Native GUI IR 0.8 Table extension
 
-AOT backend **0.9** maps that Table contract to:
+Native GUI IR **0.8** extends the native contract with Table/Grid. It preserves columns/rows and gives Table `changed` a transient `text-list` event value without adding persistent native list state.
+
+Direct AOT backend **0.9** maps that Table contract to:
 
 - Windows: report-mode `WC_LISTVIEWW`;
 - macOS: multi-column `NSTableView` inside `NSScrollView`;
@@ -45,15 +47,20 @@ AOT backend **0.9** maps that Table contract to:
 
 The dedicated `Native Table v0.9` workflow compiles and executes the same Table source on Windows/MSVC, macOS/AppKit and Linux/GTK3 and checks native selection dispatch.
 
-**Table is not yet part of sealed payload v8/runtime v0.9 or offline `patch link`.** Those paths must fail closed for Table until an explicit sealed Table format and consumer are implemented and smoke-tested.
+### Sealed payload v9 / runtime v1.0
+
+Token-free Ready apps and offline `patch link` on Windows, macOS and Linux now carry Native GUI IR **0.8** through sealed payload **v9** / runtime **v1.0**. Payload v9 preserves the v8 responsive-layout contract and adds explicit Table columns, rows and transient `text-list` event typing.
+
+The dedicated sealed-runtime matrix builds runtime v1.0 on all three platforms, seals and starts the Table example, then repeats the same operation through the ordinary offline `patch link` path. The downloadable offline compiler matrix also links and starts Table on Windows, Linux, Apple Silicon macOS and Intel macOS.
 
 ## Windows
 
 Current Windows paths include:
 
 - Console: project-named sealed PE executable;
-- Window stable surface: direct Win32 AOT or token-free sealed Win32 runtime;
-- Table: direct Win32 AOT backend 0.9 only at the current stage;
+- Window Ready/offline: native Win32 runtime v1.0 consuming payload v9 / Native GUI IR 0.8;
+- direct AOT: backend 0.8 base controls and backend 0.9 Table;
+- Table: real report-mode `WC_LISTVIEWW` on both direct AOT and sealed runtime v1.0 paths;
 - architecture: x86-64 is the primary release target;
 - signing: machinery exists, but real credentialed signing evidence is still separate work.
 
@@ -62,10 +69,11 @@ Current Windows paths include:
 Current macOS paths include:
 
 - Console: native package/CLI path;
-- Window stable surface: direct AppKit AOT or token-free sealed AppKit runtime;
-- Table: direct AppKit AOT backend 0.9 only at the current stage;
+- Window Ready/offline: AppKit runtime v1.0 consuming payload v9 / Native GUI IR 0.8;
+- direct AOT: backend 0.8 base controls and backend 0.9 Table;
+- Table: real multi-column `NSTableView` on both direct AOT and sealed runtime v1.0 paths;
 - Apple Silicon offline compiler: standalone binary;
-- Intel offline compiler: portable kit with bundled Intel Node runtime;
+- Intel offline compiler: portable kit with bundled Intel Node runtime and x86-64 AppKit runtime v1.0;
 - Developer ID notarization is not claimed without separate evidence.
 
 ## Linux
@@ -73,8 +81,9 @@ Current macOS paths include:
 Current Linux paths include:
 
 - Console: native executable;
-- Window stable surface: direct GTK3 AOT or token-free sealed GTK3 runtime;
-- Table: direct GTK3 AOT backend 0.9 only at the current stage;
+- Window Ready/offline: GTK3 runtime v1.0 consuming payload v9 / Native GUI IR 0.8;
+- direct AOT: backend 0.8 base controls and backend 0.9 Table;
+- Table: real `GtkTreeView` + `GtkListStore` on both direct AOT and sealed runtime v1.0 paths;
 - generated GUI output expects compatible normal system GTK3 libraries.
 
 Additional package formats such as AppImage remain future distribution work rather than a language requirement.
@@ -96,7 +105,7 @@ Patch source -> Change IR -> Standalone Window Web runtime
 Patch source -> direct Wasm subset -> browser host
 ```
 
-Table/Grid display and transient row-selection events are implemented in Standalone Web. Patch Studio App Preview now exposes the same transient selected-row list through the shared semantic Window event adapter, with mouse and keyboard selection and no implicit persistent state.
+Table/Grid display and transient row-selection events are implemented in Standalone Web. Patch Studio App Preview exposes the same transient selected-row list through the shared semantic Window event adapter, with mouse and keyboard selection and no implicit persistent state.
 
 ## `.patchapp`
 
@@ -119,7 +128,7 @@ This is distinct from the narrower direct-Wasm backend, which executes supported
 
 ## Build from phones/tablets
 
-Patch Studio on iOS/Android can run browser-compatible programs and generate portable/Web artifacts locally. Token-free Ready desktop artifacts use published platform runtime templates. The optional direct AOT cloud path delegates compilation to the corresponding GitHub-hosted platform runner:
+Patch Studio on iOS/Android can run browser-compatible programs and generate portable/Web artifacts locally. Token-free Ready desktop artifacts use published platform runtime templates. The current Ready Window path lowers Native GUI IR 0.8 in the browser and seals payload v9 into runtime v1.0. The optional direct AOT cloud path delegates project-specific code generation to the corresponding GitHub-hosted platform runner:
 
 ```text
 Build for Windows -> Windows runner
