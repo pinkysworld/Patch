@@ -18,7 +18,7 @@ Form dimensions, top-level geometry, labels, ids, options, Table rows, Tabs page
 
 A selected control can be moved and resized visually. A Form itself has a lower-right resize grip in the Designer. Pointer resizing and keyboard resizing both write the resulting `window ... size W, H:` values back into Patch source. Forms may grow beyond the currently visible Designer width; the Designer remains scrollable instead of clamping a Form back to the viewport.
 
-GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; Table `changed` exposes a transient row list in Studio App Preview, Standalone Web and the direct native AOT Table path. Persistent state changes only through an explicit Patch `change`.
+GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; Table `changed` exposes a transient row list in Studio App Preview, Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Windows/macOS/Linux Window apps. Persistent state changes only through an explicit Patch `change`.
 
 Tabs page selection remains transient renderer/toolkit state and creates no Patch variable or Change History entry.
 
@@ -37,15 +37,16 @@ when people changed:
   show value
 ```
 
-Current Table support is deliberately split by surface:
+Current Table support by surface:
 
 - Designer: add/select/move/resize/rename/remove while preserving row lines;
 - Standalone Web: real Table plus mouse/keyboard row selection and transient list-valued `value`;
 - Studio App preview: real Table plus mouse/keyboard row selection routed through the same shared semantic Window event adapter, with a copied transient row-list value and no implicit persistent state;
 - direct native AOT: Native GUI IR **0.8** / backend **0.9** maps Table to real Win32/AppKit/GTK widgets and is compiled/executed by a dedicated three-platform CI matrix;
-- Ready/no-token sealed apps and offline `patch link`: Table is not yet supported because those paths still carry the Native GUI IR **0.7** control surface in sealed payload **v8** / runtime **v0.9**.
+- Ready/no-token sealed apps: Native GUI IR **0.8** is sealed as payload **v9** into native runtime **v1.0** on Windows, macOS and Linux;
+- offline `patch link`: the downloadable Windows/macOS/Linux compiler embeds the same runtime **v1.0** and emits payload **v9** Table applications locally.
 
-Unsupported Table build paths must fail closed rather than silently dropping the control.
+The v1.0 sealed-runtime matrix and the ordinary offline-linker path both compile, seal and execute the Table example on Windows, macOS and Linux. Payload v8/runtime v0.9 remains an explicit compatibility line rather than being redefined in place. FreeBSD Window remains unsupported.
 
 ## Project format v2
 
@@ -71,9 +72,9 @@ The Recovery manager keeps up to five deduplicated local snapshots. It supports 
 
 ## Menus and result-bearing dialogs
 
-Native GUI **0.7** includes menus, informational dialogs and result-bearing Confirm/Open/Save dialog flows with explicit transient result semantics. Current sealed native Window payload **v8** carries the corresponding menu/dialog/radio/tabs data plus responsive layout metadata needed by Win32, AppKit and GTK runtimes.
+Native GUI **0.7** includes menus, informational dialogs and result-bearing Confirm/Open/Save dialog flows with explicit transient result semantics. Sealed payload **v8** / runtime **v0.9** remains the responsive Native GUI IR 0.7 compatibility line. Current Ready Window builds use payload **v9** / runtime **v1.0**, which preserves that existing menu/dialog/radio/tabs and Anchor/Dock contract while adding the Native GUI IR 0.8 Table metadata and transient `text-list` event type.
 
-Menus are Window structure, not positioned Designer controls. Transient dialog results do not create hidden persistent state; persistent changes still require explicit Patch `change` operations.
+Menus are Window structure, not positioned Designer controls. Transient dialog and Table-selection results do not create hidden persistent state; persistent changes still require explicit Patch `change` operations.
 
 ## Direct native desktop path
 
@@ -98,7 +99,7 @@ The `Native Table v0.9` workflow compiles and runs the same Table app on Windows
 
 The optional GitHub Actions cloud/AOT path supports explicit Cancel, a 15-minute timeout and Retry. Retry uses the original in-memory build snapshot and a new request identity rather than silently rebuilding changed editor contents.
 
-The token-free ready-app path remains the default. Windows, Linux and macOS Ready downloads currently seal the Native GUI IR 0.7 surface into responsive runtime v0.9. Table will not be advertised on that path until the sealed contract itself is upgraded and smoke-tested. Signing/notarization remains a separate distribution concern.
+The token-free Ready-app path remains the default. Windows, Linux and macOS Ready Window downloads now lower Native GUI IR 0.8 in the browser and seal payload v9 into runtime v1.0. The runtime uses real native Table widgets while retaining the runtime-v0.9 accessibility and responsive Anchor/Dock behavior. Pages waits for all three v1.0 runtime releases before replacing the deployed Studio, so a runtime-publication race does not publish a mismatched browser compiler/runtime set. Signing/notarization remains a separate distribution concern.
 
 ## PWA updates
 
@@ -127,4 +128,4 @@ The current Studio/repository also includes:
 
 ## Next work
 
-The next product stages include a sealed Table payload/runtime contract for Ready/offline linking, distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer data controls and additional native packaging polish.
+The next product stages include distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer data controls, ListBox multi-selection, richer Menu state and additional native packaging polish.
