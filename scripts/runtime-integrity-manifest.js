@@ -33,9 +33,22 @@ function normalizeEntry(entry, baseDir) {
   const expected = normalizeDigest(entry?.digest);
   if (!file || file !== path.basename(file)) throw new Error(`Invalid runtime filename: ${file || '(empty)'}`);
   if (!releaseTag) throw new Error(`Missing release tag for ${file}.`);
+
   const absolute = path.join(baseDir, file);
-  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) throw new Error(`Runtime asset does not exist: ${file}`);
-  const actual = `sha256:${crypto.createHash('sha256').update(fs.readFileSync(absolute)).digest('hex')}`;
+  let descriptor;
+  let bytes;
+  try {
+    descriptor = fs.openSync(absolute, 'r');
+    if (!fs.fstatSync(descriptor).isFile()) throw new Error(`Runtime asset is not a regular file: ${file}`);
+    bytes = fs.readFileSync(descriptor);
+  } catch (error) {
+    if (error?.code === 'ENOENT') throw new Error(`Runtime asset does not exist: ${file}`);
+    throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+
+  const actual = `sha256:${crypto.createHash('sha256').update(bytes).digest('hex')}`;
   if (expected && actual !== expected) throw new Error(`Runtime asset digest mismatch for ${file}: expected ${expected}, got ${actual}`);
   return { file, releaseTag, sha256: actual };
 }
