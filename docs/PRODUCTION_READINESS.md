@@ -28,6 +28,8 @@ Logical reproducibility is tested separately from native toolchain reproducibili
 
 Patch Studio project bundle v2 stores `main.patch`, project identity, Console/Window kind, selected build target and selected native-build mode. Version-1 bundles, v1 browser storage and the older unversioned local state migrate explicitly to v2. V1 recovery snapshots also normalize to v2 while preserving their saved source. Unknown future bundle versions remain fail-closed.
 
+Beta.34 closes an integration gap between the canonical v2 store and older Studio UI code. Programmatic sample/Designer mutations now normalize into the same shared source and Project Type signals used by manual editing, so the canonical store, recovery, visual Designer, Change Contract and native-build panel observe the same project state. The unversioned browser key remains compatibility/migration state only.
+
 `compat/source-0.2/` is the executable compatibility baseline for source forms Patch has deliberately retained. Its versioned manifest covers core numeric change, Thing fields, loose List syntax, recipes with Undo/Redo, legacy flow-layout Windows and multiple unnamed Windows. Current compilers must keep those fixtures compiling with the recorded observable result unless a future compatibility change is handled explicitly.
 
 ### Diagnostics and supportability
@@ -46,11 +48,14 @@ Patch Studio diagnostics are local-only. The report records Patch version, proje
 - [ ] Windows code signing
 - [ ] macOS signing + notarization
 - [ ] installer/package formats with uninstall path
-- [ ] verify release signatures/checksums before update/install
+- [ ] verify release signatures/checksums before update/install across future installer/update channels
+- [x] browser Ready runtime templates verified against GitHub Release SHA-256 asset digests before sealing
 - [x] document Linux packaging expectations
 - [ ] fresh-build service that does not require users to paste a personal GitHub token
 
 `docs/LINUX_PACKAGING.md` defines the current GTK3/Console runtime assumptions, archive contents, ABI limitations, explicit unsigned status, user-space removal behavior and the formats Patch does **not** yet claim (`.deb`, `.rpm`, Flatpak, Snap, AppImage). This closes the documentation item without pretending that the separate installer/uninstall-format milestone is complete.
+
+Beta.34 adds a narrower integrity guarantee to the current no-token browser Ready path without pretending the broader installer/update item is complete. Pages downloads the three native runtime-v1.0 assets, reads each SHA-256 digest recorded on the exact GitHub Release asset, independently re-hashes the downloaded bytes and writes a verified `runtime-manifest.json`. Patch Studio hashes the selected runtime again with Web Crypto before browser-side sealing and fails closed on mismatch. The service worker treats same-origin `/runtimes/` requests as fresh-first while online so an older runtime cache cannot silently override the current deployment. This is byte-consistency validation for the existing Release/Pages path, not Authenticode, Developer ID/notarization or a separate signing authority.
 
 The repository also contains fail-closed Windows Authenticode and macOS Developer ID/notarization gates for final project artifacts. Those two signing checkboxes remain open until real certificate credentials are configured and a final artifact passes the complete signing/verifying workflow. `PATCH-SIGNING.json` cannot claim required signing from the requested mode alone; platform verification evidence is required first.
 
@@ -91,6 +96,8 @@ Beta.33 centralizes Studio-facing file stems and target suffixes in `src/artifac
 The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and restore take an immediate protective snapshot before replacing the current project. The Recovery manager exposes all retained local restore points and supports manual snapshot creation, restoring any snapshot, exporting a snapshot as `.patchproject`, deleting one snapshot, or clearing the local ring after confirmation.
 
 Optional GitHub Actions builds have a 15-minute Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent as soon as the request-specific run appears. Retry uses the captured source/build snapshot and generates a fresh request id instead of silently rebuilding later editor contents or rerunning the same request. Tokens and retry snapshots remain in page memory only. Recommended browser-local/no-token builds are unchanged.
+
+Pages deployment uses one `pages` concurrency group but only direct source `push` runs cancel an older in-progress deploy. Runtime `workflow_run` completion triggers queue rather than cancelling a valid source-triggered deploy. A regression test freezes this rule so runtime publication hooks cannot reintroduce the deployment race tracked by issue #112.
 
 ### Testing
 - [x] deterministic parser/compiler grammar fuzzing
