@@ -82,6 +82,20 @@ The coarse baseline is an internal ablation, not a representation of any named p
 
 This case is a larger engineering/motivating example, not a complete plugin sandbox or malicious-code containment result.
 
+### Commit-bound reproducibility bundle
+- [x] exact Patch version and 40-character source commit in the bundle manifest
+- [x] snapshot all Git-tracked source plus explicitly regenerated formal/runtime and case-study evidence
+- [x] SHA-256 and byte size recorded and re-verified for every copied source/evidence file
+- [x] deterministic `SOURCE_DATE_EPOCH` support for security and checkout evidence timestamps
+- [x] regenerate finite transitive call-tree, runtime and repeated-call invocation-frame certificates in CI
+- [x] regenerate semantic-authority micro-case and checkout-extension reports in CI
+- [x] environment provenance recorded separately from the reproducible claim boundary
+- [x] deterministic sorted tar/gzip envelope plus archive SHA-256
+- [x] 90-day GitHub Actions artifact from the exact checked-out commit
+- [x] `docs/REPRODUCIBILITY_BUNDLE.md`
+
+The bundle supports artifact identity and evidence reruns. It intentionally does not turn variable hosted-runner timings into paper performance results.
+
 ## Product milestones
 
 ### beta.33: Studio and production-readiness layer
@@ -178,7 +192,7 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 1. [ ] collect controlled overhead/scaling measurements using the completed evaluation harness;
 2. [ ] systematic related-work review and literature-grounded comparison dimensions;
 3. [ ] broader externally motivated extension/security corpus beyond the checkout case;
-4. [ ] reproducibility bundle;
+4. [x] reproducibility bundle;
 5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
 6. [ ] extend invocation-frame evidence to richer branching/repeated-call scenarios.
 
@@ -196,10 +210,10 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 - [x] **Assurance overhead/scaling harness**
 - [x] **Semantic-authority security ablation**
 - [x] **realistic checkout/loyalty security/engineering case study**
+- [x] **commit-bound reproducibility bundle**
 - [ ] controlled measured overhead results
 - [ ] systematic related work
 - [ ] broader externally motivated application corpus
-- [ ] reproducibility bundle
 
 ## Design constraints
 
@@ -223,3 +237,4 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 18. Responsive layout metadata remains non-semantic UI metadata; runtime resize must not create hidden persistent state or Change History.
 19. A direct-AOT control extension is not a sealed-runtime support claim until the payload format and token-free consumer independently encode and execute it.
 20. Browser-side Ready packaging must fail closed if the deployed native runtime bytes do not match the deployment's verified release-integrity manifest.
+21. A reproducibility artifact may bind source and generated evidence to an exact commit without turning heterogeneous hosted-runner timing into a performance claim.

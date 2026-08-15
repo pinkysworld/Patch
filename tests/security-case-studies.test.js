@@ -46,7 +46,7 @@ test('transitive helper effects are visible to both the coarse target baseline a
   assert.match(result.patch.signatures.campaign.changes[0].via ?? '', /grant_small/);
 });
 
-test('security evaluator CLI writes JSON, CSV and markdown evidence', () => {
+test('security evaluator CLI writes reproducibly timestamped JSON, CSV and markdown evidence', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-security-cases-'));
   try {
     const jsonPath = path.join(temp, 'report.json');
@@ -57,11 +57,16 @@ test('security evaluator CLI writes JSON, CSV and markdown evidence', () => {
       '--out', jsonPath,
       '--csv', csvPath,
       '--markdown', mdPath
-    ], { cwd: root, encoding: 'utf8' });
+    ], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, SOURCE_DATE_EPOCH: '1700000000' }
+    });
     assert.equal(result.status, 0, result.stderr || result.stdout);
 
     const report = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
     assert.equal(report.format, 'patch-security-case-study-report');
+    assert.equal(report.generatedAt, '2023-11-14T22:13:20.000Z');
     assert.equal(report.summary.cases, 8);
     assert.equal(report.summary.patchAccepts, 3);
     assert.equal(report.summary.patchRejects, 5);

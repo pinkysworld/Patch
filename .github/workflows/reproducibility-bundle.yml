@@ -1,0 +1,134 @@
+name: Patch Reproducibility Bundle
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/reproducibility-bundle.yml
+      - package.json
+      - src/**
+      - formal/**
+      - examples/**
+      - case-studies/**
+      - scripts/reproducibility-bundle.js
+      - scripts/evaluate-security-cases.js
+      - scripts/evaluate-checkout-extension.js
+      - scripts/generate-transitive-call-body-certificate.js
+      - scripts/generate-transitive-runtime-certificate.js
+      - tests/reproducibility-bundle.test.js
+      - docs/REPRODUCIBILITY_BUNDLE.md
+      - docs/EVALUATION.md
+      - docs/ROADMAP.md
+      - paper/README.md
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/reproducibility-bundle.yml
+      - package.json
+      - src/**
+      - formal/**
+      - examples/**
+      - case-studies/**
+      - scripts/reproducibility-bundle.js
+      - scripts/evaluate-security-cases.js
+      - scripts/evaluate-checkout-extension.js
+      - scripts/generate-transitive-call-body-certificate.js
+      - scripts/generate-transitive-runtime-certificate.js
+      - tests/reproducibility-bundle.test.js
+      - docs/REPRODUCIBILITY_BUNDLE.md
+      - docs/EVALUATION.md
+      - docs/ROADMAP.md
+      - paper/README.md
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Resolve exact artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_COMMIT="$(git rev-parse HEAD)"
+          SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          PATCH_VERSION="$(node -p "require('./package.json').version")"
+          echo "SOURCE_COMMIT=$SOURCE_COMMIT" >> "$GITHUB_ENV"
+          echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" >> "$GITHUB_ENV"
+          echo "PATCH_VERSION=$PATCH_VERSION" >> "$GITHUB_ENV"
+          echo "SHORT_COMMIT=${SOURCE_COMMIT:0:12}" >> "$GITHUB_ENV"
+      - name: Reproducibility bundle unit tests
+        run: node --test tests/reproducibility-bundle.test.js
+      - name: Regenerate finite transitive call-tree certificate
+        run: npm run transitive-callee-trace-certify:example
+      - name: Regenerate direct-Wasm transitive runtime certificate
+        run: npm run transitive-runtime-certify:example
+      - name: Regenerate repeated-call invocation-frame certificate
+        run: npm run transitive-runtime-certify:repeated
+      - name: Regenerate semantic-authority security evidence
+        run: |
+          mkdir -p evaluation/reproducibility
+          npm run evaluate:security -- \
+            --out evaluation/reproducibility/security.json \
+            --csv evaluation/reproducibility/security.csv \
+            --markdown evaluation/reproducibility/security.md
+      - name: Regenerate checkout extension evidence
+        run: |
+          npm run evaluate:checkout-extension -- \
+            --out evaluation/reproducibility/checkout.json \
+            --markdown evaluation/reproducibility/checkout.md
+      - name: Build commit-bound reproducibility bundle
+        shell: bash
+        run: |
+          node scripts/reproducibility-bundle.js build \
+            --out reproducibility/bundle \
+            --commit "$SOURCE_COMMIT" \
+            --generated formal/GeneratedTransitiveCallBodyCertificate.lean \
+            --generated formal/GeneratedTransitiveRuntimeCertificate.lean \
+            --generated formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean \
+            --generated evaluation/reproducibility/security.json \
+            --generated evaluation/reproducibility/security.csv \
+            --generated evaluation/reproducibility/security.md \
+            --generated evaluation/reproducibility/checkout.json \
+            --generated evaluation/reproducibility/checkout.md
+      - name: Verify every bundled file hash and identity
+        run: |
+          node scripts/reproducibility-bundle.js verify \
+            --bundle reproducibility/bundle \
+            --version "$PATCH_VERSION" \
+            --commit "$SOURCE_COMMIT"
+      - name: Create deterministic archive envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE="Patch-reproducibility-${PATCH_VERSION}-${SHORT_COMMIT}.tar.gz"
+          tar --sort=name \
+            --mtime="@${SOURCE_DATE_EPOCH}" \
+            --owner=0 --group=0 --numeric-owner \
+            -C reproducibility -cf - bundle | gzip -n > "$ARCHIVE"
+          sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+          cat "$ARCHIVE.sha256"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-reproducibility-${{ env.PATCH_VERSION }}-${{ env.SHORT_COMMIT }}
+          path: |
+            ${{ env.ARCHIVE }}
+            ${{ env.ARCHIVE }}.sha256
+          if-no-files-found: error
+          retention-days: 90
