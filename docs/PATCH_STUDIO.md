@@ -107,25 +107,26 @@ The `Native Table v0.9` workflow compiles and runs the same Table app on Windows
 
 The optional GitHub Actions cloud/AOT path supports explicit Cancel, a 15-minute timeout and Retry. Retry uses the original in-memory build snapshot and a new request identity rather than silently rebuilding changed editor contents.
 
-The token-free Ready-app path remains the default. Windows, Linux and macOS Ready Window downloads lower Native GUI IR 0.8 in the browser and seal payload v9 into runtime v1.0. The runtime uses real native Table widgets while retaining runtime-v0.9 accessibility and responsive Anchor/Dock behavior.
+The token-free Ready-app path remains the default. Windows, Linux and macOS Ready Window downloads lower Native GUI IR 0.8 in the browser and seal payload v9 into runtime v1.0. Console ready builds and the explicit compatibility Window path consume the separately versioned `studio-runtime-v0.6` templates.
 
-Beta.34 adds a fail-closed integrity gate to those Ready Window runtime templates:
+Beta.34 adds one fail-closed integrity gate across every runtime template that the browser packaging path consumes:
 
-1. Pages downloads the three runtime-v1.0 release assets.
-2. It reads each SHA-256 `digest` recorded by GitHub for the exact release asset.
-3. `scripts/runtime-integrity-manifest.js` independently hashes the downloaded file and rejects a mismatch.
-4. Pages publishes `runtimes/runtime-manifest.json` only with the verified file name, release tag and digest.
-5. `web/runtime-integrity.js` hashes the fetched runtime again with Web Crypto before `native-build.js` can seal a Patch payload into it.
+1. Pages requires `studio-runtime-v0.6` plus all three native runtime-v1.0 releases before replacing the deployed Studio.
+2. It downloads the exact Console, compatibility Window and native GUI runtime assets used by Patch Studio.
+3. It reads each SHA-256 `digest` recorded by GitHub for the exact release asset.
+4. `scripts/runtime-integrity-manifest.js` independently hashes the downloaded file and rejects a mismatch.
+5. Pages publishes `runtimes/runtime-manifest.json` with the verified file name, release tag and digest for all browser-consumed runtime templates.
+6. `web/runtime-integrity.js` hashes a selected runtime again with Web Crypto before `native-build.js` can use it.
 
-A digest mismatch stops the build. This is byte-integrity validation for the existing release/deployment trust path. It does not claim Authenticode, Developer ID/notarization or an independent signing authority.
+A missing manifest entry or digest mismatch stops packaging. This is byte-integrity validation for the existing release/deployment trust path. It does not claim Authenticode, Developer ID/notarization or an independent signing authority.
 
-Pages also waits for all three v1.0 runtime releases before replacing the deployed Studio, so a runtime-publication race does not publish a mismatched browser compiler/runtime set. Signing/notarization remains a separate distribution concern.
+The release gate and Pages concurrency rule also prevent a runtime-publication race from replacing the deployed Studio with a browser/runtime combination whose required assets are incomplete.
 
 ## PWA updates
 
 Patch Studio Pages builds derive a deterministic content revision from every browser-facing page, Studio asset and browser compiler/runtime module. Generated CSS, JavaScript, manifest and icon references carry that revision, and the Service Worker uses the same revision as its active cache identity.
 
-The worker bypasses the browser HTTP cache when checking code/UI assets. Beta.34 extends the same fresh-first behavior to same-origin `/runtimes/` requests, including the runtime integrity manifest and native `.exe`/`.bin` templates. Successful runtime responses may still be retained for offline fallback, but an online Ready build does not silently prefer an old cached runtime.
+The worker bypasses the browser HTTP cache when checking code/UI assets. Beta.34 extends the same fresh-first behavior to same-origin `/runtimes/` requests, including the runtime integrity manifest, native `.exe`/`.bin` templates and compatibility `.zip` templates. Successful runtime responses may still be retained for offline fallback, but an online Ready build does not silently prefer an old cached runtime.
 
 An already-controlled Studio page reloads once when a newly activated worker takes control. Old beta-specific caches are migration inputs only; the active cache is content-addressed.
 
@@ -142,7 +143,7 @@ The current Studio/repository also includes:
 - stable `PATCHxxxx` diagnostics with line/column locations;
 - versioned CLI JSON results while preserving existing exit codes;
 - deterministic tagged-release manifests and checksum verification;
-- SHA-256 verification for the native runtime templates used by browser-side Ready Window sealing;
+- SHA-256 verification for every runtime template consumed by browser-side no-token packaging;
 - CodeQL, Dependabot for GitHub Actions and repository security-policy checks;
 - deterministic parser/compiler fuzzing;
 - Interpreter/direct-Wasm/executable-C99 differential tests;
