@@ -4,6 +4,8 @@ import fs from 'node:fs';
 
 const read = path => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
+const readme = read('README.md');
+const packageJson = JSON.parse(read('package.json'));
 const help = read('web/help.html');
 const downloads = read('web/downloads.html');
 const language = read('web/language.html');
@@ -18,7 +20,15 @@ const offlineWorkflow = read('.github/workflows/offline-compiler.yml');
 const playground = read('web/playground.js');
 const studioTable = read('web/table-stage1.js');
 
+test('repository and product surfaces expose one development version', () => {
+  const version = packageJson.version;
+  assert.match(readme, new RegExp(version.replaceAll('.', '\\.')));
+  assert.match(studio, new RegExp(version.replaceAll('.', '\\.')));
+  assert.match(roadmap, new RegExp(version.replaceAll('.', '\\.')));
+});
+
 test('public Table surfaces agree on transient row-list semantics', () => {
+  assert.match(readme, /Table exposes the selected row as transient list-valued `value`/);
   assert.match(help, /selected row only as transient <code>value<\/code>/);
   assert.match(language, /<code>value<\/code> is the selected row as a list of display strings/);
   assert.match(studio, /Table `changed` exposes a transient row list/);
@@ -26,7 +36,7 @@ test('public Table surfaces agree on transient row-list semantics', () => {
 });
 
 test('direct native Table support stays tied to IR 0.8 backend 0.9 and real platform smokes', () => {
-  for (const text of [help, language, studio, nativeApps, targets, roadmap]) {
+  for (const text of [readme, help, language, studio, nativeApps, targets, roadmap]) {
     assert.match(text, /Native GUI IR \*\*?0\.8\*\*?|Native GUI IR 0\.8/);
     assert.match(text, /backend \*\*?0\.9\*\*?|backend 0\.9/);
   }
@@ -40,7 +50,7 @@ test('direct native Table support stays tied to IR 0.8 backend 0.9 and real plat
 });
 
 test('Ready and offline surfaces consistently claim only explicit payload v9 runtime v1.0 Table support', () => {
-  for (const text of [help, downloads, language, studio, nativeApps, offline, targets, roadmap]) {
+  for (const text of [readme, help, downloads, language, studio, nativeApps, offline, targets, roadmap]) {
     assert.match(text, /payload \*\*?v9\*\*?|payload v9/i);
     assert.match(text, /runtime \*\*?v1\.0\*\*?|runtime v1\.0/i);
   }
@@ -54,6 +64,11 @@ test('Ready and offline surfaces consistently claim only explicit payload v9 run
 });
 
 test('sealed Table v1.0 has real Windows macOS Linux seal run and offline-link evidence', () => {
+  assert.match(sealedWorkflow, /contract:/);
+  assert.match(sealedWorkflow, /Test baseline sealed payload contract/);
+  assert.match(sealedWorkflow, /Test responsive sealed payload contract/);
+  assert.match(sealedWorkflow, /Test Table payload v9 contract/);
+  assert.match(sealedWorkflow, /Test offline-link payload contract/);
   assert.match(sealedWorkflow, /windows-latest/);
   assert.match(sealedWorkflow, /macos-latest/);
   assert.match(sealedWorkflow, /ubuntu-latest/);
