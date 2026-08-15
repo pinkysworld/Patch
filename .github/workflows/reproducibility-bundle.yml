@@ -13,11 +13,13 @@ on:
       - scripts/reproducibility-bundle.js
       - scripts/evaluate-security-cases.js
       - scripts/evaluate-checkout-extension.js
+      - scripts/evaluate-extension-case.js
       - scripts/generate-transitive-call-body-certificate.js
       - scripts/generate-transitive-runtime-certificate.js
       - tests/reproducibility-bundle.test.js
       - docs/REPRODUCIBILITY_BUNDLE.md
       - docs/EVALUATION.md
+      - docs/EXTENSION_CORPUS.md
       - docs/ROADMAP.md
       - paper/README.md
   push:
@@ -32,11 +34,13 @@ on:
       - scripts/reproducibility-bundle.js
       - scripts/evaluate-security-cases.js
       - scripts/evaluate-checkout-extension.js
+      - scripts/evaluate-extension-case.js
       - scripts/generate-transitive-call-body-certificate.js
       - scripts/generate-transitive-runtime-certificate.js
       - tests/reproducibility-bundle.test.js
       - docs/REPRODUCIBILITY_BUNDLE.md
       - docs/EVALUATION.md
+      - docs/EXTENSION_CORPUS.md
       - docs/ROADMAP.md
       - paper/README.md
   workflow_dispatch:
@@ -92,6 +96,11 @@ jobs:
           npm run evaluate:checkout-extension -- \
             --out evaluation/reproducibility/checkout.json \
             --markdown evaluation/reproducibility/checkout.md
+      - name: Regenerate quota extension evidence
+        run: |
+          npm run evaluate:quota-extension -- \
+            --out evaluation/reproducibility/quota.json \
+            --markdown evaluation/reproducibility/quota.md
       - name: Build commit-bound reproducibility bundle
         shell: bash
         run: |
@@ -105,7 +114,9 @@ jobs:
             --generated evaluation/reproducibility/security.csv \
             --generated evaluation/reproducibility/security.md \
             --generated evaluation/reproducibility/checkout.json \
-            --generated evaluation/reproducibility/checkout.md
+            --generated evaluation/reproducibility/checkout.md \
+            --generated evaluation/reproducibility/quota.json \
+            --generated evaluation/reproducibility/quota.md
       - name: Verify every bundled file hash and identity
         run: |
           node scripts/reproducibility-bundle.js verify \
