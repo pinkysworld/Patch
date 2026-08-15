@@ -8,6 +8,7 @@ on:
       - scripts/build-site.js
       - scripts/check-site.js
       - scripts/check-site-v10.js
+      - scripts/check-site-beta34.js
       - scripts/runtime-integrity-manifest.js
       - package.json
       - src/interpreter.js
@@ -123,7 +124,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/runtimes
-          gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
+
+          for file in \
+            patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \
+            patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
+            gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir _site/runtimes --clobber
+          done
 
           WIN_FILE=patch-windows-native-gui-runtime.exe
           LINUX_FILE=patch-linux-native-gui-runtime.bin
@@ -165,10 +171,13 @@ jobs:
           ls -lh _site/runtimes
       - name: Validate public site
         if: steps.native_runtime.outputs.ready == 'true'
-        run: npm run check:site
+        run: node scripts/check-site.js
       - name: Validate Table-ready Studio surface
         if: steps.native_runtime.outputs.ready == 'true'
         run: node scripts/check-site-v10.js
+      - name: Validate beta34 Studio hardening surface
+        if: steps.native_runtime.outputs.ready == 'true'
+        run: node scripts/check-site-beta34.js
       - uses: actions/upload-pages-artifact@v5
         if: steps.native_runtime.outputs.ready == 'true'
         with:
