@@ -79,7 +79,7 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 native-runtime\win32-sealed-gui-v10.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-table-runtime\patch-windows-native-gui-runtime.exe',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE native-runtime\win32-sealed-gui-v10.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-table-runtime\patch-windows-native-gui-runtime.exe',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
