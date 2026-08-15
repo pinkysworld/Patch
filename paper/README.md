@@ -13,7 +13,7 @@ The manuscript is now synchronized to the current research/product split:
 - formal runtime-correspondence milestone: **beta.32**;
 - beta.33/beta.34: Studio, release, persistence and runtime-integrity engineering that does not widen the beta.32 Lean claim.
 
-`main.tex` now includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, semantic-authority evaluation, checkout/loyalty case, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
+`main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, semantic-authority evaluation, checkout/loyalty case, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
 
 The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
 
@@ -23,7 +23,7 @@ The current contribution hypothesis is intentionally narrow:
 
 > Patch factors ordinary post-creation persistent mutation through a structured semantic Change, and derives operation- and magnitude-aware summaries and authority from that same mandatory mutation substrate.
 
-This is not a unique-expressibility or firstness claim. Related systems provide first-class state change, rich effects, capabilities, quantitative grades, permissions and more general state specifications. See `docs/RELATED_WORK.md`, `docs/NOVELTY.md` and `related-work.tex`.
+This is not a unique-expressibility or firstness claim. Related systems provide first-class state change, rich and value-dependent effects, capabilities, quantitative grades, permissions, typestate mechanisms and more general state specifications. See `docs/RELATED_WORK.md`, `docs/NOVELTY.md` and `related-work.tex`.
 
 ## Assurance stack represented in the manuscript
 
@@ -174,10 +174,15 @@ The structured comparison covers:
 - classical, algebraic and sequential effects;
 - Effects-as-Capabilities/System C;
 - graded quantitative reasoning;
+- 2026 dependent effects with program-value-dependent quantitative grades;
 - borrowing permissions and Mezzo;
+- 2026 revocable-capability typestate;
+- 2025 invalidation-sensitive type-and-effect analysis;
 - HTT, F* and Dijkstra monads;
 - explicit program edits/change calculi/patch theory;
 - translation validation, PCC and provenance debugging.
+
+The targeted 2025–2026 follow-up further narrows the Patch hypothesis. Value-dependent quantitative effects and flow-sensitive state/capability reasoning are explicit prior art. The remaining candidate distinction is the mandatory/default modeled persistent-mutation architecture, not the individual existence of magnitude bounds, capabilities or typestate-sensitive effects.
 
 The key discipline is to separate **expressibility** from **default mutation architecture**. Patch does not claim that richer systems cannot state an equivalent bounded transition.
 
@@ -212,6 +217,8 @@ npm run verify:reproducibility
 1. collect the fixed-machine controlled overhead/scaling dataset;
 2. analyze that dataset with explicit models, dispersion and plots, then synchronize measured results into `main.tex`;
 3. broaden the externally motivated application/extension corpus;
-4. continue recent dependent/graded-effect review for any closer architectural match;
-5. reduce parser/lowering/runtime trust boundaries where the improvement materially strengthens the central claim;
+4. reduce parser/lowering/runtime trust boundaries where the improvement materially strengthens the central claim;
+5. extend invocation-frame evidence to richer branching/repeated-call scenarios;
 6. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
+
+Normal literature surveillance should continue before submission, but the targeted 2025–2026 dependent/state-sensitive effect follow-up for this paper iteration is complete.

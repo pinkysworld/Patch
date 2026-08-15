@@ -16,15 +16,23 @@ test('related-work review preserves the narrow Patch contribution boundary', () 
     'F* / Dijkstra monads',
     'Graded modal/effect types',
     'Effects-as-Capabilities',
+    'Dependent effect systems (ESOP 2026)',
+    'Typestate via Revocable Capabilities (PLDI 2026)',
+    'InvalML invalidation effects (OOPSLA 2025)',
     'sole modeled persistent-mutation route'
   ]) {
     assert.match(review, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }
 
   assert.match(novelty, /Expressibility is not the novelty claim/i);
-  assert.match(novelty, /does \*\*not\*\* claim that `score may increase up to 10` is uniquely expressible/i);
+  assert.match(novelty, /does \*\*not\*\* claim that `score may increase up to 10`/i);
+  assert.match(novelty, /value-dependent effect/i);
+  assert.match(novelty, /state-sensitive capability/i);
+  assert.match(novelty, /uniquely expressible/i);
   assert.match(novelty, /contribution hypothesis, not a firstness assertion/i);
   assert.match(paperSection, /not claim unique expressibility/i);
+  assert.match(paperSection, /value-dependent quantitative grades/i);
+  assert.match(paperSection, /flow-sensitive typestate capabilities/i);
   assert.match(paperSection, /sole modeled persistent-mutation route/i);
 });
 
@@ -41,8 +49,11 @@ test('paper bibliography contains the comparison systems cited by the related-wo
     'brachthaeuser2020effects',
     'brachthaeuser2022boxes',
     'orchard2019quantitative',
+    'kura2026dependent',
     'naden2012borrowing',
     'pottier2013mezzo',
+    'jia2026revocable',
+    'gao2025invalidation',
     'nanevski2008htt',
     'swamy2016fstar',
     'ahman2017dijkstra',

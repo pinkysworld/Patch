@@ -111,9 +111,9 @@ The bundle supports artifact identity and evidence reruns. It intentionally does
 - [x] novelty claim narrowed to mandatory semantic mutation factorization plus operation/magnitude authority from the same substrate
 - [x] `paper/main.tex` synchronized from the old beta.28 state to beta.32 assurance / beta.34 artifact status
 - [x] security, checkout, controlled-evaluation and reproducibility evidence integrated into the manuscript
-- [ ] targeted follow-up for recent dependent/graded effect systems that may be an even closer architectural match
+- [x] targeted 2025–2026 follow-up covering dependent effects, revocable-capability typestate and invalidation effects
 
-The literature pass does not claim that Patch policies are uniquely expressible or that the review is exhaustive. Rich refinement/effect systems can state stronger relations; the candidate claim is architectural and remains subject to expert/venue scrutiny.
+The literature pass does not claim that Patch policies are uniquely expressible or that the review is exhaustive. Rich refinement/effect systems can state stronger relations; recent dependent-effect and state-sensitive capability/effect work further narrows the candidate claim to the mandatory/default mutation architecture. Expert/venue scrutiny remains necessary.
 
 ## Product milestones
 
@@ -183,7 +183,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
 - [x] direct-native runtime-responsive Anchor/Dock handling on Win32/AppKit/GTK
 - [x] Native GUI IR **0.8** Table extension remains explicit and does not redefine Native GUI IR 0.7
-- [x] AOT backend **0.9** Table widgets compile and execute on Windows/MSVC, macOS/AppKit and Linux/GTK3
+- [x] AOT backend **0.9** native Table widgets compile and execute on Windows/MSVC, macOS/AppKit and Linux/GTK3
 - [x] frozen sealed native GUI payload **v7** / runtime **v0.8** compatibility line with result dialogs and accessibility
 - [x] frozen responsive sealed native GUI payload **v8** / runtime **v0.9** compatibility line with Anchor/Dock and Native GUI IR 0.7 controls
 - [x] sealed native GUI payload **v9** carries Native GUI IR 0.8 Table columns/rows, transient `text-list` event typing and responsive layout metadata
@@ -211,7 +211,7 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 1. [ ] collect controlled overhead/scaling measurements using the completed process-isolated fixed-machine protocol;
 2. [ ] statistical analysis/plots over the controlled dataset and measured-results manuscript update;
 3. [ ] broader externally motivated extension/security corpus beyond the checkout case;
-4. [ ] targeted recent dependent/graded-effect search for a closer architectural match;
+4. [ ] obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful;
 5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
 6. [ ] extend invocation-frame evidence to richer branching/repeated-call scenarios.
 
@@ -232,6 +232,7 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 - [x] **realistic checkout/loyalty security/engineering case study**
 - [x] **commit-bound reproducibility bundle**
 - [x] **structured related work with primary-source comparison dimensions**
+- [x] **targeted 2025–2026 dependent/state-sensitive effect follow-up**
 - [x] **main manuscript synchronized to beta.32 assurance / beta.34 artifact status**
 - [ ] controlled measured overhead results
 - [ ] broader externally motivated application corpus
@@ -261,3 +262,4 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 21. A reproducibility artifact may bind source and generated evidence to an exact commit without turning heterogeneous hosted-runner timing into a performance claim.
 22. Hosted CI timing and controlled fixed-machine timing are distinct evidence classes and must never be pooled or relabelled implicitly.
 23. Related-work comparisons must distinguish expressibility from whether a mechanism is the mandatory/default mutation substrate of the compared system.
+24. Recent dependent effects or state-sensitive capabilities must narrow Patch claims where appropriate rather than being treated as irrelevant because their syntax or primary use case differs.
