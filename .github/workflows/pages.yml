@@ -86,17 +86,18 @@ jobs:
       - uses: actions/configure-pages@v6
       - name: Build public site
         run: npm run build:site
-      - name: Check Table-capable native runtime releases
+      - name: Check required Patch Studio runtime releases
         id: native_runtime
         env:
           GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: studio-runtime-v0.6
           WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
           MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
         shell: bash
         run: |
           missing=0
-          for tag in "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
+          for tag in "$RUNTIME_TAG" "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               echo "Found $tag"
             else
@@ -108,7 +109,7 @@ jobs:
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'Table-capable runtime v1.0 is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
+            echo 'A required Patch Studio runtime release is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
           fi
       - name: Add and verify compiled native runtime templates
         if: steps.native_runtime.outputs.ready == 'true'
@@ -122,11 +123,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _site/runtimes
-          if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
-          else
-            echo "Compatibility runtime release $RUNTIME_TAG is not published yet."
-          fi
+          gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
 
           WIN_FILE=patch-windows-native-gui-runtime.exe
           LINUX_FILE=patch-linux-native-gui-runtime.bin
@@ -140,22 +137,30 @@ jobs:
             gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \"$asset\") | .digest"
           }
 
-          WIN_DIGEST="$(release_digest "$WIN32_RUNTIME_TAG" "$WIN_FILE")"
-          LINUX_DIGEST="$(release_digest "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE")"
-          MACOS_DIGEST="$(release_digest "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE")"
-          for digest in "$WIN_DIGEST" "$LINUX_DIGEST" "$MACOS_DIGEST"; do
+          manifest_args=(
+            --dir _site/runtimes
+            --out _site/runtimes/runtime-manifest.json
+          )
+          add_verified_entry() {
+            local tag="$1" file="$2" digest
+            digest="$(release_digest "$tag" "$file")"
             if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-              echo "GitHub release asset is missing a valid SHA-256 digest: $digest" >&2
+              echo "GitHub release asset $tag/$file is missing a valid SHA-256 digest: $digest" >&2
               exit 1
             fi
+            manifest_args+=(--entry "$file|$tag|$digest")
+          }
+
+          add_verified_entry "$WIN32_RUNTIME_TAG" "$WIN_FILE"
+          add_verified_entry "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE"
+          add_verified_entry "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE"
+          for file in \
+            patch-windows-console-runtime.bin patch-macos-console-runtime.bin patch-linux-console-runtime.bin \
+            patch-windows-window-runtime.zip patch-macos-window-runtime.zip patch-linux-window-runtime.zip; do
+            add_verified_entry "$RUNTIME_TAG" "$file"
           done
 
-          node scripts/runtime-integrity-manifest.js \
-            --dir _site/runtimes \
-            --out _site/runtimes/runtime-manifest.json \
-            --entry "$WIN_FILE|$WIN32_RUNTIME_TAG|$WIN_DIGEST" \
-            --entry "$LINUX_FILE|$LINUX_NATIVE_RUNTIME_TAG|$LINUX_DIGEST" \
-            --entry "$MACOS_FILE|$MACOS_NATIVE_RUNTIME_TAG|$MACOS_DIGEST"
+          node scripts/runtime-integrity-manifest.js "${manifest_args[@]}"
           cat _site/runtimes/runtime-manifest.json
           ls -lh _site/runtimes
       - name: Validate public site
