@@ -3,8 +3,8 @@ import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { compileToC99 } from '../src/c99.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 import { buildCompiledWindowArtifact } from '../src/window-compiled.js';
-import { buildNativeGuiIR } from '../src/native-gui-ir.js';
-import { sealNativeGuiRuntime } from '../src/sealed-native-gui.js';
+import { buildNativeGuiIRV08 as buildNativeGuiIR } from '../src/native-gui-ir-v08.js';
+import { PATCH_SEALED_NATIVE_GUI_TABLE_VERSION, sealNativeGuiRuntime } from '../src/sealed-native-gui.js';
 import { buildLinuxNativeGuiPackage, buildMacosNativeGuiPackage } from '../src/sealed-native-package.js';
 import { buildLocalNativeKit } from '../src/local-native-kit.js';
 import { buildPrebuiltNativePackage, prebuiltNativeTemplateUrl } from '../src/prebuilt-native.js';
@@ -92,7 +92,7 @@ buildButton.addEventListener('click', async event => {
       const response = await fetch(WINDOWS_NATIVE_GUI_RUNTIME, { cache: 'no-store' });
       if (!response.ok) throw new Error(`The native Win32 runtime template is not available yet (${response.status}).`);
       const runtimeBytes = new Uint8Array(await response.arrayBuffer());
-      const sealed = sealNativeGuiRuntime(runtimeBytes, nativeGui);
+      const sealed = sealNativeGuiRuntime(runtimeBytes, nativeGui, { version: PATCH_SEALED_NATIVE_GUI_TABLE_VERSION });
       downloadBytes(sealed, `${name}.exe`, 'application/vnd.microsoft.portable-executable');
       output.textContent = `Native Windows app built ✓\n\nTarget: Windows\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${name}.exe\nNo GitHub token was used. No build queue, Electron, Chromium, Node.js, patch-app.json or sidecar runtime is required. Patch Studio compiled the GUI to Native GUI IR in this browser and sealed it into the native Win32 runtime.\n\nThis is a real single-file native Win32 application using native Windows controls. The no-token build uses a precompiled native runtime plus embedded checked GUI IR; choose “Native AOT EXE” if you specifically want MSVC to generate project-specific machine code.`;
       status.textContent = `Windows native ${name}.exe downloaded · no token · no Electron`;
@@ -105,7 +105,7 @@ buildButton.addEventListener('click', async event => {
       const response = await fetch(LINUX_NATIVE_GUI_RUNTIME, { cache: 'no-store' });
       if (!response.ok) throw new Error(`The native Linux GTK runtime template is not available yet (${response.status}).`);
       const runtimeBytes = new Uint8Array(await response.arrayBuffer());
-      const ready = buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, { name });
+      const ready = buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, { name, payloadVersion: PATCH_SEALED_NATIVE_GUI_TABLE_VERSION });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
       output.textContent = `Native Linux app built ✓\n\nTarget: Linux\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR in this browser and sealed it into a native GTK3 ELF runtime.\n\nUnzip the package and run ${ready.executable}. The ZIP preserves the executable bit. The target Linux system needs a compatible GTK3 runtime and its normal system libraries. Choose “Native AOT app” if you specifically want project-specific g++ machine-code generation in GitHub Actions.`;
       status.textContent = `Linux native GTK app downloaded · no token · no Electron`;
@@ -118,7 +118,7 @@ buildButton.addEventListener('click', async event => {
       const response = await fetch(MACOS_NATIVE_GUI_RUNTIME, { cache: 'no-store' });
       if (!response.ok) throw new Error(`The native macOS AppKit runtime template is not available yet (${response.status}).`);
       const runtimeBytes = new Uint8Array(await response.arrayBuffer());
-      const ready = buildMacosNativeGuiPackage(runtimeBytes, nativeGui, { name });
+      const ready = buildMacosNativeGuiPackage(runtimeBytes, nativeGui, { name, payloadVersion: PATCH_SEALED_NATIVE_GUI_TABLE_VERSION });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
       output.textContent = `Native macOS app built ✓\n\nTarget: macOS\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR in this browser, sealed it into a native AppKit Mach-O runtime, and packaged ${ready.bundle}.\n\nImportant: this token-free app is unsigned because browser-side sealing changes the executable after the runtime template was built. macOS Gatekeeper may therefore require Control-click → Open on first launch. Choose “Native AOT app” for project-specific clang code generation; signing/notarization remains a separate packaging stage.`;
       status.textContent = `macOS native AppKit app downloaded · unsigned · no token · no Electron`;
