@@ -24,21 +24,24 @@ test('process-isolated assurance runner preserves raw runs and robust aggregate 
     ], {
       cwd: repo,
       encoding: 'utf8',
-      env: { ...process.env, PATCH_EVAL_COMMIT: 'a'.repeat(40) },
+      env: { ...process.env },
       maxBuffer: 32 * 1024 * 1024
     });
 
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const summary = JSON.parse(fs.readFileSync(path.join(outDir, 'controlled-summary.json'), 'utf8'));
     assert.equal(summary.format, 'patch-controlled-assurance-evaluation');
-    assert.equal(summary.version, '0.1');
-    assert.equal(summary.sourceCommit, 'a'.repeat(40));
+    assert.equal(summary.version, '0.2');
+    assert.match(summary.sourceCommit, /^[0-9a-f]{40}$/);
+    assert.equal(summary.sourceCommit, summary.gitHeadCommit);
     assert.equal(summary.measurementClass, 'hosted-ci');
     assert.match(summary.claimBoundary, /non-publication timing evidence/);
     assert.equal(summary.runs, 2);
     assert.equal(summary.rawRuns.length, 2);
     assert.equal(summary.protocolChecks.independentProcesses, true);
+    assert.equal(summary.protocolChecks.sourceCommitVerifiedAgainstGit, true);
     assert.equal(summary.protocolChecks.stableEnvironmentIdentity, true);
+    assert.equal(summary.protocolChecks.stableScenarioSourceAndArtifacts, true);
     assert.match(summary.environmentFingerprintSha256, /^[0-9a-f]{64}$/);
     assert.equal(summary.aggregates.length, 1);
 
@@ -82,7 +85,7 @@ test('GitHub-hosted timing cannot be labelled controlled paper-quality measureme
     ], {
       cwd: repo,
       encoding: 'utf8',
-      env: { ...process.env, GITHUB_ACTIONS: 'true', PATCH_EVAL_COMMIT: 'b'.repeat(40) }
+      env: { ...process.env, GITHUB_ACTIONS: 'true' }
     });
 
     assert.notEqual(result.status, 0);
@@ -90,4 +93,26 @@ test('GitHub-hosted timing cannot be labelled controlled paper-quality measureme
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }
+});
+
+test('unsafe output directories are rejected before any benchmark data is removed', () => {
+  const packageBefore = fs.readFileSync(path.join(repo, 'package.json'), 'utf8');
+  const result = spawnSync(process.execPath, [
+    'scripts/run-controlled-assurance.js',
+    '--preset', 'smoke',
+    '--runs', '1',
+    '--iterations', '1',
+    '--warmup', '0',
+    '--measurement-class', 'development',
+    '--out-dir', repo,
+    '--skip-certificate'
+  ], {
+    cwd: repo,
+    encoding: 'utf8',
+    env: { ...process.env }
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing unsafe --out-dir/);
+  assert.equal(fs.readFileSync(path.join(repo, 'package.json'), 'utf8'), packageBefore);
 });
