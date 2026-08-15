@@ -3,7 +3,7 @@
 Current product version: **0.2.0-beta.33**  
 Offline compiler distribution contract: **0.1**
 
-The Patch offline compiler is the command-line counterpart to Patch Studio's token-free local build path. Windows, macOS and Linux downloads package the existing Patch source compiler with the runtime pieces needed for local development. Once downloaded, normal source checking/building and supported `patch link` operations do not require GitHub or Patch Studio. Windows, Linux and macOS Apple Silicon require no installed Node runtime; the macOS Intel kit includes its own Intel Node runtime. FreeBSD uses a portable kit with local Node and `cc` requirements.
+The Patch offline compiler is the command-line counterpart to Patch Studio's token-free local build path. Windows, macOS and Linux downloads package the Patch source compiler with the runtime pieces needed for local development. Once downloaded, normal source checking/building and supported `patch link` operations do not require GitHub or Patch Studio. Windows, Linux and macOS Apple Silicon require no installed Node runtime; the macOS Intel kit includes its own Intel Node runtime. FreeBSD uses a portable kit with local Node and `cc` requirements.
 
 ## Downloads
 
@@ -49,23 +49,27 @@ On macOS Intel, where Node SEA is not currently reliable, the portable kit inste
 
 ### Window / GUI
 
-On Windows, macOS and Linux the linker validates the current sealed Window contract, lowers supported controls to Native GUI IR **0.7** and seals payload **v8** into the embedded native Win32, AppKit or GTK3 runtime **v0.9**. No Electron compatibility runtime is selected implicitly.
+On Windows, macOS and Linux the linker validates the current Window contract, lowers supported controls through Native GUI IR **0.8** and seals payload **v9** into native Win32, AppKit or GTK3 runtime **v1.0**. No Electron compatibility runtime is selected implicitly.
 
-Source-backed `# @layout anchor ...` and `# @layout dock ...` policies are carried into payload v8. A linked supported native app therefore responds to real runtime window resizing with the same Anchor/Dock rules used by Standalone Web and the stable direct AOT surface. Fixed controls remain fixed. Layout metadata does not create Patch state or Change History.
+Payload v9 preserves source-backed `# @layout anchor ...` and `# @layout dock ...` policy and adds explicit Table/Grid columns, rows and transient `text-list` event typing. A linked native app therefore responds to real runtime window resizing with the same Anchor/Dock rules used by Standalone Web and exposes Table row selection without introducing hidden persistent list state.
 
-The offline-compiler workflow proves this path by linking and executing a responsive Window smoke app on Windows, Linux, Apple Silicon macOS and Intel macOS. Unsupported GUI behavior still fails closed during the existing Native GUI IR/preflight stages.
+The offline-compiler workflow proves this path by linking and executing a Console app, a responsive Window app and a Table/Grid Window app on Windows, Linux, Apple Silicon macOS and Intel macOS. Unsupported GUI behavior still fails closed during Native GUI IR/preflight.
 
-### Table / Grid boundary
+### Table / Grid
 
-Table/Grid has moved beyond the sealed runtime surface, so its support is intentionally split:
+Table/Grid is supported by the ordinary Windows/macOS/Linux offline linker:
 
-- language, Designer and Standalone Web: Table is implemented;
-- shared Window events: `changed` exposes the selected row as transient list-valued `value`;
-- direct native AOT staging path: Native GUI IR **0.8** plus backend **0.9** maps Table to real Win32 `WC_LISTVIEWW`, AppKit `NSTableView` and GTK3 `GtkTreeView` widgets;
-- CI compiles and executes all three native Table widgets and verifies native row-selection dispatch;
-- current offline `patch link`: **Table is not yet supported**, because the downloadable compiler still seals the Native GUI IR 0.7 control surface into payload v8/runtime v0.9.
+- language, Designer, Studio App Preview and Standalone Web implement the transient selected-row contract;
+- direct native AOT uses Native GUI IR **0.8** plus backend **0.9**;
+- sealed Ready/offline Window linking uses Native GUI IR **0.8** plus payload **v9** / runtime **v1.0**;
+- Win32 uses report-mode `WC_LISTVIEWW`;
+- AppKit uses a multi-column `NSTableView`;
+- GTK3 uses `GtkTreeView` + `GtkListStore`;
+- `changed` exposes the selected row as transient list-valued `value`; persistence still requires an explicit Patch `change`.
 
-The offline linker must fail closed for a Table project rather than silently omit the control. Offline Table linking will only be claimed after the sealed payload/runtime consumer has an explicit Table format and its Windows/macOS/Linux link-and-run matrix is green.
+The dedicated sealed-runtime matrix compiles runtime v1.0 on Windows/macOS/Linux, seals the Table example, starts the finished application and then repeats the operation through the normal offline `patch link` code path. The downloadable compiler matrix repeats Table linking on Windows, Linux, Apple Silicon macOS and Intel macOS.
+
+Payload **v8** / runtime **v0.9** remains an explicit older responsive compatibility line for Native GUI IR 0.7. It is not silently redefined to mean Table support.
 
 ### FreeBSD
 
@@ -80,10 +84,10 @@ Native FreeBSD Window/GUI linking is not claimed.
 
 | Host | Console output | Window output | Local runtime requirement |
 | --- | --- | --- | --- |
-| Windows x64 | `.exe` | supported responsive native Win32 `.exe` | none for compiler; generated app uses Windows APIs |
-| macOS arm64 | `.app` | supported responsive native AppKit `.app` | none |
-| macOS Intel | portable `.app` with embedded Node + Wasm | supported responsive native AppKit `.app` | none; Intel Node ships in the kit |
-| Linux x64 | executable | supported responsive native GTK3 executable | compatible system libraries; GUI output expects GTK3 |
+| Windows x64 | `.exe` | native Win32 `.exe`, including Table/Grid + responsive layout | none for compiler; generated app uses Windows APIs |
+| macOS arm64 | `.app` | native AppKit `.app`, including Table/Grid + responsive layout | none |
+| macOS Intel | portable `.app` with embedded Node + Wasm | native AppKit `.app`, including Table/Grid + responsive layout | none; Intel Node ships in the kit |
+| Linux x64 | executable | native GTK3 executable, including Table/Grid + responsive layout | compatible system libraries; GUI output expects GTK3 |
 | FreeBSD x64 | executable via C99 + `cc` | unsupported | Node 22+ and `cc` for the portable kit |
 
 The Apple Silicon compiler binary is ad-hoc signed by the build workflow. The Intel kit is an archive of ordinary executable/runtime files. Neither is claimed to be Developer ID notarized. Windows compiler releases are not claimed to be Authenticode-signed unless separate signing evidence is published.
@@ -92,27 +96,27 @@ The Apple Silicon compiler binary is ad-hoc signed by the build workflow. The In
 
 Windows, Linux and macOS Apple Silicon use Node's single-executable application support as a small launcher. `scripts/build-offline-compiler.js` embeds the exact Patch `src/*.js` graph plus gzip-compressed copies of a plain Node runtime and the platform runtime templates as SEA assets. `scripts/offline-compiler-runner.cjs` extracts those assets into a source/runtime-content-addressed temporary cache and starts the ordinary `src/cli-entry.js` with that embedded plain Node runtime.
 
-This launcher arrangement is intentional: Node's SEA main module may load built-ins and embedded assets but does not directly import arbitrary modules from the filesystem. The extracted ordinary Node runtime therefore executes the normal Patch ESM module graph without requiring Node to be installed on the user's machine.
+The offline compiler workflow now builds native Window runtime **v1.0 from the same repository source** on each target runner before embedding it. This avoids a release-tag ordering dependency while still publishing the same proven runtime contract.
 
-macOS Intel deliberately uses a portable tar.gz kit instead of SEA. The kit contains the same Patch ESM graph, a plain Intel Node runtime and the checked AppKit runtime.
+macOS Intel deliberately uses a portable tar.gz kit instead of SEA. The kit contains the same Patch ESM graph, a plain Intel Node runtime and an x86-64 AppKit runtime v1.0 built in the Intel runner.
 
 The offline compiler does **not** maintain a second parser, compiler, Change IR implementation or native linker model.
 
 ## Runtime inputs
 
-The distribution build binds to the existing published runtime lines:
+Current Window linking contracts are:
 
-- Console runtime on SEA-supported hosts: host-built generic Patch SEA runtime compatible with the current compiler
-- Win32 GUI runtime: `native-win32-runtime-v0.9`
-- AppKit GUI runtime: `native-macos-runtime-v0.9`
-- GTK3 GUI runtime: `native-linux-runtime-v0.9`
-- sealed native GUI payload: **v8**
-- sealed native GUI control surface: Native GUI IR **0.7** plus payload-v8 layout metadata
+- Win32 GUI runtime: runtime **v1.0**, sealed payload **v9**, Native GUI IR **0.8**;
+- AppKit GUI runtime: runtime **v1.0**, sealed payload **v9**, Native GUI IR **0.8**;
+- GTK3 GUI runtime: runtime **v1.0**, sealed payload **v9**, Native GUI IR **0.8**;
+- Console runtime on SEA-supported hosts: host-built generic Patch SEA runtime compatible with the current compiler;
+- compatibility/reproducibility line: payload **v8** / runtime **v0.9** for the Native GUI IR 0.7 responsive surface;
+- older compatibility line: payload **v7** / runtime **v0.8**.
 
-Runtime v0.9 preserves the v0.8 accessibility behavior and adds live Anchor/Dock reflow. Payload v7 remains supported only for the frozen v0.8 runtime compatibility line. The runtime versions, AOT backend versions, Native GUI IR versions and offline compiler distribution version are independent contracts.
+Runtime versions, AOT backend versions, Native GUI IR versions and offline compiler distribution versions remain independent contracts.
 
 ## Security and trust boundary
 
-The offline compiler removes the GitHub-token/cloud-build requirement from normal local compilation and supported native linking. It does not remove the ordinary trust boundary in the JavaScript parser/compiler, Native GUI IR lowering, native runtime implementations, Node SEA packaging where used, embedded Node runtimes or the local FreeBSD C compiler.
+The offline compiler removes the GitHub-token/cloud-build requirement from normal local compilation and supported native linking. It does not remove the ordinary trust boundary in the JavaScript parser/compiler, Native GUI IR lowering, sealed payload adapter, native runtime implementations, Node SEA packaging where used, embedded Node runtimes or the local FreeBSD C compiler.
 
 No claim of a fully verified compiler is implied by the offline distribution.
