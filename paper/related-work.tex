@@ -1,0 +1,41 @@
+% Input-ready related-work module for the next full main.tex synchronization.
+% The current main.tex still contains older beta.28 text elsewhere, so this module
+% is kept separate until the manuscript is updated consistently to beta.32/beta.34.
+
+\section{Related Work and Claim Boundary}
+\label{sec:related-work}
+
+Patch intersects mature work on first-class state change, effect systems, quantitative typing, capabilities and permissions, Hoare/refinement verification, explicit program changes, provenance, translation validation, and proof-carrying evidence. Our claim is therefore not that bounded state relations, semantic effects, capabilities, or first-class changes are individually inexpressible elsewhere. The narrower hypothesis concerns their architectural coupling to the persistent-mutation route.
+
+\paragraph{First-class and reified state change.}
+Plaid makes state change first class and models objects as changing abstract states \cite{sunshine2011plaid}; Worlds reifies program state to control the scope of side effects \cite{warth2011worlds}. These systems are direct prior art against any broad claim that Patch invents first-class state transition or reified state. Patch instead asks whether ordinary modeled persistent mutation can be forced through a general semantic state-delta representation whose operation and magnitude are also the vocabulary of authority and history.
+
+\paragraph{Effect systems and effect operations.}
+Classical polymorphic effect systems conservatively approximate side effects \cite{lucassen1988effects}. Algebraic accounts identify effect annotations with operation symbols \cite{kammar2012algebraic}, while parametric effect monads \cite{katsumata2014parametric} and effect quantales \cite{gordon2017flow} provide semantic foundations for compositional and order-sensitive effects. Thus neither semantic operation labels, interprocedural effect summaries, nor effect ordering are novelty claims for Patch. Patch differs in using the semantic operation sequence as the representation that actually commits the modeled persistent state transition.
+
+\paragraph{Effects and capabilities.}
+Effects-as-Capabilities connects effect requirements to capabilities \cite{brachthaeuser2020effects}, and System C further reconciles capability- and effect-based reasoning \cite{brachthaeuser2022boxes}. Consequently, a claim that Patch is novel merely for combining effects and capabilities would be too broad. The candidate distinction is that Semantic Change Contracts are derived from the same mandatory Change objects through which persistent mutation occurs.
+
+\paragraph{Quantitative reasoning.}
+Graded modal types support quantitative reasoning about program resources and effects \cite{orchard2019quantitative}. Quantitative or graded effects therefore predate Patch. Patch's narrower quantity is the magnitude of a semantic state delta attached to an operation/target pair, such as a capability allowing a particular target to increase by at most a given amount. The artifact evaluates whether this mutation-centered restriction provides useful automatically derived authority; it does not claim general quantitative typing as new.
+
+\paragraph{Permissions, ownership, and typestate.}
+Borrowing permissions provide static reasoning about aliases and access rights \cite{naden2012borrowing}; Mezzo uses affine and duplicable permissions to control ownership, aliasing, and typestate changes \cite{pottier2013mezzo}. These systems establish substantial prior art for authority over mutable objects and legal state evolution. Patch's capability axis is different: it restricts which semantic delta may be committed to a persistent target, rather than primarily who owns or aliases the object.
+
+\paragraph{Hoare, dependent, and refinement-style verification.}
+Hoare Type Theory integrates pre/post specifications with mutable higher-order state \cite{nanevski2008htt}. F* supports effectful verification through dependent types and predicate-transformer semantics \cite{swamy2016fstar}, and Dijkstra monads derive weakest-precondition reasoning for user-defined effects \cite{ahman2017dijkstra}. Such systems can express state relations that are at least as precise as a bounded Patch update. Patch therefore does not claim unique expressibility for policies such as ``the new score is no more than ten above the old score.'' Its hypothesis is instead that a deliberately less general semantic-change vocabulary can infer such an operation/magnitude summary from the mutation itself and reuse it for execution, authority, history, and provenance without requiring a separate general-purpose specification.
+
+\paragraph{Explicit changes, edits, and patch theory.}
+COPE advocates change-oriented programming environments \cite{dig2016cope}; Edit Transactions group live program edits into dynamically scoped change sets \cite{mattis2017edittransactions}. Higher-order change calculi support incremental computation \cite{cai2014changes}, while edit lenses \cite{hofmann2012edit} and homotopical patch theory \cite{anguilhomotopical2016} provide rich theories of edits and repository patches. These works prevent any claim that programming with explicit changes or formalized patches is new. Their primary changed entities and goals differ from Patch's runtime persistent application-state commit route.
+
+\paragraph{Assurance and provenance.}
+Translation validation \cite{necula2000translation} and Proof-Carrying Code \cite{necula1997pcc} are direct prior art for checking evidence produced by unverified components. Patch's generated Lean certificates and translation/runtime validators reuse that assurance pattern and are supporting contributions, not novelty headlines. Whyline-style debugging likewise establishes rich causal/provenance querying prior art \cite{ko2008whyline}; Patch history/provenance is presented as tooling enabled by explicit semantic deltas rather than an invention of provenance debugging.
+
+\paragraph{Claim boundary.}
+The comparison leaves the following working hypothesis:
+
+\begin{quote}
+Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides first-class state transitions, rich effects, quantitative grades, permissions/capabilities, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
+\end{quote}
+
+The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, or unsupported language fragments. This is a contribution hypothesis to be evaluated by the formal results, semantic-authority case studies, controlled performance measurements, and further expert/venue scrutiny, not a firstness assertion.
