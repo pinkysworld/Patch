@@ -24,6 +24,10 @@ export function compile(source, options = {}) {
   const sourceValidation = validateFormalSourceExtraction(source, formalSource);
   const guardValidation = validateFormalGuardExtraction(source, formalSource);
   const callSiteValidation = validateCallSites(source, ast);
+  // Keep the raw-source call-site binding beside formal call evidence so every
+  // existing concrete/transitive witness consumer inherits the same fail-closed
+  // precondition without maintaining separate validation plumbing.
+  formalCalls.callSiteValidation = callSiteValidation;
   const windowLayoutPolicy = buildWindowLayoutPolicyManifest(source, ast);
 
   const ir = {
