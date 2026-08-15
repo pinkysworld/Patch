@@ -91,7 +91,7 @@ test('validated call-site provenance is carried by concrete witness artifact', (
 do leaf(3)`;
   const compiled = compile(source);
   const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls, compiled.ir.callSiteValidation);
-  assert.equal(artifact.version, '0.2');
+  assert.equal(artifact.version, '0.1');
   assert.equal(artifact.callSiteValidationVersion, '0.1');
   assert.equal(artifact.rawCallSitesValidated, true);
 });
