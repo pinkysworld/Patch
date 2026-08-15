@@ -36,9 +36,13 @@ Checked items are implemented and must pass final exact-head gates before merge.
 - [x] runtime-frame `BindingList = beta.30 exact BindingList` checked in generated Lean evidence
 - [x] frame-selected effects re-evaluated through `evalCallTreeStmtEqBool`
 - [x] single and repeated runtime certificates in standard Formal/Cross-platform CI
+- [x] mixed-guard repeated-call regression `caller(1)`, `caller(4)`, `caller(1)` across `caller -> outer -> middle -> leaf`
+- [x] twelve independently reconstructed dynamic frames, six supported transitive correspondences, maximum certified nested depth 2
+- [x] branch-selected `coins +4`, `score +5`, `coins +4` traces re-checked against exact beta.30 call-tree witnesses in Lean
+- [x] `GeneratedMixedGuardTransitiveRuntimeCertificate.lean` in beta.32 CI and the reproducibility bundle
 - [x] Change IR remains **0.10**
 
-Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment, including **repeated identical calls**. Runtime capture and independent validator/frame-reconstruction correctness remain explicit proof-free boundaries.
+Beta.32 establishes invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment, including **repeated identical calls** and a stronger case where an intervening invocation takes a different concrete guard path. Runtime capture and independent validator/frame-reconstruction correctness remain explicit proof-free boundaries.
 
 ## Evaluation infrastructure
 
@@ -73,29 +77,45 @@ No empirical performance result is claimed until controlled measurements are col
 
 The coarse baseline is an internal ablation, not a representation of any named prior effect/capability system.
 
-### Realistic checkout/loyalty extension case
+### Realistic multi-domain extension corpus
+
+#### Checkout/loyalty
 - [x] coherent multi-state checkout application under `case-studies/checkout-extension/`
 - [x] protected `checkout_extension` composes `apply_discount` and `grant_loyalty` helpers
 - [x] safe case executes through real direct Wasm to `balance=80`, `points=8`, `cashback=0`
-- [x] protected entry signature must contain both transitive helper effects and their bounds
+- [x] protected entry signature contains both transitive helper effects and their bounds
 - [x] reward-magnitude escalation variant
 - [x] balance-direction escalation variant
 - [x] unauthorized cashback-target variant
 - [x] same internal coarse target-write ablation reused for controlled comparison
 - [x] application-level JSON/Markdown evaluator and regression tests
 - [x] `docs/CHECKOUT_EXTENSION_CASE.md`
-- [x] literature-grounded comparison dimensions against named related systems in `docs/RELATED_WORK.md`
-- [ ] broader externally motivated extension corpus or real plugin integration
 
-This case is a larger engineering/motivating example, not a complete plugin sandbox or malicious-code containment result.
+#### Usage/quota
+- [x] second application domain under `case-studies/quota-extension/`
+- [x] protected `quota_extension` composes bounded usage accounting and bonus helpers
+- [x] safe case executes through real direct Wasm to `used=35`, `remaining=85`, `bonus=5`, `admin_credit=0`
+- [x] protected entry signature carries transitive usage-increase, quota-decrease and bonus-increase effects with bounds
+- [x] magnitude escalation variant
+- [x] operation-direction reversal variant
+- [x] unauthorized `admin_credit` target variant
+- [x] same generic realistic-extension evaluator and internal target-only ablation
+- [x] commit-bound quota JSON/Markdown evidence in the reproducibility bundle
+- [x] `docs/EXTENSION_CORPUS.md`
+
+- [x] literature-grounded comparison dimensions against named related systems in `docs/RELATED_WORK.md`
+- [x] internally authored multi-domain application corpus beyond a single checkout example
+- [ ] genuine external/third-party plugin or extension integration study
+
+Checkout/loyalty and usage/quota are larger engineering/motivating examples. They are not a complete plugin sandbox, malicious-code containment result, or empirical evidence from an external extension ecosystem.
 
 ### Commit-bound reproducibility bundle
 - [x] exact Patch version and 40-character source commit in the bundle manifest
 - [x] snapshot all Git-tracked source plus explicitly regenerated formal/runtime and case-study evidence
 - [x] SHA-256 and byte size recorded and re-verified for every copied source/evidence file
-- [x] deterministic `SOURCE_DATE_EPOCH` support for security and checkout evidence timestamps
-- [x] regenerate finite transitive call-tree, runtime and repeated-call invocation-frame certificates in CI
-- [x] regenerate semantic-authority micro-case and checkout-extension reports in CI
+- [x] deterministic `SOURCE_DATE_EPOCH` support for security and realistic-extension evidence timestamps
+- [x] regenerate finite transitive call-tree, single-call runtime, repeated-call and mixed-guard invocation-frame certificates in CI
+- [x] regenerate semantic-authority micro-case, checkout-extension and quota-extension reports in CI
 - [x] environment provenance recorded separately from the reproducible claim boundary
 - [x] deterministic sorted tar/gzip envelope plus archive SHA-256
 - [x] 90-day GitHub Actions artifact from the exact checked-out commit
@@ -110,7 +130,9 @@ The bundle supports artifact identity and evidence reruns. It intentionally does
 - [x] citation-ready `paper/related-work.tex`
 - [x] novelty claim narrowed to mandatory semantic mutation factorization plus operation/magnitude authority from the same substrate
 - [x] `paper/main.tex` synchronized from the old beta.28 state to beta.32 assurance / beta.34 artifact status
-- [x] security, checkout, controlled-evaluation and reproducibility evidence integrated into the manuscript
+- [x] security, controlled-evaluation and reproducibility evidence integrated into the manuscript
+- [x] checkout/loyalty and usage/quota multi-domain application evidence integrated into the manuscript
+- [x] repeated-identical and mixed-guard repeated-call invocation-frame evidence integrated into the manuscript
 - [x] targeted 2025–2026 follow-up covering dependent effects, revocable-capability typestate and invalidation effects
 
 The literature pass does not claim that Patch policies are uniquely expressible or that the review is exhaustive. Rich refinement/effect systems can state stronger relations; recent dependent-effect and state-sensitive capability/effect work further narrows the candidate claim to the mandatory/default mutation architecture. Expert/venue scrutiny remains necessary.
@@ -210,10 +232,11 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 
 1. [ ] collect controlled overhead/scaling measurements using the completed process-isolated fixed-machine protocol;
 2. [ ] statistical analysis/plots over the controlled dataset and measured-results manuscript update;
-3. [ ] broader externally motivated extension/security corpus beyond the checkout case;
+3. [ ] genuine external/third-party extension or plugin integration study beyond the internally authored checkout/quota corpus;
 4. [ ] obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful;
-5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
-6. [ ] extend invocation-frame evidence to richer branching/repeated-call scenarios.
+5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification.
+
+Completed in the current research iteration: the internally authored multi-domain checkout/quota corpus and richer mixed-guard repeated-call invocation-frame evidence. Normal pre-submission literature surveillance remains ongoing rather than a one-time completed gate.
 
 ## High-venue artifact gate
 
@@ -225,17 +248,19 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 - [x] finite abstract/exact/transitive call assurance
 - [x] call-aware direct-Wasm correspondence
 - [x] invocation frames for repeated identical calls
+- [x] mixed-guard repeated-call invocation-frame evidence with Lean re-checking
 - [x] portable C99 and semantic GUI input evidence
 - [x] **Assurance overhead/scaling harness**
 - [x] **process-isolated controlled-measurement protocol**
 - [x] **Semantic-authority security ablation**
 - [x] **realistic checkout/loyalty security/engineering case study**
+- [x] **second usage/quota application case and internally authored multi-domain corpus**
 - [x] **commit-bound reproducibility bundle**
 - [x] **structured related work with primary-source comparison dimensions**
 - [x] **targeted 2025–2026 dependent/state-sensitive effect follow-up**
 - [x] **main manuscript synchronized to beta.32 assurance / beta.34 artifact status**
 - [ ] controlled measured overhead results
-- [ ] broader externally motivated application corpus
+- [ ] genuine external/third-party application or plugin integration evidence
 
 ## Design constraints
 
@@ -263,3 +288,5 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 22. Hosted CI timing and controlled fixed-machine timing are distinct evidence classes and must never be pooled or relabelled implicitly.
 23. Related-work comparisons must distinguish expressibility from whether a mechanism is the mandatory/default mutation substrate of the compared system.
 24. Recent dependent effects or state-sensitive capabilities must narrow Patch claims where appropriate rather than being treated as irrelevant because their syntax or primary use case differs.
+25. Internally authored multi-domain application cases are not external-validity evidence; third-party integration must be reported separately when it exists.
+26. Richer invocation-frame regression evidence may strengthen the supported beta.32 fragment without silently expanding the trusted parser/lowering/runtime proof boundary.

@@ -18,9 +18,9 @@ General-purpose languages usually expose persistent mutation through assignment 
 
 Patch derives \emph{Semantic Change Signatures} and optional \emph{Change Capabilities} from the same mandatory mutation representation. These contracts distinguish target, semantic operation, and, for a supported numeric fragment, magnitude. A component may therefore be authorized to increase \texttt{score} by at most 10 without receiving set or decrease authority over the same target. A Lean 4 development proves factorization, mutation transparency, signature and policy properties, integer range soundness, finite ranked call composition, exact safe-integer call binding, guarded structured traces, and finite transitive exact call-tree refinement for explicit fragments.
 
-The implementation connects production direct-WebAssembly execution to the formal model through independent validation and generated evidence rather than a claim of full compiler verification. Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls, checks each frame binding against the beta 30 exact call tree, and lets Lean re-evaluate frame-selected observed semantic effects before deriving caller-signature refinement. Runtime capture, JavaScript validator/frame-reconstruction correctness, parser/lowering correctness, and the WebAssembly engine remain explicit trust boundaries.
+The implementation connects production direct-WebAssembly execution to the formal model through independent validation and generated evidence rather than a claim of full compiler verification. Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls. The evidence now also combines repeated root-call identities with different concrete guard paths between them. Generated certificates check each frame binding against the beta 30 exact call tree and let Lean re-evaluate frame-selected observed semantic effects before deriving caller-signature refinement. Runtime capture, JavaScript validator/frame-reconstruction correctness, parser/lowering correctness, and the WebAssembly engine remain explicit trust boundaries.
 
-The artifact also includes an eight-case semantic-authority ablation, a larger checkout/loyalty extension case, a process-isolated protocol for future controlled overhead/scaling measurements, and a commit-bound reproducibility bundle. No controlled performance result, complete sandboxing result, or end-to-end compiler-verification result is claimed.
+The artifact also includes an eight-case semantic-authority ablation, two larger application cases covering checkout/loyalty and usage/quota management, a process-isolated protocol for future controlled overhead/scaling measurements, and a commit-bound reproducibility bundle. No controlled performance result, external plugin-ecosystem result, complete sandboxing result, or end-to-end compiler-verification result is claimed.
 \end{abstract}
 
 \section{Introduction}
@@ -56,7 +56,7 @@ The current artifact supports six connected claims:
 \item operation- and magnitude-sensitive Change Signatures and optional Change Capabilities are derived from those mutations;
 \item a Lean core proves factorization, signature/policy properties, source/range properties, and finite exact call-tree refinement for explicit formal fragments;
 \item production direct-WebAssembly execution is independently validated against Change IR transitions and semantic effects for a conservative supported subset;
-\item beta 32 reconstructs concrete invocation frames without trusted backend call markers, distinguishes repeated identical calls, and generates Lean-checkable evidence tying frame bindings and observed effects to the beta 30 call tree; and
+\item beta 32 reconstructs concrete invocation frames without trusted backend call markers, distinguishes repeated identical calls even across differing concrete guard paths, and generates Lean-checkable evidence tying frame bindings and observed effects to the beta 30 call tree; and
 \item semantic-authority case studies, a controlled-measurement protocol, and a commit-bound reproducibility bundle evaluate and package the implementation without extending the formal theorem beyond its stated boundary.
 \end{enumerate}
 
@@ -189,7 +189,9 @@ to conclude caller-signature refinement for the accepted observed list.
 
 The repeated-call regression source \texttt{examples/formal-transitive-calls-repeated.patch} executes two identical root calls. Independent reconstruction assigns distinct dynamic frames, so their effects can be attributed and checked separately without trusted backend call markers.
 
-Generated evidence includes \texttt{GeneratedTransitiveRuntimeCertificate.lean} and \texttt{GeneratedRepeatedTransitiveRuntimeCertificate.lean}.
+A stronger regression, \texttt{examples/formal-transitive-calls-mixed-guards.patch}, executes \texttt{caller(1)}, \texttt{caller(4)}, and \texttt{caller(1)} through a four-frame call chain. The first and third invocations are identical and select the same guard branch, while the middle invocation selects the opposite branch. Independent validation reconstructs twelve invocation frames and six supported transitive correspondences. The three \texttt{caller -> outer} witnesses carry distinct dynamic frame identities and bindings 1, 4, and 1, while their selected effects are respectively \texttt{coins +4}, \texttt{score +5}, and \texttt{coins +4}. Lean re-checks each selected trace against its exact call-tree witness.
+
+Generated evidence includes \texttt{GeneratedTransitiveRuntimeCertificate.lean}, \texttt{GeneratedRepeatedTransitiveRuntimeCertificate.lean}, and \texttt{GeneratedMixedGuardTransitiveRuntimeCertificate.lean}.
 
 \subsection{Exact trust boundary}
 Beta 32 checks more than beta 31, but it is not an end-to-end compiler refinement theorem. The following remain outside the current Lean proof:
@@ -229,7 +231,16 @@ balance=80,\qquad points=8,\qquad cashback=0.
 \]
 Its protected entry signature must include the transitive balance-decrease and points-increase effects with the expected bounds.
 
-Controlled variants escalate reward magnitude, reverse the balance operation direction, or target unauthorized cashback state. Patch rejects these violations according to Semantic Change Contracts; the first two remain intentionally invisible to the internal target-only ablation, while the target escape is rejected by both. This is an engineering/motivating case rather than a complete plugin sandbox or an empirical result over an external extension ecosystem.
+Controlled variants escalate reward magnitude, reverse the balance operation direction, or target unauthorized cashback state. Patch rejects these violations according to Semantic Change Contracts; the first two remain intentionally invisible to the internal target-only ablation, while the target escape is rejected by both.
+
+\subsection{Usage/quota extension case}
+A second application case changes domain rather than adding another checkout mutation. It models bounded usage accounting over \texttt{used}, \texttt{remaining}, \texttt{bonus}, and an unauthorized \texttt{admin\_credit} path. The safe variant executes through the same production direct-WebAssembly path and terminates with
+\[
+used=35,\qquad remaining=85,\qquad bonus=5,\qquad admin\_credit=0.
+\]
+The protected entry signature must contain transitive usage-increase, quota-decrease, and bonus-increase effects with their declared bounds. Controlled variants exercise magnitude escalation, operation-direction reversal, and target escape under the same internal target-only ablation.
+
+Together, checkout/loyalty and usage/quota form a multi-domain artifact corpus. They are engineering/motivating cases, not a complete plugin sandbox, a real third-party integration study, or empirical evidence about an external extension ecosystem.
 
 \section{Assurance-Cost Evaluation Protocol}
 The repository contains a deterministic corpus that separates nested call depth from concrete invocation count. The phase harness measures direct-WebAssembly compilation, precompiled execution, independent validation, end-to-end beta 32 correspondence, and generated certificate-source construction. It records raw samples and artifact sizes.
@@ -242,7 +253,7 @@ Timing evidence is explicitly classified as \texttt{development}, \texttt{hosted
 The measurement pipeline is implemented and regression-tested, but this manuscript reports \emph{no controlled paper-quality timing dataset yet}. Consequently it makes no empirical overhead, scalability, or asymptotic-complexity claim. Hosted-CI timing is retained only as reproducibility/regression evidence. Controlled results and statistical models must be added only after measurements on fixed documented hardware are collected and reviewed.
 
 \section{Reproducibility Artifact}
-The \emph{Patch Reproducibility Bundle} binds the research artifact to an exact Patch version and 40-character source commit. CI regenerates the finite transitive call-tree certificate, direct-WebAssembly runtime certificate, repeated-call invocation-frame certificate, semantic-authority report, and checkout-extension report. Non-performance evidence uses \texttt{SOURCE\_DATE\_EPOCH} derived from the source commit so timestamps do not drift with workflow wall-clock time.
+The \emph{Patch Reproducibility Bundle} binds the research artifact to an exact Patch version and 40-character source commit. CI regenerates the finite transitive call-tree certificate, direct-WebAssembly runtime certificate, repeated-call and mixed-guard invocation-frame certificates, semantic-authority report, and both checkout and quota application reports. Non-performance evidence uses \texttt{SOURCE\_DATE\_EPOCH} derived from the source commit so timestamps do not drift with workflow wall-clock time.
 
 The bundle snapshots tracked source plus explicitly regenerated evidence, records byte size and SHA-256 for every included file, verifies those hashes and the version/commit identity, and creates a sorted deterministic tar/gzip envelope with a separate archive SHA-256. Environment provenance is recorded separately from the reproducible claim boundary.
 
@@ -263,21 +274,21 @@ The current artifact has explicit limitations:
 \item Patch is not a fully verified compiler; parser, lowering, runtime capture, validator/frame reconstruction, and WebAssembly execution retain trusted or proof-free boundaries;
 \item the mechanized arithmetic/call/runtime fragments are deliberately narrower than the full language and use safe-integer restrictions where exact formal correspondence requires them;
 \item GUI/event behavior, richer values, external effects, foreign code, and full native GUI execution are not covered by the beta 32 Lean theorem;
-\item the eight security micro-cases and checkout example are controlled artifact cases, not evidence about the prevalence of vulnerabilities or superiority over named prior systems;
+\item the eight security micro-cases and the checkout/quota application cases are controlled artifact cases, not evidence about the prevalence of vulnerabilities, superiority over named prior systems, or behavior in a third-party plugin ecosystem;
 \item the target-only security baseline is an internal ablation, not a faithful implementation of prior effect/capability literature;
 \item no controlled performance dataset has yet been collected, so there is no measured overhead/scalability result to generalize;
 \item the related-work review is structured and primary-source-oriented but is not claimed to be an exhaustive systematic review of every effect, refinement, capability, or state-transition formalism;
 \item the candidate novelty is a conjunction of architectural choices and still requires expert/venue scrutiny, even if no reviewed system in the current comparison uses the same default mutation factorization.
 \end{itemize}
 
-The highest-value remaining research work is to collect the fixed-machine controlled dataset, analyze scaling with explicit models and dispersion, broaden the externally motivated extension corpus, continue checking recent dependent/graded effect work for closer architectural matches, and reduce implementation trust boundaries where doing so materially strengthens the central claim.
+The highest-value remaining research work is to collect the fixed-machine controlled dataset, analyze scaling with explicit models and dispersion, validate the approach against a genuinely external or third-party extension/integration setting, obtain expert/venue feedback on the architectural conjunction, continue normal pre-submission literature surveillance, and reduce implementation trust boundaries where doing so materially strengthens the central claim.
 
 \section{Conclusion}
 Patch investigates a language architecture in which ordinary modeled persistent mutation is not merely observed but factored through an explicit semantic Change representation. The same substrate supports operation- and magnitude-aware contracts, history, provenance, and assurance while keeping beginner-facing mutation syntax compact.
 
-The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls, while leaving capture, validator, parser/lowering, and engine correctness explicit rather than overstating full verification.
+The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls and preserve different concrete guard-selected traces between repeated identities, while leaving capture, validator, parser/lowering, and engine correctness explicit rather than overstating full verification.
 
-The artifact further supplies semantic-authority ablations, a checkout/loyalty case, a controlled-measurement protocol, and commit-bound reproducibility packaging. The remaining empirical question is whether the mandatory semantic-mutation factorization provides enough security and engineering value, at acceptable measured cost, to justify the architectural restriction. That question is intentionally left to controlled measurement and broader application evidence rather than answered with uncollected results.
+The artifact further supplies semantic-authority ablations, a two-domain checkout/loyalty and usage/quota application corpus, a controlled-measurement protocol, and commit-bound reproducibility packaging. The remaining empirical question is whether the mandatory semantic-mutation factorization provides enough security and engineering value, at acceptable measured cost, to justify the architectural restriction. That question is intentionally left to controlled measurement and genuine external application evidence rather than answered with uncollected results.
 
 \bibliographystyle{plain}
 \bibliography{references}
