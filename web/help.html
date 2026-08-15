@@ -43,10 +43,10 @@ Alt while dragging: bypass snap</pre>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
     <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. The Left, Top, H center and V center commands align the other selected controls to the primary control and write the resulting positions back into Patch source.</p></div>
     <div class="help-step"><b>5</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive. Anchor supports left/right/top/bottom combinations; Dock supports top, bottom, left, right and fill.</p></div>
-    <div class="help-step"><b>6</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web and supported direct native AOT controls on Windows, macOS and Linux. Token-free Ready apps retain the current sealed-runtime control surface.</p></div>
+    <div class="help-step"><b>6</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
   </section>
 
-  <section class="page-section" data-table-support="aot-v09">
+  <section class="page-section" data-table-support="sealed-v10">
     <h2>Table / Grid</h2>
     <p>Table data is written directly in Patch source. The header declares named columns and each indented <code>row</code> supplies exactly one value per column.</p>
     <pre class="page-code">window "People" as main size 520, 320:
@@ -57,8 +57,8 @@ Alt while dragging: bypass snap</pre>
 when people changed:
   show value</pre>
     <p>The source-backed Designer can add, select, move, resize, rename and remove a Table while preserving its row lines. The shared Window event contract, Studio App preview and Standalone Web support row selection. <code>changed</code> exposes the selected row only as transient <code>value</code>, represented as a Patch list of display strings. Selecting a row does not create persistent Patch state or Change History by itself.</p>
-    <p><strong>Direct native AOT Table support is implemented in the staged Native GUI IR 0.8 / backend 0.9 path.</strong> CI compiles and executes real Win32 <code>WC_LISTVIEWW</code>, AppKit <code>NSTableView</code> and GTK3 <code>GtkTreeView</code> Table smokes, including native selection dispatch and responsive layout.</p>
-    <p>Studio App-preview Table selection uses the same shared semantic Window event adapter as the other Studio controls, including mouse and keyboard selection with a copied transient row list. Token-free sealed Ready apps and offline <code>patch link</code> still use sealed payload v8/runtime v0.9 with the Native GUI IR 0.7 control surface, so Table is not yet claimed on those paths and must fail closed rather than be silently omitted.</p>
+    <p><strong>Direct native AOT Table support uses Native GUI IR 0.8 / backend 0.9.</strong> CI compiles and executes real Win32 <code>WC_LISTVIEWW</code>, AppKit <code>NSTableView</code> and GTK3 <code>GtkTreeView</code> Table smokes, including native selection dispatch and responsive layout.</p>
+    <p><strong>Token-free Ready apps and offline <code>patch link</code> now use sealed payload v9/runtime v1.0 for Window projects on Windows, macOS and Linux.</strong> That contract carries the same Native GUI IR 0.8 Table columns, rows, transient list-valued <code>changed</code> event type and Anchor/Dock policy. Dedicated CI builds, seals and starts the finished Table application on all three platforms, and separately proves the normal offline-linker path. Payload v8/runtime v0.9 remains a compatibility line rather than being silently redefined.</p>
   </section>
 
   <section class="page-section">
@@ -80,7 +80,7 @@ when people changed:
 
   <section class="page-section">
     <h2>Offline compiler</h2>
-    <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, macOS and Linux compiler downloads include responsive native runtime v0.9 templates, so supported locally linked Window apps preserve Anchor/Dock behavior without a cloud build. <strong>Table is not yet part of the sealed/offline-link Native GUI IR 0.7 surface.</strong> FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>; native FreeBSD GUI linking is not yet claimed.</p>
+    <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows and Linux downloads, Apple Silicon macOS and the Intel macOS portable kit include native runtime v1.0 for Window linking. Supported Table/Grid and responsive Anchor/Dock Window apps therefore link locally through sealed payload v9 without a cloud build or GitHub token. FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>; native FreeBSD GUI linking is not yet claimed.</p>
   </section>
 
   <section class="page-section">
