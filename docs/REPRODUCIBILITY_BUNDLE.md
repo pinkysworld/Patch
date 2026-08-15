@@ -11,7 +11,7 @@ A bundle contains:
 - the exact Patch package version;
 - the exact 40-character source commit checked out by the workflow;
 - a snapshot of every Git-tracked repository file relevant to that checkout;
-- explicitly supplied generated evidence, including regenerated Lean certificates and case-study reports;
+- explicitly supplied generated evidence, including regenerated Lean certificates and semantic-authority/application reports;
 - `BUNDLE-MANIFEST.json`, containing size and SHA-256 for every copied source/evidence file;
 - `environment.json`, recording Node/V8, host platform/architecture, CPU model strings and memory for provenance;
 - `REPRODUCE.txt`, with the core rerun commands.
@@ -38,6 +38,11 @@ SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
     --out evaluation/reproducibility/checkout.json \
     --markdown evaluation/reproducibility/checkout.md
 
+SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+  npm run evaluate:quota-extension -- \
+    --out evaluation/reproducibility/quota.json \
+    --markdown evaluation/reproducibility/quota.md
+
 node scripts/reproducibility-bundle.js build \
   --out reproducibility/bundle \
   --commit "$(git rev-parse HEAD)" \
@@ -48,7 +53,9 @@ node scripts/reproducibility-bundle.js build \
   --generated evaluation/reproducibility/security.csv \
   --generated evaluation/reproducibility/security.md \
   --generated evaluation/reproducibility/checkout.json \
-  --generated evaluation/reproducibility/checkout.md
+  --generated evaluation/reproducibility/checkout.md \
+  --generated evaluation/reproducibility/quota.json \
+  --generated evaluation/reproducibility/quota.md
 
 node scripts/reproducibility-bundle.js verify \
   --bundle reproducibility/bundle \
@@ -60,13 +67,13 @@ The shorter `npm run bundle:reproducibility` and `npm run verify:reproducibility
 
 ## Deterministic evidence timestamps
 
-The security-ablation and checkout-extension evaluators normally record the current wall-clock time. When `SOURCE_DATE_EPOCH` is set to a non-negative Unix timestamp, both use that timestamp instead. The CI bundle workflow sets it to the checked-out Git commit timestamp.
+The security-ablation and realistic-extension evaluators normally record the current wall-clock time. When `SOURCE_DATE_EPOCH` is set to a non-negative Unix timestamp, they use that timestamp instead. The CI bundle workflow sets it to the checked-out Git commit timestamp.
 
-This makes those generated evidence reports reproducible for the same source commit without pretending that benchmark timings from different machines are reproducible measurements.
+This makes security, checkout and quota evidence reproducible for the same source commit without pretending that benchmark timings from different machines are reproducible measurements.
 
 ## CI artifact
 
-`.github/workflows/reproducibility-bundle.yml` regenerates the formal/runtime evidence and both semantic-authority case-study reports, builds the commit-bound bundle, verifies every manifest hash, and creates a deterministic `tar.gz` archive.
+`.github/workflows/reproducibility-bundle.yml` regenerates the formal/runtime evidence, security micro-case report, checkout-extension report and quota-extension report, builds the commit-bound bundle, verifies every manifest hash, and creates a deterministic `tar.gz` archive.
 
 The archive uses:
 
@@ -81,7 +88,7 @@ The workflow publishes the archive plus a SHA-256 file as a GitHub Actions artif
 
 The bundle supports a narrow reproducibility statement:
 
-> A reviewer can identify the exact Patch version and source commit, verify the SHA-256 of every packaged source/evidence file, regenerate the current finite transitive call-tree/runtime certificates and semantic-authority case-study reports, and rerun the documented checks from the same source snapshot.
+> A reviewer can identify the exact Patch version and source commit, verify the SHA-256 of every packaged source/evidence file, regenerate the current finite transitive call-tree/runtime certificates and semantic-authority/application reports, and rerun the documented checks from the same source snapshot.
 
 It also prevents accidental artifact drift between manuscript-supporting code and the evidence handed to reviewers.
 
