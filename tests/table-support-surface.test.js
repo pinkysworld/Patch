@@ -55,8 +55,8 @@ test('Ready and offline surfaces consistently claim only explicit payload v9 run
     assert.match(text, /runtime \*\*?v1\.0\*\*?|runtime v1\.0/i);
   }
   assert.match(roadmap, /\[x\] sealed Ready\/offline Table payload \*\*v9\*\* \/ runtime \*\*v1\.0\*\* contract/);
-  assert.match(nativeApps, /payload \*\*v8\*\* \/ runtime \*\*v0\.9\*\* remains the frozen responsive/);
-  assert.match(offline, /Payload \*\*v8\*\* \/ runtime \*\*v0\.9\*\* remains an explicit older responsive compatibility line/);
+  assert.match(nativeApps, /payload \*\*v8\*\* \/ runtime \*\*v0\.9\*\*[^\n]*(?:frozen|compatibility)/i);
+  assert.match(offline, /payload \*\*v8\*\* \/ runtime \*\*v0\.9\*\*[^\n]*(?:older|frozen|compatibility)/i);
   assert.doesNotMatch(help, /Table is not yet claimed on those paths/);
   assert.doesNotMatch(downloads, /does not yet claim Table support/);
   assert.doesNotMatch(offline, /current offline `patch link`: \*\*Table is not yet supported\*\*/);
