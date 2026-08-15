@@ -6,26 +6,42 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - src/**
+      - native-runtime/sealed-table-v10.hpp
+      - native-runtime/win32-sealed-gui-v10.cpp
+      - native-runtime/appkit-sealed-gui-v10.mm
+      - native-runtime/gtk-sealed-gui-v10.cpp
+      - native-runtime/win32-sealed-gui-v09.cpp
+      - native-runtime/appkit-sealed-gui-v09.mm
+      - native-runtime/gtk-sealed-gui-v09.cpp
       - scripts/build-offline-compiler.js
       - scripts/offline-compiler-runner.cjs
       - scripts/build-native-sea-template.js
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
       - examples/responsive-window.patch
+      - examples/table-native-v09.patch
       - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-responsive-runtime.yml
+      - .github/workflows/native-sealed-table-runtime.yml
   push:
     branches: [main]
     paths:
       - src/**
+      - native-runtime/sealed-table-v10.hpp
+      - native-runtime/win32-sealed-gui-v10.cpp
+      - native-runtime/appkit-sealed-gui-v10.mm
+      - native-runtime/gtk-sealed-gui-v10.cpp
+      - native-runtime/win32-sealed-gui-v09.cpp
+      - native-runtime/appkit-sealed-gui-v09.mm
+      - native-runtime/gtk-sealed-gui-v09.cpp
       - scripts/build-offline-compiler.js
       - scripts/offline-compiler-runner.cjs
       - scripts/build-native-sea-template.js
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
       - examples/responsive-window.patch
+      - examples/table-native-v09.patch
       - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-responsive-runtime.yml
+      - .github/workflows/native-sealed-table-runtime.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -45,49 +61,69 @@ jobs:
           - os: windows-latest
             platform: windows
             asset: patch-windows-x64.exe
-            gui_tag: native-win32-runtime-v0.9
-            gui_asset: patch-windows-native-gui-runtime.exe
           - os: ubuntu-latest
             platform: linux
             asset: patch-linux-x64
-            gui_tag: native-linux-runtime-v0.9
-            gui_asset: patch-linux-native-gui-runtime.bin
           - os: macos-15
             platform: macos
             asset: patch-macos-arm64
-            gui_tag: native-macos-runtime-v0.9
-            gui_asset: patch-macos-native-gui-runtime.bin
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Install Linux Window smoke dependencies
+      - name: Install Linux Window build and smoke dependencies
         if: matrix.platform == 'linux'
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-3-0 xvfb
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
       - name: Build host Console runtime
         shell: bash
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Download checked responsive native GUI runtime
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Build Table-capable Win32 runtime v1.0
+        if: matrix.platform == 'windows'
+        shell: pwsh
         run: |
-          gh release download '${{ matrix.gui_tag }}' --repo "$GITHUB_REPOSITORY" --pattern '${{ matrix.gui_asset }}' --dir offline-runtime --clobber
-          mv "offline-runtime/${{ matrix.gui_asset }}" offline-runtime/gui.bin
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $script = Join-Path $PWD 'offline-runtime\build-gui-runtime.cmd'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE native-runtime\win32-sealed-gui-v10.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
+            'exit /b %errorlevel%'
+          ) | Set-Content -Path $script -Encoding ascii
+          & cmd.exe /d /c $script
+          if ($LASTEXITCODE -ne 0) { throw "MSVC GUI runtime build failed with exit code $LASTEXITCODE." }
+      - name: Build Table-capable GTK runtime v1.0
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v10.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x offline-runtime/gui.bin
+      - name: Build Table-capable AppKit runtime v1.0
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          clang++ -std=c++17 -O2 -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v10.mm -o offline-runtime/gui.bin
+          chmod +x offline-runtime/gui.bin
+          test "$(lipo -archs offline-runtime/gui.bin)" = "arm64"
       - name: Build standalone Patch compiler
         shell: bash
         run: |
           node scripts/build-offline-compiler.js --platform '${{ matrix.platform }}' --console-runtime offline-runtime/console.bin --gui-runtime offline-runtime/gui.bin --out "dist-offline/${{ matrix.asset }}"
-      - name: Smoke compiler and local Console and Window linking
+      - name: Smoke compiler and local Console, responsive Window and Table linking
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
@@ -97,8 +133,9 @@ jobs:
           "dist-offline/${{ matrix.asset }}" build examples/direct-wasm-recipes.patch --kind console --target web --out dist-smoke/OfflineSmoke.html
           "dist-offline/${{ matrix.asset }}" link examples/direct-wasm-recipes.patch --name OfflineLinked --out dist-smoke/OfflineLinked
           "dist-offline/${{ matrix.asset }}" link examples/responsive-window.patch --name OfflineResponsive --out dist-smoke/OfflineResponsive
+          "dist-offline/${{ matrix.asset }}" link examples/table-native-v09.patch --name OfflineTable --out dist-smoke/OfflineTable
           test -s dist-smoke/OfflineSmoke.html
-      - name: Smoke linked Console and responsive Window apps on Windows
+      - name: Smoke linked Console, responsive Window and Table apps on Windows
         if: matrix.platform == 'windows'
         shell: pwsh
         env:
@@ -108,16 +145,26 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Linked Console smoke failed with exit code $LASTEXITCODE." }
           & ./dist-smoke/OfflineResponsive.exe --patch-smoke
           if ($LASTEXITCODE -ne 0) { throw "Linked responsive Window smoke failed with exit code $LASTEXITCODE." }
-      - name: Smoke linked Console and responsive Window apps on Linux
+          & ./dist-smoke/OfflineTable.exe --patch-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Linked Table Window smoke failed with exit code $LASTEXITCODE." }
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-smoke/OfflineTable.exe'))
+          if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 9) { throw 'Offline compiler Table output is not sealed payload v9.' }
+      - name: Smoke linked Console, responsive Window and Table apps on Linux
         if: matrix.platform == 'linux'
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive
+          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable
           ./dist-smoke/OfflineLinked
           xvfb-run -a ./dist-smoke/OfflineResponsive --patch-smoke
-      - name: Smoke linked Console and responsive Window apps on macOS
+          xvfb-run -a ./dist-smoke/OfflineTable --patch-smoke
+          node - <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync('dist-smoke/OfflineTable');
+          if(sealed.readUInt32LE(sealed.length-12)!==9) throw new Error('Offline compiler Table output is not sealed payload v9.');
+          NODE
+      - name: Smoke linked Console, responsive Window and Table apps on macOS
         if: matrix.platform == 'macos'
         shell: bash
         env:
@@ -125,10 +172,18 @@ jobs:
         run: |
           CONSOLE_APP=dist-smoke/OfflineLinked.app/Contents/MacOS/OfflineLinked
           WINDOW_APP=dist-smoke/OfflineResponsive.app/Contents/MacOS/OfflineResponsive
+          TABLE_APP=dist-smoke/OfflineTable.app/Contents/MacOS/OfflineTable
           test -x "$CONSOLE_APP"
           test -x "$WINDOW_APP"
+          test -x "$TABLE_APP"
           "$CONSOLE_APP"
           "$WINDOW_APP" --patch-smoke
+          "$TABLE_APP" --patch-smoke
+          node - "$TABLE_APP" <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync(process.argv[2]);
+          if(sealed.readUInt32LE(sealed.length-12)!==9) throw new Error('Offline compiler Table output is not sealed payload v9.');
+          NODE
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-${{ matrix.platform }}-${{ matrix.asset }}
@@ -139,17 +194,15 @@ jobs:
   macos-intel-kit:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: macos-15-intel
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Build portable Intel macOS compiler kit
+      - name: Build portable Intel macOS compiler kit with Table runtime v1.0
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           ROOT=dist-intel/patch-macos-x64
           mkdir -p "$ROOT/src" "$ROOT/runtime" dist-smoke
@@ -157,8 +210,9 @@ jobs:
           cp package.json LICENSE "$ROOT/"
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
-          gh release download 'native-macos-runtime-v0.9' --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir "$ROOT/runtime" --clobber
-          mv "$ROOT/runtime/patch-macos-native-gui-runtime.bin" "$ROOT/runtime/gui.bin"
+          clang++ -std=c++17 -O2 -mmacosx-version-min=11.0 -arch x86_64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v10.mm -o "$ROOT/runtime/gui.bin"
+          chmod +x "$ROOT/runtime/gui.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
           set -eu
@@ -176,11 +230,11 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals the responsive AppKit v0.9 runtime into a normal .app bundle.
+          Window link seals Native GUI IR 0.8 into payload v9/runtime v1.0, including Table/Grid and responsive Anchor/Dock support.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
-      - name: Smoke Intel kit and both link paths
+      - name: Smoke Intel kit and Console, responsive Window and Table link paths
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
@@ -198,6 +252,15 @@ jobs:
           WINDOW_APP=dist-smoke/IntelWindow.app/Contents/MacOS/IntelWindow
           test -x "$WINDOW_APP"
           "$WINDOW_APP" --patch-smoke
+          "$KIT/patch" link examples/table-native-v09.patch --name IntelTable --out dist-smoke/IntelTable
+          TABLE_APP=dist-smoke/IntelTable.app/Contents/MacOS/IntelTable
+          test -x "$TABLE_APP"
+          "$TABLE_APP" --patch-smoke
+          node - "$TABLE_APP" <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync(process.argv[2]);
+          if(sealed.readUInt32LE(sealed.length-12)!==9) throw new Error('Intel offline compiler Table output is not sealed payload v9.');
+          NODE
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-macos-intel
@@ -287,5 +350,5 @@ jobs:
         shell: bash
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Supported run/build/link workflows work locally without a GitHub token.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds sealed Native GUI payload v9/runtime v1.0 with Table/Grid and responsive Anchor/Dock support. Supported run/build/link workflows work locally without a GitHub token.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

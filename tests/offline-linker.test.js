@@ -28,7 +28,7 @@ test('offline linker seals Console source into a local Windows executable plan',
   assert.deepEqual([...decoded.runtime], [...runtime]);
 });
 
-test('offline linker lowers Window source to Native GUI IR and seals platform runtime', () => {
+test('offline linker lowers Window source to Native GUI IR 0.8 and seals payload v9', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0]), 'OfflineWindow.exe'],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]), 'OfflineWindow'],
@@ -40,21 +40,24 @@ test('offline linker lowers Window source to Native GUI IR and seals platform ru
     assert.equal(plan.suggestedOutput, suggestedOutput);
     const executable = platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
     assert.ok(decodeNativeGuiPayload(executable.bytes).length > 0);
+    assert.equal(new DataView(executable.bytes.buffer, executable.bytes.byteOffset + executable.bytes.length - 12, 4).getUint32(0, true), 9);
   }
 });
 
-test('offline Window linker fails closed for Table until the sealed Native GUI contract supports it', () => {
+test('offline Window linker preserves Table in the sealed payload v9 contract', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
     ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0])]
   ];
   for (const [platform, runtime] of cases) {
-    assert.throws(
-      () => createOfflineLinkPlan(tableWindowSource, { platform, name: 'NoSealedTableYet', guiRuntime: runtime }),
-      /Table|table|unsupported native GUI control/i,
-      `${platform} offline linking must reject Table rather than omit it`
-    );
+    const plan = createOfflineLinkPlan(tableWindowSource, { platform, name: 'SealedTable', guiRuntime: runtime });
+    const executable = platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
+    const payload = new TextDecoder().decode(decodeNativeGuiPayload(executable.bytes));
+    assert.equal(new DataView(executable.bytes.buffer, executable.bytes.byteOffset + executable.bytes.length - 12, 4).getUint32(0, true), 9);
+    assert.match(payload, /Name/);
+    assert.match(payload, /Grace/);
+    assert.match(payload, /Scientist/);
   }
 });
 

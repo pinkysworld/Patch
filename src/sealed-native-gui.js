@@ -1,7 +1,9 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
+import { flattenNativeGuiControlsV08, validateNativeGuiIRV08 } from './native-gui-ir-v08.js';
 
 export const PATCH_SEALED_NATIVE_GUI_VERSION = 8;
 export const PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 7;
+export const PATCH_SEALED_NATIVE_GUI_TABLE_VERSION = 9;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -9,21 +11,22 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v8 is the current Ready-App contract. It preserves the v7
- * state/Form/control/menu/event contract and adds two bytes of responsive
- * layout policy after every control geometry: kind 0=fixed, 1=anchor, 2=dock
- * plus an anchor bit-mask or dock-side code. The policy is UI metadata only and
- * does not enter semantic Change IR.
+ * Payload v8 remains the default Ready-App contract while the Table-capable
+ * v9/runtime-v1.0 line is staged and smoke-tested. Payload v9 preserves v8's
+ * state/Form/menu/action/layout contract and adds explicit Table control kind 9,
+ * source-backed columns/rows, and event value type 3 (`text-list`). Table row
+ * selection remains transient UI state; scalar native state still changes only
+ * through ordinary semantic `change` actions.
  *
  * Payload v7 remains explicitly encodable for the frozen runtime-v0.8 release
- * line and compatibility tooling.
+ * line. User-facing Ready/offline consumers opt into v9 only together with a
+ * runtime that explicitly understands the new contract.
  */
 export function encodeNativeGuiPayload(input, options = {}) {
   const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
-  const ir = validateNativeGuiIR(input);
-  validateTextBindings(ir);
+  const { ir, flatControls } = payloadInput(input, version);
+  validateTextBindings(ir, flatControls);
   const writer = new Writer();
-  const flatControls = flattenNativeGuiControls(ir);
 
   writer.u32(ir.states.length);
   for (const state of ir.states) {
@@ -44,22 +47,26 @@ export function encodeNativeGuiPayload(input, options = {}) {
     writer.u8(form.visible ? 1 : 0);
     writer.u32(controls.length);
     for (const control of controls) {
+      if (control.type === 'table' && version < PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
+        throw new SealedNativeGuiError(`Native Table requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION}, not v${version}.`);
+      }
       writer.u8(controlTypeCode(control.type));
       writer.text(control.id ?? '');
       writer.text(control.text ?? '');
       writer.text(control.binding ?? '');
-      const options = control.type === 'tabs'
+      const controlOptions = control.type === 'tabs'
         ? control.pageTitles
         : Array.isArray(control.options) ? control.options : [];
-      writer.u32(options.length);
-      for (const option of options) writer.text(option);
+      writer.u32(controlOptions.length);
+      for (const option of controlOptions) writer.text(option);
       writer.i32(control.layout?.x ?? 24);
       writer.i32(control.layout?.y ?? 24);
       writer.i32(control.layout?.width ?? 120);
       writer.i32(control.layout?.height ?? 36);
-      if (version >= PATCH_SEALED_NATIVE_GUI_VERSION) writeLayoutPolicy(writer, control.layout?.policy);
+      if (version >= 8) writeLayoutPolicy(writer, control.layout?.policy);
       writer.i32(control.parentTabIndex ?? -1);
       writer.i32(control.pageIndex ?? -1);
+      if (version >= PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) writeTablePayload(writer, control);
     }
 
     writer.u32(form.menus.length);
@@ -77,7 +84,7 @@ export function encodeNativeGuiPayload(input, options = {}) {
   for (const event of ir.events) {
     writer.text(event.control);
     writer.u8(eventCode(event.event));
-    writer.u8(event.valueType === 'boolean' ? 1 : event.valueType === 'text' ? 2 : 0);
+    writer.u8(eventValueTypeCode(event.valueType));
     writer.u32(event.actions.length);
     for (const action of event.actions) writeAction(writer, action);
   }
@@ -120,9 +127,24 @@ export function decodeNativeGuiPayload(binaryBytes) {
   return new Uint8Array(payload);
 }
 
+function payloadInput(input, version) {
+  if (input?.version === '0.8') {
+    if (version !== PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
+      throw new SealedNativeGuiError(`Native GUI IR 0.8 requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION}, not v${version}.`);
+    }
+    const ir = validateNativeGuiIRV08(input);
+    return { ir, flatControls: flattenNativeGuiControlsV08(ir) };
+  }
+  if (version === PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
+    throw new SealedNativeGuiError('Unsupported sealed native GUI version 9 for Native GUI IR 0.7; lower Native GUI IR 0.8 first.');
+  }
+  const ir = validateNativeGuiIR(input);
+  return { ir, flatControls: flattenNativeGuiControls(ir) };
+}
+
 function payloadVersion(value) {
   const version = Number(value);
-  if (version !== PATCH_SEALED_NATIVE_GUI_VERSION && version !== PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION) {
+  if (![PATCH_SEALED_NATIVE_GUI_TABLE_VERSION, PATCH_SEALED_NATIVE_GUI_VERSION, PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION].includes(version)) {
     throw new SealedNativeGuiError(`Unsupported sealed native GUI version '${value}'.`);
   }
   return version;
@@ -150,10 +172,10 @@ function validateRuntimeHeader(runtime, platform) {
   throw new SealedNativeGuiError(`Native GUI runtime platform '${platform}' is unsupported.`);
 }
 
-function validateTextBindings(ir) {
+function validateTextBindings(ir, flatControls) {
   const states = new Set(ir.states.map(state => state.name));
   const re = /\{([A-Za-z_]\w*)\}/g;
-  for (const control of flattenNativeGuiControls(ir)) {
+  for (const control of flatControls) {
     const text = String(control.text ?? '');
     re.lastIndex = 0;
     let match;
@@ -170,6 +192,24 @@ function validateTextBindings(ir) {
     if (control.type === 'tabs' && (!Array.isArray(control.pageTitles) || control.pageTitles.length < 2)) {
       throw new SealedNativeGuiError('Native Tabs payload needs at least two page titles.');
     }
+  }
+}
+
+function writeTablePayload(writer, control) {
+  if (control.type !== 'table') {
+    writer.u32(0);
+    writer.u32(0);
+    return;
+  }
+  const columns = control.columns ?? [];
+  const rows = control.rows ?? [];
+  if (!columns.length || !rows.length) throw new SealedNativeGuiError('Native Table payload needs columns and rows.');
+  writer.u32(columns.length);
+  for (const column of columns) writer.text(column);
+  writer.u32(rows.length);
+  for (const row of rows) {
+    if (!Array.isArray(row) || row.length !== columns.length) throw new SealedNativeGuiError('Native Table payload row width does not match its columns.');
+    for (const cell of row) writer.text(cell);
   }
 }
 
@@ -210,6 +250,14 @@ function eventCode(event) {
   if (event === 'chosen') return 4;
   if (event === 'cancelled') return 5;
   throw new SealedNativeGuiError(`Unsupported native event '${event}'.`);
+}
+
+function eventValueTypeCode(valueType) {
+  if (valueType == null) return 0;
+  if (valueType === 'boolean') return 1;
+  if (valueType === 'text') return 2;
+  if (valueType === 'text-list') return 3;
+  throw new SealedNativeGuiError(`Unsupported native event value type '${valueType}'.`);
 }
 
 function writeAction(writer, action) {
@@ -274,6 +322,7 @@ function controlTypeCode(type) {
   if (type === 'listbox') return 6;
   if (type === 'tabs') return 7;
   if (type === 'radio') return 8;
+  if (type === 'table') return 9;
   throw new SealedNativeGuiError(`Unsupported native control '${type}'.`);
 }
 function opCode(op) {

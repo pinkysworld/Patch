@@ -73,7 +73,7 @@ test('sealed GTK v0.9 consumes payload v8 and follows GtkFixed allocation change
   for (const marker of ['version != 8','PatchConvertPayloadV8ToV7','ApplyPatchResponsiveLayoutV09','size-allocate','gtk_fixed_move','RunPatchResponsiveSmokeV09','ApplyPatchAccessibilityV09']) assert.ok(gtk.includes(marker), marker);
 });
 
-test('responsive runtime workflow builds and publishes one v0.9 release line per supported desktop backend', () => {
+test('responsive runtime workflow retains the frozen v0.9 release line for reproducibility', () => {
   assert.match(workflow, /win32-sealed-gui-v09\.cpp/);
   assert.match(workflow, /appkit-sealed-gui-v09\.mm/);
   assert.match(workflow, /gtk-sealed-gui-v09\.cpp/);
@@ -84,12 +84,25 @@ test('responsive runtime workflow builds and publishes one v0.9 release line per
   assert.match(workflow, /readUInt32LE\(sealed\.length-12\)!==8/);
 });
 
-test('Pages and offline compiler consume only the published v0.9 responsive runtime line', () => {
-  for (const tag of ['native-win32-runtime-v0.9','native-macos-runtime-v0.9','native-linux-runtime-v0.9']) {
+test('Pages and offline compiler advance to Table-capable runtime v1.0 without redefining v0.9', () => {
+  for (const tag of ['native-win32-runtime-v1.0','native-macos-runtime-v1.0','native-linux-runtime-v1.0']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
-    assert.ok(offline.includes(tag), `offline compiler missing ${tag}`);
   }
+  assert.match(pages, /Patch Native Sealed Table Runtime/);
+  assert.match(pages, /steps\.native_runtime\.outputs\.ready == 'true'/);
   assert.match(pages, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
+
+  for (const runtimeSource of [
+    'native-runtime\\win32-sealed-gui-v10.cpp',
+    'native-runtime/appkit-sealed-gui-v10.mm',
+    'native-runtime/gtk-sealed-gui-v10.cpp'
+  ]) assert.ok(offline.includes(runtimeSource), `offline compiler missing ${runtimeSource}`);
   assert.match(offline, /examples\/responsive-window\.patch/);
+  assert.match(offline, /examples\/table-native-v09\.patch/);
+  assert.match(offline, /OfflineTable/);
+  assert.match(offline, /payload v9/);
   assert.match(offline, /--patch-smoke/);
+  assert.doesNotMatch(offline, /native-win32-runtime-v0\.9/);
+  assert.doesNotMatch(offline, /native-macos-runtime-v0\.9/);
+  assert.doesNotMatch(offline, /native-linux-runtime-v0\.9/);
 });

@@ -7,7 +7,7 @@ export class SealedNativePackageError extends Error {}
 export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform: 'linux' });
+  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform: 'linux', version: options.payloadVersion });
   return {
     format: 'patch-sealed-linux-native-gui-package',
     version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
@@ -24,7 +24,7 @@ export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}
 export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform: 'macos' });
+  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform: 'macos', version: options.payloadVersion });
   const bundle = `${name}.app`;
   const executablePath = `${bundle}/Contents/MacOS/${name}`;
   const plistPath = `${bundle}/Contents/Info.plist`;

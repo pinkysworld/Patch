@@ -110,7 +110,7 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] opt-in Native GUI IR **0.8** Table representation with source-backed columns/rows and transient `text-list` event type
 - [x] direct AOT backend **0.9** native Table widgets on Win32/AppKit/GTK with real compile/runtime/selection smokes
 - [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
-- [ ] sealed Ready/offline Table payload/runtime contract and consumer switch
+- [x] sealed Ready/offline Table payload **v9** / runtime **v1.0** contract and Windows/macOS/Linux consumer switch with real seal/link/run smokes
 - [ ] richer data controls beyond Table/Grid
 - [ ] ListBox multi-selection with an explicit list-valued event contract
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
@@ -120,7 +120,7 @@ All current input/selection/result events expose transient values only. Persiste
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
-- [x] ready Windows/macOS/Linux Window packages for the current sealed Native GUI IR 0.7 surface
+- [x] ready Windows/macOS/Linux Window packages for the Native GUI IR 0.7 base surface
 - [x] explicit compatibility Window backend consumes a source-free compiled Window artifact instead of reparsing `main.patch`
 - [x] token-free compatibility payload v0.4 with `studio-runtime-v0.6`
 - [x] FreeBSD Console via portable C99
@@ -128,19 +128,19 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] direct-native AOT Win32/AppKit/GTK backends for the Native GUI IR 0.7 surface
 - [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
 - [x] direct-native runtime-responsive Anchor/Dock handling on Win32/AppKit/GTK
-- [x] Native GUI IR **0.8** Table extension remains opt-in and does not redefine the stable sealed IR 0.7 contract
+- [x] Native GUI IR **0.8** Table extension remains explicit and does not redefine Native GUI IR 0.7
 - [x] AOT backend **0.9** Table widgets compile and execute on Windows/MSVC, macOS/AppKit and Linux/GTK3
 - [x] frozen sealed native GUI payload **v7** / runtime **v0.8** compatibility line with result dialogs and accessibility
-- [x] sealed native GUI payload **v8** with source-backed Anchor/Dock transport
-- [x] token-free responsive sealed Win32 runtime `native-win32-runtime-v0.9`
-- [x] token-free responsive sealed GTK3 runtime `native-linux-runtime-v0.9`
-- [x] token-free responsive sealed AppKit runtime `native-macos-runtime-v0.9`
-- [x] sealed runtime v0.9 preserves v0.8 accessibility parity while adding runtime reflow
+- [x] frozen responsive sealed native GUI payload **v8** / runtime **v0.9** compatibility line with Anchor/Dock and Native GUI IR 0.7 controls
+- [x] sealed native GUI payload **v9** carries Native GUI IR 0.8 Table columns/rows, transient `text-list` event typing and responsive layout metadata
+- [x] token-free sealed Win32 runtime `native-win32-runtime-v1.0` with real Table/selection/accessibility/responsive smoke
+- [x] token-free sealed GTK3 runtime `native-linux-runtime-v1.0` with real Table/selection/accessibility/responsive smoke
+- [x] token-free sealed AppKit runtime `native-macos-runtime-v1.0` with real Table/selection/accessibility/responsive smoke
+- [x] ordinary offline `patch link` creates and executes payload-v9/runtime-v1.0 Table apps on Windows/macOS/Linux
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
-- [x] offline compiler embeds runtime v0.9 and executes responsive Window-link smokes on Windows/Linux/Apple Silicon/macOS Intel for the sealed Native GUI IR 0.7 surface
-- [ ] sealed payload/runtime Table representation and token-free Ready/offline Table linking
+- [x] offline compiler builds/embeds runtime v1.0 and executes Console, responsive Window and Table Window link smokes on Windows/Linux/Apple Silicon/macOS Intel
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
@@ -149,7 +149,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The v0.9 sealed-runtime item and the backend-v0.9 Table item are different contracts. Runtime v0.9 is the responsive payload-v8 consumer for the Native GUI IR 0.7 control surface. Backend v0.9 is the direct-AOT Table extension over Native GUI IR 0.8. Table is not claimed for Ready/offline linking until an explicit sealed Table contract passes its own Windows/macOS/Linux link-and-run gate.
+The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts over Native GUI IR 0.8. Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the explicit Table-capable Ready/offline contract. The Windows/macOS/Linux sealed-runtime matrix and ordinary offline-linker matrix independently encode and execute the new payload before it is presented as supported.
 
 ## Highest-value remaining research work
 

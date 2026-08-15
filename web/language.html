@@ -57,8 +57,8 @@ show score</pre>
 
 when people changed:
   show value</pre>
-    <p>Inside <code>changed</code>, <code>value</code> is the selected row as a list of display strings. Persistence still requires an ordinary explicit <code>change</code>. Standalone Web implements this contract, and the direct native AOT Native GUI IR 0.8/backend 0.9 path carries the same transient row-list semantics on Win32, AppKit and GTK3.</p>
-    <p>Build surfaces are intentionally versioned separately. Current token-free sealed Ready apps and offline Window linking still use the Native GUI IR 0.7 control surface, so they do not yet claim Table support.</p>
+    <p>Inside <code>changed</code>, <code>value</code> is the selected row as a list of display strings. Persistence still requires an ordinary explicit <code>change</code>. Studio App preview and Standalone Web implement this contract. Direct native AOT carries it through Native GUI IR 0.8/backend 0.9 on Win32, AppKit and GTK3.</p>
+    <p>Token-free Ready apps and offline Window linking carry the same language semantics through <strong>sealed payload v9/runtime v1.0</strong> on Windows, macOS and Linux. Payload v9 transports Table columns, rows, responsive layout policy and the transient <code>text-list</code> event type without introducing persistent native list state. Payload v8/runtime v0.9 remains an explicit older compatibility contract.</p>
   </section>
 
   <section class="page-section">
