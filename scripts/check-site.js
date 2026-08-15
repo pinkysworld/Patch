@@ -60,16 +60,16 @@ requireAll('Studio assets', html, [
   './designer-multiselect.css', './designer-responsive-layout.css', './manifest.webmanifest',
   './native-build.js', './project-lifecycle.js', './project-config-restore.js',
   './recovery-manager.js', './playground.js', './forms-designer.js', './table-stage1.js',
-  './designer-alignment.js', './designer-alignment-guides.js', './designer-multiselect.js',
-  './designer-layout-policy.js', './designer-responsive-layout.js', './form-window-resize.js',
+  './designer-alignment-guides.js', './designer-multiselect.js',
+  './designer-responsive-layout.js', './form-window-resize.js',
   './studio-diagnostics.js', './studio-accessibility.js', './icon.svg'
 ]);
 for (const id of [
   'skipToEditor', 'code', 'run', 'build', 'buildTarget', 'resultTabs', 'tabDesigner',
   'tabApp', 'tabOutput', 'tabChanges', 'tabIr', 'output', 'changes', 'ir', 'app',
-  'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'addRadio',
-  'addCombo', 'addListbox', 'addTable', 'addTabs', 'projectName', 'projectKind',
-  'exportProject', 'importProject', 'recoverProject', 'importProjectFile',
+  'designer', 'designerCanvas', 'addText', 'addButton', 'addInput', 'addCheckbox',
+  'addRadio', 'addCombo', 'addListbox', 'addTable', 'addTabs', 'projectName',
+  'projectKind', 'exportProject', 'importProject', 'recoverProject', 'importProjectFile',
   'copyDiagnostics', 'downloadDiagnostics', 'diagnosticsState', 'nativeBuildPanel',
   'nativeBuildToken', 'nativeBuildStatus'
 ]) requireText('Studio UI', html, `id="${id}"`);
