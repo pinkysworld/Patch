@@ -39,6 +39,18 @@ jobs:
         run: node --test tests/table-support-surface.test.js
       - name: Beta34 Studio hardening regressions
         run: node --test tests/runtime-integrity-manifest.test.js tests/studio-dom-sync.test.js tests/studio-runtime-integrity.test.js tests/native-runtime-trigger-hygiene.test.js
+      - name: Site navigation regression
+        run: node --test tests/site-navigation.test.js
+      - name: Offline downloads regression
+        run: node --test tests/offline-downloads-page.test.js
+      - name: Studio live-update regression
+        run: node --test tests/studio-live-update.test.js
+      - name: Studio project lifecycle regression
+        run: node --test tests/studio-project-web.test.js
+      - name: Studio sealed Table regression
+        run: node --test tests/studio-sealed-table-v10.test.js
+      - name: Site Designer bundle regression
+        run: node --test tests/site-alignment-bundle.test.js
       - name: Language, compiler, formal, source/runtime/call/concrete-call certificate, direct-Wasm, C99, app-build, validator, designer and bootstrap-Wasm tests
         run: npm test
       - name: Deterministic parser and compiler grammar fuzz
