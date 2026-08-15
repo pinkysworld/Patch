@@ -12,7 +12,7 @@ const studioVersion = `0.2 beta.${beta}`;
 const files = {
   readme: read('README.md'), website: read('web/index.html'), languagePage: read('web/language.html'), docsPage: read('web/docs.html'), downloadsPage: read('web/downloads.html'), helpPage: read('web/help.html'), studio: read('docs/PATCH_STUDIO.md'), beta34: read('docs/BETA34.md'),
   native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
-  formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'),
+  formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'), paperMain: read('paper/main.tex'), paperRelated: read('paper/related-work.tex'),
   evaluation: read('docs/EVALUATION.md'), controlledEvaluation: read('docs/CONTROLLED_EVALUATION.md'), securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'), runtimeIntegrity: read('web/runtime-integrity.js'), studioDomSync: read('web/studio-dom-sync.js'),
   compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
@@ -69,19 +69,32 @@ requireAll('docs/PATCH_STUDIO.md', files.studio, [
 ]);
 requireAll('docs/BETA34.md', files.beta34, [version, 'One canonical Studio project state', 'Runtime integrity before browser packaging', 'studio-runtime-v0.6', 'runtime-manifest.json', 'fresh-first']);
 
-// These documents retain beta.32 as the historical/formal assurance milestone even as the product beta advances.
 requireAll('docs/NATIVE_APPS.md', files.native, ['Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.34 runtime-template integrity']);
 requireAll('docs/ROADMAP.md', files.roadmap, [
   `Current development beta: **${version}**`, '### beta.34:', '### beta.32:', 'invocation frames', 'repeated identical calls', 'Assurance overhead/scaling harness',
-  'fresh-process outer runner', 'controlled paper-quality benchmark runs', 'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject'
+  'fresh-process outer runner', 'controlled paper-quality benchmark runs', 'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject',
+  'Structured related work and manuscript synchronization', 'main manuscript synchronized to beta.32 assurance / beta.34 artifact status'
 ]);
 requireAll('docs/COMPILER.md', files.compiler, ['Change IR **0.10**', 'Beta.32', 'invocation-frame', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean']);
 requireAll('docs/FORMAL_MODEL.md', files.formal, ['Beta.32', 'checkedObservedTransitiveRuntimeRefinesCallerSignature', 'invocation-frame', 'runtime capture']);
-requireAll('docs/NOVELTY.md', files.novelty, ['Beta.32', 'invocation-frame', 'supporting assurance']);
+requireAll('docs/NOVELTY.md', files.novelty, ['Beta.32', 'invocation-frame', 'supporting assurance', 'Expressibility is not the novelty claim']);
 requireAll('paper/README.md', files.paper, [
-  'Beta.32', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'PatchCallRuntime.lean',
-  'fresh-process controlled-measurement protocol', 'No overhead, scalability or asymptotic claim is made yet',
-  'Semantic-authority security ablation', '4 cases  Patch reject / coarse target-write accept', 'not a model of any named effect system'
+  'product artifact: **Patch 0.2.0-beta.34**', 'formal runtime-correspondence milestone: **beta.32**',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'process-isolated controlled-measurement protocol',
+  'no controlled paper-quality performance dataset has been collected yet', '3  Patch accept / coarse accept', '4  Patch reject / coarse accept',
+  'internal ablation, not a model of a named effect or capability system', '`paper/related-work.tex` is now included by `main.tex`'
+]);
+requireAll('paper/main.tex', files.paperMain, [
+  'Beta 34 product artifact / Beta 32 assurance manuscript', 'Beta 30 finite transitive exact call trees', 'Beta 31 call-aware bridge', 'Beta 32 invocation frames',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Patch reject / coarse accept', 'no controlled paper-quality timing dataset yet',
+  'Patch Reproducibility Bundle', '\\input{related-work}', '\\bibliography{references}'
+]);
+if (files.paperMain.includes('Beta 28 research artifact manuscript')) {
+  throw new Error('paper/main.tex regressed to the old beta.28 manuscript identity.');
+}
+requireAll('paper/related-work.tex', files.paperRelated, [
+  'Related Work and Claim Boundary', 'sunshine2011plaid', 'brachthaeuser2020effects', 'orchard2019quantitative', 'nanevski2008htt', 'swamy2016fstar',
+  'sole modeled persistent-mutation route', 'not claim unique expressibility'
 ]);
 requireAll('docs/EVALUATION.md', files.evaluation, [
   'Call-tree depth', 'Concrete invocation count', 'compileMs', 'executeMs', 'validateMs', 'correspondenceMs', 'certificateGenerationMs',

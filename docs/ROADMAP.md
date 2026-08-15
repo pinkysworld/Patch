@@ -84,8 +84,8 @@ The coarse baseline is an internal ablation, not a representation of any named p
 - [x] same internal coarse target-write ablation reused for controlled comparison
 - [x] application-level JSON/Markdown evaluator and regression tests
 - [x] `docs/CHECKOUT_EXTENSION_CASE.md`
+- [x] literature-grounded comparison dimensions against named related systems in `docs/RELATED_WORK.md`
 - [ ] broader externally motivated extension corpus or real plugin integration
-- [ ] literature-grounded comparison dimensions against named related systems
 
 This case is a larger engineering/motivating example, not a complete plugin sandbox or malicious-code containment result.
 
@@ -102,6 +102,18 @@ This case is a larger engineering/motivating example, not a complete plugin sand
 - [x] `docs/REPRODUCIBILITY_BUNDLE.md`
 
 The bundle supports artifact identity and evidence reruns. It intentionally does not turn variable hosted-runner timings into paper performance results.
+
+### Structured related work and manuscript synchronization
+- [x] mechanism-oriented comparison across first-class state change, effects, capabilities, quantitative types, permissions, state specifications, explicit edits, assurance and provenance
+- [x] explicit separation of expressibility from mandatory/default mutation architecture
+- [x] primary-source bibliography expanded for the comparison systems
+- [x] citation-ready `paper/related-work.tex`
+- [x] novelty claim narrowed to mandatory semantic mutation factorization plus operation/magnitude authority from the same substrate
+- [x] `paper/main.tex` synchronized from the old beta.28 state to beta.32 assurance / beta.34 artifact status
+- [x] security, checkout, controlled-evaluation and reproducibility evidence integrated into the manuscript
+- [ ] targeted follow-up for recent dependent/graded effect systems that may be an even closer architectural match
+
+The literature pass does not claim that Patch policies are uniquely expressible or that the review is exhaustive. Rich refinement/effect systems can state stronger relations; the candidate claim is architectural and remains subject to expert/venue scrutiny.
 
 ## Product milestones
 
@@ -197,9 +209,9 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 ## Highest-value remaining research work
 
 1. [ ] collect controlled overhead/scaling measurements using the completed process-isolated fixed-machine protocol;
-2. [ ] systematic related-work review and literature-grounded comparison dimensions;
+2. [ ] statistical analysis/plots over the controlled dataset and measured-results manuscript update;
 3. [ ] broader externally motivated extension/security corpus beyond the checkout case;
-4. [x] reproducibility bundle;
+4. [ ] targeted recent dependent/graded-effect search for a closer architectural match;
 5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification;
 6. [ ] extend invocation-frame evidence to richer branching/repeated-call scenarios.
 
@@ -219,8 +231,9 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 - [x] **Semantic-authority security ablation**
 - [x] **realistic checkout/loyalty security/engineering case study**
 - [x] **commit-bound reproducibility bundle**
+- [x] **structured related work with primary-source comparison dimensions**
+- [x] **main manuscript synchronized to beta.32 assurance / beta.34 artifact status**
 - [ ] controlled measured overhead results
-- [ ] systematic related work
 - [ ] broader externally motivated application corpus
 
 ## Design constraints
@@ -247,3 +260,4 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 20. Browser-side Ready packaging must fail closed if the deployed native runtime bytes do not match the deployment's verified release-integrity manifest.
 21. A reproducibility artifact may bind source and generated evidence to an exact commit without turning heterogeneous hosted-runner timing into a performance claim.
 22. Hosted CI timing and controlled fixed-machine timing are distinct evidence classes and must never be pooled or relabelled implicitly.
+23. Related-work comparisons must distinguish expressibility from whether a mechanism is the mandatory/default mutation substrate of the compared system.
