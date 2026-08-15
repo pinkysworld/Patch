@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Download the Patch offline compiler for Windows, macOS, Linux and FreeBSD.">
+  <meta name="description" content="Download and verify the Patch offline compiler for Windows, macOS, Linux and FreeBSD.">
   <title>Downloads · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -19,10 +19,10 @@
   <a href="./downloads.html" aria-current="page">Downloads</a>
   <a href="./help.html">Help</a>
 </nav>
-<main class="content-page" data-patch-version="0.2.0-beta.33">
+<main class="content-page" data-patch-version="0.2.0-beta.34">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch offline compiler · 0.2 beta.33</p>
+      <p class="page-eyebrow">Patch offline compiler · 0.2 beta.34</p>
       <h1>Compile Patch without opening the browser.</h1>
       <p>Download one local Patch compiler for your platform. Windows, macOS and Linux downloads contain the Patch compiler and native Window runtime v1.0, so <code>run</code>, <code>check</code>, normal build targets and supported <code>link</code> operations, including Table/Grid, work without a GitHub token or network connection after download.</p>
     </div>
@@ -35,14 +35,29 @@ patch link app.patch --out App</pre>
   <section class="page-section">
     <h2>Download Patch</h2>
     <p>The offline compiler uses the same parser, compiler and native linking contracts as Patch Studio. Supported Window apps preserve source-backed Anchor/Dock behavior when the real native window is resized. Table/Grid is carried through sealed payload v9/runtime v1.0 on Windows, macOS and Linux. Apple Silicon uses a single standalone binary. Intel macOS uses a compact portable kit because Node SEA does not currently support macOS x64 reliably.</p>
+    <p><strong><code>offline-compiler-v0.1</code> is the rolling beta download channel.</strong> Its named assets are refreshed by the green offline-compiler workflow from <code>main</code>. Use the adjacent <code>SHA256SUMS</code> file to verify the exact bytes you downloaded.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-windows-x64.exe"><strong>Windows x64</strong><span>patch-windows-x64.exe · standalone compiler + Win32 GUI linker with Table/Grid and responsive layout.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-arm64"><strong>macOS Apple Silicon</strong><span>patch-macos-arm64 · standalone compiler + AppKit linker with Table/Grid and responsive layout.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>patch-macos-x64.tar.gz · portable no-install kit with embedded Intel Node runtime + AppKit Table/Grid linker.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-linux-x64"><strong>Linux x64</strong><span>patch-linux-x64 · standalone compiler + native GTK3 Table/Grid linker.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-freebsd-x64.tar.gz"><strong>FreeBSD x64</strong><span>Portable offline compiler kit · Patch CLI + C99 linker path. Requires local Node 22+ and cc.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/SHA256SUMS"><strong>SHA256 checksums</strong><span>Verify downloaded compiler assets before use.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/SHA256SUMS"><strong>SHA256 checksums</strong><span>Verification file for every offline-compiler asset in this rolling beta channel.</span></a>
     </div>
+  </section>
+
+  <section class="page-section">
+    <h2>Verify a download</h2>
+    <p>Download <code>SHA256SUMS</code> into the same folder as the compiler asset. Verify before first use, especially after replacing an older rolling-beta download.</p>
+    <pre class="page-code"># Linux, or macOS with sha256sum installed
+sha256sum -c SHA256SUMS
+
+# macOS built-in tool, compare with the matching SHA256SUMS line
+shasum -a 256 patch-macos-arm64
+
+# Windows PowerShell, compare with the matching SHA256SUMS line
+Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
+    <p>SHA-256 confirms that the downloaded bytes match the published release checksum. It is not a substitute for Authenticode, Developer ID/notarization or a separate independent signing authority. Development artifacts remain explicitly unsigned unless a release states otherwise.</p>
   </section>
 
   <section class="page-grid" aria-label="Offline compiler capabilities">
@@ -54,7 +69,18 @@ patch link app.patch --out App</pre>
   <section class="page-section" data-table-offline-support="v10">
     <h2>Table / Grid and offline linking</h2>
     <p>Table/Grid is supported by the language, Designer, Studio App preview, Standalone Web and direct native AOT backend 0.9.</p>
-    <p><strong>The downloadable Windows, macOS and Linux compiler now supports Table through <code>patch link</code>.</strong> The compiler embeds the same sealed runtime v1.0 contract used by token-free Ready apps. CI links the same Table source through the ordinary offline CLI and starts the resulting <code>.exe</code>, AppKit <code>.app</code> and GTK executable, checking payload v9, real columns/rows and native row-selection dispatch. FreeBSD remains Console-only.</p>
+    <p><strong>The downloadable Windows, macOS and Linux compiler supports Table through <code>patch link</code>.</strong> The compiler embeds the same sealed runtime v1.0 contract used by token-free Ready apps. CI links the same Table source through the ordinary offline CLI and starts the resulting <code>.exe</code>, AppKit <code>.app</code> and GTK executable, checking payload v9, real columns/rows and native row-selection dispatch. FreeBSD remains Console-only.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>How Patch Studio verifies Ready Window runtimes</h2>
+    <p>Patch Studio's no-token Windows, macOS and Linux Window builds do not blindly seal into whatever runtime file a browser happens to have cached. The Pages deployment reads the SHA-256 digest recorded by GitHub for each runtime-v1.0 release asset, re-hashes the downloaded runtime bytes and publishes a verified <code>runtime-manifest.json</code>. The browser then re-hashes the selected native runtime with Web Crypto before sealing your Native GUI IR payload. A mismatch stops the build.</p>
+    <p>The service worker treats <code>/runtimes/</code> as fresh-first while online, with a previously verified successful fetch retained only as offline fallback. This closes the stale-runtime/cache inconsistency without changing the payload v9/runtime v1.0 ABI.</p>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.0"><strong>Win32 runtime v1.0</strong><span>Inspect the exact native Windows runtime asset and GitHub-recorded digest used by Ready Window builds.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.0"><strong>macOS runtime v1.0</strong><span>Inspect the universal AppKit runtime asset used by browser-side sealing.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.0"><strong>Linux runtime v1.0</strong><span>Inspect the GTK3 runtime asset used by browser-side sealing.</span></a>
+    </div>
   </section>
 
   <section class="page-section">
@@ -83,7 +109,7 @@ patch doctor</pre>
     <p>The browser Studio remains useful for visual Form design. The downloaded compiler is for local source editing, checking, compilation and supported application linking.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch offline compiler · 0.2.0-beta.33</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.1">Open compiler release on GitHub</a></footer>
+  <footer class="page-footer"><span>Patch offline compiler · 0.2.0-beta.34</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.1">Open compiler release on GitHub</a></footer>
 </main>
 </body>
 </html>
