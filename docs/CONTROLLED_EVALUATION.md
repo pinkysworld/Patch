@@ -22,6 +22,8 @@ The protocol does not make a performance claim by itself. It separates three cla
 
 - intended for a fixed, documented machine under the protocol below;
 - requires an explicit machine id and run label;
+- requires the recorded source commit to equal the actual `git HEAD`;
+- requires a clean Git working tree before measurement starts;
 - is rejected when `GITHUB_ACTIONS=true`;
 - is only a controlled-measurement candidate. Interpretation and manuscript synchronization remain separate review steps.
 
@@ -33,6 +35,7 @@ The protocol does not make a performance claim by itself. It separates three cla
 
 - Patch version;
 - corpus preset and scenario shape;
+- generated source identity and artifact metadata;
 - iteration/warmup protocol;
 - certificate-generation setting;
 - Node and V8 versions;
@@ -60,7 +63,9 @@ npm run evaluate:assurance:controlled -- \
 
 Do not use `--skip-certificate` for the complete paper candidate unless certificate generation is intentionally being studied in a separate run.
 
-The runner resolves the exact Git commit with `git rev-parse HEAD`. A controlled run fails if it cannot bind the measurement to a 40-character commit id.
+The runner resolves the actual Git commit with `git rev-parse HEAD`. A controlled run fails unless the recorded source commit is an exact 40-character commit equal to that `HEAD`, and it fails when `git status --porcelain` reports a dirty working tree. This prevents uncommitted compiler/runtime changes from being measured under the identity of a different commit.
+
+The output path is also fail-closed. Repository, home, filesystem-root and repository-parent paths are rejected, and the runner only clears its known aggregate files plus its own `raw/` child directory rather than recursively deleting an arbitrary output directory.
 
 ## Machine preparation
 
@@ -86,8 +91,9 @@ Recommended procedure:
 5. verify the intended Node/Lean toolchain versions;
 6. verify the exact Git commit and a clean working tree;
 7. run the process-isolated benchmark once as a non-recorded development rehearsal;
-8. execute the recorded controlled run without other interactive workloads;
-9. preserve the complete output directory unchanged.
+8. restore a clean working tree if that rehearsal created any tracked/unignored output;
+9. execute the recorded controlled run without other interactive workloads;
+10. preserve the complete output directory unchanged.
 
 If hardware, OS, runtime, power mode or experimental procedure changes, create a new machine/run label instead of pooling the measurements.
 
@@ -106,7 +112,8 @@ raw/run-01.csv
 
 `controlled-summary.json` records:
 
-- Patch version and exact source commit;
+- Patch version, recorded source commit and actual Git HEAD;
+- whether source identity was verified against Git and whether the working tree was clean at start;
 - measurement class, machine id and run label;
 - process count, measured iterations and warmups;
 - normalized environment identity and SHA-256 fingerprint;
@@ -167,7 +174,7 @@ This is deliberate. The workflow can validate the protocol, preserve raw outputs
 
 ## Claim boundary
 
-A successful `controlled` run means the artifact followed the process-isolation and recorded-environment protocol. It does not automatically make every statistical or performance statement valid.
+A successful `controlled` run means the artifact followed the process-isolation, source-identity and recorded-environment protocol. It does not automatically make every statistical or performance statement valid.
 
 Measured results must still be reviewed for:
 
