@@ -25,6 +25,7 @@ on:
       - scripts/install-pinned-lean.sh
       - examples/formal-transitive-calls.patch
       - examples/formal-transitive-calls-repeated.patch
+      - examples/formal-transitive-calls-mixed-guards.patch
       - tests/direct-trace-validator.test.js
       - tests/direct-effect-validator.test.js
       - tests/direct-invocation-frame-effects.test.js
@@ -62,6 +63,8 @@ jobs:
         run: npm run transitive-runtime-certify:example
       - name: Execute repeated direct Wasm calls and generate beta32 frame certificate
         run: npm run transitive-runtime-certify:repeated
+      - name: Execute mixed-guard repeated calls and generate beta32 frame certificate
+        run: npm run transitive-runtime-certify:mixed-guards
       - name: Install pinned Lean
         run: bash scripts/install-pinned-lean.sh
       - name: Build call-tree/runtime formal bridge used by beta32 evidence
@@ -81,11 +84,14 @@ jobs:
       - name: Verify generated beta32 repeated-call invocation-frame certificate
         working-directory: formal
         run: lake env lean GeneratedRepeatedTransitiveRuntimeCertificate.lean
+      - name: Verify generated beta32 mixed-guard invocation-frame certificate
+        working-directory: formal
+        run: lake env lean GeneratedMixedGuardTransitiveRuntimeCertificate.lean
       - name: Reject unfinished beta32 proofs
         shell: bash
         run: |
           set -euo pipefail
-          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallRuntime.lean formal/GeneratedTransitiveRuntimeCertificate.lean formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean || true)"
+          matches="$(grep -n -E '^[[:space:]]*(sorry|admit)([[:space:]]|$)|(:=|=>|by|exact)[[:space:]]+(sorry|admit)([[:space:]]|$)' formal/PatchCallRuntime.lean formal/GeneratedTransitiveRuntimeCertificate.lean formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean || true)"
           if [ -n "$matches" ]; then
             echo "$matches"
             echo 'Unfinished beta.32 proof found.'
