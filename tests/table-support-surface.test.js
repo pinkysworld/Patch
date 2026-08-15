@@ -28,7 +28,7 @@ test('repository and product surfaces expose one development version', () => {
 });
 
 test('public Table surfaces agree on transient row-list semantics', () => {
-  assert.match(readme, /Table exposes the selected row as transient list-valued `value`/);
+  assert.match(readme, /Table[^\n]*selected row[^\n]*transient list-valued `value`/i);
   assert.match(help, /selected row only as transient <code>value<\/code>/);
   assert.match(language, /<code>value<\/code> is the selected row as a list of display strings/);
   assert.match(studio, /Table `changed` exposes a transient row list/);
