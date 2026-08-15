@@ -5,9 +5,9 @@
 #include <commctrl.h>
 #include <fstream>
 
-#define wWinMain PatchSealedRuntimeV09WinMain
+#define PATCH_WIN32_RUNTIME_V09_ENTRY PatchSealedRuntimeV09WinMain
 #include "win32-sealed-gui-v09.cpp"
-#undef wWinMain
+#undef PATCH_WIN32_RUNTIME_V09_ENTRY
 #include "sealed-table-v10.hpp"
 
 static std::vector<PatchTableV10> gPatchTablesV10;
