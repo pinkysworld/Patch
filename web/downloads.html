@@ -24,7 +24,7 @@
     <div>
       <p class="page-eyebrow">Patch offline compiler · 0.2 beta.33</p>
       <h1>Compile Patch without opening the browser.</h1>
-      <p>Download one local Patch compiler for your platform. Windows, macOS and Linux downloads contain the Patch compiler and responsive native runtime v0.9, so <code>run</code>, <code>check</code>, normal build targets and supported <code>link</code> operations work without a GitHub token or network connection after download.</p>
+      <p>Download one local Patch compiler for your platform. Windows, macOS and Linux downloads contain the Patch compiler and native Window runtime v1.0, so <code>run</code>, <code>check</code>, normal build targets and supported <code>link</code> operations, including Table/Grid, work without a GitHub token or network connection after download.</p>
     </div>
     <pre class="page-code">patch check app.patch
 patch run app.patch
@@ -34,12 +34,12 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Download Patch</h2>
-    <p>The offline compiler uses the same parser, compiler and native linking paths as Patch Studio. Supported Window apps preserve source-backed Anchor/Dock behavior when the real native window is resized. Apple Silicon uses a single standalone binary. Intel macOS uses a compact portable kit because Node SEA does not currently support macOS x64 reliably.</p>
+    <p>The offline compiler uses the same parser, compiler and native linking contracts as Patch Studio. Supported Window apps preserve source-backed Anchor/Dock behavior when the real native window is resized. Table/Grid is carried through sealed payload v9/runtime v1.0 on Windows, macOS and Linux. Apple Silicon uses a single standalone binary. Intel macOS uses a compact portable kit because Node SEA does not currently support macOS x64 reliably.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-windows-x64.exe"><strong>Windows x64</strong><span>patch-windows-x64.exe · standalone compiler + responsive Win32 GUI linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-arm64"><strong>macOS Apple Silicon</strong><span>patch-macos-arm64 · standalone compiler + responsive AppKit linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>patch-macos-x64.tar.gz · portable no-install kit with embedded Intel Node runtime + responsive AppKit linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-linux-x64"><strong>Linux x64</strong><span>patch-linux-x64 · standalone compiler + responsive native GTK3 linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-windows-x64.exe"><strong>Windows x64</strong><span>patch-windows-x64.exe · standalone compiler + Win32 GUI linker with Table/Grid and responsive layout.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-arm64"><strong>macOS Apple Silicon</strong><span>patch-macos-arm64 · standalone compiler + AppKit linker with Table/Grid and responsive layout.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>patch-macos-x64.tar.gz · portable no-install kit with embedded Intel Node runtime + AppKit Table/Grid linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-linux-x64"><strong>Linux x64</strong><span>patch-linux-x64 · standalone compiler + native GTK3 Table/Grid linker.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/patch-freebsd-x64.tar.gz"><strong>FreeBSD x64</strong><span>Portable offline compiler kit · Patch CLI + C99 linker path. Requires local Node 22+ and cc.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.1/SHA256SUMS"><strong>SHA256 checksums</strong><span>Verify downloaded compiler assets before use.</span></a>
     </div>
@@ -48,25 +48,25 @@ patch link app.patch --out App</pre>
   <section class="page-grid" aria-label="Offline compiler capabilities">
     <article class="page-card"><h2>Run locally</h2><p><code>patch run program.patch</code> executes Patch source locally. <code>patch check</code> validates it without producing an application.</p></article>
     <article class="page-card"><h2>Compile locally</h2><p><code>patch build</code> retains the existing portable, WebAssembly, C99 and standalone Web targets without requiring Patch Studio.</p></article>
-    <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds a ready application for the current OS when the project fits the current sealed-runtime surface. Native Window apps use payload v8/runtime v0.9, including runtime-responsive Anchor/Dock layout; Console linking uses the platform's supported local runtime path.</p></article>
+    <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds a ready application for the current OS when the project fits the supported native surface. Windows/macOS/Linux Window apps use Native GUI IR 0.8 sealed as payload v9 into runtime v1.0, including Table/Grid and runtime-responsive Anchor/Dock layout; Console linking uses the platform's supported local runtime path.</p></article>
   </section>
 
-  <section class="page-section" data-table-offline-support="not-yet">
+  <section class="page-section" data-table-offline-support="v10">
     <h2>Table / Grid and offline linking</h2>
-    <p>Patch Table/Grid is available in the language, Designer and Standalone Web. Direct native AOT backend v0.9 also has real Win32, AppKit and GTK3 Table widgets with CI compile/runtime smokes.</p>
-    <p><strong>The current downloadable compiler does not yet claim Table support for <code>patch link</code>.</strong> Offline Window linking still seals the Native GUI IR 0.7 control surface into payload v8/runtime v0.9. A Table project must therefore fail closed instead of silently producing an incomplete native app. This download page will only advertise offline Table linking after the sealed payload/runtime consumer is upgraded and smoke-tested.</p>
+    <p>Table/Grid is supported by the language, Designer, Studio App preview, Standalone Web and direct native AOT backend 0.9.</p>
+    <p><strong>The downloadable Windows, macOS and Linux compiler now supports Table through <code>patch link</code>.</strong> The compiler embeds the same sealed runtime v1.0 contract used by token-free Ready apps. CI links the same Table source through the ordinary offline CLI and starts the resulting <code>.exe</code>, AppKit <code>.app</code> and GTK executable, checking payload v9, real columns/rows and native row-selection dispatch. FreeBSD remains Console-only.</p>
   </section>
 
   <section class="page-section">
     <h2>Platform notes</h2>
     <h3>Windows</h3>
-    <p>The x64 compiler can link supported Window projects into a single native Win32 <code>.exe</code> and Console projects into a standalone executable. Responsive controls reflow through the native <code>WM_SIZE</code> path.</p>
+    <p>The x64 compiler can link supported Window projects, including Table/Grid, into a single native Win32 <code>.exe</code> and Console projects into a standalone executable. Responsive controls reflow through the native <code>WM_SIZE</code> path.</p>
     <h3>macOS Apple Silicon</h3>
-    <p>The Apple Silicon download is one standalone compiler binary. <code>patch link</code> writes supported responsive AppKit <code>.app</code> bundles. Development compiler builds are ad-hoc signed, not Developer ID notarized.</p>
+    <p>The Apple Silicon download is one standalone compiler binary. <code>patch link</code> writes supported responsive AppKit <code>.app</code> bundles, including multi-column Table/Grid. Development compiler builds are ad-hoc signed, not Developer ID notarized.</p>
     <h3>macOS Intel</h3>
-    <p>The Intel download is a portable tar.gz kit because Node's SEA path is not currently reliable on macOS x64. It already contains an Intel Node runtime, so no Node installation is required. Console linking creates a portable <code>.app</code> containing direct Patch Wasm and the embedded Node runtime; supported Window apps use the responsive AppKit v0.9 runtime.</p>
+    <p>The Intel download is a portable tar.gz kit because Node's SEA path is not currently reliable on macOS x64. It already contains an Intel Node runtime, so no Node installation is required. Console linking creates a portable <code>.app</code> containing direct Patch Wasm and the embedded Node runtime; supported Window apps use the AppKit runtime v1.0 with payload v9 Table/Grid and responsive layout.</p>
     <h3>Linux</h3>
-    <p>The x64 compiler links supported Window projects against the embedded responsive GTK3 v0.9 runtime. The resulting GUI executable still expects the target system's normal compatible GTK3/system libraries.</p>
+    <p>The x64 compiler links supported Window projects, including Table/Grid, against the embedded GTK3 runtime v1.0. The resulting GUI executable still expects the target system's normal compatible GTK3/system libraries.</p>
     <h3>FreeBSD</h3>
     <p>FreeBSD currently supports Console linking through Patch's portable C99 backend. The FreeBSD kit is offline after download but requires a locally installed Node runtime and C compiler. Native FreeBSD Window/GUI linking is not claimed yet.</p>
   </section>
