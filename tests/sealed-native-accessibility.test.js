@@ -9,9 +9,10 @@ const gtk = fs.readFileSync('native-runtime/gtk-sealed-gui-v08.cpp', 'utf8');
 const winWorkflow = fs.readFileSync('.github/workflows/native-win32-runtime.yml', 'utf8');
 const macWorkflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 const linuxWorkflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
+const responsiveWorkflow = fs.readFileSync('.github/workflows/native-responsive-runtime.yml', 'utf8');
 const pagesWorkflow = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 
-test('current sealed contract is v8 while frozen runtime v0.8 remains payload-v7 compatible', () => {
+test('current base sealed contract is v8 while frozen runtime v0.8 remains payload-v7 compatible', () => {
   assert.equal(PATCH_SEALED_NATIVE_GUI_MAGIC, 'PCHGUI01');
   assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
   assert.equal(PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION, 7);
@@ -51,10 +52,19 @@ test('frozen sealed runtime workflows still build v0.8 and assert payload versio
   assert.match(linuxWorkflow, /readUInt32LE\(sealed\.length-12\)!==7/);
 });
 
-test('Pages consumes the responsive accessibility-capable v0.9 runtime line', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v0\.9/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v0\.9/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v0\.9/);
+test('responsive accessibility-capable v0.9 remains a frozen published compatibility line', () => {
+  assert.match(responsiveWorkflow, /native-win32-runtime-v0\.9/);
+  assert.match(responsiveWorkflow, /native-linux-runtime-v0\.9/);
+  assert.match(responsiveWorkflow, /native-macos-runtime-v0\.9/);
+  assert.match(responsiveWorkflow, /PATCH_SEALED_GUI_VERSION: 8/);
+  assert.match(responsiveWorkflow, /responsive-window\.patch/);
+});
+
+test('Pages consumes Table-capable v1.0 while still reacting to compatibility runtime completion safely', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.0/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.0/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.0/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
+  assert.match(pagesWorkflow, /Patch Native Sealed Table Runtime/);
   assert.match(pagesWorkflow, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 });
