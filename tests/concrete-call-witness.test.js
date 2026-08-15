@@ -21,10 +21,12 @@ show score`;
 
 test('concrete call witnesses evaluate and bind a transitive recipe call chain', () => {
   const compiled = compile(source, { name: 'ConcreteCalls' });
-  const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls);
+  const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls, compiled.ir.callSiteValidation);
 
   assert.equal(artifact.format, 'patch-concrete-call-witness');
-  assert.equal(artifact.version, '0.1');
+  assert.equal(artifact.version, '0.2');
+  assert.equal(artifact.callSiteValidationVersion, '0.1');
+  assert.equal(artifact.rawCallSitesValidated, true);
   assert.equal(artifact.summary.calls, 5);
 
   const root = artifact.witnesses[0];
@@ -57,7 +59,7 @@ do reward(9)`;
   assert.throws(
     () => {
       const compiled = compile(bad, { name: 'BadConcreteCall' });
-      buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls);
+      buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls, compiled.ir.callSiteValidation);
     },
     /outside its declared range 0\.\.5|value 9 is outside 'reward\.bonus' range 0\.\.5/
   );
@@ -78,7 +80,7 @@ make choose(amount number 0..5):
 
 do choose(4)`;
   const compiled = compile(branchSource, { name: 'ConcreteBranchCall' });
-  const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls);
+  const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls, compiled.ir.callSiteValidation);
   assert.ok(artifact.witnesses.some(item => item.callee === 'positive'));
   assert.equal(artifact.witnesses.some(item => item.callee === 'zero'), false);
 });
