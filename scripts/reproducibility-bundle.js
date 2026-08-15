@@ -25,11 +25,11 @@ export function buildReproducibilityBundle(options = {}) {
   for (const rel of files) {
     if (shouldExclude(rel, out, root)) continue;
     const source = path.join(root, rel);
-    if (!fs.existsSync(source) || !fs.statSync(source).isFile()) continue;
+    const bytes = readRegularFileNoFollow(source, rel);
+    if (bytes === null) continue;
     const destination = path.join(out, 'source', rel);
     fs.mkdirSync(path.dirname(destination), { recursive: true });
-    fs.copyFileSync(source, destination);
-    const bytes = fs.readFileSync(destination);
+    fs.writeFileSync(destination, bytes);
     manifestFiles.push({
       path: `source/${rel.split(path.sep).join('/')}`,
       size: bytes.length,
@@ -62,6 +62,10 @@ export function buildReproducibilityBundle(options = {}) {
 
 export function verifyReproducibilityBundle(options = {}) {
   const bundle = path.resolve(options.bundle ?? 'reproducibility/bundle');
+  for (const required of ['BUNDLE-MANIFEST.json', 'environment.json', 'REPRODUCE.txt']) {
+    if (!fs.existsSync(path.join(bundle, required))) throw new Error(`Reproducibility bundle is missing ${required}.`);
+  }
+
   const manifestPath = path.join(bundle, 'BUNDLE-MANIFEST.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   if (manifest.schema !== PATCH_REPRODUCIBILITY_BUNDLE_SCHEMA || manifest.schemaVersion !== PATCH_REPRODUCIBILITY_BUNDLE_VERSION) {
@@ -74,9 +78,11 @@ export function verifyReproducibilityBundle(options = {}) {
   const seen = new Set();
   for (const entry of manifest.files) {
     if (!entry?.path?.startsWith('source/') || entry.path.includes('..') || seen.has(entry.path)) throw new Error(`Invalid reproducibility bundle path: ${entry?.path}`);
+    if (!Number.isSafeInteger(entry.size) || entry.size < 0 || !/^[0-9a-f]{64}$/.test(entry.sha256 ?? '')) throw new Error(`Invalid reproducibility bundle file metadata: ${entry?.path}`);
     seen.add(entry.path);
     const absolute = path.join(bundle, ...entry.path.split('/'));
-    const bytes = fs.readFileSync(absolute);
+    const bytes = readRegularFileNoFollow(absolute, entry.path);
+    if (bytes === null) throw new Error(`Reproducibility bundle file is missing: ${entry.path}`);
     if (bytes.length !== entry.size) throw new Error(`Reproducibility bundle size mismatch: ${entry.path}`);
     const digest = sha256(bytes);
     if (digest !== entry.sha256) throw new Error(`Reproducibility bundle SHA-256 mismatch: ${entry.path}`);
@@ -88,14 +94,17 @@ export function verifyReproducibilityBundle(options = {}) {
 }
 
 function trackedFiles(root) {
-  return git(root, ['ls-files', '-z'], true).split('\0').filter(Boolean).sort();
+  return execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean)
+    .sort();
 }
 
 function normalizeExtraFiles(root, files) {
   return files.map(file => {
     const absolute = path.resolve(root, file);
     const relative = path.relative(root, absolute);
-    if (relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(`Generated reproducibility input is outside repository: ${file}`);
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new Error(`Generated reproducibility input is outside repository: ${file}`);
     return relative;
   });
 }
@@ -103,11 +112,29 @@ function normalizeExtraFiles(root, files) {
 function shouldExclude(rel, out, root) {
   const normalized = rel.split(path.sep).join('/');
   const outRel = path.relative(root, out).split(path.sep).join('/');
-  return normalized.startsWith(`${outRel}/`) || normalized === outRel || normalized.startsWith('node_modules/') || normalized.startsWith('_site/') || normalized.startsWith('dist');
+  return normalized.startsWith(`${outRel}/`) || normalized === outRel ||
+    normalized.startsWith('node_modules/') || normalized.startsWith('_site/') ||
+    normalized === 'dist' || normalized.startsWith('dist/');
 }
 
-function git(cwd, args, binary = false) {
-  return execFileSync('git', args, { cwd, encoding: binary ? 'utf8' : 'utf8' }).trim();
+function readRegularFileNoFollow(filename, displayName) {
+  let descriptor;
+  try {
+    const noFollow = fs.constants.O_NOFOLLOW ?? 0;
+    descriptor = fs.openSync(filename, fs.constants.O_RDONLY | noFollow);
+    if (!fs.fstatSync(descriptor).isFile()) throw new Error(`Reproducibility input is not a regular file: ${displayName}`);
+    return fs.readFileSync(descriptor);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    if (error?.code === 'ELOOP') throw new Error(`Reproducibility input must not be a symbolic link: ${displayName}`);
+    throw error;
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
+function git(cwd, args) {
+  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 }
 
 function sha256(bytes) {
@@ -124,15 +151,20 @@ function parseArgs(argv) {
   const generated = [];
   for (let i = 1; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--out') options.out = argv[++i];
-    else if (arg === '--bundle') options.bundle = argv[++i];
-    else if (arg === '--commit') options.commit = argv[++i];
-    else if (arg === '--version') options.version = argv[++i];
-    else if (arg === '--generated') generated.push(argv[++i]);
+    if (arg === '--out') options.out = requireValue(argv, ++i, '--out');
+    else if (arg === '--bundle') options.bundle = requireValue(argv, ++i, '--bundle');
+    else if (arg === '--commit') options.commit = requireValue(argv, ++i, '--commit');
+    else if (arg === '--version') options.version = requireValue(argv, ++i, '--version');
+    else if (arg === '--generated') generated.push(requireValue(argv, ++i, '--generated'));
     else throw new Error(`Unknown reproducibility bundle option: ${arg}`);
   }
   options.generated = generated;
   return { command, options };
+}
+
+function requireValue(argv, index, option) {
+  if (index >= argv.length || argv[index]?.startsWith('--')) throw new Error(`${option} requires a value.`);
+  return argv[index];
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
