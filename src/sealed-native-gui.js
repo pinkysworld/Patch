@@ -1,9 +1,9 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 import { flattenNativeGuiControlsV08, validateNativeGuiIRV08 } from './native-gui-ir-v08.js';
 
-export const PATCH_SEALED_NATIVE_GUI_VERSION = 9;
-export const PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 8;
-export const PATCH_SEALED_NATIVE_GUI_LEGACY_VERSION = 7;
+export const PATCH_SEALED_NATIVE_GUI_VERSION = 8;
+export const PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 7;
+export const PATCH_SEALED_NATIVE_GUI_TABLE_VERSION = 9;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -11,14 +11,16 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v9 is the Table-capable Ready/offline contract. It preserves the v8
+ * Payload v8 remains the default Ready-App contract while the Table-capable
+ * v9/runtime-v1.0 line is staged and smoke-tested. Payload v9 preserves v8's
  * state/Form/menu/action/layout contract and adds explicit Table control kind 9,
  * source-backed columns/rows, and event value type 3 (`text-list`). Table row
  * selection remains transient UI state; scalar native state still changes only
  * through ordinary semantic `change` actions.
  *
- * Payload v8 remains explicitly encodable for responsive runtime-v0.9 and v7
- * remains explicitly encodable for the frozen runtime-v0.8 compatibility line.
+ * Payload v7 remains explicitly encodable for the frozen runtime-v0.8 release
+ * line. User-facing Ready/offline consumers opt into v9 only together with a
+ * runtime that explicitly understands the new contract.
  */
 export function encodeNativeGuiPayload(input, options = {}) {
   const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
@@ -45,8 +47,8 @@ export function encodeNativeGuiPayload(input, options = {}) {
     writer.u8(form.visible ? 1 : 0);
     writer.u32(controls.length);
     for (const control of controls) {
-      if (control.type === 'table' && version < 9) {
-        throw new SealedNativeGuiError(`Native Table requires sealed native GUI payload v9, not v${version}.`);
+      if (control.type === 'table' && version < PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
+        throw new SealedNativeGuiError(`Native Table requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION}, not v${version}.`);
       }
       writer.u8(controlTypeCode(control.type));
       writer.text(control.id ?? '');
@@ -64,7 +66,7 @@ export function encodeNativeGuiPayload(input, options = {}) {
       if (version >= 8) writeLayoutPolicy(writer, control.layout?.policy);
       writer.i32(control.parentTabIndex ?? -1);
       writer.i32(control.pageIndex ?? -1);
-      if (version >= 9) writeTablePayload(writer, control);
+      if (version >= PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) writeTablePayload(writer, control);
     }
 
     writer.u32(form.menus.length);
@@ -127,9 +129,14 @@ export function decodeNativeGuiPayload(binaryBytes) {
 
 function payloadInput(input, version) {
   if (input?.version === '0.8') {
-    if (version < 9) throw new SealedNativeGuiError(`Native GUI IR 0.8 requires sealed native GUI payload v9, not v${version}.`);
+    if (version !== PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
+      throw new SealedNativeGuiError(`Native GUI IR 0.8 requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION}, not v${version}.`);
+    }
     const ir = validateNativeGuiIRV08(input);
     return { ir, flatControls: flattenNativeGuiControlsV08(ir) };
+  }
+  if (version === PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
+    throw new SealedNativeGuiError('Unsupported sealed native GUI version 9 for Native GUI IR 0.7; lower Native GUI IR 0.8 first.');
   }
   const ir = validateNativeGuiIR(input);
   return { ir, flatControls: flattenNativeGuiControls(ir) };
@@ -137,7 +144,7 @@ function payloadInput(input, version) {
 
 function payloadVersion(value) {
   const version = Number(value);
-  if (![PATCH_SEALED_NATIVE_GUI_VERSION, PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION, PATCH_SEALED_NATIVE_GUI_LEGACY_VERSION].includes(version)) {
+  if (![PATCH_SEALED_NATIVE_GUI_TABLE_VERSION, PATCH_SEALED_NATIVE_GUI_VERSION, PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION].includes(version)) {
     throw new SealedNativeGuiError(`Unsupported sealed native GUI version '${value}'.`);
   }
   return version;
