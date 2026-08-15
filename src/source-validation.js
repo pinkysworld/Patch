@@ -1,15 +1,16 @@
-import { buildFormalRangeExpression } from './formal-range.js';
+import { buildIndependentRangeExpression, PATCH_INDEPENDENT_RANGE_EXPRESSION_VERSION } from './independent-range-expression.js';
 
-export const PATCH_SOURCE_VALIDATION_VERSION = '0.1';
+export const PATCH_SOURCE_VALIDATION_VERSION = '0.2';
 const SOURCE_OPS = new Set(['add', 'remove', 'set', 'clear']);
 
 /**
  * Independently reconstruct the formal source/range view from raw Patch text.
  *
- * This module deliberately does not import parser.js or consume the production
- * AST. It is a small indentation-aware validator for the formal source subset.
- * The result is compared with compiler-produced formalSource entries so a
- * parser/AST/extractor disagreement is visible before certification.
+ * This module deliberately does not import parser.js, formal-range.js, or
+ * range-analysis.js and does not consume the production AST. It uses a small
+ * indentation-aware source parser plus an independent numeric expression parser
+ * and interval evaluator for the supported formal source subset. The result is
+ * compared with compiler-produced formalSource entries before certification.
  */
 export function validateFormalSourceExtraction(source, formalSource) {
   const witness = buildRawSourceWitness(source);
@@ -49,6 +50,7 @@ export function validateFormalSourceExtraction(source, formalSource) {
   return {
     format: 'patch-source-extraction-validation',
     version: PATCH_SOURCE_VALIDATION_VERSION,
+    independentRangeExpressionVersion: PATCH_INDEPENDENT_RANGE_EXPRESSION_VERSION,
     producer: 'raw-source-independent-parser',
     comparedAgainst: formalSource?.format ?? 'patch-formal-source',
     entries,
@@ -73,6 +75,7 @@ export function buildRawSourceWitness(source) {
   return {
     format: 'patch-raw-source-witness',
     version: PATCH_SOURCE_VALIDATION_VERSION,
+    independentRangeExpressionVersion: PATCH_INDEPENDENT_RANGE_EXPRESSION_VERSION,
     entries
   };
 }
@@ -256,12 +259,12 @@ function rawSourceChange(changeNode, operation, context) {
   if (operation.op === 'set' || operation.op === 'clear') return { target, field, path, operation: operation.op, amountRange: null };
 
   const expression = operation.expr ?? '';
-  const formal = buildFormalRangeExpression(expression, context.ranges);
-  if (!formal.supported) {
-    context.reasons.add(`line ${operation.line}: numeric expression is outside the verified range fragment: ${formal.reason}`);
+  const independent = buildIndependentRangeExpression(expression, context.ranges);
+  if (!independent.supported) {
+    context.reasons.add(`line ${operation.line}: numeric expression is outside the independently validated range fragment: ${independent.reason}`);
     return null;
   }
-  if (formal.range.min < 0 && formal.range.max > 0) {
+  if (independent.range.min < 0 && independent.range.max > 0) {
     context.reasons.add(`line ${operation.line}: numeric source change range crosses zero and has no single semantic direction`);
     return null;
   }
@@ -272,11 +275,11 @@ function rawSourceChange(changeNode, operation, context) {
     path,
     sourceOperation: operation.op,
     expression,
-    expr: formal.expr,
-    bindings: formal.bindings,
-    range: { min: formal.range.min, max: formal.range.max }
+    expr: independent.expr,
+    bindings: independent.bindings,
+    range: { min: independent.range.min, max: independent.range.max }
   });
-  return { target, field, path, operation: operation.op, amountRange: { min: formal.range.min, max: formal.range.max } };
+  return { target, field, path, operation: operation.op, amountRange: { min: independent.range.min, max: independent.range.max } };
 }
 
 function scanRows(source) {

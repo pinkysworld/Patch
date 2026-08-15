@@ -13,6 +13,7 @@ on:
       - src/source-validation.js
       - src/guard-validation.js
       - src/independent-guard-expression.js
+      - src/independent-range-expression.js
       - src/certificate.js
       - src/runtime-certificate.js
       - src/runtime-path-witness.js
@@ -47,6 +48,7 @@ on:
       - src/source-validation.js
       - src/guard-validation.js
       - src/independent-guard-expression.js
+      - src/independent-range-expression.js
       - src/certificate.js
       - src/runtime-certificate.js
       - src/runtime-path-witness.js
