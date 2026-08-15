@@ -28,6 +28,26 @@ Change IR remains **0.10**.
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
+## Independent source and guard translation validation
+
+The production compiler emits a formal source/guard view that later certificates consume. Patch does not treat that JavaScript extraction as self-authenticating.
+
+`src/source-validation.js` independently reconstructs the supported source/range shape from raw Patch text without importing `parser.js` or consuming the production AST, then compares the reconstructed `SourceStmt` and range claims with compiler output.
+
+Guard validation now separates both layers of parsing from the production path:
+
+1. `src/guard-validation.js` independently reconstructs indentation, recipe boundaries, branches and repeats from raw Patch text;
+2. `src/independent-guard-expression.js` uses its own lexer and recursive-descent parser for the beta.23 Boolean/integer guard fragment;
+3. this independent parser does **not** import `formal-guard.js`, `parser.js`, or production AST helpers;
+4. its normalized declarative `GuardExpr`, guard claims and variable set are compared against the compiler-produced formal guard evidence;
+5. mismatches fail validation before protected runtime certification.
+
+The production and validation sides therefore share the formal target vocabulary, but no longer share the guard-expression parser implementation. The independent parser supports the same conservative fragment used for certification: Boolean literals, comparisons, `not`/`and`/`or`, integer literals and recipe-parameter variables, addition/subtraction/negation, parentheses, and multiplication only when one operand is a non-negative integer literal. Unsupported variables, tokens, nonlinear multiplication and expressions without a Boolean result fail closed.
+
+Guard-validation evidence schema **0.2** records independent guard-expression parser version **0.1**. Runtime certificate metadata carries the guard-validation artifact, so the independent parser provenance remains inspectable alongside the generated Lean evidence.
+
+This is a concrete reduction of shared JavaScript parser trust, not a verified parser theorem. Both parser implementations remain JavaScript, and Lean checks the formal evidence produced after translation validation rather than proving either lexer/parser correct.
+
 ## Beta.30 finite transitive exact call trees
 
 `CallTreeStmt` preserves beta.29 bodies as call-free leaves and adds sequence, literal/static repeat, exact `GuardExpr` branches and ranked nested calls.
@@ -100,6 +120,8 @@ This makes repeated identical calls distinguishable by independently reconstruct
 
 `examples/formal-transitive-calls-repeated.patch` contains two identical `do caller(1)` invocations. Beta.32 generates separate frame-selected observations and the corresponding `GeneratedRepeatedTransitiveRuntimeCertificate.lean`.
 
+`examples/formal-transitive-calls-mixed-guards.patch` strengthens this regression with `caller(1)`, `caller(4)`, `caller(1)` through `caller -> outer -> middle -> leaf`. Independent reconstruction produces twelve dynamic frames and six supported transitive correspondences. The three outer witnesses preserve the concrete guard-selected effects `coins +4`, `score +5`, `coins +4`, and `GeneratedMixedGuardTransitiveRuntimeCertificate.lean` is checked with Lean.
+
 ## Exact beta.32 boundary
 
 Mechanically/formally checked after evidence generation:
@@ -123,7 +145,7 @@ Still explicit proof-free/trust boundaries:
 
 - **runtime capture**;
 - correctness/completeness of the independent JavaScript validator and **invocation-frame reconstruction**;
-- production parser/extractor correctness;
+- production parser/extractor correctness, although raw source/range validation and independently parsed guard expressions now reduce shared-code extraction trust for supported fragments;
 - JavaScript-to-Wasm lowering correctness;
 - Wasm engine correctness.
 
