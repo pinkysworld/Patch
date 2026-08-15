@@ -32,7 +32,7 @@ const report = {
   version: '0.1',
   manifestVersion: manifest.version,
   baseline: manifest.baseline,
-  generatedAt: new Date().toISOString(),
+  generatedAt: reproducibleGeneratedAt(),
   baselineBoundary: 'coarse target-path write authority only; not a named external effect/capability system',
   results,
   summary: summarize(results)
@@ -47,6 +47,17 @@ if (options.markdown) write(options.markdown, toMarkdown(report));
 if (options.out) console.log(`wrote ${options.out}`);
 if (options.csv) console.log(`wrote ${options.csv}`);
 if (options.markdown) console.log(`wrote ${options.markdown}`);
+
+function reproducibleGeneratedAt() {
+  const raw = process.env.SOURCE_DATE_EPOCH;
+  if (raw === undefined || raw === '') return new Date().toISOString();
+  if (!/^\d+$/.test(raw)) throw new Error(`SOURCE_DATE_EPOCH must be a non-negative integer, got '${raw}'.`);
+  const milliseconds = Number(raw) * 1000;
+  if (!Number.isSafeInteger(milliseconds)) throw new Error('SOURCE_DATE_EPOCH is outside the supported safe integer range.');
+  const value = new Date(milliseconds);
+  if (!Number.isFinite(value.getTime())) throw new Error('SOURCE_DATE_EPOCH is outside the supported date range.');
+  return value.toISOString();
+}
 
 function verifyExpected(entry, evaluation) {
   const expectedPatchAccepted = entry.patchExpected === 'accept';
