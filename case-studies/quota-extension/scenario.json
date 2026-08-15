@@ -1,0 +1,68 @@
+{
+  "format": "patch-realistic-extension-case",
+  "version": "0.1",
+  "name": "usage-quota-extension",
+  "title": "Usage quota extension case",
+  "motivation": "A metering extension records bounded usage, consumes remaining quota, and grants a separately bounded bonus without receiving administrative-credit authority.",
+  "entryRecipe": "quota_extension",
+  "safe": {
+    "file": "safe.patch",
+    "patchExpected": "accept",
+    "coarseWriteExpected": true,
+    "expectedState": {
+      "used": 35,
+      "remaining": 85,
+      "bonus": 5,
+      "admin_credit": 0
+    },
+    "expectedProtectedEffects": [
+      {
+        "target": "used",
+        "operation": "increase",
+        "maxAmount": 30,
+        "viaContains": "record_usage"
+      },
+      {
+        "target": "remaining",
+        "operation": "decrease",
+        "maxAmount": 30,
+        "viaContains": "record_usage"
+      },
+      {
+        "target": "bonus",
+        "operation": "increase",
+        "maxAmount": 10,
+        "viaContains": "grant_bonus"
+      }
+    ]
+  },
+  "variants": [
+    {
+      "id": "magnitude-escalation",
+      "file": "magnitude-escalation.patch",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "above the allowed maximum of 30",
+      "dimension": "magnitude",
+      "mutation": "usage helper doubles both metered consumption and quota decrement"
+    },
+    {
+      "id": "direction-escalation",
+      "file": "direction-escalation.patch",
+      "patchExpected": "reject",
+      "coarseWriteExpected": true,
+      "errorContains": "allow block does not permit that change",
+      "dimension": "operation-direction",
+      "mutation": "usage helper increases remaining quota instead of decreasing it"
+    },
+    {
+      "id": "target-escalation",
+      "file": "target-escalation.patch",
+      "patchExpected": "reject",
+      "coarseWriteExpected": false,
+      "errorContains": "allow block does not permit that change",
+      "dimension": "target-authority",
+      "mutation": "extension adds administrative credit outside declared authority"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+create number used = 20
+create number remaining = 100
+create number bonus = 0
+create number admin_credit = 0
+
+make record_usage(amount number 0..30):
+  change used:
+    add amount
+  change remaining:
+    remove amount
+
+make grant_bonus(amount number 0..10):
+  change bonus:
+    add amount
+
+make grant_admin_credit(amount number 0..10):
+  change admin_credit:
+    add amount
+
+allow quota_extension:
+  used may increase up to 30
+  remaining may decrease up to 30
+  bonus may increase up to 10
+
+make quota_extension(consumed number 0..30, reward number 0..10):
+  do record_usage(consumed)
+  do grant_bonus(reward)
+  do grant_admin_credit(reward)
+
+do quota_extension(15, 5)

@@ -2,6 +2,8 @@
   "format": "patch-realistic-extension-case",
   "version": "0.1",
   "name": "checkout-loyalty-extension",
+  "title": "Checkout loyalty extension case",
+  "motivation": "A checkout extension composes a bounded balance discount with a separately bounded loyalty reward without receiving cashback authority.",
   "entryRecipe": "checkout_extension",
   "safe": {
     "file": "safe.patch",
