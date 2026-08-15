@@ -85,10 +85,10 @@ requireAll('paper/README.md', files.paper, [
 ]);
 requireAll('docs/EVALUATION.md', files.evaluation, [
   'Call-tree depth', 'Concrete invocation count', 'compileMs', 'executeMs', 'validateMs', 'correspondenceMs', 'certificateGenerationMs',
-  'Process-isolated aggregation', 'measurement-class', 'Patch Assurance Evaluation', 'hosted runner', 'SHA256SUMS'
+  'Process-isolated aggregation', 'Measurement classes', 'Patch Assurance Evaluation', 'hosted runner', 'SHA256SUMS'
 ]);
 requireAll('docs/CONTROLLED_EVALUATION.md', files.controlledEvaluation, [
-  'Measurement classes', 'git HEAD', 'clean Git working tree', 'Refusing unsafe', 'median absolute deviation (MAD)', 'interquartile range (IQR)',
+  'Measurement classes', 'git HEAD', 'clean Git working tree', 'output path is also fail-closed', 'median absolute deviation (MAD)', 'interquartile range (IQR)',
   'Until an actual controlled dataset is collected and reviewed'
 ]);
 requireAll('docs/SECURITY_CASE_STUDIES.md', files.securityCasesDoc, [
