@@ -1,7 +1,7 @@
 import { buildFormalRangeExpression } from './formal-range.js';
 import { evaluateLoose } from './expression.js';
 
-export const PATCH_CONCRETE_CALL_WITNESS_VERSION = '0.2';
+export const PATCH_CONCRETE_CALL_WITNESS_VERSION = '0.1';
 
 /**
  * Produce proof-free concrete call-binding witnesses for the conservative
@@ -13,7 +13,8 @@ export const PATCH_CONCRETE_CALL_WITNESS_VERSION = '0.2';
  * closed unless raw `do recipe(args)` source sites exactly match production AST
  * caller/callee/line/argument-text identity. Compiler-produced formalCalls
  * carries this artifact so existing higher-level certificate paths inherit the
- * validation automatically.
+ * validation automatically. The added validation provenance is backward-
+ * compatible metadata, so the existing witness schema version remains 0.1.
  */
 export function buildConcreteCallWitnesses(ast, formalCalls, callSiteValidation = null) {
   callSiteValidation ??= formalCalls?.callSiteValidation ?? null;
