@@ -98,6 +98,18 @@ For paper-quality numbers, prefer a dedicated machine with:
 
 CI-hosted timings are useful reproducibility evidence but should not be treated as stable microbenchmark performance numbers because hosted runner hardware and load may vary.
 
+## Reproducibility artifact bundle
+
+The commit-bound reproducibility bundle documented in `docs/REPRODUCIBILITY_BUNDLE.md` is deliberately separate from this benchmark methodology.
+
+The **Patch Reproducibility Bundle** workflow regenerates the current finite transitive call-tree certificate, direct-Wasm runtime certificate, repeated-call invocation-frame certificate, semantic-authority micro-case report and checkout-extension report. It then packages those outputs together with the exact tracked source snapshot, source commit, Patch version and per-file SHA-256 manifest.
+
+The workflow sets `SOURCE_DATE_EPOCH` to the checked-out commit timestamp so non-performance evidence reports do not drift merely because the workflow ran at a different wall-clock time. It also creates a sorted tar/gzip envelope with commit-time mtimes and no gzip timestamp.
+
+That workflow intentionally does **not** execute the `paper` assurance benchmark and does not create manuscript timing results. Hosted-runner CPU, load and microarchitectural variation would make such timings unsuitable for the controlled performance claims described above.
+
+Use the reproducibility bundle for **artifact identity and evidence reruns**. Use the controlled evaluation methodology in this document for **performance measurement**.
+
 ## Interpretation discipline
 
 The benchmark measures the current implementation, not an asymptotic proof. Avoid claims such as "linear overhead" unless the collected data and model support them.
