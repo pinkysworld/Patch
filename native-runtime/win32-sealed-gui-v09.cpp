@@ -217,7 +217,11 @@ static int RunPatchResponsiveSmokeV09() {
   return 0;
 }
 
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
+#ifndef PATCH_WIN32_RUNTIME_V09_ENTRY
+#define PATCH_WIN32_RUNTIME_V09_ENTRY wWinMain
+#endif
+
+int WINAPI PATCH_WIN32_RUNTIME_V09_ENTRY(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
   PatchComScopeV09 patchCom;
   gInstance = instance;
   gGuiFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
