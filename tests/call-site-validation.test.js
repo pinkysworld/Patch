@@ -95,3 +95,30 @@ do leaf(3)`;
   assert.equal(artifact.callSiteValidationVersion, '0.1');
   assert.equal(artifact.rawCallSitesValidated, true);
 });
+
+test('all shipped examples preserve exact raw-source call-site identity', () => {
+  const dir = new URL('../examples/', import.meta.url);
+  const mismatches = [];
+  for (const name of fs.readdirSync(dir).filter(value => value.endsWith('.patch')).sort()) {
+    const source = fs.readFileSync(new URL(name, dir), 'utf8');
+    const compiled = compile(source, { name: name.replace(/\.patch$/, '') });
+    const validation = compiled.ir.callSiteValidation;
+    if (!validation.validated) {
+      const detail = `${name}: ${validation.reasons.join(' | ')}`;
+      mismatches.push(detail);
+      if (process.env.GITHUB_ACTIONS === 'true') {
+        console.log(`::error title=Raw call-site validation mismatch::${escapeWorkflowCommand(detail)}`);
+      }
+    }
+  }
+  assert.deepEqual(mismatches, []);
+});
+
+function escapeWorkflowCommand(value) {
+  return String(value)
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A')
+    .replace(/:/g, '%3A')
+    .replace(/,/g, '%2C');
+}
