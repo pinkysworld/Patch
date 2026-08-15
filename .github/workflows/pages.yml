@@ -8,6 +8,7 @@ on:
       - scripts/build-site.js
       - scripts/check-site.js
       - scripts/check-site-v10.js
+      - scripts/runtime-integrity-manifest.js
       - package.json
       - src/interpreter.js
       - src/parser.js
@@ -109,7 +110,7 @@ jobs:
             echo 'ready=false' >> "$GITHUB_OUTPUT"
             echo 'Table-capable runtime v1.0 is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
           fi
-      - name: Add compiled prebuilt native runtime templates
+      - name: Add and verify compiled native runtime templates
         if: steps.native_runtime.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -117,16 +118,45 @@ jobs:
           WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
           LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
           MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p _site/runtimes
           if gh release view "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-*-runtime.*' --dir _site/runtimes --clobber
           else
             echo "Compatibility runtime release $RUNTIME_TAG is not published yet."
           fi
-          gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-windows-native-gui-runtime.exe' --dir _site/runtimes --clobber
-          gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-linux-native-gui-runtime.bin' --dir _site/runtimes --clobber
-          gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern 'patch-macos-native-gui-runtime.bin' --dir _site/runtimes --clobber
+
+          WIN_FILE=patch-windows-native-gui-runtime.exe
+          LINUX_FILE=patch-linux-native-gui-runtime.bin
+          MACOS_FILE=patch-macos-native-gui-runtime.bin
+          gh release download "$WIN32_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$WIN_FILE" --dir _site/runtimes --clobber
+          gh release download "$LINUX_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$LINUX_FILE" --dir _site/runtimes --clobber
+          gh release download "$MACOS_NATIVE_RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$MACOS_FILE" --dir _site/runtimes --clobber
+
+          release_digest() {
+            local tag="$1" asset="$2"
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \"$asset\") | .digest"
+          }
+
+          WIN_DIGEST="$(release_digest "$WIN32_RUNTIME_TAG" "$WIN_FILE")"
+          LINUX_DIGEST="$(release_digest "$LINUX_NATIVE_RUNTIME_TAG" "$LINUX_FILE")"
+          MACOS_DIGEST="$(release_digest "$MACOS_NATIVE_RUNTIME_TAG" "$MACOS_FILE")"
+          for digest in "$WIN_DIGEST" "$LINUX_DIGEST" "$MACOS_DIGEST"; do
+            if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "GitHub release asset is missing a valid SHA-256 digest: $digest" >&2
+              exit 1
+            fi
+          done
+
+          node scripts/runtime-integrity-manifest.js \
+            --dir _site/runtimes \
+            --out _site/runtimes/runtime-manifest.json \
+            --entry "$WIN_FILE|$WIN32_RUNTIME_TAG|$WIN_DIGEST" \
+            --entry "$LINUX_FILE|$LINUX_NATIVE_RUNTIME_TAG|$LINUX_DIGEST" \
+            --entry "$MACOS_FILE|$MACOS_NATIVE_RUNTIME_TAG|$MACOS_DIGEST"
+          cat _site/runtimes/runtime-manifest.json
           ls -lh _site/runtimes
       - name: Validate public site
         if: steps.native_runtime.outputs.ready == 'true'
