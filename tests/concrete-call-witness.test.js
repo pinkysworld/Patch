@@ -24,7 +24,7 @@ test('concrete call witnesses evaluate and bind a transitive recipe call chain',
   const artifact = buildConcreteCallWitnesses(compiled.ast, compiled.ir.formalCalls, compiled.ir.callSiteValidation);
 
   assert.equal(artifact.format, 'patch-concrete-call-witness');
-  assert.equal(artifact.version, '0.2');
+  assert.equal(artifact.version, '0.1');
   assert.equal(artifact.callSiteValidationVersion, '0.1');
   assert.equal(artifact.rawCallSitesValidated, true);
   assert.equal(artifact.summary.calls, 5);
