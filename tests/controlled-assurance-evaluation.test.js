@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
-const repo = path.resolve(new URL('..', import.meta.url).pathname);
+const repo = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
 test('process-isolated assurance runner preserves raw runs and robust aggregate statistics', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-controlled-eval-'));
