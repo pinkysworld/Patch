@@ -58,7 +58,7 @@ test('checkout extension escalation variants have the expected semantic-authorit
   ]);
 });
 
-test('checkout extension evaluator emits one coherent application-level report', () => {
+test('checkout extension evaluator emits one reproducibly timestamped application-level report', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-checkout-extension-'));
   try {
     const jsonPath = path.join(temp, 'report.json');
@@ -67,11 +67,16 @@ test('checkout extension evaluator emits one coherent application-level report',
       'scripts/evaluate-checkout-extension.js',
       '--out', jsonPath,
       '--markdown', mdPath
-    ], { cwd: root, encoding: 'utf8' });
+    ], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, SOURCE_DATE_EPOCH: '1700000000' }
+    });
     assert.equal(result.status, 0, result.stderr || result.stdout);
 
     const report = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
     assert.equal(report.format, 'patch-realistic-extension-case-report');
+    assert.equal(report.generatedAt, '2023-11-14T22:13:20.000Z');
     assert.equal(report.scenario, 'checkout-loyalty-extension');
     assert.deepEqual(report.safe.finalState, { balance: 80, points: 8, cashback: 0 });
     assert.equal(report.summary.variants, 3);
