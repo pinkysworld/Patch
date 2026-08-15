@@ -166,7 +166,11 @@ static int RunPatchResponsiveSmokeV09() {
   return 0;
 }
 
-int main(int argc, const char* argv[]) {
+#ifndef PATCH_APPKIT_RUNTIME_V09_ENTRY
+#define PATCH_APPKIT_RUNTIME_V09_ENTRY main
+#endif
+
+int PATCH_APPKIT_RUNTIME_V09_ENTRY(int argc, const char* argv[]) {
   @autoreleasepool {
     [NSApplication sharedApplication];
     [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
