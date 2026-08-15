@@ -5,9 +5,9 @@
 #include <atk/atk.h>
 #include <fstream>
 
-#define main PatchSealedRuntimeV09Main
+#define PATCH_GTK_RUNTIME_V09_ENTRY PatchSealedRuntimeV09Main
 #include "gtk-sealed-gui-v09.cpp"
-#undef main
+#undef PATCH_GTK_RUNTIME_V09_ENTRY
 #include "sealed-table-v10.hpp"
 
 static std::vector<PatchTableV10> gPatchTablesV10;
