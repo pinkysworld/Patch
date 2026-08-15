@@ -65,7 +65,7 @@ requireAll('Patch Studio service worker', sw, [
   "'./table-stage1.js'",
   "'./designer-multiselect.js'",
   "'./designer-responsive-layout.js'",
-  "'../src/native-gui-ir-v08.js'"
+  "'./src/native-gui-ir-v08.js'"
 ]);
 
 const nativeGuiV08 = read('_site/src/native-gui-ir-v08.js');
