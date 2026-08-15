@@ -144,7 +144,11 @@ static int RunPatchResponsiveSmokeV09() {
   return 0;
 }
 
-int main(int argc, char* argv[]) {
+#ifndef PATCH_GTK_RUNTIME_V09_ENTRY
+#define PATCH_GTK_RUNTIME_V09_ENTRY main
+#endif
+
+int PATCH_GTK_RUNTIME_V09_ENTRY(int argc, char* argv[]) {
   gSmokeMode = HasArg(argc, argv, "--patch-smoke");
   std::vector<uint8_t> payloadV8, payloadV7;
   if (!ReadSelfPayloadV09(payloadV8) || !PatchConvertPayloadV8ToV7(payloadV8, payloadV7, gPatchLayoutPoliciesV09) || !ParsePayload(payloadV7)) return 20;
