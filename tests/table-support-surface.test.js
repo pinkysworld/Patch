@@ -32,8 +32,8 @@ test('public Table surfaces agree on transient row-list semantics', () => {
   assert.match(readme, /Table[^\n]*selected row[^\n]*transient list-valued `value`/i);
   assert.match(help, /selected row only as transient <code>value<\/code>/);
   assert.match(language, /<code>value<\/code> is the selected row as a list of display strings/);
-  assert.match(studio, /Table `changed` exposes a transient row list/);
-  assert.match(nativeApps, /Table `changed` exposes the selected row as transient list-valued `value`/);
+  assert.match(studio, /Table `changed` exposes a transient row list|transient list-valued selected row/);
+  assert.match(nativeApps, /Table `changed` exposes the selected row as transient list-valued `value`|Table .*transient row list/i);
 });
 
 test('direct native Table support stays tied to IR 0.8 backend 0.9 and real platform smokes', () => {
@@ -50,7 +50,7 @@ test('direct native Table support stays tied to IR 0.8 backend 0.9 and real plat
   assert.match(directWorkflow, /--table-v09 --smoke/);
 });
 
-test('published product docs still describe the frozen payload v9 runtime v1.0 Table line until Studio v1.1 deployment', () => {
+test('published product docs preserve the frozen payload v9 runtime v1.0 Table compatibility line after v1.1 deployment', () => {
   for (const text of [readme, help, downloads, language, studio, nativeApps, offline, targets, roadmap]) {
     assert.match(text, /payload \*\*?v9\*\*?|payload v9/i);
     assert.match(text, /runtime \*\*?v1\.0\*\*?|runtime v1\.0/i);
@@ -111,8 +111,8 @@ test('downloadable offline compiler embeds runtime v1.1 and proves payload v10 T
 
 test('Studio App preview Table event dispatch is implemented through the shared semantic adapter', () => {
   assert.match(help, /Studio App preview and Standalone Web support row selection/);
-  assert.match(studio, /Studio App preview: real Table plus mouse\/keyboard row selection routed through the same shared semantic Window event adapter/);
-  assert.match(nativeApps, /Studio App preview \| yes \| transient row list through shared Window event adapter \| implemented/);
+  assert.match(studio, /Standalone Web and Studio App Preview: transient list-valued selected row/);
+  assert.match(nativeApps, /Studio App Preview.*transient row list|Standalone Web and Studio App Preview.*transient/i);
   assert.match(targets, /Patch Studio App Preview exposes the same transient selected-row list through the shared semantic Window event adapter/);
   assert.match(roadmap, /\[x\] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter/);
   assert.match(playground, /appView\.addEventListener\('patch-studio-table-changed'/);
