@@ -4,10 +4,10 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
-import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
-import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from '../src/native-gui-ir-v08.js';
+import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
 import { emitAppKitGuiObjCpp, PATCH_APPKIT_GUI_BACKEND_VERSION } from '../src/appkit-gui-v08.js';
 import { emitAppKitGuiObjCppV09, PATCH_APPKIT_GUI_BACKEND_V09_VERSION } from '../src/appkit-gui-v09.js';
+import { emitAppKitGuiObjCppV10, PATCH_APPKIT_GUI_BACKEND_V10_VERSION } from '../src/appkit-gui-v10.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeMac');
@@ -15,19 +15,21 @@ const outDir = path.resolve(process.argv[4] ?? 'dist');
 const emitOnly = process.argv.includes('--emit-only');
 const smoke = process.argv.includes('--smoke');
 const tableV09 = process.argv.includes('--table-v09');
+const menuV10 = process.argv.includes('--menu-v10');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09]');
+  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10]');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const gui = tableV09 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
-const objCpp = tableV09 ? emitAppKitGuiObjCppV09(gui) : emitAppKitGuiObjCpp(gui);
-const backendVersion = tableV09 ? PATCH_APPKIT_GUI_BACKEND_V09_VERSION : PATCH_APPKIT_GUI_BACKEND_VERSION;
-const controlCount = tableV09 ? flattenNativeGuiControlsV08(gui).length : flattenNativeGuiControls(gui).length;
+const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10 });
+const gui = plan.gui;
+const objCpp = emitForTier(plan);
+const backendVersion = backendVersionForTier(plan.tier);
+const controlCount = plan.controlCount;
 
 fs.mkdirSync(outDir, { recursive: true });
 const sourceOut = path.join(outDir, `${appName}.appkit.mm`);
@@ -53,7 +55,9 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   shell: 'native-appkit',
   electron: false,
   framework: 'AppKit',
-  tableV09
+  nativeGuiTier: plan.tier,
+  tableV09: plan.features.table,
+  menuV10: plan.features.menuDecorations
 }, null, 2));
 
 if (emitOnly) {
@@ -97,6 +101,16 @@ if (smoke) {
   console.log('Native Patch AppKit GUI smoke passed.');
 }
 
+function emitForTier(plan) {
+  if (plan.tier === 'menu-v10') return emitAppKitGuiObjCppV10(plan.gui);
+  if (plan.tier === 'table-v09') return emitAppKitGuiObjCppV09(plan.gui);
+  return emitAppKitGuiObjCpp(plan.gui);
+}
+function backendVersionForTier(tier) {
+  if (tier === 'menu-v10') return PATCH_APPKIT_GUI_BACKEND_V10_VERSION;
+  if (tier === 'table-v09') return PATCH_APPKIT_GUI_BACKEND_V09_VERSION;
+  return PATCH_APPKIT_GUI_BACKEND_VERSION;
+}
 function buildInfoPlist(name) {
   const escaped = xmlEscape(name);
   const identifier = `org.patchlang.${name.toLowerCase().replace(/[^a-z0-9.-]/g, '-')}`;
