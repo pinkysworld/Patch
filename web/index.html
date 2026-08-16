@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.35: write, design, run and build Patch applications, including browser multi-select ListBox apps.">
+  <meta name="description" content="Patch Studio beta.35: write, design, run and build Patch applications, including browser and native multi-select ListBox apps.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -57,8 +57,8 @@
     </span>
     <span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Native runtime templates are SHA-256 verified before sealing. For beta.35, list-backed multi-select ListBox is currently browser-only and native builds fail closed.</span></section>
-  <section class="beta35-strip" aria-label="Patch beta.35 feature boundary"><strong>beta.35</strong><span>list-backed multi-select ListBox is currently browser-only and native builds fail closed. Choose <b>Multi-select ListBox</b> from Example to try the browser workflow.</span><a href="./docs.html">Details</a></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Runtime v1.1 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.1 as payload v10.</span></section>
+  <section class="beta35-strip" aria-label="Patch beta.35 feature boundary"><strong>beta.35+</strong><span>List-backed multi-select ListBox now works in browser preview, direct native AOT and token-free Ready/offline Windows, macOS and Linux apps. Persistent selection still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
 
   <section class="workspace" aria-label="Patch Studio workspace">
     <div class="source-workspace">
