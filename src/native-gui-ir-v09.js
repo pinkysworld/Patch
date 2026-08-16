@@ -68,7 +68,7 @@ export function buildNativeGuiIRV09(compiled) {
                 shortcutExpr: null,
                 line: entry.source.line
               }
-            : entry.source)
+            : { ...entry.source, shortcutExpr: null })
         };
       })
     };
@@ -190,7 +190,7 @@ export function flattenNativeGuiMenuEntriesV09(ir) {
 }
 
 export function toV08Compatible(ir) {
-  const compatible = structuredClone(ir);
+  const compatible = cloneNativeGuiIrWithPolicies(ir);
   compatible.version = '0.8';
   const usedIds = collectIrUiIds(compatible);
   let separatorOrdinal = 0;
@@ -244,6 +244,39 @@ function validateShortcutObject(shortcut, id) {
     throw new NativeGuiError(`Native GUI IR 0.9 MenuItem '${id}' has non-canonical shortcut metadata.`);
   }
   return parsed;
+}
+
+function cloneNativeGuiIrWithPolicies(input) {
+  const policies = [];
+  const collect = controls => {
+    for (const control of controls ?? []) {
+      policies.push(control.layout?.policy ? structuredClone(control.layout.policy) : null);
+      if (control.type === 'tabs') for (const page of control.pages ?? []) collect(page.controls);
+    }
+  };
+  for (const form of input.forms ?? []) collect(form.controls);
+
+  const cloned = structuredClone(input);
+  let cursor = 0;
+  const restore = controls => {
+    for (const control of controls ?? []) {
+      const policy = policies[cursor++];
+      if (policy && control.layout) {
+        Object.defineProperty(control.layout, 'policy', {
+          value: policy,
+          enumerable: false,
+          configurable: true,
+          writable: false
+        });
+      }
+      if (control.type === 'tabs') for (const page of control.pages ?? []) restore(page.controls);
+    }
+  };
+  for (const form of cloned.forms ?? []) restore(form.controls);
+  if (cursor !== policies.length) {
+    throw new NativeGuiError('Native GUI IR 0.9 policy clone lost control ordering.');
+  }
+  return cloned;
 }
 
 function collectUiIds(ast) {
