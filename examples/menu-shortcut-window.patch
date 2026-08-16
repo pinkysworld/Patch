@@ -1,0 +1,12 @@
+window "Menu shortcuts" as main size 560, 320:
+  menu "Help":
+    item "Guide" as guide_item shortcut "Primary+G"
+    separator
+    item "About" as about_item shortcut "F1"
+  text "Use Help or the keyboard shortcuts." at 24, 48 size 360, 30
+
+when guide_item clicked:
+  dialog "Guide", "Primary+G uses Ctrl on Windows/Linux and Command on macOS."
+
+when about_item clicked:
+  dialog "About Patch", "Native menus and informational dialogs"

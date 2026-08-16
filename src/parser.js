@@ -77,10 +77,26 @@ export function parse(source) {
     if ((m = row.text.match(/^menu\s+(.+)\s*:\s*$/))) {
       const items = childBlock(indent,row);
       if (!items.length) throw new PatchSyntaxError('A menu needs at least one item.',row.line);
-      for (const item of items) if (item.kind !== 'menuItem') throw new PatchSyntaxError('A menu can only contain items like item "About" as about_item.',item.line);
+      for (const item of items) {
+        if (item.kind !== 'menuItem' && item.kind !== 'menuSeparator') {
+          throw new PatchSyntaxError('A menu can only contain items and separator lines.',item.line);
+        }
+      }
+      if (!items.some(item => item.kind === 'menuItem')) throw new PatchSyntaxError('A menu needs at least one clickable item.',row.line);
+      if (items[0].kind === 'menuSeparator' || items.at(-1).kind === 'menuSeparator') {
+        throw new PatchSyntaxError('A menu separator must appear between clickable items.',row.line);
+      }
+      for (let index = 1; index < items.length; index += 1) {
+        if (items[index - 1].kind === 'menuSeparator' && items[index].kind === 'menuSeparator') {
+          throw new PatchSyntaxError('Menu separators cannot appear next to each other.',items[index].line);
+        }
+      }
       return {kind:'menu',titleExpr:m[1],body:items,line:row.line};
     }
-    if ((m = row.text.match(/^item\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) return {kind:'menuItem',textExpr:m[1],id:m[2],line:row.line};
+    if (row.text === 'separator') return {kind:'menuSeparator',line:row.line};
+    if ((m = row.text.match(/^item\s+(.+?)\s+as\s+([A-Za-z_]\w*)(?:\s+shortcut\s+(.+))?\s*$/))) {
+      return {kind:'menuItem',textExpr:m[1],id:m[2],shortcutExpr:m[3]??null,line:row.line};
+    }
 
     if ((m = row.text.match(/^tabs\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       const pages = childBlock(indent,row);

@@ -4,10 +4,10 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
-import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir.js';
-import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from '../src/native-gui-ir-v08.js';
+import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
 import { emitGtkGuiCpp, PATCH_GTK_GUI_BACKEND_VERSION } from '../src/gtk-gui-v08.js';
 import { emitGtkGuiCppV09, PATCH_GTK_GUI_BACKEND_V09_VERSION } from '../src/gtk-gui-v09.js';
+import { emitGtkGuiCppV10, PATCH_GTK_GUI_BACKEND_V10_VERSION } from '../src/gtk-gui-v10.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeGtk');
@@ -15,19 +15,21 @@ const outDir = path.resolve(process.argv[4] ?? 'dist');
 const emitOnly = process.argv.includes('--emit-only');
 const smoke = process.argv.includes('--smoke');
 const tableV09 = process.argv.includes('--table-v09');
+const menuV10 = process.argv.includes('--menu-v10');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09]');
+  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10]');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const gui = tableV09 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
-const cpp = tableV09 ? emitGtkGuiCppV09(gui) : emitGtkGuiCpp(gui);
-const backendVersion = tableV09 ? PATCH_GTK_GUI_BACKEND_V09_VERSION : PATCH_GTK_GUI_BACKEND_VERSION;
-const controlCount = tableV09 ? flattenNativeGuiControlsV08(gui).length : flattenNativeGuiControls(gui).length;
+const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10 });
+const gui = plan.gui;
+const cpp = emitForTier(plan);
+const backendVersion = backendVersionForTier(plan.tier);
+const controlCount = plan.controlCount;
 
 fs.mkdirSync(outDir, { recursive: true });
 const sourceOut = path.join(outDir, `${appName}.gtk.cpp`);
@@ -48,7 +50,9 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   shell: 'native-gtk3',
   toolkit: 'GTK3',
   electron: false,
-  tableV09
+  nativeGuiTier: plan.tier,
+  tableV09: plan.features.table,
+  menuV10: plan.features.menuDecorations
 }, null, 2));
 
 if (emitOnly) {
@@ -82,6 +86,16 @@ if (smoke) {
   console.log('Native Patch GTK GUI smoke passed.');
 }
 
+function emitForTier(plan) {
+  if (plan.tier === 'menu-v10') return emitGtkGuiCppV10(plan.gui);
+  if (plan.tier === 'table-v09') return emitGtkGuiCppV09(plan.gui);
+  return emitGtkGuiCpp(plan.gui);
+}
+function backendVersionForTier(tier) {
+  if (tier === 'menu-v10') return PATCH_GTK_GUI_BACKEND_V10_VERSION;
+  if (tier === 'table-v09') return PATCH_GTK_GUI_BACKEND_V09_VERSION;
+  return PATCH_GTK_GUI_BACKEND_VERSION;
+}
 function pkgConfig(args) {
   const result = spawnSync('pkg-config', args, { encoding: 'utf8' });
   if (result.error) throw result.error;

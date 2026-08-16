@@ -1,3 +1,5 @@
+import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
+
 export class WindowBuildError extends Error {}
 
 /** Count Patch WINDOW instructions in normalized Change IR. */
@@ -27,7 +29,7 @@ export function validateWindowBuild(compiled) {
 }
 
 /** Validate the shared Window runtime surface used by Studio, Web and desktop. */
-export function validateWindowRuntimeSupport(compiled) {
+export function validateWindowRuntimeSupport(compiled, options = {}) {
   validateWindowBuild(compiled);
   const controls = new Map();
   const tabs = new Map();
@@ -36,6 +38,9 @@ export function validateWindowRuntimeSupport(compiled) {
   const forms = new Map();
   const events = [];
   const formActions = [];
+  const menuShortcuts = new Map();
+  let menuSeparators = 0;
+  let menuShortcutCount = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -70,12 +75,34 @@ export function validateWindowRuntimeSupport(compiled) {
       throw new WindowBuildError(`line ${node.line ?? '?'}: Window menu needs at least one item.`);
     }
     for (const item of node.body) {
+      if (item.kind === 'menuSeparator') {
+        menuSeparators += 1;
+        continue;
+      }
       if (item.kind !== 'menuItem') {
-        throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu can only contain menu items.`);
+        throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu can only contain menu items and separators.`);
       }
       if (!item.id) throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu item needs a name after 'as'.`);
       if (idTaken(item.id)) throw duplicateId(item);
-      menuItems.set(item.id, { type: 'menuItem', formId, node: item });
+
+      let shortcut = null;
+      if (item.shortcutExpr) {
+        try {
+          shortcut = parseMenuShortcutExpression(item.shortcutExpr, item.line);
+        } catch (error) {
+          throw new WindowBuildError(error.message);
+        }
+        const identity = menuShortcutIdentity(shortcut);
+        const previous = menuShortcuts.get(identity);
+        if (previous) {
+          throw new WindowBuildError(
+            `line ${item.line ?? '?'}: Menu shortcut '${identity}' is already used by '${previous.id}' in this application.`
+          );
+        }
+        menuShortcuts.set(identity, item);
+        menuShortcutCount += 1;
+      }
+      menuItems.set(item.id, { type: 'menuItem', formId, node: item, shortcut });
     }
   };
 
@@ -171,12 +198,21 @@ export function validateWindowRuntimeSupport(compiled) {
     }
   }
 
+  if ((menuSeparators || menuShortcutCount) && !options.allowMenuDecorations) {
+    throw new WindowBuildError(
+      'Menu separators and shortcuts require Native GUI IR 0.9 / direct AOT backend 1.0. ' +
+      'The current sealed Ready-app runtime remains on payload v9/runtime v1.0 and fails closed for this newer menu contract.'
+    );
+  }
+
   return {
     windows: countWindowInstructions(compiled?.ir?.instructions),
     namedForms: forms.size,
     controls: controls.size,
     tabs: tabs.size,
     menuItems: menuItems.size,
+    menuSeparators,
+    menuShortcuts: menuShortcutCount,
     resultDialogs: resultDialogs.size,
     events: events.length,
     formActions: formActions.length
