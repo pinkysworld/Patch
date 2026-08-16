@@ -94,8 +94,16 @@ export function parse(source) {
       return {kind:'menu',titleExpr:m[1],body:items,line:row.line};
     }
     if (row.text === 'separator') return {kind:'menuSeparator',line:row.line};
-    if ((m = row.text.match(/^item\s+(.+?)\s+as\s+([A-Za-z_]\w*)(?:\s+shortcut\s+(.+))?\s*$/))) {
-      return {kind:'menuItem',textExpr:m[1],id:m[2],shortcutExpr:m[3]??null,line:row.line};
+    if ((m = row.text.match(/^item\s+(.+?)\s+as\s+([A-Za-z_]\w*)(?:\s+enabled\s+([A-Za-z_]\w*))?(?:\s+checked\s+([A-Za-z_]\w*))?(?:\s+shortcut\s+(.+))?\s*$/))) {
+      return {
+        kind:'menuItem',
+        textExpr:m[1],
+        id:m[2],
+        enabledState:m[3]??null,
+        checkedState:m[4]??null,
+        shortcutExpr:m[5]??null,
+        line:row.line
+      };
     }
 
     if ((m = row.text.match(/^tabs\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
