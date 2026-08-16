@@ -8,6 +8,7 @@ import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
 import { emitAppKitGuiObjCpp, PATCH_APPKIT_GUI_BACKEND_VERSION } from '../src/appkit-gui-v08.js';
 import { emitAppKitGuiObjCppV09, PATCH_APPKIT_GUI_BACKEND_V09_VERSION } from '../src/appkit-gui-v09.js';
 import { emitAppKitGuiObjCppV10, PATCH_APPKIT_GUI_BACKEND_V10_VERSION } from '../src/appkit-gui-v10.js';
+import { emitAppKitGuiObjCppV11, PATCH_APPKIT_GUI_BACKEND_V11_VERSION } from '../src/appkit-gui-v11.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeMac');
@@ -16,16 +17,17 @@ const emitOnly = process.argv.includes('--emit-only');
 const smoke = process.argv.includes('--smoke');
 const tableV09 = process.argv.includes('--table-v09');
 const menuV10 = process.argv.includes('--menu-v10');
+const menuV11 = process.argv.includes('--menu-v11');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10]');
+  console.error('Use: node scripts/build-native-appkit.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10] [--menu-v11]');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10 });
+const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10, menuV11 });
 const gui = plan.gui;
 const objCpp = emitForTier(plan);
 const backendVersion = backendVersionForTier(plan.tier);
@@ -57,7 +59,8 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   framework: 'AppKit',
   nativeGuiTier: plan.tier,
   tableV09: plan.features.table,
-  menuV10: plan.features.menuDecorations
+  menuV10: plan.features.menuSeparators || plan.features.menuShortcuts,
+  menuV11: plan.features.menuStateBindings
 }, null, 2));
 
 if (emitOnly) {
@@ -102,11 +105,13 @@ if (smoke) {
 }
 
 function emitForTier(plan) {
+  if (plan.tier === 'menu-v11') return emitAppKitGuiObjCppV11(plan.gui);
   if (plan.tier === 'menu-v10') return emitAppKitGuiObjCppV10(plan.gui);
   if (plan.tier === 'table-v09') return emitAppKitGuiObjCppV09(plan.gui);
   return emitAppKitGuiObjCpp(plan.gui);
 }
 function backendVersionForTier(tier) {
+  if (tier === 'menu-v11') return PATCH_APPKIT_GUI_BACKEND_V11_VERSION;
   if (tier === 'menu-v10') return PATCH_APPKIT_GUI_BACKEND_V10_VERSION;
   if (tier === 'table-v09') return PATCH_APPKIT_GUI_BACKEND_V09_VERSION;
   return PATCH_APPKIT_GUI_BACKEND_VERSION;

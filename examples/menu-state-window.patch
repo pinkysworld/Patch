@@ -1,0 +1,21 @@
+create boolean advanced = false
+create boolean pinned = false
+
+window "Menu state" as main size 620, 340:
+  menu "Actions":
+    item "Enable advanced" as enable_advanced
+    item "Advanced action" as advanced_action enabled advanced shortcut "Primary+E"
+    separator
+    item "Pinned" as pin_item checked pinned shortcut "Primary+P"
+  text "Menu state comes from Patch booleans." at 24, 52 size 400, 30
+
+when enable_advanced clicked:
+  change advanced:
+    set = true
+
+when advanced_action clicked:
+  dialog "Advanced", "This item became enabled through explicit Patch state."
+
+when pin_item clicked:
+  change pinned:
+    set = true

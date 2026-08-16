@@ -1,13 +1,24 @@
 import { buildNativeGuiIR, flattenNativeGuiControls } from './native-gui-ir.js';
 import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from './native-gui-ir-v08.js';
 import { buildNativeGuiIRV09, flattenNativeGuiControlsV09 } from './native-gui-ir-v09.js';
+import { buildNativeGuiIRV10, flattenNativeGuiControlsV10 } from './native-gui-ir-v10.js';
 
 /** Select the smallest native GUI contract that preserves source semantics. */
 export function buildNativeGuiPlan(compiled, options = {}) {
   const features = inspectNativeGuiFeatures(compiled?.ast);
   const forceTable = Boolean(options.tableV09);
   const forceMenu = Boolean(options.menuV10);
+  const forceMenuState = Boolean(options.menuV11);
 
+  if (forceMenuState || features.menuStateBindings) {
+    const gui = buildNativeGuiIRV10(compiled);
+    return {
+      tier: 'menu-v11',
+      gui,
+      controlCount: flattenNativeGuiControlsV10(gui).length,
+      features
+    };
+  }
   if (forceMenu || features.menuDecorations) {
     const gui = buildNativeGuiIRV09(compiled);
     return {
@@ -36,18 +47,29 @@ export function buildNativeGuiPlan(compiled, options = {}) {
 }
 
 export function inspectNativeGuiFeatures(ast) {
-  const features = { table: false, menuSeparators: false, menuShortcuts: false, menuDecorations: false };
+  const features = {
+    table: false,
+    menuSeparators: false,
+    menuShortcuts: false,
+    menuEnabledState: false,
+    menuCheckedState: false,
+    menuStateBindings: false,
+    menuDecorations: false
+  };
   const walk = nodes => {
     for (const node of nodes ?? []) {
       if (node.kind === 'uiControl' && node.control === 'table') features.table = true;
       if (node.kind === 'menuSeparator') features.menuSeparators = true;
       if (node.kind === 'menuItem' && node.shortcutExpr) features.menuShortcuts = true;
+      if (node.kind === 'menuItem' && node.enabledState) features.menuEnabledState = true;
+      if (node.kind === 'menuItem' && node.checkedState) features.menuCheckedState = true;
       if (node.body) walk(node.body);
       if (node.thenBody) walk(node.thenBody);
       if (node.elseBody) walk(node.elseBody);
     }
   };
   walk(ast);
-  features.menuDecorations = features.menuSeparators || features.menuShortcuts;
+  features.menuStateBindings = features.menuEnabledState || features.menuCheckedState;
+  features.menuDecorations = features.menuSeparators || features.menuShortcuts || features.menuStateBindings;
   return features;
 }

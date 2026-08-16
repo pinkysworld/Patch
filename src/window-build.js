@@ -39,14 +39,31 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   const events = [];
   const formActions = [];
   const menuShortcuts = new Map();
+  const stateTypes = new Map(
+    (compiled?.ast ?? [])
+      .filter(node => node.kind === 'create')
+      .map(node => [node.name, node.valueType])
+  );
   let menuSeparators = 0;
   let menuShortcutCount = 0;
+  let menuEnabledBindings = 0;
+  let menuCheckedBindings = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
     `line ${node.line ?? '?'}: Window UI id '${node.id}' is declared more than once. ` +
     'Control, Tabs, MenuItem and result-dialog ids must be unique across the current application.'
   );
+  const requireBooleanMenuState = (item, stateName, role) => {
+    if (!stateName) return;
+    const type = stateTypes.get(stateName);
+    if (type !== 'boolean') {
+      const found = type ? `${type} state` : 'no declared state';
+      throw new WindowBuildError(
+        `line ${item.line ?? '?'}: MenuItem '${item.id}' ${role} binding '${stateName}' must be boolean state; found ${found}.`
+      );
+    }
+  };
 
   const registerControl = (child, formId) => {
     if (!child?.id) return;
@@ -85,6 +102,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       if (!item.id) throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu item needs a name after 'as'.`);
       if (idTaken(item.id)) throw duplicateId(item);
 
+      requireBooleanMenuState(item, item.enabledState, 'enabled');
+      requireBooleanMenuState(item, item.checkedState, 'checked');
+      if (item.enabledState) menuEnabledBindings += 1;
+      if (item.checkedState) menuCheckedBindings += 1;
+
       let shortcut = null;
       if (item.shortcutExpr) {
         try {
@@ -102,7 +124,14 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         menuShortcuts.set(identity, item);
         menuShortcutCount += 1;
       }
-      menuItems.set(item.id, { type: 'menuItem', formId, node: item, shortcut });
+      menuItems.set(item.id, {
+        type: 'menuItem',
+        formId,
+        node: item,
+        shortcut,
+        enabledState: item.enabledState ?? null,
+        checkedState: item.checkedState ?? null
+      });
     }
   };
 
@@ -198,9 +227,13 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     }
   }
 
-  if ((menuSeparators || menuShortcutCount) && !options.allowMenuDecorations) {
+  const menuStateBindings = menuEnabledBindings + menuCheckedBindings;
+  if ((menuSeparators || menuShortcutCount || menuStateBindings) && !options.allowMenuDecorations) {
+    const required = menuStateBindings
+      ? 'Native GUI IR 1.0 / direct AOT backend 1.1'
+      : 'Native GUI IR 0.9 / direct AOT backend 1.0';
     throw new WindowBuildError(
-      'Menu separators and shortcuts require Native GUI IR 0.9 / direct AOT backend 1.0. ' +
+      `Menu decorations in this source require ${required}. ` +
       'The current sealed Ready-app runtime remains on payload v9/runtime v1.0 and fails closed for this newer menu contract.'
     );
   }
@@ -213,6 +246,8 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     menuItems: menuItems.size,
     menuSeparators,
     menuShortcuts: menuShortcutCount,
+    menuEnabledBindings,
+    menuCheckedBindings,
     resultDialogs: resultDialogs.size,
     events: events.length,
     formActions: formActions.length
