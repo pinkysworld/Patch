@@ -1,0 +1,9 @@
+create list fruits = ["Banana", "Mango"]
+
+window "Fruit picker" as main size 560, 340:
+  text "Choose one or more fruits" at 24, 32 size 320, 28
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits at 24, 72 size 280, 150
+
+when fruits changed:
+  change fruits:
+    set = value
