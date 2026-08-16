@@ -29,9 +29,9 @@ const SITE_WEB_MODULE_FILES = [
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');
-SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css');
-SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js');
-SITE_WEB_MODULE_FILES.splice(11, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
+SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
+SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js', 'studio-outline.js');
+SITE_WEB_MODULE_FILES.splice(12, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
 
 const siteRevision = computeSiteRevision();
 
