@@ -4,6 +4,7 @@ import path from 'node:path';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 import { buildNativeGuiIRV08 } from '../src/native-gui-ir-v08.js';
+import { buildNativeGuiIRV11 } from '../src/native-gui-ir-v11.js';
 import { sealNativeGuiRuntime } from '../src/sealed-native-gui.js';
 
 const sourcePath = process.argv[2];
@@ -19,7 +20,9 @@ if (!sourcePath || !runtimePath || !outputPath) {
 
 const source = fs.readFileSync(sourcePath, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const gui = payloadVersion >= 9 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
+const gui = payloadVersion >= 10
+  ? buildNativeGuiIRV11(compiled)
+  : payloadVersion >= 9 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
 const runtime = new Uint8Array(fs.readFileSync(runtimePath));
 const sealed = sealNativeGuiRuntime(runtime, gui, { version: payloadVersion });
 fs.mkdirSync(path.dirname(path.resolve(outputPath)), { recursive: true });
