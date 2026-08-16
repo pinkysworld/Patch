@@ -60,11 +60,12 @@ test('responsive accessibility-capable v0.9 remains a frozen published compatibi
   assert.match(responsiveWorkflow, /responsive-window\.patch/);
 });
 
-test('Pages consumes Table-capable v1.0 while still reacting to compatibility runtime completion safely', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.0/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.0/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.0/);
+test('Pages consumes list-capable v1.1 while still reacting to compatibility runtime completion safely', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.1/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.1/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.1/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
   assert.match(pagesWorkflow, /Patch Native Sealed Table Runtime/);
+  assert.match(pagesWorkflow, /Patch Native Sealed List Runtime/);
   assert.match(pagesWorkflow, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 });
