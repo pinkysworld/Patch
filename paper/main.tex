@@ -8,7 +8,7 @@
 
 \title{Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs}
 \author{Mich\'el Nguyen}
-\date{Beta 34 product artifact / Beta 32 assurance manuscript, August 2026}
+\date{Beta 35 product artifact / Beta 32 assurance manuscript, August 2026}
 
 \begin{document}
 \maketitle
@@ -265,9 +265,11 @@ The bundle snapshots tracked source plus explicitly regenerated evidence, record
 The bundle does not include paper performance results and deliberately does not convert heterogeneous hosted-runner timing into a performance claim.
 
 \section{Portable and Product Artifact Surface}
-Patch 0.2.0-beta.34 retains Change IR 0.10 while the product artifact includes a browser-first Patch Studio, a source-backed Window Designer, portable C99, standalone Web builds, direct native GUI backends, and token-free ready/offline runtime paths for supported desktop targets. These capabilities make the artifact easier to inspect and exercise, but they are not primary research novelty claims.
+Patch 0.2.0-beta.35 retains Change IR 0.10 while the product artifact includes a browser-first Patch Studio, a source-backed Window Designer, portable C99, standalone Web builds, direct native GUI backends, and token-free ready/offline runtime paths for supported desktop targets. These capabilities make the artifact easier to inspect and exercise, but they are not primary research novelty claims.
 
 Patch Studio's beta 34 hardening also verifies browser-consumed native runtime templates against a deployment-time SHA-256 manifest derived from GitHub Release asset digests. This is distribution integrity, not platform code signing or a formal security theorem.
+
+Beta 35 adds browser ListBox multi-selection when a ListBox id is backed by persistent list state. Studio App Preview and Standalone Web expose the selected options as a transient text list; persistence still requires an explicit semantic \texttt{change}. Native GUI IR 0.7 does not model persistent list state, so current native Window paths fail closed for that feature rather than silently degrading it. This product behavior does not widen the beta 32 Lean claim.
 
 Editable Window controls preserve the persistent-mutation rule: event-local values and renderer selection/layout state remain transient unless Patch source executes an explicit semantic \texttt{change}.
 
