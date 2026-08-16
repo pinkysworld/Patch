@@ -77,7 +77,9 @@ function lowerNode(node) {
     case 'menu':
       return op('MENU', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body ?? []) });
     case 'menuItem':
-      return op('MENU_ITEM', node, { id: node.id, textExpr: node.textExpr });
+      return op('MENU_ITEM', node, { id: node.id, textExpr: node.textExpr, shortcutExpr: node.shortcutExpr ?? null });
+    case 'menuSeparator':
+      return op('MENU_SEPARATOR', node);
     case 'dialog':
       return op('DIALOG', node, { titleExpr: node.titleExpr, messageExpr: node.messageExpr });
     case 'confirmDialog':
@@ -132,9 +134,11 @@ function inferRuntimeCapabilities(ast) {
   const caps = new Set(['state.change']);
   walk(ast, node => {
     if (node.kind === 'show') caps.add('console.output');
-    if (['window', 'uiControl', 'tabs', 'tabPage', 'menu', 'menuItem', 'dialog', 'confirmDialog', 'openFileDialog', 'saveFileDialog', 'event', 'openForm', 'closeForm'].includes(node.kind)) caps.add('ui.window');
+    if (['window', 'uiControl', 'tabs', 'tabPage', 'menu', 'menuItem', 'menuSeparator', 'dialog', 'confirmDialog', 'openFileDialog', 'saveFileDialog', 'event', 'openForm', 'closeForm'].includes(node.kind)) caps.add('ui.window');
     if (node.kind === 'tabs' || node.kind === 'tabPage') caps.add('ui.tabs');
-    if (node.kind === 'menu' || node.kind === 'menuItem') caps.add('ui.menu');
+    if (node.kind === 'menu' || node.kind === 'menuItem' || node.kind === 'menuSeparator') caps.add('ui.menu');
+    if (node.kind === 'menuSeparator') caps.add('ui.menu-separator');
+    if (node.kind === 'menuItem' && node.shortcutExpr) caps.add('ui.menu-shortcut');
     if (node.kind === 'dialog') caps.add('ui.dialog');
     if (['confirmDialog', 'openFileDialog', 'saveFileDialog'].includes(node.kind)) caps.add('ui.dialog-result');
     if (node.kind === 'confirmDialog') caps.add('ui.confirm-dialog');
