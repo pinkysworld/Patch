@@ -34,6 +34,14 @@ Patch Studio upgrades list-backed ListBoxes to real HTML multi-select controls i
 
 The source file remains the UI source of truth. No hidden form model or hidden persistent selection state is introduced.
 
+### Discoverable beta.35 workflow
+
+The Studio Example selector now exposes a **Multi-select ListBox** sample based on the canonical `examples/listbox-multiselect-window.patch` program. Choosing it switches the project to Window mode and sends the same browser `input` / `change` signals used by normal Studio editing, so project persistence, Designer refresh and native-build state continue to observe the canonical project state.
+
+The top Run/Build toolbar also includes a compact **Designer ↓** jump. This keeps the full-width editor-over-results layout while reducing scrolling friction on larger source files. A small compatibility strip beside the workspace keeps the browser/native beta.35 boundary visible before a user attempts a desktop build.
+
+The beta.35 workflow module and styling are included in the content-addressed public site build and in the PWA core cache, so the sample and navigation affordance remain available offline.
+
 ## Standalone Web
 
 Standalone Window Web detects list-backed ListBoxes at build time. The generated runtime:
