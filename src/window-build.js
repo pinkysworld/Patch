@@ -29,7 +29,7 @@ export function validateWindowBuild(compiled) {
 }
 
 /** Validate the shared Window runtime surface used by Studio, Web and desktop. */
-export function validateWindowRuntimeSupport(compiled) {
+export function validateWindowRuntimeSupport(compiled, options = {}) {
   validateWindowBuild(compiled);
   const controls = new Map();
   const tabs = new Map();
@@ -196,6 +196,13 @@ export function validateWindowRuntimeSupport(compiled) {
         `Name a window with 'as ${action.form}' or use the correct Form name.`
       );
     }
+  }
+
+  if ((menuSeparators || menuShortcutCount) && !options.allowMenuDecorations) {
+    throw new WindowBuildError(
+      'Menu separators and shortcuts require Native GUI IR 0.9 / direct AOT backend 1.0. ' +
+      'The current sealed Ready-app runtime remains on payload v9/runtime v1.0 and fails closed for this newer menu contract.'
+    );
   }
 
   return {
