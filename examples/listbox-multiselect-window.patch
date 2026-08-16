@@ -1,0 +1,11 @@
+create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker" as main size 540, 360:
+  text "Pick one or more fruits"
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits at 24, 72 size 260, 140
+  text "Selection is committed only by the changed handler"
+
+when fruits changed:
+  change fruits:
+    set = value
+  show value
