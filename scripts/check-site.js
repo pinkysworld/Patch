@@ -11,11 +11,11 @@ const pages = ['index.html', 'language.html', 'docs.html', 'downloads.html', 'he
 const staticAssets = [
   'style.css', 'site-navigation.css', 'site-pages.css', 'studio-accessibility.css',
   'designer-inspector.css', 'forms-designer.css', 'form-window-resize.css',
-  'designer-multiselect.css', 'designer-responsive-layout.css', 'project-lifecycle.css',
+  'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'project-lifecycle.css',
   'recovery-manager.css', 'studio-diagnostics.css', 'manifest.webmanifest', 'icon.svg'
 ];
 const browserModules = [
-  'playground.js', 'forms-designer.js', 'table-stage1.js', 'designer-alignment.js',
+  'playground.js', 'beta35-studio.js', 'forms-designer.js', 'table-stage1.js', 'designer-alignment.js',
   'designer-alignment-guides.js', 'designer-multiselect.js', 'designer-layout-policy.js',
   'designer-responsive-layout.js', 'form-window-resize.js', 'native-build.js',
   'project-lifecycle.js', 'project-config-restore.js', 'recovery-manager.js',
@@ -57,9 +57,9 @@ requireCurrentTab('Help', 'help.html');
 const html = sitePages.get('index.html');
 requireAll('Studio assets', html, [
   './style.css', './site-navigation.css', './studio-accessibility.css',
-  './designer-multiselect.css', './designer-responsive-layout.css', './manifest.webmanifest',
+  './designer-multiselect.css', './designer-responsive-layout.css', './beta35-studio.css', './manifest.webmanifest',
   './native-build.js', './project-lifecycle.js', './project-config-restore.js',
-  './recovery-manager.js', './playground.js', './forms-designer.js', './table-stage1.js',
+  './recovery-manager.js', './playground.js', './beta35-studio.js', './forms-designer.js', './table-stage1.js',
   './designer-alignment-guides.js', './designer-multiselect.js',
   './designer-responsive-layout.js', './form-window-resize.js',
   './studio-diagnostics.js', './studio-accessibility.js', './icon.svg'
@@ -256,7 +256,7 @@ requireAll('Service worker release', sw, [
   `const PATCH_RELEASE = '${pkg.version}'`, 'const REVISION = ',
   'const CACHE = `${CACHE_PREFIX}${REVISION}`', "'./language.html'", "'./docs.html'",
   "'./downloads.html'", "'./help.html'", "'./native-build.js'", "'./forms-designer.js'",
-  "'./table-stage1.js'", "'./designer-multiselect.js'", "'./designer-responsive-layout.js'",
+  "'./table-stage1.js'", "'./beta35-studio.js'", "'./beta35-studio.css'", "'./designer-multiselect.js'", "'./designer-responsive-layout.js'",
   "'./src/native-gui-ir-v08.js'", "'./src/window-events.js'", 'freshFirst'
 ]);
 
@@ -265,7 +265,7 @@ if (manifest.name !== 'Patch Studio') throw new Error('PWA manifest name is not 
 if (manifest.display !== 'standalone') throw new Error('PWA manifest must use standalone display mode.');
 if (!manifest.icons?.some(icon => icon.src === './icon.svg')) throw new Error('PWA manifest is missing the Patch icon.');
 
-console.log(`ok generated Patch site for ${pkg.version}`);
+console.log(`ok Patch Studio check-site for ${pkg.version}`);
 
 function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
