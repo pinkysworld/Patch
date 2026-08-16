@@ -1,6 +1,6 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.34**
+Current development beta: **0.2.0-beta.35**
 
 Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features or measured results.
 
@@ -129,7 +129,7 @@ The bundle supports artifact identity and evidence reruns. It intentionally does
 - [x] primary-source bibliography expanded for the comparison systems
 - [x] citation-ready `paper/related-work.tex`
 - [x] novelty claim narrowed to mandatory semantic mutation factorization plus operation/magnitude authority from the same substrate
-- [x] `paper/main.tex` synchronized from the old beta.28 state to beta.32 assurance / beta.34 artifact status
+- [x] `paper/main.tex` synchronized from the old beta.28 state to beta.32 assurance / beta.35 artifact status
 - [x] security, controlled-evaluation and reproducibility evidence integrated into the manuscript
 - [x] checkout/loyalty and usage/quota multi-domain application evidence integrated into the manuscript
 - [x] repeated-identical and mixed-guard repeated-call invocation-frame evidence integrated into the manuscript
@@ -157,6 +157,19 @@ The literature pass does not claim that Patch policies are uniquely expressible 
 
 Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 0.9 or sealed payload v9/runtime v1.0.
 
+### beta.35: browser ListBox multi-selection
+- [x] text-backed ListBox remains single-select with transient text `changed` value
+- [x] list-backed ListBox exposes transient text-list `changed` value through Window event adapter **0.7**
+- [x] Studio App Preview renders real multi-select ListBox and preserves transient selection across re-renders
+- [x] Standalone Window Web uses `<select multiple>` with separate transient UI-selection state
+- [x] explicit `change ... set = value` remains the only route that persists the selected list
+- [x] canonical `examples/listbox-multiselect-window.patch` regression source
+- [x] native GUI 0.7 fails closed for list-backed ListBox rather than silently degrading semantics
+- [x] website/help/download documentation states the browser/native boundary explicitly
+- [ ] versioned Native GUI IR/runtime list-state extension for native multi-select parity
+
+Beta.35 changes no Change IR, Table payload or beta.32 assurance theorem. Native multi-select remains an explicit future ABI/runtime task.
+
 ## Product priorities
 
 ### Studio / Designer
@@ -170,6 +183,7 @@ Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 
 - [x] named Forms with simple transient `open name` / `close name` lifecycle
 - [x] ComboBox with source-backed options and transient text `value`
 - [x] single-selection ListBox with source-backed options and transient text `value`
+- [x] browser list-backed ListBox multi-selection with transient text-list `value`
 - [x] grouped Radio with source-backed options and transient text `value`
 - [x] Tabs with nested pages, transient renderer-local selection and source-backed container geometry
 - [x] structural Window menus with named MenuItems and informational dialogs
@@ -187,12 +201,11 @@ Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 
 - [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
 - [x] sealed Ready/offline Table payload **v9** / runtime **v1.0** contract and Windows/macOS/Linux consumer switch with real seal/link/run smokes
 - [x] canonical v2 persistence synchronization for programmatic sample/Designer edits
-- [ ] richer data controls beyond Table/Grid
-- [ ] ListBox multi-selection with an explicit list-valued event contract
+- [ ] richer data controls beyond Table/Grid and browser multi-select ListBox
 - [ ] Menu separators, shortcuts and source-backed enabled/checked state
 - [ ] project tree and separate source files/forms
 
-All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings; renderer/native-toolkit selection is UI state and does not itself mutate Patch state.
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. Browser list-backed ListBox `changed` exposes the selected options as a transient text list. Renderer/native-toolkit selection does not itself mutate Patch state.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
@@ -218,6 +231,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
 - [x] offline compiler builds/embeds runtime v1.0 and executes Console, responsive Window and Table Window link smokes on Windows/Linux/Apple Silicon/macOS Intel
 - [x] browser Ready Window runtime templates are SHA-256 verified against release-asset digests before sealing
+- [ ] Native GUI IR/runtime support for persistent list state and multi-select ListBox
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
@@ -226,7 +240,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts over Native GUI IR 0.8. Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the explicit Table-capable Ready/offline contract. The Windows/macOS/Linux sealed-runtime matrix and ordinary offline-linker matrix independently encode and execute the new payload before it is presented as supported. Beta.34 additionally validates the byte identity of the native runtime templates used by the browser Ready path, without claiming platform code signing.
+The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts over Native GUI IR 0.8. Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the explicit Table-capable Ready/offline contract. The Windows/macOS/Linux sealed-runtime matrix and ordinary offline-linker matrix independently encode and execute the payload before it is presented as supported. Beta.34 additionally validates the byte identity of the native runtime templates used by the browser Ready path, without claiming platform code signing. Beta.35 does not silently insert list state into these existing native contracts.
 
 ## Highest-value remaining research work
 
@@ -236,14 +250,15 @@ The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts o
 4. [ ] obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful;
 5. [ ] reduce parser/lowering/runtime trust boundaries without overstating full verification.
 
-Completed in the current research iteration: the internally authored multi-domain checkout/quota corpus and richer mixed-guard repeated-call invocation-frame evidence. Normal pre-submission literature surveillance remains ongoing rather than a one-time completed gate.
+Completed in the current research iteration: the internally authored multi-domain checkout/quota corpus, richer mixed-guard repeated-call invocation-frame evidence, independent source/range/guard validation and raw-source static call-site identity binding. Normal pre-submission literature surveillance remains ongoing rather than a one-time completed gate.
 
 ## High-venue artifact gate
 
 - [x] State-Change Factorization + Mutation Transparency
 - [x] Change Signature Soundness + semantic policy containment
 - [x] machine-checked integer range fragment
-- [x] source/guard translation validation
+- [x] source/range/guard translation validation
+- [x] raw-source static call-site identity validation before concrete call certification
 - [x] direct compiled execution + independent effect validation
 - [x] finite abstract/exact/transitive call assurance
 - [x] call-aware direct-Wasm correspondence
@@ -258,7 +273,7 @@ Completed in the current research iteration: the internally authored multi-domai
 - [x] **commit-bound reproducibility bundle**
 - [x] **structured related work with primary-source comparison dimensions**
 - [x] **targeted 2025–2026 dependent/state-sensitive effect follow-up**
-- [x] **main manuscript synchronized to beta.32 assurance / beta.34 artifact status**
+- [x] **main manuscript synchronized to beta.32 assurance / beta.35 artifact status**
 - [ ] controlled measured overhead results
 - [ ] genuine external/third-party application or plugin integration evidence
 
@@ -290,3 +305,4 @@ Completed in the current research iteration: the internally authored multi-domai
 24. Recent dependent effects or state-sensitive capabilities must narrow Patch claims where appropriate rather than being treated as irrelevant because their syntax or primary use case differs.
 25. Internally authored multi-domain application cases are not external-validity evidence; third-party integration must be reported separately when it exists.
 26. Richer invocation-frame regression evidence may strengthen the supported beta.32 fragment without silently expanding the trusted parser/lowering/runtime proof boundary.
+27. Browser-only multi-select controls must fail closed on native targets until a versioned native state/event ABI preserves the same semantics.
