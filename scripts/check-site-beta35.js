@@ -25,13 +25,20 @@ for (const rel of [
   '_site/sw.js'
 ]) requireFile(rel);
 
+// beta.35 introduced the browser interaction contract. Native parity is an additive
+// post-beta.35 capability, so the current Studio must keep the sample/workflow visible
+// without preserving the original browser-only release disclaimer forever.
 const index = read('_site/index.html');
 requireAll('beta.35 Studio page', index, [
   'data-patch-version="0.2.0-beta.35"',
   '0.2 beta.35',
-  'list-backed multi-select ListBox is currently browser-only and native builds fail closed',
+  'list-backed multi-select ListBox now works in Studio, Standalone Web and token-free Ready/offline Windows, macOS and Linux apps',
+  'Choose <b>Multi-select ListBox</b> from Example',
   './table-stage1.js?v='
 ]);
+if (index.includes('list-backed multi-select ListBox is currently browser-only and native builds fail closed')) {
+  throw new Error('beta.35 Studio page regressed to the obsolete browser-only native boundary.');
+}
 
 const studioAdapter = read('_site/table-stage1.js');
 requireAll('Studio multi-select ListBox adapter', studioAdapter, [
@@ -70,6 +77,8 @@ requireAll('beta.35 Language page', language, [
   'Native GUI IR 0.7 does not yet model persistent list state'
 ]);
 
+// Help/Downloads still preserve the beta.35 release-boundary wording until the
+// dedicated documentation-sync slice updates those explanatory pages.
 const help = read('_site/help.html');
 requireAll('beta.35 Help page', help, [
   'data-patch-version="0.2.0-beta.35"',
