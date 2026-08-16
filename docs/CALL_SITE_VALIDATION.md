@@ -1,6 +1,8 @@
 # Raw-source call-site validation
 
-Status: Patch **0.2.0-beta.34**, Change IR **0.10**, call-site validation evidence **0.1**.
+Status: Patch **0.2.0-beta.35**, Change IR **0.10**, call-site validation evidence **0.1**.
+
+The machine-readable evidence schema is `patch-call-site-validation` version **0.1**.
 
 Patch's exact call certificates already re-evaluate supported call arguments in Lean and check positional binding, declared parameter ranges, and strict call-rank decrease. Before this hardening, however, the concrete call witness still accepted the production AST as the source of truth for which `do recipe(args)` call existed at a source location.
 
