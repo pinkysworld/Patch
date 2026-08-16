@@ -18,7 +18,7 @@ General-purpose languages usually expose persistent mutation through assignment 
 
 Patch derives \emph{Semantic Change Signatures} and optional \emph{Change Capabilities} from the same mandatory mutation representation. These contracts distinguish target, semantic operation, and, for a supported numeric fragment, magnitude. A component may therefore be authorized to increase \texttt{score} by at most 10 without receiving set or decrease authority over the same target. A Lean 4 development proves factorization, mutation transparency, signature and policy properties, integer range soundness, finite ranked call composition, exact safe-integer call binding, guarded structured traces, and finite transitive exact call-tree refinement for explicit fragments.
 
-The implementation connects production direct-WebAssembly execution to the formal model through independent validation and generated evidence rather than a claim of full compiler verification. Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls. The evidence now also combines repeated root-call identities with different concrete guard paths between them. Generated certificates check each frame binding against the beta 30 exact call tree and let Lean re-evaluate frame-selected observed semantic effects before deriving caller-signature refinement. Runtime capture, JavaScript validator/frame-reconstruction correctness, parser/lowering correctness, and the WebAssembly engine remain explicit trust boundaries.
+The implementation connects production direct-WebAssembly execution to the formal model through independent validation and generated evidence rather than a claim of full compiler verification. Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls. The evidence now also combines repeated root-call identities with different concrete guard paths between them. Generated certificates check each frame binding against the beta 30 exact call tree and let Lean re-evaluate frame-selected observed semantic effects before deriving caller-signature refinement. Supported source/range and guard fragments are independently reconstructed, and supported static \texttt{do recipe(args)} sites are now independently bound from raw source to production-AST call identity before concrete-call witness generation. Runtime capture, independent-validator/frame-reconstruction correctness, remaining parser/extractor semantics, JavaScript-to-WebAssembly lowering, and the WebAssembly engine remain explicit trust boundaries.
 
 The artifact also includes an eight-case semantic-authority ablation, two larger application cases covering checkout/loyalty and usage/quota management, a process-isolated protocol for future controlled overhead/scaling measurements, and a commit-bound reproducibility bundle. No controlled performance result, external plugin-ecosystem result, complete sandboxing result, or end-to-end compiler-verification result is claimed.
 \end{abstract}
@@ -125,8 +125,12 @@ EnvRespects(\Gamma,\rho) \wedge analyzeRange(e,\Gamma)=I \wedge eval(e,\rho)=v
 \]
 The mechanized fragment includes integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. Decimal/floating-point semantics, division, and general multiplication are not silently included in this theorem.
 
-\subsection{Source and guard translation validation}
-The production source path and independent raw-source paths reconstruct supported formal source/range and guard artifacts separately. Protected certification requires agreement for the supported fragments. This is translation validation, not a Lean proof of either JavaScript parser.
+\subsection{Source, guard, and static call-site translation validation}
+The production source path and independent raw-source paths reconstruct supported formal source/range and guard artifacts separately. Protected certification requires agreement for those supported fragments. Numeric range expressions and guards use independent validator-side parsers rather than reusing the corresponding production expression parser.
+
+Concrete call certification also checks static source identity before trusting the production AST's call-site description. An independent raw-source scanner reconstructs each supported \texttt{do recipe(args)} site's caller recipe, callee, source line, order, and exact trimmed argument texts. That ordered list must match a separately collected production-AST list before concrete-call witnesses are accepted. Call-site evidence is then propagated through the existing structured, transitive, and beta 32 runtime witness layers.
+
+This is translation/source-identity validation, not a Lean proof of either JavaScript parser or scanner. Lean separately checks supported argument semantics after source identity is accepted.
 
 \section{Finite Exact Recipe Calls}
 \subsection{Abstract and exact call composition}
@@ -198,12 +202,13 @@ Beta 32 checks more than beta 31, but it is not an end-to-end compiler refinemen
 \begin{itemize}[leftmargin=*]
 \item correctness/completeness of runtime transition capture;
 \item correctness/completeness of the independent JavaScript transition/effect validator and invocation-frame reconstruction;
-\item production parser/extractor correctness;
+\item production parser/extractor correctness outside independently cross-checked supported source/range, guard, and static call-site identity fragments;
+\item correctness of the independent JavaScript source/range, guard, and call-site validators themselves;
 \item JavaScript-to-WebAssembly lowering correctness;
 \item WebAssembly-engine correctness.
 \end{itemize}
 
-The certificate establishes consequences of accepted, independently reconstructed evidence for the formal fragment. It does not prove that every possible faulty runtime trace would necessarily be captured or reconstructed correctly.
+The certificate establishes consequences of accepted, independently reconstructed evidence for the formal fragment. The raw-source call-site check reduces one dependency on production-AST source identity, but it does not prove the production parser correct or validate arbitrary expression semantics. The runtime evidence likewise does not prove that every possible faulty trace would necessarily be captured or reconstructed correctly.
 
 \section{Semantic-Authority Evaluation}
 \subsection{Controlled micro-case ablation}
@@ -271,7 +276,8 @@ Editable Window controls preserve the persistent-mutation rule: event-local valu
 \section{Limitations and Threats to Validity}
 The current artifact has explicit limitations:
 \begin{itemize}[leftmargin=*]
-\item Patch is not a fully verified compiler; parser, lowering, runtime capture, validator/frame reconstruction, and WebAssembly execution retain trusted or proof-free boundaries;
+\item Patch is not a fully verified compiler; parser semantics outside independently cross-checked supported source/range, guard, and static call-site identity fragments, lowering, runtime capture, validator/frame reconstruction, and WebAssembly execution retain trusted or proof-free boundaries;
+\item the independent source/range, guard, and call-site validators are themselves JavaScript implementations rather than verified parsers/evaluators;
 \item the mechanized arithmetic/call/runtime fragments are deliberately narrower than the full language and use safe-integer restrictions where exact formal correspondence requires them;
 \item GUI/event behavior, richer values, external effects, foreign code, and full native GUI execution are not covered by the beta 32 Lean theorem;
 \item the eight security micro-cases and the checkout/quota application cases are controlled artifact cases, not evidence about the prevalence of vulnerabilities, superiority over named prior systems, or behavior in a third-party plugin ecosystem;
@@ -281,12 +287,12 @@ The current artifact has explicit limitations:
 \item the candidate novelty is a conjunction of architectural choices and still requires expert/venue scrutiny, even if no reviewed system in the current comparison uses the same default mutation factorization.
 \end{itemize}
 
-The highest-value remaining research work is to collect the fixed-machine controlled dataset, analyze scaling with explicit models and dispersion, validate the approach against a genuinely external or third-party extension/integration setting, obtain expert/venue feedback on the architectural conjunction, continue normal pre-submission literature surveillance, and reduce implementation trust boundaries where doing so materially strengthens the central claim.
+The highest-value remaining research work is to collect the fixed-machine controlled dataset, analyze scaling with explicit models and dispersion, validate the approach against a genuinely external or third-party extension/integration setting, obtain expert/venue feedback on the architectural conjunction, continue normal pre-submission literature surveillance, and reduce remaining lowering/runtime and out-of-fragment parser trust boundaries where doing so materially strengthens the central claim.
 
 \section{Conclusion}
 Patch investigates a language architecture in which ordinary modeled persistent mutation is not merely observed but factored through an explicit semantic Change representation. The same substrate supports operation- and magnitude-aware contracts, history, provenance, and assurance while keeping beginner-facing mutation syntax compact.
 
-The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls and preserve different concrete guard-selected traces between repeated identities, while leaving capture, validator, parser/lowering, and engine correctness explicit rather than overstating full verification.
+The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls and preserve different concrete guard-selected traces between repeated identities. Independent source/range and guard validation plus raw-source static call-site binding reduce selected production-extraction trust dependencies, while validator, remaining parser semantics, lowering, capture, and engine correctness remain explicit rather than overstating full verification.
 
 The artifact further supplies semantic-authority ablations, a two-domain checkout/loyalty and usage/quota application corpus, a controlled-measurement protocol, and commit-bound reproducibility packaging. The remaining empirical question is whether the mandatory semantic-mutation factorization provides enough security and engineering value, at acceptable measured cost, to justify the architectural restriction. That question is intentionally left to controlled measurement and genuine external application evidence rather than answered with uncollected results.
 
