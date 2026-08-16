@@ -2,7 +2,7 @@
 
 Patch Studio is the browser-first IDE for Patch. The product goal remains QuickBASIC/Visual-Basic/Delphi-style immediacy with one readable Patch source format across browser and desktop targets.
 
-## What works in 0.2 beta.34
+## What works in 0.2 beta.35
 
 Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form and control drag/resize layout, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Table controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
@@ -10,15 +10,13 @@ The public website is split into focused **Studio**, **Language**, **Documentati
 
 For Windows, macOS and Linux the default desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required. The optional cloud/AOT route remains separate and does not persist its GitHub token.
 
-Patch package **0.2.0-beta.34** keeps Change IR **0.10**. The beta.32 invocation-frame assurance result remains the current formal runtime-correspondence milestone; beta.34 is a Studio correctness, distribution-integrity and documentation release.
+Patch package **0.2.0-beta.35** keeps Change IR **0.10**. The beta.32 invocation-frame assurance result remains the current formal runtime-correspondence milestone; beta.35 is a browser ListBox interaction/product release and does not widen that formal claim.
 
 ## One canonical Studio state
 
-The canonical browser project is still the version-2 `patch-studio-project` bundle. Beta.34 fixes a code-review finding in older Studio integration code: some programmatic sample/Designer mutations could update visible `main.patch` and only the unversioned compatibility key, while the canonical v2 lifecycle was waiting for the same DOM `input`/`change` signals used by normal typing.
+The canonical browser project is the version-2 `patch-studio-project` bundle. Programmatic sample/Designer mutations and normal typing use the same DOM `input`/`change` signals, so source, recovery, Designer, Change Contract and the native-build panel observe one project state.
 
-`web/studio-dom-sync.js` now closes that gap. After Studio UI actions it checks whether source or Project Type changed without the normal shared signal. It emits only the missing signal, so modules that already behave correctly are not double-triggered. Programmatic source edits therefore reach the same canonical v2 persistence, recovery, Designer and Change Contract path as manual source editing.
-
-This also keeps the native build panel synchronized when sample switching changes a project from Console to Window or back.
+`web/studio-dom-sync.js` closes the older legacy-store gap by emitting only missing shared signals after programmatic Studio actions. The unversioned `patchStudio.project` entry remains a compatibility mirror rather than the authoritative project state.
 
 ## Source-backed Forms and controls
 
@@ -26,9 +24,47 @@ Form dimensions, top-level geometry, labels, ids, options, Table rows, Tabs page
 
 A selected control can be moved and resized visually. A Form itself has a lower-right resize grip in the Designer. Pointer resizing and keyboard resizing both write the resulting `window ... size W, H:` values back into Patch source. Forms may grow beyond the currently visible Designer width; the Designer remains scrollable instead of clamping a Form back to the viewport.
 
-GUI interaction does not implicitly persist state. Input/ComboBox/ListBox/Radio expose transient text `value`; Checkbox exposes transient Boolean `value`; Table `changed` exposes a transient row list in Studio App Preview, Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Windows/macOS/Linux Window apps. Persistent state changes only through an explicit Patch `change`.
+GUI interaction does not implicitly persist state. Input/ComboBox/Radio and text-backed ListBox expose transient text `value`; Checkbox exposes transient Boolean `value`; list-backed ListBox exposes transient text-list `value` in browser targets; Table `changed` exposes a transient row list. Persistent state changes only through an explicit Patch `change`.
 
 Tabs page selection remains transient renderer/toolkit state and creates no Patch variable or Change History entry.
+
+## ListBox multi-selection
+
+Beta.35 adds multi-selection without a new control keyword. The state type behind the ListBox id determines the interaction contract.
+
+A text-backed ListBox remains single-select:
+
+```patch
+create text fruit = "Banana"
+
+window "Fruit":
+  listbox "Apple", "Banana", "Cherry" as fruit
+```
+
+Its `changed` event receives text.
+
+A list-backed ListBox becomes multi-select in Studio App Preview and Standalone Window Web:
+
+```patch
+create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker":
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+
+when fruits changed:
+  change fruits:
+    set = value
+```
+
+The event-local `value` is a copied list of selected strings. Studio keeps the current selection as transient UI state across normal App Preview re-renders. The selection is not written to Patch state merely because the user clicks an option. In the example, persistence happens only through the explicit `change fruits: set = value`.
+
+The Standalone Web runtime follows the same rule and keeps a separate transient selection map so a handler such as `show value` does not silently mutate or reset persistent Patch state.
+
+### Native boundary
+
+Native GUI IR 0.7 currently supports number, text and boolean persistent state. It cannot encode list-backed ListBox state. Ready/AOT/offline native Window builds therefore fail closed for beta.35 multi-select ListBox rather than silently degrading it to single-select text semantics. Text-backed native ListBox remains unchanged.
+
+Native multi-select parity is a future, versioned Native GUI IR/runtime step.
 
 ## Table / Grid
 
@@ -82,7 +118,7 @@ The Recovery manager keeps up to five deduplicated local snapshots. It supports 
 
 Native GUI **0.7** includes menus, informational dialogs and result-bearing Confirm/Open/Save dialog flows with explicit transient result semantics. Sealed payload **v8** / runtime **v0.9** remains the responsive Native GUI IR 0.7 compatibility line. Current Ready Window builds use payload **v9** / runtime **v1.0**, which preserves that existing menu/dialog/radio/tabs and Anchor/Dock contract while adding the Native GUI IR 0.8 Table metadata and transient `text-list` event type.
 
-Menus are Window structure, not positioned Designer controls. Transient dialog and Table-selection results do not create hidden persistent state; persistent changes still require explicit Patch `change` operations.
+Menus are Window structure, not positioned Designer controls. Transient dialog, Table-selection and browser ListBox-selection results do not create hidden persistent state; persistent changes still require explicit Patch `change` operations.
 
 ## Direct native desktop path
 
@@ -92,7 +128,7 @@ Current direct-native mappings include:
 
 - Text/Button/Input/Checkbox on Win32, AppKit and GTK3;
 - ComboBox as Win32 `COMBOBOX`, AppKit `NSPopUpButton`, GTK3 `GtkComboBoxText`;
-- ListBox as Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`;
+- text-backed ListBox as Win32 `LISTBOX`, AppKit `NSTableView`, GTK3 `GtkListBox`;
 - Radio as Win32 `BS_AUTORADIOBUTTON`, AppKit `NSButtonTypeRadio`, GTK3 `GtkRadioButton`;
 - Tabs as Win32 `WC_TABCONTROLW`, AppKit `NSTabView`, GTK3 `GtkNotebook`;
 - Table as Win32 report-mode `WC_LISTVIEWW`, AppKit multi-column `NSTableView`, GTK3 `GtkTreeView`/`GtkListStore` on backend 0.9;
@@ -109,7 +145,7 @@ The optional GitHub Actions cloud/AOT path supports explicit Cancel, a 15-minute
 
 The token-free Ready-app path remains the default. Windows, Linux and macOS Ready Window downloads lower Native GUI IR 0.8 in the browser and seal payload v9 into runtime v1.0. Console ready builds and the explicit compatibility Window path consume the separately versioned `studio-runtime-v0.6` templates.
 
-Beta.34 adds one fail-closed integrity gate across every runtime template that the browser packaging path consumes:
+Beta.34 added one fail-closed integrity gate across every runtime template that the browser packaging path consumes:
 
 1. Pages requires `studio-runtime-v0.6` plus all three native runtime-v1.0 releases before replacing the deployed Studio.
 2. It downloads the exact Console, compatibility Window and native GUI runtime assets used by Patch Studio.
@@ -126,7 +162,7 @@ The release gate and Pages concurrency rule also prevent a runtime-publication r
 
 Patch Studio Pages builds derive a deterministic content revision from every browser-facing page, Studio asset and browser compiler/runtime module. Generated CSS, JavaScript, manifest and icon references carry that revision, and the Service Worker uses the same revision as its active cache identity.
 
-The worker bypasses the browser HTTP cache when checking code/UI assets. Beta.34 extends the same fresh-first behavior to same-origin `/runtimes/` requests, including the runtime integrity manifest, native `.exe`/`.bin` templates and compatibility `.zip` templates. Successful runtime responses may still be retained for offline fallback, but an online Ready build does not silently prefer an old cached runtime.
+The worker bypasses the browser HTTP cache when checking code/UI assets. Same-origin `/runtimes/` requests, including the runtime integrity manifest and native runtime templates, are fresh-first online and retain successfully fetched bytes only as an offline fallback.
 
 An already-controlled Studio page reloads once when a newly activated worker takes control. Old beta-specific caches are migration inputs only; the active cache is content-addressed.
 
@@ -134,7 +170,7 @@ An already-controlled Studio page reloads once when a newly activated worker tak
 
 The ordinary Studio does not need Lean or expose beta.32 proof machinery. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
 
-The reproducible evidence set includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`. Beta.34 Studio/distribution work does not expand those assurance claims. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+The reproducible evidence set includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`. Beta.35 product/UI work does not expand those assurance claims. Runtime capture, independent validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
 
 ## Production-readiness additions
 
@@ -152,4 +188,4 @@ The current Studio/repository also includes:
 
 ## Next work
 
-The next product stages include distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer data controls, ListBox multi-selection, richer Menu state and additional native packaging polish.
+The next product stages include native ListBox list-state/multi-selection parity, distribution signing/notarization, installers, broader generated-Window accessibility auditing, richer project trees/source-file support, richer Menu state and additional native packaging polish.
