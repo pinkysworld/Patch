@@ -9,180 +9,323 @@ if (!match) throw new Error(`Unexpected Patch beta version format: ${version}`);
 const beta = match[1];
 const studioVersion = `0.2 beta.${beta}`;
 
+if (version !== '0.2.0-beta.35') throw new Error(`Current project surface expects beta.35, got ${version}`);
+
 const files = {
-  readme: read('README.md'), website: read('web/index.html'), languagePage: read('web/language.html'), docsPage: read('web/docs.html'), downloadsPage: read('web/downloads.html'), helpPage: read('web/help.html'), studio: read('docs/PATCH_STUDIO.md'), beta34: read('docs/BETA34.md'),
-  native: read('docs/NATIVE_APPS.md'), roadmap: read('docs/ROADMAP.md'), compiler: read('docs/COMPILER.md'),
-  formal: read('docs/FORMAL_MODEL.md'), novelty: read('docs/NOVELTY.md'), paper: read('paper/README.md'), paperMain: read('paper/main.tex'), paperRelated: read('paper/related-work.tex'),
-  evaluation: read('docs/EVALUATION.md'), controlledEvaluation: read('docs/CONTROLLED_EVALUATION.md'), securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
-  runtime: read('docs/RUNTIME_CORRESPONDENCE.md'), serviceWorker: read('web/sw.js'), runtimeIntegrity: read('web/runtime-integrity.js'), studioDomSync: read('web/studio-dom-sync.js'),
-  compilerJs: read('src/compiler.js'), formalCalls: read('src/formal-calls.js'),
-  directTrace: read('src/direct-trace-validator.js'), directEffect: read('src/direct-effect-validator.js'),
-  transitiveBody: read('src/transitive-call-body.js'), transitiveCertificate: read('src/transitive-call-body-certificate.js'),
+  readme: read('README.md'),
+  website: read('web/index.html'),
+  languagePage: read('web/language.html'),
+  docsPage: read('web/docs.html'),
+  downloadsPage: read('web/downloads.html'),
+  helpPage: read('web/help.html'),
+  studio: read('docs/PATCH_STUDIO.md'),
+  beta34: read('docs/BETA34.md'),
+  beta35: read('docs/BETA35.md'),
+  native: read('docs/NATIVE_APPS.md'),
+  offline: read('docs/OFFLINE_COMPILER.md'),
+  roadmap: read('docs/ROADMAP.md'),
+  compiler: read('docs/COMPILER.md'),
+  formal: read('docs/FORMAL_MODEL.md'),
+  novelty: read('docs/NOVELTY.md'),
+  callSite: read('docs/CALL_SITE_VALIDATION.md'),
+  paper: read('paper/README.md'),
+  paperMain: read('paper/main.tex'),
+  paperRelated: read('paper/related-work.tex'),
+  evaluation: read('docs/EVALUATION.md'),
+  controlledEvaluation: read('docs/CONTROLLED_EVALUATION.md'),
+  securityCasesDoc: read('docs/SECURITY_CASE_STUDIES.md'),
+  runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
+  serviceWorker: read('web/sw.js'),
+  runtimeIntegrity: read('web/runtime-integrity.js'),
+  studioDomSync: read('web/studio-dom-sync.js'),
+  studioListboxAdapter: read('web/table-stage1.js'),
+  webapp: read('src/webapp.js'),
+  windowEvents: read('src/window-events.js'),
+  compilerJs: read('src/compiler.js'),
+  formalCalls: read('src/formal-calls.js'),
+  directTrace: read('src/direct-trace-validator.js'),
+  directEffect: read('src/direct-effect-validator.js'),
+  transitiveBody: read('src/transitive-call-body.js'),
+  transitiveCertificate: read('src/transitive-call-body-certificate.js'),
   runtimeCorrespondence: read('src/transitive-runtime-correspondence.js'),
   runtimeCertificate: read('src/transitive-runtime-certificate.js'),
   runtimeGenerator: read('scripts/generate-transitive-runtime-certificate.js'),
-  evaluationCorpus: read('src/evaluation-corpus.js'), evaluationBenchmark: read('scripts/benchmark-assurance.js'), controlledEvaluationRunner: read('scripts/run-controlled-assurance.js'),
-  securityEvaluator: read('src/security-case-study.js'), securityScript: read('scripts/evaluate-security-cases.js'),
+  evaluationCorpus: read('src/evaluation-corpus.js'),
+  evaluationBenchmark: read('scripts/benchmark-assurance.js'),
+  controlledEvaluationRunner: read('scripts/run-controlled-assurance.js'),
+  securityEvaluator: read('src/security-case-study.js'),
+  securityScript: read('scripts/evaluate-security-cases.js'),
   securityManifest: read('case-studies/security/cases.json'),
   repeatedExample: read('examples/formal-transitive-calls-repeated.patch'),
-  callTree: read('formal/PatchCallTree.lean'), callRuntime: read('formal/PatchCallRuntime.lean'), lakefile: read('formal/lakefile.lean'),
-  formalWorkflow: read('.github/workflows/formal.yml'), ciWorkflow: read('.github/workflows/ci.yml'), pagesWorkflow: read('.github/workflows/pages.yml'),
+  mixedGuardExample: read('examples/formal-transitive-calls-mixed-guards.patch'),
+  listboxExample: read('examples/listbox-multiselect-window.patch'),
+  callTree: read('formal/PatchCallTree.lean'),
+  callRuntime: read('formal/PatchCallRuntime.lean'),
+  lakefile: read('formal/lakefile.lean'),
+  formalWorkflow: read('.github/workflows/formal.yml'),
+  ciWorkflow: read('.github/workflows/ci.yml'),
+  pagesWorkflow: read('.github/workflows/pages.yml'),
   beta32Workflow: read('.github/workflows/beta32-invocation-frames.yml'),
-  evaluationWorkflow: read('.github/workflows/assurance-evaluation.yml')
+  evaluationWorkflow: read('.github/workflows/assurance-evaluation.yml'),
+  siteCheck: read('scripts/check-site.js'),
+  siteV10Check: read('scripts/check-site-v10.js'),
+  siteBeta34Check: read('scripts/check-site-beta34.js'),
+  siteBeta35Check: read('scripts/check-site-beta35.js')
 };
 
-if (pkg.scripts?.['transitive-runtime-certify:example'] !==
-    'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveRuntimeCertificate.lean') {
-  throw new Error('package.json is missing the canonical beta.32 single-call runtime certificate command.');
-}
-if (pkg.scripts?.['transitive-runtime-certify:repeated'] !==
-    'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean') {
-  throw new Error('package.json is missing the canonical beta.32 repeated-call runtime certificate command.');
-}
-if (pkg.scripts?.['evaluate:assurance'] !== 'node scripts/benchmark-assurance.js') throw new Error('package.json is missing the canonical assurance evaluation command.');
-if (pkg.scripts?.['evaluate:assurance:controlled'] !== 'node scripts/run-controlled-assurance.js --measurement-class controlled') {
-  throw new Error('package.json is missing the canonical process-isolated controlled assurance command.');
-}
-if (pkg.scripts?.['evaluate:security'] !== 'node scripts/evaluate-security-cases.js') throw new Error('package.json is missing the canonical semantic-authority security evaluation command.');
+requireScript('transitive-runtime-certify:example', 'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls.patch --out formal/GeneratedTransitiveRuntimeCertificate.lean');
+requireScript('transitive-runtime-certify:repeated', 'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-repeated.patch --out formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean');
+requireScript('transitive-runtime-certify:mixed-guards', 'node scripts/generate-transitive-runtime-certificate.js examples/formal-transitive-calls-mixed-guards.patch --out formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean');
+requireScript('evaluate:assurance', 'node scripts/benchmark-assurance.js');
+requireScript('evaluate:assurance:controlled', 'node scripts/run-controlled-assurance.js --measurement-class controlled');
+requireScript('evaluate:security', 'node scripts/evaluate-security-cases.js');
+requireScript('evaluate:checkout-extension', 'node scripts/evaluate-checkout-extension.js');
+requireScript('evaluate:quota-extension', 'node scripts/evaluate-extension-case.js --case quota-extension');
+requireScript('check:site', 'node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-beta35.js');
 
+// Current product surfaces.
 requireAll('README.md', files.readme, [
-  `Current development beta: \`${version}\``, 'Change IR: `0.10`', 'Beta.34: Studio correctness and runtime integrity', 'Beta.33: Studio and production-readiness layer',
-  'Beta.32', 'invocation-frame', 'PatchCallRuntime.lean', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
-  'https://minh.systems/Patch/', 'Documentation', 'Downloads', 'Help', 'docs/BETA34.md'
+  `Current development beta: \`${version}\``,
+  'Beta.35: list-backed ListBox multi-select',
+  'Beta.34: Studio correctness and runtime integrity',
+  'Change IR: `0.10`',
+  'Browser ListBox',
+  'Native GUI IR 0.7 does not model persistent list state',
+  'docs/BETA35.md',
+  'GeneratedRepeatedTransitiveRuntimeCertificate.lean'
 ]);
 requireAll('web/index.html', files.website, [
-  `<h1>Patch Studio <span>${studioVersion}</span></h1>`, `data-patch-version="${version}"`,
-  './language.html', './docs.html', './downloads.html', './help.html', './runtime-integrity.js', './studio-dom-sync.js', './form-window-resize.js'
+  `<h1>Patch Studio <span>${studioVersion}</span></h1>`,
+  `data-patch-version="${version}"`,
+  'list-backed multi-select ListBox is currently browser-only and native builds fail closed',
+  './runtime-integrity.js', './studio-dom-sync.js', './table-stage1.js'
 ]);
-if (files.website.includes('class="site-info"') || files.website.includes('Small syntax. Visible changes. One Studio.')) {
-  throw new Error('Studio page still contains the old combined language landing content.');
-}
 requireAll('web/language.html', files.languagePage, [
-  `data-patch-version="${version}"`, studioVersion, 'Small syntax. Visible changes.', 'Beta.32 introduced invocation-frame-aware direct-Wasm correspondence'
+  `data-patch-version="${version}"`, studioVersion,
+  'ListBox selection follows the state type',
+  'create list fruits',
+  'Native GUI IR 0.7 does not yet model persistent list state'
 ]);
-requireAll('web/docs.html', files.docsPage, [`data-patch-version="${version}"`, 'Patch documentation', 'docs/BETA34.md', 'docs/FORMAL_MODEL.md', 'docs/NATIVE_APPS.md']);
-requireAll('web/downloads.html', files.downloadsPage, [`data-patch-version="${version}"`, 'SHA256SUMS', 'Get-FileHash', 'runtime-manifest.json', 'studio-runtime-v0.6', 'native-win32-runtime-v1.0']);
-requireAll('web/help.html', files.helpPage, [`data-patch-version="${version}"`, 'Design a Window app', 'lower-right corner', 'Designer scrollbars', 'runtime manifest', 'canonical v2']);
-requireAll('docs/PATCH_STUDIO.md', files.studio, [
-  `What works in 0.2 beta.${beta}`, `Patch package **${version}**`, 'Change IR **0.10**', 'One canonical Studio state', 'project bundle that stores',
-  'lower-right resize grip', 'runtime-manifest.json', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.32 research boundary'
+requireAll('web/docs.html', files.docsPage, [
+  `data-patch-version="${version}"`,
+  'docs/BETA35.md', 'docs/BETA34.md', 'docs/FORMAL_MODEL.md', 'docs/CALL_SITE_VALIDATION.md'
 ]);
-requireAll('docs/BETA34.md', files.beta34, [version, 'One canonical Studio project state', 'Runtime integrity before browser packaging', 'studio-runtime-v0.6', 'runtime-manifest.json', 'fresh-first']);
+requireAll('web/downloads.html', files.downloadsPage, [
+  `data-patch-version="${version}"`,
+  'Beta.35 multi-select ListBox boundary',
+  'Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.',
+  'SHA256SUMS', 'runtime-manifest.json', 'native-win32-runtime-v1.0'
+]);
+requireAll('web/help.html', files.helpPage, [
+  `data-patch-version="${version}"`,
+  'ListBox: single or multi-select',
+  'intended beta.35 fail-closed boundary',
+  'runtime manifest', 'canonical v2'
+]);
 
-requireAll('docs/NATIVE_APPS.md', files.native, ['Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.34 runtime-template integrity']);
-requireAll('docs/ROADMAP.md', files.roadmap, [
-  `Current development beta: **${version}**`, '### beta.34:', '### beta.32:', 'invocation frames', 'repeated identical calls', 'Assurance overhead/scaling harness',
-  'fresh-process outer runner', 'controlled paper-quality benchmark runs', 'Semantic-authority security ablation', '3 both-accept / 4 Patch-only-reject / 1 both-reject',
-  'Structured related work and manuscript synchronization', 'main manuscript synchronized to beta.32 assurance / beta.34 artifact status'
+// Current docs and historical release separation.
+requireAll('docs/BETA35.md', files.beta35, [
+  'Patch 0.2.0-beta.35',
+  'List-backed ListBox contract',
+  'Standalone Web',
+  'Native GUI IR 0.7 supports number, text and boolean persistent state',
+  'Window event adapter contract to **0.7**',
+  'Change IR **0.10**'
 ]);
-requireAll('docs/COMPILER.md', files.compiler, ['Change IR **0.10**', 'Beta.32', 'invocation-frame', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean']);
-requireAll('docs/FORMAL_MODEL.md', files.formal, ['Beta.32', 'checkedObservedTransitiveRuntimeRefinesCallerSignature', 'invocation-frame', 'runtime capture']);
-requireAll('docs/NOVELTY.md', files.novelty, ['Beta.32', 'invocation-frame', 'supporting assurance', 'Expressibility is not the novelty claim']);
+requireAll('docs/BETA34.md', files.beta34, [
+  '0.2.0-beta.34',
+  'One canonical Studio project state',
+  'Runtime integrity before browser packaging',
+  'runtime-manifest.json', 'fresh-first'
+]);
+if (files.beta34.includes('Patch 0.2.0-beta.35')) throw new Error('Historical BETA34.md was incorrectly relabelled as beta.35.');
+requireAll('docs/PATCH_STUDIO.md', files.studio, [
+  `What works in 0.2 beta.${beta}`,
+  `Patch package **${version}**`,
+  'ListBox multi-selection',
+  'list-backed ListBox',
+  'Native GUI IR 0.7 currently supports number, text and boolean persistent state',
+  'Change IR **0.10**',
+  'Beta.32 research boundary'
+]);
+requireAll('docs/ROADMAP.md', files.roadmap, [
+  `Current development beta: **${version}**`,
+  '### beta.35: browser ListBox multi-selection',
+  'Window event adapter **0.7**',
+  'versioned Native GUI IR/runtime list-state extension for native multi-select parity',
+  '### beta.34:', '### beta.32:',
+  'controlled paper-quality benchmark runs',
+  'genuine external/third-party plugin or extension integration study',
+  'main manuscript synchronized to beta.32 assurance / beta.35 artifact status'
+]);
+requireAll('docs/NATIVE_APPS.md', files.native, ['Change IR **0.10**', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Beta.34 runtime-template integrity']);
+requireAll('docs/OFFLINE_COMPILER.md', files.offline, ['payload **v9**', 'runtime **v1.0**']);
+
+// Browser implementation contract.
+requireAll('src/window-events.js', files.windowEvents, [
+  "PATCH_WINDOW_EVENTS_VERSION = '0.7'",
+  "controlType === 'listbox'",
+  "stateType === 'list'",
+  'text-list event-local value'
+]);
+requireAll('web/table-stage1.js', files.studioListboxAdapter, [
+  'appListboxSelections', 'collectListInitials',
+  'select.multiple = true', 'aria-multiselectable', 'selectedOptions',
+  'patch-studio-table-changed'
+]);
+requireAll('src/webapp.js', files.webapp, [
+  'addWindowListboxMultiselect', 'hasListBackedListbox',
+  'listboxSelections=new Map()', 'el.multiple=true', 'selectedOptions',
+  "listboxMultiSelectMode: 'list-state-text-list'"
+]);
+requireAll('examples/listbox-multiselect-window.patch', files.listboxExample, [
+  'create list fruits',
+  'listbox "Apple", "Banana", "Cherry", "Mango" as fruits',
+  'change fruits:', 'set = value'
+]);
+
+// Paper/research surfaces. Product version moves, assurance milestone does not.
 requireAll('paper/README.md', files.paper, [
-  'product artifact: **Patch 0.2.0-beta.34**', 'formal runtime-correspondence milestone: **beta.32**',
-  'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'process-isolated controlled-measurement protocol',
-  'no controlled paper-quality performance dataset has been collected yet', '3  Patch accept / coarse accept', '4  Patch reject / coarse accept',
-  'internal ablation, not a model of a named effect or capability system', '`paper/related-work.tex` is now included by `main.tex`'
+  `product artifact: **Patch ${version}**`,
+  'formal runtime-correspondence milestone: **beta.32**',
+  'Beta.35 adds browser product behavior only',
+  'GeneratedMixedGuardTransitiveRuntimeCertificate.lean',
+  'no controlled paper-quality performance dataset has been collected yet',
+  'internal ablation, not a model of a named effect or capability system'
 ]);
 requireAll('paper/main.tex', files.paperMain, [
-  'Beta 34 product artifact / Beta 32 assurance manuscript', 'Beta 30 finite transitive exact call trees', 'Beta 31 call-aware bridge', 'Beta 32 invocation frames',
-  'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'Patch reject / coarse accept', 'no controlled paper-quality timing dataset yet',
+  'Beta 35 product artifact / Beta 32 assurance manuscript',
+  'Beta 30 finite transitive exact call trees', 'Beta 31 call-aware bridge', 'Beta 32 invocation frames',
+  'GeneratedMixedGuardTransitiveRuntimeCertificate.lean',
+  'no controlled paper-quality timing dataset yet',
   'Patch Reproducibility Bundle', '\\input{related-work}', '\\bibliography{references}'
 ]);
-if (files.paperMain.includes('Beta 28 research artifact manuscript')) {
-  throw new Error('paper/main.tex regressed to the old beta.28 manuscript identity.');
-}
+if (files.paperMain.includes('Beta 28 research artifact manuscript')) throw new Error('paper/main.tex regressed to the old beta.28 manuscript identity.');
 requireAll('paper/related-work.tex', files.paperRelated, [
-  'Related Work and Claim Boundary', 'sunshine2011plaid', 'brachthaeuser2020effects', 'orchard2019quantitative', 'nanevski2008htt', 'swamy2016fstar',
+  'Related Work and Claim Boundary', 'sunshine2011plaid', 'brachthaeuser2020effects',
+  'orchard2019quantitative', 'nanevski2008htt', 'swamy2016fstar',
   'sole modeled persistent-mutation route', 'not claim unique expressibility'
 ]);
-requireAll('docs/EVALUATION.md', files.evaluation, [
-  'Call-tree depth', 'Concrete invocation count', 'compileMs', 'executeMs', 'validateMs', 'correspondenceMs', 'certificateGenerationMs',
-  'Process-isolated aggregation', 'Measurement classes', 'Patch Assurance Evaluation', 'hosted runner', 'SHA256SUMS'
-]);
-requireAll('docs/CONTROLLED_EVALUATION.md', files.controlledEvaluation, [
-  'Measurement classes', 'git HEAD', 'clean Git working tree', 'output path is also fail-closed', 'median absolute deviation (MAD)', 'interquartile range (IQR)',
-  'Until an actual controlled dataset is collected and reviewed'
-]);
-requireAll('docs/SECURITY_CASE_STUDIES.md', files.securityCasesDoc, [
-  'coarse target-write baseline', 'internal ablation', '`loyalty-over-limit`', '`wallet-direction-escalation`', '`campaign-transitive-escalation`',
-  '`dynamic-unbounded`', '3 cases: Patch accept / coarse accept', '4 cases: Patch reject / coarse accept',
-  '1 case : Patch reject / coarse reject', 'not a claim about any named prior effect or capability system'
-]);
-requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, ['Status: **0.2.0-beta.23**', 'GuardPathValid', 'checkedGuardedConcreteRuntimeCannotEscape']);
 
-requireAll('web/runtime-integrity.js', files.runtimeIntegrity, ['patch-studio-runtime-integrity', 'runtime-manifest.json', "crypto.subtle.digest('SHA-256'", 'failed SHA-256 verification']);
-requireAll('web/studio-dom-sync.js', files.studioDomSync, ["document.querySelector('#code')", "document.querySelector('#projectKind')", 'queueMicrotask', "new Event('input'", "new Event('change'"]);
-
-requireAll('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", "'./formal-calls.js'", 'formalCalls']);
+// Formal and trust-boundary invariants.
+requireAll('docs/COMPILER.md', files.compiler, ['Change IR **0.10**', 'Beta.32', 'invocation-frame']);
+requireAll('docs/FORMAL_MODEL.md', files.formal, [
+  'Beta.32', 'checkedObservedTransitiveRuntimeRefinesCallerSignature',
+  'Independent static call-site binding', 'runtime capture', 'does not prove the production parser correct'
+]);
+requireAll('docs/CALL_SITE_VALIDATION.md', files.callSite, [
+  'patch-call-site-validation', 'caller', 'callee', 'source line', 'argument',
+  'does **not** prove the Patch parser correct'
+]);
+requireAll('docs/NOVELTY.md', files.novelty, ['Beta.32', 'supporting assurance', 'Expressibility is not the novelty claim']);
+requireAll('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", 'formalCalls', 'callSiteValidation']);
 requireAll('src/formal-calls.js', files.formalCalls, ['buildFormalCalls', 'patch-formal-calls', 'rank-decreasing']);
 requireAll('src/direct-trace-validator.js', files.directTrace, ["PATCH_DIRECT_INVOCATION_FRAME_VERSION = '0.1'", 'invocationFrames', 'activeFrameIds', 'parentFrameId']);
 requireAll('src/direct-effect-validator.js', files.directEffect, ['frameIds', 'invocationFrames', 'invocationFrameVersion']);
-requireAll('src/transitive-call-body.js', files.transitiveBody, ["PATCH_TRANSITIVE_CALL_BODY_VERSION = '0.2'", 'claimedScopedTrace', 'nestedCallDepth', 'buildNestedCall']);
+requireAll('src/transitive-call-body.js', files.transitiveBody, ["PATCH_TRANSITIVE_CALL_BODY_VERSION = '0.2'", 'nestedCallDepth', 'buildNestedCall']);
 requireAll('src/transitive-call-body-certificate.js', files.transitiveCertificate, [
   "PATCH_TRANSITIVE_CALL_BODY_CERTIFICATE_VERSION = '0.1'", 'CallTreeStmt.call', 'checkedConcreteTransitiveCallTreeRefinesCallerSignature'
 ]);
 requireAll('src/transitive-runtime-correspondence.js', files.runtimeCorrespondence, [
-  "PATCH_TRANSITIVE_RUNTIME_CORRESPONDENCE_VERSION = '0.2'", 'compileToDirectWasm', 'runDirectWasm', 'validateDirectSemanticEffects',
-  'matchingFrames', 'sameBindings', 'frameIds.includes', 'runtimeTraceSha256'
+  "PATCH_TRANSITIVE_RUNTIME_CORRESPONDENCE_VERSION = '0.2'", 'compileToDirectWasm', 'runDirectWasm',
+  'validateDirectSemanticEffects', 'matchingFrames', 'sameBindings', 'runtimeTraceSha256'
 ]);
 requireAll('src/transitive-runtime-certificate.js', files.runtimeCertificate, [
-  "PATCH_TRANSITIVE_RUNTIME_CERTIFICATE_VERSION = '0.2'", 'frameBindings', 'frame_binding_checked', 'buildTransitiveRuntimeCorrespondence',
-  'evalCallTreeStmtEqBool', 'checkedObservedTransitiveRuntimeRefinesCallerSignature', 'invocationFrameVersion'
-]);
-requireAll('scripts/generate-transitive-runtime-certificate.js', files.runtimeGenerator, ['generateTransitiveRuntimeCertificate', 'direct-Wasm trace sha256', 'invocation frame']);
-requireAll('src/evaluation-corpus.js', files.evaluationCorpus, [
-  "PATCH_ASSURANCE_EVALUATION_CORPUS_VERSION = '0.1'", 'generateAssuranceScalingProgram', 'assuranceEvaluationScenarios', "preset === 'paper'", 'nestedDepth', 'invocations'
-]);
-requireAll('scripts/benchmark-assurance.js', files.evaluationBenchmark, [
-  "format: 'patch-assurance-evaluation'", 'performance.now()', 'compileToDirectWasm', 'runDirectWasm', 'validateDirectSemanticEffects',
-  'buildTransitiveRuntimeCorrespondence', 'generateTransitiveRuntimeCertificate', 'certificateGenerationMs', 'toCsv', 'environmentManifest'
-]);
-requireAll('scripts/run-controlled-assurance.js', files.controlledEvaluationRunner, [
-  'scripts/benchmark-assurance.js', "format: 'patch-controlled-assurance-evaluation'", "version: '0.2'", "'controlled', 'hosted-ci', 'development'",
-  'GITHUB_ACTIONS', 'git HEAD exactly', 'clean Git working tree', 'resolveSafeOutDir', 'stableScenarioSourceAndArtifacts', 'environmentFingerprintSha256', 'SHA256SUMS'
-]);
-requireAll('src/security-case-study.js', files.securityEvaluator, [
-  "PATCH_SECURITY_CASE_STUDY_VERSION = '0.1'", 'evaluateSecurityCase', 'evaluateCoarseTargetWrite',
-  'target-path-only; operation/magnitude/provability intentionally ignored', 'collectReachableTargets'
-]);
-requireAll('scripts/evaluate-security-cases.js', files.securityScript, [
-  "format: 'patch-security-case-study-report'", 'coarse target-path write authority only', 'semanticAuthorityDifferentialRejects', 'toCsv', 'toMarkdown'
-]);
-requireAll('case-studies/security/cases.json', files.securityManifest, [
-  'patch-security-case-study-manifest', 'coarse-target-write', 'loyalty-over-limit', 'wallet-direction-escalation',
-  'campaign-transitive-escalation', 'dynamic-unbounded', 'target-escape'
+  "PATCH_TRANSITIVE_RUNTIME_CERTIFICATE_VERSION = '0.2'", 'frameBindings', 'frame_binding_checked',
+  'evalCallTreeStmtEqBool', 'checkedObservedTransitiveRuntimeRefinesCallerSignature'
 ]);
 requireAll('examples/formal-transitive-calls-repeated.patch', files.repeatedExample, ['do caller(1)\ndo caller(1)']);
-requireAll('formal/PatchCallTree.lean', files.callTree, ['inductive CallTreeStmt', 'theorem checkedConcreteTransitiveCallTreeRefinesCallerSignature']);
-requireAll('formal/PatchCallRuntime.lean', files.callRuntime, ['import PatchCallTree', 'theorem checkedObservedTransitiveRuntimeRefinesCallerSignature', 'evalCallTreeStmtEqBool_sound']);
+requireAll('examples/formal-transitive-calls-mixed-guards.patch', files.mixedGuardExample, ['do caller(1)', 'do caller(4)']);
+requireAll('formal/PatchCallTree.lean', files.callTree, ['inductive CallTreeStmt', 'checkedConcreteTransitiveCallTreeRefinesCallerSignature']);
+requireAll('formal/PatchCallRuntime.lean', files.callRuntime, ['import PatchCallTree', 'checkedObservedTransitiveRuntimeRefinesCallerSignature']);
 requireAll('formal/lakefile.lean', files.lakefile, ['lean_lib PatchCallTree', 'lean_lib PatchCallRuntime']);
 
+// Evaluation, security and reproducibility contracts.
+requireAll('docs/EVALUATION.md', files.evaluation, [
+  'Call-tree depth', 'Concrete invocation count', 'compileMs', 'executeMs', 'validateMs',
+  'correspondenceMs', 'certificateGenerationMs', 'Process-isolated aggregation', 'Measurement classes', 'SHA256SUMS'
+]);
+requireAll('docs/CONTROLLED_EVALUATION.md', files.controlledEvaluation, [
+  'Measurement classes', 'git HEAD', 'clean Git working tree',
+  'median absolute deviation (MAD)', 'interquartile range (IQR)',
+  'Until an actual controlled dataset is collected and reviewed'
+]);
+requireAll('docs/SECURITY_CASE_STUDIES.md', files.securityCasesDoc, [
+  'internal ablation', '`loyalty-over-limit`', '`wallet-direction-escalation`',
+  '3 cases: Patch accept / coarse accept', '4 cases: Patch reject / coarse accept',
+  '1 case : Patch reject / coarse reject'
+]);
+requireAll('src/evaluation-corpus.js', files.evaluationCorpus, [
+  "PATCH_ASSURANCE_EVALUATION_CORPUS_VERSION = '0.1'", 'generateAssuranceScalingProgram', 'assuranceEvaluationScenarios'
+]);
+requireAll('scripts/benchmark-assurance.js', files.evaluationBenchmark, [
+  "format: 'patch-assurance-evaluation'", 'performance.now()', 'compileToDirectWasm',
+  'validateDirectSemanticEffects', 'certificateGenerationMs', 'environmentManifest'
+]);
+requireAll('scripts/run-controlled-assurance.js', files.controlledEvaluationRunner, [
+  'scripts/benchmark-assurance.js', "format: 'patch-controlled-assurance-evaluation'",
+  "'controlled', 'hosted-ci', 'development'", 'GITHUB_ACTIONS', 'clean Git working tree', 'SHA256SUMS'
+]);
+requireAll('src/security-case-study.js', files.securityEvaluator, [
+  "PATCH_SECURITY_CASE_STUDY_VERSION = '0.1'", 'evaluateSecurityCase', 'evaluateCoarseTargetWrite'
+]);
+requireAll('scripts/evaluate-security-cases.js', files.securityScript, [
+  "format: 'patch-security-case-study-report'", 'semanticAuthorityDifferentialRejects', 'toCsv', 'toMarkdown'
+]);
+requireAll('case-studies/security/cases.json', files.securityManifest, [
+  'patch-security-case-study-manifest', 'loyalty-over-limit', 'wallet-direction-escalation', 'target-escape'
+]);
+
+// Runtime integrity and update behavior.
+requireAll('web/runtime-integrity.js', files.runtimeIntegrity, [
+  'patch-studio-runtime-integrity', 'runtime-manifest.json', "crypto.subtle.digest('SHA-256'", 'failed SHA-256 verification'
+]);
+requireAll('web/studio-dom-sync.js', files.studioDomSync, [
+  "document.querySelector('#code')", "document.querySelector('#projectKind')", 'queueMicrotask', "new Event('input'", "new Event('change'"
+]);
+requireAll('web/sw.js', files.serviceWorker, [
+  `const PATCH_RELEASE = '${version}'`,
+  "url.pathname.includes('/runtimes/')", "cache: 'no-store'", 'ignoreSearch: true'
+]);
+
+// CI/workflow surface.
 requireAll('.github/workflows/formal.yml', files.formalWorkflow, [
-  'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated', 'PatchCallRuntime', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean'
+  'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated',
+  'PatchCallRuntime', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'src/call-site-validation.js'
+]);
+requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflow, [
+  'transitive-runtime-certify:repeated', 'transitive-runtime-certify:mixed-guards',
+  'GeneratedMixedGuardTransitiveRuntimeCertificate.lean', 'src/call-site-validation.js'
 ]);
 requireAll('.github/workflows/ci.yml', files.ciWorkflow, [
-  'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated', 'src/transitive-runtime-correspondence.js',
-  'src/transitive-runtime-certificate.js', 'web/form-window-resize.js', 'web/project-config-restore.js', 'web/runtime-integrity.js', 'web/studio-dom-sync.js'
+  'transitive-runtime-certify:example', 'transitive-runtime-certify:repeated',
+  'src/transitive-runtime-correspondence.js', 'src/transitive-runtime-certificate.js',
+  'web/runtime-integrity.js', 'web/studio-dom-sync.js'
 ]);
-requireAll('.github/workflows/pages.yml', files.pagesWorkflow, ['studio-runtime-v0.6', 'native-win32-runtime-v1.0', 'runtime-integrity-manifest.js', 'runtime-manifest.json', "cancel-in-progress: ${{ github.event_name == 'push' }}"]);
-requireAll('.github/workflows/beta32-invocation-frames.yml', files.beta32Workflow, [
-  'Patch Beta32 Invocation Frames', 'GeneratedRepeatedTransitiveRuntimeCertificate.lean', 'PatchCallRuntime', 'cancel-in-progress: true'
+requireAll('.github/workflows/pages.yml', files.pagesWorkflow, [
+  'runtime-integrity-manifest.js', 'runtime-manifest.json', 'native-win32-runtime-v1.0', 'native-macos-runtime-v1.0', 'native-linux-runtime-v1.0'
 ]);
 requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflow, [
-  'Patch Assurance Evaluation', 'workflow_dispatch:', 'process_runs:', 'run-controlled-assurance.js', '--measurement-class hosted-ci',
-  'PATCH_EVAL_COMMIT', 'Measure Lean certificate checking', 'actions/upload-artifact@v', 'retention-days: 30'
+  'run-controlled-assurance.js', 'hosted-ci', 'benchmark-assurance.js'
 ]);
-if (files.evaluationWorkflow.includes('--measurement-class controlled')) {
-  throw new Error('.github/workflows/assurance-evaluation.yml must not label hosted GitHub Actions timing as controlled.');
+
+// Site validators: beta.34 stays historical, beta.35 owns current product assertions.
+requireAll('scripts/check-site.js', files.siteCheck, ['Patch Studio', 'check-site']);
+requireAll('scripts/check-site-v10.js', files.siteV10Check, ['Table-ready Patch Studio site surface']);
+requireAll('scripts/check-site-beta34.js', files.siteBeta34Check, ['beta.34', 'runtime-manifest.json']);
+requireAll('scripts/check-site-beta35.js', files.siteBeta35Check, [
+  '0.2.0-beta.35', 'Studio multi-select ListBox adapter',
+  'Standalone Web multi-select ListBox contract', 'Window event adapter v0.7',
+  'Beta.35 multi-select ListBox boundary'
+]);
+
+console.log(`ok Patch project surface ${version}`);
+
+function requireScript(name, expected) {
+  if (pkg.scripts?.[name] !== expected) throw new Error(`package.json script ${name} does not match the canonical project contract.`);
 }
-requireAll('web/sw.js', files.serviceWorker, [
-  `const PATCH_RELEASE = '${version}'`, "const REVISION = '__PATCH_SITE_REV__'", "'./language.html'", "'./docs.html'", "'./downloads.html'", "'./help.html'",
-  "'./runtime-integrity.js'", "'./studio-dom-sync.js'", "'./form-window-resize.js'", "'../src/formal-calls.js'", "url.pathname.includes('/runtimes/')", 'freshFirst'
-]);
-
-console.log(`ok project surface is consistent at ${version}; beta.32 remains the formal assurance milestone`);
-
-function requireAll(name, content, phrases) {
-  for (const phrase of phrases) if (!content.includes(phrase)) throw new Error(`${name} is missing required project contract: ${phrase}`);
+function requireAll(label, content, markers) {
+  for (const marker of markers) {
+    if (!content.includes(marker)) throw new Error(`${label} is missing required project surface: ${marker}`);
+  }
 }
