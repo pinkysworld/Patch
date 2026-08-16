@@ -1,10 +1,8 @@
 #pragma once
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -92,31 +90,6 @@ private:
   std::vector<uint8_t> bytes_;
 };
 
-static void PatchSkipActionV11(PatchPayloadV11Reader& reader) {
-  const uint8_t kind=reader.u8();
-  if(kind==1||kind==2){reader.skipText();return;}
-  if(kind==4){reader.skipText();reader.skipText();reader.skipText();return;}
-  if(kind==5){reader.skipText();reader.skipText();reader.skipText();reader.skipText();return;}
-  if(kind==6||kind==7){reader.skipText();reader.skipText();reader.skipText();return;}
-  if(kind!=3)throw 1;
-  reader.skipText(); const uint8_t stateType=reader.u8(); if(stateType<1||stateType>4)throw 1;
-  const uint32_t opCount=reader.u32(); if(opCount>10000)throw 1;
-  for(uint32_t op=0;op<opCount;++op){
-    const uint8_t opKind=reader.u8(),valueKind=reader.u8();
-    if(opKind<1||opKind>4||valueKind>2)throw 1;
-    if(opKind==4){if(valueKind!=0)throw 1;continue;}
-    if(valueKind==2)continue;
-    if(valueKind!=1)throw 1;
-    if(stateType==4){if(opKind==1)(void)reader.textList();else if(opKind==2||opKind==3)reader.skipText();else throw 1;}
-    else reader.skipTyped(stateType);
-  }
-}
-
-static const PatchListEventV11* PatchFindListEventV11(const std::vector<PatchListEventV11>& events,const std::string& control,uint8_t kind) {
-  for(const auto& event:events) if(event.control==control && event.kind==kind) return &event;
-  return nullptr;
-}
-
 static PatchListStateV11* PatchFindListStateV11(std::vector<PatchListStateV11>& states,const std::string& name) {
   for(auto& state:states) if(state.name==name) return &state;
   return nullptr;
@@ -125,6 +98,30 @@ static PatchListStateV11* PatchFindListStateV11(std::vector<PatchListStateV11>& 
 static const PatchListBoxV11* PatchFindListBoxV11(const std::vector<PatchListBoxV11>& boxes,const std::string& id) {
   for(const auto& box:boxes) if(box.id==id) return &box;
   return nullptr;
+}
+
+static const PatchListEventV11* PatchFindListEventV11(const std::vector<PatchListEventV11>& events,const std::string& control,uint8_t kind) {
+  for(const auto& event:events) if(event.control==control && event.kind==kind) return &event;
+  return nullptr;
+}
+
+static bool PatchSkipScalarOperationV11(PatchPayloadV11Reader& reader,uint8_t stateType,uint8_t opKind,uint8_t valueKind) {
+  if(opKind<1||opKind>4||valueKind>2)return false;
+  if(opKind==4)return valueKind==0;
+  if(valueKind==2)return true;
+  if(valueKind!=1)return false;
+  reader.skipTyped(stateType);
+  return true;
+}
+
+static bool PatchCopyNonChangeActionV11(PatchPayloadV11Reader& reader,const std::vector<uint8_t>& source,PatchPayloadV11Writer& writer,size_t start,uint8_t kind) {
+  if(kind==1||kind==2)reader.skipText();
+  else if(kind==4){reader.skipText();reader.skipText();reader.skipText();}
+  else if(kind==5){reader.skipText();reader.skipText();reader.skipText();reader.skipText();}
+  else if(kind==6||kind==7){reader.skipText();reader.skipText();reader.skipText();}
+  else return false;
+  writer.raw(source,start,reader.offset());
+  return true;
 }
 
 static bool PatchConvertPayloadV10ToV9(
@@ -192,11 +189,15 @@ static bool PatchConvertPayloadV10ToV9(
       PatchListEventV11 listEvent; listEvent.control=control;listEvent.kind=eventKind;listEvent.originalValueType=valueType;
       for(uint32_t actionIndex=0;actionIndex<actionCount;++actionIndex){
         const size_t actionStart=reader.offset(); const uint8_t kind=reader.u8();
-        if(kind!=3){reader = PatchPayloadV11Reader(payloadV10); /* unreachable assignment guard */ throw 2;}
-        const std::string target=reader.text(); const uint8_t stateType=reader.u8(); const uint32_t opCount=reader.u32(); if(opCount>10000)return false;
+        if(kind!=3){if(!PatchCopyNonChangeActionV11(reader,payloadV10,writer,actionStart,kind))return false;continue;}
+
+        const std::string target=reader.text(); const uint8_t stateType=reader.u8(); const uint32_t opCount=reader.u32(); if(opCount>10000||stateType<1||stateType>4)return false;
         if(stateType!=4){
-          reader = PatchPayloadV11Reader(payloadV10); /* replaced below by raw parser path */ throw 3;
+          for(uint32_t opIndex=0;opIndex<opCount;++opIndex){const uint8_t opKind=reader.u8(),valueKind=reader.u8();if(!PatchSkipScalarOperationV11(reader,stateType,opKind,valueKind))return false;}
+          writer.raw(payloadV10,actionStart,reader.offset());
+          continue;
         }
+
         if(!listNames.count(target))return false;
         PatchListActionV11 listAction;listAction.actionIndex=actionIndex;listAction.target=target;
         for(uint32_t opIndex=0;opIndex<opCount;++opIndex){
@@ -208,16 +209,15 @@ static bool PatchConvertPayloadV10ToV9(
           listAction.ops.push_back(std::move(op));
         }
         listEvent.actions.push_back(std::move(listAction));
+        // Keep action ordering in the scalar compatibility payload, but make the
+        // old core's placeholder mutation harmless. Runtime v1.1 executes the
+        // original list action at this exact action index instead.
         writer.u8(3);writer.text(target);writer.u8(2);writer.u32(1);writer.u8(4);writer.u8(0);
       }
       if(!listEvent.actions.empty())listEvents.push_back(std::move(listEvent));
     }
     if(!reader.done())return false;
     payloadV9=writer.take();return !payloadV9.empty();
-  } catch(int code) {
-    // The first implementation intentionally rejects mixed scalar/list actions
-    // until the generic raw-action copier below is used by runtime v1.1.
-    (void)code; payloadV9.clear();listStates.clear();listBoxes.clear();listEvents.clear();return false;
   } catch(...) {
     payloadV9.clear();listStates.clear();listBoxes.clear();listEvents.clear();return false;
   }
