@@ -1,6 +1,6 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-export const PATCH_WINDOW_EVENTS_VERSION = '0.6';
+export const PATCH_WINDOW_EVENTS_VERSION = '0.7';
 
 /**
  * Execute one Patch Window event with transient event-local data.
@@ -8,9 +8,10 @@ export const PATCH_WINDOW_EVENTS_VERSION = '0.6';
  * Persistent state is never updated by this adapter. `changed` control values
  * and `chosen` file-dialog paths are exposed only as local `value`; source must
  * use an ordinary semantic `change` to commit them. Checkbox `changed` values
- * are Boolean. Input, ComboBox, ListBox and Radio `changed` plus file-dialog
- * `chosen` values are text. Table `changed` carries the selected row as a
- * transient list of display strings.
+ * are Boolean. Input, ComboBox, Radio and text-bound ListBox `changed` plus
+ * file-dialog `chosen` values are text. A ListBox whose id is backed by
+ * `create list` carries the selected options as a transient text list. Table
+ * `changed` carries the selected row as a transient list of display strings.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -31,8 +32,18 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
     if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
       throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
     }
-    if (['input', 'combo', 'listbox', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
+    if (['input', 'combo', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
       throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
+    }
+    if (controlType === 'listbox') {
+      const stateType = runtime.types?.get?.(control) ?? null;
+      if (stateType === 'list') {
+        if (!Array.isArray(payload.value) || !payload.value.every(item => typeof item === 'string')) {
+          throw new PatchRuntimeError(`The 'changed' action for listbox '${control}' needs a text-list event-local value because '${control}' is list state.`);
+        }
+      } else if (typeof payload.value !== 'string') {
+        throw new PatchRuntimeError(`The 'changed' action for listbox '${control}' needs a text event-local value.`);
+      }
     }
     if (controlType === 'table' && (!Array.isArray(payload.value) || !payload.value.every(cell => typeof cell === 'string'))) {
       throw new PatchRuntimeError(`The 'changed' action for table '${control}' needs a row list of text event-local values.`);
