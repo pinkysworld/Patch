@@ -40,7 +40,7 @@ function appKitMenuBlock(entry, keyEquivalent, extra) {
 function appKitKeyEquivalent(key) {
   if (/^[A-Z]$/.test(key)) return objcLiteral(key.toLowerCase());
   if (/^[0-9]$/.test(key)) return objcLiteral(key);
-  if (/^F(?:[1-9]|1[0-2])$/.test(key)) return `[NSString stringWithFormat:@"%C", NS${key.slice(1)}FunctionKey]`;
+  if (/^F(?:[1-9]|1[0-2])$/.test(key)) return `[NSString stringWithFormat:@"%C", NS${key}FunctionKey]`;
   throw new NativeGuiError(`AppKit shortcut key '${key}' is unsupported.`);
 }
 
