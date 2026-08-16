@@ -15,6 +15,8 @@ The manuscript is synchronized to the current research/product split:
 
 `main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, repeated-identical and mixed-guard repeated-call evidence, semantic-authority evaluation, the checkout/loyalty and usage/quota application cases, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
 
+The artifact now also independently binds supported static `do recipe(args)` source sites to production AST call sites before concrete-call witness generation. This reduces a parser/extractor trust dependency but does not widen the Lean theorem or turn the parser into a verified component.
+
 The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
 
 ## Candidate contribution
@@ -30,7 +32,7 @@ This is not a unique-expressibility or firstness claim. Related systems provide 
 1. State-Change Factorization and Mutation Transparency;
 2. Change Signature and Change Capability soundness for explicit semantic fragments;
 3. integer `RangeExpr` soundness;
-4. independent source/range and guard translation validation;
+4. independent source/range, guard and raw static call-site translation/source-identity validation;
 5. finite ranked abstract call composition;
 6. exact safe-integer call binding and quantitative effect refinement;
 7. beta.28/29 structured and guard-selected exact callee traces;
@@ -41,6 +43,14 @@ This is not a unique-expressibility or firstness claim. Related systems provide 
 12. semantic-authority micro-case ablation plus checkout/loyalty and usage/quota engineering cases;
 13. process-isolated controlled-measurement protocol;
 14. commit-bound reproducibility bundle.
+
+## Static call-site source binding
+
+Concrete call certificates no longer accept the production AST as the sole source of truth for the identity of supported static `do recipe(args)` sites. `src/call-site-validation.js` independently scans raw source and reconstructs caller recipe context, callee name, source line and exact trimmed argument texts. The complete ordered raw-source list must agree with a separately collected production-AST list.
+
+The validation artifact is attached to `formalCalls`, so existing concrete-call, structured-call, transitive-call and beta.32 runtime witness paths inherit the same fail-closed precondition. The Concrete Call Witness schema remains **0.1** because the call-site validation version and successful-source-binding flag are additive provenance metadata.
+
+This check is syntactic, not semantic. After source identity is established, Lean still re-evaluates supported argument expressions and checks exact values, positional binding, declared ranges, call structure and later effect obligations. The independent scanner remains proof-free JavaScript and is not a verified parser. See `docs/CALL_SITE_VALIDATION.md`.
 
 ## Beta.32 runtime boundary
 
@@ -80,7 +90,7 @@ GeneratedRepeatedTransitiveRuntimeCertificate.lean
 GeneratedMixedGuardTransitiveRuntimeCertificate.lean
 ```
 
-This is **not** an end-to-end compiler/runtime refinement theorem. Explicit proof-free/trust boundaries remain runtime capture, JavaScript validator/frame-reconstruction correctness, parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine.
+This is **not** an end-to-end compiler/runtime refinement theorem. Explicit proof-free/trust boundaries remain runtime capture, JavaScript validator/frame-reconstruction correctness, parser/extractor correctness outside independently cross-checked supported source/range, guard and static-call-site fragments, JavaScript-to-Wasm lowering and the Wasm engine. The independent validators themselves remain unverified JavaScript.
 
 ## Semantic-authority evaluation
 
@@ -184,7 +194,7 @@ No overhead, scalability or asymptotic claim belongs in `main.tex` until an actu
 
 ## Reproducibility bundle
 
-The `Patch Reproducibility Bundle` workflow binds source/evidence to an exact Patch version and Git commit, regenerates the formal/runtime/security/checkout/quota evidence, hashes every bundled source/evidence file and creates a deterministic archive envelope. The formal evidence includes the single-call, repeated-identical-call and mixed-guard invocation-frame certificates.
+The `Patch Reproducibility Bundle` workflow binds source/evidence to an exact Patch version and Git commit, regenerates the formal/runtime/security/checkout/quota evidence, hashes every bundled source/evidence file and creates a deterministic archive envelope. The formal evidence includes the single-call, repeated-identical-call and mixed-guard invocation-frame certificates. The tracked source snapshot also contains the call-site validation implementation, tests and documentation that gate concrete call-witness generation.
 
 Reproduce locally:
 
@@ -252,7 +262,7 @@ npm run verify:reproducibility
 1. collect the fixed-machine controlled overhead/scaling dataset;
 2. analyze that dataset with explicit models, dispersion and plots, then synchronize measured results into `main.tex`;
 3. validate Patch in a genuinely external or third-party extension/integration setting rather than another internally authored artifact case;
-4. reduce parser/lowering/runtime trust boundaries where the improvement materially strengthens the central claim;
+4. continue reducing parser/lowering/runtime trust where the improvement materially strengthens the claim, with source/range, guard and static call-site identity already independently cross-checked for their supported fragments;
 5. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
 
 Normal literature surveillance should continue before submission, but the targeted 2025–2026 dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is now part of the reproducible beta.32 artifact rather than an open backlog item.
