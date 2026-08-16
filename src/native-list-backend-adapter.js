@@ -30,11 +30,12 @@ export function adaptNativeListsForV11Backend(input) {
     if (!state) throw new NativeGuiError(`Native multi-select ListBox '${control.id}' is missing list state.`);
     multiControls.push({ ...control, state, nativeIndex: index, commandId: 1000 + index });
   }
+  const multiIds = new Set(multiControls.map(control => control.id));
 
   const events = [];
   for (let index = 0; index < (ir.events ?? []).length; index += 1) {
     const event = ir.events[index];
-    if (event.valueType !== 'text-list') continue;
+    if (event.valueType !== 'text-list' || !multiIds.has(event.control)) continue;
     events.push({ ...event, eventIndex: index });
   }
 
