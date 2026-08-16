@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="./designer-multiselect.css">
   <link rel="stylesheet" href="./designer-responsive-layout.css">
   <link rel="stylesheet" href="./form-window-resize.css">
+  <link rel="stylesheet" href="./beta35-studio.css">
 </head>
 <body>
 <a id="skipToEditor" class="skip-link" href="#code">Skip to editor</a>
@@ -35,6 +36,7 @@
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
       <label class="compact-field"><span>Build</span><select id="buildTarget" aria-label="Build target"><optgroup label="Simple apps"><option value="web">Standalone Web App (.html)</option><option value="native-windows">Windows App (.exe)</option><option value="native-macos">macOS App (.app)</option><option value="native-linux">Linux App</option><option value="native-freebsd">FreeBSD Console</option><option value="portable">Portable .patchapp</option></optgroup><optgroup label="WebAssembly"><option value="wasm-direct">Direct WebAssembly (.wasm)</option><option value="wasm-bootstrap">Bootstrap Wasm (advanced)</option></optgroup></select></label>
       <button id="build" class="secondary" aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter" title="Build selected target (Ctrl/Cmd+Shift+Enter)">Build</button>
+      <a class="studio-jump" href="#designer" aria-label="Jump to Designer workspace">Designer ↓</a>
     </div>
   </header>
 
@@ -54,7 +56,8 @@
     </span>
     <span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Native runtime templates are SHA-256 verified before sealing. List-backed multi-select ListBox is currently browser-only and native builds fail closed.</span></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Native runtime templates are SHA-256 verified before sealing. For beta.35, list-backed multi-select ListBox is currently browser-only and native builds fail closed.</span></section>
+  <section class="beta35-strip" aria-label="Patch beta.35 feature boundary"><strong>beta.35</strong><span>list-backed multi-select ListBox is currently browser-only and native builds fail closed. Choose <b>Multi-select ListBox</b> from Example to try the browser workflow.</span><a href="./docs.html">Details</a></section>
 
   <section class="workspace" aria-label="Patch Studio workspace">
     <div class="pane editor-pane"><div id="editorTitle" class="pane-title">main.patch</div><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-labelledby="editorTitle"></textarea></div>
@@ -80,6 +83,7 @@
 <script type="module" src="./project-config-restore.js"></script>
 <script type="module" src="./recovery-manager.js"></script>
 <script type="module" src="./playground.js"></script>
+<script type="module" src="./beta35-studio.js"></script>
 <script type="module" src="./forms-designer.js"></script>
 <script type="module" src="./table-stage1.js"></script>
 <script type="module" src="./designer-alignment-guides.js"></script>
