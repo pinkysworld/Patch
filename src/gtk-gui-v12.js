@@ -38,7 +38,11 @@ export function emitGtkGuiCppV12(input) {
     );
   }
 
-  for (const event of adapted.events) source = patchListEventFunction(source, event);
+  for (const event of adapted.events) {
+    source = patchListEventFunction(source, event);
+    const control = adapted.multiControls.find(item => item.id === event.control);
+    if (control) source = patchLegacySingleListDispatch(source, control, event);
+  }
   source = injectMultiCallback(source, adapted);
   source = injectSmoke(source, adapted);
   return source;
@@ -61,6 +65,12 @@ function injectMultiCallback(source, adapted) {
   const marker = 'static gboolean OnDelete(GtkWidget *widget, GdkEvent *, gpointer data) {';
   const callback = `static void OnListMultiChanged(GtkListBox *box, gpointer data) {\n  if (gRefreshing) return;\n  int commandId = GPOINTER_TO_INT(data);\n${lines.join('\n')}\n}\n\n`;
   return replaceRequired(source, marker, callback + marker, 'GTK multi-select callback insertion');
+}
+
+function patchLegacySingleListDispatch(source, control, event) {
+  const marker = `  if (commandId == ${control.commandId}) { if (!row) { Event_${event.eventIndex}(std::string()); return; } GtkWidget *child = gtk_bin_get_child(GTK_BIN(row)); const char *value = child ? gtk_label_get_text(GTK_LABEL(child)) : ""; Event_${event.eventIndex}(value ? std::string(value) : std::string()); return; }`;
+  const replacement = `  if (commandId == ${control.commandId}) { (void)box; (void)row; return; }`;
+  return replaceRequired(source, marker, replacement, `GTK legacy single-select dispatch '${control.id}'`);
 }
 
 function patchListEventFunction(source, event) {
