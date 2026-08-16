@@ -50,7 +50,7 @@ test('direct native Table support stays tied to IR 0.8 backend 0.9 and real plat
   assert.match(directWorkflow, /--table-v09 --smoke/);
 });
 
-test('published product docs still describe the frozen payload v9 runtime v1.0 Table line until v1.1 is deployed', () => {
+test('published product docs still describe the frozen payload v9 runtime v1.0 Table line until Studio v1.1 deployment', () => {
   for (const text of [readme, help, downloads, language, studio, nativeApps, offline, targets, roadmap]) {
     assert.match(text, /payload \*\*?v9\*\*?|payload v9/i);
     assert.match(text, /runtime \*\*?v1\.0\*\*?|runtime v1\.0/i);
@@ -94,14 +94,19 @@ test('sealed runtime v1.1 carries current payload v10 Table and offline-link evi
   assert.match(sealedListWorkflow, /native-linux-runtime-v1\.1/);
 });
 
-test('downloadable offline compiler still exposes its previously published Table evidence until the v1.1 artifact refresh', () => {
+test('downloadable offline compiler embeds runtime v1.1 and proves payload v10 Table and multi-select linking', () => {
   assert.match(offlineWorkflow, /windows-latest/);
   assert.match(offlineWorkflow, /ubuntu-latest/);
   assert.match(offlineWorkflow, /macos-15/);
   assert.match(offlineWorkflow, /macos-15-intel/);
+  assert.match(offlineWorkflow, /win32-sealed-gui-v11\.cpp/);
+  assert.match(offlineWorkflow, /appkit-sealed-gui-v11\.mm/);
+  assert.match(offlineWorkflow, /gtk-sealed-gui-v11\.cpp/);
   assert.match(offlineWorkflow, /link examples\/table-native-v09\.patch/);
+  assert.match(offlineWorkflow, /link examples\/listbox-multiselect-native\.patch/);
   assert.match(offlineWorkflow, /OfflineTable/);
-  assert.match(offlineWorkflow, /payload v9\/runtime v1\.0/);
+  assert.match(offlineWorkflow, /OfflineMulti/);
+  assert.match(offlineWorkflow, /payload v10\/runtime v1\.1/);
 });
 
 test('Studio App preview Table event dispatch is implemented through the shared semantic adapter', () => {
