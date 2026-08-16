@@ -93,14 +93,13 @@ export function validateWindowRuntimeSupport(compiled) {
           throw new WindowBuildError(error.message);
         }
         const identity = menuShortcutIdentity(shortcut);
-        const key = `${formId}\u0000${identity}`;
-        const previous = menuShortcuts.get(key);
+        const previous = menuShortcuts.get(identity);
         if (previous) {
           throw new WindowBuildError(
-            `line ${item.line ?? '?'}: Menu shortcut '${identity}' is already used by '${previous.id}' on this Form.`
+            `line ${item.line ?? '?'}: Menu shortcut '${identity}' is already used by '${previous.id}' in this application.`
           );
         }
-        menuShortcuts.set(key, item);
+        menuShortcuts.set(identity, item);
         menuShortcutCount += 1;
       }
       menuItems.set(item.id, { type: 'menuItem', formId, node: item, shortcut });
