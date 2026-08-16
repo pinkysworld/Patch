@@ -28,9 +28,9 @@ Change IR remains **0.10**.
 RuntimeChanges(stmt) ⊆ Signature(stmt) ⊆ Capability(stmt)
 ```
 
-## Independent source, range and guard translation validation
+## Independent source, range, guard and call-site validation
 
-The production compiler emits formal source/range/guard views that later certificates consume. Patch does not treat those JavaScript extractions as self-authenticating.
+The production compiler emits formal source/range/guard views and concrete call witnesses that later certificates consume. Patch does not treat those JavaScript extractions as self-authenticating.
 
 ### Independent source and range path
 
@@ -60,7 +60,22 @@ Guard validation separately reconstructs both source control structure and guard
 
 The production and validation sides therefore share formal target vocabularies but no longer share the numeric range-expression or Boolean guard-expression parser implementations. Guard-validation evidence schema **0.2** records independent guard-expression parser version **0.1**.
 
-These are concrete reductions of shared JavaScript extraction trust, not verified parser/evaluator theorems. Both independent implementations remain JavaScript. Lean checks the formal evidence produced after translation validation rather than proving either lexer, parser or interval evaluator correct.
+### Independent static call-site binding
+
+`src/call-site-validation.js` independently scans raw Patch source for static `do recipe(args)` sites without importing `parser.js` or consuming lowered IR. For each site it reconstructs:
+
+- containing caller recipe, or `$program` for a top-level call;
+- callee recipe name;
+- source line;
+- exact trimmed argument texts in source order.
+
+The complete ordered raw-source list is compared with a separately collected production-AST call-site list. A mismatch in caller, callee, line, argument text, call count or order makes call-site validation fail closed.
+
+Call-site validation evidence schema **0.1** is attached to `formalCalls`. Existing concrete-call witness consumers therefore inherit the source-binding precondition before generating exact binding/effect evidence. The existing Concrete Call Witness schema remains **0.1** because the added `callSiteValidationVersion` and `rawCallSitesValidated` fields are provenance metadata rather than a semantic witness-format change.
+
+This source-identity check is deliberately separate from call semantics. After a static site has been bound to raw source, Lean still re-evaluates supported formal argument expressions and checks exact values, positional binding, declared parameter ranges, ranked call structure and the later effect properties appropriate to each certificate layer.
+
+These are concrete reductions of shared JavaScript extraction trust, not verified parser/evaluator theorems. The independent source/range, guard and call-site validators remain JavaScript. Lean checks formal evidence produced after those validations rather than proving any lexer, parser, interval evaluator or call-site scanner correct.
 
 ## Beta.30 finite transitive exact call trees
 
@@ -159,10 +174,12 @@ Still explicit proof-free/trust boundaries:
 
 - **runtime capture**;
 - correctness/completeness of the independent JavaScript validator and **invocation-frame reconstruction**;
-- production parser/extractor correctness, although independently parsed source/range and guard evidence now reduce shared-code extraction trust for the supported fragments;
-- correctness of the independent JavaScript source/range/guard validators themselves;
+- production parser/extractor correctness outside the independently cross-checked supported source/range, guard and static-call-site fragments;
+- correctness of the independent JavaScript source/range, guard and call-site validators themselves;
 - JavaScript-to-Wasm lowering correctness;
 - Wasm engine correctness.
+
+The raw call-site validator reduces one production-AST trust dependency by checking static source identity before concrete-call certification. It does not prove the production parser correct and does not validate arbitrary expression semantics.
 
 Beta.32 is therefore not a full forward/backward simulation theorem for the compiler/runtime and not full compiler verification.
 
