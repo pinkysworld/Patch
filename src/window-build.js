@@ -1,3 +1,5 @@
+import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
+
 export class WindowBuildError extends Error {}
 
 /** Count Patch WINDOW instructions in normalized Change IR. */
@@ -36,6 +38,9 @@ export function validateWindowRuntimeSupport(compiled) {
   const forms = new Map();
   const events = [];
   const formActions = [];
+  const menuShortcuts = new Map();
+  let menuSeparators = 0;
+  let menuShortcutCount = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -70,12 +75,35 @@ export function validateWindowRuntimeSupport(compiled) {
       throw new WindowBuildError(`line ${node.line ?? '?'}: Window menu needs at least one item.`);
     }
     for (const item of node.body) {
+      if (item.kind === 'menuSeparator') {
+        menuSeparators += 1;
+        continue;
+      }
       if (item.kind !== 'menuItem') {
-        throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu can only contain menu items.`);
+        throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu can only contain menu items and separators.`);
       }
       if (!item.id) throw new WindowBuildError(`line ${item.line ?? '?'}: Window menu item needs a name after 'as'.`);
       if (idTaken(item.id)) throw duplicateId(item);
-      menuItems.set(item.id, { type: 'menuItem', formId, node: item });
+
+      let shortcut = null;
+      if (item.shortcutExpr) {
+        try {
+          shortcut = parseMenuShortcutExpression(item.shortcutExpr, item.line);
+        } catch (error) {
+          throw new WindowBuildError(error.message);
+        }
+        const identity = menuShortcutIdentity(shortcut);
+        const key = `${formId}\u0000${identity}`;
+        const previous = menuShortcuts.get(key);
+        if (previous) {
+          throw new WindowBuildError(
+            `line ${item.line ?? '?'}: Menu shortcut '${identity}' is already used by '${previous.id}' on this Form.`
+          );
+        }
+        menuShortcuts.set(key, item);
+        menuShortcutCount += 1;
+      }
+      menuItems.set(item.id, { type: 'menuItem', formId, node: item, shortcut });
     }
   };
 
@@ -177,6 +205,8 @@ export function validateWindowRuntimeSupport(compiled) {
     controls: controls.size,
     tabs: tabs.size,
     menuItems: menuItems.size,
+    menuSeparators,
+    menuShortcuts: menuShortcutCount,
     resultDialogs: resultDialogs.size,
     events: events.length,
     formActions: formActions.length
