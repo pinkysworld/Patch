@@ -8,8 +8,23 @@ export const PATCH_CONCRETE_CALL_WITNESS_VERSION = '0.1';
  * integer recipe subset. Lean re-checks expression evaluation and exact
  * positional binding; this JavaScript producer is deliberately not trusted as
  * a proof.
+ *
+ * When a call-site validation artifact is supplied, witness generation fails
+ * closed unless raw `do recipe(args)` source sites exactly match production AST
+ * caller/callee/line/argument-text identity. Compiler-produced formalCalls
+ * carries this artifact so existing higher-level certificate paths inherit the
+ * validation automatically. The added validation provenance is backward-
+ * compatible metadata, so the existing witness schema version remains 0.1.
  */
-export function buildConcreteCallWitnesses(ast, formalCalls) {
+export function buildConcreteCallWitnesses(ast, formalCalls, callSiteValidation = null) {
+  callSiteValidation ??= formalCalls?.callSiteValidation ?? null;
+  if (callSiteValidation && callSiteValidation.validated !== true) {
+    const why = callSiteValidation.reasons?.length
+      ? callSiteValidation.reasons.join('; ')
+      : 'raw-source call-site validation failed';
+    throw new Error(`Concrete call certification requires validated raw-source call sites: ${why}`);
+  }
+
   const recipes = new Map();
   for (const node of ast ?? []) if (node.kind === 'function') recipes.set(node.name, node);
   const formalCallSites = indexFormalCallSites(formalCalls);
@@ -24,6 +39,8 @@ export function buildConcreteCallWitnesses(ast, formalCalls) {
   return {
     format: 'patch-concrete-call-witness',
     version: PATCH_CONCRETE_CALL_WITNESS_VERSION,
+    callSiteValidationVersion: callSiteValidation?.version ?? null,
+    rawCallSitesValidated: callSiteValidation ? true : null,
     witnesses,
     summary: { calls: witnesses.length }
   };

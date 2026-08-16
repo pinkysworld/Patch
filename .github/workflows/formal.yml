@@ -14,6 +14,7 @@ on:
       - src/guard-validation.js
       - src/independent-guard-expression.js
       - src/independent-range-expression.js
+      - src/call-site-validation.js
       - src/certificate.js
       - src/runtime-certificate.js
       - src/runtime-path-witness.js
@@ -49,6 +50,7 @@ on:
       - src/guard-validation.js
       - src/independent-guard-expression.js
       - src/independent-range-expression.js
+      - src/call-site-validation.js
       - src/certificate.js
       - src/runtime-certificate.js
       - src/runtime-path-witness.js
