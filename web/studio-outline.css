@@ -1,0 +1,145 @@
+.source-workspace {
+  display: grid;
+  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.project-outline {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-outline .pane-title {
+  justify-content: space-between;
+}
+
+.outline-title-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+}
+
+#projectOutlineStatus {
+  overflow: hidden;
+  max-width: 96px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#projectOutlineStatus[data-state="invalid"] {
+  font-style: italic;
+}
+
+.project-outline-tree {
+  flex: 1;
+  min-height: 360px;
+  max-height: clamp(402px, 42vh, 602px);
+  overflow: auto;
+  padding: 9px;
+  background: var(--surface-subtle);
+}
+
+.outline-file {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.outline-file > span {
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.outline-group + .outline-group {
+  margin-top: 8px;
+}
+
+.outline-group-title {
+  padding: 5px 8px 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.outline-items {
+  display: grid;
+  gap: 2px;
+}
+
+button.outline-item {
+  width: 100%;
+  min-height: 35px;
+  padding: 6px 8px 6px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+}
+
+button.outline-item:hover,
+button.outline-item:focus-visible {
+  background: var(--soft);
+  opacity: 1;
+}
+
+button.outline-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 32%, transparent);
+  outline-offset: 1px;
+}
+
+.outline-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-item-meta {
+  max-width: 74px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-empty {
+  margin: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .source-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-outline-tree {
+    min-height: 0;
+    max-height: 190px;
+  }
+
+  #projectOutlineStatus {
+    max-width: 46vw;
+  }
+}
