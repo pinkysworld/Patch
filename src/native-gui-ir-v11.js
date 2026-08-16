@@ -122,11 +122,17 @@ export function toV10Compatible(ir) {
     state.type = 'text';
     state.initial = state.initial?.[0] ?? '';
   }
+
+  const listBackedControlIds = new Set();
   walkControls(compatible, control => {
-    if (control.type === 'listbox' && listNames.has(control.binding)) delete control.selectionMode;
+    if (control.type === 'listbox' && listNames.has(control.binding)) {
+      listBackedControlIds.add(control.id);
+      delete control.selectionMode;
+    }
   });
+
   for (const event of compatible.events ?? []) {
-    if (event.valueType === 'text-list') event.valueType = 'text';
+    if (event.valueType === 'text-list' && listBackedControlIds.has(event.control)) event.valueType = 'text';
     for (const action of event.actions ?? []) {
       if (action.kind !== 'change' || !listNames.has(action.target)) continue;
       action.stateType = 'text';
@@ -233,13 +239,13 @@ function validateListAction(action, event, states) {
     if (op.op === 'clear') continue;
     if (op.value?.kind === 'eventValue') {
       if (op.op !== 'set' || event.valueType !== 'text-list') {
-        throw new NativeGuiError(`Native GUI IR 1.1 list eventValue requires set/text-list semantics.`);
+        throw new NativeGuiError('Native GUI IR 1.1 list eventValue requires set/text-list semantics.');
       }
       continue;
     }
     if (op.op === 'set') {
       if (!Array.isArray(op.value?.value) || op.value.value.some(value => typeof value !== 'string')) {
-        throw new NativeGuiError(`Native GUI IR 1.1 list set literal must be a text list.`);
+        throw new NativeGuiError('Native GUI IR 1.1 list set literal must be a text list.');
       }
     } else if (typeof op.value?.value !== 'string') {
       throw new NativeGuiError(`Native GUI IR 1.1 list ${op.op} literal must be text.`);
