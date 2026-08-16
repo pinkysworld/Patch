@@ -77,7 +77,13 @@ function lowerNode(node) {
     case 'menu':
       return op('MENU', node, { titleExpr: node.titleExpr, body: lowerBlock(node.body ?? []) });
     case 'menuItem':
-      return op('MENU_ITEM', node, { id: node.id, textExpr: node.textExpr, shortcutExpr: node.shortcutExpr ?? null });
+      return op('MENU_ITEM', node, {
+        id: node.id,
+        textExpr: node.textExpr,
+        enabledState: node.enabledState ?? null,
+        checkedState: node.checkedState ?? null,
+        shortcutExpr: node.shortcutExpr ?? null
+      });
     case 'menuSeparator':
       return op('MENU_SEPARATOR', node);
     case 'dialog':
@@ -139,6 +145,8 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'menu' || node.kind === 'menuItem' || node.kind === 'menuSeparator') caps.add('ui.menu');
     if (node.kind === 'menuSeparator') caps.add('ui.menu-separator');
     if (node.kind === 'menuItem' && node.shortcutExpr) caps.add('ui.menu-shortcut');
+    if (node.kind === 'menuItem' && node.enabledState) caps.add('ui.menu-enabled-state');
+    if (node.kind === 'menuItem' && node.checkedState) caps.add('ui.menu-checked-state');
     if (node.kind === 'dialog') caps.add('ui.dialog');
     if (['confirmDialog', 'openFileDialog', 'saveFileDialog'].includes(node.kind)) caps.add('ui.dialog-result');
     if (node.kind === 'confirmDialog') caps.add('ui.confirm-dialog');
