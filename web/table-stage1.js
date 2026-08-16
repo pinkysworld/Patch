@@ -13,6 +13,7 @@ const appView = document.querySelector('#app');
 const addTable = document.querySelector('#addTable');
 const observed = new Map();
 const appSelections = new Map();
+const appListboxSelections = new Map();
 let scheduled = false;
 let selectedTable = null;
 
@@ -117,6 +118,7 @@ function syncContainer(container, designer) {
   const changedHandlers = new Set(ast
     .filter(node => node.kind === 'event' && node.event === 'changed')
     .map(node => node.control));
+  const listInitials = collectListInitials(ast);
   const shells = [...container.querySelectorAll('.patch-window')];
   shells.forEach((shell, windowIndex) => {
     const body = shell.querySelector('.patch-window-body');
@@ -143,6 +145,15 @@ function syncContainer(container, designer) {
         if (designer) decorateDesignerTable(element, node, { windowIndex, controlIndex });
         return;
       }
+
+      const element = baseChildren[renderedIndex] ?? null;
+      syncMultiListboxes(node, element, {
+        designer,
+        windowIndex,
+        path: String(controlIndex),
+        changedHandlers,
+        listInitials
+      });
       renderedIndex += 1;
     });
   });
@@ -154,6 +165,103 @@ function syncContainer(container, designer) {
       populateInspector(selectedTable);
     }
   }
+}
+
+function syncMultiListboxes(node, element, context) {
+  if (!node || !element) return;
+  if (node.kind === 'uiControl') {
+    if (node.control !== 'listbox' || !node.id || !context.listInitials.has(node.id)) return;
+    const select = element.matches?.('select') ? element : element.querySelector?.('select');
+    if (!select) return;
+    const key = `${context.windowIndex}:${context.path}:${node.id}`;
+    if (!appListboxSelections.has(key)) appListboxSelections.set(key, [...(context.listInitials.get(node.id) ?? [])]);
+    const selected = appListboxSelections.get(key) ?? [];
+    select.multiple = true;
+    select.setAttribute('aria-multiselectable', 'true');
+    select.dataset.patchMultiListbox = 'true';
+    for (const option of select.options) option.selected = selected.includes(option.value);
+    if (!context.designer && select.dataset.patchMultiListboxBound !== 'true') {
+      select.dataset.patchMultiListboxBound = 'true';
+      select.addEventListener('change', event => {
+        event.stopImmediatePropagation();
+        const value = [...select.selectedOptions].map(option => option.value);
+        appListboxSelections.set(key, [...value]);
+        if (!context.changedHandlers.has(node.id)) return;
+        select.dispatchEvent(new CustomEvent('patch-studio-table-changed', {
+          bubbles: true,
+          detail: { control: node.id, value: [...value] }
+        }));
+      }, { capture: true });
+    }
+    return;
+  }
+  if (node.kind !== 'tabs') return;
+  const pages = node.body ?? [];
+  const buttons = [...element.querySelectorAll?.(':scope > .patch-tabs-list > .patch-tab-button') ?? []];
+  let activeIndex = buttons.findIndex(button => button.getAttribute('aria-selected') === 'true');
+  if (activeIndex < 0) activeIndex = 0;
+  const page = pages[activeIndex];
+  const panel = element.querySelector?.(':scope > .patch-tab-panel');
+  if (!page || !panel) return;
+  const children = [...panel.children];
+  let renderedIndex = 0;
+  for (let index = 0; index < (page.body ?? []).length; index += 1) {
+    const child = page.body[index];
+    if (child.kind === 'uiControl' && child.control === 'table') continue;
+    const childElement = children[renderedIndex] ?? null;
+    syncMultiListboxes(child, childElement, {
+      ...context,
+      path: `${context.path}.${activeIndex}.${index}`
+    });
+    renderedIndex += 1;
+  }
+}
+
+function collectListInitials(ast) {
+  const out = new Map();
+  for (const node of ast ?? []) {
+    if (node.kind !== 'create' || node.valueType !== 'list') continue;
+    try {
+      const text = String(node.expr ?? '').trim();
+      const value = text.startsWith('[')
+        ? evaluateLoose(text, { state: new Map(), locals: {} })
+        : splitTopLevel(text).map(part => evaluateLoose(part, { state: new Map(), locals: {} }));
+      if (Array.isArray(value)) out.set(node.name, value.map(item => String(item)));
+    } catch {
+      out.set(node.name, []);
+    }
+  }
+  return out;
+}
+
+function splitTopLevel(text) {
+  const out = [];
+  let current = '';
+  let quote = null;
+  let depth = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const ch = text[index];
+    if (quote) {
+      current += ch;
+      if (ch === '\\') {
+        current += text[++index] ?? '';
+        continue;
+      }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
+    if (ch === '[' || ch === '(') depth += 1;
+    if (ch === ']' || ch === ')') depth -= 1;
+    if (ch === ',' && depth === 0) {
+      if (current.trim()) out.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
 }
 
 function createTable(node, options = {}) {
@@ -338,6 +446,7 @@ function installStyles() {
 .patch-table-stage1-control[data-patch-interactive="true"] tbody tr{cursor:pointer;outline:none}
 .patch-table-stage1-control[data-patch-interactive="true"] tbody tr:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
 .patch-table-stage1-control[data-patch-interactive="true"] tbody tr.patch-table-selected td{background:color-mix(in srgb,currentColor 10%,transparent)}
+select[data-patch-multi-listbox="true"]{min-height:96px}
 @media(prefers-color-scheme:dark){.patch-table-wrap{background:#1b1d22;color:#f4f4f5;border-color:#41444e}.patch-table th,.patch-table td{border-color:#34363e}.patch-table th{background:#24262d}}
 `;
   document.head.appendChild(style);
