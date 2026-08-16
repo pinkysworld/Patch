@@ -57,7 +57,7 @@ function gtkModifiers(shortcut) {
   if (shortcut.primary) flags.push('GDK_CONTROL_MASK');
   if (shortcut.shift) flags.push('GDK_SHIFT_MASK');
   if (shortcut.alt) flags.push('GDK_MOD1_MASK');
-  return flags.length ? flags.join(' | ') : '0';
+  return `static_cast<GdkModifierType>(${flags.length ? flags.join(' | ') : '0'})`;
 }
 
 function replaceRequired(source, marker, replacement, label) {
