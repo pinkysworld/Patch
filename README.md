@@ -7,9 +7,9 @@
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 [![Sealed Table Runtime](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-table-runtime.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-table-runtime.yml)
 
-**Current development beta: `0.2.0-beta.34`** · **Change IR: `0.10`** · **Native GUI IR: `0.7` stable / `0.8` Table extension**
+**Current development beta: `0.2.0-beta.35`** · **Change IR: `0.10`** · **Native GUI IR: `0.7` stable / `0.8` Table extension**
 
-[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Beta.34 notes](docs/BETA34.md) · [Paper](paper/README.md)
+[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Beta.35 notes](docs/BETA35.md) · [Paper](paper/README.md)
 
 Patch is built around one rule:
 
@@ -34,10 +34,32 @@ This mandatory mutation substrate supports history, undo/redo, provenance, seman
 | Runtime assurance | Invocation-frame-aware direct-Wasm correspondence, including repeated identical calls |
 | Patch Studio | Browser IDE, canonical v2 project persistence, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
 | Window UI | Forms, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Tabs/Table, menus and result-bearing dialogs |
+| Browser ListBox | Text-backed ListBox remains single-select; list-backed ListBox is multi-select with transient text-list `value` in Studio Preview and Standalone Web |
 | Native Table | Native GUI IR 0.8 / direct backend 0.9 with Win32 `WC_LISTVIEWW`, AppKit `NSTableView` and GTK3 `GtkTreeView` |
 | Ready Window ABI | Sealed payload v9 / runtime v1.0 on Windows, macOS and Linux; v8/runtime v0.9 remains a frozen compatibility line |
 | Ready runtime integrity | Pages verifies release SHA-256 digests and Patch Studio re-hashes every browser-consumed runtime template before packaging |
 | Desktop | Ready Windows/macOS/Linux Console and Window downloads; FreeBSD Console via C99 |
+
+## Beta.35: list-backed ListBox multi-select
+
+Beta.35 adds a browser-first multi-select contract without adding new Patch syntax or changing Change IR 0.10. A ListBox whose `as` id is backed by `create list` is rendered as a multi-select control in Patch Studio App Preview and Standalone Window Web. Its `changed` handler receives a copied list of selected display strings as transient event-local `value`.
+
+```patch
+create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker":
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+
+when fruits changed:
+  change fruits:
+    set = value
+```
+
+Selection itself remains UI state. Persistent `fruits` changes only because the handler executes an explicit semantic `change`. A ListBox backed by `create text` remains the existing single-select control and continues to expose a text `value`.
+
+Native GUI IR 0.7 does not model persistent list state. Native Ready/AOT/offline Window builds therefore fail closed for list-backed multi-select ListBox programs rather than silently changing their semantics. Native multi-select parity requires an explicit future Native GUI IR/runtime extension.
+
+See [`docs/BETA35.md`](docs/BETA35.md).
 
 ## Patch Studio and the native Table line
 
@@ -156,7 +178,7 @@ Still explicit proof-free/trust boundaries:
 
 - runtime trace capture;
 - correctness/completeness of the independent JavaScript validator and invocation-frame reconstruction;
-- production parser/extractor correctness;
+- production parser/extractor correctness outside independently cross-checked supported fragments;
 - JavaScript-to-Wasm lowering correctness;
 - Wasm engine correctness.
 
@@ -177,11 +199,11 @@ Patch Studio provides source editing, Console/Window Run, Change Contract/IR vie
 
 Windows, macOS and Linux default to **Ready app download (no token)**. Every browser-consumed runtime template used by that path is SHA-256 verified before packaging. FreeBSD Console uses the portable C99 backend. The optional cloud/AOT route is explicitly separate and does not persist its GitHub token.
 
-GUI input remains semantic: Input/ComboBox/ListBox/Radio expose transient text `value`, Checkbox exposes transient Boolean `value`, and Table exposes the selected row as transient list-valued `value`. Persistent state changes only through explicit Patch `change`.
+GUI input remains semantic: Input/ComboBox/Radio and text-backed ListBox expose transient text `value`; Checkbox exposes transient Boolean `value`; list-backed ListBox in browser targets exposes transient text-list `value`; Table exposes the selected row as transient list-valued `value`. Persistent state changes only through explicit Patch `change`.
 
 ## Change IR 0.10
 
-Beta.34, Beta.33 and the Native GUI IR 0.8 Table extension do not change the production Change IR schema. Invocation frames and runtime certificates remain separate assurance artifacts reconstructed from the existing Change IR execution model.
+Beta.35, Beta.34, Beta.33 and the Native GUI IR 0.8 Table extension do not change the production Change IR schema. Invocation frames and runtime certificates remain separate assurance artifacts reconstructed from the existing Change IR execution model.
 
 ## Research boundary
 
