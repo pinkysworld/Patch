@@ -71,6 +71,7 @@ jobs:
           PATCH_EVAL_COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
+          # The controller launches scripts/benchmark-assurance.js once per isolated process.
           node scripts/run-controlled-assurance.js \
             --preset "$EVAL_PRESET" \
             --runs "$EVAL_RUNS" \
