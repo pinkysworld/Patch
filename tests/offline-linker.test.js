@@ -15,6 +15,20 @@ const tableWindowSource = `window "People" as main size 520, 320:
     row "Ada", "Engineer"
     row "Grace", "Scientist"
 `;
+const listWindowSource = `create list fruits = ["Banana", "Mango"]
+window "Fruit Picker" as main size 540, 360:
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits at 24, 72 size 260, 140
+when fruits changed:
+  change fruits:
+    set = value
+`;
+
+function footerVersion(bytes) {
+  return new DataView(bytes.buffer, bytes.byteOffset + bytes.length - 12, 4).getUint32(0, true);
+}
+function executableFrom(plan, platform) {
+  return platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
+}
 
 test('offline linker seals Console source into a local Windows executable plan', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4]);
@@ -28,7 +42,7 @@ test('offline linker seals Console source into a local Windows executable plan',
   assert.deepEqual([...decoded.runtime], [...runtime]);
 });
 
-test('offline linker lowers Window source to Native GUI IR 0.8 and seals payload v9', () => {
+test('offline linker lowers current Window source to Native GUI IR 1.1 and seals payload v10', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0]), 'OfflineWindow.exe'],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]), 'OfflineWindow'],
@@ -38,13 +52,13 @@ test('offline linker lowers Window source to Native GUI IR 0.8 and seals payload
     const plan = createOfflineLinkPlan(windowSource, { platform, name: 'OfflineWindow', guiRuntime: runtime });
     assert.equal(plan.kind, 'window');
     assert.equal(plan.suggestedOutput, suggestedOutput);
-    const executable = platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
+    const executable = executableFrom(plan, platform);
     assert.ok(decodeNativeGuiPayload(executable.bytes).length > 0);
-    assert.equal(new DataView(executable.bytes.buffer, executable.bytes.byteOffset + executable.bytes.length - 12, 4).getUint32(0, true), 9);
+    assert.equal(footerVersion(executable.bytes), 10);
   }
 });
 
-test('offline Window linker preserves Table in the sealed payload v9 contract', () => {
+test('offline Window linker preserves Table in the sealed payload v10 contract', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
@@ -52,12 +66,29 @@ test('offline Window linker preserves Table in the sealed payload v9 contract', 
   ];
   for (const [platform, runtime] of cases) {
     const plan = createOfflineLinkPlan(tableWindowSource, { platform, name: 'SealedTable', guiRuntime: runtime });
-    const executable = platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
+    const executable = executableFrom(plan, platform);
     const payload = new TextDecoder().decode(decodeNativeGuiPayload(executable.bytes));
-    assert.equal(new DataView(executable.bytes.buffer, executable.bytes.byteOffset + executable.bytes.length - 12, 4).getUint32(0, true), 9);
+    assert.equal(footerVersion(executable.bytes), 10);
     assert.match(payload, /Name/);
     assert.match(payload, /Grace/);
     assert.match(payload, /Scientist/);
+  }
+});
+
+test('offline Window linker preserves persistent list state and multi-select ListBox in payload v10', () => {
+  const cases = [
+    ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
+    ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
+    ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0])]
+  ];
+  for (const [platform, runtime] of cases) {
+    const plan = createOfflineLinkPlan(listWindowSource, { platform, name: 'SealedMulti', guiRuntime: runtime });
+    const executable = executableFrom(plan, platform);
+    const payload = new TextDecoder().decode(decodeNativeGuiPayload(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 10);
+    assert.match(payload, /fruits/);
+    assert.match(payload, /Banana/);
+    assert.match(payload, /Mango/);
   }
 });
 
