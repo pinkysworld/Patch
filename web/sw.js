@@ -1,5 +1,5 @@
 const REVISION = '__PATCH_SITE_REV__';
-const PATCH_RELEASE = '0.2.0-beta.34';
+const PATCH_RELEASE = '0.2.0-beta.35';
 const CACHE_PREFIX = 'patch-studio-';
 const CACHE = `${CACHE_PREFIX}${REVISION}`;
 // Known previous cache id retained only so migration remains explicit and auditable.
@@ -38,24 +38,11 @@ self.addEventListener('fetch', event => {
 
   if (freshFirst) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {
-      if (response && response.status === 200 && response.type !== 'opaque') {
-        const copy = response.clone();
-        caches.open(CACHE).then(cache => cache.put(event.request, copy));
-      }
+      if (response.ok && sameOrigin) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
       return response;
-    }).catch(async () => {
-      const cached = await caches.match(event.request, { ignoreSearch: true });
-      if (cached) return cached;
-      if (event.request.mode === 'navigate') return caches.match('./index.html', { ignoreSearch: true });
-      throw new Error(`Patch Studio ${PATCH_RELEASE} asset is unavailable offline.`);
-    }));
+    }).catch(() => caches.match(event.request).then(cached => cached || caches.match(versioned('./index.html')))));
     return;
   }
 
-  event.respondWith(caches.match(event.request, { ignoreSearch: true }).then(hit => hit || fetch(event.request).then(response => {
-    if (!response || response.status !== 200 || response.type === 'opaque') return response;
-    const copy = response.clone();
-    caches.open(CACHE).then(cache => cache.put(event.request, copy));
-    return response;
-  })));
+  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
 });
