@@ -36,7 +36,7 @@ test('sealed payload v10 encodes persistent list state and text-list eventValue 
 
   assert.equal(r.u32(), 1);
   assert.equal(r.text(), 'main');
-  assert.equal(r.text(), 'Fruit Picker');
+  assert.equal(r.text(), 'Fruit picker');
   r.u32(); r.u32(); r.u8();
   const controlCount = r.u32();
   let listboxSeen = false;
