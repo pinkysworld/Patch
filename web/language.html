@@ -19,10 +19,10 @@
   <a href="./downloads.html">Downloads</a>
   <a href="./help.html">Help</a>
 </nav>
-<main class="content-page" data-patch-version="0.2.0-beta.34">
+<main class="content-page" data-patch-version="0.2.0-beta.35">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch programming language · 0.2 beta.34</p>
+      <p class="page-eyebrow">Patch programming language · 0.2 beta.35</p>
       <h1>Small syntax. Visible changes.</h1>
       <p>Patch is a change-oriented programming language where persistent mutation is expressed through explicit semantic <code>change</code> operations. The compiler derives operation- and magnitude-aware Change Contracts from the same source-level substrate.</p>
     </div>
@@ -44,7 +44,21 @@ show score</pre>
     <h2>Why Patch exists</h2>
     <p>Patch explores whether mutation can be made easier to inspect, constrain, replay and validate by treating change itself as a first-class semantic object. The project combines a small language, Change IR, source-backed GUI design, capability-style constraints and reproducible assurance tooling.</p>
     <h3>Current formal boundary</h3>
-    <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. Beta.34 is a Studio/distribution hardening release and does not widen that formal claim. Patch does not claim a fully verified compiler: parsing, JavaScript-to-Wasm lowering, runtime capture and independent frame reconstruction remain outside the Lean-checked boundary.</p>
+    <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. Beta.35 adds product-level browser ListBox multi-selection and does not widen that formal claim. Patch does not claim a fully verified compiler: unsupported parser semantics, JavaScript-to-Wasm lowering, runtime capture and independent frame reconstruction remain outside the Lean-checked boundary.</p>
+  </section>
+
+  <section class="page-section" data-listbox-language-support="text-list">
+    <h2>ListBox selection follows the state type</h2>
+    <p>A ListBox bound to <code>create text</code> remains the existing single-select control and its <code>changed</code> handler receives text. A ListBox bound to <code>create list</code> is multi-select in Patch Studio App Preview and Standalone Window Web, and its <code>changed</code> handler receives a transient list of selected strings.</p>
+    <pre class="page-code">create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker":
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+
+when fruits changed:
+  change fruits:
+    set = value</pre>
+    <p>The toolkit selection itself is not persistent Patch state. The example persists it only because the handler executes an explicit semantic <code>change</code>. Current native GUI paths remain fail-closed for list-backed ListBox because Native GUI IR 0.7 does not yet model persistent list state.</p>
   </section>
 
   <section class="page-section" data-table-language-support="transient-list">
@@ -58,7 +72,7 @@ show score</pre>
 when people changed:
   show value</pre>
     <p>Inside <code>changed</code>, <code>value</code> is the selected row as a list of display strings. Persistence still requires an ordinary explicit <code>change</code>. Studio App preview and Standalone Web implement this contract. Direct native AOT carries it through Native GUI IR 0.8/backend 0.9 on Win32, AppKit and GTK3.</p>
-    <p>Token-free Ready apps and offline Window linking carry the same language semantics through <strong>sealed payload v9/runtime v1.0</strong> on Windows, macOS and Linux. Payload v9 transports Table columns, rows, responsive layout policy and the transient <code>text-list</code> event type without introducing persistent native list state. Payload v8/runtime v0.9 remains an explicit older compatibility contract.</p>
+    <p>Token-free Ready apps and offline Window linking carry the same Table semantics through <strong>sealed payload v9/runtime v1.0</strong> on Windows, macOS and Linux. Payload v9 transports Table columns, rows, responsive layout policy and the transient <code>text-list</code> event type without introducing persistent native list state. Payload v8/runtime v0.9 remains an explicit older compatibility contract.</p>
   </section>
 
   <section class="page-section">
@@ -71,7 +85,7 @@ when people changed:
     </div>
   </section>
 
-  <footer class="page-footer"><span>Patch is experimental research software · 0.2.0-beta.34</span><a href="https://github.com/pinkysworld/Patch">GitHub repository</a></footer>
+  <footer class="page-footer"><span>Patch is experimental research software · 0.2.0-beta.35</span><a href="https://github.com/pinkysworld/Patch">GitHub repository</a></footer>
 </main>
 </body>
 </html>

@@ -19,10 +19,10 @@
   <a href="./downloads.html" aria-current="page">Downloads</a>
   <a href="./help.html">Help</a>
 </nav>
-<main class="content-page" data-patch-version="0.2.0-beta.34">
+<main class="content-page" data-patch-version="0.2.0-beta.35">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch offline compiler · 0.2 beta.34</p>
+      <p class="page-eyebrow">Patch offline compiler · 0.2 beta.35</p>
       <h1>Compile Patch without opening the browser.</h1>
       <p>Download one local Patch compiler for your platform. Windows, macOS and Linux downloads contain the Patch compiler and native Window runtime v1.0, so <code>run</code>, <code>check</code>, normal build targets and supported <code>link</code> operations, including Table/Grid, work without a GitHub token or network connection after download.</p>
     </div>
@@ -64,6 +64,12 @@ Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
     <article class="page-card"><h2>Run locally</h2><p><code>patch run program.patch</code> executes Patch source locally. <code>patch check</code> validates it without producing an application.</p></article>
     <article class="page-card"><h2>Compile locally</h2><p><code>patch build</code> retains the existing portable, WebAssembly, C99 and standalone Web targets without requiring Patch Studio.</p></article>
     <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds a ready application for the current OS when the project fits the supported native surface. Windows/macOS/Linux Window apps use Native GUI IR 0.8 sealed as payload v9 into runtime v1.0, including Table/Grid and runtime-responsive Anchor/Dock layout; Console linking uses the platform's supported local runtime path.</p></article>
+  </section>
+
+  <section class="page-section" data-listbox-native-boundary="browser-only">
+    <h2>Beta.35 multi-select ListBox boundary</h2>
+    <p>A ListBox backed by <code>create list</code> is multi-select in Patch Studio App Preview and Standalone Window Web. Its <code>changed</code> event carries a transient list of selected strings, and persistent state still changes only through explicit Patch <code>change</code>.</p>
+    <p><strong>Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.</strong> Native GUI IR 0.7 supports number, text and boolean persistent state only. A list-backed ListBox therefore fails closed instead of being silently converted to a single-select native control. Text-backed single-select ListBox and native Table/Grid support remain unchanged.</p>
   </section>
 
   <section class="page-section" data-table-offline-support="v10">
@@ -111,7 +117,7 @@ patch doctor</pre>
     <p>The browser Studio remains useful for visual Form design. The downloaded compiler is for local source editing, checking, compilation and supported application linking.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch offline compiler · 0.2.0-beta.34</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.1">Open compiler release on GitHub</a></footer>
+  <footer class="page-footer"><span>Patch offline compiler · 0.2.0-beta.35</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.1">Open compiler release on GitHub</a></footer>
 </main>
 </body>
 </html>

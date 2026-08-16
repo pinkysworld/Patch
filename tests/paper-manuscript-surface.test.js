@@ -3,12 +3,15 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const read = path => fs.readFileSync(path, 'utf8');
+const pkg = JSON.parse(read('package.json'));
+const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
+if (!beta) throw new Error(`Unexpected Patch version ${pkg.version}`);
 
-test('main manuscript reflects the beta32 assurance and beta34 artifact boundary', () => {
+test('main manuscript reflects the beta32 assurance and current product-artifact boundary', () => {
   const tex = read('paper/main.tex');
 
   for (const phrase of [
-    'Beta 34 product artifact / Beta 32 assurance manuscript',
+    `Beta ${beta} product artifact / Beta 32 assurance manuscript`,
     'Beta 30 finite transitive exact call trees',
     'Beta 31 call-aware bridge',
     'Beta 32 invocation frames',
@@ -32,6 +35,7 @@ test('main manuscript reflects the beta32 assurance and beta34 artifact boundary
     assert.match(tex, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }
 
+  assert.match(tex, new RegExp(`Patch ${escapeRegExp(pkg.version)} retains Change IR 0\\.10`, 'i'));
   assert.doesNotMatch(tex, /Beta 28 research artifact manuscript/i);
   assert.doesNotMatch(tex, /The next formal steps are guard-aware exact callee traces/i);
   assert.doesNotMatch(tex, /Beta 28 establishes complete exact semantic-effect traces[^\n]*remaining research task/i);

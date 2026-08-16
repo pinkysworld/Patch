@@ -1,5 +1,5 @@
 const REVISION = '__PATCH_SITE_REV__';
-const PATCH_RELEASE = '0.2.0-beta.34';
+const PATCH_RELEASE = '0.2.0-beta.35';
 const CACHE_PREFIX = 'patch-studio-';
 const CACHE = `${CACHE_PREFIX}${REVISION}`;
 // Known previous cache id retained only so migration remains explicit and auditable.
@@ -8,9 +8,9 @@ const LEGACY_CACHE_ID = 'patch-studio-0.2-beta.32-forms8-ux14-a11y1';
 const versioned = path => /\.(?:js|css|webmanifest|svg)$/.test(path) ? `${path}?v=${REVISION}` : path;
 const CORE = [
   './', './index.html', './language.html', './docs.html', './downloads.html', './help.html',
-  './style.css', './site-navigation.css', './site-pages.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './designer-multiselect.css', './designer-responsive-layout.css', './form-window-resize.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css',
+  './style.css', './site-navigation.css', './site-pages.css', './studio-accessibility.css', './designer-inspector.css', './forms-designer.css', './designer-multiselect.css', './designer-responsive-layout.css', './form-window-resize.css', './beta35-studio.css', './project-lifecycle.css', './recovery-manager.css', './studio-diagnostics.css',
   './runtime-integrity.js', './native-build.js', './project-lifecycle.js', './project-config-restore.js', './recovery-manager.js',
-  './playground.js', './forms-designer.js', './table-stage1.js', './designer-alignment.js', './designer-alignment-guides.js', './designer-multiselect.js', './designer-layout-policy.js', './designer-responsive-layout.js', './form-window-resize.js', './studio-dom-sync.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
+  './playground.js', './beta35-studio.js', './forms-designer.js', './table-stage1.js', './designer-alignment.js', './designer-alignment-guides.js', './designer-multiselect.js', './designer-layout-policy.js', './designer-responsive-layout.js', './form-window-resize.js', './studio-dom-sync.js', './studio-diagnostics.js', './studio-accessibility.js', './manifest.webmanifest', './icon.svg',
   '../src/interpreter.js', '../src/parser.js', '../src/expression.js', '../src/change.js', '../src/change-analysis.js',
   '../src/range-analysis.js', '../src/formal-range.js', '../src/formal-guard.js', '../src/formal-calls.js', '../src/formal-bridge.js', '../src/formal-source.js',
   '../src/source-validation.js', '../src/guard-validation.js', '../src/compiler.js', '../src/diagnostics.js', '../src/backend-diagnostic-context.js', '../src/artifact-name.js', '../src/bundle.js', '../src/wasm.js',
@@ -38,24 +38,11 @@ self.addEventListener('fetch', event => {
 
   if (freshFirst) {
     event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {
-      if (response && response.status === 200 && response.type !== 'opaque') {
-        const copy = response.clone();
-        caches.open(CACHE).then(cache => cache.put(event.request, copy));
-      }
+      if (response.ok && sameOrigin) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
       return response;
-    }).catch(async () => {
-      const cached = await caches.match(event.request, { ignoreSearch: true });
-      if (cached) return cached;
-      if (event.request.mode === 'navigate') return caches.match('./index.html', { ignoreSearch: true });
-      throw new Error(`Patch Studio ${PATCH_RELEASE} asset is unavailable offline.`);
-    }));
+    }).catch(() => caches.match(event.request, { ignoreSearch: true }).then(cached => cached || caches.match(versioned('./index.html'), { ignoreSearch: true }))));
     return;
   }
 
-  event.respondWith(caches.match(event.request, { ignoreSearch: true }).then(hit => hit || fetch(event.request).then(response => {
-    if (!response || response.status !== 200 || response.type === 'opaque') return response;
-    const copy = response.clone();
-    caches.open(CACHE).then(cache => cache.put(event.request, copy));
-    return response;
-  })));
+  event.respondWith(caches.match(event.request, { ignoreSearch: true }).then(cached => cached || fetch(event.request)));
 });

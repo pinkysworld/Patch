@@ -8,14 +8,16 @@ Working manuscript:
 
 The manuscript is synchronized to the current research/product split:
 
-- product artifact: **Patch 0.2.0-beta.34**;
+- product artifact: **Patch 0.2.0-beta.35**;
 - semantic IR: **Change IR 0.10**;
 - formal runtime-correspondence milestone: **beta.32**;
-- beta.33/beta.34: Studio, release, persistence and runtime-integrity engineering that does not widen the beta.32 Lean claim.
+- beta.33–beta.35: Studio, release, persistence, runtime-integrity and browser ListBox interaction engineering that does not widen the beta.32 Lean claim.
 
 `main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, repeated-identical and mixed-guard repeated-call evidence, semantic-authority evaluation, the checkout/loyalty and usage/quota application cases, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
 
-The artifact now also independently binds supported static `do recipe(args)` source sites to production AST call sites before concrete-call witness generation. This reduces a parser/extractor trust dependency but does not widen the Lean theorem or turn the parser into a verified component.
+The artifact also independently binds supported static `do recipe(args)` source sites to production AST call sites before concrete-call witness generation. This reduces a parser/extractor trust dependency but does not widen the Lean theorem or turn the parser into a verified component.
+
+Beta.35 adds browser product behavior only: a ListBox backed by list state becomes multi-select in Patch Studio App Preview and Standalone Web. Native GUI 0.7 still fails closed for persistent list state. This feature does not change the paper's formal theorem or novelty hypothesis.
 
 The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
 

@@ -19,10 +19,10 @@
   <a href="./downloads.html">Downloads</a>
   <a href="./help.html" aria-current="page">Help</a>
 </nav>
-<main class="content-page" data-patch-version="0.2.0-beta.34">
+<main class="content-page" data-patch-version="0.2.0-beta.35">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch Studio help · 0.2 beta.34</p>
+      <p class="page-eyebrow">Patch Studio help · 0.2 beta.35</p>
       <h1>Build something without fighting the IDE.</h1>
       <p>Quick help for the workflows that matter most: editing, visual form design, project recovery, verified Ready builds and local downloads.</p>
     </div>
@@ -46,6 +46,22 @@ Alt while dragging: bypass snap</pre>
     <div class="help-step"><b>6</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
   </section>
 
+  <section class="page-section" data-listbox-support="browser-multiselect">
+    <h2>ListBox: single or multi-select</h2>
+    <p>A ListBox bound to <code>create text</code> is the existing single-select control. Its <code>changed</code> event receives a text <code>value</code>.</p>
+    <p>A ListBox bound to <code>create list</code> becomes multi-select in Patch Studio App Preview and Standalone Window Web. Its <code>changed</code> event receives a copied list of selected strings.</p>
+    <pre class="page-code">create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker":
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+
+when fruits changed:
+  change fruits:
+    set = value</pre>
+    <p>Selection is transient until the handler executes <code>change</code>. If the handler only uses <code>show value</code>, persistent <code>fruits</code> remains unchanged.</p>
+    <p><strong>Native boundary:</strong> Native GUI IR 0.7 has no persistent list-state contract. Current Ready/AOT/offline native Window builds therefore reject list-backed ListBox programs instead of silently changing them to single-select controls.</p>
+  </section>
+
   <section class="page-section" data-table-support="sealed-v10">
     <h2>Table / Grid</h2>
     <p>Table data is written directly in Patch source. The header declares named columns and each indented <code>row</code> supplies exactly one value per column.</p>
@@ -64,7 +80,7 @@ when people changed:
   <section class="page-section">
     <h2>Projects and recovery</h2>
     <p>Patch Studio autosaves into the versioned v2 project store. Project bundles preserve the source, project type and build configuration. Use <strong>Export</strong> for a portable <code>.patchproject</code> file, <strong>Import</strong> to restore one, and <strong>Recovery</strong> to manage local snapshots.</p>
-    <p>Beta.34 also normalizes programmatic changes from sample switching and Designer actions through the same shared source/project signals used by manual editing. That keeps the canonical v2 state, the visual Designer, Change Contract and native-build panel synchronized.</p>
+    <p>Programmatic changes from sample switching and Designer actions use the same shared source/project signals as manual editing. That keeps the canonical v2 state, visual Designer, Change Contract and native-build panel synchronized.</p>
     <h3>If an import or restore goes wrong</h3>
     <p>The Studio protects the current state with a recovery snapshot before replacement. Corrupt canonical storage is quarantined rather than silently trusted.</p>
   </section>
@@ -72,7 +88,7 @@ when people changed:
   <section class="page-section">
     <h2>Build targets</h2>
     <div class="doc-links">
-      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects.</span></a>
+      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects, including beta.35 browser multi-select ListBox.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Desktop apps</strong><span>Ready/no-token Windows, macOS and Linux paths plus local and cloud AOT build options.</span></a>
       <a class="doc-link" href="./downloads.html"><strong>Offline compiler downloads</strong><span>Run, compile, verify and locally link supported Patch apps from Windows, macOS, Linux or FreeBSD without opening Studio.</span></a>
     </div>
@@ -89,6 +105,7 @@ when people changed:
   <section class="page-section">
     <h2>Offline compiler</h2>
     <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows and Linux downloads, Apple Silicon macOS and the Intel macOS portable kit include native runtime v1.0 for Window linking. Supported Table/Grid and responsive Anchor/Dock Window apps therefore link locally through sealed payload v9 without a cloud build or GitHub token. FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>; native FreeBSD GUI linking is not yet claimed.</p>
+    <p>List-backed beta.35 multi-select ListBox is not yet part of the native list-state ABI, so native linking fails closed for that feature. Build the project as Standalone Web when you need beta.35 multi-selection today.</p>
     <p>Download <code>SHA256SUMS</code> beside the compiler asset and verify it before first use. The Downloads page includes Linux/macOS and PowerShell examples.</p>
   </section>
 
@@ -98,13 +115,15 @@ when people changed:
     <p>Patch Studio uses content-addressed web revisions. A browser session from before that update mechanism may need one reload, or an installed PWA may need to be closed and reopened once. Future site revisions should then update automatically.</p>
     <h3>A native build stops with an integrity error</h3>
     <p>Do not bypass the check. Reload the Studio once while online. If the release asset, deployed manifest and fetched runtime do not agree, Patch intentionally refuses to seal the app.</p>
+    <h3>A list-backed ListBox will not build natively</h3>
+    <p>This is the intended beta.35 fail-closed boundary, not a hidden downgrade. Use Standalone Web for multi-select ListBox, or bind the native ListBox to text for single-selection semantics.</p>
     <h3>A control disappeared below the form</h3>
     <p>The Designer scroll area supports vertical and horizontal scrolling, and newly added controls are revealed automatically. Controls that extend beyond a form also grow the form to fit.</p>
     <h3>I need support information</h3>
     <p>Use <strong>Copy diagnostics</strong> or <strong>Report</strong>. The Studio report remains local and omits source code while including version, target, compiler status and privacy-redacted errors.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.34</span><a href="./downloads.html">Download and verify the offline compiler</a></footer>
+  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.35</span><a href="./downloads.html">Download and verify the offline compiler</a></footer>
 </main>
 </body>
 </html>
