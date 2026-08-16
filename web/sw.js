@@ -40,9 +40,9 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {
       if (response.ok && sameOrigin) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
       return response;
-    }).catch(() => caches.match(event.request).then(cached => cached || caches.match(versioned('./index.html')))));
+    }).catch(() => caches.match(event.request, { ignoreSearch: true }).then(cached => cached || caches.match(versioned('./index.html'), { ignoreSearch: true }))));
     return;
   }
 
-  event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request)));
+  event.respondWith(caches.match(event.request, { ignoreSearch: true }).then(cached => cached || fetch(event.request)));
 });
