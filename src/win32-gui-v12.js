@@ -94,9 +94,10 @@ function injectSmoke(source, adapted) {
   const smoke = `  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, FALSE, (LPARAM)-1);\n  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, TRUE, 0);\n  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, TRUE, ${candidate.options.length - 1});\n  DispatchControl(${candidate.commandId}, LBN_SELCHANGE, gControls[${candidate.nativeIndex}]);\n  if (${stateName(candidate.binding)}.size() != 2 || ${stateName(candidate.binding)}[0] != ${wideString(first)} || ${stateName(candidate.binding)}[1] != ${wideString(last)}) return 91;\n`;
   const start = source.indexOf('static int RunPatchSmoke() {');
   if (start < 0) throw new NativeGuiError('Generated Win32 source is missing RunPatchSmoke for multi-select verification.');
-  const returnAt = source.indexOf('  return 0;\n}', start);
-  if (returnAt < 0) throw new NativeGuiError('Generated Win32 smoke has an unexpected shape for multi-select verification.');
-  return source.slice(0, returnAt) + smoke + source.slice(returnAt);
+  let insertion = source.indexOf('  ClearPatchAccessibleNames();', start);
+  if (insertion < 0) insertion = source.indexOf('  DestroyWindow(', start);
+  if (insertion < 0) throw new NativeGuiError('Generated Win32 smoke cleanup marker is missing for multi-select verification.');
+  return source.slice(0, insertion) + smoke + source.slice(insertion);
 }
 
 function replaceInBody(body, marker, replacement, label) {
