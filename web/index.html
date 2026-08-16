@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="./designer-responsive-layout.css">
   <link rel="stylesheet" href="./form-window-resize.css">
   <link rel="stylesheet" href="./beta35-studio.css">
+  <link rel="stylesheet" href="./studio-outline.css">
 </head>
 <body>
 <a id="skipToEditor" class="skip-link" href="#code">Skip to editor</a>
@@ -60,7 +61,13 @@
   <section class="beta35-strip" aria-label="Patch beta.35 feature boundary"><strong>beta.35</strong><span>list-backed multi-select ListBox is currently browser-only and native builds fail closed. Choose <b>Multi-select ListBox</b> from Example to try the browser workflow.</span><a href="./docs.html">Details</a></section>
 
   <section class="workspace" aria-label="Patch Studio workspace">
-    <div class="pane editor-pane"><div id="editorTitle" class="pane-title">main.patch</div><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-labelledby="editorTitle"></textarea></div>
+    <div class="source-workspace">
+      <aside class="pane project-outline" aria-label="Project outline">
+        <div class="pane-title"><span class="outline-title-copy">Project Outline</span><span id="projectOutlineStatus" role="status" aria-live="polite">main.patch</span></div>
+        <nav id="projectOutlineTree" class="project-outline-tree" aria-label="Symbols in main.patch"><p class="outline-empty">Outline appears when main.patch parses.</p></nav>
+      </aside>
+      <div class="pane editor-pane"><div id="editorTitle" class="pane-title">main.patch</div><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-labelledby="editorTitle"></textarea></div>
+    </div>
     <div class="pane result-pane">
       <div id="resultTabs" class="tabs" role="tablist" aria-label="Result views">
         <button id="tabDesigner" class="tab active" role="tab" data-tab="designer" aria-controls="designer" aria-selected="true" tabindex="0">Designer</button>
@@ -84,6 +91,7 @@
 <script type="module" src="./recovery-manager.js"></script>
 <script type="module" src="./playground.js"></script>
 <script type="module" src="./beta35-studio.js"></script>
+<script type="module" src="./studio-outline.js"></script>
 <script type="module" src="./forms-designer.js"></script>
 <script type="module" src="./table-stage1.js"></script>
 <script type="module" src="./designer-alignment-guides.js"></script>
