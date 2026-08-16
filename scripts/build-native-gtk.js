@@ -9,6 +9,7 @@ import { emitGtkGuiCpp, PATCH_GTK_GUI_BACKEND_VERSION } from '../src/gtk-gui-v08
 import { emitGtkGuiCppV09, PATCH_GTK_GUI_BACKEND_V09_VERSION } from '../src/gtk-gui-v09.js';
 import { emitGtkGuiCppV10, PATCH_GTK_GUI_BACKEND_V10_VERSION } from '../src/gtk-gui-v10.js';
 import { emitGtkGuiCppV11, PATCH_GTK_GUI_BACKEND_V11_VERSION } from '../src/gtk-gui-v11.js';
+import { emitGtkGuiCppV12, PATCH_GTK_GUI_BACKEND_V12_VERSION } from '../src/gtk-gui-v12.js';
 
 const sourcePath = process.argv[2];
 const appName = safeName(process.argv[3] ?? 'PatchNativeGtk');
@@ -18,16 +19,17 @@ const smoke = process.argv.includes('--smoke');
 const tableV09 = process.argv.includes('--table-v09');
 const menuV10 = process.argv.includes('--menu-v10');
 const menuV11 = process.argv.includes('--menu-v11');
+const listV12 = process.argv.includes('--list-v12');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10] [--menu-v11]');
+  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10] [--menu-v11] [--list-v12]');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10, menuV11 });
+const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10, menuV11, listV12 });
 const gui = plan.gui;
 const cpp = emitForTier(plan);
 const backendVersion = backendVersionForTier(plan.tier);
@@ -55,7 +57,8 @@ fs.writeFileSync(metadataPath, JSON.stringify({
   nativeGuiTier: plan.tier,
   tableV09: plan.features.table,
   menuV10: plan.features.menuSeparators || plan.features.menuShortcuts,
-  menuV11: plan.features.menuStateBindings
+  menuV11: plan.features.menuStateBindings,
+  listV12: plan.features.listState
 }, null, 2));
 
 if (emitOnly) {
@@ -90,12 +93,14 @@ if (smoke) {
 }
 
 function emitForTier(plan) {
+  if (plan.tier === 'list-v12') return emitGtkGuiCppV12(plan.gui);
   if (plan.tier === 'menu-v11') return emitGtkGuiCppV11(plan.gui);
   if (plan.tier === 'menu-v10') return emitGtkGuiCppV10(plan.gui);
   if (plan.tier === 'table-v09') return emitGtkGuiCppV09(plan.gui);
   return emitGtkGuiCpp(plan.gui);
 }
 function backendVersionForTier(tier) {
+  if (tier === 'list-v12') return PATCH_GTK_GUI_BACKEND_V12_VERSION;
   if (tier === 'menu-v11') return PATCH_GTK_GUI_BACKEND_V11_VERSION;
   if (tier === 'menu-v10') return PATCH_GTK_GUI_BACKEND_V10_VERSION;
   if (tier === 'table-v09') return PATCH_GTK_GUI_BACKEND_V09_VERSION;
