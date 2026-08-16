@@ -79,7 +79,7 @@ export function parse(source) {
       if (!items.length) throw new PatchSyntaxError('A menu needs at least one item.',row.line);
       for (const item of items) {
         if (item.kind !== 'menuItem' && item.kind !== 'menuSeparator') {
-          throw new PatchSyntaxError('A menu can only contain item declarations and separator lines.',item.line);
+          throw new PatchSyntaxError('A menu can only contain items and separator lines.',item.line);
         }
       }
       if (!items.some(item => item.kind === 'menuItem')) throw new PatchSyntaxError('A menu needs at least one clickable item.',row.line);
