@@ -1,9 +1,11 @@
 import { flattenNativeGuiControls, validateNativeGuiIR } from './native-gui-ir.js';
 import { flattenNativeGuiControlsV08, validateNativeGuiIRV08 } from './native-gui-ir-v08.js';
+import { flattenNativeGuiControlsV11, validateNativeGuiIRV11 } from './native-gui-ir-v11.js';
 
 export const PATCH_SEALED_NATIVE_GUI_VERSION = 8;
 export const PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 7;
 export const PATCH_SEALED_NATIVE_GUI_TABLE_VERSION = 9;
+export const PATCH_SEALED_NATIVE_GUI_LIST_VERSION = 10;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC = 'PCHGUI01';
 const FOOTER_SIZE = 20;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
@@ -11,21 +13,20 @@ const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 export class SealedNativeGuiError extends Error {}
 
 /**
- * Payload v8 remains the default Ready-App contract while the Table-capable
- * v9/runtime-v1.0 line is staged and smoke-tested. Payload v9 preserves v8's
- * state/Form/menu/action/layout contract and adds explicit Table control kind 9,
- * source-backed columns/rows, and event value type 3 (`text-list`). Table row
- * selection remains transient UI state; scalar native state still changes only
- * through ordinary semantic `change` actions.
+ * Payload v8 remains the stable responsive scalar contract. Payload v9/runtime
+ * v1.0 adds Table/Grid. Payload v10/runtime v1.1 adds persistent text-list state
+ * and list-backed multi-select ListBox without redefining either older line.
  *
- * Payload v7 remains explicitly encodable for the frozen runtime-v0.8 release
- * line. User-facing Ready/offline consumers opt into v9 only together with a
- * runtime that explicitly understands the new contract.
+ * ListBox selection remains transient toolkit state. A list changes only through
+ * an explicit Patch change action. In payload v10 list set literals carry a full
+ * text-list, add/remove carry one text value, clear carries no value and a
+ * text-list event can be copied only through the explicit eventValue encoding.
  */
 export function encodeNativeGuiPayload(input, options = {}) {
   const version = payloadVersion(options.version ?? PATCH_SEALED_NATIVE_GUI_VERSION);
   const { ir, flatControls } = payloadInput(input, version);
   validateTextBindings(ir, flatControls);
+  validateSealedMenuBoundary(ir, version);
   const writer = new Writer();
 
   writer.u32(ir.states.length);
@@ -48,7 +49,10 @@ export function encodeNativeGuiPayload(input, options = {}) {
     writer.u32(controls.length);
     for (const control of controls) {
       if (control.type === 'table' && version < PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
-        throw new SealedNativeGuiError(`Native Table requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION}, not v${version}.`);
+        throw new SealedNativeGuiError(`Native Table requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION} or newer, not v${version}.`);
+      }
+      if (control.selectionMode === 'multiple' && version < PATCH_SEALED_NATIVE_GUI_LIST_VERSION) {
+        throw new SealedNativeGuiError(`Native multi-select ListBox requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_LIST_VERSION}, not v${version}.`);
       }
       writer.u8(controlTypeCode(control.type));
       writer.text(control.id ?? '');
@@ -72,8 +76,9 @@ export function encodeNativeGuiPayload(input, options = {}) {
     writer.u32(form.menus.length);
     for (const menu of form.menus) {
       writer.text(menu.title);
-      writer.u32(menu.items.length);
-      for (const item of menu.items) {
+      const items = (menu.items ?? []).filter(item => item.type !== 'menuSeparator');
+      writer.u32(items.length);
+      for (const item of items) {
         writer.text(item.id);
         writer.text(item.text);
       }
@@ -128,12 +133,22 @@ export function decodeNativeGuiPayload(binaryBytes) {
 }
 
 function payloadInput(input, version) {
+  if (input?.version === '1.1') {
+    if (version !== PATCH_SEALED_NATIVE_GUI_LIST_VERSION) {
+      throw new SealedNativeGuiError(`Native GUI IR 1.1 requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_LIST_VERSION}, not v${version}.`);
+    }
+    const ir = validateNativeGuiIRV11(input);
+    return { ir, flatControls: flattenNativeGuiControlsV11(ir) };
+  }
   if (input?.version === '0.8') {
     if (version !== PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
       throw new SealedNativeGuiError(`Native GUI IR 0.8 requires sealed native GUI payload v${PATCH_SEALED_NATIVE_GUI_TABLE_VERSION}, not v${version}.`);
     }
     const ir = validateNativeGuiIRV08(input);
     return { ir, flatControls: flattenNativeGuiControlsV08(ir) };
+  }
+  if (version === PATCH_SEALED_NATIVE_GUI_LIST_VERSION) {
+    throw new SealedNativeGuiError('Unsupported sealed native GUI version 10 for older Native GUI IR; lower Native GUI IR 1.1 first.');
   }
   if (version === PATCH_SEALED_NATIVE_GUI_TABLE_VERSION) {
     throw new SealedNativeGuiError('Unsupported sealed native GUI version 9 for Native GUI IR 0.7; lower Native GUI IR 0.8 first.');
@@ -144,7 +159,7 @@ function payloadInput(input, version) {
 
 function payloadVersion(value) {
   const version = Number(value);
-  if (![PATCH_SEALED_NATIVE_GUI_TABLE_VERSION, PATCH_SEALED_NATIVE_GUI_VERSION, PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION].includes(version)) {
+  if (![PATCH_SEALED_NATIVE_GUI_LIST_VERSION, PATCH_SEALED_NATIVE_GUI_TABLE_VERSION, PATCH_SEALED_NATIVE_GUI_VERSION, PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION].includes(version)) {
     throw new SealedNativeGuiError(`Unsupported sealed native GUI version '${value}'.`);
   }
   return version;
@@ -173,14 +188,16 @@ function validateRuntimeHeader(runtime, platform) {
 }
 
 function validateTextBindings(ir, flatControls) {
-  const states = new Set(ir.states.map(state => state.name));
+  const states = new Map(ir.states.map(state => [state.name, state]));
   const re = /\{([A-Za-z_]\w*)\}/g;
   for (const control of flatControls) {
     const text = String(control.text ?? '');
     re.lastIndex = 0;
     let match;
     while ((match = re.exec(text))) {
-      if (!states.has(match[1])) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
+      const state = states.get(match[1]);
+      if (!state) throw new SealedNativeGuiError(`Native GUI text '${text}' refers to unknown state '${match[1]}'.`);
+      if (state.type === 'list') throw new SealedNativeGuiError(`Native GUI text cannot interpolate list state '${state.name}'.`);
     }
     if (control.type === 'radio' && (!Array.isArray(control.options) || control.options.length < 2)) {
       throw new SealedNativeGuiError('Native Radio payload needs at least two options.');
@@ -191,6 +208,19 @@ function validateTextBindings(ir, flatControls) {
     }
     if (control.type === 'tabs' && (!Array.isArray(control.pageTitles) || control.pageTitles.length < 2)) {
       throw new SealedNativeGuiError('Native Tabs payload needs at least two page titles.');
+    }
+  }
+}
+
+function validateSealedMenuBoundary(ir, version) {
+  if (version < PATCH_SEALED_NATIVE_GUI_LIST_VERSION) return;
+  for (const form of ir.forms ?? []) {
+    for (const menu of form.menus ?? []) {
+      for (const item of menu.items ?? []) {
+        if (item.type === 'menuSeparator' || item.shortcut || item.enabledState || item.checkedState) {
+          throw new SealedNativeGuiError('Sealed payload v10 does not yet encode Menu separators, shortcuts or source-backed MenuItem state; use direct AOT for that combination.');
+        }
+      }
     }
   }
 }
@@ -299,10 +329,11 @@ function writeAction(writer, action) {
     if (op.op === 'clear') {
       writer.u8(0);
     } else if (op.value?.kind === 'eventValue') {
+      if (type === 4 && op.op !== 'set') throw new SealedNativeGuiError('List eventValue is valid only for set.');
       writer.u8(2);
     } else {
       writer.u8(1);
-      writeTypedValue(writer, type, op.value?.value);
+      writeOperationLiteral(writer, type, op);
     }
   }
 }
@@ -311,6 +342,7 @@ function stateTypeCode(type) {
   if (type === 'number') return 1;
   if (type === 'text') return 2;
   if (type === 'boolean') return 3;
+  if (type === 'list') return 4;
   throw new SealedNativeGuiError(`Unsupported native state type '${type}'.`);
 }
 function controlTypeCode(type) {
@@ -332,11 +364,35 @@ function opCode(op) {
   if (op === 'clear') return 4;
   throw new SealedNativeGuiError(`Unsupported native operation '${op}'.`);
 }
+function writeOperationLiteral(writer, type, op) {
+  if (type !== 4) {
+    writeTypedValue(writer, type, op.value?.value);
+    return;
+  }
+  if (op.op === 'set') {
+    writeTextList(writer, op.value?.value);
+    return;
+  }
+  if (op.op === 'add' || op.op === 'remove') {
+    if (typeof op.value?.value !== 'string') throw new SealedNativeGuiError(`Native list ${op.op} requires one text literal.`);
+    writer.text(op.value.value);
+    return;
+  }
+  throw new SealedNativeGuiError(`Unsupported native list operation '${op.op}'.`);
+}
 function writeTypedValue(writer, type, value) {
   if (type === 1) writer.f64(Number(value));
   else if (type === 2) writer.text(String(value ?? ''));
   else if (type === 3) writer.u8(value ? 1 : 0);
+  else if (type === 4) writeTextList(writer, value);
   else throw new SealedNativeGuiError('Unsupported native value type.');
+}
+function writeTextList(writer, value) {
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
+    throw new SealedNativeGuiError('Native list value must be a list of text.');
+  }
+  writer.u32(value.length);
+  for (const item of value) writer.text(item);
 }
 
 class Writer {
