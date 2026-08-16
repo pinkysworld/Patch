@@ -1,8 +1,8 @@
 # Application builds
 
-Status: **0.2.0-beta.34** · Change IR **0.10**
+Status: **0.2.0-beta.35** · Change IR **0.10**
 
-Patch keeps Console, direct-native Window, token-free sealed Window and explicit compatibility Window paths separate. Product GUI work does not expand the current research assurance claims.
+Patch keeps Console, direct-native Window, token-free sealed Window and explicit compatibility Window paths separate. Product GUI work does not expand the beta.32 research assurance claims.
 
 ## Build matrix
 
@@ -22,27 +22,32 @@ Window / GUI
   FreeBSD -> not yet supported
 ```
 
-Windows/macOS/Linux ordinary Studio native downloads can use **Ready app download (no token)**. That path seals project-specific Native GUI payload into precompiled runtime templates and does not require a personal GitHub token, Node.js, Rust/Cargo or a local compiler.
-
-The local `patch-app` command and optional AOT cloud path instead compile a project-specific native application with the host toolkit backend.
+Windows/macOS/Linux ordinary Studio downloads use **Ready app download (no token)** by default. That path lowers project-specific Native GUI IR in the browser, verifies the platform runtime template, seals the checked payload into the native runtime and downloads the result. The optional cloud/local AOT paths generate project-specific machine code with the platform toolkit compiler.
 
 ## Versioned native layers
 
-The native stack deliberately keeps semantic, generator and sealed-runtime contracts separate:
+The native stack keeps semantic, generator and sealed-runtime contracts independent:
 
-- **Native GUI IR 0.7**: stable base control surface for Forms, Text/Button/Input/Checkbox, ComboBox/ListBox/Radio, Tabs, menus and dialogs.
-- **Native GUI IR 0.8**: Table extension carrying source-backed columns/rows and transient `text-list` Table `changed` events without adding persistent native list state.
-- **AOT backend 0.8**: stable Win32/AppKit/GTK generator for Native GUI IR 0.7 with accessibility and responsive Anchor/Dock handling.
-- **AOT backend 0.9**: direct Table extension using real native Table widgets on Win32/AppKit/GTK while retaining the v0.8 accessibility and responsive layout behavior.
-- **sealed payload v9 / runtime v1.0**: current token-free Ready/offline Window contract. It carries Native GUI IR 0.8 Table columns/rows, transient `text-list` event typing and the v8 responsive layout metadata.
-- **sealed payload v8 / runtime v0.9**: frozen responsive compatibility line for the Native GUI IR 0.7 control surface.
-- **sealed payload v7 / runtime v0.8**: older frozen compatibility/reproducibility line.
+- **Native GUI IR 0.7**: stable base Forms/control/menu/dialog surface.
+- **Native GUI IR 0.8**: additive Table extension with source-backed columns/rows and transient `text-list` Table events.
+- **Native GUI IR 0.9**: additive Menu separator/shortcut representation.
+- **Native GUI IR 1.0**: additive source-backed Boolean MenuItem enabled/checked state.
+- **Native GUI IR 1.1**: additive persistent text-list state and list-backed multi-select ListBox semantics.
+- **AOT backend 0.8**: base Win32/AppKit/GTK generator with accessibility and responsive layout.
+- **AOT backend 0.9**: native Table widgets.
+- **AOT backend 1.0**: Menu separators/shortcuts.
+- **AOT backend 1.1**: source-backed enabled/checked MenuItem state.
+- **AOT backend 1.2**: persistent text-list state and real native multi-select ListBox.
+- **sealed payload v10 / runtime v1.1**: current token-free Ready/offline Window contract carrying Table, responsive layout and native list state.
+- **sealed payload v9 / runtime v1.0**: frozen previous Table-capable compatibility line.
+- **sealed payload v8 / runtime v0.9**: frozen responsive compatibility line.
+- **sealed payload v7 / runtime v0.8**: older frozen accessibility/result-dialog compatibility line.
 
-A runtime or backend version therefore does not silently redefine an older payload or IR format.
+A newer runtime or backend therefore does not silently redefine an older payload or IR format.
 
 ## Responsive Window layout
 
-Visual layout remains source-backed. Patch Studio writes ordinary comments next to controls, for example:
+Visual layout remains source-backed:
 
 ```patch
 # @layout anchor left right top
@@ -52,41 +57,7 @@ button "Save" as save at 24, 24 size 120, 36
 text "Ready" at 24, 380 size 200, 30
 ```
 
-The parser still treats these as comments. The compiler extracts them into Window layout metadata; persistent application semantics and Change IR stay unchanged.
-
-The same policy is honored by Standalone Web, direct Win32/AppKit/GTK AOT, direct AOT Table backend 0.9, token-free sealed runtime v1.0 and supported Window apps linked by the downloadable offline compiler. Anchor rules preserve selected margins or stretch a control when opposite edges are anchored. Dock supports `top`, `bottom`, `left`, `right` and `fill`.
-
-## Direct AOT Window path
-
-Stable controls use:
-
-```text
-.patch source
-  -> Patch parser/compiler
-  -> Window support validation
-  -> Native GUI IR 0.7
-  -> Win32 / AppKit / GTK3 backend 0.8
-  -> finished native application
-```
-
-Table uses:
-
-```text
-.patch source
-  -> Patch parser/compiler
-  -> Window support validation
-  -> Native GUI IR 0.8
-  -> Win32 / AppKit / GTK3 backend 0.9
-  -> finished native application
-```
-
-Native Table mappings are:
-
-- Win32: report-mode `WC_LISTVIEWW`;
-- AppKit: multi-column `NSTableView` inside `NSScrollView`;
-- GTK3: `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow`.
-
-The dedicated direct-AOT Table workflow compiles and executes the same Table example on Windows/MSVC, macOS/AppKit and Linux/GTK3 and checks columns, rows, native selection dispatch, accessibility and responsive layout.
+The parser treats these as comments while the compiler extracts them into Window layout metadata. Standalone Web, direct Win32/AppKit/GTK AOT, token-free runtime v1.1 and supported offline-linked Window apps all honor the same layout policy. Runtime reflow is UI behavior and creates no Patch state or Change History.
 
 ## Native UI semantics
 
@@ -94,102 +65,118 @@ GUI interaction alone does not persist Patch state.
 
 - Input `changed` exposes transient text `value`.
 - Checkbox `changed` exposes transient Boolean `value`.
-- ComboBox/ListBox/Radio `changed` expose transient text `value`.
-- Table `changed` exposes the selected row as transient list-valued `value` in Studio App Preview, Standalone Web, direct AOT backend 0.9, sealed Ready runtime v1.0 and supported offline-linked Window apps.
+- ComboBox/Radio and text-backed ListBox `changed` expose transient text `value`.
+- list-backed ListBox `changed` exposes transient copied text-list `value`.
+- Table `changed` exposes the selected row as transient list-valued `value`.
 - MenuItem `clicked` has no value.
 - Tabs page selection is renderer/toolkit-local and exposes no Patch event.
 - Confirm emits `confirmed` or `cancelled`.
 - Open/Save emit `chosen` with transient text `value`, or `cancelled`.
 
-Patch source must execute an ordinary semantic `change` to persist a value and create Change History. Runtime layout reflow likewise creates no Patch state or history. Native GUI IR 0.8 and payload v9 do not introduce persistent list state merely because a Table event carries a row list.
+Persistent application state changes only through an explicit semantic `change`.
 
-## Table support matrix
+## Native multi-select ListBox
+
+List-backed ListBox now has parity across browser preview, Standalone Web, direct AOT and current token-free Ready/offline Windows/macOS/Linux paths.
+
+```patch
+create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker":
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+
+when fruits changed:
+  change fruits:
+    set = value
+```
+
+The native mappings are:
+
+- Win32: `LBS_EXTENDEDSEL` + `LB_GETSELITEMS` / `LB_SETSEL`;
+- AppKit: multi-select `NSTableView` + `selectedRowIndexes`;
+- GTK3: `GTK_SELECTION_MULTIPLE` + `selected-rows-changed`.
+
+Direct AOT uses Native GUI IR **1.1** / backend **1.2**. Token-free Ready/offline uses payload **v10** / runtime **v1.1**. The v10 payload keeps list `set`, `add`, `remove`, `clear` and event-local `set = value` structurally distinct instead of encoding lists as strings.
+
+## Table support
+
+Table/Grid continues to use the specialized Table representation introduced at Native GUI IR **0.8** and direct backend **0.9**:
+
+- Win32: report-mode `WC_LISTVIEWW`;
+- AppKit: multi-column `NSTableView` inside `NSScrollView`;
+- GTK3: `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow`.
 
 | Surface | Table display | Row selection / `changed` | Status |
 | --- | --- | --- | --- |
 | Designer | yes | Designer selection only | implemented |
 | Standalone Web | yes | transient row list | implemented |
-| Studio App preview | yes | transient row list through shared Window event adapter | implemented |
-| Direct Win32 AOT | `WC_LISTVIEWW` | transient row list | backend 0.9 smoke-tested |
-| Direct AppKit AOT | `NSTableView` | transient row list | backend 0.9 smoke-tested |
-| Direct GTK3 AOT | `GtkTreeView` | transient row list | backend 0.9 smoke-tested |
-| Token-free sealed Ready app | real native Table | transient row list | payload v9/runtime v1.0 smoke-tested |
-| Offline `patch link` Window | real native Table | transient row list | payload v9/runtime v1.0 smoke-tested |
+| Studio App preview | yes | transient row list | implemented |
+| Direct Win32/AppKit/GTK AOT | real native Table | transient row list | backend 0.9 smoke-tested |
+| Token-free sealed Ready app | real native Table | transient row list | current payload v10/runtime v1.1; v9/v1.0 frozen compatibility |
+| Offline `patch link` Window | real native Table | transient row list | current payload v10/runtime v1.1 |
 | FreeBSD Window | no | no | unsupported |
 
-## Token-free sealed native runtimes
+Native GUI IR 1.1 and payload v10 preserve the Table contract while adding persistent list state for ListBox. A Table row remains transient UI selection unless source explicitly persists it.
 
-Patch Studio builds native GUI downloads in the browser by sealing checked Native GUI IR into the `PCHGUI01` executable envelope.
+## Token-free sealed runtimes
 
-### Payload v9 / runtime v1.0
+Current Ready Window builds use **payload v10 / runtime v1.1** on Windows, macOS and Linux. Runtime release tags are:
 
-Current Ready Window builds use **payload v9** and **runtime v1.0** on Windows, macOS and Linux. Payload v9 preserves the v8 state/Form/menu/dialog/layout contract and adds:
+- `native-win32-runtime-v1.1`;
+- `native-linux-runtime-v1.1`;
+- `native-macos-runtime-v1.1`.
 
-- Table control kind `9`;
-- source-backed Table columns and rows;
-- transient Table event value type `text-list`;
-- Native GUI IR 0.8 Table metadata alongside the existing responsive Anchor/Dock policy.
+The **Patch Native Sealed List Runtime** workflow builds each runtime from source and proves three paths per desktop host:
 
-Runtime v1.0 validates payload v9 and keeps Table selection renderer/toolkit-local. It reuses the established v0.9/v0.8 base parser path through a validated internal adapter, while the visible Table itself is a real platform widget. The adapter's synthetic shadow state is implementation-only and is not application-visible persistent Table state.
+1. the canonical multi-select ListBox app sealed directly as payload v10;
+2. Table compatibility carried through the new runtime;
+3. ordinary offline `patch link` of the same multi-select source.
 
-The v1.0 runtime release tags are:
+The v1.1 runtime uses an additive v10-to-v9 compatibility adapter internally so the established scalar/Table core remains reproducible while list state and list actions are handled by the new layer. Original event action ordering is preserved when list actions are mixed with scalar changes, dialogs or Form actions.
 
-- `native-win32-runtime-v1.0`;
-- `native-linux-runtime-v1.0`;
-- `native-macos-runtime-v1.0`.
+### Frozen compatibility
 
-The dedicated **Patch Native Sealed Table Runtime** matrix builds each runtime from source, seals `examples/table-native-v09.patch` as payload v9, runs the finished application and separately runs the normal `patch link` path against the same runtime. Windows, macOS and Linux all execute real row-selection smokes.
+Payload **v9** / runtime **v1.0** remains a frozen Table-capable line and is still built/smoked independently on Windows, macOS and Linux. Payload **v8** / runtime **v0.9** and payload **v7** / runtime **v0.8** remain the earlier frozen lines.
 
-Pages waits until the required Studio runtime releases exist before deploying a Studio version that consumes them. If the initial source push reaches Pages first, that deployment exits successfully without replacing the current site; successful runtime publication triggers the later deployment. This avoids a browser-compiler/runtime mismatch and avoids turning release ordering into a failing Pages run.
+## Beta.34 runtime-template integrity
 
-### Beta.34 runtime-template integrity
-
-The browser Ready path now verifies every runtime template it can consume, not only the native GUI v1.0 files. This includes the three native GUI v1.0 runtimes and the Console/explicit compatibility Window templates from `studio-runtime-v0.6`.
+The integrity mechanism introduced in beta.34 remains the current delivery gate, now applied to runtime v1.1 assets.
 
 During Pages deployment:
 
-1. Pages requires `studio-runtime-v0.6` plus the three platform native runtime-v1.0 releases.
-2. GitHub Release supplies the exact runtime assets and their recorded `sha256:` digests.
-3. `scripts/runtime-integrity-manifest.js` independently hashes every downloaded runtime and fails when bytes do not match the recorded release digest.
-4. Pages writes `runtimes/runtime-manifest.json` containing the verified file name, release tag and SHA-256 digest for all browser-consumed runtime templates.
+1. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.1 releases.
+2. GitHub Release provides the runtime assets and recorded `sha256:` digests.
+3. `scripts/runtime-integrity-manifest.js` independently hashes every downloaded runtime and fails when bytes differ.
+4. Pages publishes `runtimes/runtime-manifest.json` for all browser-consumed runtime templates.
+5. the browser loads `web/runtime-integrity.js` before `native-build.js`, hashes runtime bytes with Web Crypto SHA-256 and fails closed on a missing/mismatching manifest entry.
 
-In Patch Studio, `web/runtime-integrity.js` loads before `native-build.js` and intercepts only the known same-origin runtime-template fetches. It fetches the manifest with `no-store`, hashes runtime bytes using Web Crypto SHA-256 and fails closed when a runtime is missing from the manifest or its digest differs.
+The service worker treats same-origin `/runtimes/` requests as fresh-first while online and keeps successful responses only as offline fallback.
 
-The service worker treats all same-origin `/runtimes/` requests as fresh-first while online, including the manifest, native `.exe`/`.bin` templates and compatibility `.zip` templates. Successful responses remain available as offline fallback.
-
-This validates byte consistency across the existing GitHub Release -> Pages -> browser path. It does not claim Authenticode, Developer ID/notarization, an independent transparency log or a separate signing trust root.
-
-### Compatibility lines
-
-Payload **v8** / runtime **v0.9** remains the frozen responsive Native GUI IR 0.7 line. Payload **v7** / runtime **v0.8** remains the older compatibility/reproducibility line. Existing workflows continue to exercise those contracts independently.
-
-The macOS browser-sealed bundle remains unsigned because project sealing changes the executable after the generic runtime template was compiled. Final-artifact Developer ID signing/notarization remains separate distribution work.
+This establishes byte consistency across the GitHub Release -> Pages -> browser path. It does not claim Authenticode, Developer ID/notarization, a transparency log or a separate signing trust root.
 
 ## Offline compiler
 
-The Windows, Linux, Apple Silicon macOS and Intel macOS offline compiler paths embed or package native Window runtime v1.0. The compiler lowers Window projects through Native GUI IR 0.8 and seals payload v9 locally. Its platform matrix links and executes:
+Current Windows, Linux, Apple Silicon macOS and Intel macOS offline compiler paths embed/package runtime **v1.1** and seal Window payload **v10**. Their matrix executes Console, responsive Window, Table and native multi-select Window smokes. FreeBSD remains Console-only through portable C99 + local `cc`.
 
-1. a Console application;
-2. a responsive Window application;
-3. the Table/Grid example with native row-selection smoke.
+See `docs/OFFLINE_COMPILER.md` for platform packaging and verification details.
 
-The Intel macOS kit bundles its own Intel Node runtime for the CLI. FreeBSD remains Console-only through portable C99 + local `cc`.
+## Menu capability boundary
 
-The rolling `offline-compiler-v0.1` release publishes a `SHA256SUMS` file beside its platform assets. The public Downloads page documents verification commands and explicitly separates checksum integrity from platform code-signing/notarization claims.
+Direct AOT already supports Menu separators/portable shortcuts and source-backed enabled/checked state through Native GUI IR 0.9/1.0 and backend 1.0/1.1. Current sealed payload v10/runtime v1.1 deliberately remains fail-closed for advanced Menu decorations/state combinations rather than silently dropping those properties. Extending that sealed/offline contract is a separate backlog item.
 
 ## Native accessibility baseline
 
-The direct and sealed native paths implement deterministic naming for otherwise-unlabelled Input, ComboBox, ListBox and Tabs controls and add group context to Radio options. Table backend 0.9 and sealed runtime v1.0 assign the source-derived accessible Table name while keeping real native table/grid semantics.
+Direct and sealed native paths implement deterministic naming for otherwise-unlabelled Input, ComboBox, ListBox and Tabs controls and group context for Radio options. Table widgets use source-derived accessible names.
 
 - Windows: Microsoft Active Accessibility `IAccPropServices` / `IAccessible`;
 - macOS: AppKit accessibility labels;
 - Linux: GTK3/ATK accessible names.
 
-Executable smokes fail when the platform API exposes a different name from the Patch naming contract. This is an automated engineering baseline, not a WCAG conformance claim. Manual Narrator/VoiceOver/Orca testing remains open.
+This is an automated engineering baseline, not a WCAG conformance claim. Manual Narrator/VoiceOver/Orca testing remains open.
 
 ## Explicit compatibility Window path
 
-Patch retains the Electron-based compatibility backend as an explicit fallback, not as a silent native fallback:
+Patch retains the Electron-based compatibility backend as an explicit fallback, never as a silent native fallback:
 
 ```text
 .patch source
@@ -200,35 +187,8 @@ Patch retains the Electron-based compatibility backend as an explicit fallback, 
   -> Windows/macOS/Linux application
 ```
 
-The compatibility runtime template remains **`studio-runtime-v0.6`** with Ready payload **v0.4**. Native GUI IR/payload/backend evolution does not redefine that format.
-
-## Cross-platform executable evidence
-
-CI exercises the major paths separately:
-
-- stable AOT backend 0.8 / Native GUI IR 0.7;
-- direct Table AOT backend 0.9 / Native GUI IR 0.8;
-- sealed responsive compatibility payload v8/runtime v0.9;
-- sealed Table payload v9/runtime v1.0;
-- ordinary offline `patch link` using runtime v1.0;
-- downloadable offline compiler matrices including Table linking on Windows, Linux, Apple Silicon macOS and Intel macOS.
-
-Smoke mode suppresses only blocking user interaction. Normal applications use the real OS dialogs.
+The compatibility runtime remains `studio-runtime-v0.6` with compatibility Ready payload v0.4. Native GUI IR/payload/backend evolution does not redefine that format.
 
 ## Research boundary
 
-Native product GUI work does not make Patch an end-to-end verified compiler and does not expand the current formal fragment. Runtime capture, independent validator/frame reconstruction, parser/extractor correctness, JavaScript-to-Wasm lowering, native toolkit/compiler behavior and the Wasm engine remain explicit trust/proof-free boundaries where applicable.
-
-The beta.32 invocation-frame research evidence remains independently reproducible through `formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean`; native GUI product milestones do not replace or broaden that certificate boundary.
-
-## Remaining product work
-
-The next native stages include:
-
-- manual assistive-technology validation;
-- Menu separators, shortcuts and source-backed enabled/checked state;
-- ListBox multi-selection with an explicit list-valued event contract;
-- signing/notarization evidence and install/update packaging;
-- broader installer/update integrity verification once those channels exist;
-- more self-contained Linux distribution packaging;
-- FreeBSD native GUI support.
+Native product changes do not alter the beta.32 assurance evidence. `GeneratedRepeatedTransitiveRuntimeCertificate.lean` and the related invocation-frame/call-tree evidence remain the current research correspondence milestone. Product runtime version numbers should not be read as expanded proof coverage.
