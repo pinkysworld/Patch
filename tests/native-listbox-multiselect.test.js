@@ -40,7 +40,7 @@ test('Native GUI build plan chooses IR 1.1 / backend 1.2 automatically for list 
   assert.equal(plan.tier, 'list-v12');
   assert.equal(plan.gui.version, '1.1');
   assert.equal(plan.features.listState, true);
-  assert.equal(plan.features.multiSelectListBox, true);
+  assert.equal(plan.features.listBackedListBox, true);
 });
 
 test('Native GUI 1.1 list actions keep set/add/remove/clear explicit', () => {
