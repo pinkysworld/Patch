@@ -128,13 +128,13 @@ function injectSmoke(source, adapted) {
   if (!candidate || candidate.options.length < 2) return source;
   const start = source.indexOf('static int RunPatchSmoke() {');
   if (start < 0) throw new NativeGuiError('GTK multi-select smoke function is missing.');
-  const marker = '\n  return 0;\n}';
-  const end = source.indexOf(marker, start);
-  if (end < 0) throw new NativeGuiError('GTK multi-select smoke return marker is missing.');
+  let insertion = source.indexOf('  gtk_widget_destroy(gForms[', start);
+  if (insertion < 0) insertion = source.indexOf('  return 0;', start);
+  if (insertion < 0) throw new NativeGuiError('GTK multi-select smoke cleanup marker is missing.');
   const first = candidate.options[0];
   const last = candidate.options[candidate.options.length - 1];
-  const smoke = `\n  gtk_list_box_unselect_all(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]));\n  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), 0));\n  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), ${candidate.options.length - 1}));\n  if (${stateName(candidate.binding)}.size() != 2 || ${stateName(candidate.binding)}[0] != ${cString(first)} || ${stateName(candidate.binding)}[1] != ${cString(last)}) return 91;`;
-  return source.slice(0, end) + smoke + source.slice(end);
+  const smoke = `  gtk_list_box_unselect_all(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]));\n  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), 0));\n  gtk_list_box_select_row(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), gtk_list_box_get_row_at_index(GTK_LIST_BOX(gControls[${candidate.nativeIndex}]), ${candidate.options.length - 1}));\n  if (${stateName(candidate.binding)}.size() != 2 || ${stateName(candidate.binding)}[0] != ${cString(first)} || ${stateName(candidate.binding)}[1] != ${cString(last)}) return 91;\n`;
+  return source.slice(0, insertion) + smoke + source.slice(insertion);
 }
 
 function replaceInBody(body, marker, replacement, label) {
