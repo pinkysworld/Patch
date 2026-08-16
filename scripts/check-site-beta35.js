@@ -19,6 +19,7 @@ for (const rel of [
   '_site/language.html',
   '_site/downloads.html',
   '_site/help.html',
+  '_site/beta35-studio.js',
   '_site/table-stage1.js',
   '_site/src/webapp.js',
   '_site/src/window-events.js',
@@ -26,19 +27,28 @@ for (const rel of [
 ]) requireFile(rel);
 
 // beta.35 introduced the browser interaction contract. Native parity is an additive
-// post-beta.35 capability, so the current Studio must keep the sample/workflow visible
+// post-beta.35 capability, so the current Studio must keep the workflow visible
 // without preserving the original browser-only release disclaimer forever.
 const index = read('_site/index.html');
 requireAll('beta.35 Studio page', index, [
   'data-patch-version="0.2.0-beta.35"',
   '0.2 beta.35',
-  'list-backed multi-select ListBox now works in Studio, Standalone Web and token-free Ready/offline Windows, macOS and Linux apps',
-  'Choose <b>Multi-select ListBox</b> from Example',
+  'List-backed multi-select ListBox now works in browser preview, direct native AOT and token-free Ready/offline Windows, macOS and Linux apps.',
+  'Persistent selection still changes only through explicit <b>change</b>',
+  './beta35-studio.js?v=',
   './table-stage1.js?v='
 ]);
 if (index.includes('list-backed multi-select ListBox is currently browser-only and native builds fail closed')) {
   throw new Error('beta.35 Studio page regressed to the obsolete browser-only native boundary.');
 }
+
+const beta35Studio = read('_site/beta35-studio.js');
+requireAll('beta.35 Studio example module', beta35Studio, [
+  "option.value = 'listboxMultiWindow'",
+  "option.textContent = 'Multi-select ListBox'",
+  'create list fruits = ["Banana", "Mango"]',
+  "document.querySelector('#tabDesigner')?.click()"
+]);
 
 const studioAdapter = read('_site/table-stage1.js');
 requireAll('Studio multi-select ListBox adapter', studioAdapter, [
