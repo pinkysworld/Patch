@@ -46,9 +46,16 @@ export function buildNativeGuiIRV09(compiled) {
           if (entry.kind !== 'menuSeparator') {
             return { kind: 'menuItem', source: entry, entryIndex };
           }
-          const dummyId = uniqueSeparatorId(usedIds, ++separatorOrdinal);
+          const ordinal = ++separatorOrdinal;
+          const dummyId = uniqueSeparatorId(usedIds, ordinal);
           usedIds.add(dummyId);
-          return { kind: 'menuSeparator', source: entry, entryIndex, dummyId };
+          return {
+            kind: 'menuSeparator',
+            source: entry,
+            entryIndex,
+            dummyId,
+            dummyText: `__patch_menu_separator_${ordinal}_${entryIndex}`
+          };
         });
         menus.push({ formIndex: currentForm, menuIndex: currentMenu, node: child, entries });
         return {
@@ -57,7 +64,7 @@ export function buildNativeGuiIRV09(compiled) {
             ? {
                 kind: 'menuItem',
                 id: entry.dummyId,
-                textExpr: JSON.stringify(`__patch_menu_separator_${separatorOrdinal}_${entry.entryIndex}`),
+                textExpr: JSON.stringify(entry.dummyText),
                 shortcutExpr: null,
                 line: entry.source.line
               }
@@ -93,9 +100,9 @@ export function validateNativeGuiIRV09(ir) {
     throw new NativeGuiError('Native GUI IR 0.9 format/version is unsupported.');
   }
 
+  const shortcuts = new Map();
   for (let formIndex = 0; formIndex < (ir.forms ?? []).length; formIndex += 1) {
     const form = ir.forms[formIndex];
-    const shortcuts = new Map();
     for (const menu of form.menus ?? []) {
       if (!Array.isArray(menu.items) || !menu.items.length) {
         throw new NativeGuiError(`Native GUI IR 0.9 Menu '${menu?.title ?? ''}' is empty.`);
@@ -119,7 +126,7 @@ export function validateNativeGuiIRV09(ir) {
         const identity = menuShortcutIdentity(shortcut);
         if (shortcuts.has(identity)) {
           throw new NativeGuiError(
-            `Native GUI IR 0.9 Form ${formIndex + 1} reuses Menu shortcut '${identity}' for '${item.id}' and '${shortcuts.get(identity)}'.`
+            `Native GUI IR 0.9 reuses Menu shortcut '${identity}' for '${item.id}' and '${shortcuts.get(identity)}' in one application.`
           );
         }
         shortcuts.set(identity, item.id);
@@ -185,6 +192,7 @@ export function flattenNativeGuiMenuEntriesV09(ir) {
 export function toV08Compatible(ir) {
   const compatible = structuredClone(ir);
   compatible.version = '0.8';
+  const usedIds = collectIrUiIds(compatible);
   let separatorOrdinal = 0;
   for (let formIndex = 0; formIndex < (compatible.forms ?? []).length; formIndex += 1) {
     const form = compatible.forms[formIndex];
@@ -192,10 +200,11 @@ export function toV08Compatible(ir) {
       const menu = form.menus[menuIndex];
       menu.items = (menu.items ?? []).map((item, itemIndex) => {
         if (item.type === 'menuSeparator') {
-          separatorOrdinal += 1;
+          const id = uniqueCompatSeparatorId(usedIds, ++separatorOrdinal, formIndex, menuIndex, itemIndex);
+          usedIds.add(id);
           return {
             type: 'menuItem',
-            id: `__patch_v09_separator_${formIndex}_${menuIndex}_${itemIndex}_${separatorOrdinal}`,
+            id,
             text: `__patch_v09_separator_${separatorOrdinal}`
           };
         }
@@ -251,9 +260,33 @@ function collectUiIds(ast) {
   return ids;
 }
 
+function collectIrUiIds(ir) {
+  const ids = new Set();
+  const controls = controlsList => {
+    for (const control of controlsList ?? []) {
+      if (control.id) ids.add(control.id);
+      if (control.type === 'tabs') for (const page of control.pages ?? []) controls(page.controls);
+    }
+  };
+  for (const form of ir.forms ?? []) {
+    controls(form.controls);
+    for (const menu of form.menus ?? []) {
+      for (const item of menu.items ?? []) if (item.id) ids.add(item.id);
+    }
+  }
+  return ids;
+}
+
 function uniqueSeparatorId(usedIds, ordinal) {
   let suffix = ordinal;
   let id = `__patch_menu_separator_v09_${suffix}`;
   while (usedIds.has(id)) id = `__patch_menu_separator_v09_${++suffix}`;
+  return id;
+}
+
+function uniqueCompatSeparatorId(usedIds, ordinal, formIndex, menuIndex, itemIndex) {
+  let suffix = ordinal;
+  let id = `__patch_v09_separator_${formIndex}_${menuIndex}_${itemIndex}_${suffix}`;
+  while (usedIds.has(id)) id = `__patch_v09_separator_${formIndex}_${menuIndex}_${itemIndex}_${++suffix}`;
   return id;
 }
