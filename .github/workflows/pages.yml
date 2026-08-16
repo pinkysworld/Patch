@@ -39,6 +39,9 @@ on:
       - src/window-compiled.js
       - src/native-gui-ir.js
       - src/native-gui-ir-v08.js
+      - src/native-gui-ir-v09.js
+      - src/native-gui-ir-v10.js
+      - src/native-gui-ir-v11.js
       - src/sealed-native-gui.js
       - src/sealed-native-package.js
       - src/prebuilt-native.js
@@ -55,9 +58,10 @@ on:
       - .github/workflows/native-macos-runtime.yml
       - .github/workflows/native-responsive-runtime.yml
       - .github/workflows/native-sealed-table-runtime.yml
+      - .github/workflows/native-sealed-list-runtime.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime]
     types: [completed]
 
 permissions:
@@ -92,9 +96,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.1
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.1
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.1
         shell: bash
         run: |
           missing=0
@@ -117,9 +121,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.0
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.0
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.0
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.1
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.1
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.1
         shell: bash
         run: |
           set -euo pipefail
