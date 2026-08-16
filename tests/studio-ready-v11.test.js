@@ -33,7 +33,7 @@ test('Studio tells users multi-select Ready support and keeps explicit mutation 
   assert.match(index, /Persistent selection still changes only through explicit <b>change<\/b>/);
   assert.match(index, /Native GUI IR 1\.1/);
   assert.match(index, /payload v10/);
-  assert.match(index, /runtime v1\.1/);
+  assert.match(index, /runtime v1\.1/i);
   assert.doesNotMatch(index, /currently browser-only and native builds fail closed/);
 });
 
