@@ -2,6 +2,7 @@ import { buildNativeGuiIR, flattenNativeGuiControls } from './native-gui-ir.js';
 import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from './native-gui-ir-v08.js';
 import { buildNativeGuiIRV09, flattenNativeGuiControlsV09 } from './native-gui-ir-v09.js';
 import { buildNativeGuiIRV10, flattenNativeGuiControlsV10 } from './native-gui-ir-v10.js';
+import { buildNativeGuiIRV11, flattenNativeGuiControlsV11 } from './native-gui-ir-v11.js';
 
 /** Select the smallest native GUI contract that preserves source semantics. */
 export function buildNativeGuiPlan(compiled, options = {}) {
@@ -9,7 +10,17 @@ export function buildNativeGuiPlan(compiled, options = {}) {
   const forceTable = Boolean(options.tableV09);
   const forceMenu = Boolean(options.menuV10);
   const forceMenuState = Boolean(options.menuV11);
+  const forceList = Boolean(options.listV12);
 
+  if (forceList || features.listState) {
+    const gui = buildNativeGuiIRV11(compiled);
+    return {
+      tier: 'list-v12',
+      gui,
+      controlCount: flattenNativeGuiControlsV11(gui).length,
+      features
+    };
+  }
   if (forceMenuState || features.menuStateBindings) {
     const gui = buildNativeGuiIRV10(compiled);
     return {
@@ -49,6 +60,8 @@ export function buildNativeGuiPlan(compiled, options = {}) {
 export function inspectNativeGuiFeatures(ast) {
   const features = {
     table: false,
+    listState: false,
+    listBackedListBox: false,
     menuSeparators: false,
     menuShortcuts: false,
     menuEnabledState: false,
@@ -56,9 +69,15 @@ export function inspectNativeGuiFeatures(ast) {
     menuStateBindings: false,
     menuDecorations: false
   };
+  const listNames = new Set(
+    (ast ?? []).filter(node => node.kind === 'create' && node.valueType === 'list').map(node => node.name)
+  );
+  features.listState = listNames.size > 0;
+
   const walk = nodes => {
     for (const node of nodes ?? []) {
       if (node.kind === 'uiControl' && node.control === 'table') features.table = true;
+      if (node.kind === 'uiControl' && node.control === 'listbox' && listNames.has(node.id)) features.listBackedListBox = true;
       if (node.kind === 'menuSeparator') features.menuSeparators = true;
       if (node.kind === 'menuItem' && node.shortcutExpr) features.menuShortcuts = true;
       if (node.kind === 'menuItem' && node.enabledState) features.menuEnabledState = true;
