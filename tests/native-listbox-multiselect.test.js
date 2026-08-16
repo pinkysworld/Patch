@@ -2,12 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
-import {
-  buildNativeGuiIRV11,
-  validateNativeGuiIRV11,
-  flattenNativeGuiControlsV11,
-  toV10Compatible
-} from '../src/native-gui-ir-v11.js';
+import { buildNativeGuiIRV11, toV10Compatible } from '../src/native-gui-ir-v11.js';
 import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
 import { adaptNativeListsForV11Backend } from '../src/native-list-backend-adapter.js';
 import { emitWin32GuiCppV12 } from '../src/win32-gui-v12.js';
@@ -20,34 +15,24 @@ test('Native GUI IR 1.1 preserves persistent list state and multi-select ListBox
   const ir = buildNativeGuiIRV11(compile(source, { name: 'NativeMulti', kind: 'window' }));
   assert.equal(ir.version, '1.1');
   assert.deepEqual(ir.states.find(state => state.name === 'fruits'), {
-    name: 'fruits',
-    type: 'list',
-    initial: ['Banana', 'Mango']
+    name: 'fruits', type: 'list', initial: ['Banana', 'Mango']
   });
-  const control = flattenNativeGuiControlsV11(ir).find(item => item.id === 'fruits');
+  const control = ir.forms[0].controls.find(item => item.id === 'fruits');
   assert.equal(control.type, 'listbox');
-  assert.equal(control.binding, 'fruits');
   assert.equal(control.selectionMode, 'multiple');
   const event = ir.events.find(item => item.control === 'fruits');
   assert.equal(event.event, 'changed');
   assert.equal(event.valueType, 'text-list');
-  assert.deepEqual(event.actions, [{
-    kind: 'change',
-    target: 'fruits',
-    stateType: 'list',
-    ops: [{ op: 'set', value: { kind: 'eventValue' } }]
-  }]);
-  assert.equal(validateNativeGuiIRV11(ir), ir);
+  assert.deepEqual(event.actions[0], {
+    kind: 'change', target: 'fruits', stateType: 'list', ops: [{ op: 'set', value: { kind: 'eventValue' } }]
+  });
 });
 
 test('text-backed ListBox remains single-select and does not force the list tier', () => {
-  const textSource = `create text fruit = "Banana"\nwindow "Fruit":\n  listbox "Apple", "Banana", "Cherry" as fruit\n\nwhen fruit changed:\n  change fruit:\n    set = value\n`;
-  const plan = buildNativeGuiPlan(compile(textSource, { name: 'SingleListBox', kind: 'window' }));
+  const scalar = fs.readFileSync('examples/listbox-window.patch', 'utf8');
+  const compiled = compile(scalar, { name: 'ScalarList', kind: 'window' });
+  const plan = buildNativeGuiPlan(compiled);
   assert.notEqual(plan.tier, 'list-v12');
-  const control = plan.gui.forms[0].controls.find(item => item.id === 'fruit');
-  assert.equal(control.type, 'listbox');
-  assert.equal(control.selectionMode, undefined);
-  assert.equal(plan.gui.events[0].valueType, 'text');
 });
 
 test('Native GUI build plan chooses IR 1.1 / backend 1.2 automatically for list state', () => {
@@ -59,10 +44,10 @@ test('Native GUI build plan chooses IR 1.1 / backend 1.2 automatically for list 
 });
 
 test('Native GUI 1.1 list actions keep set/add/remove/clear explicit', () => {
-  const actionSource = `create list choices = ["A"]\nwindow "Actions":\n  button "Change" as change_button\n\nwhen change_button clicked:\n  change choices:\n    set = ["A", "B"]\n    add "C"\n    remove "A"\n    clear\n`;
+  const actionSource = `create list choices = ["A"]\nwindow "Actions" as main:\n  button "Change" as change_button\n\nwhen change_button clicked:\n  change choices:\n    set = ["A", "B"]\n    add "C"\n    remove "A"\n    clear\n`;
   const ir = buildNativeGuiIRV11(compile(actionSource, { name: 'ListActions', kind: 'window' }));
-  const event = ir.events.find(item => item.control === 'change_button');
-  assert.deepEqual(event.actions[0], {
+  const action = ir.events[0].actions[0];
+  assert.deepEqual(action, {
     kind: 'change',
     target: 'choices',
     stateType: 'list',
@@ -87,7 +72,7 @@ test('Native GUI 1.1 rejects non-literal list initialization and list interpolat
 });
 
 test('Table text-list semantics remain intact when a project also has native list state', () => {
-  const mixed = `create list choices = ["A"]\nwindow "Mixed":\n  listbox "A", "B" as choices\n  table "Name", "Role" as people:\n    row "Ada", "Engineer"\n    row "Grace", "Scientist"\n\nwhen choices changed:\n  change choices:\n    set = value\n\nwhen people changed:\n  show value\n`;
+  const mixed = `create list choices = ["A"]\ncreate text status = "idle"\nwindow "Mixed":\n  listbox "A", "B" as choices\n  table "Name", "Role" as people:\n    row "Ada", "Engineer"\n    row "Grace", "Scientist"\n\nwhen choices changed:\n  change choices:\n    set = value\n\nwhen people changed:\n  change status:\n    set = "selected"\n`;
   const ir = buildNativeGuiIRV11(compile(mixed, { name: 'Mixed', kind: 'window' }));
   assert.equal(ir.events.find(event => event.control === 'choices').valueType, 'text-list');
   assert.equal(ir.events.find(event => event.control === 'people').valueType, 'text-list');

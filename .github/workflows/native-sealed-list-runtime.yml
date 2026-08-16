@@ -1,0 +1,265 @@
+name: Patch Native Sealed List Runtime
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - .github/workflows/native-sealed-list-runtime.yml
+      - native-runtime/sealed-list-v11.hpp
+      - native-runtime/win32-sealed-gui-v11.cpp
+      - native-runtime/appkit-sealed-gui-v11.mm
+      - native-runtime/gtk-sealed-gui-v11.cpp
+      - native-runtime/sealed-table-v10.hpp
+      - native-runtime/sealed-responsive-v09.hpp
+      - src/sealed-native-gui.js
+      - src/native-gui-ir-v11.js
+      - src/native-gui-ir-v10.js
+      - src/native-gui-ir-v08.js
+      - src/offline-linker.js
+      - src/cli-entry.js
+      - scripts/seal-native-win32.js
+      - scripts/seal-native-macos.js
+      - scripts/seal-native-linux.js
+      - examples/listbox-multiselect-native.patch
+      - examples/table-native-v09.patch
+      - tests/sealed-list-payload-v10.test.js
+      - tests/native-listbox-multiselect.test.js
+      - tests/offline-linker.test.js
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/native-sealed-list-runtime.yml
+      - native-runtime/sealed-list-v11.hpp
+      - native-runtime/win32-sealed-gui-v11.cpp
+      - native-runtime/appkit-sealed-gui-v11.mm
+      - native-runtime/gtk-sealed-gui-v11.cpp
+      - src/sealed-native-gui.js
+      - src/offline-linker.js
+      - scripts/seal-native-win32.js
+      - scripts/seal-native-macos.js
+      - scripts/seal-native-linux.js
+      - tests/sealed-list-payload-v10.test.js
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PATCH_SEALED_GUI_VERSION: 10
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test payload v10 list contract
+        run: node --test tests/sealed-list-payload-v10.test.js
+      - name: Test Native GUI IR 1.1 list contract
+        run: node --test tests/native-listbox-multiselect.test.js
+      - name: Test baseline sealed compatibility
+        run: node --test tests/sealed-native-gui.test.js tests/sealed-native-responsive.test.js tests/sealed-native-table-v09.test.js
+      - name: Test offline-link contract
+        run: node --test tests/offline-linker.test.js
+
+  windows:
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build Win32 sealed runtime v1.1
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-list-runtime | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $script = Join-Path $PWD 'dist-list-runtime\build-runtime.cmd'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE native-runtime\win32-sealed-gui-v11.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-list-runtime\patch-windows-native-gui-runtime.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content -Path $script -Encoding ascii
+          & cmd.exe /d /c $script
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal and smoke multi-select Win32 app
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/listbox-multiselect-native.patch dist-list-runtime/patch-windows-native-gui-runtime.exe dist-list-runtime/PatchMulti.exe PatchMulti
+          $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-list-runtime/PatchMulti.exe'))
+          if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 10) { throw 'Expected payload v10.' }
+          $process = Start-Process -FilePath (Resolve-Path 'dist-list-runtime/PatchMulti.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Win32 list smoke failed with exit code $($process.ExitCode)." }
+      - name: Seal and smoke Table compatibility
+        shell: pwsh
+        run: |
+          node scripts/seal-native-win32.js examples/table-native-v09.patch dist-list-runtime/patch-windows-native-gui-runtime.exe dist-list-runtime/PatchTable.exe PatchTable
+          $process = Start-Process -FilePath (Resolve-Path 'dist-list-runtime/PatchTable.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Win32 Table compatibility smoke failed with exit code $($process.ExitCode)." }
+      - name: Offline-link multi-select and smoke
+        shell: pwsh
+        run: |
+          $env:PATCH_OFFLINE_GUI_RUNTIME = (Resolve-Path 'dist-list-runtime/patch-windows-native-gui-runtime.exe')
+          node src/cli-entry.js link examples/listbox-multiselect-native.patch --name OfflineMulti --out dist-list-runtime/OfflineMulti
+          $linked = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-list-runtime/OfflineMulti.exe'))
+          if ([BitConverter]::ToUInt32($linked, $linked.Length - 12) -ne 10) { throw 'Offline link did not emit payload v10.' }
+          $process = Start-Process -FilePath (Resolve-Path 'dist-list-runtime/OfflineMulti.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Offline Win32 list smoke failed with exit code $($process.ExitCode)." }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-windows-native-gui-runtime-v11
+          path: dist-list-runtime/patch-windows-native-gui-runtime.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  macos:
+    needs: contract
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build universal AppKit sealed runtime v1.1
+        shell: bash
+        run: |
+          mkdir -p dist-list-runtime
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 \
+            -arch arm64 -arch x86_64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v11.mm \
+            -o dist-list-runtime/patch-macos-native-gui-runtime.bin
+          chmod +x dist-list-runtime/patch-macos-native-gui-runtime.bin
+          ARCHS="$(lipo -archs dist-list-runtime/patch-macos-native-gui-runtime.bin)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal and smoke multi-select AppKit app
+        shell: bash
+        run: |
+          node scripts/seal-native-macos.js examples/listbox-multiselect-native.patch dist-list-runtime/patch-macos-native-gui-runtime.bin dist-list-runtime/PatchMulti PatchMulti
+          node - <<'NODE'
+          const fs=require('fs');const sealed=fs.readFileSync('dist-list-runtime/PatchMulti');if(sealed.readUInt32LE(sealed.length-12)!==10)throw new Error('Expected payload v10.');
+          NODE
+          dist-list-runtime/PatchMulti --patch-smoke
+      - name: Seal and smoke Table compatibility
+        shell: bash
+        run: |
+          node scripts/seal-native-macos.js examples/table-native-v09.patch dist-list-runtime/patch-macos-native-gui-runtime.bin dist-list-runtime/PatchTable PatchTable
+          dist-list-runtime/PatchTable --patch-smoke
+      - name: Offline-link multi-select and smoke
+        shell: bash
+        run: |
+          PATCH_OFFLINE_GUI_RUNTIME="$PWD/dist-list-runtime/patch-macos-native-gui-runtime.bin" node src/cli-entry.js link examples/listbox-multiselect-native.patch --name OfflineMulti --out dist-list-runtime/OfflineMulti
+          LINKED=dist-list-runtime/OfflineMulti.app/Contents/MacOS/OfflineMulti
+          test -x "$LINKED"
+          node - "$LINKED" <<'NODE'
+          const fs=require('fs');const linked=fs.readFileSync(process.argv[2]);if(linked.readUInt32LE(linked.length-12)!==10)throw new Error('Offline link did not emit payload v10.');
+          NODE
+          "$LINKED" --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-macos-native-gui-runtime-v11
+          path: dist-list-runtime/patch-macos-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  linux:
+    needs: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Build GTK3 sealed runtime v1.1
+        shell: bash
+        run: |
+          mkdir -p dist-list-runtime
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v11.cpp -o dist-list-runtime/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x dist-list-runtime/patch-linux-native-gui-runtime.bin
+      - name: Seal and smoke multi-select GTK app
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js examples/listbox-multiselect-native.patch dist-list-runtime/patch-linux-native-gui-runtime.bin dist-list-runtime/PatchMulti PatchMulti
+          node - <<'NODE'
+          const fs=require('fs');const sealed=fs.readFileSync('dist-list-runtime/PatchMulti');if(sealed.readUInt32LE(sealed.length-12)!==10)throw new Error('Expected payload v10.');
+          NODE
+          xvfb-run -a dist-list-runtime/PatchMulti --patch-smoke
+      - name: Seal and smoke Table compatibility
+        shell: bash
+        run: |
+          node scripts/seal-native-linux.js examples/table-native-v09.patch dist-list-runtime/patch-linux-native-gui-runtime.bin dist-list-runtime/PatchTable PatchTable
+          chmod +x dist-list-runtime/PatchTable
+          xvfb-run -a dist-list-runtime/PatchTable --patch-smoke
+      - name: Offline-link multi-select and smoke
+        shell: bash
+        run: |
+          PATCH_OFFLINE_GUI_RUNTIME="$PWD/dist-list-runtime/patch-linux-native-gui-runtime.bin" node src/cli-entry.js link examples/listbox-multiselect-native.patch --name OfflineMulti --out dist-list-runtime/OfflineMulti
+          chmod +x dist-list-runtime/OfflineMulti
+          node - <<'NODE'
+          const fs=require('fs');const linked=fs.readFileSync('dist-list-runtime/OfflineMulti');if(linked.readUInt32LE(linked.length-12)!==10)throw new Error('Offline link did not emit payload v10.');
+          NODE
+          xvfb-run -a dist-list-runtime/OfflineMulti --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-linux-native-gui-runtime-v11
+          path: dist-list-runtime/patch-linux-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-windows-native-gui-runtime-v11
+          path: runtime/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-macos-native-gui-runtime-v11
+          path: runtime/macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-linux-native-gui-runtime-v11
+          path: runtime/linux
+      - name: Publish list-capable native runtime templates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          publish_runtime() {
+            local tag="$1" title="$2" asset="$3" notes="$4"
+            if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$title" --notes "$notes"; fi
+            gh release upload "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --clobber
+          }
+          publish_runtime native-win32-runtime-v1.1 'Patch Native Win32 Runtime v1.1' runtime/windows/patch-windows-native-gui-runtime.exe 'Token-free Win32 sealed-GUI runtime. Runtime v1.1 consumes payload v10 / Native GUI IR 1.1 with persistent text-list state and native multi-select ListBox while preserving Table, accessibility and responsive behavior.'
+          publish_runtime native-macos-runtime-v1.1 'Patch Native macOS Runtime v1.1' runtime/macos/patch-macos-native-gui-runtime.bin 'Unsigned universal AppKit sealed-GUI runtime. Runtime v1.1 consumes payload v10 / Native GUI IR 1.1 with persistent text-list state and native multi-select ListBox while preserving Table, accessibility and responsive behavior.'
+          publish_runtime native-linux-runtime-v1.1 'Patch Native Linux Runtime v1.1' runtime/linux/patch-linux-native-gui-runtime.bin 'GTK3 sealed-GUI runtime. Runtime v1.1 consumes payload v10 / Native GUI IR 1.1 with persistent text-list state and native multi-select ListBox while preserving Table, accessibility and responsive behavior.'

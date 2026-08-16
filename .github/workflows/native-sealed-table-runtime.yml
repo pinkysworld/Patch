@@ -17,8 +17,6 @@ on:
       - src/sealed-native-package.js
       - src/native-gui-ir-v08.js
       - src/native-gui-ir.js
-      - src/offline-linker.js
-      - src/cli-entry.js
       - src/compiler.js
       - src/parser.js
       - scripts/seal-native-win32.js
@@ -28,7 +26,6 @@ on:
       - tests/sealed-native-table-v09.test.js
       - tests/sealed-native-gui.test.js
       - tests/sealed-native-responsive.test.js
-      - tests/offline-linker.test.js
   push:
     branches: [main]
     paths:
@@ -40,14 +37,11 @@ on:
       - src/sealed-native-gui.js
       - src/sealed-native-package.js
       - src/native-gui-ir-v08.js
-      - src/offline-linker.js
-      - src/cli-entry.js
       - scripts/seal-native-win32.js
       - scripts/seal-native-macos.js
       - scripts/seal-native-linux.js
       - examples/table-native-v09.patch
       - tests/sealed-native-table-v09.test.js
-      - tests/offline-linker.test.js
   workflow_dispatch:
 
 concurrency:
@@ -76,8 +70,6 @@ jobs:
         run: node --test tests/sealed-native-responsive.test.js
       - name: Test Table payload v9 contract
         run: node --test tests/sealed-native-table-v09.test.js
-      - name: Test offline-link payload contract
-        run: node --test tests/offline-linker.test.js
 
   windows:
     needs: contract
@@ -108,7 +100,7 @@ jobs:
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
           if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
-      - name: Seal and smoke Table Win32 app
+      - name: Seal and smoke Table Win32 app as frozen payload v9
         shell: pwsh
         run: |
           node scripts/seal-native-win32.js examples/table-native-v09.patch dist-table-runtime/patch-windows-native-gui-runtime.exe dist-table-runtime/PatchTable.exe PatchTable
@@ -117,17 +109,6 @@ jobs:
           if ($version -ne 9) { throw "Expected sealed GUI payload v9, got v$version." }
           $process = Start-Process -FilePath (Resolve-Path 'dist-table-runtime/PatchTable.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Sealed Table Win32 smoke failed with exit code $($process.ExitCode)." }
-      - name: Link Table through offline CLI and smoke Win32 result
-        shell: pwsh
-        run: |
-          $env:PATCH_OFFLINE_GUI_RUNTIME = (Resolve-Path 'dist-table-runtime/patch-windows-native-gui-runtime.exe')
-          node src/cli-entry.js link examples/table-native-v09.patch --name OfflineTable --out dist-table-runtime/OfflineTable
-          if ($LASTEXITCODE -ne 0) { throw "Offline Table link failed with exit code $LASTEXITCODE." }
-          $linked = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-table-runtime/OfflineTable.exe'))
-          $version = [BitConverter]::ToUInt32($linked, $linked.Length - 12)
-          if ($version -ne 9) { throw "Offline Table link did not emit sealed GUI payload v9." }
-          $process = Start-Process -FilePath (Resolve-Path 'dist-table-runtime/OfflineTable.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Offline-linked Table Win32 smoke failed with exit code $($process.ExitCode)." }
       - uses: actions/upload-artifact@v7
         with:
           name: patch-windows-native-gui-runtime-v10
@@ -157,7 +138,7 @@ jobs:
           ARCHS="$(lipo -archs dist-table-runtime/patch-macos-native-gui-runtime.bin)"
           echo "$ARCHS" | grep -qw arm64
           echo "$ARCHS" | grep -qw x86_64
-      - name: Seal and smoke Table AppKit app
+      - name: Seal and smoke Table AppKit app as frozen payload v9
         shell: bash
         run: |
           node scripts/seal-native-macos.js examples/table-native-v09.patch dist-table-runtime/patch-macos-native-gui-runtime.bin dist-table-runtime/PatchTable PatchTable
@@ -167,19 +148,6 @@ jobs:
           if(sealed.readUInt32LE(sealed.length-12)!==9) throw new Error('Expected sealed GUI payload v9.');
           NODE
           dist-table-runtime/PatchTable --patch-smoke
-      - name: Link Table through offline CLI and smoke AppKit result
-        shell: bash
-        run: |
-          PATCH_OFFLINE_GUI_RUNTIME="$PWD/dist-table-runtime/patch-macos-native-gui-runtime.bin" \
-            node src/cli-entry.js link examples/table-native-v09.patch --name OfflineTable --out dist-table-runtime/OfflineTable
-          LINKED=dist-table-runtime/OfflineTable.app/Contents/MacOS/OfflineTable
-          test -x "$LINKED"
-          node - "$LINKED" <<'NODE'
-          const fs=require('fs');
-          const linked=fs.readFileSync(process.argv[2]);
-          if(linked.readUInt32LE(linked.length-12)!==9) throw new Error('Offline Table link did not emit sealed GUI payload v9.');
-          NODE
-          "$LINKED" --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
           name: patch-macos-native-gui-runtime-v10
@@ -207,7 +175,7 @@ jobs:
           mkdir -p dist-table-runtime
           g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v10.cpp -o dist-table-runtime/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x dist-table-runtime/patch-linux-native-gui-runtime.bin
-      - name: Seal and smoke Table GTK app
+      - name: Seal and smoke Table GTK app as frozen payload v9
         shell: bash
         run: |
           node scripts/seal-native-linux.js examples/table-native-v09.patch dist-table-runtime/patch-linux-native-gui-runtime.bin dist-table-runtime/PatchTable PatchTable
@@ -218,18 +186,6 @@ jobs:
           NODE
           chmod +x dist-table-runtime/PatchTable
           xvfb-run -a dist-table-runtime/PatchTable --patch-smoke
-      - name: Link Table through offline CLI and smoke GTK result
-        shell: bash
-        run: |
-          PATCH_OFFLINE_GUI_RUNTIME="$PWD/dist-table-runtime/patch-linux-native-gui-runtime.bin" \
-            node src/cli-entry.js link examples/table-native-v09.patch --name OfflineTable --out dist-table-runtime/OfflineTable
-          chmod +x dist-table-runtime/OfflineTable
-          node - <<'NODE'
-          const fs=require('fs');
-          const linked=fs.readFileSync('dist-table-runtime/OfflineTable');
-          if(linked.readUInt32LE(linked.length-12)!==9) throw new Error('Offline Table link did not emit sealed GUI payload v9.');
-          NODE
-          xvfb-run -a dist-table-runtime/OfflineTable --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
           name: patch-linux-native-gui-runtime-v10
@@ -256,7 +212,7 @@ jobs:
         with:
           name: patch-linux-native-gui-runtime-v10
           path: runtime/linux
-      - name: Publish Table-capable native runtime templates
+      - name: Publish frozen Table-capable native runtime templates
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -268,6 +224,6 @@ jobs:
             fi
             gh release upload "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --clobber
           }
-          publish_runtime native-win32-runtime-v1.0 'Patch Native Win32 Runtime v1.0' runtime/windows/patch-windows-native-gui-runtime.exe 'Token-free Win32 sealed-GUI runtime. Runtime v1.0 consumes sealed payload v9 / Native GUI IR 0.8 Table metadata, uses report-mode WC_LISTVIEWW, and preserves runtime-v0.9 accessibility plus responsive Anchor/Dock behavior.'
-          publish_runtime native-macos-runtime-v1.0 'Patch Native macOS Runtime v1.0' runtime/macos/patch-macos-native-gui-runtime.bin 'Unsigned universal AppKit sealed-GUI runtime. Runtime v1.0 consumes sealed payload v9 / Native GUI IR 0.8 Table metadata, uses multi-column NSTableView, and preserves runtime-v0.9 accessibility plus responsive Anchor/Dock behavior.'
-          publish_runtime native-linux-runtime-v1.0 'Patch Native Linux Runtime v1.0' runtime/linux/patch-linux-native-gui-runtime.bin 'GTK3 sealed-GUI runtime. Runtime v1.0 consumes sealed payload v9 / Native GUI IR 0.8 Table metadata, uses GtkTreeView/GtkListStore, and preserves runtime-v0.9 ATK accessibility plus responsive Anchor/Dock behavior.'
+          publish_runtime native-win32-runtime-v1.0 'Patch Native Win32 Runtime v1.0' runtime/windows/patch-windows-native-gui-runtime.exe 'Frozen Win32 sealed-GUI compatibility runtime for payload v9 / Native GUI IR 0.8 Table metadata.'
+          publish_runtime native-macos-runtime-v1.0 'Patch Native macOS Runtime v1.0' runtime/macos/patch-macos-native-gui-runtime.bin 'Frozen unsigned universal AppKit sealed-GUI compatibility runtime for payload v9 / Native GUI IR 0.8 Table metadata.'
+          publish_runtime native-linux-runtime-v1.0 'Patch Native Linux Runtime v1.0' runtime/linux/patch-linux-native-gui-runtime.bin 'Frozen GTK3 sealed-GUI compatibility runtime for payload v9 / Native GUI IR 0.8 Table metadata.'

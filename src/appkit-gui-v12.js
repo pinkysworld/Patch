@@ -49,7 +49,7 @@ export function emitAppKitGuiObjCppV12(input) {
 
 function injectListHelpers(source) {
   const marker = 'static void ShowInfoDialog(int formIndex, NSString *title, NSString *message) {';
-  const helpers = `static NSArray<NSString *> *PatchSelectedListValues(NSTableView *tableView) {\n  if (!tableView) return @[];\n  NSMutableArray<NSString *> *out = [NSMutableArray array];\n  NSIndexSet *selected = tableView.selectedRowIndexes;\n  NSUInteger row = selected.firstIndex;\n  while (row != NSNotFound) { [out addObject:PatchListOptionValue(tableView.tag, (NSInteger)row) ?: @""]; row = [selected indexGreaterThanIndex:row]; }\n  return [out copy];\n}\nstatic void SetListSelections(NSTableView *tableView, NSInteger commandId, NSArray<NSString *> *values) {\n  if (!tableView) return;\n  NSMutableIndexSet *selected = [NSMutableIndexSet indexSet];\n  NSInteger count = PatchListOptionCount(commandId);\n  for (NSInteger row = 0; row < count; ++row) { NSString *value = PatchListOptionValue(commandId, row); if ([values containsObject:value]) [selected addIndex:(NSUInteger)row]; }\n  [tableView selectRowIndexes:selected byExtendingSelection:NO];\n}\nstatic NSArray<NSString *> *PatchListRemoving(NSArray<NSString *> *values, NSString *removeValue) {\n  NSMutableArray<NSString *> *out = [values mutableCopy] ?: [NSMutableArray array];\n  [out removeObject:removeValue ?: @""];\n  return [out copy];\n}\n`;
+  const helpers = `static NSArray<NSString *> *PatchSelectedListValues(NSTableView *tableView) {\n  if (!tableView) return @[];\n  NSMutableArray<NSString *> *out = [NSMutableArray array];\n  NSIndexSet *selected = tableView.selectedRowIndexes;\n  NSUInteger row = selected.firstIndex;\n  while (row != NSNotFound) { [out addObject:PatchListOptionValue(tableView.tag, (NSInteger)row) ?: @""]; row = [selected indexGreaterThanIndex:row]; }\n  return [out copy];\n}\nstatic void SetListSelections(NSTableView *tableView, NSInteger commandId, NSArray<NSString *> *values) {\n  if (!tableView) return;\n  NSMutableIndexSet *selected = [NSMutableIndexSet indexSet];\n  NSInteger count = PatchListOptionCount(commandId);\n  for (NSInteger row = 0; row < count; ++row) { NSString *value = PatchListOptionValue(commandId, row); if ([values containsObject:value]) [selected addIndex:(NSUInteger)row]; }\n  [tableView selectRowIndexes:selected byExtendingSelection:NO];\n}\nstatic NSArray<NSString *> *PatchListRemoving(NSArray<NSString *> *values, NSString *removeValue) {\n  NSMutableArray<NSString *> *out = [values mutableCopy] ?: [NSMutableArray array];\n  NSUInteger index = [out indexOfObject:removeValue ?: @""];\n  if (index != NSNotFound) [out removeObjectAtIndex:index];\n  return [out copy];\n}\n`;
   return replaceRequired(source, marker, helpers + marker, 'AppKit multi-select ListBox helpers');
 }
 
@@ -96,9 +96,12 @@ function injectSmoke(source, adapted) {
   if (!candidate || candidate.options.length < 2) return source;
   const first = candidate.options[0];
   const last = candidate.options[candidate.options.length - 1];
-  const marker = '  for (int i = FORM_COUNT - 1; i >= 0; --i) [gForms[i] orderOut:nil];\n  return 0;';
   const smoke = `  { NSMutableIndexSet *selected = [NSMutableIndexSet indexSetWithIndex:0]; [selected addIndex:${candidate.options.length - 1}]; [(NSTableView *)gControls[${candidate.nativeIndex}] selectRowIndexes:selected byExtendingSelection:NO]; [gEventTarget handleControl:gControls[${candidate.nativeIndex}]]; if ([${stateName(candidate.binding)} count] != 2 || ![${stateName(candidate.binding)}[0] isEqualToString:${objcLiteral(first)}] || ![${stateName(candidate.binding)}[1] isEqualToString:${objcLiteral(last)}]) return 91; }\n`;
-  return replaceRequired(source, marker, smoke + marker, 'AppKit multi-select smoke insertion');
+  const start = source.indexOf('static int RunPatchSmoke() {');
+  if (start < 0) throw new NativeGuiError('Generated AppKit source is missing RunPatchSmoke for multi-select verification.');
+  const stop = source.indexOf('  [NSApp stop:nil];', start);
+  if (stop < 0) throw new NativeGuiError('Generated AppKit smoke has an unexpected shape for multi-select verification.');
+  return source.slice(0, stop) + smoke + source.slice(stop);
 }
 
 function replaceInBody(body, marker, replacement, label) {

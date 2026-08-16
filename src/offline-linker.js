@@ -6,8 +6,8 @@ import { compile } from './compiler.js';
 import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
-import { buildNativeGuiIRV08 } from './native-gui-ir-v08.js';
-import { PATCH_SEALED_NATIVE_GUI_TABLE_VERSION, sealNativeGuiRuntime } from './sealed-native-gui.js';
+import { buildNativeGuiIRV11 } from './native-gui-ir-v11.js';
+import { PATCH_SEALED_NATIVE_GUI_LIST_VERSION, sealNativeGuiRuntime } from './sealed-native-gui.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -48,9 +48,9 @@ export function createOfflineLinkPlan(source, options = {}) {
   }
 
   validateWindowRuntimeSupport(compiled);
-  const nativeGui = buildNativeGuiIRV08(compiled);
+  const nativeGui = buildNativeGuiIRV11(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
-  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform, version: PATCH_SEALED_NATIVE_GUI_TABLE_VERSION });
+  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform, version: PATCH_SEALED_NATIVE_GUI_LIST_VERSION });
   return binaryPlan({ platform, kind, name, sealed });
 }
 

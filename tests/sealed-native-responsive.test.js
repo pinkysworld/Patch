@@ -84,7 +84,7 @@ test('responsive runtime workflow retains the frozen v0.9 release line for repro
   assert.match(workflow, /readUInt32LE\(sealed\.length-12\)!==8/);
 });
 
-test('Pages and offline compiler advance to Table-capable runtime v1.0 without redefining v0.9', () => {
+test('Pages stay on published Table runtime v1.0 while the offline compiler advances to list runtime v1.1', () => {
   for (const tag of ['native-win32-runtime-v1.0','native-macos-runtime-v1.0','native-linux-runtime-v1.0']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
   }
@@ -93,14 +93,16 @@ test('Pages and offline compiler advance to Table-capable runtime v1.0 without r
   assert.match(pages, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 
   for (const runtimeSource of [
-    'native-runtime\\win32-sealed-gui-v10.cpp',
-    'native-runtime/appkit-sealed-gui-v10.mm',
-    'native-runtime/gtk-sealed-gui-v10.cpp'
+    'native-runtime\\win32-sealed-gui-v11.cpp',
+    'native-runtime/appkit-sealed-gui-v11.mm',
+    'native-runtime/gtk-sealed-gui-v11.cpp'
   ]) assert.ok(offline.includes(runtimeSource), `offline compiler missing ${runtimeSource}`);
   assert.match(offline, /examples\/responsive-window\.patch/);
   assert.match(offline, /examples\/table-native-v09\.patch/);
+  assert.match(offline, /examples\/listbox-multiselect-native\.patch/);
   assert.match(offline, /OfflineTable/);
-  assert.match(offline, /payload v9/);
+  assert.match(offline, /OfflineMulti/);
+  assert.match(offline, /payload v10\/runtime v1\.1/);
   assert.match(offline, /--patch-smoke/);
   assert.doesNotMatch(offline, /native-win32-runtime-v0\.9/);
   assert.doesNotMatch(offline, /native-macos-runtime-v0\.9/);
