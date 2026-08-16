@@ -12,6 +12,12 @@ const requireAll = (label, text, markers) => {
     if (!text.includes(marker)) throw new Error(`${label} is missing: ${marker}`);
   }
 };
+const requireAllFolded = (label, text, markers) => {
+  const folded = text.toLowerCase();
+  for (const marker of markers) {
+    if (!folded.includes(marker.toLowerCase())) throw new Error(`${label} is missing compatibility evidence: ${marker}`);
+  }
+};
 
 for (const rel of [
   '_site/downloads.html',
@@ -57,7 +63,8 @@ const downloads = read('_site/downloads.html');
 const language = read('_site/language.html');
 const help = read('_site/help.html');
 for (const [label, text] of [['Downloads', downloads], ['Language', language], ['Help', help]]) {
-  requireAll(label, text, ['Table', 'payload v9', 'runtime v1.0']);
+  requireAll(label, text, ['Table']);
+  requireAllFolded(label, text, ['payload v9', 'runtime v1.0']);
   if (/does not yet claim Table support|Table is not yet claimed|Table is not yet part of the sealed/i.test(text)) {
     throw new Error(`${label} still contains a pre-v1.0 Table support disclaimer.`);
   }
