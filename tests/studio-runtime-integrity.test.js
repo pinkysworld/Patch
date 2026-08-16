@@ -52,6 +52,18 @@ test('Pages derives the deployed runtime manifest from GitHub release asset dige
   }
 });
 
+test('Pages deploys only after the canonical current-site gate succeeds', () => {
+  assert.match(pages, /name: Validate current Patch Studio site surface/);
+  assert.match(pages, /run: npm run check:site/);
+  assert.doesNotMatch(pages, /run: node scripts\/check-site-beta34\.js/);
+  assert.match(pages, /scripts\/check-site-v11\.js/);
+  assert.match(pages, /scripts\/check-site-beta35\.js/);
+  const validate = pages.indexOf('run: npm run check:site');
+  const upload = pages.indexOf('uses: actions/upload-pages-artifact@v5');
+  const deploy = pages.indexOf('uses: actions/deploy-pages@v5');
+  assert.ok(validate > 0 && upload > validate && deploy > upload);
+});
+
 test('service worker fetches runtime assets fresh-first before offline fallback', () => {
   assert.match(serviceWorker, /runtimeAsset/);
   assert.match(serviceWorker, /url\.pathname\.includes\('\/runtimes\/'\)/);
