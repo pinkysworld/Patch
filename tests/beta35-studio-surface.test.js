@@ -9,9 +9,10 @@ const css = fs.readFileSync('web/beta35-studio.css', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
-test('beta35 multi-select workflow is visible in Studio without widening native support', () => {
-  assert.ok(index.includes('list-backed multi-select ListBox is currently browser-only and native builds fail closed'));
-  assert.ok(index.includes('Choose <b>Multi-select ListBox</b> from Example'));
+test('beta35 multi-select workflow remains visible after native parity lands', () => {
+  assert.ok(index.includes('List-backed multi-select ListBox now works in browser preview, direct native AOT and token-free Ready/offline Windows, macOS and Linux apps'));
+  assert.ok(index.includes('Persistent selection still changes only through explicit <b>change</b>'));
+  assert.doesNotMatch(index, /currently browser-only and native builds fail closed/);
   assert.match(index, /href="#designer"[^>]*>Designer ↓<\/a>/);
   assert.ok(index.includes('./beta35-studio.css'));
   assert.ok(index.includes('./beta35-studio.js'));

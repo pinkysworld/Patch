@@ -84,11 +84,12 @@ test('responsive runtime workflow retains the frozen v0.9 release line for repro
   assert.match(workflow, /readUInt32LE\(sealed\.length-12\)!==8/);
 });
 
-test('Pages stay on published Table runtime v1.0 while the offline compiler advances to list runtime v1.1', () => {
-  for (const tag of ['native-win32-runtime-v1.0','native-macos-runtime-v1.0','native-linux-runtime-v1.0']) {
+test('Pages and offline compiler both use list runtime v1.1 while frozen responsive v0.9 stays separate', () => {
+  for (const tag of ['native-win32-runtime-v1.1','native-macos-runtime-v1.1','native-linux-runtime-v1.1']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
   }
   assert.match(pages, /Patch Native Sealed Table Runtime/);
+  assert.match(pages, /Patch Native Sealed List Runtime/);
   assert.match(pages, /steps\.native_runtime\.outputs\.ready == 'true'/);
   assert.match(pages, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 
