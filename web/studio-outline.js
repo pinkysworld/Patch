@@ -1,9 +1,10 @@
 import { parse } from '../src/parser.js';
 
-const code = document.querySelector('#code');
-const outline = document.querySelector('#projectOutlineTree');
-const status = document.querySelector('#projectOutlineStatus');
-const designerTab = document.querySelector('#tabDesigner');
+const doc = typeof document === 'undefined' ? null : document;
+const code = doc?.querySelector('#code') ?? null;
+const outline = doc?.querySelector('#projectOutlineTree') ?? null;
+const status = doc?.querySelector('#projectOutlineStatus') ?? null;
+const designerTab = doc?.querySelector('#tabDesigner') ?? null;
 
 let scheduled = false;
 let lastGoodModel = null;
@@ -32,7 +33,7 @@ function scheduleRender() {
 function renderOutline() {
   try {
     const ast = parse(code.value);
-    lastGoodModel = buildModel(ast);
+    lastGoodModel = buildOutlineModel(ast);
     outline.replaceChildren(renderModel(lastGoodModel));
     status.textContent = summarize(lastGoodModel);
     status.dataset.state = 'ready';
@@ -45,7 +46,7 @@ function renderOutline() {
   }
 }
 
-function buildModel(ast) {
+export function buildOutlineModel(ast) {
   const groups = [
     { key: 'forms', label: 'Forms', items: [] },
     { key: 'state', label: 'State', items: [] },
@@ -67,23 +68,22 @@ function buildModel(ast) {
     } else if (node.kind === 'createThing') {
       byKey.get('state').items.push({ kind: 'state', line: node.line, label: node.name, meta: 'thing' });
     } else if (node.kind === 'event') {
-      byKey.get('events').items.push({
-        kind: 'event',
-        line: node.line,
-        label: node.control,
-        meta: node.event
-      });
+      byKey.get('events').items.push({ kind: 'event', line: node.line, label: node.control, meta: node.event });
     } else if (node.kind === 'recipe') {
-      byKey.get('recipes').items.push({
-        kind: 'recipe',
-        line: node.line,
-        label: node.name,
-        meta: Array.isArray(node.params) ? `${node.params.length} param${node.params.length === 1 ? '' : 's'}` : 'recipe'
-      });
+      byKey.get('recipes').items.push({ kind: 'recipe', line: node.line, label: node.name, meta: 'recipe' });
     }
   }
 
   return groups.filter(group => group.items.length);
+}
+
+export function lineSelectionRange(source, line) {
+  const lines = String(source).split(/\r?\n/);
+  if (!Number.isInteger(line) || line < 1 || !lines.length) return null;
+  const target = Math.min(line, lines.length);
+  let start = 0;
+  for (let index = 0; index < target - 1; index += 1) start += lines[index].length + 1;
+  return { line: target, start, end: start + (lines[target - 1]?.length ?? 0) };
 }
 
 function renderModel(groups) {
@@ -144,16 +144,12 @@ function emptyMessage(text) {
 }
 
 function jumpToLine(line) {
-  if (!Number.isInteger(line) || line < 1) return;
-  const lines = code.value.split(/\r?\n/);
-  const target = Math.min(line, lines.length);
-  let start = 0;
-  for (let index = 0; index < target - 1; index += 1) start += lines[index].length + 1;
-  const end = start + (lines[target - 1]?.length ?? 0);
+  const range = lineSelectionRange(code.value, line);
+  if (!range) return;
   code.focus({ preventScroll: true });
-  code.setSelectionRange(start, end);
+  code.setSelectionRange(range.start, range.end);
   code.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  status.textContent = `main.patch · line ${target}`;
+  status.textContent = `main.patch · line ${range.line}`;
   status.dataset.state = 'ready';
 }
 
