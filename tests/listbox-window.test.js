@@ -13,6 +13,7 @@ import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 const source = fs.readFileSync('examples/listbox-window.patch', 'utf8');
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
 const studio = fs.readFileSync('web/playground.js', 'utf8');
+const tableStage = fs.readFileSync('web/table-stage1.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 const compatibilityBuilder = fs.readFileSync('scripts/build-native-window-template.js', 'utf8');
 
@@ -124,17 +125,42 @@ test('Patch Studio toolbox and preview expose a real multi-row ListBox', () => {
   assert.match(formsDesigner, /\['#addListbox', 'listbox'\]/);
 });
 
-test('Standalone Window Web App renders ListBox and emits a text changed payload', () => {
+test('Patch Studio upgrades list-backed ListBox to multiple selection and text-list dispatch', () => {
+  assert.match(tableStage, /const appListboxSelections = new Map\(\)/);
+  assert.match(tableStage, /select\.multiple = true/);
+  assert.match(tableStage, /select\.selectedOptions/);
+  assert.match(tableStage, /aria-multiselectable/);
+  assert.match(tableStage, /patch-studio-table-changed/);
+  assert.match(tableStage, /collectListInitials/);
+});
+
+test('Standalone Window Web App preserves single-select ListBox string behavior', () => {
   const built = buildStandaloneWebApp(source, { name: 'ListBoxDemo', kind: 'window' });
   assert.equal(built.metadata.version, '0.8');
+  assert.equal(built.metadata.listboxMultiSelectStage, undefined);
   assert.match(built.html, /el\.size=Math\.min/);
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
+});
+
+test('Standalone Window Web App supports list-backed multi-select ListBox with transient selection state', () => {
+  const built = buildStandaloneWebApp(multiPersistSource, { name: 'MultiListBox', kind: 'window' });
+  assert.equal(built.metadata.version, '0.8');
+  assert.equal(built.metadata.listboxMultiSelectStage, 1);
+  assert.equal(built.metadata.listboxMultiSelectMode, 'list-state-text-list');
+  assert.match(built.html, /const listboxSelections=new Map\(\)/);
+  assert.match(built.html, /el\.multiple=true/);
+  assert.match(built.html, /aria-multiselectable/);
+  assert.match(built.html, /selectedOptions/);
+  assert.match(built.html, /needs a text-list event-local value because it is list state/);
+  assert.match(built.html, /listboxSelections\.set\(key,\[\.\.\.value\]\)/);
 });
 
 test('compatibility desktop renderer cannot silently omit ComboBox or ListBox', () => {
   assert.match(compatibilityBuilder, /control\.type==='combo'\|\|control\.type==='listbox'/);
   assert.match(compatibilityBuilder, /document\.createElement\('select'\)/);
   assert.match(compatibilityBuilder, /trigger\(control\.id,'changed',\{value:el\.value\}\)/);
+  assert.match(compatibilityBuilder, /window-events\.js/);
+  assert.match(compatibilityBuilder, /triggerWindowEvent/);
 });
 
 test('Native GUI v0.7 carries ListBox options, text binding and changed event semantics', () => {
