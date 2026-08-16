@@ -69,6 +69,7 @@ const files = {
   evaluationWorkflow: read('.github/workflows/assurance-evaluation.yml'),
   siteCheck: read('scripts/check-site.js'),
   siteV10Check: read('scripts/check-site-v10.js'),
+  siteV11Check: read('scripts/check-site-v11.js'),
   siteBeta34Check: read('scripts/check-site-beta34.js'),
   siteBeta35Check: read('scripts/check-site-beta35.js')
 };
@@ -81,7 +82,7 @@ requireScript('evaluate:assurance:controlled', 'node scripts/run-controlled-assu
 requireScript('evaluate:security', 'node scripts/evaluate-security-cases.js');
 requireScript('evaluate:checkout-extension', 'node scripts/evaluate-checkout-extension.js');
 requireScript('evaluate:quota-extension', 'node scripts/evaluate-extension-case.js --case quota-extension');
-requireScript('check:site', 'node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-beta35.js');
+requireScript('check:site', 'node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-v11.js && node scripts/check-site-beta35.js');
 
 // Current product surfaces.
 requireAll('README.md', files.readme, [
@@ -97,7 +98,9 @@ requireAll('README.md', files.readme, [
 requireAll('web/index.html', files.website, [
   `<h1>Patch Studio <span>${studioVersion}</span></h1>`,
   `data-patch-version="${version}"`,
-  'list-backed multi-select ListBox is currently browser-only and native builds fail closed',
+  'token-free Ready/offline Windows, macOS and Linux apps',
+  'Native GUI IR 1.1', 'payload v10', 'Runtime v1.1',
+  'Persistent selection still changes only through explicit <b>change</b>',
   './runtime-integrity.js', './studio-dom-sync.js', './table-stage1.js'
 ]);
 requireAll('web/language.html', files.languagePage, [
@@ -108,7 +111,7 @@ requireAll('web/language.html', files.languagePage, [
 ]);
 requireAll('web/docs.html', files.docsPage, [
   `data-patch-version="${version}"`,
-  'docs/BETA35.md', 'docs/BETA34.md', 'docs/FORMAL_MODEL.md', 'docs/CALL_SITE_VALIDATION.md'
+  'docs/BETA35.md', 'docs/NATIVE_LIST_STATE.md', 'docs/BETA34.md', 'docs/FORMAL_MODEL.md', 'docs/CALL_SITE_VALIDATION.md'
 ]);
 requireAll('web/downloads.html', files.downloadsPage, [
   `data-patch-version="${version}"`,
@@ -303,15 +306,21 @@ requireAll('.github/workflows/ci.yml', files.ciWorkflow, [
   'web/runtime-integrity.js', 'web/studio-dom-sync.js'
 ]);
 requireAll('.github/workflows/pages.yml', files.pagesWorkflow, [
-  'runtime-integrity-manifest.js', 'runtime-manifest.json', 'native-win32-runtime-v1.0', 'native-macos-runtime-v1.0', 'native-linux-runtime-v1.0'
+  'runtime-integrity-manifest.js', 'runtime-manifest.json',
+  'native-win32-runtime-v1.1', 'native-macos-runtime-v1.1', 'native-linux-runtime-v1.1',
+  'Patch Native Sealed List Runtime'
 ]);
 requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflow, [
   'run-controlled-assurance.js', 'hosted-ci', 'benchmark-assurance.js'
 ]);
 
-// Site validators: beta.34 stays historical, beta.35 owns current product assertions.
+// Site validators: historical beta gates stay frozen; v1.1 owns the deployed Ready runtime assertions.
 requireAll('scripts/check-site.js', files.siteCheck, ['Patch Studio', 'check-site']);
 requireAll('scripts/check-site-v10.js', files.siteV10Check, ['Table-ready Patch Studio site surface']);
+requireAll('scripts/check-site-v11.js', files.siteV11Check, [
+  'Studio Ready v1.1 site check failed', 'buildNativeGuiIRV11 as buildNativeGuiIR',
+  'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'docs/NATIVE_LIST_STATE.md'
+]);
 requireAll('scripts/check-site-beta34.js', files.siteBeta34Check, ['beta.34', 'runtime-manifest.json']);
 requireAll('scripts/check-site-beta35.js', files.siteBeta35Check, [
   '0.2.0-beta.35', 'Studio multi-select ListBox adapter',

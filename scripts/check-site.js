@@ -29,9 +29,9 @@ const sourceModules = [
   'wasm-direct.js', 'c99.js', 'webapp.js', 'window-webapp.js',
   'window-web-accessibility.js', 'window-build.js', 'window-events.js', 'designer.js',
   'form-layout.js', 'window-layout-policy.js', 'studio-project.js', 'studio-diagnostics.js',
-  'window-compiled.js', 'native-gui-ir.js', 'native-gui-ir-v08.js',
-  'sealed-native-gui.js', 'sealed-native-package.js', 'prebuilt-native.js',
-  'prebuilt-window.js', 'local-native-kit.js', 'concrete-call-witness.js',
+  'window-compiled.js', 'native-gui-ir.js', 'native-gui-ir-v08.js', 'native-gui-ir-v09.js',
+  'native-gui-ir-v10.js', 'native-gui-ir-v11.js', 'sealed-native-gui.js', 'sealed-native-package.js',
+  'prebuilt-native.js', 'prebuilt-window.js', 'local-native-kit.js', 'concrete-call-witness.js',
   'concrete-call-certificate.js', 'concrete-call-body.js', 'concrete-call-body-certificate.js'
 ];
 
@@ -224,14 +224,14 @@ requireAll('Compiled Window artifact', compiledWindow, [
 const nativeBuild = read('_site/native-build.js');
 requireAll('Native builder imports', nativeBuild, [
   './src/compiler.js', './src/wasm-direct.js', './src/c99.js', './src/window-build.js',
-  './src/window-compiled.js', './src/native-gui-ir-v08.js', './src/sealed-native-gui.js',
+  './src/window-compiled.js', './src/native-gui-ir-v11.js', './src/sealed-native-gui.js',
   './src/sealed-native-package.js', './src/prebuilt-native.js', './src/prebuilt-window.js'
 ]);
 requireAll('Native builder modes', nativeBuild, [
   'native-windows', 'native-macos', 'native-linux', 'native-freebsd',
   'validateWindowRuntimeSupport', 'compileToC99', 'buildNativeGuiIR', 'sealNativeGuiRuntime',
   'buildLinuxNativeGuiPackage', 'buildMacosNativeGuiPackage',
-  'PATCH_SEALED_NATIVE_GUI_TABLE_VERSION', 'Ready app download (no token)',
+  'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'Ready app download (no token)',
   'workflow_dispatch', 'source_b64'
 ]);
 const nativeGuiBase = read('_site/src/native-gui-ir.js');
@@ -244,11 +244,14 @@ requireAll('Native GUI IR 0.8 Table extension', nativeGuiTable, [
   "PATCH_NATIVE_GUI_IR_V08_VERSION = '0.8'", 'buildNativeGuiIRV08',
   'validateNativeGuiIRV08', "type: 'table'", "event.valueType = 'text-list'"
 ]);
+for (const module of ['native-gui-ir-v09.js', 'native-gui-ir-v10.js', 'native-gui-ir-v11.js']) {
+  requireFile(`_site/src/${module}`);
+}
 const sealedNative = read('_site/src/sealed-native-gui.js');
 requireAll('Versioned sealed native GUI contracts', sealedNative, [
   'PATCH_SEALED_NATIVE_GUI_VERSION = 8', 'PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION = 7',
-  'PATCH_SEALED_NATIVE_GUI_TABLE_VERSION = 9', 'writeLayoutPolicy',
-  "policy.kind === 'anchor'", "policy.kind === 'dock'"
+  'PATCH_SEALED_NATIVE_GUI_TABLE_VERSION = 9', 'PATCH_SEALED_NATIVE_GUI_LIST_VERSION = 10',
+  'writeLayoutPolicy', "policy.kind === 'anchor'", "policy.kind === 'dock'"
 ]);
 
 const sw = read('_site/sw.js');
@@ -257,7 +260,8 @@ requireAll('Service worker release', sw, [
   'const CACHE = `${CACHE_PREFIX}${REVISION}`', "'./language.html'", "'./docs.html'",
   "'./downloads.html'", "'./help.html'", "'./native-build.js'", "'./forms-designer.js'",
   "'./table-stage1.js'", "'./beta35-studio.js'", "'./beta35-studio.css'", "'./designer-multiselect.js'", "'./designer-responsive-layout.js'",
-  "'./src/native-gui-ir-v08.js'", "'./src/window-events.js'", 'freshFirst'
+  "'./src/native-gui-ir-v08.js'", "'./src/native-gui-ir-v09.js'", "'./src/native-gui-ir-v10.js'", "'./src/native-gui-ir-v11.js'",
+  "'./src/window-events.js'", 'freshFirst'
 ]);
 
 const manifest = JSON.parse(read('_site/manifest.webmanifest'));

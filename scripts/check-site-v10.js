@@ -23,7 +23,8 @@ for (const rel of [
   '_site/designer-responsive-layout.js',
   '_site/designer-multiselect.css',
   '_site/designer-responsive-layout.css',
-  '_site/src/native-gui-ir-v08.js'
+  '_site/src/native-gui-ir-v08.js',
+  '_site/src/native-gui-ir-v11.js'
 ]) requireFile(rel);
 
 const index = read('_site/index.html');
@@ -38,12 +39,15 @@ requireAll('Studio page', index, [
   './designer-responsive-layout.css'
 ]);
 
+// Table support was introduced by Native GUI IR 0.8 / sealed payload v9.
+// The current Studio Ready builder is allowed to use a newer additive tier,
+// but it must still carry the Table-capable dependency chain.
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
-  "./src/native-gui-ir-v08.js",
-  'buildNativeGuiIRV08 as buildNativeGuiIR',
-  'PATCH_SEALED_NATIVE_GUI_TABLE_VERSION',
-  'payloadVersion: PATCH_SEALED_NATIVE_GUI_TABLE_VERSION',
+  "./src/native-gui-ir-v11.js",
+  'buildNativeGuiIRV11 as buildNativeGuiIR',
+  'PATCH_SEALED_NATIVE_GUI_LIST_VERSION',
+  'payloadVersion: PATCH_SEALED_NATIVE_GUI_LIST_VERSION',
   'Native single EXE (no token, recommended)',
   'Native GTK app (no token, recommended)',
   'Native AppKit app (no token, unsigned)'
@@ -65,7 +69,8 @@ requireAll('Patch Studio service worker', sw, [
   "'./table-stage1.js'",
   "'./designer-multiselect.js'",
   "'./designer-responsive-layout.js'",
-  "'./src/native-gui-ir-v08.js'"
+  "'./src/native-gui-ir-v08.js'",
+  "'./src/native-gui-ir-v11.js'"
 ]);
 
 const nativeGuiV08 = read('_site/src/native-gui-ir-v08.js');
