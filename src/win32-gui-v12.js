@@ -50,8 +50,8 @@ export function emitWin32GuiCppV12(input) {
 }
 
 function injectListHelpers(source) {
-  const marker = `static void SetListBoxSelection(HWND hwnd, const std::wstring& value) {\n  if (!hwnd) return;\n  int count = (int)SendMessageW(hwnd, LB_GETCOUNT, 0, 0);\n  int selected = -1;\n  for (int i = 0; i < count; ++i) if (ListBoxTextAt(hwnd, i) == value) { selected = i; break; }\n  SendMessageW(hwnd, LB_SETCURSEL, selected, 0);\n}`;
-  const addition = `${marker}\nstatic std::vector<std::wstring> ListBoxTexts(HWND hwnd) {\n  std::vector<std::wstring> out;\n  if (!hwnd) return out;\n  LRESULT selectedCount = SendMessageW(hwnd, LB_GETSELCOUNT, 0, 0);\n  if (selectedCount <= 0) return out;\n  std::vector<int> indices((size_t)selectedCount);\n  LRESULT copied = SendMessageW(hwnd, LB_GETSELITEMS, (WPARAM)indices.size(), (LPARAM)indices.data());\n  if (copied <= 0) return out;\n  for (int i = 0; i < (int)copied; ++i) out.push_back(ListBoxTextAt(hwnd, indices[(size_t)i]));\n  return out;\n}\nstatic void SetListBoxSelections(HWND hwnd, const std::vector<std::wstring>& values) {\n  if (!hwnd) return;\n  SendMessageW(hwnd, LB_SETSEL, FALSE, (LPARAM)-1);\n  for (const auto& value : values) {\n    int index = (int)SendMessageW(hwnd, LB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)value.c_str());\n    if (index >= 0) SendMessageW(hwnd, LB_SETSEL, TRUE, (LPARAM)index);\n  }\n}`;
+  const marker = `static void SetListBoxSelection(HWND hwnd, const std::wstring& value) {\n  if (ListBoxText(hwnd) == value) return;\n  const LRESULT found = SendMessageW(hwnd, LB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)value.c_str());\n  SendMessageW(hwnd, LB_SETCURSEL, found == LB_ERR ? (WPARAM)-1 : (WPARAM)found, 0);\n}`;
+  const addition = `${marker}\nstatic std::wstring ListBoxTextAt(HWND hwnd, int index) {\n  if (!hwnd || index < 0) return L\"\";\n  const LRESULT len = SendMessageW(hwnd, LB_GETTEXTLEN, (WPARAM)index, 0);\n  if (len == LB_ERR || len < 0) return L\"\";\n  std::wstring value((size_t)len + 1, L'\\0');\n  const LRESULT copied = SendMessageW(hwnd, LB_GETTEXT, (WPARAM)index, (LPARAM)value.data());\n  value.resize(copied > 0 ? (size_t)copied : 0);\n  return value;\n}\nstatic std::vector<std::wstring> ListBoxTexts(HWND hwnd) {\n  std::vector<std::wstring> out;\n  if (!hwnd) return out;\n  LRESULT selectedCount = SendMessageW(hwnd, LB_GETSELCOUNT, 0, 0);\n  if (selectedCount <= 0) return out;\n  std::vector<int> indices((size_t)selectedCount);\n  LRESULT copied = SendMessageW(hwnd, LB_GETSELITEMS, (WPARAM)indices.size(), (LPARAM)indices.data());\n  if (copied <= 0) return out;\n  for (int i = 0; i < (int)copied; ++i) out.push_back(ListBoxTextAt(hwnd, indices[(size_t)i]));\n  return out;\n}\nstatic void SetListBoxSelections(HWND hwnd, const std::vector<std::wstring>& values) {\n  if (!hwnd) return;\n  SendMessageW(hwnd, LB_SETSEL, FALSE, (LPARAM)-1);\n  for (const auto& value : values) {\n    int index = (int)SendMessageW(hwnd, LB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM)value.c_str());\n    if (index >= 0) SendMessageW(hwnd, LB_SETSEL, TRUE, (LPARAM)index);\n  }\n}`;
   return replaceRequired(source, marker, addition, 'Win32 multi-select ListBox helpers');
 }
 
@@ -74,7 +74,7 @@ function patchListEventFunction(source, event) {
       if (op.op === 'add') {
         body = replaceInBody(body, `  ${target} += std::wstring(${wideString('')});`, `  ${target}.push_back(std::wstring(${wideString(op.value.value)}));`, `Win32 list add '${action.target}'`);
       } else if (op.op === 'remove') {
-        body = replaceInBody(body, `  ${target} = std::wstring(${wideString('')});`, `  ${target}.erase(std::remove(${target}.begin(), ${target}.end(), std::wstring(${wideString(op.value.value)})), ${target}.end());`, `Win32 list remove '${action.target}'`);
+        body = replaceInBody(body, `  ${target} = std::wstring(${wideString('')});`, `  { auto patchIt = std::find(${target}.begin(), ${target}.end(), std::wstring(${wideString(op.value.value)})); if (patchIt != ${target}.end()) ${target}.erase(patchIt); }`, `Win32 list remove '${action.target}'`);
       } else if (op.op === 'set') {
         body = replaceInBody(body, `  ${target} = std::wstring(${wideString('')});`, `  ${target} = ${wideVector(op.value.value)};`, `Win32 list set '${action.target}'`);
       }
@@ -91,9 +91,12 @@ function injectSmoke(source, adapted) {
   if (!candidate || candidate.options.length < 2) return source;
   const first = candidate.options[0];
   const last = candidate.options[candidate.options.length - 1];
-  const smoke = `  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, FALSE, (LPARAM)-1);\n  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, TRUE, 0);\n  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, TRUE, ${candidate.options.length - 1});\n  OnCommand(${candidate.commandId}, LBN_SELCHANGE, gControls[${candidate.nativeIndex}]);\n  if (${stateName(candidate.binding)}.size() != 2 || ${stateName(candidate.binding)}[0] != ${wideString(first)} || ${stateName(candidate.binding)}[1] != ${wideString(last)}) return 91;\n`;
-  const marker = '  DestroyWindow(gForms[mainIndex]);\n  return 0;';
-  return replaceRequired(source, marker, smoke + marker, 'Win32 multi-select smoke insertion');
+  const smoke = `  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, FALSE, (LPARAM)-1);\n  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, TRUE, 0);\n  SendMessageW(gControls[${candidate.nativeIndex}], LB_SETSEL, TRUE, ${candidate.options.length - 1});\n  DispatchControl(${candidate.commandId}, LBN_SELCHANGE, gControls[${candidate.nativeIndex}]);\n  if (${stateName(candidate.binding)}.size() != 2 || ${stateName(candidate.binding)}[0] != ${wideString(first)} || ${stateName(candidate.binding)}[1] != ${wideString(last)}) return 91;\n`;
+  const start = source.indexOf('static int RunPatchSmoke() {');
+  if (start < 0) throw new NativeGuiError('Generated Win32 source is missing RunPatchSmoke for multi-select verification.');
+  const returnAt = source.indexOf('  return 0;\n}', start);
+  if (returnAt < 0) throw new NativeGuiError('Generated Win32 smoke has an unexpected shape for multi-select verification.');
+  return source.slice(0, returnAt) + smoke + source.slice(returnAt);
 }
 
 function replaceInBody(body, marker, replacement, label) {
