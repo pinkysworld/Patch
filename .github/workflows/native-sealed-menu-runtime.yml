@@ -7,6 +7,7 @@ on:
     paths:
       - src/sealed-native-gui-v11.js
       - native-runtime/sealed-menu-v12.hpp
+      - native-runtime/sealed-table-v10.hpp
       - native-runtime/win32-sealed-gui-v12.cpp
       - native-runtime/win32-sealed-gui-v11.cpp
       - native-runtime/sealed-list-v11.hpp
@@ -18,6 +19,7 @@ on:
     paths:
       - src/sealed-native-gui-v11.js
       - native-runtime/sealed-menu-v12.hpp
+      - native-runtime/sealed-table-v10.hpp
       - native-runtime/win32-sealed-gui-v12.cpp
       - native-runtime/win32-sealed-gui-v11.cpp
       - native-runtime/sealed-list-v11.hpp
@@ -66,7 +68,7 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE native-runtime\win32-sealed-gui-v12.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:PatchMenuRuntimeV12.exe',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v12.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:PatchMenuRuntimeV12.exe',
             'exit /b %errorlevel%'
           ) | Set-Content build-menu-runtime.cmd -Encoding ascii
           & cmd.exe /d /c build-menu-runtime.cmd
