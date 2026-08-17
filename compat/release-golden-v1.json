@@ -38,7 +38,7 @@
     },
     "windowWeb": {
       "format": "patch-standalone-window-web",
-      "version": "0.8",
+      "version": "0.9",
       "projectKind": "window",
       "irVersion": "0.10"
     }

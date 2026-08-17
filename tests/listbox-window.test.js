@@ -136,7 +136,7 @@ test('Patch Studio upgrades list-backed ListBox to multiple selection and text-l
 
 test('Standalone Window Web App preserves single-select ListBox string behavior', () => {
   const built = buildStandaloneWebApp(source, { name: 'ListBoxDemo', kind: 'window' });
-  assert.equal(built.metadata.version, '0.8');
+  assert.equal(built.metadata.version, '0.9');
   assert.equal(built.metadata.listboxMultiSelectStage, undefined);
   assert.match(built.html, /el\.size=Math\.min/);
   assert.match(built.html, /safeTrigger\(control\.id,'changed',\{value:el\.value\}\)/);
@@ -144,7 +144,7 @@ test('Standalone Window Web App preserves single-select ListBox string behavior'
 
 test('Standalone Window Web App supports list-backed multi-select ListBox with transient selection state', () => {
   const built = buildStandaloneWebApp(multiPersistSource, { name: 'MultiListBox', kind: 'window' });
-  assert.equal(built.metadata.version, '0.8');
+  assert.equal(built.metadata.version, '0.9');
   assert.equal(built.metadata.listboxMultiSelectStage, 1);
   assert.equal(built.metadata.listboxMultiSelectMode, 'list-state-text-list');
   assert.match(built.html, /const listboxSelections=new Map\(\)/);

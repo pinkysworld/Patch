@@ -40,6 +40,7 @@ const files = {
   studioDomSync: read('web/studio-dom-sync.js'),
   studioListboxAdapter: read('web/table-stage1.js'),
   webapp: read('src/webapp.js'),
+  windowWebapp: read('src/window-webapp.js'),
   windowEvents: read('src/window-events.js'),
   compilerJs: read('src/compiler.js'),
   formalCalls: read('src/formal-calls.js'),
@@ -166,10 +167,17 @@ requireAll('docs/OFFLINE_COMPILER.md', files.offline, ['payload **v9**', 'runtim
 
 // Browser implementation contract.
 requireAll('src/window-events.js', files.windowEvents, [
-  "PATCH_WINDOW_EVENTS_VERSION = '0.7'",
+  "export const PATCH_WINDOW_EVENTS_VERSION = '0.8'",
   "controlType === 'listbox'",
   "stateType === 'list'",
   'text-list event-local value'
+]);
+requireAll('src/window-webapp.js', files.windowWebapp, [
+  "PATCH_WINDOW_WEB_VERSION = '0.9'",
+  'allowTree: true',
+  'function uiTreeNodes(nodes)',
+  "root.setAttribute('role','tree')",
+  'selected node path'
 ]);
 requireAll('web/table-stage1.js', files.studioListboxAdapter, [
   'appListboxSelections', 'collectListInitials',

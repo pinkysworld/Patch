@@ -72,9 +72,16 @@ function addReadOnlyWindowTables(built) {
   const hasTable = (built.compiled?.ast ?? []).some(windowNode => windowNode.kind === 'window' && containsTable(windowNode.body));
   if (!hasTable) return built;
   let html = built.html;
-  const modelNeedle = "options:Array.isArray(node.options)?node.options.map(uiOption):[],value:";
-  const modelReplacement = "options:Array.isArray(node.options)?node.options.map(uiOption):[],columns:Array.isArray(node.columns)?node.columns.map(uiOption):[],rows:Array.isArray(node.rows)?node.rows.map(row=>row.map(uiOption)):[],value:";
-  if (!html.includes(modelNeedle)) throw new Error('Standalone Window table model hook is unavailable.');
+  const modelNeedles = [
+    "options:Array.isArray(node.options)?node.options.map(uiOption):[],nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[],value:",
+    "options:Array.isArray(node.options)?node.options.map(uiOption):[],value:"
+  ];
+  const modelNeedle = modelNeedles.find(needle => html.includes(needle));
+  if (!modelNeedle) throw new Error('Standalone Window table model hook is unavailable.');
+  const modelReplacement = modelNeedle.replace(
+    'value:',
+    "columns:Array.isArray(node.columns)?node.columns.map(uiOption):[],rows:Array.isArray(node.rows)?node.rows.map(row=>row.map(uiOption)):[],value:"
+  );
   html = html.replace(modelNeedle, modelReplacement);
 
   const selectionNeedle = 'const tabSelections=new Map();';

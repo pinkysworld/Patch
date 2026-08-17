@@ -1,8 +1,6 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-// Historical beta.35 contract marker retained for release-surface separation:
-// PATCH_WINDOW_EVENTS_VERSION = '0.7'
-// Current TreeView Stage 1 extends only the transient event-local value contract.
+// TreeView Stage 1 extends the transient event-local value contract with text-list node paths.
 export const PATCH_WINDOW_EVENTS_VERSION = '0.8';
 
 /**
