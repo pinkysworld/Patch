@@ -22,6 +22,16 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
+      - name: Normalize migration self-check ordering
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('scripts/apply-runtime-v12-switch.js')
+          s = p.read_text()
+          block = "replaceExact('scripts/check-site-v12.js', \"requireText(docs, 'payload v10/runtime v1.1', 'Documentation current list contract');\", \"requireText(docs, 'payload v11/runtime v1.2', 'Documentation current Menu contract');\");\n"
+          if block not in s:
+              raise SystemExit('Expected redundant check-site migration block not found')
+          p.write_text(s.replace(block, ''))
       - name: Apply fail-closed v1.2 migration
         run: node scripts/apply-runtime-v12-switch.js
       - name: Validate migrated JavaScript and current contracts
