@@ -1,0 +1,35 @@
+name: Apply TreeView Stage 1 source transformation
+
+on:
+  push:
+    branches: [agent/treeview-stage1]
+    paths:
+      - scripts/apply-treeview-stage1.js
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/treeview-stage1
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Apply TreeView Stage 1 changes
+        run: node scripts/apply-treeview-stage1.js
+      - name: Verify focused TreeView contract
+        run: node --test tests/treeview-stage1.test.js
+      - name: Commit transformed sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/parser.js src/interpreter.js src/window-events.js src/window-build.js src/designer.js web/playground.js web/style.css docs/ROADMAP.md
+          git commit -m 'Implement TreeView Stage 1 browser contract'
+          git push origin HEAD:agent/treeview-stage1
