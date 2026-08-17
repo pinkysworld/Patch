@@ -2,6 +2,7 @@ import { patchArtifactStem } from './artifact-name.js';
 
 export const PATCH_STUDIO_PROJECT_FORMAT = 'patch-studio-project';
 export const PATCH_STUDIO_PROJECT_VERSION = 3;
+export const PREVIOUS_PATCH_STUDIO_PROJECT_VERSION = 2;
 export const PATCH_STUDIO_RECOVERY_FORMAT = 'patch-studio-recovery';
 export const PATCH_STUDIO_RECOVERY_VERSION = 1;
 export const PATCH_STUDIO_MAX_SOURCE_BYTES = 2 * 1024 * 1024;
@@ -65,7 +66,7 @@ export function validateStudioProjectBundle(value) {
 
   const entry = normalizedPath(value.project.entry ?? 'main.patch', 'Project entry');
   const files = validateProjectFiles(value.files, entry);
-  if (version <= 2 && (entry !== 'main.patch' || files.length !== 1 || files[0].path !== 'main.patch')) {
+  if (version <= PREVIOUS_PATCH_STUDIO_PROJECT_VERSION && (entry !== 'main.patch' || files.length !== 1 || files[0].path !== 'main.patch')) {
     throw new StudioProjectError(`Patch Studio project version ${version} supports exactly one main.patch source file.`, 'STUDIO_PROJECT_UNSUPPORTED_LAYOUT');
   }
 
