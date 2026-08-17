@@ -71,7 +71,7 @@ requireAll('Standalone Web multi-select ListBox contract', webapp, [
 ]);
 
 const events = read('_site/src/window-events.js');
-requireAll('Window event adapter v0.8', events, [
+requireAll('Window event adapter v0.7 compatibility / current v0.8', events, [
   "PATCH_WINDOW_EVENTS_VERSION = '0.8'",
   "controlType === 'listbox'",
   "stateType === 'list'",
