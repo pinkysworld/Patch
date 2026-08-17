@@ -61,7 +61,7 @@ jobs:
 
           replace_once(
               'src/offline-linker.js',
-              'validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true });',
+              'validateWindowRuntimeSupport(compiled);',
               '''validateWindowRuntimeSupport(compiled, {
             allowTables: true,
             allowLists: true,
