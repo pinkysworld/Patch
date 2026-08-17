@@ -7,6 +7,7 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildNativeGuiIRV11 } from './native-gui-ir-v11.js';
+import { sealNativeGuiRuntime } from './sealed-native-gui.js';
 import { sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
@@ -47,15 +48,18 @@ export function createOfflineLinkPlan(source, options = {}) {
     return binaryPlan({ platform, kind, name, sealed });
   }
 
+  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 11);
   validateWindowRuntimeSupport(compiled, {
-  allowTables: true,
-  allowLists: true,
-  allowListControls: true,
-  allowMenuDecorations: true
-});
+    allowTables: true,
+    allowLists: true,
+    allowListControls: true,
+    allowMenuDecorations: guiPayloadVersion >= 11
+  });
   const nativeGui = buildNativeGuiIRV11(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
-  const sealed = sealNativeGuiRuntimeV11(runtime, nativeGui, { platform });
+  const sealed = guiPayloadVersion === 10
+    ? sealNativeGuiRuntime(runtime, nativeGui, { platform, version: 10 })
+    : sealNativeGuiRuntimeV11(runtime, nativeGui, { platform });
   return binaryPlan({ platform, kind, name, sealed });
 }
 
@@ -167,6 +171,12 @@ function requiredRuntime(value, label) {
   if (value instanceof Uint8Array) return value;
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
   throw new OfflineLinkError(`${label} linking needs the runtime embedded in the Patch offline compiler.`);
+}
+
+function normalizeGuiPayloadVersion(value) {
+  const version = Number(value);
+  if (version === 10 || version === 11) return version;
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v10 or v11, not '${value}'.`);
 }
 
 function normalizePlatform(value) {
