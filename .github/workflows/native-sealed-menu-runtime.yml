@@ -86,7 +86,8 @@ jobs:
           const runtime = fs.readFileSync('PatchMenuRuntimeV12.exe');
           const sealed = sealNativeGuiRuntimeV11(runtime, ir, { platform: 'windows' });
           fs.writeFileSync('SealedMenuState.exe', sealed);
-          if (sealed.readUInt32LE(sealed.length - 12) !== 11) throw new Error('Expected sealed payload v11.');
+          const footer = new DataView(sealed.buffer, sealed.byteOffset + sealed.byteLength - 20, 20);
+          if (footer.getUint32(8, true) !== 11) throw new Error('Expected sealed payload v11.');
           NODE
       - name: Smoke sealed Win32 Menu runtime v1.2
         shell: pwsh
