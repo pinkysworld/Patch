@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
-import { triggerWindowEvent } from '../src/window-events.js';
+import { PATCH_WINDOW_EVENTS_VERSION, triggerWindowEvent } from '../src/window-events.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 
+const playground = fs.readFileSync('web/playground.js', 'utf8');
 const SOURCE = `create list selected = []
 
 window "Files" as main:
@@ -49,6 +52,7 @@ test('TreeView UI model evaluates labels but does not persist toolkit selection'
 });
 
 test('TreeView changed exposes a transient text-list path and persistence still requires Patch change', () => {
+  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.8');
   const runtime = new PatchInterpreter();
   runtime.run(SOURCE);
   const changed = triggerWindowEvent(runtime, 'files', 'changed', { value: ['src', 'parser.js'] });
@@ -59,6 +63,16 @@ test('TreeView changed exposes a transient text-list path and persistence still 
     () => triggerWindowEvent(runtime, 'files', 'changed', { value: 'parser.js' }),
     /text-list event-local value/
   );
+});
+
+test('Studio App Preview renders an accessible TreeView and emits full path selection', () => {
+  execFileSync(process.execPath, ['--check', 'web/playground.js'], { stdio: 'pipe' });
+  assert.match(playground, /function createTreeElement\(control, context\)/);
+  assert.match(playground, /root\.setAttribute\('role', 'tree'\)/);
+  assert.match(playground, /item\.setAttribute\('role', 'treeitem'\)/);
+  assert.match(playground, /group\.setAttribute\('role', 'group'\)/);
+  assert.match(playground, /trigger\(control\.id, 'changed', \{ value: selectedPath \}\)/);
+  assert.match(playground, /!interactive && control\.type !== 'tree'/);
 });
 
 test('TreeView Stage 1 is explicitly opt-in at Window runtime validation boundary', () => {
