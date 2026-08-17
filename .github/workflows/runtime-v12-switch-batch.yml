@@ -1,0 +1,49 @@
+name: Patch Runtime v1.2 Consumer Migration
+
+on:
+  push:
+    branches: [agent/current-runtime-v12-switch]
+    paths:
+      - scripts/apply-runtime-v12-switch.js
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/current-runtime-v12-switch
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Apply fail-closed v1.2 migration
+        run: node scripts/apply-runtime-v12-switch.js
+      - name: Validate migrated JavaScript and current contracts
+        run: |
+          node --check src/offline-linker.js
+          node --check src/sealed-native-package.js
+          node --check web/native-build.js
+          node --check scripts/seal-native-win32.js
+          node --check scripts/seal-native-linux.js
+          node --check scripts/seal-native-macos.js
+          node --test tests/sealed-menu-payload-v11.test.js tests/offline-linker.test.js tests/studio-ready-v12.test.js tests/studio-runtime-integrity.test.js
+          npm run build:site
+          npm run check:site
+      - name: Commit migrated consumer surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Migration produced no changes.'
+            exit 0
+          fi
+          git commit -m 'Switch current sealed consumers to runtime v1.2'
+          git push origin HEAD:agent/current-runtime-v12-switch
