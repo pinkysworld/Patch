@@ -1,10 +1,12 @@
 import { patchArtifactStem } from './artifact-name.js';
 
 export const PATCH_STUDIO_PROJECT_FORMAT = 'patch-studio-project';
-export const PATCH_STUDIO_PROJECT_VERSION = 2;
+export const PATCH_STUDIO_PROJECT_VERSION = 3;
 export const PATCH_STUDIO_RECOVERY_FORMAT = 'patch-studio-recovery';
 export const PATCH_STUDIO_RECOVERY_VERSION = 1;
 export const PATCH_STUDIO_MAX_SOURCE_BYTES = 2 * 1024 * 1024;
+export const PATCH_STUDIO_MAX_PROJECT_BYTES = 8 * 1024 * 1024;
+export const PATCH_STUDIO_MAX_PROJECT_FILES = 64;
 export const PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS = 5;
 export const PATCH_STUDIO_BUILD_TARGETS = Object.freeze([
   'web', 'native-windows', 'native-macos', 'native-linux', 'native-freebsd', 'portable', 'wasm-direct', 'wasm-bootstrap'
@@ -35,13 +37,13 @@ export function buildStudioProjectBundle(state) {
     project: {
       name: normalized.name,
       kind: normalized.kind,
-      entry: 'main.patch',
+      entry: normalized.entry,
       build: {
         target: normalized.buildTarget,
         nativeMode: normalized.nativeBuildMode
       }
     },
-    files: [{ path: 'main.patch', content: normalized.code }]
+    files: normalized.files.map(file => ({ path: file.path, content: file.content }))
   };
 }
 
@@ -62,21 +64,8 @@ export function validateStudioProjectBundle(value) {
   if (!Array.isArray(value.files) || value.files.length < 1) throw new StudioProjectError('Project files are missing.');
 
   const entry = normalizedPath(value.project.entry ?? 'main.patch', 'Project entry');
-  const files = [];
-  const seen = new Set();
-  for (const file of value.files) {
-    if (!isRecord(file)) throw new StudioProjectError('Each project file must be an object.');
-    const path = normalizedPath(file.path, 'Project file path');
-    if (seen.has(path)) throw new StudioProjectError(`Project file '${path}' appears more than once.`);
-    seen.add(path);
-    if (typeof file.content !== 'string') throw new StudioProjectError(`Project file '${path}' must contain text.`);
-    if (encoder.encode(file.content).length > PATCH_STUDIO_MAX_SOURCE_BYTES) {
-      throw new StudioProjectError(`Project file '${path}' exceeds the ${PATCH_STUDIO_MAX_SOURCE_BYTES} byte Studio limit.`, 'STUDIO_PROJECT_TOO_LARGE');
-    }
-    files.push({ path, content: file.content });
-  }
-  if (!seen.has(entry)) throw new StudioProjectError(`Project entry '${entry}' is not present in the bundle.`);
-  if (entry !== 'main.patch' || files.length !== 1) {
+  const files = validateProjectFiles(value.files, entry);
+  if (version <= 2 && (entry !== 'main.patch' || files.length !== 1 || files[0].path !== 'main.patch')) {
     throw new StudioProjectError(`Patch Studio project version ${version} supports exactly one main.patch source file.`, 'STUDIO_PROJECT_UNSUPPORTED_LAYOUT');
   }
 
@@ -87,7 +76,8 @@ export function validateStudioProjectBundle(value) {
   return buildStudioProjectBundle({
     name: value.project.name,
     kind: value.project.kind,
-    code: files[0].content,
+    entry,
+    files,
     buildTarget: migratedBuild.target,
     nativeBuildMode: migratedBuild.nativeMode
   });
@@ -109,13 +99,50 @@ export function parseStudioProjectBundle(text) {
 
 export function studioStateFromBundle(bundle) {
   const normalized = validateStudioProjectBundle(bundle);
+  const entryFile = normalized.files.find(file => file.path === normalized.project.entry);
   return {
     name: normalized.project.name,
     kind: normalized.project.kind,
-    code: normalized.files[0].content,
+    entry: normalized.project.entry,
+    files: normalized.files.map(file => ({ ...file })),
+    code: entryFile?.content ?? '',
     buildTarget: normalized.project.build.target,
     nativeBuildMode: normalized.project.build.nativeMode
   };
+}
+
+export function composeStudioProjectSource(bundle) {
+  const normalized = validateStudioProjectBundle(bundle);
+  const ordered = orderedProjectFiles(normalized);
+  let source = '';
+  const segments = [];
+
+  for (const file of ordered) {
+    const content = file.content.replace(/\r\n?/g, '\n');
+    if (source.length) source += source.endsWith('\n') ? '\n' : '\n\n';
+    const startLine = lineCount(source);
+    source += content;
+    const endLine = startLine + Math.max(0, lineCount(content) - 1);
+    segments.push({ path: file.path, startLine, endLine });
+  }
+
+  return {
+    source,
+    entry: normalized.project.entry,
+    files: ordered.map(file => file.path),
+    segments
+  };
+}
+
+export function mapStudioProjectLine(composition, line) {
+  const number = Number(line);
+  if (!composition || !Array.isArray(composition.segments) || !Number.isInteger(number) || number < 1) return null;
+  for (const segment of composition.segments) {
+    if (number >= segment.startLine && number <= segment.endLine) {
+      return { path: segment.path, line: number - segment.startLine + 1 };
+    }
+  }
+  return null;
 }
 
 export function parseStoredStudioProject(text) {
@@ -212,13 +239,49 @@ function normalizeStudioState(state) {
   const name = (rawName || 'PatchApp').slice(0, 128);
   const kind = state.kind === 'window' ? 'window' : state.kind === 'console' ? 'console' : null;
   if (!kind) throw new StudioProjectError(`Project kind must be 'console' or 'window'.`);
-  if (typeof state.code !== 'string') throw new StudioProjectError('Project source must be text.');
-  if (encoder.encode(state.code).length > PATCH_STUDIO_MAX_SOURCE_BYTES) {
-    throw new StudioProjectError(`Project source exceeds the ${PATCH_STUDIO_MAX_SOURCE_BYTES} byte Studio limit.`, 'STUDIO_PROJECT_TOO_LARGE');
-  }
+  const entry = normalizedPath(state.entry ?? 'main.patch', 'Project entry');
+  const rawFiles = Array.isArray(state.files)
+    ? state.files
+    : [{ path: entry, content: typeof state.code === 'string' ? state.code : '' }];
+  const files = validateProjectFiles(rawFiles, entry);
   const buildTarget = normalizeBuildTarget(state.buildTarget);
   const nativeBuildMode = normalizeNativeBuildMode(state.nativeBuildMode);
-  return { name, kind, code: state.code, buildTarget, nativeBuildMode };
+  return { name, kind, entry, files, buildTarget, nativeBuildMode };
+}
+
+function validateProjectFiles(value, entry) {
+  if (!Array.isArray(value) || value.length < 1) throw new StudioProjectError('Project files are missing.');
+  if (value.length > PATCH_STUDIO_MAX_PROJECT_FILES) {
+    throw new StudioProjectError(`Project contains more than ${PATCH_STUDIO_MAX_PROJECT_FILES} source files.`, 'STUDIO_PROJECT_TOO_MANY_FILES');
+  }
+  const files = [];
+  const seen = new Set();
+  let totalBytes = 0;
+  for (const file of value) {
+    if (!isRecord(file)) throw new StudioProjectError('Each project file must be an object.');
+    const path = normalizedPath(file.path, 'Project file path');
+    if (!/\.patch$/i.test(path)) throw new StudioProjectError(`Project file '${path}' must use the .patch extension.`, 'STUDIO_PROJECT_FILE_TYPE');
+    if (seen.has(path)) throw new StudioProjectError(`Project file '${path}' appears more than once.`);
+    seen.add(path);
+    if (typeof file.content !== 'string') throw new StudioProjectError(`Project file '${path}' must contain text.`);
+    const bytes = encoder.encode(file.content).length;
+    if (bytes > PATCH_STUDIO_MAX_SOURCE_BYTES) {
+      throw new StudioProjectError(`Project file '${path}' exceeds the ${PATCH_STUDIO_MAX_SOURCE_BYTES} byte Studio limit.`, 'STUDIO_PROJECT_TOO_LARGE');
+    }
+    totalBytes += bytes;
+    files.push({ path, content: file.content });
+  }
+  if (totalBytes > PATCH_STUDIO_MAX_PROJECT_BYTES) {
+    throw new StudioProjectError(`Project sources exceed the ${PATCH_STUDIO_MAX_PROJECT_BYTES} byte Studio limit.`, 'STUDIO_PROJECT_TOO_LARGE');
+  }
+  if (!seen.has(entry)) throw new StudioProjectError(`Project entry '${entry}' is not present in the bundle.`);
+  return files;
+}
+
+function orderedProjectFiles(bundle) {
+  const entry = bundle.project.entry;
+  const entryFile = bundle.files.find(file => file.path === entry);
+  return [entryFile, ...bundle.files.filter(file => file.path !== entry)];
 }
 
 function validateBuildSettings(value) {
@@ -250,6 +313,11 @@ function normalizedPath(value, label) {
   const parts = path.split('/');
   if (parts.some(part => !part || part === '.' || part === '..')) throw new StudioProjectError(`${label} must stay inside the project.`);
   return parts.join('/');
+}
+
+function lineCount(text) {
+  if (text === '') return 1;
+  return String(text).split('\n').length;
 }
 
 function integer(value, label) {
