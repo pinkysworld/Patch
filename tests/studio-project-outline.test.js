@@ -1,15 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { parse } from '../src/parser.js';
-import { buildOutlineModel, lineSelectionRange } from '../web/studio-outline.js';
+import { buildOutlineModel, lineSelectionRange } from '../src/studio-outline-model.js';
 
 const html = fs.readFileSync('web/index.html', 'utf8');
+const tree = fs.readFileSync('web/studio-outline.js', 'utf8');
 const css = fs.readFileSync('web/studio-outline.css', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
-test('Project Outline groups source-backed Forms, state, events and recipes', () => {
+test('Project Tree model groups source-backed Forms, state, events and recipes', () => {
   const source = `create number score = 0
 window "Main" as main:
   text "Score"
@@ -29,14 +31,35 @@ when add clicked:
   assert.deepEqual(model[3].items[0], { kind: 'recipe', line: 9, label: 'recalculate', meta: 'recipe' });
 });
 
-test('Project Outline computes exact editor line selection ranges', () => {
+test('Project Tree computes exact active-file editor line selection ranges', () => {
   const source = 'first\nsecond line\nthird';
   assert.deepEqual(lineSelectionRange(source, 2), { line: 2, start: 6, end: 17 });
   assert.deepEqual(lineSelectionRange(source, 99), { line: 3, start: 18, end: 23 });
   assert.equal(lineSelectionRange(source, 0), null);
 });
 
-test('Studio ships an accessible responsive outline without shrinking Designer', () => {
+test('Studio Project Tree browser module is valid JavaScript and uses the shared model', () => {
+  execFileSync(process.execPath, ['--check', 'web/studio-outline.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'src/studio-outline-model.js'], { stdio: 'pipe' });
+  assert.match(tree, /studio-outline-model\.js/);
+  assert.match(tree, /getStudioProjectFiles/);
+  assert.match(tree, /activateStudioProjectFile/);
+  assert.match(tree, /addStudioProjectFile/);
+  assert.match(tree, /removeStudioProjectFile/);
+  assert.match(tree, /data-project-action="file"/);
+  assert.match(tree, /data-project-action="form"/);
+  assert.match(tree, /Project Tree/);
+});
+
+test('Project Tree keeps build/run consumers on the composed v3 project source without replacing the visible editor source', () => {
+  assert.match(tree, /getStudioProjectBuildInput/);
+  assert.match(tree, /Object\.defineProperty\(code, 'value'/);
+  assert.match(tree, /virtualSource \?\? descriptor\.get\.call\(this\)/);
+  assert.match(tree, /event\.target\.closest\?\.\('#run, #build'\)/);
+  assert.match(tree, /queueMicrotask\(\(\) => \{ virtualSource = null; \}\)/);
+});
+
+test('Studio ships an accessible responsive project tree without shrinking Designer', () => {
   for (const marker of [
     'class="source-workspace"',
     'aria-label="Project outline"',
@@ -47,16 +70,18 @@ test('Studio ships an accessible responsive outline without shrinking Designer',
   ]) assert.ok(html.includes(marker), marker);
 
   for (const marker of [
-    'grid-template-columns: minmax(190px, 230px) minmax(0, 1fr)',
+    'grid-template-columns: minmax(210px, 270px) minmax(0, 1fr)',
     '@media (max-width: 760px)',
     '.project-outline-tree',
-    'button.outline-item:focus-visible'
+    '.outline-file-section.active',
+    'button.outline-item:focus-visible',
+    'button.outline-action:focus-visible'
   ]) assert.ok(css.includes(marker), marker);
 
   assert.ok(html.indexOf('class="source-workspace"') < html.indexOf('class="pane result-pane"'));
 });
 
-test('Project Outline assets participate in public site revisioning and offline cache', () => {
-  for (const marker of ['studio-outline.css', 'studio-outline.js']) assert.ok(buildSite.includes(marker), marker);
-  for (const marker of ["'./studio-outline.css'", "'./studio-outline.js'"]) assert.ok(sw.includes(marker), marker);
+test('Project Tree assets and shared model participate in public site revisioning and offline cache', () => {
+  for (const marker of ['studio-outline.css', 'studio-outline.js', 'studio-outline-model.js']) assert.ok(buildSite.includes(marker), marker);
+  for (const marker of ["'./studio-outline.css'", "'./studio-outline.js'", "'../src/studio-outline-model.js'"]) assert.ok(sw.includes(marker), marker);
 });
