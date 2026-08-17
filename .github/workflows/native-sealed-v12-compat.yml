@@ -1,0 +1,128 @@
+name: Patch Native Sealed Runtime v1.2 Compatibility
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - native-runtime/win32-sealed-gui-v12.cpp
+      - native-runtime/appkit-sealed-gui-v12.mm
+      - native-runtime/gtk-sealed-gui-v12.cpp
+      - native-runtime/sealed-menu-v12.hpp
+      - src/sealed-native-gui-v11.js
+      - src/native-gui-ir-v11.js
+      - examples/responsive-window.patch
+      - .github/workflows/native-sealed-v12-compat.yml
+  push:
+    branches: [main]
+    paths:
+      - native-runtime/win32-sealed-gui-v12.cpp
+      - native-runtime/appkit-sealed-gui-v12.mm
+      - native-runtime/gtk-sealed-gui-v12.cpp
+      - native-runtime/sealed-menu-v12.hpp
+      - src/sealed-native-gui-v11.js
+      - src/native-gui-ir-v11.js
+      - examples/responsive-window.patch
+      - .github/workflows/native-sealed-v12-compat.yml
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build runtime v1.2
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v12.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:RuntimeV12.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content build-runtime.cmd -Encoding ascii
+          & cmd.exe /d /c build-runtime.cmd
+          if ($LASTEXITCODE -ne 0) { throw "Runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal and smoke undecorated responsive app
+        shell: pwsh
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import{compile}from'./src/compiler.js';import{buildNativeGuiIRV11}from'./src/native-gui-ir-v11.js';import{sealNativeGuiRuntimeV11}from'./src/sealed-native-gui-v11.js';const source=fs.readFileSync('examples/responsive-window.patch','utf8');const ir=buildNativeGuiIRV11(compile(source,{name:'ResponsiveV12',kind:'window'}));const runtime=fs.readFileSync('RuntimeV12.exe');fs.writeFileSync('ResponsiveV12.exe',sealNativeGuiRuntimeV11(runtime,ir,{platform:'windows'}));"
+          $process = Start-Process -FilePath (Resolve-Path './ResponsiveV12.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Responsive v1.2 compatibility smoke failed with exit code $($process.ExitCode)." }
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build universal runtime v1.2
+        shell: bash
+        run: |
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -framework Cocoa native-runtime/appkit-sealed-gui-v12.mm -o RuntimeV12
+          chmod +x RuntimeV12
+          ARCHS="$(lipo -archs RuntimeV12)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal and smoke undecorated responsive app
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV11 } from './src/native-gui-ir-v11.js';
+          import { sealNativeGuiRuntimeV11 } from './src/sealed-native-gui-v11.js';
+          const source=fs.readFileSync('examples/responsive-window.patch','utf8');
+          const ir=buildNativeGuiIRV11(compile(source,{name:'ResponsiveV12',kind:'window'}));
+          const runtime=fs.readFileSync('RuntimeV12');
+          const sealed=sealNativeGuiRuntimeV11(runtime,ir,{platform:'macos'});
+          fs.writeFileSync('ResponsiveV12',sealed);fs.chmodSync('ResponsiveV12',0o755);
+          NODE
+          ./ResponsiveV12 --patch-smoke
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Build runtime v1.2
+        shell: bash
+        run: |
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v12.cpp -o RuntimeV12 $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x RuntimeV12
+      - name: Seal and smoke undecorated responsive app
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV11 } from './src/native-gui-ir-v11.js';
+          import { sealNativeGuiRuntimeV11 } from './src/sealed-native-gui-v11.js';
+          const source=fs.readFileSync('examples/responsive-window.patch','utf8');
+          const ir=buildNativeGuiIRV11(compile(source,{name:'ResponsiveV12',kind:'window'}));
+          const runtime=fs.readFileSync('RuntimeV12');
+          const sealed=sealNativeGuiRuntimeV11(runtime,ir,{platform:'linux'});
+          fs.writeFileSync('ResponsiveV12',sealed);fs.chmodSync('ResponsiveV12',0o755);
+          NODE
+          xvfb-run -a ./ResponsiveV12 --patch-smoke
