@@ -6,6 +6,7 @@ import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 import { buildNativeGuiIRV08 } from '../src/native-gui-ir-v08.js';
 import { buildNativeGuiIRV11 } from '../src/native-gui-ir-v11.js';
 import { sealNativeGuiRuntime } from '../src/sealed-native-gui.js';
+import { sealNativeGuiRuntimeV11 } from '../src/sealed-native-gui-v11.js';
 
 const sourcePath = process.argv[2];
 const runtimePath = process.argv[3];
@@ -24,7 +25,9 @@ const gui = payloadVersion >= 10
   ? buildNativeGuiIRV11(compiled)
   : payloadVersion >= 9 ? buildNativeGuiIRV08(compiled) : buildNativeGuiIR(compiled);
 const runtime = new Uint8Array(fs.readFileSync(runtimePath));
-const sealed = sealNativeGuiRuntime(runtime, gui, { version: payloadVersion });
+const sealed = payloadVersion >= 11
+  ? sealNativeGuiRuntimeV11(runtime, gui, { platform: 'windows' })
+  : sealNativeGuiRuntime(runtime, gui, { version: payloadVersion });
 fs.mkdirSync(path.dirname(path.resolve(outputPath)), { recursive: true });
 fs.writeFileSync(outputPath, sealed);
 console.log(`Sealed native Patch Win32 GUI: ${outputPath}`);

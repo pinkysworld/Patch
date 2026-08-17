@@ -1,4 +1,5 @@
 import { sealNativeGuiRuntime } from './sealed-native-gui.js';
+import { PATCH_SEALED_NATIVE_GUI_MENU_VERSION, sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
 
 export const PATCH_SEALED_NATIVE_PACKAGE_VERSION = '0.2';
 
@@ -7,7 +8,7 @@ export class SealedNativePackageError extends Error {}
 export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform: 'linux', version: options.payloadVersion });
+  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'linux', payloadVersion: options.payloadVersion });
   return {
     format: 'patch-sealed-linux-native-gui-package',
     version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
@@ -24,7 +25,7 @@ export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}
 export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiRuntime(runtime, nativeGui, { platform: 'macos', version: options.payloadVersion });
+  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'macos', payloadVersion: options.payloadVersion });
   const bundle = `${name}.app`;
   const executablePath = `${bundle}/Contents/MacOS/${name}`;
   const plistPath = `${bundle}/Contents/Info.plist`;
@@ -47,6 +48,13 @@ export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}
       { name: pkgInfoPath, data: pkgInfo, mode: 0o100644 }
     ])
   };
+}
+
+function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion }) {
+  if (Number(payloadVersion) === PATCH_SEALED_NATIVE_GUI_MENU_VERSION) {
+    return sealNativeGuiRuntimeV11(runtime, nativeGui, { platform });
+  }
+  return sealNativeGuiRuntime(runtime, nativeGui, { platform, version: payloadVersion });
 }
 
 function infoPlist(name) {

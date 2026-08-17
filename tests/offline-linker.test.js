@@ -6,7 +6,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createOfflineLinkPlan, materializeOfflineLinkPlan } from '../src/offline-linker.js';
 import { decodeSealedConsolePayload } from '../src/prebuilt-native.js';
-import { decodeNativeGuiPayload } from '../src/sealed-native-gui.js';
+import { decodeNativeGuiPayloadV11 } from '../src/sealed-native-gui-v11.js';
 
 const consoleSource = 'create number score = 1\nchange score:\n  add 1\nshow score\n';
 const windowSource = 'window "Main" as main size 480, 320:\n  text "Hello" at 24, 24 size 160, 30\n';
@@ -42,7 +42,7 @@ test('offline linker seals Console source into a local Windows executable plan',
   assert.deepEqual([...decoded.runtime], [...runtime]);
 });
 
-test('offline linker lowers current Window source to Native GUI IR 1.1 and seals payload v10', () => {
+test('offline linker lowers current Window source to Native GUI IR 1.1 and seals payload v11', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0]), 'OfflineWindow.exe'],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]), 'OfflineWindow'],
@@ -53,12 +53,12 @@ test('offline linker lowers current Window source to Native GUI IR 1.1 and seals
     assert.equal(plan.kind, 'window');
     assert.equal(plan.suggestedOutput, suggestedOutput);
     const executable = executableFrom(plan, platform);
-    assert.ok(decodeNativeGuiPayload(executable.bytes).length > 0);
-    assert.equal(footerVersion(executable.bytes), 10);
+    assert.ok(decodeNativeGuiPayloadV11(executable.bytes).length > 0);
+    assert.equal(footerVersion(executable.bytes), 11);
   }
 });
 
-test('offline Window linker preserves Table in the sealed payload v10 contract', () => {
+test('offline Window linker preserves Table in the sealed payload v11 contract', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
@@ -67,15 +67,15 @@ test('offline Window linker preserves Table in the sealed payload v10 contract',
   for (const [platform, runtime] of cases) {
     const plan = createOfflineLinkPlan(tableWindowSource, { platform, name: 'SealedTable', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
-    const payload = new TextDecoder().decode(decodeNativeGuiPayload(executable.bytes));
-    assert.equal(footerVersion(executable.bytes), 10);
+    const payload = new TextDecoder().decode(decodeNativeGuiPayloadV11(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 11);
     assert.match(payload, /Name/);
     assert.match(payload, /Grace/);
     assert.match(payload, /Scientist/);
   }
 });
 
-test('offline Window linker preserves persistent list state and multi-select ListBox in payload v10', () => {
+test('offline Window linker preserves persistent list state and multi-select ListBox in payload v11', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
@@ -84,11 +84,42 @@ test('offline Window linker preserves persistent list state and multi-select Lis
   for (const [platform, runtime] of cases) {
     const plan = createOfflineLinkPlan(listWindowSource, { platform, name: 'SealedMulti', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
-    const payload = new TextDecoder().decode(decodeNativeGuiPayload(executable.bytes));
-    assert.equal(footerVersion(executable.bytes), 10);
+    const payload = new TextDecoder().decode(decodeNativeGuiPayloadV11(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 11);
     assert.match(payload, /fruits/);
     assert.match(payload, /Banana/);
     assert.match(payload, /Mango/);
+  }
+});
+
+const menuWindowSource = `create boolean advanced = false
+create boolean pinned = false
+window "Menu state" as main size 620, 340:
+  menu "Actions":
+    item "Enable advanced" as enable_advanced
+    item "Advanced action" as advanced_action enabled advanced shortcut "Primary+E"
+    separator
+    item "Pinned" as pin_item checked pinned shortcut "Primary+P"
+when enable_advanced clicked:
+  change advanced:
+    set = true
+when pin_item clicked:
+  change pinned:
+    set = true
+`;
+
+test('offline Window linker preserves decorated Menu metadata in payload v11', () => {
+  for (const [platform, runtime] of [
+    ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
+    ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
+    ['macos', Uint8Array.from([0xcf,0xfa,0xed,0xfe,0])]
+  ]) {
+    const plan=createOfflineLinkPlan(menuWindowSource,{platform,name:'SealedMenu',guiRuntime:runtime});
+    const executable=executableFrom(plan,platform);
+    const payload=new TextDecoder().decode(decodeNativeGuiPayloadV11(executable.bytes));
+    assert.equal(footerVersion(executable.bytes),11);
+    assert.match(payload,/advanced_action/);
+    assert.match(payload,/Primary|advanced|pinned/);
   }
 });
 
