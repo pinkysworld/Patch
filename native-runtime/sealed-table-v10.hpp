@@ -7,6 +7,14 @@
 #include <utility>
 #include <vector>
 
+// win32-sealed-gui-v09.cpp intentionally undefines wWinMain after embedding the
+// v0.7 core. Later sealed runtimes can opt in here to restore a private entry
+// name before the v1.1 source reaches its own entry definition. The default
+// v1.0/v1.1 build path does not define this macro and remains unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY
+#endif
+
 struct PatchTableV10 {
   int nativeIndex = -1;
   std::string id;
