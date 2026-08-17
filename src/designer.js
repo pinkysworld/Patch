@@ -127,6 +127,7 @@ export function listDesignerControls(source) {
     let controlIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
+      if (child.kind === 'uiControl' && child.control === 'tree') continue;
       const item = {
         windowIndex,
         controlIndex,

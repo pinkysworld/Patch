@@ -211,6 +211,7 @@ export class PatchInterpreter {
           id:node.id,
           text:node.textExpr?this.uiText(node.textExpr):'',
           options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
+          nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes):[],
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
         });
       } else if(node.kind==='tabs'){
@@ -226,6 +227,7 @@ export class PatchInterpreter {
     }
     return items;
   }
+  uiTreeNodes(nodes){ return (nodes??[]).map(node=>({text:this.uiText(node.labelExpr),children:this.uiTreeNodes(node.children)})); }
   uiText(expr){
     let value;try{value=evaluateLoose(expr,this.env({}));}catch{value=expr;}
     return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>this.state.has(name)?formatValue(this.state.get(name)):`{${name}}`);

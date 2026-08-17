@@ -61,6 +61,28 @@ export function parse(source) {
     if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
     return uiControl(fields, null);
   }
+  function treeControlNode(row, indent, id, xText, yText, widthText, heightText) {
+    if (i >= lines.length || lines[i].indent <= indent) throw new PatchSyntaxError('A tree needs at least one indented node.', row.line);
+    const treeNodes = treeNodesAt(lines[i].indent);
+    if (!treeNodes.length) throw new PatchSyntaxError('A tree needs at least one node.', row.line);
+    const fields = { control:'tree', textExpr:null, treeNodes, id, line:row.line };
+    if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
+    return uiControl(fields, null);
+  }
+  function treeNodesAt(nodeIndent) {
+    const nodes = [];
+    while (i < lines.length) {
+      const child = lines[i];
+      if (child.indent < nodeIndent) break;
+      if (child.indent > nodeIndent) throw new PatchSyntaxError('Tree nodes must use consistent indentation under their parent.', child.line);
+      const match = child.text.match(/^node\s+(.+)$/);
+      if (!match) throw new PatchSyntaxError('A tree can only contain nodes like node "src".', child.line);
+      i += 1;
+      const children = i < lines.length && lines[i].indent > nodeIndent ? treeNodesAt(lines[i].indent) : [];
+      nodes.push({ labelExpr:match[1], children, line:child.line });
+    }
+    return nodes;
+  }
   function statement(indent) {
     const row = lines[i++];
     let m;
@@ -121,6 +143,9 @@ export function parse(source) {
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
       return {kind:'tabPage',titleExpr:m[1],body,line:row.line};
+    }
+    if ((m = row.text.match(/^tree\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
+      return treeControlNode(row, indent, m[1], m[2], m[3], m[4], m[5]);
     }
     if ((m = row.text.match(/^table\s+(.+?)\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       return tableNode(row, indent, m[1], m[2], m[3], m[4], m[5], m[6]);

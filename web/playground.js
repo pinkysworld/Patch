@@ -415,7 +415,7 @@ function renderWindows(container, windows, interactive) {
         topLevel: true
       });
       if (!el) return;
-      if (!interactive) decorateDesignerControl(el, windowIndex, controlIndex, control);
+      if (!interactive && control.type !== 'tree') decorateDesignerControl(el, windowIndex, controlIndex, control);
       body.appendChild(el);
     });
     shell.append(title, body);
@@ -488,8 +488,42 @@ function createControlElement(control, context) {
     el.value = String(control.value ?? '');
     if (context.interactive) el.addEventListener('change', () => trigger(control.id, 'changed', { value: el.value }));
     else el.disabled = true;
+  } else if (control.type === 'tree') {
+    el = createTreeElement(control, context);
   }
   return el ?? null;
+}
+
+function createTreeElement(control, context) {
+  const root = document.createElement('ul');
+  root.className = 'patch-tree';
+  root.setAttribute('role', 'tree');
+  const renderNodes = (nodes, path = []) => {
+    const fragment = document.createDocumentFragment();
+    for (const node of nodes ?? []) {
+      const item = document.createElement('li');
+      item.setAttribute('role', 'treeitem');
+      const selectedPath = [...path, node.text];
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'patch-tree-node';
+      button.textContent = node.text;
+      button.setAttribute('aria-label', selectedPath.join(' / '));
+      if (context.interactive) button.addEventListener('click', () => trigger(control.id, 'changed', { value: selectedPath }));
+      else button.disabled = true;
+      item.appendChild(button);
+      if (node.children?.length) {
+        const group = document.createElement('ul');
+        group.setAttribute('role', 'group');
+        group.appendChild(renderNodes(node.children, selectedPath));
+        item.appendChild(group);
+      }
+      fragment.appendChild(item);
+    }
+    return fragment;
+  };
+  root.appendChild(renderNodes(control.nodes));
+  return root;
 }
 
 function createTabsElement(control, context) {

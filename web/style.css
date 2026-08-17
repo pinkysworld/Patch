@@ -413,3 +413,11 @@ details[open] summary::after { content: "−"; }
   .patch-tab-button { color: #71717a; }
   .patch-tab-button[aria-selected="true"] { background: #fff; color: #18181b; }
 }
+
+.patch-tree{width:min(100%,520px);margin:0;padding:10px 12px;list-style:none;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle)}
+.patch-tree ul{margin:3px 0 0 18px;padding:0;list-style:none}
+.patch-tree li{margin:2px 0}
+.patch-tree-node{min-height:28px;padding:4px 8px;border-radius:7px;background:transparent;color:inherit;font:inherit;text-align:left}
+.patch-tree-node:hover,.patch-tree-node:focus-visible{background:var(--soft)}
+.patch-tree-node:focus-visible{outline:2px solid color-mix(in srgb,var(--text) 32%,transparent);outline-offset:1px}
+.patch-tree-node:disabled{opacity:1;cursor:default}
