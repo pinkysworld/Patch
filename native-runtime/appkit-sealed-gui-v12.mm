@@ -6,9 +6,10 @@
 #include <fstream>
 #include <vector>
 
-#define main PatchRuntimeV11CompatibilityMain
+#define PATCH_RUNTIME_V11_RESTORE_MAIN PatchRuntimeV11CompatibilityMain
 #include "appkit-sealed-gui-v11.mm"
 #undef main
+#undef PATCH_RUNTIME_V11_RESTORE_MAIN
 #include "sealed-menu-v12.hpp"
 
 static std::vector<PatchMenuEntryV12> gPatchMenuEntriesV12;
