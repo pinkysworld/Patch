@@ -94,8 +94,8 @@ jobs:
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          & ./SealedMenuState.exe --patch-smoke
-          if ($LASTEXITCODE -ne 0) { throw "Sealed Menu runtime smoke failed with exit code $LASTEXITCODE." }
+          $process = Start-Process -FilePath (Resolve-Path './SealedMenuState.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed Menu runtime smoke failed with exit code $($process.ExitCode)." }
       - uses: actions/upload-artifact@v7
         with:
           name: native-win32-menu-runtime-v1.2
