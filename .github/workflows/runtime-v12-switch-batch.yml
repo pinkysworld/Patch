@@ -31,11 +31,17 @@ jobs:
           docs_block = "replaceExact('scripts/check-site-v12.js', \"requireText(docs, 'payload v10/runtime v1.1', 'Documentation current list contract');\", \"requireText(docs, 'payload v11/runtime v1.2', 'Documentation current Menu contract');\");\n"
           old_table = "replaceExact('scripts/check-site-v10.js', 'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'PATCH_SEALED_NATIVE_GUI_MENU_VERSION');\nreplaceExact('scripts/check-site-v10.js', 'payloadVersion: PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'payloadVersion: PATCH_SEALED_NATIVE_GUI_MENU_VERSION');\n"
           new_table = "replaceAtLeast('scripts/check-site-v10.js', 'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'PATCH_SEALED_NATIVE_GUI_MENU_VERSION', 2);\n"
-          if docs_block not in s:
-              raise SystemExit('Expected redundant check-site migration block not found')
-          if old_table not in s:
-              raise SystemExit('Expected historical Table validator migration block not found')
-          p.write_text(s.replace(docs_block, '').replace(old_table, new_table))
+          redundant_payload = "replaceAtLeast('.github/workflows/offline-compiler.yml', 'payload v10.', 'payload v11.', 1);\n"
+          old_appkit_trigger = "replaceExact('.github/workflows/offline-compiler.yml', '      - native-runtime/appkit-sealed-gui-v11.mm', '      - native-runtime/appkit-sealed-gui-v11.mm\\n      - native-runtime/appkit-sealed-gui-v12.mm', 2);\n"
+          new_appkit_trigger = "replaceExact('.github/workflows/offline-compiler.yml', '      - native-runtime/appkit-sealed-gui-v12.mm', '      - native-runtime/appkit-sealed-gui-v11.mm\\n      - native-runtime/appkit-sealed-gui-v12.mm', 2);\n"
+          for label, block in [('docs', docs_block), ('table', old_table), ('payload', redundant_payload), ('appkit trigger', old_appkit_trigger)]:
+              if block not in s:
+                  raise SystemExit(f'Expected {label} migration block not found')
+          s = s.replace(docs_block, '')
+          s = s.replace(old_table, new_table)
+          s = s.replace(redundant_payload, '')
+          s = s.replace(old_appkit_trigger, new_appkit_trigger)
+          p.write_text(s)
       - name: Apply fail-closed v1.2 migration
         run: node scripts/apply-runtime-v12-switch.js
       - name: Validate migrated JavaScript and current contracts
