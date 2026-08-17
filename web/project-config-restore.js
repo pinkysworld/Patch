@@ -1,11 +1,11 @@
 import { parseStoredStudioProject, studioStateFromBundle } from '../src/studio-project.js';
 
-const CURRENT_KEY = 'patchStudio.project.v2';
+const CURRENT_KEYS = ['patchStudio.project.v3', 'patchStudio.project.v2', 'patchStudio.project.v1'];
 const buildTarget = document.querySelector('#buildTarget');
 const nativeBuildMode = document.querySelector('#nativeBuildMode');
 
 try {
-  const raw = localStorage.getItem(CURRENT_KEY);
+  const raw = CURRENT_KEYS.map(key => localStorage.getItem(key)).find(Boolean);
   if (raw) {
     const state = studioStateFromBundle(parseStoredStudioProject(raw));
     if (buildTarget && hasOption(buildTarget, state.buildTarget)) buildTarget.value = state.buildTarget;
