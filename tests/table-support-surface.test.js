@@ -78,7 +78,7 @@ test('sealed Table v1.0 remains a frozen Windows macOS Linux v9 compatibility ga
   assert.match(sealedWorkflow, /Frozen .* compatibility runtime/i);
 });
 
-test('sealed runtime v1.1 carries current payload v10 Table and offline-link evidence on all desktop hosts', () => {
+test('sealed runtime v1.1 remains the frozen payload v10 list compatibility line on all desktop hosts', () => {
   assert.match(sealedListWorkflow, /PATCH_SEALED_GUI_VERSION: 10/);
   assert.match(sealedListWorkflow, /Test payload v10 list contract/);
   assert.match(sealedListWorkflow, /Test baseline sealed compatibility/);
@@ -94,19 +94,22 @@ test('sealed runtime v1.1 carries current payload v10 Table and offline-link evi
   assert.match(sealedListWorkflow, /native-linux-runtime-v1\.1/);
 });
 
-test('downloadable offline compiler embeds runtime v1.1 and proves payload v10 Table and multi-select linking', () => {
+test('downloadable offline compiler embeds runtime v1.2 and proves payload v11 Table multi-select and Menu linking', () => {
   assert.match(offlineWorkflow, /windows-latest/);
   assert.match(offlineWorkflow, /ubuntu-latest/);
   assert.match(offlineWorkflow, /macos-15/);
   assert.match(offlineWorkflow, /macos-15-intel/);
-  assert.match(offlineWorkflow, /win32-sealed-gui-v11\.cpp/);
-  assert.match(offlineWorkflow, /appkit-sealed-gui-v11\.mm/);
-  assert.match(offlineWorkflow, /gtk-sealed-gui-v11\.cpp/);
+  assert.match(offlineWorkflow, /win32-sealed-gui-v12\.cpp/);
+  assert.match(offlineWorkflow, /appkit-sealed-gui-v12\.mm/);
+  assert.match(offlineWorkflow, /gtk-sealed-gui-v12\.cpp/);
   assert.match(offlineWorkflow, /link examples\/table-native-v09\.patch/);
   assert.match(offlineWorkflow, /link examples\/listbox-multiselect-native\.patch/);
+  assert.match(offlineWorkflow, /link examples\/menu-state-window\.patch/);
   assert.match(offlineWorkflow, /OfflineTable/);
   assert.match(offlineWorkflow, /OfflineMulti/);
-  assert.match(offlineWorkflow, /payload v10\/runtime v1\.1/);
+  assert.match(offlineWorkflow, /OfflineMenu/);
+  assert.match(offlineWorkflow, /payload v11\/runtime v1\.2/);
+  assert.match(offlineWorkflow, /not sealed payload v11|payload v11/i);
 });
 
 test('Studio App preview Table event dispatch is implemented through the shared semantic adapter', () => {
