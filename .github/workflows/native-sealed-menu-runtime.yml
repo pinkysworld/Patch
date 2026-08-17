@@ -8,9 +8,13 @@ on:
       - src/sealed-native-gui-v11.js
       - native-runtime/sealed-menu-v12.hpp
       - native-runtime/sealed-table-v10.hpp
+      - native-runtime/sealed-list-v11.hpp
       - native-runtime/win32-sealed-gui-v12.cpp
       - native-runtime/win32-sealed-gui-v11.cpp
-      - native-runtime/sealed-list-v11.hpp
+      - native-runtime/appkit-sealed-gui-v12.mm
+      - native-runtime/appkit-sealed-gui-v11.mm
+      - native-runtime/gtk-sealed-gui-v12.cpp
+      - native-runtime/gtk-sealed-gui-v11.cpp
       - examples/menu-state-window.patch
       - tests/sealed-menu-payload-v11.test.js
       - .github/workflows/native-sealed-menu-runtime.yml
@@ -20,9 +24,13 @@ on:
       - src/sealed-native-gui-v11.js
       - native-runtime/sealed-menu-v12.hpp
       - native-runtime/sealed-table-v10.hpp
+      - native-runtime/sealed-list-v11.hpp
       - native-runtime/win32-sealed-gui-v12.cpp
       - native-runtime/win32-sealed-gui-v11.cpp
-      - native-runtime/sealed-list-v11.hpp
+      - native-runtime/appkit-sealed-gui-v12.mm
+      - native-runtime/appkit-sealed-gui-v11.mm
+      - native-runtime/gtk-sealed-gui-v12.cpp
+      - native-runtime/gtk-sealed-gui-v11.cpp
       - examples/menu-state-window.patch
       - tests/sealed-menu-payload-v11.test.js
       - .github/workflows/native-sealed-menu-runtime.yml
@@ -100,5 +108,99 @@ jobs:
         with:
           name: native-win32-menu-runtime-v1.2
           path: PatchMenuRuntimeV12.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    needs: contract
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build universal AppKit sealed Menu runtime v1.2
+        shell: bash
+        run: |
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 \
+            -arch arm64 -arch x86_64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v12.mm \
+            -o PatchMenuRuntimeV12
+          chmod +x PatchMenuRuntimeV12
+          ARCHS="$(lipo -archs PatchMenuRuntimeV12)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal canonical Menu state app as payload v11
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV11 } from './src/native-gui-ir-v11.js';
+          import { sealNativeGuiRuntimeV11 } from './src/sealed-native-gui-v11.js';
+          const source = fs.readFileSync('examples/menu-state-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV11(compile(source, { name: 'SealedMenuState', kind: 'window' }));
+          const runtime = fs.readFileSync('PatchMenuRuntimeV12');
+          const sealed = sealNativeGuiRuntimeV11(runtime, ir, { platform: 'macos' });
+          fs.writeFileSync('SealedMenuState', sealed);
+          fs.chmodSync('SealedMenuState', 0o755);
+          const footer = new DataView(sealed.buffer, sealed.byteOffset + sealed.byteLength - 20, 20);
+          if (footer.getUint32(8, true) !== 11) throw new Error('Expected sealed payload v11.');
+          NODE
+      - name: Smoke sealed AppKit Menu runtime v1.2
+        shell: bash
+        run: ./SealedMenuState --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-appkit-menu-runtime-v1.2
+          path: PatchMenuRuntimeV12
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    needs: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Build GTK3 sealed Menu runtime v1.2
+        shell: bash
+        run: |
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v12.cpp -o PatchMenuRuntimeV12 $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x PatchMenuRuntimeV12
+      - name: Seal canonical Menu state app as payload v11
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV11 } from './src/native-gui-ir-v11.js';
+          import { sealNativeGuiRuntimeV11 } from './src/sealed-native-gui-v11.js';
+          const source = fs.readFileSync('examples/menu-state-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV11(compile(source, { name: 'SealedMenuState', kind: 'window' }));
+          const runtime = fs.readFileSync('PatchMenuRuntimeV12');
+          const sealed = sealNativeGuiRuntimeV11(runtime, ir, { platform: 'linux' });
+          fs.writeFileSync('SealedMenuState', sealed);
+          fs.chmodSync('SealedMenuState', 0o755);
+          const footer = new DataView(sealed.buffer, sealed.byteOffset + sealed.byteLength - 20, 20);
+          if (footer.getUint32(8, true) !== 11) throw new Error('Expected sealed payload v11.');
+          NODE
+      - name: Smoke sealed GTK Menu runtime v1.2
+        shell: bash
+        run: xvfb-run -a ./SealedMenuState --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-gtk-menu-runtime-v1.2
+          path: PatchMenuRuntimeV12
           if-no-files-found: error
           retention-days: 14
