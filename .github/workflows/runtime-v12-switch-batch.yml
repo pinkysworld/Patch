@@ -93,15 +93,22 @@ jobs:
           node --test tests/sealed-menu-payload-v11.test.js tests/offline-linker.test.js tests/studio-ready-v12.test.js tests/studio-runtime-integrity.test.js
           npm run build:site
           npm run check:site
-      - name: Commit migrated consumer surface
+      - name: Commit validated non-workflow consumer surface
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          rm -rf _site
+          git add -A -- \
+            package.json \
+            src/offline-linker.js src/sealed-native-package.js \
+            web/native-build.js web/index.html web/docs.html \
+            scripts/build-site.js scripts/check-site.js scripts/check-site-v10.js scripts/check-site-v11.js scripts/check-site-v12.js \
+            scripts/seal-native-win32.js scripts/seal-native-linux.js scripts/seal-native-macos.js \
+            tests/offline-linker.test.js tests/studio-runtime-integrity.test.js tests/studio-ready-v11.test.js tests/studio-ready-v12.test.js
           if git diff --cached --quiet; then
-            echo 'Migration produced no changes.'
+            echo 'Validated non-workflow migration produced no changes.'
             exit 0
           fi
           git commit -m 'Switch current sealed consumers to runtime v1.2'
