@@ -1,0 +1,37 @@
+name: Apply standalone Web TreeView transformation
+
+on:
+  push:
+    branches: [agent/treeview-standalone-web]
+    paths:
+      - scripts/apply-treeview-standalone-web.js
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/treeview-standalone-web
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Apply standalone Web TreeView changes
+        run: node scripts/apply-treeview-standalone-web.js
+      - name: Verify focused contract
+        run: node --test tests/treeview-standalone-web.test.js tests/treeview-stage1.test.js
+      - name: Verify project surface
+        run: node scripts/check-project-surface.js
+      - name: Commit transformed sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/window-webapp.js src/window-events.js scripts/check-project-surface.js docs/TREEVIEW_STAGE1.md docs/ROADMAP.md
+          git commit -m 'Add TreeView to standalone Window Web runtime'
+          git push origin HEAD:agent/treeview-standalone-web
