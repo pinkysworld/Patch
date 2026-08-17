@@ -5,7 +5,7 @@ import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 
-const SOURCE = `create text selected = ""
+const SOURCE = `create list selected = []
 
 window "Files" as main:
   tree as files:
@@ -17,7 +17,7 @@ window "Files" as main:
 
 when files changed:
   change selected:
-    set = value[1]
+    set = value
 `;
 
 test('TreeView Stage 1 parses and lowers hierarchical source-backed nodes', () => {
@@ -45,14 +45,14 @@ test('TreeView UI model evaluates labels but does not persist toolkit selection'
     { text: 'src', children: [{ text: 'compiler.js', children: [] }, { text: 'parser.js', children: [] }] },
     { text: 'docs', children: [{ text: 'ROADMAP.md', children: [] }] }
   ]);
-  assert.equal(result.state.selected, '');
+  assert.deepEqual(result.state.selected, []);
 });
 
 test('TreeView changed exposes a transient text-list path and persistence still requires Patch change', () => {
   const runtime = new PatchInterpreter();
   runtime.run(SOURCE);
   const changed = triggerWindowEvent(runtime, 'files', 'changed', { value: ['src', 'parser.js'] });
-  assert.equal(changed.state.selected, 'parser.js');
+  assert.deepEqual(changed.state.selected, ['src', 'parser.js']);
   assert.equal(changed.history.length, 1);
 
   assert.throws(
