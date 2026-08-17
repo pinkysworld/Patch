@@ -34,13 +34,15 @@ jobs:
           redundant_payload = "replaceAtLeast('.github/workflows/offline-compiler.yml', 'payload v10.', 'payload v11.', 1);\n"
           old_appkit_trigger = "replaceExact('.github/workflows/offline-compiler.yml', '      - native-runtime/appkit-sealed-gui-v11.mm', '      - native-runtime/appkit-sealed-gui-v11.mm\\n      - native-runtime/appkit-sealed-gui-v12.mm', 2);\n"
           new_appkit_trigger = "replaceExact('.github/workflows/offline-compiler.yml', '      - native-runtime/appkit-sealed-gui-v12.mm', '      - native-runtime/appkit-sealed-gui-v11.mm\\n      - native-runtime/appkit-sealed-gui-v12.mm', 2);\n"
-          for label, block in [('docs', docs_block), ('table', old_table), ('payload', redundant_payload), ('appkit trigger', old_appkit_trigger)]:
+          redundant_index = "replaceAtLeast('web/index.html', 'runtime v1.1', 'runtime v1.2', 1);\n"
+          for label, block in [('docs', docs_block), ('table', old_table), ('payload', redundant_payload), ('appkit trigger', old_appkit_trigger), ('Studio lowercase runtime', redundant_index)]:
               if block not in s:
                   raise SystemExit(f'Expected {label} migration block not found')
           s = s.replace(docs_block, '')
           s = s.replace(old_table, new_table)
           s = s.replace(redundant_payload, '')
           s = s.replace(old_appkit_trigger, new_appkit_trigger)
+          s = s.replace(redundant_index, '')
           p.write_text(s)
       - name: Apply fail-closed v1.2 migration
         run: node scripts/apply-runtime-v12-switch.js
