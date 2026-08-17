@@ -157,18 +157,19 @@ The literature pass does not claim that Patch policies are uniquely expressible 
 
 Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 0.9 or sealed payload v9/runtime v1.0.
 
-### beta.35: browser ListBox multi-selection
+### beta.35: browser and native ListBox multi-selection
 - [x] text-backed ListBox remains single-select with transient text `changed` value
 - [x] list-backed ListBox exposes transient text-list `changed` value through Window event adapter **0.7**
 - [x] Studio App Preview renders real multi-select ListBox and preserves transient selection across re-renders
 - [x] Standalone Window Web uses `<select multiple>` with separate transient UI-selection state
 - [x] explicit `change ... set = value` remains the only route that persists the selected list
 - [x] canonical `examples/listbox-multiselect-window.patch` regression source
-- [x] native GUI 0.7 fails closed for list-backed ListBox rather than silently degrading semantics
-- [x] website/help/download documentation states the browser/native boundary explicitly
-- [ ] versioned Native GUI IR/runtime list-state extension for native multi-select parity
+- [x] Native GUI IR **1.1** carries persistent `text-list` state and list-backed multi-select ListBox semantics
+- [x] direct AOT backend **1.2** implements native multi-select ListBox on Win32/AppKit/GTK
+- [x] sealed payload **v10** / runtime **v1.1** preserves list state and multi-select on Windows/macOS/Linux
+- [x] versioned Native GUI IR/runtime list-state extension for native multi-select parity
 
-Beta.35 changes no Change IR, Table payload or beta.32 assurance theorem. Native multi-select remains an explicit future ABI/runtime task.
+Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offline paths now preserve list-backed ListBox semantics without hidden persistence; selection persists only through explicit Patch `change`.
 
 ## Product priorities
 
@@ -201,11 +202,11 @@ Beta.35 changes no Change IR, Table payload or beta.32 assurance theorem. Native
 - [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
 - [x] sealed Ready/offline Table payload **v9** / runtime **v1.0** contract and Windows/macOS/Linux consumer switch with real seal/link/run smokes
 - [x] canonical v2 persistence synchronization for programmatic sample/Designer edits
-- [ ] richer data controls beyond Table/Grid and browser multi-select ListBox
-- [ ] Menu separators, shortcuts and source-backed enabled/checked state
+- [x] Menu separators, portable shortcuts and source-backed `enabled`/`checked` state in direct AOT and current sealed Ready/offline runtimes
+- [ ] richer data controls beyond Table/Grid and ListBox
 - [ ] project tree and separate source files/forms
 
-All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. Browser list-backed ListBox `changed` exposes the selected options as a transient text list. Renderer/native-toolkit selection does not itself mutate Patch state.
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. List-backed ListBox `changed` exposes the selected options as a transient text list across browser and supported native paths. Renderer/native-toolkit selection does not itself mutate Patch state. Menu `enabled` and `checked` are projections of ordinary Boolean Patch state; menu activation does not create hidden persistent toolkit state.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
@@ -221,17 +222,17 @@ All current input/selection/result events expose transient values only. Persiste
 - [x] AOT backend **0.9** native Table widgets compile and execute on Windows/MSVC, macOS/AppKit and Linux/GTK3
 - [x] frozen sealed native GUI payload **v7** / runtime **v0.8** compatibility line with result dialogs and accessibility
 - [x] frozen responsive sealed native GUI payload **v8** / runtime **v0.9** compatibility line with Anchor/Dock and Native GUI IR 0.7 controls
-- [x] sealed native GUI payload **v9** carries Native GUI IR 0.8 Table columns/rows, transient `text-list` event typing and responsive layout metadata
-- [x] token-free sealed Win32 runtime `native-win32-runtime-v1.0` with real Table/selection/accessibility/responsive smoke
-- [x] token-free sealed GTK3 runtime `native-linux-runtime-v1.0` with real Table/selection/accessibility/responsive smoke
-- [x] token-free sealed AppKit runtime `native-macos-runtime-v1.0` with real Table/selection/accessibility/responsive smoke
-- [x] ordinary offline `patch link` creates and executes payload-v9/runtime-v1.0 Table apps on Windows/macOS/Linux
+- [x] sealed native GUI payload **v9** / runtime **v1.0** Table compatibility line
+- [x] sealed native GUI payload **v10** / runtime **v1.1** list-state and multi-select compatibility line
+- [x] current sealed native GUI payload **v11** / runtime **v1.2** Menu+list line for token-free Ready/offline Windows/macOS/Linux apps
+- [x] token-free Win32/AppKit/GTK runtime v1.2 releases built, payload-v11 sealed, smoke-tested and published under separate v1.2 tags
+- [x] ordinary offline `patch link` creates and executes payload-v11/runtime-v1.2 responsive, Table, multi-select ListBox and decorated Menu apps on Windows/macOS/Linux
+- [x] browser Ready Window runtime templates are SHA-256 verified against v1.2 release-asset digests before sealing
+- [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
+- [x] offline compiler builds/embeds runtime v1.2 and executes Console, responsive Window, Table, multi-select ListBox and Menu Window link smokes on Windows/Linux/Apple Silicon/macOS Intel
+- [x] Native GUI IR/runtime support for persistent list state and multi-select ListBox
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
-- [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
-- [x] offline compiler builds/embeds runtime v1.0 and executes Console, responsive Window and Table Window link smokes on Windows/Linux/Apple Silicon/macOS Intel
-- [x] browser Ready Window runtime templates are SHA-256 verified against release-asset digests before sealing
-- [ ] Native GUI IR/runtime support for persistent list state and multi-select ListBox
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
 - [ ] installer/package formats with explicit uninstall path
@@ -240,7 +241,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The backend-v0.9 and sealed-runtime-v1.0 Table paths are independent contracts over Native GUI IR 0.8. Payload v8/runtime v0.9 remains the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the explicit Table-capable Ready/offline contract. The Windows/macOS/Linux sealed-runtime matrix and ordinary offline-linker matrix independently encode and execute the payload before it is presented as supported. Beta.34 additionally validates the byte identity of the native runtime templates used by the browser Ready path, without claiming platform code signing. Beta.35 does not silently insert list state into these existing native contracts.
+The sealed contracts remain versioned rather than redefined in place. Payload v8/runtime v0.9 is the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the frozen Table line; payload v10/runtime v1.1 is the frozen persistent-list/multi-select line; payload v11/runtime v1.2 is the current Menu+list Ready/offline contract over Native GUI IR 1.1. Windows/macOS/Linux sealed-runtime and ordinary offline-linker matrices independently encode and execute the payload before support is claimed. Beta.34 additionally validates byte identity against release SHA-256 digests, without claiming platform code signing.
 
 ## Highest-value remaining research work
 
@@ -305,4 +306,4 @@ Completed in the current research iteration: the internally authored multi-domai
 24. Recent dependent effects or state-sensitive capabilities must narrow Patch claims where appropriate rather than being treated as irrelevant because their syntax or primary use case differs.
 25. Internally authored multi-domain application cases are not external-validity evidence; third-party integration must be reported separately when it exists.
 26. Richer invocation-frame regression evidence may strengthen the supported beta.32 fragment without silently expanding the trusted parser/lowering/runtime proof boundary.
-27. Browser-only multi-select controls must fail closed on native targets until a versioned native state/event ABI preserves the same semantics.
+27. Multi-select controls must fail closed on native targets unless the selected versioned native state/event ABI preserves the same semantics.

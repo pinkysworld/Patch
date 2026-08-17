@@ -224,14 +224,14 @@ requireAll('Compiled Window artifact', compiledWindow, [
 const nativeBuild = read('_site/native-build.js');
 requireAll('Native builder imports', nativeBuild, [
   './src/compiler.js', './src/wasm-direct.js', './src/c99.js', './src/window-build.js',
-  './src/window-compiled.js', './src/native-gui-ir-v11.js', './src/sealed-native-gui.js',
+  './src/window-compiled.js', './src/native-gui-ir-v11.js', './src/sealed-native-gui-v11.js',
   './src/sealed-native-package.js', './src/prebuilt-native.js', './src/prebuilt-window.js'
 ]);
 requireAll('Native builder modes', nativeBuild, [
   'native-windows', 'native-macos', 'native-linux', 'native-freebsd',
-  'validateWindowRuntimeSupport', 'compileToC99', 'buildNativeGuiIR', 'sealNativeGuiRuntime',
+  'validateWindowRuntimeSupport', 'compileToC99', 'buildNativeGuiIR', 'sealNativeGuiRuntimeV11',
   'buildLinuxNativeGuiPackage', 'buildMacosNativeGuiPackage',
-  'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'Ready app download (no token)',
+  'PATCH_SEALED_NATIVE_GUI_MENU_VERSION', 'Ready app download (no token)',
   'workflow_dispatch', 'source_b64'
 ]);
 const nativeGuiBase = read('_site/src/native-gui-ir.js');

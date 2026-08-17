@@ -52,8 +52,8 @@ const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
   "./src/native-gui-ir-v11.js",
   'buildNativeGuiIRV11 as buildNativeGuiIR',
-  'PATCH_SEALED_NATIVE_GUI_LIST_VERSION',
-  'payloadVersion: PATCH_SEALED_NATIVE_GUI_LIST_VERSION',
+  'PATCH_SEALED_NATIVE_GUI_MENU_VERSION',
+  'payloadVersion: PATCH_SEALED_NATIVE_GUI_MENU_VERSION',
   'Native single EXE (no token, recommended)',
   'Native GTK app (no token, recommended)',
   'Native AppKit app (no token, unsigned)'

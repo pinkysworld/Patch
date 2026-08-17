@@ -21,17 +21,21 @@ if (command === 'link') {
   const args = argv.slice(1);
   const file = args.shift();
   if (!file) {
-    console.error('Use: patch link program.patch [--out App] [--name AppName]');
+    console.error('Use: patch link program.patch [--out App] [--name AppName] [--gui-payload-version 10|11]');
     process.exit(1);
   }
   try {
     const source = fs.readFileSync(file, 'utf8');
     const name = option(args, '--name') ?? appName(file);
     const out = option(args, '--out');
+    const guiPayloadVersion = option(args, '--gui-payload-version')
+      ?? process.env.PATCH_OFFLINE_GUI_PAYLOAD_VERSION
+      ?? process.env.PATCH_SEALED_GUI_VERSION;
     const linked = linkPatchSource(source, {
       name,
       entry: path.basename(file),
       out,
+      guiPayloadVersion,
       nodeRuntime: readRuntime(process.env.PATCH_OFFLINE_NODE_RUNTIME),
       consoleRuntime: readRuntime(process.env.PATCH_OFFLINE_CONSOLE_RUNTIME),
       guiRuntime: readRuntime(process.env.PATCH_OFFLINE_GUI_RUNTIME)

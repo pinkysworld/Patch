@@ -8,7 +8,7 @@ on:
       - scripts/build-site.js
       - scripts/check-site.js
       - scripts/check-site-v10.js
-      - scripts/check-site-v11.js
+      - scripts/check-site-v12.js
       - scripts/check-site-beta35.js
       - scripts/runtime-integrity-manifest.js
       - package.json
@@ -44,6 +44,7 @@ on:
       - src/native-gui-ir-v10.js
       - src/native-gui-ir-v11.js
       - src/sealed-native-gui.js
+      - src/sealed-native-gui-v11.js
       - src/sealed-native-package.js
       - src/prebuilt-native.js
       - src/prebuilt-window.js
@@ -60,9 +61,11 @@ on:
       - .github/workflows/native-responsive-runtime.yml
       - .github/workflows/native-sealed-table-runtime.yml
       - .github/workflows/native-sealed-list-runtime.yml
+      - .github/workflows/native-sealed-menu-runtime.yml
+      - .github/workflows/native-sealed-menu-release-v12.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime, Patch Native Sealed Menu Runtime, Patch Native Sealed Menu Runtime v1.2 Release]
     types: [completed]
 
 permissions:
@@ -97,9 +100,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.1
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.1
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.1
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.2
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.2
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.2
         shell: bash
         run: |
           missing=0
@@ -122,9 +125,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.1
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.1
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.1
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.2
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.2
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.2
         shell: bash
         run: |
           set -euo pipefail

@@ -33,13 +33,13 @@ test('runtime integrity wrapper loads before the native builder and covers every
   assert.match(runtimeIntegrity, /integrity manifest is missing/);
 });
 
-test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.1 releases', () => {
+test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.2 releases', () => {
   assert.match(pages, /RUNTIME_TAG: studio-runtime-v0\.6/);
-  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.1/);
-  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.1/);
-  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.1/);
+  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.2/);
+  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.2/);
+  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.2/);
   assert.match(pages, /for tag in "\$RUNTIME_TAG" "\$WIN32_RUNTIME_TAG" "\$LINUX_NATIVE_RUNTIME_TAG" "\$MACOS_NATIVE_RUNTIME_TAG"/);
-  assert.match(pages, /Patch Native Sealed List Runtime/);
+  assert.match(pages, /Patch Native Sealed Menu Runtime v1\.2 Release/);
 });
 
 test('Pages derives the deployed runtime manifest from GitHub release asset digests', () => {
@@ -56,7 +56,7 @@ test('Pages deploys only after the canonical current-site gate succeeds', () => 
   assert.match(pages, /name: Validate current Patch Studio site surface/);
   assert.match(pages, /run: npm run check:site/);
   assert.doesNotMatch(pages, /run: node scripts\/check-site-beta34\.js/);
-  assert.match(pages, /scripts\/check-site-v11\.js/);
+  assert.match(pages, /scripts\/check-site-v12\.js/);
   assert.match(pages, /scripts\/check-site-beta35\.js/);
   const validate = pages.indexOf('run: npm run check:site');
   const upload = pages.indexOf('uses: actions/upload-pages-artifact@v5');
