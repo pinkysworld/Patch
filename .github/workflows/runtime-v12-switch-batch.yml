@@ -56,7 +56,7 @@ jobs:
               text = p.read_text()
               count = text.count(old)
               if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one capability boundary, found {count}')
+                  raise SystemExit(f'{path}: expected exactly one current-v1.2 boundary, found {count}')
               p.write_text(text.replace(old, new))
 
           replace_once(
@@ -79,6 +79,9 @@ jobs:
               allowMenuDecorations: true
             });'''
           )
+          replace_once('scripts/check-site.js', './src/sealed-native-gui.js', './src/sealed-native-gui-v11.js')
+          replace_once('scripts/check-site.js', "'buildNativeGuiIR', 'sealNativeGuiRuntime',", "'buildNativeGuiIR', 'sealNativeGuiRuntimeV11',")
+          replace_once('scripts/check-site.js', "'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'Ready app download (no token)',", "'PATCH_SEALED_NATIVE_GUI_MENU_VERSION', 'Ready app download (no token)',")
       - name: Validate migrated JavaScript and current contracts
         run: |
           node --check src/offline-linker.js
