@@ -23,8 +23,9 @@ test('composed Studio v3 files form one executable Patch program', () => {
   const interpreter = new PatchInterpreter();
   const initial = interpreter.run(composition.source);
   assert.equal(initial.state.count, 0);
-  assert.equal(initial.ui.forms.length, 1);
-  assert.equal(initial.ui.forms[0].id, 'main');
+  assert.equal(initial.ui.length, 1);
+  assert.equal(initial.ui[0].id, 'main');
+  assert.equal(initial.ui[0].controls.find(control => control.id === 'add')?.text, 'Add');
 
   const changed = interpreter.trigger('add', 'clicked');
   assert.equal(changed.state.count, 1);
