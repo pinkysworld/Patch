@@ -1,6 +1,6 @@
 # TreeView Stage 1
 
-TreeView Stage 1 adds a small source-backed hierarchical data control to Patch Studio's App Preview without silently claiming native or standalone-Web parity.
+TreeView Stage 1 adds a small source-backed hierarchical data control with one shared browser selection contract across Patch Studio's App Preview and the standalone single-file Window Web runtime.
 
 ## Source syntax
 
@@ -51,12 +51,13 @@ Stage 1 is supported by:
 - Patch parser and compiler/IR lowering;
 - the interpreter UI model;
 - the Studio App Preview, with `tree`, `treeitem` and `group` accessibility roles;
+- the standalone single-file Window Web runtime **0.9**, using the same accessibility roles and full-path `changed` value;
 - the transient Window-event adapter.
 
-Stage 1 deliberately remains fail-closed for Window targets that have not opted into a versioned TreeView runtime contract. That currently includes native desktop builds, sealed Ready/offline apps and the standalone Window Web generator.
+Stage 1 deliberately remains fail-closed for Window targets that have not opted into a versioned TreeView runtime contract. The standalone Window Web generator opts in explicitly; native desktop builds and sealed Ready/offline apps remain fail-closed.
 
 The Designer displays the interpreter preview but does not expose TreeView source-rewrite controls in Stage 1. TreeView hierarchy is edited in Patch source until a later source-safe Designer contract is defined.
 
 ## Next slice
 
-A later TreeView runtime slice can define a versioned Native GUI IR/payload contract and platform consumers for Win32, AppKit and GTK. Standalone Web can then opt into the same selection-path semantics. Those later steps should preserve the Stage 1 rule that UI selection is transient and persistent state changes only through Patch `change`.
+A later TreeView runtime slice can define a versioned Native GUI IR/payload contract and platform consumers for Win32, AppKit and GTK. Those later steps should preserve the browser Stage 1 rule that UI selection is transient and persistent state changes only through Patch `change`.

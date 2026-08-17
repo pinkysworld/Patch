@@ -205,7 +205,7 @@ Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offlin
 - [x] Menu separators, portable shortcuts and source-backed `enabled`/`checked` state in direct AOT and current sealed Ready/offline runtimes
 - [ ] richer data controls beyond Table/Grid and ListBox
 - [x] project tree and separate source files/forms with project bundle v3, full-project recovery and deterministic Run/Build composition
-- [x] TreeView Stage 1 language/IR + Studio App Preview with hierarchical source-backed nodes and transient text-list path selection; unsupported standalone/native targets fail closed
+- [x] TreeView Stage 1 language/IR + Studio App Preview + standalone Window Web v0.9 with hierarchical source-backed nodes and transient text-list path selection; native/sealed targets remain fail closed
 
 All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. List-backed ListBox `changed` exposes the selected options as a transient text list across browser and supported native paths. Renderer/native-toolkit selection does not itself mutate Patch state. Menu `enabled` and `checked` are projections of ordinary Boolean Patch state; menu activation does not create hidden persistent toolkit state.
 
