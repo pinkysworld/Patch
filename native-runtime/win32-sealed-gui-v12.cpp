@@ -175,31 +175,48 @@ static bool PatchTranslateAcceleratorV12(MSG& msg){
 }
 
 static int RunPatchMenuSmokeV12(){
-  int code=260;
+  int code=260; bool hasDecorations=false;
   const PatchMenuEntryV12* enabledEntry=nullptr; const PatchMenuEntryV12* checkedEntry=nullptr; const PatchMenuEntryV12* separator=nullptr;
   for(const auto& entry:gPatchMenuEntriesV12){
-    if(entry.type==2)separator=&entry;
-    if(entry.type==1&&!entry.enabledState.empty())enabledEntry=&entry;
-    if(entry.type==1&&!entry.checkedState.empty())checkedEntry=&entry;
+    if(entry.type==2){
+      hasDecorations=true; separator=&entry;
+      HMENU menu=PatchNativeMenuV12(entry.formIndex,entry.menuIndex); if(!menu)return code++;
+      if(entry.entryIndex>=(uint32_t)GetMenuItemCount(menu))return code++;
+      MENUITEMINFOW info{};info.cbSize=sizeof(info);info.fMask=MIIM_FTYPE;
+      if(!GetMenuItemInfoW(menu,(UINT)entry.entryIndex,TRUE,&info)||(info.fType&MFT_SEPARATOR)==0)return code++;
+      continue;
+    }
+    if(entry.type!=1||entry.nativeItemIndex<0||entry.nativeItemIndex>=(int)gMenuItems.size())return code++;
+    HMENU menu=PatchNativeMenuV12(entry.formIndex,entry.menuIndex); if(!menu)return code++;
+    const auto& item=gMenuItems[(size_t)entry.nativeItemIndex];
+    if(entry.hasShortcut){hasDecorations=true;if(entry.formIndex>=gPatchAcceleratorsV12.size()||!gPatchAcceleratorsV12[(size_t)entry.formIndex])return code++;}
+    if(!entry.enabledState.empty()){
+      hasDecorations=true; enabledEntry=&entry;
+      const bool expected=PatchBooleanStateV12(entry.enabledState,false);
+      if(PatchMenuEnabledV12(entry.nativeItemIndex)!=expected)return code++;
+      const UINT state=GetMenuState(menu,(UINT)item.commandId,MF_BYCOMMAND);
+      const bool nativeEnabled=(state&(MF_DISABLED|MF_GRAYED))==0;
+      if(nativeEnabled!=expected)return code++;
+    }
+    if(!entry.checkedState.empty()){
+      hasDecorations=true; checkedEntry=&entry;
+      const bool expected=PatchBooleanStateV12(entry.checkedState,false);
+      const bool nativeChecked=(GetMenuState(menu,(UINT)item.commandId,MF_BYCOMMAND)&MF_CHECKED)!=0;
+      if(nativeChecked!=expected)return code++;
+    }
   }
-  if(!enabledEntry||!checkedEntry||!separator)return code++;
-  HMENU menu=PatchNativeMenuV12(separator->formIndex,separator->menuIndex); if(!menu)return code++;
-  if(GetMenuItemCount(menu)!=4)return code++;
-  MENUITEMINFOW sep{};sep.cbSize=sizeof(sep);sep.fMask=MIIM_FTYPE;if(!GetMenuItemInfoW(menu,(UINT)separator->entryIndex,TRUE,&sep)||(sep.fType&MFT_SEPARATOR)==0)return code++;
-  if(PatchMenuEnabledV12(enabledEntry->nativeItemIndex))return code++;
-  const auto& enabledItem=gMenuItems[(size_t)enabledEntry->nativeItemIndex];
-  if((GetMenuState(menu,(UINT)enabledItem.commandId,MF_BYCOMMAND)&(MF_DISABLED|MF_GRAYED))==0)return code++;
-  PatchDispatchMenuV12(enabledEntry->nativeItemIndex); // disabled must remain guarded
-  if(PatchBooleanStateV12(enabledEntry->enabledState,false))return code++;
-  auto enableAction=gMenuItemById.find(L"enable_advanced");if(enableAction==gMenuItemById.end())return code++;
-  PatchDispatchMenuV12(enableAction->second);
-  if(!PatchMenuEnabledV12(enabledEntry->nativeItemIndex))return code++;
-  const auto& checkedItem=gMenuItems[(size_t)checkedEntry->nativeItemIndex];
-  if((GetMenuState(menu,(UINT)checkedItem.commandId,MF_BYCOMMAND)&MF_CHECKED)!=0)return code++;
-  PatchDispatchMenuV12(checkedEntry->nativeItemIndex);
-  if(!PatchBooleanStateV12(checkedEntry->checkedState,false))return code++;
-  if((GetMenuState(menu,(UINT)checkedItem.commandId,MF_BYCOMMAND)&MF_CHECKED)==0)return code++;
-  if(enabledEntry->hasShortcut&&gPatchAcceleratorsV12[(size_t)enabledEntry->formIndex]==nullptr)return code++;
+  if(!hasDecorations)return 0;
+  auto enableAction=gMenuItemById.find(L"enable_advanced");
+  auto advancedAction=gMenuItemById.find(L"advanced_action");
+  auto pinAction=gMenuItemById.find(L"pin_item");
+  if(enableAction!=gMenuItemById.end()&&advancedAction!=gMenuItemById.end()&&pinAction!=gMenuItemById.end()&&enabledEntry&&checkedEntry&&separator){
+    PatchDispatchMenuV12(enabledEntry->nativeItemIndex); if(PatchBooleanStateV12(enabledEntry->enabledState,false))return code++;
+    PatchDispatchMenuV12(enableAction->second); if(!PatchMenuEnabledV12(enabledEntry->nativeItemIndex))return code++;
+    PatchDispatchMenuV12(checkedEntry->nativeItemIndex); if(!PatchBooleanStateV12(checkedEntry->checkedState,false))return code++;
+    HMENU checkedMenu=PatchNativeMenuV12(checkedEntry->formIndex,checkedEntry->menuIndex); if(!checkedMenu)return code++;
+    const auto& checkedItem=gMenuItems[(size_t)checkedEntry->nativeItemIndex];
+    if((GetMenuState(checkedMenu,(UINT)checkedItem.commandId,MF_BYCOMMAND)&MF_CHECKED)==0)return code++;
+  }
   return 0;
 }
 

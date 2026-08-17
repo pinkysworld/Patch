@@ -185,27 +185,44 @@ static bool PatchRewireTableEventsV12(){
 }
 
 static int RunPatchMenuSmokeV12(){
-  int code=260;
+  int code=260; bool hasDecorations=false;
   const PatchMenuEntryV12* enabledEntry=nullptr;const PatchMenuEntryV12* checkedEntry=nullptr;const PatchMenuEntryV12* separator=nullptr;
   for(const auto& entry:gPatchMenuEntriesV12){
-    if(entry.type==2)separator=&entry;
-    if(entry.type==1&&!entry.enabledState.empty())enabledEntry=&entry;
-    if(entry.type==1&&!entry.checkedState.empty())checkedEntry=&entry;
+    if(entry.type==2){
+      hasDecorations=true;separator=&entry;
+      GtkWidget* menu=PatchNativeMenuV12(entry.formIndex,entry.menuIndex);if(!menu)return code++;
+      GList* children=gtk_container_get_children(GTK_CONTAINER(menu));
+      GtkWidget* item=GTK_WIDGET(g_list_nth_data(children,(guint)entry.entryIndex));
+      const bool valid=item&&GTK_IS_SEPARATOR_MENU_ITEM(item);g_list_free(children);if(!valid)return code++;
+      continue;
+    }
+    if(entry.type!=1||entry.nativeItemIndex<0||entry.nativeItemIndex>=(int)gMenuItems.size())return code++;
+    GtkWidget* item=gMenuItems[(size_t)entry.nativeItemIndex].widget;if(!item)return code++;
+    if(entry.hasShortcut){hasDecorations=true;if(entry.formIndex>=gPatchAccelGroupsV12.size()||!gPatchAccelGroupsV12[(size_t)entry.formIndex])return code++;}
+    if(!entry.enabledState.empty()){
+      hasDecorations=true;enabledEntry=&entry;
+      const bool expected=PatchBooleanStateV12(entry.enabledState,false);
+      if((gtk_widget_get_sensitive(item)!=FALSE)!=expected||PatchMenuEnabledV12(entry.nativeItemIndex)!=expected)return code++;
+    }
+    if(!entry.checkedState.empty()){
+      hasDecorations=true;checkedEntry=&entry;
+      if(!GTK_IS_CHECK_MENU_ITEM(item))return code++;
+      const bool expected=PatchBooleanStateV12(entry.checkedState,false);
+      if((gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(item))!=FALSE)!=expected)return code++;
+    }
   }
-  if(!enabledEntry||!checkedEntry||!separator)return code++;
-  GtkWidget* menu=PatchNativeMenuV12(separator->formIndex,separator->menuIndex);if(!menu)return code++;
-  GList* children=gtk_container_get_children(GTK_CONTAINER(menu));
-  if(g_list_length(children)!=4){g_list_free(children);return code++;}
-  GtkWidget* separatorWidget=GTK_WIDGET(g_list_nth_data(children,(guint)separator->entryIndex));
-  const bool validSeparator=separatorWidget&&GTK_IS_SEPARATOR_MENU_ITEM(separatorWidget);g_list_free(children);if(!validSeparator)return code++;
-  GtkWidget* enabledItem=gMenuItems[(size_t)enabledEntry->nativeItemIndex].widget;if(!enabledItem||gtk_widget_get_sensitive(enabledItem))return code++;
-  PatchDispatchMenuV12(enabledEntry->nativeItemIndex);if(PatchBooleanStateV12(enabledEntry->enabledState,false))return code++;
-  auto enableAction=gMenuItemById.find("enable_advanced");if(enableAction==gMenuItemById.end())return code++;
-  PatchDispatchMenuV12(enableAction->second);if(!gtk_widget_get_sensitive(enabledItem)||!PatchMenuEnabledV12(enabledEntry->nativeItemIndex))return code++;
-  GtkWidget* checkedItem=gMenuItems[(size_t)checkedEntry->nativeItemIndex].widget;if(!checkedItem||!GTK_IS_CHECK_MENU_ITEM(checkedItem)||gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(checkedItem)))return code++;
-  PatchDispatchMenuV12(checkedEntry->nativeItemIndex);if(!PatchBooleanStateV12(checkedEntry->checkedState,false)||!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(checkedItem)))return code++;
-  if(enabledEntry->hasShortcut&&(enabledEntry->formIndex>=gPatchAccelGroupsV12.size()||!gPatchAccelGroupsV12[(size_t)enabledEntry->formIndex]))return code++;
-  if(checkedEntry->hasShortcut&&(checkedEntry->formIndex>=gPatchAccelGroupsV12.size()||!gPatchAccelGroupsV12[(size_t)checkedEntry->formIndex]))return code++;
+  if(!hasDecorations)return 0;
+  auto enableAction=gMenuItemById.find("enable_advanced");
+  auto advancedAction=gMenuItemById.find("advanced_action");
+  auto pinAction=gMenuItemById.find("pin_item");
+  if(enableAction!=gMenuItemById.end()&&advancedAction!=gMenuItemById.end()&&pinAction!=gMenuItemById.end()&&enabledEntry&&checkedEntry&&separator){
+    PatchDispatchMenuV12(enabledEntry->nativeItemIndex);if(PatchBooleanStateV12(enabledEntry->enabledState,false))return code++;
+    PatchDispatchMenuV12(enableAction->second);
+    GtkWidget* enabledItem=gMenuItems[(size_t)enabledEntry->nativeItemIndex].widget;if(!enabledItem||!gtk_widget_get_sensitive(enabledItem))return code++;
+    PatchDispatchMenuV12(checkedEntry->nativeItemIndex);
+    GtkWidget* checkedItem=gMenuItems[(size_t)checkedEntry->nativeItemIndex].widget;
+    if(!PatchBooleanStateV12(checkedEntry->checkedState,false)||!checkedItem||!GTK_IS_CHECK_MENU_ITEM(checkedItem)||!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(checkedItem)))return code++;
+  }
   return 0;
 }
 
