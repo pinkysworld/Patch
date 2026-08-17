@@ -5,6 +5,7 @@ on:
     branches: [agent/current-runtime-v12-switch]
     paths:
       - scripts/apply-runtime-v12-switch.js
+      - runtime-v12-switch.trigger
 
 permissions:
   contents: write
