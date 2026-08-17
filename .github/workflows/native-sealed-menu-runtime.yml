@@ -1,0 +1,104 @@
+name: Patch Native Sealed Menu Runtime
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/sealed-native-gui-v11.js
+      - native-runtime/sealed-menu-v12.hpp
+      - native-runtime/sealed-table-v10.hpp
+      - native-runtime/win32-sealed-gui-v12.cpp
+      - native-runtime/win32-sealed-gui-v11.cpp
+      - native-runtime/sealed-list-v11.hpp
+      - examples/menu-state-window.patch
+      - tests/sealed-menu-payload-v11.test.js
+      - .github/workflows/native-sealed-menu-runtime.yml
+  push:
+    branches: [main]
+    paths:
+      - src/sealed-native-gui-v11.js
+      - native-runtime/sealed-menu-v12.hpp
+      - native-runtime/sealed-table-v10.hpp
+      - native-runtime/win32-sealed-gui-v12.cpp
+      - native-runtime/win32-sealed-gui-v11.cpp
+      - native-runtime/sealed-list-v11.hpp
+      - examples/menu-state-window.patch
+      - tests/sealed-menu-payload-v11.test.js
+      - .github/workflows/native-sealed-menu-runtime.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test sealed Menu payload v11 contract
+        run: node --test tests/sealed-menu-payload-v11.test.js
+
+  windows:
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build Win32 sealed Menu runtime v1.2
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v12.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:PatchMenuRuntimeV12.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content build-menu-runtime.cmd -Encoding ascii
+          & cmd.exe /d /c build-menu-runtime.cmd
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal canonical Menu state app as payload v11
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV11 } from './src/native-gui-ir-v11.js';
+          import { sealNativeGuiRuntimeV11 } from './src/sealed-native-gui-v11.js';
+          const source = fs.readFileSync('examples/menu-state-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV11(compile(source, { name: 'SealedMenuState', kind: 'window' }));
+          const runtime = fs.readFileSync('PatchMenuRuntimeV12.exe');
+          const sealed = sealNativeGuiRuntimeV11(runtime, ir, { platform: 'windows' });
+          fs.writeFileSync('SealedMenuState.exe', sealed);
+          const footer = new DataView(sealed.buffer, sealed.byteOffset + sealed.byteLength - 20, 20);
+          if (footer.getUint32(8, true) !== 11) throw new Error('Expected sealed payload v11.');
+          NODE
+      - name: Smoke sealed Win32 Menu runtime v1.2
+        shell: pwsh
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          $process = Start-Process -FilePath (Resolve-Path './SealedMenuState.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed Menu runtime smoke failed with exit code $($process.ExitCode)." }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-win32-menu-runtime-v1.2
+          path: PatchMenuRuntimeV12.exe
+          if-no-files-found: error
+          retention-days: 14
