@@ -1,6 +1,9 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-export const PATCH_WINDOW_EVENTS_VERSION = '0.7';
+// Historical beta.35 contract marker retained for release-surface separation:
+// PATCH_WINDOW_EVENTS_VERSION = '0.7'
+// Current TreeView Stage 1 extends only the transient event-local value contract.
+export const PATCH_WINDOW_EVENTS_VERSION = '0.8';
 
 /**
  * Execute one Patch Window event with transient event-local data.
@@ -47,6 +50,9 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
     }
     if (controlType === 'table' && (!Array.isArray(payload.value) || !payload.value.every(cell => typeof cell === 'string'))) {
       throw new PatchRuntimeError(`The 'changed' action for table '${control}' needs a row list of text event-local values.`);
+    }
+    if (controlType === 'tree' && (!Array.isArray(payload.value) || !payload.value.length || !payload.value.every(item => typeof item === 'string'))) {
+      throw new PatchRuntimeError(`The 'changed' action for tree '${control}' needs a non-empty text-list event-local value containing the selected node path.`);
     }
   }
 

@@ -99,6 +99,7 @@ function lowerNode(node) {
       if (Array.isArray(node.options)) fields.options = [...node.options];
       if (Array.isArray(node.columns)) fields.columns = [...node.columns];
       if (Array.isArray(node.rows)) fields.rows = node.rows.map(row => [...row]);
+      if (Array.isArray(node.treeNodes)) fields.treeNodes = lowerTreeNodes(node.treeNodes);
       return op('UI_CONTROL', node, fields);
     }
     case 'event':
@@ -134,6 +135,14 @@ function lowerNode(node) {
   }
 }
 
+function lowerTreeNodes(nodes) {
+  return (nodes ?? []).map(node => ({
+    labelExpr: node.labelExpr,
+    line: node.line ?? null,
+    children: lowerTreeNodes(node.children)
+  }));
+}
+
 function op(code, node, fields = {}) { return { code, line: node.line ?? null, ...fields }; }
 
 function inferRuntimeCapabilities(ast) {
@@ -153,6 +162,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'openFileDialog' || node.kind === 'saveFileDialog') caps.add('ui.file-dialog');
     if (node.kind === 'uiControl' && node.control === 'radio') caps.add('ui.radio');
     if (node.kind === 'uiControl' && node.control === 'table') caps.add('ui.table');
+    if (node.kind === 'uiControl' && node.control === 'tree') caps.add('ui.tree');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
     if (node.kind === 'why') caps.add('change.provenance');

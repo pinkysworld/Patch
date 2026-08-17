@@ -48,6 +48,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuShortcutCount = 0;
   let menuEnabledBindings = 0;
   let menuCheckedBindings = 0;
+  let treeViews = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -69,6 +70,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (!child?.id) return;
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId });
+    if (child.control === 'tree') treeViews += 1;
   };
 
   const registerTabs = (node, formId) => {
@@ -207,9 +209,14 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: Table '${event.control}' exposes only 'changed' for transient row selection, not '${event.event}'.`
       );
     }
+    if (controlType === 'tree' && event.event !== 'changed') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: TreeView '${event.control}' exposes only 'changed' for transient node-path selection, not '${event.event}'.`
+      );
+    }
     const supported =
       ((controlType === 'button' || controlType === 'menuItem') && event.event === 'clicked') ||
-      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table') && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables. ` +
@@ -227,6 +234,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     }
   }
 
+  if (treeViews && !options.allowTree) {
+    throw new WindowBuildError(
+      'TreeView is not supported by this Window target yet. TreeView Stage 1 is available in the Studio App Preview; native and standalone targets fail closed until they opt into a versioned TreeView runtime contract.'
+    );
+  }
+
   const menuStateBindings = menuEnabledBindings + menuCheckedBindings;
   if ((menuSeparators || menuShortcutCount || menuStateBindings) && !options.allowMenuDecorations) {
     const required = menuStateBindings
@@ -242,6 +255,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     windows: countWindowInstructions(compiled?.ir?.instructions),
     namedForms: forms.size,
     controls: controls.size,
+    treeViews,
     tabs: tabs.size,
     menuItems: menuItems.size,
     menuSeparators,
