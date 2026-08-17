@@ -152,25 +152,41 @@ static bool PatchUpgradeTableTargetV12(){
 }
 
 static int RunPatchMenuSmokeV12(){
-  int code=260;
+  int code=260; bool hasDecorations=false;
   const PatchMenuEntryV12* enabledEntry=nullptr;const PatchMenuEntryV12* checkedEntry=nullptr;const PatchMenuEntryV12* separator=nullptr;
   for(const auto& entry:gPatchMenuEntriesV12){
-    if(entry.type==2)separator=&entry;
-    if(entry.type==1&&!entry.enabledState.empty())enabledEntry=&entry;
-    if(entry.type==1&&!entry.checkedState.empty())checkedEntry=&entry;
+    if(entry.type==2){
+      hasDecorations=true;separator=&entry;
+      NSMenu* menu=PatchNativeMenuV12(entry.formIndex,entry.menuIndex);if(!menu||entry.entryIndex>=(uint32_t)menu.numberOfItems)return code++;
+      NSMenuItem* item=[menu itemAtIndex:(NSInteger)entry.entryIndex];if(!item||!item.separatorItem)return code++;
+      continue;
+    }
+    if(entry.type!=1||entry.nativeItemIndex<0||entry.nativeItemIndex>=(int)gMenuItems.size())return code++;
+    NSMenuItem* item=gMenuItems[(size_t)entry.nativeItemIndex].widget;if(!item)return code++;
+    if(entry.hasShortcut){hasDecorations=true;if(item.keyEquivalent.length==0)return code++;}
+    if(!entry.enabledState.empty()){
+      hasDecorations=true;enabledEntry=&entry;
+      const bool expected=PatchBooleanStateV12(entry.enabledState,false);
+      if((item.enabled==YES)!=expected||PatchMenuEnabledV12(entry.nativeItemIndex)!=expected)return code++;
+    }
+    if(!entry.checkedState.empty()){
+      hasDecorations=true;checkedEntry=&entry;
+      const bool expected=PatchBooleanStateV12(entry.checkedState,false);
+      if((item.state==NSControlStateValueOn)!=expected)return code++;
+    }
   }
-  if(!enabledEntry||!checkedEntry||!separator)return code++;
-  NSMenu* menu=PatchNativeMenuV12(separator->formIndex,separator->menuIndex);if(!menu)return code++;
-  if(menu.numberOfItems!=4)return code++;
-  NSMenuItem* separatorItem=[menu itemAtIndex:(NSInteger)separator->entryIndex];if(!separatorItem||!separatorItem.separatorItem)return code++;
-  NSMenuItem* enabledItem=gMenuItems[(size_t)enabledEntry->nativeItemIndex].widget;if(!enabledItem||enabledItem.enabled)return code++;
-  PatchDispatchMenuV12(enabledEntry->nativeItemIndex);if(PatchBooleanStateV12(enabledEntry->enabledState,false))return code++;
-  auto enableAction=gMenuItemById.find("enable_advanced");if(enableAction==gMenuItemById.end())return code++;
-  PatchDispatchMenuV12(enableAction->second);if(!enabledItem.enabled||!PatchMenuEnabledV12(enabledEntry->nativeItemIndex))return code++;
-  NSMenuItem* checkedItem=gMenuItems[(size_t)checkedEntry->nativeItemIndex].widget;if(!checkedItem||checkedItem.state!=NSControlStateValueOff)return code++;
-  PatchDispatchMenuV12(checkedEntry->nativeItemIndex);if(!PatchBooleanStateV12(checkedEntry->checkedState,false)||checkedItem.state!=NSControlStateValueOn)return code++;
-  if(enabledEntry->hasShortcut&&enabledItem.keyEquivalent.length==0)return code++;
-  if(checkedEntry->hasShortcut&&checkedItem.keyEquivalent.length==0)return code++;
+  if(!hasDecorations)return 0;
+  auto enableAction=gMenuItemById.find("enable_advanced");
+  auto advancedAction=gMenuItemById.find("advanced_action");
+  auto pinAction=gMenuItemById.find("pin_item");
+  if(enableAction!=gMenuItemById.end()&&advancedAction!=gMenuItemById.end()&&pinAction!=gMenuItemById.end()&&enabledEntry&&checkedEntry&&separator){
+    PatchDispatchMenuV12(enabledEntry->nativeItemIndex);if(PatchBooleanStateV12(enabledEntry->enabledState,false))return code++;
+    PatchDispatchMenuV12(enableAction->second);
+    NSMenuItem* enabledItem=gMenuItems[(size_t)enabledEntry->nativeItemIndex].widget;if(!enabledItem||!enabledItem.enabled)return code++;
+    PatchDispatchMenuV12(checkedEntry->nativeItemIndex);
+    NSMenuItem* checkedItem=gMenuItems[(size_t)checkedEntry->nativeItemIndex].widget;
+    if(!PatchBooleanStateV12(checkedEntry->checkedState,false)||!checkedItem||checkedItem.state!=NSControlStateValueOn)return code++;
+  }
   return 0;
 }
 
