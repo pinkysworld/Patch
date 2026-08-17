@@ -7,9 +7,10 @@
 #include <fstream>
 #include <vector>
 
-#define main PatchRuntimeV11CompatibilityMain
+#define PATCH_RUNTIME_V11_RESTORE_MAIN PatchRuntimeV11CompatibilityMain
 #include "gtk-sealed-gui-v11.cpp"
 #undef main
+#undef PATCH_RUNTIME_V11_RESTORE_MAIN
 #include "sealed-menu-v12.hpp"
 
 static std::vector<PatchMenuEntryV12> gPatchMenuEntriesV12;
