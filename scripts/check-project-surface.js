@@ -153,7 +153,7 @@ requireAll('docs/PATCH_STUDIO.md', files.studio, [
 ]);
 requireAll('docs/ROADMAP.md', files.roadmap, [
   `Current development beta: **${version}**`,
-  '### beta.35: browser ListBox multi-selection',
+  '### beta.35: browser and native ListBox multi-selection',
   'Window event adapter **0.7**',
   'versioned Native GUI IR/runtime list-state extension for native multi-select parity',
   '### beta.34:', '### beta.32:',
