@@ -69,7 +69,7 @@ const files = {
   evaluationWorkflow: read('.github/workflows/assurance-evaluation.yml'),
   siteCheck: read('scripts/check-site.js'),
   siteV10Check: read('scripts/check-site-v10.js'),
-  siteV11Check: read('scripts/check-site-v11.js'),
+  siteV12Check: read('scripts/check-site-v12.js'),
   siteBeta34Check: read('scripts/check-site-beta34.js'),
   siteBeta35Check: read('scripts/check-site-beta35.js')
 };
@@ -82,7 +82,7 @@ requireScript('evaluate:assurance:controlled', 'node scripts/run-controlled-assu
 requireScript('evaluate:security', 'node scripts/evaluate-security-cases.js');
 requireScript('evaluate:checkout-extension', 'node scripts/evaluate-checkout-extension.js');
 requireScript('evaluate:quota-extension', 'node scripts/evaluate-extension-case.js --case quota-extension');
-requireScript('check:site', 'node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-v11.js && node scripts/check-site-beta35.js');
+requireScript('check:site', 'node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-v12.js && node scripts/check-site-beta35.js');
 
 // Current product surfaces.
 requireAll('README.md', files.readme, [
@@ -99,7 +99,7 @@ requireAll('web/index.html', files.website, [
   `<h1>Patch Studio <span>${studioVersion}</span></h1>`,
   `data-patch-version="${version}"`,
   'token-free Ready/offline Windows, macOS and Linux apps',
-  'Native GUI IR 1.1', 'payload v10', 'Runtime v1.1',
+  'Native GUI IR 1.1', 'payload v11', 'Runtime v1.2',
   'Persistent selection still changes only through explicit <b>change</b>',
   './runtime-integrity.js', './studio-dom-sync.js', './table-stage1.js'
 ]);
@@ -307,19 +307,19 @@ requireAll('.github/workflows/ci.yml', files.ciWorkflow, [
 ]);
 requireAll('.github/workflows/pages.yml', files.pagesWorkflow, [
   'runtime-integrity-manifest.js', 'runtime-manifest.json',
-  'native-win32-runtime-v1.1', 'native-macos-runtime-v1.1', 'native-linux-runtime-v1.1',
-  'Patch Native Sealed List Runtime'
+  'native-win32-runtime-v1.2', 'native-macos-runtime-v1.2', 'native-linux-runtime-v1.2',
+  'Patch Native Sealed List Runtime', 'Patch Native Sealed Menu Runtime', 'Patch Native Sealed Menu Runtime v1.2 Release'
 ]);
 requireAll('.github/workflows/assurance-evaluation.yml', files.evaluationWorkflow, [
   'run-controlled-assurance.js', 'hosted-ci', 'benchmark-assurance.js'
 ]);
 
-// Site validators: historical beta gates stay frozen; v1.1 owns the deployed Ready runtime assertions.
+// Site validators: historical beta/Table gates stay frozen; v1.2 owns current Ready runtime assertions.
 requireAll('scripts/check-site.js', files.siteCheck, ['Patch Studio', 'check-site']);
 requireAll('scripts/check-site-v10.js', files.siteV10Check, ['Table-ready Patch Studio site surface']);
-requireAll('scripts/check-site-v11.js', files.siteV11Check, [
-  'Studio Ready v1.1 site check failed', 'buildNativeGuiIRV11 as buildNativeGuiIR',
-  'PATCH_SEALED_NATIVE_GUI_LIST_VERSION', 'docs/NATIVE_LIST_STATE.md'
+requireAll('scripts/check-site-v12.js', files.siteV12Check, [
+  'Studio Ready v1.2 site check failed', 'buildNativeGuiIRV11 as buildNativeGuiIR',
+  'PATCH_SEALED_NATIVE_GUI_MENU_VERSION', 'docs/NATIVE_LIST_STATE.md', 'payload v11/runtime v1.2'
 ]);
 requireAll('scripts/check-site-beta34.js', files.siteBeta34Check, ['beta.34', 'runtime-manifest.json']);
 requireAll('scripts/check-site-beta35.js', files.siteBeta35Check, [
