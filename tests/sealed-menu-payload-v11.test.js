@@ -89,7 +89,7 @@ test('frozen payload v10 still fails closed for decorated menus', () => {
 });
 
 test('payload v11 composes menu metadata with list-state IR 1.1', () => {
-  const source = `create boolean enabled = true\ncreate list choices = ["A", "C"]\nwindow "Combined" as main:\n  listbox ["A", "B", "C"] as choices\n  menu "Actions":\n    item "Apply" as apply_item shortcut "Primary+A" enabled enabled\n    separator\n    item "Reset" as reset_item\n\nwhen choices changed:\n  change choices:\n    set = value\n`;
+  const source = `create boolean enabled = true\ncreate list choices = ["A", "C"]\nwindow "Combined" as main:\n  listbox "A", "B", "C" as choices\n  menu "Actions":\n    item "Apply" as apply_item shortcut "Primary+A" enabled enabled\n    separator\n    item "Reset" as reset_item\n\nwhen choices changed:\n  change choices:\n    set = value\n`;
   const ir = buildNativeGuiIRV11(compile(source, { name: 'Combined', kind: 'window' }));
   const bytes = encodeNativeGuiPayloadV11(ir);
   assert.ok(bytes.length > 0);
