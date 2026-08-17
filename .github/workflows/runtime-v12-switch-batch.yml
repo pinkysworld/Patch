@@ -46,6 +46,39 @@ jobs:
           p.write_text(s)
       - name: Apply fail-closed v1.2 migration
         run: node scripts/apply-runtime-v12-switch.js
+      - name: Enable verified v1.2 Menu capability
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one capability boundary, found {count}')
+              p.write_text(text.replace(old, new))
+
+          replace_once(
+              'src/offline-linker.js',
+              'validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true });',
+              '''validateWindowRuntimeSupport(compiled, {
+            allowTables: true,
+            allowLists: true,
+            allowListControls: true,
+            allowMenuDecorations: true
+          });'''
+          )
+          replace_once(
+              'web/native-build.js',
+              'const support = validateWindowRuntimeSupport(preflight);',
+              '''const support = validateWindowRuntimeSupport(preflight, {
+              allowTables: true,
+              allowLists: true,
+              allowListControls: true,
+              allowMenuDecorations: true
+            });'''
+          )
       - name: Validate migrated JavaScript and current contracts
         run: |
           node --check src/offline-linker.js
