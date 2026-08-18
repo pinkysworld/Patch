@@ -30,7 +30,8 @@ test('Studio advertises current payload v12 runtime v1.3 TreeView support', () =
   assert.match(nativeBuild, /payload v12/);
   assert.match(nativeBuild, /runtime v1\.3/i);
   assert.match(nativeBuild, /including TreeView/);
-  assert.match(index, /token-free Ready\/offline Windows, macOS and Linux apps/);
+  assert.match(index, /Ready\/offline Windows, macOS and Linux/);
+  assert.match(index, /hierarchical TreeView/);
 });
 
 test('runtime integrity remains a separate browser-side SHA-256 verification gate', () => {
