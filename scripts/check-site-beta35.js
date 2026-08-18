@@ -85,7 +85,7 @@ const nativeGuiV12 = read('_site/src/native-gui-ir-v12.js');
 requireAll('Native GUI IR 1.2 TreeView extension', nativeGuiV12, [
   "PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",
   'buildNativeGuiIRV12',
-  "type: 'tree'"
+  "control.type = 'tree'"
 ]);
 const sealedV12 = read('_site/src/sealed-native-gui-v12.js');
 requireAll('sealed payload v12 TreeView contract', sealedV12, [
