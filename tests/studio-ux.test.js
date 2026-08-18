@@ -26,12 +26,12 @@ test('Patch Studio exposes visible scroll areas for code, results and Designer',
 
 test('Designer canvas is a bounded vertical scrollport instead of growing with Forms', () => {
   for (const marker of [
-    'height: clamp(580px, 72vh, 780px)',
+    'height: clamp(640px, 78vh, 900px)',
     'overflow-y: scroll !important',
     'overscroll-behavior: contain',
     'scrollbar-gutter: stable both-edges',
     '.patch-window:last-child',
-    'margin-bottom: 48px'
+    'margin-bottom: 56px'
   ]) assert.ok(inspector.includes(marker), marker);
 });
 
@@ -60,7 +60,8 @@ test('Designer toolbox and Form controls remain compact IDE-style controls', () 
 
 test('Designer presents toolbox controls as a left icon rail on desktop', () => {
   for (const marker of [
-    'grid-template-columns: 52px minmax(0, 1fr) 248px',
+    '--designer-inspector-width: 340px',
+    'grid-template-columns: 54px minmax(0, 1fr) var(--designer-inspector-width)',
     '.designer-view::before',
     '#designer #addText::before',
     '#designer #addButton::before',
@@ -69,17 +70,21 @@ test('Designer presents toolbox controls as a left icon rail on desktop', () => 
     '#designer #addRadio::before',
     '#designer #addCombo::before',
     '#designer #addListbox::before',
+    '#designer #addTable::before',
+    '#designer #addTree::before',
     '#designer #addTabs::before'
   ]) assert.ok(inspector.includes(marker), marker);
 });
 
-test('Designer Properties panel stays compact and responsive', () => {
+test('Designer Properties panel is resizable collapsible and responsive', () => {
   for (const marker of [
     'grid-column: 3',
-    'min-height: 30px',
+    'min-height: 32px',
     'position: sticky',
     'grid-template-columns: 1fr 1fr auto',
-    '@media (max-width: 1050px)',
+    '.designer-inspector-resize',
+    '.designer-properties-collapsed',
+    '@media (max-width: 1180px)',
     '@media (max-width: 760px)'
   ]) assert.ok(inspector.includes(marker), marker);
 });
