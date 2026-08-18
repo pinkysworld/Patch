@@ -11,13 +11,14 @@ The manuscript is synchronized to the current research/product split:
 - product artifact: **Patch 0.2.0-beta.35**;
 - semantic IR: **Change IR 0.10**;
 - formal runtime-correspondence milestone: **beta.32**;
-- beta.33–beta.35: Studio, release, persistence, runtime-integrity and browser ListBox interaction engineering that does not widen the beta.32 Lean claim.
+- current native product contract: **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3**;
+- beta.33-beta.35 product engineering does not widen the beta.32 Lean claim.
 
 `main.tex` includes the implemented beta.30 finite transitive call-tree layer, beta.31 call-aware direct-Wasm bridge, beta.32 independently reconstructed invocation frames, repeated-identical and mixed-guard repeated-call evidence, semantic-authority evaluation, the checkout/loyalty and usage/quota application cases, controlled-measurement protocol, reproducibility bundle and the narrowed related-work claim boundary.
 
 The artifact also independently binds supported static `do recipe(args)` source sites to production AST call sites before concrete-call witness generation. This reduces a parser/extractor trust dependency but does not widen the Lean theorem or turn the parser into a verified component.
 
-Beta.35 adds browser product behavior only: a ListBox backed by list state becomes multi-select in Patch Studio App Preview and Standalone Web. Native GUI 0.7 still fails closed for persistent list state. This feature does not change the paper's formal theorem or novelty hypothesis.
+Beta.35+ product work now includes the canonical multi-file Studio project bundle v3, list-backed multi-select ListBox parity and hierarchical TreeView across browser and supported Windows/macOS/Linux direct-native and token-free Ready/offline paths. Current token-free desktop Window packaging uses Native GUI IR 1.2, sealed payload v12 and runtime v1.3. These GUI/runtime additions remain outside the beta.32 formal runtime-correspondence claim.
 
 The paper remains a working research manuscript, not yet a submission-ready top-venue paper. In particular, **no controlled paper-quality performance dataset has been collected yet**.
 
@@ -48,15 +49,15 @@ This is not a unique-expressibility or firstness claim. Related systems provide 
 
 ## Static call-site source binding
 
-Concrete call certificates no longer accept the production AST as the sole source of truth for the identity of supported static `do recipe(args)` sites. `src/call-site-validation.js` independently scans raw source and reconstructs caller recipe context, callee name, source line and exact trimmed argument texts. The complete ordered raw-source list must agree with a separately collected production-AST list.
+Concrete call certificates do not accept the production AST as the sole source of truth for the identity of supported static `do recipe(args)` sites. `src/call-site-validation.js` independently scans raw source and reconstructs caller recipe context, callee name, source line and exact trimmed argument texts. The complete ordered raw-source list must agree with a separately collected production-AST list.
 
-The validation artifact is attached to `formalCalls`, so existing concrete-call, structured-call, transitive-call and beta.32 runtime witness paths inherit the same fail-closed precondition. The Concrete Call Witness schema remains **0.1** because the call-site validation version and successful-source-binding flag are additive provenance metadata.
+The validation artifact is attached to `formalCalls`, so concrete-call, structured-call, transitive-call and beta.32 runtime witness paths inherit the same fail-closed precondition. The Concrete Call Witness schema remains **0.1** because the call-site validation version and successful-source-binding flag are additive provenance metadata.
 
 This check is syntactic, not semantic. After source identity is established, Lean still re-evaluates supported argument expressions and checks exact values, positional binding, declared ranges, call structure and later effect obligations. The independent scanner remains proof-free JavaScript and is not a verified parser. See `docs/CALL_SITE_VALIDATION.md`.
 
 ## Beta.32 runtime boundary
 
-The production direct-Wasm backend does not need to emit trusted call-entry/exit markers. The independent validator reconstructs concrete invocation frames from validated execution structure. Each frame carries caller/callee identity, dynamic ordinal, parent/depth information, exact arguments/bindings and transition boundaries.
+The production direct-Wasm backend does not emit trusted call-entry/exit markers. The independent validator reconstructs concrete invocation frames from validated execution structure. Each frame carries caller/callee identity, dynamic ordinal, parent/depth information, exact arguments/bindings and transition boundaries.
 
 For a selected beta.30 exact call-tree witness, generated evidence checks:
 
@@ -93,6 +94,19 @@ GeneratedMixedGuardTransitiveRuntimeCertificate.lean
 ```
 
 This is **not** an end-to-end compiler/runtime refinement theorem. Explicit proof-free/trust boundaries remain runtime capture, JavaScript validator/frame-reconstruction correctness, parser/extractor correctness outside independently cross-checked supported source/range, guard and static-call-site fragments, JavaScript-to-Wasm lowering and the Wasm engine. The independent validators themselves remain unverified JavaScript.
+
+## Product boundary relative to the paper
+
+The beta.35+ product artifact has moved ahead of the formal runtime-correspondence milestone in UI and distribution engineering. Current product features include:
+
+- Patch Studio multi-file project bundle v3;
+- browser App Preview and Standalone Web support for list-backed multi-select ListBox and TreeView;
+- Native GUI IR 1.2 with hierarchical TreeView;
+- sealed payload v12 / runtime v1.3 for current token-free Ready/offline Windows, macOS and Linux Window applications;
+- preserved Table/Grid, responsive layout, list-state and Menu semantics from the frozen earlier native contracts;
+- SHA-256-verified browser runtime templates and a separately checksummed offline compiler distribution.
+
+These product features are implementation evidence and usability/distribution work. They do not imply a new Lean theorem, a fully verified compiler, native GUI semantic verification, Authenticode signing or Developer ID notarization.
 
 ## Semantic-authority evaluation
 
@@ -210,24 +224,11 @@ The bundle deliberately excludes manuscript performance results from heterogeneo
 
 ## Related work
 
-`paper/related-work.tex` is now included by `main.tex` and cites the expanded `references.bib`.
+`paper/related-work.tex` is included by `main.tex` and cites the expanded `references.bib`.
 
-The structured comparison covers:
+The structured comparison covers first-class state change, reified state, classical/algebraic/sequential effects, Effects-as-Capabilities/System C, graded quantitative reasoning, dependent effects, borrowing permissions, Mezzo, revocable-capability typestate, invalidation-sensitive type-and-effect analysis, HTT, F*, Dijkstra monads, explicit program edits/change calculi/patch theory, translation validation, PCC and provenance debugging.
 
-- Plaid and first-class state change;
-- Worlds/reified state;
-- classical, algebraic and sequential effects;
-- Effects-as-Capabilities/System C;
-- graded quantitative reasoning;
-- 2026 dependent effects with program-value-dependent quantitative grades;
-- borrowing permissions and Mezzo;
-- 2026 revocable-capability typestate;
-- 2025 invalidation-sensitive type-and-effect analysis;
-- HTT, F* and Dijkstra monads;
-- explicit program edits/change calculi/patch theory;
-- translation validation, PCC and provenance debugging.
-
-The targeted 2025–2026 follow-up further narrows the Patch hypothesis. Value-dependent quantitative effects and flow-sensitive state/capability reasoning are explicit prior art. The remaining candidate distinction is the mandatory/default modeled persistent-mutation architecture, not the individual existence of magnitude bounds, capabilities or typestate-sensitive effects.
+The targeted 2025-2026 follow-up narrows the Patch hypothesis. Value-dependent quantitative effects and flow-sensitive state/capability reasoning are explicit prior art. The remaining candidate distinction is the mandatory/default modeled persistent-mutation architecture, not the individual existence of magnitude bounds, capabilities or typestate-sensitive effects.
 
 The key discipline is to separate **expressibility** from **default mutation architecture**. Patch does not claim that richer systems cannot state an equivalent bounded transition.
 
@@ -267,4 +268,4 @@ npm run verify:reproducibility
 4. continue reducing parser/lowering/runtime trust where the improvement materially strengthens the claim, with source/range, guard and static call-site identity already independently cross-checked for their supported fragments;
 5. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
 
-Normal literature surveillance should continue before submission, but the targeted 2025–2026 dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is now part of the reproducible beta.32 artifact rather than an open backlog item.
+Normal literature surveillance should continue before submission, but the targeted recent dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is part of the reproducible beta.32 artifact rather than an open backlog item.
