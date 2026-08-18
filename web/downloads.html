@@ -83,9 +83,9 @@ Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
     <pre class="page-code">create list selected = []
 window "Files" as main size 560, 380:
   tree as files at 24, 56 size 300, 240:
-    node "src":
+    node "src"
       node "compiler.js"
-    node "docs":
+    node "docs"
       node "README.md"
 when files changed:
   change selected:
