@@ -87,3 +87,19 @@ test('TreeView parser rejects malformed hierarchy and empty trees', () => {
   assert.throws(() => compile('window "X":\n  tree as nav:\n', { kind: 'window' }), /tree needs at least one/i);
   assert.throws(() => compile('window "X":\n  tree as nav:\n    button "No" as bad\n', { kind: 'window' }), /tree.*node/i);
 });
+
+test('TreeView documentation and public examples use the canonical node syntax', () => {
+  const surfaces = [
+    'docs/NATIVE_TREEVIEW.md',
+    'docs/NATIVE_GUI.md',
+    'docs/OFFLINE_COMPILER.md',
+    'docs/PATCH_STUDIO.md',
+    'web/language.html',
+    'web/downloads.html',
+    'web/help.html'
+  ];
+  for (const file of surfaces) {
+    const text = fs.readFileSync(file, 'utf8');
+    assert.doesNotMatch(text, /^\s*node\s+"[^"\n]*":\s*$/m, `${file} uses a colon after a TreeView node label`);
+  }
+});
