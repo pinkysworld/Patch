@@ -23,18 +23,21 @@ for (const rel of [
   '_site/table-stage1.js',
   '_site/src/webapp.js',
   '_site/src/window-events.js',
+  '_site/src/native-gui-ir-v12.js',
+  '_site/src/sealed-native-gui-v12.js',
   '_site/sw.js'
 ]) requireFile(rel);
 
-// beta.35 introduced the browser interaction contract. Native parity is an additive
-// post-beta.35 capability, so the current Studio must keep the workflow visible
-// without preserving the original browser-only release disclaimer forever.
+// beta.35 introduced the browser interaction contract. Native parity is additive
+// post-beta.35 capability, so current product surfaces must preserve the semantic
+// mutation boundary while advertising the newer versioned native contract.
 const index = read('_site/index.html');
-requireAll('beta.35 Studio page', index, [
+requireAll('beta.35+ Studio page', index, [
   'data-patch-version="0.2.0-beta.35"',
-  '0.2 beta.35',
-  'List-backed multi-select ListBox now works in browser preview, direct native AOT and token-free Ready/offline Windows, macOS and Linux apps.',
-  'Persistent selection still changes only through explicit <b>change</b>',
+  '0.2 beta.35+',
+  'list-backed multi-select ListBox and hierarchical TreeView',
+  'supported native Ready/offline Windows, macOS and Linux paths',
+  'explicit <b>change</b>',
   './beta35-studio.js?v=',
   './table-stage1.js?v='
 ]);
@@ -71,11 +74,24 @@ requireAll('Standalone Web multi-select ListBox contract', webapp, [
 ]);
 
 const events = read('_site/src/window-events.js');
-requireAll('Window event adapter v0.7 compatibility / current v0.8', events, [
+requireAll('Window event adapter current contract', events, [
   "PATCH_WINDOW_EVENTS_VERSION = '0.8'",
   "controlType === 'listbox'",
   "stateType === 'list'",
   'text-list event-local value'
+]);
+
+const nativeGuiV12 = read('_site/src/native-gui-ir-v12.js');
+requireAll('Native GUI IR 1.2 TreeView extension', nativeGuiV12, [
+  "PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",
+  'buildNativeGuiIRV12',
+  "type: 'tree'"
+]);
+const sealedV12 = read('_site/src/sealed-native-gui-v12.js');
+requireAll('sealed payload v12 TreeView contract', sealedV12, [
+  'PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12',
+  'sealNativeGuiRuntimeV12',
+  'inspectNativeGuiTreesV12'
 ]);
 
 const language = read('_site/language.html');
@@ -83,34 +99,38 @@ requireAll('beta.35 Language page', language, [
   'data-patch-version="0.2.0-beta.35"',
   'ListBox selection follows the state type',
   'create list fruits',
-  'multi-select in Patch Studio App Preview and Standalone Window Web',
-  'Native GUI IR 0.7 does not yet model persistent list state'
+  'multi-select in Patch Studio App Preview and Standalone Window Web'
 ]);
 
-// Help/Downloads still preserve the beta.35 release-boundary wording until the
-// dedicated documentation-sync slice updates those explanatory pages.
 const help = read('_site/help.html');
 requireAll('beta.35 Help page', help, [
   'data-patch-version="0.2.0-beta.35"',
   'ListBox: single or multi-select',
-  'Native boundary:',
-  'intended beta.35 fail-closed boundary'
+  'Ready/no-token',
+  'Offline compiler'
 ]);
 
 const downloads = read('_site/downloads.html');
-requireAll('beta.35 Downloads page', downloads, [
+requireAll('beta.35+ Downloads page', downloads, [
   'data-patch-version="0.2.0-beta.35"',
-  'Beta.35 multi-select ListBox boundary',
-  'Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.',
+  'Native GUI IR <strong>1.2</strong>',
+  'payload <strong>v12</strong>',
+  'runtime <strong>v1.3</strong>',
+  'hierarchical TreeView',
   'SHA256SUMS',
   'runtime-manifest.json'
 ]);
+if (downloads.includes('Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.')) {
+  throw new Error('Downloads page regressed to the obsolete native ListBox boundary.');
+}
 
 const sw = read('_site/sw.js');
 requireAll('beta.35 Service Worker', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'",
   "url.pathname.includes('/runtimes/')",
-  "freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset"
+  "freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset",
+  '../src/native-gui-ir-v12.js',
+  '../src/sealed-native-gui-v12.js'
 ]);
 
-console.log('ok Patch Studio beta.35 ListBox multi-select site surface');
+console.log('ok Patch Studio beta.35+ browser/native parity site surface');
