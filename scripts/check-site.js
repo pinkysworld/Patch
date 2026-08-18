@@ -81,7 +81,7 @@ requireAll('sealed payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSIO
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'", "url.pathname.includes('/runtimes/')",
-  '../src/native-gui-ir-v12.js','../src/native-tree-backend-adapter.js','../src/sealed-native-gui-v12.js'
+  './src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
 ]);
 
 const integrity = read('_site/runtime-integrity.js');
