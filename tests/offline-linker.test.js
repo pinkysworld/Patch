@@ -145,7 +145,7 @@ test('offline Window linker supports hierarchical TreeView in payload v12 on all
     const plan = createOfflineLinkPlan(treeWindowSource, { platform, name: 'TreeReady', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
     const payload = decodeNativeGuiPayloadV12(executable.bytes);
-    const trees = inspectNativeGuiTreesV12(payload);
+    const { trees } = inspectNativeGuiTreesV12(payload);
     assert.equal(footerVersion(executable.bytes), 12);
     assert.equal(trees.length, 1);
     assert.equal(trees[0].id, 'files');
