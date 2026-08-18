@@ -1,6 +1,8 @@
 # Native list state and multi-select ListBox
 
-Patch Native GUI IR 1.1 adds persistent text-list state and native multi-select ListBox semantics without changing the existing text-backed ListBox contract.
+Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics without changing the existing text-backed ListBox contract. That ABI remains part of the current Native GUI IR **1.2** / sealed payload **v12** / runtime **v1.3** desktop line.
+
+This document describes the list-state extension itself and distinguishes its original compatibility versions from the current Ready/offline consumer contract.
 
 ## Source contract
 
@@ -30,11 +32,11 @@ when fruits changed:
     set = value
 ```
 
-The toolkit selection is transient UI state. Persistent Patch state changes only because the handler performs the explicit semantic `change fruits: set = value`.
+Toolkit selection is transient UI state. Persistent Patch state changes only because the handler performs the explicit semantic `change fruits: set = value`.
 
-## Native GUI IR 1.1
+## Native GUI IR 1.1 list-state extension
 
-Native GUI IR 1.1 extends the existing versioned GUI stack with:
+Native GUI IR 1.1 added:
 
 - state type `list`, represented as a list of text values;
 - `selectionMode: multiple` only on list-backed ListBox controls;
@@ -42,19 +44,20 @@ Native GUI IR 1.1 extends the existing versioned GUI stack with:
 - explicit list-state `set`, `add`, `remove` and `clear` actions;
 - `set = value` as the typed bridge from a transient `text-list` event into persistent list state.
 
-Text-backed ListBox remains single-select and continues to expose transient `text`. Table row selection remains its independent existing `text-list` event contract. A project may contain both Table and multi-select ListBox without one event adapter reinterpreting the other.
+Text-backed ListBox remains single-select and exposes transient text. Table row selection remains its independent `text-list` event contract. A project may contain both Table and multi-select ListBox without one event adapter reinterpreting the other.
 
-Native GUI IR 1.1 preserves the earlier version layers rather than redefining them:
+The additive Native GUI IR history is:
 
-- Native GUI IR 0.7: stable base controls;
+- Native GUI IR 0.7: base controls;
 - Native GUI IR 0.8: Table extension;
 - Native GUI IR 0.9: Menu separators and shortcuts;
 - Native GUI IR 1.0: source-backed MenuItem enabled/checked state;
-- Native GUI IR 1.1: persistent text-list state and list-backed multi-select ListBox.
+- Native GUI IR 1.1: persistent text-list state and list-backed multi-select ListBox;
+- Native GUI IR 1.2: current hierarchical TreeView extension, preserving the 1.1 list-state ABI.
 
-## Direct AOT backend 1.2
+## Direct native backend
 
-The normal native build commands automatically select backend 1.2 when list state is present.
+The native backend line maps list state without converting it to an opaque string.
 
 ### Windows
 
@@ -68,29 +71,36 @@ List state is represented as `NSArray<NSString *>`. The AppKit `NSTableView` Lis
 
 List state is represented as `std::vector<std::string>`. GTK3 uses `GTK_SELECTION_MULTIPLE`, the `selected-rows-changed` signal and `gtk_list_box_get_selected_rows`.
 
-The dedicated Native ListBox v1.2 CI matrix compiles and executes the same multi-select application on Windows/MSVC, macOS/AppKit and Linux/GTK3. Its smoke selects more than one row, dispatches the real native changed-event path and verifies that the explicit `set = value` operation receives the selected text list.
+The dedicated Native ListBox v1.2 CI matrix retains direct Windows/MSVC, macOS/AppKit and Linux/GTK evidence for the list-state feature. Later TreeView/runtime layers are additive and preserve this behavior.
 
 ## Ready apps and offline `patch link`
 
-Windows, macOS and Linux now use the same current sealed Window contract for token-free Ready apps and offline linking:
+The original list-state sealed compatibility line was:
 
 - Native GUI IR **1.1**;
 - sealed payload **v10**;
 - native runtime **v1.1**.
 
-This contract is used by:
+That v10/v1.1 line remains frozen and independently tested. It is no longer the current Ready/offline consumer version.
 
-- Patch Studio **Ready app download (no token)**;
-- the downloadable offline compiler;
-- ordinary local `patch link` Window builds.
+Current Windows, macOS and Linux Ready/offline Window builds use:
 
-Payload v10 stores text-list state as a typed list. It does not hide list state inside a text scalar. Runtime v1.1 preserves source action ordering when list changes are mixed with scalar changes, Forms or dialogs, then projects the resulting persistent Patch list back into the native multi-select control.
+- Native GUI IR **1.2**;
+- sealed payload **v12**;
+- native runtime **v1.3**.
 
-The previous payload **v9** / runtime **v1.0** Table-capable line remains frozen as a reproducible compatibility contract. Runtime v1.1 was added instead of redefining v1.0 in place.
+Payload v12 preserves typed list state, multi-select ListBox events and list mutations while also carrying the later Menu and TreeView contracts. Patch Studio Ready app download, the downloadable offline compiler and ordinary local `patch link` therefore all preserve the same list-state semantics through the current v12/v1.3 line.
+
+The version progression is deliberately additive:
+
+- payload v9/runtime v1.0: frozen Table line;
+- payload v10/runtime v1.1: frozen persistent-list/multi-select line;
+- payload v11/runtime v1.2: frozen Menu+list line;
+- payload v12/runtime v1.3: current TreeView-capable line preserving Table, Menu and list semantics.
 
 ## Supported native list operations
 
-The 1.1 contract keeps these persistent mutations explicit:
+The persistent mutations remain explicit:
 
 ```patch
 change fruits:
@@ -100,36 +110,39 @@ change fruits:
   clear
 ```
 
-`add` appends one value. `remove` removes the first matching value and follows normal Patch runtime error behavior when the value is absent. `set` replaces the list and `clear` empties it. `set = value` is additionally supported inside a `text-list` event such as a list-backed ListBox `changed` handler.
+`add` appends one value. `remove` removes the first matching value and follows normal Patch runtime error behavior when the value is absent. `set` replaces the list and `clear` empties it. `set = value` is supported inside a `text-list` event such as a list-backed ListBox `changed` handler.
 
-Initial native list state and literal list `set` values currently require literal lists of quoted text. Native GUI 1.1 deliberately rejects interpolating a list directly into a Form/control label; applications should derive a scalar display state instead.
+Initial native list state and literal list `set` values use literal lists of quoted text in the current supported contract. Applications should derive scalar display state rather than interpolating an entire list directly into a Form/control label.
 
 ## Runtime integrity
 
-Patch Studio Pages deploys the runtime-v1.1 assets only when the Windows, macOS and Linux releases all exist. The deployment reads the SHA-256 digest recorded by GitHub for each exact release asset, hashes the downloaded file independently, and writes the verified result into `runtime-manifest.json`.
+Patch Studio Pages now gates the current runtime-v1.3 assets. Deployment requires:
 
-The browser verifies the selected runtime bytes again with Web Crypto before token-free sealing. This is byte-integrity validation of the published runtime path. It is not Windows Authenticode, Apple Developer ID signing or notarization.
+- `native-win32-runtime-v1.3`;
+- `native-macos-runtime-v1.3`;
+- `native-linux-runtime-v1.3`;
+- the compatibility/Console `studio-runtime-v0.6` release.
+
+Pages reads the GitHub-recorded SHA-256 digest for every exact runtime asset, independently hashes the downloaded bytes and writes the verified result into `runtime-manifest.json`. The browser verifies the selected runtime again with Web Crypto before token-free sealing.
+
+This is byte-integrity validation of the published runtime path. It is not Windows Authenticode, Apple Developer ID signing or notarization.
 
 ## Current fail-closed boundaries
 
-Sealed payload v10 does not yet encode the newer direct-AOT Menu decorators:
+The obsolete v10 limitation on advanced Menu decoration is retained only as a compatibility property of payload v10. Current payload v12/runtime v1.3 supports the later Menu separators, portable shortcuts and source-backed `enabled`/`checked` state inherited from payload v11/runtime v1.2, plus hierarchical TreeView.
 
-- Menu separators;
-- portable shortcuts;
-- source-backed MenuItem `enabled` state;
-- source-backed MenuItem `checked` state.
-
-A Ready/offline application that needs those sealed Menu features must fail closed rather than silently lose them. Direct AOT already supports the Menu features.
-
-FreeBSD Window/GUI remains unsupported. FreeBSD Console continues through the portable C99/offline path.
+An application explicitly linked against a legacy payload fails closed when it requests features newer than that payload. FreeBSD Window/GUI remains unsupported; FreeBSD Console continues through the portable C99/offline path.
 
 ## Regression evidence
 
-The repository keeps the runtime lines separate:
+The repository keeps runtime generations separate:
 
-- payload v9 / runtime v1.0 compatibility tests and Windows/macOS/Linux smokes;
-- payload v10 / runtime v1.1 contract tests plus Windows/macOS/Linux multi-select, Table and ordinary offline-link smokes;
-- direct backend 1.2 Windows/AppKit/GTK compile-and-run smokes;
+- payload v9/runtime v1.0 compatibility tests and desktop smokes;
+- payload v10/runtime v1.1 list-state compatibility tests;
+- payload v11/runtime v1.2 Menu+list compatibility tests;
+- payload v12/runtime v1.3 TreeView-capable Windows/macOS/Linux seal/link/run smokes;
+- direct native ListBox compile-and-run smokes;
+- downloadable offline-compiler responsive/Table/ListBox/Menu/TreeView smokes;
 - Patch Studio site and runtime-integrity surface tests.
 
 The separation is intentional: new functionality advances through a versioned contract rather than changing the meaning of previously published binaries.
