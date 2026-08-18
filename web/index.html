@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.35: write, design, run and build Patch applications, including browser and native multi-select ListBox apps.">
+  <meta name="description" content="Patch Studio beta.35+: write, design, run and build Patch applications with multi-file projects, native ListBox, Table, Menu and TreeView support.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -31,7 +31,7 @@
 </nav>
 <main class="studio" data-patch-version="0.2.0-beta.35">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true">P</div><div><h1>Patch Studio <span>0.2 beta.35</span></h1><p>Write, run and build Patch.</p></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true">P</div><div><h1>Patch Studio <span>0.2 beta.35+</span></h1><p>Write, run and build Patch.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
       <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="counterWindow">Window app</option><option value="tabsWindow">Tabs app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
@@ -57,8 +57,8 @@
     </span>
     <span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Runtime v1.2 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.1 as payload v11.</span></section>
-  <section class="beta35-strip" aria-label="Patch beta.35 feature boundary"><strong>beta.35+</strong><span>List-backed multi-select ListBox now works in browser preview, direct native AOT and token-free Ready/offline Windows, macOS and Linux apps. Persistent selection still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Runtime v1.3 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.2 as payload v12, including hierarchical TreeView.</span></section>
+  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Multi-file project bundle v3, list-backed multi-select ListBox and hierarchical TreeView now work across browser and supported native Ready/offline Windows, macOS and Linux paths. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
 
   <section class="workspace" aria-label="Patch Studio workspace">
     <div class="source-workspace">
