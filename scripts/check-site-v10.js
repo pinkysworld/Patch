@@ -47,7 +47,7 @@ requireAll('Studio native Ready builder', nativeBuild, [
 const downloads = read('_site/downloads.html');
 const language = read('_site/language.html');
 const help = read('_site/help.html');
-requireAllFolded('Downloads', downloads, ['payload v9', 'runtime v1.0']);
+requireAllFolded('Downloads', downloads, ['v9/v1.0', 'Table line']);
 for (const [label, text] of [['Downloads', downloads], ['Language', language], ['Help', help]]) {
   requireAll(label, text, ['Table']);
   if (/does not yet claim Table support|Table is not yet claimed|Table is not yet part of the sealed/i.test(text)) {
