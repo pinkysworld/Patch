@@ -4,6 +4,7 @@ import {
   removeDesignerControl,
   updateDesignerControl
 } from '../src/designer.js';
+import { formControlDefaultSize } from '../src/form-layout.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -114,8 +115,12 @@ function syncTrees() {
   if (selectedTree) {
     const element = treeElement(selectedTree);
     if (element) {
+      for (const current of canvas.querySelectorAll('.designer-control.designer-selected')) {
+        if (current !== element) current.classList.remove('designer-selected');
+      }
       element.classList.add('designer-selected');
       populateInspector(selectedTree);
+      ensureTreeResizeHandle(element, selectedTree);
     } else {
       selectedTree = null;
     }
@@ -135,8 +140,10 @@ function decorateTree(element, model, selection) {
     event.stopPropagation();
     selectedTree = selection;
     for (const current of canvas.querySelectorAll('.designer-control.designer-selected')) current.classList.remove('designer-selected');
+    for (const handle of canvas.querySelectorAll('.patch-form-resize-handle')) handle.remove();
     element.classList.add('designer-selected');
     populateInspector(selection);
+    ensureTreeResizeHandle(element, selection);
   };
   element.addEventListener('click', select);
   element.addEventListener('keydown', event => {
@@ -163,8 +170,40 @@ function populateInspector(selection) {
   if (textField) textField.hidden = true;
   if (optionsField) optionsField.hidden = true;
   if (id) id.value = control.id ?? '';
+  syncGeometryFields(control);
   const error = document.querySelector('#designerInspectorError');
   if (error) { error.hidden = true; error.textContent = ''; }
+}
+
+function syncGeometryFields(control) {
+  const defaults = formControlDefaultSize('tree');
+  const values = {
+    patchControlX: control.x ?? 24,
+    patchControlY: control.y ?? (24 + control.controlIndex * 48),
+    patchControlWidth: control.width ?? defaults.width,
+    patchControlHeight: control.height ?? defaults.height
+  };
+  for (const [id, value] of Object.entries(values)) {
+    const field = document.querySelector(`#${id}`);
+    if (field) field.value = String(value);
+  }
+}
+
+function ensureTreeResizeHandle(element, selection) {
+  const body = element.parentElement;
+  if (!body) return;
+  for (const handle of body.querySelectorAll('.patch-form-resize-handle')) handle.remove();
+  const handle = document.createElement('span');
+  handle.className = 'patch-form-resize-handle';
+  handle.dataset.windowIndex = String(selection.windowIndex);
+  handle.dataset.controlIndex = String(selection.controlIndex);
+  const x = parseInt(element.style.left, 10) || 0;
+  const y = parseInt(element.style.top, 10) || 0;
+  const width = parseInt(element.style.width, 10) || element.offsetWidth;
+  const height = parseInt(element.style.height, 10) || element.offsetHeight;
+  handle.style.left = `${x + width - 7}px`;
+  handle.style.top = `${y + height - 7}px`;
+  body.appendChild(handle);
 }
 
 function activeTreeSelection() {
