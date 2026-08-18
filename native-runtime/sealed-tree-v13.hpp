@@ -17,6 +17,35 @@ struct PatchTreeV13 {
   std::vector<PatchTreeNodeV13> nodes;
 };
 
+// Runtime-v1.3 compatibility helpers. The v1.3 sources compile the proven
+// v1.2 implementation as a private layer; these adapters bridge only naming or
+// toolkit-type differences and do not alter the v1.2 payload/action semantics.
+#if defined(_WIN32)
+static bool CreateFormsV09() { return CreateForms(); }
+static bool PatchTranslateMenuAcceleratorV12(MSG* msg) {
+  return msg != nullptr && PatchTranslateAcceleratorV12(*msg);
+}
+#endif
+
+#ifdef __OBJC__
+static NSString* NS(NSString* value) { return value; }
+#endif
+
+#ifdef GTK_MAJOR_VERSION
+static int PatchTreeModelCount(GtkTreeModel* model, GtkTreeIter* parent) {
+  if (!model) return 0;
+  int count = 0;
+  GtkTreeIter iter;
+  gboolean ok = gtk_tree_model_iter_children(model, &iter, parent);
+  while (ok) {
+    ++count;
+    count += PatchTreeModelCount(model, &iter);
+    ok = gtk_tree_model_iter_next(model, &iter);
+  }
+  return count;
+}
+#endif
+
 static bool PatchConvertPayloadV12ToV11(
   const std::vector<uint8_t>& payloadV12,
   std::vector<uint8_t>& payloadV11,
