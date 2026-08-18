@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio help for projects, Designer forms, verified builds, recovery and diagnostics.">
+  <meta name="description" content="Patch Studio help for multi-file projects, Designer forms, TreeView, verified native builds, recovery and diagnostics.">
   <title>Help · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -19,13 +19,12 @@
   <a href="./downloads.html">Downloads</a>
   <a href="./help.html" aria-current="page">Help</a>
 </nav>
-<!-- Historical beta.35 source-surface evidence only; no longer the current contract: Native boundary: this was the intended beta.35 fail-closed boundary. -->
 <main class="content-page" data-patch-version="0.2.0-beta.35">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch Studio help · 0.2 beta.35</p>
+      <p class="page-eyebrow">Patch Studio help · 0.2 beta.35+</p>
       <h1>Build something without fighting the IDE.</h1>
-      <p>Quick help for the workflows that matter most: editing, visual form design, project recovery, verified Ready builds and local downloads.</p>
+      <p>Quick help for editing, multi-file projects, visual form design, project recovery, verified Ready builds and local downloads.</p>
     </div>
     <pre class="page-code">Run   Ctrl/Cmd + Enter
 Build Ctrl/Cmd + Shift + Enter
@@ -39,91 +38,95 @@ Alt while dragging: bypass snap</pre>
 
   <section class="page-section">
     <h2>Design a Window app</h2>
-    <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open the Window example.</p></div>
-    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table or Tabs controls.</p></div>
+    <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open a Window example.</p></div>
+    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table or Tabs controls. TreeView hierarchy is source-backed and appears in App Preview and current native builds.</p></div>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
-    <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. The Left, Top, H center and V center commands align the other selected controls to the primary control and write the resulting positions back into Patch source.</p></div>
-    <div class="help-step"><b>5</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive. Anchor supports left/right/top/bottom combinations; Dock supports top, bottom, left, right and fill.</p></div>
-    <div class="help-step"><b>6</b><p>Resize the form itself from the grip in the form's lower-right corner. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
+    <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. Alignment commands write the resulting positions back into Patch source.</p></div>
+    <div class="help-step"><b>5</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive.</p></div>
+    <div class="help-step"><b>6</b><p>Resize the form itself from the lower-right grip. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
   </section>
 
-  <section class="page-section" data-listbox-support="native-multiselect-v11">
+  <section class="page-section" data-listbox-support="native-multiselect-v12">
     <h2>ListBox: single or multi-select</h2>
-    <p>A ListBox bound to <code>create text</code> is the single-select control. Its <code>changed</code> event receives a text <code>value</code>.</p>
-    <p>A ListBox bound to <code>create list</code> is multi-select in Patch Studio App Preview, Standalone Window Web, direct Win32/AppKit/GTK AOT and current token-free Ready/offline Windows, macOS and Linux apps. Its <code>changed</code> event receives a copied list of selected strings.</p>
+    <p>A ListBox bound to <code>create text</code> is single-select and its <code>changed</code> event receives a text <code>value</code>. A ListBox bound to <code>create list</code> is multi-select in Patch Studio App Preview, Standalone Window Web, direct Win32/AppKit/GTK AOT and current token-free Ready/offline Windows, macOS and Linux apps.</p>
     <pre class="page-code">create list fruits = ["Banana", "Mango"]
-
 window "Fruit Picker":
   listbox "Apple", "Banana", "Cherry", "Mango" as fruits
-
 when fruits changed:
   change fruits:
     set = value</pre>
-    <p><strong>Selection is transient until the handler executes <code>change</code>.</strong> If the handler only inspects or shows <code>value</code>, persistent <code>fruits</code> remains unchanged. Native selection therefore follows the same explicit-mutation rule as browser selection.</p>
-    <p><strong>Current native contract:</strong> Native GUI IR 1.1 / direct backend 1.2 for AOT, and sealed payload v10/runtime v1.1 for Ready/offline builds. Payload v9/runtime v1.0 remains a frozen Table-capable compatibility line and is not retroactively widened.</p>
+    <p><strong>Selection is transient until the handler executes <code>change</code>.</strong> Native GUI IR 1.1 introduced the list-state ABI. The current Native GUI IR 1.2 / payload v12 / runtime v1.3 line preserves it while adding TreeView.</p>
   </section>
 
-  <section class="page-section" data-table-support="sealed-v11">
+  <section class="page-section" data-table-support="sealed-v12">
     <h2>Table / Grid</h2>
-    <p>Table data is written directly in Patch source. The header declares named columns and each indented <code>row</code> supplies exactly one value per column.</p>
+    <p>Table data is written directly in Patch source. A Table <code>changed</code> event exposes the selected row only as transient list-valued <code>value</code>. Current token-free Ready apps and offline <code>patch link</code> preserve this contract inside payload v12/runtime v1.3.</p>
     <pre class="page-code">window "People" as main size 520, 320:
   table "Name", "Role" as people at 24, 64 size 440, 180:
     row "Ada", "Engineer"
     row "Grace", "Scientist"
-
 when people changed:
   show value</pre>
-    <p>The source-backed Designer can add, select, move, resize, rename and remove a Table while preserving its row lines. The shared Window event contract, Studio App preview and Standalone Web support row selection. <code>changed</code> exposes the selected row only as transient <code>value</code>, represented as a Patch list of display strings. Selecting a row does not create persistent Patch state or Change History by itself.</p>
-    <p><strong>Direct native AOT Table support uses Native GUI IR 0.8 / backend 0.9.</strong> CI compiles and executes real Win32 <code>WC_LISTVIEWW</code>, AppKit <code>NSTableView</code> and GTK3 <code>GtkTreeView</code> Table smokes, including native selection dispatch and responsive layout.</p>
-    <p><strong>Current token-free Ready apps and offline <code>patch link</code> use sealed payload v10/runtime v1.1 for Window projects on Windows, macOS and Linux.</strong> Payload v10 preserves the Table columns/rows, transient row-list event type and Anchor/Dock policy introduced by v9, while adding persistent text-list state for native multi-select ListBox. Payload v9/runtime v1.0 remains the frozen previous Table-capable line.</p>
+  </section>
+
+  <section class="page-section" data-tree-support="sealed-v12">
+    <h2>TreeView</h2>
+    <p>TreeView is hierarchical and source-backed. Selecting a node produces its root-to-node display path as a transient text-list <code>value</code>. Toolkit selection does not mutate persistent Patch state.</p>
+    <pre class="page-code">create list selected = []
+window "Files" as main size 560, 380:
+  tree as files at 24, 56 size 300, 240:
+    node "src":
+      node "compiler.js"
+    node "docs":
+      node "README.md"
+when files changed:
+  change selected:
+    set = value</pre>
+    <p>Current native support is Native GUI IR 1.2 / payload v12 / runtime v1.3 on Win32, AppKit and GTK3.</p>
   </section>
 
   <section class="page-section">
     <h2>Projects and recovery</h2>
-    <p>Patch Studio autosaves into the versioned v2 project store. Project bundles preserve the source, project type and build configuration. Use <strong>Export</strong> for a portable <code>.patchproject</code> file, <strong>Import</strong> to restore one, and <strong>Recovery</strong> to manage local snapshots.</p>
-    <p>Programmatic changes from sample switching and Designer actions use the same shared source/project signals as manual editing. That keeps the canonical v2 state, visual Designer, Change Contract and native-build panel synchronized.</p>
-    <h3>If an import or restore goes wrong</h3>
-    <p>The Studio protects the current state with a recovery snapshot before replacement. Corrupt canonical storage is quarantined rather than silently trusted.</p>
+    <p>Patch Studio autosaves the current versioned project state. The canonical project bundle is <strong>v3</strong> and carries bounded multi-file Patch sources, deterministic composition/provenance, project type and build configuration. The Project Tree lets you move between the source-backed files and Forms.</p>
+    <p>Use <strong>Export</strong> for a portable <code>.patchproject</code> file, <strong>Import</strong> to restore one, and <strong>Recovery</strong> to manage local snapshots. Programmatic sample/Designer changes use the same shared project signals as manual editing.</p>
   </section>
 
   <section class="page-section">
     <h2>Build targets</h2>
     <div class="doc-links">
-      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects, including list-backed multi-select ListBox.</span></a>
+      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Desktop apps</strong><span>Ready/no-token Windows, macOS and Linux paths plus local and cloud AOT build options.</span></a>
-      <a class="doc-link" href="./downloads.html"><strong>Offline compiler downloads</strong><span>Run, compile, verify and locally link supported Patch apps from Windows, macOS, Linux or FreeBSD without opening Studio.</span></a>
+      <a class="doc-link" href="./downloads.html"><strong>Offline compiler downloads</strong><span>Run, compile, verify and locally link supported Patch apps without opening Studio.</span></a>
     </div>
-    <p>GitHub tokens are only used by the optional cloud/AOT path and are not saved by Patch Studio. The normal ready-app paths and the downloaded offline compiler do not require a token.</p>
+    <p>GitHub tokens are only used by the optional cloud/AOT route and are not saved by Patch Studio. The normal Ready paths and downloaded offline compiler do not require a token.</p>
   </section>
 
   <section class="page-section">
     <h2>Ready runtime verification</h2>
-    <p>Before a no-token Windows, macOS or Linux Window build is sealed, Patch Studio verifies the selected native runtime template with SHA-256. The Pages deployment creates a runtime manifest from the SHA-256 digest recorded on the corresponding GitHub Release asset and independently checks the downloaded release bytes. The browser hashes the runtime again before use and stops the build on any mismatch.</p>
-    <p>Current native GUI Ready assets are the platform runtime-v1.1 releases. Runtime requests are fresh-first while the Studio is online, so an old service-worker cache cannot silently win over a newer deployed runtime. A successfully fetched runtime may still be used as an offline fallback.</p>
-    <p>This verifies byte consistency for the runtime-template path. It does not turn unsigned development applications into Authenticode-signed or Developer ID-notarized releases.</p>
+    <p>Before a no-token Windows, macOS or Linux Window build is sealed, Patch Studio verifies the selected runtime template with SHA-256. Pages creates a runtime manifest from the SHA-256 digest recorded on the corresponding GitHub Release asset and independently checks the downloaded bytes. The browser hashes the runtime again before use and stops the build on mismatch.</p>
+    <p>Current native GUI Ready assets are the three runtime-v1.3 releases. Runtime requests are fresh-first while Studio is online, with a successfully fetched runtime available as offline fallback.</p>
+    <p>This verifies byte consistency for the runtime-template path. It does not make unsigned development applications Authenticode-signed or Developer ID-notarized.</p>
   </section>
 
   <section class="page-section">
     <h2>Offline compiler</h2>
-    <p>After downloading the compiler for your platform, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows and Linux downloads, Apple Silicon macOS and the Intel macOS portable kit include native Window runtime v1.1. Supported responsive, Table/Grid and list-backed multi-select ListBox Window apps link locally through sealed payload v10 without a cloud build or GitHub token. FreeBSD uses the portable C99 linker path and requires local Node plus <code>cc</code>; native FreeBSD GUI linking is not yet claimed.</p>
-    <p>Download <code>SHA256SUMS</code> beside the compiler asset and verify it before first use. The Downloads page includes Linux/macOS and PowerShell examples.</p>
+    <p>After downloading the compiler, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, Linux, Apple Silicon macOS and the Intel macOS kit include the current native Window runtime v1.3. Supported responsive, Table/Grid, list-backed ListBox, Menu and TreeView apps link locally through payload v12 without a cloud build or GitHub token.</p>
+    <p>FreeBSD currently supports Console linking via portable C99 and requires local Node plus <code>cc</code>. Native FreeBSD GUI linking is not yet claimed.</p>
   </section>
 
   <section class="page-section">
     <h2>Troubleshooting</h2>
     <h3>The website still looks old</h3>
-    <p>Patch Studio uses content-addressed web revisions. A browser session from before that update mechanism may need one reload, or an installed PWA may need to be closed and reopened once. Future site revisions should then update automatically.</p>
+    <p>Patch Studio uses content-addressed web revisions and fresh-first code/runtime requests. Reload once while online, or close and reopen an installed PWA.</p>
     <h3>A native build stops with an integrity error</h3>
-    <p>Do not bypass the check. Reload the Studio once while online. If the release asset, deployed manifest and fetched runtime do not agree, Patch intentionally refuses to seal the app.</p>
-    <h3>A list-backed ListBox fails in an older native runtime</h3>
-    <p>Use the current runtime v1.1 / payload v10 path. The frozen payload v9/runtime v1.0 compatibility line predates persistent native list state and intentionally remains fail-closed instead of silently changing multi-select semantics.</p>
-    <h3>A control disappeared below the form</h3>
-    <p>The Designer scroll area supports vertical and horizontal scrolling, and newly added controls are revealed automatically. Controls that extend beyond a form also grow the form to fit.</p>
+    <p>Do not bypass the check. Reload Studio while online. If the release asset, deployed manifest and fetched runtime do not agree, Patch intentionally refuses to seal the app.</p>
+    <h3>A TreeView or multi-select ListBox fails with a legacy payload</h3>
+    <p>Use the current Native GUI IR 1.2 / payload v12 / runtime v1.3 path. Frozen older contracts intentionally fail closed rather than silently changing semantics.</p>
     <h3>I need support information</h3>
     <p>Use <strong>Copy diagnostics</strong> or <strong>Report</strong>. The Studio report remains local and omits source code while including version, target, compiler status and privacy-redacted errors.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.35</span><a href="./downloads.html">Download and verify the offline compiler</a></footer>
+  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.35+</span><a href="./downloads.html">Download and verify the offline compiler</a></footer>
 </main>
 </body>
 </html>
