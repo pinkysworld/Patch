@@ -24,14 +24,14 @@ const SITE_WEB_STATIC_FILES = [
 
 const SITE_WEB_MODULE_FILES = [
   'runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
-  'playground.js','forms-designer.js','table-stage1.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
+  'playground.js','forms-designer.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
   'studio-dom-sync.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');
 SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
 SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js', 'studio-outline.js');
-SITE_WEB_MODULE_FILES.splice(12, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
+SITE_WEB_MODULE_FILES.splice(14, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
 
 const siteRevision = computeSiteRevision();
 
