@@ -192,18 +192,24 @@ function syncGeometryFields(control) {
 function ensureTreeResizeHandle(element, selection) {
   const body = element.parentElement;
   if (!body) return;
-  for (const handle of body.querySelectorAll('.patch-form-resize-handle')) handle.remove();
-  const handle = document.createElement('span');
-  handle.className = 'patch-form-resize-handle';
-  handle.dataset.windowIndex = String(selection.windowIndex);
-  handle.dataset.controlIndex = String(selection.controlIndex);
+  const selector = `.patch-form-resize-handle[data-window-index="${selection.windowIndex}"][data-control-index="${selection.controlIndex}"]`;
+  let handle = body.querySelector(selector);
+  for (const other of body.querySelectorAll('.patch-form-resize-handle')) {
+    if (other !== handle) other.remove();
+  }
+  if (!handle) {
+    handle = document.createElement('span');
+    handle.className = 'patch-form-resize-handle';
+    handle.dataset.windowIndex = String(selection.windowIndex);
+    handle.dataset.controlIndex = String(selection.controlIndex);
+    body.appendChild(handle);
+  }
   const x = parseInt(element.style.left, 10) || 0;
   const y = parseInt(element.style.top, 10) || 0;
   const width = parseInt(element.style.width, 10) || element.offsetWidth;
   const height = parseInt(element.style.height, 10) || element.offsetHeight;
   handle.style.left = `${x + width - 7}px`;
   handle.style.top = `${y + height - 7}px`;
-  body.appendChild(handle);
 }
 
 function activeTreeSelection() {
