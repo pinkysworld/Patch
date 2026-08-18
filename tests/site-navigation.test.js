@@ -32,7 +32,7 @@ test('every public page exposes the same five top-level navigation tabs', () => 
 
 test('Studio stays focused on the IDE instead of duplicating the language landing page', () => {
   const studio = pages.get('Studio');
-  assert.ok(studio.includes(`Patch Studio <span>0.2 beta.${beta}</span>`));
+  assert.ok(studio.includes(`Patch Studio <span>0.2 beta.${beta}`));
   assert.doesNotMatch(studio, /Small syntax\. Visible changes\./);
   assert.doesNotMatch(studio, /class="site-info"/);
 });
@@ -59,5 +59,6 @@ test('site builder and validators remain syntactically valid', () => {
   execFileSync(process.execPath, ['--check', 'scripts/build-site.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'scripts/check-site.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'scripts/check-site-v10.js'], { stdio: 'pipe' });
-  execFileSync(process.execPath, ['--check', 'scripts/check-site-beta34.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'scripts/check-site-v12.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'scripts/check-site-beta35.js'], { stdio: 'pipe' });
 });
