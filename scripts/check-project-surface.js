@@ -90,7 +90,7 @@ requireAll('docs/ROADMAP.md', files.roadmap, [
 
 requireAll('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", 'formalCalls', 'sourceValidation', 'guardValidation']);
 requireAll('src/window-events.js', files.windowEvents, ["PATCH_WINDOW_EVENTS_VERSION = '0.8'", 'text-list event-local value']);
-requireAll('src/native-gui-ir-v12.js', files.nativeGui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12', "type: 'tree'"]);
+requireAll('src/native-gui-ir-v12.js', files.nativeGui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12', "control.type = 'tree'"]);
 requireAll('src/sealed-native-gui-v12.js', files.sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12', 'sealNativeGuiRuntimeV12', 'inspectNativeGuiTreesV12']);
 requireAll('src/offline-linker.js', files.offlineLinker, [
   'options.guiPayloadVersion ?? 12', 'allowTree: guiPayloadVersion >= 12', 'buildNativeGuiIRV12', 'sealNativeGuiRuntimeV12'
