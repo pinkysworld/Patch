@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch programming language: explicit semantic change, Change Contracts and cross-platform execution.">
+  <meta name="description" content="Patch programming language: explicit semantic change, Change Contracts, transient GUI event values and cross-platform execution.">
   <title>Patch Language · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -22,15 +22,13 @@
 <main class="content-page" data-patch-version="0.2.0-beta.35">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch programming language · 0.2 beta.35</p>
+      <p class="page-eyebrow">Patch programming language · 0.2 beta.35+</p>
       <h1>Small syntax. Visible changes.</h1>
       <p>Patch is a change-oriented programming language where persistent mutation is expressed through explicit semantic <code>change</code> operations. The compiler derives operation- and magnitude-aware Change Contracts from the same source-level substrate.</p>
     </div>
     <pre class="page-code">create number score = 0
-
 change score:
   add 1
-
 show score</pre>
   </section>
 
@@ -44,35 +42,46 @@ show score</pre>
     <h2>Why Patch exists</h2>
     <p>Patch explores whether mutation can be made easier to inspect, constrain, replay and validate by treating change itself as a first-class semantic object. The project combines a small language, Change IR, source-backed GUI design, capability-style constraints and reproducible assurance tooling.</p>
     <h3>Current formal boundary</h3>
-    <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. Beta.35 adds product-level browser ListBox multi-selection and does not widen that formal claim. Patch does not claim a fully verified compiler: unsupported parser semantics, JavaScript-to-Wasm lowering, runtime capture and independent frame reconstruction remain outside the Lean-checked boundary.</p>
+    <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. The current beta.35+ product work expands Studio and native GUI behavior without widening that formal claim. Patch does not claim a fully verified compiler.</p>
   </section>
 
   <section class="page-section" data-listbox-language-support="text-list">
     <h2>ListBox selection follows the state type</h2>
-    <p>A ListBox bound to <code>create text</code> remains the existing single-select control and its <code>changed</code> handler receives text. A ListBox bound to <code>create list</code> is multi-select in Patch Studio App Preview and Standalone Window Web, and its <code>changed</code> handler receives a transient list of selected strings.</p>
+    <p>A ListBox bound to <code>create text</code> remains single-select and its <code>changed</code> handler receives text. A ListBox bound to <code>create list</code> is multi-select in Patch Studio App Preview and Standalone Window Web, direct Win32/AppKit/GTK AOT and current token-free Ready/offline desktop builds. Its handler receives a transient list of selected strings.</p>
     <pre class="page-code">create list fruits = ["Banana", "Mango"]
-
 window "Fruit Picker":
   listbox "Apple", "Banana", "Cherry", "Mango" as fruits
-
 when fruits changed:
   change fruits:
     set = value</pre>
-    <p>The toolkit selection itself is not persistent Patch state. The example persists it only because the handler executes an explicit semantic <code>change</code>. Current native GUI paths remain fail-closed for list-backed ListBox because Native GUI IR 0.7 does not yet model persistent list state.</p>
+    <p>The toolkit selection itself is not persistent Patch state. Persistence occurs only because the handler executes an explicit semantic <code>change</code>. The current native contract is Native GUI IR 1.2 / payload v12 / runtime v1.3; it preserves the list-state ABI introduced by Native GUI IR 1.1.</p>
   </section>
 
   <section class="page-section" data-table-language-support="transient-list">
     <h2>Table / Grid stays change-oriented</h2>
-    <p>Table structure and rows live in Patch source. Selecting a row is transient UI interaction; it does not silently create or assign persistent application state.</p>
+    <p>Table structure and rows live in Patch source. Selecting a row is transient UI interaction and <code>value</code> is the selected row as a list of display strings. Persistence still requires explicit <code>change</code>.</p>
     <pre class="page-code">window "People" as main size 520, 320:
   table "Name", "Role" as people at 24, 64 size 440, 180:
     row "Ada", "Engineer"
     row "Grace", "Scientist"
-
 when people changed:
   show value</pre>
-    <p>Inside <code>changed</code>, <code>value</code> is the selected row as a list of display strings. Persistence still requires an ordinary explicit <code>change</code>. Studio App preview and Standalone Web implement this contract. Direct native AOT carries it through Native GUI IR 0.8/backend 0.9 on Win32, AppKit and GTK3.</p>
-    <p>Token-free Ready apps and offline Window linking carry the same Table semantics through <strong>sealed payload v9/runtime v1.0</strong> on Windows, macOS and Linux. Payload v9 transports Table columns, rows, responsive layout policy and the transient <code>text-list</code> event type without introducing persistent native list state. Payload v8/runtime v0.9 remains an explicit older compatibility contract.</p>
+    <p>Table originated in Native GUI IR 0.8 / sealed payload v9/runtime v1.0. The current payload v12/runtime v1.3 contract preserves that Table representation while adding later list, Menu and TreeView extensions.</p>
+  </section>
+
+  <section class="page-section" data-tree-language-support="transient-path-list">
+    <h2>TreeView keeps hierarchy source-backed</h2>
+    <p>A TreeView declares its hierarchy directly in Patch source. Selection exposes the selected root-to-node display path as a transient text-list event value.</p>
+    <pre class="page-code">create list selected = []
+window "Files" as main size 560, 380:
+  tree as files at 24, 56 size 300, 240:
+    node "src":
+      node "compiler.js"
+      node "parser.js"
+when files changed:
+  change selected:
+    set = value</pre>
+    <p>Selecting <code>compiler.js</code> yields <code>["src", "compiler.js"]</code> as transient <code>value</code>. Renderer or native-toolkit selection alone does not mutate persistent state. Browser, direct native and current token-free Ready/offline paths implement this contract through Native GUI IR 1.2 and payload v12/runtime v1.3.</p>
   </section>
 
   <section class="page-section">
@@ -85,7 +94,7 @@ when people changed:
     </div>
   </section>
 
-  <footer class="page-footer"><span>Patch is experimental research software · 0.2.0-beta.35</span><a href="https://github.com/pinkysworld/Patch">GitHub repository</a></footer>
+  <footer class="page-footer"><span>Patch is experimental research software · 0.2.0-beta.35+</span><a href="https://github.com/pinkysworld/Patch">GitHub repository</a></footer>
 </main>
 </body>
 </html>
