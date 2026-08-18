@@ -4,7 +4,7 @@ Patch Studio is the browser-first IDE for Patch. The product goal remains QuickB
 
 ## What works in 0.2 beta.35+
 
-Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form/control drag and resize, multi-file project bundle v3, a Project Tree, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Table controls, Tabs, TreeView, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form/control drag and resize, multi-file project bundle v3, a Project Tree, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Table/TreeView controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
 
 The public website is split into focused **Studio**, **Language**, **Documentation**, **Downloads** and **Help** pages. The default Windows/macOS/Linux desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required for those Ready builds. Optional local/cloud AOT remains separate.
 
@@ -21,6 +21,8 @@ The source workspace includes a source-backed Project Tree. Run and Build compos
 ## Source-backed Forms and controls
 
 Form dimensions, control geometry, labels, ids, options, Table rows, TreeView hierarchy, Tabs pages and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent form document.
+
+The desktop Designer presents the controls in a compact left rail, including Table and TreeView as first-class source-backed tools. The Properties pane defaults to a wider desktop layout, can be resized by dragging its separator, can be collapsed from the Designer toolbar and remembers its local width. On narrower screens Properties moves below the canvas. This workspace state is an IDE preference only and does not become Patch application state.
 
 A selected control can be moved/resized visually. A Form has a lower-right resize grip. Pointer and keyboard changes rewrite visible Patch source. Forms may grow beyond the visible Designer width; the Designer remains scrollable instead of clamping the Form.
 
@@ -84,7 +86,9 @@ when files changed:
     set = value
 ```
 
-Selecting `compiler.js` exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
+The Designer can create a TreeView with a small starter hierarchy, select the control, move/resize it, rename its id, jump to its source and delete the complete hierarchy. The hierarchy itself remains ordinary visible `node` source rather than becoming a hidden visual-designer document.
+
+Selecting `compiler.js` at runtime exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
 
 TreeView Stage 1 is implemented in Studio App Preview and Standalone Window Web. Direct native and token-free Ready/offline parity use Native GUI IR **1.2**, sealed payload **v12** and runtime **v1.3** on Windows, macOS and Linux.
 
@@ -146,7 +150,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker now include the current Native GUI IR 1.2 / sealed payload v12 dependency chain, including `native-tree-backend-adapter.js`.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer and resizable Designer workspace modules.
 
 ## Recovery and diagnostics
 
@@ -166,4 +170,4 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-The TreeView Ready/offline parity slice is complete. Highest-value remaining product work includes richer data controls, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.
+The TreeView Ready/offline parity slice and first-class TreeView Designer control are complete. Highest-value remaining product work includes richer data controls and Designer editing, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.

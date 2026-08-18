@@ -39,11 +39,12 @@ Alt while dragging: bypass snap</pre>
   <section class="page-section">
     <h2>Design a Window app</h2>
     <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open a Window example.</p></div>
-    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table or Tabs controls. TreeView hierarchy is source-backed and appears in App Preview and current native builds.</p></div>
+    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table, TreeView or Tabs controls. TreeView starts with a small source-backed hierarchy that you can refine directly in Patch source.</p></div>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
     <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. Alignment commands write the resulting positions back into Patch source.</p></div>
-    <div class="help-step"><b>5</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive.</p></div>
-    <div class="help-step"><b>6</b><p>Resize the form itself from the lower-right grip. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
+    <div class="help-step"><b>5</b><p>The Properties panel is wider on desktop, can be resized by dragging its left separator, can be hidden with the Properties button and remembers its local width. On narrower screens it moves below the canvas. Properties never stores a second hidden form model.</p></div>
+    <div class="help-step"><b>6</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive.</p></div>
+    <div class="help-step"><b>7</b><p>Resize the form itself from the lower-right grip. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
   </section>
 
   <section class="page-section" data-listbox-support="native-multiselect-v12">
@@ -71,7 +72,7 @@ when people changed:
 
   <section class="page-section" data-tree-support="sealed-v12">
     <h2>TreeView</h2>
-    <p>TreeView is hierarchical and source-backed. Selecting a node produces its root-to-node display path as a transient text-list <code>value</code>. Toolkit selection does not mutate persistent Patch state.</p>
+    <p>TreeView is hierarchical and source-backed. The Designer can add, select, move, resize, rename and remove the TreeView itself while its hierarchy remains ordinary visible <code>node</code> source. Selecting a node at runtime produces its root-to-node display path as a transient text-list <code>value</code>. Toolkit selection does not mutate persistent Patch state.</p>
     <pre class="page-code">create list selected = []
 window "Files" as main size 560, 380:
   tree as files at 24, 56 size 300, 240:

@@ -113,6 +113,18 @@ export function addDesignerControl(source, type, options = {}) {
     return tidy(lines.join('\n'));
   }
 
+  if (type === 'tree') {
+    const id = nextId(lines, 'tree');
+    lines.splice(insertAt, 0,
+      `${childIndent}${formatControl('tree', id, null, layout)}`,
+      `${childIndent}  node "Root"`,
+      `${childIndent}    node "Child 1"`,
+      `${childIndent}    node "Child 2"`,
+      `${childIndent}  node "Other"`
+    );
+    return tidy(lines.join('\n'));
+  }
+
   const control = makeControl(type, lines, layout);
   lines.splice(insertAt, 0, `${childIndent}${control}`);
   return tidy(lines.join('\n'));
@@ -127,7 +139,6 @@ export function listDesignerControls(source) {
     let controlIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      if (child.kind === 'uiControl' && child.control === 'tree') continue;
       const item = {
         windowIndex,
         controlIndex,
@@ -145,6 +156,9 @@ export function listDesignerControls(source) {
       if (child.kind === 'uiControl' && child.control === 'table') {
         item.columns = Array.isArray(child.columns) ? [...child.columns] : [];
         item.rows = Array.isArray(child.rows) ? child.rows.map(row => [...row]) : [];
+      }
+      if (child.kind === 'uiControl' && child.control === 'tree') {
+        item.treeNodes = cloneTreeNodes(child.treeNodes);
       }
       controls.push(item);
       controlIndex += 1;
@@ -201,7 +215,7 @@ export function removeDesignerControl(source, selector) {
   const control = findControl(controls, selector);
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
-  if (control.type === 'tabs' || control.type === 'table') {
+  if (control.type === 'tabs' || control.type === 'table' || control.type === 'tree') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
     while (end < lines.length) {
@@ -361,16 +375,25 @@ function formatControl(type, id, textExpr, layout, options = null) {
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
+  else if (type === 'tree') core = `tree as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
-  if (!layout) return type === 'tabs' ? `${core}:` : core;
+  const block = type === 'tabs' || type === 'tree';
+  if (!layout) return block ? `${core}:` : core;
   const positioned = `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
-  return type === 'tabs' ? `${positioned}:` : positioned;
+  return block ? `${positioned}:` : positioned;
 }
 
 function formatTableControl(id, columns, layout) {
   const core = `table ${(columns ?? []).join(', ')} as ${id}`;
   if (!layout) return `${core}:`;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
+}
+
+function cloneTreeNodes(nodes = []) {
+  return (nodes ?? []).map(node => ({
+    labelExpr: node.labelExpr,
+    children: cloneTreeNodes(node.children)
+  }));
 }
 
 function nextId(lines, base) {
