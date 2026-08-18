@@ -58,8 +58,8 @@ for (const [label, text] of [['Downloads', downloads], ['Language', language], [
 const sw = read('_site/sw.js');
 requireAll('Patch Studio service worker', sw, [
   "'./downloads.html'", "'./table-stage1.js'", "'./designer-multiselect.js'",
-  "'./designer-responsive-layout.js'", "'../src/native-gui-ir-v08.js'",
-  "'../src/native-gui-ir-v12.js'"
+  "'./designer-responsive-layout.js'", "'./src/native-gui-ir-v08.js'",
+  "'./src/native-gui-ir-v12.js'"
 ]);
 
 const nativeGuiV08 = read('_site/src/native-gui-ir-v08.js');
