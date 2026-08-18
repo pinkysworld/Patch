@@ -7,6 +7,16 @@
 #include <vector>
 #include "sealed-list-v11.hpp"
 
+// Later sealed runtimes may compile the proven v1.2 source as a private
+// compatibility layer. These hooks are opt-in; normal v1.2 builds remain
+// byte-for-byte source-compatible in behavior when neither macro is defined.
+#ifdef PATCH_WIN32_RUNTIME_V13_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V13_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V13_RESTORE_MAIN
+#define main PATCH_RUNTIME_V13_RESTORE_MAIN
+#endif
+
 struct PatchMenuEntryV12 {
   uint32_t formIndex = 0;
   uint32_t menuIndex = 0;
