@@ -198,7 +198,13 @@ The v1.3 release workflow independently:
 3. seals the same canonical TreeView program for each host;
 4. executes the finished sealed application under `--patch-smoke`;
 5. uploads the exact runtime template artifacts;
-6. on `main`, publishes separate `native-*-runtime-v1.3` releases.
+6. on `main`, publishes separate versioned runtime releases.
+
+The current platform release tags are:
+
+- `native-win32-runtime-v1.3`;
+- `native-macos-runtime-v1.3`;
+- `native-linux-runtime-v1.3`.
 
 Patch Pages waits for all three v1.3 release assets before deploying the browser compiler that consumes payload v12. It obtains the GitHub release SHA-256 digest for every runtime asset, builds the runtime integrity manifest and only then publishes the site. Patch Studio independently re-hashes the selected runtime with Web Crypto before sealing.
 
