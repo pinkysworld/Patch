@@ -60,14 +60,15 @@ test('responsive accessibility-capable v0.9 remains a frozen published compatibi
   assert.match(responsiveWorkflow, /responsive-window\.patch/);
 });
 
-test('Pages consumes Menu-capable v1.2 while still reacting to compatibility runtime completion safely', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.2/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.2/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.2/);
+test('Pages consumes current TreeView-capable v1.3 while still reacting to frozen compatibility runtime completion safely', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.3/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.3/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.3/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
   assert.match(pagesWorkflow, /Patch Native Sealed Table Runtime/);
   assert.match(pagesWorkflow, /Patch Native Sealed List Runtime/);
   assert.match(pagesWorkflow, /Patch Native Sealed Menu Runtime/);
   assert.match(pagesWorkflow, /Patch Native Sealed Menu Runtime v1\.2 Release/);
+  assert.match(pagesWorkflow, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pagesWorkflow, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 });
