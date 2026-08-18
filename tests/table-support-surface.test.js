@@ -33,7 +33,7 @@ test('public Table surfaces agree on transient selected-row list semantics', () 
   assert.match(readme, /Table[^\n]*selected row[^\n]*transient list-valued `value`/i);
   assert.match(help, /Table[^\n]*selected row[^\n]*transient (?:text-)?list/i);
   assert.match(language, /selected row as a list of display strings/i);
-  assert.match(studio, /Table[^\n]*selected row[^\n]*transient/i);
+  assert.match(studio, /Table: text-list for the selected row/i);
   assert.match(nativeGui, /Table[^\n]*text-list containing the selected row/i);
   assert.match(nativeApps, /Table `changed` exposes the selected row as transient list-valued `value`|Table .*transient row list/i);
 });
@@ -118,7 +118,7 @@ test('downloadable offline compiler embeds runtime v1.3 and proves payload v12 T
 });
 
 test('Studio App preview Table dispatch uses the shared semantic event adapter', () => {
-  assert.match(help, /Table[^\n]*transient text-list event value/i);
+  assert.match(help, /Table[^\n]*selected row[^\n]*transient list-valued/i);
   assert.match(studio, /Table: text-list for the selected row/);
   assert.match(nativeApps, /Studio App Preview.*transient row list|Standalone Web and Studio App Preview.*transient/i);
   assert.match(targets, /Patch Studio App Preview exposes the same transient selected-row list through the shared semantic Window event adapter/);
