@@ -155,7 +155,7 @@ The literature pass does not claim that Patch policies are uniquely expressible 
 - [x] Downloads page documents SHA-256 verification and separates integrity checking from signing/notarization claims
 - [x] Pages concurrency prevents runtime `workflow_run` events from cancelling a valid source-triggered deploy
 
-Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 0.9 or sealed payload v9/runtime v1.0.
+Beta.34 does not change Change IR 0.10. Its historical release boundary was Native GUI IR 0.8 / sealed payload v9 / runtime v1.0; newer contracts are tracked separately below.
 
 ### beta.35: browser and native ListBox multi-selection
 - [x] text-backed ListBox remains single-select with transient text `changed` value
@@ -166,10 +166,11 @@ Beta.34 does not change Change IR 0.10, Native GUI IR 0.8, direct Table backend 
 - [x] canonical `examples/listbox-multiselect-window.patch` regression source
 - [x] Native GUI IR **1.1** carries persistent `text-list` state and list-backed multi-select ListBox semantics
 - [x] direct AOT backend **1.2** implements native multi-select ListBox on Win32/AppKit/GTK
-- [x] sealed payload **v10** / runtime **v1.1** preserves list state and multi-select on Windows/macOS/Linux
+- [x] sealed payload **v10** / runtime **v1.1** introduced the list-state/multi-select compatibility line
+- [x] sealed payload **v11** / runtime **v1.2** carries the complete Menu+list contract
 - [x] versioned Native GUI IR/runtime list-state extension for native multi-select parity
 
-Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offline paths now preserve list-backed ListBox semantics without hidden persistence; selection persists only through explicit Patch `change`.
+Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offline paths preserve list-backed ListBox semantics without hidden persistence; selection persists only through explicit Patch `change`.
 
 ## Product priorities
 
@@ -203,34 +204,39 @@ Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offlin
 - [x] sealed Ready/offline Table payload **v9** / runtime **v1.0** contract and Windows/macOS/Linux consumer switch with real seal/link/run smokes
 - [x] canonical v2 persistence synchronization for programmatic sample/Designer edits
 - [x] Menu separators, portable shortcuts and source-backed `enabled`/`checked` state in direct AOT and current sealed Ready/offline runtimes
-- [ ] richer data controls beyond Table/Grid and ListBox
+- [ ] richer data controls beyond Table/Grid, ListBox and TreeView
 - [x] project tree and separate source files/forms with project bundle v3, full-project recovery and deterministic Run/Build composition
-- [x] TreeView Stage 1 language/IR + Studio App Preview + standalone Window Web v0.9 with hierarchical source-backed nodes and transient text-list path selection; native/sealed targets remain fail closed
+- [x] TreeView Stage 1 language/IR + Studio App Preview + standalone Window Web v0.9 with hierarchical source-backed nodes and transient text-list path selection
+- [x] direct-native TreeView parity on Win32/AppKit/GTK through Native GUI IR 1.2 and backend/runtime v1.3
+- [x] sealed payload v12 / runtime v1.3 TreeView parity with root-to-node text-list selection and Windows/macOS/Linux smoke execution
+- [x] token-free Ready/offline consumer switch to TreeView-capable payload v12 / runtime v1.3
 
-All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. List-backed ListBox `changed` exposes the selected options as a transient text list across browser and supported native paths. Renderer/native-toolkit selection does not itself mutate Patch state. Menu `enabled` and `checked` are projections of ordinary Boolean Patch state; menu activation does not create hidden persistent toolkit state.
+All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. List-backed ListBox `changed` exposes the selected options as a transient text list. TreeView `changed` exposes the selected root-to-node display path as a transient text list. Renderer/native-toolkit selection does not itself mutate Patch state. Menu `enabled` and `checked` are projections of ordinary Boolean Patch state; menu activation does not create hidden persistent toolkit state.
 
 ### Desktop
 - [x] ready Windows/macOS/Linux Console packages
-- [x] ready Windows/macOS/Linux Window packages for the Native GUI IR 0.7 base surface
+- [x] ready Windows/macOS/Linux Window packages for the Native GUI IR base surface
 - [x] explicit compatibility Window backend consumes a source-free compiled Window artifact instead of reparsing `main.patch`
 - [x] token-free compatibility payload v0.4 with `studio-runtime-v0.6`
 - [x] FreeBSD Console via portable C99
-- [x] Native GUI IR **0.7** for Forms, Text/Button/Input/Checkbox, ComboBox/ListBox/Radio, Tabs, menus, informational dialogs and result-bearing Confirm/Open/Save dialogs
-- [x] direct-native AOT Win32/AppKit/GTK backends for the Native GUI IR 0.7 surface
-- [x] AOT backend **0.8** native accessibility naming/readback on Win32/AppKit/GTK
+- [x] Native GUI IR **0.7** base controls and result dialogs
+- [x] Native GUI IR **0.8** Table compatibility extension
+- [x] Native GUI IR **1.1** persistent list state, multi-select ListBox and Menu semantics
+- [x] Native GUI IR **1.2** hierarchical TreeView with transient text-list path event semantics
+- [x] direct-native AOT Win32/AppKit/GTK backends for the current TreeView-capable surface
+- [x] AOT backend accessibility naming/readback on Win32/AppKit/GTK
 - [x] direct-native runtime-responsive Anchor/Dock handling on Win32/AppKit/GTK
-- [x] Native GUI IR **0.8** Table extension remains explicit and does not redefine Native GUI IR 0.7
-- [x] AOT backend **0.9** native Table widgets compile and execute on Windows/MSVC, macOS/AppKit and Linux/GTK3
-- [x] frozen sealed native GUI payload **v7** / runtime **v0.8** compatibility line with result dialogs and accessibility
-- [x] frozen responsive sealed native GUI payload **v8** / runtime **v0.9** compatibility line with Anchor/Dock and Native GUI IR 0.7 controls
-- [x] sealed native GUI payload **v9** / runtime **v1.0** Table compatibility line
-- [x] sealed native GUI payload **v10** / runtime **v1.1** list-state and multi-select compatibility line
-- [x] current sealed native GUI payload **v11** / runtime **v1.2** Menu+list line for token-free Ready/offline Windows/macOS/Linux apps
-- [x] token-free Win32/AppKit/GTK runtime v1.2 releases built, payload-v11 sealed, smoke-tested and published under separate v1.2 tags
-- [x] ordinary offline `patch link` creates and executes payload-v11/runtime-v1.2 responsive, Table, multi-select ListBox and decorated Menu apps on Windows/macOS/Linux
-- [x] browser Ready Window runtime templates are SHA-256 verified against v1.2 release-asset digests before sealing
+- [x] frozen sealed native GUI payload **v7** / runtime **v0.8** result-dialog/accessibility compatibility line
+- [x] frozen responsive sealed native GUI payload **v8** / runtime **v0.9** compatibility line
+- [x] frozen sealed native GUI payload **v9** / runtime **v1.0** Table compatibility line
+- [x] frozen sealed native GUI payload **v10** / runtime **v1.1** list-state/multi-select compatibility line
+- [x] frozen sealed native GUI payload **v11** / runtime **v1.2** Menu+list compatibility line
+- [x] current sealed native GUI payload **v12** / runtime **v1.3** TreeView line for token-free Ready/offline Windows/macOS/Linux apps
+- [x] token-free Win32/AppKit/GTK runtime v1.3 release workflow builds payload-v12 sealed apps, smoke-tests each host and publishes separate v1.3 tags
+- [x] ordinary offline `patch link` defaults to payload-v12/runtime-v1.3 and preserves responsive layout, Table, multi-select ListBox, Menu and TreeView semantics on Windows/macOS/Linux
+- [x] explicit offline payload v10/v11 compatibility remains available for older non-Tree artifacts
+- [x] browser Ready Window runtime templates are SHA-256 verified against v1.3 release-asset digests before sealing
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus a FreeBSD portable C99 kit
-- [x] offline compiler builds/embeds runtime v1.2 and executes Console, responsive Window, Table, multi-select ListBox and Menu Window link smokes on Windows/Linux/Apple Silicon/macOS Intel
 - [x] Native GUI IR/runtime support for persistent list state and multi-select ListBox
 - [x] fail-closed final-artifact Windows/macOS signing/notarization machinery
 - [x] Linux packaging expectations documented
@@ -242,7 +248,7 @@ All current input/selection/result events expose transient values only. Persiste
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where justified
 
-The sealed contracts remain versioned rather than redefined in place. Payload v8/runtime v0.9 is the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the frozen Table line; payload v10/runtime v1.1 is the frozen persistent-list/multi-select line; payload v11/runtime v1.2 is the current Menu+list Ready/offline contract over Native GUI IR 1.1. Windows/macOS/Linux sealed-runtime and ordinary offline-linker matrices independently encode and execute the payload before support is claimed. Beta.34 additionally validates byte identity against release SHA-256 digests, without claiming platform code signing.
+The sealed contracts remain versioned rather than redefined in place. Payload v8/runtime v0.9 is the frozen responsive Native GUI IR 0.7 compatibility line; payload v9/runtime v1.0 is the frozen Table line; payload v10/runtime v1.1 is the frozen persistent-list/multi-select line; payload v11/runtime v1.2 is the frozen Menu+list line; payload v12/runtime v1.3 is the current TreeView-capable Ready/offline contract over Native GUI IR 1.2. Windows/macOS/Linux sealed-runtime and ordinary offline-linker matrices independently encode and execute the payload before support is claimed. Runtime assets are additionally bound to the Pages deployment through GitHub release SHA-256 digests, without claiming platform code signing.
 
 ## Highest-value remaining research work
 
@@ -308,3 +314,4 @@ Completed in the current research iteration: the internally authored multi-domai
 25. Internally authored multi-domain application cases are not external-validity evidence; third-party integration must be reported separately when it exists.
 26. Richer invocation-frame regression evidence may strengthen the supported beta.32 fragment without silently expanding the trusted parser/lowering/runtime proof boundary.
 27. Multi-select controls must fail closed on native targets unless the selected versioned native state/event ABI preserves the same semantics.
+28. TreeView must expose only transient root-to-node text-list selection through the versioned Tree contract; renderer/toolkit selection must never become hidden persistent Patch state.

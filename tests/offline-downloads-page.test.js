@@ -32,23 +32,29 @@ test('every primary public Patch page links to Downloads', () => {
 });
 
 test('downloads page clearly distinguishes standalone, Intel macOS kit and FreeBSD requirements', () => {
-  assert.match(downloads, /without a GitHub token or network connection after download/);
+  assert.match(downloads, /normal local workflows do not need a GitHub token/i);
   assert.match(downloads, /macOS Intel/);
   assert.match(downloads, /portable tar\.gz kit/);
-  assert.match(downloads, /no Node installation is required/);
+  assert.match(downloads, /includes its own Intel Node runtime/i);
   assert.match(downloads, /FreeBSD x64/);
-  assert.match(downloads, /Requires local Node 22\+ and cc/);
+  assert.match(downloads, /requires local Node 22\+ and cc/i);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
   assert.match(downloads, /patch link app\.patch --out App/);
+  assert.match(downloads, /payload <strong>v12<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.3<\/strong>/);
+  assert.match(downloads, /hierarchical TreeView/);
 });
 
-test('generated public site contains the downloads page and offline Designer assets', () => {
+test('generated public site contains the downloads page and current Designer/native compiler assets', () => {
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
   for (const file of [
     '_site/downloads.html',
     '_site/designer-alignment.js',
     '_site/designer-alignment-guides.js',
     '_site/designer-multiselect.js',
-    '_site/designer-multiselect.css'
+    '_site/designer-multiselect.css',
+    '_site/src/native-gui-ir-v12.js',
+    '_site/src/native-tree-backend-adapter.js',
+    '_site/src/sealed-native-gui-v12.js'
   ]) assert.ok(fs.existsSync(file), file);
 });

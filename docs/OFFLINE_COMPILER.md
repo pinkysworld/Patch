@@ -1,6 +1,6 @@
 # Patch offline compiler
 
-Current product version: **0.2.0-beta.35**  
+Current product version: **0.2.0-beta.35+**  
 Offline compiler distribution contract: **0.1**
 
 The Patch offline compiler is the command-line counterpart to Patch Studio's token-free local build path. Windows, macOS and Linux downloads package the Patch source compiler with the runtime pieces needed for local development. Once downloaded, normal source checking/building and supported `patch link` operations do not require GitHub or Patch Studio. Windows, Linux and macOS Apple Silicon require no installed Node runtime; the macOS Intel kit includes its own Intel Node runtime. FreeBSD uses a portable kit with local Node and `cc` requirements.
@@ -47,14 +47,15 @@ Windows, Linux and macOS Apple Silicon lower supported Console programs through 
 
 ### Window / GUI
 
-Current Windows, macOS and Linux linking lowers supported Window programs through Native GUI IR **1.1** and seals payload **v10** into native Win32, AppKit or GTK3 runtime **v1.1**. Electron is not selected implicitly.
+Current Windows, macOS and Linux linking lowers supported Window programs through Native GUI IR **1.2** and seals payload **v12** into native Win32, AppKit or GTK3 runtime **v1.3**. Electron is not selected implicitly.
 
-Payload v10 is additive over the prior Table-capable payload v9. It carries:
+Payload v12 preserves the complete earlier responsive/Table/list/Menu contract and adds explicit hierarchical TreeView metadata. The current surface includes:
 
-- the existing Forms, controls, menus, dialogs and responsive Anchor/Dock metadata;
+- Forms, controls, dialogs and responsive Anchor/Dock metadata;
 - Table/Grid columns, rows and transient `text-list` row-selection events;
-- persistent text-list state;
-- list-backed native multi-select ListBox state/event semantics.
+- persistent text-list state and list-backed native multi-select ListBox semantics;
+- Menu separators, portable shortcuts and source-backed `enabled` / `checked` projections;
+- hierarchical TreeView nodes and transient root-to-node text-list selection paths.
 
 The ordinary Window event rule does not change: toolkit selection is transient. Persistent Patch state changes only through explicit semantic `change`.
 
@@ -63,17 +64,43 @@ The offline-compiler matrix builds and executes on Windows, Linux, Apple Silicon
 1. a Console application;
 2. a responsive Window application;
 3. the Table/Grid example;
-4. the list-backed multi-select ListBox example.
+4. the list-backed multi-select ListBox example;
+5. the decorated Menu example;
+6. the hierarchical TreeView example.
 
-Unsupported GUI combinations continue to fail closed during lowering or sealing rather than silently degrading semantics.
+Every current Window smoke also verifies that the finished executable contains sealed payload **v12**. Unsupported GUI combinations continue to fail closed rather than silently degrading semantics.
+
+## TreeView
+
+TreeView is supported by the current offline Window linker:
+
+```patch
+create list selected = []
+
+window "Files" as main size 560, 380:
+  tree as files at 24, 56 size 300, 240:
+    node "src"
+      node "compiler.js"
+      node "parser.js"
+    node "docs"
+      node "README.md"
+
+when files changed:
+  change selected:
+    set = value
+```
+
+Selecting a node exposes its root-to-node display path as transient text-list `value`. In the example, selecting `compiler.js` yields `['src', 'compiler.js']`. Persistence occurs only because source explicitly executes `change selected`.
+
+Native mappings are Win32 TreeView, AppKit `NSOutlineView` and GTK3 `GtkTreeView` + `GtkTreeStore`.
 
 ## Table / Grid
 
 Table/Grid remains supported throughout the current stack:
 
 - language, Designer, Studio App Preview and Standalone Web expose transient selected-row semantics;
-- direct native AOT Table support uses Native GUI IR **0.8** plus backend **0.9**;
-- current Ready/offline linking carries the same Table contract inside payload **v10** / runtime **v1.1**;
+- direct native support uses the versioned Native GUI stack;
+- current Ready/offline linking carries the Table contract inside payload **v12** / runtime **v1.3**;
 - Win32 maps to report-mode `WC_LISTVIEWW`;
 - AppKit maps to multi-column `NSTableView`;
 - GTK3 maps to `GtkTreeView` + `GtkListStore`.
@@ -82,7 +109,7 @@ Table `changed` exposes the selected row as transient list-valued `value`; persi
 
 ## List-backed multi-select ListBox
 
-A ListBox bound to `create list` now has native parity on the supported desktop hosts.
+A ListBox bound to `create list` has native parity on the supported desktop hosts.
 
 ```patch
 create list fruits = ["Banana", "Mango"]
@@ -95,23 +122,19 @@ when fruits changed:
     set = value
 ```
 
-The current contracts are:
-
-- browser/Studio event semantics: Window event adapter **0.7** with transient `text-list` `value`;
-- direct native AOT: Native GUI IR **1.1** / backend **1.2**;
-- token-free Ready/offline: payload **v10** / runtime **v1.1**.
-
-Text-backed ListBox remains single-select.
+Native GUI IR 1.1 introduced the persistent text-list state/event ABI. The current Native GUI IR **1.2** / payload **v12** / runtime **v1.3** contract preserves it unchanged while adding TreeView. Text-backed ListBox remains single-select.
 
 ## Frozen compatibility lines
 
 Versioned runtime formats are not redefined after publication:
 
-- payload **v9** / runtime **v1.0** is the frozen Table-capable compatibility line; it predates persistent native list state;
+- payload **v11** / runtime **v1.2** is the frozen Menu+list compatibility line;
+- payload **v10** / runtime **v1.1** is the frozen persistent-list/multi-select line;
+- payload **v9** / runtime **v1.0** is the frozen Table-capable line;
 - payload **v8** / runtime **v0.9** is the frozen responsive Native GUI IR 0.7 line;
 - payload **v7** / runtime **v0.8** is the older accessibility/result-dialog compatibility line.
 
-A current compiler uses v10/v1.1 for supported Window linking. The older lines remain independently exercised for reproducibility and backwards-compatibility evidence.
+The current compiler defaults to v12/v1.3. `src/offline-linker.js` retains explicit payload v10/v11 compatibility for non-Tree artifacts and fails closed if TreeView is requested on a legacy contract.
 
 ## FreeBSD
 
@@ -121,10 +144,10 @@ FreeBSD currently supports Console projects only. The portable kit carries the P
 
 | Host | Console output | Window output | Local runtime requirement |
 | --- | --- | --- | --- |
-| Windows x64 | `.exe` | native Win32 `.exe`, including Table/Grid, multi-select ListBox and responsive layout | none for compiler |
-| macOS arm64 | `.app` | native AppKit `.app`, including Table/Grid, multi-select ListBox and responsive layout | none |
-| macOS Intel | portable `.app` with embedded Node + Wasm | native AppKit `.app` through runtime v1.1 | none; Intel Node ships in kit |
-| Linux x64 | executable | native GTK3 executable through runtime v1.1 | compatible system GTK3/system libraries |
+| Windows x64 | `.exe` | native Win32 `.exe` with responsive layout, Table, multi-select ListBox, Menu and TreeView | none for compiler |
+| macOS arm64 | `.app` | native AppKit `.app` with the current v1.3 GUI contract | none |
+| macOS Intel | portable `.app` with embedded Node + Wasm | native AppKit `.app` through runtime v1.3 | none; Intel Node ships in kit |
+| Linux x64 | executable | native GTK3 executable through runtime v1.3 | compatible system GTK3/system libraries |
 | FreeBSD x64 | executable via C99 + `cc` | unsupported | Node 22+ and `cc` |
 
 The Apple Silicon compiler binary is ad-hoc signed by the build workflow. Neither macOS distribution is claimed to be Developer ID notarized. Windows compiler releases are not claimed to be Authenticode-signed unless separate signing evidence is published.
@@ -133,7 +156,7 @@ The Apple Silicon compiler binary is ad-hoc signed by the build workflow. Neithe
 
 Windows, Linux and macOS Apple Silicon use Node single-executable application support as a launcher. `scripts/build-offline-compiler.js` embeds the exact Patch source graph plus compressed copies of a plain Node runtime and platform runtime templates. `scripts/offline-compiler-runner.cjs` extracts those assets into a content-addressed temporary cache and starts the ordinary `src/cli-entry.js`.
 
-The offline-compiler workflow builds native Window runtime **v1.1** from the same repository source on each target runner before embedding it. macOS Intel deliberately uses a portable tar.gz kit with an Intel Node runtime and x86-64 AppKit runtime v1.1.
+The offline-compiler workflow builds native Window runtime **v1.3** from repository source on each target runner before embedding it. macOS Intel deliberately uses a portable tar.gz kit with an Intel Node runtime and x86-64 AppKit runtime v1.3. The workflow then exercises the same current responsive, Table, ListBox, Menu and TreeView link paths before publishing the rolling download assets.
 
 The offline compiler does **not** maintain a second parser, compiler, Change IR implementation or native linker model.
 
@@ -141,13 +164,14 @@ The offline compiler does **not** maintain a second parser, compiler, Change IR 
 
 Current Window linking contracts are:
 
-- Win32 GUI runtime: runtime **v1.1**, sealed payload **v10**, Native GUI IR **1.1**;
-- AppKit GUI runtime: runtime **v1.1**, sealed payload **v10**, Native GUI IR **1.1**;
-- GTK3 GUI runtime: runtime **v1.1**, sealed payload **v10**, Native GUI IR **1.1**;
+- Win32 GUI runtime: runtime **v1.3**, sealed payload **v12**, Native GUI IR **1.2**;
+- AppKit GUI runtime: runtime **v1.3**, sealed payload **v12**, Native GUI IR **1.2**;
+- GTK3 GUI runtime: runtime **v1.3**, sealed payload **v12**, Native GUI IR **1.2**;
 - Console runtime on SEA-supported hosts: host-built generic Patch SEA runtime compatible with the current compiler;
+- frozen Menu+list compatibility: payload **v11** / runtime **v1.2**;
+- frozen list compatibility: payload **v10** / runtime **v1.1**;
 - frozen Table compatibility: payload **v9** / runtime **v1.0**;
-- frozen responsive compatibility: payload **v8** / runtime **v0.9**;
-- older frozen compatibility: payload **v7** / runtime **v0.8**.
+- older compatibility lines remain versioned for reproducibility.
 
 Runtime versions, direct AOT backend versions, Native GUI IR versions and offline compiler distribution versions remain independent contracts.
 
@@ -155,7 +179,7 @@ Runtime versions, direct AOT backend versions, Native GUI IR versions and offlin
 
 The offline compiler is self-contained and does not fetch browser Ready runtime templates while linking. Its release assets are covered by the rolling channel's `SHA256SUMS` file.
 
-Patch Studio's browser Ready path has a separate integrity gate. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.1 releases, verifies every downloaded release asset against GitHub's recorded SHA-256 digest, publishes `runtime-manifest.json`, and the browser re-hashes the selected runtime with Web Crypto before sealing. Same-origin `/runtimes/` requests are fresh-first while online with offline cache fallback only after successful fetches.
+Patch Studio's browser Ready path has a separate integrity gate. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.3 releases, verifies every downloaded release asset against GitHub's recorded SHA-256 digest, publishes `runtime-manifest.json`, and the browser re-hashes the selected runtime with Web Crypto before sealing. Same-origin `/runtimes/` requests are fresh-first while online with offline cache fallback only after successful fetches.
 
 This validates byte consistency inside the existing GitHub Release -> Pages -> browser trust path. It is separate from code signing/notarization.
 

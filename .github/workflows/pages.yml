@@ -43,8 +43,11 @@ on:
       - src/native-gui-ir-v09.js
       - src/native-gui-ir-v10.js
       - src/native-gui-ir-v11.js
+      - src/native-gui-ir-v12.js
+      - src/native-tree-backend-adapter.js
       - src/sealed-native-gui.js
       - src/sealed-native-gui-v11.js
+      - src/sealed-native-gui-v12.js
       - src/sealed-native-package.js
       - src/prebuilt-native.js
       - src/prebuilt-window.js
@@ -63,9 +66,10 @@ on:
       - .github/workflows/native-sealed-list-runtime.yml
       - .github/workflows/native-sealed-menu-runtime.yml
       - .github/workflows/native-sealed-menu-release-v12.yml
+      - .github/workflows/native-sealed-tree-runtime-v13.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime, Patch Native Sealed Menu Runtime, Patch Native Sealed Menu Runtime v1.2 Release]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime, Patch Native Sealed Menu Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3]
     types: [completed]
 
 permissions:
@@ -100,9 +104,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.2
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.2
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.2
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.3
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.3
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.3
         shell: bash
         run: |
           missing=0
@@ -125,9 +129,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.2
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.2
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.2
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.3
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.3
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.3
         shell: bash
         run: |
           set -euo pipefail

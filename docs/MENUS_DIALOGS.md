@@ -1,6 +1,6 @@
 # Menus and informational dialogs
 
-Patch has a language, Change IR and native-runtime contract for structural Window menus and informational dialogs. The direct native AOT path supports separators, portable keyboard shortcuts and source-backed MenuItem enabled/checked state.
+Patch has a language, Change IR and native-runtime contract for structural Window menus and informational dialogs. Direct native AOT and the current token-free Ready/offline desktop line support separators, portable keyboard shortcuts and source-backed MenuItem enabled/checked state.
 
 ## Syntax
 
@@ -44,9 +44,9 @@ When several modifiers are present, the readable order is:
 
 Both bindings must name a declared `create boolean` state. Missing, text, number or list state is rejected during Window preflight.
 
-The binding is one-way from Patch state to toolkit state. It does **not** create a framework-owned variable and a checked item does **not** persistently toggle itself. A click only fires the ordinary `clicked` event. If the application wants the check or enabled state to change, the handler must perform an explicit semantic `change` on the bound Boolean state. `RefreshUI()` then projects the new Patch state back into the native menu.
+The binding is one-way from Patch state to toolkit state. It does not create a framework-owned variable and a checked item does not persistently toggle itself. A click fires the ordinary `clicked` event. If the application wants checked/enabled state to change, its handler must perform an explicit semantic `change` on the bound Boolean state. UI refresh then projects the new Patch state back into the native menu.
 
-This also means a disabled item cannot bypass the binding through a keyboard shortcut. The native backend guards MenuItem dispatch from the same Boolean state.
+A disabled item also cannot bypass the binding through a keyboard shortcut. Native dispatch is guarded by the same Boolean Patch state.
 
 ## Portable shortcuts
 
@@ -55,7 +55,7 @@ A MenuItem may add `shortcut "..."`. Stage 1 accepts:
 - `Primary`, mapped to **Ctrl** on Windows/Linux and **Command** on macOS;
 - optional `Shift`;
 - optional `Alt`, mapped to **Option** on macOS;
-- exactly one key from `A`–`Z`, `0`–`9` or `F1`–`F12`.
+- exactly one key from `A` to `Z`, `0` to `9` or `F1` to `F12`.
 
 Examples:
 
@@ -65,7 +65,7 @@ item "Save As" as save_as_item shortcut "Primary+Shift+S"
 item "Help" as help_item shortcut "F1"
 ```
 
-Shortcut identities are application-wide. Patch rejects two MenuItems that declare the same portable shortcut, even if they belong to different Forms. This avoids platform-specific ambiguity in accelerator dispatch.
+Shortcut identities are application-wide. Patch rejects duplicate portable shortcuts across MenuItems to avoid platform-specific accelerator ambiguity.
 
 A separator must occur between clickable items. Leading, trailing and adjacent separators are rejected by the parser.
 
@@ -75,25 +75,32 @@ A separator must occur between clickable items. Leading, trailing and adjacent s
 
 The existing Change IR version is retained. Menu structure is explicit through:
 
-- `MENU`
-- `MENU_ITEM`, including optional `enabledState`, `checkedState` and `shortcutExpr`
-- `MENU_SEPARATOR`
-- `DIALOG`
+- `MENU`;
+- `MENU_ITEM`, including optional `enabledState`, `checkedState` and `shortcutExpr`;
+- `MENU_SEPARATOR`;
+- `DIALOG`.
 
 The compiler advertises `ui.menu`, `ui.menu-separator`, `ui.menu-shortcut`, `ui.menu-enabled-state`, `ui.menu-checked-state` and `ui.dialog` as appropriate. This product/runtime work does not widen the beta.32 formal-assurance boundary.
 
 ## Native GUI contract layering
 
-The existing contracts remain versioned rather than being redefined in place:
+Menu support advanced additively through the versioned native stack:
 
-- Native GUI IR **0.7** remains the stable base for ordinary menus;
-- Native GUI IR **0.8** remains the Table extension;
-- Native GUI IR **0.9** adds Menu separators and portable shortcut metadata while preserving the 0.8 Table surface;
-- direct AOT backend **1.0** consumes IR 0.9;
-- Native GUI IR **1.0** adds Boolean `enabledState` / `checkedState` references;
-- direct AOT backend **1.1** consumes IR 1.0 on Win32, AppKit and GTK3.
+- Native GUI IR **0.7**: base MenuItems;
+- Native GUI IR **0.8**: Table extension retained alongside menus;
+- Native GUI IR **0.9**: Menu separators and portable shortcut metadata;
+- Native GUI IR **1.0**: Boolean `enabledState` / `checkedState` references;
+- Native GUI IR **1.1**: persistent list/ListBox extension while preserving Menu state;
+- Native GUI IR **1.2**: current TreeView extension while preserving the complete Menu contract.
 
-The native build scripts automatically choose the smallest contract that preserves the source. A normal GUI stays on the stable base, a Table needs the 0.8/0.9 Table path, a separator/shortcut Menu selects IR 0.9/backend 1.0, and a MenuItem state binding selects IR 1.0/backend 1.1. `--menu-v11` exists for explicit test/build selection but is not required for ordinary source-driven builds.
+The matching sealed progression is:
+
+- payload **v9** / runtime **v1.0**: frozen Table line, before sealed Menu decoration/state parity;
+- payload **v10** / runtime **v1.1**: frozen persistent-list line;
+- payload **v11** / runtime **v1.2**: frozen Menu+list line with separators, portable shortcuts and source-backed enabled/checked state;
+- payload **v12** / runtime **v1.3**: current TreeView-capable Ready/offline line preserving the full v11 Menu contract.
+
+Older formats remain reproducible compatibility contracts. Newer Menu or Tree requirements fail closed when explicitly linked against a payload version that predates them.
 
 ## Native mappings
 
@@ -127,15 +134,22 @@ The native build scripts automatically choose the smallest contract that preserv
 - checked state: `gtk_check_menu_item_set_active`;
 - `Primary`: `GDK_CONTROL_MASK`.
 
-The direct backend smoke matrices compile the same decorated/state-bound applications with MSVC, AppKit/clang and GTK3/C++ and execute them under `--patch-smoke`.
+Direct-backend and sealed-runtime smoke matrices execute decorated/state-bound applications on Windows, macOS and Linux. Current payload v12/runtime v1.3 additionally proves that those Menu semantics compose with the later TreeView layer.
 
-## Ready/offline boundary
+## Current Ready/offline boundary
 
-The token-free sealed Ready-app line remains the independently versioned payload **v9** / runtime **v1.0** contract that carries Native GUI IR 0.8 Table metadata. It does **not** silently reinterpret or discard IR 0.9/1.0 Menu additions.
+The token-free Ready app and ordinary offline Window linker now use **Native GUI IR 1.2 / payload v12 / runtime v1.3**. They support:
 
-Shared Ready-app preflight therefore fails closed for separators, shortcuts and source-backed MenuItem state until a future sealed payload/runtime revision independently encodes, validates and executes the same behavior on Windows, macOS and Linux.
+- separators;
+- portable shortcuts;
+- source-backed MenuItem `enabled` state;
+- source-backed MenuItem `checked` state;
+- the persistent list/ListBox contract from the earlier list layer;
+- hierarchical TreeView from the current layer.
 
-This distinction is intentional: direct AOT backend 1.1 support is not presented as sealed-runtime support.
+The v11/runtime v1.2 Menu+list line remains independently tested as a frozen compatibility contract. The current v12 runtime does not reinterpret v11; it adds a separate Tree metadata extension over the frozen v11 prefix.
+
+Patch Studio's browser Ready path verifies the v1.3 runtime assets through the deployment SHA-256 manifest before sealing. The downloadable offline compiler independently builds and smoke-runs responsive, Table, ListBox, Menu and TreeView apps on its supported desktop hosts.
 
 ## Result-bearing dialogs
 
