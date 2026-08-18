@@ -129,8 +129,8 @@ requireAll('beta.35 Service Worker', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'",
   "url.pathname.includes('/runtimes/')",
   "freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset",
-  '../src/native-gui-ir-v12.js',
-  '../src/sealed-native-gui-v12.js'
+  './src/native-gui-ir-v12.js',
+  './src/sealed-native-gui-v12.js'
 ]);
 
 console.log('ok Patch Studio beta.35+ browser/native parity site surface');
