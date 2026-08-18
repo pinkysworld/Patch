@@ -1,0 +1,15 @@
+create text rootLabel = "src"
+create list selected = []
+
+window "Native TreeView" as main size 560, 360:
+  tree as files at 24, 48 size 300, 220:
+    node "{rootLabel}"
+      node "compiler.js"
+      node "parser.js"
+    node "docs"
+      node "ROADMAP.md"
+      node "TREEVIEW_STAGE1.md"
+
+when files changed:
+  change selected:
+    set = value

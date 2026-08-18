@@ -10,118 +10,15 @@ import { emitGtkGuiCppV09, PATCH_GTK_GUI_BACKEND_V09_VERSION } from '../src/gtk-
 import { emitGtkGuiCppV10, PATCH_GTK_GUI_BACKEND_V10_VERSION } from '../src/gtk-gui-v10.js';
 import { emitGtkGuiCppV11, PATCH_GTK_GUI_BACKEND_V11_VERSION } from '../src/gtk-gui-v11.js';
 import { emitGtkGuiCppV12, PATCH_GTK_GUI_BACKEND_V12_VERSION } from '../src/gtk-gui-v12.js';
+import { emitGtkGuiCppV13, PATCH_GTK_GUI_BACKEND_V13_VERSION } from '../src/gtk-gui-v13.js';
 
-const sourcePath = process.argv[2];
-const appName = safeName(process.argv[3] ?? 'PatchNativeGtk');
-const outDir = path.resolve(process.argv[4] ?? 'dist');
-const emitOnly = process.argv.includes('--emit-only');
-const smoke = process.argv.includes('--smoke');
-const tableV09 = process.argv.includes('--table-v09');
-const menuV10 = process.argv.includes('--menu-v10');
-const menuV11 = process.argv.includes('--menu-v11');
-const listV12 = process.argv.includes('--list-v12');
-
-if (!sourcePath) {
-  console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10] [--menu-v11] [--list-v12]');
-  process.exit(2);
-}
-
-const absoluteSource = path.resolve(sourcePath);
-const source = fs.readFileSync(absoluteSource, 'utf8');
-const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10, menuV11, listV12 });
-const gui = plan.gui;
-const cpp = emitForTier(plan);
-const backendVersion = backendVersionForTier(plan.tier);
-const controlCount = plan.controlCount;
-
-fs.mkdirSync(outDir, { recursive: true });
-const sourceOut = path.join(outDir, `${appName}.gtk.cpp`);
-const executablePath = path.join(outDir, appName);
-const metadataPath = path.join(outDir, `${appName}.gtk-build.json`);
-fs.writeFileSync(sourceOut, cpp);
-fs.writeFileSync(metadataPath, JSON.stringify({
-  format: 'patch-native-gtk-build',
-  version: '0.1',
-  backendVersion,
-  appName,
-  nativeGuiIrVersion: gui.version,
-  changeIrVersion: compiled.ir?.version ?? null,
-  forms: gui.forms.length,
-  controls: controlCount,
-  events: gui.events.length,
-  sourceSha256: createHash('sha256').update(source, 'utf8').digest('hex'),
-  shell: 'native-gtk3',
-  toolkit: 'GTK3',
-  electron: false,
-  nativeGuiTier: plan.tier,
-  tableV09: plan.features.table,
-  menuV10: plan.features.menuSeparators || plan.features.menuShortcuts,
-  menuV11: plan.features.menuStateBindings,
-  listV12: plan.features.listState
-}, null, 2));
-
-if (emitOnly) {
-  console.log(`Emitted native GTK C++ source: ${sourceOut}`);
-  process.exit(0);
-}
-if (process.platform !== 'linux') {
-  console.error('Direct GTK linking currently runs on Linux. Use --emit-only to inspect generated C++ elsewhere.');
-  process.exit(3);
-}
-
-const cflags = pkgConfig(['--cflags', 'gtk+-3.0']);
-const libs = pkgConfig(['--libs', 'gtk+-3.0']);
-const compiler = findCompiler();
-const build = spawnSync(compiler, ['-std=c++17', '-O2', '-s', ...cflags, sourceOut, '-o', executablePath, ...libs], { stdio: 'inherit' });
-if (build.error) throw build.error;
-if (build.status !== 0) throw new Error(`GTK native build exited with status ${build.status}.`);
-if (!fs.existsSync(executablePath)) throw new Error('C++ compiler completed without producing the native GTK executable.');
-fs.chmodSync(executablePath, 0o755);
-
-console.log(`Built native Patch GTK GUI: ${executablePath}`);
-console.log(`Native GUI IR ${gui.version}, backend ${backendVersion}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source, 'utf8').digest('hex')}`);
-
-if (smoke) {
-  const useXvfb = !process.env.DISPLAY && commandExists('xvfb-run');
-  const command = useXvfb ? 'xvfb-run' : executablePath;
-  const args = useXvfb ? ['-a', executablePath, '--patch-smoke'] : ['--patch-smoke'];
-  const run = spawnSync(command, args, { stdio: 'inherit', timeout: 30000, env: process.env });
-  if (run.error) throw run.error;
-  if (run.status !== 0) throw new Error(`Native Patch GTK GUI smoke exited with status ${run.status}.`);
-  console.log('Native Patch GTK GUI smoke passed.');
-}
-
-function emitForTier(plan) {
-  if (plan.tier === 'list-v12') return emitGtkGuiCppV12(plan.gui);
-  if (plan.tier === 'menu-v11') return emitGtkGuiCppV11(plan.gui);
-  if (plan.tier === 'menu-v10') return emitGtkGuiCppV10(plan.gui);
-  if (plan.tier === 'table-v09') return emitGtkGuiCppV09(plan.gui);
-  return emitGtkGuiCpp(plan.gui);
-}
-function backendVersionForTier(tier) {
-  if (tier === 'list-v12') return PATCH_GTK_GUI_BACKEND_V12_VERSION;
-  if (tier === 'menu-v11') return PATCH_GTK_GUI_BACKEND_V11_VERSION;
-  if (tier === 'menu-v10') return PATCH_GTK_GUI_BACKEND_V10_VERSION;
-  if (tier === 'table-v09') return PATCH_GTK_GUI_BACKEND_V09_VERSION;
-  return PATCH_GTK_GUI_BACKEND_VERSION;
-}
-function pkgConfig(args) {
-  const result = spawnSync('pkg-config', args, { encoding: 'utf8' });
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(`pkg-config ${args.join(' ')} failed. Install GTK3 development files (for example libgtk-3-dev).`);
-  return result.stdout.trim().split(/\s+/).filter(Boolean);
-}
-function findCompiler() {
-  for (const command of ['g++', 'clang++']) if (commandExists(command)) return command;
-  throw new Error('A C++17 compiler (g++ or clang++) is required for native GTK builds.');
-}
-function commandExists(command) {
-  const result = spawnSync('sh', ['-c', `command -v ${shellQuote(command)} >/dev/null 2>&1`]);
-  return result.status === 0;
-}
-function shellQuote(value) { return `'${String(value).replace(/'/g, `'"'"'`)}'`; }
-function safeName(name) {
-  const cleaned = String(name).trim().replace(/[^A-Za-z0-9_-]/g, '_').replace(/_+/g, '_').slice(0, 64);
-  return cleaned || 'PatchNativeGtk';
-}
+const sourcePath=process.argv[2],appName=safeName(process.argv[3]??'PatchNativeGtk'),outDir=path.resolve(process.argv[4]??'dist');
+const emitOnly=process.argv.includes('--emit-only'),smoke=process.argv.includes('--smoke'),tableV09=process.argv.includes('--table-v09'),menuV10=process.argv.includes('--menu-v10'),menuV11=process.argv.includes('--menu-v11'),listV12=process.argv.includes('--list-v12');
+if(!sourcePath){console.error('Use: node scripts/build-native-gtk.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10] [--menu-v11] [--list-v12]');process.exit(2);}
+const absoluteSource=path.resolve(sourcePath),source=fs.readFileSync(absoluteSource,'utf8'),compiled=compile(source,{name:appName,kind:'window',entry:path.basename(sourcePath)}),plan=buildNativeGuiPlan(compiled,{tableV09,menuV10,menuV11,listV12}),gui=plan.gui,cpp=emitForTier(plan),backendVersion=backendVersionForTier(plan.tier),controlCount=plan.controlCount;
+fs.mkdirSync(outDir,{recursive:true});const sourceOut=path.join(outDir,`${appName}.gtk.cpp`),executablePath=path.join(outDir,appName),metadataPath=path.join(outDir,`${appName}.gtk-build.json`);fs.writeFileSync(sourceOut,cpp);fs.writeFileSync(metadataPath,JSON.stringify({format:'patch-native-gtk-build',version:'0.1',backendVersion,appName,nativeGuiIrVersion:gui.version,changeIrVersion:compiled.ir?.version??null,forms:gui.forms.length,controls:controlCount,events:gui.events.length,sourceSha256:createHash('sha256').update(source,'utf8').digest('hex'),shell:'native-gtk3',toolkit:'GTK3',electron:false,nativeGuiTier:plan.tier,tableV09:plan.features.table,menuV10:plan.features.menuSeparators||plan.features.menuShortcuts,menuV11:plan.features.menuStateBindings,listV12:plan.features.listState,treeV13:plan.features.tree},null,2));
+if(emitOnly){console.log(`Emitted native GTK C++ source: ${sourceOut}`);process.exit(0);}if(process.platform!=='linux'){console.error('Direct GTK linking currently runs on Linux. Use --emit-only to inspect generated C++ elsewhere.');process.exit(3);}
+const cflags=pkgConfig(['--cflags','gtk+-3.0']),libs=pkgConfig(['--libs','gtk+-3.0']),compiler=findCompiler(),build=spawnSync(compiler,['-std=c++17','-O2','-s',...cflags,sourceOut,'-o',executablePath,...libs],{stdio:'inherit'});if(build.error)throw build.error;if(build.status!==0)throw new Error(`GTK native build exited with status ${build.status}.`);if(!fs.existsSync(executablePath))throw new Error('C++ compiler completed without producing the native GTK executable.');fs.chmodSync(executablePath,0o755);
+console.log(`Built native Patch GTK GUI: ${executablePath}`);console.log(`Native GUI IR ${gui.version}, backend ${backendVersion}, Change IR ${compiled.ir?.version??'?'}, source sha256 ${createHash('sha256').update(source,'utf8').digest('hex')}`);if(smoke){const useXvfb=!process.env.DISPLAY&&commandExists('xvfb-run'),command=useXvfb?'xvfb-run':executablePath,args=useXvfb?['-a',executablePath,'--patch-smoke']:['--patch-smoke'],run=spawnSync(command,args,{stdio:'inherit',timeout:30000,env:process.env});if(run.error)throw run.error;if(run.status!==0)throw new Error(`Native Patch GTK GUI smoke exited with status ${run.status}.`);console.log('Native Patch GTK GUI smoke passed.');}
+function emitForTier(plan){if(plan.tier==='tree-v13')return emitGtkGuiCppV13(plan.gui);if(plan.tier==='list-v12')return emitGtkGuiCppV12(plan.gui);if(plan.tier==='menu-v11')return emitGtkGuiCppV11(plan.gui);if(plan.tier==='menu-v10')return emitGtkGuiCppV10(plan.gui);if(plan.tier==='table-v09')return emitGtkGuiCppV09(plan.gui);return emitGtkGuiCpp(plan.gui);}function backendVersionForTier(tier){if(tier==='tree-v13')return PATCH_GTK_GUI_BACKEND_V13_VERSION;if(tier==='list-v12')return PATCH_GTK_GUI_BACKEND_V12_VERSION;if(tier==='menu-v11')return PATCH_GTK_GUI_BACKEND_V11_VERSION;if(tier==='menu-v10')return PATCH_GTK_GUI_BACKEND_V10_VERSION;if(tier==='table-v09')return PATCH_GTK_GUI_BACKEND_V09_VERSION;return PATCH_GTK_GUI_BACKEND_VERSION;}
+function pkgConfig(args){const result=spawnSync('pkg-config',args,{encoding:'utf8'});if(result.error)throw result.error;if(result.status!==0)throw new Error(`pkg-config ${args.join(' ')} failed. Install GTK3 development files (for example libgtk-3-dev).`);return result.stdout.trim().split(/\s+/).filter(Boolean);}function findCompiler(){for(const command of ['g++','clang++'])if(commandExists(command))return command;throw new Error('A C++17 compiler (g++ or clang++) is required for native GTK builds.');}function commandExists(command){const result=spawnSync('sh',['-c',`command -v ${shellQuote(command)} >/dev/null 2>&1`]);return result.status===0;}function shellQuote(value){return `'${String(value).replace(/'/g,`'"'"'`)}'`;}function safeName(name){const cleaned=String(name).trim().replace(/[^A-Za-z0-9_-]/g,'_').replace(/_+/g,'_').slice(0,64);return cleaned||'PatchNativeGtk';}
