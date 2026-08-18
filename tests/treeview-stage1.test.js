@@ -88,7 +88,7 @@ test('TreeView parser rejects malformed hierarchy and empty trees', () => {
   assert.throws(() => compile('window "X":\n  tree as nav:\n    button "No" as bad\n', { kind: 'window' }), /tree.*node/i);
 });
 
-test('TreeView documentation and public examples use the canonical node syntax', () => {
+test('TreeView documentation and public examples use the canonical colonless node syntax', () => {
   const surfaces = [
     'docs/NATIVE_TREEVIEW.md',
     'docs/NATIVE_GUI.md',
