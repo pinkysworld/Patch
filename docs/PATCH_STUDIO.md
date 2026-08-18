@@ -74,10 +74,10 @@ TreeView hierarchy is source-backed:
 create list selected = []
 window "Files" as main size 560, 380:
   tree as files at 24, 56 size 300, 240:
-    node "src":
+    node "src"
       node "compiler.js"
       node "parser.js"
-    node "docs":
+    node "docs"
       node "README.md"
 when files changed:
   change selected:
