@@ -34,9 +34,17 @@ export function emitWin32GuiCppV13(input) {
     }
   }
 
+  const eventDeclarations = adapted.events
+    .map(event => `static void Event_${event.eventIndex}(const std::vector<std::wstring>& eventValue);`)
+    .join('\n');
   const treeFunctions = adapted.trees.map(tree => emitTreeFunctions(tree, adapted.states)).join('\n\n');
   const treeNotify = emitTreeNotify(adapted);
-  source = replaceRequired(source, 'static bool HandleTabNotify(NMHDR *header) {', `${treeFunctions}\n\n${treeNotify}\nstatic bool HandleTabNotify(NMHDR *header) {`, 'Win32 TreeView helper insertion');
+  source = replaceRequired(
+    source,
+    'static bool HandleTabNotify(NMHDR *header) {',
+    `${eventDeclarations}\n${treeFunctions}\n\n${treeNotify}\nstatic bool HandleTabNotify(NMHDR *header) {`,
+    'Win32 TreeView helper insertion'
+  );
   source = replaceRequired(
     source,
     '    case WM_NOTIFY:\n',
@@ -74,12 +82,10 @@ function treeCreate(adapted, tree) {
   const pos = win32Position(control, adapted.controls);
   const width = positiveInt(control.layout?.width, 220), height = positiveInt(control.layout?.height, 120);
   const inserts = [];
-  const itemVars = new Map();
   for (const node of tree.flatNodes) {
     const parentFlat = node.flatIndexPath.length > 1 ? node.flatIndexPath[node.flatIndexPath.length - 2] : null;
-    const parent = parentFlat === null ? 'TVI_ROOT' : itemVars.get(parentFlat);
+    const parent = parentFlat === null ? 'TVI_ROOT' : `gTreeItems[${tree.nativeIndex}][${parentFlat}]`;
     const variable = `treeItem_${tree.nativeIndex}_${node.flatIndex}`;
-    itemVars.set(node.flatIndex, variable);
     inserts.push(`    { std::wstring label = TreeNodeText_${tree.nativeIndex}_${node.flatIndex}(); TVINSERTSTRUCTW insert{}; insert.hParent = ${parent}; insert.hInsertAfter = TVI_LAST; insert.item.mask = TVIF_TEXT; insert.item.pszText = label.data(); HTREEITEM ${variable} = TreeView_InsertItem(gControls[${tree.nativeIndex}], &insert); if (!${variable}) return nullptr; gTreeItems[${tree.nativeIndex}].push_back(${variable}); }`);
   }
   for (const node of tree.flatNodes.filter(node => node.children > 0)) inserts.push(`    TreeView_Expand(gControls[${tree.nativeIndex}], gTreeItems[${tree.nativeIndex}][${node.flatIndex}], TVE_EXPAND);`);
