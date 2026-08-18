@@ -74,7 +74,7 @@ requireAll('Compiler release contract', compiler, ["PATCH_IR_VERSION = '0.10'", 
 const events = read('_site/src/window-events.js');
 requireAll('Window event contract', events, ["PATCH_WINDOW_EVENTS_VERSION = '0.8'", 'text-list event-local value']);
 const gui12 = read('_site/src/native-gui-ir-v12.js');
-requireAll('Native GUI IR 1.2', gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12', "type: 'tree'"]);
+requireAll('Native GUI IR 1.2', gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12', "control.type = 'tree'"]);
 const sealed12 = read('_site/src/sealed-native-gui-v12.js');
 requireAll('sealed payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12', 'sealNativeGuiRuntimeV12', 'inspectNativeGuiTreesV12']);
 
