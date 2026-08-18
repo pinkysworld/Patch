@@ -4,7 +4,9 @@ Patch already has broad semantic/formal coverage and cross-platform build smoke 
 
 This plan deliberately separates **P0 reliability work** from research novelty.
 
-## P0 — required before calling Patch production-ready
+Current product baseline: **0.2.0-beta.35+**, Change IR **0.10**, Patch Studio project bundle **v3**, Native GUI IR **1.2**, sealed Window payload **v12** / runtime **v1.3**. The beta.32 formal runtime-correspondence boundary remains unchanged by later product work.
+
+## P0: required before calling Patch production-ready
 
 ### Release integrity
 - [x] deterministic SHA-256 release manifest tooling
@@ -14,9 +16,9 @@ This plan deliberately separates **P0 reliability work** from research novelty.
 - [x] release notes generated from reviewed changes
 - [x] reproducibility check: rebuilding the same source/toolchain produces equivalent logical payloads where platform packaging permits
 
-Tagged releases are fail-closed. `v<package version>` must point at the checked-out `GITHUB_SHA`; the workflow tests that exact source, builds the portable/Web/Wasm/C99/npm release bundle, generates `release-manifest.json` and `SHA256SUMS.txt`, independently re-hashes every artifact, verifies the recorded Patch version and source commit, and only then calls `gh release create --verify-tag --generate-notes`. Beta/pre-release package versions are published as GitHub prereleases.
+Tagged releases are fail-closed. `v<package version>` must point at the checked-out `GITHUB_SHA`; the workflow tests that exact source, builds the portable/Web/Wasm/C99/npm release bundle, generates `release-manifest.json` and `SHA256SUMS.txt`, independently re-hashes every artifact, verifies the recorded Patch version and source commit, and only then creates the release. Beta/pre-release package versions are published as GitHub prereleases.
 
-Logical reproducibility is tested separately from native toolchain reproducibility. `scripts/logical-release-fingerprint.js` rebuilds portable PatchApp, bootstrap/direct Wasm, C99 and Console/Window Web artifacts. The regression suite launches two separate Node processes and requires identical byte-length/SHA-256 fingerprint documents. `docs/REPRODUCIBILITY.md` explicitly excludes final PE/Mach-O/ELF/signing/toolchain metadata from this claim.
+Logical reproducibility is tested separately from native toolchain reproducibility. `scripts/logical-release-fingerprint.js` rebuilds portable PatchApp, bootstrap/direct Wasm, C99 and Console/Window Web artifacts. The regression suite launches two separate Node processes and requires identical byte-length/SHA-256 fingerprint documents. Final PE/Mach-O/ELF/signing/toolchain metadata remains outside that logical-byte claim.
 
 ### Compatibility and project lifecycle
 - [x] document pre-1.0 compatibility policy
@@ -25,41 +27,67 @@ Logical reproducibility is tested separately from native toolchain reproducibili
 - [x] migrations for old project bundle schema versions
 - [x] explicit refusal for unsupported future schema versions
 - [x] source-language compatibility regression corpus
+- [x] multi-file project bundle with deterministic composition and provenance
+- [x] full-project recovery snapshots
 
-Patch Studio project bundle v2 stores `main.patch`, project identity, Console/Window kind, selected build target and selected native-build mode. Version-1 bundles, v1 browser storage and the older unversioned local state migrate explicitly to v2. V1 recovery snapshots also normalize to v2 while preserving their saved source. Unknown future bundle versions remain fail-closed.
+Patch Studio project bundle **v3** is the current canonical browser project. It carries bounded multi-file Patch sources, deterministic composition/provenance, project identity, Console/Window kind, selected build target and selected native-build mode. Older v1/v2 bundles and legacy browser state migrate explicitly. Unknown future bundle versions remain fail-closed.
 
-Beta.34 closes an integration gap between the canonical v2 store and older Studio UI code. Programmatic sample/Designer mutations now normalize into the same shared source and Project Type signals used by manual editing, so the canonical store, recovery, visual Designer, Change Contract and native-build panel observe the same project state. The unversioned browser key remains compatibility/migration state only.
+Programmatic sample/Designer mutations and normal typing use shared source/project signals, so the canonical store, recovery, visual Designer, Change Contract, Project Tree and native-build panel observe one project state. Recovery snapshots preserve the full v3 project rather than only `main.patch`.
 
-`compat/source-0.2/` is the executable compatibility baseline for source forms Patch has deliberately retained. Its versioned manifest covers core numeric change, Thing fields, loose List syntax, recipes with Undo/Redo, legacy flow-layout Windows and multiple unnamed Windows. Current compilers must keep those fixtures compiling with the recorded observable result unless a future compatibility change is handled explicitly.
+`compat/source-0.2/` remains the executable source-compatibility baseline for forms Patch deliberately retains. Current compilers must keep those fixtures compiling with the recorded observable behavior unless a future compatibility change is handled explicitly.
 
 ### Diagnostics and supportability
 - [x] `patch doctor` structured diagnostics core
 - [x] expose `patch doctor --json` through the installed CLI
 - [x] stable machine-readable diagnostic/error codes for compiler/build failures
-- [x] one-click "Copy diagnostics" in Patch Studio
+- [x] one-click Copy diagnostics in Patch Studio
 - [x] crash/build report bundle with Patch version, target, diagnostics and redacted logs
 - [x] no telemetry by default; any future telemetry must be explicit opt-in
 
-Patch diagnostics use the versioned `patch-diagnostic` envelope and stable `PATCHxxxx` code families. Parser failures retain exact line numbers and normalized diagnostics derive an indentation-aware column without embedding the source line. Studio reports carry those code/location fields while preserving the existing local-only privacy boundary.
+Patch diagnostics use the versioned `patch-diagnostic` envelope and stable `PATCHxxxx` code families. Parser failures retain exact line numbers and normalized diagnostics derive locations without embedding user source unnecessarily.
 
-Patch Studio diagnostics are local-only. The report records Patch version, project kind, selected build target, compiler status, source size/SHA-256, PWA/browser state and a bounded set of redacted recent errors. The source body is not included; source echoes, common token forms, email addresses and user-home path components are redacted. Neither Copy diagnostics nor `.patchreport` creation has a network upload path.
+Patch Studio diagnostics are local-only. Reports record Patch version, project kind, selected build target, compiler state, source/project size and hash, PWA/browser state and bounded redacted errors. The source body is not uploaded; source echoes, common token forms, email addresses and user-home path components are redacted. Neither Copy diagnostics nor `.patchreport` creation has a network upload path.
 
 ### Distribution safety
-- [ ] Windows code signing
-- [ ] macOS signing + notarization
-- [ ] installer/package formats with uninstall path
+- [ ] real credentialed Windows code-signing evidence
+- [ ] real credentialed macOS signing + notarization evidence
+- [ ] installer/package formats with explicit uninstall path
 - [ ] verify release signatures/checksums before update/install across future installer/update channels
 - [x] browser Ready runtime templates verified against GitHub Release SHA-256 asset digests before sealing
 - [x] document Linux packaging expectations
-- [ ] fresh-build service that does not require users to paste a personal GitHub token
+- [ ] fresh remote build service that does not require users to paste a personal GitHub token
 
-`docs/LINUX_PACKAGING.md` defines the current GTK3/Console runtime assumptions, archive contents, ABI limitations, explicit unsigned status, user-space removal behavior and the formats Patch does **not** yet claim (`.deb`, `.rpm`, Flatpak, Snap, AppImage). This closes the documentation item without pretending that the separate installer/uninstall-format milestone is complete.
+`docs/LINUX_PACKAGING.md` defines the current GTK3/Console runtime assumptions, ABI limitations, unsigned status, user-space removal behavior and package formats Patch does not yet claim. This documentation item is separate from the still-open installer/uninstall milestone.
 
-Beta.34 adds a narrower integrity guarantee to the current no-token browser Ready path without pretending the broader installer/update item is complete. Pages downloads the three native runtime-v1.0 assets, reads each SHA-256 digest recorded on the exact GitHub Release asset, independently re-hashes the downloaded bytes and writes a verified `runtime-manifest.json`. Patch Studio hashes the selected runtime again with Web Crypto before browser-side sealing and fails closed on mismatch. The service worker treats same-origin `/runtimes/` requests as fresh-first while online so an older runtime cache cannot silently override the current deployment. This is byte-consistency validation for the existing Release/Pages path, not Authenticode, Developer ID/notarization or a separate signing authority.
+The runtime-integrity mechanism introduced in beta.34 now protects the **current payload v12/runtime v1.3 Ready path**. Pages requires `studio-runtime-v0.6` plus these native releases:
 
-The repository also contains fail-closed Windows Authenticode and macOS Developer ID/notarization gates for final project artifacts. Those two signing checkboxes remain open until real certificate credentials are configured and a final artifact passes the complete signing/verifying workflow. `PATCH-SIGNING.json` cannot claim required signing from the requested mode alone; platform verification evidence is required first.
+- `native-win32-runtime-v1.3`;
+- `native-macos-runtime-v1.3`;
+- `native-linux-runtime-v1.3`.
 
-Ready Windows, macOS and Linux application downloads can already be consumed without a personal GitHub token. The remaining fresh-build item above is specifically about requesting new/fresh remote builds without user-supplied credentials.
+Pages downloads the exact runtime assets, reads GitHub's recorded `sha256:` digest, independently re-hashes the bytes and writes a verified `runtime-manifest.json`. Patch Studio hashes the selected runtime again with Web Crypto before browser-side sealing and fails closed on mismatch. The service worker treats same-origin `/runtimes/` requests as fresh-first while online so an older cache cannot silently override the current deployment.
+
+This is byte-consistency validation for the existing Release/Pages/browser path. It does not claim Authenticode, Developer ID/notarization or a separate signing authority.
+
+The repository contains fail-closed Windows Authenticode and macOS Developer ID/notarization machinery for final project artifacts. Those signing items remain open until real credentials are configured and a final artifact passes the complete signing/verifying workflow. `PATCH-SIGNING.json` cannot claim required signing from requested mode alone; platform verification evidence is required first.
+
+Ready Windows, macOS and Linux application downloads already work without a personal GitHub token. The remaining fresh-build item is specifically a service that performs a new remote project-specific build without user-supplied credentials.
+
+### Native Window release contract
+
+The current token-free Ready/offline Window line is **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3** on Windows, macOS and Linux. It preserves responsive Anchor/Dock behavior, Table/Grid, persistent list-backed multi-select ListBox, Menu separators/shortcuts/state and hierarchical TreeView.
+
+TreeView `changed` exposes only a transient root-to-node text-list path. Table row selection and list-backed ListBox selection are likewise transient event values. Persistent application state still changes only through explicit semantic `change`.
+
+Older contracts remain frozen compatibility lines rather than being redefined:
+
+- payload v11/runtime v1.2: Menu+list;
+- payload v10/runtime v1.1: persistent list/multi-select;
+- payload v9/runtime v1.0: Table;
+- payload v8/runtime v0.9: responsive base;
+- payload v7/runtime v0.8: older accessibility/result-dialog line.
+
+The v1.3 TreeView runtime workflow builds, seals and executes a canonical TreeView app on Windows, macOS and Linux before publishing current runtime assets. The downloadable offline compiler independently links and executes responsive, Table, ListBox, Menu and TreeView examples on its supported desktop hosts.
 
 ### Security and maintenance
 - [x] security reporting policy
@@ -68,9 +96,9 @@ Ready Windows, macOS and Linux application downloads can already be consumed wit
 - [x] security-sensitive code review checklist
 - [x] threat model for Studio, remote builds and generated desktop apps
 
-GitHub Actions are monitored weekly through Dependabot and JavaScript/TypeScript is scanned by a scheduled and change-triggered CodeQL `security-extended` workflow. The normal CI also executes `scripts/security-policy-check.js`, which rejects `pull_request_target`, `permissions: write-all`, network-download-to-shell patterns, branch-like/floating Action refs, and npm dependencies without a lockfile. Patch currently has no external npm dependencies, so no synthetic lockfile is maintained. `docs/SECURITY_MAINTENANCE.md`, `docs/THREAT_MODEL.md` and `docs/SECURITY_REVIEW_CHECKLIST.md` define the maintenance cadence, trust boundaries, residual risks and required review evidence.
+GitHub Actions are monitored through Dependabot and JavaScript/TypeScript is scanned by CodeQL `security-extended`. Normal CI executes `scripts/security-policy-check.js`, which rejects dangerous workflow patterns such as `pull_request_target`, `permissions: write-all`, network-download-to-shell patterns and branch-like/floating Action refs. Patch currently has no external npm dependencies, so no synthetic lockfile is maintained.
 
-## P1 — strongly recommended for serious users
+## P1: strongly recommended for serious users
 
 ### Stable developer experience
 - [x] documented CLI exit-code contract
@@ -79,11 +107,9 @@ GitHub Actions are monitored weekly through Dependabot and JavaScript/TypeScript
 - [x] deterministic artifact naming across Studio/project packaging paths
 - [x] project-level build configuration instead of target settings scattered through UI state
 
-`docs/CLI_CONTRACT.md` freezes the existing coarse exit taxonomy as `0 = success`, `1 = CLI usage`, `2 = processing/build/validation failure`. `check`, `formal`, `certify` and `build` expose the versioned `patch-cli-result` v1 envelope. Successful commands return command-specific structured data; failures retain exit `2` and carry the existing `patch-diagnostic` v1 object with stable `PATCHxxxx` code and source location where available. Human-readable behavior remains the default without `--json`.
+`docs/CLI_CONTRACT.md` freezes the coarse exit taxonomy as `0 = success`, `1 = CLI usage`, `2 = processing/build/validation failure`. `check`, `formal`, `certify` and `build` expose the versioned `patch-cli-result` v1 envelope. Human-readable behavior remains the default without `--json`.
 
-Backend source mapping is now incremental rather than parser-only. Direct-Wasm fail-closed errors preserve their original Patch `at line N` hints through the normalized diagnostic envelope. C99 failures that share that validator retain the same locations, and a second fail-closed C99 context layer maps several C99-only errors only when the original source has exactly one unambiguous matching location. Generated C/C++/Rust compiler/linker locations are deliberately **not** reinterpreted as Patch source lines. The P1 item therefore remains open for the remaining native/toolchain/runtime/packaging error classes.
-
-Beta.33 centralizes Studio-facing file stems and target suffixes in `src/artifact-name.js`, and project format v2 stores the selected build target/native mode in the project/recovery lifecycle. Platform toolchains may still impose their own internal bundle/executable naming rules, but the user-facing Studio packaging names are deterministic and regression-tested.
+Backend source mapping is incremental rather than complete. Direct-Wasm and several C99 fail-closed errors retain original Patch line hints. Generated C/C++/Rust compiler/linker locations are deliberately not reinterpreted as Patch source lines. The P1 item therefore remains open for remaining native/toolchain/runtime/packaging error classes.
 
 ### Resilience
 - [x] atomic Studio saves and recovery snapshots
@@ -93,57 +119,58 @@ Beta.33 centralizes Studio-facing file stems and target suffixes in `src/artifac
 - [x] cloud-build cancellation and timeout UX
 - [x] retry semantics for remote builds without reusing a request
 
-The versioned Studio store uses a pending-write key before promoting the canonical project, while the previous project is periodically retained in a bounded five-snapshot recovery ring. Import and restore take an immediate protective snapshot before replacing the current project. The Recovery manager exposes all retained local restore points and supports manual snapshot creation, restoring any snapshot, exporting a snapshot as `.patchproject`, deleting one snapshot, or clearing the local ring after confirmation.
+The versioned Studio store uses a pending-write key before promoting canonical project state. Recovery keeps a bounded snapshot ring and supports manual snapshot creation, restore, export, delete and clear. Current v3 snapshots carry the full multi-file project.
 
-Optional GitHub Actions builds have a 15-minute Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent as soon as the request-specific run appears. Retry uses the captured source/build snapshot and generates a fresh request id instead of silently rebuilding later editor contents or rerunning the same request. Tokens and retry snapshots remain in page memory only. Recommended browser-local/no-token builds are unchanged.
+Optional GitHub Actions builds have a Studio deadline, exact-run cancellation and retry. A cancellation requested before GitHub exposes the run is remembered and sent when the request-specific run appears. Retry uses the captured build snapshot and a fresh request id. Tokens and retry snapshots remain in page memory only. Recommended Ready/no-token builds are unaffected.
 
-Pages deployment uses one `pages` concurrency group but only direct source `push` runs cancel an older in-progress deploy. Runtime `workflow_run` completion triggers queue rather than cancelling a valid source-triggered deploy. A regression test freezes this rule so runtime publication hooks cannot reintroduce the deployment race tracked by issue #112.
+Pages deployment uses one `pages` concurrency group, but only direct source-push runs cancel an older in-progress deploy. Runtime workflow completions queue rather than cancelling a valid source-triggered deployment.
 
 ### Testing
 - [x] deterministic parser/compiler grammar fuzzing
 - [x] property-based change/history/undo tests
-- [x] differential interpreter ↔ direct-Wasm ↔ executable C99 tests for every currently documented shared numeric semantic subset
+- [x] differential interpreter to direct-Wasm to executable C99 tests for every currently documented shared numeric semantic subset
 - [x] golden release artifact tests
 - [x] upgrade/migration tests across project schema versions
+- [x] Windows/macOS/Linux sealed TreeView runtime smoke matrix
+- [x] offline compiler Window smoke matrix for responsive/Table/ListBox/Menu/TreeView paths
 
-CI runs 500 deterministic generated valid programs plus 500 paired guaranteed-invalid programs. Valid cases reach the parser, compiler, direct-Wasm lowering/validation and independent C99 lowering; invalid cases must fail with the expected stable diagnostic family. The seed and failing source are printed for exact replay.
+CI runs deterministic valid and guaranteed-invalid generated programs through parser/compiler and supported lowering paths. Seed and failing source are printed for replay.
 
-The executable differential corpus compares interpreter output/state against direct Wasm, then compiles generated C99 with the host C compiler and compares native-process output against the interpreter. The corpus is coupled to the C99 backend's documented `metadata.supported` list, so adding a new shared capability without adding a differential case makes CI fail. This is deterministic grammar fuzzing and differential testing, not a claim of coverage-guided fuzzing or compiler correctness proof.
+The executable differential corpus compares interpreter output/state against direct Wasm and compiled C99 for their documented shared subset. This is deterministic differential testing, not a claim of compiler correctness proof.
 
-The Change/History property suite deterministically generates 240 mixed numeric mutation histories and checks forward operations, stored inverses, `invertChange`, full composed changes, complete Undo and complete Redo. Additional generated cases require any new commit after Undo to invalidate the redo stack. Seed and case number are included in every failure context.
+The Change/History property suite checks forward operations, stored inverses, `invertChange`, composed changes, complete Undo/Redo and redo invalidation after a new post-Undo commit.
 
-`compat/release-golden-v1.json` pins the logical artifact format/version boundaries for PatchApp, bootstrap/direct Wasm, C99 and Console/Window Web. Golden tests validate those contracts and the independent-process logical reproducibility fingerprint. Golden format expectations are kept separate from permanent byte hashes so reviewed deterministic code-generation changes do not masquerade as nondeterminism.
+Golden tests pin logical artifact format/version boundaries separately from permanent byte hashes so reviewed deterministic code-generation changes do not masquerade as nondeterminism.
 
-Project v1→v2 tests preserve source/name/kind and assert the documented default build configuration. The suite also rejects unknown future project versions and unsupported v2 build-mode values rather than silently guessing.
+Project migration tests preserve documented state through older bundle migrations and reject unsupported future versions/build modes rather than silently guessing.
 
-## P2 — polish and ecosystem
+## P2: polish and ecosystem
 
 - [ ] extension/plugin capability model
 - [ ] package/library story
 - [x] native Win32/AppKit/GTK GUI lowering and sealed runtime paths
+- [x] native hierarchical TreeView parity on Win32/AppKit/GTK
+- [ ] richer data controls beyond Table/ListBox/TreeView
 - [ ] FreeBSD native GUI backend
 - [x] Patch Studio keyboard/focus/responsive accessibility baseline
 - [x] generated standalone Window Web accessibility baseline
-- [x] generated native Window app accessibility audit
+- [x] generated native Window app accessibility engineering baseline
 - [ ] manual assistive-technology/browser accessibility audit before a stable release
 - [ ] localization
 - [ ] long-term support/release channels after 1.0
 
-The Studio baseline includes a skip link, labelled editor, WAI-ARIA-style result tab relationships, arrow/Home/End result navigation, keyboard Run/Build shortcuts, visible keyboard focus, polite status announcements, coarse-pointer target sizing, reduced-motion handling, forced-colors affordances and responsive project/support/result layouts. This is an implementation baseline, not a WCAG conformance claim.
-
-Generated standalone Window Web apps add labelled Window regions, accessible names for otherwise-unlabelled Input/Combo/ListBox controls, grouped Radio semantics, polite output status, roving tab focus with Arrow/Home/End control, visible keyboard focus, reduced-motion handling and forced-colors focus treatment. The accessibility layer also renders Radio groups in standalone Window Web apps.
-
-The automated native-app accessibility audit now covers **both** direct-native paths. AOT backend v0.8 and sealed runtime v0.8 derive deterministic names for Input, ComboBox, ListBox and Tabs controls and add Radio group context while preserving native visible labels on Button/Checkbox controls. Windows uses Microsoft Active Accessibility (`IAccPropServices` / `IAccessible`), AppKit uses accessibility labels, and GTK3 uses ATK. The sealed-runtime workflows execute the existing semantic smoke first, then read accessibility names back through those native APIs, while continuing to assert `PCHGUI01` payload version 7. This checkbox is merged only if the final exact-head Windows/macOS/Linux runtime gates pass. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing remains a separate open release gate and no WCAG conformance claim is made.
+Automated accessibility coverage is an engineering baseline, not a WCAG conformance claim. Manual Narrator, VoiceOver, Orca and browser/assistive-technology testing remains a separate open release gate.
 
 ## Release rule
 
-Research milestones may continue rapidly, but a production release candidate should be cut only from a commit where:
+A production release candidate should be cut only from a commit where:
 
-1. the normal cross-platform CI is green;
+1. normal cross-platform CI is green;
 2. all formal/certificate gates relevant to that version are green;
-3. native packaging smoke tests are green;
+3. current native packaging and compatibility smoke tests are green;
 4. release artifacts are generated from that exact commit;
-5. the release manifest/checksums match the distributed bytes;
-6. compatibility/security documentation matches the shipped behavior.
+5. release manifests/checksums match distributed bytes;
+6. compatibility/security documentation matches shipped behavior;
+7. current runtime releases exist before Pages deploys a browser compiler that consumes them.
 
 Formal verification strengthens Patch's semantic claims, but it does not replace operational release engineering.
