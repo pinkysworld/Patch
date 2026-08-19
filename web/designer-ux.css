@@ -38,9 +38,13 @@
   cursor: default;
 }
 
+#designer .designer-toolbar.designer-form-settings-open {
+  overflow: visible !important;
+}
 .forms-toolbar-group[data-patch-compact-forms="true"] {
   position: relative;
   gap: 5px;
+  overflow: visible !important;
 }
 .forms-toolbar-group[data-patch-compact-forms="true"] > label:first-child {
   gap: 5px;
@@ -101,14 +105,14 @@
   background: var(--surface);
   box-shadow: var(--shadow);
 }
-.designer-form-settings-panel label {
+.designer-form-settings-panel .designer-form-setting-field {
   display: grid !important;
   grid-template-columns: 1fr !important;
   align-items: start !important;
   gap: 4px !important;
 }
-.designer-form-settings-panel label:has(#patchFormName),
-.designer-form-settings-panel label:has(#patchFormTitle) {
+.designer-form-settings-panel .designer-form-setting-name,
+.designer-form-settings-panel .designer-form-setting-title {
   grid-column: 1 / -1;
 }
 .designer-form-settings-panel input {
@@ -117,6 +121,7 @@
 }
 .designer-form-settings-panel #patchApplyForm {
   grid-column: 1 / -1;
+  display: block !important;
   width: auto !important;
   min-width: 100% !important;
   font-size: 10px !important;
@@ -194,6 +199,12 @@
   .designer-selection-status { flex: 1 1 auto; }
   .designer-context-group button {
     min-width: 42px;
+  }
+  .forms-toolbar-group[data-patch-compact-forms="true"] .designer-form-settings-panel .designer-form-setting-field {
+    display: grid !important;
+  }
+  .forms-toolbar-group[data-patch-compact-forms="true"] .designer-form-settings-panel #patchApplyForm {
+    display: block !important;
   }
   .designer-form-settings-panel {
     position: fixed;
