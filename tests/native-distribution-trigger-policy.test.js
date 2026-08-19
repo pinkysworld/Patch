@@ -35,11 +35,14 @@ test('Native Distribution only watches distribution-affecting PR paths', () => {
   assert.doesNotMatch(paths, /\n\s*- tests\//);
 });
 
-test('Linux GTK dependency setup is bounded and retry-aware', () => {
+test('Linux GTK dependency setup is bounded, retry-aware and preserves the real failure code', () => {
   assert.match(workflow, /sudo timeout 180s apt-get -o Acquire::Retries=3 update/);
   assert.match(workflow, /sudo timeout 300s apt-get -o Acquire::Retries=3 -o DPkg::Lock::Timeout=60 install/);
   assert.match(workflow, /GTK dependency index update failed or exceeded 180 seconds/);
   assert.match(workflow, /GTK dependency installation failed or exceeded 300 seconds/);
+  assert.equal((workflow.match(/code=\$\?/g) ?? []).length, 2);
+  assert.equal((workflow.match(/exit "\$code"/g) ?? []).length, 2);
+  assert.doesNotMatch(workflow, /if ! sudo timeout/);
   assert.match(workflow, /timeout-minutes: 30/);
 });
 
