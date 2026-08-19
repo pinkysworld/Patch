@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const tabs = fs.readFileSync('docs/TABS.md', 'utf8');
+const listbox = fs.readFileSync('docs/LISTBOX.md', 'utf8');
 const studio = fs.readFileSync('docs/PATCH_STUDIO.md', 'utf8');
 const roadmap = fs.readFileSync('docs/ROADMAP.md', 'utf8');
 const help = fs.readFileSync('web/help.html', 'utf8');
@@ -16,6 +17,17 @@ test('current Tabs documentation names the active native contract rather than th
   assert.match(tabs, /runtime \*\*v1\.3\*\*/);
   assert.match(tabs, /payload v12 \/ runtime v1\.3\s+current TreeView-capable Ready\/offline line/);
   assert.doesNotMatch(tabs, /The corresponding token-free runtime releases are:\s*\n\s*- `native-win32-runtime-v0\.4`/);
+});
+
+test('current ListBox documentation reflects native single/multi-select parity', () => {
+  assert.match(listbox, /direct native Win32\/AppKit\/GTK/);
+  assert.match(listbox, /create text/);
+  assert.match(listbox, /create list/);
+  assert.match(listbox, /Native GUI IR \*\*1\.2\*\*/);
+  assert.match(listbox, /sealed payload \*\*v12\*\*/);
+  assert.match(listbox, /native runtime \*\*v1\.3\*\*/);
+  assert.doesNotMatch(listbox, /direct native GUI parity is not implemented yet/);
+  assert.doesNotMatch(listbox, /Native GUI IR v0\.2 currently supports ComboBox but not ListBox/);
 });
 
 test('Studio public docs describe current nested Tabs structural Properties editing', () => {
