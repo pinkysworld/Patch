@@ -104,21 +104,40 @@ test('ordinary controls and Tabs are bridged into the same selection store and e
   assert.match(index, /\.\/designer-core-selection\.js/);
 });
 
+test('shared selection is also the normal Properties Apply/Delete/Source boundary', () => {
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  assert.match(core, /installSharedInspectorBridge/);
+  assert.match(core, /captureInspectorApply/);
+  assert.match(core, /captureInspectorDelete/);
+  assert.match(core, /captureInspectorSource/);
+  assert.match(core, /applySharedInspector/);
+  assert.match(core, /populateSharedInspector/);
+  assert.match(core, /updateDesignerControl\(code\.value, selection, changes\)/);
+  assert.match(core, /removeDesignerControl\(code\.value, selection\)/);
+  assert.match(core, /event\.stopImmediatePropagation\(\)/, 'shared capture handlers must win over legacy adapter/property fallbacks');
+  assert.match(core, /designerSelectionForControl\(updated, selection\.adapter\)/, 'renames must preserve the active adapter identity');
+});
+
 test('core selection bridge is additive migration, not a false claim that the playground mirror is already removed', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const doc = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTURE.md', 'utf8');
   assert.match(playground, /let designerSelection = null;/);
   assert.match(core, /legacySelected/);
   assert.match(core, /rememberDesignerSelection\(canvas, selection, \{ emit: false \}\)/);
+  assert.match(doc, /private `designerSelection` mirror/);
+  assert.match(doc, /not as total removal of every historical selection implementation/);
 });
 
-test('public Studio packaging includes shared Designer selection and the core bridge', () => {
+test('public Studio packaging and docs include shared Designer selection and the core bridge', () => {
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const checkSite = fs.readFileSync('scripts/check-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
+  const docs = fs.readFileSync('web/docs.html', 'utf8');
   assert.match(buildSite, /'designer-selection\.js'/);
   assert.match(buildSite, /'designer-core-selection\.js'/);
   assert.match(checkSite, /Core Designer selection bridge/);
   assert.match(sw, /'\.\/designer-selection\.js'/);
   assert.match(sw, /'\.\/designer-core-selection\.js'/);
+  assert.match(docs, /docs\/STUDIO_SELECTION_ARCHITECTURE\.md/);
 });
