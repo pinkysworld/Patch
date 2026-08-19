@@ -17,6 +17,7 @@ import {
   updateDesignerTableData,
   updateDesignerTreeNodes
 } from '../src/designer-data.js';
+import { installDesignerStructuralKeyboard } from './designer-structural-keyboard.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -27,6 +28,7 @@ let scheduled = false;
 
 installStylesheet();
 const panel = installPanel();
+installDesignerStructuralKeyboard(panel);
 observe();
 scheduleSync();
 
@@ -108,7 +110,8 @@ function renderTreeEditor(control) {
       <button type="button" class="secondary" data-tree-action="indent" ${path ? '' : 'disabled'}>Indent</button>
       <button type="button" class="secondary" data-tree-action="outdent" ${path ? '' : 'disabled'}>Outdent</button>
       <button type="button" class="danger" data-tree-action="delete" ${path ? '' : 'disabled'}>Delete node</button>
-    </div>`;
+    </div>
+    <p class="inspector-hint designer-keyboard-hint">Keyboard: ↑/↓ or Home/End selects nodes; Ctrl/Cmd+↑/↓ reorders; Ctrl/Cmd+←/→ outdents/indents; Ctrl/Cmd+Enter focuses the label. Ctrl/Cmd+Enter in the label applies Rename.</p>`;
 }
 
 function renderTableEditor(control) {
@@ -131,7 +134,7 @@ function renderTableEditor(control) {
       <button type="button" class="secondary" data-table-action="remove-column" ${columns.length <= 1 ? 'disabled' : ''}>− Column</button>
       <button type="button" class="secondary" data-table-action="add-row">+ Row</button>
     </div>
-    <p class="inspector-hint">Cells are Patch expressions. Editing this grid rewrites only the selected source-backed <code>table</code>/<code>row</code> block.</p>`;
+    <p class="inspector-hint">Cells are Patch expressions. Editing this grid rewrites only the selected source-backed <code>table</code>/<code>row</code> block. <span class="designer-keyboard-hint">Ctrl/Cmd+Enter in any cell or column applies the current grid.</span></p>`;
 }
 
 function renderTabsEditor(control) {
@@ -155,7 +158,7 @@ function renderTabsEditor(control) {
       <button type="button" class="secondary" data-tabs-action="down" ${pageIndex >= pages.length - 1 ? 'disabled' : ''}>↓</button>
       <button type="button" class="danger" data-tabs-action="delete" ${pages.length <= 2 ? 'disabled' : ''}>Delete page</button>
     </div>
-    <p class="inspector-hint">Tabs Stage 1 keeps at least two pages. Reordering preserves each page body; deleting a page also removes handlers that belong only to controls removed with that page.</p>`;
+    <p class="inspector-hint">Tabs Stage 1 keeps at least two pages. Reordering preserves each page body; deleting a page also removes handlers that belong only to controls removed with that page. <span class="designer-keyboard-hint">↑/↓ or Home/End selects pages; Ctrl/Cmd+↑/↓ reorders; Ctrl/Cmd+Enter focuses the title, and Ctrl/Cmd+Enter there applies Rename.</span></p>`;
 }
 
 function handleAction(event) {
