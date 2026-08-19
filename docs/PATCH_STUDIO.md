@@ -24,11 +24,17 @@ Form dimensions, control geometry, labels, ids, options, Table rows, TreeView hi
 
 The desktop Designer presents the controls in a compact left rail, including Table and TreeView as first-class source-backed tools. The Properties pane defaults to a wider desktop layout, can be resized by dragging its separator, can be collapsed from the Designer toolbar and remembers its local width. On narrower screens Properties moves below the canvas. This workspace state is an IDE preference only and does not become Patch application state.
 
+The current Designer toolbar exposes a compact shared-selection context. It shows the selected control type, id, Form and multi-select count, provides **Focus selected / Focus form** and **Clear**, and supports Escape-to-deselect when focus is not inside an editor field. Properties uses the same shared selection boundary, shows a type-specific heading and reports whether common source-backed fields are current or have unapplied edits.
+
+The Form workflow keeps the active Form selector and Add Form action directly available while Name, Title, Width and Height live in a compact **Form settings** popover. The active Form is highlighted in the canvas; clicking or keyboard-activating a Form title switches to it. Previous/next buttons and Alt+PageUp / Alt+PageDown navigate named Forms. These are transient IDE interactions only.
+
+**Fit controls** computes the bounding box of the active Form's source-backed controls plus padding and rewrites the ordinary `window ... size W, H` source. **Default 640×420** restores the ordinary source-backed default dimensions. Neither action creates hidden layout state.
+
 A selected control can be moved/resized visually. A Form has a lower-right resize grip. Pointer and keyboard changes rewrite visible Patch source. Forms may grow beyond the visible Designer width; the Designer remains scrollable instead of clamping the Form.
 
 Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties. These editors rewrite only the selected `table`/`row`, `tree`/`node` or `tabs`/`tab` block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
 
-Table and TreeView no longer maintain parallel private Designer-selection variables. Their special adapters use the shared `web/designer-selection.js` layer, which keeps one adapter-aware selection state per Designer canvas, applies the common `.designer-selected` marker and emits the internal `patch-designer-selection-change` event. Clicking or keyboard-selecting an ordinary Designer control clears special-adapter selection through the same bridge. This is IDE interaction state only; it never becomes Patch application state or Change History.
+Table and TreeView no longer maintain parallel private Designer-selection variables. Their special adapters use the shared `web/designer-selection.js` layer, which keeps one adapter-aware selection state per Designer canvas, applies the common `.designer-selected` marker and emits the internal `patch-designer-selection-change` event. Ordinary controls and Tabs are bridged into the same shared primary-selection and Properties boundary through `web/designer-core-selection.js`. Designer multi-select remains an explicit transient secondary set over that primary selection. This IDE interaction state never becomes Patch application state or Change History.
 
 GUI interaction does not implicitly persist state. Current transient event values are:
 
@@ -185,7 +191,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace, shared Table/TreeView Designer selection module and shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion/removal and nested Table/TreeView structural editing for Tabs pages.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace, shared primary-selection/Properties modules, compact Designer context UX, active Form navigation/sizing workflow and the shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion/removal and nested Table/TreeView structural editing for Tabs pages.
 
 ## Recovery and diagnostics
 
@@ -205,6 +211,6 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing, nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView, nested Table/TreeView structural Properties editing and the shared Table/TreeView Designer selection architecture are complete.
+TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing, nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView, nested Table/TreeView structural Properties editing, the shared top-level Designer selection/Properties bridge, compact Designer context UX and active Form navigation/source-backed sizing workflow are complete.
 
-Highest-value remaining Studio work is broader data-control/container polish and accessibility/keyboard refinement. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
+Highest-value remaining Studio work is removing the final historical `playground.js` selection mirror/fallback paths, then broader data-control/container polish and additional accessibility/keyboard refinement. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
