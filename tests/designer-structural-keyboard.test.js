@@ -56,7 +56,23 @@ test('structural editor CSS exposes explicit keyboard focus states', () => {
 
 test('public Studio build and offline cache include structural keyboard support', () => {
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
+  const checkSite = fs.readFileSync('scripts/check-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(buildSite, /'designer-structural-keyboard\.js'/);
+  assert.match(checkSite, /Designer structural keyboard accessibility/);
   assert.match(sw, /'\.\/designer-structural-keyboard\.js'/);
+});
+
+test('public Help and Documentation expose the keyboard-only structural editor contract', () => {
+  const help = fs.readFileSync('web/help.html', 'utf8');
+  const docs = fs.readFileSync('web/docs.html', 'utf8');
+  const keyboardDoc = fs.readFileSync('docs/STUDIO_KEYBOARD_ACCESSIBILITY.md', 'utf8');
+
+  assert.match(help, /data-structural-keyboard="roving-v1"/);
+  assert.match(help, /Ctrl\/Cmd \+ Arrow Up\/Down/);
+  assert.match(help, /Escape<\/strong> closes the editor/);
+  assert.match(docs, /docs\/STUDIO_KEYBOARD_ACCESSIBILITY\.md/);
+  assert.match(keyboardDoc, /Roving selection lists/);
+  assert.match(keyboardDoc, /Persistent application state/);
+  assert.match(keyboardDoc, /not a WCAG conformance statement/);
 });
