@@ -117,7 +117,9 @@ Selecting Tabs in the Designer exposes its pages in Properties. A page can be ad
 
 The selected page also exposes its flow-layout controls. The Designer can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly into that page, assigning globally unique ids where needed. Existing nested controls can be removed. Named handlers are removed with the deleted control, and multi-line Table rows or TreeView nodes are removed with the complete parent block rather than being orphaned.
 
-Nested Table and TreeView receive small valid source-backed starter structures without `at/size` geometry because controls inside Tabs use flow layout. Their row/column or hierarchy content remains directly editable in the visible Patch source in this slice. The dedicated top-level Table and TreeView structural Properties editors are unchanged. A dedicated nested Table/TreeView structural inspector remains a Studio polish item, not a language/runtime limitation.
+Nested Table and TreeView receive small valid source-backed starter structures without `at/size` geometry because controls inside Tabs use flow layout. Their dedicated nested Properties editors now mirror the top-level structural workflows: Table supports editable column/cell expressions plus add/remove columns and rows, while TreeView supports add root/child, rename, move, indent/outdent and delete. Each action rewrites only the selected nested `table`/`row` or `tree`/`node` block and reparses the source before accepting it.
+
+The nested inspector is UI convenience over the visible Patch source, not a second model. A nested Table still fails closed on row-width mismatch or zero columns, and a nested TreeView still refuses to become empty.
 
 The editor refuses to leave a page empty and still fails closed for Tabs-inside-Tabs. Page selection remains transient renderer/toolkit state, nested controls retain their ordinary event contracts, and existing Native GUI IR/runtime contracts are unchanged.
 
@@ -181,7 +183,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion and removal for Tabs pages.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion/removal and nested Table/TreeView structural editing for Tabs pages.
 
 ## Recovery and diagnostics
 
@@ -201,6 +203,6 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing and nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView are complete.
+TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing, nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView, and nested Table/TreeView structural Properties editing are complete.
 
-Highest-value remaining Studio work is the dedicated nested Table/TreeView structural Properties inspector and broader data-control/container polish. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
+Highest-value remaining Studio work is broader data-control/container polish, shared selection architecture cleanup for special Designer adapters, and accessibility/keyboard refinement. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
