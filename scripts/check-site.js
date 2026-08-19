@@ -22,7 +22,7 @@ for (const rel of [
   '_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/table-stage1.js',
   '_site/tree-designer.js','_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-workspace.js',
-  '_site/designer-structural-keyboard.js','_site/designer-inspector.css',
+  '_site/designer-ux.js','_site/designer-ux.css','_site/designer-structural-keyboard.js','_site/designer-inspector.css',
   '_site/src/compiler.js','_site/src/studio-project.js','_site/src/window-build.js','_site/src/window-events.js',
   '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js',
   '_site/src/native-tree-backend-adapter.js','_site/src/sealed-native-gui-v11.js','_site/src/sealed-native-gui-v12.js',
@@ -62,6 +62,16 @@ requireAll('Core Designer selection bridge', coreSelection, [
   'installSharedInspectorBridge', 'applySharedInspector', 'captureInspectorDelete', 'captureInspectorSource',
   'populateSharedInspector', 'decorateDesignerAdapterElement', 'patchDesignerAdapter'
 ]);
+const designerUx = read('_site/designer-ux.js');
+requireAll('Designer UX workflow', designerUx, [
+  'designer-context-group', 'Focus selected', 'Focus form', 'designer-form-settings', 'patchFormCount',
+  "event.key !== 'Escape'", 'Property changes ready to apply.', 'Source-backed · up to date.'
+]);
+const designerUxCss = read('_site/designer-ux.css');
+requireAll('Designer UX presentation', designerUxCss, [
+  '.designer-context-group', '.designer-form-settings-panel', '.inspector-state', '.designer-focus-pulse',
+  '@media (max-width: 640px)', '@media (prefers-reduced-motion: reduce)'
+]);
 
 const treeDesigner = read('_site/tree-designer.js');
 requireAll('TreeView Designer integration', treeDesigner, [
@@ -69,7 +79,7 @@ requireAll('TreeView Designer integration', treeDesigner, [
 ]);
 const designerWorkspace = read('_site/designer-workspace.js');
 requireAll('Designer Properties workspace', designerWorkspace, [
-  'patch-studio-designer-properties-v1', 'designerPropertiesToggle', 'designer-inspector-resize', 'setPointerCapture'
+  "import './designer-ux.js'", 'patch-studio-designer-properties-v1', 'designerPropertiesToggle', 'designer-inspector-resize', 'setPointerCapture'
 ]);
 const structuralKeyboard = read('_site/designer-structural-keyboard.js');
 requireAll('Designer structural keyboard accessibility', structuralKeyboard, [
@@ -117,11 +127,12 @@ requireAll('sealed payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSIO
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'", "url.pathname.includes('/runtimes/')",
-  './designer-selection.js','./designer-core-selection.js','./tree-designer.js','./designer-workspace.js','./designer-structural-keyboard.js',
+  './designer-selection.js','./designer-core-selection.js','./designer-workspace.js','./designer-ux.js','./designer-ux.css',
+  './tree-designer.js','./designer-structural-keyboard.js',
   './src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
 ]);
 
 const integrity = read('_site/runtime-integrity.js');
 requireAll('Runtime integrity gate', integrity, ['runtime-manifest.json','SHA-256','crypto.subtle']);
 
-console.log('ok current Patch Studio public site surface: beta.35+ / shared core+adapter Designer selection+Properties / structural keyboard accessibility / runtime v1.3');
+console.log('ok current Patch Studio public site surface: beta.35+ / shared Designer selection+Properties / compact Form workflow / Designer context UX / runtime v1.3');
