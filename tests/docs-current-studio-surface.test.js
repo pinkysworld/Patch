@@ -11,6 +11,8 @@ const docs = fs.readFileSync('web/docs.html', 'utf8');
 const nested = fs.readFileSync('src/designer-tabs-nested.js', 'utf8');
 const nestedWeb = fs.readFileSync('web/designer-tabs-nested.js', 'utf8');
 const designerSelection = fs.readFileSync('web/designer-selection.js', 'utf8');
+const designerCoreSelection = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+const formWorkflow = fs.readFileSync('web/form-designer-workflow.js', 'utf8');
 
 test('current Tabs documentation names the active native contract rather than the historical v0.4 line', () => {
   assert.match(tabs, /Native GUI IR \*\*1\.2\*\*/);
@@ -49,19 +51,32 @@ test('nested Tabs implementation and docs stay aligned on Table and TreeView str
   assert.match(nestedWeb, /Nested TreeView nodes/);
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
-  assert.match(studio, /nested Table\/TreeView structural Properties editing and the shared Table\/TreeView Designer selection architecture are complete/);
+  assert.match(studio, /nested Table\/TreeView structural Properties editing, the shared top-level Designer selection\/Properties bridge/);
   assert.doesNotMatch(tabs, /dedicated nested Table\/TreeView structural Properties inspector is still pending/);
   assert.match(studio, /Native GUI IR \*\*1\.2\*\*/);
   assert.match(studio, /payload \*\*v12\*\*/);
   assert.match(studio, /runtime \*\*v1\.3\*\*/);
 });
 
-test('Studio docs and implementation keep special Table and TreeView selection on one shared transient layer', () => {
+test('Studio docs and implementation keep core Tabs Table and TreeView on one shared transient primary layer', () => {
   assert.match(studio, /shared `web\/designer-selection\.js` layer/);
   assert.match(studio, /one adapter-aware selection state per Designer canvas/);
+  assert.match(studio, /Ordinary controls and Tabs are bridged into the same shared primary-selection and Properties boundary/);
   assert.match(studio, /never becomes Patch application state or Change History/);
   assert.match(designerSelection, /patch-designer-selection-change/);
   assert.match(designerSelection, /selectionState = new WeakMap/);
+  assert.match(designerCoreSelection, /installSharedInspectorBridge/);
+});
+
+test('Studio docs and implementation expose the current source-backed active Form workflow', () => {
+  assert.match(studio, /active Form is highlighted in the canvas/);
+  assert.match(studio, /Alt\+PageUp \/ Alt\+PageDown navigate named Forms/);
+  assert.match(studio, /\*\*Fit controls\*\* computes the bounding box/);
+  assert.match(studio, /\*\*Default 640×420\*\*/);
+  assert.match(formWorkflow, /suggestDesignerFormSize/);
+  assert.match(formWorkflow, /updateDesignerWindow\(code\.value, windowIndex, size\)/);
+  assert.match(formWorkflow, /patchPreviousForm/);
+  assert.match(formWorkflow, /patchNextForm/);
 });
 
 test('roadmap records the actual current Studio and native line', () => {
