@@ -18,7 +18,8 @@
   color: var(--muted);
   font-size: 12px;
 }
-.designer-tree-node-list {
+.designer-tree-node-list,
+.designer-tabs-page-list {
   display: grid;
   max-height: 210px;
   overflow: auto;
@@ -26,9 +27,10 @@
   border-radius: 6px;
   background: var(--surface);
 }
-.designer-tree-node {
+.designer-tree-node,
+.designer-tabs-page {
   min-height: 30px;
-  padding: 4px 8px 4px calc(8px + var(--tree-depth, 0) * 18px);
+  padding: 4px 8px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -36,13 +38,30 @@
   text-align: left;
   font: inherit;
 }
+.designer-tree-node {
+  padding-left: calc(8px + var(--tree-depth, 0) * 18px);
+}
 .designer-tree-node:hover,
-.designer-tree-node.active {
+.designer-tree-node.active,
+.designer-tabs-page:hover,
+.designer-tabs-page.active {
   background: var(--surface-hover, var(--surface-subtle));
 }
-.designer-tree-node.active {
+.designer-tree-node.active,
+.designer-tabs-page.active {
   box-shadow: inset 3px 0 0 currentColor;
   font-weight: 700;
+}
+.designer-tabs-page {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.designer-tabs-page small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
 }
 .designer-data-actions {
   display: flex;
