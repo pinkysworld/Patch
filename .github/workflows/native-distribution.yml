@@ -50,12 +50,6 @@ on:
       - scripts/build-native-appkit.js
       - scripts/build-native-gtk.js
       - scripts/build-native-sea.js
-      - tests/native-signing-policy.test.js
-      - tests/native-accessibility.test.js
-      - docs/RELEASE_SIGNING.md
-      - docs/LINUX_PACKAGING.md
-      - docs/NATIVE_ACCESSIBILITY.md
-      - web/docs.html
       - examples/forms-navigation.patch
 
 concurrency:
@@ -258,8 +252,17 @@ jobs:
         if: env.PATCH_KIND == 'window'
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+          set -euo pipefail
+          if ! sudo timeout 180s apt-get -o Acquire::Retries=3 update; then
+            status=$?
+            echo "GTK dependency index update failed or exceeded 180 seconds (status $status)." >&2
+            exit 124
+          fi
+          if ! sudo timeout 300s apt-get -o Acquire::Retries=3 -o DPkg::Lock::Timeout=60 install -y --no-install-recommends libgtk-3-dev xvfb; then
+            status=$?
+            echo "GTK dependency installation failed or exceeded 300 seconds (status $status)." >&2
+            exit 124
+          fi
       - name: Build final Linux artifact
         shell: bash
         run: |
