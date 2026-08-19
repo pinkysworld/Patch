@@ -5,21 +5,27 @@ import {
   updateDesignerControl
 } from '../src/designer.js';
 import { formControlDefaultSize } from '../src/form-layout.js';
+import {
+  clearDesignerSelection,
+  currentDesignerSelection,
+  decorateDesignerAdapterElement,
+  installDesignerSelectionBridge,
+  rememberDesignerSelection,
+  restoreDesignerAdapterSelection,
+  selectDesignerElement
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
 const addTree = document.querySelector('#addTree');
-let selectedTree = null;
 let scheduled = false;
 
+installDesignerSelectionBridge(canvas);
 installTool();
 installInspectorBridge();
 observeCanvas();
 code?.addEventListener('input', scheduleSync);
 code?.addEventListener('change', scheduleSync);
-canvas?.addEventListener('click', event => {
-  if (!event.target.closest?.('.patch-tree[data-patch-designer-tree="true"]')) selectedTree = null;
-}, { capture: true });
 scheduleSync();
 
 function installTool() {
@@ -31,7 +37,7 @@ function installTool() {
       const next = addDesignerControl(code.value, 'tree', { windowIndex: activeForm });
       const trees = listDesignerControls(next).filter(item => item.windowIndex === activeForm && item.type === 'tree');
       const added = trees[trees.length - 1];
-      selectedTree = added ? { windowIndex: added.windowIndex, controlIndex: added.controlIndex } : null;
+      if (added) rememberDesignerSelection(canvas, treeSelection(added), { reason: 'add-tree' });
       setSource(next);
     } catch (error) {
       showError(error);
@@ -48,7 +54,12 @@ function installInspectorBridge() {
     try {
       const id = document.querySelector('#designerInspectorId')?.value ?? '';
       const next = updateDesignerControl(code.value, selection, { id });
-      selectedTree = selection;
+      const updated = listDesignerControls(next).find(item =>
+        item.windowIndex === selection.windowIndex &&
+        item.controlIndex === selection.controlIndex &&
+        item.type === 'tree'
+      );
+      if (updated) rememberDesignerSelection(canvas, treeSelection(updated), { emit: false });
       setSource(next);
     } catch (error) {
       showError(error);
@@ -62,7 +73,7 @@ function installInspectorBridge() {
     event.stopImmediatePropagation();
     try {
       const next = removeDesignerControl(code.value, selection);
-      selectedTree = null;
+      clearDesignerSelection(canvas, { adapter: 'tree', reason: 'delete-tree' });
       setSource(next);
     } catch (error) {
       showError(error);
@@ -104,26 +115,17 @@ function syncTrees() {
     trees.forEach((element, index) => {
       const model = models[index];
       if (!model) return;
-      const selection = { windowIndex, controlIndex: model.controlIndex };
-      element.dataset.windowIndex = String(windowIndex);
-      element.dataset.controlIndex = String(model.controlIndex);
+      const selection = treeSelection(model);
       element.dataset.patchDesignerTree = 'true';
       decorateTree(element, model, selection);
     });
   });
 
-  if (selectedTree) {
-    const element = treeElement(selectedTree);
-    if (element) {
-      for (const current of canvas.querySelectorAll('.designer-control.designer-selected')) {
-        if (current !== element) current.classList.remove('designer-selected');
-      }
-      element.classList.add('designer-selected');
-      populateInspector(selectedTree);
-      ensureTreeResizeHandle(element, selectedTree);
-    } else {
-      selectedTree = null;
-    }
+  const restored = restoreDesignerAdapterSelection(canvas, 'tree', treeElement);
+  const selection = currentDesignerSelection(canvas, 'tree');
+  if (restored && selection) {
+    populateInspector(selection);
+    ensureTreeResizeHandle(restored, selection);
   }
 }
 
@@ -131,19 +133,19 @@ function decorateTree(element, model, selection) {
   element.classList.add('designer-control', 'patch-tree-designer-control');
   element.tabIndex = 0;
   element.setAttribute('aria-label', `Select TreeView control ${model.id ?? selection.controlIndex + 1}`);
-  element.classList.toggle('designer-selected', sameSelection(selectedTree, selection));
+  decorateDesignerAdapterElement(canvas, element, selection);
   if (element.dataset.patchTreeDesignerBound === 'true') return;
   element.dataset.patchTreeDesignerBound = 'true';
 
   const select = event => {
     event.preventDefault();
     event.stopPropagation();
-    selectedTree = selection;
-    for (const current of canvas.querySelectorAll('.designer-control.designer-selected')) current.classList.remove('designer-selected');
+    const liveSelection = treeSelectionFromElement(element);
+    if (!liveSelection) return;
     for (const handle of canvas.querySelectorAll('.patch-form-resize-handle')) handle.remove();
-    element.classList.add('designer-selected');
-    populateInspector(selection);
-    ensureTreeResizeHandle(element, selection);
+    selectDesignerElement(canvas, element, liveSelection, { reason: 'tree-control' });
+    populateInspector(liveSelection);
+    ensureTreeResizeHandle(element, liveSelection);
   };
   element.addEventListener('click', select);
   element.addEventListener('keydown', event => {
@@ -213,10 +215,11 @@ function ensureTreeResizeHandle(element, selection) {
 }
 
 function activeTreeSelection() {
-  if (!selectedTree) return null;
-  const element = treeElement(selectedTree);
+  const selection = currentDesignerSelection(canvas, 'tree');
+  if (!selection) return null;
+  const element = treeElement(selection);
   if (!element?.classList.contains('designer-selected')) return null;
-  return selectedTree;
+  return selection;
 }
 
 function treeControl(selection) {
@@ -234,12 +237,27 @@ function treeElement(selection) {
   );
 }
 
-function countTreeNodes(nodes = []) {
-  return (nodes ?? []).reduce((count, node) => count + 1 + countTreeNodes(node.children), 0);
+function treeSelection(control) {
+  return {
+    windowIndex: control.windowIndex,
+    controlIndex: control.controlIndex,
+    adapter: 'tree',
+    id: control.id ?? ''
+  };
 }
 
-function sameSelection(a, b) {
-  return Boolean(a && b && a.windowIndex === b.windowIndex && a.controlIndex === b.controlIndex);
+function treeSelectionFromElement(element) {
+  const windowIndex = Number(element?.dataset?.windowIndex);
+  const controlIndex = Number(element?.dataset?.controlIndex);
+  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
+  const control = listDesignerControls(code.value).find(item =>
+    item.windowIndex === windowIndex && item.controlIndex === controlIndex && item.type === 'tree'
+  );
+  return control ? treeSelection(control) : null;
+}
+
+function countTreeNodes(nodes = []) {
+  return (nodes ?? []).reduce((count, node) => count + 1 + countTreeNodes(node.children), 0);
 }
 
 function revealLine(line) {
