@@ -111,7 +111,9 @@ window "Settings":
 
 Selecting Tabs in the Designer exposes its pages in Properties. A page can be added, renamed, moved up/down or removed. Moving a page preserves its complete nested control body. Deleting a page removes event handlers belonging to controls deleted with that page so the source cannot be left with orphan handlers. Tabs Stage 1 continues to require at least two pages, so the editor disables and rejects deletion at that boundary.
 
-The editor does not change Tabs runtime semantics. Page selection remains transient renderer/toolkit state, nested controls remain normal Patch controls, and existing Native GUI IR/runtime contracts are unchanged.
+The selected page also exposes its simple flow controls. The Designer can add Text, Button, Input, Checkbox, Radio, ComboBox and ListBox controls directly into that page, assigning globally unique ids where needed. Existing simple controls can be removed; a named control's matching event block is removed with it. The editor refuses to leave a page empty and fails closed for complex nested Table, TreeView or container controls that are outside this slice.
+
+The editor does not change Tabs runtime semantics. Nested controls remain normal Patch controls using flow layout, page selection remains transient renderer/toolkit state, and existing Native GUI IR/runtime contracts are unchanged.
 
 ## Menus and dialogs
 
@@ -171,7 +173,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules, including nested simple-control editing for Tabs pages.
 
 ## Recovery and diagnostics
 
@@ -191,4 +193,4 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-The TreeView Ready/offline parity, first-class TreeView Designer control, source-backed TreeView/Table data editors and source-backed Tabs page editor are complete. Highest-value remaining product work includes richer data controls, deeper nested-control editing inside container pages, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.
+The TreeView Ready/offline parity, first-class TreeView Designer control, source-backed TreeView/Table data editors, Tabs page editor and simple nested Tabs control editing are complete. Highest-value remaining product work includes richer data controls and complex nested/container editing, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.

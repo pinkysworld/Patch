@@ -1,4 +1,5 @@
 import './designer-data-editor.js';
+import './designer-tabs-nested.js';
 
 const STORAGE_KEY = 'patch-studio-designer-properties-v1';
 const DEFAULT_WIDTH = 340;
