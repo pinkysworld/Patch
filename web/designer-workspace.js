@@ -1,3 +1,5 @@
+import './designer-data-editor.js';
+
 const STORAGE_KEY = 'patch-studio-designer-properties-v1';
 const DEFAULT_WIDTH = 340;
 const MIN_WIDTH = 280;
