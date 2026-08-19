@@ -19,9 +19,11 @@ Checked items are implemented and must pass final exact-head gates before merge.
 - [x] source-backed nested Tabs insertion/removal for Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView
 - [x] dedicated nested Table column/row and TreeView hierarchy structural editing inside Tabs Properties
 - [x] source-backed multi-line nested Table/TreeView removal and orphan-event cleanup
+- [x] categorized source-backed control discovery plus active Form navigation/sizing workflow
+- [x] structural Properties summary/filter/empty-state polish for Table/TreeView/Tabs
 - [x] public Help/Documentation plus `docs/PATCH_STUDIO.md` and `docs/TABS.md` synchronized to the current v12/runtime-v1.3 line
 - [x] CI regression gate against Studio/Tabs documentation drifting back to obsolete native contracts or unsupported feature claims
-- [ ] shared Designer selection/event architecture cleanup for special adapters
+- [x] shared Designer selection/event architecture cleanup across core/Tabs/Table/TreeView, including removal of the historical `playground.js` mirror and Table/Tree Inspector fallbacks
 - [ ] broader data-control/container polish beyond current Table/ListBox/TreeView/Tabs surface
 - [ ] additional accessibility and keyboard refinement beyond the current baseline
 
@@ -238,8 +240,9 @@ Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offlin
 - [x] source-backed Tabs page add/rename/reorder/delete Properties editor
 - [x] source-backed nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView
 - [x] nested Table columns/rows and TreeView hierarchy structural Properties editing inside Tabs
+- [x] categorized Add control picker, active Form navigation/source-backed fit/default sizing and structural Properties filtering/empty states
 - [x] documentation drift regression coverage for current Studio/Tabs features and native contract
-- [ ] unify special Table/Tree/Tabs Designer adapters behind a shared selection/event architecture
+- [x] unify core/Tabs/Table/TreeView behind one shared primary-selection/event and common Properties action architecture
 - [ ] additional accessibility and keyboard refinement for structural/nested editors
 
 All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. List-backed ListBox `changed` exposes the selected options as a transient text list. TreeView `changed` exposes the selected root-to-node display path as a transient text list. Renderer/native-toolkit selection does not itself mutate Patch state. Menu `enabled` and `checked` are projections of ordinary Boolean Patch state; menu activation does not create hidden persistent toolkit state.
