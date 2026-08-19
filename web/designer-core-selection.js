@@ -1,4 +1,8 @@
-import { listDesignerControls } from '../src/designer.js';
+import {
+  listDesignerControls,
+  removeDesignerControl,
+  updateDesignerControl
+} from '../src/designer.js';
 import {
   DESIGNER_SELECTION_EVENT,
   clearDesignerSelection,
@@ -29,10 +33,14 @@ let pendingToolAdd = null;
 
 if (canvas && code) {
   installDesignerSelectionBridge(canvas);
+  installSharedInspectorBridge();
   document.addEventListener('click', captureToolboxIntent, { capture: true });
   canvas.addEventListener('click', captureCoreSelection, { capture: true });
   canvas.addEventListener('keydown', captureCoreSelectionKey, { capture: true });
-  canvas.addEventListener(DESIGNER_SELECTION_EVENT, scheduleSync);
+  canvas.addEventListener(DESIGNER_SELECTION_EVENT, () => {
+    populateSharedInspector();
+    scheduleSync();
+  });
   new MutationObserver(scheduleSync).observe(canvas, { childList: true, subtree: true });
   code.addEventListener('input', scheduleSync);
   code.addEventListener('change', scheduleSync);
@@ -79,7 +87,12 @@ function scheduleSync() {
   scheduled = true;
   queueMicrotask(() => {
     scheduled = false;
-    try { syncCoreSelection(); } catch { /* source may be transiently invalid while typing */ }
+    try {
+      syncCoreSelection();
+      populateSharedInspector();
+    } catch {
+      // Source may be transiently invalid while typing. Playground owns the visible parse diagnostic.
+    }
   });
 }
 
@@ -130,6 +143,117 @@ function syncCoreSelection() {
   }
 }
 
+function installSharedInspectorBridge() {
+  const apply = document.querySelector('#designerInspectorApply');
+  const remove = document.querySelector('#designerInspectorDelete');
+  const source = document.querySelector('#designerInspectorSource');
+  apply?.addEventListener('click', captureInspectorApply, { capture: true });
+  remove?.addEventListener('click', captureInspectorDelete, { capture: true });
+  source?.addEventListener('click', captureInspectorSource, { capture: true });
+  for (const field of [
+    document.querySelector('#designerInspectorId'),
+    document.querySelector('#designerInspectorText'),
+    document.querySelector('#designerInspectorOptions')
+  ]) {
+    field?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' || !currentDesignerSelection(canvas)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      applySharedInspector();
+    }, { capture: true });
+  }
+}
+
+function captureInspectorApply(event) {
+  if (!currentDesignerSelection(canvas)) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  applySharedInspector();
+}
+
+function captureInspectorDelete(event) {
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  try {
+    const next = removeDesignerControl(code.value, selection);
+    clearDesignerSelection(canvas, { reason: 'delete-control' });
+    setSource(next);
+  } catch (error) {
+    showInspectorError(error);
+  }
+}
+
+function captureInspectorSource(event) {
+  const control = currentSharedControl();
+  if (!control) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  revealLine(control.line);
+}
+
+function applySharedInspector() {
+  const selection = currentDesignerSelection(canvas);
+  const selected = currentSharedControl();
+  if (!selection || !selected) return;
+  try {
+    const changes = {};
+    if (selected.type !== 'text') changes.id = document.querySelector('#designerInspectorId')?.value ?? '';
+    if (['text', 'button', 'checkbox'].includes(selected.type)) {
+      changes.textExpr = document.querySelector('#designerInspectorText')?.value ?? '';
+    }
+    if (['combo', 'listbox', 'radio'].includes(selected.type)) {
+      changes.options = splitOptionExpressions(document.querySelector('#designerInspectorOptions')?.value ?? '');
+    }
+    const next = updateDesignerControl(code.value, selection, changes);
+    const updated = listDesignerControls(next).find(control => sameLocation(control, selection));
+    if (updated) rememberDesignerSelection(canvas, designerSelectionForControl(updated, selection.adapter), { emit: false });
+    setSource(next);
+  } catch (error) {
+    showInspectorError(error);
+  }
+}
+
+function populateSharedInspector() {
+  const selection = currentDesignerSelection(canvas);
+  const control = currentSharedControl();
+  const empty = document.querySelector('#designerInspectorEmpty');
+  const form = document.querySelector('#designerInspectorForm');
+  if (!selection || !control) {
+    if (empty) empty.hidden = false;
+    if (form) form.hidden = true;
+    return;
+  }
+
+  if (empty) empty.hidden = true;
+  if (form) form.hidden = false;
+  const type = document.querySelector('#designerInspectorType');
+  const location = document.querySelector('#designerInspectorLocation');
+  const idField = document.querySelector('#designerInspectorIdField');
+  const textField = document.querySelector('#designerInspectorTextField');
+  const optionsField = document.querySelector('#designerInspectorOptionsField');
+  const id = document.querySelector('#designerInspectorId');
+  const text = document.querySelector('#designerInspectorText');
+  const options = document.querySelector('#designerInspectorOptions');
+
+  if (type) type.textContent = displayControlType(control.type);
+  if (location) location.textContent = inspectorLocation(control);
+  if (idField) idField.hidden = control.type === 'text';
+  if (textField) textField.hidden = !['text', 'button', 'checkbox'].includes(control.type);
+  if (optionsField) optionsField.hidden = !['combo', 'listbox', 'radio'].includes(control.type);
+  if (id) id.value = control.id ?? '';
+  if (text) text.value = control.textExpr ?? '';
+  if (options) options.value = control.options?.join(', ') ?? '';
+  clearInspectorError();
+}
+
+function currentSharedControl() {
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  return listDesignerControls(code.value).find(control => sameLocation(control, selection)) ?? null;
+}
+
 function coreControlFromTarget(target) {
   const element = target?.closest?.('.designer-control');
   if (!element || !canvas.contains(element) || !isCoreElement(element)) return null;
@@ -166,4 +290,83 @@ function elementFor(control) {
 
 function sameLocation(control, selection) {
   return Number(control.windowIndex) === Number(selection.windowIndex) && Number(control.controlIndex) === Number(selection.controlIndex);
+}
+
+function displayControlType(type) {
+  if (type === 'tree') return 'TreeView';
+  if (type === 'combo') return 'ComboBox';
+  if (type === 'listbox') return 'ListBox';
+  if (type === 'tabs') return 'Tabs';
+  if (type === 'table') return 'Table';
+  const text = String(type ?? 'Control');
+  return text ? text[0].toUpperCase() + text.slice(1) : 'Control';
+}
+
+function inspectorLocation(control) {
+  let suffix = '';
+  if (control.type === 'tree') suffix = ` · ${countTreeNodes(control.treeNodes)} nodes`;
+  if (control.type === 'table') suffix = ` · ${(control.columns ?? []).length} columns · ${(control.rows ?? []).length} rows`;
+  return `Window ${control.windowIndex + 1} · control ${control.controlIndex + 1} · line ${control.line}${suffix}`;
+}
+
+function countTreeNodes(nodes = []) {
+  return (nodes ?? []).reduce((count, node) => count + 1 + countTreeNodes(node.children), 0);
+}
+
+function splitOptionExpressions(text) {
+  const out = [];
+  let current = '';
+  let quote = null;
+  let escaped = false;
+  let depth = 0;
+  for (const ch of String(text ?? '')) {
+    if (quote) {
+      current += ch;
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
+    if (ch === '(' || ch === '[') depth += 1;
+    if ((ch === ')' || ch === ']') && depth > 0) depth -= 1;
+    if (ch === ',' && depth === 0) {
+      if (current.trim()) out.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) out.push(current.trim());
+  return out;
+}
+
+function revealLine(line) {
+  const lines = code.value.replace(/\r\n/g, '\n').split('\n');
+  let start = 0;
+  for (let index = 0; index < line - 1; index += 1) start += lines[index].length + 1;
+  const end = start + (lines[line - 1]?.length ?? 0);
+  code.focus();
+  code.setSelectionRange(start, end);
+}
+
+function setSource(source) {
+  code.value = source;
+  code.dispatchEvent(new Event('input', { bubbles: true }));
+  code.dispatchEvent(new Event('change', { bubbles: true }));
+  scheduleSync();
+}
+
+function showInspectorError(error) {
+  const target = document.querySelector('#designerInspectorError');
+  if (!target) return;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+}
+
+function clearInspectorError() {
+  const target = document.querySelector('#designerInspectorError');
+  if (!target) return;
+  target.textContent = '';
+  target.hidden = true;
 }
