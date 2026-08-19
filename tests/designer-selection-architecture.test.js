@@ -104,6 +104,12 @@ test('ordinary controls and Tabs are bridged into the same selection store and e
   assert.match(index, /\.\/designer-core-selection\.js/);
 });
 
+test('additive pointer and keyboard multi-select do not replace the shared primary before the multiselect layer runs', () => {
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const guards = core.match(/if \(event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey\) return;/g) ?? [];
+  assert.equal(guards.length, 2, 'both pointer and Enter/Space selection paths must defer modifier gestures to designer-multiselect');
+});
+
 test('shared selection is also the normal Properties Apply/Delete/Source boundary', () => {
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   assert.match(core, /installSharedInspectorBridge/);
