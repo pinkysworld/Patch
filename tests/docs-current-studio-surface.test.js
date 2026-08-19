@@ -12,6 +12,7 @@ const nested = fs.readFileSync('src/designer-tabs-nested.js', 'utf8');
 const nestedWeb = fs.readFileSync('web/designer-tabs-nested.js', 'utf8');
 const designerSelection = fs.readFileSync('web/designer-selection.js', 'utf8');
 const designerCoreSelection = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+const structureUx = fs.readFileSync('web/designer-structure-ux.js', 'utf8');
 const formWorkflow = fs.readFileSync('web/form-designer-workflow.js', 'utf8');
 
 test('current Tabs documentation names the active native contract rather than the historical v0.4 line', () => {
@@ -51,11 +52,22 @@ test('nested Tabs implementation and docs stay aligned on Table and TreeView str
   assert.match(nestedWeb, /Nested TreeView nodes/);
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
-  assert.match(studio, /nested Table\/TreeView structural Properties editing, the shared top-level Designer selection\/Properties bridge/);
+  assert.match(studio, /nested Table\/TreeView structural Properties editing, structural Properties summary\/filter\/empty-state polish, the shared top-level Designer selection\/Properties bridge/);
   assert.doesNotMatch(tabs, /dedicated nested Table\/TreeView structural Properties inspector is still pending/);
   assert.match(studio, /Native GUI IR \*\*1\.2\*\*/);
   assert.match(studio, /payload \*\*v12\*\*/);
   assert.match(studio, /runtime \*\*v1\.3\*\*/);
+});
+
+test('Studio docs and implementation expose current structural Properties usability without a second mutation path', () => {
+  assert.match(studio, /common \*\*Structure\*\* summary/);
+  assert.match(studio, /filters for TreeView nodes, Tabs pages and controls inside the selected page/);
+  assert.match(studio, /Empty Tables show \*\*No rows yet\*\*/);
+  assert.match(studio, /quick actions call the existing source-backed editor buttons/);
+  assert.match(structureUx, /filterStructureLabels/);
+  assert.match(structureUx, /structuralEditorSummary/);
+  assert.match(structureUx, /clickExisting/);
+  assert.doesNotMatch(structureUx, /\bcode\.value\b/);
 });
 
 test('Studio docs and implementation keep core Tabs Table and TreeView on one shared transient primary layer', () => {
