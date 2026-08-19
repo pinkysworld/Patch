@@ -91,14 +91,19 @@ when files changed:
   <section class="page-section" data-tabs-editor="source-backed">
     <h2>Tabs pages</h2>
     <p>Select a Tabs control in the Designer to edit its source-backed page list in Properties. You can add a page, rename it, move it up or down, or delete it. Reordering preserves the full nested control body. Deleting a page also removes handlers for controls deleted with that page, preventing orphan event handlers.</p>
-    <p>The selected page also exposes its <strong>Page controls</strong>. Patch Studio can add Text, Button, Input, Checkbox, Radio, ComboBox and ListBox controls directly to that page, or remove an existing simple flow control. New named controls receive an id that is unique across the whole Window source. Removing a named nested control also removes its matching event handler. The editor refuses to leave a page empty, and complex nested Table/Tree/container editing remains fail-closed rather than silently changing source structure.</p>
+    <p>The selected page also exposes its <strong>Page controls</strong>. Patch Studio can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly to that page, or remove an existing nested control. New named controls receive an id that is unique across top-level and nested controls. Nested Table and TreeView receive small valid source-backed starter structures, and removing either control removes its complete multi-line <code>row</code>/<code>node</code> block rather than leaving orphan source behind.</p>
+    <p>Table row/column editing and TreeView hierarchy editing for a nested page control remain visible-source operations for now. The dedicated top-level Table/TreeView structural Properties editors are unchanged. Tabs cannot be nested inside Tabs, and the nested editor refuses to leave a page empty.</p>
     <pre class="page-code">window "Settings":
   tabs as settings:
     tab "General":
       text "General"
+      table "Name", "Value" as preferences:
+        row "Theme", "System"
     tab "Advanced":
-      text "Advanced"</pre>
-    <p>Tabs Stage 1 requires at least two pages, so the editor will not delete below that limit. Nested page controls continue to use flow layout. Page selection remains transient renderer state and does not become persistent Patch state.</p>
+      tree as sections:
+        node "Security"
+          node "Keys"</pre>
+    <p>Tabs requires at least two pages, so the editor will not delete below that limit. Nested page controls use flow layout. Page selection remains transient renderer state and does not become persistent Patch state. Current Ready/offline builds use Native GUI IR 1.2 / payload v12 / runtime v1.3.</p>
   </section>
 
   <section class="page-section">
