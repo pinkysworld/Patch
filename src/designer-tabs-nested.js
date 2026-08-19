@@ -1,7 +1,7 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
 
-const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox']);
+const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'table', 'tree']);
 
 export function listDesignerTabPageControls(source, selector, pageIndex) {
   const { page } = requireTabsPage(source, selector, pageIndex);
@@ -11,7 +11,10 @@ export function listDesignerTabPageControls(source, selector, pageIndex) {
     type: node.control,
     id: node.id ?? null,
     textExpr: node.textExpr ?? null,
-    options: Array.isArray(node.options) ? [...node.options] : []
+    options: Array.isArray(node.options) ? [...node.options] : [],
+    columns: Array.isArray(node.columns) ? [...node.columns] : [],
+    rows: Array.isArray(node.rows) ? node.rows.map(row => [...row]) : [],
+    treeNodes: cloneTreeNodes(node.treeNodes ?? [])
   }));
 }
 
@@ -26,14 +29,14 @@ export function addDesignerTabPageControl(source, selector, pageIndex, type) {
   const insertAt = tabPageContentEnd(lines, control, tabsNode, pageIndex);
   const indent = `${indentOf(lines[page.line - 1])}  `;
   const ids = new Set(collectAllControlIds(ast));
-  const line = formatNewNestedControl(controlType, ids);
-  lines.splice(insertAt, 0, `${indent}${line}`);
+  const rendered = formatNewNestedControl(controlType, ids).map(line => `${indent}${line}`);
+  lines.splice(insertAt, 0, ...rendered);
   return validateAndPreserve(source, lines);
 }
 
 export function removeDesignerTabPageControl(source, selector, pageIndex, controlIndex) {
-  const { page } = requireTabsPage(source, selector, pageIndex);
-  const controls = page.body ?? [];
+  const context = requireTabsPage(source, selector, pageIndex);
+  const controls = context.page.body ?? [];
   if (controls.length <= 1) throw new Error('A tab page needs at least one control.');
   if (!Number.isInteger(controlIndex) || controlIndex < 0 || controlIndex >= controls.length) {
     throw new Error('Tab page control selection is invalid.');
@@ -45,7 +48,9 @@ export function removeDesignerTabPageControl(source, selector, pageIndex, contro
   }
 
   const lines = normalizeLines(source);
-  lines.splice(nested.line - 1, 1);
+  const start = nested.line - 1;
+  const end = nestedControlBlockEnd(lines, context, controlIndex);
+  lines.splice(start, end - start);
   if (nested.id) removeEventBlocksForIds(lines, [nested.id]);
   return validateAndPreserve(source, lines);
 }
@@ -94,14 +99,28 @@ function tabPageContentEnd(lines, control, tabsNode, pageIndex) {
   return end;
 }
 
+function nestedControlBlockEnd(lines, context, controlIndex) {
+  const controls = context.page.body ?? [];
+  if (controlIndex + 1 < controls.length) return controls[controlIndex + 1].line - 1;
+  return tabPageContentEnd(lines, context.control, context.tabsNode, context.tabsNode.body.indexOf(context.page));
+}
+
 function formatNewNestedControl(type, usedIds) {
-  if (type === 'text') return 'text "Text"';
-  if (type === 'button') return `button "Button" as ${uniqueId('button', usedIds)}`;
-  if (type === 'input') return `input ${uniqueId('input', usedIds)}`;
-  if (type === 'checkbox') return `checkbox "Checkbox" as ${uniqueId('checkbox', usedIds)}`;
-  if (type === 'radio') return `radio "One", "Two" as ${uniqueId('radio', usedIds)}`;
-  if (type === 'combo') return `combo "One", "Two" as ${uniqueId('combo', usedIds)}`;
-  if (type === 'listbox') return `listbox "One", "Two" as ${uniqueId('listbox', usedIds)}`;
+  if (type === 'text') return ['text "Text"'];
+  if (type === 'button') return [`button "Button" as ${uniqueId('button', usedIds)}`];
+  if (type === 'input') return [`input ${uniqueId('input', usedIds)}`];
+  if (type === 'checkbox') return [`checkbox "Checkbox" as ${uniqueId('checkbox', usedIds)}`];
+  if (type === 'radio') return [`radio "One", "Two" as ${uniqueId('radio', usedIds)}`];
+  if (type === 'combo') return [`combo "One", "Two" as ${uniqueId('combo', usedIds)}`];
+  if (type === 'listbox') return [`listbox "One", "Two" as ${uniqueId('listbox', usedIds)}`];
+  if (type === 'table') {
+    const id = uniqueId('table', usedIds);
+    return [`table "Name", "Value" as ${id}:`, '  row "Item", "Value"'];
+  }
+  if (type === 'tree') {
+    const id = uniqueId('tree', usedIds);
+    return [`tree as ${id}:`, '  node "Root"', '    node "Child"'];
+  }
   throw new Error(`Unsupported nested control '${type}'.`);
 }
 
@@ -162,6 +181,13 @@ function controlBlockEnd(lines, lineIndex) {
     end += 1;
   }
   return end;
+}
+
+function cloneTreeNodes(nodes) {
+  return (nodes ?? []).map(node => ({
+    labelExpr: node.labelExpr,
+    children: cloneTreeNodes(node.children ?? [])
+  }));
 }
 
 function validateAndPreserve(original, lines) {
