@@ -33,7 +33,9 @@ Tabs structure remains ordinary visible Patch source. Selecting a Tabs control i
 
 For the selected page, Patch Studio can add or remove source-backed Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView controls. Generated named controls receive ids that are unique across top-level and nested controls. Nested Table and TreeView are inserted with small valid source-backed starter structures and no hidden geometry.
 
-The current nested-controls slice intentionally keeps Table row/column editing and TreeView hierarchy editing in the visible Patch source block. Top-level Table and TreeView already have dedicated structural Properties editors; a dedicated nested structural inspector is a remaining Studio polish item rather than a language/runtime limitation.
+Nested Table and TreeView now have dedicated structural editing directly inside Tabs Properties as well. A nested Table exposes the same source-backed column/cell grid actions as a top-level Table: edit expressions, apply data, add/remove columns and add/remove rows. A nested TreeView exposes the same hierarchy actions as a top-level TreeView: add root/child, rename, move up/down, indent/outdent and delete nodes. Every action rewrites only that nested `table`/`row` or `tree`/`node` block and reparses the resulting Patch source before it is accepted.
+
+The nested structural inspector is UI convenience over the same visible source, not a second Designer document. A Table still needs at least one column and every row must match the column count. A TreeView still needs at least one node.
 
 The Designer refuses to leave a tab page empty and still enforces the language requirement of at least two pages.
 
@@ -108,6 +110,5 @@ Older payloads are not silently upgraded or reinterpreted when newer nested cont
 - page controls use flow layout rather than individual source `at/size` geometry;
 - Tabs cannot currently be nested inside Tabs;
 - page selection has no Patch event;
-- the dedicated nested Table/TreeView structural Properties inspector is still pending, although both controls can now be added/removed inside pages and edited directly in source;
 - real credentialed Windows signing evidence and macOS Developer ID/notarization evidence remain separate production-readiness work;
 - FreeBSD remains Console-only and Linux native distribution still relies on normal GTK3/system libraries.
