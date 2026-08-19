@@ -4,6 +4,29 @@ Current development beta: **0.2.0-beta.35**
 
 Checked items are implemented and must pass final exact-head gates before merge. Unchecked items are not presented as finished features or measured results.
 
+## Current product and Studio line
+
+- Patch package: **0.2.0-beta.35**
+- Change IR: **0.10**
+- Native GUI IR: **1.2**
+- current sealed native GUI payload: **v12**
+- current token-free Ready/offline native runtime: **v1.3** on Windows, macOS and Linux
+- formal runtime-correspondence milestone: **beta.32**; later product/Studio work does not widen that proof claim
+- [x] project bundle v3, Project Tree and deterministic multi-file Run/Build composition
+- [x] wider, resizable and collapsible Designer Properties workspace with local IDE-only width persistence
+- [x] first-class source-backed Table and TreeView Designer controls and top-level structural Properties editors
+- [x] source-backed Tabs page add/rename/reorder/delete editing
+- [x] source-backed nested Tabs insertion/removal for Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView
+- [x] dedicated nested Table column/row and TreeView hierarchy structural editing inside Tabs Properties
+- [x] source-backed multi-line nested Table/TreeView removal and orphan-event cleanup
+- [x] public Help/Documentation plus `docs/PATCH_STUDIO.md` and `docs/TABS.md` synchronized to the current v12/runtime-v1.3 line
+- [x] CI regression gate against Studio/Tabs documentation drifting back to obsolete native contracts or unsupported feature claims
+- [ ] shared Designer selection/event architecture cleanup for special adapters
+- [ ] broader data-control/container polish beyond current Table/ListBox/TreeView/Tabs surface
+- [ ] additional accessibility and keyboard refinement beyond the current baseline
+
+The current Studio milestones above are product/editor work. They do not imply a new Change IR, Native GUI IR, payload/runtime version or a broader formal assurance result.
+
 ## Completed research milestones
 
 ### beta.25–27: call composition and exact binding
@@ -210,6 +233,14 @@ Beta.35 keeps Change IR at **0.10**. Browser, direct AOT and sealed Ready/offlin
 - [x] direct-native TreeView parity on Win32/AppKit/GTK through Native GUI IR 1.2 and backend/runtime v1.3
 - [x] sealed payload v12 / runtime v1.3 TreeView parity with root-to-node text-list selection and Windows/macOS/Linux smoke execution
 - [x] token-free Ready/offline consumer switch to TreeView-capable payload v12 / runtime v1.3
+- [x] first-class source-backed TreeView tool and wider/resizable/collapsible Properties workspace
+- [x] source-backed top-level Table grid and TreeView hierarchy structural Properties editors
+- [x] source-backed Tabs page add/rename/reorder/delete Properties editor
+- [x] source-backed nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView
+- [x] nested Table columns/rows and TreeView hierarchy structural Properties editing inside Tabs
+- [x] documentation drift regression coverage for current Studio/Tabs features and native contract
+- [ ] unify special Table/Tree/Tabs Designer adapters behind a shared selection/event architecture
+- [ ] additional accessibility and keyboard refinement for structural/nested editors
 
 All current input/selection/result events expose transient values only. Persistent application state still changes through ordinary semantic `change`. Runtime layout reflow is UI behavior only and does not create Patch state or Change History. Table `changed` exposes the selected row as a transient list of display strings. List-backed ListBox `changed` exposes the selected options as a transient text list. TreeView `changed` exposes the selected root-to-node display path as a transient text list. Renderer/native-toolkit selection does not itself mutate Patch state. Menu `enabled` and `checked` are projections of ordinary Boolean Patch state; menu activation does not create hidden persistent toolkit state.
 

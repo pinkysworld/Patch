@@ -125,7 +125,11 @@
   border-radius: 6px;
   background: var(--surface);
 }
-.designer-tabs-control-row > span {
+.designer-tabs-control-row.active {
+  box-shadow: inset 3px 0 0 currentColor;
+  background: var(--surface-hover, var(--surface-subtle));
+}
+.designer-tabs-control-row > span:first-child {
   display: grid;
   min-width: 0;
 }
@@ -136,6 +140,24 @@
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.designer-tabs-control-row-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  gap: 4px;
+  align-items: center;
+}
+.designer-tabs-structure-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.designer-tabs-structure-editor .designer-table-editor,
+.designer-tabs-structure-editor .designer-tree-node-list {
+  max-height: 240px;
 }
 .designer-tabs-control-add {
   display: grid;
@@ -161,4 +183,6 @@
   .designer-data-actions button { flex: 1 1 auto; }
   .designer-table-editor { max-height: 240px; }
   .designer-tabs-control-add { grid-template-columns: 1fr; }
+  .designer-tabs-control-row { align-items: flex-start; }
+  .designer-tabs-control-row-actions { grid-auto-flow: row; }
 }
