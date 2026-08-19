@@ -133,7 +133,7 @@ test('shared core selection never adopts a legacy renderer-only selected DOM mar
   assert.doesNotMatch(core, /legacySelected/);
   assert.doesNotMatch(core, /elements\.find\(element => element\.classList\.contains\('designer-selected'\)\)/);
   assert.match(core, /const shared = currentDesignerSelection\(canvas\)/);
-  assert.match(doc, /does not adopt renderer-only `\.designer-selected` markers/);
+  assert.match(doc, /no longer adopts renderer-only `\.designer-selected` markers/);
   assert.match(doc, /private `designerSelection` mirror still exists/);
 });
 
