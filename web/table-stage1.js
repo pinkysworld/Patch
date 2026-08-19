@@ -6,6 +6,15 @@ import {
   removeDesignerControl,
   updateDesignerControl
 } from '../src/designer.js';
+import {
+  clearDesignerSelection,
+  currentDesignerSelection,
+  decorateDesignerAdapterElement,
+  installDesignerSelectionBridge,
+  rememberDesignerSelection,
+  restoreDesignerAdapterSelection,
+  selectDesignerElement
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const designerCanvas = document.querySelector('#designerCanvas');
@@ -15,18 +24,15 @@ const observed = new Map();
 const appSelections = new Map();
 const appListboxSelections = new Map();
 let scheduled = false;
-let selectedTable = null;
 
 installStyles();
+installDesignerSelectionBridge(designerCanvas);
 installTool();
 installInspectorBridge();
 observe(designerCanvas, true);
 observe(appView, false);
 code?.addEventListener('input', scheduleSync);
 code?.addEventListener('change', scheduleSync);
-designerCanvas?.addEventListener('click', event => {
-  if (!event.target.closest?.('.patch-table-stage1-control')) selectedTable = null;
-}, { capture: true });
 scheduleSync();
 
 function installTool() {
@@ -38,7 +44,7 @@ function installTool() {
       const next = addDesignerControl(code.value, 'table', { windowIndex: activeForm });
       const tables = listDesignerControls(next).filter(item => item.windowIndex === activeForm && item.type === 'table');
       const added = tables[tables.length - 1];
-      selectedTable = added ? { windowIndex: added.windowIndex, controlIndex: added.controlIndex } : null;
+      if (added) rememberDesignerSelection(designerCanvas, tableSelection(added), { reason: 'add-table' });
       setSource(next);
     } catch (error) {
       showError(error);
@@ -55,7 +61,12 @@ function installInspectorBridge() {
     try {
       const id = document.querySelector('#designerInspectorId')?.value ?? '';
       const next = updateDesignerControl(code.value, selection, { id });
-      selectedTable = selection;
+      const updated = listDesignerControls(next).find(item =>
+        item.windowIndex === selection.windowIndex &&
+        item.controlIndex === selection.controlIndex &&
+        item.type === 'table'
+      );
+      if (updated) rememberDesignerSelection(designerCanvas, tableSelection(updated), { emit: false });
       setSource(next);
     } catch (error) {
       showError(error);
@@ -69,7 +80,7 @@ function installInspectorBridge() {
     event.stopImmediatePropagation();
     try {
       const next = removeDesignerControl(code.value, selection);
-      selectedTable = null;
+      clearDesignerSelection(designerCanvas, { adapter: 'table', reason: 'delete-table' });
       setSource(next);
     } catch (error) {
       showError(error);
@@ -142,7 +153,7 @@ function syncContainer(container, designer) {
         element.dataset.controlIndex = String(controlIndex);
         const anchor = baseChildren[renderedIndex] ?? body.querySelector(':scope > .patch-form-resize-handle') ?? null;
         body.insertBefore(element, anchor);
-        if (designer) decorateDesignerTable(element, node, { windowIndex, controlIndex });
+        if (designer) decorateDesignerTable(element, node, { windowIndex, controlIndex, adapter: 'table', id: node.id ?? '' });
         return;
       }
 
@@ -158,12 +169,10 @@ function syncContainer(container, designer) {
     });
   });
 
-  if (designer && selectedTable) {
-    const selected = tableElement(selectedTable);
-    if (selected) {
-      selected.classList.add('designer-selected');
-      populateInspector(selectedTable);
-    }
+  if (designer) {
+    const restored = restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement);
+    const selection = currentDesignerSelection(designerCanvas, 'table');
+    if (restored && selection) populateInspector(selection);
   }
 }
 
@@ -338,14 +347,14 @@ function decorateDesignerTable(element, node, selection) {
   element.classList.add('designer-control');
   element.tabIndex = 0;
   element.setAttribute('aria-label', `Select table control ${node.id ?? selection.controlIndex + 1}`);
-  if (sameSelection(selectedTable, selection)) element.classList.add('designer-selected');
+  decorateDesignerAdapterElement(designerCanvas, element, selection);
   const select = event => {
     event.preventDefault();
     event.stopPropagation();
-    selectedTable = selection;
-    for (const current of designerCanvas.querySelectorAll('.designer-control.designer-selected')) current.classList.remove('designer-selected');
-    element.classList.add('designer-selected');
-    populateInspector(selection);
+    const liveSelection = tableSelectionFromElement(element);
+    if (!liveSelection) return;
+    selectDesignerElement(designerCanvas, element, liveSelection, { reason: 'table-control' });
+    populateInspector(liveSelection);
     const marker = document.createTextNode('');
     element.appendChild(marker);
     marker.remove();
@@ -382,10 +391,11 @@ function populateInspector(selection) {
 }
 
 function activeTableSelection() {
-  if (!selectedTable) return null;
-  const element = tableElement(selectedTable);
+  const selection = currentDesignerSelection(designerCanvas, 'table');
+  if (!selection) return null;
+  const element = tableElement(selection);
   if (!element?.classList.contains('designer-selected')) return null;
-  return selectedTable;
+  return selection;
 }
 
 function tableElement(selection) {
@@ -395,8 +405,23 @@ function tableElement(selection) {
   );
 }
 
-function sameSelection(a, b) {
-  return Boolean(a && b && a.windowIndex === b.windowIndex && a.controlIndex === b.controlIndex);
+function tableSelection(control) {
+  return {
+    windowIndex: control.windowIndex,
+    controlIndex: control.controlIndex,
+    adapter: 'table',
+    id: control.id ?? ''
+  };
+}
+
+function tableSelectionFromElement(element) {
+  const windowIndex = Number(element?.dataset?.windowIndex);
+  const controlIndex = Number(element?.dataset?.controlIndex);
+  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
+  const control = listDesignerControls(code.value).find(item =>
+    item.windowIndex === windowIndex && item.controlIndex === controlIndex && item.type === 'table'
+  );
+  return control ? tableSelection(control) : null;
 }
 
 function displayExpression(expr) {
