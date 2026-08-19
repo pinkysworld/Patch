@@ -56,6 +56,7 @@ function enhanceOverview(mode) {
   const countText = head.querySelector('span')?.textContent?.trim() ?? '';
   const summary = structuralEditorSummary(mode, countText);
   if (!summary) return;
+  const signature = `${mode}:${summary.label}:${summary.count}:${summary.quickLabel}`;
 
   let overview = panel.querySelector(':scope > [data-designer-structure-overview]');
   if (!overview) {
@@ -64,6 +65,8 @@ function enhanceOverview(mode) {
     overview.dataset.designerStructureOverview = '1';
     panel.insertBefore(overview, head);
   }
+  if (overview.dataset.signature === signature) return;
+  overview.dataset.signature = signature;
   overview.dataset.structureKind = mode;
   overview.innerHTML = `
     <div class="designer-structure-overview-copy">
