@@ -96,7 +96,7 @@ Selecting `compiler.js` at runtime exposes `['src', 'compiler.js']` as transient
 
 TreeView Stage 1 is implemented in Studio App Preview and Standalone Window Web. Direct native and token-free Ready/offline parity use Native GUI IR **1.2**, sealed payload **v12** and runtime **v1.3** on Windows, macOS and Linux.
 
-## Tabs page editing
+## Tabs page and nested-control editing
 
 Tabs page structure is also ordinary Patch source:
 
@@ -105,15 +105,23 @@ window "Settings":
   tabs as settings:
     tab "General":
       text "General"
+      table "Name", "Value" as preferences:
+        row "Theme", "System"
     tab "Advanced":
-      text "Advanced"
+      tree as sections:
+        node "Security"
+          node "Keys"
 ```
 
-Selecting Tabs in the Designer exposes its pages in Properties. A page can be added, renamed, moved up/down or removed. Moving a page preserves its complete nested control body. Deleting a page removes event handlers belonging to controls deleted with that page so the source cannot be left with orphan handlers. Tabs Stage 1 continues to require at least two pages, so the editor disables and rejects deletion at that boundary.
+Selecting Tabs in the Designer exposes its pages in Properties. A page can be added, renamed, moved up/down or removed. Moving a page preserves its complete nested control body. Deleting a page removes event handlers belonging to controls deleted with that page so the source cannot be left with orphan handlers. Tabs requires at least two pages, so the editor disables and rejects deletion at that boundary.
 
-The selected page also exposes its simple flow controls. The Designer can add Text, Button, Input, Checkbox, Radio, ComboBox and ListBox controls directly into that page, assigning globally unique ids where needed. Existing simple controls can be removed; a named control's matching event block is removed with it. The editor refuses to leave a page empty and fails closed for complex nested Table, TreeView or container controls that are outside this slice.
+The selected page also exposes its flow-layout controls. The Designer can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly into that page, assigning globally unique ids where needed. Existing nested controls can be removed. Named handlers are removed with the deleted control, and multi-line Table rows or TreeView nodes are removed with the complete parent block rather than being orphaned.
 
-The editor does not change Tabs runtime semantics. Nested controls remain normal Patch controls using flow layout, page selection remains transient renderer/toolkit state, and existing Native GUI IR/runtime contracts are unchanged.
+Nested Table and TreeView receive small valid source-backed starter structures without `at/size` geometry because controls inside Tabs use flow layout. Their row/column or hierarchy content remains directly editable in the visible Patch source in this slice. The dedicated top-level Table and TreeView structural Properties editors are unchanged. A dedicated nested Table/TreeView structural inspector remains a Studio polish item, not a language/runtime limitation.
+
+The editor refuses to leave a page empty and still fails closed for Tabs-inside-Tabs. Page selection remains transient renderer/toolkit state, nested controls retain their ordinary event contracts, and existing Native GUI IR/runtime contracts are unchanged.
+
+See `docs/TABS.md` for the current Tabs syntax, native mappings, compatibility history and limitations.
 
 ## Menus and dialogs
 
@@ -173,7 +181,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules, including nested simple-control editing for Tabs pages.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion and removal for Tabs pages.
 
 ## Recovery and diagnostics
 
@@ -193,4 +201,6 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-The TreeView Ready/offline parity, first-class TreeView Designer control, source-backed TreeView/Table data editors, Tabs page editor and simple nested Tabs control editing are complete. Highest-value remaining product work includes richer data controls and complex nested/container editing, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.
+TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing and nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView are complete.
+
+Highest-value remaining Studio work is the dedicated nested Table/TreeView structural Properties inspector and broader data-control/container polish. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
