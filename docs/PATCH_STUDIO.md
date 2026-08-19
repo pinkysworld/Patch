@@ -22,7 +22,9 @@ The source workspace includes a source-backed Project Tree. Run and Build compos
 
 Form dimensions, control geometry, labels, ids, options, Table rows, TreeView hierarchy, Tabs pages and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent form document.
 
-The desktop Designer presents the controls in a compact left rail, including Table and TreeView as first-class source-backed tools. The Properties pane defaults to a wider desktop layout, can be resized by dragging its separator, can be collapsed from the Designer toolbar and remembers its local width. On narrower screens Properties moves below the canvas. This workspace state is an IDE preference only and does not become Patch application state.
+The desktop Designer presents the controls in a compact left rail, including Table and TreeView as first-class source-backed tools. A categorized **Add control** picker groups the same tools into **Basic**, **Choices**, **Data** and **Containers**. On narrow screens the picker replaces the long row of individual add icons; on desktop the rail remains available for fast direct insertion. Ctrl/Cmd+Shift+A focuses the picker. The picker deliberately delegates to the existing source-backed toolbox buttons rather than introducing a second add or source-mutation path.
+
+The Properties pane defaults to a wider desktop layout, can be resized by dragging its separator, can be collapsed from the Designer toolbar and remembers its local width. On narrower screens Properties moves below the canvas. This workspace state is an IDE preference only and does not become Patch application state.
 
 The current Designer toolbar exposes a compact shared-selection context. It shows the selected control type, id, Form and multi-select count, provides **Focus selected / Focus form** and **Clear**, and supports Escape-to-deselect when focus is not inside an editor field. Properties uses the same shared selection boundary, shows a type-specific heading and reports whether common source-backed fields are current or have unapplied edits.
 
@@ -191,7 +193,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace, shared primary-selection/Properties modules, compact Designer context UX, active Form navigation/sizing workflow and the shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion/removal and nested Table/TreeView structural editing for Tabs pages.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace, shared primary-selection/Properties modules, compact Designer context UX, categorized control picker, active Form navigation/sizing workflow and the shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion/removal and nested Table/TreeView structural editing for Tabs pages.
 
 ## Recovery and diagnostics
 
@@ -211,6 +213,6 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing, nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView, nested Table/TreeView structural Properties editing, the shared top-level Designer selection/Properties bridge, compact Designer context UX and active Form navigation/source-backed sizing workflow are complete.
+TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing, nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView, nested Table/TreeView structural Properties editing, the shared top-level Designer selection/Properties bridge, compact Designer context UX, categorized control discovery and active Form navigation/source-backed sizing workflow are complete.
 
 Highest-value remaining Studio work is removing the final historical `playground.js` selection mirror/fallback paths, then broader data-control/container polish and additional accessibility/keyboard refinement. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
