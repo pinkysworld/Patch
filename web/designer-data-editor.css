@@ -52,6 +52,13 @@
   box-shadow: inset 3px 0 0 currentColor;
   font-weight: 700;
 }
+.designer-tree-node:focus-visible,
+.designer-tabs-page:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
 .designer-tabs-page {
   display: flex;
   align-items: center;
@@ -99,8 +106,20 @@
   width: 100%;
   min-width: 0;
 }
+.designer-table-editor input:focus-visible,
+.designer-data-editor .inspector-field input:focus-visible,
+.designer-tabs-control-add select:focus-visible,
+.designer-tabs-control-row button:focus-visible,
+.designer-data-actions button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
 .designer-data-editor code {
   font-size: .92em;
+}
+.designer-keyboard-hint {
+  color: var(--muted);
+  font-size: 11px;
 }
 .designer-tabs-nested-controls {
   display: grid;
@@ -154,6 +173,9 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+}
+.designer-tabs-structure-editor:focus-within {
+  border-color: currentColor;
 }
 .designer-tabs-structure-editor .designer-table-editor,
 .designer-tabs-structure-editor .designer-tree-node-list {
