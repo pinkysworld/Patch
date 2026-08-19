@@ -2,13 +2,9 @@ import { parse } from '../src/parser.js';
 import { evaluateLoose } from '../src/expression.js';
 import {
   addDesignerControl,
-  listDesignerControls,
-  removeDesignerControl,
-  updateDesignerControl
+  listDesignerControls
 } from '../src/designer.js';
 import {
-  clearDesignerSelection,
-  currentDesignerSelection,
   decorateDesignerAdapterElement,
   installDesignerSelectionBridge,
   rememberDesignerSelection,
@@ -28,7 +24,6 @@ let scheduled = false;
 installStyles();
 installDesignerSelectionBridge(designerCanvas);
 installTool();
-installInspectorBridge();
 observe(designerCanvas, true);
 observe(appView, false);
 code?.addEventListener('input', scheduleSync);
@@ -49,54 +44,6 @@ function installTool() {
     } catch (error) {
       showError(error);
     }
-  }, { capture: true });
-}
-
-function installInspectorBridge() {
-  document.querySelector('#designerInspectorApply')?.addEventListener('click', event => {
-    const selection = activeTableSelection();
-    if (!selection) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    try {
-      const id = document.querySelector('#designerInspectorId')?.value ?? '';
-      const next = updateDesignerControl(code.value, selection, { id });
-      const updated = listDesignerControls(next).find(item =>
-        item.windowIndex === selection.windowIndex &&
-        item.controlIndex === selection.controlIndex &&
-        item.type === 'table'
-      );
-      if (updated) rememberDesignerSelection(designerCanvas, tableSelection(updated), { emit: false });
-      setSource(next);
-    } catch (error) {
-      showError(error);
-    }
-  }, { capture: true });
-
-  document.querySelector('#designerInspectorDelete')?.addEventListener('click', event => {
-    const selection = activeTableSelection();
-    if (!selection) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    try {
-      const next = removeDesignerControl(code.value, selection);
-      clearDesignerSelection(designerCanvas, { adapter: 'table', reason: 'delete-table' });
-      setSource(next);
-    } catch (error) {
-      showError(error);
-    }
-  }, { capture: true });
-
-  document.querySelector('#designerInspectorSource')?.addEventListener('click', event => {
-    const selection = activeTableSelection();
-    if (!selection) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const control = listDesignerControls(code.value).find(item =>
-      item.windowIndex === selection.windowIndex && item.controlIndex === selection.controlIndex
-    );
-    if (!control) return;
-    revealLine(control.line);
   }, { capture: true });
 }
 
@@ -169,11 +116,7 @@ function syncContainer(container, designer) {
     });
   });
 
-  if (designer) {
-    const restored = restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement);
-    const selection = currentDesignerSelection(designerCanvas, 'table');
-    if (restored && selection) populateInspector(selection);
-  }
+  if (designer) restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement);
 }
 
 function syncMultiListboxes(node, element, context) {
@@ -354,48 +297,11 @@ function decorateDesignerTable(element, node, selection) {
     const liveSelection = tableSelectionFromElement(element);
     if (!liveSelection) return;
     selectDesignerElement(designerCanvas, element, liveSelection, { reason: 'table-control' });
-    populateInspector(liveSelection);
-    const marker = document.createTextNode('');
-    element.appendChild(marker);
-    marker.remove();
   };
   element.addEventListener('click', select);
   element.addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') select(event);
   });
-}
-
-function populateInspector(selection) {
-  const control = listDesignerControls(code.value).find(item =>
-    item.windowIndex === selection.windowIndex && item.controlIndex === selection.controlIndex && item.type === 'table'
-  );
-  if (!control) return;
-  const empty = document.querySelector('#designerInspectorEmpty');
-  const form = document.querySelector('#designerInspectorForm');
-  if (empty) empty.hidden = true;
-  if (form) form.hidden = false;
-  const type = document.querySelector('#designerInspectorType');
-  const location = document.querySelector('#designerInspectorLocation');
-  const idField = document.querySelector('#designerInspectorIdField');
-  const textField = document.querySelector('#designerInspectorTextField');
-  const optionsField = document.querySelector('#designerInspectorOptionsField');
-  const id = document.querySelector('#designerInspectorId');
-  if (type) type.textContent = 'Table';
-  if (location) location.textContent = `Window ${control.windowIndex + 1} · control ${control.controlIndex + 1} · line ${control.line}`;
-  if (idField) idField.hidden = false;
-  if (textField) textField.hidden = true;
-  if (optionsField) optionsField.hidden = true;
-  if (id) id.value = control.id ?? '';
-  const error = document.querySelector('#designerInspectorError');
-  if (error) { error.hidden = true; error.textContent = ''; }
-}
-
-function activeTableSelection() {
-  const selection = currentDesignerSelection(designerCanvas, 'table');
-  if (!selection) return null;
-  const element = tableElement(selection);
-  if (!element?.classList.contains('designer-selected')) return null;
-  return selection;
 }
 
 function tableElement(selection) {
@@ -431,15 +337,6 @@ function displayExpression(expr) {
   } catch {
     return text;
   }
-}
-
-function revealLine(line) {
-  const lines = code.value.replace(/\r\n/g, '\n').split('\n');
-  let start = 0;
-  for (let index = 0; index < line - 1; index += 1) start += lines[index].length + 1;
-  const end = start + (lines[line - 1]?.length ?? 0);
-  code.focus();
-  code.setSelectionRange(start, end);
 }
 
 function setSource(source) {
