@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio help for multi-file projects, source-backed Designer controls, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
+  <meta name="description" content="Patch Studio help for multi-file projects, source-backed Designer controls, structural Properties keyboard editing, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
   <title>Help · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,7 +24,7 @@
     <div>
       <p class="page-eyebrow">Patch Studio help · 0.2 beta.35+</p>
       <h1>Build something without fighting the IDE.</h1>
-      <p>Quick help for editing, multi-file projects, visual form design, project recovery, verified Ready builds and local downloads.</p>
+      <p>Quick help for editing, multi-file projects, visual form design, keyboard-only structural Properties, project recovery, verified Ready builds and local downloads.</p>
     </div>
     <pre class="page-code">Run   Ctrl/Cmd + Enter
 Build Ctrl/Cmd + Shift + Enter
@@ -33,7 +33,12 @@ Designer: select, drag, resize
 Ctrl/Cmd/Shift-click: add/remove selection
 Arrow keys: move primary or selected group
 Shift + Arrow: move 10 px
-Alt while dragging: bypass snap</pre>
+Alt while dragging: bypass snap
+
+Structural Properties
+Arrow/Home/End: select node or page
+Ctrl/Cmd + Arrow: reorder / tree indent
+Ctrl/Cmd + Enter: apply / rename</pre>
   </section>
 
   <section class="page-section">
@@ -45,6 +50,15 @@ Alt while dragging: bypass snap</pre>
     <div class="help-step"><b>5</b><p>The Properties panel is wider on desktop, can be resized by dragging its left separator, can be hidden with the Properties button and remembers its local width. On narrower screens it moves below the canvas. Properties never stores a second hidden form model.</p></div>
     <div class="help-step"><b>6</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive.</p></div>
     <div class="help-step"><b>7</b><p>Resize the form itself from the lower-right grip. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
+  </section>
+
+  <section class="page-section" data-structural-keyboard="roving-v1">
+    <h2>Keyboard-only structural Properties</h2>
+    <p>TreeView nodes and Tabs pages use roving keyboard focus: <strong>Arrow Up/Down</strong> selects the previous or next item, while <strong>Home/End</strong> jumps to the first or last item. Focus follows the selected item even when the source-backed editor re-renders.</p>
+    <p>With a TreeView node focused, use <strong>Ctrl/Cmd + Arrow Up/Down</strong> to move it, <strong>Ctrl/Cmd + Arrow Left/Right</strong> to outdent or indent it, and <strong>Ctrl/Cmd + Enter</strong> to focus its label expression. The same hierarchy shortcuts work for a nested TreeView inside Tabs.</p>
+    <p>With a Tabs page focused, <strong>Ctrl/Cmd + Arrow Up/Down</strong> reorders the page and <strong>Ctrl/Cmd + Enter</strong> focuses its title expression. In Table cells/columns, TreeView labels and Tabs titles, <strong>Ctrl/Cmd + Enter</strong> performs the corresponding Apply or Rename action.</p>
+    <p>Inside an expanded nested Table or TreeView structure editor, <strong>Escape</strong> closes the editor and restores focus to its Edit button. These focus/selection states are IDE-only and never become Patch application state or Change History.</p>
+    <p>See <a href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md">Studio keyboard accessibility</a> for the complete shortcut and scope contract.</p>
   </section>
 
   <section class="page-section" data-listbox-support="native-multiselect-v12">
