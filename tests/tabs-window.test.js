@@ -106,13 +106,14 @@ test('Designer inserts, selects, moves, renames and removes Tabs without rewriti
 test('Patch Studio exposes Tabs in the toolbox and renders a real tablist/tabpanel', () => {
   assert.match(studioIndex, /id="addTabs"/);
   assert.match(studioIndex, /value="tabsWindow"/);
-  assert.match(studio, /addControl\('tabs'\)/);
+  assert.doesNotMatch(studio, /addControl\('tabs'\)/);
   assert.match(studio, /control\.type === 'tabs'/);
   assert.match(studio, /patch-tabs-list/);
   assert.match(studio, /patch-tab-button/);
   assert.match(studio, /aria-selected/);
   assert.match(studio, /patch-tab-panel/);
   assert.match(formsDesigner, /\['#addTabs', 'tabs'\]/);
+  assert.match(formsDesigner, /addDesignerControl\(code\.value, type, \{ windowIndex: activeForm \}\)/);
   assert.match(formsDesigner, /formControlDefaultSize/);
 });
 
