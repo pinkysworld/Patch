@@ -57,7 +57,7 @@ function enhanceTabsEditor() {
       <label>New control <select data-tabs-control-type>${supportedDesignerTabControlTypes().map(type => `<option value="${type}">${escapeHtml(displayType(type))}</option>`).join('')}</select></label>
       <button type="button" class="secondary" data-tabs-add-control>Add control</button>
     </div>
-    <p class="inspector-hint">Nested controls use Tabs Stage 1 flow layout. Add/remove rewrites only the selected <code>tab</code> body. Removing a named control also removes its event handler.</p>`;
+    <p class="inspector-hint">Nested controls use Tabs flow layout. Text, inputs, selection controls, Table and TreeView are inserted as ordinary visible Patch source. Table rows and TreeView nodes remain source-backed; use their source block for structural edits until the dedicated nested data inspector lands. Removing a named control also removes its event handler.</p>`;
 
   const hint = panel.querySelector('.inspector-hint:last-child');
   if (hint) hint.insertAdjacentElement('afterend', section);
@@ -126,7 +126,7 @@ function showError(error) {
 }
 
 function displayType(type) {
-  return ({ listbox: 'ListBox', checkbox: 'Checkbox', radio: 'Radio', combo: 'ComboBox', button: 'Button', input: 'Input', text: 'Text' })[type] ?? String(type);
+  return ({ listbox: 'ListBox', checkbox: 'Checkbox', radio: 'Radio', combo: 'ComboBox', button: 'Button', input: 'Input', text: 'Text', table: 'Table', tree: 'TreeView' })[type] ?? String(type);
 }
 
 function escapeHtml(text) {
