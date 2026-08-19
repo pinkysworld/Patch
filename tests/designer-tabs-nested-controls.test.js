@@ -34,7 +34,7 @@ test('Tabs nested editor lists flow-layout controls for the selected page', () =
   assert.deepEqual(controls.map(control => control.id), [null, 'save']);
 });
 
-test('Tabs nested editor adds every supported simple flow control as valid Patch source', () => {
+test('Tabs nested editor adds every supported flow control as valid Patch source', () => {
   let source = base;
   for (const type of supportedDesignerTabControlTypes()) {
     source = addDesignerTabPageControl(source, tabs(source), 1, type);
@@ -53,12 +53,45 @@ test('nested control ids remain unique across top-level and Tabs page controls',
   assert.match(source, /button "Button" as button_2/);
 });
 
+test('nested Table and TreeView use source-backed starter structures without geometry', () => {
+  let source = addDesignerTabPageControl(base, tabs(), 1, 'table');
+  source = addDesignerTabPageControl(source, tabs(source), 1, 'tree');
+  assert.match(source, /table "Name", "Value" as table_1:\n        row "Item", "Value"/);
+  assert.match(source, /tree as tree_1:\n        node "Root"\n          node "Child"/);
+  assert.doesNotMatch(source, /table "Name", "Value" as table_1 at/);
+  assert.doesNotMatch(source, /tree as tree_1 at/);
+  const controls = listDesignerTabPageControls(source, tabs(source), 1);
+  const table = controls.find(control => control.type === 'table');
+  const tree = controls.find(control => control.type === 'tree');
+  assert.deepEqual(table.columns, ['"Name"', '"Value"']);
+  assert.deepEqual(table.rows, [['"Item"', '"Value"']]);
+  assert.equal(tree.treeNodes[0].labelExpr, '"Root"');
+  assert.equal(tree.treeNodes[0].children[0].labelExpr, '"Child"');
+});
+
 test('removing a named nested control also removes its orphan handler', () => {
   const next = removeDesignerTabPageControl(base, tabs(), 0, 1);
   assert.doesNotMatch(next, /button "Save" as save/);
   assert.doesNotMatch(next, /when save clicked:/);
   assert.match(next, /tab "General":\n      text "General"/);
   assert.doesNotThrow(() => parse(next));
+});
+
+test('removing nested Table and TreeView removes their complete source blocks', () => {
+  let source = addDesignerTabPageControl(base, tabs(), 1, 'table');
+  source = addDesignerTabPageControl(source, tabs(source), 1, 'tree');
+  let controls = listDesignerTabPageControls(source, tabs(source), 1);
+  const tableIndex = controls.find(control => control.type === 'table').controlIndex;
+  source = removeDesignerTabPageControl(source, tabs(source), 1, tableIndex);
+  assert.doesNotMatch(source, /table "Name", "Value" as table_1/);
+  assert.doesNotMatch(source, /row "Item", "Value"/);
+  assert.match(source, /tree as tree_1/);
+  controls = listDesignerTabPageControls(source, tabs(source), 1);
+  const treeIndex = controls.find(control => control.type === 'tree').controlIndex;
+  source = removeDesignerTabPageControl(source, tabs(source), 1, treeIndex);
+  assert.doesNotMatch(source, /tree as tree_1/);
+  assert.doesNotMatch(source, /node "Root"/);
+  assert.doesNotThrow(() => parse(source));
 });
 
 test('nested editor refuses to leave a Tabs page empty', () => {
@@ -72,9 +105,9 @@ test('nested editor refuses to leave a Tabs page empty', () => {
   assert.throws(() => removeDesignerTabPageControl(source, tabs(source), 0, 0), /at least one control/);
 });
 
-test('nested editor fails closed for controls outside the current simple-flow slice', () => {
-  assert.throws(() => addDesignerTabPageControl(base, tabs(), 0, 'tree'), /cannot add 'tree'/);
-  assert.throws(() => addDesignerTabPageControl(base, tabs(), 0, 'table'), /cannot add 'table'/);
+test('nested editor fails closed for unknown or unsupported container types', () => {
+  assert.throws(() => addDesignerTabPageControl(base, tabs(), 0, 'tabs'), /cannot add 'tabs'/);
+  assert.throws(() => addDesignerTabPageControl(base, tabs(), 0, 'unknown'), /cannot add 'unknown'/);
 });
 
 test('Studio ships nested Tabs control editing through the content-addressed PWA surface', () => {
@@ -88,8 +121,9 @@ test('Studio ships nested Tabs control editing through the content-addressed PWA
   assert.match(web, /Page controls/);
   assert.match(web, /data-tabs-add-control/);
   assert.match(web, /data-tabs-remove-control/);
+  assert.match(web, /Table/);
+  assert.match(web, /TreeView/);
   assert.match(css, /designer-tabs-control-list/);
-  assert.match(sw, /designer-tabs-nested\.js/);
   assert.match(sw, /designer-tabs-nested\.js/);
   assert.match(build, /'designer-tabs-nested\.js'/);
 
