@@ -1,0 +1,37 @@
+name: Diagnose Studio cleanup
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  focused-tests:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Run Studio renderer and adapter tests individually
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(grep -l -E "web/(playground|table-stage1|tree-designer|forms-designer)\\.js" tests/*.test.js | sort)
+          echo "Focused files: ${#files[@]}"
+          failed=0
+          for file in "${files[@]}"; do
+            if node --test "$file" >/tmp/patch-test.log 2>&1; then
+              echo "PASS $file"
+            else
+              echo "FAIL $file"
+              tail -n 120 /tmp/patch-test.log
+              failed=1
+            fi
+          done
+          exit "$failed"
