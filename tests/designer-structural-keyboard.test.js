@@ -46,6 +46,14 @@ test('Designer data editor installs one keyboard layer covering top-level and ne
   assert.match(keyboard, /requestAnimationFrame/);
 });
 
+test('filtered structural options are excluded from roving keyboard focus', () => {
+  const keyboard = fs.readFileSync('web/designer-structural-keyboard.js', 'utf8');
+  assert.match(keyboard, /attributeFilter: \['aria-selected', 'hidden'\]/);
+  assert.match(keyboard, /!option\.hidden && !option\.disabled/);
+  assert.match(keyboard, /\[role="option"\]\[aria-selected="true"\]:not\(\[hidden\]\)/);
+  assert.match(keyboard, /\[role="option"\]:not\(\[hidden\]\)/);
+});
+
 test('structural editor CSS exposes explicit keyboard focus states', () => {
   const css = fs.readFileSync('web/designer-data-editor.css', 'utf8');
   assert.match(css, /\.designer-tree-node:focus-visible/);

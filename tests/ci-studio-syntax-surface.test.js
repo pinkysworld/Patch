@@ -12,6 +12,7 @@ test('Patch CI syntax-checks current source-backed Designer and UX modules befor
   assert.match(syntaxStep, /node --check web\/designer-core-selection\.js/);
   assert.match(syntaxStep, /node --check web\/designer-data-editor\.js/);
   assert.match(syntaxStep, /node --check web\/designer-tabs-nested\.js/);
+  assert.match(syntaxStep, /node --check web\/designer-structure-ux\.js/);
   assert.match(syntaxStep, /node --check web\/designer-workspace\.js/);
   assert.match(syntaxStep, /node --check web\/designer-ux\.js/);
   assert.match(syntaxStep, /node --check web\/form-designer-workflow\.js/);

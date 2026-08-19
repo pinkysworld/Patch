@@ -71,7 +71,7 @@ export function installDesignerStructuralKeyboard(panel) {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['aria-selected']
+    attributeFilter: ['aria-selected', 'hidden']
   });
   normalizeStructuralKeyboard(panel);
 }
@@ -164,7 +164,8 @@ function focusLabelForKind(panel, kind) {
 }
 
 function enabledOptions(listbox) {
-  return [...(listbox?.querySelectorAll?.('[role="option"]') ?? [])].filter(option => !option.disabled && option.getAttribute('aria-disabled') !== 'true');
+  return [...(listbox?.querySelectorAll?.('[role="option"]') ?? [])]
+    .filter(option => !option.hidden && !option.disabled && option.getAttribute('aria-disabled') !== 'true');
 }
 
 function listboxShortcuts(kind) {
@@ -177,7 +178,7 @@ function refocusSelectedOption(panel, ariaLabel) {
   defer(() => {
     const listbox = [...(panel.querySelectorAll?.('[role="listbox"]') ?? [])]
       .find(item => (item.getAttribute('aria-label') ?? '') === ariaLabel);
-    const selected = listbox?.querySelector?.('[role="option"][aria-selected="true"]') ?? listbox?.querySelector?.('[role="option"]');
+    const selected = listbox?.querySelector?.('[role="option"][aria-selected="true"]:not([hidden])') ?? listbox?.querySelector?.('[role="option"]:not([hidden])');
     selected?.focus?.();
   });
 }
