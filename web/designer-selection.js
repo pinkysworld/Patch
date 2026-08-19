@@ -17,6 +17,19 @@ export function normalizeDesignerSelection(selection) {
   return normalized;
 }
 
+export function designerSelectionForControl(control, adapter = null) {
+  if (!control || typeof control !== 'object') return null;
+  const resolvedAdapter = String(adapter ?? '').trim() || (
+    control.type === 'table' ? 'table' : control.type === 'tree' ? 'tree' : 'core'
+  );
+  return normalizeDesignerSelection({
+    windowIndex: control.windowIndex,
+    controlIndex: control.controlIndex,
+    adapter: resolvedAdapter,
+    id: control.id ?? ''
+  });
+}
+
 export function sameDesignerSelection(left, right) {
   const a = normalizeDesignerSelection(left);
   const b = normalizeDesignerSelection(right);
@@ -73,6 +86,7 @@ export function decorateDesignerAdapterElement(canvas, element, selection) {
   element.dataset.windowIndex = String(normalized.windowIndex);
   element.dataset.controlIndex = String(normalized.controlIndex);
   if (normalized.id) element.dataset.controlId = normalized.id;
+  else delete element.dataset.controlId;
   const selected = selectionState.get(canvas) ?? null;
   if (sameDesignerSelection(selected, normalized) && (selected?.id ?? '') !== (normalized.id ?? '')) {
     selectionState.set(canvas, normalized);
@@ -110,15 +124,15 @@ export function installDesignerSelectionBridge(canvas) {
   if (!canvas || installedBridges.has(canvas)) return;
   installedBridges.add(canvas);
 
-  const clearForCoreSelection = event => {
+  const clearForCanvasSelection = event => {
     const control = event.target?.closest?.('.designer-control');
-    if (control?.dataset?.patchDesignerAdapter) return;
+    if (control) return;
     if (event.type === 'keydown' && !['Enter', ' '].includes(event.key)) return;
-    clearDesignerSelection(canvas, { reason: control ? 'core-control' : 'canvas' });
+    clearDesignerSelection(canvas, { reason: 'canvas' });
   };
 
-  canvas.addEventListener('click', clearForCoreSelection, { capture: true });
-  canvas.addEventListener('keydown', clearForCoreSelection, { capture: true });
+  canvas.addEventListener('click', clearForCanvasSelection, { capture: true });
+  canvas.addEventListener('keydown', clearForCanvasSelection, { capture: true });
 }
 
 function emitSelection(canvas, selection, reason) {
