@@ -73,6 +73,6 @@ test('public Help and Documentation expose the keyboard-only structural editor c
   assert.match(help, /Escape<\/strong> closes the editor/);
   assert.match(docs, /docs\/STUDIO_KEYBOARD_ACCESSIBILITY\.md/);
   assert.match(keyboardDoc, /Roving selection lists/);
-  assert.match(keyboardDoc, /Persistent application state/);
+  assert.match(keyboardDoc, /do not create Patch application state/);
   assert.match(keyboardDoc, /not a WCAG conformance statement/);
 });
