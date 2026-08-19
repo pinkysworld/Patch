@@ -42,6 +42,7 @@ function install() {
 
   context = installContextGroup();
   enhanceInspector();
+  bindInspectorListeners();
   scheduleFormEnhancement();
 
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, syncDesignerUx);
@@ -51,8 +52,6 @@ function install() {
     if (event.target?.id === 'patchFormSelect') syncDesignerUx();
   });
   doc.addEventListener('keydown', handleEscape, { capture: true });
-  doc.querySelector('#designerInspector')?.addEventListener('input', syncInspectorDirtyState);
-  doc.querySelector('#designerInspector')?.addEventListener('change', syncInspectorDirtyState);
 
   new MutationObserver(() => {
     scheduleFormEnhancement();
@@ -105,6 +104,14 @@ function enhanceInspector() {
   }
 }
 
+function bindInspectorListeners() {
+  const inspector = doc.querySelector('#designerInspector');
+  if (!inspector || inspector.dataset.patchDesignerUxBound === 'true') return;
+  inspector.dataset.patchDesignerUxBound = 'true';
+  inspector.addEventListener('input', syncInspectorDirtyState);
+  inspector.addEventListener('change', syncInspectorDirtyState);
+}
+
 function scheduleFormEnhancement() {
   if (formEnhanceQueued) return;
   formEnhanceQueued = true;
@@ -145,17 +152,27 @@ function enhanceFormToolbar() {
 
   for (const id of ['patchFormName', 'patchFormTitle', 'patchFormWidth', 'patchFormHeight']) {
     const field = group.querySelector(`#${id}`)?.closest('label');
-    if (field) panel.appendChild(field);
+    if (!field) continue;
+    field.classList.add('designer-form-setting-field', `designer-form-setting-${id.replace('patchForm', '').toLowerCase()}`);
+    panel.appendChild(field);
   }
   panel.appendChild(apply);
   details.append(summary, panel);
   group.appendChild(details);
-  details.addEventListener('toggle', () => saveState({ ...loadState(), formSettingsOpen: details.open }));
+
+  const syncOpenState = () => {
+    toolbar.classList.toggle('designer-form-settings-open', details.open);
+    saveState({ ...loadState(), formSettingsOpen: details.open });
+  };
+  details.addEventListener('toggle', syncOpenState);
+  toolbar.classList.toggle('designer-form-settings-open', details.open);
 
   syncFormContext();
 }
 
 function syncDesignerUx() {
+  enhanceInspector();
+  bindInspectorListeners();
   syncSelectionContext();
   syncFormContext();
   syncInspectorHeading();
@@ -169,7 +186,8 @@ function syncSelectionContext() {
   const control = selection
     ? controls.find(item => sameLocation(item, selection)) ?? null
     : null;
-  const selectedCount = Math.max(1, canvas.querySelectorAll('.designer-control.designer-multi-selected').length || (selection ? 1 : 0));
+  const multiCount = canvas.querySelectorAll('.designer-control.designer-multi-selected').length;
+  const selectedCount = selection ? Math.max(1, multiCount) : 0;
   context.status.textContent = formatDesignerSelectionSummary(control, selectedCount);
   context.clear.disabled = !selection;
   context.focus.textContent = selection ? 'Focus selected' : 'Focus form';
