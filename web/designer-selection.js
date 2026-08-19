@@ -24,8 +24,7 @@ export function sameDesignerSelection(left, right) {
     a && b &&
     a.windowIndex === b.windowIndex &&
     a.controlIndex === b.controlIndex &&
-    a.adapter === b.adapter &&
-    (a.id ?? '') === (b.id ?? '')
+    a.adapter === b.adapter
   );
 }
 
@@ -75,6 +74,9 @@ export function decorateDesignerAdapterElement(canvas, element, selection) {
   element.dataset.controlIndex = String(normalized.controlIndex);
   if (normalized.id) element.dataset.controlId = normalized.id;
   const selected = selectionState.get(canvas) ?? null;
+  if (sameDesignerSelection(selected, normalized) && (selected?.id ?? '') !== (normalized.id ?? '')) {
+    selectionState.set(canvas, normalized);
+  }
   element.classList.toggle('designer-selected', sameDesignerSelection(selected, normalized));
   return normalized;
 }
