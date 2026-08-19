@@ -59,7 +59,8 @@ const coreSelection = read('_site/designer-core-selection.js');
 requireAll('Core Designer selection bridge', coreSelection, [
   'CORE_TOOL_TYPES', "designerSelectionForControl(control, 'core')", 'captureToolboxIntent',
   'captureCoreSelection', 'captureCoreSelectionKey', 'add-core-control', 'missing-core-control',
-  'decorateDesignerAdapterElement', 'patchDesignerAdapter'
+  'installSharedInspectorBridge', 'applySharedInspector', 'captureInspectorDelete', 'captureInspectorSource',
+  'populateSharedInspector', 'decorateDesignerAdapterElement', 'patchDesignerAdapter'
 ]);
 
 const treeDesigner = read('_site/tree-designer.js');
@@ -99,7 +100,8 @@ requireAll('Downloads page', downloads, [
 
 const docs = read('_site/docs.html');
 requireAll('Documentation page', docs, [
-  'docs/PATCH_STUDIO.md','docs/STUDIO_KEYBOARD_ACCESSIBILITY.md','docs/COMPILER.md','docs/OFFLINE_COMPILER.md','docs/FORMAL_MODEL.md',
+  'docs/PATCH_STUDIO.md','docs/STUDIO_SELECTION_ARCHITECTURE.md','docs/STUDIO_KEYBOARD_ACCESSIBILITY.md',
+  'docs/COMPILER.md','docs/OFFLINE_COMPILER.md','docs/FORMAL_MODEL.md',
   'docs/NATIVE_GUI.md','docs/NATIVE_APPS.md','docs/ROADMAP.md','Native GUI IR 1.2 / payload v12 / runtime v1.3'
 ]);
 
@@ -122,4 +124,4 @@ requireAll('Service worker current compiler cache', sw, [
 const integrity = read('_site/runtime-integrity.js');
 requireAll('Runtime integrity gate', integrity, ['runtime-manifest.json','SHA-256','crypto.subtle']);
 
-console.log('ok current Patch Studio public site surface: beta.35+ / shared core+adapter Designer selection / structural keyboard accessibility / runtime v1.3');
+console.log('ok current Patch Studio public site surface: beta.35+ / shared core+adapter Designer selection+Properties / structural keyboard accessibility / runtime v1.3');
