@@ -4,12 +4,6 @@ import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
 import { compileToWasm } from '../src/wasm.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
-import {
-  addDesignerControl,
-  listDesignerControls,
-  removeDesignerControl,
-  updateDesignerControl
-} from '../src/designer.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 
@@ -128,7 +122,7 @@ const irView = document.querySelector('#ir');
 const appView = document.querySelector('#app');
 const designerView = document.querySelector('#designer');
 const designerCanvas = document.querySelector('#designerCanvas');
-const designerInspector = installDesignerInspector();
+installDesignerInspector();
 const sample = document.querySelector('#sample');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
@@ -137,8 +131,6 @@ const saveState = document.querySelector('#saveState');
 let runtime = null;
 let designerTimer = null;
 let changeContractTimer = null;
-let designerSelection = null;
-let designerControls = [];
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -148,7 +140,6 @@ projectKind.value = saved?.kind ?? (saved ? 'console' : 'window');
 sample.addEventListener('change', () => {
   code.value = samples[sample.value];
   projectKind.value = ['counterWindow', 'tabsWindow'].includes(sample.value) ? 'window' : 'console';
-  designerSelection = null;
   saveProject();
   refreshDesigner();
   showTab(sample.value === 'capabilities' ? 'changes' : (projectKind.value === 'window' ? 'designer' : 'output'));
@@ -166,21 +157,6 @@ appView.addEventListener('patch-studio-table-changed', event => {
   if (typeof detail.control !== 'string' || !Array.isArray(detail.value) || !detail.value.every(cell => typeof cell === 'string')) return;
   trigger(detail.control, 'changed', { value: [...detail.value] });
 });
-document.querySelector('#addText').addEventListener('click', () => addControl('text'));
-document.querySelector('#addButton').addEventListener('click', () => addControl('button'));
-document.querySelector('#addInput').addEventListener('click', () => addControl('input'));
-document.querySelector('#addRadio')?.addEventListener('click', () => addControl('radio'));
-document.querySelector('#addCombo')?.addEventListener('click', () => addControl('combo'));
-document.querySelector('#addListbox')?.addEventListener('click', () => addControl('listbox'));
-document.querySelector('#addTabs')?.addEventListener('click', () => addControl('tabs'));
-designerInspector.apply.addEventListener('click', applyDesignerProperties);
-designerInspector.remove.addEventListener('click', removeSelectedDesignerControl);
-designerInspector.source.addEventListener('click', revealSelectedDesignerSource);
-for (const field of [designerInspector.idInput, designerInspector.textInput, designerInspector.optionsInput]) {
-  field.addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); applyDesignerProperties(); }
-  });
-}
 
 document.querySelector('#build').addEventListener('click', () => {
   try {
@@ -231,69 +207,6 @@ for (const tab of document.querySelectorAll('.tab')) {
     if (tab.dataset.tab === 'changes') refreshChangeContract();
     showTab(tab.dataset.tab);
   });
-}
-
-function addControl(type) {
-  try {
-    code.value = addDesignerControl(code.value, type);
-    projectKind.value = 'window';
-    designerControls = listDesignerControls(code.value);
-    const firstWindow = designerControls.filter(item => item.windowIndex === 0);
-    const added = firstWindow[firstWindow.length - 1];
-    designerSelection = added ? selectionOf(added) : null;
-    saveProject();
-    refreshDesigner();
-    refreshChangeContract();
-    showTab('designer');
-  } catch (err) {
-    output.textContent = `Designer stopped:\n${err.message}`;
-    showTab('output');
-  }
-}
-
-function applyDesignerProperties() {
-  const selected = currentDesignerControl();
-  if (!selected) return;
-  try {
-    const changes = {};
-    if (selected.type !== 'text') changes.id = designerInspector.idInput.value;
-    if (['text', 'button', 'checkbox'].includes(selected.type)) changes.textExpr = designerInspector.textInput.value;
-    if (['combo', 'listbox', 'radio'].includes(selected.type)) changes.options = splitOptionExpressions(designerInspector.optionsInput.value);
-    code.value = updateDesignerControl(code.value, designerSelection, changes);
-    saveProject();
-    refreshDesigner();
-    refreshChangeContract();
-    showTab('designer');
-  } catch (err) {
-    designerInspector.error.textContent = err.message;
-    designerInspector.error.hidden = false;
-  }
-}
-
-function removeSelectedDesignerControl() {
-  if (!currentDesignerControl()) return;
-  try {
-    code.value = removeDesignerControl(code.value, designerSelection);
-    designerSelection = null;
-    saveProject();
-    refreshDesigner();
-    refreshChangeContract();
-    showTab('designer');
-  } catch (err) {
-    designerInspector.error.textContent = err.message;
-    designerInspector.error.hidden = false;
-  }
-}
-
-function revealSelectedDesignerSource() {
-  const selected = currentDesignerControl();
-  if (!selected) return;
-  const lines = code.value.replace(/\r\n/g, '\n').split('\n');
-  let start = 0;
-  for (let i = 0; i < selected.line - 1; i += 1) start += lines[i].length + 1;
-  const end = start + (lines[selected.line - 1]?.length ?? 0);
-  code.focus();
-  code.setSelectionRange(start, end);
 }
 
 function runProject() {
@@ -368,17 +281,11 @@ function formatChangeAnalysis(ir) {
 function refreshDesigner() {
   clearTimeout(designerTimer);
   try {
-    designerControls = listDesignerControls(code.value);
-    if (designerSelection && !currentDesignerControl()) designerSelection = null;
     const preview = new PatchInterpreter().run(code.value);
     renderWindows(designerCanvas, preview.ui, false);
     if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';
-    renderDesignerInspector();
   } catch (err) {
-    designerControls = [];
-    designerSelection = null;
     designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
-    renderDesignerInspector();
   }
 }
 
@@ -569,52 +476,10 @@ function createTabsElement(control, context) {
 
 function decorateDesignerControl(el, windowIndex, controlIndex, control) {
   el.classList.add('designer-control');
-  if (designerSelection?.windowIndex === windowIndex && designerSelection?.controlIndex === controlIndex) {
-    el.classList.add('designer-selected');
-  }
+  el.dataset.windowIndex = String(windowIndex);
+  el.dataset.controlIndex = String(controlIndex);
   if (!['BUTTON', 'INPUT', 'SELECT'].includes(el.tagName)) el.tabIndex = 0;
   el.setAttribute('aria-label', `Select ${control.type} control ${control.id ?? controlIndex + 1}`);
-  const select = event => {
-    event.preventDefault();
-    event.stopPropagation();
-    selectDesignerControl(windowIndex, controlIndex);
-  };
-  el.addEventListener('click', select);
-  el.addEventListener('keydown', event => {
-    if (event.key === 'Enter' || event.key === ' ') select(event);
-  });
-}
-
-function selectDesignerControl(windowIndex, controlIndex) {
-  designerSelection = { windowIndex, controlIndex };
-  refreshDesigner();
-}
-
-function currentDesignerControl() {
-  if (!designerSelection) return null;
-  return designerControls.find(item => item.windowIndex === designerSelection.windowIndex && item.controlIndex === designerSelection.controlIndex) ?? null;
-}
-
-function selectionOf(control) {
-  return { windowIndex: control.windowIndex, controlIndex: control.controlIndex };
-}
-
-function renderDesignerInspector() {
-  const selected = currentDesignerControl();
-  designerInspector.error.hidden = true;
-  designerInspector.error.textContent = '';
-  designerInspector.empty.hidden = Boolean(selected);
-  designerInspector.form.hidden = !selected;
-  if (!selected) return;
-
-  designerInspector.type.textContent = selected.type[0].toUpperCase() + selected.type.slice(1);
-  designerInspector.location.textContent = `Window ${selected.windowIndex + 1} · control ${selected.controlIndex + 1} · line ${selected.line}`;
-  designerInspector.idField.hidden = selected.type === 'text';
-  designerInspector.textField.hidden = ['input', 'combo', 'listbox', 'radio', 'tabs'].includes(selected.type);
-  designerInspector.optionsField.hidden = !['combo', 'listbox', 'radio'].includes(selected.type);
-  designerInspector.idInput.value = selected.id ?? '';
-  designerInspector.textInput.value = selected.textExpr ?? '';
-  designerInspector.optionsInput.value = selected.options?.join(', ') ?? '';
 }
 
 function installDesignerInspector() {
@@ -645,24 +510,6 @@ function installDesignerInspector() {
       </div>
     </div>`;
   surface.appendChild(aside);
-
-  return {
-    root: aside,
-    empty: aside.querySelector('#designerInspectorEmpty'),
-    form: aside.querySelector('#designerInspectorForm'),
-    type: aside.querySelector('#designerInspectorType'),
-    location: aside.querySelector('#designerInspectorLocation'),
-    idField: aside.querySelector('#designerInspectorIdField'),
-    idInput: aside.querySelector('#designerInspectorId'),
-    textField: aside.querySelector('#designerInspectorTextField'),
-    textInput: aside.querySelector('#designerInspectorText'),
-    optionsField: aside.querySelector('#designerInspectorOptionsField'),
-    optionsInput: aside.querySelector('#designerInspectorOptions'),
-    error: aside.querySelector('#designerInspectorError'),
-    apply: aside.querySelector('#designerInspectorApply'),
-    source: aside.querySelector('#designerInspectorSource'),
-    remove: aside.querySelector('#designerInspectorDelete')
-  };
 }
 
 function installDesignerInspectorStylesheet() {
@@ -684,34 +531,6 @@ function trigger(control, event, payload = {}) {
     output.textContent = `Patch stopped:\n${err.message}`;
     showTab('output');
   }
-}
-
-function splitOptionExpressions(text) {
-  const out = [];
-  let current = '';
-  let quote = null;
-  let escaped = false;
-  let depth = 0;
-  for (const ch of String(text ?? '')) {
-    if (quote) {
-      current += ch;
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = null;
-      continue;
-    }
-    if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
-    if (ch === '(' || ch === '[') depth += 1;
-    if ((ch === ')' || ch === ']') && depth > 0) depth -= 1;
-    if (ch === ',' && depth === 0) {
-      if (current.trim()) out.push(current.trim());
-      current = '';
-      continue;
-    }
-    current += ch;
-  }
-  if (current.trim()) out.push(current.trim());
-  return out;
 }
 
 function showTab(name) {
