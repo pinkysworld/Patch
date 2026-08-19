@@ -21,7 +21,8 @@ for (const rel of [
   '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/table-stage1.js',
-  '_site/tree-designer.js','_site/designer-workspace.js','_site/designer-structural-keyboard.js','_site/designer-inspector.css',
+  '_site/tree-designer.js','_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-workspace.js',
+  '_site/designer-structural-keyboard.js','_site/designer-inspector.css',
   '_site/src/compiler.js','_site/src/studio-project.js','_site/src/window-build.js','_site/src/window-events.js',
   '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js',
   '_site/src/native-tree-backend-adapter.js','_site/src/sealed-native-gui-v11.js','_site/src/sealed-native-gui-v12.js',
@@ -42,11 +43,23 @@ requireAll('Studio shell', index, [
   'id="recoverProject"', 'id="nativeBuildPanel"', 'id="nativeBuildStatus"',
   'Project Outline', 'multi-file project bundle v3', 'hierarchical TreeView', 'runtime v1.3',
   'Native GUI IR 1.2', 'payload v12', 'id="addTree"', './tree-designer.js', './designer-workspace.js',
-  './runtime-integrity.js', './native-build.js', './studio-outline.js'
+  './designer-core-selection.js', './runtime-integrity.js', './native-build.js', './studio-outline.js'
 ]);
 rejectAll('Studio shell', index, [
   'currently browser-only and native builds fail closed',
   'Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.'
+]);
+
+const sharedSelection = read('_site/designer-selection.js');
+requireAll('Shared Designer selection store', sharedSelection, [
+  'patch-designer-selection-change', 'designerSelectionForControl', "control.type === 'table'", "control.type === 'tree'",
+  "control.type === 'table' ? 'table' : control.type === 'tree' ? 'tree' : 'core'"
+]);
+const coreSelection = read('_site/designer-core-selection.js');
+requireAll('Core Designer selection bridge', coreSelection, [
+  'CORE_TOOL_TYPES', "designerSelectionForControl(control, 'core')", 'captureToolboxIntent',
+  'captureCoreSelection', 'captureCoreSelectionKey', 'add-core-control', 'missing-core-control',
+  'decorateDesignerAdapterElement', 'patchDesignerAdapter'
 ]);
 
 const treeDesigner = read('_site/tree-designer.js');
@@ -102,11 +115,11 @@ requireAll('sealed payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSIO
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'", "url.pathname.includes('/runtimes/')",
-  './tree-designer.js','./designer-workspace.js','./designer-structural-keyboard.js',
+  './designer-selection.js','./designer-core-selection.js','./tree-designer.js','./designer-workspace.js','./designer-structural-keyboard.js',
   './src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
 ]);
 
 const integrity = read('_site/runtime-integrity.js');
 requireAll('Runtime integrity gate', integrity, ['runtime-manifest.json','SHA-256','crypto.subtle']);
 
-console.log('ok current Patch Studio public site surface: beta.35+ / source-backed TreeView Designer / structural keyboard accessibility / runtime v1.3');
+console.log('ok current Patch Studio public site surface: beta.35+ / shared core+adapter Designer selection / structural keyboard accessibility / runtime v1.3');
