@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import {
   clearDesignerSelection,
   currentDesignerSelection,
+  designerSelectionForControl,
   normalizeDesignerSelection,
   rememberDesignerSelection,
   sameDesignerSelection
@@ -36,19 +37,30 @@ test('shared Designer selections normalize and use adapter/location identity', (
   ), false);
 });
 
-test('shared Designer selection state is one adapter-aware store per canvas', () => {
-  const canvas = fakeCanvas();
-  rememberDesignerSelection(canvas, { windowIndex: 0, controlIndex: 2, adapter: 'table', id: 'people' }, { emit: false });
-  assert.deepEqual(currentDesignerSelection(canvas, 'table'), {
+test('control-to-selection mapping gives ordinary controls and Tabs the core adapter', () => {
+  assert.deepEqual(designerSelectionForControl({ type: 'button', windowIndex: 0, controlIndex: 2, id: 'save' }), {
     windowIndex: 0,
     controlIndex: 2,
-    adapter: 'table',
-    id: 'people'
+    adapter: 'core',
+    id: 'save'
   });
-  assert.equal(currentDesignerSelection(canvas, 'tree'), null);
+  assert.equal(designerSelectionForControl({ type: 'tabs', windowIndex: 1, controlIndex: 0, id: 'settings' })?.adapter, 'core');
+  assert.equal(designerSelectionForControl({ type: 'table', windowIndex: 0, controlIndex: 3, id: 'people' })?.adapter, 'table');
+  assert.equal(designerSelectionForControl({ type: 'tree', windowIndex: 0, controlIndex: 4, id: 'files' })?.adapter, 'tree');
+  assert.equal(designerSelectionForControl({ type: 'tree', windowIndex: 0, controlIndex: 4 }, 'core')?.adapter, 'core');
+});
+
+test('shared Designer selection state is one adapter-aware store per canvas', () => {
+  const canvas = fakeCanvas();
+  rememberDesignerSelection(canvas, { windowIndex: 0, controlIndex: 2, adapter: 'core', id: 'save' }, { emit: false });
+  assert.equal(currentDesignerSelection(canvas, 'core')?.id, 'save');
+
+  rememberDesignerSelection(canvas, { windowIndex: 0, controlIndex: 3, adapter: 'table', id: 'people' }, { emit: false });
+  assert.equal(currentDesignerSelection(canvas, 'core'), null, 'Table replaces the prior core selection in the one shared store');
+  assert.equal(currentDesignerSelection(canvas, 'table')?.id, 'people');
 
   rememberDesignerSelection(canvas, { windowIndex: 1, controlIndex: 0, adapter: 'tree', id: 'files' }, { emit: false });
-  assert.equal(currentDesignerSelection(canvas, 'table'), null, 'TreeView replaces the prior Table special-adapter selection');
+  assert.equal(currentDesignerSelection(canvas, 'table'), null, 'TreeView replaces the prior Table selection');
   assert.equal(currentDesignerSelection(canvas, 'tree')?.id, 'files');
 
   clearDesignerSelection(canvas, { adapter: 'tree', emit: false });
@@ -74,9 +86,64 @@ test('Table and TreeView adapters no longer keep parallel private selection stat
   assert.match(shared, /data-patch-designer-adapter|patchDesignerAdapter/);
 });
 
-test('public Studio packaging includes the shared Designer selection module', () => {
+test('ordinary controls and Tabs are bridged into the same selection store and event boundary', () => {
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const shared = fs.readFileSync('web/designer-selection.js', 'utf8');
+  const index = fs.readFileSync('web/index.html', 'utf8');
+
+  assert.match(core, /CORE_TOOL_TYPES/);
+  for (const type of ['text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'tabs']) {
+    assert.match(core, new RegExp(`'${type}'`));
+  }
+  assert.match(core, /designerSelectionForControl\(control, 'core'\)/);
+  assert.match(core, /selectDesignerElement/);
+  assert.match(core, /decorateDesignerAdapterElement/);
+  assert.match(core, /DESIGNER_SELECTION_EVENT/);
+  assert.match(core, /pendingToolAdd/);
+  assert.match(shared, /if \(control\) return;/, 'the canvas bridge must not clear selection merely because a core control was clicked');
+  assert.match(index, /\.\/designer-core-selection\.js/);
+});
+
+test('additive pointer and keyboard multi-select do not replace the shared primary before the multiselect layer runs', () => {
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const guards = core.match(/if \(event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey\) return;/g) ?? [];
+  assert.equal(guards.length, 2, 'both pointer and Enter/Space selection paths must defer modifier gestures to designer-multiselect');
+});
+
+test('shared selection is also the normal Properties Apply/Delete/Source boundary', () => {
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  assert.match(core, /installSharedInspectorBridge/);
+  assert.match(core, /captureInspectorApply/);
+  assert.match(core, /captureInspectorDelete/);
+  assert.match(core, /captureInspectorSource/);
+  assert.match(core, /applySharedInspector/);
+  assert.match(core, /populateSharedInspector/);
+  assert.match(core, /updateDesignerControl\(code\.value, selection, changes\)/);
+  assert.match(core, /removeDesignerControl\(code\.value, selection\)/);
+  assert.match(core, /event\.stopImmediatePropagation\(\)/, 'shared capture handlers must win over legacy adapter/property fallbacks');
+  assert.match(core, /designerSelectionForControl\(updated, selection\.adapter\)/, 'renames must preserve the active adapter identity');
+});
+
+test('core selection bridge is additive migration, not a false claim that the playground mirror is already removed', () => {
+  const playground = fs.readFileSync('web/playground.js', 'utf8');
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const doc = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTURE.md', 'utf8');
+  assert.match(playground, /let designerSelection = null;/);
+  assert.match(core, /legacySelected/);
+  assert.match(core, /rememberDesignerSelection\(canvas, selection, \{ emit: false \}\)/);
+  assert.match(doc, /private `designerSelection` mirror/);
+  assert.match(doc, /not as total removal of every historical selection implementation/);
+});
+
+test('public Studio packaging and docs include shared Designer selection and the core bridge', () => {
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
+  const checkSite = fs.readFileSync('scripts/check-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
+  const docs = fs.readFileSync('web/docs.html', 'utf8');
   assert.match(buildSite, /'designer-selection\.js'/);
+  assert.match(buildSite, /'designer-core-selection\.js'/);
+  assert.match(checkSite, /Core Designer selection bridge/);
   assert.match(sw, /'\.\/designer-selection\.js'/);
+  assert.match(sw, /'\.\/designer-core-selection\.js'/);
+  assert.match(docs, /docs\/STUDIO_SELECTION_ARCHITECTURE\.md/);
 });
