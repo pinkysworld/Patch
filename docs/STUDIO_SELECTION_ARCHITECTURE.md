@@ -34,6 +34,18 @@ The core bridge also owns the normal Properties action boundary for the active s
 
 Toolbox additions for ordinary controls are reconciled back into the shared selection after the source-backed Designer rerenders. A selection that points to a removed core control is cleared fail-closed.
 
+## Current Designer context UX
+
+`web/designer-ux.js` is an IDE-only presentation layer over the same shared selection and source-backed Form model. It does not introduce a second application model.
+
+The Designer toolbar now exposes a compact selection context that shows the selected control type, id, Form and multi-select count. `Focus selected` centers the active control in the scrollable canvas; when nothing is selected the same action focuses the active Form. `Clear` and Escape clear the shared primary selection without changing Patch source.
+
+The Form toolbar keeps the active Form selector and Add Form action visible while moving Name, Title, Width, Height and Apply into a compact Form settings popover. The open/closed state of that popover is an IDE preference stored locally and is not Patch application state.
+
+Properties now distinguishes the selected control type in its heading and reports whether common source-backed fields are already current or have pending edits. The common Apply action is disabled when there is nothing to apply. Structural Table, TreeView and Tabs editors retain their dedicated source-backed actions.
+
+These UX additions are packaged in the public Studio and offline PWA together with `designer-ux.css`. They do not change source semantics or runtime contracts.
+
 ## Multi-select
 
 Designer multi-select remains a separate transient extension over the primary selection. The shared selection record identifies the primary control. `designer-multiselect.js` keeps the additional selected-control set used for group movement and alignment.
