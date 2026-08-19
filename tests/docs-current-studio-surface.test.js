@@ -28,6 +28,8 @@ test('current ListBox documentation reflects native single/multi-select parity',
   assert.match(listbox, /native runtime \*\*v1\.3\*\*/);
   assert.doesNotMatch(listbox, /direct native GUI parity is not implemented yet/);
   assert.doesNotMatch(listbox, /Native GUI IR v0\.2 currently supports ComboBox but not ListBox/);
+  assert.match(docs, /docs\/LISTBOX\.md/);
+  assert.match(docs, /text-backed single-select and list-backed multi-select contracts/);
 });
 
 test('Studio public docs describe current nested Tabs structural Properties editing', () => {
