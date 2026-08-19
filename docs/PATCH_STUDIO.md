@@ -26,7 +26,7 @@ The desktop Designer presents the controls in a compact left rail, including Tab
 
 A selected control can be moved/resized visually. A Form has a lower-right resize grip. Pointer and keyboard changes rewrite visible Patch source. Forms may grow beyond the visible Designer width; the Designer remains scrollable instead of clamping the Form.
 
-Table and TreeView additionally expose source-backed data editors inside Properties. These editors rewrite only the selected `table`/`row` or `tree`/`node` block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
+Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties. These editors rewrite only the selected `table`/`row`, `tree`/`node` or `tabs`/`tab` block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
 
 GUI interaction does not implicitly persist state. Current transient event values are:
 
@@ -96,6 +96,23 @@ Selecting `compiler.js` at runtime exposes `['src', 'compiler.js']` as transient
 
 TreeView Stage 1 is implemented in Studio App Preview and Standalone Window Web. Direct native and token-free Ready/offline parity use Native GUI IR **1.2**, sealed payload **v12** and runtime **v1.3** on Windows, macOS and Linux.
 
+## Tabs page editing
+
+Tabs page structure is also ordinary Patch source:
+
+```patch
+window "Settings":
+  tabs as settings:
+    tab "General":
+      text "General"
+    tab "Advanced":
+      text "Advanced"
+```
+
+Selecting Tabs in the Designer exposes its pages in Properties. A page can be added, renamed, moved up/down or removed. Moving a page preserves its complete nested control body. Deleting a page removes event handlers belonging to controls deleted with that page so the source cannot be left with orphan handlers. Tabs Stage 1 continues to require at least two pages, so the editor disables and rejects deletion at that boundary.
+
+The editor does not change Tabs runtime semantics. Page selection remains transient renderer/toolkit state, nested controls remain normal Patch controls, and existing Native GUI IR/runtime contracts are unchanged.
+
 ## Menus and dialogs
 
 The current native line includes structural menus, separators, portable shortcuts and source-backed Boolean `enabled` / `checked` MenuItem projections, plus informational and result-bearing Confirm/Open/Save dialogs. Menu activation does not create hidden persistent toolkit state.
@@ -154,7 +171,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table data-editor modules.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table/Tabs structural editor modules.
 
 ## Recovery and diagnostics
 
@@ -174,4 +191,4 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-The TreeView Ready/offline parity, first-class TreeView Designer control and first source-backed TreeView/Table data editors are complete. Highest-value remaining product work includes richer data controls, richer nested/container editing, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.
+The TreeView Ready/offline parity, first-class TreeView Designer control, source-backed TreeView/Table data editors and source-backed Tabs page editor are complete. Highest-value remaining product work includes richer data controls, deeper nested-control editing inside container pages, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.
