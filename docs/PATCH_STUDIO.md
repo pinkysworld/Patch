@@ -26,6 +26,8 @@ The desktop Designer presents the controls in a compact left rail, including Tab
 
 A selected control can be moved/resized visually. A Form has a lower-right resize grip. Pointer and keyboard changes rewrite visible Patch source. Forms may grow beyond the visible Designer width; the Designer remains scrollable instead of clamping the Form.
 
+Table and TreeView additionally expose source-backed data editors inside Properties. These editors rewrite only the selected `table`/`row` or `tree`/`node` block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
+
 GUI interaction does not implicitly persist state. Current transient event values are:
 
 - Input, ComboBox, Radio and text-backed ListBox: text;
@@ -66,6 +68,8 @@ when people changed:
   show value
 ```
 
+Selecting a Table in the Designer exposes an editable grid in Properties. Column expressions and cell expressions can be edited in place; columns and rows can be added or removed. Applying the grid rewrites the visible `table` header and `row` lines while preserving the control id, geometry and event handlers. Row width mismatch fails closed instead of silently truncating or padding data.
+
 Table originated in Native GUI IR 0.8 / payload v9/runtime v1.0. Current payload v12/runtime v1.3 preserves its columns, rows, responsive layout policy and transient selected-row semantics.
 
 ## TreeView
@@ -86,7 +90,7 @@ when files changed:
     set = value
 ```
 
-The Designer can create a TreeView with a small starter hierarchy, select the control, move/resize it, rename its id, jump to its source and delete the complete hierarchy. The hierarchy itself remains ordinary visible `node` source rather than becoming a hidden visual-designer document.
+The Designer can create a TreeView with a small starter hierarchy, select the control, move/resize it, rename its id, jump to its source and delete the complete hierarchy. The Tree nodes panel in Properties can add roots or children, rename a selected node, move it up/down, indent/outdent it and delete it. Every action rewrites ordinary visible `node` source rather than creating a hidden visual-designer document. The editor refuses to leave a TreeView with no nodes.
 
 Selecting `compiler.js` at runtime exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
 
@@ -150,7 +154,7 @@ The offline-compiler CI links and executes canonical responsive, Table, ListBox,
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer and resizable Designer workspace modules.
+Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace and shared TreeView/Table data-editor modules.
 
 ## Recovery and diagnostics
 
@@ -170,4 +174,4 @@ The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned
 
 ## Next work
 
-The TreeView Ready/offline parity slice and first-class TreeView Designer control are complete. Highest-value remaining product work includes richer data controls and Designer editing, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.
+The TreeView Ready/offline parity, first-class TreeView Designer control and first source-backed TreeView/Table data editors are complete. Highest-value remaining product work includes richer data controls, richer nested/container editing, installer/uninstall formats, real credentialed Windows signing, real macOS signing/notarization evidence, FreeBSD native GUI, more self-contained Linux packaging where justified, and a fresh remote native build service that does not require a user-supplied GitHub token.

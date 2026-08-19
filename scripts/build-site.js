@@ -13,25 +13,25 @@ const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
-  'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
+  'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
   'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-tree-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
 const SITE_WEB_STATIC_FILES = [
-  'style.css','site-navigation.css','site-pages.css','studio-accessibility.css','designer-inspector.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
+  'style.css','site-navigation.css','site-pages.css','studio-accessibility.css','designer-inspector.css','designer-data-editor.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
 ];
 
 const SITE_WEB_MODULE_FILES = [
   'runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
-  'playground.js','forms-designer.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
+  'playground.js','forms-designer.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-data-editor.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
   'studio-dom-sync.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');
-SITE_WEB_STATIC_FILES.splice(6, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
+SITE_WEB_STATIC_FILES.splice(7, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
 SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js', 'studio-outline.js');
-SITE_WEB_MODULE_FILES.splice(14, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
+SITE_WEB_MODULE_FILES.splice(15, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
 
 const siteRevision = computeSiteRevision();
 

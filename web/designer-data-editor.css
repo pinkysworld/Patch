@@ -1,0 +1,94 @@
+.designer-data-editor {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+.designer-data-editor[hidden] { display: none !important; }
+.designer-data-editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.designer-data-editor-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.designer-tree-node-list {
+  display: grid;
+  max-height: 210px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.designer-tree-node {
+  min-height: 30px;
+  padding: 4px 8px 4px calc(8px + var(--tree-depth, 0) * 18px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+}
+.designer-tree-node:hover,
+.designer-tree-node.active {
+  background: var(--surface-hover, var(--surface-subtle));
+}
+.designer-tree-node.active {
+  box-shadow: inset 3px 0 0 currentColor;
+  font-weight: 700;
+}
+.designer-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.designer-data-actions button {
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.designer-table-editor {
+  display: grid;
+  gap: 6px;
+  max-height: 300px;
+  overflow: auto;
+  padding-bottom: 2px;
+}
+.designer-table-editor-row {
+  display: grid;
+  grid-template-columns: repeat(var(--table-columns), minmax(110px, 1fr)) auto;
+  gap: 6px;
+  align-items: end;
+}
+.designer-table-editor-columns {
+  grid-template-columns: repeat(var(--table-columns), minmax(110px, 1fr));
+}
+.designer-table-editor label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.designer-table-editor input,
+.designer-data-editor .inspector-field input {
+  width: 100%;
+  min-width: 0;
+}
+.designer-data-editor code {
+  font-size: .92em;
+}
+@media (max-width: 1050px) {
+  .designer-table-editor-row {
+    grid-template-columns: repeat(var(--table-columns), minmax(120px, 1fr)) auto;
+  }
+}
+@media (max-width: 760px) {
+  .designer-data-actions button { flex: 1 1 auto; }
+  .designer-table-editor { max-height: 240px; }
+}
