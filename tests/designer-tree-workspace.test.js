@@ -71,15 +71,17 @@ test('TreeView has a professional Designer default size', () => {
   assert.deepEqual(formControlDefaultSize('tree'), { width: 300, height: 220 });
 });
 
-test('Patch Studio exposes TreeView plus resizable and collapsible Properties workspace', () => {
+test('Patch Studio exposes TreeView through shared selection plus resizable and collapsible Properties workspace', () => {
   const index = fs.readFileSync('web/index.html', 'utf8');
   const css = fs.readFileSync('web/designer-inspector.css', 'utf8');
   const treeDesigner = fs.readFileSync('web/tree-designer.js', 'utf8');
+  const coreSelection = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
 
   assert.match(index, /id="addTree"/);
   assert.match(index, /\.\/tree-designer\.js/);
+  assert.match(index, /\.\/designer-core-selection\.js/);
   assert.match(index, /\.\/designer-workspace\.js/);
   assert.match(css, /--designer-inspector-width: 340px/);
   assert.match(css, /#designer #addTable \{ top: 287px; \}/);
@@ -87,12 +89,17 @@ test('Patch Studio exposes TreeView plus resizable and collapsible Properties wo
   assert.match(css, /designer-properties-collapsed/);
   assert.match(css, /designer-inspector-resize/);
   assert.match(treeDesigner, /addDesignerControl\(code\.value, 'tree'/);
-  assert.match(treeDesigner, /type\.textContent = 'TreeView'/);
+  assert.match(treeDesigner, /selectDesignerElement/);
+  assert.match(treeDesigner, /decorateDesignerAdapterElement/);
+  assert.doesNotMatch(treeDesigner, /type\.textContent = 'TreeView'/);
+  assert.match(coreSelection, /if \(control\.type === 'tree'\) type\.textContent = 'TreeView'/);
   assert.match(workspace, /patch-studio-designer-properties-v1/);
   assert.match(workspace, /setPointerCapture/);
   assert.match(sw, /'\.\/tree-designer\.js'/);
+  assert.match(sw, /'\.\/designer-core-selection\.js'/);
   assert.match(sw, /'\.\/designer-workspace\.js'/);
 
   execFileSync(process.execPath, ['--check', 'web/tree-designer.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'web/designer-core-selection.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/designer-workspace.js'], { stdio: 'pipe' });
 });
