@@ -36,7 +36,8 @@ Shift + Arrow: move 10 px
 Alt while dragging: bypass snap
 
 Structural Properties
-Arrow/Home/End: select node or page
+Filter: narrow nodes / pages / controls
+Arrow/Home/End: select visible node or page
 Ctrl/Cmd + Arrow: reorder / tree indent
 Ctrl/Cmd + Enter: apply / rename</pre>
   </section>
@@ -44,7 +45,7 @@ Ctrl/Cmd + Enter: apply / rename</pre>
   <section class="page-section">
     <h2>Design a Window app</h2>
     <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open a Window example.</p></div>
-    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table, TreeView or Tabs controls. Table, TreeView and Tabs expose source-backed structural editors in Properties.</p></div>
+    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table, TreeView or Tabs controls. Table, TreeView and Tabs expose source-backed structural editors in Properties. Their common <strong>Structure</strong> summary shows the current size and provides quick Add/Source actions; filters narrow TreeView nodes, Tabs pages and controls inside the selected page without changing Patch source.</p></div>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
     <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. Alignment commands write the resulting positions back into Patch source.</p></div>
     <div class="help-step"><b>5</b><p>The Properties panel is wider on desktop, can be resized by dragging its left separator, can be hidden with the Properties button and remembers its local width. On narrower screens it moves below the canvas. Properties never stores a second hidden form model.</p></div>
@@ -54,9 +55,10 @@ Ctrl/Cmd + Enter: apply / rename</pre>
 
   <section class="page-section" data-structural-keyboard="roving-v1">
     <h2>Keyboard-only structural Properties</h2>
-    <p>TreeView nodes and Tabs pages use roving keyboard focus: <strong>Arrow Up/Down</strong> selects the previous or next item, while <strong>Home/End</strong> jumps to the first or last item. Focus follows the selected item even when the source-backed editor re-renders.</p>
+    <p>TreeView nodes and Tabs pages use roving keyboard focus: <strong>Arrow Up/Down</strong> selects the previous or next visible item, while <strong>Home/End</strong> jumps to the first or last visible item. Focus follows the selected item even when the source-backed editor re-renders. When a structure filter is active, hidden matches are excluded from keyboard navigation.</p>
     <p>With a TreeView node focused, use <strong>Ctrl/Cmd + Arrow Up/Down</strong> to move it, <strong>Ctrl/Cmd + Arrow Left/Right</strong> to outdent or indent it, and <strong>Ctrl/Cmd + Enter</strong> to focus its label expression. The same hierarchy shortcuts work for a nested TreeView inside Tabs.</p>
     <p>With a Tabs page focused, <strong>Ctrl/Cmd + Arrow Up/Down</strong> reorders the page and <strong>Ctrl/Cmd + Enter</strong> focuses its title expression. In Table cells/columns, TreeView labels and Tabs titles, <strong>Ctrl/Cmd + Enter</strong> performs the corresponding Apply or Rename action.</p>
+    <p>The filter field reports how many nodes/pages/controls remain visible and shows an explicit no-match state. An empty Table shows <strong>No rows yet</strong> with <strong>Add first row</strong>. These are IDE conveniences only: filtering never changes source, and the quick actions delegate to the existing source-backed structural editor actions.</p>
     <p>Inside an expanded nested Table or TreeView structure editor, <strong>Escape</strong> closes the editor and restores focus to its Edit button. These focus/selection states are IDE-only and never become Patch application state or Change History.</p>
     <p>See <a href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md">Studio keyboard accessibility</a> for the complete shortcut and scope contract.</p>
   </section>
@@ -75,7 +77,7 @@ when fruits changed:
 
   <section class="page-section" data-table-support="sealed-v12">
     <h2>Table / Grid</h2>
-    <p>Table data is written directly in Patch source. Select a Table in the Designer to edit column and cell expressions in Properties, add or remove rows, and add or remove columns. Applying the grid rewrites the visible <code>table</code>/<code>row</code> block and validates row width before accepting it.</p>
+    <p>Table data is written directly in Patch source. Select a Table in the Designer to edit column and cell expressions in Properties, add or remove rows, and add or remove columns. Applying the grid rewrites the visible <code>table</code>/<code>row</code> block and validates row width before accepting it. When the Table has no rows, Properties shows <strong>No rows yet</strong> and a source-backed <strong>Add first row</strong> action.</p>
     <p>A Table <code>changed</code> event exposes the selected row only as transient list-valued <code>value</code>. Current token-free Ready apps and offline <code>patch link</code> preserve this contract inside payload v12/runtime v1.3.</p>
     <pre class="page-code">window "People" as main size 520, 320:
   table "Name", "Role" as people at 24, 64 size 440, 180:
@@ -87,7 +89,7 @@ when people changed:
 
   <section class="page-section" data-tree-support="sealed-v12">
     <h2>TreeView</h2>
-    <p>TreeView is hierarchical and source-backed. The Designer can add, select, move, resize, rename and remove the TreeView itself. In Properties, its Tree nodes editor can add roots or children, rename, move, indent/outdent and delete nodes. Each action rewrites ordinary visible <code>node</code> source and the editor refuses to leave an empty TreeView.</p>
+    <p>TreeView is hierarchical and source-backed. The Designer can add, select, move, resize, rename and remove the TreeView itself. In Properties, its Tree nodes editor can add roots or children, rename, move, indent/outdent and delete nodes. A filter narrows long node lists while retaining only visible items in keyboard navigation. Each structural action rewrites ordinary visible <code>node</code> source and the editor refuses to leave an empty TreeView.</p>
     <p>Selecting a node at runtime produces its root-to-node display path as a transient text-list <code>value</code>. Toolkit selection does not mutate persistent Patch state.</p>
     <pre class="page-code">create list selected = []
 window "Files" as main size 560, 380:
@@ -104,7 +106,7 @@ when files changed:
 
   <section class="page-section" data-tabs-editor="source-backed">
     <h2>Tabs pages</h2>
-    <p>Select a Tabs control in the Designer to edit its source-backed page list in Properties. You can add a page, rename it, move it up or down, or delete it. Reordering preserves the full nested control body. Deleting a page also removes handlers for controls deleted with that page, preventing orphan event handlers.</p>
+    <p>Select a Tabs control in the Designer to edit its source-backed page list in Properties. You can add a page, rename it, move it up or down, or delete it. Reordering preserves the full nested control body. Deleting a page also removes handlers for controls deleted with that page, preventing orphan event handlers. Page and page-control filters make larger Tabs structures easier to navigate without changing source.</p>
     <p>The selected page also exposes its <strong>Page controls</strong>. Patch Studio can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly to that page, or remove an existing nested control. New named controls receive an id that is unique across top-level and nested controls. Nested Table and TreeView receive small valid source-backed starter structures, and removing either control removes its complete multi-line <code>row</code>/<code>node</code> block rather than leaving orphan source behind.</p>
     <p>Nested Table and TreeView now have dedicated structural Properties editing too. Click <strong>Edit</strong> beside a nested Table to edit column/cell expressions and add or remove rows and columns. Click <strong>Edit</strong> beside a nested TreeView to add roots/children, rename nodes, move them up/down, indent/outdent or delete them. Every action rewrites only that nested Patch source block and validates the resulting source. Tabs cannot be nested inside Tabs, and the nested editor refuses to leave a page, Table or TreeView structurally invalid.</p>
     <pre class="page-code">window "Settings":
