@@ -1,3 +1,4 @@
+import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
 
 export function updateDesignerTreeNodes(source, selector, treeNodes) {
@@ -32,6 +33,75 @@ export function updateDesignerTableData(source, selector, changes = {}) {
   const childIndent = `${indent}  `;
   lines[lineIndex] = `${indent}${formatTableHeader(control, columns)}`;
   lines.splice(lineIndex + 1, end - lineIndex - 1, ...rows.map(row => `${childIndent}row ${row.join(', ')}`));
+  return validateAndPreserve(source, lines);
+}
+
+export function listDesignerTabPages(source, selector) {
+  const { tabsNode } = requireTabsAst(source, selector);
+  return (tabsNode.body ?? []).map((page, pageIndex) => ({
+    pageIndex,
+    line: page.line,
+    titleExpr: page.titleExpr,
+    controlIds: collectControlIds(page.body)
+  }));
+}
+
+export function addDesignerTabPage(source, selector, titleExpr = null) {
+  const { control, tabsNode } = requireTabsAst(source, selector);
+  const pages = tabsNode.body ?? [];
+  const title = normalizeExpression(titleExpr ?? JSON.stringify(`Page ${pages.length + 1}`), 'Tab page title');
+  const lines = normalizeLines(source);
+  const lineIndex = control.line - 1;
+  const blockEnd = controlBlockEnd(lines, lineIndex);
+  let insertAt = blockEnd;
+  while (insertAt > lineIndex + 1 && !lines[insertAt - 1].trim()) insertAt -= 1;
+  const pageIndent = `${indentOf(lines[lineIndex])}  `;
+  const bodyIndent = `${pageIndent}  `;
+  lines.splice(insertAt, 0,
+    `${pageIndent}tab ${title}:`,
+    `${bodyIndent}text ${title}`
+  );
+  return validateAndPreserve(source, lines);
+}
+
+export function renameDesignerTabPage(source, selector, pageIndex, titleExpr) {
+  const { tabsNode } = requireTabsAst(source, selector);
+  const page = requireTabPage(tabsNode, pageIndex);
+  const title = normalizeExpression(titleExpr, 'Tab page title');
+  const lines = normalizeLines(source);
+  const lineIndex = page.line - 1;
+  lines[lineIndex] = `${indentOf(lines[lineIndex])}tab ${title}:`;
+  return validateAndPreserve(source, lines);
+}
+
+export function moveDesignerTabPage(source, selector, pageIndex, direction) {
+  const { control, tabsNode } = requireTabsAst(source, selector);
+  requireTabPage(tabsNode, pageIndex);
+  const delta = direction === 'up' ? -1 : direction === 'down' ? 1 : 0;
+  if (!delta) throw new Error("Tab page direction must be 'up' or 'down'.");
+  const target = pageIndex + delta;
+  if (target < 0 || target >= tabsNode.body.length) return source;
+
+  const lines = normalizeLines(source);
+  const blocks = tabPageBlocks(lines, control, tabsNode);
+  [blocks[pageIndex], blocks[target]] = [blocks[target], blocks[pageIndex]];
+  const start = blocks.reduce((minimum, block) => Math.min(minimum, block.originalStart), Infinity);
+  const end = Math.max(...blocks.map(block => block.originalEnd));
+  const replacement = blocks.flatMap(block => block.lines);
+  lines.splice(start, end - start, ...replacement);
+  return validateAndPreserve(source, lines);
+}
+
+export function removeDesignerTabPage(source, selector, pageIndex) {
+  const { control, tabsNode } = requireTabsAst(source, selector);
+  const pages = tabsNode.body ?? [];
+  if (pages.length <= 2) throw new Error('Tabs needs at least two tab pages.');
+  const page = requireTabPage(tabsNode, pageIndex);
+  const lines = normalizeLines(source);
+  const blocks = tabPageBlocks(lines, control, tabsNode);
+  const block = blocks[pageIndex];
+  lines.splice(block.originalStart, block.originalEnd - block.originalStart);
+  removeEventBlocksForIds(lines, collectControlIds(page.body));
   return validateAndPreserve(source, lines);
 }
 
@@ -127,8 +197,81 @@ function requireControl(source, selector, type) {
   const control = listDesignerControls(source).find(item =>
     item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex
   );
-  if (!control || control.type !== type) throw new Error(`Designer selection is not a ${type === 'tree' ? 'TreeView' : 'Table'}.`);
+  if (!control || control.type !== type) {
+    const label = type === 'tree' ? 'TreeView' : type === 'tabs' ? 'Tabs' : 'Table';
+    throw new Error(`Designer selection is not a ${label}.`);
+  }
   return control;
+}
+
+function requireTabsAst(source, selector) {
+  const control = requireControl(source, selector, 'tabs');
+  const ast = parse(source);
+  let windowIndex = 0;
+  for (const node of ast) {
+    if (node.kind !== 'window') continue;
+    if (windowIndex === control.windowIndex) {
+      let controlIndex = 0;
+      for (const child of node.body ?? []) {
+        if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
+        if (controlIndex === control.controlIndex) {
+          if (child.kind !== 'tabs') throw new Error('Designer selection is not Tabs.');
+          return { control, tabsNode: child };
+        }
+        controlIndex += 1;
+      }
+    }
+    windowIndex += 1;
+  }
+  throw new Error('Designer Tabs selection no longer matches Patch source.');
+}
+
+function requireTabPage(tabsNode, pageIndex) {
+  if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= (tabsNode.body ?? []).length) {
+    throw new Error('Tab page selection is invalid.');
+  }
+  return tabsNode.body[pageIndex];
+}
+
+function tabPageBlocks(lines, control, tabsNode) {
+  const tabsLineIndex = control.line - 1;
+  let contentEnd = controlBlockEnd(lines, tabsLineIndex);
+  while (contentEnd > tabsLineIndex + 1 && !lines[contentEnd - 1].trim()) contentEnd -= 1;
+  const starts = (tabsNode.body ?? []).map(page => page.line - 1);
+  return starts.map((start, index) => {
+    const end = index + 1 < starts.length ? starts[index + 1] : contentEnd;
+    return { originalStart: start, originalEnd: end, lines: lines.slice(start, end) };
+  });
+}
+
+function collectControlIds(nodes = [], out = []) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.id) out.push(node.id);
+    if (node.kind === 'tabs') {
+      for (const page of node.body ?? []) collectControlIds(page.body, out);
+    }
+  }
+  return out;
+}
+
+function removeEventBlocksForIds(lines, ids) {
+  if (!ids?.length) return;
+  const names = new Set(ids);
+  for (let index = 0; index < lines.length;) {
+    const match = lines[index].match(/^(\s*)when\s+([A-Za-z_]\w*)\s+([^:\s]+)\s*:\s*$/);
+    if (!match || !names.has(match[2])) {
+      index += 1;
+      continue;
+    }
+    const baseIndent = match[1].length;
+    let end = index + 1;
+    while (end < lines.length) {
+      if (!lines[end].trim()) { end += 1; continue; }
+      if (indentOf(lines[end]).length <= baseIndent) break;
+      end += 1;
+    }
+    lines.splice(index, end - index);
+  }
 }
 
 function normalizeTreeNodes(nodes) {
