@@ -124,15 +124,17 @@ test('shared selection is also the normal Properties Apply/Delete/Source boundar
   assert.match(core, /designerSelectionForControl\(updated, selection\.adapter\)/, 'renames must preserve the active adapter identity');
 });
 
-test('core selection bridge is additive migration, not a false claim that the playground mirror is already removed', () => {
+test('shared core selection never adopts a legacy renderer-only selected DOM marker', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   const doc = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTURE.md', 'utf8');
-  assert.match(playground, /let designerSelection = null;/);
-  assert.match(core, /legacySelected/);
-  assert.match(core, /rememberDesignerSelection\(canvas, selection, \{ emit: false \}\)/);
-  assert.match(doc, /private `designerSelection` mirror/);
-  assert.match(doc, /not as total removal of every historical selection implementation/);
+
+  assert.match(playground, /let designerSelection = null;/, 'the historical renderer mirror still exists until its dedicated rewrite');
+  assert.doesNotMatch(core, /legacySelected/);
+  assert.doesNotMatch(core, /elements\.find\(element => element\.classList\.contains\('designer-selected'\)\)/);
+  assert.match(core, /const shared = currentDesignerSelection\(canvas\)/);
+  assert.match(doc, /no longer adopts renderer-only `\.designer-selected` markers/);
+  assert.match(doc, /private `designerSelection` mirror still exists/);
 });
 
 test('public Studio packaging and docs include shared Designer selection and the core bridge', () => {

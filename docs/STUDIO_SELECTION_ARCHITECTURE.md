@@ -34,17 +34,21 @@ The core bridge also owns the normal Properties action boundary for the active s
 
 Toolbox additions for ordinary controls are reconciled back into the shared selection after the source-backed Designer rerenders. A selection that points to a removed core control is cleared fail-closed.
 
+The shared core bridge no longer adopts renderer-only `.designer-selected` markers. Its primary state may come only from the shared selection API, an actual selection action, or the explicit toolbox-add reconciliation path. This makes the migration one-way: the historical renderer can still mirror selection visually, but it cannot silently recreate shared selection state from a stale DOM class.
+
 ## Current Designer context UX
 
 `web/designer-ux.js` is an IDE-only presentation layer over the same shared selection and source-backed Form model. It does not introduce a second application model.
 
-The Designer toolbar now exposes a compact selection context that shows the selected control type, id, Form and multi-select count. `Focus selected` centers the active control in the scrollable canvas; when nothing is selected the same action focuses the active Form. `Clear` and Escape clear the shared primary selection without changing Patch source.
+The Designer toolbar exposes a compact selection context that shows the selected control type, id, Form and multi-select count. `Focus selected` centers the active control in the scrollable canvas; when nothing is selected the same action focuses the active Form. `Clear` and Escape clear the shared primary selection without changing Patch source.
 
 The Form toolbar keeps the active Form selector and Add Form action visible while moving Name, Title, Width, Height and Apply into a compact Form settings popover. The open/closed state of that popover is an IDE preference stored locally and is not Patch application state.
 
-Properties now distinguishes the selected control type in its heading and reports whether common source-backed fields are already current or have pending edits. The common Apply action is disabled when there is nothing to apply. Structural Table, TreeView and Tabs editors retain their dedicated source-backed actions.
+The active Form is highlighted in the canvas and Form titles are pointer/keyboard activatable. Previous/next actions plus Alt+PageUp / Alt+PageDown navigate named Forms. `Fit controls` and `Default 640×420` rewrite ordinary source-backed Form dimensions through the existing Designer source updater.
 
-These UX additions are packaged in the public Studio and offline PWA together with `designer-ux.css`. They do not change source semantics or runtime contracts.
+Properties distinguishes the selected control type in its heading and reports whether common source-backed fields are already current or have pending edits. The common Apply action is disabled when there is nothing to apply. Structural Table, TreeView and Tabs editors retain their dedicated source-backed actions.
+
+These UX additions are packaged in the public Studio and offline PWA. They do not change source semantics or runtime contracts.
 
 ## Multi-select
 
@@ -60,16 +64,16 @@ Persistent application state changes only through ordinary semantic `change` ope
 
 ## Remaining migration work
 
-The historical `playground.js` renderer still keeps a private `designerSelection` mirror for its internal rerender path. The shared store is now the cross-adapter canvas/Properties boundary, but that legacy mirror has not yet been deleted.
+The historical `playground.js` renderer private `designerSelection` mirror still exists for its internal rerender path. It is no longer a source of truth for the shared core selection, and the core bridge does not recover selection from its DOM marker.
 
-A later cleanup should:
+A later dedicated rewrite should:
 
-1. move the remaining `playground.js` render lookup directly onto the shared selection API;
-2. remove the private `designerSelection` variable and its helper functions;
+1. remove the private `designerSelection` variable and the renderer-only selection helper functions from `playground.js`;
+2. leave `playground.js` responsible only for rendering and creating the Inspector DOM shell;
 3. remove now-dead Table/Tree inspector fallback listeners after the shared path has been proven stable;
 4. keep multi-select as an explicit secondary-set layer over the shared primary selection.
 
-Until those steps are complete, documentation should describe the work as a shared top-level selection/Properties bridge, not as total removal of every historical selection implementation.
+Until those final compatibility paths are deleted, documentation should describe the architecture as one authoritative shared primary-selection/Properties boundary with a remaining legacy renderer mirror, not as total removal of every historical selection implementation.
 
 ## Contract boundary
 

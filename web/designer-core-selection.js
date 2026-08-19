@@ -113,28 +113,16 @@ function syncCoreSelection() {
     }
   }
 
-  let shared = currentDesignerSelection(canvas);
+  const shared = currentDesignerSelection(canvas);
   if (shared?.adapter === 'core') {
     const live = controls.find(control => sameLocation(control, shared) && isCoreType(control.type));
     if (!live) {
       clearDesignerSelection(canvas, { adapter: 'core', reason: 'missing-core-control' });
-      shared = null;
     } else {
       const normalized = designerSelectionForControl(live, 'core');
       if (!sameDesignerSelection(shared, normalized) || (shared.id ?? '') !== (normalized.id ?? '')) {
         rememberDesignerSelection(canvas, normalized, { emit: false });
-        shared = normalized;
       }
-    }
-  }
-
-  if (!shared) {
-    const legacySelected = elements.find(element => element.classList.contains('designer-selected'));
-    const control = legacySelected ? controlFromElement(legacySelected, controls) : null;
-    if (control) {
-      const selection = designerSelectionForControl(control, 'core');
-      rememberDesignerSelection(canvas, selection, { emit: false });
-      shared = selection;
     }
   }
 
