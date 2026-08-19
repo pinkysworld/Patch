@@ -1,6 +1,7 @@
 import './designer-data-editor.js';
 import './designer-tabs-nested.js';
 import './designer-ux.js';
+import './form-designer-workflow.js';
 
 const STORAGE_KEY = 'patch-studio-designer-properties-v1';
 const DEFAULT_WIDTH = 340;
