@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const tabs = fs.readFileSync('docs/TABS.md', 'utf8');
 const studio = fs.readFileSync('docs/PATCH_STUDIO.md', 'utf8');
+const roadmap = fs.readFileSync('docs/ROADMAP.md', 'utf8');
 const help = fs.readFileSync('web/help.html', 'utf8');
 const docs = fs.readFileSync('web/docs.html', 'utf8');
 const nested = fs.readFileSync('src/designer-tabs-nested.js', 'utf8');
@@ -38,4 +39,13 @@ test('nested Tabs implementation and docs stay aligned on Table and TreeView str
   assert.match(studio, /Native GUI IR \*\*1\.2\*\*/);
   assert.match(studio, /payload \*\*v12\*\*/);
   assert.match(studio, /runtime \*\*v1\.3\*\*/);
+});
+
+test('roadmap records the actual current Studio and native line', () => {
+  assert.match(roadmap, /Current development beta: \*\*0\.2\.0-beta\.35\*\*/);
+  assert.match(roadmap, /Native GUI IR: \*\*1\.2\*\*/);
+  assert.match(roadmap, /current sealed native GUI payload: \*\*v12\*\*/);
+  assert.match(roadmap, /current token-free Ready\/offline native runtime: \*\*v1\.3\*\*/);
+  assert.match(roadmap, /\[x\] dedicated nested Table column\/row and TreeView hierarchy structural editing inside Tabs Properties/);
+  assert.match(roadmap, /\[ \] shared Designer selection\/event architecture cleanup for special adapters/);
 });
