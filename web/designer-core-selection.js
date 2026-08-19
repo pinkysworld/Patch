@@ -63,6 +63,7 @@ function captureToolboxIntent(event) {
 }
 
 function captureCoreSelection(event) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey) return;
   const element = coreControlFromTarget(event.target);
   if (!element) return;
   selectCoreElement(element, 'core-control');
@@ -70,6 +71,7 @@ function captureCoreSelection(event) {
 
 function captureCoreSelectionKey(event) {
   if (!['Enter', ' '].includes(event.key)) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey) return;
   const element = coreControlFromTarget(event.target);
   if (!element) return;
   selectCoreElement(element, 'core-keyboard');
