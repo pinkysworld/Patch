@@ -64,8 +64,8 @@ function install() {
     const buttonId = select.value;
     select.value = '';
     if (!buttonId) return;
-    const button = toolbar.querySelector(`#${CSS.escape(buttonId)}`);
-    if (!button || button.disabled) return;
+    const button = doc.getElementById(buttonId);
+    if (!button || !toolbar.contains(button) || button.disabled) return;
     button.click();
   });
 
