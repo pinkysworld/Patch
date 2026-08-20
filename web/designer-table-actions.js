@@ -65,6 +65,9 @@ function syncToolbar() {
     toolbar.setAttribute('aria-label', 'Table row and column actions');
     editor.insertAdjacentElement('afterend', toolbar);
   }
+  const signature = JSON.stringify({ columns: data.columns, rows: data.rows, rowIndex, columnIndex });
+  if (toolbar.dataset.signature === signature) return;
+  toolbar.dataset.signature = signature;
   renderToolbar(toolbar, data, rowIndex, columnIndex);
 }
 
