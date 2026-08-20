@@ -53,7 +53,8 @@ test('nested Tabs implementation and docs stay aligned on Table and TreeView str
   assert.match(nestedWeb, /Nested TreeView nodes/);
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
-  assert.match(studio, /nested Table\/TreeView structural Properties editing, structural Properties summary\/filter\/empty-state polish, the shared top-level Designer selection\/Properties bridge/);
+  assert.match(studio, /Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties/);
+  assert.match(studio, /All top-level controls now share one authoritative primary-selection and common Properties action boundary/);
   assert.doesNotMatch(tabs, /dedicated nested Table\/TreeView structural Properties inspector is still pending/);
   assert.match(studio, /Native GUI IR \*\*1\.2\*\*/);
   assert.match(studio, /payload \*\*v12\*\*/);
@@ -72,9 +73,9 @@ test('Studio docs and implementation expose current structural Properties usabil
 });
 
 test('Studio docs and implementation keep core Tabs Table and TreeView on one shared transient primary layer', () => {
-  assert.match(studio, /shared `web\/designer-selection\.js` layer/);
-  assert.match(studio, /one adapter-aware selection state per Designer canvas/);
-  assert.match(studio, /Ordinary controls and Tabs are bridged into the same shared primary-selection and Properties boundary/);
+  assert.match(studio, /`web\/designer-selection\.js` owns the adapter-aware selection record/);
+  assert.match(studio, /All top-level controls now share one authoritative primary-selection and common Properties action boundary/);
+  assert.match(studio, /Designer multi-select remains an explicit transient secondary set over the shared primary selection/);
   assert.match(studio, /never becomes Patch application state or Change History/);
   assert.match(designerSelection, /patch-designer-selection-change/);
   assert.match(designerSelection, /selectionState = new WeakMap/);
