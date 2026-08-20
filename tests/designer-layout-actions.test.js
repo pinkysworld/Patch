@@ -78,13 +78,19 @@ test('Designer layout action UI delegates only to source-backed Designer mutatio
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
-test('public Studio and offline PWA package single-control layout actions', () => {
+test('public Studio, docs and offline PWA package single-control layout actions', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
+  const docs = fs.readFileSync('web/docs.html', 'utf8');
+  const layoutDocs = fs.readFileSync('docs/STUDIO_LAYOUT_ACTIONS.md', 'utf8');
   assert.match(workspace, /import '\.\/designer-layout-actions\.js'/);
   assert.match(buildSite, /designer-layout-actions\.js/);
   assert.match(buildSite, /designer-layout-actions\.css/);
   assert.match(sw, /'\.\/designer-layout-actions\.js'/);
   assert.match(sw, /'\.\/designer-layout-actions\.css'/);
+  assert.match(docs, /docs\/STUDIO_LAYOUT_ACTIONS\.md/);
+  assert.match(docs, /Center H\/Center V, Default size and collision-aware Auto place/);
+  assert.match(layoutDocs, /does not change Patch syntax, Change IR \*\*0\.10\*\*/);
+  assert.match(layoutDocs, /does not silently combine layout operations/);
 });
