@@ -12,7 +12,7 @@ import {
   moveTableColumn,
   moveTableRow,
   tableActionAvailability
-} from '../src/designer-table-actions.js';
+} from '../web/designer-table-model.js';
 
 const tableData = {
   columns: ['"Name"', '"Role"', '"Team"'],
@@ -99,26 +99,32 @@ test('nested Table uses the same row/column operation semantics and stays parsea
 test('shared Table action UI is idempotent, source-backed and packaged for top-level and nested editors', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const web = fs.readFileSync('web/designer-table-actions.js', 'utf8');
+  const model = fs.readFileSync('web/designer-table-model.js', 'utf8');
   const css = fs.readFileSync('web/designer-table-actions.css', 'utf8');
   const build = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
 
   assert.match(workspace, /import '\.\/designer-table-actions\.js'/);
+  assert.match(web, /from '\.\/designer-table-model\.js'/);
   assert.match(web, /updateDesignerTableData/);
   assert.match(web, /updateDesignerTabPageTableData/);
   assert.match(web, /data-table-advanced-action="row-duplicate"/);
   assert.match(web, /data-table-advanced-action="column-duplicate"/);
   assert.match(web, /toolbar\.dataset\.signature === signature/);
   assert.doesNotMatch(web, /localStorage|sessionStorage|Change History/);
+  assert.match(model, /duplicateTableRow/);
+  assert.match(model, /moveTableColumn/);
   assert.match(css, /designer-table-advanced-actions/);
   assert.match(css, /@media \(forced-colors: active\)/);
+  assert.match(build, /designer-table-model\.js/);
   assert.match(build, /designer-table-actions\.js/);
   assert.match(build, /designer-table-actions\.css/);
-  assert.match(build, /'designer-table-actions\.js'/);
+  assert.match(sw, /'\.\/designer-table-model\.js'/);
   assert.match(sw, /'\.\/designer-table-actions\.js'/);
   assert.match(sw, /'\.\/designer-table-actions\.css'/);
-  assert.match(sw, /'\.\.\/src\/designer-table-actions\.js'/);
+  assert.doesNotMatch(build, /SITE_SRC_FILES\.splice\([^\n]*designer-table-actions/);
+  assert.doesNotMatch(sw, /\.\.\/src\/designer-table-actions\.js/);
 
-  execFileSync(process.execPath, ['--check', 'src/designer-table-actions.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'web/designer-table-model.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/designer-table-actions.js'], { stdio: 'pipe' });
 });
