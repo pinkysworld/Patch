@@ -41,15 +41,25 @@ test('Auto place finds a non-overlapping standard column position', () => {
   assert.deepEqual(autoPlaceDesignerControl(controls[2], controls), { x: 24, y: 120 });
 });
 
-test('computed layout actions remain ordinary parseable Patch source edits', () => {
+test('computed layout actions remain ordinary parseable Patch source edits and preserve action order', () => {
   const source = `window "Main" as main size 640, 420:\n  button "Save" as save at 30, 50 size 180, 50\n`;
   const control = listDesignerControls(source)[0];
   const form = listDesignerWindows(source)[0];
-  const centered = centeredDesignerControlPosition(control, form, 'horizontal');
+
+  // Center H acts on the control's current 180px width, then Default size changes only dimensions.
+  const centeredCurrentSize = centeredDesignerControlPosition(control, form, 'horizontal');
   const resized = defaultDesignerControlSize(control);
-  const next = updateDesignerControl(source, control, { ...centered, ...resized });
-  assert.doesNotThrow(() => parse(next));
-  assert.match(next, /button "Save" as save at 260, 50 size 120, 36/);
+  const centeredThenResized = updateDesignerControl(source, control, { ...centeredCurrentSize, ...resized });
+  assert.doesNotThrow(() => parse(centeredThenResized));
+  assert.match(centeredThenResized, /button "Save" as save at 230, 50 size 120, 36/);
+
+  // If the user presses Default size first and Center H second, centering uses the new 120px width.
+  const resizedOnly = updateDesignerControl(source, control, resized);
+  const resizedControl = listDesignerControls(resizedOnly)[0];
+  const centeredDefaultSize = centeredDesignerControlPosition(resizedControl, listDesignerWindows(resizedOnly)[0], 'horizontal');
+  const resizedThenCentered = updateDesignerControl(resizedOnly, resizedControl, centeredDefaultSize);
+  assert.doesNotThrow(() => parse(resizedThenCentered));
+  assert.match(resizedThenCentered, /button "Save" as save at 260, 50 size 120, 36/);
 });
 
 test('Designer layout action UI delegates only to source-backed Designer mutations', () => {
