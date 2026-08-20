@@ -52,6 +52,17 @@ rejectAll('Studio shell', index, [
   'Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.'
 ]);
 
+const playground = read('_site/playground.js');
+requireAll('Designer renderer boundary', playground, [
+  'installDesignerInspector()', 'designerInspectorEmpty', 'designerInspectorForm',
+  'el.dataset.windowIndex = String(windowIndex)', 'el.dataset.controlIndex = String(controlIndex)'
+]);
+rejectAll('Designer renderer boundary', playground, [
+  'designerSelection', 'designerControls', 'currentDesignerControl', 'selectDesignerControl',
+  'renderDesignerInspector', 'applyDesignerProperties', 'removeSelectedDesignerControl', 'revealSelectedDesignerSource',
+  'addDesignerControl', 'removeDesignerControl', 'updateDesignerControl'
+]);
+
 const sharedSelection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection store', sharedSelection, [
   'patch-designer-selection-change', 'designerSelectionForControl', "control.type === 'table'", "control.type === 'tree'",
@@ -62,7 +73,8 @@ requireAll('Core Designer selection bridge', coreSelection, [
   'CORE_TOOL_TYPES', "designerSelectionForControl(control, 'core')", 'captureToolboxIntent',
   'captureCoreSelection', 'captureCoreSelectionKey', 'add-core-control', 'missing-core-control',
   'installSharedInspectorBridge', 'applySharedInspector', 'captureInspectorDelete', 'captureInspectorSource',
-  'populateSharedInspector', 'decorateDesignerAdapterElement', 'patchDesignerAdapter'
+  'populateSharedInspector', 'decorateDesignerAdapterElement', 'patchDesignerAdapter',
+  'if (type) type.textContent = displayControlType(control.type)', "if (type === 'tree') return 'TreeView'"
 ]);
 const designerUx = read('_site/designer-ux.js');
 requireAll('Designer UX workflow', designerUx, [
@@ -107,7 +119,21 @@ requireAll('Active Form Designer presentation', formWorkflowCss, [
 
 const treeDesigner = read('_site/tree-designer.js');
 requireAll('TreeView Designer integration', treeDesigner, [
-  "addDesignerControl(code.value, 'tree'", "type.textContent = 'TreeView'", 'countTreeNodes', 'patchDesignerTree'
+  "addDesignerControl(code.value, 'tree'", 'installDesignerSelectionBridge', 'selectDesignerElement',
+  'decorateDesignerAdapterElement', 'restoreDesignerAdapterSelection', 'patch-tree-designer-control'
+]);
+rejectAll('TreeView Designer integration', treeDesigner, [
+  'designerInspectorApply', 'designerInspectorDelete', 'designerInspectorSource', 'function installInspectorBridge',
+  "type.textContent = 'TreeView'", 'updateDesignerControl', 'removeDesignerControl'
+]);
+const tableDesigner = read('_site/table-stage1.js');
+requireAll('Table Designer integration', tableDesigner, [
+  "addDesignerControl(code.value, 'table'", 'installDesignerSelectionBridge', 'selectDesignerElement',
+  'decorateDesignerAdapterElement', 'restoreDesignerAdapterSelection'
+]);
+rejectAll('Table Designer integration', tableDesigner, [
+  'designerInspectorApply', 'designerInspectorDelete', 'designerInspectorSource', 'function installInspectorBridge',
+  'updateDesignerControl', 'removeDesignerControl'
 ]);
 const designerWorkspace = read('_site/designer-workspace.js');
 requireAll('Designer Properties workspace', designerWorkspace, [
@@ -169,4 +195,4 @@ requireAll('Service worker current compiler cache', sw, [
 const integrity = read('_site/runtime-integrity.js');
 requireAll('Runtime integrity gate', integrity, ['runtime-manifest.json','SHA-256','crypto.subtle']);
 
-console.log('ok current Patch Studio public site surface: beta.35+ / structural Properties polish / categorized Designer toolbox / shared selection+Properties / active Form workflow+fit / runtime v1.3');
+console.log('ok current Patch Studio public site surface: beta.35+ / completed shared selection+Properties architecture / structural Properties polish / categorized Designer toolbox / active Form workflow+fit / runtime v1.3');

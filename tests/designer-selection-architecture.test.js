@@ -67,7 +67,7 @@ test('shared Designer selection state is one adapter-aware store per canvas', ()
   assert.equal(currentDesignerSelection(canvas), null);
 });
 
-test('Table and TreeView adapters no longer keep parallel private selection state', () => {
+test('Table and TreeView adapters share selection without private inspector fallbacks', () => {
   const table = fs.readFileSync('web/table-stage1.js', 'utf8');
   const tree = fs.readFileSync('web/tree-designer.js', 'utf8');
   const shared = fs.readFileSync('web/designer-selection.js', 'utf8');
@@ -75,8 +75,11 @@ test('Table and TreeView adapters no longer keep parallel private selection stat
   for (const source of [table, tree]) {
     assert.match(source, /from '\.\/designer-selection\.js'/);
     assert.match(source, /installDesignerSelectionBridge/);
-    assert.match(source, /currentDesignerSelection/);
     assert.match(source, /selectDesignerElement/);
+    assert.doesNotMatch(source, /function installInspectorBridge\b/);
+    assert.doesNotMatch(source, /function populateInspector\b/);
+    assert.doesNotMatch(source, /removeDesignerControl/);
+    assert.doesNotMatch(source, /updateDesignerControl/);
   }
   assert.doesNotMatch(table, /let selectedTable\b/);
   assert.doesNotMatch(tree, /let selectedTree\b/);
@@ -110,8 +113,10 @@ test('additive pointer and keyboard multi-select do not replace the shared prima
   assert.equal(guards.length, 2, 'both pointer and Enter/Space selection paths must defer modifier gestures to designer-multiselect');
 });
 
-test('shared selection is also the normal Properties Apply/Delete/Source boundary', () => {
+test('shared selection is the only normal Properties Apply/Delete/Source boundary', () => {
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const table = fs.readFileSync('web/table-stage1.js', 'utf8');
+  const tree = fs.readFileSync('web/tree-designer.js', 'utf8');
   assert.match(core, /installSharedInspectorBridge/);
   assert.match(core, /captureInspectorApply/);
   assert.match(core, /captureInspectorDelete/);
@@ -120,21 +125,35 @@ test('shared selection is also the normal Properties Apply/Delete/Source boundar
   assert.match(core, /populateSharedInspector/);
   assert.match(core, /updateDesignerControl\(code\.value, selection, changes\)/);
   assert.match(core, /removeDesignerControl\(code\.value, selection\)/);
-  assert.match(core, /event\.stopImmediatePropagation\(\)/, 'shared capture handlers must win over legacy adapter/property fallbacks');
   assert.match(core, /designerSelectionForControl\(updated, selection\.adapter\)/, 'renames must preserve the active adapter identity');
+  for (const adapter of [table, tree]) {
+    assert.doesNotMatch(adapter, /designerInspectorApply/);
+    assert.doesNotMatch(adapter, /designerInspectorDelete/);
+    assert.doesNotMatch(adapter, /designerInspectorSource/);
+  }
 });
 
-test('shared core selection never adopts a legacy renderer-only selected DOM marker', () => {
+test('playground renderer no longer owns Designer selection or source mutations', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
   const doc = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTURE.md', 'utf8');
 
-  assert.match(playground, /let designerSelection = null;/, 'the historical renderer mirror still exists until its dedicated rewrite');
-  assert.doesNotMatch(core, /legacySelected/);
-  assert.doesNotMatch(core, /elements\.find\(element => element\.classList\.contains\('designer-selected'\)\)/);
+  for (const obsolete of [
+    'designerSelection', 'designerControls', 'addDesignerControl', 'removeDesignerControl', 'updateDesignerControl',
+    'currentDesignerControl', 'selectDesignerControl', 'selectionOf', 'renderDesignerInspector',
+    'applyDesignerProperties', 'removeSelectedDesignerControl', 'revealSelectedDesignerSource', 'splitOptionExpressions'
+  ]) assert.doesNotMatch(playground, new RegExp(`\\b${obsolete}\\b`), obsolete);
+
+  assert.match(playground, /installDesignerInspector\(\)/, 'renderer still creates the Inspector DOM shell');
+  assert.match(playground, /el\.dataset\.windowIndex = String\(windowIndex\)/);
+  assert.match(playground, /el\.dataset\.controlIndex = String\(controlIndex\)/);
   assert.match(core, /const shared = currentDesignerSelection\(canvas\)/);
-  assert.match(doc, /no longer adopts renderer-only `\.designer-selected` markers/);
-  assert.match(doc, /private `designerSelection` mirror still exists/);
+  assert.doesNotMatch(core, /legacySelected/);
+  assert.match(forms, /patch-designer-selection-change/);
+  assert.match(forms, /patch-form-resize-handle/);
+  assert.match(doc, /There is no longer a private `playground\.js` control-selection mirror/);
+  assert.match(doc, /former Table\/TreeView Inspector fallback listeners have been removed/);
 });
 
 test('public Studio packaging and docs include shared Designer selection and the core bridge', () => {

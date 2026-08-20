@@ -1,10 +1,10 @@
 # Patch Studio Designer selection architecture
 
-This document records the current top-level Designer selection migration in Patch Studio 0.2 beta.35+.
+This document records the current top-level Designer selection architecture in Patch Studio 0.2 beta.35+.
 
-## Current shared boundary
+## Authoritative shared boundary
 
-`web/designer-selection.js` owns one transient selection record per Designer canvas. The record contains:
+`web/designer-selection.js` owns one transient primary-selection record per Designer canvas. The record contains:
 
 - `windowIndex`;
 - `controlIndex`;
@@ -14,6 +14,8 @@ This document records the current top-level Designer selection migration in Patc
 Selection identity is location + adapter. Renaming an id therefore does not lose the selected control.
 
 The shared layer applies the common `.designer-selected` DOM marker and emits the internal `patch-designer-selection-change` event when the primary selection changes.
+
+There is no longer a private `playground.js` control-selection mirror. The renderer creates the visual controls and Inspector DOM shell, but it does not own selection, mutate source for Properties actions, or repopulate Properties from private state.
 
 ## Core bridge
 
@@ -28,13 +30,32 @@ The shared layer applies the common `.designer-selected` DOM marker and emits th
 - ListBox;
 - Tabs.
 
-Table and TreeView already use the same store through their special rendering adapters.
+Table and TreeView use the same store through their special rendering adapters.
 
-The core bridge also owns the normal Properties action boundary for the active shared selection. Apply, Delete and Source therefore resolve the currently selected source-backed control from the shared selection record rather than requiring separate Table/Tree inspector state. Table and TreeView keep their older inspector listeners as compatibility fallbacks during the migration, but the common bridge is loaded first and handles the normal Studio path.
+The core bridge owns the normal Properties action boundary for every active shared selection. Apply, Delete and Source resolve the currently selected source-backed control from the shared selection record. The former Table/TreeView Inspector fallback listeners have been removed, so there is one Properties action path rather than layered compatibility handlers.
 
-Toolbox additions for ordinary controls are reconciled back into the shared selection after the source-backed Designer rerenders. A selection that points to a removed core control is cleared fail-closed.
+Toolbox additions for ordinary controls remain source-backed through `forms-designer.js` and are reconciled into shared selection after the Designer rerenders. Table and TreeView keep their dedicated source-backed add/render adapters, then publish the same shared selection record. A selection that points to a removed control is cleared fail-closed.
 
-The shared core bridge no longer adopts renderer-only `.designer-selected` markers. Its primary state may come only from the shared selection API, an actual selection action, or the explicit toolbox-add reconciliation path. This makes the migration one-way: the historical renderer can still mirror selection visually, but it cannot silently recreate shared selection state from a stale DOM class.
+The shared bridge never adopts renderer-only `.designer-selected` markers. Primary state may come only from the shared selection API, an actual selection action, or an explicit source-backed toolbox-add reconciliation path.
+
+## Renderer boundary
+
+`web/playground.js` now has a deliberately narrower Designer role:
+
+- render Window/Form preview DOM;
+- create the Inspector DOM shell consumed by the shared Properties bridge;
+- expose stable Designer control metadata (`data-window-index` / `data-control-index`) for later enhancement layers;
+- render App Preview and runtime interactions.
+
+It does **not** import `addDesignerControl`, `updateDesignerControl`, `removeDesignerControl` or `listDesignerControls`, and it has no private `designerSelection`, `currentDesignerControl`, `selectDesignerControl`, `renderDesignerInspector` or renderer-owned Apply/Delete/Source handlers.
+
+This keeps source mutation in the dedicated source-backed Designer modules rather than the generic renderer.
+
+## Form layout synchronization
+
+`web/forms-designer.js` listens directly for `patch-designer-selection-change`. Geometry fields and the common resize handle therefore follow shared selection without depending on a full renderer refresh or DOM-marker tricks.
+
+The layout layer removes stale resize handles before applying the current primary selection, so clearing or moving selection does not leave a handle attached to an old control.
 
 ## Current Designer context UX
 
@@ -46,7 +67,7 @@ The Form toolbar keeps the active Form selector and Add Form action visible whil
 
 The active Form is highlighted in the canvas and Form titles are pointer/keyboard activatable. Previous/next actions plus Alt+PageUp / Alt+PageDown navigate named Forms. `Fit controls` and `Default 640×420` rewrite ordinary source-backed Form dimensions through the existing Designer source updater.
 
-Properties distinguishes the selected control type in its heading and reports whether common source-backed fields are already current or have pending edits. The common Apply action is disabled when there is nothing to apply. Structural Table, TreeView and Tabs editors retain their dedicated source-backed actions.
+Properties distinguishes the selected control type in its heading and reports whether common source-backed fields are already current or have pending edits. The common Apply action is disabled when there is nothing to apply. Structural Table, TreeView and Tabs editors retain their dedicated source-backed actions and the shared Structural Properties UX.
 
 These UX additions are packaged in the public Studio and offline PWA. They do not change source semantics or runtime contracts.
 
@@ -62,18 +83,11 @@ Designer selection, structural editor selection and Tabs page selection are tran
 
 Persistent application state changes only through ordinary semantic `change` operations in Patch source.
 
-## Remaining migration work
+## Completed migration invariant
 
-The historical `playground.js` renderer private `designerSelection` mirror still exists for its internal rerender path. It is no longer a source of truth for the shared core selection, and the core bridge does not recover selection from its DOM marker.
+The top-level Designer now has one authoritative primary-selection and common Properties boundary across core controls, Tabs, Table and TreeView. Special adapters may still own rendering details or structural editing, but they do not own competing primary-selection variables or Inspector Apply/Delete/Source handlers.
 
-A later dedicated rewrite should:
-
-1. remove the private `designerSelection` variable and the renderer-only selection helper functions from `playground.js`;
-2. leave `playground.js` responsible only for rendering and creating the Inspector DOM shell;
-3. remove now-dead Table/Tree inspector fallback listeners after the shared path has been proven stable;
-4. keep multi-select as an explicit secondary-set layer over the shared primary selection.
-
-Until those final compatibility paths are deleted, documentation should describe the architecture as one authoritative shared primary-selection/Properties boundary with a remaining legacy renderer mirror, not as total removal of every historical selection implementation.
+Any future control adapter should publish selection through `designer-selection.js`, let `designer-core-selection.js` resolve common Properties actions, and keep additional editor-specific state transient and source-backed.
 
 ## Contract boundary
 

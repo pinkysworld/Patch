@@ -24,6 +24,7 @@ interceptToolbox();
 installDragAndResize();
 observe(canvas);
 observe(appView);
+canvas?.addEventListener('patch-designer-selection-change', scheduleApply);
 code?.addEventListener('input', scheduleApply);
 code?.addEventListener('change', scheduleApply);
 scheduleApply();
@@ -305,6 +306,10 @@ function applyLayouts(container, designer) {
       el.dataset.windowIndex = String(windowIndex);
       el.dataset.controlIndex = String(controlIndex);
     });
+
+    if (designer) {
+      for (const handle of body.querySelectorAll(':scope > .patch-form-resize-handle')) handle.remove();
+    }
 
     const sourceHasLayout = Boolean(
       model.width || model.height ||

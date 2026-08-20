@@ -22,6 +22,7 @@ const source = `window "People" as main size 520, 320:
 
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
 const studioTable = fs.readFileSync('web/table-stage1.js', 'utf8');
+const studioCoreSelection = fs.readFileSync('web/designer-core-selection.js', 'utf8');
 const studioPlayground = fs.readFileSync('web/playground.js', 'utf8');
 const siteBuilder = fs.readFileSync('scripts/build-site.js', 'utf8');
 const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
@@ -72,16 +73,21 @@ test('Designer adds moves renames and removes a Table block without rewriting ro
   assert.match(edited, /button "Button" as button_1/);
 });
 
-test('Patch Studio exposes Table in Designer and App preview through an offline-shipped module', () => {
+test('Patch Studio exposes Table through its render adapter and the shared Properties bridge', () => {
   const checked = spawnSync(process.execPath, ['--check', 'web/table-stage1.js'], { encoding: 'utf8' });
   assert.equal(checked.status, 0, checked.stderr);
   assert.match(studioIndex, /id="addTable"/);
   assert.match(studioIndex, /src="\.\/table-stage1\.js"/);
+  assert.match(studioIndex, /src="\.\/designer-core-selection\.js"/);
   assert.match(studioTable, /addDesignerControl\(code\.value, 'table'/);
   assert.match(studioTable, /document\.createElement\('table'\)/);
   assert.match(studioTable, /patch-table-stage1-control/);
-  assert.match(studioTable, /updateDesignerControl\(code\.value, selection/);
-  assert.match(studioTable, /removeDesignerControl\(code\.value, selection\)/);
+  assert.match(studioTable, /selectDesignerElement/);
+  assert.match(studioTable, /decorateDesignerAdapterElement/);
+  assert.doesNotMatch(studioTable, /updateDesignerControl\(code\.value, selection/);
+  assert.doesNotMatch(studioTable, /removeDesignerControl\(code\.value, selection\)/);
+  assert.match(studioCoreSelection, /updateDesignerControl\(code\.value, selection, changes\)/);
+  assert.match(studioCoreSelection, /removeDesignerControl\(code\.value, selection\)/);
   assert.match(siteBuilder, /'table-stage1\.js'/);
   assert.match(serviceWorker, /'\.\/table-stage1\.js'/);
 });

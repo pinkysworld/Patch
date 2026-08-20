@@ -120,9 +120,10 @@ test('Designer can add, resize, rename and edit ListBox options in source', () =
 
 test('Patch Studio toolbox and preview expose a real multi-row ListBox', () => {
   assert.match(studioIndex, /id="addListbox"/);
-  assert.match(studio, /addControl\('listbox'\)/);
+  assert.doesNotMatch(studio, /addControl\('listbox'\)/);
   assert.match(studio, /patch-listbox/);
   assert.match(formsDesigner, /\['#addListbox', 'listbox'\]/);
+  assert.match(formsDesigner, /addDesignerControl\(code\.value, type, \{ windowIndex: activeForm \}\)/);
 });
 
 test('Patch Studio upgrades list-backed ListBox to multiple selection and text-list dispatch', () => {

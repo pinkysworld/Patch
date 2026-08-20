@@ -71,9 +71,10 @@ test('Designer can add, move, rename and edit ComboBox options in source', () =>
 
 test('Patch Studio toolbox and preview expose source-backed ComboBox editing', () => {
   assert.match(studioIndex, /id="addCombo"/);
-  assert.match(studio, /addControl\('combo'\)/);
+  assert.doesNotMatch(studio, /addControl\('combo'\)/);
   assert.match(studio, /control\.type === 'combo'/);
   assert.match(formsDesigner, /\['#addCombo', 'combo'\]/);
+  assert.match(formsDesigner, /addDesignerControl\(code\.value, type, \{ windowIndex: activeForm \}\)/);
 });
 
 test('Standalone Window Web App renders ComboBox and emits a text changed payload', () => {
