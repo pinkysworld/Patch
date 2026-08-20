@@ -124,3 +124,18 @@ test('public Studio and offline PWA package Form duplication', () => {
   execFileSync(process.execPath, ['--check', 'web/designer-form-duplicate-model.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/designer-form-duplicate.js'], { stdio: 'pipe' });
 });
+
+test('Form duplication documentation records source, state and assurance boundaries', () => {
+  const doc = fs.readFileSync('docs/STUDIO_FORM_DUPLICATION.md', 'utf8');
+  assert.match(doc, /Duplicate Form/);
+  assert.match(doc, /complete selected `window` block directly after the original/);
+  assert.match(doc, /fresh globally unique type-based id/);
+  assert.match(doc, /Handler bodies are preserved verbatim/);
+  assert.match(doc, /does \*\*not\*\* reinterpret or silently rewrite semantic references/);
+  assert.match(doc, /does not create a second active-Form state/);
+  assert.match(doc, /Change IR \*\*0\.10\*\*/);
+  assert.match(doc, /Native GUI IR \*\*1\.2\*\*/);
+  assert.match(doc, /payload \*\*v12\*\*/);
+  assert.match(doc, /runtime \*\*v1\.3\*\*/);
+  assert.match(doc, /beta\.32 formal runtime-correspondence boundary/);
+});
