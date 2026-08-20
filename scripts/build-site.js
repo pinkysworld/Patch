@@ -34,9 +34,8 @@ SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js', 'studio-outline.js');
 SITE_WEB_MODULE_FILES.splice(23, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
 SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-ux.css') + 1, 0, 'designer-layout-actions.css');
 SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-ux.js') + 1, 0, 'designer-layout-actions.js');
-SITE_SRC_FILES.splice(SITE_SRC_FILES.indexOf('designer-data.js') + 1, 0, 'designer-table-actions.js');
 SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-layout-actions.css') + 1, 0, 'designer-table-actions.css');
-SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-layout-actions.js') + 1, 0, 'designer-table-actions.js');
+SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-layout-actions.js') + 1, 0, 'designer-table-model.js', 'designer-table-actions.js');
 
 const siteRevision = computeSiteRevision();
 
