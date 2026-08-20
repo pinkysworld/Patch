@@ -6,7 +6,7 @@ import {
   moveTableColumn,
   moveTableRow,
   tableActionAvailability
-} from '../src/designer-table-actions.js';
+} from './designer-table-model.js';
 import {
   listDesignerTabPageControls,
   updateDesignerTabPageTableData
