@@ -1,4 +1,3 @@
-import { listDesignerControls } from '../src/designer.js';
 import {
   currentDesignerSelection,
   designerSelectionForControl,
