@@ -13,7 +13,7 @@ const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
-  'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
+  'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-table-actions.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
   'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-tree-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
@@ -32,7 +32,8 @@ SITE_HTML_FILES.splice(3, 0, 'downloads.html');
 SITE_WEB_STATIC_FILES.splice(11, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
 SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js', 'studio-outline.js');
 SITE_WEB_MODULE_FILES.splice(23, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
-SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-ux.css') + 1, 0, 'designer-layout-actions.css');
+SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-ux.css') + 1, 0, 'designer-layout-actions.css', 'designer-table-actions.css');
+SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-tabs-nested.js') + 1, 0, 'designer-table-actions.js');
 SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-ux.js') + 1, 0, 'designer-layout-actions.js');
 
 const siteRevision = computeSiteRevision();
