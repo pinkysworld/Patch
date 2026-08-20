@@ -17,9 +17,11 @@ The row and column selectors are transient IDE selection only. They are not Patc
 
 Every action starts from the current values visible in the Table grid and rewrites the existing visible `table` / `row` source block through the established Designer data APIs.
 
-There is no second persistent Table model. Top-level Tables use `updateDesignerTableData`; nested Tables use `updateDesignerTabPageTableData`. Both consume the same shared operation helpers from `src/designer-table-actions.js`.
+There is no second persistent Table model. Top-level Tables use `updateDesignerTableData`; nested Tables use `updateDesignerTabPageTableData`. Both consume the same immutable Studio-only operation helpers from `web/designer-table-model.js`.
 
 A moved column is atomic at the structural level: its header and the matching cell in every row always move together. Duplicate operations create copied arrays before rewrite so later editing cannot mutate the original row through shared JavaScript references.
+
+Keeping the helper in the Studio web layer is intentional: these are authoring operations, not runtime semantics, so a Designer-only change does not need to trigger native runtime distribution workflows.
 
 ## Boundaries
 
