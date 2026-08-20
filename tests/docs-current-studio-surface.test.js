@@ -15,6 +15,8 @@ const designerCoreSelection = fs.readFileSync('web/designer-core-selection.js', 
 const structureUx = fs.readFileSync('web/designer-structure-ux.js', 'utf8');
 const formWorkflow = fs.readFileSync('web/form-designer-workflow.js', 'utf8');
 const selectionArchitecture = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTURE.md', 'utf8');
+const tableActionsDoc = fs.readFileSync('docs/STUDIO_TABLE_ACTIONS.md', 'utf8');
+const tableActionsWeb = fs.readFileSync('web/designer-table-actions.js', 'utf8');
 
 test('current Tabs documentation names the active native contract rather than the historical v0.4 line', () => {
   assert.match(tabs, /Native GUI IR \*\*1\.2\*\*/);
@@ -70,6 +72,23 @@ test('Studio docs and implementation expose current structural Properties usabil
   assert.match(structureUx, /structuralEditorSummary/);
   assert.match(structureUx, /clickExisting/);
   assert.doesNotMatch(structureUx, /\bcode\.value\b/);
+});
+
+test('Table reorder/duplicate documentation matches the shared top-level and nested source-backed action layer', () => {
+  assert.match(tableActionsDoc, /Row Up \/ Down/);
+  assert.match(tableActionsDoc, /Duplicate Row/);
+  assert.match(tableActionsDoc, /Column Left \/ Right/);
+  assert.match(tableActionsDoc, /Duplicate Column/);
+  assert.match(tableActionsDoc, /header and the matching cell in every row always move together/);
+  assert.match(tableActionsDoc, /Top-level Tables use `updateDesignerTableData`/);
+  assert.match(tableActionsDoc, /nested Tables use `updateDesignerTabPageTableData`/);
+  assert.match(tableActionsWeb, /updateDesignerTableData/);
+  assert.match(tableActionsWeb, /updateDesignerTabPageTableData/);
+  assert.match(tableActionsWeb, /toolbar\.dataset\.signature === signature/);
+  assert.match(tableActionsDoc, /Change IR 0\.10/);
+  assert.match(tableActionsDoc, /Native GUI IR 1\.2/);
+  assert.match(tableActionsDoc, /payload v12/);
+  assert.match(tableActionsDoc, /runtime v1\.3/);
 });
 
 test('Studio docs and implementation keep core Tabs Table and TreeView on one shared transient primary layer', () => {

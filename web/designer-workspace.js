@@ -1,5 +1,6 @@
 import './designer-data-editor.js';
 import './designer-tabs-nested.js';
+import './designer-table-actions.js';
 import './designer-structure-ux.js';
 import './designer-ux.js';
 import './designer-layout-actions.js';
