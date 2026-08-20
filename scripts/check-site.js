@@ -74,7 +74,7 @@ requireAll('Core Designer selection bridge', coreSelection, [
   'captureCoreSelection', 'captureCoreSelectionKey', 'add-core-control', 'missing-core-control',
   'installSharedInspectorBridge', 'applySharedInspector', 'captureInspectorDelete', 'captureInspectorSource',
   'populateSharedInspector', 'decorateDesignerAdapterElement', 'patchDesignerAdapter',
-  "if (control.type === 'tree') type.textContent = 'TreeView'"
+  'if (type) type.textContent = displayControlType(control.type)', "if (type === 'tree') return 'TreeView'"
 ]);
 const designerUx = read('_site/designer-ux.js');
 requireAll('Designer UX workflow', designerUx, [
