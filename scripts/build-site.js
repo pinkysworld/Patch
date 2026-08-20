@@ -40,7 +40,8 @@ SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-layout-acti
   'designer-tree-model.js', 'designer-tree-duplicate.js',
   'designer-tabs-control-model.js', 'designer-tabs-control-actions.js',
   'designer-tabs-page-model.js', 'designer-tabs-page-duplicate.js',
-  'designer-control-duplicate-model.js', 'designer-control-duplicate.js'
+  'designer-control-duplicate-model.js', 'designer-control-duplicate.js',
+  'designer-form-duplicate-model.js', 'designer-form-duplicate.js'
 );
 
 const siteRevision = computeSiteRevision();
