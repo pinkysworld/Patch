@@ -92,7 +92,8 @@ test('Patch Studio exposes TreeView through shared selection plus resizable and 
   assert.match(treeDesigner, /selectDesignerElement/);
   assert.match(treeDesigner, /decorateDesignerAdapterElement/);
   assert.doesNotMatch(treeDesigner, /type\.textContent = 'TreeView'/);
-  assert.match(coreSelection, /if \(control\.type === 'tree'\) type\.textContent = 'TreeView'/);
+  assert.match(coreSelection, /if \(type\) type\.textContent = displayControlType\(control\.type\)/);
+  assert.match(coreSelection, /if \(type === 'tree'\) return 'TreeView'/);
   assert.match(workspace, /patch-studio-designer-properties-v1/);
   assert.match(workspace, /setPointerCapture/);
   assert.match(sw, /'\.\/tree-designer\.js'/);
