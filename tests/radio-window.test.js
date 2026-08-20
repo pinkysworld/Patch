@@ -77,11 +77,12 @@ test('Patch Studio exposes, previews and edits Radio groups instead of silently 
   const html = fs.readFileSync('web/index.html', 'utf8');
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
+  const coreSelection = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   const css = fs.readFileSync('web/forms-designer.css', 'utf8');
   assert.match(html, /id="addRadio"/);
   assert.match(playground, /control\.type === 'radio'/);
   assert.match(playground, /patch-radio/);
-  assert.match(playground, /\['combo', 'listbox', 'radio'\]/);
+  assert.match(coreSelection, /\['combo', 'listbox', 'radio'\]\.includes\(selected\.type\)/);
   assert.match(forms, /\['#addRadio', 'radio'\]/);
   assert.match(css, /\.patch-radio/);
 });
