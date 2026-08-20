@@ -4,6 +4,7 @@ import './designer-tabs-control-actions.js';
 import './designer-tabs-page-duplicate.js';
 import './designer-control-duplicate.js';
 import './designer-form-duplicate.js';
+import './designer-form-delete.js';
 import './designer-table-actions.js';
 import './designer-tree-duplicate.js';
 import './designer-structure-ux.js';
