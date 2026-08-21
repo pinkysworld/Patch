@@ -32,7 +32,7 @@ That mandatory mutation substrate is reused for Change History, undo/redo, prove
 | Patch Studio | Browser IDE with **canonical multi-file project bundle v3**, Project Tree, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
 | Designer controls | Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider Stage 1**, Table, TreeView and Tabs |
 | Slider | Source-backed numeric range control in Studio and Standalone Window Web; bounded finite numeric transient `value`; native v1.3 intentionally fails closed |
-| Table | Source-backed grid, structural Properties editing and transient selected-row value |
+| Table | Source-backed grid, structural Properties editing; the selected row is exposed as transient list-valued `value` |
 | ListBox | Text-backed single-select plus list-backed native/browser multi-select with transient text-list value |
 | TreeView | Source-backed hierarchy with transient root-to-node path; current native line includes **hierarchical TreeView** |
 | Native desktop GUI | Native GUI IR 1.2 / sealed **payload v12 / runtime v1.3** on Win32, AppKit and GTK3 |
