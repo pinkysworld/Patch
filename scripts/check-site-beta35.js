@@ -151,9 +151,9 @@ requireAll('beta.35 Service Worker', sw, [
   "url.pathname.includes('/runtimes/')",
   "freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset",
   './slider-stage1.js',
-  '../src/window-events.js',
-  '../src/native-gui-ir-v12.js',
-  '../src/sealed-native-gui-v12.js'
+  './src/window-events.js',
+  './src/native-gui-ir-v12.js',
+  './src/sealed-native-gui-v12.js'
 ]);
 
 console.log('ok Patch Studio beta.35+ Slider browser / native v1.3 fail-closed site surface');
