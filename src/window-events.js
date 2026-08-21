@@ -1,6 +1,6 @@
 import { PatchRuntimeError } from './interpreter.js';
 
-// Slider Stage 1 extends the transient event-local value contract with finite numeric values.
+// Slider Stage 1 extends the transient event-local value contract with bounded finite numeric values.
 export const PATCH_WINDOW_EVENTS_VERSION = '0.9';
 
 /**
@@ -9,12 +9,13 @@ export const PATCH_WINDOW_EVENTS_VERSION = '0.9';
  * Persistent state is never updated by this adapter. `changed` control values
  * and `chosen` file-dialog paths are exposed only as local `value`; source must
  * use an ordinary semantic `change` to commit them. Checkbox `changed` values
- * are Boolean. Slider `changed` values are finite numbers. Input, ComboBox,
- * Radio and text-bound ListBox `changed` plus file-dialog `chosen` values are
- * text. A ListBox whose id is backed by `create list` carries the selected
- * options as a transient text list. Table `changed` carries the selected row
- * as a transient list of display strings. TreeView `changed` carries the
- * root-to-node path as a non-empty transient text list.
+ * are Boolean. Slider `changed` values are finite numbers inside the declared
+ * source-backed range. Input, ComboBox, Radio and text-bound ListBox `changed`
+ * plus file-dialog `chosen` values are text. A ListBox whose id is backed by
+ * `create list` carries the selected options as a transient text list. Table
+ * `changed` carries the selected row as a transient list of display strings.
+ * TreeView `changed` carries the root-to-node path as a non-empty transient
+ * text list.
  */
 export function triggerWindowEvent(runtime, control, event = 'clicked', payload = {}) {
   if (!runtime) throw new PatchRuntimeError('The Patch Window runtime has not started.');
@@ -31,12 +32,20 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
   }
 
   if (event === 'changed') {
-    const controlType = findControlType(runtime, control);
+    const controlNode = findControlNode(runtime, control);
+    const controlType = controlNode?.control ?? null;
     if (controlType === 'checkbox' && typeof payload.value !== 'boolean') {
       throw new PatchRuntimeError(`The 'changed' action for checkbox '${control}' needs a Boolean event-local value.`);
     }
-    if (controlType === 'slider' && (typeof payload.value !== 'number' || !Number.isFinite(payload.value))) {
-      throw new PatchRuntimeError(`The 'changed' action for slider '${control}' needs a finite number event-local value.`);
+    if (controlType === 'slider') {
+      if (typeof payload.value !== 'number' || !Number.isFinite(payload.value)) {
+        throw new PatchRuntimeError(`The 'changed' action for slider '${control}' needs a finite number event-local value.`);
+      }
+      const min = Number(controlNode.min);
+      const max = Number(controlNode.max);
+      if (payload.value < min || payload.value > max) {
+        throw new PatchRuntimeError(`The 'changed' action for slider '${control}' needs a value from ${min} to ${max}.`);
+      }
     }
     if (['input', 'combo', 'radio'].includes(controlType) && typeof payload.value !== 'string') {
       throw new PatchRuntimeError(`The 'changed' action for ${controlType} '${control}' needs a text event-local value.`);
@@ -78,10 +87,10 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
   }
 }
 
-function findControlType(runtime, id) {
+function findControlNode(runtime, id) {
   const find = nodes => {
     for (const node of nodes ?? []) {
-      if (node.kind === 'uiControl' && node.id === id) return node.control;
+      if (node.kind === 'uiControl' && node.id === id) return node;
       if (node.kind === 'tabs') {
         for (const page of node.body ?? []) {
           const nested = find(page.body);
@@ -92,8 +101,8 @@ function findControlType(runtime, id) {
     return null;
   };
   for (const windowNode of runtime.windows ?? []) {
-    const type = find(windowNode.body);
-    if (type) return type;
+    const node = find(windowNode.body);
+    if (node) return node;
   }
   return null;
 }
