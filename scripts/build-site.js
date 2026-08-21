@@ -24,14 +24,14 @@ const SITE_WEB_STATIC_FILES = [
 
 const SITE_WEB_MODULE_FILES = [
   'runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
-  'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-toolbox.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
+  'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-toolbox.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
   'studio-dom-sync.js','studio-diagnostics.js','studio-accessibility.js','sw.js'
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');
 SITE_WEB_STATIC_FILES.splice(11, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
 SITE_WEB_MODULE_FILES.splice(6, 0, 'beta35-studio.js', 'studio-outline.js');
-SITE_WEB_MODULE_FILES.splice(23, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
+SITE_WEB_MODULE_FILES.splice(24, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
 SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-ux.css') + 1, 0, 'designer-layout-actions.css');
 SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-ux.js') + 1, 0, 'designer-layout-actions.js');
 SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-layout-actions.css') + 1, 0, 'designer-table-actions.css');
