@@ -10,9 +10,10 @@ const sw = fs.readFileSync('web/sw.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
 test('beta35 multi-select workflow remains visible after current native parity lands', () => {
-  assert.match(index, /list-backed multi-select ListBox and hierarchical TreeView now work across browser and supported native Ready\/offline Windows, macOS and Linux paths/i);
+  assert.match(index, /multi-select ListBox and TreeView remain available across browser and supported native Ready\/offline Windows, macOS and Linux paths/i);
+  assert.match(index, /source-backed browser Slider Stage 1 with transient numeric values/i);
+  assert.match(index, /Slider Stage 1 is browser-only until a later versioned native contract adds parity/i);
   assert.match(index, /Persistent application state still changes only through explicit <b>change<\/b>/i);
-  assert.doesNotMatch(index, /currently browser-only and native builds fail closed/);
   assert.match(index, /href="#designer"[^>]*>Designer ↓<\/a>/);
   assert.ok(index.includes('./beta35-studio.css'));
   assert.ok(index.includes('./beta35-studio.js'));

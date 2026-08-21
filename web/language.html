@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch programming language: explicit semantic change, Change Contracts, transient GUI event values and cross-platform execution.">
+  <meta name="description" content="Patch programming language: explicit semantic change, Change Contracts, transient GUI event values including Slider Stage 1, and cross-platform execution.">
   <title>Patch Language · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -43,6 +43,18 @@ show score</pre>
     <p>Patch explores whether mutation can be made easier to inspect, constrain, replay and validate by treating change itself as a first-class semantic object. The project combines a small language, Change IR, source-backed GUI design, capability-style constraints and reproducible assurance tooling.</p>
     <h3>Current formal boundary</h3>
     <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. The current beta.35+ product work expands Studio and native GUI behavior without widening that formal claim. Patch does not claim a fully verified compiler.</p>
+  </section>
+
+  <section class="page-section" data-slider-language-support="browser-stage1">
+    <h2>Slider Stage 1 uses transient numbers</h2>
+    <p>A Slider declares its numeric range directly in Patch source. Its <code>changed</code> event receives a finite numeric <code>value</code>. Moving the toolkit control does not itself mutate persistent Patch state.</p>
+    <pre class="page-code">create number volume = 50
+window "Mixer":
+  slider 0..100 as volume step 5
+when volume changed:
+  change volume:
+    set = value</pre>
+    <p><code>step</code> defaults to <code>1</code>; signed and decimal ranges are supported. A same-name persistent binding must be number state. Patch Studio and Standalone Window Web implement Slider Stage 1, including source-backed min/max/step and layout. The current Native GUI IR 1.2 / payload v12 / runtime v1.3 line intentionally does <strong>not</strong> claim Slider support and fails closed until a future versioned native contract adds parity.</p>
   </section>
 
   <section class="page-section" data-listbox-language-support="text-list">

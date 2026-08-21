@@ -170,6 +170,12 @@ export function parse(source) {
       if(options.length<2)throw new PatchSyntaxError('A listbox needs at least two options.',row.line);
       return uiControl({control:'listbox',textExpr:null,options,id:m[2],line:row.line},ui.layout);
     }
+    if ((m = ui.core.match(/^slider\s+([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\.\.\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s+as\s+([A-Za-z_]\w*)(?:\s+step\s+([+-]?(?:\d+(?:\.\d*)?|\.\d+)))?$/))) {
+      const min=Number(m[1]); const max=Number(m[2]); const step=m[4]===undefined?1:Number(m[4]);
+      if(!(min<max))throw new PatchSyntaxError('A slider range must go from a smaller number to a larger number.',row.line);
+      if(!(step>0))throw new PatchSyntaxError('A slider step must be greater than zero.',row.line);
+      return uiControl({control:'slider',textExpr:null,id:m[3],min,max,step,line:row.line},ui.layout);
+    }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^confirm\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) {

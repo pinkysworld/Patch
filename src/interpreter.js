@@ -206,14 +206,20 @@ export class PatchInterpreter {
     const items=[];
     for(const node of nodes??[]){
       if(node.kind==='uiControl'){
-        items.push({
+        const item={
           type:node.control,
           id:node.id,
           text:node.textExpr?this.uiText(node.textExpr):'',
           options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
           nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes):[],
-          value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):''
-        });
+          value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
+        };
+        if(node.control==='slider'){
+          item.min=node.min;
+          item.max=node.max;
+          item.step=node.step;
+        }
+        items.push(item);
       } else if(node.kind==='tabs'){
         items.push({
           type:'tabs',

@@ -20,7 +20,7 @@ if (pkg.version !== '0.2.0-beta.35') throw new Error(`Unexpected Patch site pack
 for (const rel of [
   '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
-  '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/table-stage1.js',
+  '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/slider-stage1.js','_site/table-stage1.js',
   '_site/tree-designer.js','_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-workspace.js',
   '_site/designer-ux.js','_site/designer-ux.css','_site/designer-toolbox.js','_site/designer-toolbox.css',
   '_site/designer-structure-ux.js','_site/designer-structure-ux.css',
@@ -43,8 +43,10 @@ requireAll('Studio shell', index, [
   'Patch Studio', 'id="code"', 'id="run"', 'id="build"', 'id="designer"', 'id="app"',
   'id="projectName"', 'id="projectKind"', 'id="exportProject"', 'id="importProject"',
   'id="recoverProject"', 'id="nativeBuildPanel"', 'id="nativeBuildStatus"',
-  'Project Outline', 'multi-file project bundle v3', 'hierarchical TreeView', 'runtime v1.3',
-  'Native GUI IR 1.2', 'payload v12', 'id="addTree"', './tree-designer.js', './designer-workspace.js',
+  'Project Outline', 'multi-file project bundle v3', 'source-backed browser Slider Stage 1',
+  'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
+  'hierarchical TreeView', 'runtime v1.3', 'Native GUI IR 1.2', 'payload v12',
+  'id="addSlider"', 'id="addTree"', './slider-stage1.js', './tree-designer.js', './designer-workspace.js',
   './designer-core-selection.js', './runtime-integrity.js', './native-build.js', './studio-outline.js'
 ]);
 rejectAll('Studio shell', index, [
@@ -76,6 +78,8 @@ requireAll('Core Designer selection bridge', coreSelection, [
   'populateSharedInspector', 'decorateDesignerAdapterElement', 'patchDesignerAdapter',
   'if (type) type.textContent = displayControlType(control.type)', "if (type === 'tree') return 'TreeView'"
 ]);
+const sliderStage = read('_site/slider-stage1.js');
+requireAll('Slider Stage 1 Studio integration', sliderStage, ["document.querySelector('#addSlider')", 'addDesignerControl', "'slider'", 'patch-slider']);
 const designerUx = read('_site/designer-ux.js');
 requireAll('Designer UX workflow', designerUx, [
   'designer-context-group', 'Focus selected', 'Focus form', 'designer-form-settings', 'patchFormCount',
@@ -88,7 +92,7 @@ requireAll('Designer UX presentation', designerUxCss, [
 ]);
 const toolbox = read('_site/designer-toolbox.js');
 requireAll('Designer toolbox discovery', toolbox, [
-  'DESIGNER_TOOL_CATALOG', "group: 'Basic'", "group: 'Choices'", "group: 'Data'", "group: 'Containers'",
+  'DESIGNER_TOOL_CATALOG', "type: 'slider'", "buttonId: 'addSlider'", "group: 'Basic'", "group: 'Choices'", "group: 'Data'", "group: 'Containers'",
   'designerAddControl', 'button.click()', 'Ctrl/Cmd+Shift+A'
 ]);
 const toolboxCss = read('_site/designer-toolbox.css');
@@ -147,7 +151,8 @@ requireAll('Designer structural keyboard accessibility', structuralKeyboard, [
 ]);
 const designerCss = read('_site/designer-inspector.css');
 requireAll('Designer layout', designerCss, [
-  '--designer-inspector-width: 340px', '#designer #addTable { top: 287px; }', '#designer #addTree { top: 321px; }',
+  '--designer-inspector-width: 340px', '#designer #addSlider { top: 287px; }', '#designer #addTable { top: 321px; }',
+  '#designer #addTree { top: 355px; }', '#designer #addTabs { top: 389px; }', '#designer #addSlider::before',
   'designer-properties-collapsed', 'designer-inspector-resize'
 ]);
 
@@ -159,6 +164,7 @@ requireAll('Studio native Ready builder', nativeBuild, [
   'Native single EXE (no token, recommended)', 'Native GTK app (no token, recommended)',
   'Native AppKit app (no token, unsigned)'
 ]);
+rejectAll('Studio native Ready Slider boundary', nativeBuild, ['allowSlider: true']);
 
 const downloads = read('_site/downloads.html');
 requireAll('Downloads page', downloads, [
@@ -169,7 +175,7 @@ requireAll('Downloads page', downloads, [
 
 const docs = read('_site/docs.html');
 requireAll('Documentation page', docs, [
-  'docs/PATCH_STUDIO.md','docs/STUDIO_SELECTION_ARCHITECTURE.md','docs/STUDIO_KEYBOARD_ACCESSIBILITY.md',
+  'docs/SLIDER_STAGE1.md','Slider Stage 1','docs/PATCH_STUDIO.md','docs/STUDIO_SELECTION_ARCHITECTURE.md','docs/STUDIO_KEYBOARD_ACCESSIBILITY.md',
   'docs/COMPILER.md','docs/OFFLINE_COMPILER.md','docs/FORMAL_MODEL.md',
   'docs/NATIVE_GUI.md','docs/NATIVE_APPS.md','docs/ROADMAP.md','Native GUI IR 1.2 / payload v12 / runtime v1.3'
 ]);
@@ -177,7 +183,9 @@ requireAll('Documentation page', docs, [
 const compiler = read('_site/src/compiler.js');
 requireAll('Compiler release contract', compiler, ["PATCH_IR_VERSION = '0.10'", 'formalCalls', 'sourceValidation', 'guardValidation']);
 const events = read('_site/src/window-events.js');
-requireAll('Window event contract', events, ["PATCH_WINDOW_EVENTS_VERSION = '0.8'", 'text-list event-local value']);
+requireAll('Window event contract', events, ["PATCH_WINDOW_EVENTS_VERSION = '0.9'", "controlType === 'slider'", 'finite number', 'text-list event-local value']);
+const windowBuild = read('_site/src/window-build.js');
+requireAll('Window Slider capability gate', windowBuild, ['allowSlider', 'Slider', 'not enabled for this Window target']);
 const gui12 = read('_site/src/native-gui-ir-v12.js');
 requireAll('Native GUI IR 1.2', gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12', "control.type = 'tree'"]);
 const sealed12 = read('_site/src/sealed-native-gui-v12.js');
@@ -186,13 +194,13 @@ requireAll('sealed payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSIO
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'", "url.pathname.includes('/runtimes/')",
-  './designer-selection.js','./designer-core-selection.js','./designer-workspace.js','./designer-ux.js','./designer-ux.css',
+  './slider-stage1.js','./designer-selection.js','./designer-core-selection.js','./designer-workspace.js','./designer-ux.js','./designer-ux.css',
   './designer-toolbox.js','./designer-toolbox.css','./designer-structure-ux.js','./designer-structure-ux.css',
   './form-designer-workflow.js','./form-designer-workflow.css','./tree-designer.js','./designer-structural-keyboard.js',
-  './src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
+  './src/window-events.js','./src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
 ]);
 
 const integrity = read('_site/runtime-integrity.js');
 requireAll('Runtime integrity gate', integrity, ['runtime-manifest.json','SHA-256','crypto.subtle']);
 
-console.log('ok current Patch Studio public site surface: beta.35+ / completed shared selection+Properties architecture / structural Properties polish / categorized Designer toolbox / active Form workflow+fit / runtime v1.3');
+console.log('ok current Patch Studio public site surface: beta.35+ Slider browser contract / native v1.3 fail-closed / completed shared Designer architecture');

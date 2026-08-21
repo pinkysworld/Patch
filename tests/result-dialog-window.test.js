@@ -82,8 +82,8 @@ test('result dialog ids share the application UI source namespace', () => {
   assert.throws(() => validateWindowRuntimeSupport(compiled), error => error instanceof WindowBuildError && /declared more than once/.test(error.message));
 });
 
-test('Window event adapter v0.8 carries chosen path only as transient text value', () => {
-  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.8');
+test('Window event adapter v0.9 carries chosen path only as transient text value', () => {
+  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.9');
   const runtime = new PatchInterpreter();
   runtime.run(example);
   const chosen = triggerWindowEvent(runtime, 'open_result', 'chosen', { value: '/tmp/demo.patch' });

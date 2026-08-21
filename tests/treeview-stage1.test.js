@@ -52,7 +52,7 @@ test('TreeView UI model evaluates labels but does not persist toolkit selection'
 });
 
 test('TreeView changed exposes a transient text-list path and persistence still requires Patch change', () => {
-  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.8');
+  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.9');
   const runtime = new PatchInterpreter();
   runtime.run(SOURCE);
   const changed = triggerWindowEvent(runtime, 'files', 'changed', { value: ['src', 'parser.js'] });

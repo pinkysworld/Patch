@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.35+: write, design, run and build Patch applications with multi-file projects, native ListBox, Table, Menu and TreeView support.">
+  <meta name="description" content="Patch Studio beta.35+: write, design, run and build Patch applications with multi-file projects, Slider Stage 1, native ListBox, Table, Menu and TreeView support.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -33,7 +33,7 @@
   <header class="topbar">
     <div class="brand"><div class="brand-mark" aria-hidden="true">P</div><div><h1>Patch Studio <span>0.2 beta.35+</span></h1><p>Write, run and build Patch.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
-      <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="counterWindow">Window app</option><option value="tabsWindow">Tabs app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
+      <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="counterWindow">Window app</option><option value="tabsWindow">Tabs app</option><option value="sliderWindow">Slider app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
       <label class="compact-field"><span>Build</span><select id="buildTarget" aria-label="Build target"><optgroup label="Simple apps"><option value="web">Standalone Web App (.html)</option><option value="native-windows">Windows App (.exe)</option><option value="native-macos">macOS App (.app)</option><option value="native-linux">Linux App</option><option value="native-freebsd">FreeBSD Console</option><option value="portable">Portable .patchapp</option></optgroup><optgroup label="WebAssembly"><option value="wasm-direct">Direct WebAssembly (.wasm)</option><option value="wasm-bootstrap">Bootstrap Wasm (advanced)</option></optgroup></select></label>
       <button id="build" class="secondary" aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter" title="Build selected target (Ctrl/Cmd+Shift+Enter)">Build</button>
@@ -57,8 +57,8 @@
     </span>
     <span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.3 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.2 as payload v12, including hierarchical TreeView.</span></section>
-  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>The canonical multi-file project bundle v3, list-backed multi-select ListBox and hierarchical TreeView now work across browser and supported native Ready/offline Windows, macOS and Linux paths. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.3 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.2 as payload v12, including hierarchical TreeView. Slider Stage 1 is browser-only until a later versioned native contract adds parity.</span></section>
+  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Patch Studio now includes a source-backed browser Slider Stage 1 with transient numeric values; multi-file project bundle v3, multi-select ListBox and TreeView remain available across browser and supported native Ready/offline Windows, macOS and Linux paths. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
 
   <section class="workspace" aria-label="Patch Studio workspace">
     <div class="source-workspace">
@@ -76,7 +76,7 @@
         <button id="tabChanges" class="tab" role="tab" data-tab="changes" aria-controls="changes" aria-selected="false" tabindex="-1">Changes</button>
         <button id="tabIr" class="tab" role="tab" data-tab="ir" aria-controls="ir" aria-selected="false" tabindex="-1">IR</button>
       </div>
-      <div id="designer" class="designer-view" role="tabpanel" aria-labelledby="tabDesigner" tabindex="0"><div class="designer-toolbar" aria-label="Designer toolbox"><strong>Toolbox</strong><button id="addText" class="secondary small" aria-label="Add Text">+ Text</button><button id="addButton" class="secondary small" aria-label="Add Button">+ Button</button><button id="addInput" class="secondary small" aria-label="Add Input">+ Input</button><button id="addCheckbox" class="secondary small" aria-label="Add Checkbox">+ Checkbox</button><button id="addRadio" class="secondary small" aria-label="Add Radio group">+ Radio</button><button id="addCombo" class="secondary small" aria-label="Add ComboBox">+ Combo</button><button id="addListbox" class="secondary small" aria-label="Add ListBox">+ ListBox</button><button id="addTable" class="secondary small" aria-label="Add Table">+ Table</button><button id="addTree" class="secondary small" aria-label="Add TreeView">+ Tree</button><button id="addTabs" class="secondary small" aria-label="Add Tabs">+ Tabs</button></div><div id="designerCanvas" class="app-preview designer-canvas"><p class="empty-preview">Window projects appear here while you edit.</p></div></div>
+      <div id="designer" class="designer-view" role="tabpanel" aria-labelledby="tabDesigner" tabindex="0"><div class="designer-toolbar" aria-label="Designer toolbox"><strong>Toolbox</strong><button id="addText" class="secondary small" aria-label="Add Text">+ Text</button><button id="addButton" class="secondary small" aria-label="Add Button">+ Button</button><button id="addInput" class="secondary small" aria-label="Add Input">+ Input</button><button id="addCheckbox" class="secondary small" aria-label="Add Checkbox">+ Checkbox</button><button id="addRadio" class="secondary small" aria-label="Add Radio group">+ Radio</button><button id="addCombo" class="secondary small" aria-label="Add ComboBox">+ Combo</button><button id="addListbox" class="secondary small" aria-label="Add ListBox">+ ListBox</button><button id="addSlider" class="secondary small" aria-label="Add Slider">+ Slider</button><button id="addTable" class="secondary small" aria-label="Add Table">+ Table</button><button id="addTree" class="secondary small" aria-label="Add TreeView">+ Tree</button><button id="addTabs" class="secondary small" aria-label="Add Tabs">+ Tabs</button></div><div id="designerCanvas" class="app-preview designer-canvas"><p class="empty-preview">Window projects appear here while you edit.</p></div></div>
       <div id="app" class="app-preview" role="tabpanel" aria-labelledby="tabApp" tabindex="0" hidden><p class="empty-preview">Run a window project to preview it here.</p></div>
       <pre id="output" role="tabpanel" aria-labelledby="tabOutput" tabindex="0" hidden>Press Run.</pre><pre id="changes" role="tabpanel" aria-labelledby="tabChanges" tabindex="0" hidden>Run or build to inspect the Change Contract.</pre><pre id="ir" role="tabpanel" aria-labelledby="tabIr" tabindex="0" hidden>Run or build to inspect Change IR.</pre>
     </div>
@@ -94,6 +94,7 @@
 <script type="module" src="./studio-outline.js"></script>
 <script type="module" src="./forms-designer.js"></script>
 <script type="module" src="./designer-core-selection.js"></script>
+<script type="module" src="./slider-stage1.js"></script>
 <script type="module" src="./table-stage1.js"></script>
 <script type="module" src="./tree-designer.js"></script>
 <script type="module" src="./designer-workspace.js"></script>

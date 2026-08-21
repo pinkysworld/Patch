@@ -10,7 +10,7 @@ const WINDOW_WEB_SUPPORTED = new Set([
 /** Build a single-file executable browser app from the parsed Patch AST. */
 export function buildStandaloneWindowWebApp(compiled, name) {
   const windowCount = validateWindowBuild(compiled);
-  validateWindowRuntimeSupport(compiled, { allowTree: true });
+  validateWindowRuntimeSupport(compiled, { allowTree: true, allowSlider: true });
   validateWindowWebSubset(compiled.ast);
   const programJson = scriptJson(compiled.ast);
   const appName = String(name || 'PatchApp');

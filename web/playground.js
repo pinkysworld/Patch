@@ -40,6 +40,15 @@ when notifications changed:
 when reset_name clicked:
   change name:
     set = "Mia"`,
+  sliderWindow: `create number volume = 50
+
+window "Mixer" as main size 560, 300:
+  text "Volume: {volume}"
+  slider 0..100 as volume step 5 at 24, 80 size 300, 44
+
+when volume changed:
+  change volume:
+    set = value`,
   capabilities: `create thing player:
   name = "Mia"
   score = 0
@@ -139,7 +148,7 @@ projectKind.value = saved?.kind ?? (saved ? 'console' : 'window');
 
 sample.addEventListener('change', () => {
   code.value = samples[sample.value];
-  projectKind.value = ['counterWindow', 'tabsWindow'].includes(sample.value) ? 'window' : 'console';
+  projectKind.value = ['counterWindow', 'tabsWindow', 'sliderWindow'].includes(sample.value) ? 'window' : 'console';
   saveProject();
   refreshDesigner();
   showTab(sample.value === 'capabilities' ? 'changes' : (projectKind.value === 'window' ? 'designer' : 'output'));
@@ -395,6 +404,23 @@ function createControlElement(control, context) {
     el.value = String(control.value ?? '');
     if (context.interactive) el.addEventListener('change', () => trigger(control.id, 'changed', { value: el.value }));
     else el.disabled = true;
+  } else if (control.type === 'slider') {
+    el = document.createElement('label');
+    el.className = 'patch-slider';
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = String(control.min ?? 0);
+    input.max = String(control.max ?? 100);
+    input.step = String(control.step ?? 1);
+    input.value = String(Number.isFinite(Number(control.value)) ? control.value : (control.min ?? 0));
+    input.setAttribute('aria-label', control.id ? `${control.id} slider` : 'Slider');
+    const value = document.createElement('output');
+    value.textContent = input.value;
+    value.htmlFor = input.id || '';
+    input.addEventListener('input', () => { value.textContent = input.value; });
+    if (context.interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: Number(input.value) }));
+    else input.disabled = true;
+    el.append(input, value);
   } else if (control.type === 'tree') {
     el = createTreeElement(control, context);
   }
@@ -502,6 +528,12 @@ function installDesignerInspector() {
       <label id="designerInspectorIdField" class="inspector-field">Control id <input id="designerInspectorId" autocomplete="off" spellcheck="false"></label>
       <label id="designerInspectorTextField" class="inspector-field">Text expression <input id="designerInspectorText" autocomplete="off" spellcheck="false"></label>
       <label id="designerInspectorOptionsField" class="inspector-field" hidden>Options <input id="designerInspectorOptions" autocomplete="off" spellcheck="false" placeholder='"Small", "Medium", "Large"'></label>
+      <div id="designerInspectorSliderFields" class="forms-geometry-grid" hidden>
+        <strong>Slider range</strong>
+        <label>Min <input id="designerInspectorSliderMin" inputmode="decimal"></label>
+        <label>Max <input id="designerInspectorSliderMax" inputmode="decimal"></label>
+        <label>Step <input id="designerInspectorSliderStep" inputmode="decimal"></label>
+      </div>
       <p id="designerInspectorError" class="inspector-hint" hidden></p>
       <div class="inspector-actions">
         <button id="designerInspectorApply" type="button">Apply</button>

@@ -49,6 +49,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuEnabledBindings = 0;
   let menuCheckedBindings = 0;
   let treeViews = 0;
+  let sliders = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -71,6 +72,15 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId });
     if (child.control === 'tree') treeViews += 1;
+    if (child.control === 'slider') {
+      sliders += 1;
+      const stateType = stateTypes.get(child.id);
+      if (stateType && stateType !== 'number') {
+        throw new WindowBuildError(
+          `line ${child.line ?? '?'}: Slider '${child.id}' can bind only to number state; found ${stateType} state with the same name.`
+        );
+      }
+    }
   };
 
   const registerTabs = (node, formId) => {
@@ -214,12 +224,17 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: TreeView '${event.control}' exposes only 'changed' for transient node-path selection, not '${event.event}'.`
       );
     }
+    if (controlType === 'slider' && event.event !== 'changed') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: Slider '${event.control}' exposes only 'changed' for transient numeric values, not '${event.event}'.`
+      );
+    }
     const supported =
       ((controlType === 'button' || controlType === 'menuItem') && event.event === 'clicked') ||
-      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree') && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'slider') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
@@ -240,6 +255,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (sliders && !options.allowSlider) {
+    throw new WindowBuildError(
+      'Slider is not enabled for this Window target. Select a Slider-capable browser target or enable its versioned Slider runtime contract; validation fails closed otherwise.'
+    );
+  }
+
   const menuStateBindings = menuEnabledBindings + menuCheckedBindings;
   if ((menuSeparators || menuShortcutCount || menuStateBindings) && !options.allowMenuDecorations) {
     const required = menuStateBindings
@@ -256,6 +277,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     namedForms: forms.size,
     controls: controls.size,
     treeViews,
+    sliders,
     tabs: tabs.size,
     menuItems: menuItems.size,
     menuSeparators,

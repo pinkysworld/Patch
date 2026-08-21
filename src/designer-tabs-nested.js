@@ -1,7 +1,7 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
 
-const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'table', 'tree']);
+const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree']);
 
 export function listDesignerTabPageControls(source, selector, pageIndex) {
   const { page } = requireTabsPage(source, selector, pageIndex);
@@ -12,6 +12,9 @@ export function listDesignerTabPageControls(source, selector, pageIndex) {
     id: node.id ?? null,
     textExpr: node.textExpr ?? null,
     options: Array.isArray(node.options) ? [...node.options] : [],
+    min: node.control === 'slider' ? node.min : null,
+    max: node.control === 'slider' ? node.max : null,
+    step: node.control === 'slider' ? node.step : null,
     columns: Array.isArray(node.columns) ? [...node.columns] : [],
     rows: Array.isArray(node.rows) ? node.rows.map(row => [...row]) : [],
     treeNodes: cloneTreeNodes(node.treeNodes ?? [])
@@ -162,6 +165,7 @@ function formatNewNestedControl(type, usedIds) {
   if (type === 'radio') return [`radio "One", "Two" as ${uniqueId('radio', usedIds)}`];
   if (type === 'combo') return [`combo "One", "Two" as ${uniqueId('combo', usedIds)}`];
   if (type === 'listbox') return [`listbox "One", "Two" as ${uniqueId('listbox', usedIds)}`];
+  if (type === 'slider') return [`slider 0..100 as ${uniqueId('slider', usedIds)} step 1`];
   if (type === 'table') {
     const id = uniqueId('table', usedIds);
     return [`table "Name", "Value" as ${id}:`, '  row "Item", "Value"'];

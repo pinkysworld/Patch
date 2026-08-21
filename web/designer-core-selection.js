@@ -26,6 +26,7 @@ const CORE_TOOL_TYPES = new Map([
   ['addRadio', 'radio'],
   ['addCombo', 'combo'],
   ['addListbox', 'listbox'],
+  ['addSlider', 'slider'],
   ['addTabs', 'tabs']
 ]);
 let scheduled = false;
@@ -143,7 +144,10 @@ function installSharedInspectorBridge() {
   for (const field of [
     document.querySelector('#designerInspectorId'),
     document.querySelector('#designerInspectorText'),
-    document.querySelector('#designerInspectorOptions')
+    document.querySelector('#designerInspectorOptions'),
+    document.querySelector('#designerInspectorSliderMin'),
+    document.querySelector('#designerInspectorSliderMax'),
+    document.querySelector('#designerInspectorSliderStep')
   ]) {
     field?.addEventListener('keydown', event => {
       if (event.key !== 'Enter' || !currentDesignerSelection(canvas)) return;
@@ -196,6 +200,11 @@ function applySharedInspector() {
     if (['combo', 'listbox', 'radio'].includes(selected.type)) {
       changes.options = splitOptionExpressions(document.querySelector('#designerInspectorOptions')?.value ?? '');
     }
+    if (selected.type === 'slider') {
+      changes.min = document.querySelector('#designerInspectorSliderMin')?.value ?? selected.min;
+      changes.max = document.querySelector('#designerInspectorSliderMax')?.value ?? selected.max;
+      changes.step = document.querySelector('#designerInspectorSliderStep')?.value ?? selected.step;
+    }
     const next = updateDesignerControl(code.value, selection, changes);
     const updated = listDesignerControls(next).find(control => sameLocation(control, selection));
     if (updated) rememberDesignerSelection(canvas, designerSelectionForControl(updated, selection.adapter), { emit: false });
@@ -223,18 +232,26 @@ function populateSharedInspector() {
   const idField = document.querySelector('#designerInspectorIdField');
   const textField = document.querySelector('#designerInspectorTextField');
   const optionsField = document.querySelector('#designerInspectorOptionsField');
+  const sliderFields = document.querySelector('#designerInspectorSliderFields');
   const id = document.querySelector('#designerInspectorId');
   const text = document.querySelector('#designerInspectorText');
   const options = document.querySelector('#designerInspectorOptions');
+  const sliderMin = document.querySelector('#designerInspectorSliderMin');
+  const sliderMax = document.querySelector('#designerInspectorSliderMax');
+  const sliderStep = document.querySelector('#designerInspectorSliderStep');
 
   if (type) type.textContent = displayControlType(control.type);
   if (location) location.textContent = inspectorLocation(control);
   if (idField) idField.hidden = control.type === 'text';
   if (textField) textField.hidden = !['text', 'button', 'checkbox'].includes(control.type);
   if (optionsField) optionsField.hidden = !['combo', 'listbox', 'radio'].includes(control.type);
+  if (sliderFields) sliderFields.hidden = control.type !== 'slider';
   if (id) id.value = control.id ?? '';
   if (text) text.value = control.textExpr ?? '';
   if (options) options.value = control.options?.join(', ') ?? '';
+  if (sliderMin) sliderMin.value = control.type === 'slider' ? String(control.min) : '';
+  if (sliderMax) sliderMax.value = control.type === 'slider' ? String(control.max) : '';
+  if (sliderStep) sliderStep.value = control.type === 'slider' ? String(control.step) : '';
   clearInspectorError();
 }
 
@@ -288,6 +305,7 @@ function displayControlType(type) {
   if (type === 'listbox') return 'ListBox';
   if (type === 'tabs') return 'Tabs';
   if (type === 'table') return 'Table';
+  if (type === 'slider') return 'Slider';
   const text = String(type ?? 'Control');
   return text ? text[0].toUpperCase() + text.slice(1) : 'Control';
 }
@@ -296,6 +314,7 @@ function inspectorLocation(control) {
   let suffix = '';
   if (control.type === 'tree') suffix = ` · ${countTreeNodes(control.treeNodes)} nodes`;
   if (control.type === 'table') suffix = ` · ${(control.columns ?? []).length} columns · ${(control.rows ?? []).length} rows`;
+  if (control.type === 'slider') suffix = ` · ${control.min}..${control.max} · step ${control.step}`;
   return `Window ${control.windowIndex + 1} · control ${control.controlIndex + 1} · line ${control.line}${suffix}`;
 }
 
