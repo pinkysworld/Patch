@@ -39,6 +39,7 @@ Product/Studio work after beta.32 does not widen the formal assurance claim.
 - [x] Text, Button, Input, Checkbox, Radio, ComboBox and ListBox authoring
 - [x] browser and native list-backed multi-select ListBox with transient text-list values and explicit `change` persistence
 - [x] read-only source-backed Table/Grid Stage 1 with row selection and structural Properties editing
+- [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
 - [x] TreeView Stage 1 language/IR, Studio preview, Standalone Web and native parity
 - [x] sealed payload v12 / runtime v1.3 TreeView parity with root-to-node text-list selection and Windows/macOS/Linux smoke execution
 - [x] token-free Ready/offline consumer switch to TreeView-capable payload v12 / runtime v1.3
@@ -74,6 +75,18 @@ All current input/selection/result events remain transient. Persistent applicati
 - [x] semantic-authority security ablation
 - [x] internally authored checkout/loyalty and usage/quota extension corpus
 - [x] process-isolated controlled-measurement protocol and aggregation tooling
+
+## Frozen native compatibility evidence
+
+These historical lines remain part of the compatibility evidence even though the current consumer is Native GUI IR 1.2 / payload v12 / runtime v1.3:
+
+- [x] **Native GUI IR 0.8** introduced the Table compatibility representation and the direct AOT backend preserves the frozen Table semantics on Win32, AppKit and GTK.
+- [x] frozen sealed native GUI payload **v9** / runtime **v1.0** Table compatibility line remains tested across Windows, macOS and Linux.
+- [x] payload **v10** / runtime **v1.1** preserves persistent text-list state and list-backed ListBox compatibility.
+- [x] payload **v11** / runtime **v1.2** preserves Menu + list compatibility.
+- [x] Native GUI IR **1.2** / payload **v12** / runtime **v1.3** adds TreeView while preserving the earlier Table/ListBox/Menu contracts.
+
+Older payload/runtime contracts are frozen compatibility evidence, not obsolete current-product claims.
 
 ## Desktop / distribution status
 
