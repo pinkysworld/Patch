@@ -79,7 +79,7 @@ requireAll('Core Designer selection bridge', coreSelection, [
   'if (type) type.textContent = displayControlType(control.type)', "if (type === 'tree') return 'TreeView'"
 ]);
 const sliderStage = read('_site/slider-stage1.js');
-requireAll('Slider Stage 1 Studio integration', sliderStage, ['addSlider', 'sliderWindow', 'addDesignerControl', "'slider'", 'changed']);
+requireAll('Slider Stage 1 Studio integration', sliderStage, ["document.querySelector('#addSlider')", 'addDesignerControl', "'slider'", 'patch-slider']);
 const designerUx = read('_site/designer-ux.js');
 requireAll('Designer UX workflow', designerUx, [
   'designer-context-group', 'Focus selected', 'Focus form', 'designer-form-settings', 'patchFormCount',
@@ -92,7 +92,7 @@ requireAll('Designer UX presentation', designerUxCss, [
 ]);
 const toolbox = read('_site/designer-toolbox.js');
 requireAll('Designer toolbox discovery', toolbox, [
-  'DESIGNER_TOOL_CATALOG', "group: 'Basic'", "group: 'Choices'", "group: 'Data'", "group: 'Containers'",
+  'DESIGNER_TOOL_CATALOG', "type: 'slider'", "buttonId: 'addSlider'", "group: 'Basic'", "group: 'Choices'", "group: 'Data'", "group: 'Containers'",
   'designerAddControl', 'button.click()', 'Ctrl/Cmd+Shift+A'
 ]);
 const toolboxCss = read('_site/designer-toolbox.css');
@@ -151,7 +151,8 @@ requireAll('Designer structural keyboard accessibility', structuralKeyboard, [
 ]);
 const designerCss = read('_site/designer-inspector.css');
 requireAll('Designer layout', designerCss, [
-  '--designer-inspector-width: 340px', '#designer #addTable { top: 287px; }', '#designer #addTree { top: 321px; }',
+  '--designer-inspector-width: 340px', '#designer #addSlider { top: 287px; }', '#designer #addTable { top: 321px; }',
+  '#designer #addTree { top: 355px; }', '#designer #addTabs { top: 389px; }', '#designer #addSlider::before',
   'designer-properties-collapsed', 'designer-inspector-resize'
 ]);
 
@@ -196,7 +197,7 @@ requireAll('Service worker current compiler cache', sw, [
   './slider-stage1.js','./designer-selection.js','./designer-core-selection.js','./designer-workspace.js','./designer-ux.js','./designer-ux.css',
   './designer-toolbox.js','./designer-toolbox.css','./designer-structure-ux.js','./designer-structure-ux.css',
   './form-designer-workflow.js','./form-designer-workflow.css','./tree-designer.js','./designer-structural-keyboard.js',
-  './src/window-events.js','./src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
+  '../src/window-events.js','../src/native-gui-ir-v12.js','../src/native-tree-backend-adapter.js','../src/sealed-native-gui-v12.js'
 ]);
 
 const integrity = read('_site/runtime-integrity.js');
