@@ -102,7 +102,7 @@ requireAll('docs/PATCH_STUDIO.md', files.studio, [
   'beta.32 invocation-frame'
 ]);
 requireAll('docs/STUDIO_AUTHORING_SURFACE.md', files.studioSurface, [
-  'Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider**, Table, TreeView and Tabs',
+  'Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table, TreeView and Tabs',
   'Slider Stage 1', 'manual assistive-technology validation',
   'current authoring surface for the **existing Patch UI/control vocabulary**, now including Slider Stage 1'
 ]);
