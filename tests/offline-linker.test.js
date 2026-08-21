@@ -163,7 +163,7 @@ test('offline linker keeps explicit payload v11 compatibility for non-Tree Windo
   assert.ok(decodeNativeGuiPayloadV11(plan.files[0].bytes).length > 0);
   assert.throws(() => createOfflineLinkPlan(treeWindowSource, {
     platform: 'windows', name: 'LegacyTree', guiRuntime: runtime, guiPayloadVersion: 11
-  }), /TreeView requires|TreeView is not supported/);
+  }), /TreeView.*not enabled.*Window target/i);
 });
 
 test('macOS Console linking can fall back to a portable embedded-Node app when SEA is unavailable', () => {

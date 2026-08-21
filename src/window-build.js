@@ -219,7 +219,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
@@ -236,7 +236,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
 
   if (treeViews && !options.allowTree) {
     throw new WindowBuildError(
-      'TreeView is not supported by this Window target yet. TreeView Stage 1 is available in the Studio App Preview; native and standalone targets fail closed until they opt into a versioned TreeView runtime contract.'
+      'TreeView is not enabled for this Window target. Select a TreeView-capable target or enable its versioned TreeView runtime contract; validation fails closed otherwise.'
     );
   }
 
@@ -247,7 +247,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       : 'Native GUI IR 0.9 / direct AOT backend 1.0';
     throw new WindowBuildError(
       `Menu decorations in this source require ${required}. ` +
-      'The current sealed Ready-app runtime remains on payload v9/runtime v1.0 and fails closed for this newer menu contract.'
+      'This Window target has not enabled the corresponding menu-decoration contract; validation fails closed rather than silently dropping separators, shortcuts or state bindings.'
     );
   }
 

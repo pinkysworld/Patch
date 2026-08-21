@@ -77,7 +77,7 @@ test('Studio App Preview renders an accessible TreeView and emits full path sele
 
 test('TreeView Stage 1 is explicitly opt-in at Window runtime validation boundary', () => {
   const compiled = compile(SOURCE, { name: 'TreeStage1', kind: 'window' });
-  assert.throws(() => validateWindowRuntimeSupport(compiled), /TreeView.*not supported/i);
+  assert.throws(() => validateWindowRuntimeSupport(compiled), /TreeView.*not enabled.*Window target/i);
   const support = validateWindowRuntimeSupport(compiled, { allowTree: true });
   assert.equal(support.treeViews, 1);
   assert.equal(support.events, 1);
