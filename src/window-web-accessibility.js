@@ -59,6 +59,12 @@ function accessibilityRuntime() {
     return Math.min(max,Math.max(min,number));
   }
 
+  function patchSliderNode(id){
+    const find=nodes=>{for(const node of nodes||[]){if(node?.kind==='uiControl'&&node.control==='slider'&&node.id===id)return node;if(node?.kind==='tabs'){for(const page of node.body||[]){const nested=find(page.body);if(nested)return nested;}}}return null;};
+    for(const node of typeof PROGRAM!=='undefined'?(PROGRAM||[]):[]){if(node?.kind!=='window')continue;const slider=find(node.body);if(slider)return slider;}
+    return null;
+  }
+
   function patchSliderModels(nodes,models){
     let modelIndex=0;
     for(const node of nodes||[]){
@@ -89,6 +95,10 @@ function accessibilityRuntime() {
       if(event==='changed'&&typeof controlType==='function'&&controlType(control)==='slider'){
         if(typeof payload?.value!=='number'||!Number.isFinite(payload.value)){
           throw new PatchAppError("The 'changed' action for slider '"+control+"' needs a finite numeric event-local value.");
+        }
+        const slider=patchSliderNode(control);
+        if(slider&&(payload.value<Number(slider.min)||payload.value>Number(slider.max))){
+          throw new PatchAppError("The 'changed' action for slider '"+control+"' needs a value from "+slider.min+' to '+slider.max+'.');
         }
       }
       return patchOriginalTrigger(control,event,payload);
