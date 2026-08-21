@@ -47,10 +47,11 @@ Product/Studio work after beta.32 does not widen the formal assurance claim.
 - [x] source-backed top-level Table grid and TreeView hierarchy structural Properties editors
 - [x] source-backed Tabs page add/rename/reorder/delete/duplicate editing
 - [x] source-backed nested Tabs insertion/removal/reorder/duplicate for Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table and TreeView
-- [x] nested Table columns/rows and TreeView hierarchy structural Properties editing inside Tabs
+- [x] dedicated nested Table column/row and TreeView hierarchy structural editing inside Tabs Properties
 - [x] categorized Add control picker plus active Form navigation and source-backed sizing workflow
 - [x] structural Properties summary/filter/empty-state polish
-- [x] shared core/Tabs/Table/TreeView primary-selection and Properties architecture
+- [x] shared Designer selection/event architecture cleanup across core/Tabs/Table/TreeView
+- [x] unify core/Tabs/Table/TreeView behind one shared primary-selection/event and common Properties action architecture
 - [x] **richer data-control surface beyond Table/Grid, ListBox and TreeView via source-backed Slider Stage 1**
 - [x] Slider Stage 1 source syntax, compiler lowering, bounded finite numeric transient `changed` value, Designer integration, Tabs insertion, Studio preview and Standalone Window Web
 - [x] structural/nested accessibility and keyboard refinement: roving Tree/Tabs selection, source-backed structural shortcuts, `Ctrl/Cmd+Enter`, Escape close/focus restoration and focus-visible treatment
