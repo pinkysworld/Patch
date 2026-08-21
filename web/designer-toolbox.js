@@ -10,6 +10,7 @@ export const DESIGNER_TOOL_CATALOG = Object.freeze([
   { group: 'Choices', type: 'radio', buttonId: 'addRadio', label: 'Radio group' },
   { group: 'Choices', type: 'combo', buttonId: 'addCombo', label: 'ComboBox' },
   { group: 'Choices', type: 'listbox', buttonId: 'addListbox', label: 'ListBox' },
+  { group: 'Choices', type: 'slider', buttonId: 'addSlider', label: 'Slider' },
   { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
   { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
   { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' }
