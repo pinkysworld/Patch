@@ -64,17 +64,25 @@ The current source-backed Form lifecycle supports:
 - confirmed deletion with orphan-handler cleanup;
 - last-Form protection.
 
-Previous/next controls plus `Alt+PageUp` / `Alt+PageDown` navigate Forms. That active-Form state is transient IDE state only.
+The active Form is highlighted in the canvas; clicking or keyboard-activating a Form title switches to it. Previous/next controls plus `Alt+PageUp / Alt+PageDown` navigate named Forms. That active-Form state is transient IDE state only.
+
+**Fit controls** computes the bounding box of the active Form's source-backed controls plus padding and rewrites the ordinary `window ... size W, H` source. **Default 640×420** restores the ordinary source-backed default dimensions. Neither action creates hidden layout state.
 
 ### Control discovery and Properties
 
 The desktop Designer exposes a compact control rail and a categorized **Add control** picker. The picker groups controls into Basic, Choices, Data and Containers and is the narrow/mobile discovery surface as well. `Ctrl/Cmd+Shift+A` focuses it.
 
-All top-level controls share one authoritative primary-selection boundary and common Properties actions. The Properties pane is wider by default, resizable, collapsible and responsive. Its width preference is local IDE state rather than Patch application state.
+All top-level controls now share one authoritative primary-selection and common Properties action boundary. The Properties pane is wider by default, resizable, collapsible and responsive. Its width preference is local IDE state rather than Patch application state.
 
 A selected control can be moved/resized visually. Pointer and keyboard changes rewrite visible source. Common source-backed actions include Center H, Center V, Default size and collision-aware Auto place.
 
-Designer multi-select is an explicit transient secondary set over the shared primary selection. It never becomes Patch state or Change History.
+Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties. These editors rewrite only the selected source block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
+
+The structural Properties surface adds a common **Structure** summary with the current Table/TreeView/Tabs size, quick source-backed actions, filters for TreeView nodes, Tabs pages and controls inside the selected page, visible match counts, and explicit no-match states. Empty Tables show **No rows yet** plus an add-row action. These are IDE-only affordances: quick actions call the existing source-backed editor buttons and filters only hide/show editor rows, so there is no second structural mutation path or persistent filter state in the Patch application.
+
+`web/designer-selection.js` owns the adapter-aware selection record, while `web/designer-core-selection.js` resolves common Properties actions for core controls, Tabs, Table and TreeView. The historical private control-selection mirror and old Table/TreeView Inspector fallbacks are not separate mutation paths.
+
+Designer multi-select remains an explicit transient secondary set over the shared primary selection. This IDE interaction state never becomes Patch application state or Change History.
 
 ## Slider Stage 1
 
