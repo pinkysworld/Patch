@@ -100,6 +100,11 @@ function lowerNode(node) {
       if (Array.isArray(node.columns)) fields.columns = [...node.columns];
       if (Array.isArray(node.rows)) fields.rows = node.rows.map(row => [...row]);
       if (Array.isArray(node.treeNodes)) fields.treeNodes = lowerTreeNodes(node.treeNodes);
+      if (node.control === 'slider') {
+        fields.min = node.min;
+        fields.max = node.max;
+        fields.step = node.step;
+      }
       return op('UI_CONTROL', node, fields);
     }
     case 'event':
@@ -163,6 +168,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'radio') caps.add('ui.radio');
     if (node.kind === 'uiControl' && node.control === 'table') caps.add('ui.table');
     if (node.kind === 'uiControl' && node.control === 'tree') caps.add('ui.tree');
+    if (node.kind === 'uiControl' && node.control === 'slider') caps.add('ui.slider');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
     if (node.kind === 'why') caps.add('change.provenance');
