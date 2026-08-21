@@ -197,7 +197,7 @@ requireAll('Service worker current compiler cache', sw, [
   './slider-stage1.js','./designer-selection.js','./designer-core-selection.js','./designer-workspace.js','./designer-ux.js','./designer-ux.css',
   './designer-toolbox.js','./designer-toolbox.css','./designer-structure-ux.js','./designer-structure-ux.css',
   './form-designer-workflow.js','./form-designer-workflow.css','./tree-designer.js','./designer-structural-keyboard.js',
-  '../src/window-events.js','../src/native-gui-ir-v12.js','../src/native-tree-backend-adapter.js','../src/sealed-native-gui-v12.js'
+  './src/window-events.js','./src/native-gui-ir-v12.js','./src/native-tree-backend-adapter.js','./src/sealed-native-gui-v12.js'
 ]);
 
 const integrity = read('_site/runtime-integrity.js');
