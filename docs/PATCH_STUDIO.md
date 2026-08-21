@@ -1,58 +1,115 @@
 # Patch Studio
 
-Patch Studio is the browser-first IDE for Patch. The product goal remains QuickBASIC/Visual-Basic/Delphi-style immediacy with one readable Patch source format across browser and desktop targets.
+Patch Studio is the browser-first IDE for Patch. The product goal remains QuickBASIC/Visual-Basic/Delphi-style immediacy while keeping one readable source-backed Patch application model across browser and desktop targets.
 
-## What works in 0.2 beta.35+
+## Current status: 0.2 beta.35+
 
-Patch Studio provides source editing and local autosave, Console and Window Run, a source-backed visual Designer, named Forms, direct Form/control drag and resize, multi-file project bundle v3, a Project Tree, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Table/TreeView controls, Tabs, Change Contract/IR views, portable `.patchapp`, Web/Wasm builds, Windows/macOS/Linux Console and Window builds, and FreeBSD Console through portable C99.
+Patch Studio provides:
 
-The public website is split into focused **Studio**, **Language**, **Documentation**, **Downloads** and **Help** pages. The default Windows/macOS/Linux desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required for those Ready builds. Optional local/cloud AOT remains separate.
+- source editing, local autosave and privacy-redacted local diagnostics;
+- canonical **multi-file project bundle v3** plus Project Tree and deterministic Run/Build composition;
+- Console and Window Run;
+- a source-backed visual Designer with named Forms;
+- Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider Stage 1**, Table, TreeView and Tabs authoring;
+- Form/control drag, resize, keyboard movement and source-backed layout actions;
+- structural Table, TreeView and Tabs Properties editors;
+- top-level/nested duplicate, reorder and source-reveal workflows;
+- Change Contract and Change IR views;
+- portable `.patchapp`, Web, direct/bootstrap Wasm and portable C99 builds;
+- token-free Ready Windows/macOS/Linux Console and Window builds;
+- downloadable offline compiler/linker;
+- FreeBSD Console through portable C99.
 
-Patch package **0.2.0-beta.35** keeps Change IR **0.10**. The beta.32 invocation-frame assurance result remains the current formal runtime-correspondence milestone. Later product/runtime work does not widen that formal claim.
+The default Windows/macOS/Linux desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required for those Ready builds. Optional cloud/AOT remains a separate advanced route.
 
-## Canonical multi-file Studio state
+Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Native GUI IR remains **1.2**, the current sealed payload is **v12**, and the token-free Ready/offline runtime is **v1.3**. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
 
-The canonical browser project is `patch-studio-project` bundle **version 3**. It carries bounded multi-file Patch sources, deterministic composition/provenance, project name, Console/Window kind, selected build target and native build mode. Older project versions migrate explicitly; unknown future versions fail closed.
+## Product-backlog boundary
 
-Programmatic sample/Designer mutations and normal typing use the same project/source signals, so source, recovery, Designer, Change Contract, Project Tree and native-build panel observe one project state. Recovery snapshots preserve the complete project rather than only one editor buffer.
+The repository-controlled beta.35+ Studio/compiler backlog is currently closed. The former open product items for a richer data-control surface and structural/nested keyboard refinement are satisfied by Slider Stage 1 plus the implemented keyboard/focus milestone.
 
-The source workspace includes a source-backed Project Tree. Run and Build compose the bounded project deterministically instead of inventing a hidden second application model.
+Remaining unchecked roadmap items are deliberately separated because they need something outside ordinary repository implementation:
 
-## Source-backed Forms and controls
+- native Slider parity requires a new versioned Native GUI IR/backend/payload/runtime contract;
+- real Windows/macOS signing evidence requires credentials;
+- manual Narrator/VoiceOver/Orca validation requires actual assistive-technology testing;
+- controlled performance results require fixed-hardware measurements;
+- genuine third-party integration evidence requires an external application/plugin context.
 
-Form dimensions, control geometry, labels, ids, options, Table rows, TreeView hierarchy, Tabs pages and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent form document.
+See `docs/ROADMAP.md` for the exact split.
 
-The desktop Designer presents the controls in a compact left rail, including Table and TreeView as first-class source-backed tools. A categorized **Add control** picker groups the same tools into **Basic**, **Choices**, **Data** and **Containers**. On narrow screens the picker replaces the long row of individual add icons; on desktop the rail remains available for fast direct insertion. Ctrl/Cmd+Shift+A focuses the picker. The picker deliberately delegates to the existing source-backed toolbox buttons rather than introducing a second add or source-mutation path.
+## Canonical multi-file project state
 
-The Properties pane defaults to a wider desktop layout, can be resized by dragging its separator, can be collapsed from the Designer toolbar and remembers its local width. On narrower screens Properties moves below the canvas. This workspace state is an IDE preference only and does not become Patch application state.
+The canonical browser project is `patch-studio-project` bundle **version 3**. It carries bounded multi-file Patch sources, deterministic composition/provenance, project name, Console/Window kind, selected build target and native build mode. Older versions migrate explicitly; unknown future versions fail closed.
 
-The current Designer toolbar exposes a compact shared-selection context. It shows the selected control type, id, Form and multi-select count, provides **Focus selected / Focus form** and **Clear**, and supports Escape-to-deselect when focus is not inside an editor field. Properties uses the same shared selection boundary, shows a type-specific heading and reports whether common source-backed fields are current or have unapplied edits.
+Typing, sample switching and source-backed Designer mutations feed the same project/source signals. Source, recovery, Designer, Change Contract, Project Tree and native-build UI therefore observe one canonical project state rather than parallel editor models.
 
-The Form workflow keeps the active Form selector and Add Form action directly available while Name, Title, Width and Height live in a compact **Form settings** popover. The active Form is highlighted in the canvas; clicking or keyboard-activating a Form title switches to it. Previous/next buttons and Alt+PageUp / Alt+PageDown navigate named Forms. These are transient IDE interactions only.
+Recovery snapshots preserve the complete project, not only the active editor buffer.
 
-**Fit controls** computes the bounding box of the active Form's source-backed controls plus padding and rewrites the ordinary `window ... size W, H` source. **Default 640×420** restores the ordinary source-backed default dimensions. Neither action creates hidden layout state.
+## Source-backed Designer
 
-A selected control can be moved/resized visually. A Form has a lower-right resize grip. Pointer and keyboard changes rewrite visible Patch source. Forms may grow beyond the visible Designer width; the Designer remains scrollable instead of clamping the Form.
+Form dimensions, control geometry, Slider range/step, Table rows, TreeView hierarchy, Tabs pages and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent visual-designer document.
 
-Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties. These editors rewrite only the selected `table`/`row`, `tree`/`node` or `tabs`/`tab` block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
+### Forms
 
-The structural Properties surface now adds a common **Structure** summary with the current Table/TreeView/Tabs size, quick **Add row / Add node / Add page** and **Source** actions, filters for TreeView nodes, Tabs pages and controls inside the selected page, visible match counts, and explicit no-match states. Empty Tables show **No rows yet** plus **Add first row**. These are IDE-only affordances: quick actions call the existing source-backed editor buttons and filters only hide/show editor rows, so there is no second structural mutation path or persistent filter state in the Patch application.
+The current source-backed Form lifecycle supports:
 
-All top-level controls now share one authoritative primary-selection and common Properties action boundary. `web/designer-selection.js` owns the adapter-aware selection record, while `web/designer-core-selection.js` resolves Apply/Delete/Source for core controls, Tabs, Table and TreeView. The historical private `playground.js` selection mirror and the old Table/TreeView Inspector fallbacks have been removed. `playground.js` now only renders controls and creates the Inspector DOM shell; it does not own Designer selection or source-backed Properties mutations. Geometry and resize handles synchronize directly from `patch-designer-selection-change` instead of depending on a full renderer refresh. Designer multi-select remains an explicit transient secondary set over the shared primary selection. This IDE interaction state never becomes Patch application state or Change History.
+- Add Form;
+- active Form selection and canvas activation;
+- Name, Title, Width and Height Properties;
+- pointer resize;
+- **Fit controls** source rewrite;
+- **Default 640×420** source rewrite;
+- full Form duplication with fresh Form/control ids and copied handlers;
+- confirmed deletion with orphan-handler cleanup;
+- last-Form protection.
 
-GUI interaction does not implicitly persist state. Current transient event values are:
+Previous/next controls plus `Alt+PageUp` / `Alt+PageDown` navigate Forms. That active-Form state is transient IDE state only.
 
-- Input, ComboBox, Radio and text-backed ListBox: text;
-- Checkbox: Boolean;
-- list-backed ListBox: text-list of selected display strings;
-- Table: text-list for the selected row;
-- TreeView: text-list for the selected root-to-node display path.
+### Control discovery and Properties
 
-Persistent application state changes only through explicit Patch `change`. Tabs page selection remains renderer/toolkit-local unless a future language contract exposes it.
+The desktop Designer exposes a compact control rail and a categorized **Add control** picker. The picker groups controls into Basic, Choices, Data and Containers and is the narrow/mobile discovery surface as well. `Ctrl/Cmd+Shift+A` focuses it.
+
+All top-level controls share one authoritative primary-selection boundary and common Properties actions. The Properties pane is wider by default, resizable, collapsible and responsive. Its width preference is local IDE state rather than Patch application state.
+
+A selected control can be moved/resized visually. Pointer and keyboard changes rewrite visible source. Common source-backed actions include Center H, Center V, Default size and collision-aware Auto place.
+
+Designer multi-select is an explicit transient secondary set over the shared primary selection. It never becomes Patch state or Change History.
+
+## Slider Stage 1
+
+Slider Stage 1 is the current richer data/input control beyond Table/ListBox/TreeView:
+
+```patch
+create number volume = 50
+window "Mixer" as main size 560, 300:
+  text "Volume: {volume}"
+  slider 0..100 as volume step 5 at 24, 80 size 300, 44
+when volume changed:
+  change volume:
+    set = value
+```
+
+Studio provides:
+
+- **+ Slider** source-backed insertion;
+- default `0..100 step 1` generation;
+- id/min/max/step Properties;
+- normal source-backed X/Y/width/height geometry;
+- App Preview range rendering and live transient display;
+- bounded finite numeric `changed` dispatch;
+- insertion inside source-backed Tabs pages;
+- a Slider sample application.
+
+Slider interaction itself never persists application state. The event-local `value` is a finite number inside the declared range; state changes only when source executes ordinary semantic `change`.
+
+Standalone Window Web supports the same contract. Current Native GUI IR 1.2 / payload v12 / runtime v1.3 intentionally does not. A native Slider program fails closed until a future versioned native contract adds parity.
+
+See `docs/SLIDER_STAGE1.md`.
 
 ## ListBox multi-selection
 
-The state type behind a ListBox id determines its interaction contract.
+The state type behind a ListBox id determines its interaction contract:
 
 ```patch
 create list fruits = ["Banana", "Mango"]
@@ -69,7 +126,7 @@ Native GUI IR 1.1 introduced persistent text-list state and the list-backed List
 
 ## Table / Grid
 
-Table remains source-backed and selection remains transient:
+Table is source-backed and runtime selection remains transient:
 
 ```patch
 window "People" as main size 520, 320:
@@ -80,13 +137,13 @@ when people changed:
   show value
 ```
 
-Selecting a Table in the Designer exposes an editable grid in Properties. Column expressions and cell expressions can be edited in place; columns and rows can be added or removed. Applying the grid rewrites the visible `table` header and `row` lines while preserving the control id, geometry and event handlers. Row width mismatch fails closed instead of silently truncating or padding data.
+Top-level and nested Table Properties support editable columns/cells, add/remove, reorder and duplicate row/column operations. Column movement always keeps the header and corresponding cells aligned. Invalid row widths fail closed instead of silently truncating/padding data.
 
-Table originated in Native GUI IR 0.8 / payload v9/runtime v1.0. Current payload v12/runtime v1.3 preserves its columns, rows, responsive layout policy and transient selected-row semantics.
+Current payload v12/runtime v1.3 preserves Table structure, responsive layout and transient selected-row semantics.
 
 ## TreeView
 
-TreeView hierarchy is source-backed:
+TreeView hierarchy is ordinary Patch source:
 
 ```patch
 create list selected = []
@@ -102,100 +159,100 @@ when files changed:
     set = value
 ```
 
-The Designer can create a TreeView with a small starter hierarchy, select the control, move/resize it, rename its id, jump to its source and delete the complete hierarchy. The Tree nodes panel in Properties can add roots or children, rename a selected node, move it up/down, indent/outdent it and delete it. Every action rewrites ordinary visible `node` source rather than creating a hidden visual-designer document. The editor refuses to leave a TreeView with no nodes.
+Top-level and nested TreeView Properties support add root/child, rename, move, indent/outdent, delete and deep-copy subtree duplication. The editor refuses to leave an invalid empty TreeView.
 
-Selecting `compiler.js` at runtime exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
+Selecting `compiler.js` exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
 
-TreeView Stage 1 is implemented in Studio App Preview and Standalone Window Web. Direct native and token-free Ready/offline parity use Native GUI IR **1.2**, sealed payload **v12** and runtime **v1.3** on Windows, macOS and Linux.
+Direct native and token-free Ready/offline parity use Native GUI IR **1.2**, sealed payload **v12** and runtime **v1.3** on Windows, macOS and Linux.
 
-## Tabs page and nested-control editing
+## Tabs and nested controls
 
-Tabs page structure is also ordinary Patch source:
+Tabs page structure and nested controls are source-backed. Studio supports page add/rename/reorder/delete/duplicate and nested insertion/removal/reorder/duplicate for:
 
-```patch
-window "Settings":
-  tabs as settings:
-    tab "General":
-      text "General"
-      table "Name", "Value" as preferences:
-        row "Theme", "System"
-    tab "Advanced":
-      tree as sections:
-        node "Security"
-          node "Keys"
-```
+- Text;
+- Button;
+- Input;
+- Checkbox;
+- Radio;
+- ComboBox;
+- ListBox;
+- **Slider**;
+- Table;
+- TreeView.
 
-Selecting Tabs in the Designer exposes its pages in Properties. A page can be added, renamed, moved up/down or removed. Moving a page preserves its complete nested control body. Deleting a page removes event handlers belonging to controls deleted with that page so the source cannot be left with orphan handlers. Tabs requires at least two pages, so the editor disables and rejects deletion at that boundary.
+Nested Table and TreeView use dedicated structural Properties editors. Multi-line blocks move/copy atomically. Named duplicates receive globally unique ids and matching handlers are copied to the remapped id.
 
-The selected page also exposes its flow-layout controls. The Designer can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly into that page, assigning globally unique ids where needed. Existing nested controls can be removed. Named handlers are removed with the deleted control, and multi-line Table rows or TreeView nodes are removed with the complete parent block rather than being orphaned.
+Tabs-inside-Tabs remains intentionally outside the current stage and fails closed.
 
-Nested Table and TreeView receive small valid source-backed starter structures without `at/size` geometry because controls inside Tabs use flow layout. Their dedicated nested Properties editors now mirror the top-level structural workflows: Table supports editable column/cell expressions plus add/remove columns and rows, while TreeView supports add root/child, rename, move, indent/outdent and delete. Each action rewrites only the selected nested `table`/`row` or `tree`/`node` block and reparses the source before accepting it.
+See `docs/TABS.md`.
 
-The nested inspector is UI convenience over the visible Patch source, not a second model. A nested Table still fails closed on row-width mismatch or zero columns, and a nested TreeView still refuses to become empty.
+## Keyboard and accessibility refinement
 
-The editor refuses to leave a page empty and still fails closed for Tabs-inside-Tabs. Page selection remains transient renderer/toolkit state, nested controls retain their ordinary event contracts, and existing Native GUI IR/runtime contracts are unchanged.
+The automated structural/nested editor baseline includes:
 
-See `docs/TABS.md` for the current Tabs syntax, native mappings, compatibility history and limitations.
+- roving TreeView/Tabs selection with ArrowUp/ArrowDown/Home/End;
+- `Ctrl/Cmd+Arrow` structural move/indent/outdent shortcuts;
+- `Ctrl/Cmd+Enter` commit/focus actions;
+- Escape to close nested structure editors and restore focus;
+- `aria-keyshortcuts` projection;
+- explicit `:focus-visible` treatment;
+- focus restoration after supported source-backed rewrites.
 
-## Menus and dialogs
+This closes the repository-side keyboard-refinement milestone. It is **not** a WCAG conformance statement. Manual Narrator, VoiceOver, Orca and comparable assistive-technology testing remains an external validation gate.
 
-The current native line includes structural menus, separators, portable shortcuts and source-backed Boolean `enabled` / `checked` MenuItem projections, plus informational and result-bearing Confirm/Open/Save dialogs. Menu activation does not create hidden persistent toolkit state.
+See `docs/STUDIO_KEYBOARD_ACCESSIBILITY.md`.
 
-The version history remains additive:
+## Transient GUI event values
 
-```text
-Native GUI IR 0.7  base controls/dialogs
-Native GUI IR 0.8  Table
-Native GUI IR 0.9  Menu separators/shortcuts
-Native GUI IR 1.0  Menu enabled/checked state
-Native GUI IR 1.1  persistent list state + multi-select ListBox
-Native GUI IR 1.2  hierarchical TreeView
-```
+Current event values are:
 
-## Direct native desktop path
+- Input, ComboBox, Radio and text-backed ListBox: text;
+- Checkbox: Boolean;
+- Slider: bounded finite number;
+- list-backed ListBox: text-list of selected display strings;
+- Table: text-list for the selected row;
+- TreeView: text-list for the selected root-to-node display path.
 
-Current native mappings include Win32, AppKit and GTK3 controls for the supported surface. TreeView maps to the platform TreeView/common control on Windows, `NSOutlineView` on macOS and `GtkTreeView` + `GtkTreeStore` on Linux.
+Persistent application state changes only through explicit Patch `change`. Tabs page selection and Designer/editor selection remain renderer/IDE state.
 
-Unsupported native behavior fails closed. There is no implicit Electron fallback. The separately labelled compatibility package is the only Electron-based GUI path.
+## Native desktop path
 
-## Token-free Ready runtime
+Current mappings include Win32, AppKit and GTK3 controls for the supported TreeView-capable surface. Unsupported native behavior fails closed. There is no implicit Electron fallback; the separately labelled compatibility package is the only Electron-based GUI path.
 
-Current Windows, Linux and macOS Ready Window downloads lower Native GUI IR **1.2** in the browser and seal payload **v12** into native runtime **v1.3**.
-
-Current platform release tags are:
+Current release tags are:
 
 - `native-win32-runtime-v1.3`;
 - `native-macos-runtime-v1.3`;
 - `native-linux-runtime-v1.3`.
 
-Frozen compatibility lines remain explicit: v11/runtime v1.2 for Menu+list, v10/runtime v1.1 for persistent list state, v9/runtime v1.0 for Table, and older responsive/base contracts below that. New source features are never silently encoded into older payload versions.
+Frozen compatibility lines remain explicit: v11/runtime v1.2 for Menu+list, v10/runtime v1.1 for list state, v9/runtime v1.0 for Table and earlier responsive/base contracts below them.
 
-## Native build resilience and runtime integrity
+## Runtime integrity
 
-The optional cloud/AOT path supports explicit Cancel, timeout and Retry. Retry uses the original in-memory build snapshot rather than silently rebuilding changed editor contents.
+The token-free Ready path is protected by the release/deployment integrity chain:
 
-The token-free Ready path is the default. The Beta.34 runtime-template integrity mechanism now protects the current v1.3 assets:
-
-1. Pages requires `studio-runtime-v0.6` plus all three native runtime-v1.3 releases.
-2. It downloads the exact browser-consumed runtime assets.
-3. It reads the SHA-256 digest recorded by GitHub Release.
-4. `scripts/runtime-integrity-manifest.js` independently hashes the downloaded files and rejects mismatch.
+1. Pages requires the current runtime releases.
+2. It downloads the exact browser-consumed assets.
+3. GitHub Release SHA-256 digests are read.
+4. `scripts/runtime-integrity-manifest.js` independently re-hashes the assets.
 5. Pages publishes `runtimes/runtime-manifest.json`.
-6. `web/runtime-integrity.js` hashes the selected runtime again with Web Crypto before `native-build.js` may use it.
+6. `web/runtime-integrity.js` hashes the selected runtime again with Web Crypto before packaging.
 
-A missing entry or mismatch stops packaging. This is byte-integrity validation inside the existing release/deployment trust path, not Authenticode or Developer ID/notarization.
+A missing entry or mismatch stops packaging. This proves byte identity inside the release/deployment path; it is not Authenticode or Developer ID/notarization evidence.
 
 ## Offline compiler
 
-The downloadable compiler is the command-line counterpart to the Ready path. Current Windows/macOS/Linux `patch link` defaults to Native GUI IR **1.2**, payload **v12** and runtime **v1.3**, with responsive layout, Table, multi-select ListBox, Menu and TreeView support. Explicit payload v10/v11 compatibility remains available for older non-Tree artifacts.
+The downloadable compiler is the command-line counterpart to Ready builds. Windows/macOS/Linux `patch link` defaults to Native GUI IR **1.2**, payload **v12** and runtime **v1.3**, preserving responsive layout, Table, multi-select ListBox, Menu and TreeView semantics.
 
-The offline-compiler CI links and executes canonical responsive, Table, ListBox, Menu and TreeView apps on Windows, Linux, Apple Silicon macOS and Intel macOS before publishing the rolling download assets. FreeBSD remains Console-only through portable C99.
+The offline-compiler CI independently links and executes canonical current Window apps on Windows, Linux, Apple Silicon macOS and Intel macOS. FreeBSD remains Console-only via portable C99.
 
-## PWA updates
+## PWA and public website
 
-Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated CSS, JavaScript, manifest and icon references carry that revision; the Service Worker uses it as the active cache identity.
+Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated local asset references carry that revision and the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online. Successfully fetched bytes remain available only as offline fallback. The browser bundle and Service Worker include the current Native GUI IR 1.2 / sealed payload v12 dependency chain plus the source-backed TreeView Designer, resizable Designer workspace, completed shared primary-selection/Properties architecture, compact Designer context UX, categorized control picker, active Form navigation/sizing workflow, structural Properties summary/filter/empty-state UX and the shared TreeView/Table/Tabs structural editor modules, including nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView insertion/removal and nested Table/TreeView structural editing for Tabs pages.
+Same-origin `/runtimes/` requests are fresh-first online with successful bytes retained as offline fallback.
+
+The public website now uses a shared refreshed presentation layer. Studio exposes the current contracts and quick-start shortcuts directly above the IDE workspace. The Documentation page groups the current docs and provides a local text filter without telemetry or an external search service.
 
 ## Recovery and diagnostics
 
@@ -203,18 +260,20 @@ Recovery keeps deduplicated local snapshots and supports Snapshot now, Restore, 
 
 `Copy diagnostics` and `.patchreport` create local privacy-redacted support bundles. They include version, target, source size/hash, compiler state, browser/PWA state and bounded recent errors but omit project source. No diagnostics upload path exists in Studio.
 
-## Beta.32 research boundary
+## Formal/research boundary
 
-The ordinary Studio does not need Lean or expose beta.32 proof machinery. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
+The ordinary Studio does not need Lean. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
 
-The reproducible evidence set includes `GeneratedRepeatedTransitiveRuntimeCertificate.lean`. Product/UI/runtime work after beta.32 does not expand those assurance claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+Product/UI/runtime work after beta.32 does not expand those claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
 
-## Production-readiness additions
+## Where future work belongs
 
-The current Studio/repository includes stable `PATCHxxxx` diagnostics, versioned CLI JSON results, recovery, deterministic release manifests, SHA-256 runtime verification, CodeQL/security checks, compiler fuzzing, differential backend tests, Change/History/Undo/Redo property tests, source-compatibility coverage and reproducibility gates.
+Core current Studio authoring is complete for the existing control vocabulary. Future work should be classified by dependency rather than added as a vague never-ending backlog:
 
-## Next work
+- **new product milestone:** genuinely new controls or IDE capabilities with concrete tests;
+- **new native ABI milestone:** Slider native parity or another feature requiring a versioned native contract;
+- **distribution gate:** installers, signing evidence or update channels;
+- **manual validation gate:** screen-reader/assistive-technology verification;
+- **research gate:** controlled measurements, external integration evidence or venue feedback.
 
-TreeView Ready/offline parity, first-class TreeView Designer support, source-backed top-level TreeView/Table data editors, Tabs page editing, nested Tabs insertion/removal for Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Table/TreeView, nested Table/TreeView structural Properties editing, structural Properties summary/filter/empty-state polish, the completed shared core/Tabs/Table/TreeView primary-selection/Properties architecture, compact Designer context UX, categorized control discovery and active Form navigation/source-backed sizing workflow are complete.
-
-Highest-value remaining Studio work is broader data-control/container polish, richer canvas/Form Designer ergonomics and additional accessibility/keyboard refinement. Distribution work remains installer/uninstall formats, real credentialed Windows signing evidence, real macOS signing/notarization evidence, more self-contained Linux packaging where justified, FreeBSD native GUI and a fresh remote native build service that does not require a user-supplied GitHub token.
+That separation keeps the beta.35+ product surface accurate without overstating external evidence.
