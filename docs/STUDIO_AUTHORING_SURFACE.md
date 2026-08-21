@@ -130,7 +130,8 @@ This is the complete current authoring surface for the **existing Patch UI/contr
 The former ordinary product-backlog items for a richer data-control surface and structural/nested keyboard refinement are closed by Slider Stage 1 plus the implemented keyboard/focus milestone. Any new/richer data controls beyond the current Table, ListBox and TreeView vocabulary are future/new product milestones rather than missing beta.35 implementation. Slider Stage 1 is the completed current numeric-range addition. Remaining work is deliberately separated by dependency:
 
 - **native Slider parity** requires a future versioned Native GUI IR/backend/payload/runtime contract rather than redefining v1.3;
-- **manual assistive-technology validation** requires real Narrator, VoiceOver, Orca or comparable testing and is not a WCAG conformance claim;
+- **manual assistive-technology verification with Narrator, VoiceOver, Orca** or comparable tools remains an external validation gate and makes no WCAG conformance claim;
+- **distribution work such as installer/uninstaller formats** requires a concrete packaging decision plus release/signing evidence and is not missing current Studio authoring implementation;
 - **credentialed distribution evidence** requires real Windows/macOS signing identities and installer/release-channel decisions;
 - **research/evaluation gates** such as controlled fixed-hardware measurements and genuine third-party integration evidence remain outside Studio authoring.
 
