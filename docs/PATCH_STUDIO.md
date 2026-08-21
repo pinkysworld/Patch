@@ -64,7 +64,7 @@ The current source-backed Form lifecycle supports:
 - confirmed deletion with orphan-handler cleanup;
 - last-Form protection.
 
-The active Form is highlighted in the canvas; clicking or keyboard-activating a Form title switches to it. Previous/next controls plus `Alt+PageUp / Alt+PageDown` navigate named Forms. That active-Form state is transient IDE state only.
+The active Form is highlighted in the canvas; clicking or keyboard-activating a Form title switches to it. Previous/next controls plus Alt+PageUp / Alt+PageDown navigate named Forms. That active-Form state is transient IDE state only.
 
 **Fit controls** computes the bounding box of the active Form's source-backed controls plus padding and rewrites the ordinary `window ... size W, H` source. **Default 640×420** restores the ordinary source-backed default dimensions. Neither action creates hidden layout state.
 
