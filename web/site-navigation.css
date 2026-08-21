@@ -1,3 +1,5 @@
+@import url("./site-refresh.css");
+
 .site-tabs {
   width: min(1600px, calc(100% - 32px));
   margin: 10px auto 0;
