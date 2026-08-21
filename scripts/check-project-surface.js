@@ -103,7 +103,7 @@ requireAll('docs/PATCH_STUDIO.md', files.studio, [
 ]);
 requireAll('docs/STUDIO_AUTHORING_SURFACE.md', files.studioSurface, [
   'Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table, TreeView and Tabs',
-  'Slider Stage 1', 'manual assistive-technology validation',
+  'Slider Stage 1', 'manual assistive-technology verification with Narrator, VoiceOver, Orca',
   'current authoring surface for the **existing Patch UI/control vocabulary**, now including Slider Stage 1'
 ]);
 requireAll('docs/SLIDER_STAGE1.md', files.slider, [
