@@ -115,9 +115,10 @@
 #designer #addRadio { top: 185px; }
 #designer #addCombo { top: 219px; }
 #designer #addListbox { top: 253px; }
-#designer #addTable { top: 287px; }
-#designer #addTree { top: 321px; }
-#designer #addTabs { top: 355px; }
+#designer #addSlider { top: 287px; }
+#designer #addTable { top: 321px; }
+#designer #addTree { top: 355px; }
+#designer #addTabs { top: 389px; }
 #designer #addText::before { content: "T"; }
 #designer #addButton::before { content: "▭"; font-size: 18px; }
 #designer #addInput::before { content: "I"; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
@@ -125,6 +126,7 @@
 #designer #addRadio::before { content: "◉"; font-size: 16px; }
 #designer #addCombo::before { content: "⌄"; font-size: 19px; }
 #designer #addListbox::before { content: "≡"; font-size: 19px; }
+#designer #addSlider::before { content: "↔"; font-size: 17px; }
 #designer #addTable::before { content: "▦"; font-size: 17px; }
 #designer #addTree::before { content: "↳"; font-size: 19px; }
 #designer #addTabs::before { content: "▤"; font-size: 17px; }
