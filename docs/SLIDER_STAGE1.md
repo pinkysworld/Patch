@@ -28,7 +28,7 @@ slider MIN..MAX as ID [step STEP] [at X, Y [size W, H]]
 
 Slider exposes only `changed`.
 
-Its event-local `value` is a finite **number inside the declared Slider range**. The shared Window event adapter fails closed on non-numeric, non-finite or out-of-range host values. The UI control does not persist that number by itself. Persistent application state changes only when Patch source executes an ordinary semantic `change`.
+Its event-local `value` is a finite **number** inside the declared Slider range. The shared Window event adapter fails closed on non-numeric, non-finite or out-of-range host values. The UI control does not persist that number by itself. Persistent application state changes only when Patch source executes an ordinary semantic `change`.
 
 This means:
 
