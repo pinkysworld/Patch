@@ -22,6 +22,7 @@ const files = {
   docsPage: read('web/docs.html'),
   downloadsPage: read('web/downloads.html'),
   studio: read('docs/PATCH_STUDIO.md'),
+  slider: read('docs/SLIDER_STAGE1.md'),
   offline: read('docs/OFFLINE_COMPILER.md'),
   nativeGui: read('docs/NATIVE_GUI.md'),
   roadmap: read('docs/ROADMAP.md'),
@@ -33,6 +34,7 @@ const files = {
   paperMain: read('paper/main.tex'),
   compilerJs: read('src/compiler.js'),
   windowEvents: read('src/window-events.js'),
+  windowBuild: read('src/window-build.js'),
   nativeGui12: read('src/native-gui-ir-v12.js'),
   sealed12: read('src/sealed-native-gui-v12.js'),
   offlineLinker: read('src/offline-linker.js'),
@@ -58,10 +60,11 @@ requireAll('README.md', files.readme, [
 ]);
 requireAll('web/index.html', files.website, [
   `data-patch-version="${version}"`, '0.2 beta.35+', 'multi-file project bundle v3',
+  'source-backed browser Slider Stage 1', 'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
   'Native GUI IR 1.2', 'payload v12', 'runtime v1.3', 'hierarchical TreeView', './runtime-integrity.js'
 ]);
 requireAll('web/docs.html', files.docsPage, [
-  `data-patch-version="${version}"`, 'docs/OFFLINE_COMPILER.md', 'docs/NATIVE_GUI.md',
+  `data-patch-version="${version}"`, 'docs/SLIDER_STAGE1.md', 'docs/OFFLINE_COMPILER.md', 'docs/NATIVE_GUI.md',
   'Native GUI IR 1.2 / payload v12 / runtime v1.3'
 ]);
 requireAll('web/downloads.html', files.downloadsPage, [
@@ -74,6 +77,11 @@ rejectAll('public current surfaces', files.website + files.downloadsPage, [
   'list-backed multi-select ListBox is currently browser-only and native builds fail closed'
 ]);
 
+requireAll('docs/SLIDER_STAGE1.md', files.slider, [
+  'Slider Stage 1', 'Window event adapter **0.9**', 'finite **number**',
+  'Native GUI IR **1.2**', 'sealed payload **v12**', 'native runtime **v1.3**',
+  'future versioned Native GUI IR/backend/payload/runtime contract'
+]);
 requireAll('docs/NATIVE_GUI.md', files.nativeGui, [
   'Native GUI IR 1.2', 'sealed payload v12 / runtime v1.3', 'TreeView',
   'root-to-node display path', 'native-win32-runtime-v1.3'
@@ -89,17 +97,19 @@ requireAll('docs/ROADMAP.md', files.roadmap, [
 ]);
 
 requireAll('src/compiler.js', files.compilerJs, ["PATCH_IR_VERSION = '0.10'", 'formalCalls', 'sourceValidation', 'guardValidation']);
-requireAll('src/window-events.js', files.windowEvents, ["PATCH_WINDOW_EVENTS_VERSION = '0.8'", 'text-list event-local value']);
+requireAll('src/window-events.js', files.windowEvents, ["PATCH_WINDOW_EVENTS_VERSION = '0.9'", 'finite number', 'text-list event-local value']);
+requireAll('src/window-build.js', files.windowBuild, ['allowSlider', 'Slider', 'not enabled for this Window target']);
 requireAll('src/native-gui-ir-v12.js', files.nativeGui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12', "control.type = 'tree'"]);
 requireAll('src/sealed-native-gui-v12.js', files.sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12', 'sealNativeGuiRuntimeV12', 'inspectNativeGuiTreesV12']);
 requireAll('src/offline-linker.js', files.offlineLinker, [
   'options.guiPayloadVersion ?? 12', 'allowTree: guiPayloadVersion >= 12', 'buildNativeGuiIRV12', 'sealNativeGuiRuntimeV12'
 ]);
+rejectAll('current native Ready/offline Slider boundary', files.offlineLinker + files.nativeBuild, ['allowSlider: true']);
 requireAll('web/native-build.js', files.nativeBuild, [
   'buildNativeGuiIRV12 as buildNativeGuiIR', 'PATCH_SEALED_NATIVE_GUI_TREE_VERSION',
   'sealNativeGuiRuntimeV12', 'allowTree: true', 'runtime v1.3'
 ]);
-requireAll('web/sw.js', files.serviceWorker, ['../src/native-gui-ir-v12.js', '../src/native-tree-backend-adapter.js', '../src/sealed-native-gui-v12.js']);
+requireAll('web/sw.js', files.serviceWorker, ['./slider-stage1.js', '../src/window-events.js', '../src/native-gui-ir-v12.js', '../src/native-tree-backend-adapter.js', '../src/sealed-native-gui-v12.js']);
 
 for (const tag of ['native-win32-runtime-v1.3','native-macos-runtime-v1.3','native-linux-runtime-v1.3']) {
   requireAll('.github/workflows/pages.yml', files.pagesWorkflow, [tag]);
@@ -122,4 +132,4 @@ requireAll('docs/RUNTIME_CORRESPONDENCE.md', files.runtime, ['Beta.32', 'invocat
 requireAll('paper/README.md', files.paper, ['formal runtime-correspondence milestone: **beta.32**', 'no controlled paper-quality performance dataset has been collected yet']);
 requireAll('paper/main.tex', files.paperMain, ['Beta 35 product artifact / Beta 32 assurance manuscript', 'no controlled paper-quality timing dataset yet']);
 
-console.log('ok Patch project surface: beta.35+ product, Native GUI IR 1.2 / payload v12 / runtime v1.3, beta.32 assurance boundary');
+console.log('ok Patch project surface: beta.35+ Slider browser contract, Native GUI IR 1.2 / payload v12 / runtime v1.3, beta.32 assurance boundary');
