@@ -4,6 +4,7 @@ import { buildNativeGuiIRV09, flattenNativeGuiControlsV09 } from './native-gui-i
 import { buildNativeGuiIRV10, flattenNativeGuiControlsV10 } from './native-gui-ir-v10.js';
 import { buildNativeGuiIRV11, flattenNativeGuiControlsV11 } from './native-gui-ir-v11.js';
 import { buildNativeGuiIRV12, flattenNativeGuiControlsV12 } from './native-gui-ir-v12.js';
+import { buildNativeGuiIRV13, flattenNativeGuiControlsV13 } from './native-gui-ir-v13.js';
 
 /** Select the smallest native GUI contract that preserves source semantics. */
 export function buildNativeGuiPlan(compiled, options = {}) {
@@ -13,7 +14,12 @@ export function buildNativeGuiPlan(compiled, options = {}) {
   const forceMenuState = Boolean(options.menuV11);
   const forceList = Boolean(options.listV12);
   const forceTree = Boolean(options.treeV13);
+  const forceSlider = Boolean(options.sliderV14);
 
+  if (forceSlider || features.slider) {
+    const gui = buildNativeGuiIRV13(compiled);
+    return { tier: 'slider-v14', gui, controlCount: flattenNativeGuiControlsV13(gui).length, features };
+  }
   if (forceTree || features.tree) {
     const gui = buildNativeGuiIRV12(compiled);
     return { tier: 'tree-v13', gui, controlCount: flattenNativeGuiControlsV12(gui).length, features };
@@ -42,6 +48,7 @@ export function inspectNativeGuiFeatures(ast) {
   const features = {
     table: false,
     tree: false,
+    slider: false,
     listState: false,
     listBackedListBox: false,
     menuSeparators: false,
@@ -58,6 +65,7 @@ export function inspectNativeGuiFeatures(ast) {
     for (const node of nodes ?? []) {
       if (node.kind === 'uiControl' && node.control === 'table') features.table = true;
       if (node.kind === 'uiControl' && node.control === 'tree') features.tree = true;
+      if (node.kind === 'uiControl' && node.control === 'slider') features.slider = true;
       if (node.kind === 'uiControl' && node.control === 'listbox' && listNames.has(node.id)) features.listBackedListBox = true;
       if (node.kind === 'menuSeparator') features.menuSeparators = true;
       if (node.kind === 'menuItem' && node.shortcutExpr) features.menuShortcuts = true;
