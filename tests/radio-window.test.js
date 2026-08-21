@@ -47,8 +47,8 @@ test('Radio changed value is transient text and persists only through explicit P
   assert.throws(() => triggerWindowEvent(runtime, 'mode', 'changed', { value: true }), /needs a text event-local value/);
 });
 
-test('Window event adapter v0.8 type-checks controls nested inside Tabs recursively', () => {
-  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.8');
+test('Window event adapter v0.9 type-checks controls nested inside Tabs recursively', () => {
+  assert.equal(PATCH_WINDOW_EVENTS_VERSION, '0.9');
   const nested = `create text mode = "A"\n\nwindow "Nested" as main:\n  tabs as settings:\n    tab "One":\n      radio "A", "B" as mode\n    tab "Two":\n      text "Two"\n\nwhen mode changed:\n  change mode:\n    set = value\n`;
   const runtime = new PatchInterpreter();
   runtime.run(nested);
