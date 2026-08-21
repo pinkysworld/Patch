@@ -23,7 +23,7 @@ Duplicate/Delete activation always returns through the existing Form selector. T
 
 ## Top-level controls
 
-The Designer exposes Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider**, Table, TreeView and Tabs through the same source-backed toolbox/discovery boundary.
+The Designer exposes Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table, TreeView and Tabs through the same source-backed toolbox/discovery boundary. Slider Stage 1 is additionally exposed through that same boundary.
 
 For the supported top-level controls, Studio provides:
 
@@ -90,7 +90,7 @@ Page workflows:
 
 Nested page-control workflows:
 
-- add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider**, Table and TreeView;
+- add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView, plus Slider Stage 1;
 - remove;
 - move up/down;
 - duplicate;
@@ -127,7 +127,7 @@ The current authoring modules are part of the deterministic content-addressed pu
 
 This is the complete current authoring surface for the **existing Patch UI/control vocabulary**, now including Slider Stage 1. It does not mean every conceivable IDE feature exists.
 
-The former ordinary product-backlog items for a richer data-control surface and structural/nested keyboard refinement are closed by Slider Stage 1 plus the implemented keyboard/focus milestone. Remaining work is deliberately separated by dependency:
+The former ordinary product-backlog items for a richer data-control surface and structural/nested keyboard refinement are closed by Slider Stage 1 plus the implemented keyboard/focus milestone. Any new/richer data controls beyond the current Table, ListBox and TreeView vocabulary are future/new product milestones rather than missing beta.35 implementation. Slider Stage 1 is the completed current numeric-range addition. Remaining work is deliberately separated by dependency:
 
 - **native Slider parity** requires a future versioned Native GUI IR/backend/payload/runtime contract rather than redefining v1.3;
 - **manual assistive-technology validation** requires real Narrator, VoiceOver, Orca or comparable testing and is not a WCAG conformance claim;
