@@ -155,6 +155,7 @@ function materializeFreeBsd(plan, options) {
     throw new OfflineLinkError('FreeBSD native linking must run on FreeBSD. Use the FreeBSD offline compiler kit on the target system.');
   }
   const output = options.out ?? plan.suggestedOutput;
+  fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-freebsd-link-'));
   const cFile = path.join(temp, `${fileStem(plan.name)}.c`);
   try {
