@@ -17,32 +17,38 @@ if (pkg.version !== '0.2.0-beta.35') throw new Error(`beta.35 site validator req
 for (const rel of [
   '_site/index.html',
   '_site/language.html',
+  '_site/docs.html',
   '_site/downloads.html',
   '_site/help.html',
   '_site/beta35-studio.js',
+  '_site/slider-stage1.js',
   '_site/table-stage1.js',
   '_site/src/webapp.js',
   '_site/src/window-events.js',
+  '_site/src/window-build.js',
   '_site/src/native-gui-ir-v12.js',
   '_site/src/sealed-native-gui-v12.js',
   '_site/sw.js'
 ]) requireFile(rel);
 
-// beta.35 introduced the browser interaction contract. Native parity is additive
-// post-beta.35 capability, so current product surfaces must preserve the semantic
-// mutation boundary while advertising the newer versioned native contract.
+// beta.35 introduced the browser multi-select interaction contract. Current
+// beta.35+ product work also includes Slider Stage 1 in browser/Standalone Web,
+// while the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 line remains
+// intentionally Slider-free and fail-closed.
 const index = read('_site/index.html');
 requireAll('beta.35+ Studio page', index, [
   'data-patch-version="0.2.0-beta.35"',
   '0.2 beta.35+',
-  'list-backed multi-select ListBox and hierarchical TreeView',
-  'supported native Ready/offline Windows, macOS and Linux paths',
+  'source-backed browser Slider Stage 1 with transient numeric values',
+  'multi-select ListBox and TreeView remain available across browser and supported native Ready/offline Windows, macOS and Linux paths',
+  'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
   'explicit <b>change</b>',
   './beta35-studio.js?v=',
+  './slider-stage1.js?v=',
   './table-stage1.js?v='
 ]);
 if (index.includes('list-backed multi-select ListBox is currently browser-only and native builds fail closed')) {
-  throw new Error('beta.35 Studio page regressed to the obsolete browser-only native boundary.');
+  throw new Error('beta.35 Studio page regressed to the obsolete browser-only native ListBox boundary.');
 }
 
 const beta35Studio = read('_site/beta35-studio.js');
@@ -51,6 +57,11 @@ requireAll('beta.35 Studio example module', beta35Studio, [
   "option.textContent = 'Multi-select ListBox'",
   'create list fruits = ["Banana", "Mango"]',
   "document.querySelector('#tabDesigner')?.click()"
+]);
+
+const sliderStudio = read('_site/slider-stage1.js');
+requireAll('Slider Stage 1 Studio module', sliderStudio, [
+  'addSlider', 'sliderWindow', 'addDesignerControl', "'slider'", 'changed'
 ]);
 
 const studioAdapter = read('_site/table-stage1.js');
@@ -75,11 +86,16 @@ requireAll('Standalone Web multi-select ListBox contract', webapp, [
 
 const events = read('_site/src/window-events.js');
 requireAll('Window event adapter current contract', events, [
-  "PATCH_WINDOW_EVENTS_VERSION = '0.8'",
+  "PATCH_WINDOW_EVENTS_VERSION = '0.9'",
+  "controlType === 'slider'",
+  'finite number',
   "controlType === 'listbox'",
   "stateType === 'list'",
   'text-list event-local value'
 ]);
+
+const windowBuild = read('_site/src/window-build.js');
+requireAll('Slider target capability boundary', windowBuild, ['allowSlider', 'Slider', 'not enabled for this Window target']);
 
 const nativeGuiV12 = read('_site/src/native-gui-ir-v12.js');
 requireAll('Native GUI IR 1.2 TreeView extension', nativeGuiV12, [
@@ -97,10 +113,15 @@ requireAll('sealed payload v12 TreeView contract', sealedV12, [
 const language = read('_site/language.html');
 requireAll('beta.35 Language page', language, [
   'data-patch-version="0.2.0-beta.35"',
+  'Slider Stage 1 is numeric and transient',
+  'slider 0..100 as volume step 5',
   'ListBox selection follows the state type',
   'create list fruits',
   'multi-select in Patch Studio App Preview and Standalone Window Web'
 ]);
+
+const docs = read('_site/docs.html');
+requireAll('beta.35 Documentation page', docs, ['docs/SLIDER_STAGE1.md', 'Slider Stage 1']);
 
 const help = read('_site/help.html');
 requireAll('beta.35 Help page', help, [
@@ -129,8 +150,10 @@ requireAll('beta.35 Service Worker', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'",
   "url.pathname.includes('/runtimes/')",
   "freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset",
+  './slider-stage1.js',
+  './src/window-events.js',
   './src/native-gui-ir-v12.js',
   './src/sealed-native-gui-v12.js'
 ]);
 
-console.log('ok Patch Studio beta.35+ browser/native parity site surface');
+console.log('ok Patch Studio beta.35+ Slider browser / native v1.3 fail-closed site surface');
