@@ -61,7 +61,7 @@ requireAll('beta.35 Studio example module', beta35Studio, [
 
 const sliderStudio = read('_site/slider-stage1.js');
 requireAll('Slider Stage 1 Studio module', sliderStudio, [
-  'addSlider', 'sliderWindow', 'addDesignerControl', "'slider'", 'changed'
+  "document.querySelector('#addSlider')", 'addDesignerControl', "'slider'", 'patch-slider'
 ]);
 
 const studioAdapter = read('_site/table-stage1.js');
@@ -113,7 +113,7 @@ requireAll('sealed payload v12 TreeView contract', sealedV12, [
 const language = read('_site/language.html');
 requireAll('beta.35 Language page', language, [
   'data-patch-version="0.2.0-beta.35"',
-  'Slider Stage 1 is numeric and transient',
+  'Slider Stage 1 uses transient numbers',
   'slider 0..100 as volume step 5',
   'ListBox selection follows the state type',
   'create list fruits',
@@ -151,9 +151,9 @@ requireAll('beta.35 Service Worker', sw, [
   "url.pathname.includes('/runtimes/')",
   "freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset",
   './slider-stage1.js',
-  './src/window-events.js',
-  './src/native-gui-ir-v12.js',
-  './src/sealed-native-gui-v12.js'
+  '../src/window-events.js',
+  '../src/native-gui-ir-v12.js',
+  '../src/sealed-native-gui-v12.js'
 ]);
 
 console.log('ok Patch Studio beta.35+ Slider browser / native v1.3 fail-closed site surface');
