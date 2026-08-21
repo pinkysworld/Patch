@@ -19,6 +19,7 @@ if (pkg.version !== '0.2.0-beta.35') throw new Error(`Unexpected Patch site pack
 
 for (const rel of [
   '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
+  '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/slider-stage1.js','_site/table-stage1.js',
   '_site/tree-designer.js','_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-workspace.js',
@@ -46,6 +47,7 @@ requireAll('Studio shell', index, [
   'Project Outline', 'multi-file project bundle v3', 'source-backed browser Slider Stage 1',
   'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
   'hierarchical TreeView', 'runtime v1.3', 'Native GUI IR 1.2', 'payload v12',
+  'Local-first Studio', 'Ready desktop builds', 'Explicit persistence', 'Quick start and shortcuts',
   'id="addSlider"', 'id="addTree"', './slider-stage1.js', './tree-designer.js', './designer-workspace.js',
   './designer-core-selection.js', './runtime-integrity.js', './native-build.js', './studio-outline.js'
 ]);
@@ -53,6 +55,15 @@ rejectAll('Studio shell', index, [
   'currently browser-only and native builds fail closed',
   'Current native Ready/AOT/offline Window builds do not claim list-backed multi-select ListBox support.'
 ]);
+
+const refreshCss = read('_site/site-refresh.css');
+requireAll('Shared website refresh', refreshCss, [
+  '.site-tabs', '.studio-launchpad', '.studio-snapshot', '.studio-guide',
+  '.docs-contract-grid', '.docs-commandbar', '.docs-search', '.doc-link',
+  '@media (prefers-reduced-motion: reduce)', '@media (forced-colors: active)'
+]);
+const navigationCss = read('_site/site-navigation.css');
+requireAll('Website navigation refresh import', navigationCss, ['@import url("./site-refresh.css")']);
 
 const playground = read('_site/playground.js');
 requireAll('Designer renderer boundary', playground, [
@@ -170,14 +181,25 @@ const downloads = read('_site/downloads.html');
 requireAll('Downloads page', downloads, [
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz',
   'SHA256SUMS','Native GUI IR <strong>1.2</strong>','payload <strong>v12</strong>','runtime <strong>v1.3</strong>',
-  'hierarchical TreeView','runtime-manifest.json','native-win32-runtime-v1.3','native-macos-runtime-v1.3','native-linux-runtime-v1.3'
+  'hierarchical TreeView','runtime-manifest.json','native-win32-runtime-v1.3','native-macos-runtime-v1.3','native-linux-runtime-v1.3',
+  'Slider Stage 1 is currently a Patch Studio and Standalone Window Web feature',
+  'Native Slider parity requires a future versioned native GUI contract'
 ]);
 
 const docs = read('_site/docs.html');
 requireAll('Documentation page', docs, [
-  'docs/SLIDER_STAGE1.md','Slider Stage 1','docs/PATCH_STUDIO.md','docs/STUDIO_SELECTION_ARCHITECTURE.md','docs/STUDIO_KEYBOARD_ACCESSIBILITY.md',
-  'docs/COMPILER.md','docs/OFFLINE_COMPILER.md','docs/FORMAL_MODEL.md',
-  'docs/NATIVE_GUI.md','docs/NATIVE_APPS.md','docs/ROADMAP.md','Native GUI IR 1.2 / payload v12 / runtime v1.3'
+  'One current map of Patch.', 'id="docFilter"', 'id="docFilterStatus"', 'Find docs',
+  'docs/SLIDER_STAGE1.md','Slider Stage 1','docs/PATCH_STUDIO.md','docs/STUDIO_AUTHORING_SURFACE.md',
+  'docs/STUDIO_SELECTION_ARCHITECTURE.md','docs/STUDIO_KEYBOARD_ACCESSIBILITY.md',
+  'docs/COMPILER.md','docs/OFFLINE_COMPILER.md','docs/FORMAL_MODEL.md','docs/REPRODUCIBILITY_BUNDLE.md',
+  'docs/NATIVE_GUI.md','docs/NATIVE_APPS.md','docs/TARGETS.md','docs/ROADMAP.md',
+  'Native GUI IR 1.2 / payload v12 / runtime v1.3', 'beta.32 assurance boundary'
+]);
+
+const help = read('_site/help.html');
+requireAll('Help page current control surface', help, [
+  'Slider Stage 1', 'ListBox: single or multi-select', 'Keyboard-only structural Properties',
+  'Ready runtime verification', 'Offline compiler', 'Native runtime v1.3 is TreeView-capable but Slider-free'
 ]);
 
 const compiler = read('_site/src/compiler.js');
@@ -193,7 +215,7 @@ requireAll('sealed payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSIO
 
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache', sw, [
-  "const PATCH_RELEASE = '0.2.0-beta.35'", "url.pathname.includes('/runtimes/')",
+  "const PATCH_RELEASE = '0.2.0-beta.35'", "url.pathname.includes('/runtimes/')", './site-refresh.css',
   './slider-stage1.js','./designer-selection.js','./designer-core-selection.js','./designer-workspace.js','./designer-ux.js','./designer-ux.css',
   './designer-toolbox.js','./designer-toolbox.css','./designer-structure-ux.js','./designer-structure-ux.css',
   './form-designer-workflow.js','./form-designer-workflow.css','./tree-designer.js','./designer-structural-keyboard.js',
@@ -203,4 +225,4 @@ requireAll('Service worker current compiler cache', sw, [
 const integrity = read('_site/runtime-integrity.js');
 requireAll('Runtime integrity gate', integrity, ['runtime-manifest.json','SHA-256','crypto.subtle']);
 
-console.log('ok current Patch Studio public site surface: beta.35+ Slider browser contract / native v1.3 fail-closed / completed shared Designer architecture');
+console.log('ok current Patch website: beta.35+ Studio refresh / searchable docs / Slider browser contract / native v1.3 fail-closed / completed core Designer surface');
