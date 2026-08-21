@@ -160,6 +160,11 @@ export function listDesignerControls(source) {
       if (child.kind === 'uiControl' && child.control === 'tree') {
         item.treeNodes = cloneTreeNodes(child.treeNodes);
       }
+      if (child.kind === 'uiControl' && child.control === 'slider') {
+        item.min = child.min;
+        item.max = child.max;
+        item.step = child.step;
+      }
       controls.push(item);
       controlIndex += 1;
     }
@@ -198,12 +203,22 @@ export function updateDesignerControl(source, selector, changes = {}) {
     if (nextOptions.length < 2) throw new Error(`A ${label} needs at least two options.`);
   }
 
+  let slider = null;
+  if (control.type === 'slider') {
+    const min = sliderNumber(Object.hasOwn(changes, 'min') ? changes.min : control.min, 'minimum');
+    const max = sliderNumber(Object.hasOwn(changes, 'max') ? changes.max : control.max, 'maximum');
+    const step = sliderNumber(Object.hasOwn(changes, 'step') ? changes.step : control.step, 'step');
+    if (!(min < max)) throw new Error('Slider minimum must be smaller than its maximum.');
+    if (!(step > 0)) throw new Error('Slider step must be greater than zero.');
+    slider = { min, max, step };
+  }
+
   const layout = normalizeControlLayout(control, changes);
   const indent = indentOf(lines[lineIndex]);
   if (control.type === 'table') {
     lines[lineIndex] = `${indent}${formatTableControl(nextId, control.columns ?? [], layout)}`;
   } else {
-    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions)}`;
+    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider)}`;
   }
 
   if (oldId && nextId !== oldId && control.type !== 'tabs') renameEventHeaders(lines, oldId, nextId);
@@ -311,6 +326,12 @@ function controlDimension(value, name) {
   return number;
 }
 
+function sliderNumber(value, name) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) throw new Error(`Slider ${name} must be a finite number.`);
+  return number;
+}
+
 function windowDimension(value, name) {
   const number = Number(value);
   const minimum = name === 'width' ? 120 : 80;
@@ -362,10 +383,11 @@ function makeControl(type, lines, layout) {
   if (type === 'radio') return formatControl(type, nextId(lines, 'radio'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'combo') return formatControl(type, nextId(lines, 'combo'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'listbox') return formatControl(type, nextId(lines, 'listbox'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
+  if (type === 'slider') return formatControl(type, nextId(lines, 'slider'), null, layout, null, { min: 0, max: 100, step: 1 });
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
-function formatControl(type, id, textExpr, layout, options = null) {
+function formatControl(type, id, textExpr, layout, options = null, slider = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
@@ -374,6 +396,7 @@ function formatControl(type, id, textExpr, layout, options = null) {
   else if (type === 'radio') core = `radio ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
+  else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
   else if (type === 'tree') core = `tree as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
@@ -387,6 +410,11 @@ function formatTableControl(id, columns, layout) {
   const core = `table ${(columns ?? []).join(', ')} as ${id}`;
   if (!layout) return `${core}:`;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  return Number.isInteger(number) ? String(number) : String(number);
 }
 
 function cloneTreeNodes(nodes = []) {
