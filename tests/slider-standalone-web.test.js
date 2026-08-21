@@ -25,9 +25,10 @@ test('Standalone Window Web builds Slider Stage 1 without widening native GUI v1
   assert.match(built.html, /input\.step=String\(control\.step\?\?1\)/);
   assert.match(built.html, /Number\(input\.value\)/);
   assert.match(built.html, /finite numeric event-local value/);
+  assert.match(built.html, /needs a value from/);
 });
 
-test('generated Slider Web runtime emits numeric changed values and keeps input display live', () => {
+test('generated Slider Web runtime emits bounded numeric changed values and keeps input display live', () => {
   const built = buildStandaloneWebApp(source, { name: 'SliderRuntime', kind: 'window' });
   const scripts = [...built.html.matchAll(/<script data-patch-window-accessibility>([\s\S]*?)<\/script>/g)];
   assert.equal(scripts.length, 1);
@@ -65,6 +66,7 @@ test('generated Slider Web runtime emits numeric changed values and keeps input 
   const context = vm.createContext({ document, console, structuredClone });
   vm.runInContext(`
 class PatchAppError extends Error {}
+var PROGRAM = [{ kind:'window', body:[{ kind:'uiControl', control:'slider', id:'volume', min:0, max:100, step:5 }] }];
 var state = new Map([['volume', 25]]);
 var rendered = null;
 var triggered = [];
@@ -74,7 +76,7 @@ function renderControl(control) { const el = document.createElement('div'); el.t
 function trigger(control,event,payload) { triggered.push({ control, event, payload }); return payload; }
 function safeTrigger(control,event,payload) { return trigger(control,event,payload); }
 function render() {
-  const model = buildUIItems([{ kind:'uiControl', control:'slider', id:'volume', min:0, max:100, step:5 }])[0];
+  const model = buildUIItems(PROGRAM[0].body)[0];
   rendered = renderControl(model, 'main', 0);
 }
 `, context);
@@ -104,5 +106,9 @@ function render() {
   assert.throws(
     () => context.trigger('volume', 'changed', { value: '40' }),
     /finite numeric event-local value/
+  );
+  assert.throws(
+    () => context.trigger('volume', 'changed', { value: 140 }),
+    /value from 0 to 100/
   );
 });
