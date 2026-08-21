@@ -9,7 +9,7 @@
 
 **Current development beta: `0.2.0-beta.35`** · **Change IR: `0.10`** · **Native GUI IR: `1.2`** · **sealed desktop runtime: `v1.3`**
 
-[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Spec](docs/SPEC.md) · [Compiler](docs/COMPILER.md) · [Formal model](docs/FORMAL_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Beta.35 notes](docs/BETA35.md) · [Paper](paper/README.md)
+[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
 Patch is built around one rule:
 
@@ -22,195 +22,171 @@ change score:
 show score
 ```
 
-This mandatory mutation substrate supports history, undo/redo, provenance, semantic Change Signatures, magnitude-aware Change Capabilities, range evidence and generated Lean certificates.
+That mandatory mutation substrate is reused for Change History, undo/redo, provenance, semantic Change Signatures, magnitude-aware Change Capabilities, range evidence and generated Lean certificates.
 
-## Current status
+## Current product snapshot
 
-| Area | Status |
+| Area | Current status |
 |---|---|
 | Language | Working interpreter/compiler frontend; Change IR 0.10 |
-| Formal core | State-Change Factorization, signature soundness, policy containment, integer range soundness |
-| Calls | Exact safe-integer binding, guarded structured traces, finite transitive exact call trees |
-| Runtime assurance | Invocation-frame-aware direct-Wasm correspondence, including repeated identical calls |
-| Patch Studio | Browser IDE, canonical multi-file project bundle v3, Project Tree, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
-| Window UI | Forms, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Tabs/Table/TreeView, menus and result-bearing dialogs |
-| Browser ListBox | Text-backed ListBox remains single-select; list-backed ListBox is multi-select with transient text-list `value` in Studio Preview and Standalone Web |
-| Native desktop GUI | Native GUI IR 1.2 / sealed runtime v1.3 with Win32, AppKit and GTK3 Table, persistent list-backed ListBox, Menu state/shortcuts and hierarchical TreeView |
-| TreeView semantics | A TreeView `changed` event exposes the selected root-to-node display path as transient text-list `value`; persistence still requires explicit `change` |
-| Ready Window ABI | Sealed payload v12 / runtime v1.3 on Windows, macOS and Linux; v11/runtime v1.2 and earlier contracts remain explicit compatibility lines |
-| Ready runtime integrity | Pages verifies release SHA-256 digests and Patch Studio re-hashes every browser-consumed runtime template before packaging |
-| Desktop | Ready Windows/macOS/Linux Console and Window downloads; FreeBSD Console via C99 |
+| Patch Studio | Browser IDE with **canonical multi-file project bundle v3**, Project Tree, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
+| Designer controls | Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider Stage 1**, Table, TreeView and Tabs |
+| Slider | Source-backed numeric range control in Studio and Standalone Window Web; bounded finite numeric transient `value`; native v1.3 intentionally fails closed |
+| Table | Source-backed grid and structural Properties editing; the selected row is delivered as the transient list-valued `value` |
+| ListBox | Text-backed single-select plus list-backed native/browser multi-select with transient text-list value |
+| TreeView | Source-backed hierarchy with transient root-to-node path; current native line includes **hierarchical TreeView** |
+| Native desktop GUI | Native GUI IR 1.2 / sealed **payload v12 / runtime v1.3** on Win32, AppKit and GTK3 |
+| Runtime integrity | Pages verifies GitHub Release SHA-256 asset digests; Studio re-hashes runtime templates before token-free sealing |
+| Formal milestone | beta.32 invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment |
+| Product backlog | Current repository-controlled beta.35+ Studio/compiler backlog closed; credential/manual/research evidence gates are tracked separately in `docs/ROADMAP.md` |
 
-## Beta.35: list-backed ListBox multi-select
+## Patch Studio
 
-Beta.35 introduced a browser-first multi-select contract without adding new Patch syntax or changing Change IR 0.10. A ListBox whose `as` id is backed by `create list` is rendered as a multi-select control in Patch Studio App Preview and Standalone Window Web. Its `changed` handler receives a copied list of selected display strings as transient event-local `value`.
+Patch Studio keeps visual application structure in ordinary `.patch` source. Form dimensions, control geometry, Slider ranges, Table rows, TreeView hierarchy, Tabs pages and Menu structure are not stored in a hidden second form document.
+
+The current Designer includes:
+
+- source-backed Forms and controls;
+- resizable/collapsible Properties;
+- categorized Add Control discovery;
+- pointer and keyboard movement/resizing;
+- alignment and layout actions;
+- source-backed Table/TreeView/Tabs structural editors;
+- top-level and nested duplication/reorder workflows;
+- structural keyboard accessibility and focus restoration;
+- multi-file projects, recovery and local privacy-redacted diagnostics.
+
+The public Studio now surfaces the current contract and quick-start shortcuts directly above the IDE workspace. The Documentation page provides a categorized, locally filterable index without telemetry or an external search service.
+
+See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) and [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md).
+
+## Slider Stage 1
+
+Slider Stage 1 adds a numeric range control without changing Change IR 0.10:
 
 ```patch
-create list fruits = ["Banana", "Mango"]
+create number volume = 50
 
-window "Fruit Picker":
-  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+window "Mixer" as main size 560, 300:
+  text "Volume: {volume}"
+  slider 0..100 as volume step 5 at 24, 80 size 300, 44
 
-when fruits changed:
-  change fruits:
+when volume changed:
+  change volume:
     set = value
 ```
 
-Selection itself remains UI state. Persistent `fruits` changes only because the handler executes an explicit semantic `change`. A ListBox backed by `create text` remains the existing single-select control and continues to expose a text `value`.
+The event-local `value` is a finite number inside the declared range. The control does not persist that number by itself. Persistence happens only because source executes the ordinary semantic `change`.
 
-The original beta.35 browser-only boundary has since been closed for supported desktop targets. Native GUI IR 1.1 added persistent list state and native multi-select ListBox semantics, runtime v1.2 carried the Menu/list contract, and the current Native GUI IR 1.2 / payload v12 / runtime v1.3 line preserves those semantics while adding TreeView. Legacy payload/runtime contracts stay frozen and fail closed when a program requires a newer feature.
+Slider Stage 1 works in Patch Studio App Preview, source-backed Designer authoring, Tabs insertion and Standalone Window Web. The frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 line intentionally remains Slider-free and fails closed rather than silently dropping the control or falling back to Electron.
 
-See [`docs/BETA35.md`](docs/BETA35.md) and [`docs/NATIVE_LIST_STATE.md`](docs/NATIVE_LIST_STATE.md).
+See [`docs/SLIDER_STAGE1.md`](docs/SLIDER_STAGE1.md).
 
-## Patch Studio and the current native GUI line
+## ListBox, Table and TreeView event semantics
 
-Patch Studio keeps visual UI structure source-backed in `.patch` code. Form dimensions, control geometry, Table columns/rows, TreeView hierarchy, Tabs pages and Menu structure are not stored in a second hidden form format.
+GUI input remains transient until source commits it:
 
-Table and TreeView selection follow the same semantic rule as the rest of Patch GUI input. A Table `changed` event exposes the selected row as a transient list-valued `value`. A TreeView `changed` event exposes the selected root-to-node display path as a transient text-list `value`. Toolkit or browser selection itself does not mutate persistent Patch state. Persistent state still changes only through an explicit `change`.
+- Input, ComboBox, Radio and text-backed ListBox: transient text `value`;
+- Checkbox: transient Boolean `value`;
+- Slider: bounded finite numeric `value`;
+- list-backed ListBox: transient text-list of selected display strings;
+- Table: transient text-list for the selected row;
+- TreeView: transient text-list for the selected root-to-node display path.
 
-The native desktop path is deliberately versioned instead of silently redefining older formats:
+Renderer or native-toolkit selection itself never becomes hidden Patch state.
 
-- **Native GUI IR 0.7** remains the frozen base-control compatibility surface;
-- **Native GUI IR 0.8** introduced the Table extension;
-- **Native GUI IR 1.1 / payload v11 / runtime v1.2** added persistent list state, native multi-select ListBox and source-backed Menu state/shortcuts;
-- **Native GUI IR 1.2 / payload v12 / runtime v1.3** is the current Ready/offline contract and adds hierarchical TreeView;
-- direct Win32/AppKit/GTK backends expose the same current TreeView-capable semantics;
-- older payload/runtime versions remain frozen compatibility lines and do not silently accept newer source constructs.
+## Native desktop contract
 
-The dedicated sealed-runtime workflow independently gates the shared payload contract and then compiles, seals, links and smoke-runs the TreeView example on Windows, macOS and Linux. The ordinary offline compiler matrix separately exercises local `patch link` output.
+The desktop path is explicitly versioned rather than redefining older formats in place:
 
-## Beta.34: Studio correctness and runtime integrity
+- Native GUI IR 0.7: frozen base-control compatibility surface;
+- Native GUI IR 0.8 / payload v9 / runtime v1.0: Table compatibility line;
+- payload v10 / runtime v1.1: persistent list-state compatibility line;
+- payload v11 / runtime v1.2: Menu + list compatibility line;
+- **Native GUI IR 1.2 / payload v12 / runtime v1.3:** current TreeView-capable Ready/offline line.
 
-Beta.34 hardened the product layer after the payload-v9/runtime-v1.0 switch. It did not widen the beta.32 formal assurance claim and did not change Change IR 0.10.
+Windows, macOS and Linux default to **Ready app download (no token)**. Browser-consumed runtime assets are SHA-256 verified before packaging. The offline compiler independently links and smoke-runs current Window artifacts on the supported hosts. FreeBSD remains Console-only through portable C99.
 
-A code review found that some programmatic Patch Studio edits, especially sample switching and older Designer add/edit/delete paths, could change visible source while only updating the legacy unversioned browser key. Beta.34 normalized programmatic source and Project Type mutations into the same DOM event path used by manual editing. The canonical project lifecycle, recovery snapshots, Designer refresh, Change Contract refresh and native-build panel therefore observe one consistent project state. The project format has since advanced to multi-file bundle v3 with an explicit Project Tree.
+Unsupported new native behavior fails closed. There is no implicit Electron fallback; the explicitly labelled compatibility package is separate.
 
-The browser no-token packaging path adds a fail-closed runtime-integrity step for every runtime template it consumes. Pages downloads the exact Console, compatibility Window and native GUI assets used by Patch Studio, reads the SHA-256 digest recorded by GitHub for each asset and independently re-hashes those bytes before publishing a verified runtime manifest. Patch Studio then hashes the selected runtime again with Web Crypto before packaging. A missing manifest entry or mismatch stops the build instead of silently producing an application from unexpected runtime bytes. The current native GUI release gate is runtime v1.3.
+## Project format and local-first behavior
 
-The service worker also treats same-origin `/runtimes/` requests as fresh-first. Online builds therefore ask the current deployment for the runtime and integrity manifest, while successfully fetched bytes remain available as an offline fallback.
+Patch Studio uses project bundle **version 3** with bounded multi-file sources, deterministic composition/provenance, project name, Console/Window kind, selected build target and native build mode. Older project versions migrate explicitly and unknown future versions fail closed.
 
-See [`docs/BETA34.md`](docs/BETA34.md) for the exact historical scope and trust boundary.
+Recovery snapshots preserve the complete project. Diagnostics are privacy-redacted and local. No diagnostics upload path exists in Studio.
 
-## Beta.33: Studio and production-readiness layer
+## Compiler and formal assurance
 
-Beta.33 advanced the product layer without widening the beta.32 formal runtime-correspondence claim. Patch Studio introduced a version-2 project bundle that preserved the selected build target and native build mode alongside name, project kind and source. The current project bundle is v3 and adds bounded multi-file Patch sources, deterministic composition/provenance and the source-backed Project Tree.
+Patch keeps Change IR at **0.10** while the assurance layer has advanced through exact call binding, structured/guard-aware traces, finite transitive call trees and beta.32 invocation frames.
 
-The source-backed Designer can resize both controls and the Form window itself. A Form may grow beyond the visible Designer viewport and remains reachable through horizontal/vertical scrolling rather than being clamped back to the current pane width.
-
-The public site is split into focused **Studio**, **Language**, **Documentation**, **Downloads** and **Help** pages. Studio remains an IDE instead of doubling as a long project landing page.
-
-Recent production work also includes stable `PATCHxxxx` diagnostics, versioned CLI JSON results, recovery snapshots, local privacy-redacted `.patchreport` diagnostics, build cancel/timeout/retry, tagged-release integrity manifests, CodeQL/security gates, deterministic grammar fuzzing, Interpreter/direct-Wasm/C99 differential testing, Change/Undo property tests and logical artifact reproducibility checks.
-
-## Beta.32: independently reconstructed invocation frames
-
-Beta.31 connected beta.30 finite exact call trees to an actually executed direct-Wasm trace, but deliberately rejected repeated indistinguishable call traces because scoped-slice attribution was ambiguous.
-
-Beta.32 removes that restriction without adding trusted call-enter/call-exit markers to the backend. The independent Change-IR validator reconstructs every concrete `DO` invocation frame with:
+Beta.32 independently reconstructs concrete call frames from validated execution transitions and distinguishes repeated identical calls. The standard evidence set includes:
 
 ```text
-frameId
-parentFrameId
-callerScope
-callee
-dynamic invocation ordinal
-depth
-exact argument values
-exact parameter BindingList
-transitionStart / transitionEndExclusive
+formal/GeneratedTransitiveRuntimeCertificate.lean
+formal/GeneratedRepeatedTransitiveRuntimeCertificate.lean
+formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean
 ```
 
-Every independently validated transition/effect also carries its active frame stack. Runtime correspondence therefore selects effects by **concrete frame identity**, rather than requiring a globally unique effect sequence.
+`GeneratedRepeatedTransitiveRuntimeCertificate.lean` is checked in standard Formal CI together with the other generated evidence.
 
-The assurance pipeline is:
+The assurance claim remains intentionally scoped. Runtime trace capture, correctness/completeness of the independent JavaScript validator/frame reconstruction, remaining parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine remain explicit proof-free/trust boundaries. Patch does **not** claim full compiler/runtime verification.
 
-```text
-Patch source
-  -> existing direct-Wasm compiler
-  -> execute real Wasm module
-  -> raw target/before/after transitions
-  -> independent Change-IR execution + complete trace validation
-  -> independently reconstructed concrete invocation frames
-  -> frame-selected observed semantic effects
-  -> Lean: runtime frame BindingList = beta.30 exact BindingList
-  -> Lean: evalCallTreeStmtEqBool exactCallTree observedEffects = true
-  -> observed trace refines caller semantic signature
-```
+See [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md), [`docs/RUNTIME_CORRESPONDENCE.md`](docs/RUNTIME_CORRESPONDENCE.md) and [`docs/REPRODUCIBILITY_BUNDLE.md`](docs/REPRODUCIBILITY_BUNDLE.md).
 
-`examples/formal-transitive-calls-repeated.patch` executes two identical `do caller(1)` calls. Beta.32 reconstructs different concrete frames for both and generates separate certifiable observations rather than rejecting them as ambiguous.
+## Research and evaluation boundary
 
-### Lean bridge
+The repository already contains:
 
-`formal/PatchCallRuntime.lean` retains:
+- semantic-authority security ablations;
+- internally authored checkout/loyalty and usage/quota extension cases;
+- process-isolated assurance-overhead measurement tooling;
+- a fixed-machine controlled-measurement procedure;
+- commit-bound reproducibility bundles;
+- structured related-work comparisons.
 
-```text
-checkedObservedTransitiveRuntimeRefinesCallerSignature
-```
+It does **not** invent missing evidence. Controlled paper-quality measurements, statistical analysis over that future dataset and a genuine external/third-party integration study remain open research gates. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-The beta.32 generated certificate adds a mechanically checked equality between each independently reconstructed runtime-frame `BindingList` and the corresponding beta.30 exact callee binding before re-evaluating the frame-selected observed effect list against `CallTreeStmt`.
+## Core candidate contribution
 
-Reproducible certificates:
-
-```bash
-npm run transitive-runtime-certify:example
-npm run transitive-runtime-certify:repeated
-```
-
-Generated files:
-
-```text
-GeneratedTransitiveRuntimeCertificate.lean
-GeneratedRepeatedTransitiveRuntimeCertificate.lean
-```
-
-Standard Formal CI verifies both with pinned Lean. Standard Windows/macOS/Linux CI executes the direct-Wasm programs and regenerates the evidence.
-
-### Exact beta.32 boundary
-
-Covered:
-
-- actual execution of the existing direct-Wasm backend;
-- complete raw transition validation against the independent Change-IR executor;
-- independently reconstructed semantic operation identity, recipe scope and concrete invocation frames;
-- exact safe-integer frame parameter bindings;
-- repeated identical finite calls distinguished by dynamic frame identity;
-- frame-selected observed effects re-evaluated against beta.30 exact call trees in Lean;
-- caller-signature refinement for the accepted observed lists.
-
-Still explicit proof-free/trust boundaries:
-
-- runtime trace capture;
-- correctness/completeness of the independent JavaScript validator and invocation-frame reconstruction;
-- production parser/extractor correctness outside independently cross-checked supported fragments;
-- JavaScript-to-Wasm lowering correctness;
-- Wasm engine correctness.
-
-Beta.32 **does not claim full compiler/runtime simulation or full compiler verification**.
-
-## Earlier assurance milestones
-
-- **Beta.31:** first conservative call-aware direct-Wasm correspondence, requiring one globally unambiguous scoped trace.
-- **Beta.30:** finite transitive exact call-tree semantics with nested binding, rank decrease and edge-by-edge signature import.
-- **Beta.29:** exact `GuardExpr` branch selection under exact recipe-parameter bindings.
-- **Beta.28:** exact direct quantitative sequence/static-repeat callee traces.
-- **Beta.25-27:** finite abstract call composition, exact positional binding and integer `RangeExpr` coverage.
-- **Beta.23:** conservative guard-aware direct-runtime/capability correspondence.
-
-## Studio and builds
-
-Patch Studio provides source editing, Console/Window Run, Change Contract/IR views, source-backed Designer editing, multi-file project export/import/recovery, a source-backed Project Tree and ready desktop builds. The Studio, Language, Documentation, Downloads and Help surfaces are separate web pages sharing one navigation bar.
-
-Windows, macOS and Linux default to **Ready app download (no token)**. Current Window builds use Native GUI IR 1.2, sealed payload v12 and runtime v1.3, including hierarchical TreeView. Every browser-consumed runtime template used by that path is SHA-256 verified before packaging. FreeBSD Console uses the portable C99 backend. The optional cloud/AOT route is explicitly separate and does not persist its GitHub token.
-
-GUI input remains semantic: Input/ComboBox/Radio and text-backed ListBox expose transient text `value`; Checkbox exposes transient Boolean `value`; list-backed ListBox exposes transient text-list `value`; Table exposes the selected row as transient list-valued `value`; TreeView exposes the selected root-to-node display path as transient text-list `value`. Persistent state changes only through explicit Patch `change`.
-
-## Change IR 0.10
-
-The current Native GUI IR 1.2 TreeView extension, like the earlier Table/List/Menu work, does not change the production Change IR schema. Invocation frames and runtime certificates remain separate assurance artifacts reconstructed from the existing Change IR execution model.
-
-## Research boundary
-
-Patch does not claim novelty for effects, capabilities, procedure semantics, invocation frames, call graphs, transitive traces, runtime validation, proof-carrying evidence, WebAssembly or GUI packaging.
+Patch does not claim novelty for effects, capabilities, procedure semantics, call graphs, invocation frames, runtime validation, proof-carrying evidence, WebAssembly or GUI packaging.
 
 The primary candidate contribution remains:
 
 > **ordinary persistent mutation is factored through a mandatory semantic Change representation, and operation-/magnitude-aware semantic authority is derived from that same mutation substrate.**
+
+Expressibility is not the novelty claim. Rich refinement/effect systems can express stronger relations. Patch's candidate distinction is the mandatory/default mutation architecture and the reuse of the same semantic mutation substrate for authority, history and assurance.
+
+## Quick commands
+
+```bash
+npm test
+npm run check:site
+npm run check:project-surface
+npm run build:site
+```
+
+Offline compiler examples:
+
+```bash
+patch check app.patch --json
+patch build app.patch --target web
+patch link app.patch --out App
+patch doctor --json
+```
+
+## Documentation map
+
+- [`docs/SPEC.md`](docs/SPEC.md) – language specification
+- [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) – browser IDE and build paths
+- [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) – current visual authoring inventory
+- [`docs/SLIDER_STAGE1.md`](docs/SLIDER_STAGE1.md) – Slider syntax/event/native boundary
+- [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md) – current native contract
+- [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) – downloadable compiler/linker
+- [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md) – release and operational boundaries
+- [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md) – mechanized assurance scope
+- [`docs/EVALUATION.md`](docs/EVALUATION.md) – measurement harness
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) – closed core backlog plus external/research gates
+
+## License and status
+
+Patch is an active research/prototype language and IDE. Version labels and compatibility lines are explicit so product progress does not silently broaden older runtime or formal claims.

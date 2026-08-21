@@ -46,6 +46,11 @@ patch link app.patch --out App</pre>
   </section>
 
   <section class="page-section">
+    <h2>Current native boundary</h2>
+    <p><strong>Slider Stage 1 is currently a Patch Studio and Standalone Window Web feature.</strong> Native GUI IR 1.2 / payload v12 / runtime v1.3 intentionally remains Slider-free. A Slider program presented to the current native Ready/offline linker fails closed rather than silently dropping the control or falling back to Electron. Native Slider parity requires a future versioned native GUI contract.</p>
+  </section>
+
+  <section class="page-section">
     <h2>Verify a download</h2>
     <p>Download <code>SHA256SUMS</code> into the same folder as the compiler asset and verify the exact bytes before first use or after replacing a rolling-beta download.</p>
     <pre class="page-code"># Linux, or macOS with sha256sum installed

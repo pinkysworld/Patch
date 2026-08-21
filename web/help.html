@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio help for multi-file projects, source-backed Designer controls, structural Properties keyboard editing, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
+  <meta name="description" content="Patch Studio help for multi-file projects, Slider Stage 1, source-backed Designer controls, structural Properties keyboard editing, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
   <title>Help · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,7 +24,7 @@
     <div>
       <p class="page-eyebrow">Patch Studio help · 0.2 beta.35+</p>
       <h1>Build something without fighting the IDE.</h1>
-      <p>Quick help for editing, multi-file projects, visual form design, keyboard-only structural Properties, project recovery, verified Ready builds and local downloads.</p>
+      <p>Quick help for editing, multi-file projects, Slider Stage 1, visual form design, keyboard-only structural Properties, project recovery, verified Ready builds and local downloads.</p>
     </div>
     <pre class="page-code">Run   Ctrl/Cmd + Enter
 Build Ctrl/Cmd + Shift + Enter
@@ -45,12 +45,24 @@ Ctrl/Cmd + Enter: apply / rename</pre>
   <section class="page-section">
     <h2>Design a Window app</h2>
     <div class="help-step"><b>1</b><p>Choose <strong>Window</strong> as the project type or open a Window example.</p></div>
-    <div class="help-step"><b>2</b><p>Use the Designer palette to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, Table, TreeView or Tabs controls. Table, TreeView and Tabs expose source-backed structural editors in Properties. Their common <strong>Structure</strong> summary shows the current size and provides quick Add/Source actions; filters narrow TreeView nodes, Tabs pages and controls inside the selected page without changing Patch source.</p></div>
+    <div class="help-step"><b>2</b><p>Use the Designer palette or categorized Add control picker to add Text, Button, Input, Checkbox, Radio, Combo, ListBox, <strong>Slider</strong>, Table, TreeView or Tabs controls. Slider exposes source-backed id/range/step Properties. Table, TreeView and Tabs expose source-backed structural editors in Properties.</p></div>
     <div class="help-step"><b>3</b><p>Select a control to move it. Drag it to snap nearby edges and centers to visible alignment guides, hold Alt while dragging to bypass snapping, use the arrow keys for 1 px source-backed positioning, hold Shift for 10 px keyboard steps, or edit X/Y/W/H in Properties. Drag its resize grip to change its size.</p></div>
     <div class="help-step"><b>4</b><p>Use Ctrl-click, Cmd-click or Shift-click to add or remove controls from the current selection. The solid control is the primary control. Drag or keyboard-move that primary control to move the selected group together. Alignment commands write the resulting positions back into Patch source.</p></div>
     <div class="help-step"><b>5</b><p>The Properties panel is wider on desktop, can be resized by dragging its left separator, can be hidden with the Properties button and remembers its local width. On narrower screens it moves below the canvas. Properties never stores a second hidden form model.</p></div>
     <div class="help-step"><b>6</b><p>Choose an Anchor or Dock policy in Properties when a control should react to Form resizing. Studio writes that policy visibly into source as a <code># @layout ...</code> directive.</p></div>
     <div class="help-step"><b>7</b><p>Resize the form itself from the lower-right grip. Forms may grow beyond the visible Designer width; use the Designer scrollbars to reach the rest. The same source-backed Anchor/Dock policy is honored by Standalone Web, direct native AOT, token-free Ready apps and supported offline-linked Window apps on Windows, macOS and Linux.</p></div>
+  </section>
+
+  <section class="page-section">
+    <h2>Slider Stage 1</h2>
+    <p>Slider Stage 1 is source-backed in the Designer and Standalone Window Web. Its <code>changed</code> event exposes a finite numeric <code>value</code> inside the declared range. Moving the control does not implicitly persist application state.</p>
+    <pre class="page-code">create number volume = 50
+window "Mixer":
+  slider 0..100 as volume step 5
+when volume changed:
+  change volume:
+    set = value</pre>
+    <p>Current Native GUI IR 1.2 / payload v12 / runtime v1.3 intentionally remains Slider-free. Native Ready/offline builds fail closed for Slider instead of silently dropping the control. Use Standalone Web for Slider applications until a future versioned native contract adds parity.</p>
   </section>
 
   <section class="page-section" data-structural-keyboard="roving-v1">
@@ -60,7 +72,7 @@ Ctrl/Cmd + Enter: apply / rename</pre>
     <p>With a Tabs page focused, <strong>Ctrl/Cmd + Arrow Up/Down</strong> reorders the page and <strong>Ctrl/Cmd + Enter</strong> focuses its title expression. In Table cells/columns, TreeView labels and Tabs titles, <strong>Ctrl/Cmd + Enter</strong> performs the corresponding Apply or Rename action.</p>
     <p>The filter field reports how many nodes/pages/controls remain visible and shows an explicit no-match state. An empty Table shows <strong>No rows yet</strong> with <strong>Add first row</strong>. These are IDE conveniences only: filtering never changes source, and the quick actions delegate to the existing source-backed structural editor actions.</p>
     <p>Inside an expanded nested Table or TreeView structure editor, <strong>Escape</strong> closes the editor and restores focus to its Edit button. These focus/selection states are IDE-only and never become Patch application state or Change History.</p>
-    <p>See <a href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md">Studio keyboard accessibility</a> for the complete shortcut and scope contract.</p>
+    <p>See <a href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md">Studio keyboard accessibility</a> for the complete shortcut and scope contract. Manual Narrator/VoiceOver/Orca verification remains a separate validation activity, not a claim of WCAG conformance.</p>
   </section>
 
   <section class="page-section" data-listbox-support="native-multiselect-v12">
@@ -106,20 +118,19 @@ when files changed:
 
   <section class="page-section" data-tabs-editor="source-backed">
     <h2>Tabs pages</h2>
-    <p>Select a Tabs control in the Designer to edit its source-backed page list in Properties. You can add a page, rename it, move it up or down, or delete it. Reordering preserves the full nested control body. Deleting a page also removes handlers for controls deleted with that page, preventing orphan event handlers. Page and page-control filters make larger Tabs structures easier to navigate without changing source.</p>
-    <p>The selected page also exposes its <strong>Page controls</strong>. Patch Studio can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly to that page, or remove an existing nested control. New named controls receive an id that is unique across top-level and nested controls. Nested Table and TreeView receive small valid source-backed starter structures, and removing either control removes its complete multi-line <code>row</code>/<code>node</code> block rather than leaving orphan source behind.</p>
-    <p>Nested Table and TreeView now have dedicated structural Properties editing too. Click <strong>Edit</strong> beside a nested Table to edit column/cell expressions and add or remove rows and columns. Click <strong>Edit</strong> beside a nested TreeView to add roots/children, rename nodes, move them up/down, indent/outdent or delete them. Every action rewrites only that nested Patch source block and validates the resulting source. Tabs cannot be nested inside Tabs, and the nested editor refuses to leave a page, Table or TreeView structurally invalid.</p>
+    <p>Select a Tabs control in the Designer to edit its source-backed page list in Properties. You can add, rename, reorder, duplicate or delete a page within the minimum-page boundary. Reordering/duplication preserves the complete nested control body and remaps ids/handlers where needed.</p>
+    <p>The selected page exposes its <strong>Page controls</strong>. Patch Studio can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly to that page; Slider Stage 1 is also available there as a source-backed nested control. Nested Table and TreeView receive valid source-backed starter structures and dedicated structural Properties editing.</p>
+    <p>Click <strong>Edit</strong> beside a nested Table to open its source-backed row/column structural Properties editor. Click <strong>Edit</strong> beside a nested TreeView to open its source-backed hierarchy structural Properties editor.</p>
     <pre class="page-code">window "Settings":
   tabs as settings:
     tab "General":
       text "General"
-      table "Name", "Value" as preferences:
-        row "Theme", "System"
+      slider 0..100 as zoom step 5
     tab "Advanced":
       tree as sections:
         node "Security"
           node "Keys"</pre>
-    <p>Tabs requires at least two pages, so the editor will not delete below that limit. Nested page controls use flow layout. Page selection remains transient renderer state and does not become persistent Patch state. Current Ready/offline builds use Native GUI IR 1.2 / payload v12 / runtime v1.3.</p>
+    <p>Tabs requires at least two pages. Tabs-inside-Tabs remains fail-closed. Nested page controls use flow layout and page selection remains transient renderer state.</p>
   </section>
 
   <section class="page-section">
@@ -131,8 +142,8 @@ when files changed:
   <section class="page-section">
     <h2>Build targets</h2>
     <div class="doc-links">
-      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Desktop apps</strong><span>Ready/no-token Windows, macOS and Linux paths plus local and cloud AOT build options.</span></a>
+      <a class="doc-link" href="./index.html"><strong>Standalone Web App</strong><span>Single HTML output for Console or Window projects, including Slider Stage 1.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Desktop apps</strong><span>Ready/no-token Windows, macOS and Linux paths plus local and cloud AOT options.</span></a>
       <a class="doc-link" href="./downloads.html"><strong>Offline compiler downloads</strong><span>Run, compile, verify and locally link supported Patch apps without opening Studio.</span></a>
     </div>
     <p>Credentials are only needed by the optional cloud/AOT route and are not persisted by Patch Studio. The normal Ready paths and downloaded offline compiler do not require them.</p>
@@ -157,6 +168,8 @@ when files changed:
     <p>Patch Studio uses content-addressed web revisions and fresh-first code/runtime requests. Reload once while online, or close and reopen an installed PWA.</p>
     <h3>A native build stops with an integrity error</h3>
     <p>Keep integrity verification enabled and reload Studio while online. If the release asset, deployed manifest and fetched runtime do not agree, Patch intentionally refuses to seal the app.</p>
+    <h3>A native build rejects Slider</h3>
+    <p>That is the current intentional boundary. Native runtime v1.3 is TreeView-capable but Slider-free. Build the application as Standalone Web or wait for a future versioned native Slider contract.</p>
     <h3>A TreeView or multi-select ListBox fails with a legacy payload</h3>
     <p>Use the current Native GUI IR 1.2 / payload v12 / runtime v1.3 path. Frozen older contracts intentionally fail closed rather than silently changing semantics.</p>
     <h3>I need support information</h3>
