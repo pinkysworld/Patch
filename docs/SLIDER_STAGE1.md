@@ -28,7 +28,7 @@ slider MIN..MAX as ID [step STEP] [at X, Y [size W, H]]
 
 Slider exposes only `changed`.
 
-Its event-local `value` is a finite **number**. The UI control does not persist that number by itself. Persistent application state changes only when Patch source executes an ordinary semantic `change`.
+Its event-local `value` is a finite **number inside the declared Slider range**. The shared Window event adapter fails closed on non-numeric, non-finite or out-of-range host values. The UI control does not persist that number by itself. Persistent application state changes only when Patch source executes an ordinary semantic `change`.
 
 This means:
 
@@ -49,7 +49,7 @@ commits the value through the ordinary Change IR / Change History path.
 
 If a persistent state variable has the same name as the Slider id, that state must be `number` state. A text/list/Boolean binding with the same id fails Window validation.
 
-Window event adapter **0.9** is the first contract that types Slider `changed` as a finite numeric event-local value.
+Window event adapter **0.9** is the first contract that types Slider `changed` as a bounded finite numeric event-local value.
 
 ## Compiler and IR
 
@@ -75,7 +75,8 @@ Patch Studio provides:
 - normal source-backed X/Y/width/height geometry;
 - App Preview rendering with an HTML range control;
 - live transient value display while dragging;
-- numeric `changed` dispatch when the interaction is committed;
+- bounded numeric `changed` dispatch when the interaction is committed;
+- Slider insertion inside source-backed Tabs pages using flow layout;
 - a Slider sample application.
 
 The Designer always rewrites visible `.patch` source. There is no hidden slider configuration document or second persistent UI model.
@@ -84,7 +85,7 @@ The Designer always rewrites visible `.patch` source. There is no hidden slider 
 
 Standalone Window Web supports Slider Stage 1.
 
-The generated single-file HTML app restores Slider metadata from the compiled AST, renders an accessible `<input type="range">`, exposes a live display value and validates that Slider `changed` receives a finite number before executing Patch handlers.
+The generated single-file HTML app restores Slider metadata from the compiled AST, renders an accessible `<input type="range">`, exposes a live display value and validates that Slider `changed` receives a finite in-range number before executing Patch handlers.
 
 The standalone metadata advertises:
 
