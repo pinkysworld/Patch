@@ -162,16 +162,3 @@ function relativeModuleSpecifiers(source) {
   }
   return found;
 }
-
-function relativeModuleSpecifiers(source) {
-  const found = new Set();
-  const patterns = [
-    /^\s*import\s+(?:[^'"\n]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
-    /^\s*export\s+[^'"\n]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
-    /\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g
-  ];
-  for (const pattern of patterns) {
-    for (const match of source.matchAll(pattern)) found.add(match[1]);
-  }
-  return found;
-}
