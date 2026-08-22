@@ -60,7 +60,8 @@ Product/Studio/native work after beta.32 does not widen the formal assurance cla
 - [x] current Ready/offline composition preserves Table, list-backed ListBox, Menu and TreeView while adding Slider
 - [x] structural/nested accessibility and keyboard refinement: roving Tree/Tabs selection, source-backed structural shortcuts, `Ctrl/Cmd+Enter`, Escape close/focus restoration and focus-visible treatment
 - [x] documentation drift gates for current Studio/native contracts
-- [x] deterministic public site bundle and PWA cache include the complete current Studio authoring surface and transitive browser module closure
+- [x] deterministic public site bundle and PWA cache include the complete current Studio authoring surface, transitive browser-module closure and local HTML asset closure
+- [x] Pages deployment fails closed when required runtime releases are incomplete and verifies critical Studio/compiler assets over HTTP after a real deploy
 
 All current input/selection/result events remain transient. Persistent application state changes through ordinary semantic `change` only. Slider `changed` exposes a finite in-range number; Table/ListBox/TreeView expose their documented transient list/text-list values. Renderer or native-toolkit selection never becomes hidden Patch state.
 
@@ -112,6 +113,7 @@ Older payload/runtime contracts are frozen compatibility evidence, not obsolete 
 - [x] current Slider runtime smoke on Windows/macOS/Linux validates real native controls and numeric event persistence through explicit `change`
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
 - [x] Linux packaging expectations and removal documented
+- [x] public-site deployment status is truthful: missing required runtime releases fail the Pages run instead of producing a green no-op, and successful deployments perform a canonical HTTP asset smoke
 
 ### Externally gated or deliberately future distribution work
 
@@ -200,7 +202,7 @@ Evidence still requiring new data or external participation:
 - **beta.33:** Studio/project/recovery/diagnostics production-readiness layer
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
-- **beta.35+ product work:** project bundle v3, current Designer architecture, Table/TreeView/Tabs completion, Slider Stage 1 and additive native Slider parity through Native GUI IR 1.3 / payload v13 / runtime v1.4
+- **beta.35+ product work:** project bundle v3, current Designer architecture, Table/TreeView/Tabs completion, Slider Stage 1, additive native Slider parity through Native GUI IR 1.3 / payload v13 / runtime v1.4, and fail-closed public-site deployment verification
 
 ## Rule for new backlog items
 
