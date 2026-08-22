@@ -25,6 +25,9 @@ on:
       - src/formal-source.js
       - src/source-validation.js
       - src/guard-validation.js
+      - src/call-site-validation.js
+      - src/independent-range-expression.js
+      - src/independent-guard-expression.js
       - src/compiler.js
       - src/bundle.js
       - src/wasm.js
@@ -44,10 +47,13 @@ on:
       - src/native-gui-ir-v10.js
       - src/native-gui-ir-v11.js
       - src/native-gui-ir-v12.js
+      - src/native-gui-ir-v13.js
       - src/native-tree-backend-adapter.js
+      - src/native-slider-backend-adapter.js
       - src/sealed-native-gui.js
       - src/sealed-native-gui-v11.js
       - src/sealed-native-gui-v12.js
+      - src/sealed-native-gui-v13.js
       - src/sealed-native-package.js
       - src/prebuilt-native.js
       - src/prebuilt-window.js
@@ -67,9 +73,10 @@ on:
       - .github/workflows/native-sealed-menu-runtime.yml
       - .github/workflows/native-sealed-menu-release-v12.yml
       - .github/workflows/native-sealed-tree-runtime-v13.yml
+      - .github/workflows/native-sealed-slider-runtime-v14.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime, Patch Native Sealed Menu Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime, Patch Native Sealed Menu Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4]
     types: [completed]
 
 permissions:
@@ -104,34 +111,34 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.3
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.3
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.3
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.4
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.4
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.4
         shell: bash
         run: |
+          set -euo pipefail
           missing=0
           for tag in "$RUNTIME_TAG" "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               echo "Found $tag"
             else
-              echo "Waiting for $tag"
+              echo "Missing required release: $tag" >&2
               missing=1
             fi
           done
-          if [ "$missing" -eq 0 ]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'A required Patch Studio runtime release is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
+          if [ "$missing" -ne 0 ]; then
+            echo 'Required Patch Studio runtime releases are incomplete. Refusing to report a successful Pages run without a deployment.' >&2
+            exit 1
           fi
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
       - name: Add and verify compiled native runtime templates
         if: steps.native_runtime.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.3
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.3
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.3
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.4
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.4
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.4
         shell: bash
         run: |
           set -euo pipefail
@@ -192,3 +199,36 @@ jobs:
         if: steps.native_runtime.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
+      - name: Verify deployed Patch Studio critical assets
+        if: steps.native_runtime.outputs.ready == 'true'
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${PAGE_URL%/}/"
+          cache_bust="deploy-${GITHUB_SHA}"
+          assets=(
+            index.html
+            site-navigation.css
+            site-refresh.css
+            playground.js
+            native-build.js
+            sw.js
+            src/compiler.js
+            src/call-site-validation.js
+            src/independent-range-expression.js
+            src/independent-guard-expression.js
+          )
+          for asset in "${assets[@]}"; do
+            url="${base}${asset}?smoke=${cache_bust}"
+            echo "Checking $url"
+            curl --fail --silent --show-error --location \
+              --retry 8 --retry-delay 3 --retry-all-errors \
+              --output /tmp/patch-pages-smoke "$url"
+            test -s /tmp/patch-pages-smoke
+          done
+          curl --fail --silent --show-error --location \
+            --retry 8 --retry-delay 3 --retry-all-errors \
+            "${base}index.html?smoke=${cache_bust}" | grep -F 'data-patch-version="0.2.0-beta.35"' >/dev/null
+          echo "Patch Studio canonical Pages deployment smoke passed: $base"

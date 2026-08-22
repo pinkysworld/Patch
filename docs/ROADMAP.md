@@ -16,17 +16,18 @@ Checked items are implemented. Unchecked items are deliberately not presented as
 - public product surface: **0.2 beta.35+**
 - Change IR: **0.10**
 - Window event adapter: **0.9**
-- Native GUI IR: **1.2**
-- current sealed native GUI payload: **v12**
-- current token-free Ready/offline native runtime: **v1.3** on Windows, macOS and Linux
+- Native GUI IR: **1.3**
+- current sealed native GUI payload: **v13**
+- current token-free Ready/offline native runtime: **v1.4** on Windows, macOS and Linux
+- frozen TreeView compatibility line: Native GUI IR **1.2** / payload **v12** / runtime **v1.3**
 - formal runtime-correspondence milestone: **beta.32**
 - project format: **multi-file bundle v3**
 
-Product/Studio work after beta.32 does not widen the formal assurance claim.
+Product/Studio/native work after beta.32 does not widen the formal assurance claim.
 
 ## Core product backlog status
 
-**The current beta.35+ Studio/compiler product backlog is closed.** There are no open GitHub Issues in the repository at this status point. New feature ideas can create a new milestone, but they are not silently carried as unfinished beta.35 work.
+**The current beta.35+ Studio/compiler product backlog is closed.** There are no ordinary repository-controlled feature items left in this milestone. New feature ideas can create a new milestone, but they are not silently carried as unfinished beta.35 work.
 
 ### Studio / Designer
 
@@ -41,9 +42,7 @@ Product/Studio work after beta.32 does not widen the formal assurance claim.
 - [x] read-only source-backed Table/Grid Stage 1 with row selection and structural Properties editing
 - [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
 - [x] TreeView Stage 1 language/IR, Studio preview, Standalone Web and native parity
-- [x] sealed payload v12 / runtime v1.3 TreeView parity with root-to-node text-list selection and Windows/macOS/Linux smoke execution
-- [x] token-free Ready/offline consumer switch to TreeView-capable payload v12 / runtime v1.3
-- [x] first-class source-backed TreeView tool and wider/resizable/collapsible Properties workspace
+- [x] sealed payload v12 / runtime v1.3 TreeView compatibility line with root-to-node text-list selection and Windows/macOS/Linux smoke execution
 - [x] source-backed top-level Table grid and TreeView hierarchy structural Properties editors
 - [x] source-backed Tabs page add/rename/reorder/delete/duplicate editing
 - [x] source-backed nested Tabs insertion/removal/reorder/duplicate for Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table and TreeView
@@ -54,9 +53,15 @@ Product/Studio work after beta.32 does not widen the formal assurance claim.
 - [x] unify core/Tabs/Table/TreeView behind one shared primary-selection/event and common Properties action architecture
 - [x] **richer data-control surface beyond Table/Grid, ListBox and TreeView via source-backed Slider Stage 1**
 - [x] Slider Stage 1 source syntax, compiler lowering, bounded finite numeric transient `changed` value, Designer integration, Tabs insertion, Studio preview and Standalone Window Web
+- [x] Native GUI IR 1.3 Slider range/step/numeric event contract without redefining frozen IR 1.2
+- [x] native Slider parity through backend 1.4 using Win32 `TRACKBAR`, AppKit `NSSlider` and GTK3 `GtkScale`
+- [x] sealed payload v13 / runtime v1.4 native Slider transport and Windows/macOS/Linux smoke execution
+- [x] token-free Ready/offline consumer switch to Native GUI IR 1.3 / payload v13 / runtime v1.4
+- [x] current Ready/offline composition preserves Table, list-backed ListBox, Menu and TreeView while adding Slider
 - [x] structural/nested accessibility and keyboard refinement: roving Tree/Tabs selection, source-backed structural shortcuts, `Ctrl/Cmd+Enter`, Escape close/focus restoration and focus-visible treatment
 - [x] documentation drift gates for current Studio/native contracts
-- [x] deterministic public site bundle and PWA cache include the complete current Studio authoring surface
+- [x] deterministic public site bundle and PWA cache include the complete current Studio authoring surface, transitive browser-module closure and local HTML asset closure
+- [x] Pages deployment fails closed when required runtime releases are incomplete and verifies critical Studio/compiler assets over HTTP after a real deploy
 
 All current input/selection/result events remain transient. Persistent application state changes through ordinary semantic `change` only. Slider `changed` exposes a finite in-range number; Table/ListBox/TreeView expose their documented transient list/text-list values. Renderer or native-toolkit selection never becomes hidden Patch state.
 
@@ -79,13 +84,14 @@ All current input/selection/result events remain transient. Persistent applicati
 
 ## Frozen native compatibility evidence
 
-These historical lines remain part of the compatibility evidence even though the current consumer is Native GUI IR 1.2 / payload v12 / runtime v1.3:
+These historical lines remain part of the compatibility evidence even though the current consumer is Native GUI IR 1.3 / payload v13 / runtime v1.4:
 
 - [x] **Native GUI IR 0.8** introduced the Table compatibility representation and the direct AOT backend preserves the frozen Table semantics on Win32, AppKit and GTK.
 - [x] frozen sealed native GUI payload **v9** / runtime **v1.0** Table compatibility line remains tested across Windows, macOS and Linux.
 - [x] payload **v10** / runtime **v1.1** preserves persistent text-list state and list-backed ListBox compatibility.
 - [x] payload **v11** / runtime **v1.2** preserves Menu + list compatibility.
-- [x] Native GUI IR **1.2** / payload **v12** / runtime **v1.3** adds TreeView while preserving the earlier Table/ListBox/Menu contracts.
+- [x] Native GUI IR **1.2** / payload **v12** / runtime **v1.3** adds TreeView while preserving earlier Table/ListBox/Menu contracts and intentionally remains Slider fail-closed.
+- [x] Native GUI IR **1.3** / payload **v13** / runtime **v1.4** is additive over the frozen v12 compatibility bytes rather than redefining them.
 
 Older payload/runtime contracts are frozen compatibility evidence, not obsolete current-product claims.
 
@@ -96,19 +102,22 @@ Older payload/runtime contracts are frozen compatibility evidence, not obsolete 
 - [x] Ready Windows/macOS/Linux Console packages
 - [x] Ready Windows/macOS/Linux Window packages for the current native GUI surface
 - [x] direct-native Win32/AppKit/GTK backends
-- [x] current Native GUI IR **1.2** hierarchical TreeView line
+- [x] current Native GUI IR **1.3** Slider-capable line
+- [x] frozen Native GUI IR **1.2** hierarchical TreeView compatibility line
 - [x] frozen versioned payload/runtime compatibility lines rather than in-place redefinition
-- [x] token-free v1.3 runtime release workflows for Windows/macOS/Linux
-- [x] ordinary offline `patch link` defaults to payload v12/runtime v1.3
-- [x] explicit payload v10/v11 compatibility for older non-Tree artifacts
+- [x] token-free v1.4 runtime release workflows for Windows/macOS/Linux
+- [x] ordinary offline `patch link` defaults to payload v13/runtime v1.4
+- [x] explicit v12/v1.3 and older compatibility behavior remains fail-closed for newer requirements
 - [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
+- [x] current Slider runtime smoke on Windows/macOS/Linux validates real native controls and numeric event persistence through explicit `change`
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
 - [x] Linux packaging expectations and removal documented
+- [x] public-site deployment status is truthful: missing required runtime releases fail the Pages run instead of producing a green no-op, and successful deployments perform a canonical HTTP asset smoke
 
 ### Externally gated or deliberately future distribution work
 
-These are **not unfinished core beta.35 implementation tasks**. They require credentials, platform/distribution choices or a new versioned runtime contract.
+These are **not unfinished core beta.35 implementation tasks**. They require credentials, platform/distribution choices or external validation.
 
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
@@ -117,8 +126,9 @@ These are **not unfinished core beta.35 implementation tasks**. They require cre
 - [ ] fresh remote native build service without a user-supplied GitHub token
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where deployment evidence justifies them
-- [ ] native Slider parity through a **future versioned Native GUI IR/backend/payload/runtime contract**; runtime v1.3 intentionally remains Slider-free and fail-closed
 - [ ] manual assistive-technology validation with Narrator, VoiceOver, Orca or comparable tools; no WCAG conformance claim is made without that work
+
+Native Slider parity is **not** an open item anymore. It is implemented in the additive IR 1.3 / payload v13 / runtime v1.4 line while v1.3 remains frozen Slider fail-closed compatibility evidence.
 
 ## Research evidence gates
 
@@ -192,7 +202,7 @@ Evidence still requiring new data or external participation:
 - **beta.33:** Studio/project/recovery/diagnostics production-readiness layer
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
-- **beta.35+ product work:** project bundle v3, current Designer architecture, Table/TreeView/Tabs completion and browser/Standalone-Web Slider Stage 1
+- **beta.35+ product work:** project bundle v3, current Designer architecture, Table/TreeView/Tabs completion, Slider Stage 1, additive native Slider parity through Native GUI IR 1.3 / payload v13 / runtime v1.4, and fail-closed public-site deployment verification
 
 ## Rule for new backlog items
 

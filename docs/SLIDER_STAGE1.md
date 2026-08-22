@@ -1,6 +1,6 @@
 # Slider Stage 1
 
-Slider Stage 1 adds a source-backed numeric range control to Patch Window applications without changing Change IR 0.10 or redefining the existing native GUI v1.3 contract.
+Slider Stage 1 adds a source-backed numeric range control to Patch Window applications without changing Change IR 0.10. It is now supported across Patch Studio, Standalone Window Web, direct native AOT, token-free Ready builds and the offline compiler.
 
 ## Syntax
 
@@ -51,7 +51,7 @@ If a persistent state variable has the same name as the Slider id, that state mu
 
 Window event adapter **0.9** is the first contract that types Slider `changed` as a bounded finite numeric event-local value.
 
-## Compiler and IR
+## Compiler and Change IR
 
 Slider lowers as the existing `UI_CONTROL` Change IR instruction with additional UI metadata:
 
@@ -63,7 +63,7 @@ Slider lowers as the existing `UI_CONTROL` Change IR instruction with additional
 
 The compiler advertises runtime capability `ui.slider`.
 
-Change IR remains **0.10** because the Slider does not add a new persistent mutation mechanism or alter semantic Change operations. Its range and geometry are UI structure.
+Change IR remains **0.10** because Slider does not add a new persistent mutation mechanism or alter semantic Change operations. Its range and geometry are UI structure.
 
 ## Patch Studio
 
@@ -79,7 +79,7 @@ Patch Studio provides:
 - Slider insertion inside source-backed Tabs pages using flow layout;
 - a Slider sample application.
 
-The Designer always rewrites visible `.patch` source. There is no hidden slider configuration document or second persistent UI model.
+The Designer always rewrites visible `.patch` source. There is no hidden Slider configuration document or second persistent UI model.
 
 ## Standalone Window Web
 
@@ -92,28 +92,48 @@ The standalone metadata advertises:
 - `sliderStage: 1`
 - `sliderMode: "transient-number"`
 
-## Native boundary
+## Current native contract
 
-Slider Stage 1 is deliberately **not** part of the current native Ready/offline contract.
+Native Slider parity is provided by a new additive contract rather than by redefining the frozen TreeView line:
 
-The current native line remains:
+- Native GUI IR **1.3**
+- direct native backend **1.4**
+- sealed payload **v13**
+- sealed native runtime **v1.4**
+- Windows: native `TRACKBAR`
+- macOS: native `NSSlider`
+- Linux: native GTK3 `GtkScale`
+
+The same contract is used by direct AOT builds, token-free Ready Window downloads and Windows/macOS/Linux offline Window linking.
+
+Native GUI IR 1.3 records Slider range, step, optional numeric binding and numeric `changed` event type. Payload v13 is an additive transport over the exact payload-v12 compatibility bytes. Runtime v1.4 restores the native numeric event value before invoking the existing explicit Change action engine. The private compatibility transport is not persistent Patch state and is not exposed as language semantics.
+
+Native smoke execution on all three desktop hosts seals the canonical `examples/slider-window.patch` as payload v13, drives the real platform Slider and verifies that:
+
+1. the native control exists with the declared range;
+2. a numeric `changed` event is dispatched;
+3. `change volume: set = value` stores the actual Slider number;
+4. ordinary Table, ListBox, Menu and TreeView behavior continues through the existing action executor.
+
+## Frozen v1.3 compatibility boundary
+
+The previous native contract remains frozen and intentionally fails closed for Slider:
 
 - Native GUI IR **1.2**
 - sealed payload **v12**
 - native runtime **v1.3**
-- Windows / AppKit / GTK TreeView-capable surface
+- TreeView-capable Windows / AppKit / GTK surface
 
-A Slider source presented to a Window target that has not explicitly enabled Slider support fails closed during Window validation. Patch does not silently drop the control and does not fall back to Electron.
-
-Native Slider parity therefore requires a future versioned Native GUI IR/backend/payload/runtime contract plus platform smoke execution before native support can be claimed.
+A Slider source explicitly targeted at payload v12/runtime v1.3 is rejected. Patch does not silently omit the control and does not reinterpret v1.3 as Slider-capable. This frozen failure is retained as compatibility evidence while current Ready/offline builds use v13/v1.4.
 
 ## Assurance boundary
 
-Slider Stage 1 is product/editor/runtime work after the beta.32 research milestone. It does not widen the beta.32 invocation-frame/direct-Wasm correspondence claim.
+Slider Stage 1 and native runtime v1.4 are product/editor/runtime work after the beta.32 research milestone. They do not widen the beta.32 invocation-frame/direct-Wasm correspondence claim.
 
 The relevant invariants remain:
 
 1. persistent mutation stays explicit through `change`;
 2. UI/toolkit selection is transient unless source commits it;
-3. unsupported native controls fail closed;
-4. native payload/runtime contracts are versioned rather than redefined in place.
+3. unsupported older native contracts fail closed;
+4. native payload/runtime contracts are versioned rather than redefined in place;
+5. the formal runtime-correspondence assurance boundary remains beta.32.

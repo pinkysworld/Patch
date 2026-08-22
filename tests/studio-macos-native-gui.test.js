@@ -31,11 +31,14 @@ test('browser package seals Native GUI IR v0.7 payload v8 into a minimal macOS a
   assert.equal((central.getUint32(38, true) >>> 16) & 0xffff, 0o100755);
 });
 
-test('Studio defaults macOS Window downloads to native AppKit sealing without token', () => {
+test('Studio defaults macOS Window downloads to native AppKit runtime v1.4 sealing without token', () => {
   assert.ok(studio.includes("const MACOS_NATIVE_GUI_RUNTIME = './runtimes/patch-macos-native-gui-runtime.bin'"));
   assert.ok(studio.includes('buildMacosNativeGuiPackage'));
   assert.ok(studio.includes('Native AppKit app (no token, unsigned)'));
-  assert.ok(studio.includes('macOS native AppKit app downloaded · unsigned · no token · no Electron'));
+  assert.ok(studio.includes('macOS native AppKit runtime v1.4 app downloaded · unsigned · no token · no Electron'));
+  assert.ok(studio.includes('Native GUI IR 1.3'));
+  assert.ok(studio.includes('payload v13'));
+  assert.ok(studio.includes('NSSlider'));
 });
 
 test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatibility routes', () => {

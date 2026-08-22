@@ -26,11 +26,14 @@ test('browser package seals Native GUI IR v0.7 payload v8 into one Linux ELF exe
   assert.equal((central.getUint32(38, true) >>> 16) & 0xffff, 0o100755);
 });
 
-test('Studio defaults Linux Window downloads to native GTK sealing without token', () => {
+test('Studio defaults Linux Window downloads to native GTK runtime v1.4 sealing without token', () => {
   assert.ok(studio.includes("const LINUX_NATIVE_GUI_RUNTIME = './runtimes/patch-linux-native-gui-runtime.bin'"));
   assert.ok(studio.includes('buildLinuxNativeGuiPackage'));
   assert.ok(studio.includes('Native GTK app (no token, recommended)'));
-  assert.ok(studio.includes('Linux native GTK app downloaded · no token · no Electron'));
+  assert.ok(studio.includes('Linux native GTK runtime v1.4 app downloaded · no token · no Electron'));
+  assert.ok(studio.includes('Native GUI IR 1.3'));
+  assert.ok(studio.includes('payload v13'));
+  assert.ok(studio.includes('GtkScale'));
 });
 
 test('Linux compatibility packaging remains explicit and AOT route remains available', () => {

@@ -16,20 +16,25 @@ test('Slider Stage 1 stays visible across Studio, public docs and the PWA bundle
 
   assert.match(index, /id="addSlider"/);
   assert.match(index, /Slider Stage 1/);
-  assert.match(index, /browser-only until a later versioned native contract/i);
-  assert.match(language, /data-slider-language-support="browser-stage1"/);
+  assert.match(index, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/i);
+  assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
+  assert.match(language, /data-slider-language-support="native-v14"/);
   assert.match(language, /slider 0\.\.100 as volume step 5/);
-  assert.match(language, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3.*does <strong>not<\/strong> claim Slider support/s);
+  assert.match(language, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4.*native Slider support/s);
+  assert.match(language, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3.*frozen compatibility/s);
   assert.match(docs, /docs\/SLIDER_STAGE1\.md/);
-  assert.match(docs, /Slider Stage 1 is not part of this frozen native line/);
+  assert.match(docs, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
   assert.match(contract, /Window event adapter \*\*0\.9\*\*/);
   assert.match(contract, /Change IR remains \*\*0\.10\*\*/);
+  assert.match(contract, /Native GUI IR \*\*1\.3\*\*/);
+  assert.match(contract, /sealed payload \*\*v13\*\*/);
+  assert.match(contract, /native runtime \*\*v1\.4\*\*/);
   assert.match(slider, /addDesignerControl\(code\.value, 'slider'/);
   assert.match(buildSite, /'slider-stage1\.js'/);
   assert.match(sw, /'\.\/slider-stage1\.js'/);
 });
 
-test('Standalone Web opts into Slider while current native Ready/offline paths remain fail-closed', () => {
+test('Standalone Web and current native Ready/offline paths opt into Slider while frozen v1.3 remains fail-closed', () => {
   const webRuntime = read('src/window-webapp.js');
   const nativeBuild = read('web/native-build.js');
   const offlineLinker = read('src/offline-linker.js');
@@ -37,8 +42,12 @@ test('Standalone Web opts into Slider while current native Ready/offline paths r
   const nativeV12 = read('src/native-gui-ir-v12.js');
 
   assert.match(webRuntime, /allowSlider:\s*true/);
-  assert.doesNotMatch(nativeBuild, /allowSlider:\s*true/);
-  assert.doesNotMatch(offlineLinker, /allowSlider:\s*true/);
+  assert.match(nativeBuild, /allowSlider:\s*true/);
+  assert.match(nativeBuild, /buildNativeGuiIRV13 as buildNativeGuiIR/);
+  assert.match(nativeBuild, /sealNativeGuiRuntimeV13/);
+  assert.match(offlineLinker, /allowSlider:\s*guiPayloadVersion >= 13/);
+  assert.match(offlineLinker, /buildNativeGuiIRV13/);
+  assert.match(offlineLinker, /sealNativeGuiRuntimeV13/);
   assert.match(windowBuild, /if \(sliders && !options\.allowSlider\)/);
   assert.match(windowBuild, /Slider is not enabled for this Window target/);
   assert.doesNotMatch(nativeV12, /control\.type === 'slider'|control==='slider'|control === 'slider'/);

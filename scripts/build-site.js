@@ -14,7 +14,7 @@ const SITE_SRC_FILES = [
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
-  'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-tree-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
+  'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
@@ -76,6 +76,7 @@ for (const name of SITE_SRC_FILES) {
 }
 
 validateGeneratedModuleClosure();
+validateGeneratedHtmlAssetClosure();
 console.log(`built _site/ for Patch revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
 
 function computeSiteRevision() {
@@ -115,6 +116,27 @@ function validateGeneratedModuleClosure() {
   }
   if (missing.length) {
     throw new Error(`Generated Patch Studio has unresolved relative module imports:\n${missing.map(item => `- ${item}`).join('\n')}`);
+  }
+}
+
+function validateGeneratedHtmlAssetClosure() {
+  const missing = [];
+  const assetExtension = /\.(?:js|css|webmanifest|svg|png|ico)$/i;
+  for (const name of SITE_HTML_FILES) {
+    const file = path.join(out, name);
+    const html = fs.readFileSync(file, 'utf8');
+    for (const match of html.matchAll(/\b(?:href|src)="(\.\/[^"#]+)"/g)) {
+      const specifier = match[1];
+      const clean = specifier.split(/[?#]/, 1)[0];
+      if (!assetExtension.test(clean)) continue;
+      const target = path.resolve(path.dirname(file), clean);
+      if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
+        missing.push(`${name} -> ${specifier}`);
+      }
+    }
+  }
+  if (missing.length) {
+    throw new Error(`Generated Patch Studio has unresolved local HTML assets:\n${missing.map(item => `- ${item}`).join('\n')}`);
   }
 }
 

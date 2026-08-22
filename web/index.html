@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.35+: write, design, run and build source-backed Patch applications with multi-file projects, Slider Stage 1, native ListBox, Table, Menu and TreeView support.">
+  <meta name="description" content="Patch Studio beta.35+: write, design, run and build source-backed Patch applications with multi-file projects, native Slider, ListBox, Table, Menu and TreeView support.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -57,13 +57,13 @@
     </span>
     <span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.3 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.2 as payload v12, including hierarchical TreeView. Slider Stage 1 is browser-only until a later versioned native contract adds parity.</span></section>
-  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Patch Studio now includes a source-backed browser Slider Stage 1 with transient numeric values; multi-file project bundle v3, multi-select ListBox and TreeView remain available across browser and supported native Ready/offline Windows, macOS and Linux paths. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.4 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.3 as payload v13, including hierarchical TreeView and native Slider. The frozen payload v12 / runtime v1.3 compatibility line remains Slider fail-closed.</span></section>
+  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Patch Studio includes source-backed Slider Stage 1 with transient numeric values across browser, Standalone Web and supported native Ready/offline Windows, macOS and Linux paths; multi-file project bundle v3, multi-select ListBox and TreeView remain available. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
 
   <section class="studio-launchpad" aria-label="Patch Studio current status and quick start">
     <div class="studio-snapshot" aria-label="Current Patch contracts">
       <div class="studio-snapshot-card"><b>Local-first Studio</b><span>Multi-file bundle v3, recovery and privacy-redacted diagnostics stay in the browser unless you explicitly export or build.</span></div>
-      <div class="studio-snapshot-card"><b>Ready desktop builds</b><span>Windows, macOS and Linux use the verified Native GUI IR 1.2 / payload v12 / runtime v1.3 no-token path.</span></div>
+      <div class="studio-snapshot-card"><b>Ready desktop builds</b><span>Windows, macOS and Linux use the verified Native GUI IR 1.3 / payload v13 / runtime v1.4 no-token path with native Slider parity.</span></div>
       <div class="studio-snapshot-card"><b>Explicit persistence</b><span>UI selection and event values are transient. Persistent application state changes only through semantic <code>change</code>.</span></div>
     </div>
     <details class="studio-guide">

@@ -18,23 +18,24 @@ const selectionArchitecture = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTUR
 const tableActionsDoc = fs.readFileSync('docs/STUDIO_TABLE_ACTIONS.md', 'utf8');
 const tableActionsWeb = fs.readFileSync('web/designer-table-actions.js', 'utf8');
 
-test('current Tabs documentation names the active native contract rather than the historical v0.4 line', () => {
-  assert.match(tabs, /Native GUI IR \*\*1\.2\*\*/);
-  assert.match(tabs, /payload \*\*v12\*\*/);
-  assert.match(tabs, /runtime \*\*v1\.3\*\*/);
-  assert.match(tabs, /payload v12 \/ runtime v1\.3\s+current TreeView-capable Ready\/offline line/);
-  assert.doesNotMatch(tabs, /The corresponding token-free runtime releases are:\s*\n\s*- `native-win32-runtime-v0\.4`/);
+test('current Tabs documentation names native v1.4 and retains frozen v1.3 compatibility', () => {
+  assert.match(tabs, /Native GUI IR \*\*1\.3\*\*/);
+  assert.match(tabs, /payload v13 \/ runtime v1\.4\s+current Slider-capable Ready\/offline line/);
+  assert.match(tabs, /payload v12 \/ runtime v1\.3\s+frozen TreeView-capable line, Slider fail-closed/);
+  assert.match(tabs, /Slider/);
+  assert.doesNotMatch(tabs, /payload v12 \/ runtime v1\.3\s+current TreeView-capable Ready\/offline line/);
 });
 
-test('current ListBox documentation reflects native single/multi-select parity', () => {
+test('current ListBox documentation reflects native single/multi-select parity on v1.4', () => {
   assert.match(listbox, /direct native Win32\/AppKit\/GTK/);
   assert.match(listbox, /create text/);
   assert.match(listbox, /create list/);
-  assert.match(listbox, /Native GUI IR \*\*1\.2\*\*/);
-  assert.match(listbox, /sealed payload \*\*v12\*\*/);
-  assert.match(listbox, /native runtime \*\*v1\.3\*\*/);
+  assert.match(listbox, /Native GUI IR \*\*1\.1\*\*/);
+  assert.match(listbox, /Native GUI IR \*\*1\.3\*\*/);
+  assert.match(listbox, /sealed payload \*\*v13\*\*/);
+  assert.match(listbox, /native runtime \*\*v1\.4\*\*/);
+  assert.match(listbox, /payload v12 \/ runtime v1\.3\s+frozen TreeView-capable line/);
   assert.doesNotMatch(listbox, /direct native GUI parity is not implemented yet/);
-  assert.doesNotMatch(listbox, /Native GUI IR v0\.2 currently supports ComboBox but not ListBox/);
   assert.match(docs, /docs\/LISTBOX\.md/);
   assert.match(docs, /text-backed single-select and list-backed multi-select contracts/);
 });
@@ -47,8 +48,9 @@ test('Studio public docs describe current nested Tabs structural Properties edit
   assert.match(docs, /nested Table\/TreeView structural Properties editing/);
 });
 
-test('nested Tabs implementation and docs stay aligned on Table and TreeView structural editing', () => {
+test('nested Tabs implementation and docs stay aligned on Table TreeView and Slider editing', () => {
   assert.match(nested, /'table', 'tree'/);
+  assert.match(nested, /'slider'/);
   assert.match(nested, /updateDesignerTabPageTableData/);
   assert.match(nested, /updateDesignerTabPageTreeNodes/);
   assert.match(nestedWeb, /Nested Table data/);
@@ -58,9 +60,10 @@ test('nested Tabs implementation and docs stay aligned on Table and TreeView str
   assert.match(studio, /Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties/);
   assert.match(studio, /All top-level controls now share one authoritative primary-selection and common Properties action boundary/);
   assert.doesNotMatch(tabs, /dedicated nested Table\/TreeView structural Properties inspector is still pending/);
-  assert.match(studio, /Native GUI IR \*\*1\.2\*\*/);
-  assert.match(studio, /payload \*\*v12\*\*/);
-  assert.match(studio, /runtime \*\*v1\.3\*\*/);
+  assert.match(studio, /Native GUI IR \*\*1\.3\*\*/);
+  assert.match(studio, /payload \*\*v13\*\*/);
+  assert.match(studio, /runtime \*\*v1\.4\*\*/);
+  assert.match(studio, /Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\* remains the frozen TreeView compatibility line/);
 });
 
 test('Studio docs and implementation expose current structural Properties usability without a second mutation path', () => {
@@ -86,9 +89,6 @@ test('Table reorder/duplicate documentation matches the shared top-level and nes
   assert.match(tableActionsWeb, /updateDesignerTabPageTableData/);
   assert.match(tableActionsWeb, /toolbar\.dataset\.signature === signature/);
   assert.match(tableActionsDoc, /Change IR 0\.10/);
-  assert.match(tableActionsDoc, /Native GUI IR 1\.2/);
-  assert.match(tableActionsDoc, /payload v12/);
-  assert.match(tableActionsDoc, /runtime v1\.3/);
 });
 
 test('Studio docs and implementation keep core Tabs Table and TreeView on one shared transient primary layer', () => {
@@ -114,11 +114,14 @@ test('Studio docs and implementation expose the current source-backed active For
   assert.match(formWorkflow, /patchNextForm/);
 });
 
-test('roadmap records the actual current Studio and native line', () => {
+test('roadmap records the actual current Studio and native line plus frozen compatibility', () => {
   assert.match(roadmap, /Current development beta: \*\*0\.2\.0-beta\.35\*\*/);
-  assert.match(roadmap, /Native GUI IR: \*\*1\.2\*\*/);
-  assert.match(roadmap, /current sealed native GUI payload: \*\*v12\*\*/);
-  assert.match(roadmap, /current token-free Ready\/offline native runtime: \*\*v1\.3\*\*/);
+  assert.match(roadmap, /Native GUI IR: \*\*1\.3\*\*/);
+  assert.match(roadmap, /current sealed native GUI payload: \*\*v13\*\*/);
+  assert.match(roadmap, /current token-free Ready\/offline native runtime: \*\*v1\.4\*\*/);
+  assert.match(roadmap, /frozen TreeView compatibility line: Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\*/);
+  assert.match(roadmap, /\[x\] native Slider parity through backend 1\.4/);
+  assert.match(roadmap, /Native Slider parity is \*\*not\*\* an open item anymore/);
   assert.match(roadmap, /\[x\] dedicated nested Table column\/row and TreeView hierarchy structural editing inside Tabs Properties/);
   assert.match(roadmap, /\[x\] shared Designer selection\/event architecture cleanup across core\/Tabs\/Table\/TreeView/);
   assert.match(roadmap, /\[x\] unify core\/Tabs\/Table\/TreeView behind one shared primary-selection\/event and common Properties action architecture/);
