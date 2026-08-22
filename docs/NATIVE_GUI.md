@@ -13,13 +13,15 @@ The native stack intentionally separates semantic IR, direct AOT generation and 
 | Change IR | **0.10**, unchanged by GUI extensions |
 | Native GUI IR 0.7 | frozen base controls/dialog compatibility |
 | Native GUI IR 0.8 | frozen Table/Grid extension |
-| Native GUI IR 1.1 | persistent text-list state, multi-select ListBox, Menu state/shortcuts |
-| Native GUI IR 1.2 | **current**, adds hierarchical TreeView |
+| Native GUI IR 1.1 | persistent text-list state and multi-select ListBox ABI |
+| Native GUI IR 1.2 | frozen TreeView-capable compatibility line |
+| Native GUI IR 1.3 | **current**, adds Slider range/step/numeric event metadata |
 | sealed payload v8 / runtime v0.9 | frozen responsive base compatibility |
 | sealed payload v9 / runtime v1.0 | frozen Table compatibility |
 | sealed payload v10 / runtime v1.1 | frozen persistent-list compatibility |
 | sealed payload v11 / runtime v1.2 | frozen Menu+list compatibility |
-| sealed payload v12 / runtime v1.3 | **current Ready/offline desktop contract**, adds TreeView |
+| sealed payload v12 / runtime v1.3 | frozen TreeView compatibility, Slider fail-closed |
+| sealed payload v13 / runtime v1.4 | **current Ready/offline desktop contract**, adds Slider |
 
 A backend or runtime version never silently redefines an older IR or payload format. A source program requiring a newer feature fails closed when explicitly linked against an older contract.
 
@@ -41,7 +43,7 @@ Linux   -> GTK3   -> executable
 
 Patch Studio also supports token-free browser-side sealing into precompiled native runtime templates. The downloadable offline compiler performs the same supported sealed linking locally. Project-specific remote AOT through GitHub Actions remains a separate optional route.
 
-Current token-free Ready/offline Window builds use **Native GUI IR 1.2**, **sealed payload v12** and **runtime v1.3**.
+Current token-free Ready/offline Window builds use **Native GUI IR 1.3**, **sealed payload v13** and **runtime v1.4**.
 
 ## Supported Window surface
 
@@ -57,6 +59,7 @@ The current native line includes:
 - Tabs containers with page-owned child controls;
 - source-backed Table/Grid columns and rows;
 - hierarchical source-backed TreeView nodes;
+- source-backed Slider range, step, optional numeric binding and numeric `changed` event;
 - structural Window menus, separators, portable shortcuts and source-backed `enabled` / `checked` projections;
 - informational dialogs;
 - named result-bearing Confirm/Open/Save dialogs;
@@ -67,12 +70,12 @@ The current native line includes:
 
 Unsupported native behavior fails closed. There is no implicit Electron fallback.
 
-## Selection semantics
+## Selection and input semantics
 
-GUI selection is transient unless Patch source explicitly persists it:
+GUI interaction is transient unless Patch source explicitly persists it:
 
 ```text
-native selection -> transient event value -> when <id> changed -> explicit Patch change
+native interaction -> transient event value -> when <id> changed -> explicit Patch change
 ```
 
 Current transient values are:
@@ -87,79 +90,52 @@ Current transient values are:
 | Checkbox | Boolean |
 | Table | text-list containing the selected row's display strings |
 | TreeView | text-list containing the selected root-to-node display path |
+| Slider | finite number inside the declared range |
 
-Tabs page selection remains renderer/toolkit-local and has no Patch event. Selection itself does not create Patch state or Change History.
+Tabs page selection remains renderer/toolkit-local and has no Patch event. Interaction itself does not create Patch state or Change History.
+
+## Slider
+
+Native GUI IR 1.3 adds Slider as an additive contract over the frozen TreeView line:
+
+```patch
+create number volume = 50
+window "Mixer" as main size 560, 300:
+  slider 0..100 as volume step 5 at 24, 80 size 300, 44
+when volume changed:
+  change volume:
+    set = value
+```
+
+Native mappings are:
+
+| Platform | Native Slider |
+|---|---|
+| Windows | common-controls `TRACKBAR` |
+| macOS | `NSSlider` |
+| Linux | GTK3 `GtkScale` |
+
+The runtime validates and restores a finite numeric event-local value before executing the ordinary Patch handler. Moving the toolkit control never becomes implicit Patch state. Persistence occurs only through the explicit `change volume` block.
+
+Payload v13 appends Slider metadata to the exact payload-v12 compatibility representation. Runtime v1.4 consumes that extension and reuses the existing semantic action engine. Payload v12/runtime v1.3 remains deliberately Slider fail-closed.
 
 ## Table / Grid
 
-Table was introduced as an explicit IR extension rather than an implementation-only control alias:
+Table was introduced as an explicit IR extension rather than an implementation-only control alias. Native mappings remain report-mode `WC_LISTVIEWW` on Windows, multi-column `NSTableView` in `NSScrollView` on macOS and `GtkTreeView` + `GtkListStore` in `GtkScrolledWindow` on Linux.
 
-```patch
-window "People" as main size 520, 320:
-  table "Name", "Role" as people at 24, 64 size 440, 180:
-    row "Ada", "Engineer"
-    row "Grace", "Scientist"
-
-when people changed:
-  show value
-```
-
-Native mappings are:
-
-| Platform | Native Table |
-|---|---|
-| Windows | report-mode `WC_LISTVIEWW` |
-| macOS | multi-column `NSTableView` inside `NSScrollView` |
-| Linux | `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow` |
+The selected row is a transient text-list event value. Current v13/v1.4 preserves the frozen v9/v1.0 Table representation.
 
 ## TreeView
 
-Native GUI IR 1.2 adds hierarchical TreeView while keeping selection semantically transient:
+Native GUI IR 1.2 introduced hierarchical TreeView while keeping selection semantically transient. Native mappings remain common-controls TreeView on Windows, `NSOutlineView` in `NSScrollView` on macOS and `GtkTreeView` + `GtkTreeStore` in `GtkScrolledWindow` on Linux.
 
-```patch
-create list selected = []
-
-window "Files" as main size 560, 380:
-  tree as files at 24, 56 size 300, 240:
-    node "src"
-      node "compiler.js"
-      node "parser.js"
-    node "docs"
-      node "README.md"
-
-when files changed:
-  change selected:
-    set = value
-```
-
-Selecting `compiler.js` exposes `['src', 'compiler.js']` as the transient event-local `value`. Persistent `selected` changes only because the handler contains an explicit semantic `change`.
-
-Native mappings are:
-
-| Platform | Native TreeView |
-|---|---|
-| Windows | common-controls TreeView |
-| macOS | `NSOutlineView` in `NSScrollView` |
-| Linux | `GtkTreeView` + `GtkTreeStore` in `GtkScrolledWindow` |
-
-Payload v12 carries an explicit Tree metadata block over the frozen v11 prefix. Runtime v1.3 validates and consumes that metadata, while the established v1.2 event/action engine remains authoritative for semantic changes.
+Selecting a node exposes the root-to-node text-list path. Current Native GUI IR 1.3 / payload v13 / runtime v1.4 preserves that exact TreeView contract while adding Slider. Payload v12/runtime v1.3 remains the frozen TreeView-origin line.
 
 ## Multi-select ListBox and persistent list state
 
-A ListBox backed by `create list` uses the text-list event contract:
+A ListBox backed by `create list` uses the text-list event contract. The native toolkit owns transient selection. Patch persistence occurs only through an explicit `change` block.
 
-```patch
-create list fruits = ["Banana", "Mango"]
-
-window "Fruit Picker":
-  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
-
-when fruits changed:
-  change fruits:
-    set = value
-```
-
-The native toolkit owns transient selection. Patch persistence occurs only through the explicit `change fruits` block. Native GUI IR 1.1 introduced this state/event ABI, and current IR 1.2 / payload v12 preserves it unchanged.
+Native GUI IR 1.1 introduced this state/event ABI. Current IR 1.3 / payload v13 preserves it unchanged. Frozen payload v10/runtime v1.1 remains dedicated compatibility evidence for the original list-state line.
 
 ## Menus and dialogs
 
@@ -179,36 +155,47 @@ Under `--patch-smoke`, blocking dialogs return deterministic test results so CI 
 
 ## Accessibility
 
-The native paths use a deterministic naming contract for controls whose visible native text is insufficient. Platform APIs are:
-
-- Windows: Microsoft Active Accessibility `IAccPropServices`, read back through `IAccessible`;
-- AppKit: accessibility labels;
-- GTK3: ATK accessible names.
+The native paths use a deterministic naming contract for controls whose visible native text is insufficient. Platform APIs are Microsoft Active Accessibility `IAccPropServices` on Windows, AppKit accessibility labels on macOS and ATK accessible names on GTK3.
 
 Automated accessibility smoke evidence is an implementation baseline, not a WCAG conformance claim or a substitute for manual Narrator, VoiceOver or Orca testing.
 
-## Token-free sealed runtime v1.3 / payload v12
+## Token-free sealed runtime v1.4 / payload v13
 
-All three current token-free Ready Window builds use the `PCHGUI01` envelope with payload **v12** and runtime **v1.3**.
+All three current token-free Ready Window builds use the `PCHGUI01` envelope with payload **v13** and runtime **v1.4**.
 
-The v1.3 release workflow independently:
+The v1.4 release workflow independently:
 
-1. validates the payload-v12/Native-GUI-IR-1.2 contract;
+1. validates the payload-v13/Native-GUI-IR-1.3 contract;
 2. builds the Win32, universal AppKit and GTK3 runtime templates;
-3. seals the same canonical TreeView program for each host;
+3. seals the canonical Slider program for each host;
 4. executes the finished sealed application under `--patch-smoke`;
-5. uploads the exact runtime template artifacts;
-6. on `main`, publishes separate versioned runtime releases.
+5. verifies real native Slider creation and numeric event handling while retaining Table/ListBox/Menu/Tree behavior;
+6. uploads the exact runtime template artifacts;
+7. on `main`, publishes separate versioned runtime releases.
 
 The current platform release tags are:
 
-- `native-win32-runtime-v1.3`;
-- `native-macos-runtime-v1.3`;
-- `native-linux-runtime-v1.3`.
+- `native-win32-runtime-v1.4`;
+- `native-macos-runtime-v1.4`;
+- `native-linux-runtime-v1.4`.
 
-Patch Pages waits for all three v1.3 release assets before deploying the browser compiler that consumes payload v12. It obtains the GitHub release SHA-256 digest for every runtime asset, builds the runtime integrity manifest and only then publishes the site. Patch Studio independently re-hashes the selected runtime with Web Crypto before sealing.
+Patch Pages waits for all three v1.4 release assets before deploying the browser compiler that consumes payload v13. It obtains the GitHub release SHA-256 digest for every runtime asset, builds the runtime integrity manifest and only then publishes the site. Patch Studio independently re-hashes the selected runtime with Web Crypto before sealing.
 
 The macOS browser-sealed app remains unsigned because browser-side sealing modifies the executable after the generic runtime was built. Final-artifact Developer ID signing/notarization is separate distribution work.
+
+## Frozen compatibility chain
+
+The current line does not replace historical evidence:
+
+```text
+Native GUI IR 0.8 / payload v9  / runtime v1.0  Table
+Native GUI IR 1.1 / payload v10 / runtime v1.1  persistent list + multi-select ListBox
+payload v11 / runtime v1.2                         Menu + list
+Native GUI IR 1.2 / payload v12 / runtime v1.3  TreeView, Slider fail-closed
+Native GUI IR 1.3 / payload v13 / runtime v1.4  current Slider-capable line
+```
+
+Explicit legacy linking remains fail-closed when a source needs a newer capability.
 
 ## Executable evidence
 
@@ -216,7 +203,7 @@ Current native behavior is covered by independent paths:
 
 1. direct AOT Win32/AppKit/GTK compilation and runtime smokes;
 2. frozen compatibility workflow coverage for older payload/runtime contracts;
-3. payload-v12/runtime-v1.3 TreeView seal/link/run smokes on Windows, macOS and Linux;
+3. payload-v13/runtime-v1.4 Slider seal/link/run smokes on Windows, macOS and Linux;
 4. ordinary offline `patch link` tests for the current contract plus explicit legacy-version tests;
 5. downloadable offline compiler matrices;
 6. Pages release-integrity gating for the runtime templates used by token-free browser builds.
@@ -225,6 +212,6 @@ The native GUI artifacts do not use Electron, Chromium or Node.js as their GUI r
 
 ## Current boundary
 
-Linux native GUI requires compatible GTK3 system libraries. Stable installers, real credentialed Windows signing, real macOS signing/notarization evidence, richer distribution/update channels, FreeBSD native GUI and manual assistive-technology validation remain open product work.
+Linux native GUI requires compatible GTK3 system libraries. Stable installers, real credentialed Windows signing, real macOS signing/notarization evidence, richer distribution/update channels, FreeBSD native GUI and manual assistive-technology validation remain open distribution/validation work.
 
-None of this changes Change IR 0.10 or expands the current formal research assurance claims. See `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.
+None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/SLIDER_STAGE1.md`, `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.
