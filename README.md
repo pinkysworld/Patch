@@ -5,9 +5,9 @@
 [![Patch CI](https://github.com/pinkysworld/Patch/actions/workflows/ci.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/ci.yml)
 [![Formal Verification](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml)
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
-[![Sealed TreeView Runtime](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-tree-runtime-v13.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-tree-runtime-v13.yml)
+[![Sealed Slider Runtime](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-slider-runtime-v14.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-sealed-slider-runtime-v14.yml)
 
-**Current development beta: `0.2.0-beta.35`** · **Change IR: `0.10`** · **Native GUI IR: `1.2`** · **sealed desktop runtime: `v1.3`**
+**Current development beta: `0.2.0-beta.35`** · **Change IR: `0.10`** · **Native GUI IR: `1.3`** · **sealed payload: `v13`** · **sealed desktop runtime: `v1.4`**
 
 [Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
 
@@ -31,11 +31,11 @@ That mandatory mutation substrate is reused for Change History, undo/redo, prove
 | Language | Working interpreter/compiler frontend; Change IR 0.10 |
 | Patch Studio | Browser IDE with **canonical multi-file project bundle v3**, Project Tree, Console/Window Run, source-backed Designer, recovery, diagnostics and ready desktop builds |
 | Designer controls | Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider Stage 1**, Table, TreeView and Tabs |
-| Slider | Source-backed numeric range control in Studio and Standalone Window Web; bounded finite numeric transient `value`; native v1.3 intentionally fails closed |
+| Slider | Source-backed numeric range control in Studio, Standalone Window Web and native Windows/macOS/Linux Ready/offline/AOT paths; bounded finite numeric transient `value` |
 | Table | Source-backed grid and structural Properties editing; the selected row is delivered as the transient list-valued `value` |
 | ListBox | Text-backed single-select plus list-backed native/browser multi-select with transient text-list value |
-| TreeView | Source-backed hierarchy with transient root-to-node path; current native line includes **hierarchical TreeView** |
-| Native desktop GUI | Native GUI IR 1.2 / sealed **payload v12 / runtime v1.3** on Win32, AppKit and GTK3 |
+| TreeView | Source-backed hierarchy with transient root-to-node path, preserved by the current native line |
+| Native desktop GUI | **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4** on Win32, AppKit and GTK3; IR 1.2 / v12 / v1.3 remains frozen compatibility |
 | Runtime integrity | Pages verifies GitHub Release SHA-256 asset digests; Studio re-hashes runtime templates before token-free sealing |
 | Formal milestone | beta.32 invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment |
 | Product backlog | Current repository-controlled beta.35+ Studio/compiler backlog closed; credential/manual/research evidence gates are tracked separately in `docs/ROADMAP.md` |
@@ -56,7 +56,7 @@ The current Designer includes:
 - structural keyboard accessibility and focus restoration;
 - multi-file projects, recovery and local privacy-redacted diagnostics.
 
-The public Studio now surfaces the current contract and quick-start shortcuts directly above the IDE workspace. The Documentation page provides a categorized, locally filterable index without telemetry or an external search service.
+The public Studio surfaces the current contract and quick-start shortcuts directly above the IDE workspace. The Documentation page provides a categorized, locally filterable index without telemetry or an external search service.
 
 See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) and [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md).
 
@@ -78,11 +78,13 @@ when volume changed:
 
 The event-local `value` is a finite number inside the declared range. The control does not persist that number by itself. Persistence happens only because source executes the ordinary semantic `change`.
 
-Slider Stage 1 works in Patch Studio App Preview, source-backed Designer authoring, Tabs insertion and Standalone Window Web. The frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 line intentionally remains Slider-free and fails closed rather than silently dropping the control or falling back to Electron.
+Slider Stage 1 works in Patch Studio App Preview, source-backed Designer authoring, Tabs insertion, Standalone Window Web, direct native AOT and token-free Ready/offline Windows, macOS and Linux paths. Current native parity uses Native GUI IR 1.3, payload v13 and runtime v1.4 with `TRACKBAR`, `NSSlider` and `GtkScale` respectively.
+
+The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line remains frozen and intentionally fails closed for Slider rather than being redefined in place.
 
 See [`docs/SLIDER_STAGE1.md`](docs/SLIDER_STAGE1.md).
 
-## ListBox, Table and TreeView event semantics
+## ListBox, Table, TreeView and Slider event semantics
 
 GUI input remains transient until source commits it:
 
@@ -99,15 +101,16 @@ Renderer or native-toolkit selection itself never becomes hidden Patch state.
 
 The desktop path is explicitly versioned rather than redefining older formats in place:
 
-- Native GUI IR 0.7: frozen base-control compatibility surface;
-- Native GUI IR 0.8 / payload v9 / runtime v1.0: Table compatibility line;
-- payload v10 / runtime v1.1: persistent list-state compatibility line;
-- payload v11 / runtime v1.2: Menu + list compatibility line;
-- **Native GUI IR 1.2 / payload v12 / runtime v1.3:** current TreeView-capable Ready/offline line.
+- Native GUI IR 0.7: frozen base-control compatibility surface.
+- Native GUI IR **0.8** / sealed payload **v9** / runtime **v1.0**: frozen Table compatibility line.
+- **Native GUI IR 1.1** / sealed payload **v10** / runtime **v1.1**: persistent text-list state and list-backed multi-select ListBox compatibility line.
+- payload **v11** / runtime **v1.2**: Menu + list compatibility line.
+- Native GUI IR **1.2** / payload **v12** / runtime **v1.3**: frozen TreeView-capable compatibility line.
+- Native GUI IR **1.3** / sealed payload **v13** / runtime **v1.4**: current Slider-capable Ready/offline line on Windows, macOS and Linux.
 
 Windows, macOS and Linux default to **Ready app download (no token)**. Browser-consumed runtime assets are SHA-256 verified before packaging. The offline compiler independently links and smoke-runs current Window artifacts on the supported hosts. FreeBSD remains Console-only through portable C99.
 
-Unsupported new native behavior fails closed. There is no implicit Electron fallback; the explicitly labelled compatibility package is separate.
+Unsupported behavior on an older explicitly selected contract fails closed. There is no implicit Electron fallback; the explicitly labelled compatibility package is separate.
 
 ## Project format and local-first behavior
 
@@ -130,6 +133,8 @@ formal/GeneratedMixedGuardTransitiveRuntimeCertificate.lean
 `GeneratedRepeatedTransitiveRuntimeCertificate.lean` is checked in standard Formal CI together with the other generated evidence.
 
 The assurance claim remains intentionally scoped. Runtime trace capture, correctness/completeness of the independent JavaScript validator/frame reconstruction, remaining parser/extractor correctness, JavaScript-to-Wasm lowering and the Wasm engine remain explicit proof-free/trust boundaries. Patch does **not** claim full compiler/runtime verification.
+
+Native GUI IR 1.3 / payload v13 / runtime v1.4 is product/runtime work after beta.32 and does not widen that formal claim.
 
 See [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md), [`docs/RUNTIME_CORRESPONDENCE.md`](docs/RUNTIME_CORRESPONDENCE.md) and [`docs/REPRODUCIBILITY_BUNDLE.md`](docs/REPRODUCIBILITY_BUNDLE.md).
 
@@ -176,16 +181,16 @@ patch doctor --json
 
 ## Documentation map
 
-- [`docs/SPEC.md`](docs/SPEC.md) – language specification
-- [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) – browser IDE and build paths
-- [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) – current visual authoring inventory
-- [`docs/SLIDER_STAGE1.md`](docs/SLIDER_STAGE1.md) – Slider syntax/event/native boundary
-- [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md) – current native contract
-- [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) – downloadable compiler/linker
-- [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md) – release and operational boundaries
-- [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md) – mechanized assurance scope
-- [`docs/EVALUATION.md`](docs/EVALUATION.md) – measurement harness
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) – closed core backlog plus external/research gates
+- [`docs/SPEC.md`](docs/SPEC.md) - language specification
+- [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) - browser IDE and build paths
+- [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) - current visual authoring inventory
+- [`docs/SLIDER_STAGE1.md`](docs/SLIDER_STAGE1.md) - Slider syntax/event/native boundary
+- [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md) - current native contract and frozen compatibility lines
+- [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) - downloadable compiler/linker
+- [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md) - release and operational boundaries
+- [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md) - mechanized assurance scope
+- [`docs/EVALUATION.md`](docs/EVALUATION.md) - measurement harness
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) - closed core backlog plus external/research gates
 
 ## License and status
 
