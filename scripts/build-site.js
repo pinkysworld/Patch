@@ -64,6 +64,7 @@ for (const name of SITE_WEB_MODULE_FILES) {
     .replaceAll("'../src/", "'./src/")
     .replaceAll('"../src/', '"./src/');
   if (name === 'sw.js') content = content.replaceAll('__PATCH_SITE_REV__', siteRevision);
+  content = versionRelativeModuleSpecifiers(content, siteRevision);
   fs.writeFileSync(path.join(out, name), content);
 }
 
@@ -72,10 +73,12 @@ fs.mkdirSync(siteSrc, { recursive: true });
 for (const name of SITE_SRC_FILES) {
   const source = path.join(sourceSrc, name);
   if (!fs.existsSync(source)) throw new Error(`Missing Patch Studio browser dependency: src/${name}`);
-  fs.copyFileSync(source, path.join(siteSrc, name));
+  const content = versionRelativeModuleSpecifiers(fs.readFileSync(source, 'utf8'), siteRevision);
+  fs.writeFileSync(path.join(siteSrc, name), content);
 }
 
 validateGeneratedModuleClosure();
+validateGeneratedModuleRevisions();
 validateGeneratedHtmlAssetClosure();
 console.log(`built _site/ for Patch revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
 
@@ -101,6 +104,14 @@ function versionLocalAssetReferences(html, revision) {
   return html.replace(/((?:href|src)="\.\/[^"?]+\.(?:css|js|webmanifest|svg))"/g, `$1?v=${revision}"`);
 }
 
+function versionRelativeModuleSpecifiers(source, revision) {
+  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?)(['"])(\.{1,2}\/[^'"]+\.js)\2/gm;
+  const dynamicPattern = /(\bimport\s*\(\s*)(['"])(\.{1,2}\/[^'"]+\.js)\2(\s*\))/g;
+  return source
+    .replace(staticPattern, (_match, prefix, quote, specifier) => `${prefix}${quote}${specifier}?v=${revision}${quote}`)
+    .replace(dynamicPattern, (_match, prefix, quote, specifier, suffix) => `${prefix}${quote}${specifier}?v=${revision}${quote}${suffix}`);
+}
+
 function validateGeneratedModuleClosure() {
   const modules = walkJs(out);
   const missing = [];
@@ -116,6 +127,22 @@ function validateGeneratedModuleClosure() {
   }
   if (missing.length) {
     throw new Error(`Generated Patch Studio has unresolved relative module imports:\n${missing.map(item => `- ${item}`).join('\n')}`);
+  }
+}
+
+function validateGeneratedModuleRevisions() {
+  const stale = [];
+  for (const file of walkJs(out)) {
+    const source = fs.readFileSync(file, 'utf8');
+    for (const specifier of relativeModuleSpecifiers(source)) {
+      const clean = specifier.split('#', 1)[0];
+      if (!clean.endsWith(`.js?v=${siteRevision}`)) {
+        stale.push(`${path.relative(out, file).split(path.sep).join('/')} -> ${specifier}`);
+      }
+    }
+  }
+  if (stale.length) {
+    throw new Error(`Generated Patch Studio has unversioned relative module imports:\n${stale.map(item => `- ${item}`).join('\n')}`);
   }
 }
 

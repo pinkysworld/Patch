@@ -43,6 +43,24 @@ test('Patch site build content-addresses every public page and service-worker ca
   assert.match(builtWorker, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
 });
 
+test('site builder content-addresses the complete transitive browser module graph', () => {
+  execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
+  const html = fs.readFileSync('_site/index.html', 'utf8');
+  const revision = /\.\/style\.css\?v=([a-f0-9]{16})/.exec(html)?.[1];
+  assert.ok(revision);
+
+  const playground = fs.readFileSync('_site/playground.js', 'utf8');
+  const compiler = fs.readFileSync('_site/src/compiler.js', 'utf8');
+  assert.ok(playground.includes(`from './src/compiler.js?v=${revision}'`));
+  assert.ok(playground.includes(`from './src/interpreter.js?v=${revision}'`));
+  assert.ok(compiler.includes(`from './parser.js?v=${revision}'`));
+  assert.ok(compiler.includes(`from './call-site-validation.js?v=${revision}'`));
+
+  assert.match(buildSite, /versionRelativeModuleSpecifiers\(content, siteRevision\)/);
+  assert.match(buildSite, /validateGeneratedModuleRevisions\(\)/);
+  assert.match(buildSite, /unversioned relative module imports/);
+});
+
 test('site builder validates module imports and local HTML asset closure before success', () => {
   assert.match(buildSite, /validateGeneratedModuleClosure\(\)/);
   assert.match(buildSite, /validateGeneratedHtmlAssetClosure\(\)/);
