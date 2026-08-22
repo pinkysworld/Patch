@@ -22,16 +22,16 @@ Patch Studio provides:
 
 The default Windows/macOS/Linux desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required for those Ready builds. Optional cloud/AOT remains a separate advanced route.
 
-Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Native GUI IR remains **1.2**, the current sealed payload is **v12**, and the token-free Ready/offline runtime is **v1.3**. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
+Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Current native desktop consumers use Native GUI IR **1.3**, sealed payload **v13** and token-free Ready/offline runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line and intentionally stays Slider fail-closed. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
 
 ## Product-backlog boundary
 
-The repository-controlled beta.35+ Studio/compiler backlog is currently closed. The former open product items for a richer data-control surface and structural/nested keyboard refinement are satisfied by Slider Stage 1 plus the implemented keyboard/focus milestone.
+The repository-controlled beta.35+ Studio/compiler backlog is currently closed. The former open product items for a richer data-control surface, native Slider parity and structural/nested keyboard refinement are satisfied by Slider Stage 1, the additive v1.4 native contract and the implemented keyboard/focus milestone.
 
 Remaining unchecked roadmap items are deliberately separated because they need something outside ordinary repository implementation:
 
-- native Slider parity requires a new versioned Native GUI IR/backend/payload/runtime contract;
 - real Windows/macOS signing evidence requires credentials;
+- installer/update-channel work requires an explicit distribution decision;
 - manual Narrator/VoiceOver/Orca validation requires actual assistive-technology testing;
 - controlled performance results require fixed-hardware measurements;
 - genuine third-party integration evidence requires an external application/plugin context.
@@ -86,7 +86,7 @@ Designer multi-select remains an explicit transient secondary set over the share
 
 ## Slider Stage 1
 
-Slider Stage 1 is the current richer data/input control beyond Table/ListBox/TreeView:
+Slider Stage 1 is the current numeric range/data-input control beyond Table/ListBox/TreeView:
 
 ```patch
 create number volume = 50
@@ -111,7 +111,9 @@ Studio provides:
 
 Slider interaction itself never persists application state. The event-local `value` is a finite number inside the declared range; state changes only when source executes ordinary semantic `change`.
 
-Standalone Window Web supports the same contract. Current Native GUI IR 1.2 / payload v12 / runtime v1.3 intentionally does not. A native Slider program fails closed until a future versioned native contract adds parity.
+Standalone Window Web supports the same contract. Native parity is current through Native GUI IR **1.3**, direct backend **1.4**, payload **v13** and runtime **v1.4**. Windows uses `TRACKBAR`, macOS uses `NSSlider`, and Linux uses GTK3 `GtkScale`. The same line is consumed by direct AOT, token-free Ready and offline `patch link` paths.
+
+The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 contract remains frozen and rejects Slider explicitly. It is compatibility evidence, not the current product consumer.
 
 See `docs/SLIDER_STAGE1.md`.
 
@@ -130,7 +132,7 @@ when fruits changed:
 
 Text-backed ListBox remains single-select. List-backed ListBox is multi-select in Studio App Preview, Standalone Window Web, direct Win32/AppKit/GTK AOT and current token-free Ready/offline Windows/macOS/Linux paths.
 
-Native GUI IR 1.1 introduced persistent text-list state and the list-backed ListBox event ABI. Current Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserves it unchanged while adding TreeView.
+Native GUI IR 1.1 introduced persistent text-list state and the list-backed ListBox event ABI. Current Native GUI IR **1.3** / payload **v13** / runtime **v1.4** preserves it unchanged while composing Table, Menu, TreeView and Slider. The older v12/v1.3 line remains frozen compatibility.
 
 ## Table / Grid
 
@@ -147,7 +149,7 @@ when people changed:
 
 Top-level and nested Table Properties support editable columns/cells, add/remove, reorder and duplicate row/column operations. Column movement always keeps the header and corresponding cells aligned. Invalid row widths fail closed instead of silently truncating/padding data.
 
-Current payload v12/runtime v1.3 preserves Table structure, responsive layout and transient selected-row semantics.
+Current payload v13/runtime v1.4 preserves the existing Table structure, responsive layout and transient selected-row semantics. Payload v9/runtime v1.0 remains the frozen Table-origin compatibility line.
 
 ## TreeView
 
@@ -171,7 +173,7 @@ Top-level and nested TreeView Properties support add root/child, rename, move, i
 
 Selecting `compiler.js` exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
 
-Direct native and token-free Ready/offline parity use Native GUI IR **1.2**, sealed payload **v12** and runtime **v1.3** on Windows, macOS and Linux.
+Current direct native and token-free Ready/offline consumers use Native GUI IR **1.3**, sealed payload **v13** and runtime **v1.4** on Windows, macOS and Linux. The original TreeView ABI remains frozen in Native GUI IR **1.2** / payload **v12** / runtime **v1.3** and is preserved by the additive v1.4 line.
 
 ## Tabs and nested controls
 
@@ -225,21 +227,21 @@ Persistent application state changes only through explicit Patch `change`. Tabs 
 
 ## Native desktop path
 
-Current mappings include Win32, AppKit and GTK3 controls for the supported TreeView-capable surface. Unsupported native behavior fails closed. There is no implicit Electron fallback; the separately labelled compatibility package is the only Electron-based GUI path.
+Current mappings include Win32, AppKit and GTK3 controls for the Slider-capable Native GUI IR 1.3 surface. Unsupported behavior on an explicitly selected older native contract fails closed. There is no implicit Electron fallback; the separately labelled compatibility package is the only Electron-based GUI path.
 
 Current release tags are:
 
-- `native-win32-runtime-v1.3`;
-- `native-macos-runtime-v1.3`;
-- `native-linux-runtime-v1.3`.
+- `native-win32-runtime-v1.4`;
+- `native-macos-runtime-v1.4`;
+- `native-linux-runtime-v1.4`.
 
-Frozen compatibility lines remain explicit: v11/runtime v1.2 for Menu+list, v10/runtime v1.1 for list state, v9/runtime v1.0 for Table and earlier responsive/base contracts below them.
+Frozen compatibility lines remain explicit: Native GUI IR 1.2 / payload v12 / runtime v1.3 for TreeView, v11/runtime v1.2 for Menu+list, v10/runtime v1.1 for list state, v9/runtime v1.0 for Table and earlier responsive/base contracts below them.
 
 ## Runtime integrity
 
 The token-free Ready path is protected by the release/deployment integrity chain:
 
-1. Pages requires the current runtime releases.
+1. Pages requires the current v1.4 runtime releases.
 2. It downloads the exact browser-consumed assets.
 3. GitHub Release SHA-256 digests are read.
 4. `scripts/runtime-integrity-manifest.js` independently re-hashes the assets.
@@ -250,17 +252,17 @@ A missing entry or mismatch stops packaging. This proves byte identity inside th
 
 ## Offline compiler
 
-The downloadable compiler is the command-line counterpart to Ready builds. Windows/macOS/Linux `patch link` defaults to Native GUI IR **1.2**, payload **v12** and runtime **v1.3**, preserving responsive layout, Table, multi-select ListBox, Menu and TreeView semantics.
+The downloadable compiler is the command-line counterpart to Ready builds. Windows/macOS/Linux `patch link` defaults to Native GUI IR **1.3**, payload **v13** and runtime **v1.4**, preserving responsive layout, Table, multi-select ListBox, Menu and TreeView semantics while adding native Slider numeric events.
 
-The offline-compiler CI independently links and executes canonical current Window apps on Windows, Linux, Apple Silicon macOS and Intel macOS. FreeBSD remains Console-only via portable C99.
+The offline-compiler CI independently links and executes canonical current Window apps, including Slider, on Windows, Linux, Apple Silicon macOS and Intel macOS. Explicit compatibility targets remain fail-closed when a source needs a newer capability. FreeBSD remains Console-only via portable C99.
 
 ## PWA and public website
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated local asset references carry that revision and the Service Worker uses it as the active cache identity.
 
-Same-origin `/runtimes/` requests are fresh-first online with successful bytes retained as offline fallback.
+The site builder validates the transitive relative ES-module import closure of the generated `_site`, so a deploy cannot succeed while a browser-imported compiler module is missing. Same-origin `/runtimes/` requests are fresh-first online with successful bytes retained as offline fallback.
 
-The public website now uses a shared refreshed presentation layer. Studio exposes the current contracts and quick-start shortcuts directly above the IDE workspace. The Documentation page groups the current docs and provides a local text filter without telemetry or an external search service.
+The public website uses a shared refreshed presentation layer. Studio exposes the current contracts and quick-start shortcuts directly above the IDE workspace. The Documentation page groups the current docs and provides a local text filter without telemetry or an external search service.
 
 ## Recovery and diagnostics
 
@@ -272,14 +274,13 @@ Recovery keeps deduplicated local snapshots and supports Snapshot now, Restore, 
 
 The ordinary Studio does not need Lean. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
 
-Product/UI/runtime work after beta.32 does not expand those claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+Product/UI/runtime work through Native GUI IR 1.3 / payload v13 / runtime v1.4 does not expand those claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
 
 ## Where future work belongs
 
-Core current Studio authoring is complete for the existing control vocabulary. Future work should be classified by dependency rather than added as a vague never-ending backlog:
+Core current Studio authoring and native Slider parity are complete for the existing control vocabulary. Future work should be classified by dependency rather than added as a vague never-ending backlog:
 
-- **new product milestone:** genuinely new controls or IDE capabilities with concrete tests;
-- **new native ABI milestone:** Slider native parity or another feature requiring a versioned native contract;
+- **new product/native ABI milestone:** genuinely new controls or runtime capabilities with concrete tests;
 - **distribution gate:** installers, signing evidence or update channels;
 - **manual validation gate:** screen-reader/assistive-technology verification;
 - **research gate:** controlled measurements, external integration evidence or venue feedback.
