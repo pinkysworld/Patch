@@ -41,6 +41,14 @@ test('Patch site build content-addresses every public page and service-worker ca
   assert.match(builtWorker, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
 });
 
+test('site builder validates module imports and local HTML asset closure before success', () => {
+  assert.match(buildSite, /validateGeneratedModuleClosure\(\)/);
+  assert.match(buildSite, /validateGeneratedHtmlAssetClosure\(\)/);
+  assert.match(buildSite, /unresolved relative module imports/);
+  assert.match(buildSite, /unresolved local HTML assets/);
+  assert.match(buildSite, /\(\.\?:js\|css\|webmanifest\|svg\|png\|ico\)/);
+});
+
 test('Studio service worker bypasses stale HTTP cache but keeps offline fallback', () => {
   assert.match(serviceWorkerSource, /cache: 'no-store'/);
   assert.match(serviceWorkerSource, /ignoreSearch: true/);
