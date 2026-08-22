@@ -62,6 +62,7 @@ function installServiceWorkerRefresh() {
   if (!('serviceWorker' in navigator)) return;
 
   const reloadGuardKey = 'patch-studio-sw-reload-guard';
+  const siteRevision = new URL(import.meta.url).searchParams.get('v') || '';
   let reloadedForActivation = false;
   try {
     reloadedForActivation = sessionStorage.getItem(reloadGuardKey) === '1';
@@ -79,7 +80,9 @@ function installServiceWorkerRefresh() {
 
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      const registration = siteRevision
+        ? await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(siteRevision)}`, { updateViaCache: 'none', scope: './' })
+        : await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
       await registration.update();
     } catch {
       // Offline Studio operation remains valid when an update check cannot reach the network.

@@ -86,6 +86,9 @@ test('Studio cache cleanup is scoped to Patch caches on the shared Pages origin'
 
 test('Studio actively checks for a new worker and reloads once after activation', () => {
   assert.match(accessibility, /installServiceWorkerRefresh\(\)/);
+  assert.match(accessibility, /new URL\(import\.meta\.url\)\.searchParams\.get\('v'\)/);
+  assert.match(accessibility, /register\(`\.\/sw\.js\?v=\$\{encodeURIComponent\(siteRevision\)\}`/);
+  assert.match(accessibility, /scope: '\.\/'/);
   assert.match(accessibility, /register\('\.\/sw\.js', \{ updateViaCache: 'none' \}\)/);
   assert.match(accessibility, /await registration\.update\(\)/);
   assert.match(accessibility, /addEventListener\('controllerchange'/);
@@ -95,6 +98,10 @@ test('Studio actively checks for a new worker and reloads once after activation'
 
 test('Studio recovery bootstrap can repair a stale deployment before application modules execute', () => {
   assert.doesNotMatch(bootstrap, /^\s*import\s/m);
+  assert.match(bootstrap, /document\.currentScript\?\.src/);
+  assert.match(bootstrap, /searchParams\.get\('v'\)/);
+  assert.match(bootstrap, /register\(`\.\/sw\.js\?v=\$\{encodeURIComponent\(siteRevision\)\}`/);
+  assert.match(bootstrap, /scope: '\.\/'/);
   assert.match(bootstrap, /navigator\.serviceWorker\.register\('\.\/sw\.js', \{ updateViaCache: 'none' \}\)/);
   assert.match(bootstrap, /await registration\.update\(\)/);
   assert.match(bootstrap, /addEventListener\('controllerchange'/);
@@ -103,4 +110,23 @@ test('Studio recovery bootstrap can repair a stale deployment before application
   assert.match(studioHtml, /<script src="\.\/studio-bootstrap\.js"><\/script>\s*<script type="module" src="\.\/runtime-integrity\.js"><\/script>/);
   assert.ok(buildSite.includes("'studio-bootstrap.js','runtime-integrity.js'"));
   assert.match(serviceWorkerSource, /'\.\/studio-bootstrap\.js'/);
+});
+
+test('generated Studio propagates one revision into both worker refresh entrypoints', () => {
+  execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
+  const html = fs.readFileSync('_site/index.html', 'utf8');
+  const revision = /\.\/style\.css\?v=([a-f0-9]{16})/.exec(html)?.[1];
+  assert.ok(revision);
+  assert.ok(html.includes(`./studio-bootstrap.js?v=${revision}`));
+  assert.ok(html.includes(`./studio-accessibility.js?v=${revision}`));
+
+  const builtBootstrap = fs.readFileSync('_site/studio-bootstrap.js', 'utf8');
+  const builtAccessibility = fs.readFileSync('_site/studio-accessibility.js', 'utf8');
+  assert.match(builtBootstrap, /document\.currentScript\?\.src/);
+  assert.match(builtBootstrap, /searchParams\.get\('v'\)/);
+  assert.match(builtAccessibility, /new URL\(import\.meta\.url\)\.searchParams\.get\('v'\)/);
+  for (const source of [builtBootstrap, builtAccessibility]) {
+    assert.match(source, /register\(`\.\/sw\.js\?v=\$\{encodeURIComponent\(siteRevision\)\}`/);
+    assert.match(source, /scope: '\.\/'/);
+  }
 });
