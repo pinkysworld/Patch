@@ -43,6 +43,12 @@ test('Pages gates deployment on compatibility runtime plus current native GUI ru
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
 });
 
+test('Pages refuses a false green when required runtime releases are incomplete', () => {
+  assert.match(pages, /Refusing to report a successful Pages run without a deployment/);
+  assert.match(pages, /exit 1/);
+  assert.doesNotMatch(pages, /finish successfully without replacing the current site/);
+});
+
 test('Pages derives the deployed runtime manifest from GitHub release asset digests', () => {
   assert.match(pages, /runtime-integrity-manifest\.js/);
   assert.match(pages, /\.assets\[\]/);
@@ -63,6 +69,18 @@ test('Pages deploys only after the canonical current-site gate succeeds', () => 
   const upload = pages.indexOf('uses: actions/upload-pages-artifact@v5');
   const deploy = pages.indexOf('uses: actions/deploy-pages@v5');
   assert.ok(validate > 0 && upload > validate && deploy > upload);
+});
+
+test('Pages verifies the canonical deployed site and critical compiler assets over HTTP', () => {
+  const deploy = pages.indexOf('uses: actions/deploy-pages@v5');
+  const smoke = pages.indexOf('name: Verify deployed Patch Studio critical assets');
+  assert.ok(smoke > deploy);
+  assert.match(pages, /PAGE_URL: \$\{\{ steps\.deployment\.outputs\.page_url \}\}/);
+  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js']) {
+    assert.ok(pages.includes(asset), `Pages live smoke should cover ${asset}`);
+  }
+  assert.match(pages, /curl --fail --silent --show-error --location/);
+  assert.match(pages, /data-patch-version=\\"0\.2\.0-beta\.35\\"/);
 });
 
 test('service worker fetches runtime assets fresh-first before offline fallback', () => {
