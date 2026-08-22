@@ -76,6 +76,7 @@ for (const name of SITE_SRC_FILES) {
 }
 
 validateGeneratedModuleClosure();
+validateGeneratedHtmlAssetClosure();
 console.log(`built _site/ for Patch revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
 
 function computeSiteRevision() {
@@ -115,6 +116,27 @@ function validateGeneratedModuleClosure() {
   }
   if (missing.length) {
     throw new Error(`Generated Patch Studio has unresolved relative module imports:\n${missing.map(item => `- ${item}`).join('\n')}`);
+  }
+}
+
+function validateGeneratedHtmlAssetClosure() {
+  const missing = [];
+  const assetExtension = /\.(?:js|css|webmanifest|svg|png|ico)$/i;
+  for (const name of SITE_HTML_FILES) {
+    const file = path.join(out, name);
+    const html = fs.readFileSync(file, 'utf8');
+    for (const match of html.matchAll(/\b(?:href|src)="(\.\/[^"#]+)"/g)) {
+      const specifier = match[1];
+      const clean = specifier.split(/[?#]/, 1)[0];
+      if (!assetExtension.test(clean)) continue;
+      const target = path.resolve(path.dirname(file), clean);
+      if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
+        missing.push(`${name} -> ${specifier}`);
+      }
+    }
+  }
+  if (missing.length) {
+    throw new Error(`Generated Patch Studio has unresolved local HTML assets:\n${missing.map(item => `- ${item}`).join('\n')}`);
   }
 }
 
