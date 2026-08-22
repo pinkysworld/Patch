@@ -33,13 +33,14 @@ test('runtime integrity wrapper loads before the native builder and covers every
   assert.match(runtimeIntegrity, /integrity manifest is missing/);
 });
 
-test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.3 releases', () => {
+test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.4 releases', () => {
   assert.match(pages, /RUNTIME_TAG: studio-runtime-v0\.6/);
-  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.3/);
-  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.3/);
-  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.3/);
+  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.4/);
+  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.4/);
+  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.4/);
   assert.match(pages, /for tag in "\$RUNTIME_TAG" "\$WIN32_RUNTIME_TAG" "\$LINUX_NATIVE_RUNTIME_TAG" "\$MACOS_NATIVE_RUNTIME_TAG"/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
+  assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
 });
 
 test('Pages derives the deployed runtime manifest from GitHub release asset digests', () => {
