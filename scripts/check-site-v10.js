@@ -20,7 +20,8 @@ for (const rel of [
   '_site/designer-alignment-guides.js', '_site/designer-multiselect.js',
   '_site/designer-layout-policy.js', '_site/designer-responsive-layout.js',
   '_site/designer-multiselect.css', '_site/designer-responsive-layout.css',
-  '_site/src/native-gui-ir-v08.js', '_site/src/native-gui-ir-v12.js'
+  '_site/src/native-gui-ir-v08.js', '_site/src/native-gui-ir-v12.js',
+  '_site/src/native-gui-ir-v13.js', '_site/src/sealed-native-gui-v13.js'
 ]) requireFile(rel);
 
 const index = read('_site/index.html');
@@ -32,13 +33,16 @@ requireAll('Studio page', index, [
 ]);
 
 // Table originated in Native GUI IR 0.8 / payload v9. The current Ready tier is
-// additive and must still carry that Table-capable dependency chain.
+// Native GUI IR 1.3 / payload v13 / runtime v1.4 and must preserve the Table
+// contract while the frozen IR 1.2/v12 TreeView line remains available as
+// compatibility evidence rather than as the current Ready implementation.
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
-  "./src/native-gui-ir-v12.js",
-  'buildNativeGuiIRV12 as buildNativeGuiIR',
-  'PATCH_SEALED_NATIVE_GUI_TREE_VERSION',
-  'payloadVersion: PATCH_SEALED_NATIVE_GUI_TREE_VERSION',
+  "./src/native-gui-ir-v13.js",
+  "./src/sealed-native-gui-v13.js",
+  'buildNativeGuiIRV13 as buildNativeGuiIR',
+  'PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION',
+  'sealNativeGuiRuntimeV13',
   'Native single EXE (no token, recommended)',
   'Native GTK app (no token, recommended)',
   'Native AppKit app (no token, unsigned)'
@@ -59,7 +63,8 @@ const sw = read('_site/sw.js');
 requireAll('Patch Studio service worker', sw, [
   "'./downloads.html'", "'./table-stage1.js'", "'./designer-multiselect.js'",
   "'./designer-responsive-layout.js'", "'./src/native-gui-ir-v08.js'",
-  "'./src/native-gui-ir-v12.js'"
+  "'./src/native-gui-ir-v12.js'", "'./src/native-gui-ir-v13.js'",
+  "'./src/sealed-native-gui-v13.js'"
 ]);
 
 const nativeGuiV08 = read('_site/src/native-gui-ir-v08.js');
@@ -67,4 +72,14 @@ requireAll('Native GUI IR 0.8 browser module', nativeGuiV08, [
   "PATCH_NATIVE_GUI_IR_V08_VERSION = '0.8'", "type: 'table'", "event.valueType = 'text-list'"
 ]);
 
-console.log('ok Table-compatible current Patch Studio site surface');
+const nativeGuiV12 = read('_site/src/native-gui-ir-v12.js');
+requireAll('Frozen Native GUI IR 1.2 compatibility module', nativeGuiV12, [
+  "PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12'
+]);
+
+const nativeGuiV13 = read('_site/src/native-gui-ir-v13.js');
+requireAll('Current Native GUI IR 1.3 module', nativeGuiV13, [
+  "PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'", 'buildNativeGuiIRV13'
+]);
+
+console.log('ok Table-compatible current Patch Studio site surface on Native GUI IR 1.3 / payload v13 / runtime v1.4');
