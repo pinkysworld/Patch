@@ -1,6 +1,7 @@
 import { sealNativeGuiRuntime } from './sealed-native-gui.js';
 import { PATCH_SEALED_NATIVE_GUI_MENU_VERSION, sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
 import { PATCH_SEALED_NATIVE_GUI_TREE_VERSION, sealNativeGuiRuntimeV12 } from './sealed-native-gui-v12.js';
+import { PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION, sealNativeGuiRuntimeV13 } from './sealed-native-gui-v13.js';
 
 export const PATCH_SEALED_NATIVE_PACKAGE_VERSION = '0.2';
 
@@ -52,6 +53,9 @@ export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}
 }
 
 function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion }) {
+  if (Number(payloadVersion) === PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION) {
+    return sealNativeGuiRuntimeV13(runtime, nativeGui, { platform });
+  }
   if (Number(payloadVersion) === PATCH_SEALED_NATIVE_GUI_TREE_VERSION) {
     return sealNativeGuiRuntimeV12(runtime, nativeGui, { platform });
   }
