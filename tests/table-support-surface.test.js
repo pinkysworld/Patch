@@ -96,25 +96,27 @@ test('sealed runtime v1.1 remains the frozen payload v10 list compatibility line
   assert.match(sealedListWorkflow, /native-linux-runtime-v1\.1/);
 });
 
-test('downloadable offline compiler embeds runtime v1.3 and proves payload v12 Table ListBox Menu and Tree linking', () => {
+test('downloadable offline compiler embeds runtime v1.4 and proves payload v13 Table ListBox Menu Tree and Slider linking', () => {
   assert.match(offlineWorkflow, /windows-latest/);
   assert.match(offlineWorkflow, /ubuntu-latest/);
   assert.match(offlineWorkflow, /macos-15/);
   assert.match(offlineWorkflow, /macos-15-intel/);
-  assert.match(offlineWorkflow, /win32-sealed-gui-v13\.cpp/);
-  assert.match(offlineWorkflow, /appkit-sealed-gui-v13\.mm/);
-  assert.match(offlineWorkflow, /gtk-sealed-gui-v13\.cpp/);
+  assert.match(offlineWorkflow, /win32-sealed-gui-v14\.cpp/);
+  assert.match(offlineWorkflow, /appkit-sealed-gui-v14\.mm/);
+  assert.match(offlineWorkflow, /gtk-sealed-gui-v14\.cpp/);
   assert.match(offlineWorkflow, /link examples\/table-native-v09\.patch/);
   assert.match(offlineWorkflow, /link examples\/listbox-multiselect-native\.patch/);
   assert.match(offlineWorkflow, /link examples\/menu-state-window\.patch/);
   assert.match(offlineWorkflow, /link examples\/treeview-window\.patch/);
+  assert.match(offlineWorkflow, /link examples\/slider-window\.patch/);
   assert.match(offlineWorkflow, /OfflineTable/);
   assert.match(offlineWorkflow, /OfflineMulti/);
   assert.match(offlineWorkflow, /OfflineMenu/);
   assert.match(offlineWorkflow, /OfflineTree/);
-  assert.match(offlineWorkflow, /payload v12/i);
-  assert.match(offlineWorkflow, /runtime v1\.3/i);
-  assert.match(offlineWorkflow, /not sealed payload v12|payload v12/i);
+  assert.match(offlineWorkflow, /OfflineSlider/);
+  assert.match(offlineWorkflow, /payload v13/i);
+  assert.match(offlineWorkflow, /runtime v1\.4/i);
+  assert.match(offlineWorkflow, /not sealed payload v13|payload v13/i);
 });
 
 test('Studio App preview Table dispatch uses the shared semantic event adapter', () => {
