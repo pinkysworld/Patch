@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Current Patch documentation for the language, compiler, Studio, Slider Stage 1, formal assurance and Native GUI IR 1.2 / payload v12 / runtime v1.3 application targets.">
+  <meta name="description" content="Current Patch documentation for Change IR 0.10, Patch Studio, native Slider, Native GUI IR 1.3, payload v13, runtime v1.4 and the beta.32 assurance boundary.">
   <title>Documentation · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,11 +24,12 @@
     <div>
       <p class="page-eyebrow">Documentation · 0.2 beta.35+</p>
       <h1>One current map of Patch.</h1>
-      <p>Language, compiler, multi-file Patch Studio, Slider Stage 1, native builds, formal assurance and release engineering are documented against the same current product boundary instead of separate stale snapshots.</p>
+      <p>Language, compiler, multi-file Patch Studio, native Slider, formal assurance and release engineering are documented against one current product boundary.</p>
       <div class="docs-contract-grid" aria-label="Current Patch contracts">
         <div class="docs-contract-card"><span>Language</span><strong>Change IR 0.10</strong></div>
-        <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.2 / payload v12 / runtime v1.3</strong></div>
-        <div class="docs-contract-card"><span>Studio</span><strong>Multi-file bundle v3 · Slider Stage 1</strong></div>
+        <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.3 / payload v13 / runtime v1.4</strong></div>
+        <div class="docs-contract-card"><span>Compatibility</span><strong>IR 1.2 / payload v12 / runtime v1.3 frozen</strong></div>
+        <div class="docs-contract-card"><span>Studio</span><strong>Multi-file bundle v3 · native Slider Stage 1</strong></div>
         <div class="docs-contract-card"><span>Formal milestone</span><strong>beta.32 assurance boundary</strong></div>
       </div>
     </div>
@@ -43,84 +44,79 @@ patch doctor --json</pre>
     <span id="docFilterStatus" class="docs-search-status" role="status" aria-live="polite">Showing all documentation.</span>
   </div>
   <nav class="docs-jumps" aria-label="Documentation sections">
-    <a href="#start">Start here</a>
-    <a href="#studio-authoring">Studio authoring</a>
-    <a href="#language-compiler">Language &amp; compiler</a>
-    <a href="#assurance">Assurance &amp; research</a>
-    <a href="#native-release">Native &amp; release</a>
+    <a href="#start">Start here</a><a href="#studio-authoring">Studio authoring</a><a href="#language-compiler">Language &amp; compiler</a><a href="#assurance">Assurance &amp; research</a><a href="#native-release">Native &amp; release</a>
   </nav>
 
   <section id="start" class="page-section docs-filterable">
     <h2>Start here</h2>
-    <p>These documents describe the current product rather than only a historical milestone.</p>
+    <p>The current native line is Native GUI IR 1.3 / payload v13 / runtime v1.4 with native Slider support on Win32, AppKit and GTK. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains a frozen compatibility line and stays Slider fail-closed.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, examples, project bundle v3, Slider Stage 1 and current development status.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Browser IDE, Designer, multi-file project state, Project Tree, source-backed Slider/Table/TreeView/Tabs editing, recovery, diagnostics and builds.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_AUTHORING_SURFACE.md"><strong>Studio authoring surface</strong><span>Compact inventory of the complete current source-backed Form/control authoring surface, including Slider Stage 1 and explicit future boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SLIDER_STAGE1.md"><strong>Slider Stage 1</strong><span>Numeric range syntax, bounded transient finite-number changed values, Studio/Standalone Web support and the explicit native v1.3 fail-closed boundary.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Normative Patch syntax and semantic contracts for state, change, recipes and application structure.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Core beta.35+ product backlog, current completed Studio/compiler surface and separately identified external/research gates.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, examples, project bundle v3, native Slider and current development status.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Browser IDE, Designer, multi-file project state, recovery, diagnostics and Ready builds.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_AUTHORING_SURFACE.md"><strong>Studio authoring surface</strong><span>Complete source-backed Form/control authoring inventory.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SLIDER_STAGE1.md"><strong>Slider Stage 1</strong><span>Numeric syntax, bounded transient values and current native v1.4 parity.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Normative syntax and semantic contracts.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Completed core product work and separately tracked external/research gates.</span></a>
     </div>
   </section>
 
   <section id="studio-authoring" class="page-section docs-filterable">
     <h2>Studio authoring</h2>
-    <p>Source-backed visual authoring has one shared selection/Properties path. These documents cover the detailed editor workflows.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_SELECTION_ARCHITECTURE.md"><strong>Selection architecture</strong><span>Shared top-level Designer selection and Properties boundary for core controls, Tabs, Table and TreeView.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_LAYOUT_ACTIONS.md"><strong>Layout actions</strong><span>Source-backed Center H/Center V, Default size and collision-aware Auto place commands.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md"><strong>Keyboard accessibility</strong><span>Roving Tree/Tabs selection, source-backed reorder/indent shortcuts, Ctrl/Cmd+Enter commits and nested-editor focus restoration.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECT_OUTLINE.md"><strong>Project Outline</strong><span>Source-backed Forms, state, event and recipe navigation with exact editor-line jumps.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_CONTROL_DUPLICATION.md"><strong>Control duplication</strong><span>Top-level Duplicate with global id remapping, handler copying and visible offset placement.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_FORM_DUPLICATION.md"><strong>Form duplication</strong><span>Complete window-block duplication with fresh Form/control ids, nested structures and preserved handler-body semantics.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_FORM_DELETION.md"><strong>Form deletion</strong><span>Confirmed source-backed Form removal, orphan-handler cleanup and last-Form protection.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TABLE_ACTIONS.md"><strong>Table actions</strong><span>Top-level and nested row/column duplicate and reorder semantics with header/cell integrity.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TREE_ACTIONS.md"><strong>TreeView actions</strong><span>Top-level and nested deep-copy subtree duplication over the structural editor.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TABS_CONTROL_ACTIONS.md"><strong>Tabs control actions</strong><span>Nested page-control reorder/duplicate with multi-line block integrity, fresh ids and copied handlers.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TABS_PAGE_DUPLICATION.md"><strong>Tabs page duplication</strong><span>Complete page duplication with nested id/handler remapping and copied-page selection.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/TABS.md"><strong>Tabs</strong><span>Source-backed page editing, nested controls including Slider Stage 1, nested Table/TreeView structural Properties editing and current native boundary.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_SELECTION_ARCHITECTURE.md"><strong>Selection architecture</strong><span>Shared selection and Properties boundary.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_LAYOUT_ACTIONS.md"><strong>Layout actions</strong><span>Source-backed centering, sizing and auto placement.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md"><strong>Keyboard accessibility</strong><span>Roving structure selection and source-backed keyboard actions.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECT_OUTLINE.md"><strong>Project Outline</strong><span>Forms, state, events and recipes with exact editor jumps.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_CONTROL_DUPLICATION.md"><strong>Control duplication</strong><span>Fresh ids, copied handlers and source-backed placement.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_FORM_DUPLICATION.md"><strong>Form duplication</strong><span>Complete source-backed Form copying.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_FORM_DELETION.md"><strong>Form deletion</strong><span>Confirmed removal and orphan-handler cleanup.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TABLE_ACTIONS.md"><strong>Table actions</strong><span>Row/column duplicate and reorder.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TREE_ACTIONS.md"><strong>TreeView actions</strong><span>Hierarchy editing and subtree duplication.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TABS_CONTROL_ACTIONS.md"><strong>Tabs control actions</strong><span>Nested control reorder/duplicate.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_TABS_PAGE_DUPLICATION.md"><strong>Tabs page duplication</strong><span>Complete page duplication with id/handler remapping.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/TABS.md"><strong>Tabs</strong><span>Source-backed pages and nested Slider/Table/TreeView controls.</span></a>
     </div>
   </section>
 
   <section id="language-compiler" class="page-section docs-filterable">
     <h2>Language and compiler</h2>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md"><strong>Compiler</strong><span>Compiler pipeline, Change IR 0.10, validation and supported backend boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_COMPILER.md"><strong>Offline compiler</strong><span>Standalone downloads, local <code>patch link</code>, current payload v12 defaults and platform outputs.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CLI_CONTRACT.md"><strong>CLI contract</strong><span>Stable exit codes and the versioned machine-readable JSON result format.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LISTBOX.md"><strong>ListBox</strong><span>text-backed single-select and list-backed multi-select contracts across Studio, Web and the current native line.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_LIST_STATE.md"><strong>Native list state</strong><span>Native GUI IR 1.1 list-state compatibility contract preserved by Native GUI IR 1.2 / payload v12.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/MENUS_DIALOGS.md"><strong>Menus &amp; dialogs</strong><span>Structural MenuItems, separators, shortcuts, source-backed Boolean enabled/checked state and result dialogs.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA35.md"><strong>Beta.35 notes</strong><span>Original browser ListBox multi-select milestone and its historical release boundary.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA34.md"><strong>Beta.34 notes</strong><span>Studio persistence fixes, runtime SHA-256 verification and service-worker freshness.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md"><strong>Compiler</strong><span>Compiler pipeline, Change IR 0.10 and backend boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_COMPILER.md"><strong>Offline compiler</strong><span>Standalone downloads and current payload v13/runtime v1.4 local linking.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CLI_CONTRACT.md"><strong>CLI contract</strong><span>Stable exit codes and machine-readable JSON.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LISTBOX.md"><strong>ListBox</strong><span>Single- and multi-select event contracts.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_LIST_STATE.md"><strong>Native list state</strong><span>Native GUI IR 1.1 list-state compatibility retained by current v1.4.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/MENUS_DIALOGS.md"><strong>Menus &amp; dialogs</strong><span>Shortcuts, Boolean projections and result dialogs.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA35.md"><strong>Beta.35 notes</strong><span>Historical browser ListBox multi-select milestone.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA34.md"><strong>Beta.34 notes</strong><span>Persistence, runtime integrity and service-worker freshness.</span></a>
     </div>
   </section>
 
   <section id="assurance" class="page-section docs-filterable">
     <h2>Assurance and research</h2>
-    <p>Product work after beta.32 does not silently widen the formal runtime-correspondence claim.</p>
+    <p>Native v1.4 product work does not widen the beta.32 formal runtime-correspondence claim.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md"><strong>Formal model</strong><span>Lean-checked boundaries and the exact scope of current correspondence claims.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CALL_SITE_VALIDATION.md"><strong>Call-site validation</strong><span>Independent raw-source binding for static call-site identity before concrete call certification.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md"><strong>Runtime correspondence</strong><span>Runtime traces, invocation frames, correspondence evidence and remaining trust boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/EVALUATION.md"><strong>Evaluation</strong><span>Assurance overhead/scaling corpus and reproducibility harness without inventing controlled measurements.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md"><strong>Novelty and prior art</strong><span>How Patch positions mandatory semantic change and magnitude-aware authority without claiming unique expressibility.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/REPRODUCIBILITY_BUNDLE.md"><strong>Reproducibility bundle</strong><span>Commit-bound source/evidence snapshot, checksums and deterministic archive boundary.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md"><strong>Formal model</strong><span>Lean-checked boundaries and exact claim scope.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CALL_SITE_VALIDATION.md"><strong>Call-site validation</strong><span>Independent raw-source static call-site binding.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md"><strong>Runtime correspondence</strong><span>Runtime traces and invocation-frame evidence.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/EVALUATION.md"><strong>Evaluation</strong><span>Assurance evaluation harness and evidence boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md"><strong>Novelty and prior art</strong><span>Contribution boundary without unique-expressibility claims.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/REPRODUCIBILITY_BUNDLE.md"><strong>Reproducibility bundle</strong><span>Commit-bound source/evidence snapshots and checksums.</span></a>
     </div>
   </section>
 
   <section id="native-release" class="page-section docs-filterable">
     <h2>Native applications and release engineering</h2>
-    <p>Slider Stage 1 is not part of this frozen native line.</p>
+    <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.3 / payload v13 / runtime v1.4. Slider is native through TRACKBAR, NSSlider and GtkScale. The v12/v1.3 TreeView line remains frozen for compatibility.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Native GUI IR 1.2 / payload v12 / runtime v1.3 with Table, list-backed ListBox, Menu state and TreeView on Win32/AppKit/GTK. Slider remains fail-closed on this frozen native line.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Native apps</strong><span>Windows, macOS, Linux and FreeBSD application paths and their exact requirements.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Operational release gates, runtime integrity, diagnostics, compatibility, signing and distribution boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RELEASE_SIGNING.md"><strong>Signing &amp; notarization</strong><span>Fail-closed Windows Authenticode, macOS Developer ID/notarization machinery and explicit unsigned status where credentials are unavailable.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LINUX_PACKAGING.md"><strong>Linux packaging</strong><span>GTK3/Console runtime expectations, portable archive boundaries, integrity and removal.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/DIAGNOSTICS.md"><strong>Diagnostics</strong><span>Stable PATCH error codes, locations and privacy-redacted Studio reports.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/THREAT_MODEL.md"><strong>Threat model</strong><span>Studio, remote build, generated-app and toolchain trust boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/TARGETS.md"><strong>Target matrix</strong><span>Current Web, portable, Wasm, native AOT, Ready/offline and FreeBSD target contracts.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts from frozen compatibility tiers through current Slider v1.4.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Native apps</strong><span>Windows, macOS, Linux and FreeBSD paths.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Runtime integrity, diagnostics, signing and distribution boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RELEASE_SIGNING.md"><strong>Signing &amp; notarization</strong><span>Windows Authenticode and macOS Developer ID/notarization gates.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LINUX_PACKAGING.md"><strong>Linux packaging</strong><span>GTK3 runtime requirements and package boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/DIAGNOSTICS.md"><strong>Diagnostics</strong><span>Stable error codes and privacy-redacted Studio reports.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/THREAT_MODEL.md"><strong>Threat model</strong><span>Studio, build and generated-app trust boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/TARGETS.md"><strong>Target matrix</strong><span>Web, Wasm, native AOT, Ready/offline and FreeBSD contracts.</span></a>
     </div>
   </section>
 
@@ -135,7 +131,6 @@ patch doctor --json</pre>
   const links = [...document.querySelectorAll('.doc-link')];
   const sections = [...document.querySelectorAll('.docs-filterable')];
   if (!input || !status || !empty) return;
-
   const apply = () => {
     const query = input.value.trim().toLocaleLowerCase();
     let visible = 0;
@@ -149,16 +144,15 @@ patch doctor --json</pre>
       section.hidden = Boolean(query) && sectionLinks.length > 0 && sectionLinks.every(link => link.hidden);
     }
     empty.hidden = visible !== 0;
-    status.textContent = query ? `${visible} matching document${visible === 1 ? '' : 's'}.` : `Showing all ${links.length} documents.`;
+    status.textContent = query ? `${visible} documentation link${visible === 1 ? '' : 's'} match “${input.value.trim()}”.` : 'Showing all documentation.';
   };
-
   input.addEventListener('input', apply);
   input.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || !input.value) return;
+    if (event.key !== 'Escape') return;
     input.value = '';
     apply();
+    input.focus();
   });
-  apply();
 })();
 </script>
 </body>
