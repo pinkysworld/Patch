@@ -124,6 +124,10 @@ requireAll('Service worker current compiler cache', sw, [
   './src/native-gui-ir-v13.js','./src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js'
 ]);
 
+const coreSelection = read('_site/designer-core-selection.js');
+requireAll('Core Designer selection bridge', coreSelection, ['currentDesignerSelection']);
+rejectAll('Core Designer selection bridge', coreSelection, ['legacySelected']);
+
 const structureUx = read('_site/designer-structure-ux.js');
 requireAll('Structural Properties usability', structureUx, ['filterStructureLabels','structuralEditorSummary','Filter nodes','Filter pages','No rows yet','Add first row','clickExisting']);
 const structuralKeyboard = read('_site/designer-structural-keyboard.js');
