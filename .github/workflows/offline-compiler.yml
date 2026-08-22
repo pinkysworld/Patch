@@ -10,18 +10,22 @@ on:
       - native-runtime/sealed-menu-v12.hpp
       - native-runtime/sealed-table-v10.hpp
       - native-runtime/sealed-tree-v13.hpp
+      - native-runtime/sealed-slider-v14.hpp
       - native-runtime/win32-sealed-gui-v10.cpp
       - native-runtime/win32-sealed-gui-v11.cpp
       - native-runtime/win32-sealed-gui-v12.cpp
       - native-runtime/win32-sealed-gui-v13.cpp
+      - native-runtime/win32-sealed-gui-v14.cpp
       - native-runtime/appkit-sealed-gui-v10.mm
       - native-runtime/appkit-sealed-gui-v11.mm
       - native-runtime/appkit-sealed-gui-v12.mm
       - native-runtime/appkit-sealed-gui-v13.mm
+      - native-runtime/appkit-sealed-gui-v14.mm
       - native-runtime/gtk-sealed-gui-v10.cpp
       - native-runtime/gtk-sealed-gui-v11.cpp
       - native-runtime/gtk-sealed-gui-v12.cpp
       - native-runtime/gtk-sealed-gui-v13.cpp
+      - native-runtime/gtk-sealed-gui-v14.cpp
       - scripts/build-offline-compiler.js
       - scripts/offline-compiler-runner.cjs
       - scripts/build-native-sea-template.js
@@ -32,9 +36,11 @@ on:
       - examples/listbox-multiselect-native.patch
       - examples/menu-state-window.patch
       - examples/treeview-window.patch
+      - examples/slider-window.patch
       - .github/workflows/offline-compiler.yml
       - .github/workflows/native-sealed-list-runtime.yml
       - .github/workflows/native-sealed-tree-runtime-v13.yml
+      - .github/workflows/native-sealed-slider-runtime-v14.yml
   push:
     branches: [main]
     paths:
@@ -43,18 +49,22 @@ on:
       - native-runtime/sealed-menu-v12.hpp
       - native-runtime/sealed-table-v10.hpp
       - native-runtime/sealed-tree-v13.hpp
+      - native-runtime/sealed-slider-v14.hpp
       - native-runtime/win32-sealed-gui-v10.cpp
       - native-runtime/win32-sealed-gui-v11.cpp
       - native-runtime/win32-sealed-gui-v12.cpp
       - native-runtime/win32-sealed-gui-v13.cpp
+      - native-runtime/win32-sealed-gui-v14.cpp
       - native-runtime/appkit-sealed-gui-v10.mm
       - native-runtime/appkit-sealed-gui-v11.mm
       - native-runtime/appkit-sealed-gui-v12.mm
       - native-runtime/appkit-sealed-gui-v13.mm
+      - native-runtime/appkit-sealed-gui-v14.mm
       - native-runtime/gtk-sealed-gui-v10.cpp
       - native-runtime/gtk-sealed-gui-v11.cpp
       - native-runtime/gtk-sealed-gui-v12.cpp
       - native-runtime/gtk-sealed-gui-v13.cpp
+      - native-runtime/gtk-sealed-gui-v14.cpp
       - scripts/build-offline-compiler.js
       - scripts/offline-compiler-runner.cjs
       - scripts/build-native-sea-template.js
@@ -65,9 +75,11 @@ on:
       - examples/listbox-multiselect-native.patch
       - examples/menu-state-window.patch
       - examples/treeview-window.patch
+      - examples/slider-window.patch
       - .github/workflows/offline-compiler.yml
       - .github/workflows/native-sealed-list-runtime.yml
       - .github/workflows/native-sealed-tree-runtime-v13.yml
+      - .github/workflows/native-sealed-slider-runtime-v14.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -112,7 +124,7 @@ jobs:
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Build TreeView-capable Win32 runtime v1.3
+      - name: Build Slider-capable Win32 runtime v1.4
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
@@ -126,23 +138,23 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v13.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v14.cpp user32.lib gdi32.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
           if ($LASTEXITCODE -ne 0) { throw "MSVC GUI runtime build failed with exit code $LASTEXITCODE." }
-      - name: Build TreeView-capable GTK runtime v1.3
+      - name: Build Slider-capable GTK runtime v1.4
         if: matrix.platform == 'linux'
         shell: bash
         run: |
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v13.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v14.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x offline-runtime/gui.bin
-      - name: Build TreeView-capable AppKit runtime v1.3
+      - name: Build Slider-capable AppKit runtime v1.4
         if: matrix.platform == 'macos'
         shell: bash
         run: |
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v13.mm -o offline-runtime/gui.bin
+            native-runtime/appkit-sealed-gui-v14.mm -o offline-runtime/gui.bin
           chmod +x offline-runtime/gui.bin
           test "$(lipo -archs offline-runtime/gui.bin)" = "arm64"
       - name: Build standalone Patch compiler
@@ -163,6 +175,7 @@ jobs:
           "dist-offline/${{ matrix.asset }}" link examples/listbox-multiselect-native.patch --name OfflineMulti --out dist-smoke/OfflineMulti
           "dist-offline/${{ matrix.asset }}" link examples/menu-state-window.patch --name OfflineMenu --out dist-smoke/OfflineMenu
           "dist-offline/${{ matrix.asset }}" link examples/treeview-window.patch --name OfflineTree --out dist-smoke/OfflineTree
+          "dist-offline/${{ matrix.asset }}" link examples/slider-window.patch --name OfflineSlider --out dist-smoke/OfflineSlider
           test -s dist-smoke/OfflineSmoke.html
       - name: Smoke linked Window apps on Windows
         if: matrix.platform == 'windows'
@@ -172,13 +185,13 @@ jobs:
         run: |
           & ./dist-smoke/OfflineLinked.exe
           if ($LASTEXITCODE -ne 0) { throw "Linked Console smoke failed with exit code $LASTEXITCODE." }
-          foreach ($name in @('OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree')) {
+          foreach ($name in @('OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider')) {
             & "./dist-smoke/$name.exe" --patch-smoke
             if ($LASTEXITCODE -ne 0) { throw "$name smoke failed with exit code $LASTEXITCODE." }
           }
-          foreach ($name in @('OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree')) {
+          foreach ($name in @('OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider')) {
             $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path "dist-smoke/$name.exe"))
-            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 12) { throw "$name is not sealed payload v12." }
+            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 13) { throw "$name is not sealed payload v13." }
           }
       - name: Smoke linked Window apps on Linux
         if: matrix.platform == 'linux'
@@ -186,18 +199,19 @@ jobs:
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable dist-smoke/OfflineMulti dist-smoke/OfflineMenu dist-smoke/OfflineTree
+          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable dist-smoke/OfflineMulti dist-smoke/OfflineMenu dist-smoke/OfflineTree dist-smoke/OfflineSlider
           ./dist-smoke/OfflineLinked
           xvfb-run -a ./dist-smoke/OfflineResponsive --patch-smoke
           xvfb-run -a ./dist-smoke/OfflineTable --patch-smoke
           xvfb-run -a ./dist-smoke/OfflineMulti --patch-smoke
           xvfb-run -a ./dist-smoke/OfflineMenu --patch-smoke
           xvfb-run -a ./dist-smoke/OfflineTree --patch-smoke
+          xvfb-run -a ./dist-smoke/OfflineSlider --patch-smoke
           node - <<'NODE'
           const fs=require('fs');
-          for(const name of ['OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree']){
+          for(const name of ['OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider']){
             const sealed=fs.readFileSync(`dist-smoke/${name}`);
-            if(sealed.readUInt32LE(sealed.length-12)!==12) throw new Error(`${name} is not sealed payload v12.`);
+            if(sealed.readUInt32LE(sealed.length-12)!==13) throw new Error(`${name} is not sealed payload v13.`);
           }
           NODE
       - name: Smoke linked Window apps on macOS
@@ -212,18 +226,20 @@ jobs:
           MULTI_APP=dist-smoke/OfflineMulti.app/Contents/MacOS/OfflineMulti
           MENU_APP=dist-smoke/OfflineMenu.app/Contents/MacOS/OfflineMenu
           TREE_APP=dist-smoke/OfflineTree.app/Contents/MacOS/OfflineTree
-          test -x "$CONSOLE_APP" && test -x "$WINDOW_APP" && test -x "$TABLE_APP" && test -x "$MULTI_APP" && test -x "$MENU_APP" && test -x "$TREE_APP"
+          SLIDER_APP=dist-smoke/OfflineSlider.app/Contents/MacOS/OfflineSlider
+          test -x "$CONSOLE_APP" && test -x "$WINDOW_APP" && test -x "$TABLE_APP" && test -x "$MULTI_APP" && test -x "$MENU_APP" && test -x "$TREE_APP" && test -x "$SLIDER_APP"
           "$CONSOLE_APP"
           "$WINDOW_APP" --patch-smoke
           "$TABLE_APP" --patch-smoke
           "$MULTI_APP" --patch-smoke
           "$MENU_APP" --patch-smoke
           "$TREE_APP" --patch-smoke
-          node - "$WINDOW_APP" "$TABLE_APP" "$MULTI_APP" "$MENU_APP" "$TREE_APP" <<'NODE'
+          "$SLIDER_APP" --patch-smoke
+          node - "$WINDOW_APP" "$TABLE_APP" "$MULTI_APP" "$MENU_APP" "$TREE_APP" "$SLIDER_APP" <<'NODE'
           const fs=require('fs');
           for(const file of process.argv.slice(2)){
             const sealed=fs.readFileSync(file);
-            if(sealed.readUInt32LE(sealed.length-12)!==12) throw new Error(`${file} is not sealed payload v12.`);
+            if(sealed.readUInt32LE(sealed.length-12)!==13) throw new Error(`${file} is not sealed payload v13.`);
           }
           NODE
       - uses: actions/upload-artifact@v7
@@ -243,7 +259,7 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Build portable Intel macOS compiler kit with TreeView runtime v1.3
+      - name: Build portable Intel macOS compiler kit with Slider runtime v1.4
         shell: bash
         run: |
           ROOT=dist-intel/patch-macos-x64
@@ -253,7 +269,7 @@ jobs:
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch x86_64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v13.mm -o "$ROOT/runtime/gui.bin"
+            native-runtime/appkit-sealed-gui-v14.mm -o "$ROOT/runtime/gui.bin"
           chmod +x "$ROOT/runtime/gui.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
@@ -272,7 +288,7 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals Native GUI IR 1.2 into payload v12/runtime v1.3, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts and hierarchical TreeView support.
+          Window link seals Native GUI IR 1.3 into payload v13/runtime v1.4, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, hierarchical TreeView and native Slider support.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
@@ -290,7 +306,7 @@ jobs:
           test -x "$CONSOLE_APP"
           actual="$("$CONSOLE_APP")"
           test "$actual" = "8"
-          for pair in "responsive-window.patch IntelWindow" "table-native-v09.patch IntelTable" "listbox-multiselect-native.patch IntelMulti" "menu-state-window.patch IntelMenu" "treeview-window.patch IntelTree"; do
+          for pair in "responsive-window.patch IntelWindow" "table-native-v09.patch IntelTable" "listbox-multiselect-native.patch IntelMulti" "menu-state-window.patch IntelMenu" "treeview-window.patch IntelTree" "slider-window.patch IntelSlider"; do
             set -- $pair
             "$KIT/patch" link "examples/$1" --name "$2" --out "dist-smoke/$2"
             APP="dist-smoke/$2.app/Contents/MacOS/$2"
@@ -299,7 +315,7 @@ jobs:
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==12) throw new Error('Intel offline compiler Window output is not sealed payload v12.');
+          if(sealed.readUInt32LE(sealed.length-12)!==13) throw new Error('Intel offline compiler Window output is not sealed payload v13.');
           NODE
           done
       - uses: actions/upload-artifact@v7
@@ -391,5 +407,5 @@ jobs:
         shell: bash
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds sealed Native GUI payload v12/runtime v1.3 with responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts and hierarchical TreeView support. Supported run/build/link workflows work locally without a GitHub token.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.1' --notes 'Standalone Patch compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds sealed Native GUI payload v13/runtime v1.4 with responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, hierarchical TreeView and native Slider support. Supported run/build/link workflows work locally without a GitHub token.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
