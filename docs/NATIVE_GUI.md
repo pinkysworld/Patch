@@ -15,7 +15,7 @@ The native stack intentionally separates semantic IR, direct AOT generation and 
 | Native GUI IR 0.8 | frozen Table/Grid extension |
 | Native GUI IR 1.1 | persistent text-list state and multi-select ListBox ABI |
 | Native GUI IR 1.2 | frozen TreeView-capable compatibility line |
-| Native GUI IR 1.3 | **current**, adds Slider range/step/numeric event metadata |
+| Native GUI IR **1.3** | **current**, adds Slider range/step/numeric event metadata |
 | sealed payload v8 / runtime v0.9 | frozen responsive base compatibility |
 | sealed payload v9 / runtime v1.0 | frozen Table compatibility |
 | sealed payload v10 / runtime v1.1 | frozen persistent-list compatibility |
