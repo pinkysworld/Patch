@@ -71,15 +71,25 @@ test('Pages deploys only after the canonical current-site gate succeeds', () => 
   assert.ok(validate > 0 && upload > validate && deploy > upload);
 });
 
-test('Pages verifies the canonical deployed site and critical compiler assets over HTTP', () => {
+test('Pages verifies the canonical and public deployed site with one revision-consistent module graph', () => {
   const deploy = pages.indexOf('uses: actions/deploy-pages@v5');
   const smoke = pages.indexOf('name: Verify deployed Patch Studio critical assets');
   assert.ok(smoke > deploy);
   assert.match(pages, /PAGE_URL: \$\{\{ steps\.deployment\.outputs\.page_url \}\}/);
-  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js']) {
+  assert.match(pages, /PUBLIC_URL: https:\/\/minh\.systems\/Patch\//);
+  assert.match(pages, /verify_base \(\)/);
+  assert.match(pages, /verify_base "\$PAGE_URL" pages/);
+  assert.match(pages, /verify_base "\$PUBLIC_URL" public/);
+  assert.match(pages, /style\\\.css\\\?v=\[0-9a-f\]\{16\}/);
+  assert.match(pages, /studio-bootstrap\.js\?v=\$\{revision\}/);
+  assert.match(pages, /studio-accessibility\.js\?v=\$\{revision\}/);
+  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','studio-bootstrap.js','studio-accessibility.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js']) {
     assert.ok(pages.includes(asset), `Pages live smoke should cover ${asset}`);
   }
   assert.match(pages, /curl --fail --silent --show-error --location/);
+  assert.match(pages, /src\/compiler\.js\?v=\$\{revision\}/);
+  assert.match(pages, /\.\/parser\.js\?v=\$\{revision\}/);
+  assert.match(pages, /sw\.js\?v=\$\{encodeURIComponent\(siteRevision\)\}/);
   assert.match(pages, /data-patch-version="0\.2\.0-beta\.35"/);
 });
 
