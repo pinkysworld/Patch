@@ -203,32 +203,61 @@ jobs:
         if: steps.native_runtime.outputs.ready == 'true'
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          PUBLIC_URL: https://minh.systems/Patch/
         shell: bash
         run: |
           set -euo pipefail
-          base="${PAGE_URL%/}/"
           cache_bust="deploy-${GITHUB_SHA}"
-          assets=(
-            index.html
-            site-navigation.css
-            site-refresh.css
-            playground.js
-            native-build.js
-            sw.js
-            src/compiler.js
-            src/call-site-validation.js
-            src/independent-range-expression.js
-            src/independent-guard-expression.js
-          )
-          for asset in "${assets[@]}"; do
-            url="${base}${asset}?smoke=${cache_bust}"
+
+          fetch_asset() {
+            local url="$1" output="$2"
             echo "Checking $url"
             curl --fail --silent --show-error --location \
               --retry 8 --retry-delay 3 --retry-all-errors \
-              --output /tmp/patch-pages-smoke "$url"
-            test -s /tmp/patch-pages-smoke
-          done
-          curl --fail --silent --show-error --location \
-            --retry 8 --retry-delay 3 --retry-all-errors \
-            "${base}index.html?smoke=${cache_bust}" | grep -F 'data-patch-version="0.2.0-beta.35"' >/dev/null
-          echo "Patch Studio canonical Pages deployment smoke passed: $base"
+              --output "$output" "$url"
+            test -s "$output"
+          }
+
+          verify_base() {
+            local base="${1%/}/" label="$2" index_file revision
+            index_file="/tmp/patch-pages-index-${label}"
+            fetch_asset "${base}index.html?smoke=${cache_bust}" "$index_file"
+            grep -F 'data-patch-version="0.2.0-beta.35"' "$index_file" >/dev/null
+            revision="$(grep -oE '\./style\.css\?v=[0-9a-f]{16}' "$index_file" | head -n1 | sed 's/.*?v=//')"
+            if [[ ! "$revision" =~ ^[0-9a-f]{16}$ ]]; then
+              echo "${label} did not publish a valid Patch site revision." >&2
+              exit 1
+            fi
+            grep -F "./studio-bootstrap.js?v=${revision}" "$index_file" >/dev/null
+            grep -F "./studio-accessibility.js?v=${revision}" "$index_file" >/dev/null
+
+            assets=(
+              site-navigation.css
+              site-refresh.css
+              playground.js
+              native-build.js
+              studio-bootstrap.js
+              studio-accessibility.js
+              sw.js
+              src/compiler.js
+              src/call-site-validation.js
+              src/independent-range-expression.js
+              src/independent-guard-expression.js
+            )
+            for asset in "${assets[@]}"; do
+              fetch_asset "${base}${asset}?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-smoke
+            done
+
+            fetch_asset "${base}playground.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-playground
+            grep -F "./src/compiler.js?v=${revision}" /tmp/patch-pages-playground >/dev/null
+            fetch_asset "${base}src/compiler.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-compiler
+            grep -F "./parser.js?v=${revision}" /tmp/patch-pages-compiler >/dev/null
+            fetch_asset "${base}studio-bootstrap.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-bootstrap
+            grep -F 'sw.js?v=${encodeURIComponent(siteRevision)}' /tmp/patch-pages-bootstrap >/dev/null
+            echo "Patch Studio ${label} revision ${revision} smoke passed: $base"
+          }
+
+          verify_base "$PAGE_URL" pages
+          if [ "${PUBLIC_URL%/}" != "${PAGE_URL%/}" ]; then
+            verify_base "$PUBLIC_URL" public
+          fi
