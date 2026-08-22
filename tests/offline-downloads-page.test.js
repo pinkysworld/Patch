@@ -31,7 +31,7 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page clearly distinguishes standalone, Intel macOS kit and FreeBSD requirements', () => {
+test('downloads page clearly distinguishes current v1.4, Intel macOS kit, FreeBSD and frozen v1.3 compatibility', () => {
   assert.match(downloads, /normal local workflows do not need a GitHub token/i);
   assert.match(downloads, /macOS Intel/);
   assert.match(downloads, /portable tar\.gz kit/);
@@ -40,12 +40,16 @@ test('downloads page clearly distinguishes standalone, Intel macOS kit and FreeB
   assert.match(downloads, /requires local Node 22\+ and cc/i);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
   assert.match(downloads, /patch link app\.patch --out App/);
-  assert.match(downloads, /payload <strong>v12<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.3<\/strong>/);
+  assert.match(downloads, /Native GUI IR <strong>1\.3<\/strong>/);
+  assert.match(downloads, /payload <strong>v13<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.4<\/strong>/);
+  assert.match(downloads, /native Slider/i);
   assert.match(downloads, /hierarchical TreeView/);
+  assert.match(downloads, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
+  assert.match(downloads, /Slider fail-closed/);
 });
 
-test('generated public site contains the downloads page and current Designer/native compiler assets', () => {
+test('generated public site contains downloads and current plus frozen native compiler assets', () => {
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
   for (const file of [
     '_site/downloads.html',
@@ -55,6 +59,9 @@ test('generated public site contains the downloads page and current Designer/nat
     '_site/designer-multiselect.css',
     '_site/src/native-gui-ir-v12.js',
     '_site/src/native-tree-backend-adapter.js',
-    '_site/src/sealed-native-gui-v12.js'
+    '_site/src/sealed-native-gui-v12.js',
+    '_site/src/native-gui-ir-v13.js',
+    '_site/src/native-slider-backend-adapter.js',
+    '_site/src/sealed-native-gui-v13.js'
   ]) assert.ok(fs.existsSync(file), file);
 });
