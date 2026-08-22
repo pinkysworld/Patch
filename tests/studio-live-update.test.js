@@ -6,6 +6,8 @@ import { execFileSync } from 'node:child_process';
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 const serviceWorkerSource = fs.readFileSync('web/sw.js', 'utf8');
 const accessibility = fs.readFileSync('web/studio-accessibility.js', 'utf8');
+const bootstrap = fs.readFileSync('web/studio-bootstrap.js', 'utf8');
+const studioHtml = fs.readFileSync('web/index.html', 'utf8');
 
 test('Patch site build content-addresses every public page and service-worker cache', () => {
   assert.match(buildSite, /createHash\('sha256'\)/);
@@ -24,7 +26,7 @@ test('Patch site build content-addresses every public page and service-worker ca
 
   for (const asset of [
     'site-navigation.css', 'studio-accessibility.css', 'designer-multiselect.css', 'form-window-resize.css', 'manifest.webmanifest',
-    'native-build.js', 'project-lifecycle.js', 'project-config-restore.js', 'recovery-manager.js',
+    'studio-bootstrap.js', 'native-build.js', 'project-lifecycle.js', 'project-config-restore.js', 'recovery-manager.js',
     'playground.js', 'forms-designer.js', 'designer-alignment-guides.js', 'designer-multiselect.js',
     'form-window-resize.js', 'studio-diagnostics.js', 'studio-accessibility.js'
   ]) assert.ok(html.includes(`./${asset}?v=${revision}`), asset);
@@ -71,4 +73,16 @@ test('Studio actively checks for a new worker and reloads once after activation'
   assert.match(accessibility, /addEventListener\('controllerchange'/);
   assert.match(accessibility, /patch-studio-sw-reload-guard/);
   assert.match(accessibility, /window\.location\.reload\(\)/);
+});
+
+test('Studio recovery bootstrap can repair a stale deployment before application modules execute', () => {
+  assert.doesNotMatch(bootstrap, /^\s*import\s/m);
+  assert.match(bootstrap, /navigator\.serviceWorker\.register\('\.\/sw\.js', \{ updateViaCache: 'none' \}\)/);
+  assert.match(bootstrap, /await registration\.update\(\)/);
+  assert.match(bootstrap, /addEventListener\('controllerchange'/);
+  assert.match(bootstrap, /patch-studio-sw-reload-guard/);
+  assert.match(bootstrap, /window\.location\.reload\(\)/);
+  assert.match(studioHtml, /<script src="\.\/studio-bootstrap\.js"><\/script>\s*<script type="module" src="\.\/runtime-integrity\.js"><\/script>/);
+  assert.ok(buildSite.includes("'studio-bootstrap.js','runtime-integrity.js'"));
+  assert.match(serviceWorkerSource, /'\.\/studio-bootstrap\.js'/);
 });
