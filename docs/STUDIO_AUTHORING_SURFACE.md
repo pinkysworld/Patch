@@ -2,7 +2,7 @@
 
 Status: **0.2.0-beta.35+** current source-backed Studio authoring surface.
 
-This document is the compact inventory for the visual Designer workflows available for the **existing Patch control set**. It does not introduce a new language or runtime contract.
+This document is the compact inventory for the visual Designer workflows available for the **existing Patch control set**. It does not introduce a new language or widen the formal assurance contract.
 
 ## Forms
 
@@ -23,7 +23,7 @@ Duplicate/Delete activation always returns through the existing Form selector. T
 
 ## Top-level controls
 
-The Designer exposes Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table, TreeView and Tabs through the same source-backed toolbox/discovery boundary. Slider Stage 1 is additionally exposed through that same boundary.
+The Designer exposes Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs through the same source-backed toolbox/discovery boundary.
 
 For the supported top-level controls, Studio provides:
 
@@ -41,7 +41,7 @@ For the supported top-level controls, Studio provides:
 - collision-aware Auto place;
 - transient multi-select with shared movement and primary-relative alignment.
 
-Slider Stage 1 additionally exposes source-backed id, minimum, maximum and step Properties plus live range preview. Slider interaction is transient and numeric; persistence still requires explicit Patch `change`.
+Slider additionally exposes source-backed id, minimum, maximum and step Properties plus live range preview. Slider interaction is transient and numeric; persistence still requires explicit Patch `change`.
 
 Duplicated Tabs remap ids for controls nested in all pages as well as the Tabs id itself. Table rows and TreeView hierarchies are copied with their complete parent source block.
 
@@ -90,7 +90,7 @@ Page workflows:
 
 Nested page-control workflows:
 
-- add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView, plus Slider Stage 1;
+- add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table and TreeView;
 - remove;
 - move up/down;
 - duplicate;
@@ -119,20 +119,27 @@ Application persistence still occurs only through ordinary Patch semantic `chang
 
 Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state.
 
+## Native delivery boundary
+
+The current desktop consumer contract is Native GUI IR **1.3**, sealed payload **v13** and runtime **v1.4**. Slider is native on Windows through `TRACKBAR`, macOS through `NSSlider`, and Linux through GTK3 `GtkScale`. This same additive contract is used by direct AOT, token-free Ready and offline `patch link` paths.
+
+Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. It deliberately stays Slider fail-closed and is not redefined by the v1.4 work.
+
 ## Public/offline delivery
 
-The current authoring modules are part of the deterministic content-addressed public Patch Studio build and the offline PWA cache. Studio-only authoring additions remain in `web/` so they do not unnecessarily trigger native-runtime build matrices.
+The current authoring modules are part of the deterministic content-addressed public Patch Studio build and the offline PWA cache. The generated site also validates the transitive relative ES-module import closure so a browser compiler dependency cannot be omitted silently. Studio-only authoring additions remain in `web/` so they do not unnecessarily trigger native-runtime build matrices.
 
 ## What “complete” means here
 
-This is the complete current authoring surface for the **existing Patch UI/control vocabulary**, now including Slider Stage 1. It does not mean every conceivable IDE feature exists.
+This is the complete current authoring surface for the **existing Patch UI/control vocabulary**, including Slider. It does not mean every conceivable IDE feature exists.
 
-The former ordinary product-backlog items for a richer data-control surface and structural/nested keyboard refinement are closed by Slider Stage 1 plus the implemented keyboard/focus milestone. Any new/richer data controls beyond the current Table, ListBox and TreeView vocabulary are future/new product milestones rather than missing beta.35 implementation. Slider Stage 1 is the completed current numeric-range addition. Remaining work is deliberately separated by dependency:
+The former ordinary product-backlog items for a richer data-control surface, native Slider parity and structural/nested keyboard refinement are closed by Slider Stage 1, Native GUI IR 1.3 / payload v13 / runtime v1.4 and the implemented keyboard/focus milestone. New controls or additional native capabilities are future/new product milestones rather than missing beta.35 implementation.
 
-- **native Slider parity** requires a future versioned Native GUI IR/backend/payload/runtime contract rather than redefining v1.3;
+Remaining work is deliberately separated by dependency:
+
 - **manual assistive-technology verification with Narrator, VoiceOver, Orca** or comparable tools remains an external validation gate and makes no WCAG conformance claim;
 - **distribution work such as installer/uninstaller formats** requires a concrete packaging decision plus release/signing evidence and is not missing current Studio authoring implementation;
 - **credentialed distribution evidence** requires real Windows/macOS signing identities and installer/release-channel decisions;
 - **research/evaluation gates** such as controlled fixed-hardware measurements and genuine third-party integration evidence remain outside Studio authoring.
 
-Current contracts remain Patch **0.2.0-beta.35**, Change IR **0.10**, Native GUI IR **1.2**, sealed payload **v12**, token-free Ready/offline runtime **v1.3**, with the formal runtime-correspondence milestone remaining **beta.32**.
+Current contracts remain Patch **0.2.0-beta.35**, Change IR **0.10**, Native GUI IR **1.3**, sealed payload **v13**, token-free Ready/offline runtime **v1.4**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen compatibility and the formal runtime-correspondence milestone remaining **beta.32**.
