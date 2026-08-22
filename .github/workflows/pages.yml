@@ -25,6 +25,9 @@ on:
       - src/formal-source.js
       - src/source-validation.js
       - src/guard-validation.js
+      - src/call-site-validation.js
+      - src/independent-range-expression.js
+      - src/independent-guard-expression.js
       - src/compiler.js
       - src/bundle.js
       - src/wasm.js
@@ -113,21 +116,21 @@ jobs:
           MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.4
         shell: bash
         run: |
+          set -euo pipefail
           missing=0
           for tag in "$RUNTIME_TAG" "$WIN32_RUNTIME_TAG" "$LINUX_NATIVE_RUNTIME_TAG" "$MACOS_NATIVE_RUNTIME_TAG"; do
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               echo "Found $tag"
             else
-              echo "Waiting for $tag"
+              echo "Missing required release: $tag" >&2
               missing=1
             fi
           done
-          if [ "$missing" -eq 0 ]; then
-            echo 'ready=true' >> "$GITHUB_OUTPUT"
-          else
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            echo 'A required Patch Studio runtime release is not fully published yet. This Pages run will finish successfully without replacing the current site; successful runtime publication triggers another Pages run.'
+          if [ "$missing" -ne 0 ]; then
+            echo 'Required Patch Studio runtime releases are incomplete. Refusing to report a successful Pages run without a deployment.' >&2
+            exit 1
           fi
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
       - name: Add and verify compiled native runtime templates
         if: steps.native_runtime.outputs.ready == 'true'
         env:
@@ -196,3 +199,36 @@ jobs:
         if: steps.native_runtime.outputs.ready == 'true'
         id: deployment
         uses: actions/deploy-pages@v5
+      - name: Verify deployed Patch Studio critical assets
+        if: steps.native_runtime.outputs.ready == 'true'
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${PAGE_URL%/}/"
+          cache_bust="deploy-${GITHUB_SHA}"
+          assets=(
+            index.html
+            site-navigation.css
+            site-refresh.css
+            playground.js
+            native-build.js
+            sw.js
+            src/compiler.js
+            src/call-site-validation.js
+            src/independent-range-expression.js
+            src/independent-guard-expression.js
+          )
+          for asset in "${assets[@]}"; do
+            url="${base}${asset}?smoke=${cache_bust}"
+            echo "Checking $url"
+            curl --fail --silent --show-error --location \
+              --retry 8 --retry-delay 3 --retry-all-errors \
+              --output /tmp/patch-pages-smoke "$url"
+            test -s /tmp/patch-pages-smoke
+          done
+          curl --fail --silent --show-error --location \
+            --retry 8 --retry-delay 3 --retry-all-errors \
+            "${base}index.html?smoke=${cache_bust}" | grep -F 'data-patch-version="0.2.0-beta.35"' >/dev/null
+          echo "Patch Studio canonical Pages deployment smoke passed: $base"
