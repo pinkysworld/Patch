@@ -4,7 +4,7 @@ Patch already has broad semantic/formal coverage and cross-platform build smoke 
 
 This plan deliberately separates **P0 reliability work** from research novelty.
 
-Current product baseline: **0.2.0-beta.35+**, Change IR **0.10**, Patch Studio project bundle **v3**, Native GUI IR **1.2**, sealed Window payload **v12** / runtime **v1.3**. The beta.32 formal runtime-correspondence boundary remains unchanged by later product work.
+Current product baseline: **0.2.0-beta.35+**, Change IR **0.10**, Patch Studio project bundle **v3**, Native GUI IR **1.3**, sealed Window payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. The beta.32 formal runtime-correspondence boundary remains unchanged by later product work.
 
 ## P0: required before calling Patch production-ready
 
@@ -59,11 +59,11 @@ Patch Studio diagnostics are local-only. Reports record Patch version, project k
 
 `docs/LINUX_PACKAGING.md` defines the current GTK3/Console runtime assumptions, ABI limitations, unsigned status, user-space removal behavior and package formats Patch does not yet claim. This documentation item is separate from the still-open installer/uninstall milestone.
 
-The runtime-integrity mechanism introduced in beta.34 now protects the **current payload v12/runtime v1.3 Ready path**. Pages requires `studio-runtime-v0.6` plus these native releases:
+The runtime-integrity mechanism protects the **current payload v13/runtime v1.4 Ready path**. Pages requires `studio-runtime-v0.6` plus these native releases:
 
-- `native-win32-runtime-v1.3`;
-- `native-macos-runtime-v1.3`;
-- `native-linux-runtime-v1.3`.
+- `native-win32-runtime-v1.4`;
+- `native-macos-runtime-v1.4`;
+- `native-linux-runtime-v1.4`.
 
 Pages downloads the exact runtime assets, reads GitHub's recorded `sha256:` digest, independently re-hashes the bytes and writes a verified `runtime-manifest.json`. Patch Studio hashes the selected runtime again with Web Crypto before browser-side sealing and fails closed on mismatch. The service worker treats same-origin `/runtimes/` requests as fresh-first while online so an older cache cannot silently override the current deployment.
 
@@ -75,19 +75,20 @@ Ready Windows, macOS and Linux application downloads already work without a pers
 
 ### Native Window release contract
 
-The current token-free Ready/offline Window line is **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3** on Windows, macOS and Linux. It preserves responsive Anchor/Dock behavior, Table/Grid, persistent list-backed multi-select ListBox, Menu separators/shortcuts/state and hierarchical TreeView.
+The current token-free Ready/offline Window line is **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4** on Windows, macOS and Linux. It preserves responsive Anchor/Dock behavior, Table/Grid, persistent list-backed multi-select ListBox, Menu separators/shortcuts/state and hierarchical TreeView while adding native Slider.
 
-TreeView `changed` exposes only a transient root-to-node text-list path. Table row selection and list-backed ListBox selection are likewise transient event values. Persistent application state still changes only through explicit semantic `change`.
+Slider `changed` exposes only a finite numeric transient value inside the declared range. TreeView `changed` exposes a transient root-to-node text-list path. Table row selection and list-backed ListBox selection are likewise transient event values. Persistent application state still changes only through explicit semantic `change`.
 
 Older contracts remain frozen compatibility lines rather than being redefined:
 
+- Native GUI IR 1.2 / payload v12/runtime v1.3: TreeView, Slider fail-closed;
 - payload v11/runtime v1.2: Menu+list;
 - payload v10/runtime v1.1: persistent list/multi-select;
 - payload v9/runtime v1.0: Table;
 - payload v8/runtime v0.9: responsive base;
 - payload v7/runtime v0.8: older accessibility/result-dialog line.
 
-The v1.3 TreeView runtime workflow builds, seals and executes a canonical TreeView app on Windows, macOS and Linux before publishing current runtime assets. The downloadable offline compiler independently links and executes responsive, Table, ListBox, Menu and TreeView examples on its supported desktop hosts.
+The v1.4 Slider runtime workflow builds, seals and executes a canonical Slider app on Windows, macOS and Linux before publishing current runtime assets. The smoke validates real `TRACKBAR`, `NSSlider` and `GtkScale` controls, bounded numeric event dispatch and preservation of the established Table/ListBox/Menu/Tree action executor. The downloadable offline compiler independently links and executes responsive, Table, ListBox, Menu, TreeView and Slider examples on its supported desktop hosts.
 
 ### Security and maintenance
 - [x] security reporting policy
@@ -131,8 +132,9 @@ Pages deployment uses one `pages` concurrency group, but only direct source-push
 - [x] differential interpreter to direct-Wasm to executable C99 tests for every currently documented shared numeric semantic subset
 - [x] golden release artifact tests
 - [x] upgrade/migration tests across project schema versions
-- [x] Windows/macOS/Linux sealed TreeView runtime smoke matrix
-- [x] offline compiler Window smoke matrix for responsive/Table/ListBox/Menu/TreeView paths
+- [x] Windows/macOS/Linux sealed TreeView runtime compatibility smoke matrix
+- [x] Windows/macOS/Linux sealed Slider runtime v1.4 smoke matrix
+- [x] offline compiler Window smoke matrix for responsive/Table/ListBox/Menu/TreeView/Slider paths
 
 CI runs deterministic valid and guaranteed-invalid generated programs through parser/compiler and supported lowering paths. Seed and failing source are printed for replay.
 
@@ -150,7 +152,8 @@ Project migration tests preserve documented state through older bundle migration
 - [ ] package/library story
 - [x] native Win32/AppKit/GTK GUI lowering and sealed runtime paths
 - [x] native hierarchical TreeView parity on Win32/AppKit/GTK
-- [ ] richer data controls beyond Table/ListBox/TreeView
+- [x] native Slider parity on Win32/AppKit/GTK through the versioned v1.4 line
+- [ ] genuinely new data/control types beyond the current Table/ListBox/TreeView/Slider vocabulary
 - [ ] FreeBSD native GUI backend
 - [x] Patch Studio keyboard/focus/responsive accessibility baseline
 - [x] generated standalone Window Web accessibility baseline
