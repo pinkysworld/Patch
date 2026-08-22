@@ -7,6 +7,15 @@
 #include <vector>
 #include "sealed-menu-v12.hpp"
 
+// Later runtimes may compile v1.3 as a private compatibility layer. These
+// aliases are opt-in only and leave ordinary runtime-v1.3 builds unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V14_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V14_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V14_RESTORE_MAIN
+#define main PATCH_RUNTIME_V14_RESTORE_MAIN
+#endif
+
 struct PatchTreeNodeV13 {
   int32_t parent = -1;
   std::string text;
