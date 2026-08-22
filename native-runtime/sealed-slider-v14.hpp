@@ -6,6 +6,15 @@
 #include <vector>
 #include <set>
 
+#ifdef _WIN32
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+#endif
+
 struct PatchSliderEventPatchV14 {
   uint32_t eventIndex = 0;
   std::vector<double> sentinels;
