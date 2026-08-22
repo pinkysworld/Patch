@@ -12,7 +12,7 @@ const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
-  'source-validation.js','guard-validation.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
+  'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
   'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
@@ -75,6 +75,7 @@ for (const name of SITE_SRC_FILES) {
   fs.copyFileSync(source, path.join(siteSrc, name));
 }
 
+validateGeneratedModuleClosure();
 console.log(`built _site/ for Patch revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
 
 function computeSiteRevision() {
@@ -97,4 +98,45 @@ function computeSiteRevision() {
 
 function versionLocalAssetReferences(html, revision) {
   return html.replace(/((?:href|src)="\.\/[^"?]+\.(?:css|js|webmanifest|svg))"/g, `$1?v=${revision}"`);
+}
+
+function validateGeneratedModuleClosure() {
+  const modules = walkJs(out);
+  const missing = [];
+  for (const file of modules) {
+    const source = fs.readFileSync(file, 'utf8');
+    for (const specifier of relativeModuleSpecifiers(source)) {
+      const clean = specifier.split(/[?#]/, 1)[0];
+      const target = path.resolve(path.dirname(file), clean);
+      if (!fs.existsSync(target) || !fs.statSync(target).isFile()) {
+        missing.push(`${path.relative(out, file).split(path.sep).join('/')} -> ${specifier}`);
+      }
+    }
+  }
+  if (missing.length) {
+    throw new Error(`Generated Patch Studio has unresolved relative module imports:\n${missing.map(item => `- ${item}`).join('\n')}`);
+  }
+}
+
+function walkJs(dir) {
+  const files = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const target = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...walkJs(target));
+    else if (entry.isFile() && entry.name.endsWith('.js')) files.push(target);
+  }
+  return files;
+}
+
+function relativeModuleSpecifiers(source) {
+  const found = new Set();
+  const patterns = [
+    /^\s*import\s+(?:[^'"\n]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
+    /^\s*export\s+[^'"\n]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
+    /\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g
+  ];
+  for (const pattern of patterns) {
+    for (const match of source.matchAll(pattern)) found.add(match[1]);
+  }
+  return found;
 }
