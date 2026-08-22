@@ -48,6 +48,7 @@ test('Pages waits for and pins all three current Slider-capable runtime v1.4 rel
   assert.match(pages, /native-win32-runtime-v1\.4/);
   assert.match(pages, /native-linux-runtime-v1\.4/);
   assert.match(pages, /native-macos-runtime-v1\.4/);
-  assert.match(pages, /ready=false/);
+  assert.match(pages, /Refusing to report a successful Pages run without a deployment/);
+  assert.match(pages, /exit 1/);
   assert.match(pages, /if: steps\.native_runtime\.outputs\.ready == 'true'/);
 });
