@@ -23,7 +23,7 @@ Duplicate/Delete activation always returns through the existing Form selector. T
 
 ## Top-level controls
 
-The Designer exposes Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs through the same source-backed toolbox/discovery boundary.
+The shared top-level workflow originally covered Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table, TreeView and Tabs. Slider now joins that same source-backed toolbox/discovery boundary, so the current Designer exposes all of those controls plus Slider through one authoring model.
 
 For the supported top-level controls, Studio provides:
 
@@ -127,13 +127,13 @@ Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen Tr
 
 ## Public/offline delivery
 
-The current authoring modules are part of the deterministic content-addressed public Patch Studio build and the offline PWA cache. The generated site also validates the transitive relative ES-module import closure so a browser compiler dependency cannot be omitted silently. Studio-only authoring additions remain in `web/` so they do not unnecessarily trigger native-runtime build matrices.
+The current authoring modules are part of the deterministic content-addressed public Patch Studio build and the offline PWA cache. The generated site validates both the transitive relative ES-module import closure and the local HTML JS/CSS/manifest/icon asset closure, so a browser dependency cannot be omitted silently. Studio-only authoring additions remain in `web/` so they do not unnecessarily trigger native-runtime build matrices.
 
 ## What “complete” means here
 
 This is the complete current authoring surface for the **existing Patch UI/control vocabulary**, including Slider. It does not mean every conceivable IDE feature exists.
 
-The former ordinary product-backlog items for a richer data-control surface, native Slider parity and structural/nested keyboard refinement are closed by Slider Stage 1, Native GUI IR 1.3 / payload v13 / runtime v1.4 and the implemented keyboard/focus milestone. New controls or additional native capabilities are future/new product milestones rather than missing beta.35 implementation.
+The former ordinary product-backlog items for a richer data-control surface, native Slider parity and structural/nested keyboard refinement are closed by Slider Stage 1, Native GUI IR 1.3 / payload v13 / runtime v1.4 and the implemented keyboard/focus milestone. The legacy backlog phrase "new/richer data controls beyond the current Table, ListBox and TreeView vocabulary" is now a future-control category rather than missing current implementation; Slider parity itself is already complete in v1.4. New controls or additional native capabilities are future/new product milestones rather than missing beta.35 implementation.
 
 Remaining work is deliberately separated by dependency:
 
