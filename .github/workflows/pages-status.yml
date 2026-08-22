@@ -1,0 +1,38 @@
+name: Publish Patch Studio Deployment Status
+
+on:
+  workflow_run:
+    workflows: [Deploy Patch Studio]
+    types: [completed]
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  publish:
+    if: github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish public-site commit status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS_SHA: ${{ github.event.workflow_run.head_sha }}
+          DEPLOY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          DEPLOY_URL: ${{ github.event.workflow_run.html_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state=failure
+          description='Patch Studio public deployment failed'
+          if [ "$DEPLOY_CONCLUSION" = 'success' ]; then
+            state=success
+            description='Patch Studio public deployment verified'
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$STATUS_SHA" \
+            -f state="$state" \
+            -f context='patch-studio/public-site' \
+            -f description="$description" \
+            -f target_url="$DEPLOY_URL" >/dev/null
+          echo "Published patch-studio/public-site=$state for $STATUS_SHA"

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 const html = fs.readFileSync('web/index.html', 'utf8');
 const runtimeIntegrity = fs.readFileSync('web/runtime-integrity.js', 'utf8');
 const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
+const pagesStatus = fs.readFileSync('.github/workflows/pages-status.yml', 'utf8');
 const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
 
 const browserRuntimeFiles = [
@@ -91,6 +92,22 @@ test('Pages verifies the canonical and public deployed site with one revision-co
   assert.ok(pages.includes('./parser.js?v=${revision}'));
   assert.ok(pages.includes('sw.js?v=${encodeURIComponent(siteRevision)}'));
   assert.match(pages, /data-patch-version="0\.2\.0-beta\.35"/);
+});
+
+test('Pages deployment result is published as a queryable commit status', () => {
+  assert.ok(pages.includes('.github/workflows/pages-status.yml'));
+  assert.match(pagesStatus, /name: Publish Patch Studio Deployment Status/);
+  assert.match(pagesStatus, /workflows: \[Deploy Patch Studio\]/);
+  assert.match(pagesStatus, /statuses: write/);
+  assert.match(pagesStatus, /contents: read/);
+  assert.doesNotMatch(pagesStatus, /write-all/);
+  assert.match(pagesStatus, /github\.event\.workflow_run\.head_branch == 'main'/);
+  assert.match(pagesStatus, /STATUS_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \}\}/);
+  assert.match(pagesStatus, /DEPLOY_CONCLUSION: \$\{\{ github\.event\.workflow_run\.conclusion \}\}/);
+  assert.match(pagesStatus, /context='patch-studio\/public-site'/);
+  assert.match(pagesStatus, /state=success/);
+  assert.match(pagesStatus, /state=failure/);
+  assert.match(pagesStatus, /statuses\/\$STATUS_SHA/);
 });
 
 test('service worker fetches runtime assets fresh-first before offline fallback', () => {

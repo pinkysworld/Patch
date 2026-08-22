@@ -63,6 +63,7 @@ on:
       - src/concrete-call-body.js
       - src/concrete-call-body-certificate.js
       - .github/workflows/pages.yml
+      - .github/workflows/pages-status.yml
       - .github/workflows/runtime-templates.yml
       - .github/workflows/native-win32-runtime.yml
       - .github/workflows/native-linux-runtime.yml
