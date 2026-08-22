@@ -46,7 +46,7 @@ test('site builder validates module imports and local HTML asset closure before 
   assert.match(buildSite, /validateGeneratedHtmlAssetClosure\(\)/);
   assert.match(buildSite, /unresolved relative module imports/);
   assert.match(buildSite, /unresolved local HTML assets/);
-  assert.match(buildSite, /\(\.\?:js\|css\|webmanifest\|svg\|png\|ico\)/);
+  assert.ok(buildSite.includes("const assetExtension = /\\.(?:js|css|webmanifest|svg|png|ico)$/i;"));
 });
 
 test('Studio service worker bypasses stale HTTP cache but keeps offline fallback', () => {
