@@ -97,7 +97,13 @@ List-backed ListBox has parity across browser preview, Standalone Web, direct AO
 
 ## Table support
 
-Table/Grid continues to use the specialized Table representation introduced at Native GUI IR **0.8** and direct backend **0.9**. Current token-free sealed Ready apps and offline `patch link` preserve that representation inside payload v13/runtime v1.4; payload v9/runtime v1.0 remains the frozen Table compatibility line.
+Table/Grid continues to use the specialized Table representation introduced at Native GUI IR **0.8** and direct backend **0.9**. The frozen direct-native mappings remain explicit compatibility evidence:
+
+- **Windows:** report-mode `WC_LISTVIEWW`;
+- **macOS:** multi-column `NSTableView` inside `NSScrollView`;
+- **Linux:** `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow`.
+
+Standalone Web and Studio App Preview expose the selected row as a transient row list through the shared semantic Window event adapter. Direct AOT and current token-free sealed Ready/offline paths preserve the same semantic selected-row contract. Current payload v13/runtime v1.4 carries the unchanged Table representation; payload v9/runtime v1.0 remains the frozen Table compatibility line.
 
 A Table row remains transient UI selection unless source explicitly persists it.
 
