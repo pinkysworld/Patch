@@ -1,0 +1,9 @@
+create number volume = 20
+
+window "Native Slider" as main size 520, 220:
+  slider 0..100 as volume step 5 at 24, 32 size 320, 44
+  text "Volume {volume}" at 24, 96 size 240, 30
+
+when volume changed:
+  change volume:
+    set = value
