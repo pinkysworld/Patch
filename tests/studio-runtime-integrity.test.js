@@ -80,7 +80,7 @@ test('Pages verifies the canonical deployed site and critical compiler assets ov
     assert.ok(pages.includes(asset), `Pages live smoke should cover ${asset}`);
   }
   assert.match(pages, /curl --fail --silent --show-error --location/);
-  assert.match(pages, /data-patch-version=\\"0\.2\.0-beta\.35\\"/);
+  assert.match(pages, /data-patch-version="0\.2\.0-beta\.35"/);
 });
 
 test('service worker fetches runtime assets fresh-first before offline fallback', () => {
