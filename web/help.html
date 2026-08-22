@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio help for multi-file projects, Slider Stage 1, source-backed Designer controls, structural Properties keyboard editing, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
+  <meta name="description" content="Patch Studio help for multi-file projects, native Slider Stage 1, source-backed Designer controls, structural Properties keyboard editing, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
   <title>Help · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -55,14 +55,14 @@ Ctrl/Cmd + Enter: apply / rename</pre>
 
   <section class="page-section">
     <h2>Slider Stage 1</h2>
-    <p>Slider Stage 1 is source-backed in the Designer and Standalone Window Web. Its <code>changed</code> event exposes a finite numeric <code>value</code> inside the declared range. Moving the control does not implicitly persist application state.</p>
+    <p>Slider Stage 1 is source-backed in the Designer, Standalone Window Web and the current native desktop line. Its <code>changed</code> event exposes a finite numeric <code>value</code> inside the declared range. Moving the control does not implicitly persist application state.</p>
     <pre class="page-code">create number volume = 50
 window "Mixer":
   slider 0..100 as volume step 5
 when volume changed:
   change volume:
     set = value</pre>
-    <p>Current Native GUI IR 1.2 / payload v12 / runtime v1.3 intentionally remains Slider-free. Native Ready/offline builds fail closed for Slider instead of silently dropping the control. Use Standalone Web for Slider applications until a future versioned native contract adds parity.</p>
+    <p>Current Native GUI IR 1.3 / payload v13 / runtime v1.4 implements Slider through Win32 <code>TRACKBAR</code>, AppKit <code>NSSlider</code> and GTK3 <code>GtkScale</code>. Native GUI IR 1.2 / payload v12 / runtime v1.3 is the frozen TreeView compatibility line and remains Slider fail-closed. Use the current Ready/offline path for native Slider applications.</p>
   </section>
 
   <section class="page-section" data-structural-keyboard="roving-v1">
@@ -72,10 +72,10 @@ when volume changed:
     <p>With a Tabs page focused, <strong>Ctrl/Cmd + Arrow Up/Down</strong> reorders the page and <strong>Ctrl/Cmd + Enter</strong> focuses its title expression. In Table cells/columns, TreeView labels and Tabs titles, <strong>Ctrl/Cmd + Enter</strong> performs the corresponding Apply or Rename action.</p>
     <p>The filter field reports how many nodes/pages/controls remain visible and shows an explicit no-match state. An empty Table shows <strong>No rows yet</strong> with <strong>Add first row</strong>. These are IDE conveniences only: filtering never changes source, and the quick actions delegate to the existing source-backed structural editor actions.</p>
     <p>Inside an expanded nested Table or TreeView structure editor, <strong>Escape</strong> closes the editor and restores focus to its Edit button. These focus/selection states are IDE-only and never become Patch application state or Change History.</p>
-    <p>See <a href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md">Studio keyboard accessibility</a> for the complete shortcut and scope contract. Manual Narrator/VoiceOver/Orca verification remains a separate validation activity, not a claim of WCAG conformance.</p>
+    <p>Manual Narrator/VoiceOver/Orca verification remains a separate validation activity, not a claim of WCAG conformance.</p>
   </section>
 
-  <section class="page-section" data-listbox-support="native-multiselect-v12">
+  <section class="page-section" data-listbox-support="native-multiselect-v13">
     <h2>ListBox: single or multi-select</h2>
     <p>A ListBox bound to <code>create text</code> is single-select and its <code>changed</code> event receives a text <code>value</code>. A ListBox bound to <code>create list</code> is multi-select in Patch Studio App Preview, Standalone Window Web, direct Win32/AppKit/GTK AOT and current token-free Ready/offline Windows, macOS and Linux apps.</p>
     <pre class="page-code">create list fruits = ["Banana", "Mango"]
@@ -84,36 +84,19 @@ window "Fruit Picker":
 when fruits changed:
   change fruits:
     set = value</pre>
-    <p><strong>Selection is transient until the handler executes <code>change</code>.</strong> Native GUI IR 1.1 introduced the list-state ABI. The current Native GUI IR 1.2 / payload v12 / runtime v1.3 line preserves it while adding TreeView.</p>
+    <p><strong>Selection is transient until the handler executes <code>change</code>.</strong> Native GUI IR 1.1 introduced the list-state ABI. Current Native GUI IR 1.3 / payload v13 / runtime v1.4 preserves it while composing TreeView and Slider.</p>
   </section>
 
-  <section class="page-section" data-table-support="sealed-v12">
+  <section class="page-section" data-table-support="sealed-v13">
     <h2>Table / Grid</h2>
     <p>Table data is written directly in Patch source. Select a Table in the Designer to edit column and cell expressions in Properties, add or remove rows, and add or remove columns. Applying the grid rewrites the visible <code>table</code>/<code>row</code> block and validates row width before accepting it. When the Table has no rows, Properties shows <strong>No rows yet</strong> and a source-backed <strong>Add first row</strong> action.</p>
-    <p>A Table <code>changed</code> event exposes the selected row only as transient list-valued <code>value</code>. Current token-free Ready apps and offline <code>patch link</code> preserve this contract inside payload v12/runtime v1.3.</p>
-    <pre class="page-code">window "People" as main size 520, 320:
-  table "Name", "Role" as people at 24, 64 size 440, 180:
-    row "Ada", "Engineer"
-    row "Grace", "Scientist"
-when people changed:
-  show value</pre>
+    <p>A Table <code>changed</code> event exposes the selected row only as transient list-valued <code>value</code>. Current token-free Ready apps and offline <code>patch link</code> preserve this contract inside payload v13/runtime v1.4.</p>
   </section>
 
-  <section class="page-section" data-tree-support="sealed-v12">
+  <section class="page-section" data-tree-support="sealed-v13">
     <h2>TreeView</h2>
     <p>TreeView is hierarchical and source-backed. The Designer can add, select, move, resize, rename and remove the TreeView itself. In Properties, its Tree nodes editor can add roots or children, rename, move, indent/outdent and delete nodes. A filter narrows long node lists while retaining only visible items in keyboard navigation. Each structural action rewrites ordinary visible <code>node</code> source and the editor refuses to leave an empty TreeView.</p>
-    <p>Selecting a node at runtime produces its root-to-node display path as a transient text-list <code>value</code>. Toolkit selection does not mutate persistent Patch state.</p>
-    <pre class="page-code">create list selected = []
-window "Files" as main size 560, 380:
-  tree as files at 24, 56 size 300, 240:
-    node "src"
-      node "compiler.js"
-    node "docs"
-      node "README.md"
-when files changed:
-  change selected:
-    set = value</pre>
-    <p>Current native support is Native GUI IR 1.2 / payload v12 / runtime v1.3 on Win32, AppKit and GTK3.</p>
+    <p>Selecting a node at runtime produces its root-to-node display path as a transient text-list <code>value</code>. Toolkit selection does not mutate persistent Patch state. Current native consumers use Native GUI IR 1.3 / payload v13 / runtime v1.4 while preserving the TreeView ABI introduced by frozen v12/v1.3.</p>
   </section>
 
   <section class="page-section" data-tabs-editor="source-backed">
@@ -121,15 +104,6 @@ when files changed:
     <p>Select a Tabs control in the Designer to edit its source-backed page list in Properties. You can add, rename, reorder, duplicate or delete a page within the minimum-page boundary. Reordering/duplication preserves the complete nested control body and remaps ids/handlers where needed.</p>
     <p>The selected page exposes its <strong>Page controls</strong>. Patch Studio can add Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table and TreeView directly to that page; Slider Stage 1 is also available there as a source-backed nested control. Nested Table and TreeView receive valid source-backed starter structures and dedicated structural Properties editing.</p>
     <p>Click <strong>Edit</strong> beside a nested Table to open its source-backed row/column structural Properties editor. Click <strong>Edit</strong> beside a nested TreeView to open its source-backed hierarchy structural Properties editor.</p>
-    <pre class="page-code">window "Settings":
-  tabs as settings:
-    tab "General":
-      text "General"
-      slider 0..100 as zoom step 5
-    tab "Advanced":
-      tree as sections:
-        node "Security"
-          node "Keys"</pre>
     <p>Tabs requires at least two pages. Tabs-inside-Tabs remains fail-closed. Nested page controls use flow layout and page selection remains transient renderer state.</p>
   </section>
 
@@ -152,31 +126,31 @@ when files changed:
   <section class="page-section">
     <h2>Ready runtime verification</h2>
     <p>Before a no-token Windows, macOS or Linux Window build is sealed, Patch Studio verifies the selected runtime template with SHA-256. Pages creates a runtime manifest from the SHA-256 digest recorded on the corresponding GitHub Release asset and independently checks the downloaded bytes. The browser hashes the runtime again before use and stops the build on mismatch.</p>
-    <p>Current native GUI Ready assets are the three runtime-v1.3 releases. Runtime requests are fresh-first while Studio is online, with a successfully fetched runtime available as offline fallback.</p>
+    <p>Current native GUI Ready assets are the three runtime-v1.4 releases. Runtime requests are fresh-first while Studio is online, with a successfully fetched runtime available as offline fallback.</p>
     <p>This verifies byte consistency for the runtime-template path. It does not make unsigned development applications Authenticode-signed or Developer ID-notarized.</p>
   </section>
 
   <section class="page-section">
     <h2>Offline compiler</h2>
-    <p>After downloading the compiler, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, Linux, Apple Silicon macOS and the Intel macOS kit include the current native Window runtime v1.3. Supported responsive, Table/Grid, list-backed ListBox, Menu and TreeView apps link locally through payload v12 without a cloud build or account credential.</p>
+    <p>After downloading the compiler, use <code>patch check app.patch</code>, <code>patch run app.patch</code>, <code>patch build ...</code> or <code>patch link app.patch --out App</code>. Windows, Linux, Apple Silicon macOS and the Intel macOS kit include the current native Window runtime v1.4. Supported responsive, Table/Grid, list-backed ListBox, Menu, TreeView and Slider apps link locally through payload v13 without a cloud build or account credential.</p>
     <p>FreeBSD currently supports Console linking via portable C99 and requires local Node plus <code>cc</code>. Native FreeBSD GUI linking is not yet claimed.</p>
   </section>
 
   <section class="page-section">
     <h2>Troubleshooting</h2>
-    <h3>The website still looks old</h3>
-    <p>Patch Studio uses content-addressed web revisions and fresh-first code/runtime requests. Reload once while online, or close and reopen an installed PWA.</p>
+    <h3>The website still looks old or loads incompletely</h3>
+    <p>Patch Studio uses content-addressed web revisions and fresh-first code/runtime requests. Reload once while online, or close and reopen an installed PWA. The site build validates its complete transitive relative ES-module import graph, so a newly deployed site cannot pass CI with a missing browser compiler dependency.</p>
     <h3>A native build stops with an integrity error</h3>
     <p>Keep integrity verification enabled and reload Studio while online. If the release asset, deployed manifest and fetched runtime do not agree, Patch intentionally refuses to seal the app.</p>
-    <h3>A native build rejects Slider</h3>
-    <p>That is the current intentional boundary. Native runtime v1.3 is TreeView-capable but Slider-free. Build the application as Standalone Web or wait for a future versioned native Slider contract.</p>
+    <h3>A legacy native build rejects Slider</h3>
+    <p>That is expected for the frozen compatibility line. Native runtime v1.3 is TreeView-capable but Slider-free. Use the current Native GUI IR 1.3 / payload v13 / runtime v1.4 Ready/offline path for native Slider.</p>
     <h3>A TreeView or multi-select ListBox fails with a legacy payload</h3>
-    <p>Use the current Native GUI IR 1.2 / payload v12 / runtime v1.3 path. Frozen older contracts intentionally fail closed rather than silently changing semantics.</p>
+    <p>Use the current Native GUI IR 1.3 / payload v13 / runtime v1.4 path. Frozen older contracts intentionally fail closed rather than silently changing semantics.</p>
     <h3>I need support information</h3>
     <p>Use <strong>Copy diagnostics</strong> or <strong>Report</strong>. The Studio report remains local and omits source code while including version, target, compiler status and privacy-redacted errors.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.35+</span><a href="./downloads.html">Download and verify the offline compiler</a></footer>
+  <footer class="page-footer"><span>Patch Studio help · 0.2.0-beta.35+</span><span><a href="./docs.html">Documentation</a> · <a href="./downloads.html">Downloads</a></span></footer>
 </main>
 </body>
 </html>
