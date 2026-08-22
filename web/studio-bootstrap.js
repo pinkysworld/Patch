@@ -2,6 +2,8 @@
   if (!('serviceWorker' in navigator)) return;
 
   const reloadGuardKey = 'patch-studio-sw-reload-guard';
+  const scriptUrl = document.currentScript?.src ? new URL(document.currentScript.src, window.location.href) : null;
+  const siteRevision = scriptUrl?.searchParams.get('v') || '';
   let reloadedForActivation = false;
   try {
     reloadedForActivation = sessionStorage.getItem(reloadGuardKey) === '1';
@@ -20,7 +22,9 @@
 
   const refresh = async () => {
     try {
-      const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      const registration = siteRevision
+        ? await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(siteRevision)}`, { updateViaCache: 'none', scope: './' })
+        : await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
       await registration.update();
     } catch {
       // A network failure must not prevent the already-cached Studio from opening offline.
