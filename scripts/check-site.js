@@ -20,7 +20,7 @@ if (pkg.version !== '0.2.0-beta.35') throw new Error(`Unexpected Patch site pack
 const requiredFiles = [
   '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
-  '_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
+  '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/slider-stage1.js','_site/table-stage1.js',
   '_site/tree-designer.js','_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-workspace.js',
   '_site/designer-ux.js','_site/designer-ux.css','_site/designer-toolbox.js','_site/designer-toolbox.css',
@@ -47,12 +47,18 @@ requireAll('Studio shell', index, [
   'Project Outline','multi-file project bundle v3','Slider Stage 1','supported native Ready/offline Windows, macOS and Linux paths',
   'Native GUI IR 1.3','payload v13','runtime v1.4','payload v12 / runtime v1.3 compatibility line remains Slider fail-closed',
   'hierarchical TreeView','Local-first Studio','Ready desktop builds','Explicit persistence','Quick start and shortcuts',
-  'id="addSlider"','id="addTree"','./slider-stage1.js','./tree-designer.js','./designer-workspace.js','./runtime-integrity.js','./native-build.js'
+  'id="addSlider"','id="addTree"','./studio-bootstrap.js','./slider-stage1.js','./tree-designer.js','./designer-workspace.js','./runtime-integrity.js','./native-build.js'
 ]);
 rejectAll('Studio shell', index, [
   'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
   'currently browser-only and native builds fail closed'
 ]);
+
+const bootstrap = read('_site/studio-bootstrap.js');
+requireAll('Studio recovery bootstrap', bootstrap, [
+  "navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange','patch-studio-sw-reload-guard','window.location.reload()'
+]);
+if (/^\s*import\s/m.test(bootstrap)) throw new Error('Studio recovery bootstrap must remain dependency-free.');
 
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
@@ -119,7 +125,7 @@ requireAll('Website navigation refresh import', navigationCss, ['@import url("./
 
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache', sw, [
-  "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./slider-stage1.js',
+  "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js','./slider-stage1.js',
   './src/compiler.js','./src/call-site-validation.js','./src/independent-range-expression.js','./src/independent-guard-expression.js',
   './src/native-gui-ir-v13.js','./src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js'
 ]);
