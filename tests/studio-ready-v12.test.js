@@ -34,9 +34,10 @@ test('Studio advertises current payload v13 runtime v1.4 native Slider support',
   assert.match(nativeBuild, /payload v13/);
   assert.match(nativeBuild, /runtime v1\.4/i);
   assert.match(nativeBuild, /including TreeView and Slider/);
-  assert.match(index, /Ready\/offline Windows, macOS and Linux/);
-  assert.match(index, /hierarchical TreeView/);
-  assert.match(index, /Slider Stage 1/);
+  assert.match(index, /Windows, macOS and Linux support Ready app download with no token or local toolchain/i);
+  assert.match(index, /Current runtime v1\.4 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1\.3 as payload v13/i);
+  assert.match(index, /hierarchical TreeView and native Slider/i);
+  assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
 });
 
 test('payload v12 runtime v1.3 remains an explicit frozen compatibility line', () => {
