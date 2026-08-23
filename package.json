@@ -15,6 +15,7 @@
     "validate:wasm-direct": "node scripts/validate-direct-trace.js examples/direct-wasm-recipes.patch",
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
+    "check:syntax": "node scripts/check-js-syntax.js",
     "check:project": "node scripts/check-project-surface.js && node scripts/check-checkout-extension-surface.js",
     "fuzz:compiler": "node scripts/fuzz-compiler.js --seed 20260812 --cases 500",
     "test:differential": "node scripts/differential-backends.js",
