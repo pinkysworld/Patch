@@ -1,21 +1,10 @@
 name: Patch Native Menu v1.0
 
+# Frozen direct-native compatibility smoke. Current CI and sealed-runtime
+# workflows cover normal development changes; run this explicitly when
+# auditing the historical v1.0 menu backend.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'scripts/build-native-*.js'
-      - 'examples/menu-shortcut-window.patch'
-      - 'tests/menu-shortcut-window.test.js'
-      - '.github/workflows/native-menu-v10.yml'
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'scripts/build-native-*.js'
-      - 'examples/menu-shortcut-window.patch'
-      - 'tests/menu-shortcut-window.test.js'
-      - '.github/workflows/native-menu-v10.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -7,7 +7,7 @@ const read = path => fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 test('mixed-guard invocation-frame evidence remains reproducible and reviewable', () => {
   const pkg = JSON.parse(read('package.json'));
   const example = read('examples/formal-transitive-calls-mixed-guards.patch');
-  const workflow = read('.github/workflows/beta32-invocation-frames.yml');
+  const workflow = read('.github/workflows/formal.yml');
   const reproWorkflow = read('.github/workflows/reproducibility-bundle.yml');
   const doc = read('docs/MIXED_GUARD_INVOCATION_FRAMES.md');
   const reproDoc = read('docs/REPRODUCIBILITY_BUNDLE.md');

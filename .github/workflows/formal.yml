@@ -114,6 +114,8 @@ jobs:
         run: npm run transitive-runtime-certify:example
       - name: Execute repeated direct Wasm calls and generate invocation-frame certificate
         run: npm run transitive-runtime-certify:repeated
+      - name: Execute mixed-guard repeated calls and generate beta32 frame certificate
+        run: npm run transitive-runtime-certify:mixed-guards
       - name: Install Elan and pinned Lean
         run: bash scripts/install-pinned-lean.sh
       - name: Build Lean formalization and invocation-frame runtime assurance boundaries
@@ -154,6 +156,9 @@ jobs:
       - name: Verify repeated-call invocation-frame direct-Wasm certificate
         working-directory: formal
         run: lake env lean GeneratedRepeatedTransitiveRuntimeCertificate.lean
+      - name: Verify generated beta32 mixed-guard invocation-frame certificate
+        working-directory: formal
+        run: lake env lean GeneratedMixedGuardTransitiveRuntimeCertificate.lean
       - name: Reject unfinished proofs
         shell: bash
         run: |

@@ -12,12 +12,7 @@ const leanBootstrap = fs.readFileSync('scripts/install-pinned-lean.sh', 'utf8');
 
 const leanWorkflows = [
   '.github/workflows/formal.yml',
-  '.github/workflows/assurance-evaluation.yml',
-  '.github/workflows/beta26-concrete-calls.yml',
-  '.github/workflows/beta27-arithmetic-calls.yml',
-  '.github/workflows/beta28-callee-traces.yml',
-  '.github/workflows/beta29-guarded-callee-traces.yml',
-  '.github/workflows/beta32-invocation-frames.yml'
+  '.github/workflows/assurance-evaluation.yml'
 ].map(file => [file, fs.readFileSync(file, 'utf8')]);
 
 test('repository security policy checker is valid and passes current workflows', () => {
@@ -45,7 +40,7 @@ test('CodeQL uses least-privilege JavaScript security scanning on v4 actions', (
   assert.doesNotMatch(codeql, /pull_request_target/);
 });
 
-test('Lean bootstrap downloads before execution and every formal workflow reuses it', () => {
+test('Lean bootstrap downloads before execution and every active formal workflow reuses it', () => {
   assert.match(leanBootstrap, /--output "\$INSTALLER"/);
   assert.match(leanBootstrap, /test -s "\$INSTALLER"/);
   assert.match(leanBootstrap, /sh "\$INSTALLER" -y --default-toolchain none/);

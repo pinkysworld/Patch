@@ -1,21 +1,10 @@
 name: Patch Native ListBox v1.2
 
+# Frozen direct-native compatibility smoke. Current CI and sealed-runtime
+# workflows cover normal development changes; run this explicitly when
+# auditing the historical v1.2 direct backend.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'scripts/build-native-*.js'
-      - 'examples/listbox-multiselect-native.patch'
-      - 'tests/native-listbox-multiselect.test.js'
-      - '.github/workflows/native-listbox-v12.yml'
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'scripts/build-native-*.js'
-      - 'examples/listbox-multiselect-native.patch'
-      - 'tests/native-listbox-multiselect.test.js'
-      - '.github/workflows/native-listbox-v12.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

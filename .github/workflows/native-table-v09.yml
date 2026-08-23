@@ -1,45 +1,13 @@
 name: Native Table v0.9
 
+# Frozen direct-native compatibility smoke. Current CI and sealed-runtime
+# workflows cover normal development changes; run this explicitly when
+# auditing the historical v0.9 Table backend.
 on:
-  pull_request:
-    paths:
-      - 'src/native-gui-ir-v08.js'
-      - 'src/native-table-backend-adapter.js'
-      - 'src/win32-gui-v09.js'
-      - 'src/appkit-gui-v09.js'
-      - 'src/appkit-table-overlay-v09.js'
-      - 'src/gtk-gui-v09.js'
-      - 'src/gtk-table-overlay-v09.js'
-      - 'src/window-layout-policy.js'
-      - 'scripts/build-native-win32.js'
-      - 'scripts/build-native-appkit.js'
-      - 'scripts/build-native-gtk.js'
-      - 'examples/table-native-v09.patch'
-      - '.github/workflows/native-table-v09.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/native-gui-ir-v08.js'
-      - 'src/native-table-backend-adapter.js'
-      - 'src/win32-gui-v09.js'
-      - 'src/appkit-gui-v09.js'
-      - 'src/appkit-table-overlay-v09.js'
-      - 'src/gtk-gui-v09.js'
-      - 'src/gtk-table-overlay-v09.js'
-      - 'src/window-layout-policy.js'
-      - 'scripts/build-native-win32.js'
-      - 'scripts/build-native-appkit.js'
-      - 'scripts/build-native-gtk.js'
-      - 'examples/table-native-v09.patch'
-      - '.github/workflows/native-table-v09.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: native-table-v09-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   windows:
