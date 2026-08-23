@@ -605,5 +605,3 @@ function escapeHtml(text) {
 refreshDesigner();
 refreshChangeContract();
 showTab(projectKind.value === 'window' ? 'designer' : 'output');
-
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});

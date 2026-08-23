@@ -1,7 +1,7 @@
 @import url("./site-refresh.css");
 
 .site-tabs {
-  width: min(1600px, calc(100% - 32px));
+  width: min(1500px, calc(100% - 32px));
   margin: 10px auto 0;
   display: flex;
   align-items: center;
@@ -17,7 +17,7 @@
   align-items: center;
   padding: 6px 11px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 9px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 760;
@@ -33,7 +33,7 @@
   border-color: var(--border-strong);
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 2px 9px rgba(24,24,27,.06);
+  box-shadow: 0 2px 9px rgba(24,24,27,.055);
 }
 .site-tabs a:focus-visible {
   outline: 2px solid var(--text);

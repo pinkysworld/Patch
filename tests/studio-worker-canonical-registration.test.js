@@ -4,19 +4,22 @@ import fs from 'node:fs';
 
 const bootstrap = fs.readFileSync('web/studio-bootstrap.js', 'utf8');
 const playground = fs.readFileSync('web/playground.js', 'utf8');
+const accessibility = fs.readFileSync('web/studio-accessibility.js', 'utf8');
 
-test('bootstrap canonicalizes legacy local worker registrations to the published revision', () => {
-  assert.match(bootstrap, /const originalRegister = navigator\.serviceWorker\.register\.bind\(navigator\.serviceWorker\)/);
-  assert.match(bootstrap, /Object\.defineProperty\(navigator\.serviceWorker, 'register'/);
-  assert.match(bootstrap, /requested\.origin === canonicalWorker\.origin/);
-  assert.match(bootstrap, /requested\.pathname === canonicalWorker\.pathname/);
-  assert.match(bootstrap, /return originalRegister\(canonicalWorkerUrl/);
+test('Studio bootstrap is the single service-worker registration owner', () => {
+  assert.match(bootstrap, /navigator\.serviceWorker\.register\(`\.\/sw\.js\?v=\$\{encodeURIComponent\(siteRevision\)\}`/);
+  assert.match(bootstrap, /scope: '\.\/'/);
   assert.match(bootstrap, /updateViaCache: 'none'/);
-  assert.match(bootstrap, /scope: options\?\.scope \?\? '\.\/'/);
+  assert.match(bootstrap, /await registration\.update\(\)/);
+  assert.doesNotMatch(playground, /serviceWorker\.register/);
+  assert.doesNotMatch(accessibility, /serviceWorker\.register/);
 });
 
-test('legacy playground registration cannot request an unversioned public worker after bootstrap', () => {
-  assert.match(playground, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);
-  assert.match(bootstrap, /const canonicalWorkerUrl = siteRevision/);
-  assert.match(bootstrap, /`\.\/sw\.js\?v=\$\{encodeURIComponent\(siteRevision\)\}`/);
+test('single-owner bootstrap keeps revision-bound activation recovery', () => {
+  assert.match(bootstrap, /document\.currentScript\?\.src/);
+  assert.match(bootstrap, /searchParams\.get\('v'\)/);
+  assert.match(bootstrap, /patch-studio-sw-reload-guard/);
+  assert.match(bootstrap, /addEventListener\('controllerchange'/);
+  assert.match(bootstrap, /window\.location\.reload\(\)/);
+  assert.doesNotMatch(bootstrap, /Object\.defineProperty\(navigator\.serviceWorker, 'register'/);
 });

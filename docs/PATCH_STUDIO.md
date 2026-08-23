@@ -7,7 +7,7 @@ Patch Studio is the browser-first IDE for Patch. The product goal remains QuickB
 Patch Studio provides:
 
 - source editing, local autosave and privacy-redacted local diagnostics;
-- canonical **multi-file project bundle v3** plus Project Tree and deterministic Run/Build composition;
+- canonical **multi-file project bundle v3** plus Project Tree/Outline and deterministic Run/Build composition;
 - Console and Window Run;
 - a source-backed visual Designer with named Forms;
 - Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider Stage 1**, Table, TreeView and Tabs authoring;
@@ -15,6 +15,7 @@ Patch Studio provides:
 - structural Table, TreeView and Tabs Properties editors;
 - top-level/nested duplicate, reorder and source-reveal workflows;
 - Change Contract and Change IR views;
+- keyboard-first **Command Palette** with `Ctrl/Cmd+K`;
 - portable `.patchapp`, Web, direct/bootstrap Wasm and portable C99 builds;
 - token-free Ready Windows/macOS/Linux Console and Window builds;
 - downloadable offline compiler/linker;
@@ -24,19 +25,28 @@ The default Windows/macOS/Linux desktop workflow is **Ready app download (no tok
 
 Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Current native desktop consumers use Native GUI IR **1.3**, sealed payload **v13** and token-free Ready/offline runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line and intentionally stays Slider fail-closed. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
 
-## Product-backlog boundary
+## Active UX and reliability milestone
 
-The repository-controlled beta.35+ Studio/compiler backlog is currently closed. The former open product items for a richer data-control surface, native Slider parity and structural/nested keyboard refinement are satisfied by Slider Stage 1, the additive v1.4 native contract and the implemented keyboard/focus milestone.
+The previous beta.35+ feature milestone completed the planned multi-file, source-backed Designer, Table/TreeView/Tabs, ListBox and Slider work. The repository now has an active UX/reliability milestone rather than claiming that all product work is permanently closed.
 
-Remaining unchecked roadmap items are deliberately separated because they need something outside ordinary repository implementation:
+Current completed work includes:
 
-- real Windows/macOS signing evidence requires credentials;
-- installer/update-channel work requires an explicit distribution decision;
-- manual Narrator/VoiceOver/Orca validation requires actual assistive-technology testing;
-- controlled performance results require fixed-hardware measurements;
-- genuine third-party integration evidence requires an external application/plugin context.
+- real Chrome startup/responsiveness verification locally and against the deployed public site;
+- protection against self-triggering Designer `MutationObserver` reconciliation loops;
+- a single service-worker owner in the early Studio bootstrap;
+- type-safe offline fallback that never substitutes HTML for a missing JavaScript/CSS/runtime asset;
+- site-wide responsive visual polish;
+- a keyboard-first Command Palette that delegates to existing Studio actions.
 
-See `docs/ROADMAP.md` for the exact split.
+The next concrete repository-controlled items are tracked in `docs/ROADMAP.md`, including project-file/symbol quick-open through the Command Palette, a user-resizable workspace split and clearer startup diagnostics. Credentialed signing, manual assistive-technology validation and research measurements remain separate external/evidence gates.
+
+## Command Palette
+
+Press **Ctrl/Cmd+K** or choose **Commands** in Studio. The palette currently delegates to the existing Run, Build, source editor, Designer, App, Output, Change Contract, Change IR, Recovery, Documentation, Downloads and Help actions.
+
+Search text, selection and dialog visibility are transient IDE interaction state. The palette does not write Patch source, project persistence, Change History, `localStorage`, `sessionStorage` or IndexedDB and therefore does not create a second project or mutation model.
+
+See `docs/STUDIO_COMMAND_PALETTE.md`.
 
 ## Canonical multi-file project state
 
@@ -72,7 +82,7 @@ The active Form is highlighted in the canvas; clicking or keyboard-activating a 
 
 The desktop Designer exposes a compact control rail and a categorized **Add control** picker. The picker groups controls into Basic, Choices, Data and Containers and is the narrow/mobile discovery surface as well. `Ctrl/Cmd+Shift+A` focuses it.
 
-All top-level controls now share one authoritative primary-selection and common Properties action boundary. The Properties pane is wider by default, resizable, collapsible and responsive. Its width preference is local IDE state rather than Patch application state.
+All top-level controls share one authoritative primary-selection and common Properties action boundary. The Properties pane is wider by default, resizable, collapsible and responsive. Its width preference is local IDE state rather than Patch application state.
 
 A selected control can be moved/resized visually. Pointer and keyboard changes rewrite visible source. Common source-backed actions include Center H, Center V, Default size and collision-aware Auto place.
 
@@ -208,9 +218,11 @@ The automated structural/nested editor baseline includes:
 - explicit `:focus-visible` treatment;
 - focus restoration after supported source-backed rewrites.
 
-This closes the repository-side keyboard-refinement milestone. It is **not** a WCAG conformance statement. Manual Narrator, VoiceOver, Orca and comparable assistive-technology testing remains an external validation gate.
+The Command Palette adds `Ctrl/Cmd+K`, searchable commands and Arrow/Enter/Escape operation without changing application state.
 
-See `docs/STUDIO_KEYBOARD_ACCESSIBILITY.md`.
+This is an automated accessibility baseline, **not** a WCAG conformance statement. Manual Narrator, VoiceOver, Orca and comparable assistive-technology testing remains an external validation gate.
+
+See `docs/STUDIO_KEYBOARD_ACCESSIBILITY.md` and `docs/STUDIO_COMMAND_PALETTE.md`.
 
 ## Transient GUI event values
 
@@ -260,9 +272,11 @@ The offline-compiler CI independently links and executes canonical current Windo
 
 Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated local asset references carry that revision and the Service Worker uses it as the active cache identity.
 
-The site builder validates the transitive relative ES-module import closure of the generated `_site`, so a deploy cannot succeed while a browser-imported compiler module is missing. Same-origin `/runtimes/` requests are fresh-first online with successful bytes retained as offline fallback.
+`web/studio-bootstrap.js` is the single registration/refresh owner. Playground and Accessibility no longer register a worker later in startup. Online code/runtime requests are fresh-first with successful exact bytes retained for offline use. If a JavaScript, CSS or runtime fetch fails and no exact cached asset exists, the request fails rather than receiving `index.html`; the cached Studio shell is a fallback only for real document navigation.
 
-The public website uses a shared refreshed presentation layer. Studio exposes the current contracts and quick-start shortcuts directly above the IDE workspace. The Documentation page groups the current docs and provides a local text filter without telemetry or an external search service.
+The site builder validates the transitive relative ES-module import closure of generated `_site`. Standard CI then opens Studio in real Chrome, runs the default Window application and probes responsiveness after the delayed-freeze window. The Pages workflow repeats the browser test against the actual public URL after deployment before publishing a healthy `patch-studio/public-site` status.
+
+The shared website presentation is responsive across Studio, Documentation, Language, Downloads and Help. Documentation uses a balanced contract grid plus local text filtering without telemetry or an external search service.
 
 ## Recovery and diagnostics
 
@@ -274,15 +288,14 @@ Recovery keeps deduplicated local snapshots and supports Snapshot now, Restore, 
 
 The ordinary Studio does not need Lean. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
 
-Product/UI/runtime work through Native GUI IR 1.3 / payload v13 / runtime v1.4 does not expand those claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+Product/UI/runtime work through Native GUI IR 1.3 / payload v13 / runtime v1.4 and the current UX/reliability milestone does not expand those claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
 
 ## Where future work belongs
 
-Core current Studio authoring and native Slider parity are complete for the existing control vocabulary. Future work should be classified by dependency rather than added as a vague never-ending backlog:
+The next repository-controlled Studio work is explicit rather than a vague never-ending list:
 
-- **new product/native ABI milestone:** genuinely new controls or runtime capabilities with concrete tests;
-- **distribution gate:** installers, signing evidence or update channels;
-- **manual validation gate:** screen-reader/assistive-technology verification;
-- **research gate:** controlled measurements, external integration evidence or venue feedback.
+- Command Palette v2 project-file/symbol quick-open through existing multi-file/Outline models;
+- user-resizable source/result workspace split stored only as IDE preference;
+- clearer startup diagnostics when a critical application module fails before normal initialization.
 
-That separation keeps the beta.35+ product surface accurate without overstating external evidence.
+Distribution credentials, manual accessibility validation and research evidence remain in their separate roadmap gates. See `docs/ROADMAP.md`.

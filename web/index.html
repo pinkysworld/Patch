@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="./form-window-resize.css">
   <link rel="stylesheet" href="./beta35-studio.css">
   <link rel="stylesheet" href="./studio-outline.css">
+  <link rel="stylesheet" href="./studio-command-palette.css">
 </head>
 <body>
 <a id="skipToEditor" class="skip-link" href="#code">Skip to editor</a>
@@ -37,6 +38,7 @@
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
       <label class="compact-field"><span>Build</span><select id="buildTarget" aria-label="Build target"><optgroup label="Simple apps"><option value="web">Standalone Web App (.html)</option><option value="native-windows">Windows App (.exe)</option><option value="native-macos">macOS App (.app)</option><option value="native-linux">Linux App</option><option value="native-freebsd">FreeBSD Console</option><option value="portable">Portable .patchapp</option></optgroup><optgroup label="WebAssembly"><option value="wasm-direct">Direct WebAssembly (.wasm)</option><option value="wasm-bootstrap">Bootstrap Wasm (advanced)</option></optgroup></select></label>
       <button id="build" class="secondary" aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter" title="Build selected target (Ctrl/Cmd+Shift+Enter)">Build</button>
+      <button id="openCommandPalette" class="secondary command-palette-trigger" type="button" aria-haspopup="dialog" aria-keyshortcuts="Control+K Meta+K" title="Open commands (Ctrl/Cmd+K)">Commands <kbd>⌘K</kbd></button>
       <a class="studio-jump" href="#designer" aria-label="Jump to Designer workspace">Designer ↓</a>
     </div>
   </header>
@@ -58,19 +60,19 @@
     <span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span>
   </section>
   <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.4 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.3 as payload v13, including hierarchical TreeView and native Slider. The frozen payload v12 / runtime v1.3 compatibility line remains Slider fail-closed.</span></section>
-  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Patch Studio includes source-backed Slider Stage 1 with transient numeric values across browser, Standalone Web and supported native Ready/offline Windows, macOS and Linux paths; multi-file project bundle v3, multi-select ListBox and TreeView remain available. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Details</a></section>
+  <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Current Studio: multi-file project bundle v3, source-backed Designer, Slider, multi-select ListBox, Table, TreeView and Tabs, plus verified no-token Ready builds. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
 
   <section class="studio-launchpad" aria-label="Patch Studio current status and quick start">
     <div class="studio-snapshot" aria-label="Current Patch contracts">
-      <div class="studio-snapshot-card"><b>Local-first Studio</b><span>Multi-file bundle v3, recovery and privacy-redacted diagnostics stay in the browser unless you explicitly export or build.</span></div>
-      <div class="studio-snapshot-card"><b>Ready desktop builds</b><span>Windows, macOS and Linux use the verified Native GUI IR 1.3 / payload v13 / runtime v1.4 no-token path with native Slider parity.</span></div>
-      <div class="studio-snapshot-card"><b>Explicit persistence</b><span>UI selection and event values are transient. Persistent application state changes only through semantic <code>change</code>.</span></div>
+      <div class="studio-snapshot-card"><b>Local-first Studio</b><span>Projects, recovery and privacy-redacted diagnostics remain local unless you explicitly export or build.</span></div>
+      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.3 / payload v13 / runtime v1.4 Ready assets.</span></div>
+      <div class="studio-snapshot-card"><b>Browser-gated delivery</b><span>Every public deploy now has to initialize, Run a Window app and remain responsive in real Chrome before the deployment is marked healthy.</span></div>
     </div>
     <details class="studio-guide">
       <summary>Quick start and shortcuts <span class="summary-hint">3 steps</span></summary>
       <div class="studio-guide-body">
         <div class="studio-guide-step"><b>1 · Start from source</b><span>Choose an example or edit <code>main.patch</code>. The Designer always rewrites visible Patch source.</span></div>
-        <div class="studio-guide-step"><b>2 · Run or design</b><span><code>Ctrl/Cmd+Enter</code> runs. Use Designer for Forms, Slider, Table, TreeView and Tabs authoring.</span></div>
+        <div class="studio-guide-step"><b>2 · Run or navigate</b><span><code>Ctrl/Cmd+Enter</code> runs. <code>Ctrl/Cmd+K</code> opens commands for Editor, Designer, Output, Recovery and docs.</span></div>
         <div class="studio-guide-step"><b>3 · Build</b><span><code>Ctrl/Cmd+Shift+Enter</code> builds the selected target. Ready desktop downloads need no GitHub token.</span></div>
       </div>
     </details>
@@ -98,8 +100,21 @@
     </div>
   </section>
 
-  <section class="statusbar"><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span><span>Autosaved in this browser · <a href="./help.html">Keyboard &amp; help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
+  <section class="statusbar"><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span><span>Autosaved in this browser · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard &amp; help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
 </main>
+
+<dialog id="commandPalette" class="command-palette" aria-labelledby="commandPaletteTitle">
+  <div class="command-palette-shell">
+    <div class="command-palette-header">
+      <input id="commandPaletteInput" type="search" autocomplete="off" spellcheck="false" placeholder="Run, build, Designer, recovery, docs…" aria-label="Search Patch Studio commands">
+      <span class="command-palette-hint">Esc to close</span>
+    </div>
+    <div id="commandPaletteList" class="command-palette-list" role="listbox" aria-label="Patch Studio commands"></div>
+    <p id="commandPaletteEmpty" class="command-palette-empty" hidden>No matching command.</p>
+    <div class="command-palette-footer"><span id="commandPaletteTitle">Patch Studio commands</span><span>↑↓ select · Enter run · Ctrl/Cmd+K toggle</span></div>
+  </div>
+</dialog>
+
 <script src="./studio-bootstrap.js"></script>
 <script type="module" src="./runtime-integrity.js"></script>
 <script type="module" src="./native-build.js"></script>
@@ -121,6 +136,7 @@
 <script type="module" src="./form-window-resize.js"></script>
 <script type="module" src="./studio-dom-sync.js"></script>
 <script type="module" src="./studio-diagnostics.js"></script>
+<script type="module" src="./studio-command-palette.js"></script>
 <script type="module" src="./studio-accessibility.js"></script>
 </body>
 </html>

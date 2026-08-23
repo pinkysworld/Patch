@@ -2,13 +2,7 @@
 
 Current development beta: **0.2.0-beta.35**
 
-This roadmap distinguishes three different things that were previously mixed together:
-
-1. **core product backlog** that can be implemented and verified inside the Patch repository;
-2. **externally gated distribution/validation work** that requires credentials, real platform testing or deployment decisions;
-3. **research evidence work** that must not be marked complete without new empirical or third-party evidence.
-
-Checked items are implemented. Unchecked items are deliberately not presented as finished features or measured results.
+The roadmap separates repository-controlled product work from credential/manual distribution work and research evidence that cannot be manufactured by CI.
 
 ## Current contract
 
@@ -18,52 +12,62 @@ Checked items are implemented. Unchecked items are deliberately not presented as
 - Window event adapter: **0.9**
 - Native GUI IR: **1.3**
 - current sealed native GUI payload: **v13**
-- current token-free Ready/offline native runtime: **v1.4** on Windows, macOS and Linux
+- current token-free Ready/offline runtime: **v1.4** on Windows, macOS and Linux
 - frozen TreeView compatibility line: Native GUI IR **1.2** / payload **v12** / runtime **v1.3**
-- formal runtime-correspondence milestone: **beta.32**
 - project format: **multi-file bundle v3**
+- formal runtime-correspondence milestone: **beta.32**
 
-Product/Studio/native work after beta.32 does not widen the formal assurance claim.
+Product, Studio and native work after beta.32 does not widen the formal assurance claim.
 
-## Core product backlog status
+## Active UX and reliability milestone
 
-**The current beta.35+ Studio/compiler product backlog is closed.** There are no ordinary repository-controlled feature items left in this milestone. New feature ideas can create a new milestone, but they are not silently carried as unfinished beta.35 work.
+The previous beta.35+ feature milestone closed the planned source-backed Designer, multi-file project, Table/TreeView/Tabs, ListBox and Slider work. A new repository-controlled milestone is now active for product polish, browser reliability and faster IDE navigation.
+
+### Completed in the current milestone
+
+- [x] real Headless Chrome startup/responsiveness test that loads Studio, runs the default Window application and probes the main thread after the delayed-freeze window
+- [x] production Pages gate that runs the same Chrome behavior test against `https://minh.systems/Patch/` before `patch-studio/public-site` can become healthy
+- [x] prevent self-triggering Designer `MutationObserver` reconciliation loops from starving the browser main thread
+- [x] make `studio-bootstrap.js` the **single service-worker registration and revision-refresh owner**
+- [x] remove late service-worker registration from Playground and Accessibility modules
+- [x] type-safe offline routing: missing JavaScript/CSS/runtime assets never receive `index.html`; only real document navigation may fall back to the cached Studio shell
+- [x] site-wide responsive visual polish for Studio, Documentation, Language, Downloads and Help
+- [x] balanced Documentation contract layout with 3-column desktop, 2-column medium and 1-column narrow behavior instead of the squeezed four-plus-one card row
+- [x] keyboard-first **Command Palette** (`Ctrl/Cmd+K`) delegating to existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions
+- [x] Command Palette kept transient and navigation-only, with no second project/mutation model or local persistent state
+- [x] README, public Documentation and Help synchronized to the current UX/reliability and native/runtime boundaries
+- [x] CI/site validation expanded for Command Palette packaging, single-worker ownership and type-safe offline fallback
+
+### Next repository-controlled backlog
+
+- [ ] **Command Palette v2: project-file and symbol quick-open** using the existing multi-file bundle v3 and Project Outline models; acceptance: fuzzy file/symbol filtering, exact editor navigation, keyboard-only operation and no second persistent project index
+- [ ] **Workspace layout v2**: user-resizable source/result vertical split with a local IDE-only preference and a one-click reset; acceptance: editor/Designer minimum sizes, keyboard accessibility, responsive fallback and no Patch application-state impact
+- [ ] **Studio startup diagnostics v2**: visible non-blocking readiness/failure surface when a critical application module fails before normal initialization; acceptance: no silent dead UI, copyable privacy-redacted error and production browser regression coverage
+
+New product items should have a concrete implementation target and acceptance test before being added here.
+
+## Completed beta.35+ product foundation
 
 ### Studio / Designer
 
-- [x] canonical multi-file project bundle v3 with Project Tree, deterministic Run/Build composition, full-project recovery and explicit migrations
+- [x] canonical multi-file project bundle v3 with Project Tree/Outline, deterministic Run/Build composition, full-project recovery and explicit migrations
 - [x] source-backed Form add/select/resize/fit/default-size/duplicate/delete lifecycle
-- [x] source-backed control selection, common Properties actions, source reveal, delete and duplicate
-- [x] pointer and keyboard positioning/resizing plus Center H / Center V, Default size and collision-aware Auto place
-- [x] transient Designer multi-select with shared movement/alignment
+- [x] shared top-level control selection and source-backed Properties actions
+- [x] pointer and keyboard positioning/resizing, alignment, Center H / Center V, Default size and collision-aware Auto place
+- [x] transient Designer multi-select with shared group movement/alignment
 - [x] source-backed Anchor/Dock layout policy and runtime reflow
 - [x] Text, Button, Input, Checkbox, Radio, ComboBox and ListBox authoring
-- [x] browser and native list-backed multi-select ListBox with transient text-list values and explicit `change` persistence
-- [x] read-only source-backed Table/Grid Stage 1 with row selection and structural Properties editing
-- [x] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter
-- [x] TreeView Stage 1 language/IR, Studio preview, Standalone Web and native parity
-- [x] sealed payload v12 / runtime v1.3 TreeView compatibility line with root-to-node text-list selection and Windows/macOS/Linux smoke execution
-- [x] source-backed top-level Table grid and TreeView hierarchy structural Properties editors
-- [x] source-backed Tabs page add/rename/reorder/delete/duplicate editing
-- [x] source-backed nested Tabs insertion/removal/reorder/duplicate for Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table and TreeView
-- [x] dedicated nested Table column/row and TreeView hierarchy structural editing inside Tabs Properties
-- [x] categorized Add control picker plus active Form navigation and source-backed sizing workflow
-- [x] structural Properties summary/filter/empty-state polish
-- [x] shared Designer selection/event architecture cleanup across core/Tabs/Table/TreeView
-- [x] unify core/Tabs/Table/TreeView behind one shared primary-selection/event and common Properties action architecture
-- [x] **richer data-control surface beyond Table/Grid, ListBox and TreeView via source-backed Slider Stage 1**
-- [x] Slider Stage 1 source syntax, compiler lowering, bounded finite numeric transient `changed` value, Designer integration, Tabs insertion, Studio preview and Standalone Window Web
-- [x] Native GUI IR 1.3 Slider range/step/numeric event contract without redefining frozen IR 1.2
-- [x] native Slider parity through backend 1.4 using Win32 `TRACKBAR`, AppKit `NSSlider` and GTK3 `GtkScale`
-- [x] sealed payload v13 / runtime v1.4 native Slider transport and Windows/macOS/Linux smoke execution
-- [x] token-free Ready/offline consumer switch to Native GUI IR 1.3 / payload v13 / runtime v1.4
-- [x] current Ready/offline composition preserves Table, list-backed ListBox, Menu and TreeView while adding Slider
-- [x] structural/nested accessibility and keyboard refinement: roving Tree/Tabs selection, source-backed structural shortcuts, `Ctrl/Cmd+Enter`, Escape close/focus restoration and focus-visible treatment
-- [x] documentation drift gates for current Studio/native contracts
-- [x] deterministic public site bundle and PWA cache include the complete current Studio authoring surface, transitive browser-module closure and local HTML asset closure
-- [x] Pages deployment fails closed when required runtime releases are incomplete and verifies critical Studio/compiler assets over HTTP after a real deploy
+- [x] list-backed multi-select ListBox with transient text-list semantics across browser and current native lines
+- [x] Table/Grid Stage 1 with selected-row events and source-backed structural Properties editing
+- [x] TreeView hierarchy, source-backed structural editing, browser preview and current native parity
+- [x] Tabs page lifecycle plus nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Slider/Table/TreeView editing
+- [x] Slider Stage 1 source syntax, Designer, Tabs, browser preview, Standalone Web and native Windows/macOS/Linux parity
+- [x] Native GUI IR 1.3 / payload v13 / runtime v1.4 additive Slider line while v12/v1.3 remains frozen
+- [x] structural/nested keyboard refinement, focus restoration and explicit focus-visible treatment
+- [x] deterministic content-addressed public site and complete browser module/HTML asset closure validation
+- [x] runtime-template SHA-256 integrity chain for token-free Ready builds
 
-All current input/selection/result events remain transient. Persistent application state changes through ordinary semantic `change` only. Slider `changed` exposes a finite in-range number; Table/ListBox/TreeView expose their documented transient list/text-list values. Renderer or native-toolkit selection never becomes hidden Patch state.
+All current input/selection/result events remain transient. Persistent application state changes through ordinary semantic `change` only.
 
 ### Compiler / language / assurance infrastructure
 
@@ -84,16 +88,13 @@ All current input/selection/result events remain transient. Persistent applicati
 
 ## Frozen native compatibility evidence
 
-These historical lines remain part of the compatibility evidence even though the current consumer is Native GUI IR 1.3 / payload v13 / runtime v1.4:
+The current consumer is Native GUI IR 1.3 / payload v13 / runtime v1.4. Older lines remain tested compatibility evidence:
 
-- [x] **Native GUI IR 0.8** introduced the Table compatibility representation and the direct AOT backend preserves the frozen Table semantics on Win32, AppKit and GTK.
-- [x] frozen sealed native GUI payload **v9** / runtime **v1.0** Table compatibility line remains tested across Windows, macOS and Linux.
-- [x] payload **v10** / runtime **v1.1** preserves persistent text-list state and list-backed ListBox compatibility.
-- [x] payload **v11** / runtime **v1.2** preserves Menu + list compatibility.
-- [x] Native GUI IR **1.2** / payload **v12** / runtime **v1.3** adds TreeView while preserving earlier Table/ListBox/Menu contracts and intentionally remains Slider fail-closed.
-- [x] Native GUI IR **1.3** / payload **v13** / runtime **v1.4** is additive over the frozen v12 compatibility bytes rather than redefining them.
-
-Older payload/runtime contracts are frozen compatibility evidence, not obsolete current-product claims.
+- [x] Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line
+- [x] payload v10 / runtime v1.1 persistent text-list state and list-backed ListBox line
+- [x] payload v11 / runtime v1.2 Menu + list line
+- [x] Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line, intentionally Slider fail-closed
+- [x] Native GUI IR 1.3 / payload v13 / runtime v1.4 additive Slider line
 
 ## Desktop / distribution status
 
@@ -102,22 +103,16 @@ Older payload/runtime contracts are frozen compatibility evidence, not obsolete 
 - [x] Ready Windows/macOS/Linux Console packages
 - [x] Ready Windows/macOS/Linux Window packages for the current native GUI surface
 - [x] direct-native Win32/AppKit/GTK backends
-- [x] current Native GUI IR **1.3** Slider-capable line
-- [x] frozen Native GUI IR **1.2** hierarchical TreeView compatibility line
-- [x] frozen versioned payload/runtime compatibility lines rather than in-place redefinition
 - [x] token-free v1.4 runtime release workflows for Windows/macOS/Linux
 - [x] ordinary offline `patch link` defaults to payload v13/runtime v1.4
-- [x] explicit v12/v1.3 and older compatibility behavior remains fail-closed for newer requirements
 - [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
-- [x] current Slider runtime smoke on Windows/macOS/Linux validates real native controls and numeric event persistence through explicit `change`
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
-- [x] Linux packaging expectations and removal documented
-- [x] public-site deployment status is truthful: missing required runtime releases fail the Pages run instead of producing a green no-op, and successful deployments perform a canonical HTTP asset smoke
+- [x] truthful Pages deployment status with required-runtime checks, HTTP asset verification and live Chrome behavior verification
 
-### Externally gated or deliberately future distribution work
+### Externally gated distribution work
 
-These are **not unfinished core beta.35 implementation tasks**. They require credentials, platform/distribution choices or external validation.
+These require credentials, real platform testing or a distribution decision and are not ordinary repository implementation claims.
 
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
@@ -128,11 +123,7 @@ These are **not unfinished core beta.35 implementation tasks**. They require cre
 - [ ] more self-contained Linux distribution formats where deployment evidence justifies them
 - [ ] manual assistive-technology validation with Narrator, VoiceOver, Orca or comparable tools; no WCAG conformance claim is made without that work
 
-Native Slider parity is **not** an open item anymore. It is implemented in the additive IR 1.3 / payload v13 / runtime v1.4 line while v1.3 remains frozen Slider fail-closed compatibility evidence.
-
 ## Research evidence gates
-
-The following remain intentionally unchecked because the repository cannot truthfully manufacture the missing external evidence.
 
 ### Controlled evaluation
 
@@ -141,10 +132,9 @@ The following remain intentionally unchecked because the repository cannot truth
 - [x] raw samples plus min/median/mean/p95/max and robust Q1/Q3/MAD/IQR aggregation
 - [x] environment/commit/scenario consistency checks
 - [x] explicit `development` / `hosted-ci` / `controlled` measurement classes
-- [x] fail closed when GitHub Actions timing is labelled `controlled`
 - [x] fixed-machine procedure in `docs/CONTROLLED_EVALUATION.md`
-- [ ] **controlled paper-quality benchmark runs** on fixed hardware
-- [ ] statistical model/plots over the collected controlled dataset
+- [ ] controlled paper-quality benchmark runs on fixed hardware
+- [ ] statistical model/plots over the controlled dataset
 - [ ] measured results synchronized into the manuscript
 
 No empirical performance result is claimed until those measurements actually exist.
@@ -153,9 +143,7 @@ No empirical performance result is claimed until those measurements actually exi
 
 - [x] internally authored multi-domain checkout/loyalty and usage/quota application corpus
 - [x] literature-grounded comparison dimensions in `docs/RELATED_WORK.md`
-- [ ] **genuine external/third-party plugin or extension integration study**
-
-The internal examples are engineering/security evidence, not a substitute for evidence from an external extension ecosystem.
+- [ ] genuine external/third-party plugin or extension integration study
 
 ### Venue/expert validation
 
@@ -164,27 +152,7 @@ The internal examples are engineering/security evidence, not a substitute for ev
 
 ## High-venue artifact gate
 
-Completed repository-side evidence:
-
-- [x] State-Change Factorization + Mutation Transparency
-- [x] Change Signature Soundness + semantic policy containment
-- [x] machine-checked integer range fragment
-- [x] source/range/guard translation validation
-- [x] raw-source static call-site identity validation
-- [x] direct compiled execution + independent effect validation
-- [x] finite abstract/exact/transitive call assurance
-- [x] call-aware direct-Wasm correspondence
-- [x] invocation frames for repeated identical calls
-- [x] mixed-guard repeated-call invocation-frame evidence with Lean re-checking
-- [x] portable C99 and semantic GUI input evidence
-- [x] assurance overhead/scaling harness
-- [x] process-isolated controlled-measurement protocol
-- [x] semantic-authority security ablation
-- [x] realistic checkout/loyalty and usage/quota cases
-- [x] commit-bound reproducibility bundle
-- [x] structured related work with primary-source comparison dimensions
-- [x] targeted 2025–2026 dependent/state-sensitive effect follow-up
-- [x] main manuscript synchronized to beta.32 assurance / beta.35 artifact status
+Repository-side evidence already includes State-Change Factorization, Mutation Transparency, semantic policy containment, machine-checked integer range evidence, source/range/guard validation, raw-source call-site identity validation, direct compiled execution plus independent effect validation, finite call assurance, invocation frames, repeated-call correspondence, portable C99 and GUI evidence, assurance measurement tooling, semantic-authority security cases, commit-bound reproducibility and structured related work.
 
 Evidence still requiring new data or external participation:
 
@@ -202,8 +170,5 @@ Evidence still requiring new data or external participation:
 - **beta.33:** Studio/project/recovery/diagnostics production-readiness layer
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
-- **beta.35+ product work:** project bundle v3, current Designer architecture, Table/TreeView/Tabs completion, Slider Stage 1, additive native Slider parity through Native GUI IR 1.3 / payload v13 / runtime v1.4, and fail-closed public-site deployment verification
-
-## Rule for new backlog items
-
-A new unchecked core-product item should be added only when it has a concrete implementation target and acceptance test. Credential-dependent deployment, manual validation and research-evidence requirements stay in their dedicated gated sections so the core product backlog cannot appear perpetually unfinished for reasons outside the repository.
+- **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs, Slider and native runtime v1.4
+- **current UX/reliability milestone:** MutationObserver freeze fix, live Chrome deployment gate, single service-worker ownership, type-safe offline fallback, site-wide visual polish and Command Palette

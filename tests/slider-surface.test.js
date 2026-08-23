@@ -15,7 +15,8 @@ test('Slider Stage 1 stays visible across Studio, public docs and the PWA bundle
   const contract = read('docs/SLIDER_STAGE1.md');
 
   assert.match(index, /id="addSlider"/);
-  assert.match(index, /Slider Stage 1/);
+  assert.match(index, /value="sliderWindow">Slider app<\/option>/);
+  assert.match(index, /native Slider/i);
   assert.match(index, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/i);
   assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
   assert.match(language, /data-slider-language-support="native-v14"/);
@@ -24,6 +25,7 @@ test('Slider Stage 1 stays visible across Studio, public docs and the PWA bundle
   assert.match(language, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3.*frozen compatibility/s);
   assert.match(docs, /docs\/SLIDER_STAGE1\.md/);
   assert.match(docs, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
+  assert.match(contract, /Slider Stage 1/);
   assert.match(contract, /Window event adapter \*\*0\.9\*\*/);
   assert.match(contract, /Change IR remains \*\*0\.10\*\*/);
   assert.match(contract, /Native GUI IR \*\*1\.3\*\*/);

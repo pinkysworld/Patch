@@ -232,13 +232,17 @@ jobs:
             fi
             grep -F "./studio-bootstrap.js?v=${revision}" "$index_file" >/dev/null
             grep -F "./studio-accessibility.js?v=${revision}" "$index_file" >/dev/null
+            grep -F "./studio-command-palette.js?v=${revision}" "$index_file" >/dev/null
+            grep -F "./studio-command-palette.css?v=${revision}" "$index_file" >/dev/null
 
             assets=(
               site-navigation.css
               site-refresh.css
+              studio-command-palette.css
               playground.js
               native-build.js
               studio-bootstrap.js
+              studio-command-palette.js
               studio-accessibility.js
               sw.js
               src/compiler.js

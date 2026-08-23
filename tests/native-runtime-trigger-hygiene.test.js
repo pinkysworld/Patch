@@ -19,6 +19,12 @@ test('native runtime workflows do not rebuild for site-only build plumbing', () 
   }
 });
 
+test('general roadmap edits do not rebuild legacy native runtime templates', () => {
+  for (const [platform, workflow] of workflows) {
+    assert.equal(workflow.includes('docs/ROADMAP.md'), false, `${platform} should not couple native runtime rebuilds to the general roadmap`);
+  }
+});
+
 test('macOS native runtime is not coupled to the Pages workflow itself', () => {
   assert.equal(workflows.get('macos').includes('.github/workflows/pages.yml'), false);
 });

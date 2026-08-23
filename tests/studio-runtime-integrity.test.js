@@ -110,8 +110,15 @@ test('Pages deployment result is published as a queryable commit status', () => 
   assert.match(pagesStatus, /statuses\/\$STATUS_SHA/);
 });
 
-test('service worker fetches runtime assets fresh-first before offline fallback', () => {
-  assert.match(serviceWorker, /runtimeAsset/);
+test('service worker fetches documents, code and runtime assets fresh-first with type-safe offline fallback', () => {
+  assert.match(serviceWorker, /const navigation = event\.request\.mode === 'navigate'/);
+  assert.match(serviceWorker, /const codeAsset = sameOrigin/);
+  assert.match(serviceWorker, /const htmlAsset = sameOrigin/);
+  assert.match(serviceWorker, /const runtimeAsset = sameOrigin/);
   assert.match(serviceWorker, /url\.pathname\.includes\('\/runtimes\/'\)/);
-  assert.match(serviceWorker, /freshFirst = event\.request\.mode === 'navigate' \|\| codeAsset \|\| runtimeAsset/);
+  assert.match(serviceWorker, /const freshFirst = navigation \|\| codeAsset \|\| htmlAsset \|\| runtimeAsset/);
+  assert.match(serviceWorker, /const cached = await caches\.match\(event\.request, \{ ignoreSearch: true \}\)/);
+  assert.match(serviceWorker, /if \(navigation\) \{/);
+  assert.match(serviceWorker, /caches\.match\(versioned\('\.\/index\.html'\), \{ ignoreSearch: true \}\)/);
+  assert.match(serviceWorker, /throw error/);
 });

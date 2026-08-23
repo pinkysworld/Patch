@@ -8,7 +8,6 @@ const buildButton = document.querySelector('#build');
 installSkipLink();
 installResultTabKeyboard();
 installStudioShortcuts();
-installServiceWorkerRefresh();
 syncResultTabs();
 
 if (resultTabList && typeof MutationObserver !== 'undefined') {
@@ -56,38 +55,6 @@ function installStudioShortcuts() {
     if (event.shiftKey) buildButton?.click();
     else runButton?.click();
   });
-}
-
-function installServiceWorkerRefresh() {
-  if (!('serviceWorker' in navigator)) return;
-
-  const reloadGuardKey = 'patch-studio-sw-reload-guard';
-  const siteRevision = new URL(import.meta.url).searchParams.get('v') || '';
-  const reloadGuardValue = siteRevision || 'unversioned';
-  let reloadedForActivation = false;
-  try {
-    reloadedForActivation = sessionStorage.getItem(reloadGuardKey) === reloadGuardValue;
-  } catch {}
-
-  const hadController = Boolean(navigator.serviceWorker.controller);
-  let reloadRequested = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || reloadedForActivation || reloadRequested) return;
-    reloadRequested = true;
-    try { sessionStorage.setItem(reloadGuardKey, reloadGuardValue); } catch {}
-    window.location.reload();
-  });
-
-  window.addEventListener('load', async () => {
-    try {
-      const registration = siteRevision
-        ? await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(siteRevision)}`, { updateViaCache: 'none', scope: './' })
-        : await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
-      await registration.update();
-    } catch {
-      // Offline Studio operation remains valid when an update check cannot reach the network.
-    }
-  }, { once: true });
 }
 
 function syncResultTabs() {

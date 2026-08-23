@@ -28,8 +28,8 @@ for (const rel of [
 // The previous v12/v1.3 TreeView line remains frozen and Slider fail-closed.
 const index = read('_site/index.html');
 requireAll('beta.35+ Studio page', index, [
-  'data-patch-version="0.2.0-beta.35"','0.2 beta.35+','Slider Stage 1','supported native Ready/offline Windows, macOS and Linux paths',
-  'multi-select ListBox and TreeView remain available','Native GUI IR 1.3','payload v13','runtime v1.4','payload v12 / runtime v1.3 compatibility line remains Slider fail-closed',
+  'data-patch-version="0.2.0-beta.35"','0.2 beta.35+','value="sliderWindow">Slider app</option>','id="addSlider"','native Slider',
+  'multi-file project bundle v3','source-backed Designer','Native GUI IR 1.3','payload v13','runtime v1.4','payload v12 / runtime v1.3 compatibility line remains Slider fail-closed',
   'explicit <b>change</b>','./beta35-studio.js?v=','./slider-stage1.js?v=','./table-stage1.js?v='
 ]);
 rejectAll('beta.35+ Studio page', index, [
@@ -80,9 +80,9 @@ rejectAll('beta.35+ Downloads page', downloads, ['Native Slider parity requires 
 
 const sw = read('_site/sw.js');
 requireAll('beta.35 Service Worker', sw, [
-  "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')","freshFirst = event.request.mode === 'navigate' || codeAsset || runtimeAsset",'./slider-stage1.js','./src/window-events.js',
+  "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')","const navigation = event.request.mode === 'navigate'","const htmlAsset = sameOrigin","freshFirst = navigation || codeAsset || htmlAsset || runtimeAsset",'./slider-stage1.js','./src/window-events.js',
   './src/native-gui-ir-v12.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v12.js','./src/sealed-native-gui-v13.js',
-  './src/call-site-validation.js','./src/independent-range-expression.js','./src/independent-guard-expression.js'
+  './src/call-site-validation.js','./src/independent-range-expression.js','./src/independent-guard-expression.js','if (navigation)','throw error'
 ]);
 
 console.log('ok Patch Studio beta.35+ native Slider v1.4 with frozen v1.3 compatibility surface');
