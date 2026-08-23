@@ -6,6 +6,7 @@ on:
     paths:
       - web/**
       - tests/studio-browser-startup.test.js
+      - tests/studio-startup-diagnostics.test.js
       - scripts/build-site.js
       - scripts/check-site.js
       - scripts/check-site-v10.js
@@ -270,5 +271,5 @@ jobs:
       - name: Verify deployed Patch Studio in Chrome
         if: steps.native_runtime.outputs.ready == 'true'
         env:
-          PATCH_STUDIO_SMOKE_URL: https://minh.systems/Patch/
+          PATCH_STUDIO_SMOKE_URL: https://minh.systems/Patch/?startup-diagnostic-smoke=1
         run: node --test tests/studio-browser-startup.test.js
