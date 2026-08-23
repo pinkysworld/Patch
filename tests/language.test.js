@@ -16,7 +16,10 @@ test('list add and remove', () => {
 });
 test('thing fields change independently', () => {
   const r=run('create thing player:\n  score = 1\n  lives = 3\nchange player:\n  add 2 to score\n  remove 1 from lives');
-  assert.deepEqual(r.state.player,{score:3,lives:2}); assert.deepEqual(r.history[0].operations.map(x=>x.field),['score','lives']);
+  assert.equal(Object.getPrototypeOf(r.state.player), null);
+  assert.equal(r.state.player.score, 3);
+  assert.equal(r.state.player.lives, 2);
+  assert.deepEqual(r.history[0].operations.map(x=>x.field),['score','lives']);
 });
 test('if and else', () => { assert.deepEqual(run('create number age = 8\nif age < 10:\n  show "child"\nelse:\n  show "older"').output,['child']); });
 test('repeat changes state', () => { assert.equal(run('create number x = 0\nrepeat 4:\n  change x:\n    add 2').state.x,8); });

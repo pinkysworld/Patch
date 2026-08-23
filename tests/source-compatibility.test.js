@@ -26,7 +26,7 @@ for (const item of manifest.cases) {
       assert.equal(compiled.project.kind, 'console');
       const result = new PatchInterpreter().run(source);
       assert.deepEqual(result.output, item.expectedOutput);
-      assert.deepEqual(result.state, item.expectedState);
+      assert.deepEqual(JSON.parse(JSON.stringify(result.state)), item.expectedState);
       return;
     }
 

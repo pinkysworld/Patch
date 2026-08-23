@@ -1,0 +1,4 @@
+# Keep text files LF-normalized even on Windows checkouts where
+# Git for Windows defaults to core.autocrlf=true. Tests that match
+# YAML/Markdown against `\n` depend on a stable working-tree encoding.
+* text=auto eol=lf
