@@ -1,60 +1,107 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.8 development**
+Status: **0.2.0-beta.35 development**
 
-Patch is indentation-sensitive. Two spaces are recommended.
+This document describes the current source-language surface. Patch is indentation-sensitive; two spaces are recommended. Product/runtime compatibility details live in `docs/ROADMAP.md` and `docs/NATIVE_GUI.md`. The formal assurance boundary is intentionally narrower than the language and remains the **beta.32** milestone described in `docs/FORMAL_MODEL.md` and `docs/RUNTIME_CORRESPONDENCE.md`.
 
 ## Core rule
 
-After a value is created, ordinary source code cannot assign to it directly. Persistent mutation occurs only inside `change`.
+After a persistent value is created, ordinary source code cannot assign to it directly. Persistent mutation occurs through an explicit `change` block.
 
 ```patch
-create number x = 1
-change x:
+create number score = 0
+change score:
   add 1
+show score
 ```
 
-Direct reassignment such as `x = 2` is intentionally invalid outside a `create thing` field initializer.
+A direct reassignment such as `score = 2` is invalid outside a `create thing` field declaration.
 
-## Values and expressions
+## Values
+
+Patch currently has numbers, text, booleans, lists and Things.
 
 ```patch
 create number score = 10
 create text name = "Mia"
 create boolean ready = true
 create list fruits = apple, banana
-```
 
-Things are simple records:
-
-```patch
 create thing player:
   name = "Sam"
   score = 0
   active = true
 ```
 
-Expressions include numbers, strings, booleans, variables, thing fields such as `player.score`, arithmetic `+ - * / %`, comparisons, `and`, `or`, `not`, parentheses, and list literals.
+Thing fields are application data, not JavaScript prototype metadata. The field names `__proto__`, `prototype` and `constructor` are rejected fail-closed. Runtime Thing storage is prototype-free, and expression lookup only follows own fields.
 
-## Change
+## Expressions
 
-A `change` block forms one semantic change record.
+Expressions support:
+
+- numeric and quoted text literals;
+- `true` and `false`;
+- variables and Thing paths such as `player.score`;
+- list literals such as `[1, 2, 3]`;
+- arithmetic `+ - * / %`;
+- comparisons `< > <= >=`;
+- equality `== !=`;
+- Boolean `and`, `or`, `not`;
+- parentheses.
+
+Patch value equality is structural. Lists compare by length and element order. Things compare by their own field names and values, independent of object insertion order. `NaN` compares equal to `NaN` for Patch structural equality, and inherited JavaScript properties never participate in a Patch path lookup.
+
+## Semantic changes
+
+A `change` block forms one semantic committed change record.
 
 ```patch
-change score:
+change score called bonus:
   add 10
 
 change player:
   add 10 to score
-  remove 1 from lives
   set name = "Alex"
 ```
 
-Supported source mutation verbs are `set`, `add`, `remove`, and `clear`. The runtime normalizes these into semantic operations and generates inverses where supported.
+Supported source mutation verbs are:
 
-## Semantic Change Signatures
+```text
+set
+add
+remove
+clear
+```
 
-Patch automatically infers a semantic Change Signature for every recipe.
+The interpreter/runtime converts these into explicit semantic operations and records enough information for history and inverse operations where supported.
+
+Examples:
+
+```patch
+change score:
+  add 5
+
+change score:
+  remove 2
+
+change player:
+  set name = "Lin"
+
+change fruits:
+  add pear
+
+change fruits:
+  remove apple
+
+change ready:
+  clear
+```
+
+Field-targeting forms are `set field = value`, `add value to field`, `remove value from field`, and `clear field`.
+
+## Change Signatures
+
+Patch infers a semantic Change Signature for recipes and compiled programs. A signature records semantic effect information such as target/path, operation class, source provenance, and a known amount or amount range where production analysis can establish one.
 
 ```patch
 make reward(player):
@@ -69,51 +116,11 @@ reward(player)
   player.score -> increase by 5
 ```
 
-Signatures contain target/path, semantic operation class, source information, and a known amount or amount range when the analyzer can prove one. Preview-only changes are marked non-committing. Simple recipe calls can be followed transitively by the production analyzer, although recipe calls remain outside the current formal certificate subset.
+Change IR currently has version **0.10**.
 
 ## Change Capabilities
 
-A recipe can optionally state what semantic changes it may produce.
-
-```patch
-allow reward:
-  player.score may increase up to 10
-```
-
-Rules use:
-
-```text
-target[.field] may operation [up to number]
-```
-
-Current policy operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clear`. The verified formal policy vocabulary currently uses normalized `increase`, `decrease`, `set`, and `clear` effects.
-
-A protected recipe is rejected by the production compiler if its inferred committed changes are not covered by its rules.
-
-For the structured Lean core, the machine-checked relation is:
-
-```text
-RuntimeChanges(stmt) subset-of Signature(stmt)
-Signature(stmt) admitted-by Capability(stmt)
----------------------------------------------
-RuntimeChanges(stmt) admitted-by Capability(stmt)
-```
-
-## Ranged recipe parameters
-
-Patch supports bounded numeric parameters:
-
-```patch
-make reward(player, bonus number 0..10):
-  change player:
-    add bonus to score
-```
-
-A ranged parameter is still used as an ordinary number. The annotation gives the analyzer/runtime a declared input contract.
-
-The production interval analyzer currently supports numeric literals, ranged parameter names, unary `+`/`-`, parentheses, and `+`, `-`, `*`, `/`. Division is not proven when the denominator interval can contain zero.
-
-Example:
+A recipe can state which semantic effects it may produce.
 
 ```patch
 allow reward:
@@ -124,215 +131,42 @@ make reward(player, bonus number 0..5):
     add bonus * 2 to score
 ```
 
-The production analyzer infers `bonus * 2` as `0..10`. With `bonus number 0..6`, the possible range becomes `0..12` and the current capability checker rejects the program.
-
-Calls to ranged recipes are guarded at runtime. Production interval-analysis soundness itself is still a formal proof obligation.
-
-## Formal metadata in Change IR 0.6
-
-Patch IR 0.6 contains both:
+Capability rules use:
 
 ```text
-formalSource
-formalBridge
+target[.field] may operation [up to number]
 ```
 
-in addition to ordinary instructions, runtime capabilities, Change Signatures, and Change Capability policies.
+Current policy operations are `increase`, `decrease`, `add`, `remove`, `set`, and `clear`. `up to` applies to quantitative increase/decrease/add/remove rules. The production compiler rejects a protected recipe when its inferred committed effects are not covered by the declared rules.
 
-### `formalSource`
+## Ranged recipe parameters
 
-`formalSource` preserves source mutation verbs for the supported formal subset:
-
-```text
-add | remove | set | clear
-```
-
-plus sequence, branch and literal-repeat structure. Numeric `add`/`remove` nodes carry the production-inferred raw amount range.
-
-### `formalBridge`
-
-`formalBridge` contains the independent semantic view used for production translation validation. Numeric changes are normalized there to semantic operation classes such as `increase` and `decrease`.
-
-`patch formal program.patch` reports coverage of both views. Unsupported constructs are listed explicitly.
-
-## Beta 8 source/evidence certificates
-
-For protected recipes inside both supported formal subsets:
-
-```bash
-patch certify program.patch --out Program.patchcert.lean
-```
-
-emits a Lean-checkable artifact containing separate claims:
-
-```text
-SourceStmt
-EvidenceStmt
-production Change Signature
-semantic policy
-source SHA-256
-Patch IR version
-source/evidence schema versions
-```
-
-The important distinction is that the source artifact still says source-level `add`, `remove`, `set`, or `clear`.
-
-For example:
+Numeric recipe parameters can carry an inclusive range contract.
 
 ```patch
-change player:
-  add -5 to score
+make reward(points number 0..100):
+  show points
 ```
 
-can be represented in the formal source artifact as:
+The production interval analyzer supports the documented arithmetic fragment and fails conservatively when it cannot prove a required quantitative bound. Runtime calls also enforce declared parameter ranges.
 
-```text
-add amount [-5,-5]
-```
-
-while the separate semantic evidence says:
-
-```text
-decrease amount [5,5]
-```
-
-`formal/PatchSource.lean` validates the raw amount bounds and performs this semantic normalization itself. Lean then checks that the independently emitted semantic evidence matches the source lowering.
-
-The executable source/evidence check is:
-
-```text
-checkSourceEvidence(source, evidence)
-```
-
-and successful checking implies:
-
-```text
-lowerSourceStmt(source) = some evidence
-```
-
-The source/signature path is:
-
-```text
-SourceStmt
-  -> Lean source normalization
-  -> EvidenceStmt
-  -> Lean evidence decoding
-  -> CoreStmt
-  -> formal inferSignature
-  -> compare with separate production Change Signature claim
-```
-
-For the formal Source-core execution relation, Lean also proves that a successful source policy check prevents modeled runtime effects outside policy.
-
-## Important verification boundary
-
-Beta 8 is **not full compiler verification**.
-
-Still trusted/unproved:
-
-```text
-Patch source bytes
-  -> JavaScript parser / AST
-  -> SourceStmt extraction
-```
-
-and:
-
-```text
-Patch numeric expression
-  -> production-inferred amount interval
-```
-
-Lean-checked after the formal source boundary:
-
-```text
-SourceStmt
-  -> semantic normalization
-  -> EvidenceStmt correspondence
-  -> CoreStmt decoding
-  -> formal signature reconstruction
-  -> production-signature correspondence
-  -> semantic policy checking
-  -> runtime containment for formal SourceExecutes traces
-```
-
-The production JavaScript runtime is also not yet proved to correspond to the formal `SourceExecutes` relation.
-
-Certificate generation refuses protected recipes outside the source/semantic formal subset. Unsupported code is not silently called verified.
-
-## Current formal certificate subset
-
-Currently supported:
-
-- direct `add`, `remove`, `set`, `clear` source changes;
-- non-mixed-sign proven numeric amount ranges for `add`/`remove`;
-- sequence;
-- `if` alternatives;
-- literal non-negative `repeat`;
-- preview as no committed formal effect.
-
-Currently outside the subset:
-
-- recipe calls and cross-call substitution;
-- dynamic repeat counts;
-- `return`;
-- `undo` / `redo`;
-- GUI/window/event execution;
-- mixed-sign numeric ranges;
-- numeric mutation amounts for which no range is proved;
-- external effects and richer source semantics not represented by the current formal core.
-
-## Causal provenance and `why`
-
-Committed semantic changes retain source line, target/before/after values, semantic operations, active recipe-call chain, and GUI-event cause when relevant.
+## Recipes and calls
 
 ```patch
-why score
-why score > 100
+make greet(name):
+  show "Hello " + name
+
+do greet("Ada")
 ```
 
-`why score` reports recorded transitions and known recipe/event causes. A condition query reconstructs pre-change state and replays committed changes until it finds the first recorded false-to-true transition when possible.
-
-This is historical provenance, not a general counterfactual causality system.
-
-## Window applications
+Recipes can return a value:
 
 ```patch
-create number count = 0
-
-window "Counter":
-  text "Count: {count}"
-  button "Add" as add_button
-
-when add_button clicked:
-  change count:
-    add 1
+make identity(value):
+  return value
 ```
 
-Current GUI syntax includes `window`, `text`, `button`, `input`, and `when control clicked:`. GUI/event execution uses the same production mutation machinery but is not yet in the formal certificate subset.
-
-## Named changes, undo, preview, history
-
-```patch
-change score called bonus:
-  add 10
-
-history score
-undo bonus
-redo
-```
-
-Named undo is currently restricted to the latest committed change.
-
-Preview executes against cloned state/history and restores committed state:
-
-```patch
-preview:
-  change score:
-    add 100
-```
-
-`watch score` reports future committed transitions.
+Current assurance tooling supports progressively stronger finite, acyclic recipe-call fragments. Recursion/cycles are not silently certified by the finite-call assurance pipeline.
 
 ## Control flow
 
@@ -347,34 +181,255 @@ repeat 5:
     add 1
 ```
 
-Inside production `repeat`, `count` is a one-based local number. Only literal non-negative repeat counts are currently in the formal source certificate subset.
+Inside `repeat`, `count` is a one-based local number. Production execution limits a repeat count to a whole number from 0 through 100000.
 
-## Recipes
+## History, undo, redo and preview
 
-```patch
-make greet(name):
-  show "Hello " + name
-
-do greet("Ada")
-```
-
-Ranged parameters are optional and numeric only in the current beta:
+Committed semantic changes are visible through history.
 
 ```patch
-make award(points number 0..100):
-  show points
+history score
+undo bonus
+redo
 ```
+
+Named undo is restricted to the latest committed change when that name is supplied.
+
+`preview` runs against cloned state/history and restores committed state afterwards:
+
+```patch
+preview:
+  change score:
+    add 100
+```
+
+Preview comparison uses the same structural Patch value equality as `==` and list removal.
+
+## Watch and provenance
+
+```patch
+watch score
+why score
+why score > 100
+```
+
+`watch` reports later committed transitions. `why` uses recorded semantic history and known recipe/event causes. This is historical provenance, not a general counterfactual-causality system.
+
+## Window applications and Forms
+
+A Window project uses the same persistent state/change machinery as a Console project.
+
+```patch
+create number count = 0
+
+window "Counter" as counter size 520, 360:
+  text "Count: {count}"
+  button "Add" as add_button at 24, 64 size 120, 34
+
+when add_button clicked:
+  change count:
+    add 1
+```
+
+Named Forms can be opened and closed:
+
+```patch
+open settings
+close settings
+```
+
+Unnamed legacy windows remain source-compatible.
+
+## Window controls
+
+Current top-level Window controls are:
+
+- `text`
+- `button`
+- `input`
+- `checkbox`
+- `radio`
+- `combo`
+- `listbox`
+- `slider`
+- `table`
+- `tree`
+- `tabs`
+
+Examples:
+
+```patch
+checkbox "Enabled" as enabled_box
+radio "Small", "Large" as size_choice
+combo "Red", "Green", "Blue" as color_choice
+listbox "One", "Two", "Three" as choices
+slider 0..100 as volume step 5
+```
+
+Controls may use source-backed layout:
+
+```text
+at x, y
+at x, y size width, height
+```
+
+Control positions must be non-negative. Explicit control sizes must be at least 16 by 16. Explicit Window sizes must be at least 120 by 80.
+
+## Tables
+
+A Table declares source-backed columns and rows.
+
+```patch
+table "Name", "Role" as people:
+  row "Ada", "Engineer"
+  row "Lin", "Researcher"
+```
+
+Every row must have exactly the declared number of values.
+
+## TreeView
+
+```patch
+tree as files:
+  node "src"
+    node "parser.js"
+    node "interpreter.js"
+  node "README.md"
+```
+
+Tree hierarchy is source-backed. Selection is transient UI state unless a handler explicitly commits persistent state through `change`.
+
+## Tabs
+
+Tabs contain at least two source-backed pages. Nested page controls currently use flow layout.
+
+```patch
+tabs as settings_tabs:
+  tab "General":
+    text "General settings"
+    input user_name
+  tab "Advanced":
+    checkbox "Enabled" as advanced_enabled
+```
+
+Nested Tabs controls use the same source-backed control/event semantics as their top-level counterparts where supported.
+
+## Menus
+
+```patch
+menu "File":
+  item "Open" as open_item shortcut "Ctrl+O"
+  separator
+  item "Enabled mode" as enabled_item checked mode_enabled
+```
+
+Menu items may carry portable shortcuts plus source-backed Boolean `enabled` and `checked` bindings. Separators must appear between clickable items.
+
+## Dialogs and file results
+
+Informational dialog:
+
+```patch
+dialog "About", "Patch"
+```
+
+Result-producing forms include:
+
+```patch
+confirm "Delete?", "This cannot be undone." as delete_result
+open file "Choose a file" as open_result
+save file "Save project" as save_result
+```
+
+Their result events are transient. Persistent application state changes only when event code executes an explicit `change`.
+
+## Events
+
+Current event words are:
+
+```text
+clicked
+changed
+closed
+confirmed
+chosen
+cancelled
+```
+
+Example:
+
+```patch
+when volume changed:
+  change level:
+    set = volume
+```
+
+Event-local UI values are transient until explicitly committed by source code.
 
 ## Application kind
 
-Projects are `console` or `window` applications. Both compile through the same Change IR and state/change semantics.
+Projects are `console` or `window` applications. Both compile through the same Change IR and persistent state/change semantics. GUI/runtime target support is a product capability boundary, not a different mutation model.
 
-## Reserved words
+## Current assurance metadata
 
-`create thing number text boolean list change called set add remove clear show why watch history undo redo preview if else repeat make do return allow may increase decrease up to window text button input when clicked changed closed as true false and or not`
+Change IR **0.10** carries the production semantic program plus assurance metadata for supported fragments, including source/semantic views and call/source/guard validation artifacts.
 
-`formal` and `certify` are CLI commands, not source-language reserved words.
+The repository currently contains these assurance layers:
+
+1. production Change Signatures and Change Capabilities;
+2. Lean-checked source/evidence/signature/policy relations for supported explicit changes;
+3. integer `RangeExpr` evidence;
+4. independent raw-source/range and guard extraction checks for supported fragments;
+5. independent raw static `do recipe(args)` call-site identity checking;
+6. ranked finite abstract call composition and exact safe-integer concrete binding;
+7. structured and guard-selected callee traces;
+8. finite transitive exact call trees;
+9. direct-Wasm execution with independently validated semantic observations;
+10. **beta.32** independently reconstructed invocation frames, including repeated identical calls and mixed concrete guard paths.
+
+This is deliberately **not** an end-to-end verified compiler/runtime theorem.
+
+Trusted or proof-free boundaries still include general parser/extractor correctness outside the independently checked subsets, JavaScript lowering/backend correctness, runtime capture, independent-validator implementation correctness, and the executing Wasm engine. GUI execution is outside the beta.32 Lean runtime-correspondence claim.
+
+Unsupported constructs are reported as unsupported rather than silently called verified.
+
+## Certificate commands
+
+Core source/evidence certificate:
+
+```bash
+patch certify program.patch --out Program.patchcert.lean
+```
+
+Coverage report:
+
+```bash
+patch formal program.patch
+```
+
+The repository additionally exposes dedicated commands/scripts for call, concrete-call, structured-callee, transitive-call and runtime-correspondence certificates. See `docs/FORMAL_MODEL.md` and `docs/RUNTIME_CORRESPONDENCE.md` for the exact current theorem boundary.
+
+## Source syntax words
+
+The current source syntax includes the following structural words:
+
+```text
+create thing number text boolean list
+change called set add remove clear
+show why watch history undo redo preview
+if else repeat make do return
+allow may increase decrease up to
+window as size at
+text button input checkbox radio combo listbox slider step
+table row tree node tabs tab
+menu item separator enabled checked shortcut
+dialog confirm open close save file
+when clicked changed closed confirmed chosen cancelled
+true false and or not
+```
+
+This is a synchronization list for the current language surface, not a promise that every word is forbidden as an identifier in every grammatical position. `formal`, `certify`, `run`, `build`, and related names are CLI commands rather than source-language constructs.
 
 ## Error design
 
-Patch errors should explain what went wrong, where, and how to fix it without unnecessary compiler jargon. Capability/range/formal checks deliberately fail conservatively when they cannot prove the required property.
+Patch errors should state what failed, where possible give the source line, and prefer a concrete correction over parser jargon. Capability, range, target and assurance boundaries fail conservatively when the implementation cannot establish the required condition.

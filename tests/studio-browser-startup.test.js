@@ -12,7 +12,7 @@ const MIME = new Map([
   ['.js', 'text/javascript; charset=utf-8'],
   ['.css', 'text/css; charset=utf-8'],
   ['.json', 'application/json; charset=utf-8'],
-  ['.webmanifest', 'application/manifest+json; charset=utf-8'],
+  ['.webmanifest', 'application/manifest+json'],
   ['.svg', 'image/svg+xml'],
   ['.wasm', 'application/wasm']
 ]);
@@ -224,6 +224,7 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
     '--disable-extensions',
     '--no-first-run',
     '--no-default-browser-check',
+    '--window-size=1440,1200',
     '--remote-debugging-port=0',
     `--user-data-dir=${profile}`,
     url

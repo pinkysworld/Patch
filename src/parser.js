@@ -2,6 +2,15 @@ export class PatchSyntaxError extends Error {
   constructor(message, line) { super(`line ${line}: ${message}`); this.line = line; }
 }
 
+const UNSAFE_THING_FIELDS = new Set(['__proto__', 'prototype', 'constructor']);
+
+function safeThingField(name, line) {
+  if (name && UNSAFE_THING_FIELDS.has(name)) {
+    throw new PatchSyntaxError(`'${name}' cannot be used as a thing field name. Choose an application field name instead.`, line);
+  }
+  return name;
+}
+
 function sourceLines(source) {
   const rows = [];
   source.replace(/\t/g, '  ').split(/\r?\n/).forEach((raw, index) => {
@@ -197,6 +206,7 @@ export function parse(source) {
       return {kind:'allow',name:m[1],rules,line:row.line};
     }
     if ((m = row.text.match(/^([A-Za-z_]\w*)(?:\.([A-Za-z_]\w*))?\s+may\s+(increase|decrease|add|remove|set|clear)(?:\s+up\s+to\s+([0-9]+(?:\.[0-9]+)?))?$/))) {
+      safeThingField(m[2], row.line);
       const maxAmount=m[4]===undefined?null:Number(m[4]);
       if(maxAmount!==null&&!['increase','decrease','add','remove'].includes(m[3])) throw new PatchSyntaxError(`'up to' is only meaningful for increase, decrease, add, or remove.`,row.line);
       return {kind:'capRule',target:m[1],field:m[2]??null,operation:m[3],maxAmount,line:row.line};
@@ -212,11 +222,11 @@ export function parse(source) {
       const ops=childBlock(indent,row); for(const op of ops) if(op.kind!=='changeOp') throw new PatchSyntaxError('Only set, add, remove, or clear can appear directly inside change.',op.line);
       return {kind:'change',target:m[1],name:m[2]??null,ops,line:row.line};
     }
-    if ((m = row.text.match(/^set(?:\s+([A-Za-z_]\w*))?\s*=\s*(.+)$/))) return {kind:'changeOp',op:'set',field:m[1]??null,expr:m[2],line:row.line};
-    if ((m = row.text.match(/^add\s+(.+?)(?:\s+to\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'add',field:m[2]??null,expr:m[1],line:row.line};
-    if ((m = row.text.match(/^remove\s+(.+?)(?:\s+from\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'remove',field:m[2]??null,expr:m[1],line:row.line};
-    if ((m = row.text.match(/^clear(?:\s+([A-Za-z_]\w*))?$/))) return {kind:'changeOp',op:'clear',field:m[1]??null,line:row.line};
-    if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) return {kind:'field',name:m[1],expr:m[2],line:row.line};
+    if ((m = row.text.match(/^set(?:\s+([A-Za-z_]\w*))?\s*=\s*(.+)$/))) { safeThingField(m[1], row.line); return {kind:'changeOp',op:'set',field:m[1]??null,expr:m[2],line:row.line}; }
+    if ((m = row.text.match(/^add\s+(.+?)(?:\s+to\s+([A-Za-z_]\w*))?$/))) { safeThingField(m[2], row.line); return {kind:'changeOp',op:'add',field:m[2]??null,expr:m[1],line:row.line}; }
+    if ((m = row.text.match(/^remove\s+(.+?)(?:\s+from\s+([A-Za-z_]\w*))?$/))) { safeThingField(m[2], row.line); return {kind:'changeOp',op:'remove',field:m[2]??null,expr:m[1],line:row.line}; }
+    if ((m = row.text.match(/^clear(?:\s+([A-Za-z_]\w*))?$/))) { safeThingField(m[1], row.line); return {kind:'changeOp',op:'clear',field:m[1]??null,line:row.line}; }
+    if ((m = row.text.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/))) { safeThingField(m[1], row.line); return {kind:'field',name:m[1],expr:m[2],line:row.line}; }
     if ((m = row.text.match(/^if\s+(.+)\s*:\s*$/))) {
       const thenBody=childBlock(indent,row); let elseBody=[];
       if(i<lines.length&&lines[i].indent===indent&&lines[i].text==='else:'){const elseRow=lines[i++];elseBody=childBlock(indent,elseRow);}
