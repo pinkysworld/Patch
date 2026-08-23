@@ -7,8 +7,16 @@ const workflows = new Map([
   ['linux', fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8')],
   ['macos', fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8')]
 ]);
+const frozenDirectWorkflows = [
+  '.github/workflows/native-table-v09.yml',
+  '.github/workflows/native-menu-v10.yml',
+  '.github/workflows/native-menu-state-v11.yml',
+  '.github/workflows/native-listbox-v12.yml',
+  '.github/workflows/native-treeview-v13.yml'
+];
 const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 const pagesStatus = fs.readFileSync('.github/workflows/pages-status.yml', 'utf8');
+const formal = fs.readFileSync('.github/workflows/formal.yml', 'utf8');
 
 test('native runtime workflows do not rebuild for site-only build plumbing', () => {
   for (const [platform, workflow] of workflows) {
@@ -34,6 +42,30 @@ test('each native runtime still self-triggers when its workflow changes', () => 
   assert.match(workflows.get('win32'), /\.github\/workflows\/native-win32-runtime\.yml/);
   assert.match(workflows.get('linux'), /\.github\/workflows\/native-linux-runtime\.yml/);
   assert.match(workflows.get('macos'), /\.github\/workflows\/native-macos-runtime\.yml/);
+});
+
+test('frozen direct-native compatibility workflows are manual-only', () => {
+  for (const file of frozenDirectWorkflows) {
+    const workflow = fs.readFileSync(file, 'utf8');
+    assert.match(workflow, /on:\s*\n\s*workflow_dispatch:/m, file);
+    assert.doesNotMatch(workflow, /\n\s*(?:push|pull_request):/, file);
+  }
+});
+
+test('versioned beta workflows are folded into the canonical formal gate', () => {
+  for (const file of [
+    '.github/workflows/beta26-concrete-calls.yml',
+    '.github/workflows/beta27-arithmetic-calls.yml',
+    '.github/workflows/beta28-callee-traces.yml',
+    '.github/workflows/beta29-guarded-callee-traces.yml',
+    '.github/workflows/beta32-invocation-frames.yml'
+  ]) assert.equal(fs.existsSync(file), false, `${file} should no longer be an active Actions workflow`);
+  assert.match(formal, /npm run concrete-call-certify:example/);
+  assert.match(formal, /npm run arithmetic-call-certify:example/);
+  assert.match(formal, /npm run callee-trace-certify:example/);
+  assert.match(formal, /npm run guarded-callee-trace-certify:example/);
+  assert.match(formal, /npm run transitive-runtime-certify:mixed-guards/);
+  assert.match(formal, /GeneratedMixedGuardTransitiveRuntimeCertificate\.lean/);
 });
 
 test('Pages source deploys cannot be cancelled by later runtime workflow_run triggers', () => {
