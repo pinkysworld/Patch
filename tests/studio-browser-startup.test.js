@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -134,23 +135,57 @@ function withSmokeQuery(value) {
   return url.href;
 }
 
-function waitForDevTools(child, stderr, timeoutMs = 15000) {
+function listenPort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = address && typeof address === 'object' ? address.port : 0;
+      server.close(error => {
+        if (error) reject(error);
+        else resolve(port);
+      });
+    });
+  });
+}
+
+function matchDevTools(text) {
+  const match = String(text).match(/DevTools listening on (ws:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):(\d+)\/devtools\/browser\/[^\s]+)/);
+  return match ? { browserWsUrl: match[1], port: Number(match[2]) } : null;
+}
+
+function waitForDevTools(child, stderr, port, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => finish(new Error(`Chrome did not expose DevTools within ${timeoutMs}ms. stderr:\n${stderr.text}`)), timeoutMs);
-    const onData = () => {
-      const match = stderr.text.match(/DevTools listening on (ws:\/\/127\.0\.0\.1:(\d+)\/devtools\/browser\/[^\s]+)/);
-      if (match) finish(null, { browserWsUrl: match[1], port: Number(match[2]) });
+    const poll = async () => {
+      while (!done) {
+        const fromStderr = matchDevTools(stderr.text);
+        if (fromStderr) return finish(null, fromStderr);
+        try {
+          const response = await fetch(`http://127.0.0.1:${port}/json/version`, { cache: 'no-store' });
+          if (response.ok) {
+            const info = await response.json();
+            if (info?.webSocketDebuggerUrl) return finish(null, { browserWsUrl: info.webSocketDebuggerUrl, port });
+          }
+        } catch {
+          // Chrome is still starting.
+        }
+        if (child.exitCode !== null || child.signalCode !== null) {
+          return finish(new Error(`Chrome exited before DevTools was ready (code=${child.exitCode}, signal=${child.signalCode}). stderr:\n${stderr.text}`));
+        }
+        await delay(150);
+      }
     };
-    const onExit = (code, signal) => finish(new Error(`Chrome exited before DevTools was ready (code=${code}, signal=${signal}). stderr:\n${stderr.text}`));
+    let done = false;
     const finish = (error, value) => {
+      if (done) return;
+      done = true;
       clearTimeout(timer);
-      child.stderr?.off('data', onData);
-      child.off('exit', onExit);
       if (error) reject(error);
       else resolve(value);
     };
-    child.stderr?.on('data', onData);
-    child.once('exit', onExit);
+    poll();
   });
 }
 
@@ -247,6 +282,14 @@ async function evaluate(cdp, expression, timeoutMs = 2000) {
 
 async function stopChrome(child) {
   if (child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform === 'win32' && child.pid) {
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+    await Promise.race([
+      new Promise(resolve => child.once('exit', resolve)),
+      delay(1500)
+    ]);
+    return;
+  }
   child.kill('SIGTERM');
   await Promise.race([
     new Promise(resolve => child.once('exit', resolve)),
@@ -277,6 +320,8 @@ test('Studio browser startup gate probes macOS and Windows Chrome locations', ()
   assert.match(source, /windowsHide: true/);
   assert.match(source, /fs\.existsSync\(executable\)/);
   assert.match(source, /GUI-subsystem binaries/);
+  assert.match(source, /taskkill/);
+  assert.match(source, /json\/version/);
 });
 
 test('Patch Studio stays responsive in Chrome, runs a Window app and exercises current IDE navigation/layout', { timeout: 45000 }, async t => {
@@ -292,6 +337,7 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-studio-chrome-'));
   t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
 
+  const debugPort = await listenPort();
   const stderr = { text: '' };
   const child = spawn(chrome, [
     '--headless=new',
@@ -299,19 +345,20 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
     '--disable-gpu',
     '--disable-dev-shm-usage',
     '--disable-background-networking',
+    '--disable-crash-reporter',
     '--disable-default-apps',
     '--disable-extensions',
     '--no-first-run',
     '--no-default-browser-check',
     '--window-size=1440,1200',
-    '--remote-debugging-port=0',
+    `--remote-debugging-port=${debugPort}`,
     `--user-data-dir=${profile}`,
     url
   ], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
   child.stderr?.on('data', chunk => { stderr.text += chunk.toString(); });
   t.after(() => stopChrome(child));
 
-  const devtools = await waitForDevTools(child, stderr);
+  const devtools = await waitForDevTools(child, stderr, debugPort);
   const target = await waitForPageTarget(devtools.port, url, stderr);
   const cdp = await connectCdp(target.webSocketDebuggerUrl);
   t.after(() => cdp.close());
