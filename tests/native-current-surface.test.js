@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(path, 'utf8');
+
+test('current product consumers use the stable native contract facade', () => {
+  const studio = read('web/native-build.js');
+  const offline = read('src/offline-linker.js');
+  const plan = read('src/native-gui-build-plan.js');
+  for (const [label, source] of [['Studio', studio], ['offline linker', offline], ['native build plan', plan]]) {
+    assert.match(source, /native-current-contract\.js/, label);
+    assert.doesNotMatch(source, /from ['"](?:\.\.\/)?(?:src\/)?native-gui-ir-v13\.js['"]/, label);
+  }
+  assert.doesNotMatch(studio, /sealed-native-gui-v13\.js/);
+  assert.doesNotMatch(offline, /sealed-native-gui-v13\.js/);
+});
+
+test('browser packaging contains the stable facade while versioned compatibility modules remain available', () => {
+  const buildSite = read('scripts/build-site.js');
+  const sw = read('web/sw.js');
+  assert.match(buildSite, /native-current-contract\.js/);
+  assert.match(sw, /native-current-contract\.js/);
+  for (const version of ['v08','v09','v10','v11','v12','v13']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
+});
+
+test('native compatibility documentation makes current versus frozen ownership explicit', () => {
+  const docs = read('docs/NATIVE_COMPATIBILITY.md');
+  for (const marker of ['Native GUI IR 1.3 / sealed payload v13 / runtime v1.4','native-current-contract.js','native-gui-1.3/payload-13/runtime-1.4','Frozen compatibility contracts','beta.32']) assert.ok(docs.includes(marker), marker);
+});

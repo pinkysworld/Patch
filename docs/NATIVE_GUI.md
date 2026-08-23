@@ -43,7 +43,7 @@ Linux   -> GTK3   -> executable
 
 Patch Studio also supports token-free browser-side sealing into precompiled native runtime templates. The downloadable offline compiler performs the same supported sealed linking locally. Project-specific remote AOT through GitHub Actions remains a separate optional route.
 
-Current token-free Ready/offline Window builds use **Native GUI IR 1.3**, **sealed payload v13** and **runtime v1.4**.
+Current token-free Ready/offline Window builds use **Native GUI IR 1.3**, **sealed payload v13** and **runtime v1.4**. Product-facing JavaScript imports this line through `src/native-current-contract.js`; version-numbered IR/sealer modules are retained behind that facade for frozen compatibility and regression evidence.
 
 ## Supported Window surface
 

@@ -8,11 +8,10 @@ import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildNativeGuiIRV11 } from './native-gui-ir-v11.js';
 import { buildNativeGuiIRV12 } from './native-gui-ir-v12.js';
-import { buildNativeGuiIRV13 } from './native-gui-ir-v13.js';
+import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
 import { sealNativeGuiRuntime } from './sealed-native-gui.js';
 import { sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
 import { sealNativeGuiRuntimeV12 } from './sealed-native-gui-v12.js';
-import { sealNativeGuiRuntimeV13 } from './sealed-native-gui-v13.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -62,7 +61,7 @@ export function createOfflineLinkPlan(source, options = {}) {
     allowSlider: guiPayloadVersion >= 13
   });
   const nativeGui = guiPayloadVersion >= 13
-    ? buildNativeGuiIRV13(compiled)
+    ? buildCurrentNativeGuiIR(compiled)
     : guiPayloadVersion >= 12
       ? buildNativeGuiIRV12(compiled)
       : buildNativeGuiIRV11(compiled);
@@ -73,7 +72,7 @@ export function createOfflineLinkPlan(source, options = {}) {
       ? sealNativeGuiRuntimeV11(runtime, nativeGui, { platform })
       : guiPayloadVersion === 12
         ? sealNativeGuiRuntimeV12(runtime, nativeGui, { platform })
-        : sealNativeGuiRuntimeV13(runtime, nativeGui, { platform });
+        : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
   return binaryPlan({ platform, kind, name, sealed });
 }
 
