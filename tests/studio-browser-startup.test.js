@@ -60,6 +60,13 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function withSmokeQuery(value) {
+  const url = new URL(value);
+  url.searchParams.set('patch-smoke', '1');
+  url.searchParams.set('smoke-run', process.env.GITHUB_SHA ?? String(Date.now()));
+  return url.href;
+}
+
 function waitForDevTools(child, stderr, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => finish(new Error(`Chrome did not expose DevTools within ${timeoutMs}ms. stderr:\n${stderr.text}`)), timeoutMs);
@@ -81,6 +88,7 @@ function waitForDevTools(child, stderr, timeoutMs = 8000) {
 }
 
 async function waitForPageTarget(port, expectedUrl, stderr, timeoutMs = 8000) {
+  const expected = new URL(expectedUrl);
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
   while (Date.now() < deadline) {
@@ -88,7 +96,17 @@ async function waitForPageTarget(port, expectedUrl, stderr, timeoutMs = 8000) {
       const response = await fetch(`http://127.0.0.1:${port}/json/list`, { cache: 'no-store' });
       if (response.ok) {
         const targets = await response.json();
-        const target = targets.find(item => item.type === 'page' && item.url?.startsWith(expectedUrl));
+        const target = targets.find(item => {
+          if (item.type !== 'page' || !item.url) return false;
+          try {
+            const candidate = new URL(item.url);
+            return candidate.origin === expected.origin
+              && candidate.pathname === expected.pathname
+              && candidate.searchParams.get('patch-smoke') === '1';
+          } catch {
+            return false;
+          }
+        });
         if (target?.webSocketDebuggerUrl) return target;
       }
     } catch (error) {
@@ -170,7 +188,19 @@ async function stopChrome(child) {
   if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
 }
 
-test('Patch Studio stays responsive in Chrome and can run the default Window app', { timeout: 25000 }, async t => {
+async function localStudioUrl(t) {
+  const server = createStaticServer();
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  return withSmokeQuery(`http://127.0.0.1:${address.port}/web/index.html`);
+}
+
+test('Patch Studio stays responsive in Chrome and can run the default Window app', { timeout: 30000 }, async t => {
   const chrome = findChrome();
   if (!chrome) {
     if (process.env.CI) assert.fail('Chrome/Chromium is required for the Patch Studio browser startup gate');
@@ -178,19 +208,11 @@ test('Patch Studio stays responsive in Chrome and can run the default Window app
     return;
   }
 
-  const server = createStaticServer();
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', resolve);
-  });
-  t.after(() => new Promise(resolve => server.close(resolve)));
-
-  const address = server.address();
-  assert.ok(address && typeof address === 'object');
+  const externalUrl = process.env.PATCH_STUDIO_SMOKE_URL?.trim();
+  const url = externalUrl ? withSmokeQuery(externalUrl) : await localStudioUrl(t);
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-studio-chrome-'));
   t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
 
-  const url = `http://127.0.0.1:${address.port}/web/index.html?patch-smoke=1`;
   const stderr = { text: '' };
   const child = spawn(chrome, [
     '--headless=new',
@@ -223,7 +245,7 @@ test('Patch Studio stays responsive in Chrome and can run the default Window app
     await delay(150);
   }
 
-  assert.equal(smokeState, 'ready', `Studio did not reach the responsive Run state. stderr:\n${stderr.text}`);
+  assert.equal(smokeState, 'ready', `Studio did not reach the responsive Run state at ${url}. stderr:\n${stderr.text}`);
   assert.equal(await evaluate(cdp, "!!document.querySelector('#app') && !document.querySelector('#app').hidden && !!document.querySelector('#app .patch-window')"), true,
     'Run smoke probe did not render the default Patch Window app');
 
@@ -232,5 +254,5 @@ test('Patch Studio stays responsive in Chrome and can run the default Window app
   // reconciled their own DOM writes.
   await delay(2500);
   assert.equal(await evaluate(cdp, "document.documentElement?.dataset?.patchStudioSmoke === 'ready' && !!document.querySelector('#run')"), true,
-    'Patch Studio stopped responding after its initial render');
+    `Patch Studio stopped responding after its initial render at ${url}`);
 });
