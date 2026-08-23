@@ -55,7 +55,7 @@ Patch Studio's delivery path is fail-closed:
 - activation can request at most one recovery reload per site revision;
 - code and runtime requests bypass stale HTTP cache while preserving exact offline cache entries;
 - missing JavaScript, CSS or runtime assets are never replaced with `index.html`; only document navigation may use the cached Studio shell;
-- CI opens Studio in real Headless Chrome, runs a Window app and verifies that the main thread remains responsive after the delayed-freeze window;
+- CI opens Studio in real Headless Chrome, runs a Window app and verifies that the main thread remains responsive after the delayed-freeze window; Windows CI isolates that smoke so a hung `chrome.exe` cannot pin the job;
 - the same browser test runs against the deployed `https://minh.systems/Patch/` site before the public deployment is reported healthy.
 
 This sits on top of deterministic site revisioning, transitive module-closure validation and HTTP asset checks.

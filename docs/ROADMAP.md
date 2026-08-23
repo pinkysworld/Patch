@@ -40,6 +40,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] **Studio startup diagnostics v2** with bootstrap-time module/error/rejection/timeout capture, visible non-blocking redacted details, local copy support, handoff into ordinary `.patchreport` diagnostics and production Chrome exercise of the failure path
 - [x] README, public Documentation and Help synchronized to the current UX/reliability and native/runtime boundaries
 - [x] CI/site validation expanded for Command Palette packaging, single-worker ownership and type-safe offline fallback
+- [x] Windows Chrome smoke isolated from the 12-minute full suite; DevTools waits abort and a hung browser tree is killed
 
 ### Next repository-controlled backlog
 
