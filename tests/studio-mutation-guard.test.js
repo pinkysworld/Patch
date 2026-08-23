@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 
 const bootstrap = fs.readFileSync('web/studio-bootstrap.js', 'utf8');
 const designerUx = fs.readFileSync('web/designer-ux.js', 'utf8');
@@ -20,6 +21,52 @@ test('Designer observers stay disconnected through reconciliation microtasks', (
   assert.match(bootstrap, /scheduleMicrotask\(\(\) => this\.reconnect\(\)\)/);
   assert.match(bootstrap, /if \(isDesignerTarget\(target\)\) this\.guarded = true/);
   assert.match(bootstrap, /target\.id === 'designer' \|\| target\.id === 'designerCanvas'/);
+});
+
+test('guard suppresses a self-triggering Designer reconciliation microtask', async () => {
+  class NativeMutationObserver {
+    static instances = [];
+
+    constructor(callback) {
+      this.callback = callback;
+      this.observing = false;
+      NativeMutationObserver.instances.push(this);
+    }
+
+    observe() { this.observing = true; }
+    disconnect() { this.observing = false; }
+    takeRecords() { return []; }
+    trigger(records = []) { if (this.observing) this.callback(records, this); }
+  }
+
+  const windowObject = { MutationObserver: NativeMutationObserver };
+  const context = vm.createContext({
+    window: windowObject,
+    navigator: {},
+    document: {},
+    queueMicrotask,
+    Promise,
+    TypeError
+  });
+  vm.runInContext(bootstrap, context);
+
+  let callbacks = 0;
+  const observer = new context.window.MutationObserver(() => {
+    callbacks += 1;
+    queueMicrotask(() => NativeMutationObserver.instances[0].trigger([{ type: 'childList' }]));
+  });
+  const designer = { id: 'designer', nodeType: 1, closest: selector => selector === '#designer' ? designer : null };
+  observer.observe(designer, { childList: true, subtree: true });
+
+  NativeMutationObserver.instances[0].trigger([{ type: 'childList' }]);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(callbacks, 1, 'observer must not retrigger from its own reconciliation microtask');
+
+  NativeMutationObserver.instances[0].trigger([{ type: 'childList' }]);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(callbacks, 2, 'observer must reconnect for later external mutations');
 });
 
 test('guard covers the two existing self-mutating Designer reconciliation paths', () => {
