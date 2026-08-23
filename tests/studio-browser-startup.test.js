@@ -200,7 +200,7 @@ async function localStudioUrl(t) {
   return withSmokeQuery(`http://127.0.0.1:${address.port}/web/index.html`);
 }
 
-test('Patch Studio stays responsive in Chrome, runs a Window app and opens the command palette', { timeout: 30000 }, async t => {
+test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens project symbols', { timeout: 30000 }, async t => {
   const chrome = findChrome();
   if (!chrome) {
     if (process.env.CI) assert.fail('Chrome/Chromium is required for the Patch Studio browser startup gate');
@@ -256,7 +256,7 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and opens the c
   assert.equal(await evaluate(cdp, "document.documentElement?.dataset?.patchStudioSmoke === 'ready' && !!document.querySelector('#run')"), true,
     `Patch Studio stopped responding after its initial render at ${url}`);
 
-  // Exercise one real polished IDE interaction as part of the same production gate.
+  // Exercise the real keyboard-first palette against the loaded project model.
   assert.equal(await evaluate(cdp, `(() => {
     const trigger = document.querySelector('#openCommandPalette');
     trigger?.click();
@@ -274,10 +274,48 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and opens the c
   assert.equal(recoveryMatch?.count, 1, 'Command Palette filtering should narrow to the Recovery command');
   assert.match(recoveryMatch?.text ?? '', /Recovery/);
 
-  assert.equal(await evaluate(cdp, `(() => {
+  const fileMatch = await evaluate(cdp, `(() => {
+    const input = document.querySelector('#commandPaletteInput');
+    if (!input) return null;
+    input.value = 'file main.patch';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const items = [...document.querySelectorAll('#commandPaletteList .command-palette-item')];
+    return { count: items.length, text: items[0]?.textContent ?? '', kind: items[0]?.querySelector('.command-palette-kind')?.textContent ?? '' };
+  })()`);
+  assert.equal(fileMatch?.count, 1, 'Quick-open should isolate the canonical main.patch file result');
+  assert.match(fileMatch?.text ?? '', /main\.patch/);
+  assert.equal(fileMatch?.kind, 'File');
+
+  const symbolMatch = await evaluate(cdp, `(() => {
+    const input = document.querySelector('#commandPaletteInput');
+    if (!input) return null;
+    input.value = 'counter form';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const items = [...document.querySelectorAll('#commandPaletteList .command-palette-item')];
+    return { count: items.length, text: items[0]?.textContent ?? '', kind: items[0]?.querySelector('.command-palette-kind')?.textContent ?? '' };
+  })()`);
+  assert.equal(symbolMatch?.count, 1, 'Quick-open should isolate the Counter form symbol');
+  assert.match(symbolMatch?.text ?? '', /Counter/);
+  assert.match(symbolMatch?.text ?? '', /main\.patch:3/);
+  assert.equal(symbolMatch?.kind, 'Form');
+
+  const quickOpenResult = await evaluate(cdp, `(async () => {
+    const item = document.querySelector('#commandPaletteList .command-palette-item');
+    item?.click();
+    await new Promise(resolve => setTimeout(resolve, 40));
     const dialog = document.querySelector('#commandPalette');
-    if (!dialog) return false;
-    dialog.close();
-    return !dialog.open && document.documentElement?.dataset?.patchStudioSmoke === 'ready';
-  })()`), true, 'Studio did not remain responsive after Command Palette interaction');
+    const editor = document.querySelector('#code');
+    return {
+      dialogOpen: Boolean(dialog?.open),
+      editorTitle: document.querySelector('#editorTitle')?.textContent ?? '',
+      selected: editor ? editor.value.slice(editor.selectionStart, editor.selectionEnd) : '',
+      status: document.querySelector('#projectOutlineStatus')?.textContent ?? '',
+      smoke: document.documentElement?.dataset?.patchStudioSmoke ?? ''
+    };
+  })()`);
+  assert.equal(quickOpenResult?.dialogOpen, false, 'Selecting a quick-open result should close the palette');
+  assert.equal(quickOpenResult?.editorTitle, 'main.patch');
+  assert.match(quickOpenResult?.selected ?? '', /window "Counter"/);
+  assert.match(quickOpenResult?.status ?? '', /main\.patch · line 3/);
+  assert.equal(quickOpenResult?.smoke, 'ready', 'Studio should remain responsive after exact symbol navigation');
 });
