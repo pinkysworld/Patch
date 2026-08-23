@@ -1,4 +1,7 @@
 (() => {
+  installDesignerMutationGuard();
+  installSmokeProbe();
+
   if (!('serviceWorker' in navigator)) return;
 
   const reloadGuardKey = 'patch-studio-sw-reload-guard';
@@ -68,4 +71,103 @@
   // Run independently of the compiler/designer module graph so a stale or missing
   // application module cannot block service-worker recovery.
   void refresh();
+
+  function installDesignerMutationGuard() {
+    const NativeMutationObserver = window.MutationObserver;
+    if (typeof NativeMutationObserver !== 'function' || window.__patchStudioMutationGuardInstalled === true) return;
+    window.__patchStudioMutationGuardInstalled = true;
+
+    const scheduleMicrotask = typeof queueMicrotask === 'function'
+      ? queueMicrotask
+      : callback => Promise.resolve().then(callback);
+
+    class PatchStudioMutationObserver {
+      constructor(callback) {
+        if (typeof callback !== 'function') throw new TypeError('MutationObserver callback must be a function');
+        this.callback = callback;
+        this.observations = [];
+        this.active = true;
+        this.guarded = false;
+        this.reconnectQueued = false;
+        this.nativeObserver = new NativeMutationObserver(records => {
+          if (!this.guarded) {
+            this.callback(records, this);
+            return;
+          }
+
+          // Designer observers commonly schedule a DOM reconciliation microtask.
+          // Keep the observer disconnected through that microtask so mutations made
+          // by its own reconciliation cannot immediately trigger the same observer
+          // again and starve Chrome's main thread.
+          this.nativeObserver.disconnect();
+          this.reconnectQueued = true;
+          try {
+            this.callback(records, this);
+          } finally {
+            scheduleMicrotask(() => this.reconnect());
+          }
+        });
+      }
+
+      observe(target, options) {
+        this.active = true;
+        const existing = this.observations.findIndex(item => item.target === target);
+        const observation = { target, options: { ...(options ?? {}) } };
+        if (existing >= 0) this.observations[existing] = observation;
+        else this.observations.push(observation);
+        if (isDesignerTarget(target)) this.guarded = true;
+        this.nativeObserver.observe(target, options);
+      }
+
+      disconnect() {
+        this.active = false;
+        this.reconnectQueued = false;
+        this.observations = [];
+        this.nativeObserver.disconnect();
+      }
+
+      takeRecords() {
+        return this.nativeObserver.takeRecords();
+      }
+
+      reconnect() {
+        if (!this.reconnectQueued || !this.active) return;
+        this.reconnectQueued = false;
+        for (const { target, options } of this.observations) {
+          this.nativeObserver.observe(target, options);
+        }
+      }
+    }
+
+    function isDesignerTarget(target) {
+      if (!target) return false;
+      if (target.id === 'designer' || target.id === 'designerCanvas') return true;
+      const element = target.nodeType === 1 ? target : target.parentElement;
+      return Boolean(element?.closest?.('#designer'));
+    }
+
+    window.MutationObserver = PatchStudioMutationObserver;
+  }
+
+  function installSmokeProbe() {
+    let enabled = false;
+    try { enabled = new URL(window.location.href).searchParams.get('patch-smoke') === '1'; }
+    catch { return; }
+    if (!enabled) return;
+
+    document.documentElement.dataset.patchStudioSmoke = 'pending';
+    window.setTimeout(() => {
+      const run = document.querySelector('#run');
+      const app = document.querySelector('#app');
+      if (!run || !app) {
+        document.documentElement.dataset.patchStudioSmoke = 'failed';
+        return;
+      }
+      run.click();
+      window.setTimeout(() => {
+        const renderedWindow = app.querySelector('.patch-window');
+        document.documentElement.dataset.patchStudioSmoke = !app.hidden && renderedWindow ? 'ready' : 'failed';
+      }, 100);
+    }, 1000);
+  }
 })();
