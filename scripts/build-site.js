@@ -14,7 +14,7 @@ const SITE_SRC_FILES = [
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
-  'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
+  'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-frozen-contract.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
@@ -105,7 +105,9 @@ function versionLocalAssetReferences(html, revision) {
 }
 
 function versionRelativeModuleSpecifiers(source, revision) {
-  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?)(['"])(\.{1,2}\/[^'"]+\.js)\2/gm;
+  // Import/export declarations may span lines. Keep the match bounded by the
+  // first quoted module specifier instead of treating a newline as a boundary.
+  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'"]*?\s+from\s+)?)(['"])(\.{1,2}\/[^'"]+\.js)\2/gm;
   const dynamicPattern = /(\bimport\s*\(\s*)(['"])(\.{1,2}\/[^'"]+\.js)\2(\s*\))/g;
   return source
     .replace(staticPattern, (_match, prefix, quote, specifier) => `${prefix}${quote}${specifier}?v=${revision}${quote}`)
@@ -180,8 +182,8 @@ function walkJs(dir) {
 function relativeModuleSpecifiers(source) {
   const found = new Set();
   const patterns = [
-    /^\s*import\s+(?:[^'"\n]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
-    /^\s*export\s+[^'"\n]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
+    /^\s*import\s+(?:[^'"]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
+    /^\s*export\s+[^'"]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
     /\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g
   ];
   for (const pattern of patterns) {

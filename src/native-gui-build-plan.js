@@ -3,7 +3,7 @@ import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from './native-gui-i
 import { buildNativeGuiIRV09, flattenNativeGuiControlsV09 } from './native-gui-ir-v09.js';
 import { buildNativeGuiIRV10, flattenNativeGuiControlsV10 } from './native-gui-ir-v10.js';
 import { buildNativeGuiIRV11, flattenNativeGuiControlsV11 } from './native-gui-ir-v11.js';
-import { buildNativeGuiIRV12, flattenNativeGuiControlsV12 } from './native-gui-ir-v12.js';
+import { buildFrozenNativeGuiIR, flattenFrozenNativeGuiControls } from './native-frozen-contract.js';
 import { buildCurrentNativeGuiIR, flattenCurrentNativeGuiControls } from './native-current-contract.js';
 
 /** Select the smallest native GUI contract that preserves source semantics. */
@@ -21,8 +21,8 @@ export function buildNativeGuiPlan(compiled, options = {}) {
     return { tier: 'slider-v14', gui, controlCount: flattenCurrentNativeGuiControls(gui).length, features };
   }
   if (forceTree || features.tree) {
-    const gui = buildNativeGuiIRV12(compiled);
-    return { tier: 'tree-v13', gui, controlCount: flattenNativeGuiControlsV12(gui).length, features };
+    const gui = buildFrozenNativeGuiIR(compiled);
+    return { tier: 'tree-v13', gui, controlCount: flattenFrozenNativeGuiControls(gui).length, features };
   }
   if (forceList || features.listState) {
     const gui = buildNativeGuiIRV11(compiled);

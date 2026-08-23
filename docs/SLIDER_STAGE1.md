@@ -103,6 +103,7 @@ Native Slider parity is provided by a new additive contract rather than by redef
 - Windows: native `TRACKBAR`
 - macOS: native `NSSlider`
 - Linux: native GTK3 `GtkScale`
+- product import: `src/native-current-contract.js`
 
 The same contract is used by direct AOT builds, token-free Ready Window downloads and Windows/macOS/Linux offline Window linking.
 
@@ -124,7 +125,7 @@ The previous native contract remains frozen and intentionally fails closed for S
 - native runtime **v1.3**
 - TreeView-capable Windows / AppKit / GTK surface
 
-A Slider source explicitly targeted at payload v12/runtime v1.3 is rejected. Patch does not silently omit the control and does not reinterpret v1.3 as Slider-capable. This frozen failure is retained as compatibility evidence while current Ready/offline builds use v13/v1.4.
+A Slider source explicitly targeted at payload v12/runtime v1.3 is rejected. Patch does not silently omit the control and does not reinterpret v1.3 as Slider-capable. This frozen failure is retained as compatibility evidence while current Ready/offline builds use v13/v1.4 through `src/native-current-contract.js`. Frozen TreeView consumers import `src/native-frozen-contract.js`.
 
 ## Assurance boundary
 

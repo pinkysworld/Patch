@@ -51,6 +51,7 @@ on:
       - src/native-gui-ir-v12.js
       - src/native-gui-ir-v13.js
       - src/native-current-contract.js
+      - src/native-frozen-contract.js
       - src/native-tree-backend-adapter.js
       - src/native-slider-backend-adapter.js
       - src/sealed-native-gui.js
@@ -252,6 +253,7 @@ jobs:
               src/independent-range-expression.js
               src/independent-guard-expression.js
               src/native-current-contract.js
+              src/native-frozen-contract.js
             )
             for asset in "${assets[@]}"; do
               fetch_asset "${base}${asset}?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-smoke
@@ -261,6 +263,10 @@ jobs:
             grep -F "./src/compiler.js?v=${revision}" /tmp/patch-pages-playground >/dev/null
             fetch_asset "${base}native-build.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-native-build
             grep -F "./src/native-current-contract.js?v=${revision}" /tmp/patch-pages-native-build >/dev/null
+            fetch_asset "${base}src/native-current-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-current
+            grep -F "./native-gui-ir-v13.js?v=${revision}" /tmp/patch-pages-current >/dev/null
+            fetch_asset "${base}src/native-frozen-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-frozen
+            grep -F "./native-gui-ir-v12.js?v=${revision}" /tmp/patch-pages-frozen >/dev/null
             fetch_asset "${base}src/compiler.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-compiler
             grep -F "./parser.js?v=${revision}" /tmp/patch-pages-compiler >/dev/null
             fetch_asset "${base}studio-bootstrap.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-bootstrap

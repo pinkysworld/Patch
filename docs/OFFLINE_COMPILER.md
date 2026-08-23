@@ -47,7 +47,7 @@ Windows, Linux and macOS Apple Silicon lower supported Console programs through 
 
 ### Window / GUI
 
-Current Windows, macOS and Linux linking lowers supported Window programs through Native GUI IR **1.3** and seals payload **v13** into native Win32, AppKit or GTK3 runtime **v1.4**. Electron is not selected implicitly.
+Current Windows, macOS and Linux linking lowers supported Window programs through Native GUI IR **1.3** and seals payload **v13** into native Win32, AppKit or GTK3 runtime **v1.4**. Product JavaScript for that line imports `src/native-current-contract.js`. The frozen TreeView line remains Native GUI IR **1.2** / payload **v12** / runtime **v1.3** through `src/native-frozen-contract.js` and stays Slider fail-closed. Electron is not selected implicitly.
 
 Payload v13 preserves the complete earlier responsive/Table/list/Menu/TreeView contract and adds explicit Slider range/step/numeric-event metadata. The current surface includes:
 

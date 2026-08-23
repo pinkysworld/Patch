@@ -43,7 +43,7 @@ Linux   -> GTK3   -> executable
 
 Patch Studio also supports token-free browser-side sealing into precompiled native runtime templates. The downloadable offline compiler performs the same supported sealed linking locally. Project-specific remote AOT through GitHub Actions remains a separate optional route.
 
-Current token-free Ready/offline Window builds use **Native GUI IR 1.3**, **sealed payload v13** and **runtime v1.4**. Product-facing JavaScript imports this line through `src/native-current-contract.js`; version-numbered IR/sealer modules are retained behind that facade for frozen compatibility and regression evidence.
+Current token-free Ready/offline Window builds use **Native GUI IR 1.3**, **sealed payload v13** and **runtime v1.4**. Product-facing JavaScript imports this line through `src/native-current-contract.js`. The frozen TreeView line is Native GUI IR **1.2** / payload **v12** / runtime **v1.3**, imported through `src/native-frozen-contract.js`. Version-numbered IR/sealer modules remain behind those facades for historical compatibility and regression evidence.
 
 ## Supported Window surface
 
@@ -214,4 +214,4 @@ The native GUI artifacts do not use Electron, Chromium or Node.js as their GUI r
 
 Linux native GUI requires compatible GTK3 system libraries. Stable installers, real credentialed Windows signing, real macOS signing/notarization evidence, richer distribution/update channels, FreeBSD native GUI and manual assistive-technology validation remain open distribution/validation work.
 
-None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/SLIDER_STAGE1.md`, `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.
+None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/NATIVE_COMPATIBILITY.md`, `docs/SLIDER_STAGE1.md`, `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.

@@ -24,7 +24,7 @@ for (const rel of [
   '_site/designer-layout-policy.js', '_site/designer-responsive-layout.js',
   '_site/designer-multiselect.css', '_site/designer-responsive-layout.css',
   '_site/src/native-gui-ir-v08.js', '_site/src/native-gui-ir-v12.js',
-  '_site/src/native-gui-ir-v13.js', '_site/src/native-current-contract.js', '_site/src/sealed-native-gui-v13.js'
+  '_site/src/native-gui-ir-v13.js', '_site/src/native-current-contract.js', '_site/src/native-frozen-contract.js', '_site/src/sealed-native-gui-v13.js'
 ]) requireFile(rel);
 
 const index = read('_site/index.html');
@@ -69,7 +69,7 @@ const sw = read('_site/sw.js');
 requireAll('Patch Studio service worker', sw, [
   "'./downloads.html'", "'./table-stage1.js'", "'./designer-multiselect.js'",
   "'./designer-responsive-layout.js'", "'./src/native-gui-ir-v08.js'",
-  "'./src/native-gui-ir-v12.js'", "'./src/native-gui-ir-v13.js'", "'./src/native-current-contract.js'",
+  "'./src/native-gui-ir-v12.js'", "'./src/native-gui-ir-v13.js'", "'./src/native-current-contract.js'", "'./src/native-frozen-contract.js'",
   "'./src/sealed-native-gui-v13.js'"
 ]);
 
@@ -87,6 +87,12 @@ const current = read('_site/src/native-current-contract.js');
 requireAll('Current native product facade', current, [
   "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.3/payload-13/runtime-1.4'",
   'buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
+]);
+
+const frozen = read('_site/src/native-frozen-contract.js');
+requireAll('Frozen native TreeView product facade', frozen, [
+  "PATCH_FROZEN_NATIVE_CONTRACT_ID = 'native-gui-1.2/payload-12/runtime-1.3'",
+  'buildFrozenNativeGuiIR','sealFrozenNativeGuiRuntime'
 ]);
 
 const nativeGuiV13 = read('_site/src/native-gui-ir-v13.js');

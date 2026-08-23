@@ -7,11 +7,10 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildNativeGuiIRV11 } from './native-gui-ir-v11.js';
-import { buildNativeGuiIRV12 } from './native-gui-ir-v12.js';
+import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
 import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
 import { sealNativeGuiRuntime } from './sealed-native-gui.js';
 import { sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
-import { sealNativeGuiRuntimeV12 } from './sealed-native-gui-v12.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -63,7 +62,7 @@ export function createOfflineLinkPlan(source, options = {}) {
   const nativeGui = guiPayloadVersion >= 13
     ? buildCurrentNativeGuiIR(compiled)
     : guiPayloadVersion >= 12
-      ? buildNativeGuiIRV12(compiled)
+      ? buildFrozenNativeGuiIR(compiled)
       : buildNativeGuiIRV11(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
   const sealed = guiPayloadVersion === 10
@@ -71,7 +70,7 @@ export function createOfflineLinkPlan(source, options = {}) {
     : guiPayloadVersion === 11
       ? sealNativeGuiRuntimeV11(runtime, nativeGui, { platform })
       : guiPayloadVersion === 12
-        ? sealNativeGuiRuntimeV12(runtime, nativeGui, { platform })
+        ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
         : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
   return binaryPlan({ platform, kind, name, sealed });
 }

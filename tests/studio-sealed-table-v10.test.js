@@ -27,7 +27,7 @@ test('Studio Ready Window builds use the stable current facade for Native GUI IR
 });
 
 test('Studio site and offline PWA cache contain the complete current Native GUI IR 1.3 browser dependency chain', () => {
-  for (const module of ['native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js']) {
+  for (const module of ['native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-frozen-contract.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js']) {
     assert.ok(siteBuilder.includes(`'${module}'`), `site builder missing ${module}`);
     assert.ok(serviceWorker.includes(`../src/${module}`), `service worker missing ${module}`);
   }
@@ -53,6 +53,7 @@ test('Pages waits for and pins all three current Slider-capable runtime v1.4 rel
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
   assert.match(pages, /src\/native-current-contract\.js/);
+  assert.match(pages, /src\/native-frozen-contract\.js/);
   assert.match(pages, /native-win32-runtime-v1\.4/);
   assert.match(pages, /native-linux-runtime-v1\.4/);
   assert.match(pages, /native-macos-runtime-v1\.4/);

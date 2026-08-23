@@ -22,7 +22,7 @@ Window / GUI
   FreeBSD -> not yet supported
 ```
 
-Windows/macOS/Linux ordinary Studio downloads use **Ready app download (no token)** by default. That path lowers project-specific Native GUI IR 1.3 in the browser, verifies the platform runtime template, seals payload v13 into the native runtime and downloads the result. The optional cloud/local AOT paths generate project-specific machine code with the platform toolkit compiler.
+Windows/macOS/Linux ordinary Studio downloads use **Ready app download (no token)** by default. That path lowers project-specific Native GUI IR 1.3 in the browser through `src/native-current-contract.js`, verifies the platform runtime template, seals payload v13 into the native runtime and downloads the result. The frozen TreeView contract is Native GUI IR 1.2 / payload v12 / runtime v1.3 via `src/native-frozen-contract.js`. The optional cloud/local AOT paths generate project-specific machine code with the platform toolkit compiler. See `docs/NATIVE_COMPATIBILITY.md`.
 
 ## Versioned native layers
 

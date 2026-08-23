@@ -31,11 +31,11 @@ The same mandatory mutation substrate is reused for Change History, undo/redo, p
 | Language | Working interpreter/compiler frontend with Change IR 0.10 |
 | Patch Studio | Browser IDE, multi-file project bundle v3, Project Outline, source-backed Designer, recovery, diagnostics and **Ctrl/Cmd+K Command Palette** with file/symbol quick-open |
 | Designer | Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs with source-backed layout/structure editing |
-| Native desktop | Native GUI IR 1.3 / payload v13 / runtime v1.4 on Win32, AppKit and GTK3; v12/v1.3 remains frozen compatibility |
+| Native desktop | Two live contracts: current Native GUI IR 1.3 / payload v13 / runtime v1.4, frozen TreeView IR 1.2 / payload v12 / runtime v1.3 |
 | Ready builds | Token-free Windows, macOS and Linux paths with SHA-256 verified runtime templates |
 | Web delivery | One service-worker owner, type-safe offline fallback and a real Chrome responsiveness gate on every public deployment |
 | Formal milestone | beta.32 invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment |
-| Backlog | Active repository-controlled UX/reliability milestone; external signing/manual validation and research-evidence gates are tracked separately |
+| Backlog | Consolidation: two native product contracts (current + frozen TreeView), spec/docs sync and CI maintenance; external signing/manual validation and research-evidence gates are tracked separately |
 
 ## Patch Studio
 
@@ -75,9 +75,11 @@ Renderer selection itself never becomes hidden persistent Patch state.
 
 ## Native desktop contract
 
-The current Ready/offline line is **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**. It preserves Table, persistent list state, multi-select ListBox, Menu and TreeView compatibility while adding native Slider through Win32 `TRACKBAR`, AppKit `NSSlider` and GTK3 `GtkScale`.
+The current Ready/offline line is **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**. It preserves Table, persistent list state, multi-select ListBox, Menu and TreeView compatibility while adding native Slider through Win32 `TRACKBAR`, AppKit `NSSlider` and GTK3 `GtkScale`. Product JavaScript imports that line through `src/native-current-contract.js`.
 
-Older native contracts remain explicit frozen compatibility evidence rather than being redefined in place. Unsupported behavior on an older selected contract fails closed. FreeBSD remains Console-only through portable C99.
+The frozen TreeView line is Native GUI IR 1.2 / payload v12 / runtime v1.3 and stays Slider fail-closed. Product JavaScript for that line imports `src/native-frozen-contract.js`. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files are the historical include-chain base, not the Ready runtime. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
+
+Unsupported behavior on an older selected contract fails closed. FreeBSD remains Console-only through portable C99.
 
 ## Compiler and assurance
 
@@ -122,6 +124,7 @@ patch doctor --json
 - [`docs/STUDIO_COMMAND_PALETTE.md`](docs/STUDIO_COMMAND_PALETTE.md) · keyboard-first Studio commands and project quick-open
 - [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) · visual authoring inventory
 - [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md) · native contracts and frozen compatibility lines
+- [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md) · two live native product contracts and the include-chain collapse rule
 - [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) · downloadable compiler/linker
 - [`docs/PRODUCTION_READINESS.md`](docs/PRODUCTION_READINESS.md) · operational boundaries
 - [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md) · mechanized assurance scope

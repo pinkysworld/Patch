@@ -43,6 +43,8 @@ const files = {
   gui12: read('src/native-gui-ir-v12.js'),
   gui13: read('src/native-gui-ir-v13.js'),
   nativeCurrent: read('src/native-current-contract.js'),
+  nativeFrozen: read('src/native-frozen-contract.js'),
+  nativeCompat: read('docs/NATIVE_COMPATIBILITY.md'),
   sealed12: read('src/sealed-native-gui-v12.js'),
   sealed13: read('src/sealed-native-gui-v13.js'),
   buildSite: read('scripts/build-site.js'),
@@ -58,7 +60,8 @@ requireScript('check:site', 'node scripts/check-site.js && node scripts/check-si
 
 requireAll('README current contract', files.readme, [
   'Development beta `0.2.0-beta.35`','Change IR `0.10`','Native GUI IR `1.3`','payload `v13`','desktop runtime `v1.4`',
-  'Native GUI IR 1.3 / sealed payload v13 / runtime v1.4','Ctrl/Cmd+K Command Palette','real Chrome responsiveness gate'
+  'Native GUI IR 1.3 / sealed payload v13 / runtime v1.4','Ctrl/Cmd+K Command Palette','real Chrome responsiveness gate',
+  'native-current-contract.js','native-frozen-contract.js','docs/NATIVE_COMPATIBILITY.md'
 ]);
 requireAll('README native Slider evidence', files.readme, ['TRACKBAR','NSSlider','GtkScale']);
 requireAll('README scoped assurance', files.readme, ['beta.32','does **not** claim full compiler/runtime verification']);
@@ -80,10 +83,11 @@ requireAll('Language current native contract', files.language, ['Native GUI IR 1
 requireAll('Documentation current map', files.docsPage, [
   'Native GUI IR 1.3 / payload v13 / runtime v1.4','IR 1.2 / payload v12 / runtime v1.3 frozen','beta.32 assurance boundary',
   'Command Palette','Public deploy gated by real Chrome responsiveness','docs/STUDIO_COMMAND_PALETTE.md',
-  'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing'
+  'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
+  'docs/NATIVE_COMPATIBILITY.md','two live native product contracts'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']);
-requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only']);
+requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md']);
 
 requireAll('Command Palette docs', files.commandPaletteDocs, [
   'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model'
@@ -126,19 +130,25 @@ requireAll('Stable current native product entry point', files.nativeCurrent, [
   'PATCH_CURRENT_NATIVE_CONTRACT_ID','PATCH_CURRENT_NATIVE_GUI_IR_VERSION','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','PATCH_CURRENT_NATIVE_RUNTIME_VERSION',
   'native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
+requireAll('Stable frozen native TreeView entry point', files.nativeFrozen, [
+  'PATCH_FROZEN_NATIVE_CONTRACT_ID','native-gui-1.2/payload-12/runtime-1.3','native-win32-runtime-v1.3','buildFrozenNativeGuiIR','sealFrozenNativeGuiRuntime'
+]);
+requireAll('Native compatibility two-contract boundary', files.nativeCompat, [
+  'native-current-contract.js','native-frozen-contract.js','native-gui-1.3/payload-13/runtime-1.4','native-gui-1.2/payload-12/runtime-1.3','Historical include chain'
+]);
 requireAll('Frozen Native GUI IR 1.2 implementation', files.gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",'buildNativeGuiIRV12']);
 requireAll('Frozen payload v12 implementation', files.sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12','sealNativeGuiRuntimeV12']);
 
 requireAll('Site build complete browser graph', files.buildSite, [
   "'site-navigation.css','site-refresh.css','site-pages.css'",'studio-command-palette.css','studio-command-palette.js',
-  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
+  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
 ]);
 requireAll('Single service-worker ownership', files.bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard']);
 rejectAll('Accessibility worker ownership', files.accessibility, ['serviceWorker.register']);
 rejectAll('Playground worker ownership', files.playground, ['serviceWorker.register']);
 requireAll('Service worker complete browser graph and type-safe fallback', files.sw, [
   './studio-command-palette.css','./studio-command-palette.js','./src/call-site-validation.js','./src/independent-range-expression.js',
-  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
+  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
 ]);
 
 requireAll('Formal claim boundary', files.formal, ['beta.32']);

@@ -93,6 +93,26 @@ window "Bad type":
   assert.match(executed.app.querySelector('p').textContent, /score must start as a number/);
 });
 
+test('Window Web runtime rejects inherited Thing paths and keeps Things prototype-free', () => {
+  const source = `create thing player:
+  name = "Ada"
+
+change player:
+  set name = "Alex"
+
+window "Player":
+  text "Name: {player.name}"
+
+show player.name
+show player.constructor`;
+  assert.throws(() => new PatchInterpreter().run(source), /player\.constructor/);
+
+  const built = buildStandaloneWebApp(source, { name: 'ThingProto', kind: 'window' });
+  assert.match(built.html, /Object\.create\(null\)/);
+  const executed = executeWindowHtml(built.html);
+  assert.match(executed.app.querySelector('p').textContent, /player\.constructor/);
+});
+
 test('Window Web runtime rejects writes to missing thing fields like the interpreter', () => {
   const source = `create thing player:
   score = 1
