@@ -64,7 +64,7 @@ requireAll('README scoped assurance', files.readme, ['beta.32','does **not** cla
 rejectAll('README obsolete backlog boundary', files.readme, ['product backlog is closed','future versioned native contract adds parity']);
 
 requireAll('Language SPEC current contract', files.spec, [
-  'Status: **0.2.0-beta.35 development**','Change IR **0.10**','**beta.32**','`slider`','`table`','`tree`','`tabs`','`menu`','__proto__','constructor'
+  'Status: **0.2.0-beta.35 development**','Change IR **0.10**','**beta.32**','`slider`','`table`','`tree`','`tabs`','menu item separator enabled checked shortcut','__proto__','constructor'
 ]);
 rejectAll('Language SPEC obsolete assurance/product markers', files.spec, ['0.2.0-beta.8','Change IR 0.6','Beta 8 source/evidence']);
 
