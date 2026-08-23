@@ -84,7 +84,8 @@ function findChrome() {
     if (path.isAbsolute(executable)) {
       // Windows chrome.exe / msedge.exe are GUI-subsystem binaries: `--version` can hang
       // until spawnSync's timeout instead of printing and exiting. Known install paths
-      // are accepted by existence; the smoke launch itself is `--headless=new`.
+      // are accepted by existence. The smoke launch waits on /json/version with an
+      // aborted fetch, not on `--headless=new` stderr.
       if (fs.existsSync(executable)) return executable;
       continue;
     }
@@ -128,6 +129,19 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function fetchJson(url, timeoutMs = 400) {
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
 function withSmokeQuery(value) {
   const url = new URL(value);
   url.searchParams.set('patch-smoke', '1');
@@ -162,15 +176,8 @@ function waitForDevTools(child, stderr, port, timeoutMs = 15000) {
       while (!done) {
         const fromStderr = matchDevTools(stderr.text);
         if (fromStderr) return finish(null, fromStderr);
-        try {
-          const response = await fetch(`http://127.0.0.1:${port}/json/version`, { cache: 'no-store' });
-          if (response.ok) {
-            const info = await response.json();
-            if (info?.webSocketDebuggerUrl) return finish(null, { browserWsUrl: info.webSocketDebuggerUrl, port });
-          }
-        } catch {
-          // Chrome is still starting.
-        }
+        const info = await fetchJson(`http://127.0.0.1:${port}/json/version`, 400);
+        if (info?.webSocketDebuggerUrl) return finish(null, { browserWsUrl: info.webSocketDebuggerUrl, port });
         if (child.exitCode !== null || child.signalCode !== null) {
           return finish(new Error(`Chrome exited before DevTools was ready (code=${child.exitCode}, signal=${child.signalCode}). stderr:\n${stderr.text}`));
         }
@@ -192,31 +199,27 @@ function waitForDevTools(child, stderr, port, timeoutMs = 15000) {
 async function waitForPageTarget(port, expectedUrl, stderr, timeoutMs = 10000) {
   const expected = new URL(expectedUrl);
   const deadline = Date.now() + timeoutMs;
-  let lastError = null;
+  let lastError = 'no /json/list response';
   while (Date.now() < deadline) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${port}/json/list`, { cache: 'no-store' });
-      if (response.ok) {
-        const targets = await response.json();
-        const target = targets.find(item => {
-          if (item.type !== 'page' || !item.url) return false;
-          try {
-            const candidate = new URL(item.url);
-            return candidate.origin === expected.origin
-              && candidate.pathname === expected.pathname
-              && candidate.searchParams.get('patch-smoke') === '1';
-          } catch {
-            return false;
-          }
-        });
-        if (target?.webSocketDebuggerUrl) return target;
-      }
-    } catch (error) {
-      lastError = error;
+    const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`, 400);
+    if (Array.isArray(targets)) {
+      const target = targets.find(item => {
+        if (item.type !== 'page' || !item.url) return false;
+        try {
+          const candidate = new URL(item.url);
+          return candidate.origin === expected.origin
+            && candidate.pathname === expected.pathname
+            && candidate.searchParams.get('patch-smoke') === '1';
+        } catch {
+          return false;
+        }
+      });
+      if (target?.webSocketDebuggerUrl) return target;
+      lastError = `no matching page in ${targets.length} targets`;
     }
     await delay(100);
   }
-  throw new Error(`Chrome page target was not discoverable. ${lastError?.message ?? ''}\nstderr:\n${stderr.text}`);
+  throw new Error(`Chrome page target was not discoverable. ${lastError}\nstderr:\n${stderr.text}`);
 }
 
 async function connectCdp(webSocketDebuggerUrl) {
@@ -281,13 +284,18 @@ async function evaluate(cdp, expression, timeoutMs = 2000) {
 }
 
 async function stopChrome(child) {
-  if (child.exitCode !== null || child.signalCode !== null) return;
+  if (!child) return;
+  if (child.exitCode !== null || child.signalCode !== null) {
+    try { child.unref(); } catch { /* already closed */ }
+    return;
+  }
   if (process.platform === 'win32' && child.pid) {
     spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
     await Promise.race([
       new Promise(resolve => child.once('exit', resolve)),
       delay(1500)
     ]);
+    try { child.unref(); } catch { /* already closed */ }
     return;
   }
   child.kill('SIGTERM');
@@ -296,6 +304,39 @@ async function stopChrome(child) {
     delay(1500)
   ]);
   if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+  try { child.unref(); } catch { /* already closed */ }
+}
+
+function chromeLaunchArgs(debugPort, profile) {
+  return [
+    process.platform === 'win32' ? '--headless=old' : '--headless=new',
+    '--no-sandbox',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--disable-background-networking',
+    '--disable-crash-reporter',
+    '--disable-default-apps',
+    '--disable-extensions',
+    '--disable-hang-monitor',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--window-size=1440,1200',
+    `--remote-debugging-port=${debugPort}`,
+    '--remote-debugging-address=127.0.0.1',
+    `--user-data-dir=${profile}`,
+    'about:blank'
+  ];
+}
+
+function launchChrome(chrome, debugPort, profile) {
+  const child = spawn(chrome, chromeLaunchArgs(debugPort, profile), {
+    stdio: process.platform === 'win32' ? 'ignore' : ['ignore', 'ignore', 'pipe'],
+    windowsHide: true,
+    detached: process.platform === 'win32'
+  });
+  const stderr = { text: '' };
+  child.stderr?.on('data', chunk => { stderr.text += chunk.toString(); });
+  return { child, stderr };
 }
 
 async function localStudioUrl(t) {
@@ -322,6 +363,20 @@ test('Studio browser startup gate probes macOS and Windows Chrome locations', ()
   assert.match(source, /GUI-subsystem binaries/);
   assert.match(source, /taskkill/);
   assert.match(source, /json\/version/);
+  assert.match(source, /AbortSignal\.timeout/);
+  assert.match(source, /headless=old/);
+  assert.match(source, /remote-debugging-address=127\.0\.0\.1/);
+  assert.match(source, /about:blank/);
+});
+
+test('full CI suite isolates Chrome smoke so a hung browser cannot pin the 12-minute job', () => {
+  const ci = fs.readFileSync(path.join(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  const runner = fs.readFileSync(path.join(ROOT, 'scripts/run-tests-ci.js'), 'utf8');
+  assert.match(runner, /--test-skip-pattern/);
+  assert.match(runner, /stays responsive in Chrome/);
+  assert.match(ci, /Studio Chrome startup smoke/);
+  assert.match(ci, /timeout-minutes: 2/);
+  assert.match(ci, /tests\/studio-browser-startup\.test\.js/);
 });
 
 test('Patch Studio stays responsive in Chrome, runs a Window app and exercises current IDE navigation/layout', { timeout: 45000 }, async t => {
@@ -338,27 +393,34 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
   t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
 
   const debugPort = await listenPort();
-  const stderr = { text: '' };
-  const child = spawn(chrome, [
-    '--headless=new',
-    '--no-sandbox',
-    '--disable-gpu',
-    '--disable-dev-shm-usage',
-    '--disable-background-networking',
-    '--disable-crash-reporter',
-    '--disable-default-apps',
-    '--disable-extensions',
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--window-size=1440,1200',
-    `--remote-debugging-port=${debugPort}`,
-    `--user-data-dir=${profile}`,
-    url
-  ], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
-  child.stderr?.on('data', chunk => { stderr.text += chunk.toString(); });
+  const { child, stderr } = launchChrome(chrome, debugPort, profile);
   t.after(() => stopChrome(child));
+  const watchdog = setTimeout(() => { stopChrome(child); }, 35000);
+  t.after(() => clearTimeout(watchdog));
 
-  const devtools = await waitForDevTools(child, stderr, debugPort);
+  let devtools;
+  try {
+    devtools = await waitForDevTools(child, stderr, debugPort);
+  } catch (error) {
+    await stopChrome(child);
+    throw error;
+  }
+
+  const existing = await fetchJson(`http://127.0.0.1:${devtools.port}/json/list`, 400);
+  const blankPage = Array.isArray(existing)
+    ? existing.find(item => item.type === 'page' && item.webSocketDebuggerUrl)
+    : null;
+  if (blankPage) {
+    const pageCdp = await connectCdp(blankPage.webSocketDebuggerUrl);
+    t.after(() => pageCdp.close());
+    await pageCdp.command('Page.enable');
+    await pageCdp.command('Page.navigate', { url });
+  } else {
+    const browserCdp = await connectCdp(devtools.browserWsUrl);
+    t.after(() => browserCdp.close());
+    await browserCdp.command('Target.createTarget', { url });
+  }
+
   const target = await waitForPageTarget(devtools.port, url, stderr);
   const cdp = await connectCdp(target.webSocketDebuggerUrl);
   t.after(() => cdp.close());

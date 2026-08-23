@@ -2,7 +2,14 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 
-const child = spawn(process.execPath, ['--test'], {
+// The Chrome Studio smoke is a dedicated CI step with a 2-minute timeout.
+// Skipping it here keeps a hung GUI-subsystem browser from pinning the
+// 12-minute full-suite job on windows-latest.
+const child = spawn(process.execPath, [
+  '--test',
+  '--test-skip-pattern',
+  'stays responsive in Chrome'
+], {
   cwd: process.cwd(),
   env: process.env,
   stdio: ['inherit', 'pipe', 'pipe']

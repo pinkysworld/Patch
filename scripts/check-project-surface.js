@@ -110,7 +110,8 @@ requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and re
 requireAll('Slider current native evidence', files.slider, ['direct native backend **1.4**','sealed payload **v13**','sealed native runtime **v1.4**','TRACKBAR','NSSlider','GtkScale','Frozen v1.3 compatibility boundary']);
 requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
-  'type-safe offline routing','Command Palette','Command Palette v2: project-file and symbol quick-open','Workspace Layout v2','Studio startup diagnostics v2'
+  'type-safe offline routing','Command Palette','Command Palette v2: project-file and symbol quick-open','Workspace Layout v2','Studio startup diagnostics v2',
+  'Windows Chrome smoke isolated from the 12-minute full suite'
 ]);
 requireAll('Workspace Layout v2 implementation boundary', files.accessibility, [
   "patchStudio.workspaceSplit.v2","role', 'separator'","aria-orientation', 'horizontal'","max-width: 760px","--workspace-source-height","--workspace-result-height"

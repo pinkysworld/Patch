@@ -55,6 +55,9 @@ jobs:
         run: node --test tests/site-alignment-bundle.test.js
       - name: Language, compiler, formal, source/runtime/call/concrete-call certificate, direct-Wasm, C99, app-build, validator, designer and bootstrap-Wasm tests
         run: node scripts/run-tests-ci.js
+      - name: Studio Chrome startup smoke
+        timeout-minutes: 2
+        run: node --test tests/studio-browser-startup.test.js
       - name: Upload concise test failures
         if: failure()
         uses: actions/upload-artifact@v7
