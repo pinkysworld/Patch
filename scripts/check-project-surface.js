@@ -111,7 +111,8 @@ requireAll('Slider current native evidence', files.slider, ['direct native backe
 requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
   'type-safe offline routing','Command Palette','Command Palette v2: project-file and symbol quick-open','Workspace Layout v2','Studio startup diagnostics v2',
-  'Windows Chrome smoke isolated from the 12-minute full suite'
+  'Windows Chrome smoke isolated from the 12-minute full suite',
+  'Windows Chrome profile cleanup is best-effort'
 ]);
 requireAll('Workspace Layout v2 implementation boundary', files.accessibility, [
   "patchStudio.workspaceSplit.v2","role', 'separator'","aria-orientation', 'horizontal'","max-width: 760px","--workspace-source-height","--workspace-result-height"

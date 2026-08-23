@@ -307,6 +307,28 @@ async function stopChrome(child) {
   try { child.unref(); } catch { /* already closed */ }
 }
 
+// Windows chrome.exe can keep SQLite/lock files in user-data-dir after taskkill.
+// node:test after-hooks run in registration order, so profile deletion must
+// follow process teardown and must never fail the smoke on leftover EPERM.
+async function removeChromeProfile(profile) {
+  if (!profile) return;
+  if (process.platform === 'win32') await delay(250);
+  const attempts = process.platform === 'win32' ? 8 : 2;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      return;
+    } catch {
+      if (attempt < attempts - 1) await delay(process.platform === 'win32' ? 250 : 50);
+    }
+  }
+}
+
+async function stopChromeAndCleanup(child, profile) {
+  await stopChrome(child);
+  await removeChromeProfile(profile);
+}
+
 function chromeLaunchArgs(debugPort, profile) {
   return [
     process.platform === 'win32' ? '--headless=old' : '--headless=new',
@@ -367,6 +389,11 @@ test('Studio browser startup gate probes macOS and Windows Chrome locations', ()
   assert.match(source, /headless=old/);
   assert.match(source, /remote-debugging-address=127\.0\.0\.1/);
   assert.match(source, /about:blank/);
+  assert.match(source, /removeChromeProfile/);
+  assert.match(source, /stopChromeAndCleanup/);
+  assert.match(source, /never fail the smoke on leftover EPERM/);
+  assert.match(source, /maxRetries: 5/);
+  assert.doesNotMatch(source, /t\.after\(\(\) => fs\.rmSync\(profile/);
 });
 
 test('full CI suite isolates Chrome smoke so a hung browser cannot pin the 12-minute job', () => {
@@ -390,11 +417,9 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
   const externalUrl = process.env.PATCH_STUDIO_SMOKE_URL?.trim();
   const url = externalUrl ? withSmokeQuery(externalUrl) : await localStudioUrl(t);
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-studio-chrome-'));
-  t.after(() => fs.rmSync(profile, { recursive: true, force: true }));
-
   const debugPort = await listenPort();
   const { child, stderr } = launchChrome(chrome, debugPort, profile);
-  t.after(() => stopChrome(child));
+  t.after(() => stopChromeAndCleanup(child, profile));
   const watchdog = setTimeout(() => { stopChrome(child); }, 35000);
   t.after(() => clearTimeout(watchdog));
 
