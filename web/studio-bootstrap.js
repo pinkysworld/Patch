@@ -387,7 +387,7 @@
     if (!enabled) return;
 
     document.documentElement.dataset.patchStudioSmoke = 'pending';
-    const smokeDeadline = Date.now() + 7000;
+    const smokeDeadline = Date.now() + 14000;
 
     const probeReadyStudio = () => {
       const run = document.querySelector('#run');

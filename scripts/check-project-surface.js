@@ -35,6 +35,7 @@ const files = {
   roadmap: read('docs/ROADMAP.md'),
   compiler: read('docs/COMPILER.md'),
   cliContract: read('docs/CLI_CONTRACT.md'),
+  diagnostics: read('docs/DIAGNOSTICS.md'),
   formal: read('docs/FORMAL_MODEL.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
   paper: read('paper/README.md'),
@@ -99,7 +100,7 @@ requireAll('Documentation current map', files.docsPage, [
   'prototype-free Things','Thing fields such as player.score'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset']);
-requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing','patch doctor']);
+requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003']);
 
 requireAll('Command Palette docs', files.commandPaletteDocs, [
   'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model',
@@ -131,14 +132,18 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Public language/docs/README name Things as prototype-free own-field records',
   'Windows Chrome smoke retries a stalled first-paint Runtime.evaluate',
   'Command Palette / Project Tree expose Thing fields',
-  '`patch doctor` self-checks interpreter, direct Wasm and C99 numeric subset'
+  '`patch doctor` self-checks interpreter, direct Wasm and C99 numeric subset',
+  'Direct Wasm/C99 numeric-subset failures classify as `PATCH2003`'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
 ]);
 requireAll('Compiler docs Thing/Wasm boundary', files.compiler, [
   'Things (`CREATE_THING`)','fail closed rather than silently falling back','outside the beta.32 Lean runtime-correspondence claim',
-  '`patch doctor` self-checks a tiny numeric program'
+  '`patch doctor` self-checks a tiny numeric program','PATCH2003'
+]);
+requireAll('Diagnostics numeric-subset code', files.diagnostics, [
+  'PATCH2003','target does not support this numeric/direct subset construct'
 ]);
 requireAll('Doctor compiler self-check', files.doctor, [
   'compiler-backends','compileToDirectWasm','things are outside the direct numeric Wasm subset','PatchInterpreter','CREATE_THING'
@@ -150,7 +155,7 @@ requireAll('Offline compiler doctor self-check', files.offline, [
   'self-checks the interpreter, direct Wasm and C99 numeric subset'
 ]);
 requireAll('Production doctor self-check', files.production, [
-  '`patch doctor` compiler-backend self-check'
+  '`patch doctor` compiler-backend self-check','PATCH2003'
 ]);
 requireAll('Runtime correspondence Thing/GUI boundary', files.runtime, [
   'Things, lists, text/boolean state and GUI execution remain outside the beta.32'
@@ -194,7 +199,7 @@ requireAll('Site build complete browser graph', files.buildSite, [
   "'site-navigation.css','site-refresh.css','site-pages.css'",'studio-command-palette.css','studio-command-palette.js',
   'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
 ]);
-requireAll('Single service-worker ownership', files.bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard']);
+requireAll('Single service-worker ownership', files.bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard','Date.now() + 14000']);
 rejectAll('Accessibility worker ownership', files.accessibility, ['serviceWorker.register']);
 rejectAll('Playground worker ownership', files.playground, ['serviceWorker.register']);
 requireAll('Service worker complete browser graph and type-safe fallback', files.sw, [

@@ -47,6 +47,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] Windows Chrome smoke retries a stalled first-paint Runtime.evaluate instead of failing the 1.5s CDP timeout
 - [x] Command Palette / Project Tree expose Thing fields as source-backed Field symbols (`player.score`) using the existing outline model
 - [x] `patch doctor` self-checks interpreter, direct Wasm and C99 numeric subset, including Thing fail-closed
+- [x] Direct Wasm/C99 numeric-subset failures classify as `PATCH2003`; production Chrome smoke waits through a slower first Run after deploy
 
 ### Next repository-controlled backlog
 

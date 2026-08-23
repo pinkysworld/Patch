@@ -41,6 +41,7 @@ Programmatic sample/Designer mutations and normal typing use shared source/proje
 - [x] expose `patch doctor --json` through the installed CLI
 - [x] `patch doctor` compiler-backend self-check for interpreter, direct Wasm/C99 numeric subset and Thing fail-closed
 - [x] stable machine-readable diagnostic/error codes for compiler/build failures
+- [x] `PATCH2003` for direct Wasm/C99 numeric-subset fail-closed errors
 - [x] one-click Copy diagnostics in Patch Studio
 - [x] crash/build report bundle with Patch version, target, diagnostics and redacted logs
 - [x] no telemetry by default; any future telemetry must be explicit opt-in

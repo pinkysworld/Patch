@@ -44,6 +44,9 @@ test('build target failures receive stable build codes without source locations'
 
   const unsupported = diagnosticFromError(new Error('Direct WebAssembly currently supports Console projects only.'), { phase: 'build' });
   assert.equal(unsupported.code, PATCH_DIAGNOSTIC_CODES.UNSUPPORTED_TARGET_KIND);
+
+  const subset = diagnosticFromError(new Error('Direct Wasm: things are outside the direct numeric Wasm subset at line 1.'), { phase: 'build' });
+  assert.equal(subset.code, PATCH_DIAGNOSTIC_CODES.UNSUPPORTED_NUMERIC_SUBSET);
 });
 
 test('explicit PATCH codes survive normalization', () => {
