@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 
 const html = fs.readFileSync('web/index.html', 'utf8');
 const palette = fs.readFileSync('web/studio-command-palette.js', 'utf8');
-const quickOpen = fs.readFileSync('src/studio-quick-open.js', 'utf8');
+const quickOpen = fs.readFileSync('web/studio-quick-open.js', 'utf8');
 const paletteCss = fs.readFileSync('web/studio-command-palette.css', 'utf8');
 const refreshCss = fs.readFileSync('web/site-refresh.css', 'utf8');
 const pagesCss = fs.readFileSync('web/site-pages.css', 'utf8');
@@ -14,7 +14,7 @@ const sw = fs.readFileSync('web/sw.js', 'utf8');
 
 test('Studio command palette is syntax-valid, discoverable and keyboard-first', () => {
   execFileSync(process.execPath, ['--check', 'web/studio-command-palette.js'], { stdio: 'pipe' });
-  execFileSync(process.execPath, ['--check', 'src/studio-quick-open.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'web/studio-quick-open.js'], { stdio: 'pipe' });
   assert.match(html, /id="openCommandPalette"/);
   assert.match(html, /id="statusCommands"/);
   assert.match(html, /id="commandPalette"/);
@@ -61,7 +61,8 @@ test('command palette v2 derives file and symbol results from the existing proje
 test('command palette and quick-open model are packaged for offline Studio use', () => {
   assert.match(sw, /'\.\/studio-command-palette\.css'/);
   assert.match(sw, /'\.\/studio-command-palette\.js'/);
-  assert.match(sw, /'\.\.\/src\/studio-quick-open\.js'/);
+  assert.match(sw, /'\.\/studio-quick-open\.js'/);
+  assert.doesNotMatch(sw, /'\.\.\/src\/studio-quick-open\.js'/);
   assert.match(buildSite, /'studio-quick-open\.js'/);
   assert.match(paletteCss, /\.command-palette::backdrop/);
   assert.match(paletteCss, /\.command-palette-kind/);
