@@ -58,7 +58,7 @@ test('nested Tabs implementation and docs stay aligned on Table TreeView and Sli
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
   assert.match(studio, /Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties/);
-  assert.match(studio, /All top-level controls now share one authoritative primary-selection and common Properties action boundary/);
+  assert.match(studio, /All top-level controls (?:now )?share one authoritative primary-selection and common Properties action boundary/);
   assert.doesNotMatch(tabs, /dedicated nested Table\/TreeView structural Properties inspector is still pending/);
   assert.match(studio, /Native GUI IR \*\*1\.3\*\*/);
   assert.match(studio, /payload \*\*v13\*\*/);
@@ -93,7 +93,7 @@ test('Table reorder/duplicate documentation matches the shared top-level and nes
 
 test('Studio docs and implementation keep core Tabs Table and TreeView on one shared transient primary layer', () => {
   assert.match(studio, /`web\/designer-selection\.js` owns the adapter-aware selection record/);
-  assert.match(studio, /All top-level controls now share one authoritative primary-selection and common Properties action boundary/);
+  assert.match(studio, /All top-level controls (?:now )?share one authoritative primary-selection and common Properties action boundary/);
   assert.match(studio, /Designer multi-select remains an explicit transient secondary set over the shared primary selection/);
   assert.match(studio, /never becomes Patch application state or Change History/);
   assert.match(designerSelection, /patch-designer-selection-change/);
@@ -118,11 +118,12 @@ test('roadmap records the actual current Studio and native line plus frozen comp
   assert.match(roadmap, /Current development beta: \*\*0\.2\.0-beta\.35\*\*/);
   assert.match(roadmap, /Native GUI IR: \*\*1\.3\*\*/);
   assert.match(roadmap, /current sealed native GUI payload: \*\*v13\*\*/);
-  assert.match(roadmap, /current token-free Ready\/offline native runtime: \*\*v1\.4\*\*/);
+  assert.match(roadmap, /current token-free Ready\/offline (?:native )?runtime: \*\*v1\.4\*\* on Windows, macOS and Linux/);
   assert.match(roadmap, /frozen TreeView compatibility line: Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\*/);
-  assert.match(roadmap, /\[x\] native Slider parity through backend 1\.4/);
-  assert.match(roadmap, /Native Slider parity is \*\*not\*\* an open item anymore/);
-  assert.match(roadmap, /\[x\] dedicated nested Table column\/row and TreeView hierarchy structural editing inside Tabs Properties/);
-  assert.match(roadmap, /\[x\] shared Designer selection\/event architecture cleanup across core\/Tabs\/Table\/TreeView/);
-  assert.match(roadmap, /\[x\] unify core\/Tabs\/Table\/TreeView behind one shared primary-selection\/event and common Properties action architecture/);
+  assert.match(roadmap, /Slider Stage 1 source syntax, Designer, Tabs, browser preview, Standalone Web and native Windows\/macOS\/Linux parity/);
+  assert.match(roadmap, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4 additive Slider line while v12\/v1\.3 remains frozen/);
+  assert.match(roadmap, /Table\/Grid Stage 1 with selected-row events and source-backed structural Properties editing/);
+  assert.match(roadmap, /TreeView hierarchy, source-backed structural editing, browser preview and current native parity/);
+  assert.match(roadmap, /shared top-level control selection and source-backed Properties actions/);
+  assert.match(roadmap, /Tabs page lifecycle plus nested Text\/Button\/Input\/Checkbox\/Radio\/ComboBox\/ListBox\/Slider\/Table\/TreeView editing/);
 });
