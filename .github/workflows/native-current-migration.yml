@@ -1,0 +1,44 @@
+name: Native current contract migration
+
+on:
+  push:
+    branches: [agent/native-compat-inventory]
+    paths:
+      - .github/workflows/native-current-migration.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: agent/native-compat-inventory
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply current native contract migration
+        run: node scripts/migrate-native-current-contract.js
+      - name: Validate migrated JavaScript and focused contracts
+        run: |
+          npm run check:syntax
+          node --test tests/native-current-contract.test.js tests/native-current-surface.test.js tests/native-runtime-trigger-hygiene.test.js
+          npm run check:project
+          npm run build:site
+          npm run check:site
+      - name: Commit migrated product surface and remove one-shot machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/native-current-migration.yml scripts/migrate-native-current-contract.js
+          git add -A
+          git diff --cached --check
+          git commit -m 'Route current native consumers through stable contract'
+          git push origin HEAD:agent/native-compat-inventory
