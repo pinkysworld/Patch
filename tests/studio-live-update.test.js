@@ -44,17 +44,19 @@ test('Patch site build content-addresses every public page and service-worker ca
   assert.match(builtWorker, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);
 });
 
-test('site builder content-addresses the complete transitive browser module graph', () => {
+test('site builder content-addresses the complete transitive browser module graph including multiline imports', () => {
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
   const html = fs.readFileSync('_site/index.html', 'utf8');
   const revision = /\.\/style\.css\?v=([a-f0-9]{16})/.exec(html)?.[1];
   assert.ok(revision);
 
   const playground = fs.readFileSync('_site/playground.js', 'utf8');
+  const nativeBuild = fs.readFileSync('_site/native-build.js', 'utf8');
   const compiler = fs.readFileSync('_site/src/compiler.js', 'utf8');
   assert.ok(playground.includes(`from './src/compiler.js?v=${revision}'`));
   assert.ok(playground.includes(`from './src/interpreter.js?v=${revision}''`) === false);
   assert.ok(playground.includes(`from './src/interpreter.js?v=${revision}'`));
+  assert.ok(nativeBuild.includes(`from './src/native-current-contract.js?v=${revision}'`), 'multiline current-native facade import must be revisioned');
   assert.ok(compiler.includes(`from './parser.js?v=${revision}'`));
   assert.ok(compiler.includes(`from './call-site-validation.js?v=${revision}'`));
 
