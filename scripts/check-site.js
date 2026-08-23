@@ -89,7 +89,8 @@ requireAll('Downloads page', downloads, [
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS',
   'Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native Slider',
   'runtime-manifest.json','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4',
-  'Native GUI IR 1.2 / payload v12 / runtime v1.3','Slider fail-closed'
+  'Native GUI IR 1.2 / payload v12 / runtime v1.3','Slider fail-closed',
+  'self-checks the interpreter, direct Wasm and C99 numeric subset'
 ]);
 rejectAll('Downloads page', downloads, ['Native Slider parity requires a future versioned native GUI contract']);
 
@@ -101,7 +102,8 @@ requireAll('Documentation page', docs, [
   'docs/REPRODUCIBILITY_BUNDLE.md','docs/NATIVE_GUI.md','docs/NATIVE_APPS.md','docs/TARGETS.md','docs/ROADMAP.md',
   'Native GUI IR 1.3 / payload v13 / runtime v1.4','IR 1.2 / payload v12 / runtime v1.3 frozen','beta.32 assurance boundary',
   'Center H/Center V, Default size and collision-aware Auto place',
-  'text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing'
+  'text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
+  'Thing fields such as player.score'
 ]);
 
 const language = read('_site/language.html');
@@ -118,7 +120,7 @@ requireAll('Help page current control surface', help, [
   'Slider Stage 1','ListBox: single or multi-select','Keyboard-only structural Properties','Ready runtime verification','Offline compiler',
   'Native GUI IR 1.3 / payload v13 / runtime v1.4','Native runtime v1.3 is TreeView-capable but Slider-free',
   'Click <strong>Edit</strong> beside a nested Table','Click <strong>Edit</strong> beside a nested TreeView',
-  'Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing'
+  'Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing','patch doctor'
 ]);
 
 const compiler = read('_site/src/compiler.js');

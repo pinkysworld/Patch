@@ -70,6 +70,6 @@ Local `native`/`app` JSON builds run Cargo quietly so toolchain progress cannot 
 
 ## Human-readable compatibility
 
-Without `--json`, the existing human-readable output remains the default. `run`, `run-wasm`, `changes` and `runtime-certify` retain their existing text behavior in this contract version. `doctor --json` predates the generic CLI result envelope and continues to expose its existing dedicated doctor-report schema.
+Without `--json`, the existing human-readable output remains the default. `run`, `run-wasm`, `changes` and `runtime-certify` retain their existing text behavior in this contract version. `doctor --json` predates the generic CLI result envelope and continues to expose its existing dedicated doctor-report schema. That report includes environment probes plus a `compiler-backends` self-check of the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends.
 
 Scripts should not parse the human-readable prose when an equivalent JSON mode exists.
