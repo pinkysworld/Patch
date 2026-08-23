@@ -25,7 +25,7 @@ The palette delegates to the existing Studio controls and navigation routes. It 
 
 The same search surface also exposes the files and outline symbols in the current multi-file project bundle v3.
 
-File results activate the existing project file and focus its source. Symbol results activate the owning file and select the exact source line. Current symbol categories reuse the Project Tree model: **Form**, **State**, **Event** and **Recipe**.
+File results activate the existing project file and focus its source. Symbol results activate the owning file and select the exact source line. Current symbol categories reuse the Project Tree model: **Form**, **State**, **Event**, **Recipe** and **Field**. Thing records appear as State symbols; each Thing field is a Field symbol labelled `name.field` that jumps to the field declaration line.
 
 The quick-open result set is rebuilt from `getStudioProjectFiles()` whenever the palette opens and when the active project/file changes. Symbol extraction uses the normal Patch parser plus `buildOutlineModel`, the same semantic source used by Project Tree. Invalid source still exposes its file result but does not invent a stale symbol result.
 
@@ -39,7 +39,7 @@ Running or building through the palette is equivalent to activating the existing
 
 ## Accessibility
 
-The palette is exposed as a modal `dialog` containing a search field and `listbox`. Keyboard selection is reflected with `aria-selected`. Result-kind badges distinguish Commands, Files, Forms, State, Events and Recipes without replacing the accessible result text. The normal Studio Run/Build shortcuts are suppressed while a dialog is open, so the palette keeps a single active keyboard context.
+The palette is exposed as a modal `dialog` containing a search field and `listbox`. Keyboard selection is reflected with `aria-selected`. Result-kind badges distinguish Commands, Files, Forms, State, Events, Recipes and Fields without replacing the accessible result text. The normal Studio Run/Build shortcuts are suppressed while a dialog is open, so the palette keeps a single active keyboard context.
 
 The palette has responsive, forced-colors and reduced-motion styling. This automated baseline does not replace manual assistive-technology testing.
 
