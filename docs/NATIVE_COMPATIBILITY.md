@@ -18,7 +18,7 @@ Unversioned files such as `src/native-gui-ir.js` (Native GUI IR **0.7**) and `na
 
 Version-numbered files such as `native-gui-ir-v08.js` through `native-gui-ir-v11.js`, their sealed payload implementations, backend adapters and compatibility fixtures remain executable test-only evidence because older Table, list and Menu contracts are intentionally preserved rather than redefined. They are not a product import surface and are not copied into the public Studio site bundle.
 
-Unversioned historical bases such as `native-gui-ir.js` and `native-runtime/*-sealed-gui.cpp` remain the include-chain root. They must not be treated as the Ready runtime.
+Unversioned historical bases such as `native-gui-ir.js` and `native-runtime/*-sealed-gui.cpp` remain the include-chain root. They are labeled as Native GUI IR **0.7** / payload **v6** and must not be treated as the Ready runtime. Historical `scripts/seal-native-*.js` sealers fail closed unless `PATCH_SEALED_GUI_VERSION` is explicitly 7 or 8. Automatic `native-*-runtime.yml` workflows are the historical v0.8 compatibility line and do not gate Pages; Ready remains v1.4.
 
 ## Collapse rule
 
@@ -31,5 +31,5 @@ The 90-day consolidation target is two live contracts only: **current** and **fr
 - A version-numbered v07–v11 module is imported directly only when implementing or testing that exact historical format.
 - The public Studio site ships current, frozen and the two snapshots. It does not ship retired v07–v11 copies.
 - Manual v07–v11 compatibility workflows are retired. Current v1.4 and frozen v1.3 release workflows remain automatic for changes to the active runtime implementation.
-- The remaining work is keeping unversioned historical bases from being mistaken for the Ready runtime.
+- Unversioned historical bases stay as labeled include-chain evidence. They do not gate Ready/Pages and cannot be sealed as if they were payload v12/v13.
 - The beta.32 formal assurance boundary is independent of this packaging facade and is unchanged.

@@ -60,11 +60,14 @@ test('responsive accessibility-capable v0.9 remains a frozen published compatibi
   assert.match(responsiveWorkflow, /responsive-window\.patch/);
 });
 
-test('Pages consumes current Slider-capable v1.4 and frozen TreeView v1.3 without retired v07–v11 sealed workflows', () => {
+test('Pages consumes current Slider-capable v1.4 and frozen TreeView v1.3 without historical v0.8 runtime workflows', () => {
   assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.4/);
   assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.4/);
   assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.4/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
+  assert.doesNotMatch(pagesWorkflow, /Patch Native Win32 Runtime,/);
+  assert.doesNotMatch(pagesWorkflow, /Patch Native Linux Runtime,/);
+  assert.doesNotMatch(pagesWorkflow, /Patch Native macOS Runtime,/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Sealed Table Runtime/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Sealed List Runtime/);
   assert.match(pagesWorkflow, /Patch Native Sealed Menu Runtime v1\.2 Release/);

@@ -41,9 +41,10 @@ test('sealed GUI v8 is current while v7 remains explicit compatibility', () => {
   assert.equal(new DataView(sealed8.buffer, sealed8.byteOffset + sealed8.length - 12, 4).getUint32(0, true), 8);
 });
 
-test('legacy v0.8 sealing scripts remain pinned to payload v7', () => {
+test('legacy v0.8 sealing scripts remain explicit payload-v7/v8 historical sealers', () => {
   for (const sourceText of [winSealer, macSealer, linuxSealer]) {
-    assert.match(sourceText, /PATCH_SEALED_GUI_VERSION \?\? 7/);
+    assert.doesNotMatch(sourceText, /PATCH_SEALED_GUI_VERSION \?\? 7/);
+    assert.match(sourceText, /payloadVersion !== 7 && payloadVersion !== 8/);
     assert.match(sourceText, /version: payloadVersion/);
   }
   assert.match(workflow, /PATCH_SEALED_GUI_VERSION: 8/);

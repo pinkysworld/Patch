@@ -1,4 +1,6 @@
-name: Patch Native macOS Runtime
+# HISTORICAL v0.8 compatibility runtime. Not the Ready v1.4 line.
+# Ready publishes native-macos-runtime-v1.4 via native-sealed-slider-runtime-v14.yml.
+name: Patch Native macOS Runtime v0.8 (historical)
 
 on:
   pull_request:
@@ -9,14 +11,7 @@ on:
       - native-runtime/appkit-sealed-gui-v08.mm
       - scripts/seal-native-macos.js
       - src/sealed-native-gui.js
-      - src/sealed-native-package.js
       - src/native-gui-ir.js
-      - src/window-events.js
-      - src/window-build.js
-      - src/compiler.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
@@ -24,7 +19,6 @@ on:
       - examples/radio-window.patch
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
-      - web/native-build.js
       - tests/sealed-native-gui.test.js
       - tests/sealed-native-accessibility.test.js
       - tests/combobox-window.test.js
@@ -34,10 +28,6 @@ on:
       - tests/menu-dialog-window.test.js
       - tests/result-dialog-window.test.js
       - tests/studio-macos-native-gui.test.js
-      - docs/NATIVE_GUI.md
-      - docs/NATIVE_APPS.md
-      - docs/NATIVE_ACCESSIBILITY.md
-      - docs/RESULT_DIALOGS.md
   push:
     branches: [main]
     paths:
@@ -46,14 +36,7 @@ on:
       - native-runtime/appkit-sealed-gui-v08.mm
       - scripts/seal-native-macos.js
       - src/sealed-native-gui.js
-      - src/sealed-native-package.js
       - src/native-gui-ir.js
-      - src/window-events.js
-      - src/window-build.js
-      - src/compiler.js
-      - src/parser.js
-      - src/expression.js
-      - src/change.js
       - examples/forms-navigation.patch
       - examples/combo-window.patch
       - examples/listbox-window.patch
@@ -61,7 +44,6 @@ on:
       - examples/radio-window.patch
       - examples/menu-dialog-window.patch
       - examples/result-dialog-window.patch
-      - web/native-build.js
       - tests/sealed-native-gui.test.js
       - tests/sealed-native-accessibility.test.js
       - tests/combobox-window.test.js
@@ -71,10 +53,6 @@ on:
       - tests/menu-dialog-window.test.js
       - tests/result-dialog-window.test.js
       - tests/studio-macos-native-gui.test.js
-      - docs/NATIVE_GUI.md
-      - docs/NATIVE_APPS.md
-      - docs/NATIVE_ACCESSIBILITY.md
-      - docs/RESULT_DIALOGS.md
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -88,6 +66,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: macos-latest
     timeout-minutes: 20
+    env:
+      PATCH_SEALED_GUI_VERSION: '7'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

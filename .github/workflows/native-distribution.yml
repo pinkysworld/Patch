@@ -37,11 +37,16 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - .github/workflows/native-distribution.yml
-      - src/native-gui-ir.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
       - src/native-accessibility.js
-      - src/win32-gui-v08.js
-      - src/appkit-gui-v08.js
-      - src/gtk-gui-v08.js
+      - src/win32-gui-v13.js
+      - src/win32-gui-v14.js
+      - src/appkit-gui-v13.js
+      - src/appkit-gui-v14.js
+      - src/gtk-gui-v13.js
+      - src/gtk-gui-v14.js
       - scripts/sign-windows.ps1
       - scripts/sign-notarize-macos.sh
       - scripts/write-signing-status.js

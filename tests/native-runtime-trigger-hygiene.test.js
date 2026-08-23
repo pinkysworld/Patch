@@ -27,9 +27,9 @@ test('native runtime workflows do not rebuild for site-only build plumbing', () 
   for (const [platform, workflow] of workflows) {
     assert.equal(workflow.includes('scripts/build-site.js'), false, `${platform} should not trigger on build-site.js`);
     assert.equal(workflow.includes('scripts/check-site.js'), false, `${platform} should not trigger on check-site.js`);
-    assert.match(workflow, /web\/native-build\.js/, `${platform} keeps Studio/native integration coverage`);
-    assert.match(workflow, /src\/native-gui-ir\.js/, `${platform} keeps native IR coverage`);
-    assert.match(workflow, /src\/sealed-native-gui\.js/, `${platform} keeps sealed runtime coverage`);
+    assert.equal(workflow.includes('web/native-build.js'), false, `${platform} historical v0.8 line should not trigger on Studio Ready packaging`);
+    assert.match(workflow, /src\/native-gui-ir\.js/, `${platform} keeps historical native IR coverage`);
+    assert.match(workflow, /src\/sealed-native-gui\.js/, `${platform} keeps historical sealed runtime coverage`);
   }
 });
 

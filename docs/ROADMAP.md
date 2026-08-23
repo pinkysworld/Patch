@@ -43,16 +43,16 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 
 ### Next repository-controlled backlog
 
-The reliability backlog is intentionally not being extended with another control or runtime tier. The next repository work is consolidation: specification/documentation synchronization, semantic object hardening, CI maintenance and native two-contract collapse before any new product surface is added.
+The reliability backlog is intentionally not being extended with another control or runtime tier. Native two-contract collapse is complete: **current** (IR 1.3 / payload v13 / runtime v1.4) and **frozen** (IR 1.2 / payload v12 / runtime v1.3) are the only product import surfaces. Remaining repository-controlled work is specification/documentation synchronization, semantic object hardening and CI maintenance before any new product surface is added.
 
-Native collapse means keeping **current** (IR 1.3 / payload v13 / runtime v1.4) and **frozen** (IR 1.2 / payload v12 / runtime v1.3) as the only product import surfaces. Current and frozen lowering/sealing use standalone snapshots instead of importing versioned v07–v11 modules. Product JavaScript, the Studio site bundle and Ready/offline linking no longer consume those versioned modules. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files remain the historical include-chain base, not the Ready runtime.
+Native collapse means keeping **current** (IR 1.3 / payload v13 / runtime v1.4) and **frozen** (IR 1.2 / payload v12 / runtime v1.3) as the only product import surfaces. Current and frozen lowering/sealing use standalone snapshots instead of importing versioned v07–v11 modules. Product JavaScript, the Studio site bundle and Ready/offline linking no longer consume those versioned modules. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files remain the historical include-chain base, not the Ready runtime. Historical v0.8 runtime workflows are named as such, require an explicit payload v7/v8 sealer, and do not gate Pages or Ready releases.
 
 - [x] stable current native facade (`src/native-current-contract.js`)
 - [x] stable frozen TreeView facade (`src/native-frozen-contract.js`)
 - [x] README, public docs and Studio website name both live contracts and the include-chain rule
 - [x] flatten current and frozen so they no longer import the v11→v07 chain
 - [x] retire v07–v11 consumers, site-bundle copies and manual workflows together
-- [ ] keep unversioned historical bases from being mistaken for the Ready runtime
+- [x] keep unversioned historical bases from being mistaken for the Ready runtime
 
 New product items should have a concrete implementation target and acceptance test before being added here.
 

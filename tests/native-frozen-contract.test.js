@@ -33,6 +33,9 @@ test('frozen native facade pins the TreeView contract to IR 1.2 / payload 12 / r
 test('unversioned native-gui-ir.js remains the historical IR 0.7 base, not the current or frozen product contract', () => {
   assert.equal(PATCH_NATIVE_GUI_IR_VERSION, '0.7');
   assert.notEqual(PATCH_NATIVE_GUI_IR_VERSION, PATCH_FROZEN_NATIVE_GUI_IR_VERSION);
+  const source = fs.readFileSync('src/native-gui-ir.js', 'utf8');
+  assert.match(source, /HISTORICAL INCLUDE-CHAIN BASE/);
+  assert.match(source, /Native GUI IR 0\.7/);
 });
 
 test('frozen native facade builds and encodes a TreeView Window without enabling Slider', () => {

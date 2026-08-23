@@ -1,3 +1,7 @@
+/* HISTORICAL INCLUDE-CHAIN BASE — sealed payload v6.
+ * This is not the Ready runtime. Current Ready is native-runtime/win32-sealed-gui-v14.cpp
+ * (runtime v1.4 / payload v13). Frozen TreeView is win32-sealed-gui-v13.cpp.
+ */
 #define UNICODE
 #define _UNICODE
 #include <windows.h>

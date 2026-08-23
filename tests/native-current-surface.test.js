@@ -53,9 +53,11 @@ test('native compatibility documentation makes current versus frozen ownership e
     'native-gui-frozen-lower.js',
     'Historical include chain',
     'IR **0.7**',
+    'do not gate Ready/Pages',
     'Frozen TreeView contract',
     'beta.32'
   ]) assert.ok(docs.includes(marker), marker);
+  assert.equal(docs.includes('The remaining work is keeping unversioned historical bases'), false);
 });
 
 test('README and public website name both live native contracts', () => {
