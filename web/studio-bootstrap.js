@@ -1,5 +1,6 @@
 (() => {
   installDesignerMutationGuard();
+  installSmokeProbe();
 
   if (!('serviceWorker' in navigator)) return;
 
@@ -146,5 +147,27 @@
     }
 
     window.MutationObserver = PatchStudioMutationObserver;
+  }
+
+  function installSmokeProbe() {
+    let enabled = false;
+    try { enabled = new URL(window.location.href).searchParams.get('patch-smoke') === '1'; }
+    catch { return; }
+    if (!enabled) return;
+
+    document.documentElement.dataset.patchStudioSmoke = 'pending';
+    window.setTimeout(() => {
+      const run = document.querySelector('#run');
+      const app = document.querySelector('#app');
+      if (!run || !app) {
+        document.documentElement.dataset.patchStudioSmoke = 'failed';
+        return;
+      }
+      run.click();
+      window.setTimeout(() => {
+        const renderedWindow = app.querySelector('.patch-window');
+        document.documentElement.dataset.patchStudioSmoke = !app.hidden && renderedWindow ? 'ready' : 'failed';
+      }, 100);
+    }, 1000);
   }
 })();
