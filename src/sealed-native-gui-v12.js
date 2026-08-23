@@ -1,6 +1,6 @@
 import { adaptNativeTreesForV12Backend } from './native-tree-backend-adapter.js';
 import { validateNativeGuiIRV12 } from './native-gui-ir-v12.js';
-import { encodeNativeGuiPayloadV11 } from './sealed-native-gui-v11.js';
+import { encodeNativeGuiPayloadV11 } from './native-gui-frozen-seal.js';
 
 export const PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC_V12 = 'PCHGUI01';

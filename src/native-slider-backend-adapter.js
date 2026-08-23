@@ -1,4 +1,4 @@
-import { NativeGuiError } from './native-gui-ir.js';
+import { NativeGuiError } from './native-gui-frozen-lower.js';
 import {
   validateNativeGuiIRV13,
   toV12CompatibleV13,

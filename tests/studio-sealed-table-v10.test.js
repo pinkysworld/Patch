@@ -27,7 +27,7 @@ test('Studio Ready Window builds use the stable current facade for Native GUI IR
 });
 
 test('Studio site and offline PWA cache contain the complete current Native GUI IR 1.3 browser dependency chain', () => {
-  for (const module of ['native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-frozen-contract.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js']) {
+  for (const module of ['native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js']) {
     assert.ok(siteBuilder.includes(`'${module}'`), `site builder missing ${module}`);
     assert.ok(serviceWorker.includes(`../src/${module}`), `service worker missing ${module}`);
   }

@@ -1,9 +1,10 @@
-import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-ir.js';
 import {
+  NativeGuiError,
+  PATCH_NATIVE_GUI_IR_FORMAT,
   buildNativeGuiIRV11,
   validateNativeGuiIRV11,
   flattenNativeGuiMenuItemsV11
-} from './native-gui-ir-v11.js';
+} from './native-gui-frozen-lower.js';
 
 export const PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2';
 

@@ -134,21 +134,21 @@ requireAll('Stable frozen native TreeView entry point', files.nativeFrozen, [
   'PATCH_FROZEN_NATIVE_CONTRACT_ID','native-gui-1.2/payload-12/runtime-1.3','native-win32-runtime-v1.3','buildFrozenNativeGuiIR','sealFrozenNativeGuiRuntime'
 ]);
 requireAll('Native compatibility two-contract boundary', files.nativeCompat, [
-  'native-current-contract.js','native-frozen-contract.js','native-gui-1.3/payload-13/runtime-1.4','native-gui-1.2/payload-12/runtime-1.3','Historical include chain'
+  'native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-gui-1.3/payload-13/runtime-1.4','native-gui-1.2/payload-12/runtime-1.3','Historical include chain'
 ]);
 requireAll('Frozen Native GUI IR 1.2 implementation', files.gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",'buildNativeGuiIRV12']);
 requireAll('Frozen payload v12 implementation', files.sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12','sealNativeGuiRuntimeV12']);
 
 requireAll('Site build complete browser graph', files.buildSite, [
   "'site-navigation.css','site-refresh.css','site-pages.css'",'studio-command-palette.css','studio-command-palette.js',
-  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
+  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
 ]);
 requireAll('Single service-worker ownership', files.bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard']);
 rejectAll('Accessibility worker ownership', files.accessibility, ['serviceWorker.register']);
 rejectAll('Playground worker ownership', files.playground, ['serviceWorker.register']);
 requireAll('Service worker complete browser graph and type-safe fallback', files.sw, [
   './studio-command-palette.css','./studio-command-palette.js','./src/call-site-validation.js','./src/independent-range-expression.js',
-  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
+  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-frozen-lower.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
 ]);
 
 requireAll('Formal claim boundary', files.formal, ['beta.32']);

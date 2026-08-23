@@ -26,7 +26,8 @@ The 90-day consolidation target is two live contracts only: **current** and **fr
 
 - New product code imports `native-current-contract.js`.
 - Frozen TreeView / payload-v12 / runtime-v1.3 code imports `native-frozen-contract.js`.
-- A version-numbered module is imported directly only when implementing or testing that exact historical format, or while the include chain has not yet been flattened.
+- Current and frozen lowering/sealing no longer import versioned v07–v11 modules; they use standalone snapshots `native-gui-frozen-lower.js` and `native-gui-frozen-seal.js`.
+- A version-numbered module is imported directly only when implementing or testing that exact historical format, or by remaining v07–v11 consumers such as older `native-gui-build-plan.js` tiers.
 - Compatibility files are removed only when their executable consumers and documented support boundary are retired together.
-- Flattening current and frozen into standalone implementations (so they no longer import v11→v10→…) is the next collapse step. Deleting v07–v11 before that rewrite would break both live contracts.
+- Deleting v07–v11 still waits until remaining historical consumers, site-bundle copies and manual workflows retire together.
 - The beta.32 formal assurance boundary is independent of this packaging facade and is unchanged.
