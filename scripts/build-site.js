@@ -105,7 +105,9 @@ function versionLocalAssetReferences(html, revision) {
 }
 
 function versionRelativeModuleSpecifiers(source, revision) {
-  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?)(['"])(\.{1,2}\/[^'"]+\.js)\2/gm;
+  // Import/export declarations may span lines. Keep the match bounded by the
+  // first quoted module specifier instead of treating a newline as a boundary.
+  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'"]*?\s+from\s+)?)(['"])(\.{1,2}\/[^'"]+\.js)\2/gm;
   const dynamicPattern = /(\bimport\s*\(\s*)(['"])(\.{1,2}\/[^'"]+\.js)\2(\s*\))/g;
   return source
     .replace(staticPattern, (_match, prefix, quote, specifier) => `${prefix}${quote}${specifier}?v=${revision}${quote}`)
@@ -180,8 +182,8 @@ function walkJs(dir) {
 function relativeModuleSpecifiers(source) {
   const found = new Set();
   const patterns = [
-    /^\s*import\s+(?:[^'"\n]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
-    /^\s*export\s+[^'"\n]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
+    /^\s*import\s+(?:[^'"]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
+    /^\s*export\s+[^'"]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
     /\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g
   ];
   for (const pattern of patterns) {
