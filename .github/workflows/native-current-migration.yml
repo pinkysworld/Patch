@@ -34,14 +34,24 @@ jobs:
           npm run check:project
           npm run build:site
           npm run check:site
-      - name: Commit migrated product surface and remove one-shot machinery
+      - name: Commit migrated product surface
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/native-current-migration.yml scripts/migrate-native-current-contract.js
-          git add -A
+          rm -rf _site
+          git add \
+            web/native-build.js \
+            src/offline-linker.js \
+            src/native-gui-build-plan.js \
+            scripts/build-site.js \
+            web/sw.js \
+            scripts/check-project-surface.js \
+            docs/NATIVE_GUI.md \
+            docs/NATIVE_COMPATIBILITY.md \
+            tests/native-current-contract.test.js \
+            tests/native-current-surface.test.js
           git diff --cached --check
           git commit -m 'Route current native consumers through stable contract'
           git push origin HEAD:agent/native-compat-inventory
