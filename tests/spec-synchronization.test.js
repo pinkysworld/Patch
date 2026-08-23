@@ -18,19 +18,19 @@ test('SPEC status is bound to the package and current Change IR', () => {
 
 test('SPEC documents every current user-facing parser family', () => {
   const constructs = [
-    ['window', /\^window\\s\+/, '`window`'],
-    ['checkbox', /\^checkbox\\s\+/, '`checkbox`'],
-    ['radio', /\^radio\\s\+/, '`radio`'],
-    ['combo', /\^combo\\s\+/, '`combo`'],
-    ['listbox', /\^listbox\\s\+/, '`listbox`'],
-    ['slider', /\^slider\\s\+/, '`slider`'],
-    ['table', /\^table\\s\+/, '`table`'],
-    ['tree', /\^tree\\s\+/, '`tree`'],
-    ['tabs', /\^tabs\\s\+/, '`tabs`'],
-    ['menu', /\^menu\\s\+/, '`menu`'],
-    ['confirm', /\^confirm\\s\+/, '`confirm`'],
-    ['open file', /\^open\\s\+file/, 'open file'],
-    ['save file', /\^save\\s\+file/, 'save file']
+    ['window', /\^window\\s\+/, '## Window applications and Forms'],
+    ['checkbox', /\^checkbox\\s\+/, '- `checkbox`'],
+    ['radio', /\^radio\\s\+/, '- `radio`'],
+    ['combo', /\^combo\\s\+/, '- `combo`'],
+    ['listbox', /\^listbox\\s\+/, '- `listbox`'],
+    ['slider', /\^slider\\s\+/, '- `slider`'],
+    ['table', /\^table\\s\+/, '## Tables'],
+    ['tree', /\^tree\\s\+/, '## TreeView'],
+    ['tabs', /\^tabs\\s\+/, '## Tabs'],
+    ['menu', /\^menu\\s\+/, '## Menus'],
+    ['confirm', /\^confirm\\s\+/, 'confirm "Delete?"'],
+    ['open file', /\^open\\s\+file/, 'open file "Choose a file"'],
+    ['save file', /\^save\\s\+file/, 'save file "Save project"']
   ];
   for (const [name, parserMarker, specMarker] of constructs) {
     assert.match(parser, parserMarker, `parser marker missing for ${name}`);
