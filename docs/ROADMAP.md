@@ -45,6 +45,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] Window Web structural equality matches the interpreter own-field contract; event-local values reuse the prototype-preserving clone
 - [x] Public language/docs/README name Things as prototype-free own-field records; direct Wasm/C99 fail closed and stay outside beta.32
 - [x] Windows Chrome smoke retries a stalled first-paint Runtime.evaluate instead of failing the 1.5s CDP timeout
+- [x] Command Palette / Project Tree expose Thing fields as source-backed Field symbols (`player.score`) using the existing outline model
 
 ### Next repository-controlled backlog
 

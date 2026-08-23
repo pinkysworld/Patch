@@ -7,7 +7,7 @@ Patch Studio now uses a source-backed **Project Tree** as the Stage 2 project-na
 The tree reads every `.patch` source in the canonical project v3 bundle. Each file is a real project source and expands into the same parser-derived groups used by the original outline:
 
 - **Forms** for `window` declarations;
-- **State** for `create` declarations;
+- **State** for `create` declarations, including Thing records and their own fields as `name.field`;
 - **Events** for `when ...` handlers;
 - **Recipes** for recipe declarations.
 

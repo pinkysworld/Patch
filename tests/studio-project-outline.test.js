@@ -31,6 +31,20 @@ when add clicked:
   assert.deepEqual(model[3].items[0], { kind: 'recipe', line: 9, label: 'recalculate', meta: 'recipe' });
 });
 
+test('Project Tree exposes Thing records and own-field symbols from the parser model', () => {
+  const source = `create thing player:
+  name = "Sam"
+  score = 0
+`;
+  const model = buildOutlineModel(parse(source));
+  assert.deepEqual(model.map(group => group.key), ['state']);
+  assert.deepEqual(model[0].items, [
+    { kind: 'state', line: 1, label: 'player', meta: 'thing' },
+    { kind: 'field', line: 2, label: 'player.name', meta: 'thing field' },
+    { kind: 'field', line: 3, label: 'player.score', meta: 'thing field' }
+  ]);
+});
+
 test('Project Tree computes exact active-file editor line selection ranges', () => {
   const source = 'first\nsecond line\nthird';
   assert.deepEqual(lineSelectionRange(source, 2), { line: 2, start: 6, end: 17 });

@@ -94,10 +94,11 @@ requireAll('Documentation current map', files.docsPage, [
   'prototype-free Things'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']);
-requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md']);
+requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing']);
 
 requireAll('Command Palette docs', files.commandPaletteDocs, [
-  'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model'
+  'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model',
+  'Field','name.field'
 ]);
 
 for (const [label, text] of [
@@ -123,7 +124,8 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Windows Chrome profile cleanup is best-effort',
   'Window Web structural equality matches the interpreter own-field contract',
   'Public language/docs/README name Things as prototype-free own-field records',
-  'Windows Chrome smoke retries a stalled first-paint Runtime.evaluate'
+  'Windows Chrome smoke retries a stalled first-paint Runtime.evaluate',
+  'Command Palette / Project Tree expose Thing fields'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'

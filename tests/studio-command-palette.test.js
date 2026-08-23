@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { buildStudioQuickOpenItems, rankStudioQuickOpenItems } from '../web/studio-quick-open.js';
 
 const html = fs.readFileSync('web/index.html', 'utf8');
 const palette = fs.readFileSync('web/studio-command-palette.js', 'utf8');
@@ -56,6 +57,25 @@ test('command palette v2 derives file and symbol results from the existing proje
   assert.match(quickOpen, /type: 'file'/);
   assert.match(quickOpen, /type: 'symbol'/);
   assert.match(quickOpen, /fuzzyQuickOpenScore/);
+  assert.match(palette, /field: 'Field'/);
+});
+
+test('quick-open exposes Thing fields from the Project Tree model and jumps to the field line', () => {
+  const items = buildStudioQuickOpenItems([{
+    path: 'main.patch',
+    content: `create thing player:
+  name = "Sam"
+  score = 0
+`
+  }]);
+  const field = items.find(item => item.label === 'player.score');
+  assert.ok(field, 'Thing field player.score should be a quick-open symbol');
+  assert.equal(field.type, 'symbol');
+  assert.equal(field.symbolKind, 'field');
+  assert.equal(field.line, 3);
+  assert.equal(field.file, 'main.patch');
+  const ranked = rankStudioQuickOpenItems(items, 'player.score');
+  assert.equal(ranked[0]?.label, 'player.score');
 });
 
 test('command palette and quick-open model are packaged for offline Studio use', () => {

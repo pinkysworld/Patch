@@ -19,6 +19,14 @@ export function buildOutlineModel(ast) {
       byKey.get('state').items.push({ kind: 'state', line: node.line, label: node.name, meta: node.valueType });
     } else if (node.kind === 'createThing') {
       byKey.get('state').items.push({ kind: 'state', line: node.line, label: node.name, meta: 'thing' });
+      for (const field of node.fields ?? []) {
+        byKey.get('state').items.push({
+          kind: 'field',
+          line: field.line,
+          label: `${node.name}.${field.name}`,
+          meta: 'thing field'
+        });
+      }
     } else if (node.kind === 'event') {
       byKey.get('events').items.push({ kind: 'event', line: node.line, label: node.control, meta: node.event });
     } else if (node.kind === 'recipe' || node.kind === 'function') {
