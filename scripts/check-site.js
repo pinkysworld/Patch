@@ -21,6 +21,7 @@ const requiredFiles = [
   '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
+  '_site/studio-command-palette.js','_site/studio-command-palette.css',
   '_site/project-lifecycle.js','_site/recovery-manager.js','_site/studio-outline.js','_site/slider-stage1.js','_site/table-stage1.js',
   '_site/tree-designer.js','_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-workspace.js',
   '_site/designer-ux.js','_site/designer-ux.css','_site/designer-toolbox.js','_site/designer-toolbox.css',
@@ -44,10 +45,11 @@ const index = read('_site/index.html');
 requireAll('Studio shell', index, [
   'Patch Studio','id="code"','id="run"','id="build"','id="designer"','id="app"',
   'id="projectName"','id="projectKind"','id="exportProject"','id="importProject"','id="recoverProject"',
-  'Project Outline','multi-file project bundle v3','Slider Stage 1','supported native Ready/offline Windows, macOS and Linux paths',
-  'Native GUI IR 1.3','payload v13','runtime v1.4','payload v12 / runtime v1.3 compatibility line remains Slider fail-closed',
-  'hierarchical TreeView','Local-first Studio','Ready desktop builds','Explicit persistence','Quick start and shortcuts',
-  'id="addSlider"','id="addTree"','./studio-bootstrap.js','./slider-stage1.js','./tree-designer.js','./designer-workspace.js','./runtime-integrity.js','./native-build.js'
+  'Project Outline','multi-file project bundle v3','Slider Stage 1','Native GUI IR 1.3','payload v13','runtime v1.4',
+  'hierarchical TreeView','Local-first Studio','Verified desktop path','Browser-gated delivery','Quick start and shortcuts',
+  'id="addSlider"','id="addTree"','id="openCommandPalette"','id="commandPalette"','id="commandPaletteInput"',
+  './studio-command-palette.css','./studio-command-palette.js','./studio-bootstrap.js','./slider-stage1.js','./tree-designer.js',
+  './designer-workspace.js','./runtime-integrity.js','./native-build.js'
 ]);
 rejectAll('Studio shell', index, [
   'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
@@ -59,6 +61,18 @@ requireAll('Studio recovery bootstrap', bootstrap, [
   "navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange','patch-studio-sw-reload-guard','window.location.reload()'
 ]);
 if (/^\s*import\s/m.test(bootstrap)) throw new Error('Studio recovery bootstrap must remain dependency-free.');
+
+const playground = read('_site/playground.js');
+const accessibility = read('_site/studio-accessibility.js');
+rejectAll('Studio playground service-worker ownership', playground, ['serviceWorker.register']);
+rejectAll('Studio accessibility service-worker ownership', accessibility, ['serviceWorker.register']);
+
+const palette = read('_site/studio-command-palette.js');
+requireAll('Studio command palette', palette, [
+  "'Run project'","'Build selected target'","'Focus source editor'","'Open Designer'","'Open Recovery'",
+  "navigate('./docs.html')","navigate('./downloads.html')","navigate('./help.html')",'event.key.toLowerCase()','ArrowDown','ArrowUp'
+]);
+rejectAll('Studio command palette persistence boundary', palette, ['localStorage','sessionStorage','indexedDB']);
 
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
@@ -118,16 +132,19 @@ requireAll('frozen payload v12', sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSIO
 const refreshCss = read('_site/site-refresh.css');
 requireAll('Shared website refresh', refreshCss, [
   '.site-tabs','.studio-launchpad','.studio-snapshot','.studio-guide','.docs-contract-grid','.docs-commandbar','.docs-search','.doc-link',
+  'grid-template-columns: repeat(3, minmax(0, 1fr))','@media (max-width: 1180px)','@media (max-width: 620px)',
   '@media (prefers-reduced-motion: reduce)','@media (forced-colors: active)'
 ]);
 const navigationCss = read('_site/site-navigation.css');
 requireAll('Website navigation refresh import', navigationCss, ['@import url("./site-refresh.css")']);
 
 const sw = read('_site/sw.js');
-requireAll('Service worker current compiler cache', sw, [
-  "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js','./slider-stage1.js',
-  './src/compiler.js','./src/call-site-validation.js','./src/independent-range-expression.js','./src/independent-guard-expression.js',
-  './src/native-gui-ir-v13.js','./src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js'
+requireAll('Service worker current compiler cache and type-safe fallback', sw, [
+  "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js',
+  './studio-command-palette.css','./studio-command-palette.js','./slider-stage1.js','./src/compiler.js','./src/call-site-validation.js',
+  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-gui-ir-v13.js',
+  './src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'',
+  'if (navigation)','throw error'
 ]);
 
 const coreSelection = read('_site/designer-core-selection.js');
@@ -141,4 +158,4 @@ requireAll('Designer structural keyboard accessibility', structuralKeyboard, ['n
 const toolbox = read('_site/designer-toolbox.js');
 requireAll('Designer toolbox discovery', toolbox, ['DESIGNER_TOOL_CATALOG',"type: 'slider'","buttonId: 'addSlider'",'designerAddControl']);
 
-console.log('Patch public site validation passed for beta.35+ / Native GUI IR 1.3 / payload v13 / runtime v1.4.');
+console.log('Patch public site validation passed for beta.35+ / polished Studio / Native GUI IR 1.3 / payload v13 / runtime v1.4.');
