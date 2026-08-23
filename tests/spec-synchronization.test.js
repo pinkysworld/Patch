@@ -57,3 +57,12 @@ test('SPEC exposes the fail-closed Thing field boundary implemented by the parse
     assert.ok(parser.includes(`'${field}'`), `parser must block Thing field ${field}`);
   }
 });
+
+test('SEMANTICS documents prototype-free Things and structural own-field equality', () => {
+  const semantics = fs.readFileSync('docs/SEMANTICS.md', 'utf8');
+  assert.match(semantics, /prototype-free/);
+  assert.match(semantics, /JSON serialization is not the equality oracle/);
+  for (const field of ['__proto__', 'prototype', 'constructor']) {
+    assert.ok(semantics.includes(field), `SEMANTICS must name blocked Thing field ${field}`);
+  }
+});

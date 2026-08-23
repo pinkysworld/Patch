@@ -37,6 +37,7 @@ const files = {
   formal: read('docs/FORMAL_MODEL.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
   paper: read('paper/README.md'),
+  semantics: read('docs/SEMANTICS.md'),
   compilerJs: read('src/compiler.js'),
   windowEvents: read('src/window-events.js'),
   windowBuild: read('src/window-build.js'),
@@ -112,7 +113,17 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
   'type-safe offline routing','Command Palette','Command Palette v2: project-file and symbol quick-open','Workspace Layout v2','Studio startup diagnostics v2',
   'Windows Chrome smoke isolated from the 12-minute full suite',
-  'Windows Chrome profile cleanup is best-effort'
+  'Windows Chrome profile cleanup is best-effort',
+  'Window Web structural equality matches the interpreter own-field contract'
+]);
+requireAll('Semantics Thing and equality contract', files.semantics, [
+  'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
+]);
+requireAll('Window event adapter clones event-local values', files.windowEvents, [
+  "import { clone } from './change.js'", 'clone(payload.value)'
+]);
+rejectAll('Window event adapter must not structuredClone event-local values', files.windowEvents, [
+  'structuredClone(payload.value)'
 ]);
 requireAll('Workspace Layout v2 implementation boundary', files.accessibility, [
   "patchStudio.workspaceSplit.v2","role', 'separator'","aria-orientation', 'horizontal'","max-width: 760px","--workspace-source-height","--workspace-result-height"

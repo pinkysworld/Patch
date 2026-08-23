@@ -2,6 +2,12 @@
 
 Patch's research semantics treats mutation as a semantic object rather than an incidental machine operation.
 
+## Values
+
+Patch values are numbers, text, booleans, lists and Things. A Thing is a finite own-field record: runtime storage is prototype-free, the field names `__proto__`, `prototype` and `constructor` are rejected fail-closed, and lookup never walks inherited JavaScript properties.
+
+Structural equality compares lists by length and element order, and Things by sorted own field names and values. Insertion order and JavaScript prototypes are not part of the equality contract. JSON serialization is not the equality oracle: `NaN` equals `NaN`, and `NaN` is not equal to `null`.
+
 ## State
 
 Let program state be a finite mapping `σ : Name -> Value`, history be `H = [δ1, δ2, ..., δn]`, and `ν(x)` be the current version of target `x`.
