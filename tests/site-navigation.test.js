@@ -50,8 +50,9 @@ test('language documentation downloads and help content live on dedicated pages'
 test('site navigation and content pages are responsive and keyboard visible', () => {
   assert.match(navigationCss, /overflow-x: auto/);
   assert.match(navigationCss, /focus-visible/);
-  assert.match(pageCss, /@media \(max-width: 820px\)/);
-  assert.match(pageCss, /@media \(max-width: 600px\)/);
+  assert.match(pageCss, /@media \(max-width: \d+px\)[\s\S]*?\.page-hero \{ grid-template-columns: 1fr;[^}]*\}/);
+  assert.match(pageCss, /@media \(max-width: \d+px\)[\s\S]*?\.doc-links \{ grid-template-columns: 1fr;[^}]*\}/);
+  assert.match(pageCss, /\.content-page \{[\s\S]*?width: calc\(100% - 20px\);/);
   assert.match(pageCss, /grid-template-columns: 1fr/);
 });
 
