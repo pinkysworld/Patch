@@ -1,16 +1,19 @@
 name: Native current contract migration
 
 on:
-  push:
-    branches: [agent/native-compat-inventory]
+  pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - .github/workflows/native-current-migration.yml
+      - scripts/migrate-native-current-contract.js
+      - src/native-current-contract.js
 
 permissions:
   contents: write
 
 jobs:
   migrate:
+    if: github.head_ref == 'agent/native-compat-inventory'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
