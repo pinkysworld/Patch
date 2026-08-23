@@ -54,7 +54,7 @@ test('AppKit backend lowers numeric Patch change and text interpolation', () => 
   assert.match(mm, /patch_state_count \+= 1/);
 });
 
-test('AppKit build script emits auditable Native GUI IR v0.7 / backend v0.8 source and metadata', () => {
+test('AppKit build script emits auditable frozen Native GUI IR 1.2 / backend 1.3 source and metadata', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-appkit-emit-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/build-native-appkit.js', 'examples/tabs-window.patch', 'NativeMacTabs', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
@@ -65,8 +65,8 @@ test('AppKit build script emits auditable Native GUI IR v0.7 / backend v0.8 sour
     assert.equal(meta.shell, 'native-appkit');
     assert.equal(meta.electron, false);
     assert.equal(meta.framework, 'AppKit');
-    assert.equal(meta.nativeGuiIrVersion, '0.7');
-    assert.equal(meta.backendVersion, '0.8');
+    assert.equal(meta.nativeGuiIrVersion, '1.2');
+    assert.equal(meta.backendVersion, '1.3');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 1);
     assert.equal(meta.events, 3);

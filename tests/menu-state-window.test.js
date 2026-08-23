@@ -119,10 +119,10 @@ test('Native GUI IR 1.0 keeps Boolean state references on real MenuItems', () =>
   );
 });
 
-test('Native GUI build plan selects IR 1.0 / backend 1.1 automatically for menu state', () => {
+test('Native GUI build plan uses the frozen TreeView contract for menu state', () => {
   const plan = buildNativeGuiPlan(compile(source, { name: 'MenuStateDemo', kind: 'window' }));
-  assert.equal(plan.tier, 'menu-v11');
-  assert.equal(plan.gui.version, '1.0');
+  assert.equal(plan.tier, 'tree-v13');
+  assert.equal(plan.gui.version, '1.2');
   assert.equal(plan.features.menuEnabledState, true);
   assert.equal(plan.features.menuCheckedState, true);
   assert.equal(plan.features.menuStateBindings, true);

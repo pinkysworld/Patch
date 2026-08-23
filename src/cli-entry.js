@@ -21,7 +21,7 @@ if (command === 'link') {
   const args = argv.slice(1);
   const file = args.shift();
   if (!file) {
-    console.error('Use: patch link program.patch [--out App] [--name AppName] [--gui-payload-version 10|11]');
+    console.error('Use: patch link program.patch [--out App] [--name AppName] [--gui-payload-version 12|13]');
     process.exit(1);
   }
   try {

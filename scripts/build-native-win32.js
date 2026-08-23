@@ -5,11 +5,6 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
-import { emitWin32GuiCpp, PATCH_WIN32_GUI_BACKEND_VERSION } from '../src/win32-gui-v08.js';
-import { emitWin32GuiCppV09, PATCH_WIN32_GUI_BACKEND_V09_VERSION } from '../src/win32-gui-v09.js';
-import { emitWin32GuiCppV10, PATCH_WIN32_GUI_BACKEND_V10_VERSION } from '../src/win32-gui-v10.js';
-import { emitWin32GuiCppV11, PATCH_WIN32_GUI_BACKEND_V11_VERSION } from '../src/win32-gui-v11.js';
-import { emitWin32GuiCppV12, PATCH_WIN32_GUI_BACKEND_V12_VERSION } from '../src/win32-gui-v12.js';
 import { emitWin32GuiCppV13, PATCH_WIN32_GUI_BACKEND_V13_VERSION } from '../src/win32-gui-v13.js';
 import { emitWin32GuiCppV14, PATCH_WIN32_GUI_BACKEND_V14_VERSION } from '../src/win32-gui-v14.js';
 
@@ -26,14 +21,18 @@ const treeV13 = process.argv.includes('--tree-v13');
 const sliderV14 = process.argv.includes('--slider-v14');
 
 if (!sourcePath) {
-  console.error('Use: node scripts/build-native-win32.js program.patch AppName dist [--emit-only] [--smoke] [--table-v09] [--menu-v10] [--menu-v11] [--list-v12] [--tree-v13] [--slider-v14]');
+  console.error('Use: node scripts/build-native-win32.js program.patch AppName dist [--emit-only] [--smoke] [--tree-v13] [--slider-v14]');
+  process.exit(2);
+}
+if (tableV09 || menuV10 || menuV11 || listV12) {
+  console.error('Direct native builds no longer select retired v07–v11 contracts. Use --tree-v13 (frozen) or --slider-v14 (current).');
   process.exit(2);
 }
 
 const absoluteSource = path.resolve(sourcePath);
 const source = fs.readFileSync(absoluteSource, 'utf8');
 const compiled = compile(source, { name: appName, kind: 'window', entry: path.basename(sourcePath) });
-const plan = buildNativeGuiPlan(compiled, { tableV09, menuV10, menuV11, listV12, treeV13, sliderV14 });
+const plan = buildNativeGuiPlan(compiled, { treeV13, sliderV14 });
 const gui = plan.gui;
 const cpp = normalizeGeneratedCpp(emitForTier(plan));
 const backendVersion = backendVersionForTier(plan.tier);
@@ -71,8 +70,8 @@ console.log(`Built native Patch Win32 GUI: ${exePath}`);
 console.log(`Native GUI IR ${gui.version}, backend ${backendVersion}, Change IR ${compiled.ir?.version ?? '?'}, source sha256 ${createHash('sha256').update(source,'utf8').digest('hex')}`);
 if (smoke) { const run=spawnSync(exePath,['--patch-smoke'],{stdio:'inherit',windowsHide:false,timeout:30000}); if(run.error)throw run.error; if(run.status!==0)throw new Error(`Native Patch Win32 GUI smoke exited with status ${run.status}.`); console.log('Native Patch Win32 GUI smoke passed.'); }
 
-function emitForTier(plan) { if(plan.tier==='slider-v14')return emitWin32GuiCppV14(plan.gui); if(plan.tier==='tree-v13')return emitWin32GuiCppV13(plan.gui); if(plan.tier==='list-v12')return emitWin32GuiCppV12(plan.gui); if(plan.tier==='menu-v11')return emitWin32GuiCppV11(plan.gui); if(plan.tier==='menu-v10')return emitWin32GuiCppV10(plan.gui); if(plan.tier==='table-v09')return emitWin32GuiCppV09(plan.gui); return emitWin32GuiCpp(plan.gui); }
-function backendVersionForTier(tier) { if(tier==='slider-v14')return PATCH_WIN32_GUI_BACKEND_V14_VERSION; if(tier==='tree-v13')return PATCH_WIN32_GUI_BACKEND_V13_VERSION; if(tier==='list-v12')return PATCH_WIN32_GUI_BACKEND_V12_VERSION; if(tier==='menu-v11')return PATCH_WIN32_GUI_BACKEND_V11_VERSION; if(tier==='menu-v10')return PATCH_WIN32_GUI_BACKEND_V10_VERSION; if(tier==='table-v09')return PATCH_WIN32_GUI_BACKEND_V09_VERSION; return PATCH_WIN32_GUI_BACKEND_VERSION; }
+function emitForTier(plan) { if(plan.tier==='slider-v14')return emitWin32GuiCppV14(plan.gui); return emitWin32GuiCppV13(plan.gui); }
+function backendVersionForTier(tier) { if(tier==='slider-v14')return PATCH_WIN32_GUI_BACKEND_V14_VERSION; return PATCH_WIN32_GUI_BACKEND_V13_VERSION; }
 function normalizeGeneratedCpp(text){return String(text).replaceAll('\0','\\0');}
 function runThroughVsDevCmd(vsDevCmd,args){const scriptPath=path.join(outDir,`${appName}.msvc-build.cmd`);const script=['@echo off',`call "${vsDevCmd.replace(/"/g,'""')}" -arch=x64 -host_arch=x64`,'if errorlevel 1 exit /b %errorlevel%',`cl.exe ${args.map(batchQuote).join(' ')}`,'exit /b %errorlevel%',''].join('\r\n');fs.writeFileSync(scriptPath,script,'utf8');try{return spawnSync('cmd.exe',['/d','/c',scriptPath],{stdio:'inherit',windowsHide:true});}finally{fs.rmSync(scriptPath,{force:true});}}
 function resolveMsvc(){const direct=spawnSync('where.exe',['cl.exe'],{encoding:'utf8',windowsHide:true});if(direct.status===0&&direct.stdout?.trim())return{kind:'direct',command:'cl.exe'};const candidates=[path.join(process.env['ProgramFiles(x86)']??'C:\\Program Files (x86)','Microsoft Visual Studio','Installer','vswhere.exe'),path.join(process.env.ProgramFiles??'C:\\Program Files','Microsoft Visual Studio','Installer','vswhere.exe')];const vswhere=candidates.find(file=>fs.existsSync(file));if(!vswhere)throw new Error('Microsoft C++ Build Tools were not found. Install Visual Studio Build Tools with Desktop development with C++.');const query=spawnSync(vswhere,['-latest','-products','*','-requires','Microsoft.VisualStudio.Component.VC.Tools.x86.x64','-property','installationPath'],{encoding:'utf8',windowsHide:true});if(query.status!==0||!query.stdout?.trim())throw new Error('Visual Studio C++ Build Tools installation could not be located.');const installation=query.stdout.trim().split(/\r?\n/).filter(Boolean).at(-1);const vsDevCmd=path.join(installation,'Common7','Tools','VsDevCmd.bat');if(!fs.existsSync(vsDevCmd))throw new Error(`MSVC environment script was not found at ${vsDevCmd}.`);return{kind:'vsdevcmd',vsDevCmd};}

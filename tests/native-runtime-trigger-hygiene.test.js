@@ -8,11 +8,16 @@ const workflows = new Map([
   ['macos', fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8')]
 ]);
 const frozenDirectWorkflows = [
+  '.github/workflows/native-treeview-v13.yml'
+];
+const retiredManualWorkflows = [
   '.github/workflows/native-table-v09.yml',
   '.github/workflows/native-menu-v10.yml',
   '.github/workflows/native-menu-state-v11.yml',
   '.github/workflows/native-listbox-v12.yml',
-  '.github/workflows/native-treeview-v13.yml'
+  '.github/workflows/native-sealed-table-runtime.yml',
+  '.github/workflows/native-sealed-menu-runtime.yml',
+  '.github/workflows/native-sealed-list-runtime.yml'
 ];
 const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 const pagesStatus = fs.readFileSync('.github/workflows/pages-status.yml', 'utf8');
@@ -49,6 +54,12 @@ test('frozen direct-native compatibility workflows are manual-only', () => {
     const workflow = fs.readFileSync(file, 'utf8');
     assert.match(workflow, /on:\s*\n\s*workflow_dispatch:/m, file);
     assert.doesNotMatch(workflow, /\n\s*(?:push|pull_request):/, file);
+  }
+});
+
+test('retired v07–v11 manual workflows are no longer active Actions files', () => {
+  for (const file of retiredManualWorkflows) {
+    assert.equal(fs.existsSync(file), false, `${file} should no longer be an active Actions workflow`);
   }
 });
 

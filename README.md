@@ -77,7 +77,7 @@ Renderer selection itself never becomes hidden persistent Patch state.
 
 The current Ready/offline line is **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**. It preserves Table, persistent list state, multi-select ListBox, Menu and TreeView compatibility while adding native Slider through Win32 `TRACKBAR`, AppKit `NSSlider` and GTK3 `GtkScale`. Product JavaScript imports that line through `src/native-current-contract.js`.
 
-The frozen TreeView line is Native GUI IR 1.2 / payload v12 / runtime v1.3 and stays Slider fail-closed. Product JavaScript for that line imports `src/native-frozen-contract.js`. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files are the historical include-chain base, not the Ready runtime. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
+The frozen TreeView line is Native GUI IR 1.2 / payload v12 / runtime v1.3 and stays Slider fail-closed. Product JavaScript for that line imports `src/native-frozen-contract.js`. Studio, Ready/offline linking and the public site bundle import only those two live contracts. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files are the historical include-chain base, not the Ready runtime. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
 
 Unsupported behavior on an older selected contract fails closed. FreeBSD remains Console-only through portable C99.
 

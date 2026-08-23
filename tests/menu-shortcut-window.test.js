@@ -117,11 +117,11 @@ test('Native GUI IR 0.9 preserves Table-capable 0.8 structure plus menu decorati
   assert.equal(validateNativeGuiIRV09(ir), ir);
 });
 
-test('Native GUI build plan selects backend 1.0 automatically for decorated menus', () => {
+test('Native GUI build plan uses the frozen TreeView contract for decorated menus', () => {
   const compiled = compile(source, { name: 'MenuShortcutDemo', kind: 'window' });
   const plan = buildNativeGuiPlan(compiled);
-  assert.equal(plan.tier, 'menu-v10');
-  assert.equal(plan.gui.version, '0.9');
+  assert.equal(plan.tier, 'tree-v13');
+  assert.equal(plan.gui.version, '1.2');
   assert.equal(plan.features.menuSeparators, true);
   assert.equal(plan.features.menuShortcuts, true);
 });

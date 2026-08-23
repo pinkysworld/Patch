@@ -16,9 +16,9 @@ The frozen TreeView line is **Native GUI IR 1.2 / sealed payload v12 / runtime v
 
 Unversioned files such as `src/native-gui-ir.js` (Native GUI IR **0.7**) and `native-runtime/win32-sealed-gui.cpp` (payload **v6**) are the *base* of the versioned include chain, not aliases of the current product contract. Each later `*-vNN` module extends the previous one. They must not be edited as if they were the v1.4 Ready runtime.
 
-Version-numbered files such as `native-gui-ir-v08.js` through `native-gui-ir-v11.js`, their sealed payload implementations, backend adapters and compatibility fixtures remain executable because older Table, list and Menu contracts are intentionally preserved rather than redefined. They are not a product import surface.
+Version-numbered files such as `native-gui-ir-v08.js` through `native-gui-ir-v11.js`, their sealed payload implementations, backend adapters and compatibility fixtures remain executable test-only evidence because older Table, list and Menu contracts are intentionally preserved rather than redefined. They are not a product import surface and are not copied into the public Studio site bundle.
 
-Historical direct-native smoke workflows are manual compatibility audits. Current v1.4 release workflows remain automatic for changes to the active runtime implementation.
+Unversioned historical bases such as `native-gui-ir.js` and `native-runtime/*-sealed-gui.cpp` remain the include-chain root. They must not be treated as the Ready runtime.
 
 ## Collapse rule
 
@@ -27,7 +27,9 @@ The 90-day consolidation target is two live contracts only: **current** and **fr
 - New product code imports `native-current-contract.js`.
 - Frozen TreeView / payload-v12 / runtime-v1.3 code imports `native-frozen-contract.js`.
 - Current and frozen lowering/sealing no longer import versioned v07–v11 modules; they use standalone snapshots `native-gui-frozen-lower.js` and `native-gui-frozen-seal.js`.
-- A version-numbered module is imported directly only when implementing or testing that exact historical format, or by remaining v07–v11 consumers such as older `native-gui-build-plan.js` tiers.
-- Compatibility files are removed only when their executable consumers and documented support boundary are retired together.
-- Deleting v07–v11 still waits until remaining historical consumers, site-bundle copies and manual workflows retire together.
+- Ready/offline linking, Studio packaging and the native build plan import only those two live contracts. Payload versions below v12 fail closed.
+- A version-numbered v07–v11 module is imported directly only when implementing or testing that exact historical format.
+- The public Studio site ships current, frozen and the two snapshots. It does not ship retired v07–v11 copies.
+- Manual v07–v11 compatibility workflows are retired. Current v1.4 and frozen v1.3 release workflows remain automatic for changes to the active runtime implementation.
+- The remaining work is keeping unversioned historical bases from being mistaken for the Ready runtime.
 - The beta.32 formal assurance boundary is independent of this packaging facade and is unchanged.

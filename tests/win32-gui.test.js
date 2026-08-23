@@ -67,7 +67,7 @@ test('native GUI lowering fails closed on event behavior the backend does not im
   assert.throws(() => buildNativeGuiIR(compile(unsupported, { kind: 'window', name: 'Unsupported' })), error => error instanceof NativeGuiError && /support change, open, close and dialog actions only/.test(error.message));
 });
 
-test('Win32 build script emits auditable Native GUI IR v0.7 / backend v0.8 source and metadata on every development OS', () => {
+test('Win32 build script emits auditable frozen Native GUI IR 1.2 / backend 1.3 source and metadata on every development OS', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-win32-emit-'));
   try {
     const result = spawnSync(process.execPath, ['scripts/build-native-win32.js', 'examples/tabs-window.patch', 'NativeTabsSmoke', temp, '--emit-only'], { cwd: path.resolve('.'), encoding: 'utf8' });
@@ -80,8 +80,8 @@ test('Win32 build script emits auditable Native GUI IR v0.7 / backend v0.8 sourc
     assert.equal(meta.shell, 'native-win32');
     assert.equal(meta.electron, false);
     assert.equal(meta.crt, 'static');
-    assert.equal(meta.nativeGuiIrVersion, '0.7');
-    assert.equal(meta.backendVersion, '0.8');
+    assert.equal(meta.nativeGuiIrVersion, '1.2');
+    assert.equal(meta.backendVersion, '1.3');
     assert.equal(meta.changeIrVersion, '0.10');
     assert.equal(meta.forms, 1);
     assert.equal(meta.controls, 5);

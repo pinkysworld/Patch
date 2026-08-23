@@ -1,7 +1,5 @@
-import { sealNativeGuiRuntime } from './sealed-native-gui.js';
-import { PATCH_SEALED_NATIVE_GUI_MENU_VERSION, sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
-import { PATCH_SEALED_NATIVE_GUI_TREE_VERSION, sealNativeGuiRuntimeV12 } from './sealed-native-gui-v12.js';
-import { PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION, sealNativeGuiRuntimeV13 } from './sealed-native-gui-v13.js';
+import { PATCH_FROZEN_NATIVE_PAYLOAD_VERSION, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
+import { PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
 
 export const PATCH_SEALED_NATIVE_PACKAGE_VERSION = '0.2';
 
@@ -53,16 +51,14 @@ export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}
 }
 
 function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion }) {
-  if (Number(payloadVersion) === PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION) {
-    return sealNativeGuiRuntimeV13(runtime, nativeGui, { platform });
+  const version = Number(payloadVersion);
+  if (version === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
+    return sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
   }
-  if (Number(payloadVersion) === PATCH_SEALED_NATIVE_GUI_TREE_VERSION) {
-    return sealNativeGuiRuntimeV12(runtime, nativeGui, { platform });
+  if (version === PATCH_FROZEN_NATIVE_PAYLOAD_VERSION) {
+    return sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform });
   }
-  if (Number(payloadVersion) === PATCH_SEALED_NATIVE_GUI_MENU_VERSION) {
-    return sealNativeGuiRuntimeV11(runtime, nativeGui, { platform });
-  }
-  return sealNativeGuiRuntime(runtime, nativeGui, { platform, version: payloadVersion });
+  throw new SealedNativePackageError(`Ready/offline native packages support payload v12 or v13, not '${payloadVersion}'.`);
 }
 
 function infoPlist(name) {

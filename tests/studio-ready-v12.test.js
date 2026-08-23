@@ -51,8 +51,11 @@ test('Studio advertises current payload v13 runtime v1.4 native Slider support',
 test('payload v12 runtime v1.3 remains an explicit frozen compatibility line', () => {
   assert.match(v12, /PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12/);
   assert.match(v13, /PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION = 13/);
-  assert.match(packageSource, /sealNativeGuiRuntimeV12/);
-  assert.match(packageSource, /sealNativeGuiRuntimeV13/);
+  assert.match(packageSource, /native-frozen-contract\.js/);
+  assert.match(packageSource, /sealFrozenNativeGuiRuntime/);
+  assert.match(packageSource, /native-current-contract\.js/);
+  assert.match(packageSource, /sealCurrentNativeGuiRuntime/);
+  assert.doesNotMatch(packageSource, /sealNativeGuiRuntimeV11/);
 });
 
 test('runtime integrity remains a separate browser-side SHA-256 verification gate', () => {

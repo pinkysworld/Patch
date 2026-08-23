@@ -1,47 +1,24 @@
-import { buildNativeGuiIR, flattenNativeGuiControls } from './native-gui-ir.js';
-import { buildNativeGuiIRV08, flattenNativeGuiControlsV08 } from './native-gui-ir-v08.js';
-import { buildNativeGuiIRV09, flattenNativeGuiControlsV09 } from './native-gui-ir-v09.js';
-import { buildNativeGuiIRV10, flattenNativeGuiControlsV10 } from './native-gui-ir-v10.js';
-import { buildNativeGuiIRV11, flattenNativeGuiControlsV11 } from './native-gui-ir-v11.js';
 import { buildFrozenNativeGuiIR, flattenFrozenNativeGuiControls } from './native-frozen-contract.js';
 import { buildCurrentNativeGuiIR, flattenCurrentNativeGuiControls } from './native-current-contract.js';
 
-/** Select the smallest native GUI contract that preserves source semantics. */
+const RETIRED_PLAN_OPTIONS = ['tableV09', 'menuV10', 'menuV11', 'listV12'];
+
+/** Select the live native GUI contract that preserves source semantics. */
 export function buildNativeGuiPlan(compiled, options = {}) {
+  for (const key of RETIRED_PLAN_OPTIONS) {
+    if (options[key]) {
+      throw new Error(`Retired native contract option '${key}' is not a product build plan. Use current (Slider) or frozen (TreeView).`);
+    }
+  }
   const features = inspectNativeGuiFeatures(compiled?.ast);
-  const forceTable = Boolean(options.tableV09);
-  const forceMenu = Boolean(options.menuV10);
-  const forceMenuState = Boolean(options.menuV11);
-  const forceList = Boolean(options.listV12);
-  const forceTree = Boolean(options.treeV13);
   const forceSlider = Boolean(options.sliderV14);
 
   if (forceSlider || features.slider) {
     const gui = buildCurrentNativeGuiIR(compiled);
     return { tier: 'slider-v14', gui, controlCount: flattenCurrentNativeGuiControls(gui).length, features };
   }
-  if (forceTree || features.tree) {
-    const gui = buildFrozenNativeGuiIR(compiled);
-    return { tier: 'tree-v13', gui, controlCount: flattenFrozenNativeGuiControls(gui).length, features };
-  }
-  if (forceList || features.listState) {
-    const gui = buildNativeGuiIRV11(compiled);
-    return { tier: 'list-v12', gui, controlCount: flattenNativeGuiControlsV11(gui).length, features };
-  }
-  if (forceMenuState || features.menuStateBindings) {
-    const gui = buildNativeGuiIRV10(compiled);
-    return { tier: 'menu-v11', gui, controlCount: flattenNativeGuiControlsV10(gui).length, features };
-  }
-  if (forceMenu || features.menuDecorations) {
-    const gui = buildNativeGuiIRV09(compiled);
-    return { tier: 'menu-v10', gui, controlCount: flattenNativeGuiControlsV09(gui).length, features };
-  }
-  if (forceTable || features.table) {
-    const gui = buildNativeGuiIRV08(compiled);
-    return { tier: 'table-v09', gui, controlCount: flattenNativeGuiControlsV08(gui).length, features };
-  }
-  const gui = buildNativeGuiIR(compiled);
-  return { tier: 'base-v08', gui, controlCount: flattenNativeGuiControls(gui).length, features };
+  const gui = buildFrozenNativeGuiIR(compiled);
+  return { tier: 'tree-v13', gui, controlCount: flattenFrozenNativeGuiControls(gui).length, features };
 }
 
 export function inspectNativeGuiFeatures(ast) {

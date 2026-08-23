@@ -15,9 +15,6 @@ const nativeApps = read('docs/NATIVE_APPS.md');
 const offline = read('docs/OFFLINE_COMPILER.md');
 const targets = read('docs/TARGETS.md');
 const roadmap = read('docs/ROADMAP.md');
-const directWorkflow = read('.github/workflows/native-table-v09.yml');
-const sealedWorkflow = read('.github/workflows/native-sealed-table-runtime.yml');
-const sealedListWorkflow = read('.github/workflows/native-sealed-list-runtime.yml');
 const offlineWorkflow = read('.github/workflows/offline-compiler.yml');
 const playground = read('web/playground.js');
 const studioTable = read('web/table-stage1.js');
@@ -46,10 +43,6 @@ test('direct native Table support preserves the frozen IR 0.8 backend 0.9 compat
   assert.match(nativeApps, /WC_LISTVIEWW/);
   assert.match(nativeApps, /NSTableView/);
   assert.match(nativeApps, /GtkTreeView/);
-  assert.match(directWorkflow, /windows-latest/);
-  assert.match(directWorkflow, /macos-15/);
-  assert.match(directWorkflow, /ubuntu-latest/);
-  assert.match(directWorkflow, /--table-v09 --smoke/);
 });
 
 test('authoritative compatibility docs preserve the frozen payload v9 runtime v1.0 Table line', () => {
@@ -62,38 +55,10 @@ test('authoritative compatibility docs preserve the frozen payload v9 runtime v1
   assert.match(offline, /payload \*\*v9\*\* \/ runtime \*\*v1\.0\*\*[^\n]*frozen Table/i);
 });
 
-test('sealed Table v1.0 remains a frozen Windows macOS Linux v9 compatibility gate', () => {
-  assert.match(sealedWorkflow, /contract:/);
-  assert.match(sealedWorkflow, /Test baseline sealed payload contract/);
-  assert.match(sealedWorkflow, /Test responsive sealed payload contract/);
-  assert.match(sealedWorkflow, /Test Table payload v9 contract/);
-  assert.doesNotMatch(sealedWorkflow, /src\/cli-entry\.js link examples\/table-native-v09\.patch/);
-  assert.match(sealedWorkflow, /windows-latest/);
-  assert.match(sealedWorkflow, /macos-latest/);
-  assert.match(sealedWorkflow, /ubuntu-latest/);
-  assert.match(sealedWorkflow, /PATCH_SEALED_GUI_VERSION: 9/);
-  assert.match(sealedWorkflow, /examples\/table-native-v09\.patch/);
-  assert.match(sealedWorkflow, /--patch-smoke/);
-  assert.match(sealedWorkflow, /native-win32-runtime-v1\.0/);
-  assert.match(sealedWorkflow, /native-macos-runtime-v1\.0/);
-  assert.match(sealedWorkflow, /native-linux-runtime-v1\.0/);
-  assert.match(sealedWorkflow, /Frozen .* compatibility runtime/i);
-});
-
-test('sealed runtime v1.1 remains the frozen payload v10 list compatibility line on all desktop hosts', () => {
-  assert.match(sealedListWorkflow, /PATCH_SEALED_GUI_VERSION: 10/);
-  assert.match(sealedListWorkflow, /Test payload v10 list contract/);
-  assert.match(sealedListWorkflow, /Test baseline sealed compatibility/);
-  assert.match(sealedListWorkflow, /Test offline-link contract/);
-  assert.match(sealedListWorkflow, /windows-latest/);
-  assert.match(sealedListWorkflow, /macos-latest/);
-  assert.match(sealedListWorkflow, /ubuntu-latest/);
-  assert.match(sealedListWorkflow, /Seal and smoke Table compatibility/);
-  assert.match(sealedListWorkflow, /Offline-link multi-select and smoke/);
-  assert.match(sealedListWorkflow, /src\/cli-entry\.js link examples\/listbox-multiselect-native\.patch/);
-  assert.match(sealedListWorkflow, /native-win32-runtime-v1\.1/);
-  assert.match(sealedListWorkflow, /native-macos-runtime-v1\.1/);
-  assert.match(sealedListWorkflow, /native-linux-runtime-v1\.1/);
+test('retired v07–v11 Table and list sealed workflows are no longer active', () => {
+  assert.equal(fs.existsSync(new URL('../.github/workflows/native-table-v09.yml', import.meta.url)), false);
+  assert.equal(fs.existsSync(new URL('../.github/workflows/native-sealed-table-runtime.yml', import.meta.url)), false);
+  assert.equal(fs.existsSync(new URL('../.github/workflows/native-sealed-list-runtime.yml', import.meta.url)), false);
 });
 
 test('downloadable offline compiler embeds runtime v1.4 and proves payload v13 Table ListBox Menu Tree and Slider linking', () => {

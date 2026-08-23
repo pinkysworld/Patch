@@ -26,29 +26,34 @@ test('Studio Ready Window builds use the stable current facade for Native GUI IR
   assert.match(studio, /allowSlider: true/);
 });
 
-test('Studio site and offline PWA cache contain the complete current Native GUI IR 1.3 browser dependency chain', () => {
-  for (const module of ['native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js']) {
+test('Studio site and offline PWA cache contain the live native contracts without retired v07–v11 copies', () => {
+  for (const module of ['native-gui-ir-v12.js','native-gui-ir-v13.js','native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js']) {
     assert.ok(siteBuilder.includes(`'${module}'`), `site builder missing ${module}`);
     assert.ok(serviceWorker.includes(`../src/${module}`), `service worker missing ${module}`);
   }
-  assert.ok(siteBuilder.includes("'sealed-native-gui-v11.js'"), 'site builder missing v11 compatibility sealer');
+  assert.equal(siteBuilder.includes("'native-gui-ir-v08.js'"), false);
+  assert.equal(siteBuilder.includes("'native-gui-ir-v11.js'"), false);
+  assert.equal(siteBuilder.includes("'sealed-native-gui-v11.js'"), false);
   assert.ok(siteBuilder.includes("'sealed-native-gui-v12.js'"), 'site builder missing frozen v12 compatibility sealer');
   assert.ok(siteBuilder.includes("'sealed-native-gui-v13.js'"), 'site builder missing current v13 implementation sealer');
 });
 
-test('sealed native package helpers route payload v13 to current sealer and preserve v12/v11 compatibility', () => {
-  assert.match(packageSource, /Number\(payloadVersion\) === PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION/);
-  assert.match(packageSource, /sealNativeGuiRuntimeV13\(runtime, nativeGui, \{ platform \}\)/);
-  assert.match(packageSource, /Number\(payloadVersion\) === PATCH_SEALED_NATIVE_GUI_TREE_VERSION/);
-  assert.match(packageSource, /sealNativeGuiRuntimeV12\(runtime, nativeGui, \{ platform \}\)/);
-  assert.match(packageSource, /Number\(payloadVersion\) === PATCH_SEALED_NATIVE_GUI_MENU_VERSION/);
-  assert.match(packageSource, /sealNativeGuiRuntimeV11\(runtime, nativeGui, \{ platform \}\)/);
-  assert.match(packageSource, /sealNativeGuiRuntime\(runtime, nativeGui, \{ platform, version: payloadVersion \}\)/);
+test('sealed native package helpers route payload v13 and v12 through the live facades', () => {
+  assert.match(packageSource, /native-current-contract\.js/);
+  assert.match(packageSource, /native-frozen-contract\.js/);
+  assert.match(packageSource, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.match(packageSource, /sealCurrentNativeGuiRuntime\(runtime, nativeGui, \{ platform \}\)/);
+  assert.match(packageSource, /PATCH_FROZEN_NATIVE_PAYLOAD_VERSION/);
+  assert.match(packageSource, /sealFrozenNativeGuiRuntime\(runtime, nativeGui, \{ platform \}\)/);
+  assert.match(packageSource, /Ready\/offline native packages support payload v12 or v13/);
+  assert.doesNotMatch(packageSource, /sealed-native-gui-v11\.js/);
+  assert.doesNotMatch(packageSource, /from ['"]\.\/sealed-native-gui\.js['"]/);
 });
 
-test('Pages waits for and pins all three current Slider-capable runtime v1.4 releases while retaining compatibility triggers', () => {
-  assert.match(pages, /Patch Native Sealed List Runtime/);
-  assert.match(pages, /Patch Native Sealed Menu Runtime/);
+test('Pages waits for current and frozen runtime lines without retired v07–v11 sealed workflows', () => {
+  assert.doesNotMatch(pages, /Patch Native Sealed List Runtime,/);
+  assert.doesNotMatch(pages, /Patch Native Sealed Table Runtime/);
+  assert.doesNotMatch(pages, /Patch Native Sealed Menu Runtime,/);
   assert.match(pages, /Patch Native Sealed Menu Runtime v1\.2 Release/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
