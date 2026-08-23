@@ -63,8 +63,7 @@ function delay(ms) {
 function waitForDevTools(child, stderr, timeoutMs = 8000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => finish(new Error(`Chrome did not expose DevTools within ${timeoutMs}ms. stderr:\n${stderr.text}`)), timeoutMs);
-    const onData = chunk => {
-      stderr.text += chunk.toString();
+    const onData = () => {
       const match = stderr.text.match(/DevTools listening on (ws:\/\/127\.0\.0\.1:(\d+)\/devtools\/browser\/[^\s]+)/);
       if (match) finish(null, { browserWsUrl: match[1], port: Number(match[2]) });
     };
@@ -151,7 +150,13 @@ async function evaluate(cdp, expression, timeoutMs = 2000) {
     returnByValue: true,
     awaitPromise: true
   }, timeoutMs);
-  if (result.exceptionDetails) throw new Error(`Chrome evaluation failed: ${result.exceptionDetails.text ?? 'unknown exception'}`);
+  if (result.exceptionDetails) {
+    const detail = result.exceptionDetails.exception?.description
+      ?? result.result?.description
+      ?? result.exceptionDetails.text
+      ?? 'unknown exception';
+    throw new Error(`Chrome evaluation failed: ${detail}`);
+  }
   return result.result?.value;
 }
 
@@ -213,19 +218,19 @@ test('Patch Studio stays responsive in Chrome and can run the default Window app
   const deadline = Date.now() + 9000;
   let smokeState = null;
   while (Date.now() < deadline) {
-    smokeState = await evaluate(cdp, 'document.documentElement.dataset.patchStudioSmoke', 1500);
+    smokeState = await evaluate(cdp, 'document.documentElement?.dataset?.patchStudioSmoke ?? null', 1500);
     if (smokeState === 'ready' || smokeState === 'failed') break;
     await delay(150);
   }
 
   assert.equal(smokeState, 'ready', `Studio did not reach the responsive Run state. stderr:\n${stderr.text}`);
-  assert.equal(await evaluate(cdp, "!document.querySelector('#app').hidden && !!document.querySelector('#app .patch-window')"), true,
+  assert.equal(await evaluate(cdp, "!!document.querySelector('#app') && !document.querySelector('#app').hidden && !!document.querySelector('#app .patch-window')"), true,
     'Run smoke probe did not render the default Patch Window app');
 
   // Keep probing after the automatic Run action. The original production failure
   // appeared only after a few seconds when Designer MutationObservers recursively
   // reconciled their own DOM writes.
   await delay(2500);
-  assert.equal(await evaluate(cdp, "document.documentElement.dataset.patchStudioSmoke === 'ready' && !!document.querySelector('#run')"), true,
+  assert.equal(await evaluate(cdp, "document.documentElement?.dataset?.patchStudioSmoke === 'ready' && !!document.querySelector('#run')"), true,
     'Patch Studio stopped responding after its initial render');
 });
