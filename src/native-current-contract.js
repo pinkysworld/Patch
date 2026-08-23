@@ -20,6 +20,7 @@ import {
  * evidence. Current product consumers should import this module instead of a
  * concrete native-gui-ir-vNN/sealed-native-gui-vNN implementation.
  */
+export const PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.3/payload-13/runtime-1.4';
 export const PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V13_VERSION;
 export const PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION;
 export const PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.4';
@@ -41,6 +42,7 @@ export const inspectCurrentNativeGuiSliders = inspectNativeGuiSlidersV13;
 
 export function currentNativeContract() {
   return Object.freeze({
+    id: PATCH_CURRENT_NATIVE_CONTRACT_ID,
     guiIr: PATCH_CURRENT_NATIVE_GUI_IR_VERSION,
     payload: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION,
     runtime: PATCH_CURRENT_NATIVE_RUNTIME_VERSION,
