@@ -141,14 +141,14 @@ requireAll('Frozen payload v12 implementation', files.sealed12, ['PATCH_SEALED_N
 
 requireAll('Site build complete browser graph', files.buildSite, [
   "'site-navigation.css','site-refresh.css','site-pages.css'",'studio-command-palette.css','studio-command-palette.js',
-  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
+  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
 ]);
 requireAll('Single service-worker ownership', files.bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard']);
 rejectAll('Accessibility worker ownership', files.accessibility, ['serviceWorker.register']);
 rejectAll('Playground worker ownership', files.playground, ['serviceWorker.register']);
 requireAll('Service worker complete browser graph and type-safe fallback', files.sw, [
   './studio-command-palette.css','./studio-command-palette.js','./src/call-site-validation.js','./src/independent-range-expression.js',
-  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
+  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
 ]);
 
 requireAll('Formal claim boundary', files.formal, ['beta.32']);

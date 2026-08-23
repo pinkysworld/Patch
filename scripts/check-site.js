@@ -29,7 +29,7 @@ const requiredFiles = [
   '_site/designer-structural-keyboard.js','_site/designer-inspector.css',
   '_site/src/compiler.js','_site/src/call-site-validation.js','_site/src/independent-range-expression.js','_site/src/independent-guard-expression.js',
   '_site/src/studio-project.js','_site/src/window-build.js','_site/src/window-events.js',
-  '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-current-contract.js',
+  '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
   '_site/src/native-tree-backend-adapter.js','_site/src/native-slider-backend-adapter.js',
   '_site/src/sealed-native-gui-v11.js','_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-package.js'
 ];
@@ -128,6 +128,10 @@ requireAll('current native product facade', nativeCurrent, [
   'PATCH_CURRENT_NATIVE_GUI_IR_VERSION','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','PATCH_CURRENT_NATIVE_RUNTIME_VERSION',
   'native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
+const nativeFrozen = read('_site/src/native-frozen-contract.js');
+requireAll('frozen native TreeView product facade', nativeFrozen, [
+  'PATCH_FROZEN_NATIVE_CONTRACT_ID','native-gui-1.2/payload-12/runtime-1.3','native-win32-runtime-v1.3','buildFrozenNativeGuiIR','sealFrozenNativeGuiRuntime'
+]);
 const gui13 = read('_site/src/native-gui-ir-v13.js');
 requireAll('Native GUI IR 1.3 implementation', gui13, ["PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'",'buildNativeGuiIRV13','slider']);
 const sealed13 = read('_site/src/sealed-native-gui-v13.js');
@@ -150,7 +154,7 @@ const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache and type-safe fallback', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js',
   './studio-command-palette.css','./studio-command-palette.js','./slider-stage1.js','./src/compiler.js','./src/call-site-validation.js',
-  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-gui-ir-v13.js',
+  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-ir-v13.js',
   './src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'',
   'if (navigation)','throw error'
 ]);

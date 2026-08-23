@@ -25,7 +25,9 @@ test('browser packaging contains the stable facade while versioned compatibility
   const buildSite = read('scripts/build-site.js');
   const sw = read('web/sw.js');
   assert.match(buildSite, /native-current-contract\.js/);
+  assert.match(buildSite, /native-frozen-contract\.js/);
   assert.match(sw, /native-current-contract\.js/);
+  assert.match(sw, /native-frozen-contract\.js/);
   for (const version of ['v08','v09','v10','v11','v12','v13']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
 });
 

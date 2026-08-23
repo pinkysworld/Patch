@@ -29,6 +29,7 @@ test('Studio token-free Window builds lower Native GUI IR 1.3 and seal payload v
 test('Pages gates deployment on published runtime v1.4 assets for all desktop hosts', () => {
   for (const tag of ['native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']) assert.ok(pages.includes(tag), tag);
   assert.match(pages, /src\/native-current-contract\.js/);
+  assert.match(pages, /src\/native-frozen-contract\.js/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /runtime-integrity-manifest\.js/);

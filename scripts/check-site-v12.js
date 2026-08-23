@@ -7,6 +7,7 @@ const nativeBuild = read('native-build.js');
 const docs = read('docs.html');
 const downloads = read('downloads.html');
 const current = read('src/native-current-contract.js');
+const frozen = read('src/native-frozen-contract.js');
 const gui12 = read('src/native-gui-ir-v12.js');
 const sealed12 = read('src/sealed-native-gui-v12.js');
 
@@ -34,6 +35,10 @@ requireText(current, "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.3/payload
 requireText(current, 'PATCH_CURRENT_NATIVE_GUI_IR_VERSION', 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION', 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_RUNTIME_VERSION', 'current native facade');
+
+requireText(frozen, "PATCH_FROZEN_NATIVE_CONTRACT_ID = 'native-gui-1.2/payload-12/runtime-1.3'", 'frozen native facade');
+requireText(frozen, 'buildFrozenNativeGuiIR', 'frozen native facade');
+requireText(frozen, 'sealFrozenNativeGuiRuntime', 'frozen native facade');
 
 requireText(gui12, "PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'frozen Native GUI IR 1.2 module');
 requireText(gui12, 'buildNativeGuiIRV12', 'frozen Native GUI IR 1.2 module');
