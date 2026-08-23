@@ -267,7 +267,7 @@ async function connectCdp(webSocketDebuggerUrl) {
   };
 }
 
-async function evaluate(cdp, expression, timeoutMs = 2000) {
+async function evaluate(cdp, expression, timeoutMs = process.platform === 'win32' ? 4000 : 2000) {
   const result = await cdp.command('Runtime.evaluate', {
     expression,
     returnByValue: true,
@@ -281,6 +281,24 @@ async function evaluate(cdp, expression, timeoutMs = 2000) {
     throw new Error(`Chrome evaluation failed: ${detail}`);
   }
   return result.result?.value;
+}
+
+async function waitForSmokeReady(cdp, timeoutMs = 9000) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError = 'no smoke state yet';
+  while (Date.now() < deadline) {
+    try {
+      const smokeState = await evaluate(cdp, 'document.documentElement?.dataset?.patchStudioSmoke ?? null', 1500);
+      if (smokeState === 'ready' || smokeState === 'failed') return smokeState;
+      lastError = `smoke=${smokeState}`;
+    } catch (error) {
+      // A single stalled Runtime.evaluate must not fail the Windows smoke;
+      // Chrome can miss one 1.5s CDP round-trip during first paint.
+      lastError = error?.message ?? String(error);
+    }
+    await delay(150);
+  }
+  throw new Error(`Studio smoke did not become ready (${lastError})`);
 }
 
 async function stopChrome(child) {
@@ -393,6 +411,9 @@ test('Studio browser startup gate probes macOS and Windows Chrome locations', ()
   assert.match(source, /stopChromeAndCleanup/);
   assert.match(source, /never fail the smoke on leftover EPERM/);
   assert.match(source, /maxRetries: 5/);
+  assert.match(source, /waitForSmokeReady/);
+  assert.match(source, /single stalled Runtime.evaluate must not fail the Windows smoke/);
+  assert.match(source, /win32' \? 4000 : 2000/);
   assert.doesNotMatch(source, /t\.after\(\(\) => fs\.rmSync\(profile/);
 });
 
@@ -451,14 +472,7 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
   t.after(() => cdp.close());
   await cdp.command('Runtime.enable');
 
-  const deadline = Date.now() + 9000;
-  let smokeState = null;
-  while (Date.now() < deadline) {
-    smokeState = await evaluate(cdp, 'document.documentElement?.dataset?.patchStudioSmoke ?? null', 1500);
-    if (smokeState === 'ready' || smokeState === 'failed') break;
-    await delay(150);
-  }
-
+  const smokeState = await waitForSmokeReady(cdp);
   assert.equal(smokeState, 'ready', `Studio did not reach the responsive Run state at ${url}. stderr:\n${stderr.text}`);
   assert.equal(await evaluate(cdp, "!!document.querySelector('#app') && !document.querySelector('#app').hidden && !!document.querySelector('#app .patch-window')"), true,
     'Run smoke probe did not render the default Patch Window app');

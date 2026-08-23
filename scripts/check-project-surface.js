@@ -122,7 +122,8 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Windows Chrome smoke isolated from the 12-minute full suite',
   'Windows Chrome profile cleanup is best-effort',
   'Window Web structural equality matches the interpreter own-field contract',
-  'Public language/docs/README name Things as prototype-free own-field records'
+  'Public language/docs/README name Things as prototype-free own-field records',
+  'Windows Chrome smoke retries a stalled first-paint Runtime.evaluate'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
