@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio help for multi-file projects, native Slider Stage 1, source-backed Designer controls, structural Properties keyboard editing, TreeView, Table, Tabs, verified native builds, recovery and diagnostics.">
+  <meta name="description" content="Patch Studio help for the Command Palette, multi-file projects, native Slider Stage 1, source-backed Designer controls, structural Properties keyboard editing, verified native builds, recovery and diagnostics.">
   <title>Help · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,10 +24,11 @@
     <div>
       <p class="page-eyebrow">Patch Studio help · 0.2 beta.35+</p>
       <h1>Build something without fighting the IDE.</h1>
-      <p>Quick help for editing, multi-file projects, Slider Stage 1, visual form design, keyboard-only structural Properties, project recovery, verified Ready builds and local downloads.</p>
+      <p>Quick help for commands, editing, multi-file projects, visual form design, keyboard-only structural Properties, project recovery, verified Ready builds and local downloads.</p>
     </div>
-    <pre class="page-code">Run   Ctrl/Cmd + Enter
-Build Ctrl/Cmd + Shift + Enter
+    <pre class="page-code">Commands Ctrl/Cmd + K
+Run      Ctrl/Cmd + Enter
+Build    Ctrl/Cmd + Shift + Enter
 
 Designer: select, drag, resize
 Ctrl/Cmd/Shift-click: add/remove selection
@@ -36,10 +37,15 @@ Shift + Arrow: move 10 px
 Alt while dragging: bypass snap
 
 Structural Properties
-Filter: narrow nodes / pages / controls
 Arrow/Home/End: select visible node or page
 Ctrl/Cmd + Arrow: reorder / tree indent
 Ctrl/Cmd + Enter: apply / rename</pre>
+  </section>
+
+  <section class="page-section">
+    <h2>Command Palette</h2>
+    <p>Press <strong>Ctrl/Cmd+K</strong> or choose <strong>Commands</strong> in Studio. Type to filter, use Arrow Up/Down to move through results, press Enter to run the selected command, and Escape to close.</p>
+    <p>The current palette can Run, Build, focus the source editor, switch to Designer/App/Output/Changes/IR, open Recovery and navigate to Documentation, Downloads or Help. These entries delegate to the existing Studio actions. Palette search and selection are transient IDE state and do not modify Patch source or application state.</p>
   </section>
 
   <section class="page-section">
@@ -139,7 +145,8 @@ when fruits changed:
   <section class="page-section">
     <h2>Troubleshooting</h2>
     <h3>The website still looks old or loads incompletely</h3>
-    <p>Patch Studio uses content-addressed web revisions and fresh-first code/runtime requests. Reload once while online, or close and reopen an installed PWA. The site build validates its complete transitive relative ES-module import graph, so a newly deployed site cannot pass CI with a missing browser compiler dependency.</p>
+    <p>Patch Studio uses content-addressed web revisions and fresh-first code/runtime requests. Service-worker registration is owned by the early bootstrap only, so later Studio modules cannot replace the active controller. A failed JavaScript, CSS or runtime request is never substituted with <code>index.html</code>; only a real document navigation may use the cached Studio shell.</p>
+    <p>Every public deployment is also opened in real Headless Chrome, runs the default Window app and must remain JavaScript-responsive through the delayed-freeze window before the deployment status becomes healthy.</p>
     <h3>A native build stops with an integrity error</h3>
     <p>Keep integrity verification enabled and reload Studio while online. If the release asset, deployed manifest and fetched runtime do not agree, Patch intentionally refuses to seal the app.</p>
     <h3>A legacy native build rejects Slider</h3>
