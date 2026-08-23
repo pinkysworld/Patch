@@ -91,7 +91,7 @@ jobs:
             set -- $pair
             dir=$1; name=$2
             test -x "$dir/$name"
-            node -e "const m=require('./$dir/$name.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.8') process.exit(1)"
+            node -e "const m=require('./$dir/$name.gtk-build.json'); if(m.electron!==false||m.shell!=='native-gtk3'||m.toolkit!=='GTK3'||m.nativeGuiIrVersion!=='1.2'||m.backendVersion!=='1.3') process.exit(1)"
           done
           ! find dist-native-gtk dist-native-menu-dialog dist-native-result-dialog -iname '*Electron*' -print -quit | grep -q .
       - name: Upload native GTK compiler evidence
