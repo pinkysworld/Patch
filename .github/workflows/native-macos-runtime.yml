@@ -38,7 +38,6 @@ on:
       - docs/NATIVE_APPS.md
       - docs/NATIVE_ACCESSIBILITY.md
       - docs/RESULT_DIALOGS.md
-      - docs/ROADMAP.md
   push:
     branches: [main]
     paths:
@@ -76,7 +75,6 @@ on:
       - docs/NATIVE_APPS.md
       - docs/NATIVE_ACCESSIBILITY.md
       - docs/RESULT_DIALOGS.md
-      - docs/ROADMAP.md
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
