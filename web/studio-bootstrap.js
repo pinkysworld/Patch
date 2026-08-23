@@ -124,18 +124,29 @@
     if (!enabled) return;
 
     document.documentElement.dataset.patchStudioSmoke = 'pending';
-    window.setTimeout(() => {
+    const smokeDeadline = Date.now() + 7000;
+
+    const probeReadyStudio = () => {
       const run = document.querySelector('#run');
       const app = document.querySelector('#app');
-      if (!run || !app) {
+      if (run && app) {
+        run.click();
+        const renderedWindow = app.querySelector('.patch-window');
+        if (!app.hidden && renderedWindow) {
+          document.documentElement.dataset.patchStudioSmoke = 'ready';
+          return;
+        }
+      }
+
+      if (Date.now() >= smokeDeadline) {
         document.documentElement.dataset.patchStudioSmoke = 'failed';
         return;
       }
-      run.click();
-      window.setTimeout(() => {
-        const renderedWindow = app.querySelector('.patch-window');
-        document.documentElement.dataset.patchStudioSmoke = !app.hidden && renderedWindow ? 'ready' : 'failed';
-      }, 100);
-    }, 1000);
+      window.setTimeout(probeReadyStudio, 200);
+    };
+
+    // Production module loading can legitimately take longer than local CI. Probe
+    // the real Run behavior instead of assuming its listener exists after 1 second.
+    window.setTimeout(probeReadyStudio, 250);
   }
 })();
