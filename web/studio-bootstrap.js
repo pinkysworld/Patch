@@ -57,7 +57,7 @@
   const refresh = async () => {
     try {
       const registration = siteRevision
-        ? await navigator.serviceWorker.register(canonicalWorkerUrl, { updateViaCache: 'none', scope: './' })
+        ? await navigator.serviceWorker.register(`./sw.js?v=${encodeURIComponent(siteRevision)}`, { updateViaCache: 'none', scope: './' })
         : await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
       await registration.update();
     } catch {
