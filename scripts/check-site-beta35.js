@@ -66,7 +66,7 @@ const sealedV13 = read('_site/src/sealed-native-gui-v13.js');
 requireAll('current sealed payload v13 Slider contract', sealedV13, ['PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION','sealNativeGuiRuntimeV13']);
 
 const language = read('_site/language.html');
-requireAll('beta.35 Language page', language, ['data-patch-version="0.2.0-beta.35"','Slider Stage 1 uses transient numbers','slider 0..100 as volume step 5','ListBox selection follows the state type','create list fruits','Native GUI IR 1.3','runtime v1.4']);
+requireAll('beta.35 Language page', language, ['data-patch-version="0.2.0-beta.35"','Slider Stage 1 uses transient numbers','slider 0..100 as volume step 5','ListBox selection follows the state type','create list fruits','Native GUI IR 1.3','runtime v1.4','Things are own-field records','fail closed on Things']);
 
 const docs = read('_site/docs.html');
 requireAll('beta.35 Documentation page', docs, ['docs/SLIDER_STAGE1.md','Slider Stage 1','Native GUI IR 1.3 / payload v13 / runtime v1.4']);

@@ -148,6 +148,8 @@ Beta.32 is not a complete compiler/runtime simulation proof or full compiler ver
 
 Direct Wasm supports the conservative numeric Console subset including acyclic recipes. It imports Patch's small host ABI and is not yet a standalone WASI command. Portable C99 is tested on Linux, macOS and FreeBSD 15.1.
 
+Things (`CREATE_THING`), text/boolean/list state and GUI execution are outside that numeric subset and fail closed rather than silently falling back to the interpreter. They remain outside the beta.32 Lean runtime-correspondence claim. Runtime Thing storage in the interpreter and Window Web path is prototype-free.
+
 Window preflight supports button `clicked` and input `changed`; input edits remain transient until Patch source performs semantic `change`.
 
 ## Quality gates

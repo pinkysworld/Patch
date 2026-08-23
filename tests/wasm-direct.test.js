@@ -193,4 +193,10 @@ test('direct Wasm rejects non-numeric language constructs instead of silently fa
     () => compileToDirectWasm(textSource, { kind: 'console' }),
     err => err instanceof DirectWasmUnsupportedError && /create text/.test(err.message)
   );
+
+  const thingSource = `create thing player:\n  score = 1\nshow player.score`;
+  assert.throws(
+    () => compileToDirectWasm(thingSource, { kind: 'console' }),
+    err => err instanceof DirectWasmUnsupportedError && /things are outside the direct numeric Wasm subset/.test(err.message)
+  );
 });

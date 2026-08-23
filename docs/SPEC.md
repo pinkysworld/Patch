@@ -49,7 +49,7 @@ Expressions support:
 - Boolean `and`, `or`, `not`;
 - parentheses.
 
-Patch value equality is structural. Lists compare by length and element order. Things compare by their own field names and values, independent of object insertion order. `NaN` compares equal to `NaN` for Patch structural equality, and inherited JavaScript properties never participate in a Patch path lookup.
+Patch value equality is structural. Lists compare by length and element order. Things compare by their own field names and values, independent of object insertion order. `NaN` compares equal to `NaN` for Patch structural equality, and inherited JavaScript properties never participate in a Patch path lookup. JSON serialization is not the equality oracle: `NaN` is not equal to `null`.
 
 ## Semantic changes
 
@@ -389,7 +389,7 @@ The repository currently contains these assurance layers:
 
 This is deliberately **not** an end-to-end verified compiler/runtime theorem.
 
-Trusted or proof-free boundaries still include general parser/extractor correctness outside the independently checked subsets, JavaScript lowering/backend correctness, runtime capture, independent-validator implementation correctness, and the executing Wasm engine. GUI execution is outside the beta.32 Lean runtime-correspondence claim.
+Trusted or proof-free boundaries still include general parser/extractor correctness outside the independently checked subsets, JavaScript lowering/backend correctness, runtime capture, independent-validator implementation correctness, and the executing Wasm engine. GUI execution is outside the beta.32 Lean runtime-correspondence claim. Thing records, lists and non-numeric Console state are likewise outside that Lean claim; direct Wasm and portable C99 fail closed on them.
 
 Unsupported constructs are reported as unsupported rather than silently called verified.
 

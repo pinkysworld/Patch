@@ -53,4 +53,10 @@ test('C99 backend conservatively rejects constructs outside direct numeric subse
 show greeting
 `;
   assert.throws(() => compileToC99(source, { kind: 'console' }), /direct numeric Wasm subset|only numeric create/i);
+
+  const thingSource = `create thing player:
+  score = 1
+show player.score
+`;
+  assert.throws(() => compileToC99(thingSource, { kind: 'console' }), /things are outside the direct numeric Wasm subset/);
 });

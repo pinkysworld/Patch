@@ -66,3 +66,16 @@ test('SEMANTICS documents prototype-free Things and structural own-field equalit
     assert.ok(semantics.includes(field), `SEMANTICS must name blocked Thing field ${field}`);
   }
 });
+
+test('public language surface and compiler docs keep Things outside the beta.32 Wasm subset', () => {
+  const language = fs.readFileSync('web/language.html', 'utf8');
+  const compilerDocs = fs.readFileSync('docs/COMPILER.md', 'utf8');
+  const wasmDirect = fs.readFileSync('src/wasm-direct.js', 'utf8');
+  assert.match(language, /Things are own-field records/);
+  assert.match(language, /fail closed on Things/);
+  assert.match(spec, /JSON serialization is not the equality oracle/);
+  assert.match(spec, /direct Wasm and portable C99 fail closed/);
+  assert.match(compilerDocs, /Things \(`CREATE_THING`\)/);
+  assert.match(wasmDirect, /case 'CREATE_THING'/);
+  assert.match(wasmDirect, /things are outside the direct numeric Wasm subset/);
+});

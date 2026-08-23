@@ -43,6 +43,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] Windows Chrome smoke isolated from the 12-minute full suite; DevTools waits abort and a hung browser tree is killed
 - [x] Windows Chrome profile cleanup is best-effort after the browser tree is killed so leftover user-data-dir file locks cannot fail the smoke
 - [x] Window Web structural equality matches the interpreter own-field contract; event-local values reuse the prototype-preserving clone
+- [x] Public language/docs/README name Things as prototype-free own-field records; direct Wasm/C99 fail closed and stay outside beta.32
 
 ### Next repository-controlled backlog
 
