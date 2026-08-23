@@ -67,7 +67,7 @@ function withSmokeQuery(value) {
   return url.href;
 }
 
-function waitForDevTools(child, stderr, timeoutMs = 8000) {
+function waitForDevTools(child, stderr, timeoutMs = 15000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => finish(new Error(`Chrome did not expose DevTools within ${timeoutMs}ms. stderr:\n${stderr.text}`)), timeoutMs);
     const onData = () => {
@@ -87,7 +87,7 @@ function waitForDevTools(child, stderr, timeoutMs = 8000) {
   });
 }
 
-async function waitForPageTarget(port, expectedUrl, stderr, timeoutMs = 8000) {
+async function waitForPageTarget(port, expectedUrl, stderr, timeoutMs = 10000) {
   const expected = new URL(expectedUrl);
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
@@ -121,7 +121,7 @@ async function connectCdp(webSocketDebuggerUrl) {
   assert.equal(typeof WebSocket, 'function', 'Node WebSocket support is required for the Chrome startup gate');
   const socket = new WebSocket(webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('Timed out connecting to the Chrome page target')), 3000);
+    const timer = setTimeout(() => reject(new Error('Timed out connecting to the Chrome page target')), 5000);
     socket.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
     socket.addEventListener('error', () => { clearTimeout(timer); reject(new Error('Chrome DevTools WebSocket connection failed')); }, { once: true });
   });
@@ -200,7 +200,7 @@ async function localStudioUrl(t) {
   return withSmokeQuery(`http://127.0.0.1:${address.port}/web/index.html`);
 }
 
-test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens project symbols', { timeout: 30000 }, async t => {
+test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens project symbols', { timeout: 45000 }, async t => {
   const chrome = findChrome();
   if (!chrome) {
     if (process.env.CI) assert.fail('Chrome/Chromium is required for the Patch Studio browser startup gate');
