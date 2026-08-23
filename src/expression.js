@@ -27,7 +27,7 @@ export function lookupPath(env, path) {
   else if (env.state && env.state.has(root)) value = env.state.get(root);
   else throw new ExpressionError(`I cannot find '${root}'. Create it first.`);
   for (const part of parts.slice(1)) {
-    if (value === null || typeof value !== 'object' || !(part in value)) throw new ExpressionError(`I cannot find '${parts.join('.')}'.`);
+    if (value === null || typeof value !== 'object' || !Object.prototype.hasOwnProperty.call(value, part)) throw new ExpressionError(`I cannot find '${parts.join('.')}'.`);
     value = value[part];
   }
   return value;
@@ -62,4 +62,22 @@ export function evaluateLoose(source, env) {
   try { return evaluateExpression(s, env); }
   catch(err){ if(err instanceof ExpressionError && /^[A-Za-z_][A-Za-z0-9_-]*$/.test(s)) return s; throw err; }
 }
-export function deepEqual(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+
+export function deepEqual(a, b) {
+  if (a === b) return true;
+  if (typeof a === 'number' && typeof b === 'number' && Number.isNaN(a) && Number.isNaN(b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let index = 0; index < a.length; index += 1) if (!deepEqual(a[index], b[index])) return false;
+    return true;
+  }
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const aKeys = Object.keys(a).sort();
+  const bKeys = Object.keys(b).sort();
+  if (aKeys.length !== bKeys.length) return false;
+  for (let index = 0; index < aKeys.length; index += 1) {
+    const key = aKeys[index];
+    if (key !== bKeys[index] || !Object.prototype.hasOwnProperty.call(b, key) || !deepEqual(a[key], b[key])) return false;
+  }
+  return true;
+}
