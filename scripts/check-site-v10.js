@@ -23,8 +23,8 @@ for (const rel of [
   '_site/designer-alignment-guides.js', '_site/designer-multiselect.js',
   '_site/designer-layout-policy.js', '_site/designer-responsive-layout.js',
   '_site/designer-multiselect.css', '_site/designer-responsive-layout.css',
-  '_site/src/native-gui-ir-v08.js', '_site/src/native-gui-ir-v12.js',
-  '_site/src/native-gui-ir-v13.js', '_site/src/native-current-contract.js', '_site/src/native-frozen-contract.js', '_site/src/sealed-native-gui-v13.js'
+  '_site/src/native-gui-ir-v12.js',
+  '_site/src/native-gui-ir-v13.js', '_site/src/native-current-contract.js', '_site/src/native-frozen-contract.js', '_site/src/native-gui-frozen-lower.js', '_site/src/sealed-native-gui-v13.js'
 ]) requireFile(rel);
 
 const index = read('_site/index.html');
@@ -68,19 +68,18 @@ for (const [label, text] of [['Downloads', downloads], ['Language', language], [
 const sw = read('_site/sw.js');
 requireAll('Patch Studio service worker', sw, [
   "'./downloads.html'", "'./table-stage1.js'", "'./designer-multiselect.js'",
-  "'./designer-responsive-layout.js'", "'./src/native-gui-ir-v08.js'",
-  "'./src/native-gui-ir-v12.js'", "'./src/native-gui-ir-v13.js'", "'./src/native-current-contract.js'", "'./src/native-frozen-contract.js'",
+  "'./designer-responsive-layout.js'", "'./src/native-gui-ir-v12.js'",
+  "'./src/native-gui-ir-v13.js'", "'./src/native-current-contract.js'", "'./src/native-frozen-contract.js'",
   "'./src/sealed-native-gui-v13.js'"
 ]);
 
-const nativeGuiV08 = read('_site/src/native-gui-ir-v08.js');
-requireAll('Native GUI IR 0.8 browser module', nativeGuiV08, [
-  "PATCH_NATIVE_GUI_IR_V08_VERSION = '0.8'", "type: 'table'", "event.valueType = 'text-list'"
-]);
-
 const nativeGuiV12 = read('_site/src/native-gui-ir-v12.js');
-requireAll('Frozen Native GUI IR 1.2 compatibility module', nativeGuiV12, [
+requireAll('Frozen Native GUI IR 1.2 browser module', nativeGuiV12, [
   "PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'buildNativeGuiIRV12'
+]);
+const frozenLower = read('_site/src/native-gui-frozen-lower.js');
+requireAll('Frozen lowering snapshot preserves Table', frozenLower, [
+  "type: 'table'", "event.valueType = 'text-list'"
 ]);
 
 const current = read('_site/src/native-current-contract.js');

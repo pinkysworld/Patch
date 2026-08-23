@@ -6,11 +6,8 @@ import { compile } from './compiler.js';
 import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
-import { buildNativeGuiIRV11 } from './native-gui-ir-v11.js';
 import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
 import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
-import { sealNativeGuiRuntime } from './sealed-native-gui.js';
-import { sealNativeGuiRuntimeV11 } from './sealed-native-gui-v11.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -55,23 +52,17 @@ export function createOfflineLinkPlan(source, options = {}) {
     allowTables: true,
     allowLists: true,
     allowListControls: true,
-    allowMenuDecorations: guiPayloadVersion >= 11,
-    allowTree: guiPayloadVersion >= 12,
+    allowMenuDecorations: true,
+    allowTree: true,
     allowSlider: guiPayloadVersion >= 13
   });
   const nativeGui = guiPayloadVersion >= 13
     ? buildCurrentNativeGuiIR(compiled)
-    : guiPayloadVersion >= 12
-      ? buildFrozenNativeGuiIR(compiled)
-      : buildNativeGuiIRV11(compiled);
+    : buildFrozenNativeGuiIR(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
-  const sealed = guiPayloadVersion === 10
-    ? sealNativeGuiRuntime(runtime, nativeGui, { platform, version: 10 })
-    : guiPayloadVersion === 11
-      ? sealNativeGuiRuntimeV11(runtime, nativeGui, { platform })
-      : guiPayloadVersion === 12
-        ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
-        : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
+  const sealed = guiPayloadVersion === 12
+    ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
+    : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
   return binaryPlan({ platform, kind, name, sealed });
 }
 
@@ -188,8 +179,8 @@ function requiredRuntime(value, label) {
 
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
-  if (version === 10 || version === 11 || version === 12 || version === 13) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v10, v11, v12 or v13, not '${value}'.`);
+  if (version === 12 || version === 13) return version;
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v13, not '${value}'.`);
 }
 
 function normalizePlatform(value) {

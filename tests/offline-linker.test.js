@@ -6,7 +6,6 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createOfflineLinkPlan, materializeOfflineLinkPlan } from '../src/offline-linker.js';
 import { decodeSealedConsolePayload } from '../src/prebuilt-native.js';
-import { decodeNativeGuiPayloadV11 } from '../src/sealed-native-gui-v11.js';
 import { decodeNativeGuiPayloadV12, inspectNativeGuiTreesV12 } from '../src/sealed-native-gui-v12.js';
 import { decodeNativeGuiPayloadV13, inspectNativeGuiSlidersV13 } from '../src/sealed-native-gui-v13.js';
 
@@ -181,7 +180,7 @@ test('offline Window linker supports native Slider numeric events in payload v13
   }
 });
 
-test('offline linker keeps explicit payload v12 and v11 compatibility fail-closed for newer controls', () => {
+test('offline linker keeps explicit payload v12 compatibility and fails closed for retired v11', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 0, 0]);
   const v12 = createOfflineLinkPlan(treeWindowSource, {
     platform: 'windows', name: 'LegacyTree12', guiRuntime: runtime, guiPayloadVersion: 12
@@ -192,14 +191,12 @@ test('offline linker keeps explicit payload v12 and v11 compatibility fail-close
     platform: 'windows', name: 'LegacySlider12', guiRuntime: runtime, guiPayloadVersion: 12
   }), /Slider.*not enabled.*Window target/i);
 
-  const v11 = createOfflineLinkPlan(listWindowSource, {
+  assert.throws(() => createOfflineLinkPlan(listWindowSource, {
     platform: 'windows', name: 'LegacyList', guiRuntime: runtime, guiPayloadVersion: 11
-  });
-  assert.equal(footerVersion(v11.files[0].bytes), 11);
-  assert.ok(decodeNativeGuiPayloadV11(v11.files[0].bytes).length > 0);
+  }), /payload v12 or v13/i);
   assert.throws(() => createOfflineLinkPlan(treeWindowSource, {
     platform: 'windows', name: 'LegacyTree', guiRuntime: runtime, guiPayloadVersion: 11
-  }), /TreeView.*not enabled.*Window target/i);
+  }), /payload v12 or v13/i);
 });
 
 test('macOS Console linking can fall back to a portable embedded-Node app when SEA is unavailable', () => {

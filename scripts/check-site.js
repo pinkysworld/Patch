@@ -29,9 +29,9 @@ const requiredFiles = [
   '_site/designer-structural-keyboard.js','_site/designer-inspector.css',
   '_site/src/compiler.js','_site/src/call-site-validation.js','_site/src/independent-range-expression.js','_site/src/independent-guard-expression.js',
   '_site/src/studio-project.js','_site/src/window-build.js','_site/src/window-events.js',
-  '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js','_site/src/native-gui-frozen-lower.js','_site/src/native-gui-frozen-seal.js',
+  '_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js','_site/src/native-gui-frozen-lower.js','_site/src/native-gui-frozen-seal.js',
   '_site/src/native-tree-backend-adapter.js','_site/src/native-slider-backend-adapter.js',
-  '_site/src/sealed-native-gui-v11.js','_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-package.js'
+  '_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-package.js'
 ];
 for (const rel of requiredFiles) requireFile(rel);
 

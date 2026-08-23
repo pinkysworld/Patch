@@ -20,9 +20,12 @@ test('current product consumers use the stable native contract facade', () => {
   assert.doesNotMatch(plan, /from ['"]\.\/native-gui-ir-v12\.js['"]/);
   assert.doesNotMatch(offline, /from ['"]\.\/native-gui-ir-v12\.js['"]/);
   assert.doesNotMatch(offline, /from ['"]\.\/sealed-native-gui-v12\.js['"]/);
+  for (const source of [studio, offline, plan]) {
+    assert.doesNotMatch(source, /native-gui-ir-v1[01]\.js|native-gui-ir-v0[89]\.js|from ['"](?:\.\.\/)?(?:src\/)?native-gui-ir\.js['"]|sealed-native-gui-v11\.js/);
+  }
 });
 
-test('browser packaging contains the stable facade while versioned compatibility modules remain available', () => {
+test('browser packaging ships current and frozen contracts without retired v07–v11 copies', () => {
   const buildSite = read('scripts/build-site.js');
   const sw = read('web/sw.js');
   assert.match(buildSite, /native-current-contract\.js/);
@@ -32,7 +35,11 @@ test('browser packaging contains the stable facade while versioned compatibility
   assert.match(sw, /native-current-contract\.js/);
   assert.match(sw, /native-frozen-contract\.js/);
   assert.match(sw, /native-gui-frozen-lower\.js/);
-  for (const version of ['v08','v09','v10','v11','v12','v13']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
+  for (const version of ['v12','v13']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
+  for (const retired of ['native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','sealed-native-gui.js','sealed-native-gui-v11.js']) {
+    assert.equal(buildSite.includes(`'${retired}'`), false, `site builder still copies ${retired}`);
+    assert.equal(sw.includes(`../src/${retired}`), false, `service worker still caches ${retired}`);
+  }
 });
 
 test('native compatibility documentation makes current versus frozen ownership explicit', () => {

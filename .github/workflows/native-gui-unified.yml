@@ -159,8 +159,8 @@ jobs:
             const meta = JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
             if (meta.shell !== expected) throw new Error(`Expected ${expected}, got ${meta.shell}`);
             if (meta.electron !== false) throw new Error('Unified native build must record electron=false.');
-            if (meta.nativeGuiIrVersion !== '0.7') throw new Error(`Expected Native GUI IR 0.7, got ${meta.nativeGuiIrVersion}`);
-            if (meta.backendVersion !== '0.8') throw new Error(`Expected backend 0.8, got ${meta.backendVersion}`);
+            if (meta.nativeGuiIrVersion !== '1.2') throw new Error(`Expected Native GUI IR 1.2, got ${meta.nativeGuiIrVersion}`);
+            if (meta.backendVersion !== '1.3') throw new Error(`Expected backend 1.3, got ${meta.backendVersion}`);
           }
-          console.log(`Unified host selected ${expected} backend 0.8 for Forms, ComboBox, ListBox, Tabs, Radio, Menu/Dialog and Result Dialogs`);
+          console.log(`Unified host selected ${expected} frozen Native GUI IR 1.2 / backend 1.3 for Forms, ComboBox, ListBox, Tabs, Radio, Menu/Dialog and Result Dialogs`);
           NODE

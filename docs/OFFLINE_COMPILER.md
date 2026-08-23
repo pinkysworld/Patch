@@ -123,7 +123,7 @@ Versioned runtime formats are not redefined after publication:
 - payload **v8** / runtime **v0.9** is the frozen responsive Native GUI IR 0.7 line;
 - payload **v7** / runtime **v0.8** is the older accessibility/result-dialog compatibility line.
 
-The current compiler defaults to Native GUI IR 1.3 / payload v13 / runtime v1.4. `src/offline-linker.js` retains explicit compatibility behavior and fails closed if a requested capability is newer than the selected contract.
+The current compiler defaults to Native GUI IR 1.3 / payload v13 / runtime v1.4. `patch link --gui-payload-version` accepts **12** (frozen TreeView) or **13** (current Slider). Older payload versions fail closed rather than silently degrading semantics.
 
 ## FreeBSD
 

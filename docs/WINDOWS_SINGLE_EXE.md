@@ -11,9 +11,9 @@ A Patch Window program is built entirely from the public Studio as:
 ```text
 .patch source
   -> Patch compiler in the browser
-  -> Native GUI IR 0.8
-  -> sealed GUI payload v9
-  -> precompiled native Win32 runtime v1.0
+  -> Native GUI IR 1.3
+  -> sealed GUI payload v13
+  -> precompiled native Win32 runtime v1.4
   -> AppName.exe
 ```
 
@@ -23,7 +23,7 @@ The finished application:
 
 - is one Windows PE `.exe`;
 - uses native Win32 windows and controls;
-- supports the documented Native GUI IR 0.8 surface, including report-mode `WC_LISTVIEWW` Table/Grid;
+- supports the documented Native GUI IR 1.3 surface, including Table/Grid, list-backed ListBox, Menu, TreeView and Slider (`TRACKBAR`);
 - preserves source-backed Anchor/Dock behavior through native `WM_SIZE` handling;
 - contains no `patch-app.json`;
 - contains no Electron, Chromium or Node.js GUI runtime;
@@ -32,7 +32,7 @@ The finished application:
 
 This no-token path is **not per-project AOT machine-code generation**. The Win32 runtime machine code is precompiled, while the project-specific Patch Forms/state/event program is embedded as checked Native GUI IR and executed by that native runtime. The distinction is explicit in Studio.
 
-The sealed executable uses the `PCHGUI01` envelope. Current Ready Window output is payload **v9** consumed by runtime **v1.0**. The footer carries the payload version, length and CRC32. The runtime fails closed on malformed or unsupported input. Payload v9 extends the older v8 responsive contract with explicit Table columns, rows and transient `text-list` event typing; payload v8/runtime v0.9 remains a compatibility line rather than being redefined.
+The sealed executable uses the `PCHGUI01` envelope. Current Ready Window output is payload **v13** consumed by runtime **v1.4**. Product JavaScript imports that line through `src/native-current-contract.js`. The footer carries the payload version, length and CRC32. The runtime fails closed on malformed or unsupported input. Payload v13 preserves the earlier Table/list/Menu/TreeView contract and adds Slider; payload v12/runtime v1.3 remains the frozen TreeView line rather than being redefined.
 
 ## Table / Grid
 
@@ -48,9 +48,9 @@ when people changed:
   show value
 ```
 
-Runtime v1.0 reconstructs this as a real report-mode `WC_LISTVIEWW`. `changed` exposes the selected row as a transient list of display strings. Selection alone does not persist Patch state or create Change History.
+Runtime v1.4 reconstructs this as a real report-mode `WC_LISTVIEWW`. `changed` exposes the selected row as a transient list of display strings. Selection alone does not persist Patch state or create Change History.
 
-The dedicated sealed-runtime CI compiles the v1.0 runtime, seals this Table example as payload v9, executes the resulting `.exe` with `--patch-smoke`, validates columns/rows/accessibility/responsive behavior and triggers a real native selection notification. The same workflow separately proves the ordinary offline `patch link` path.
+The current sealed-runtime CI compiles the v1.4 runtime, seals Window examples as payload v13, executes the resulting `.exe` with `--patch-smoke`, and publishes `native-win32-runtime-v1.4`. Table originated as payload v9 / runtime v1.0; that line remains historical evidence rather than the Ready path.
 
 ## Native AOT EXE
 
@@ -59,8 +59,8 @@ Patch also retains direct project-specific code generation:
 ```text
 .patch source
   -> Patch compiler
-  -> Native GUI IR 0.7 / 0.8
-  -> Win32 backend 0.8 / Table backend 0.9
+  -> Native GUI IR 1.2 / 1.3
+  -> Win32 backend 1.3 / Slider backend 1.4
   -> generated Win32 C++
   -> MSVC /O2 /MT /SUBSYSTEM:WINDOWS
   -> AppName.exe
@@ -74,7 +74,7 @@ The optional GitHub Actions AOT route requires a user-supplied Actions-capable G
 
 For **Windows + Window / GUI**, the build-mode selector exposes:
 
-- **Native single EXE (no token, recommended)**: browser compilation to Native GUI IR 0.8 plus payload-v9 sealing into Win32 runtime v1.0; downloads `AppName.exe` directly.
+- **Native single EXE (no token, recommended)**: browser compilation to Native GUI IR 1.3 plus payload-v13 sealing into Win32 runtime v1.4; downloads `AppName.exe` directly.
 - **Native AOT EXE (GitHub Actions)**: project-specific Win32 C++/MSVC generation; the artifact ZIP contains the generated `.exe` and requires an Actions token.
 - **Compatibility package (Electron, no token)**: explicit older compiled-Window compatibility path and not a native single-EXE claim.
 - **Local compatibility kit (advanced)**: older local desktop packager. Direct native local compilation uses `patch-app`; ordinary local sealed linking is also available through the downloadable offline compiler's `patch link` command.
@@ -83,12 +83,12 @@ When the Studio profile changes to Windows + Window / GUI, **Native single EXE (
 
 ## Native runtime publication
 
-`.github/workflows/native-sealed-table-runtime.yml` builds `native-runtime/win32-sealed-gui-v10.cpp` with MSVC in Unicode mode, seals `examples/table-native-v09.patch` as payload v9 and executes the resulting application with `--patch-smoke`.
+`.github/workflows/native-sealed-slider-runtime-v14.yml` builds `native-runtime/win32-sealed-gui-v14.cpp` with MSVC in Unicode mode, seals the current Slider example as payload v13 and executes the resulting application with `--patch-smoke`.
 
-Only after the Windows, macOS and Linux runtime-v1.0 jobs succeed does the `main` publication job publish the Win32 runtime under release tag:
+Only after the Windows, macOS and Linux runtime-v1.4 jobs succeed does the `main` publication job publish the Win32 runtime under release tag:
 
 ```text
-native-win32-runtime-v1.0
+native-win32-runtime-v1.4
 ```
 
 with asset:
@@ -97,19 +97,19 @@ with asset:
 patch-windows-native-gui-runtime.exe
 ```
 
-The Pages deployment waits for all three v1.0 platform releases before replacing the deployed Studio runtime set. This prevents a new browser compiler from being paired with an older payload-v8 template during release ordering.
+The Pages deployment waits for the current v1.4 platform releases before replacing the deployed Studio runtime set. This prevents a new browser compiler from being paired with an older payload template during release ordering.
 
 The runtime asset itself is not a project until Studio or `patch link` seals a project-specific payload into it.
 
 ## Offline compiler
 
-The Windows offline compiler builds/embeds the same Win32 runtime v1.0 contract. Its CI links the Table example through the ordinary CLI:
+The Windows offline compiler builds/embeds the same Win32 runtime v1.4 contract. Its CI links the Table example through the ordinary CLI:
 
 ```text
 patch link examples/table-native-v09.patch --name OfflineTable --out OfflineTable
 ```
 
-and executes `OfflineTable.exe --patch-smoke`, verifying that the produced application contains payload v9 and the native Table contract works without Studio, GitHub or a local C++ toolchain after the compiler has been downloaded.
+and executes `OfflineTable.exe --patch-smoke`, verifying that the produced application contains payload v13 and the native Table contract works without Studio, GitHub or a local C++ toolchain after the compiler has been downloaded.
 
 ## Compatibility lines
 

@@ -2,25 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
-import { buildNativeGuiIR } from '../src/native-gui-ir.js';
-import { PATCH_SEALED_NATIVE_GUI_VERSION, decodeNativeGuiPayload } from '../src/sealed-native-gui.js';
+import { buildCurrentNativeGuiIR, PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, decodeCurrentNativeGuiPayload } from '../src/native-current-contract.js';
 import { buildMacosNativeGuiPackage } from '../src/sealed-native-package.js';
 
 const source = fs.readFileSync('examples/forms-navigation.patch', 'utf8');
-const gui = buildNativeGuiIR(compile(source, { name: 'MacNativeTest', kind: 'window', entry: 'forms-navigation.patch' }));
+const gui = buildCurrentNativeGuiIR(compile(source, { name: 'MacNativeTest', kind: 'window', entry: 'forms-navigation.patch' }));
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 
-test('browser package seals Native GUI IR v0.7 payload v8 into a minimal macOS app bundle ZIP', () => {
-  assert.equal(gui.version, '0.7');
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+test('browser package seals current Native GUI IR 1.3 payload v13 into a minimal macOS app bundle ZIP', () => {
+  assert.equal(gui.version, '1.3');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 13);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 10, 20, 30, 40]);
-  const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App' });
+  const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App', payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION });
   assert.equal(ready.filename, 'My_Mac_App-macos-window.zip');
   assert.equal(ready.bundle, 'My_Mac_App.app');
   assert.equal(ready.executable, 'My_Mac_App.app/Contents/MacOS/My_Mac_App');
   assert.deepEqual(ready.sealedBytes.subarray(0, fakeMachO.length), fakeMachO);
-  assert.ok(decodeNativeGuiPayload(ready.sealedBytes).length > 64);
+  assert.ok(decodeCurrentNativeGuiPayload(ready.sealedBytes).length > 64);
   const zipText = new TextDecoder().decode(ready.bytes);
   assert.match(zipText, /My_Mac_App\.app\/Contents\/MacOS\/My_Mac_App/);
   assert.match(zipText, /CFBundleExecutable/);

@@ -2,24 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
-import { buildNativeGuiIR } from '../src/native-gui-ir.js';
-import { PATCH_SEALED_NATIVE_GUI_VERSION, decodeNativeGuiPayload } from '../src/sealed-native-gui.js';
+import { buildCurrentNativeGuiIR, PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, decodeCurrentNativeGuiPayload } from '../src/native-current-contract.js';
 import { buildLinuxNativeGuiPackage } from '../src/sealed-native-package.js';
 
 const source = fs.readFileSync('examples/forms-navigation.patch', 'utf8');
-const gui = buildNativeGuiIR(compile(source, { name: 'LinuxNativeTest', kind: 'window', entry: 'forms-navigation.patch' }));
+const gui = buildCurrentNativeGuiIR(compile(source, { name: 'LinuxNativeTest', kind: 'window', entry: 'forms-navigation.patch' }));
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 
-test('browser package seals Native GUI IR v0.7 payload v8 into one Linux ELF executable', () => {
-  assert.equal(gui.version, '0.7');
-  assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
+test('browser package seals current Native GUI IR 1.3 payload v13 into one Linux ELF executable', () => {
+  assert.equal(gui.version, '1.3');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 13);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 10, 20, 30, 40]);
-  const ready = buildLinuxNativeGuiPackage(fakeElf, gui, { name: 'My Linux App' });
+  const ready = buildLinuxNativeGuiPackage(fakeElf, gui, { name: 'My Linux App', payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION });
   assert.equal(ready.filename, 'My_Linux_App-linux-window.zip');
   assert.equal(ready.executable, 'My_Linux_App');
   assert.deepEqual(ready.sealedBytes.subarray(0, fakeElf.length), fakeElf);
-  assert.ok(decodeNativeGuiPayload(ready.sealedBytes).length > 64);
+  assert.ok(decodeCurrentNativeGuiPayload(ready.sealedBytes).length > 64);
   const centralOffset = findSignature(ready.bytes, [0x50, 0x4b, 0x01, 0x02]);
   assert.ok(centralOffset > 0);
   const central = new DataView(ready.bytes.buffer, ready.bytes.byteOffset + centralOffset, 46);

@@ -88,9 +88,8 @@ test('Pages and offline compiler use current runtime v1.4 while frozen responsiv
   for (const tag of ['native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
   }
-  assert.match(pages, /Patch Native Sealed Table Runtime/);
-  assert.match(pages, /Patch Native Sealed List Runtime/);
-  assert.match(pages, /Patch Native Sealed Menu Runtime/);
+  assert.doesNotMatch(pages, /Patch Native Sealed Table Runtime/);
+  assert.doesNotMatch(pages, /Patch Native Sealed List Runtime/);
   assert.match(pages, /Patch Native Sealed Menu Runtime v1\.2 Release/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);

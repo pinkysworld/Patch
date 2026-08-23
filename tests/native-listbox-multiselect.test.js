@@ -28,17 +28,19 @@ test('Native GUI IR 1.1 preserves persistent list state and multi-select ListBox
   });
 });
 
-test('text-backed ListBox remains single-select and does not force the list tier', () => {
+test('text-backed ListBox remains single-select and does not require Slider', () => {
   const scalar = fs.readFileSync('examples/listbox-window.patch', 'utf8');
   const compiled = compile(scalar, { name: 'ScalarList', kind: 'window' });
   const plan = buildNativeGuiPlan(compiled);
-  assert.notEqual(plan.tier, 'list-v12');
+  assert.equal(plan.tier, 'tree-v13');
+  assert.equal(plan.gui.version, '1.2');
+  assert.equal(plan.features.slider, false);
 });
 
-test('Native GUI build plan chooses IR 1.1 / backend 1.2 automatically for list state', () => {
+test('Native GUI build plan uses the frozen TreeView contract for list state', () => {
   const plan = buildNativeGuiPlan(compile(source, { name: 'NativeMulti', kind: 'window' }));
-  assert.equal(plan.tier, 'list-v12');
-  assert.equal(plan.gui.version, '1.1');
+  assert.equal(plan.tier, 'tree-v13');
+  assert.equal(plan.gui.version, '1.2');
   assert.equal(plan.features.listState, true);
   assert.equal(plan.features.listBackedListBox, true);
 });

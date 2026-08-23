@@ -43,11 +43,6 @@ on:
       - src/designer.js
       - src/form-layout.js
       - src/window-compiled.js
-      - src/native-gui-ir.js
-      - src/native-gui-ir-v08.js
-      - src/native-gui-ir-v09.js
-      - src/native-gui-ir-v10.js
-      - src/native-gui-ir-v11.js
       - src/native-gui-ir-v12.js
       - src/native-gui-ir-v13.js
       - src/native-current-contract.js
@@ -56,8 +51,6 @@ on:
       - src/native-gui-frozen-seal.js
       - src/native-tree-backend-adapter.js
       - src/native-slider-backend-adapter.js
-      - src/sealed-native-gui.js
-      - src/sealed-native-gui-v11.js
       - src/sealed-native-gui-v12.js
       - src/sealed-native-gui-v13.js
       - src/sealed-native-package.js
@@ -75,15 +68,12 @@ on:
       - .github/workflows/native-linux-runtime.yml
       - .github/workflows/native-macos-runtime.yml
       - .github/workflows/native-responsive-runtime.yml
-      - .github/workflows/native-sealed-table-runtime.yml
-      - .github/workflows/native-sealed-list-runtime.yml
-      - .github/workflows/native-sealed-menu-runtime.yml
       - .github/workflows/native-sealed-menu-release-v12.yml
       - .github/workflows/native-sealed-tree-runtime-v13.yml
       - .github/workflows/native-sealed-slider-runtime-v14.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Table Runtime, Patch Native Sealed List Runtime, Patch Native Sealed Menu Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4]
+    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4]
     types: [completed]
 
 permissions:

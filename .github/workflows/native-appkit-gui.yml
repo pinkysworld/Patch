@@ -87,7 +87,7 @@ jobs:
             set -- $pair
             dir=$1; name=$2
             test -x "$dir/$name.app/Contents/MacOS/$name"
-            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='0.7'||m.backendVersion!=='0.8') process.exit(1)"
+            node -e "const m=require('./$dir/$name.appkit-build.json'); if(m.electron!==false||m.shell!=='native-appkit'||m.framework!=='AppKit'||m.nativeGuiIrVersion!=='1.2'||m.backendVersion!=='1.3') process.exit(1)"
             test ! -d "$dir/$name.app/Contents/Frameworks/Electron Framework.framework"
           done
           ! find dist-native-mac dist-native-menu-dialog dist-native-result-dialog -iname '*Electron*' -print -quit | grep -q .

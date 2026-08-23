@@ -119,8 +119,17 @@ test('combo and listbox receive explicit names while native buttons keep their b
   assert.doesNotMatch(win, /SetPatchAccessibleName\([^\n]+Notifications/);
 });
 
-test('native build entrypoints use accessibility backend v0.8', () => {
-  assert.match(fs.readFileSync('scripts/build-native-win32.js', 'utf8'), /win32-gui-v08\.js/);
-  assert.match(fs.readFileSync('scripts/build-native-appkit.js', 'utf8'), /appkit-gui-v08\.js/);
-  assert.match(fs.readFileSync('scripts/build-native-gtk.js', 'utf8'), /gtk-gui-v08\.js/);
+test('native build entrypoints use current and frozen backends', () => {
+  const win32 = fs.readFileSync('scripts/build-native-win32.js', 'utf8');
+  const appkit = fs.readFileSync('scripts/build-native-appkit.js', 'utf8');
+  const gtk = fs.readFileSync('scripts/build-native-gtk.js', 'utf8');
+  assert.match(win32, /win32-gui-v13\.js/);
+  assert.match(win32, /win32-gui-v14\.js/);
+  assert.doesNotMatch(win32, /win32-gui-v08\.js/);
+  assert.match(appkit, /appkit-gui-v13\.js/);
+  assert.match(appkit, /appkit-gui-v14\.js/);
+  assert.doesNotMatch(appkit, /appkit-gui-v08\.js/);
+  assert.match(gtk, /gtk-gui-v13\.js/);
+  assert.match(gtk, /gtk-gui-v14\.js/);
+  assert.doesNotMatch(gtk, /gtk-gui-v08\.js/);
 });
