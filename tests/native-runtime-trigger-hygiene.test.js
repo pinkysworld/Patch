@@ -8,6 +8,7 @@ const workflows = new Map([
   ['macos', fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8')]
 ]);
 const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
+const pagesStatus = fs.readFileSync('.github/workflows/pages-status.yml', 'utf8');
 
 test('native runtime workflows do not rebuild for site-only build plumbing', () => {
   for (const [platform, workflow] of workflows) {
@@ -38,7 +39,13 @@ test('each native runtime still self-triggers when its workflow changes', () => 
 test('Pages source deploys cannot be cancelled by later runtime workflow_run triggers', () => {
   assert.match(pages, /concurrency:\s*\n\s*group: pages\s*\n\s*cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/m);
   assert.match(pages, /workflow_run:/);
-  assert.match(pages, /Patch Native Sealed Table Runtime/);
+});
+
+test('cancelled superseded Pages runs cannot overwrite the public-site status', () => {
+  assert.match(pagesStatus, /github\.event\.workflow_run\.head_branch == 'main' && github\.event\.workflow_run\.conclusion != 'cancelled'/);
+  assert.match(pagesStatus, /if \[ "\$DEPLOY_CONCLUSION" = 'success' \]/);
+  assert.match(pagesStatus, /state=failure/);
+  assert.match(pagesStatus, /context='patch-studio\/public-site'/);
 });
 
 test('Pages runtime-integrity generator is site-only and cannot retrigger native runtime builds', () => {
