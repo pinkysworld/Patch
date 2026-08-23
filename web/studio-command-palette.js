@@ -208,11 +208,6 @@ function openProjectItem(item) {
       editor.focus({ preventScroll: true });
       editor.setSelectionRange(range.start, range.end);
       editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const status = document.querySelector('#projectOutlineStatus');
-      if (status) {
-        status.textContent = `${item.file} · line ${range.line}`;
-        status.dataset.state = 'ready';
-      }
     }
   } else {
     editor.focus({ preventScroll: true });
