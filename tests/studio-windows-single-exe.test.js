@@ -3,12 +3,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
+const current = fs.readFileSync('src/native-current-contract.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/windows-single-exe.yml', 'utf8');
 
 test('Studio defaults Windows Window builds to token-free native single EXE sealing', () => {
   assert.match(studio, /WINDOWS_NATIVE_GUI_RUNTIME = '\.\/runtimes\/patch-windows-native-gui-runtime\.exe'/);
-  assert.match(studio, /buildNativeGuiIR/);
-  assert.match(studio, /sealNativeGuiRuntime/);
+  assert.match(studio, /native-current-contract\.js/);
+  assert.match(studio, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
+  assert.match(studio, /sealCurrentNativeGuiRuntime/);
+  assert.match(studio, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.3\/payload-13\/runtime-1\.4'/);
+  assert.match(current, /sealNativeGuiRuntimeV13/);
   assert.match(studio, /Native single EXE \(no token, recommended\)/);
   assert.match(studio, /nativeBuildMode\.value = 'prebuilt'/);
   assert.match(studio, /downloadBytes\(sealed, `\$\{name\}\.exe`/);
