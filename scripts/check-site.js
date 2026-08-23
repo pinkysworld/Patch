@@ -45,8 +45,8 @@ const index = read('_site/index.html');
 requireAll('Studio shell', index, [
   'Patch Studio','id="code"','id="run"','id="build"','id="designer"','id="app"',
   'id="projectName"','id="projectKind"','id="exportProject"','id="importProject"','id="recoverProject"',
-  'Project Outline','multi-file project bundle v3','Slider Stage 1','Native GUI IR 1.3','payload v13','runtime v1.4',
-  'hierarchical TreeView','Local-first Studio','Verified desktop path','Browser-gated delivery','Quick start and shortcuts',
+  'Project Outline','multi-file project bundle v3','value="sliderWindow">Slider app</option>','Native GUI IR 1.3','payload v13','runtime v1.4',
+  'hierarchical TreeView','native Slider','Local-first Studio','Verified desktop path','Browser-gated delivery','Quick start and shortcuts',
   'id="addSlider"','id="addTree"','id="openCommandPalette"','id="commandPalette"','id="commandPaletteInput"',
   './studio-command-palette.css','./studio-command-palette.js','./studio-bootstrap.js','./slider-stage1.js','./tree-designer.js',
   './designer-workspace.js','./runtime-integrity.js','./native-build.js'
