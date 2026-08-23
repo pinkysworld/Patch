@@ -43,7 +43,15 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 
 ### Next repository-controlled backlog
 
-The reliability backlog is intentionally not being extended with another control or runtime tier. The next repository work is consolidation: specification/documentation synchronization, semantic object hardening and CI maintenance before any new product surface is added.
+The reliability backlog is intentionally not being extended with another control or runtime tier. The next repository work is consolidation: specification/documentation synchronization, semantic object hardening, CI maintenance and native two-contract collapse before any new product surface is added.
+
+Native collapse means keeping **current** (IR 1.3 / payload v13 / runtime v1.4) and **frozen** (IR 1.2 / payload v12 / runtime v1.3) as the only product import surfaces. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files are the historical include-chain base, not the current runtime. Versioned v07–v11 modules stay until current and frozen are flattened into standalone implementations; they are not deleted while those live contracts still import them.
+
+- [x] stable current native facade (`src/native-current-contract.js`)
+- [x] stable frozen TreeView facade (`src/native-frozen-contract.js`)
+- [ ] flatten current and frozen so they no longer import the v11→v07 chain
+- [ ] retire v07–v11 consumers, site-bundle copies and manual workflows together
+- [ ] keep unversioned historical bases from being mistaken for the Ready runtime
 
 New product items should have a concrete implementation target and acceptance test before being added here.
 

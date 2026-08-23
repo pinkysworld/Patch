@@ -43,6 +43,8 @@ const files = {
   gui12: read('src/native-gui-ir-v12.js'),
   gui13: read('src/native-gui-ir-v13.js'),
   nativeCurrent: read('src/native-current-contract.js'),
+  nativeFrozen: read('src/native-frozen-contract.js'),
+  nativeCompat: read('docs/NATIVE_COMPATIBILITY.md'),
   sealed12: read('src/sealed-native-gui-v12.js'),
   sealed13: read('src/sealed-native-gui-v13.js'),
   buildSite: read('scripts/build-site.js'),
@@ -125,6 +127,12 @@ requireAll('Native payload v13 implementation', files.sealed13, ['PATCH_SEALED_N
 requireAll('Stable current native product entry point', files.nativeCurrent, [
   'PATCH_CURRENT_NATIVE_CONTRACT_ID','PATCH_CURRENT_NATIVE_GUI_IR_VERSION','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','PATCH_CURRENT_NATIVE_RUNTIME_VERSION',
   'native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
+]);
+requireAll('Stable frozen native TreeView entry point', files.nativeFrozen, [
+  'PATCH_FROZEN_NATIVE_CONTRACT_ID','native-gui-1.2/payload-12/runtime-1.3','native-win32-runtime-v1.3','buildFrozenNativeGuiIR','sealFrozenNativeGuiRuntime'
+]);
+requireAll('Native compatibility two-contract boundary', files.nativeCompat, [
+  'native-current-contract.js','native-frozen-contract.js','native-gui-1.3/payload-13/runtime-1.4','native-gui-1.2/payload-12/runtime-1.3','Historical include chain'
 ]);
 requireAll('Frozen Native GUI IR 1.2 implementation', files.gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",'buildNativeGuiIRV12']);
 requireAll('Frozen payload v12 implementation', files.sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12','sealNativeGuiRuntimeV12']);

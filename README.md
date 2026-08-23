@@ -35,7 +35,7 @@ The same mandatory mutation substrate is reused for Change History, undo/redo, p
 | Ready builds | Token-free Windows, macOS and Linux paths with SHA-256 verified runtime templates |
 | Web delivery | One service-worker owner, type-safe offline fallback and a real Chrome responsiveness gate on every public deployment |
 | Formal milestone | beta.32 invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment |
-| Backlog | Active repository-controlled UX/reliability milestone; external signing/manual validation and research-evidence gates are tracked separately |
+| Backlog | Consolidation: two native product contracts (current + frozen TreeView), spec/docs sync and CI maintenance; external signing/manual validation and research-evidence gates are tracked separately |
 
 ## Patch Studio
 

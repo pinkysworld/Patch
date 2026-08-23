@@ -92,7 +92,20 @@ let output=[];
 const appEl=document.getElementById('app');
 const outputEl=document.getElementById('output');
 
-function clone(value){ return value===undefined?undefined:structuredClone(value); }
+function clone(value){ return value===undefined?undefined:copyValue(value); }
+function copyValue(value){
+  if(value===null||typeof value!=='object')return value;
+  if(Array.isArray(value))return value.map(copyValue);
+  const next=Object.getPrototypeOf(value)===Object.prototype?{}:Object.create(null);
+  for(const key of Object.keys(value))next[key]=copyValue(value[key]);
+  return next;
+}
+function emptyRecord(){ return Object.create(null); }
+function withOwnField(current,field,next){
+  const updated=emptyRecord();
+  if(current&&typeof current==='object'&&!Array.isArray(current)) for(const key of Object.keys(current)) updated[key]=current[key];
+  updated[field]=next; return updated;
+}
 function formatValue(value){
   if(typeof value==='string')return value;
   if(Array.isArray(value))return value.join(', ');
@@ -112,7 +125,7 @@ function tokenize(source){
   }
   tokens.push({type:'eof',value:null});return tokens;
 }
-function lookupPath(env,path){const parts=Array.isArray(path)?path:String(path).split('.');const root=parts[0];const stateView=env.state??state;let value;if(env.locals&&Object.prototype.hasOwnProperty.call(env.locals,root))value=env.locals[root];else if(stateView.has(root))value=stateView.get(root);else throw new PatchAppError("I cannot find '"+root+"'. Create it first.");for(const part of parts.slice(1)){if(value===null||typeof value!=='object'||!(part in value))throw new PatchAppError("I cannot find '"+parts.join('.')+"'.");value=value[part];}return value;}
+function lookupPath(env,path){const parts=Array.isArray(path)?path:String(path).split('.');const root=parts[0];const stateView=env.state??state;let value;if(env.locals&&Object.prototype.hasOwnProperty.call(env.locals,root))value=env.locals[root];else if(stateView.has(root))value=stateView.get(root);else throw new PatchAppError("I cannot find '"+root+"'. Create it first.");for(const part of parts.slice(1)){if(value===null||typeof value!=='object'||!Object.prototype.hasOwnProperty.call(value,part))throw new PatchAppError("I cannot find '"+parts.join('.')+"'.");value=value[part];}return value;}
 class ExprParser{
   constructor(tokens,env){this.tokens=tokens;this.i=0;this.env=env;}
   peek(type,value){const t=this.tokens[this.i];return t.type===type&&(value===undefined||t.value===value);}
@@ -130,8 +143,8 @@ class ExprParser{
 function evaluateExpression(source,locals={},stateView=state){return new ExprParser(tokenize(String(source).trim()),{locals,state:stateView}).parse();}
 function evaluateLoose(source,locals={},stateView=state){const s=String(source).trim();try{return evaluateExpression(s,locals,stateView);}catch(err){if(err instanceof PatchAppError&&/^[A-Za-z_][A-Za-z0-9_-]*$/.test(s))return s;throw err;}}
 function splitComma(text){const out=[];let cur='';let quote=null;let depth=0;for(const ch of text){if(quote){cur+=ch;if(ch===quote)quote=null;continue;}if(ch==='"'||ch==="'"){quote=ch;cur+=ch;continue;}if(ch==='['||ch==='(')depth++;if(ch===']'||ch===')')depth--;if(ch===','&&depth===0){if(cur.trim())out.push(cur.trim());cur='';continue;}cur+=ch;}if(cur.trim())out.push(cur.trim());return out;}
-function clearValue(value){if(Array.isArray(value))return[];if(typeof value==='string')return'';if(typeof value==='number')return 0;if(typeof value==='boolean')return false;if(value&&typeof value==='object')return{};return null;}
-function setField(current,field,value){return field?{...current,[field]:value}:value;}
+function clearValue(value){if(Array.isArray(value))return[];if(typeof value==='string')return'';if(typeof value==='number')return 0;if(typeof value==='boolean')return false;if(value&&typeof value==='object')return Object.create(null);return null;}
+function setField(current,field,value){return field?withOwnField(current,field,value):value;}
 function currentAt(current,field){return field?current[field]:current;}
 function registerWindow(node){if(node.id){if(formVisibility.has(node.id))throw new PatchAppError("Form '"+node.id+"' is declared more than once.");formVisibility.set(node.id,namedFormCount===0);namedFormCount++;}windows.push(node);}
 function setFormVisible(form,visible){if(!formVisibility.has(form))throw new PatchAppError("I cannot find a Form called '"+form+"'.");formVisibility.set(form,Boolean(visible));}
@@ -140,7 +153,7 @@ function executeBlock(nodes,locals={}){for(const node of nodes??[]){const signal
 function execute(node,locals){
   switch(node.kind){
     case 'create':{if(state.has(node.name))throw new PatchAppError("'"+node.name+"' already exists. Use change to modify it.");let value=node.valueType==='list'?(String(node.expr).trim().startsWith('[')?evaluateExpression(node.expr,locals):splitComma(node.expr).map(x=>evaluateLoose(x,locals))):evaluateExpression(node.expr,locals);if(node.valueType==='number'&&typeof value!=='number')throw new PatchAppError(node.name+' must start as a number.');if(node.valueType==='text'&&typeof value!=='string')throw new PatchAppError(node.name+' must start as text in quotes.');if(node.valueType==='boolean'&&typeof value!=='boolean')throw new PatchAppError(node.name+' must start as true or false.');state.set(node.name,clone(value));return;}
-    case 'createThing':{if(state.has(node.name))throw new PatchAppError("'"+node.name+"' already exists. Use change to modify it.");const value={};for(const field of node.fields)value[field.name]=evaluateLoose(field.expr,locals);state.set(node.name,value);return;}
+    case 'createThing':{if(state.has(node.name))throw new PatchAppError("'"+node.name+"' already exists. Use change to modify it.");const value=Object.create(null);for(const field of node.fields)value[field.name]=evaluateLoose(field.expr,locals);state.set(node.name,value);return;}
     case 'window':registerWindow(node);return;
     case 'event':events.push(node);return;
     case 'openForm':setFormVisible(node.form,true);return;
@@ -156,7 +169,7 @@ function execute(node,locals){
     default:throw new PatchAppError('Standalone Window Web runtime cannot execute '+node.kind+'.');
   }
 }
-function applyChange(node,locals){if(!state.has(node.target))throw new PatchAppError("I cannot change '"+node.target+"' because it does not exist.");let current=clone(state.get(node.target));for(const op of node.ops){const field=op.field;if(field&&(current===null||typeof current!=='object'||Array.isArray(current)))throw new PatchAppError("'"+node.target+"' has no fields. Remove 'to "+field+"' / 'from "+field+"'.");if(field&&!(field in current))throw new PatchAppError("'"+node.target+"' has no field called '"+field+"'.");const old=currentAt(current,field);const stateView=new Map(state);stateView.set(node.target,current);let next;if(op.op==='set')next=evaluateLoose(op.expr,locals,stateView);else if(op.op==='add'){const value=evaluateLoose(op.expr,locals,stateView);if(typeof old==='number'&&typeof value==='number')next=old+value;else if(Array.isArray(old))next=[...old,clone(value)];else if(typeof old==='string')next=old+String(value);else throw new PatchAppError('add works with numbers, lists, or text.');}else if(op.op==='remove'){const value=evaluateLoose(op.expr,locals,stateView);if(typeof old==='number'&&typeof value==='number')next=old-value;else if(Array.isArray(old)){const index=old.findIndex(x=>deepEqual(x,value));if(index<0)throw new PatchAppError('Cannot remove '+formatValue(value)+' because it is not in the list.');next=[...old];next.splice(index,1);}else throw new PatchAppError('remove works with numbers or lists.');}else if(op.op==='clear')next=clearValue(old);else throw new PatchAppError('Unknown change operation '+op.op+'.');current=setField(current,field,next);}state.set(node.target,current);}
+function applyChange(node,locals){if(!state.has(node.target))throw new PatchAppError("I cannot change '"+node.target+"' because it does not exist.");let current=clone(state.get(node.target));for(const op of node.ops){const field=op.field;if(field&&(current===null||typeof current!=='object'||Array.isArray(current)))throw new PatchAppError("'"+node.target+"' has no fields. Remove 'to "+field+"' / 'from "+field+"'.");if(field&&!Object.prototype.hasOwnProperty.call(current,field))throw new PatchAppError("'"+node.target+"' has no field called '"+field+"'.");const old=currentAt(current,field);const stateView=new Map(state);stateView.set(node.target,current);let next;if(op.op==='set')next=evaluateLoose(op.expr,locals,stateView);else if(op.op==='add'){const value=evaluateLoose(op.expr,locals,stateView);if(typeof old==='number'&&typeof value==='number')next=old+value;else if(Array.isArray(old))next=[...old,clone(value)];else if(typeof old==='string')next=old+String(value);else throw new PatchAppError('add works with numbers, lists, or text.');}else if(op.op==='remove'){const value=evaluateLoose(op.expr,locals,stateView);if(typeof old==='number'&&typeof value==='number')next=old-value;else if(Array.isArray(old)){const index=old.findIndex(x=>deepEqual(x,value));if(index<0)throw new PatchAppError('Cannot remove '+formatValue(value)+' because it is not in the list.');next=[...old];next.splice(index,1);}else throw new PatchAppError('remove works with numbers or lists.');}else if(op.op==='clear')next=clearValue(old);else throw new PatchAppError('Unknown change operation '+op.op+'.');current=setField(current,field,next);}state.set(node.target,current);}
 function callRecipe(node,locals){const fn=functions.get(node.name);if(!fn)throw new PatchAppError("I cannot find a recipe called '"+node.name+"'.");if(fn.params.length!==node.args.length)throw new PatchAppError(node.name+' needs '+fn.params.length+' value(s).');const args=node.args.map(a=>evaluateLoose(a,locals));fn.params.forEach((p,index)=>{const range=fn.paramRanges?.[p];if(range){const value=args[index];if(typeof value!=='number'||value<range.min||value>range.max)throw new PatchAppError(node.name+" expects '"+p+"' to be a number from "+range.min+' to '+range.max+', but got '+formatValue(value)+'.');}});const child={...locals};fn.params.forEach((p,index)=>child[p]=args[index]);const signal=executeBlock(fn.body,child);return signal instanceof ReturnSignal?signal.value:null;}
 function uiText(expr){let value;try{value=evaluateLoose(expr,{});}catch{value=expr;}return String(value).replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>state.has(name)?formatValue(state.get(name)):'{'+name+'}');}
 function uiOption(expr){let value;try{value=evaluateLoose(expr,{});}catch{value=expr;}return String(value);}

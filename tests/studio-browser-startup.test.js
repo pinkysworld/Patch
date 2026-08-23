@@ -17,6 +17,42 @@ const MIME = new Map([
   ['.wasm', 'application/wasm']
 ]);
 
+function uniqueStrings(values) {
+  const seen = new Set();
+  const out = [];
+  for (const value of values) {
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
+
+function windowsBrowserInstallPaths() {
+  const roots = uniqueStrings([
+    process.env.PROGRAMFILES,
+    process.env['PROGRAMFILES(X86)'],
+    process.env.ProgramW6432,
+    process.env.LOCALAPPDATA,
+    'C:\\Program Files',
+    'C:\\Program Files (x86)'
+  ]);
+  const extraPaths = [];
+  for (const root of roots) {
+    extraPaths.push(
+      path.join(root, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+      path.join(root, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
+    );
+  }
+  return extraPaths;
+}
+
+function locateWindowsCommand(name) {
+  const probe = spawnSync('where.exe', [name], { encoding: 'utf8', timeout: 3000, windowsHide: true });
+  if (probe.error || probe.status !== 0) return null;
+  return String(probe.stdout || '').split(/\r?\n/).map(line => line.trim()).find(line => line && fs.existsSync(line)) ?? null;
+}
+
 function findChrome() {
   const extraPaths = [];
   if (process.platform === 'darwin') {
@@ -26,16 +62,10 @@ function findChrome() {
       '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
     );
   } else if (process.platform === 'win32') {
-    for (const root of [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA]) {
-      if (!root) continue;
-      extraPaths.push(
-        path.join(root, 'Google', 'Chrome', 'Application', 'chrome.exe'),
-        path.join(root, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
-      );
-    }
+    extraPaths.push(...windowsBrowserInstallPaths());
   }
 
-  const candidates = [
+  const candidates = uniqueStrings([
     process.env.CHROME_BIN,
     process.env.CHROMIUM_BIN,
     ...extraPaths,
@@ -44,16 +74,30 @@ function findChrome() {
     'chromium',
     'chromium-browser',
     'chrome',
-    'msedge'
-  ].filter(Boolean);
+    'msedge',
+    'chrome.exe',
+    'msedge.exe'
+  ]);
 
   for (const executable of candidates) {
-    if (path.isAbsolute(executable) && !fs.existsSync(executable)) continue;
-    const probe = spawnSync(executable, ['--version'], { encoding: 'utf8', timeout: 3000, windowsHide: true });
+    if (path.isAbsolute(executable)) {
+      // Windows chrome.exe / msedge.exe are GUI-subsystem binaries: `--version` can hang
+      // until spawnSync's timeout instead of printing and exiting. Known install paths
+      // are accepted by existence; the smoke launch itself is `--headless=new`.
+      if (fs.existsSync(executable)) return executable;
+      continue;
+    }
+    if (process.platform === 'win32') {
+      const located = locateWindowsCommand(executable);
+      if (located) return located;
+      continue;
+    }
+    const probe = spawnSync(executable, ['--version'], { encoding: 'utf8', timeout: 3000 });
     if (!probe.error && probe.status === 0) return executable;
   }
   return null;
 }
+
 
 function createStaticServer() {
   return http.createServer((request, response) => {
@@ -228,7 +272,11 @@ test('Studio browser startup gate probes macOS and Windows Chrome locations', ()
   assert.match(source, /Google Chrome\.app\/Contents\/MacOS\/Google Chrome/);
   assert.match(source, /Google', 'Chrome', 'Application', 'chrome\.exe/);
   assert.match(source, /CHROMIUM_BIN/);
+  assert.match(source, /ProgramW6432/);
+  assert.match(source, /where\.exe/);
   assert.match(source, /windowsHide: true/);
+  assert.match(source, /fs\.existsSync\(executable\)/);
+  assert.match(source, /GUI-subsystem binaries/);
 });
 
 test('Patch Studio stays responsive in Chrome, runs a Window app and exercises current IDE navigation/layout', { timeout: 45000 }, async t => {
@@ -259,7 +307,7 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and exercises c
     '--remote-debugging-port=0',
     `--user-data-dir=${profile}`,
     url
-  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  ], { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
   child.stderr?.on('data', chunk => { stderr.text += chunk.toString(); });
   t.after(() => stopChrome(child));
 
