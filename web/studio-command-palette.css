@@ -133,6 +133,30 @@
   font-size: 9.5px;
 }
 
+.status-command {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.status-command:hover {
+  color: var(--text);
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.status-command:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
 @media (max-width: 560px) {
   .command-palette { width: calc(100% - 16px); }
   .command-palette-header { padding: 9px; }
