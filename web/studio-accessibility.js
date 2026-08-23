@@ -77,7 +77,7 @@ function installWorkspaceLayoutV2() {
   const storageKey = 'patchStudio.workspaceSplit.v2';
   const defaultRatio = 0.40;
   const minSource = 320;
-  const minResult = 560;
+  const minResult = 480;
   const narrow = window.matchMedia('(max-width: 760px)');
   let ratio = readRatio();
   let totalHeight = 0;
@@ -95,8 +95,6 @@ function installWorkspaceLayoutV2() {
   handle.setAttribute('role', 'separator');
   handle.setAttribute('aria-orientation', 'horizontal');
   handle.setAttribute('aria-label', 'Resize source and result workspace');
-  handle.setAttribute('aria-valuemin', '25');
-  handle.setAttribute('aria-valuemax', '70');
   handle.tabIndex = 0;
   handle.innerHTML = '<span class="workspace-split-grip" aria-hidden="true"></span><span class="workspace-split-label">Source / Result</span>';
 
@@ -226,6 +224,10 @@ function installWorkspaceLayoutV2() {
 
   function syncSeparator() {
     const percent = Math.round(ratio * 100);
+    const minPercent = totalHeight ? Math.ceil((minSource / totalHeight) * 100) : 25;
+    const maxPercent = totalHeight ? Math.floor(((totalHeight - minResult) / totalHeight) * 100) : 70;
+    handle.setAttribute('aria-valuemin', String(minPercent));
+    handle.setAttribute('aria-valuemax', String(Math.max(minPercent, maxPercent)));
     handle.setAttribute('aria-valuenow', String(percent));
     handle.setAttribute('aria-valuetext', `Source ${percent} percent, result ${100 - percent} percent`);
     handle.dataset.ratio = String(percent);
@@ -280,7 +282,7 @@ function installWorkspaceStyles() {
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .source-workspace > .pane { height: 100%; min-height: 0; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] .editor-pane textarea { height: calc(100% - 42px); min-height: 0; resize: none; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] .project-outline-tree { height: calc(100% - 42px); min-height: 0; max-height: none; }
-    .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane { height: var(--workspace-result-height); min-height: 560px; }
+    .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane { height: var(--workspace-result-height); min-height: 480px; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane > pre,
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane > .app-preview,
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane > .designer-view { height: calc(100% - 42px); min-height: 0; max-height: none; }
