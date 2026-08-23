@@ -1,5 +1,5 @@
 import { parse, PatchSyntaxError } from './parser.js';
-import { evaluateExpression, evaluateLoose, ExpressionError } from './expression.js';
+import { evaluateExpression, evaluateLoose, ExpressionError, deepEqual } from './expression.js';
 import { clone, formatValue, applySemanticOperations } from './change.js';
 
 export class PatchRuntimeError extends Error {
@@ -91,7 +91,7 @@ export class PatchInterpreter {
   }
   createThing(node,locals){
     if(this.state.has(node.name))throw new PatchRuntimeError(`'${node.name}' already exists. Use change to modify it.`,node.line);
-    const value={}; for(const field of node.fields)value[field.name]=evaluateLoose(field.expr,this.env(locals));
+    const value=Object.create(null); for(const field of node.fields)value[field.name]=evaluateLoose(field.expr,this.env(locals));
     this.state.set(node.name,value);this.types.set(node.name,'thing');this.versions.set(node.name,0);
   }
   parseList(expr,locals){ const text=expr.trim(); if(text.startsWith('['))return evaluateExpression(text,this.env(locals)); return splitComma(text).map(part=>evaluateLoose(part,this.env(locals))); }
@@ -101,7 +101,7 @@ export class PatchInterpreter {
     for(const op of node.ops){
       const field=op.field;
       if(field&&(current===null||typeof current!=='object'||Array.isArray(current)))throw new PatchRuntimeError(`'${node.target}' has no fields. Remove 'to ${field}' / 'from ${field}'.`,op.line);
-      if(field&&!(field in current))throw new PatchRuntimeError(`'${node.target}' has no field called '${field}'.`,op.line);
+      if(field&&!Object.prototype.hasOwnProperty.call(current,field))throw new PatchRuntimeError(`'${node.target}' has no field called '${field}'.`,op.line);
       const old=field?current[field]:current; let semantic; let inverse;
       if(op.op==='set'){
         const value=evaluateLoose(op.expr,this.envWithTarget(locals,node.target,current)); semantic={op:'set',field,value:clone(value)}; inverse={op:'set',field,value:clone(old)};
@@ -114,7 +114,7 @@ export class PatchInterpreter {
       } else if(op.op==='remove'){
         const value=evaluateLoose(op.expr,this.envWithTarget(locals,node.target,current));
         if(typeof old==='number'&&typeof value==='number'){semantic={op:'removeNumber',field,value};inverse={op:'addNumber',field,value};}
-        else if(Array.isArray(old)){const index=old.findIndex(x=>JSON.stringify(x)===JSON.stringify(value));if(index<0)throw new PatchRuntimeError(`Cannot remove ${formatValue(value)} because it is not in the list.`,op.line);semantic={op:'removeAt',field,index};inverse={op:'insertAt',field,index,value:clone(old[index])};}
+        else if(Array.isArray(old)){const index=old.findIndex(x=>deepEqual(x,value));if(index<0)throw new PatchRuntimeError(`Cannot remove ${formatValue(value)} because it is not in the list.`,op.line);semantic={op:'removeAt',field,index};inverse={op:'insertAt',field,index,value:clone(old[index])};}
         else throw new PatchRuntimeError('remove works with numbers or lists.',op.line);
       } else if(op.op==='clear'){ semantic={op:'clear',field}; inverse={op:'set',field,value:clone(old)}; }
       semantic.sourceLine=op.line; inverse.sourceLine=op.line;
@@ -143,7 +143,7 @@ export class PatchInterpreter {
     const snapshot={state:cloneMap(this.state),types:new Map(this.types),versions:new Map(this.versions),history:clone(this.history),redo:clone(this.redoStack),watchers:new Set(this.watchers),outputLength:this.output.length,counter:this.changeCounter,formVisibility:new Map(this.formVisibility),namedFormCount:this.namedFormCount};
     const beforeState=Object.fromEntries([...this.state].map(([k,v])=>[k,clone(v)]));this.executeBlock(body,locals);const afterState=Object.fromEntries([...this.state].map(([k,v])=>[k,clone(v)]));
     const previewOutput=this.output.splice(snapshot.outputLength);this.state=snapshot.state;this.types=snapshot.types;this.versions=snapshot.versions;this.history=snapshot.history;this.redoStack=snapshot.redo;this.watchers=snapshot.watchers;this.changeCounter=snapshot.counter;this.formVisibility=snapshot.formVisibility;this.namedFormCount=snapshot.namedFormCount;
-    const diffs=[];for(const key of new Set([...Object.keys(beforeState),...Object.keys(afterState)]))if(JSON.stringify(beforeState[key])!==JSON.stringify(afterState[key]))diffs.push(`${key}: ${formatValue(beforeState[key])} -> ${formatValue(afterState[key])}`);
+    const diffs=[];for(const key of new Set([...Object.keys(beforeState),...Object.keys(afterState)]))if(!deepEqual(beforeState[key],afterState[key]))diffs.push(`${key}: ${formatValue(beforeState[key])} -> ${formatValue(afterState[key])}`);
     this.output.push(diffs.length?`preview ${diffs.join(' | ')}`:'preview no changes');this.output.push(...previewOutput.map(x=>`preview output: ${x}`));
   }
   showHistory(target,line){
