@@ -54,6 +54,41 @@ test('Studio keyboard shortcuts use Enter without browser bookmark conflicts', (
   assert.ok(!html.includes('Control+Shift+B'));
 });
 
+test('Workspace Layout v2 is keyboard and pointer resizable with one local IDE-only preference', () => {
+  for (const marker of [
+    'installWorkspaceLayoutV2()',
+    "storageKey = 'patchStudio.workspaceSplit.v2'",
+    "handle.setAttribute('role', 'separator')",
+    "handle.setAttribute('aria-orientation', 'horizontal')",
+    "handle.setAttribute('aria-valuemin', '25')",
+    "handle.setAttribute('aria-valuemax', '70')",
+    "event.key === 'ArrowUp'",
+    "event.key === 'ArrowDown'",
+    "event.key === 'Home'",
+    "handle.addEventListener('pointerdown'",
+    "handle.addEventListener('pointermove'",
+    "resetWorkspaceLayout",
+    "localStorage.removeItem(storageKey)"
+  ]) assert.ok(accessibility.includes(marker), marker);
+  assert.doesNotMatch(accessibility, /patchStudio\.project\.v3|patchStudio\.recovery\.v1/);
+});
+
+test('Workspace Layout v2 preserves editor and Designer minimums and falls back on narrow screens', () => {
+  for (const marker of [
+    'minSource = 320',
+    'minResult = 560',
+    "window.matchMedia('(max-width: 760px)')",
+    "--workspace-source-height",
+    "--workspace-result-height",
+    'min-height: 320px',
+    'min-height: 560px',
+    '@media (max-width: 760px)',
+    '.workspace-layout-bar { display: none; }'
+  ]) assert.ok(accessibility.includes(marker), marker);
+  assert.match(accessibility, /\.editor-pane textarea \{ height: calc\(100% - 42px\); min-height: 0; resize: none; \}/);
+  assert.match(accessibility, /\.designer-surface[\s\S]*min-height: 0/);
+});
+
 test('save diagnostics and native build states are announced without making output noisy', () => {
   assert.match(html, /id="saveState"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
   assert.match(html, /id="diagnosticsState"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
