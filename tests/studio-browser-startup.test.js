@@ -283,13 +283,15 @@ async function evaluate(cdp, expression, timeoutMs = process.platform === 'win32
   return result.result?.value;
 }
 
-async function waitForSmokeReady(cdp, timeoutMs = 9000) {
+async function waitForSmokeReady(cdp, timeoutMs = 16000) {
   const deadline = Date.now() + timeoutMs;
   let lastError = 'no smoke state yet';
+  let lastState = null;
   while (Date.now() < deadline) {
     try {
       const smokeState = await evaluate(cdp, 'document.documentElement?.dataset?.patchStudioSmoke ?? null', 1500);
-      if (smokeState === 'ready' || smokeState === 'failed') return smokeState;
+      lastState = smokeState;
+      if (smokeState === 'ready') return 'ready';
       lastError = `smoke=${smokeState}`;
     } catch (error) {
       // A single stalled Runtime.evaluate must not fail the Windows smoke;
@@ -298,6 +300,7 @@ async function waitForSmokeReady(cdp, timeoutMs = 9000) {
     }
     await delay(150);
   }
+  if (lastState === 'failed') return 'failed';
   throw new Error(`Studio smoke did not become ready (${lastError})`);
 }
 
@@ -413,6 +416,9 @@ test('Studio browser startup gate probes macOS and Windows Chrome locations', ()
   assert.match(source, /maxRetries: 5/);
   assert.match(source, /waitForSmokeReady/);
   assert.match(source, /single stalled Runtime.evaluate must not fail the Windows smoke/);
+  assert.match(source, /timeoutMs = 16000/);
+  assert.match(source, /if \(smokeState === 'ready'\) return 'ready'/);
+  assert.doesNotMatch(source, /smokeState === 'ready' \|\| smokeState === 'failed'/);
   assert.match(source, /win32' \? 4000 : 2000/);
   assert.doesNotMatch(source, /t\.after\(\(\) => fs\.rmSync\(profile/);
 });

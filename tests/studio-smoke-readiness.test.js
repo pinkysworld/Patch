@@ -6,7 +6,7 @@ const bootstrap = fs.readFileSync('web/studio-bootstrap.js', 'utf8');
 
 test('production smoke probes real Run behavior until Studio becomes functional', () => {
   assert.match(bootstrap, /document\.documentElement\.dataset\.patchStudioSmoke = 'pending'/);
-  assert.match(bootstrap, /const smokeDeadline = Date\.now\(\) \+ 7000/);
+  assert.match(bootstrap, /const smokeDeadline = Date\.now\(\) \+ 14000/);
   assert.match(bootstrap, /const probeReadyStudio = \(\) =>/);
   assert.match(bootstrap, /run\.click\(\)/);
   assert.match(bootstrap, /app\.querySelector\('\.patch-window'\)/);

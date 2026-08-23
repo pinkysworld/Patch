@@ -14,6 +14,7 @@ export const PATCH_DIAGNOSTIC_CODES = Object.freeze({
   COMPILER: 'PATCH1900',
   UNKNOWN_BUILD_TARGET: 'PATCH2001',
   UNSUPPORTED_TARGET_KIND: 'PATCH2002',
+  UNSUPPORTED_NUMERIC_SUBSET: 'PATCH2003',
   BUILD: 'PATCH2900',
   RUNTIME: 'PATCH3000',
   INTERNAL: 'PATCH9000'
@@ -80,10 +81,18 @@ function classifyDiagnosticCode(error, phase, message) {
   }
   if (/Unknown build target/i.test(message)) return PATCH_DIAGNOSTIC_CODES.UNKNOWN_BUILD_TARGET;
   if (/(?:supports Console projects only|Window packaging currently|For a Window project use|Choose a Windows\/macOS\/Linux App)/i.test(message)) return PATCH_DIAGNOSTIC_CODES.UNSUPPORTED_TARGET_KIND;
+  if (isUnsupportedNumericSubset(message)) return PATCH_DIAGNOSTIC_CODES.UNSUPPORTED_NUMERIC_SUBSET;
   if (phase === 'build') return PATCH_DIAGNOSTIC_CODES.BUILD;
   if (phase === 'runtime' || phase === 'run') return PATCH_DIAGNOSTIC_CODES.RUNTIME;
   if (phase === 'compile' || phase === 'compiler' || phase === 'check') return PATCH_DIAGNOSTIC_CODES.COMPILER;
   return PATCH_DIAGNOSTIC_CODES.INTERNAL;
+}
+
+function isUnsupportedNumericSubset(message) {
+  const text = String(message);
+  if (/Direct Wasm:/i.test(text) && !/supports console projects only/i.test(text)) return true;
+  if (/C99 backend:/i.test(text) && /(?:subset|unsupported)/i.test(text)) return true;
+  return /outside the (?:direct )?(?:numeric Wasm |direct Wasm |numeric |portable numeric |portable )?subset/i.test(text);
 }
 
 function sourceColumn(source, line) {

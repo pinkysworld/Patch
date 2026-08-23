@@ -36,6 +36,7 @@ The current diagnostic format is `patch-diagnostic` version `1`.
 - `PATCH1900` compiler error not covered by a narrower code
 - `PATCH2001` unknown build target
 - `PATCH2002` target does not support the project kind
+- `PATCH2003` target does not support this numeric/direct subset construct
 - `PATCH2900` build error not covered by a narrower code
 - `PATCH3000` runtime error
 - `PATCH9000` internal/unclassified error
@@ -52,7 +53,7 @@ For C99-only errors that do not yet carry a line field, `backend-diagnostic-cont
 
 The normalizer intentionally does **not** interpret arbitrary compiler/toolchain locations such as `generated.c:17:9` as Patch locations. Final C/C++/Rust/PE/Mach-O/ELF packaging errors still need an explicit source map before they can safely point back to Patch code.
 
-For example, a direct-Wasm build failure that already says `create text at line 3 ...` becomes a `PATCH2900` diagnostic with `main.patch:3:<indent-column>` in CLI `build --json` output instead of losing its source position.
+For example, a direct-Wasm build failure that already says `create text at line 3 ...` or `things are outside the direct numeric Wasm subset at line 1` becomes a `PATCH2003` diagnostic with `main.patch:<line>:<indent-column>` in CLI `build --json` output instead of a generic `PATCH2900`. Final C/C++/Rust packaging failures remain `PATCH2900` until they carry an explicit Patch source map.
 
 Patch Studio `.patchreport` files include the stable code and normalized source location for compiler failures. They still omit the source body. Diagnostic normalization never needs to embed the offending source line.
 
