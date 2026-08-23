@@ -200,7 +200,7 @@ async function localStudioUrl(t) {
   return withSmokeQuery(`http://127.0.0.1:${address.port}/web/index.html`);
 }
 
-test('Patch Studio stays responsive in Chrome and can run the default Window app', { timeout: 30000 }, async t => {
+test('Patch Studio stays responsive in Chrome, runs a Window app and opens the command palette', { timeout: 30000 }, async t => {
   const chrome = findChrome();
   if (!chrome) {
     if (process.env.CI) assert.fail('Chrome/Chromium is required for the Patch Studio browser startup gate');
@@ -255,4 +255,29 @@ test('Patch Studio stays responsive in Chrome and can run the default Window app
   await delay(2500);
   assert.equal(await evaluate(cdp, "document.documentElement?.dataset?.patchStudioSmoke === 'ready' && !!document.querySelector('#run')"), true,
     `Patch Studio stopped responding after its initial render at ${url}`);
+
+  // Exercise one real polished IDE interaction as part of the same production gate.
+  assert.equal(await evaluate(cdp, `(() => {
+    const trigger = document.querySelector('#openCommandPalette');
+    trigger?.click();
+    return Boolean(document.querySelector('#commandPalette')?.open);
+  })()`), true, 'Command Palette did not open in Chrome');
+
+  const recoveryMatch = await evaluate(cdp, `(() => {
+    const input = document.querySelector('#commandPaletteInput');
+    if (!input) return null;
+    input.value = 'recovery';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const items = [...document.querySelectorAll('#commandPaletteList .command-palette-item')];
+    return { count: items.length, text: items[0]?.textContent ?? '' };
+  })()`);
+  assert.equal(recoveryMatch?.count, 1, 'Command Palette filtering should narrow to the Recovery command');
+  assert.match(recoveryMatch?.text ?? '', /Recovery/);
+
+  assert.equal(await evaluate(cdp, `(() => {
+    const dialog = document.querySelector('#commandPalette');
+    if (!dialog) return false;
+    dialog.close();
+    return !dialog.open && document.documentElement?.dataset?.patchStudioSmoke === 'ready';
+  })()`), true, 'Studio did not remain responsive after Command Palette interaction');
 });
