@@ -39,11 +39,21 @@ test('guard suppresses a self-triggering Designer reconciliation microtask', asy
     trigger(records = []) { if (this.observing) this.callback(records, this); }
   }
 
-  const windowObject = { MutationObserver: NativeMutationObserver };
+  const windowObject = {
+    MutationObserver: NativeMutationObserver,
+    addEventListener() {},
+    dispatchEvent() {},
+    setTimeout() { return 1; },
+    clearTimeout() {}
+  };
+  const documentObject = {
+    documentElement: { dataset: {} },
+    querySelector() { return null; }
+  };
   const context = vm.createContext({
     window: windowObject,
     navigator: {},
-    document: {},
+    document: documentObject,
     queueMicrotask,
     Promise,
     TypeError
