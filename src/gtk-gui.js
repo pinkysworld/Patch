@@ -1,3 +1,8 @@
+/**
+ * HISTORICAL INCLUDE-CHAIN BASE — direct GTK backend 0.6 for Native GUI IR 0.7.
+ * This is not the Ready runtime. Direct native emit uses gtk-gui-v13.js (frozen)
+ * or gtk-gui-v14.js (current).
+ */
 import { flattenNativeGuiControls, flattenNativeGuiMenuItems, validateNativeGuiIR, NativeGuiError } from './native-gui-ir.js';
 
 export const PATCH_GTK_GUI_BACKEND_VERSION = '0.6';

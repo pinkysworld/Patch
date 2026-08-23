@@ -1,3 +1,7 @@
+/* HISTORICAL INCLUDE-CHAIN BASE — sealed payload v6.
+ * This is not the Ready runtime. Current Ready is native-runtime/appkit-sealed-gui-v14.mm
+ * (runtime v1.4 / payload v13). Frozen TreeView is appkit-sealed-gui-v13.mm.
+ */
 #import <Cocoa/Cocoa.h>
 #include <mach-o/dyld.h>
 #include <algorithm>

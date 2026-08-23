@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/**
+ * HISTORICAL sealer — payload v7 or v8 only.
+ * Ready/offline Window packages use payload v12 or v13 via src/sealed-native-package.js.
+ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { compile } from '../src/compiler.js';
@@ -12,10 +16,17 @@ const sourcePath = process.argv[2];
 const runtimePath = process.argv[3];
 const outputPath = process.argv[4];
 const appName = process.argv[5] ?? path.basename(outputPath ?? 'PatchApp');
-const payloadVersion = Number(process.env.PATCH_SEALED_GUI_VERSION ?? 7);
 
 if (!sourcePath || !runtimePath || !outputPath) {
   console.error('Use: node scripts/seal-native-macos.js program.patch runtime-macho output [AppName]');
+  process.exit(2);
+}
+
+const rawPayloadVersion = process.env.PATCH_SEALED_GUI_VERSION;
+const payloadVersion = Number(rawPayloadVersion);
+if (rawPayloadVersion == null || rawPayloadVersion === '' || (payloadVersion !== 7 && payloadVersion !== 8)) {
+  console.error('scripts/seal-native-macos.js is the historical payload-v7/v8 sealer, not the Ready runtime.');
+  console.error('Set PATCH_SEALED_GUI_VERSION=7 or 8. Ready/offline Window packages use payload v12 or v13 via src/sealed-native-package.js.');
   process.exit(2);
 }
 

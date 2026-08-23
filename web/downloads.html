@@ -47,7 +47,7 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Current native boundary</h2>
-    <p><strong>Slider Stage 1 now has native parity in the current versioned desktop line.</strong> Native GUI IR 1.3 / payload v13 / runtime v1.4 implements Slider through Win32 <code>TRACKBAR</code>, AppKit <code>NSSlider</code> and GTK3 <code>GtkScale</code>. The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 line remains frozen, TreeView-capable and intentionally Slider fail-closed. Those two live contracts are the product import surface; older contracts are not silently reinterpreted.</p>
+    <p><strong>Slider Stage 1 now has native parity in the current versioned desktop line.</strong> Native GUI IR 1.3 / payload v13 / runtime v1.4 implements Slider through Win32 <code>TRACKBAR</code>, AppKit <code>NSSlider</code> and GTK3 <code>GtkScale</code>. The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 line remains frozen, TreeView-capable and intentionally Slider fail-closed. Those two live contracts are the product import surface; unversioned include-chain bases and older contracts are not silently reinterpreted as Ready.</p>
   </section>
 
   <section class="page-section">

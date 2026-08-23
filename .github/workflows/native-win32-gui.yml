@@ -5,12 +5,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - src/native-gui-ir.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
+      - src/native-gui-frozen-lower.js
       - src/native-result-dialog-overlay.js
       - src/native-accessibility.js
-      - src/win32-gui.js
-      - src/win32-gui-v07.js
-      - src/win32-gui-v08.js
+      - src/win32-gui-v13.js
+      - src/win32-gui-v14.js
       - scripts/build-native-win32.js
       - tests/native-accessibility.test.js
       - tests/win32-gui.test.js
@@ -24,12 +26,14 @@ on:
   push:
     branches: [main]
     paths:
-      - src/native-gui-ir.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
+      - src/native-gui-frozen-lower.js
       - src/native-result-dialog-overlay.js
       - src/native-accessibility.js
-      - src/win32-gui.js
-      - src/win32-gui-v07.js
-      - src/win32-gui-v08.js
+      - src/win32-gui-v13.js
+      - src/win32-gui-v14.js
       - scripts/build-native-win32.js
       - tests/native-accessibility.test.js
       - tests/win32-gui.test.js
@@ -62,12 +66,13 @@ jobs:
       - name: Check native GUI backend JavaScript
         shell: pwsh
         run: |
-          node --check src/native-gui-ir.js
+          node --check src/native-current-contract.js
+          node --check src/native-frozen-contract.js
+          node --check src/native-gui-build-plan.js
           node --check src/native-result-dialog-overlay.js
           node --check src/native-accessibility.js
-          node --check src/win32-gui.js
-          node --check src/win32-gui-v07.js
-          node --check src/win32-gui-v08.js
+          node --check src/win32-gui-v13.js
+          node --check src/win32-gui-v14.js
           node --check scripts/build-native-win32.js
           node --check tests/native-accessibility.test.js
           node --check tests/win32-gui.test.js

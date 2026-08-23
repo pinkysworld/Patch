@@ -36,9 +36,13 @@ on:
       - scripts/build-native-appkit.js
       - scripts/build-native-gtk.js
       - src/native-gui-host.js
-      - src/native-gui-ir.js
-      - src/appkit-gui.js
-      - src/gtk-gui.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
+      - src/appkit-gui-v13.js
+      - src/appkit-gui-v14.js
+      - src/gtk-gui-v13.js
+      - src/gtk-gui-v14.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js
@@ -55,9 +59,13 @@ on:
       - scripts/build-native-appkit.js
       - scripts/build-native-gtk.js
       - src/native-gui-host.js
-      - src/native-gui-ir.js
-      - src/appkit-gui.js
-      - src/gtk-gui.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
+      - src/appkit-gui-v13.js
+      - src/appkit-gui-v14.js
+      - src/gtk-gui-v13.js
+      - src/gtk-gui-v14.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js

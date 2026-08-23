@@ -25,8 +25,11 @@ on:
     paths:
       - .github/workflows/windows-single-exe.yml
       - scripts/build-native-win32.js
-      - src/native-gui-ir.js
-      - src/win32-gui.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
+      - src/win32-gui-v13.js
+      - src/win32-gui-v14.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js
@@ -39,8 +42,11 @@ on:
     paths:
       - .github/workflows/windows-single-exe.yml
       - scripts/build-native-win32.js
-      - src/native-gui-ir.js
-      - src/win32-gui.js
+      - src/native-current-contract.js
+      - src/native-frozen-contract.js
+      - src/native-gui-build-plan.js
+      - src/win32-gui-v13.js
+      - src/win32-gui-v14.js
       - src/compiler.js
       - src/parser.js
       - src/expression.js

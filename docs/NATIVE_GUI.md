@@ -23,7 +23,7 @@ The native stack intentionally separates semantic IR, direct AOT generation and 
 | sealed payload v12 / runtime v1.3 | frozen TreeView compatibility, Slider fail-closed |
 | sealed payload v13 / runtime v1.4 | **current Ready/offline desktop contract**, adds Slider |
 
-A backend or runtime version never silently redefines an older IR or payload format. A source program requiring a newer feature fails closed when explicitly linked against an older contract.
+A backend or runtime version never silently redefines an older IR or payload format. A source program requiring a newer feature fails closed when explicitly linked against an older contract. Unversioned files such as `src/native-gui-ir.js` and `native-runtime/*-sealed-gui.cpp` are the Native GUI IR 0.7 / payload v6 include-chain base, not aliases of the current Ready runtime.
 
 ## Build paths
 

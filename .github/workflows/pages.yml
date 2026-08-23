@@ -64,16 +64,13 @@ on:
       - .github/workflows/pages.yml
       - .github/workflows/pages-status.yml
       - .github/workflows/runtime-templates.yml
-      - .github/workflows/native-win32-runtime.yml
-      - .github/workflows/native-linux-runtime.yml
-      - .github/workflows/native-macos-runtime.yml
       - .github/workflows/native-responsive-runtime.yml
       - .github/workflows/native-sealed-menu-release-v12.yml
       - .github/workflows/native-sealed-tree-runtime-v13.yml
       - .github/workflows/native-sealed-slider-runtime-v14.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Win32 Runtime, Patch Native Linux Runtime, Patch Native macOS Runtime, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4]
+    workflows: [Patch Studio Runtime Templates, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4]
     types: [completed]
 
 permissions:
