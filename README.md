@@ -106,7 +106,7 @@ See [`docs/NOVELTY.md`](docs/NOVELTY.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md
 ```bash
 npm test
 npm run check:site
-npm run check:project-surface
+npm run check:project
 npm run build:site
 ```
 
@@ -118,6 +118,8 @@ patch build app.patch --target web
 patch link app.patch --out App
 patch doctor --json
 ```
+
+`patch doctor` reports environment probes and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends.
 
 ## Documentation
 

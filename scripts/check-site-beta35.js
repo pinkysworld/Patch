@@ -69,13 +69,13 @@ const language = read('_site/language.html');
 requireAll('beta.35 Language page', language, ['data-patch-version="0.2.0-beta.35"','Slider Stage 1 uses transient numbers','slider 0..100 as volume step 5','ListBox selection follows the state type','create list fruits','Native GUI IR 1.3','runtime v1.4','Things are own-field records','fail closed on Things']);
 
 const docs = read('_site/docs.html');
-requireAll('beta.35 Documentation page', docs, ['docs/SLIDER_STAGE1.md','Slider Stage 1','Native GUI IR 1.3 / payload v13 / runtime v1.4']);
+requireAll('beta.35 Documentation page', docs, ['docs/SLIDER_STAGE1.md','Slider Stage 1','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields such as player.score']);
 
 const help = read('_site/help.html');
-requireAll('beta.35 Help page', help, ['data-patch-version="0.2.0-beta.35"','ListBox: single or multi-select','Ready runtime verification','Offline compiler','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields as <code>player.score</code>']);
+requireAll('beta.35 Help page', help, ['data-patch-version="0.2.0-beta.35"','ListBox: single or multi-select','Ready runtime verification','Offline compiler','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields as <code>player.score</code>','patch doctor']);
 
 const downloads = read('_site/downloads.html');
-requireAll('beta.35+ Downloads page', downloads, ['data-patch-version="0.2.0-beta.35"','Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native Slider','SHA256SUMS','runtime-manifest.json','Native GUI IR 1.2 / payload v12 / runtime v1.3']);
+requireAll('beta.35+ Downloads page', downloads, ['data-patch-version="0.2.0-beta.35"','Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native Slider','SHA256SUMS','runtime-manifest.json','Native GUI IR 1.2 / payload v12 / runtime v1.3','self-checks the interpreter, direct Wasm and C99 numeric subset']);
 rejectAll('beta.35+ Downloads page', downloads, ['Native Slider parity requires a future versioned native GUI contract']);
 
 const sw = read('_site/sw.js');

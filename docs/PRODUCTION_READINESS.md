@@ -39,6 +39,7 @@ Programmatic sample/Designer mutations and normal typing use shared source/proje
 ### Diagnostics and supportability
 - [x] `patch doctor` structured diagnostics core
 - [x] expose `patch doctor --json` through the installed CLI
+- [x] `patch doctor` compiler-backend self-check for interpreter, direct Wasm/C99 numeric subset and Thing fail-closed
 - [x] stable machine-readable diagnostic/error codes for compiler/build failures
 - [x] one-click Copy diagnostics in Patch Studio
 - [x] crash/build report bundle with Patch version, target, diagnostics and redacted logs

@@ -2,8 +2,12 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { collectDoctorReport, formatDoctorReport } from '../src/doctor.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('doctor reports a stable machine-readable schema', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-doctor-test-'));
@@ -30,4 +34,32 @@ test('doctor fails the report when the Node runtime is below the supported floor
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('doctor self-checks interpreter, direct Wasm and C99 plus Thing fail-closed', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-doctor-compilers-'));
+  try {
+    const report = collectDoctorReport({ cwd: dir });
+    const compilers = report.checks.find(item => item.id === 'compiler-backends');
+    assert.ok(compilers, 'compiler-backends check must be present');
+    assert.equal(compilers.status, 'ok', compilers.detail);
+    assert.match(compilers.detail, /Interpreter, direct Wasm and C99 numeric subset match/);
+    assert.match(compilers.detail, /Things fail closed on Wasm\/C99/);
+    assert.match(formatDoctorReport(report), /compiler-backends: Interpreter, direct Wasm and C99 numeric subset match/);
+    assert.ok(report.checks.some(item => item.id === 'c99-toolchain'), 'environment c99-toolchain probe remains separate from the backend self-check');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('CLI doctor --json exposes the compiler-backends self-check', () => {
+  const result = spawnSync(process.execPath, [path.join(root, 'src', 'cli-entry.js'), 'doctor', '--json'], {
+    cwd: root,
+    encoding: 'utf8'
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.schema, 'patch-doctor');
+  const compilers = report.checks.find(item => item.id === 'compiler-backends');
+  assert.equal(compilers?.status, 'ok', compilers?.detail);
 });

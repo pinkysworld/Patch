@@ -36,13 +36,13 @@ Current completed work includes:
 - a single service-worker owner in the early Studio bootstrap;
 - type-safe offline fallback that never substitutes HTML for a missing JavaScript/CSS/runtime asset;
 - site-wide responsive visual polish;
-- a keyboard-first Command Palette that delegates to existing Studio actions.
+- a keyboard-first Command Palette that delegates to existing Studio actions and project-file/symbol quick-open, including Thing fields as `player.score`.
 
-The next concrete repository-controlled items are tracked in `docs/ROADMAP.md`, including project-file/symbol quick-open through the Command Palette, a user-resizable workspace split and clearer startup diagnostics. Credentialed signing, manual assistive-technology validation and research measurements remain separate external/evidence gates.
+Completed UX/reliability work now includes Command Palette v2 project-file/symbol quick-open, Workspace Layout v2 and Studio startup diagnostics v2. Remaining repository-controlled work is tracked in `docs/ROADMAP.md`. Credentialed signing, manual assistive-technology validation and research measurements remain separate external/evidence gates.
 
 ## Command Palette
 
-Press **Ctrl/Cmd+K** or choose **Commands** in Studio. The palette currently delegates to the existing Run, Build, source editor, Designer, App, Output, Change Contract, Change IR, Recovery, Documentation, Downloads and Help actions.
+Press **Ctrl/Cmd+K** or choose **Commands** in Studio. The palette currently delegates to the existing Run, Build, source editor, Designer, App, Output, Change Contract, Change IR, Recovery, Documentation, Downloads and Help actions. The same search also lists project files and Project Tree symbols, including Thing fields as `player.score`.
 
 Search text, selection and dialog visibility are transient IDE interaction state. The palette does not write Patch source, project persistence, Change History, `localStorage`, `sessionStorage` or IndexedDB and therefore does not create a second project or mutation model.
 

@@ -34,6 +34,7 @@ const files = {
   production: read('docs/PRODUCTION_READINESS.md'),
   roadmap: read('docs/ROADMAP.md'),
   compiler: read('docs/COMPILER.md'),
+  cliContract: read('docs/CLI_CONTRACT.md'),
   formal: read('docs/FORMAL_MODEL.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
   paper: read('paper/README.md'),
@@ -52,7 +53,8 @@ const files = {
   bootstrap: read('web/studio-bootstrap.js'),
   accessibility: read('web/studio-accessibility.js'),
   playground: read('web/playground.js'),
-  sw: read('web/sw.js')
+  sw: read('web/sw.js'),
+  doctor: read('src/doctor.js')
 };
 
 requireScript('check:syntax', 'node scripts/check-js-syntax.js');
@@ -63,10 +65,13 @@ requireAll('README current contract', files.readme, [
   'Development beta `0.2.0-beta.35`','Change IR `0.10`','Native GUI IR `1.3`','payload `v13`','desktop runtime `v1.4`',
   'Native GUI IR 1.3 / sealed payload v13 / runtime v1.4','Ctrl/Cmd+K Command Palette','real Chrome responsiveness gate',
   'native-current-contract.js','native-frozen-contract.js','docs/NATIVE_COMPATIBILITY.md',
-  'prototype-free Things','fail closed on Things'
+  'prototype-free Things','fail closed on Things',
+  'self-checks the interpreter, direct Wasm and C99 numeric subset',
+  'npm run check:project'
 ]);
 requireAll('README native Slider evidence', files.readme, ['TRACKBAR','NSSlider','GtkScale']);
 requireAll('README scoped assurance', files.readme, ['beta.32','does **not** claim full compiler/runtime verification']);
+rejectAll('README obsolete npm script name', files.readme, ['npm run check:project-surface']);
 rejectAll('README obsolete backlog boundary', files.readme, ['product backlog is closed','future versioned native contract adds parity']);
 
 requireAll('Language SPEC current contract', files.spec, [
@@ -91,10 +96,10 @@ requireAll('Documentation current map', files.docsPage, [
   'Command Palette','Public deploy gated by real Chrome responsiveness','docs/STUDIO_COMMAND_PALETTE.md',
   'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
   'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages',
-  'prototype-free Things'
+  'prototype-free Things','Thing fields such as player.score'
 ]);
-requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']);
-requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing']);
+requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset']);
+requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing','patch doctor']);
 
 requireAll('Command Palette docs', files.commandPaletteDocs, [
   'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model',
@@ -115,7 +120,7 @@ requireAll('Paper current/frozen native boundary', files.paper, [
   'Thing records are prototype-free own-field product values'
 ]);
 
-requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome']);
+requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`']);
 requireAll('Slider current native evidence', files.slider, ['direct native backend **1.4**','sealed payload **v13**','sealed native runtime **v1.4**','TRACKBAR','NSSlider','GtkScale','Frozen v1.3 compatibility boundary']);
 requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
@@ -125,13 +130,27 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Window Web structural equality matches the interpreter own-field contract',
   'Public language/docs/README name Things as prototype-free own-field records',
   'Windows Chrome smoke retries a stalled first-paint Runtime.evaluate',
-  'Command Palette / Project Tree expose Thing fields'
+  'Command Palette / Project Tree expose Thing fields',
+  '`patch doctor` self-checks interpreter, direct Wasm and C99 numeric subset'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
 ]);
 requireAll('Compiler docs Thing/Wasm boundary', files.compiler, [
-  'Things (`CREATE_THING`)','fail closed rather than silently falling back','outside the beta.32 Lean runtime-correspondence claim'
+  'Things (`CREATE_THING`)','fail closed rather than silently falling back','outside the beta.32 Lean runtime-correspondence claim',
+  '`patch doctor` self-checks a tiny numeric program'
+]);
+requireAll('Doctor compiler self-check', files.doctor, [
+  'compiler-backends','compileToDirectWasm','things are outside the direct numeric Wasm subset','PatchInterpreter','CREATE_THING'
+]);
+requireAll('CLI doctor contract', files.cliContract, [
+  'compiler-backends','Things fail closed'
+]);
+requireAll('Offline compiler doctor self-check', files.offline, [
+  'self-checks the interpreter, direct Wasm and C99 numeric subset'
+]);
+requireAll('Production doctor self-check', files.production, [
+  '`patch doctor` compiler-backend self-check'
 ]);
 requireAll('Runtime correspondence Thing/GUI boundary', files.runtime, [
   'Things, lists, text/boolean state and GUI execution remain outside the beta.32'
@@ -146,6 +165,7 @@ requireAll('Workspace Layout v2 implementation boundary', files.accessibility, [
   "patchStudio.workspaceSplit.v2","role', 'separator'","aria-orientation', 'horizontal'","max-width: 760px","--workspace-source-height","--workspace-result-height"
 ]);
 rejectAll('Roadmap obsolete closed backlog claim', files.roadmap, ['The current beta.35+ Studio/compiler product backlog is closed.']);
+rejectAll('Studio docs obsolete next-item claim', files.studio, ['including project-file/symbol quick-open through the Command Palette, a user-resizable workspace split']);
 
 for (const [label, text] of [
   ['Studio docs', files.studio],['Studio authoring docs', files.studioSurface],['Slider docs', files.slider],['Offline docs', files.offline],['Native GUI docs', files.nativeGui],['Native apps docs', files.nativeApps],['Targets docs', files.targets],['Production docs', files.production],['Roadmap', files.roadmap]
