@@ -13,7 +13,7 @@ const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
-  'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-quick-open.js','studio-diagnostics.js',
+  'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-outline-model.js','studio-diagnostics.js',
   'window-compiled.js','native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','sealed-native-gui.js','sealed-native-gui-v11.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
@@ -25,7 +25,7 @@ const SITE_WEB_STATIC_FILES = [
 const SITE_WEB_MODULE_FILES = [
   'studio-bootstrap.js','runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
   'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-toolbox.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
-  'studio-dom-sync.js','studio-diagnostics.js','studio-command-palette.js','studio-accessibility.js','sw.js'
+  'studio-dom-sync.js','studio-diagnostics.js','studio-quick-open.js','studio-command-palette.js','studio-accessibility.js','sw.js'
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');
