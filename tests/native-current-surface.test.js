@@ -44,3 +44,15 @@ test('native compatibility documentation makes current versus frozen ownership e
   ]) assert.ok(docs.includes(marker), marker);
 });
 
+test('README and public website name both live native contracts', () => {
+  const readme = read('README.md');
+  const docsPage = read('web/docs.html');
+  const downloads = read('web/downloads.html');
+  for (const marker of ['native-current-contract.js', 'native-frozen-contract.js', 'docs/NATIVE_COMPATIBILITY.md']) {
+    assert.ok(readme.includes(marker), marker);
+  }
+  assert.match(docsPage, /docs\/NATIVE_COMPATIBILITY\.md/);
+  assert.match(docsPage, /two live native product contracts/);
+  assert.match(downloads, /Those two live contracts are the product import surface/);
+});
+

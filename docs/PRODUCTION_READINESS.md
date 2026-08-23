@@ -4,7 +4,7 @@ Patch already has broad semantic/formal coverage and cross-platform build smoke 
 
 This plan deliberately separates **P0 reliability work** from research novelty.
 
-Current product baseline: **0.2.0-beta.35+**, Change IR **0.10**, Patch Studio project bundle **v3**, Native GUI IR **1.3**, sealed Window payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. The beta.32 formal runtime-correspondence boundary remains unchanged by later product work.
+Current product baseline: **0.2.0-beta.35+**, Change IR **0.10**, Patch Studio project bundle **v3**, Native GUI IR **1.3**, sealed Window payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Those two live contracts are imported through `src/native-current-contract.js` and `src/native-frozen-contract.js`; see `docs/NATIVE_COMPATIBILITY.md`. The beta.32 formal runtime-correspondence boundary remains unchanged by later product work.
 
 ## P0: required before calling Patch production-ready
 

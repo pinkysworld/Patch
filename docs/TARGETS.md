@@ -49,6 +49,8 @@ These formats remain independently smoke-tested and are not redefined by newer r
 
 ### Current Native GUI IR 1.3 / payload v13 / runtime v1.4
 
+These two lines are the live native product contracts. Current Ready/offline and ordinary `patch link` consumers import `src/native-current-contract.js`. Frozen TreeView / payload-v12 consumers import `src/native-frozen-contract.js`. Older IR/payload/runtime files remain executable include-chain evidence; see `docs/NATIVE_COMPATIBILITY.md`.
+
 Native GUI IR **1.3** adds Slider range, step, optional numeric binding and numeric `changed` event metadata while preserving all earlier supported semantics. Current token-free Ready apps and ordinary offline `patch link` on Windows, macOS and Linux seal **payload v13** into **runtime v1.4**.
 
 Slider interaction exposes a finite numeric transient `value` inside the declared range. TreeView selection exposes a transient root-to-node text-list path. Table and list-backed ListBox selections remain transient list-valued events. Persistent application state changes only through an explicit semantic Patch `change`.

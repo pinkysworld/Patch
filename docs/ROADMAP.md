@@ -49,6 +49,7 @@ Native collapse means keeping **current** (IR 1.3 / payload v13 / runtime v1.4) 
 
 - [x] stable current native facade (`src/native-current-contract.js`)
 - [x] stable frozen TreeView facade (`src/native-frozen-contract.js`)
+- [x] README, public docs and Studio website name both live contracts and the include-chain rule
 - [ ] flatten current and frozen so they no longer import the v11→v07 chain
 - [ ] retire v07–v11 consumers, site-bundle copies and manual workflows together
 - [ ] keep unversioned historical bases from being mistaken for the Ready runtime

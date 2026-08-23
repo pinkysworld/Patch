@@ -23,7 +23,7 @@ Patch Studio provides:
 
 The default Windows/macOS/Linux desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required for those Ready builds. Optional cloud/AOT remains a separate advanced route.
 
-Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Current native desktop consumers use Native GUI IR **1.3**, sealed payload **v13** and token-free Ready/offline runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line and intentionally stays Slider fail-closed. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
+Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Current native desktop consumers use Native GUI IR **1.3**, sealed payload **v13** and token-free Ready/offline runtime **v1.4** through `src/native-current-contract.js`. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line through `src/native-frozen-contract.js` and intentionally stays Slider fail-closed. See `docs/NATIVE_COMPATIBILITY.md`. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
 
 ## Active UX and reliability milestone
 

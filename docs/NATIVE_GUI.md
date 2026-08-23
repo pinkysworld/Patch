@@ -214,4 +214,4 @@ The native GUI artifacts do not use Electron, Chromium or Node.js as their GUI r
 
 Linux native GUI requires compatible GTK3 system libraries. Stable installers, real credentialed Windows signing, real macOS signing/notarization evidence, richer distribution/update channels, FreeBSD native GUI and manual assistive-technology validation remain open distribution/validation work.
 
-None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/SLIDER_STAGE1.md`, `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.
+None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/NATIVE_COMPATIBILITY.md`, `docs/SLIDER_STAGE1.md`, `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.

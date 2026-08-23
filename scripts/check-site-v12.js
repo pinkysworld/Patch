@@ -41,6 +41,8 @@ requireText(sealed12, 'PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12', 'frozen paylo
 requireText(sealed12, 'sealNativeGuiRuntimeV12', 'frozen payload v12 module');
 
 requireText(docs, 'IR 1.2 / payload v12 / runtime v1.3 frozen', 'Documentation compatibility card');
+requireText(docs, 'docs/NATIVE_COMPATIBILITY.md', 'Documentation native compatibility link');
+requireText(docs, 'two live native product contracts', 'Documentation two-contract wording');
 requireText(downloads, 'Native GUI IR 1.2 / payload v12 / runtime v1.3', 'Downloads frozen compatibility line');
 requireText(downloads, 'Slider fail-closed', 'Downloads frozen compatibility behavior');
 requireText(downloads, 'payload <strong>v13</strong>', 'Downloads current payload');
