@@ -35,7 +35,7 @@ patch link app.patch --out App
 patch doctor
 ```
 
-`patch build` preserves the normal compiler targets. `patch link` is the host-local application linker. `patch doctor` reports environment probes and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends.
+`patch build` preserves the normal compiler targets. `patch link` is the host-local application linker. `patch doctor` reports environment probes and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends. On Unix hosts with a C compiler it also compiles and runs the numeric C99 program.
 
 ## Current `patch link` contract
 

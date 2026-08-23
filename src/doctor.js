@@ -150,6 +150,13 @@ function probeCompilerBackends() {
     if (!c99.source?.includes('int main(void)') || !c99.source.includes('patch_show_number')) {
       return { ok: false, detail: 'C99 backend did not emit a numeric Console program.' };
     }
+    const c99Run = runHostC99(c99.source);
+    if (c99Run.error) {
+      return { ok: false, detail: `Host C99 compile/run failed: ${c99Run.error}` };
+    }
+    if (c99Run.executed && !hasOutput(c99Run.output, '2')) {
+      return { ok: false, detail: `Host C99 numeric run expected 2, got ${JSON.stringify(c99Run.output)}.` };
+    }
 
     const thingCompiled = compile(THING_SOURCE, { name: 'DoctorThing', kind: 'console', entry: 'doctor.patch' });
     if (!thingCompiled.ir.instructions.some(item => item.code === 'CREATE_THING')) {
@@ -168,7 +175,9 @@ function probeCompilerBackends() {
 
     return {
       ok: true,
-      detail: 'Interpreter, direct Wasm and C99 numeric subset match; Things fail closed on Wasm/C99.'
+      detail: c99Run.executed
+        ? 'Interpreter, direct Wasm and C99 numeric subset match; host C99 compiled and printed 2; Things fail closed on Wasm/C99.'
+        : 'Interpreter, direct Wasm and C99 numeric subset match; Things fail closed on Wasm/C99.'
     };
   } catch (error) {
     return { ok: false, detail: `Compiler backend self-check failed: ${error.message}` };
@@ -202,6 +211,59 @@ function runDirectWasmSync(moduleBytes) {
   });
   instance.exports.run();
   return output;
+}
+
+function runHostC99(source) {
+  // Windows CI does not gate executable C99; keep doctor green there.
+  if (process.platform === 'win32') return { executed: false, output: null, error: null };
+  const compiler = findCCompiler();
+  if (!compiler) return { executed: false, output: null, error: null };
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-doctor-c99-'));
+  try {
+    const cFile = path.join(dir, 'doctor.c');
+    const exe = path.join(dir, process.platform === 'win32' ? 'doctor.exe' : 'doctor');
+    fs.writeFileSync(cFile, source);
+    const compiled = spawnSync(compiler, ['-std=c99', '-O0', cFile, '-lm', '-o', exe], {
+      encoding: 'utf8',
+      timeout: 30000,
+      shell: false
+    });
+    if (compiled.error || compiled.status !== 0) {
+      return {
+        executed: false,
+        output: null,
+        error: compiled.error?.message ?? firstLine(compiled.stderr || compiled.stdout) ?? `C compiler exited ${compiled.status}`
+      };
+    }
+    const run = spawnSync(exe, [], { encoding: 'utf8', timeout: 10000, shell: false });
+    if (run.error || run.status !== 0) {
+      return {
+        executed: true,
+        output: null,
+        error: run.error?.message ?? firstLine(run.stderr || run.stdout) ?? `C99 program exited ${run.status}`
+      };
+    }
+    const output = String(run.stdout ?? '').replace(/\r/g, '').trimEnd().split('\n').filter(Boolean);
+    return { executed: true, output, error: null };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function findCCompiler() {
+  const preferred = process.platform === 'win32' ? 'clang' : 'cc';
+  const candidates = [process.env.CC, preferred, 'cc', 'gcc', 'clang'].filter(Boolean);
+  for (const candidate of [...new Set(candidates)]) {
+    const result = spawnSync(candidate, ['--version'], { encoding: 'utf8', timeout: 5000, shell: false });
+    if (!result.error && result.status === 0) return candidate;
+  }
+  return null;
+}
+
+function firstLine(text) {
+  const line = String(text ?? '').trim().split(/\r?\n/)[0];
+  return line || null;
 }
 
 function hasOutput(output, expected) {

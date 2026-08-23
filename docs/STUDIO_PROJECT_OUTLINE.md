@@ -9,7 +9,7 @@ The tree reads every `.patch` source in the canonical project v3 bundle. Each fi
 - **Forms** for `window` declarations;
 - **State** for `create` declarations, including Thing records and their own fields as `name.field`;
 - **Events** for `when ...` handlers;
-- **Recipes** for recipe declarations.
+- **Recipes** for recipe declarations and their parameters as `name.param`.
 
 The Patch parser remains the only source of symbol structure. The tree does not persist a duplicate AST, Form definition or private UI state.
 

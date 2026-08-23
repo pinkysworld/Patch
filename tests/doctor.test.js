@@ -45,6 +45,10 @@ test('doctor self-checks interpreter, direct Wasm and C99 plus Thing fail-closed
     assert.equal(compilers.status, 'ok', compilers.detail);
     assert.match(compilers.detail, /Interpreter, direct Wasm and C99 numeric subset match/);
     assert.match(compilers.detail, /Things fail closed on Wasm\/C99/);
+    const toolchain = report.checks.find(item => item.id === 'c99-toolchain');
+    if (toolchain?.status === 'ok' && process.platform !== 'win32') {
+      assert.match(compilers.detail, /host C99 compiled and printed 2/);
+    }
     assert.match(formatDoctorReport(report), /compiler-backends: Interpreter, direct Wasm and C99 numeric subset match/);
     assert.ok(report.checks.some(item => item.id === 'c99-toolchain'), 'environment c99-toolchain probe remains separate from the backend self-check');
   } finally {

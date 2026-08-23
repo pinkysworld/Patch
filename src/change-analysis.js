@@ -1,3 +1,4 @@
+import { clone } from './change.js';
 import { inferNumericRange, formatRange } from './range-analysis.js';
 
 const SIMPLE_NAME = /^[A-Za-z_]\w*$/;
@@ -285,5 +286,3 @@ function walk(nodes, visit) {
     if (node.elseBody) walk(node.elseBody, visit);
   }
 }
-
-function clone(value) { return JSON.parse(JSON.stringify(value)); }

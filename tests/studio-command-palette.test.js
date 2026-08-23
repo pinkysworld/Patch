@@ -58,6 +58,7 @@ test('command palette v2 derives file and symbol results from the existing proje
   assert.match(quickOpen, /type: 'symbol'/);
   assert.match(quickOpen, /fuzzyQuickOpenScore/);
   assert.match(palette, /field: 'Field'/);
+  assert.match(palette, /param: 'Param'/);
 });
 
 test('quick-open exposes Thing fields from the Project Tree model and jumps to the field line', () => {
@@ -77,6 +78,26 @@ test('quick-open exposes Thing fields from the Project Tree model and jumps to t
   const ranked = rankStudioQuickOpenItems(items, 'player.score');
   assert.equal(ranked[0]?.label, 'player.score');
 });
+
+test('quick-open exposes recipe parameters from the Project Tree model and jumps to the recipe line', () => {
+  const items = buildStudioQuickOpenItems([{
+    path: 'logic/reward.patch',
+    content: `create number score = 0
+make reward(bonus number 0..5):
+  change score:
+    add bonus
+`
+  }]);
+  const param = items.find(item => item.label === 'reward.bonus');
+  assert.ok(param, 'Recipe parameter reward.bonus should be a quick-open symbol');
+  assert.equal(param.type, 'symbol');
+  assert.equal(param.symbolKind, 'param');
+  assert.equal(param.line, 2);
+  assert.equal(param.file, 'logic/reward.patch');
+  const ranked = rankStudioQuickOpenItems(items, 'reward.bonus');
+  assert.equal(ranked[0]?.label, 'reward.bonus');
+});
+
 
 test('command palette and quick-open model are packaged for offline Studio use', () => {
   assert.match(sw, /'\.\/studio-command-palette\.css'/);

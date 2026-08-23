@@ -45,7 +45,7 @@ Ctrl/Cmd + Enter: apply / rename</pre>
   <section class="page-section">
     <h2>Command Palette</h2>
     <p>Press <strong>Ctrl/Cmd+K</strong> or choose <strong>Commands</strong> in Studio. Type to filter, use Arrow Up/Down to move through results, press Enter to run the selected command, and Escape to close.</p>
-    <p>The current palette can Run, Build, focus the source editor, switch to Designer/App/Output/Changes/IR, open Recovery and navigate to Documentation, Downloads or Help. These entries delegate to the existing Studio actions. Palette search and selection are transient IDE state and do not modify Patch source or application state. The same search also lists project files and outline symbols, including Thing fields as <code>player.score</code>.</p>
+    <p>The current palette can Run, Build, focus the source editor, switch to Designer/App/Output/Changes/IR, open Recovery and navigate to Documentation, Downloads or Help. These entries delegate to the existing Studio actions. Palette search and selection are transient IDE state and do not modify Patch source or application state. The same search also lists project files and outline symbols, including Thing fields as <code>player.score</code> and recipe parameters as <code>reward.bonus</code>.</p>
   </section>
 
   <section class="page-section">
@@ -154,7 +154,7 @@ when fruits changed:
     <h3>A TreeView or multi-select ListBox fails with a legacy payload</h3>
     <p>Use the current Native GUI IR 1.3 / payload v13 / runtime v1.4 path. Frozen older contracts intentionally fail closed rather than silently changing semantics.</p>
     <h3>A direct Wasm or C99 build rejects a Thing</h3>
-    <p>That is expected. Direct Wasm and portable C99 stay on the numeric Console subset. Thing records are prototype-free own-field product values in the interpreter and Window Web runtime and remain outside the beta.32 Lean claim. The compiler reports this as <code>PATCH2003</code>. Use <code>patch run</code>, Patch Studio or a Window Web build for Thing programs. Use <code>patch doctor</code> to self-check the interpreter plus this fail-closed boundary.</p>
+    <p>That is expected. Direct Wasm and portable C99 stay on the numeric Console subset. Thing records are prototype-free own-field product values in the interpreter and Window Web runtime and remain outside the beta.32 Lean claim. The compiler reports this as <code>PATCH2003</code>. Use <code>patch run</code>, Patch Studio or a Window Web build for Thing programs. Use <code>patch doctor</code> to self-check the interpreter plus this fail-closed boundary; on Unix it also compiles and runs the numeric C99 program.</p>
     <h3>I need support information</h3>
     <p>Use <strong>Copy diagnostics</strong> or <strong>Report</strong>. The Studio report remains local and omits source code while including version, target, compiler status and privacy-redacted errors. Multi-file compiler failures name the owning project file as <code>file:line</code>.</p>
   </section>

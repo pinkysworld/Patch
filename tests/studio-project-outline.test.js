@@ -45,6 +45,20 @@ test('Project Tree exposes Thing records and own-field symbols from the parser m
   ]);
 });
 
+test('Project Tree exposes recipe parameters as Param symbols from the parser model', () => {
+  const source = `create number score = 0
+make reward(bonus number 0..5):
+  change score:
+    add bonus
+`;
+  const model = buildOutlineModel(parse(source));
+  const recipes = model.find(group => group.key === 'recipes');
+  assert.deepEqual(recipes.items, [
+    { kind: 'recipe', line: 2, label: 'reward', meta: 'recipe' },
+    { kind: 'param', line: 2, label: 'reward.bonus', meta: 'number 0..5' }
+  ]);
+});
+
 test('Project Tree computes exact active-file editor line selection ranges', () => {
   const source = 'first\nsecond line\nthird';
   assert.deepEqual(lineSelectionRange(source, 2), { line: 2, start: 6, end: 17 });
