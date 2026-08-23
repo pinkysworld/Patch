@@ -274,7 +274,7 @@ Patch Studio derives a deterministic content revision from browser-facing pages/
 
 `web/studio-bootstrap.js` is the single registration/refresh owner. Playground and Accessibility no longer register a worker later in startup. Online code/runtime requests are fresh-first with successful exact bytes retained for offline use. If a JavaScript, CSS or runtime fetch fails and no exact cached asset exists, the request fails rather than receiving `index.html`; the cached Studio shell is a fallback only for real document navigation.
 
-The site builder validates the transitive relative ES-module import closure of generated `_site`. Standard CI then opens Studio in real Chrome, runs the default Window application and probes responsiveness after the delayed-freeze window. The Pages workflow repeats the browser test against the actual public URL after deployment before publishing a healthy `patch-studio/public-site` status.
+The site builder validates the transitive relative ES-module import closure of generated `_site`. Standard CI then opens Studio in real Chrome, runs the default Window application and probes responsiveness after the delayed-freeze window. Windows CI isolates that smoke from the 12-minute full suite and treats Chrome profile cleanup as best-effort so leftover `chrome.exe` file locks cannot fail the job. The Pages workflow repeats the browser test against the actual public URL after deployment before publishing a healthy `patch-studio/public-site` status.
 
 The shared website presentation is responsive across Studio, Documentation, Language, Downloads and Help. Documentation uses a balanced contract grid plus local text filtering without telemetry or an external search service.
 
