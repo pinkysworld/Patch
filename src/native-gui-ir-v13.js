@@ -1,4 +1,4 @@
-import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-ir.js';
+import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
 import {
   buildNativeGuiIRV12,
   validateNativeGuiIRV12,

@@ -52,6 +52,8 @@ on:
       - src/native-gui-ir-v13.js
       - src/native-current-contract.js
       - src/native-frozen-contract.js
+      - src/native-gui-frozen-lower.js
+      - src/native-gui-frozen-seal.js
       - src/native-tree-backend-adapter.js
       - src/native-slider-backend-adapter.js
       - src/sealed-native-gui.js

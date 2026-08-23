@@ -1,10 +1,9 @@
-import { NativeGuiError } from './native-gui-ir.js';
+import { NativeGuiError, flattenNativeGuiControlsV11 } from './native-gui-frozen-lower.js';
 import {
   validateNativeGuiIRV12,
   toV11CompatibleV12,
   flattenNativeGuiControlsV12
 } from './native-gui-ir-v12.js';
-import { flattenNativeGuiControlsV11 } from './native-gui-ir-v11.js';
 
 /** Adapt Native GUI IR 1.2 TreeViews to backend-v1.2 list shadows. */
 export function adaptNativeTreesForV12Backend(input) {
