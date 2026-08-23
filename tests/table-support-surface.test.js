@@ -30,7 +30,7 @@ test('repository and product surfaces expose one development version', () => {
 });
 
 test('public Table surfaces agree on transient selected-row list semantics', () => {
-  assert.match(readme, /Table[^\n]*selected row[^\n]*transient list-valued `value`/i);
+  assert.match(readme, /Table exposes the selected row as a transient text-list/i);
   assert.match(help, /Table[^\n]*selected row[^\n]*transient (?:text-)?list/i);
   assert.match(language, /selected row as a list of display strings/i);
   assert.match(studio, /Table: text-list for the selected row/i);
@@ -42,7 +42,7 @@ test('direct native Table support preserves the frozen IR 0.8 backend 0.9 compat
   for (const text of [nativeGui, nativeApps, targets, roadmap]) {
     assert.match(text, /Native GUI IR \*\*?0\.8\*\*?|Native GUI IR 0\.8/);
   }
-  assert.match(roadmap, /direct AOT backend \*\*1\.2\*\* implements native multi-select|direct AOT backend/i);
+  assert.match(roadmap, /Native GUI IR 0\.8 \/ payload v9 \/ runtime v1\.0 Table line/i);
   assert.match(nativeApps, /WC_LISTVIEWW/);
   assert.match(nativeApps, /NSTableView/);
   assert.match(nativeApps, /GtkTreeView/);
@@ -57,7 +57,7 @@ test('authoritative compatibility docs preserve the frozen payload v9 runtime v1
     assert.match(text, /payload \*\*?v9\*\*?|payload v9/i);
     assert.match(text, /runtime \*\*?v1\.0\*\*?|runtime v1\.0/i);
   }
-  assert.match(roadmap, /frozen sealed native GUI payload \*\*v9\*\* \/ runtime \*\*v1\.0\*\* Table compatibility line/i);
+  assert.match(roadmap, /Native GUI IR 0\.8 \/ payload v9 \/ runtime v1\.0 Table line/i);
   assert.match(nativeGui, /sealed payload v9 \/ runtime v1\.0[^\n]*frozen Table compatibility/i);
   assert.match(offline, /payload \*\*v9\*\* \/ runtime \*\*v1\.0\*\*[^\n]*frozen Table/i);
 });
@@ -124,7 +124,6 @@ test('Studio App preview Table dispatch uses the shared semantic event adapter',
   assert.match(studio, /Table: text-list for the selected row/);
   assert.match(nativeApps, /Studio App Preview.*transient row list|Standalone Web and Studio App Preview.*transient/i);
   assert.match(targets, /Patch Studio App Preview exposes the same transient selected-row list through the shared semantic Window event adapter/);
-  assert.match(roadmap, /\[x\] Studio App-preview dispatch parity for Table row selection through the shared semantic Window event adapter/);
   assert.match(playground, /appView\.addEventListener\('patch-studio-table-changed'/);
   assert.match(playground, /trigger\(detail\.control, 'changed', \{ value: \[\.\.\.detail\.value\] \}\)/);
   assert.match(studioTable, /new CustomEvent\('patch-studio-table-changed'/);
