@@ -35,12 +35,12 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] balanced Documentation contract layout with 3-column desktop, 2-column medium and 1-column narrow behavior instead of the squeezed four-plus-one card row
 - [x] keyboard-first **Command Palette** (`Ctrl/Cmd+K`) delegating to existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions
 - [x] Command Palette kept transient and navigation-only, with no second project/mutation model or local persistent state
+- [x] **Command Palette v2: project-file and symbol quick-open** using the existing multi-file bundle v3, parser and Project Outline models; fuzzy token-aware filtering, exact file/line editor navigation, keyboard-only operation and no second persistent project index
 - [x] README, public Documentation and Help synchronized to the current UX/reliability and native/runtime boundaries
 - [x] CI/site validation expanded for Command Palette packaging, single-worker ownership and type-safe offline fallback
 
 ### Next repository-controlled backlog
 
-- [ ] **Command Palette v2: project-file and symbol quick-open** using the existing multi-file bundle v3 and Project Outline models; acceptance: fuzzy file/symbol filtering, exact editor navigation, keyboard-only operation and no second persistent project index
 - [ ] **Workspace layout v2**: user-resizable source/result vertical split with a local IDE-only preference and a one-click reset; acceptance: editor/Designer minimum sizes, keyboard accessibility, responsive fallback and no Patch application-state impact
 - [ ] **Studio startup diagnostics v2**: visible non-blocking readiness/failure surface when a critical application module fails before normal initialization; acceptance: no silent dead UI, copyable privacy-redacted error and production browser regression coverage
 
@@ -171,4 +171,4 @@ Evidence still requiring new data or external participation:
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs, Slider and native runtime v1.4
-- **current UX/reliability milestone:** MutationObserver freeze fix, live Chrome deployment gate, single service-worker ownership, type-safe offline fallback, site-wide visual polish and Command Palette
+- **current UX/reliability milestone:** MutationObserver freeze fix, live Chrome deployment gate, single service-worker ownership, type-safe offline fallback, site-wide visual polish, Command Palette and project-file/symbol quick-open
