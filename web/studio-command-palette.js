@@ -1,5 +1,6 @@
 const dialog = document.querySelector('#commandPalette');
 const trigger = document.querySelector('#openCommandPalette');
+const statusTrigger = document.querySelector('#statusCommands');
 const input = document.querySelector('#commandPaletteInput');
 const list = document.querySelector('#commandPaletteList');
 const empty = document.querySelector('#commandPaletteEmpty');
@@ -22,8 +23,12 @@ if (dialog && trigger && input && list && empty) {
 
   let visible = commands;
   let activeIndex = 0;
+  const defer = typeof queueMicrotask === 'function'
+    ? queueMicrotask
+    : callback => Promise.resolve().then(callback);
 
   trigger.addEventListener('click', openPalette);
+  statusTrigger?.addEventListener('click', openPalette);
   window.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.isComposing) return;
     const commandKey = event.ctrlKey || event.metaKey;
@@ -106,7 +111,7 @@ if (dialog && trigger && input && list && empty) {
 
   function execute(item) {
     closePalette();
-    queueMicrotask(item.run);
+    defer(item.run);
   }
 
   function render() {
