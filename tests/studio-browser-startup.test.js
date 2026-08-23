@@ -18,15 +18,38 @@ const MIME = new Map([
 ]);
 
 function findChrome() {
+  const extraPaths = [];
+  if (process.platform === 'darwin') {
+    extraPaths.push(
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+    );
+  } else if (process.platform === 'win32') {
+    for (const root of [process.env.PROGRAMFILES, process.env['PROGRAMFILES(X86)'], process.env.LOCALAPPDATA]) {
+      if (!root) continue;
+      extraPaths.push(
+        path.join(root, 'Google', 'Chrome', 'Application', 'chrome.exe'),
+        path.join(root, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
+      );
+    }
+  }
+
   const candidates = [
     process.env.CHROME_BIN,
+    process.env.CHROMIUM_BIN,
+    ...extraPaths,
     'google-chrome',
     'google-chrome-stable',
     'chromium',
-    'chromium-browser'
+    'chromium-browser',
+    'chrome',
+    'msedge'
   ].filter(Boolean);
+
   for (const executable of candidates) {
-    const probe = spawnSync(executable, ['--version'], { encoding: 'utf8', timeout: 3000 });
+    if (path.isAbsolute(executable) && !fs.existsSync(executable)) continue;
+    const probe = spawnSync(executable, ['--version'], { encoding: 'utf8', timeout: 3000, windowsHide: true });
     if (!probe.error && probe.status === 0) return executable;
   }
   return null;
@@ -199,6 +222,14 @@ async function localStudioUrl(t) {
   assert.ok(address && typeof address === 'object');
   return withSmokeQuery(`http://127.0.0.1:${address.port}/web/index.html`);
 }
+
+test('Studio browser startup gate probes macOS and Windows Chrome locations', () => {
+  const source = fs.readFileSync(new URL(import.meta.url), 'utf8');
+  assert.match(source, /Google Chrome\.app\/Contents\/MacOS\/Google Chrome/);
+  assert.match(source, /Google', 'Chrome', 'Application', 'chrome\.exe/);
+  assert.match(source, /CHROMIUM_BIN/);
+  assert.match(source, /windowsHide: true/);
+});
 
 test('Patch Studio stays responsive in Chrome, runs a Window app and exercises current IDE navigation/layout', { timeout: 45000 }, async t => {
   const chrome = findChrome();

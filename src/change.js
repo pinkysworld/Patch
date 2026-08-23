@@ -1,4 +1,12 @@
-export function clone(value) { return value === undefined ? undefined : structuredClone(value); }
+export function clone(value) { return value === undefined ? undefined : copyValue(value); }
+
+function copyValue(value) {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(copyValue);
+  const next = Object.getPrototypeOf(value) === Object.prototype ? {} : Object.create(null);
+  for (const key of Object.keys(value)) next[key] = copyValue(value[key]);
+  return next;
+}
 
 export function formatValue(value) {
   if (typeof value === 'string') return value;
@@ -42,6 +50,17 @@ export function changesConflict(a,b) {
   return false;
 }
 
+function emptyRecord() { return Object.create(null); }
+
+function withOwnField(current, field, next) {
+  const updated = emptyRecord();
+  if (current && typeof current === 'object' && !Array.isArray(current)) {
+    for (const key of Object.keys(current)) updated[key] = current[key];
+  }
+  updated[field] = next;
+  return updated;
+}
+
 export function applySemanticOperations(value,operations) {
   let current=clone(value);
   for(const op of operations){
@@ -55,9 +74,9 @@ export function applySemanticOperations(value,operations) {
     else if(op.op==='removeAt'){next=[...old];next.splice(op.index,1);}
     else if(op.op==='insertAt'){next=[...old];next.splice(op.index,0,clone(op.value));}
     else if(op.op==='clear'){
-      if(Array.isArray(old))next=[]; else if(typeof old==='string')next=''; else if(typeof old==='number')next=0; else if(typeof old==='boolean')next=false; else if(old&&typeof old==='object')next={}; else next=null;
+      if(Array.isArray(old))next=[]; else if(typeof old==='string')next=''; else if(typeof old==='number')next=0; else if(typeof old==='boolean')next=false; else if(old&&typeof old==='object')next=emptyRecord(); else next=null;
     } else throw new Error(`Unknown semantic operation ${op.op}`);
-    if(hasField) current={...current,[op.field]:next}; else current=next;
+    if(hasField) current=withOwnField(current,op.field,next); else current=next;
   }
   return current;
 }

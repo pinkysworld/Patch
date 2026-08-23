@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { deepEqual, lookupPath, ExpressionError } from '../src/expression.js';
 import { parse, PatchSyntaxError } from '../src/parser.js';
 import { PatchInterpreter } from '../src/interpreter.js';
+import { applySemanticOperations, clone } from '../src/change.js';
 
 test('Patch structural equality is independent of object key insertion order', () => {
   assert.equal(deepEqual({ name: 'Ada', stats: { score: 3, lives: 2 } }, { stats: { lives: 2, score: 3 }, name: 'Ada' }), true);
@@ -37,6 +38,60 @@ test('Things start without an Object prototype and remain source-readable', () =
   const result = runtime.run('create thing player:\n  name = "Ada"\n  score = 1\nshow player.name\n');
   assert.equal(Object.getPrototypeOf(runtime.state.get('player')), null);
   assert.deepEqual(result.output, ['Ada']);
+});
+
+test('clone preserves a true null prototype on Thing records', () => {
+  const thing = Object.create(null);
+  thing.name = 'Ada';
+  thing.nested = Object.create(null);
+  thing.nested.score = 1;
+  const copied = clone(thing);
+  assert.notEqual(copied, thing);
+  assert.equal(Object.getPrototypeOf(copied), null);
+  assert.equal(Object.getPrototypeOf(copied.nested), null);
+  assert.equal(copied.name, 'Ada');
+  assert.equal(copied.nested.score, 1);
+  assert.equal(Object.getPrototypeOf(clone({ op: 'set', field: 'score', value: 1 })), Object.prototype);
+  assert.deepEqual(clone([1, { x: 2 }]), [1, { x: 2 }]);
+});
+
+test('applySemanticOperations keeps Thing records prototype-free', () => {
+  const before = Object.create(null);
+  before.name = 'Ada';
+  before.score = 1;
+  const after = applySemanticOperations(before, [{ op: 'set', field: 'score', value: 2 }]);
+  assert.equal(Object.getPrototypeOf(after), null);
+  assert.equal(after.score, 2);
+  assert.equal(after.name, 'Ada');
+  assert.equal(Object.getPrototypeOf(before), null);
+
+  const clearedField = applySemanticOperations(after, [{ op: 'clear', field: 'score' }]);
+  assert.equal(Object.getPrototypeOf(clearedField), null);
+  assert.equal(clearedField.score, 0);
+
+  const cleared = applySemanticOperations(after, [{ op: 'clear' }]);
+  assert.equal(Object.getPrototypeOf(cleared), null);
+  assert.deepEqual(Object.keys(cleared), []);
+});
+
+test('Things keep a null prototype after field change, clear and undo', () => {
+  const runtime = new PatchInterpreter();
+  runtime.run('create thing player:\n  name = "Ada"\n  score = 1\nchange player:\n  set score = 2\n');
+  assert.equal(Object.getPrototypeOf(runtime.state.get('player')), null);
+  assert.equal(runtime.state.get('player').score, 2);
+  assert.equal(runtime.state.get('player').constructor, undefined);
+
+  runtime.run('change player:\n  clear score\n', { reset: false });
+  assert.equal(Object.getPrototypeOf(runtime.state.get('player')), null);
+  assert.equal(runtime.state.get('player').score, 0);
+
+  runtime.run('undo\n', { reset: false });
+  assert.equal(Object.getPrototypeOf(runtime.state.get('player')), null);
+  assert.equal(runtime.state.get('player').score, 2);
+
+  runtime.run('change player:\n  clear\n', { reset: false });
+  assert.equal(Object.getPrototypeOf(runtime.state.get('player')), null);
+  assert.deepEqual(Object.keys(runtime.state.get('player')), []);
 });
 
 test('list remove and preview reuse the same structural equality contract', () => {

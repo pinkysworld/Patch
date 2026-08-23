@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const workflow = fs.readFileSync('.github/workflows/native-distribution.yml', 'utf8');
+function readRepoText(file) {
+  return fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+const workflow = readRepoText('.github/workflows/native-distribution.yml');
 
 function pullRequestPaths(text) {
   const match = text.match(/pull_request:\n[\s\S]*?paths:\n([\s\S]*?)\n\nconcurrency:/);

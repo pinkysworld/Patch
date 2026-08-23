@@ -2,9 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const surface = fs.readFileSync('docs/STUDIO_AUTHORING_SURFACE.md', 'utf8');
-const docsPage = fs.readFileSync('web/docs.html', 'utf8');
-const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
+function readRepoText(file) {
+  return fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+const surface = readRepoText('docs/STUDIO_AUTHORING_SURFACE.md');
+const docsPage = readRepoText('web/docs.html');
+const workspace = readRepoText('web/designer-workspace.js');
 
 test('current Studio authoring surface records the complete Form lifecycle', () => {
   for (const marker of [
