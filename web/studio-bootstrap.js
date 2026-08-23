@@ -4,10 +4,10 @@
   const reloadGuardKey = 'patch-studio-sw-reload-guard';
   const scriptUrl = document.currentScript?.src ? new URL(document.currentScript.src, window.location.href) : null;
   const siteRevision = scriptUrl?.searchParams.get('v') || '';
+  const reloadGuardValue = siteRevision || 'unversioned';
   let reloadedForActivation = false;
   try {
-    reloadedForActivation = sessionStorage.getItem(reloadGuardKey) === '1';
-    if (reloadedForActivation) sessionStorage.removeItem(reloadGuardKey);
+    reloadedForActivation = sessionStorage.getItem(reloadGuardKey) === reloadGuardValue;
   } catch {}
 
   const hadController = Boolean(navigator.serviceWorker.controller);
@@ -16,7 +16,7 @@
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloadedForActivation || reloadRequested) return;
     reloadRequested = true;
-    try { sessionStorage.setItem(reloadGuardKey, '1'); } catch {}
+    try { sessionStorage.setItem(reloadGuardKey, reloadGuardValue); } catch {}
     window.location.reload();
   });
 
