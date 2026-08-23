@@ -5,13 +5,16 @@ import { execFileSync } from 'node:child_process';
 
 const html = fs.readFileSync('web/index.html', 'utf8');
 const palette = fs.readFileSync('web/studio-command-palette.js', 'utf8');
+const quickOpen = fs.readFileSync('web/studio-quick-open.js', 'utf8');
 const paletteCss = fs.readFileSync('web/studio-command-palette.css', 'utf8');
 const refreshCss = fs.readFileSync('web/site-refresh.css', 'utf8');
 const pagesCss = fs.readFileSync('web/site-pages.css', 'utf8');
+const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
 
 test('Studio command palette is syntax-valid, discoverable and keyboard-first', () => {
   execFileSync(process.execPath, ['--check', 'web/studio-command-palette.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'web/studio-quick-open.js'], { stdio: 'pipe' });
   assert.match(html, /id="openCommandPalette"/);
   assert.match(html, /id="statusCommands"/);
   assert.match(html, /id="commandPalette"/);
@@ -37,12 +40,32 @@ test('command palette delegates to existing Studio actions without hidden persis
     "navigate('./docs.html')", "navigate('./downloads.html')", "navigate('./help.html')"
   ]) assert.ok(palette.includes(marker), marker);
   assert.doesNotMatch(palette, /localStorage|sessionStorage|indexedDB/);
+  assert.doesNotMatch(quickOpen, /localStorage|sessionStorage|indexedDB/);
 });
 
-test('command palette is packaged for offline Studio use', () => {
+test('command palette v2 derives file and symbol results from the existing project and outline models', () => {
+  assert.match(palette, /buildStudioQuickOpenItems/);
+  assert.match(palette, /rankStudioQuickOpenItems/);
+  assert.match(palette, /getStudioProjectFiles/);
+  assert.match(palette, /activateStudioProjectFile/);
+  assert.match(palette, /lineSelectionRange/);
+  assert.match(palette, /patch:studio-project-files-changed/);
+  assert.match(palette, /patch:studio-active-file-changed/);
+  assert.match(palette, /patch:studio-quick-open/);
+  assert.match(quickOpen, /buildOutlineModel\(parse\(content\)\)/);
+  assert.match(quickOpen, /type: 'file'/);
+  assert.match(quickOpen, /type: 'symbol'/);
+  assert.match(quickOpen, /fuzzyQuickOpenScore/);
+});
+
+test('command palette and quick-open model are packaged for offline Studio use', () => {
   assert.match(sw, /'\.\/studio-command-palette\.css'/);
   assert.match(sw, /'\.\/studio-command-palette\.js'/);
+  assert.match(sw, /'\.\/studio-quick-open\.js'/);
+  assert.doesNotMatch(sw, /'\.\.\/src\/studio-quick-open\.js'/);
+  assert.match(buildSite, /'studio-quick-open\.js'/);
   assert.match(paletteCss, /\.command-palette::backdrop/);
+  assert.match(paletteCss, /\.command-palette-kind/);
   assert.match(paletteCss, /@media \(max-width: 560px\)/);
   assert.match(paletteCss, /@media \(forced-colors: active\)/);
 });

@@ -25,7 +25,7 @@ const SITE_WEB_STATIC_FILES = [
 const SITE_WEB_MODULE_FILES = [
   'studio-bootstrap.js','runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
   'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-toolbox.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
-  'studio-dom-sync.js','studio-diagnostics.js','studio-command-palette.js','studio-accessibility.js','sw.js'
+  'studio-dom-sync.js','studio-diagnostics.js','studio-quick-open.js','studio-command-palette.js','studio-accessibility.js','sw.js'
 ];
 
 SITE_HTML_FILES.splice(3, 0, 'downloads.html');

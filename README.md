@@ -29,7 +29,7 @@ The same mandatory mutation substrate is reused for Change History, undo/redo, p
 | Area | Current status |
 |---|---|
 | Language | Working interpreter/compiler frontend with Change IR 0.10 |
-| Patch Studio | Browser IDE, multi-file project bundle v3, Project Outline, source-backed Designer, recovery, diagnostics and **Ctrl/Cmd+K Command Palette** |
+| Patch Studio | Browser IDE, multi-file project bundle v3, Project Outline, source-backed Designer, recovery, diagnostics and **Ctrl/Cmd+K Command Palette** with file/symbol quick-open |
 | Designer | Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs with source-backed layout/structure editing |
 | Native desktop | Native GUI IR 1.3 / payload v13 / runtime v1.4 on Win32, AppKit and GTK3; v12/v1.3 remains frozen compatibility |
 | Ready builds | Token-free Windows, macOS and Linux paths with SHA-256 verified runtime templates |
@@ -43,7 +43,7 @@ Patch Studio keeps visual application structure in ordinary `.patch` source. For
 
 The Studio includes source-backed Forms and controls, pointer/keyboard movement and resizing, alignment/layout actions, structural Table/TreeView/Tabs editors, multi-file project state, recovery and privacy-redacted diagnostics.
 
-Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions. Palette state is transient IDE state and does not create another project or mutation model.
+Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions and also exposes the current project files and parser-derived Project Tree symbols. File results activate the canonical project file; symbol results select the exact source line. Palette state and its quick-open result set are transient IDE state and do not create another project, persistent index or mutation model.
 
 See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/STUDIO_COMMAND_PALETTE.md`](docs/STUDIO_COMMAND_PALETTE.md) and [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md).
 
@@ -119,7 +119,7 @@ patch doctor --json
 
 - [`docs/SPEC.md`](docs/SPEC.md) · language specification
 - [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) · browser IDE and build paths
-- [`docs/STUDIO_COMMAND_PALETTE.md`](docs/STUDIO_COMMAND_PALETTE.md) · keyboard-first Studio commands
+- [`docs/STUDIO_COMMAND_PALETTE.md`](docs/STUDIO_COMMAND_PALETTE.md) · keyboard-first Studio commands and project quick-open
 - [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) · visual authoring inventory
 - [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md) · native contracts and frozen compatibility lines
 - [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) · downloadable compiler/linker
