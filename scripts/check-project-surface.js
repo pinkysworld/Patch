@@ -83,8 +83,11 @@ requireAll('Command Palette docs', files.commandPaletteDocs, [
 
 for (const [label, text] of [
   ['Patch Studio docs', files.studio],['Studio authoring docs', files.studioSurface],['Slider docs', files.slider],['Offline compiler docs', files.offline],
-  ['Native GUI docs', files.nativeGui],['Native apps docs', files.nativeApps],['Targets docs', files.targets],['Production readiness docs', files.production],['Roadmap', files.roadmap]
+  ['Native GUI docs', files.nativeGui],['Native apps docs', files.nativeApps],['Targets docs', files.targets],['Production readiness docs', files.production]
 ]) requireAll(`${label} current native line`, text, ['Native GUI IR **1.3**','v13','v1.4']);
+requireAll('Roadmap current native line', files.roadmap, [
+  'Native GUI IR: **1.3**','current sealed native GUI payload: **v13**','current token-free Ready/offline runtime: **v1.4** on Windows, macOS and Linux'
+]);
 
 requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome']);
 requireAll('Slider current native evidence', files.slider, ['direct native backend **1.4**','sealed payload **v13**','sealed native runtime **v1.4**','TRACKBAR','NSSlider','GtkScale','Frozen v1.3 compatibility boundary']);
