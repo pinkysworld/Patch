@@ -112,7 +112,24 @@ function formatValue(value){
   if(value&&typeof value==='object')return Object.entries(value).map(([k,v])=>k+'='+formatValue(v)).join(', ');
   return String(value);
 }
-function deepEqual(a,b){return JSON.stringify(a)===JSON.stringify(b);}
+function deepEqual(a,b){
+  if(a===b)return true;
+  if(typeof a==='number'&&typeof b==='number'&&Number.isNaN(a)&&Number.isNaN(b))return true;
+  if(Array.isArray(a)||Array.isArray(b)){
+    if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length)return false;
+    for(let i=0;i<a.length;i++)if(!deepEqual(a[i],b[i]))return false;
+    return true;
+  }
+  if(!a||!b||typeof a!=='object'||typeof b!=='object')return false;
+  const aKeys=Object.keys(a).sort();
+  const bKeys=Object.keys(b).sort();
+  if(aKeys.length!==bKeys.length)return false;
+  for(let i=0;i<aKeys.length;i++){
+    const key=aKeys[i];
+    if(key!==bKeys[i]||!Object.prototype.hasOwnProperty.call(b,key)||!deepEqual(a[key],b[key]))return false;
+  }
+  return true;
+}
 
 const TOKEN=/\s*(?:(\d+(?:\.\d+)?)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|([A-Za-z_][A-Za-z0-9_]*)|(==|!=|<=|>=|\+|-|\*|\/|%|<|>|\(|\)|\[|\]|,|\.))/gy;
 function tokenize(source){

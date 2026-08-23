@@ -1,4 +1,5 @@
 import { PatchRuntimeError } from './interpreter.js';
+import { clone } from './change.js';
 
 // Slider Stage 1 extends the transient event-local value contract with bounded finite numeric values.
 export const PATCH_WINDOW_EVENTS_VERSION = '0.9';
@@ -73,7 +74,7 @@ export function triggerWindowEvent(runtime, control, event = 'clicked', payload 
     const matches = (runtime.events ?? []).filter(handler => handler.control === control && handler.event === event);
     if (!matches.length) throw new PatchRuntimeError(`There is no '${event}' action for '${control}'.`);
 
-    const locals = { value: structuredClone(payload.value) };
+    const locals = { value: clone(payload.value) };
     for (const handler of matches) {
       runtime.withCause(
         { kind: 'event', control, event, line: handler.line },

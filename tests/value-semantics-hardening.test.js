@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { deepEqual, lookupPath, ExpressionError } from '../src/expression.js';
 import { parse, PatchSyntaxError } from '../src/parser.js';
 import { PatchInterpreter } from '../src/interpreter.js';
@@ -101,4 +102,18 @@ test('list remove and preview reuse the same structural equality contract', () =
 
   const preview = runtime.run('create number value = 0 / 0\npreview:\n  change value:\n    set = 0 / 0\n', { reset: true });
   assert.ok(preview.output.includes('preview no changes'));
+});
+
+test('standalone Window Web runtime uses structural equality, not JSON serialization', () => {
+  const source = fs.readFileSync(new URL('../src/window-webapp.js', import.meta.url), 'utf8');
+  assert.match(source, /Object\.keys\(a\)\.sort\(\)/);
+  assert.match(source, /Number\.isNaN\(a\)/);
+  assert.doesNotMatch(source, /JSON\.stringify\(a\)===JSON\.stringify\(b\)/);
+});
+
+test('Window event-local values reuse the prototype-preserving semantic clone', () => {
+  const source = fs.readFileSync(new URL('../src/window-events.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ clone \} from '\.\/change\.js'/);
+  assert.match(source, /value: clone\(payload\.value\)/);
+  assert.doesNotMatch(source, /structuredClone\(payload\.value\)/);
 });

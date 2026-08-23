@@ -113,6 +113,39 @@ show player.constructor`;
   assert.match(executed.app.querySelector('p').textContent, /player\.constructor/);
 });
 
+test('Window Web runtime compares Things structurally regardless of field insertion order', () => {
+  const source = `create thing left:
+  name = "Ada"
+  score = 1
+
+create thing right:
+  score = 1
+  name = "Ada"
+
+create list players = []
+
+change players:
+  add left
+
+change players:
+  remove right
+
+window "Equal":
+  text "ready"
+
+show left == right
+show players`;
+
+  const expected = new PatchInterpreter().run(source);
+  assert.deepEqual(expected.output, ['true', '']);
+  assert.deepEqual(expected.state.players, []);
+
+  const built = buildStandaloneWebApp(source, { name: 'ThingEqual', kind: 'window' });
+  assert.doesNotMatch(built.html, /JSON\.stringify\(a\)===JSON\.stringify\(b\)/);
+  const executed = executeWindowHtml(built.html);
+  assert.equal(executed.output.textContent, expected.output.join('\n'));
+});
+
 test('Window Web runtime rejects writes to missing thing fields like the interpreter', () => {
   const source = `create thing player:
   score = 1
