@@ -285,6 +285,9 @@ function lowerInstruction(instruction, ctx) {
       return;
     }
 
+    case 'CREATE_THING':
+      throw unsupported(`things are outside the direct numeric Wasm subset at line ${instruction.line ?? '?'}`);
+
     case 'CHANGE': {
       const index = requireDefinedNumeric(instruction.target, globals, defined, instruction.line);
 

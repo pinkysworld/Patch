@@ -45,6 +45,19 @@ show score</pre>
     <p>Beta.32 introduced invocation-frame-aware direct-Wasm correspondence for the supported finite-call-tree subset. The current beta.35+ product work expands Studio and native GUI behavior without widening that formal claim. Patch does not claim a fully verified compiler.</p>
   </section>
 
+  <section class="page-section" data-thing-language-support="own-field">
+    <h2>Things are own-field records</h2>
+    <p>Patch values are numbers, text, booleans, lists and Things. A Thing is a finite record of named fields. The field names <code>__proto__</code>, <code>prototype</code> and <code>constructor</code> are rejected. Runtime Thing storage is prototype-free, and paths such as <code>player.score</code> only follow own fields.</p>
+    <pre class="page-code">create thing player:
+  name = "Sam"
+  score = 0
+
+change player:
+  add 10 to score
+show player.name</pre>
+    <p>Thing equality is structural: two Things compare equal when they have the same own field names and values, independent of declaration order. JSON serialization is not the equality oracle. Direct Wasm and portable C99 stay on the numeric Console subset and fail closed on Things. Thing records are product runtime, not part of the beta.32 Lean runtime-correspondence claim.</p>
+  </section>
+
   <section class="page-section" data-slider-language-support="native-v14">
     <h2>Slider Stage 1 uses transient numbers</h2>
     <p>A Slider declares its numeric range directly in Patch source. Its <code>changed</code> event receives a finite numeric <code>value</code>. Moving the toolkit control does not itself mutate persistent Patch state.</p>

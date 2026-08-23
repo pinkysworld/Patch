@@ -24,11 +24,13 @@ show score
 
 The same mandatory mutation substrate is reused for Change History, undo/redo, provenance, semantic Change Signatures, magnitude-aware Change Capabilities, range evidence and generated Lean certificates.
 
+Values are numbers, text, booleans, lists and Things. Thing fields are application data: `__proto__`, `prototype` and `constructor` are rejected fail-closed, runtime records stay prototype-free, and equality compares own fields independent of insertion order. Direct Wasm and portable C99 remain the numeric Console subset and fail closed on Things; that stays outside the beta.32 formal claim.
+
 ## Current product
 
 | Area | Current status |
 |---|---|
-| Language | Working interpreter/compiler frontend with Change IR 0.10 |
+| Language | Working interpreter/compiler frontend with Change IR 0.10; numbers, text, booleans, lists and prototype-free Things |
 | Patch Studio | Browser IDE, multi-file project bundle v3, Project Outline, source-backed Designer, recovery, diagnostics and **Ctrl/Cmd+K Command Palette** with file/symbol quick-open |
 | Designer | Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs with source-backed layout/structure editing |
 | Native desktop | Two live contracts: current Native GUI IR 1.3 / payload v13 / runtime v1.4, frozen TreeView IR 1.2 / payload v12 / runtime v1.3 |

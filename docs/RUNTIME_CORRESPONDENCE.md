@@ -208,6 +208,8 @@ Explicit proof-free/trust boundaries remain:
 
 Beta.32 is therefore **not** a full forward/backward compiler simulation theorem and Patch is **not** a fully verified compiler.
 
+Things, lists, text/boolean state and GUI execution remain outside the beta.32 Lean runtime-correspondence claim. Direct Wasm and portable C99 fail closed on those constructs instead of treating them as certified.
+
 ## Reproducing the current evidence
 
 Generate the ordinary and repeated Beta.32 runtime certificates with:

@@ -109,6 +109,9 @@ requireAll('Language current Slider contract', language, [
   'Slider Stage 1','Native GUI IR 1.3','payload v13','runtime v1.4','TRACKBAR','NSSlider','GtkScale',
   'Native GUI IR 1.2 / payload v12 / runtime v1.3','frozen'
 ]);
+requireAll('Language Thing own-field contract', language, [
+  'Things are own-field records','__proto__','prototype-free','JSON serialization is not the equality oracle','fail closed on Things'
+]);
 
 const help = read('_site/help.html');
 requireAll('Help page current control surface', help, [

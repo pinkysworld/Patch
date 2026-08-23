@@ -62,14 +62,16 @@ requireScript('check:site', 'node scripts/check-site.js && node scripts/check-si
 requireAll('README current contract', files.readme, [
   'Development beta `0.2.0-beta.35`','Change IR `0.10`','Native GUI IR `1.3`','payload `v13`','desktop runtime `v1.4`',
   'Native GUI IR 1.3 / sealed payload v13 / runtime v1.4','Ctrl/Cmd+K Command Palette','real Chrome responsiveness gate',
-  'native-current-contract.js','native-frozen-contract.js','docs/NATIVE_COMPATIBILITY.md'
+  'native-current-contract.js','native-frozen-contract.js','docs/NATIVE_COMPATIBILITY.md',
+  'prototype-free Things','fail closed on Things'
 ]);
 requireAll('README native Slider evidence', files.readme, ['TRACKBAR','NSSlider','GtkScale']);
 requireAll('README scoped assurance', files.readme, ['beta.32','does **not** claim full compiler/runtime verification']);
 rejectAll('README obsolete backlog boundary', files.readme, ['product backlog is closed','future versioned native contract adds parity']);
 
 requireAll('Language SPEC current contract', files.spec, [
-  'Status: **0.2.0-beta.35 development**','Change IR **0.10**','**beta.32**','`slider`','`table`','`tree`','`tabs`','menu item separator enabled checked shortcut','__proto__','constructor'
+  'Status: **0.2.0-beta.35 development**','Change IR **0.10**','**beta.32**','`slider`','`table`','`tree`','`tabs`','menu item separator enabled checked shortcut','__proto__','constructor',
+  'JSON serialization is not the equality oracle','direct Wasm and portable C99 fail closed'
 ]);
 rejectAll('Language SPEC obsolete assurance/product markers', files.spec, ['0.2.0-beta.8','Change IR 0.6','Beta 8 source/evidence']);
 
@@ -81,11 +83,15 @@ requireAll('Studio current product surface', files.website, [
   'Native GUI IR 1.3','payload v13','runtime v1.4','Browser-gated delivery','id="openCommandPalette"','id="commandPalette"','./studio-command-palette.js'
 ]);
 requireAll('Language current native contract', files.language, ['Native GUI IR 1.3','payload v13','runtime v1.4','TRACKBAR','NSSlider','GtkScale','frozen']);
+requireAll('Language Thing own-field contract', files.language, [
+  'Things are own-field records','__proto__','prototype-free','JSON serialization is not the equality oracle','fail closed on Things'
+]);
 requireAll('Documentation current map', files.docsPage, [
   'Native GUI IR 1.3 / payload v13 / runtime v1.4','IR 1.2 / payload v12 / runtime v1.3 frozen','beta.32 assurance boundary',
   'Command Palette','Public deploy gated by real Chrome responsiveness','docs/STUDIO_COMMAND_PALETTE.md',
   'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
-  'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages'
+  'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages',
+  'prototype-free Things'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']);
 requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md']);
@@ -104,7 +110,8 @@ requireAll('Roadmap current native line', files.roadmap, [
 requireAll('Paper current/frozen native boundary', files.paper, [
   'current native product contract: **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**',
   'frozen TreeView compatibility contract: **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3**',
-  'formal runtime-correspondence milestone: **beta.32**'
+  'formal runtime-correspondence milestone: **beta.32**',
+  'Thing records are prototype-free own-field product values'
 ]);
 
 requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome']);
@@ -114,10 +121,17 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'type-safe offline routing','Command Palette','Command Palette v2: project-file and symbol quick-open','Workspace Layout v2','Studio startup diagnostics v2',
   'Windows Chrome smoke isolated from the 12-minute full suite',
   'Windows Chrome profile cleanup is best-effort',
-  'Window Web structural equality matches the interpreter own-field contract'
+  'Window Web structural equality matches the interpreter own-field contract',
+  'Public language/docs/README name Things as prototype-free own-field records'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
+]);
+requireAll('Compiler docs Thing/Wasm boundary', files.compiler, [
+  'Things (`CREATE_THING`)','fail closed rather than silently falling back','outside the beta.32 Lean runtime-correspondence claim'
+]);
+requireAll('Runtime correspondence Thing/GUI boundary', files.runtime, [
+  'Things, lists, text/boolean state and GUI execution remain outside the beta.32'
 ]);
 requireAll('Window event adapter clones event-local values', files.windowEvents, [
   "import { clone } from './change.js'", 'clone(payload.value)'
