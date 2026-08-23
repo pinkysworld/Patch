@@ -16,6 +16,8 @@ if (resultTabList && typeof MutationObserver !== 'undefined') {
   observer.observe(resultTabList, { attributes: true, subtree: true, attributeFilter: ['class'] });
 }
 
+announceStudioReady();
+
 function installSkipLink() {
   skipLink?.addEventListener('click', event => {
     event.preventDefault();
@@ -66,6 +68,12 @@ function syncResultTabs() {
     tab.setAttribute('aria-selected', selected ? 'true' : 'false');
     tab.tabIndex = selected ? 0 : -1;
   }
+}
+
+function announceStudioReady() {
+  window.dispatchEvent(new CustomEvent('patch:studio-ready', {
+    detail: { module: 'studio-accessibility' }
+  }));
 }
 
 function installWorkspaceLayoutV2() {

@@ -18,6 +18,7 @@ const recentErrors = [];
 const MAX_RECENT_ERRORS = 10;
 
 installStylesheet();
+adoptStartupDiagnostics();
 installErrorCapture();
 copyButton?.addEventListener('click', copyDiagnostics);
 downloadButton?.addEventListener('click', downloadDiagnostics);
@@ -75,6 +76,24 @@ async function downloadDiagnostics() {
     rememberError('diagnostics-report', error);
     setState('Could not create report.', error?.message);
   }
+}
+
+function adoptStartupDiagnostics() {
+  const startup = window.__patchStudioStartupDiagnostics;
+  if (startup?.snapshot) {
+    for (const entry of startup.snapshot()) rememberStartupEntry(entry);
+  }
+  window.addEventListener('patch:studio-startup-diagnostic', event => {
+    rememberStartupEntry(event.detail);
+  });
+}
+
+function rememberStartupEntry(entry) {
+  if (!entry) return;
+  const type = `startup-${String(entry.type ?? 'error')}`;
+  const asset = String(entry.asset ?? '').trim();
+  const message = `${asset ? `${asset}: ` : ''}${String(entry.message ?? 'Unknown startup error')}`;
+  rememberError(type, message);
 }
 
 function installErrorCapture() {
