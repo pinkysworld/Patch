@@ -10,8 +10,8 @@ const sw = fs.readFileSync('web/sw.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
 test('beta35 multi-select workflow remains visible after current native Slider parity lands', () => {
-  assert.match(index, /Slider Stage 1 with transient numeric values across browser, Standalone Web and supported native Ready\/offline Windows, macOS and Linux paths/i);
-  assert.match(index, /multi-select ListBox and TreeView remain available/i);
+  assert.match(index, /value="sliderWindow">Slider app<\/option>/i);
+  assert.match(index, /Current Studio:[^<]*multi-file project bundle v3,[^<]*source-backed Designer,[^<]*Slider,[^<]*multi-select ListBox,[^<]*Table,[^<]*TreeView and Tabs/i);
   assert.match(index, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/i);
   assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
   assert.match(index, /Persistent application state still changes only through explicit <b>change<\/b>/i);
