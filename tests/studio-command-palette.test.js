@@ -13,10 +13,13 @@ const sw = fs.readFileSync('web/sw.js', 'utf8');
 test('Studio command palette is syntax-valid, discoverable and keyboard-first', () => {
   execFileSync(process.execPath, ['--check', 'web/studio-command-palette.js'], { stdio: 'pipe' });
   assert.match(html, /id="openCommandPalette"/);
+  assert.match(html, /id="statusCommands"/);
   assert.match(html, /id="commandPalette"/);
   assert.match(html, /id="commandPaletteInput"/);
   assert.match(html, /\.\/studio-command-palette\.css/);
   assert.match(html, /\.\/studio-command-palette\.js/);
+  assert.doesNotMatch(html, /document\.querySelector\('#statusCommands'\).*addEventListener/);
+  assert.match(palette, /statusTrigger\?\.addEventListener\('click', openPalette\)/);
   assert.match(palette, /event\.key\.toLowerCase\(\) !== 'k'/);
   assert.match(palette, /ArrowDown/);
   assert.match(palette, /ArrowUp/);
