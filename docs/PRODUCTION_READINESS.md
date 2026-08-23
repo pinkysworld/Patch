@@ -46,7 +46,7 @@ Programmatic sample/Designer mutations and normal typing use shared source/proje
 - [x] crash/build report bundle with Patch version, target, diagnostics and redacted logs
 - [x] no telemetry by default; any future telemetry must be explicit opt-in
 
-Patch diagnostics use the versioned `patch-diagnostic` envelope and stable `PATCHxxxx` code families. Parser failures retain exact line numbers and normalized diagnostics derive locations without embedding user source unnecessarily.
+Patch diagnostics use the versioned `patch-diagnostic` envelope and stable `PATCHxxxx` code families. Parser failures retain exact line numbers and normalized diagnostics derive locations without embedding user source unnecessarily. Studio multi-file projects map composed compiler lines back to owning `file:line` through existing composition segments.
 
 Patch Studio diagnostics are local-only. Reports record Patch version, project kind, selected build target, compiler state, source/project size and hash, PWA/browser state and bounded redacted errors. The source body is not uploaded; source echoes, common token forms, email addresses and user-home path components are redacted. Neither Copy diagnostics nor `.patchreport` creation has a network upload path.
 
@@ -112,7 +112,7 @@ GitHub Actions are monitored through Dependabot and JavaScript/TypeScript is sca
 
 `docs/CLI_CONTRACT.md` freezes the coarse exit taxonomy as `0 = success`, `1 = CLI usage`, `2 = processing/build/validation failure`. `check`, `formal`, `certify` and `build` expose the versioned `patch-cli-result` v1 envelope. Human-readable behavior remains the default without `--json`.
 
-Backend source mapping is incremental rather than complete. Direct-Wasm and several C99 fail-closed errors retain original Patch line hints. Generated C/C++/Rust compiler/linker locations are deliberately not reinterpreted as Patch source lines. The P1 item therefore remains open for remaining native/toolchain/runtime/packaging error classes.
+Backend source mapping is incremental rather than complete. Studio diagnostics and compiler/build errors map composed project lines to owning `file:line`. Direct-Wasm and several C99 fail-closed errors retain original Patch line hints. Generated C/C++/Rust compiler/linker locations are deliberately not reinterpreted as Patch source lines. The P1 item therefore remains open for remaining native/toolchain/runtime/packaging error classes.
 
 ### Resilience
 - [x] atomic Studio saves and recovery snapshots

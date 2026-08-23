@@ -8,6 +8,7 @@ import {
   serializePatchDiagnostic,
   validatePatchDiagnostic
 } from '../src/diagnostics.js';
+import { buildStudioProjectBundle, composeStudioProjectSource } from '../src/studio-project.js';
 
 test('unknown statements receive a stable syntax code and exact source line', () => {
   const source = 'if true:\n  nonsense command\nshow 1';
@@ -55,3 +56,56 @@ test('explicit PATCH codes survive normalization', () => {
   assert.equal(diagnostic.code, 'PATCH7777');
   assert.deepEqual(diagnostic.location, { entry: 'custom.patch', line: 4, column: 9 });
 });
+
+test('composed project diagnostics map to the owning file:line without changing schema version', () => {
+  const bundle = buildStudioProjectBundle({
+    name: 'BrokenReward',
+    kind: 'console',
+    files: [
+      { path: 'main.patch', content: 'create number score = 0\n' },
+      { path: 'logic/reward.patch', content: 'if true:\n  frobnicate score\nshow score\n' }
+    ]
+  });
+  const composition = composeStudioProjectSource(bundle);
+  let error;
+  try { parse(composition.source); } catch (caught) { error = caught; }
+  const diagnostic = diagnosticFromError(error, {
+    source: composition.source,
+    entry: composition.entry,
+    composition,
+    phase: 'compile'
+  });
+  assert.equal(diagnostic.format, 'patch-diagnostic');
+  assert.equal(diagnostic.version, 1);
+  assert.equal(diagnostic.code, PATCH_DIAGNOSTIC_CODES.UNKNOWN_STATEMENT);
+  assert.deepEqual(diagnostic.location, {
+    entry: 'main.patch',
+    file: 'logic/reward.patch',
+    line: 2,
+    column: 3
+  });
+  assert.match(formatPatchDiagnostic(diagnostic), /^PATCH1001 logic\/reward\.patch:2:3 /);
+  assert.equal(validatePatchDiagnostic(diagnostic), diagnostic);
+});
+
+test('single-file composition keeps the existing entry location shape', () => {
+  const bundle = buildStudioProjectBundle({
+    name: 'Solo',
+    kind: 'console',
+    files: [{ path: 'main.patch', content: 'if true:\n  nonsense command\nshow 1\n' }]
+  });
+  const composition = composeStudioProjectSource(bundle);
+  let error;
+  try { parse(composition.source); } catch (caught) { error = caught; }
+  const diagnostic = diagnosticFromError(error, {
+    source: composition.source,
+    entry: composition.entry,
+    composition,
+    phase: 'compile'
+  });
+  assert.equal(diagnostic.location.entry, 'main.patch');
+  assert.equal(diagnostic.location.file, 'main.patch');
+  assert.equal(diagnostic.location.line, 2);
+  assert.match(formatPatchDiagnostic(diagnostic), /^PATCH1001 main\.patch:2:3 /);
+});
+

@@ -282,7 +282,7 @@ The shared website presentation is responsive across Studio, Documentation, Lang
 
 Recovery keeps deduplicated local snapshots and supports Snapshot now, Restore, Export, Delete and Clear all.
 
-`Copy diagnostics` and `.patchreport` create local privacy-redacted support bundles. They include version, target, source size/hash, compiler state, browser/PWA state and bounded recent errors but omit project source. No diagnostics upload path exists in Studio.
+`Copy diagnostics` and `.patchreport` create local privacy-redacted support bundles. They include version, target, source size/hash, compiler state, browser/PWA state and bounded recent errors but omit project source. Compiler failures in a multi-file v3 project report the owning `file:line` after mapping the composed stream. No diagnostics upload path exists in Studio.
 
 ## Formal/research boundary
 
@@ -292,10 +292,6 @@ Product/UI/runtime work through Native GUI IR 1.3 / payload v13 / runtime v1.4 a
 
 ## Where future work belongs
 
-The next repository-controlled Studio work is explicit rather than a vague never-ending list:
+Command Palette v2, Workspace Layout v2, startup diagnostics v2 and composed `file:line` diagnostics are complete. Remaining repository-controlled work is specification/documentation synchronization, semantic object hardening and CI maintenance before any new product surface. See `docs/ROADMAP.md`.
 
-- Command Palette v2 project-file/symbol quick-open through existing multi-file/Outline models;
-- user-resizable source/result workspace split stored only as IDE preference;
-- clearer startup diagnostics when a critical application module fails before normal initialization.
-
-Distribution credentials, manual accessibility validation and research evidence remain in their separate roadmap gates. See `docs/ROADMAP.md`.
+Distribution credentials, manual accessibility validation and research evidence remain in their separate roadmap gates.

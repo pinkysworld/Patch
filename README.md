@@ -43,7 +43,7 @@ Values are numbers, text, booleans, lists and Things. Thing fields are applicati
 
 Patch Studio keeps visual application structure in ordinary `.patch` source. Form dimensions, control geometry, Slider ranges, Table rows, TreeView hierarchy and Tabs pages are not stored in a second hidden form document.
 
-The Studio includes source-backed Forms and controls, pointer/keyboard movement and resizing, alignment/layout actions, structural Table/TreeView/Tabs editors, multi-file project state, recovery and privacy-redacted diagnostics.
+The Studio includes source-backed Forms and controls, pointer/keyboard movement and resizing, alignment/layout actions, structural Table/TreeView/Tabs editors, multi-file project state, recovery and privacy-redacted diagnostics that name owning `file:line`.
 
 Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions and also exposes the current project files and parser-derived Project Tree symbols, including Thing fields as `player.score`. File results activate the canonical project file; symbol results select the exact source line. Palette state and its quick-open result set are transient IDE state and do not create another project, persistent index or mutation model.
 

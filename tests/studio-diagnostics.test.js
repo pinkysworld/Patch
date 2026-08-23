@@ -8,6 +8,7 @@ import {
   serializeStudioDiagnosticReport,
   sha256Text
 } from '../src/studio-diagnostics.js';
+import { buildStudioProjectBundle, composeStudioProjectSource } from '../src/studio-project.js';
 
 test('Studio diagnostic report hashes source without embedding it', async () => {
   const source = 'create text secret = "private project words"\nshow secret';
@@ -67,6 +68,37 @@ test('compiler errors include stable code and exact line/column without source t
   assert.match(text, /Compiler error: PATCH1001 main\.patch:2:3/);
   assert.doesNotMatch(text, /if true/);
 });
+
+test('compiler errors in a composed project report the owning file:line', async () => {
+  const bundle = buildStudioProjectBundle({
+    name: 'Split',
+    kind: 'console',
+    files: [
+      { path: 'main.patch', content: 'create number score = 0\n' },
+      { path: 'logic/reward.patch', content: 'if true:\n  frobnicate score\nshow score\n' }
+    ]
+  });
+  const composition = composeStudioProjectSource(bundle);
+  let compilerError;
+  try { parse(composition.source); } catch (error) { compilerError = error; }
+  const report = await buildStudioDiagnosticReport({
+    source: composition.source,
+    compilerError,
+    entry: composition.entry,
+    composition
+  });
+  assert.equal(report.compiler.error.code, 'PATCH1001');
+  assert.deepEqual(report.compiler.error.location, {
+    entry: 'main.patch',
+    file: 'logic/reward.patch',
+    line: 2,
+    column: 3
+  });
+  const text = formatStudioDiagnosticReport(report);
+  assert.match(text, /Compiler error: PATCH1001 logic\/reward\.patch:2:3/);
+  assert.doesNotMatch(text, /frobnicate/);
+});
+
 
 test('plain-text diagnostics remain useful without carrying source', async () => {
   const source = 'create number value = 1\nshow value';

@@ -12,6 +12,8 @@ import { buildLinuxNativeGuiPackage, buildMacosNativeGuiPackage } from '../src/s
 import { buildLocalNativeKit } from '../src/local-native-kit.js';
 import { buildPrebuiltNativePackage, prebuiltNativeTemplateUrl } from '../src/prebuilt-native.js';
 import { buildPrebuiltCompiledWindowPackage } from '../src/prebuilt-window.js';
+import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
+import { getStudioProjectDiagnosticContext } from './project-lifecycle.js';
 
 const REPOSITORY = 'pinkysworld/Patch';
 const NATIVE_WORKFLOW = 'native-apps.yml';
@@ -53,6 +55,24 @@ nativeBuildMode.addEventListener('change', refreshNativePanel);
 cloudControls.cancel.addEventListener('click', cancelActiveCloudBuild);
 cloudControls.retry.addEventListener('click', retryLastCloudBuild);
 refreshNativePanel();
+
+function formatNativeStop(error) {
+  const message = error?.message ?? String(error);
+  if (error?.name === 'PatchBuildCancelledError' || error?.name === 'PatchBuildTimeoutError') return message;
+  try {
+    const context = getStudioProjectDiagnosticContext();
+    const diagnostic = diagnosticFromError(error, {
+      source: context.source,
+      entry: context.entry,
+      composition: context.composition,
+      phase: 'build'
+    });
+    if (diagnostic.location) return formatPatchDiagnostic(diagnostic);
+  } catch {
+    /* keep the original transport or host message */
+  }
+  return message;
+}
 
 buildButton.addEventListener('click', async event => {
   const platform = nativeTargets.get(buildTarget.value);
@@ -188,7 +208,7 @@ buildButton.addEventListener('click', async event => {
     lastCloudBuildSnapshot = cloudSnapshot;
     await runCloudBuild(cloudSnapshot);
   } catch (error) {
-    output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
+    output.textContent = `Native build stopped:\n${formatNativeStop(error)}`;
     status.textContent = error?.name === 'PatchBuildCancelledError'
       ? 'Cloud build cancelled'
       : error?.name === 'PatchBuildTimeoutError'
@@ -449,7 +469,7 @@ async function retryLastCloudBuild() {
   try {
     await runCloudBuild(snapshot);
   } catch (error) {
-    output.textContent = `Native build stopped:\n${error?.message ?? String(error)}`;
+    output.textContent = `Native build stopped:\n${formatNativeStop(error)}`;
     status.textContent = error?.name === 'PatchBuildCancelledError'
       ? 'Cloud build cancelled'
       : error?.name === 'PatchBuildTimeoutError'

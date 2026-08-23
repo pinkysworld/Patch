@@ -75,6 +75,7 @@ test('project lifecycle exports multi-file editor project and build APIs', () =>
     'export function getStudioProjectEditorState()',
     'export function getStudioProjectBundle()',
     'export function getStudioProjectBuildInput()',
+    'export function getStudioProjectDiagnosticContext()',
     'export function getStudioProjectFiles()',
     'export function getActiveStudioProjectFile()',
     'export function activateStudioProjectFile(path)',

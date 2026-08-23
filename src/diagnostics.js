@@ -1,4 +1,5 @@
 import { inferBackendPatchLine } from './backend-diagnostic-context.js';
+import { mapStudioProjectLine } from './studio-project.js';
 
 export const PATCH_DIAGNOSTIC_FORMAT = 'patch-diagnostic';
 export const PATCH_DIAGNOSTIC_VERSION = 1;
@@ -25,11 +26,14 @@ export function diagnosticFromError(error, options = {}) {
   const phase = normalizePhase(options.phase);
   const rawMessage = String(item.message ?? item);
   const code = validPatchCode(item.code) ? item.code : classifyDiagnosticCode(item, phase, rawMessage);
-  const line = normalizePositiveInteger(item.line)
+  const composedLine = normalizePositiveInteger(item.line)
     ?? patchSourceLineFromMessage(rawMessage)
     ?? inferBackendPatchLine(rawMessage, options.source);
-  const column = normalizePositiveInteger(item.column) ?? sourceColumn(options.source, line);
-  const entry = normalizeEntry(options.entry ?? item.entry ?? 'main.patch');
+  const mapped = mapStudioProjectLine(options.composition, composedLine);
+  const line = mapped?.line ?? composedLine;
+  const column = normalizePositiveInteger(item.column) ?? sourceColumn(options.source, composedLine);
+  const entry = normalizeEntry(options.entry ?? item.entry ?? options.composition?.entry ?? 'main.patch');
+  const file = mapped?.path ? normalizeProjectFile(mapped.path) : null;
 
   return {
     format: PATCH_DIAGNOSTIC_FORMAT,
@@ -38,15 +42,24 @@ export function diagnosticFromError(error, options = {}) {
     severity: 'error',
     phase,
     message: stripParserLinePrefix(rawMessage),
-    location: line === null ? null : { entry, line, column: column ?? 1 }
+    location: composedLine === null ? null : {
+      entry,
+      ...(file ? { file } : {}),
+      line,
+      column: column ?? 1
+    }
   };
+}
+
+export function formatDiagnosticLocation(location) {
+  if (!location) return '';
+  const path = location.file || location.entry;
+  return `${path}:${location.line}:${location.column}`;
 }
 
 export function formatPatchDiagnostic(diagnostic) {
   validatePatchDiagnostic(diagnostic);
-  const where = diagnostic.location
-    ? ` ${diagnostic.location.entry}:${diagnostic.location.line}:${diagnostic.location.column}`
-    : '';
+  const where = diagnostic.location ? ` ${formatDiagnosticLocation(diagnostic.location)}` : '';
   return `${diagnostic.code}${where} ${diagnostic.message}`;
 }
 
@@ -66,6 +79,9 @@ export function validatePatchDiagnostic(diagnostic) {
   if (diagnostic.location !== null) {
     if (!diagnostic.location || typeof diagnostic.location.entry !== 'string' || !diagnostic.location.entry) throw new Error('Patch diagnostic entry is invalid.');
     if (!normalizePositiveInteger(diagnostic.location.line) || !normalizePositiveInteger(diagnostic.location.column)) throw new Error('Patch diagnostic source location is invalid.');
+    if (diagnostic.location.file != null && !normalizeProjectFile(diagnostic.location.file)) {
+      throw new Error('Patch diagnostic file is invalid.');
+    }
   }
   return diagnostic;
 }
@@ -133,6 +149,14 @@ function normalizeEntry(value) {
   const text = String(value ?? 'main.patch').replace(/\\/g, '/');
   const leaf = text.split('/').filter(Boolean).pop();
   return leaf || 'main.patch';
+}
+
+function normalizeProjectFile(value) {
+  const text = String(value ?? '').trim().replace(/\\/g, '/');
+  if (!text) return null;
+  if (text.startsWith('/') || text === '..' || text.startsWith('../') || text.includes('/../') || text.endsWith('/..')) return null;
+  if (/^[A-Za-z]:/.test(text)) return null;
+  return text;
 }
 
 function validPatchCode(value) {

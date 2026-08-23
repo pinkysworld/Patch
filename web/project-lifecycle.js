@@ -141,6 +141,25 @@ export function getStudioProjectBuildInput() {
   return { bundle, composition: composeStudioProjectSource(bundle) };
 }
 
+export function getStudioProjectDiagnosticContext() {
+  try {
+    const { bundle, composition } = getStudioProjectBuildInput();
+    return {
+      source: composition.source,
+      entry: composition.entry,
+      composition,
+      kind: bundle.project.kind
+    };
+  } catch {
+    return {
+      source: String(code?.value ?? ''),
+      entry: 'main.patch',
+      composition: null,
+      kind: projectKind?.value === 'window' ? 'window' : 'console'
+    };
+  }
+}
+
 export function getStudioProjectFiles() {
   const bundle = syncBundleFromDom();
   return bundle.files.map(file => ({ ...file }));

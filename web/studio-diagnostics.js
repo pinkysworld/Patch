@@ -6,10 +6,9 @@ import {
   redactDiagnosticText,
   serializeStudioDiagnosticReport
 } from '../src/studio-diagnostics.js';
+import { getStudioProjectDiagnosticContext } from './project-lifecycle.js';
 
-const code = document.querySelector('#code');
 const projectName = document.querySelector('#projectName');
-const projectKind = document.querySelector('#projectKind');
 const buildTarget = document.querySelector('#buildTarget');
 const copyButton = document.querySelector('#copyDiagnostics');
 const downloadButton = document.querySelector('#downloadDiagnostics');
@@ -24,13 +23,13 @@ copyButton?.addEventListener('click', copyDiagnostics);
 downloadButton?.addEventListener('click', downloadDiagnostics);
 
 async function collectReport() {
-  const source = code?.value ?? '';
+  const context = getStudioProjectDiagnosticContext();
   let compilerError = null;
   try {
-    compile(source, {
+    compile(context.source, {
       name: studioProjectFileStem(projectName?.value),
-      kind: projectKind?.value ?? 'console',
-      entry: 'main.patch'
+      kind: context.kind,
+      entry: context.entry
     });
   } catch (error) {
     compilerError = error;
@@ -38,8 +37,10 @@ async function collectReport() {
 
   return buildStudioDiagnosticReport({
     patchVersion: document.querySelector('.studio')?.dataset.patchVersion ?? 'unknown',
-    source,
-    projectKind: projectKind?.value ?? 'console',
+    source: context.source,
+    entry: context.entry,
+    composition: context.composition,
+    projectKind: context.kind,
     buildTarget: buildTarget?.value ?? 'unknown',
     compilerError,
     recentErrors,
