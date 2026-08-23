@@ -1,4 +1,4 @@
-import { diagnosticFromError } from './diagnostics.js';
+import { diagnosticFromError, formatDiagnosticLocation } from './diagnostics.js';
 
 export const PATCH_STUDIO_DIAGNOSTICS_FORMAT = 'patch-studio-diagnostics';
 export const PATCH_STUDIO_DIAGNOSTICS_VERSION = 1;
@@ -40,10 +40,10 @@ export function redactSourceEchoes(value, source) {
   return text;
 }
 
-export function normalizeStudioDiagnosticError(error, type = 'studio', source = '', entry = 'main.patch') {
+export function normalizeStudioDiagnosticError(error, type = 'studio', source = '', entry = 'main.patch', composition = null) {
   if (!error) return null;
   const item = typeof error === 'object' ? error : { message: String(error) };
-  const diagnostic = diagnosticFromError(item, { source, entry, phase: type === 'compiler' ? 'compile' : type });
+  const diagnostic = diagnosticFromError(item, { source, entry, composition, phase: type === 'compiler' ? 'compile' : type });
   return {
     type: redactDiagnosticText(type, 80),
     name: redactDiagnosticText(item.name ?? 'Error', 80),
@@ -70,7 +70,13 @@ export async function buildStudioDiagnosticReport(input = {}) {
   const source = String(input.source ?? '');
   const sourceBytes = encoder.encode(source).length;
   const sourceSha256 = await sha256Text(source);
-  const compilerError = normalizeStudioDiagnosticError(input.compilerError, 'compiler', source, input.entry ?? 'main.patch');
+  const compilerError = normalizeStudioDiagnosticError(
+    input.compilerError,
+    'compiler',
+    source,
+    input.entry ?? 'main.patch',
+    input.composition ?? null
+  );
   const environment = input.environment ?? {};
 
   return {
@@ -129,13 +135,13 @@ export function formatStudioDiagnosticReport(report) {
   ];
   if (report.compiler.error) {
     const error = report.compiler.error;
-    const where = error.location ? ` ${error.location.entry}:${error.location.line}:${error.location.column}` : '';
+    const where = error.location ? ` ${formatDiagnosticLocation(error.location)}` : '';
     lines.push(`Compiler error: ${error.code}${where} ${error.message}`);
   }
   if (report.recentErrors.length) {
     lines.push('', 'Recent Studio errors:');
     for (const error of report.recentErrors) {
-      const where = error.location ? ` ${error.location.entry}:${error.location.line}:${error.location.column}` : '';
+      const where = error.location ? ` ${formatDiagnosticLocation(error.location)}` : '';
       lines.push(`- ${error.time} [${error.type}] ${error.code}${where} ${error.message}`);
     }
   }
@@ -168,6 +174,9 @@ function validateNormalizedError(error) {
     if (!Number.isInteger(error.location.line) || error.location.line < 1) throw new Error('Patch Studio diagnostic line is invalid.');
     if (!Number.isInteger(error.location.column) || error.location.column < 1) throw new Error('Patch Studio diagnostic column is invalid.');
     if (typeof error.location.entry !== 'string' || !error.location.entry) throw new Error('Patch Studio diagnostic entry is invalid.');
+    if (error.location.file != null && (typeof error.location.file !== 'string' || !error.location.file)) {
+      throw new Error('Patch Studio diagnostic file is invalid.');
+    }
   }
 }
 

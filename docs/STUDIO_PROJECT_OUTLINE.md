@@ -60,4 +60,4 @@ Below 760 px the source workspace becomes one column and the tree turns into a s
 
 Stage 2 establishes real multi-file project storage, editing, recovery and Run/Build composition. It does not claim a module/import system: project files are deliberately composed into one Patch program and share one global declaration namespace.
 
-The project model now carries source-to-file line segments, but every existing diagnostic surface has not yet been upgraded to display `file:line`. A later provenance slice can consume that mapping in Studio diagnostics and build errors without changing the project format again.
+Studio diagnostics, Run/Build errors, Change Contract failures, `.patchreport` files and native preflight errors consume the composition segments and display owning `file:line`. Generated C/C++/Rust compiler/linker locations remain unmapped.

@@ -46,3 +46,4 @@ test('composed project locations map back to their owning source file', () => {
   assert.deepEqual(mapStudioProjectLine(composition, reward.startLine), { path: 'logic/reward.patch', line: 1 });
   assert.deepEqual(mapStudioProjectLine(composition, reward.startLine + 2), { path: 'logic/reward.patch', line: 3 });
 });
+

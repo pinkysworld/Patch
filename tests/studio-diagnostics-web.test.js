@@ -29,6 +29,9 @@ test('browser diagnostics report compiler and PWA state without an upload path',
     "from '../src/compiler.js'",
     "from '../src/studio-project.js'",
     "from '../src/studio-diagnostics.js'",
+    "from './project-lifecycle.js'",
+    'getStudioProjectDiagnosticContext',
+    'composition: context.composition',
     'navigator.userAgent','navigator.language','navigator.onLine','serviceWorkerControlled',
     "window.addEventListener('error'", "window.addEventListener('unhandledrejection'", 'MutationObserver',
     'navigator.clipboard','document.execCommand', '.patchreport', 'Nothing uploaded'
@@ -53,3 +56,14 @@ test('PWA cache includes all diagnostics assets in the content-addressed cache',
     assert.ok(sw.includes(`'${marker}'`), marker);
   }
 });
+
+test('Run Build and Change Contract surface composed file:line Patch diagnostics', () => {
+  const playground = fs.readFileSync('web/playground.js', 'utf8');
+  assert.match(playground, /getStudioProjectDiagnosticContext/);
+  assert.match(playground, /formatPatchDiagnostic/);
+  assert.match(playground, /formatStudioStop\(err, 'build'\)/);
+  assert.match(playground, /formatStudioStop\(err, 'run'\)/);
+  assert.match(playground, /formatStudioStop\(err, 'compile'\)/);
+  assert.match(playground, /compiledWasComposed \? context\.composition : null/);
+});
+

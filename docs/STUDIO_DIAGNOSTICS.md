@@ -18,7 +18,8 @@ The current report format is `patch-studio-diagnostics` version 1. It includes:
 - selected build target;
 - source size in bytes;
 - SHA-256 of the current source;
-- current compiler success/failure state;
+- current compiler success/failure state, including stable `PATCHxxxx` codes and source locations;
+- for multi-file v3 projects, owning `file:line` after mapping the composed compiler line back through project segments;
 - browser/PWA state such as online status, standalone display mode and service-worker control;
 - up to ten recent user-visible or browser errors observed by the diagnostics module.
 

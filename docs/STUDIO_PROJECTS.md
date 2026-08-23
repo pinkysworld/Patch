@@ -48,7 +48,7 @@ Example:
 
 For compilation and execution, Studio validates the whole bundle and composes one source stream. The entry file is first, followed by the other project files in their stored order. Blank-line separators prevent accidental token joining.
 
-The composition records a line segment for every source file. `mapStudioProjectLine` can map a compiler/runtime line in the composed stream back to the owning project file and local source line. This creates the provenance boundary needed for richer cross-file diagnostics without changing Patch syntax.
+The composition records a line segment for every source file. `mapStudioProjectLine` maps a compiler/runtime line in the composed stream back to the owning project file and local source line. Studio diagnostics, Run/Build output, Change Contract, `.patchreport` and native preflight errors consume that mapping and display `file:line` without changing Patch syntax.
 
 The current Stage 2 UI keeps `main.patch` as the normal entry created by Studio. Other `.patch` files can contain Forms, state, events or recipes, and their declarations participate in the same program. A repository test composes three separate files, compiles the resulting Window program, executes it in the Patch interpreter and dispatches an event declared in another file.
 

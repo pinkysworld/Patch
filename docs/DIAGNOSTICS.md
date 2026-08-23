@@ -16,13 +16,14 @@ The current diagnostic format is `patch-diagnostic` version `1`.
   "message": "I do not understand 'nonsense command'.",
   "location": {
     "entry": "main.patch",
+    "file": "logic/reward.patch",
     "line": 2,
     "column": 3
   }
 }
 ```
 
-`location` is `null` when a failure is not tied to a Patch source line. Paths are reduced to the entry filename before they enter the normalized diagnostic.
+`location` is `null` when a failure is not tied to a Patch source line. Filesystem paths are reduced to the entry filename before they enter the normalized diagnostic. When a Studio v3 composition is supplied, diagnostics add an optional `file` field with the owning project-relative path and rewrite `line` to that file's local line. Display prefers `file` over `entry`, so a composed error becomes `logic/reward.patch:2:3` instead of a concatenated `main.patch` line. CLI single-file runs keep the existing `{ entry, line, column }` shape.
 
 ## Stable code families
 
@@ -46,6 +47,8 @@ New narrower codes may be added without changing the diagnostic schema version. 
 ## Source locations
 
 Parser errors already carry exact source line numbers. The normalized diagnostic derives the column from the first non-whitespace character on that source line when the originating error does not provide a more precise column. This means indentation-aware source locations remain useful while preserving existing parser error messages.
+
+Studio Run/Build, Change Contract, Copy diagnostics, `.patchreport` and native preflight failures consume the project composition segments through `mapStudioProjectLine`. A compiler line in the composed stream therefore displays as owning `file:line` without changing the project format or Patch syntax.
 
 Backend lowerers also report original Patch lines for a growing set of fail-closed errors. Diagnostic normalization recognizes the deliberately narrow `at line N`, `at Patch line N` and `at source line N` forms and maps those back to the original entry file. This immediately preserves source locations for existing direct-Wasm failures and the C99 failures that share the direct-Wasm conservative support validator.
 

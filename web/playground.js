@@ -6,6 +6,8 @@ import { compileToDirectWasm } from '../src/wasm-direct.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
+import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
+import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext } from './project-lifecycle.js';
 
 const samples = {
   counterWindow: `create number count = 0
@@ -206,7 +208,7 @@ document.querySelector('#build').addEventListener('click', () => {
     }
     showTab('output');
   } catch (err) {
-    output.textContent = `Build stopped:\n${err.message}`;
+    output.textContent = `Build stopped:\n${formatStudioStop(err, 'build')}`;
     showTab('output');
   }
 });
@@ -229,7 +231,7 @@ function runProject() {
     renderWindows(appView, result.ui, true);
     showTab(result.ui.length ? 'app' : 'output');
   } catch (err) {
-    output.textContent = `Patch stopped:\n${err.message}`;
+    output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
     appView.innerHTML = '<p class="empty-preview">The app could not start.</p>';
     changesView.textContent = `Change contract unavailable:\n${err.message}`;
     showTab('output');
@@ -243,7 +245,7 @@ function refreshChangeContract() {
     const compiled = compile(code.value, projectOptions());
     changesView.textContent = formatChangeAnalysis(compiled.ir);
   } catch (err) {
-    changesView.textContent = `Change contract stopped:\n${err.message}`;
+    changesView.textContent = `Change contract stopped:\n${formatStudioStop(err, 'compile')}`;
   }
 }
 
@@ -560,7 +562,7 @@ function trigger(control, event, payload = {}) {
     output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
     renderWindows(appView, result.ui, true);
   } catch (err) {
-    output.textContent = `Patch stopped:\n${err.message}`;
+    output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
     showTab('output');
   }
 }
@@ -575,6 +577,22 @@ function showTab(name) {
 }
 
 function projectOptions() { return { name: studioProjectFileStem(projectName.value), kind: projectKind.value, entry: 'main.patch' }; }
+
+function formatStudioStop(error, phase) {
+  try {
+    const context = getStudioProjectDiagnosticContext();
+    const active = code.value;
+    const compiledWasComposed = Boolean(context.composition && active === context.source);
+    return formatPatchDiagnostic(diagnosticFromError(error, {
+      source: compiledWasComposed ? context.source : active,
+      entry: compiledWasComposed ? context.entry : (getActiveStudioProjectFile() || 'main.patch'),
+      composition: compiledWasComposed ? context.composition : null,
+      phase
+    }));
+  } catch {
+    return error?.message ?? String(error);
+  }
+}
 
 function saveProject() {
   try {

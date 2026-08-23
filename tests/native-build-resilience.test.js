@@ -47,3 +47,10 @@ test('no-token ready and local build modes remain independent of cloud cancellat
   assert.match(nativeBuild, /nativeBuildMode\.value === 'local'/);
   assert.match(nativeBuild, /nativeBuildMode\.value === 'cloud'/);
 });
+
+test('native source failures format as Patch diagnostics with composed file:line when available', () => {
+  assert.match(nativeBuild, /getStudioProjectDiagnosticContext/);
+  assert.match(nativeBuild, /formatNativeStop/);
+  assert.match(nativeBuild, /formatPatchDiagnostic/);
+  assert.match(nativeBuild, /if \(diagnostic\.location\) return formatPatchDiagnostic\(diagnostic\)/);
+});
