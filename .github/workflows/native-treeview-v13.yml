@@ -1,20 +1,9 @@
 name: Patch Native TreeView v1.3
 
+# Frozen direct-native compatibility smoke. The sealed v1.3 compatibility
+# release and current v1.4 runtime lines have their own release gates; use
+# this workflow only for an explicit audit of the historical direct backend.
 on:
-  pull_request:
-    paths:
-      - 'src/native-gui-ir-v12.js'
-      - 'src/native-tree-backend-adapter.js'
-      - 'src/win32-gui-v13.js'
-      - 'src/appkit-gui-v13.js'
-      - 'src/gtk-gui-v13.js'
-      - 'src/native-gui-build-plan.js'
-      - 'scripts/build-native-win32.js'
-      - 'scripts/build-native-appkit.js'
-      - 'scripts/build-native-gtk.js'
-      - 'examples/treeview-window.patch'
-      - 'tests/native-treeview.test.js'
-      - '.github/workflows/native-treeview-v13.yml'
   workflow_dispatch:
 
 permissions:
