@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const nativeBuild = fs.readFileSync('web/native-build.js', 'utf8');
+const current = fs.readFileSync('src/native-current-contract.js', 'utf8');
 const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
 const index = fs.readFileSync('web/index.html', 'utf8');
 const integrity = fs.readFileSync('web/runtime-integrity.js', 'utf8');
@@ -10,18 +11,24 @@ const packageSource = fs.readFileSync('src/sealed-native-package.js', 'utf8');
 const v12 = fs.readFileSync('src/sealed-native-gui-v12.js', 'utf8');
 const v13 = fs.readFileSync('src/sealed-native-gui-v13.js', 'utf8');
 
-test('Studio token-free Window builds lower Native GUI IR 1.3 and seal payload v13', () => {
-  assert.match(nativeBuild, /buildNativeGuiIRV13 as buildNativeGuiIR/);
-  assert.match(nativeBuild, /sealed-native-gui-v13\.js/);
-  assert.match(nativeBuild, /PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION/);
-  assert.match(nativeBuild, /sealNativeGuiRuntimeV13\(runtimeBytes, nativeGui, \{ platform: 'windows' \}\)/);
-  assert.match(nativeBuild, /payloadVersion: PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION/);
+test('Studio token-free Window builds lower Native GUI IR 1.3 and seal payload v13 through the current facade', () => {
+  assert.match(nativeBuild, /native-current-contract\.js/);
+  assert.match(nativeBuild, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
+  assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.match(nativeBuild, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows' \}\)/);
+  assert.match(nativeBuild, /payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.doesNotMatch(nativeBuild, /sealed-native-gui-v13\.js/);
+  assert.doesNotMatch(nativeBuild, /native-gui-ir-v13\.js/);
+  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.3\/payload-13\/runtime-1\.4'/);
+  assert.match(current, /buildNativeGuiIRV13/);
+  assert.match(current, /sealNativeGuiRuntimeV13/);
   assert.match(nativeBuild, /allowTree: true/);
   assert.match(nativeBuild, /allowSlider: true/);
 });
 
 test('Pages gates deployment on published runtime v1.4 assets for all desktop hosts', () => {
   for (const tag of ['native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']) assert.ok(pages.includes(tag), tag);
+  assert.match(pages, /src\/native-current-contract\.js/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /runtime-integrity-manifest\.js/);
