@@ -4,7 +4,7 @@ import {
   buildStudioQuickOpenItems,
   fuzzyQuickOpenScore,
   rankStudioQuickOpenItems
-} from '../src/studio-quick-open.js';
+} from '../web/studio-quick-open.js';
 
 const files = [
   {
