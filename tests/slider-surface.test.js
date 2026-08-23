@@ -40,16 +40,24 @@ test('Standalone Web and current native Ready/offline paths opt into Slider whil
   const webRuntime = read('src/window-webapp.js');
   const nativeBuild = read('web/native-build.js');
   const offlineLinker = read('src/offline-linker.js');
+  const currentNative = read('src/native-current-contract.js');
   const windowBuild = read('src/window-build.js');
   const nativeV12 = read('src/native-gui-ir-v12.js');
 
   assert.match(webRuntime, /allowSlider:\s*true/);
   assert.match(nativeBuild, /allowSlider:\s*true/);
-  assert.match(nativeBuild, /buildNativeGuiIRV13 as buildNativeGuiIR/);
-  assert.match(nativeBuild, /sealNativeGuiRuntimeV13/);
+  assert.match(nativeBuild, /native-current-contract\.js/);
+  assert.match(nativeBuild, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
+  assert.match(nativeBuild, /sealCurrentNativeGuiRuntime/);
+  assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/native-gui-ir-v13\.js['"]/);
+  assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/sealed-native-gui-v13\.js['"]/);
   assert.match(offlineLinker, /allowSlider:\s*guiPayloadVersion >= 13/);
-  assert.match(offlineLinker, /buildNativeGuiIRV13/);
-  assert.match(offlineLinker, /sealNativeGuiRuntimeV13/);
+  assert.match(offlineLinker, /buildCurrentNativeGuiIR/);
+  assert.match(offlineLinker, /sealCurrentNativeGuiRuntime/);
+  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.3\/payload-13\/runtime-1\.4'/);
+  assert.match(currentNative, /buildNativeGuiIRV13/);
+  assert.match(currentNative, /sealNativeGuiRuntimeV13/);
   assert.match(windowBuild, /if \(sliders && !options\.allowSlider\)/);
   assert.match(windowBuild, /Slider is not enabled for this Window target/);
   assert.doesNotMatch(nativeV12, /control\.type === 'slider'|control==='slider'|control === 'slider'/);
@@ -73,6 +81,7 @@ test('Slider browser modules remain syntactically valid', () => {
     'src/window-events.js',
     'src/window-webapp.js',
     'src/window-web-accessibility.js',
+    'src/native-current-contract.js',
     'web/playground.js',
     'web/designer-core-selection.js',
     'web/slider-stage1.js'

@@ -42,6 +42,7 @@ const files = {
   windowBuild: read('src/window-build.js'),
   gui12: read('src/native-gui-ir-v12.js'),
   gui13: read('src/native-gui-ir-v13.js'),
+  nativeCurrent: read('src/native-current-contract.js'),
   sealed12: read('src/sealed-native-gui-v12.js'),
   sealed13: read('src/sealed-native-gui-v13.js'),
   buildSite: read('scripts/build-site.js'),
@@ -121,19 +122,23 @@ requireAll('Window event adapter', files.windowEvents, ["PATCH_WINDOW_EVENTS_VER
 requireAll('Window target Slider gate', files.windowBuild, ['allowSlider','Slider is not enabled for this Window target']);
 requireAll('Native GUI IR 1.3 implementation', files.gui13, ["PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'",'buildNativeGuiIRV13','slider']);
 requireAll('Native payload v13 implementation', files.sealed13, ['PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION','sealNativeGuiRuntimeV13']);
+requireAll('Stable current native product entry point', files.nativeCurrent, [
+  'PATCH_CURRENT_NATIVE_CONTRACT_ID','PATCH_CURRENT_NATIVE_GUI_IR_VERSION','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','PATCH_CURRENT_NATIVE_RUNTIME_VERSION',
+  'native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
+]);
 requireAll('Frozen Native GUI IR 1.2 implementation', files.gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",'buildNativeGuiIRV12']);
 requireAll('Frozen payload v12 implementation', files.sealed12, ['PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12','sealNativeGuiRuntimeV12']);
 
 requireAll('Site build complete browser graph', files.buildSite, [
   "'site-navigation.css','site-refresh.css','site-pages.css'",'studio-command-palette.css','studio-command-palette.js',
-  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
+  'call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-gui-ir-v13.js','sealed-native-gui-v13.js'
 ]);
 requireAll('Single service-worker ownership', files.bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard']);
 rejectAll('Accessibility worker ownership', files.accessibility, ['serviceWorker.register']);
 rejectAll('Playground worker ownership', files.playground, ['serviceWorker.register']);
 requireAll('Service worker complete browser graph and type-safe fallback', files.sw, [
   './studio-command-palette.css','./studio-command-palette.js','./src/call-site-validation.js','./src/independent-range-expression.js',
-  './src/independent-guard-expression.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
+  './src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'','throw error'
 ]);
 
 requireAll('Formal claim boundary', files.formal, ['beta.32']);

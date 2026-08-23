@@ -29,7 +29,7 @@ const requiredFiles = [
   '_site/designer-structural-keyboard.js','_site/designer-inspector.css',
   '_site/src/compiler.js','_site/src/call-site-validation.js','_site/src/independent-range-expression.js','_site/src/independent-guard-expression.js',
   '_site/src/studio-project.js','_site/src/window-build.js','_site/src/window-events.js',
-  '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js',
+  '_site/src/native-gui-ir-v08.js','_site/src/native-gui-ir-v11.js','_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-current-contract.js',
   '_site/src/native-tree-backend-adapter.js','_site/src/native-slider-backend-adapter.js',
   '_site/src/sealed-native-gui-v11.js','_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-package.js'
 ];
@@ -76,9 +76,12 @@ rejectAll('Studio command palette persistence boundary', palette, ['localStorage
 
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
-  "./src/native-gui-ir-v13.js","./src/sealed-native-gui-v13.js",'buildNativeGuiIRV13 as buildNativeGuiIR',
-  'sealNativeGuiRuntimeV13','PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION','allowTree: true','allowSlider: true',
+  "./src/native-current-contract.js",'buildCurrentNativeGuiIR as buildNativeGuiIR',
+  'sealCurrentNativeGuiRuntime','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','allowTree: true','allowSlider: true',
   'runtime v1.4','payload v13','Native single EXE (no token, recommended)','Native GTK app (no token, recommended)','Native AppKit app (no token, unsigned)'
+]);
+rejectAll('Studio native Ready builder direct-version imports', nativeBuild, [
+  './src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','sealNativeGuiRuntimeV13','PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION'
 ]);
 
 const downloads = read('_site/downloads.html');
@@ -120,10 +123,15 @@ const events = read('_site/src/window-events.js');
 requireAll('Window event contract', events, ["PATCH_WINDOW_EVENTS_VERSION = '0.9'","controlType === 'slider'",'finite number','text-list event-local value']);
 const windowBuild = read('_site/src/window-build.js');
 requireAll('Window Slider capability gate', windowBuild, ['allowSlider','Slider','not enabled for this Window target']);
+const nativeCurrent = read('_site/src/native-current-contract.js');
+requireAll('current native product facade', nativeCurrent, [
+  'PATCH_CURRENT_NATIVE_GUI_IR_VERSION','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','PATCH_CURRENT_NATIVE_RUNTIME_VERSION',
+  'native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
+]);
 const gui13 = read('_site/src/native-gui-ir-v13.js');
-requireAll('Native GUI IR 1.3', gui13, ["PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'",'buildNativeGuiIRV13','slider']);
+requireAll('Native GUI IR 1.3 implementation', gui13, ["PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'",'buildNativeGuiIRV13','slider']);
 const sealed13 = read('_site/src/sealed-native-gui-v13.js');
-requireAll('sealed payload v13', sealed13, ['PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION','sealNativeGuiRuntimeV13','13']);
+requireAll('sealed payload v13 implementation', sealed13, ['PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION','sealNativeGuiRuntimeV13','13']);
 const gui12 = read('_site/src/native-gui-ir-v12.js');
 requireAll('frozen Native GUI IR 1.2', gui12, ["PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'",'buildNativeGuiIRV12']);
 const sealed12 = read('_site/src/sealed-native-gui-v12.js');
@@ -142,7 +150,7 @@ const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache and type-safe fallback', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js',
   './studio-command-palette.css','./studio-command-palette.js','./slider-stage1.js','./src/compiler.js','./src/call-site-validation.js',
-  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-gui-ir-v13.js',
+  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-gui-ir-v13.js',
   './src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'',
   'if (navigation)','throw error'
 ]);
@@ -158,4 +166,4 @@ requireAll('Designer structural keyboard accessibility', structuralKeyboard, ['n
 const toolbox = read('_site/designer-toolbox.js');
 requireAll('Designer toolbox discovery', toolbox, ['DESIGNER_TOOL_CATALOG',"type: 'slider'","buttonId: 'addSlider'",'designerAddControl']);
 
-console.log('Patch public site validation passed for beta.35+ / polished Studio / Native GUI IR 1.3 / payload v13 / runtime v1.4.');
+console.log('Patch public site validation passed for beta.35+ / polished Studio / stable current native facade / Native GUI IR 1.3 / payload v13 / runtime v1.4.');

@@ -6,6 +6,7 @@ const index = read('index.html');
 const nativeBuild = read('native-build.js');
 const docs = read('docs.html');
 const downloads = read('downloads.html');
+const current = read('src/native-current-contract.js');
 const gui12 = read('src/native-gui-ir-v12.js');
 const sealed12 = read('src/sealed-native-gui-v12.js');
 
@@ -21,10 +22,18 @@ requireText(index, 'payload v13', 'Studio current native status');
 requireText(index, 'runtime v1.4', 'Studio current native status');
 requireText(index, 'payload v12 / runtime v1.3 compatibility line remains Slider fail-closed', 'Studio frozen compatibility status');
 
-requireText(nativeBuild, 'buildNativeGuiIRV13 as buildNativeGuiIR', 'browser current native builder');
-requireText(nativeBuild, 'PATCH_SEALED_NATIVE_GUI_SLIDER_VERSION', 'browser current native builder');
-requireText(nativeBuild, 'sealNativeGuiRuntimeV13', 'browser current native builder');
+requireText(nativeBuild, './src/native-current-contract.js', 'browser current native builder');
+requireText(nativeBuild, 'buildCurrentNativeGuiIR as buildNativeGuiIR', 'browser current native builder');
+requireText(nativeBuild, 'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION', 'browser current native builder');
+requireText(nativeBuild, 'sealCurrentNativeGuiRuntime', 'browser current native builder');
 requireText(nativeBuild, 'allowSlider: true', 'browser current native builder');
+rejectText(nativeBuild, './src/native-gui-ir-v13.js', 'browser current native builder');
+rejectText(nativeBuild, './src/sealed-native-gui-v13.js', 'browser current native builder');
+
+requireText(current, "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.3/payload-13/runtime-1.4'", 'current native facade');
+requireText(current, 'PATCH_CURRENT_NATIVE_GUI_IR_VERSION', 'current native facade');
+requireText(current, 'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION', 'current native facade');
+requireText(current, 'PATCH_CURRENT_NATIVE_RUNTIME_VERSION', 'current native facade');
 
 requireText(gui12, "PATCH_NATIVE_GUI_IR_V12_VERSION = '1.2'", 'frozen Native GUI IR 1.2 module');
 requireText(gui12, 'buildNativeGuiIRV12', 'frozen Native GUI IR 1.2 module');
@@ -40,4 +49,4 @@ requireText(downloads, 'runtime <strong>v1.4</strong>', 'Downloads current runti
 rejectText(index, 'Slider Stage 1 is browser-only until a later versioned native contract adds parity', 'Studio index');
 rejectText(downloads, 'Native Slider parity requires a future versioned native GUI contract', 'Downloads page');
 
-console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated alongside current v1.4.');
+console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated behind the current v1.4 facade.');

@@ -4,7 +4,7 @@ import { buildNativeGuiIRV09, flattenNativeGuiControlsV09 } from './native-gui-i
 import { buildNativeGuiIRV10, flattenNativeGuiControlsV10 } from './native-gui-ir-v10.js';
 import { buildNativeGuiIRV11, flattenNativeGuiControlsV11 } from './native-gui-ir-v11.js';
 import { buildNativeGuiIRV12, flattenNativeGuiControlsV12 } from './native-gui-ir-v12.js';
-import { buildNativeGuiIRV13, flattenNativeGuiControlsV13 } from './native-gui-ir-v13.js';
+import { buildCurrentNativeGuiIR, flattenCurrentNativeGuiControls } from './native-current-contract.js';
 
 /** Select the smallest native GUI contract that preserves source semantics. */
 export function buildNativeGuiPlan(compiled, options = {}) {
@@ -17,8 +17,8 @@ export function buildNativeGuiPlan(compiled, options = {}) {
   const forceSlider = Boolean(options.sliderV14);
 
   if (forceSlider || features.slider) {
-    const gui = buildNativeGuiIRV13(compiled);
-    return { tier: 'slider-v14', gui, controlCount: flattenNativeGuiControlsV13(gui).length, features };
+    const gui = buildCurrentNativeGuiIR(compiled);
+    return { tier: 'slider-v14', gui, controlCount: flattenCurrentNativeGuiControls(gui).length, features };
   }
   if (forceTree || features.tree) {
     const gui = buildNativeGuiIRV12(compiled);
