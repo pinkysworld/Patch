@@ -200,7 +200,7 @@ async function localStudioUrl(t) {
   return withSmokeQuery(`http://127.0.0.1:${address.port}/web/index.html`);
 }
 
-test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens project symbols', { timeout: 45000 }, async t => {
+test('Patch Studio stays responsive in Chrome, runs a Window app and exercises current IDE navigation/layout', { timeout: 45000 }, async t => {
   const chrome = findChrome();
   if (!chrome) {
     if (process.env.CI) assert.fail('Chrome/Chromium is required for the Patch Studio browser startup gate');
@@ -249,14 +249,10 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens
   assert.equal(await evaluate(cdp, "!!document.querySelector('#app') && !document.querySelector('#app').hidden && !!document.querySelector('#app .patch-window')"), true,
     'Run smoke probe did not render the default Patch Window app');
 
-  // Keep probing after the automatic Run action. The original production failure
-  // appeared only after a few seconds when Designer MutationObservers recursively
-  // reconciled their own DOM writes.
   await delay(2500);
   assert.equal(await evaluate(cdp, "document.documentElement?.dataset?.patchStudioSmoke === 'ready' && !!document.querySelector('#run')"), true,
     `Patch Studio stopped responding after its initial render at ${url}`);
 
-  // Exercise the real keyboard-first palette against the loaded project model.
   assert.equal(await evaluate(cdp, `(() => {
     const trigger = document.querySelector('#openCommandPalette');
     trigger?.click();
@@ -316,4 +312,41 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens
   assert.equal(quickOpenResult?.editorTitle, 'main.patch');
   assert.match(quickOpenResult?.selected ?? '', /window "Counter"/);
   assert.equal(quickOpenResult?.smoke, 'ready', 'Studio should remain responsive after exact symbol navigation');
+
+  const workspaceLayout = await evaluate(cdp, `(async () => {
+    const workspace = document.querySelector('.workspace');
+    const handle = document.querySelector('#workspaceSplitHandle');
+    const reset = document.querySelector('#resetWorkspaceLayout');
+    if (!workspace || !handle || !reset) return null;
+    localStorage.removeItem('patchStudio.workspaceSplit.v2');
+    const before = Number(handle.getAttribute('aria-valuenow'));
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 30));
+    const after = Number(handle.getAttribute('aria-valuenow'));
+    const stored = localStorage.getItem('patchStudio.workspaceSplit.v2');
+    const sourceHeight = workspace.style.getPropertyValue('--workspace-source-height');
+    const resultHeight = workspace.style.getPropertyValue('--workspace-result-height');
+    reset.click();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    return {
+      before,
+      after,
+      stored,
+      sourceHeight,
+      resultHeight,
+      resetStored: localStorage.getItem('patchStudio.workspaceSplit.v2'),
+      resetValue: Number(handle.getAttribute('aria-valuenow')),
+      sized: workspace.dataset.workspaceSized ?? '',
+      smoke: document.documentElement?.dataset?.patchStudioSmoke ?? ''
+    };
+  })()`);
+  assert.ok(workspaceLayout, 'Workspace Layout v2 controls should exist in Chrome');
+  assert.ok(workspaceLayout.after > workspaceLayout.before, 'Arrow Down should allocate more height to the source workspace');
+  assert.match(workspaceLayout.stored ?? '', /^0\.\d{4}$/);
+  assert.match(workspaceLayout.sourceHeight ?? '', /^\d+px$/);
+  assert.match(workspaceLayout.resultHeight ?? '', /^\d+px$/);
+  assert.equal(workspaceLayout.resetStored, null, 'Reset split should remove the local IDE preference');
+  assert.equal(workspaceLayout.resetValue, 40, 'Reset split should restore the default 40 percent source allocation');
+  assert.equal(workspaceLayout.sized, 'true');
+  assert.equal(workspaceLayout.smoke, 'ready', 'Studio should remain responsive after workspace resizing');
 });
