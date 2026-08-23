@@ -18,12 +18,14 @@ test('syntax discovery covers all maintained JavaScript roots automatically', ()
   assert.ok(files.every(file => /^(?:src|web|scripts|tests)\//.test(file)));
 });
 
-test('syntax checker fails closed for a newly discovered invalid file', () => {
+test('syntax checker fails closed for a newly discovered invalid ES module', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-syntax-discovery-'));
   try {
     for (const directory of ['src', 'web', 'scripts', 'tests']) fs.mkdirSync(path.join(root, directory), { recursive: true });
     fs.writeFileSync(path.join(root, 'src', 'valid.js'), 'export const ok = true;\n');
     fs.writeFileSync(path.join(root, 'web', 'new-module.js'), 'export const broken = ;\n');
+    const discovered = discoverJavaScriptFiles(root);
+    assert.ok(discovered.includes('web/new-module.js'), 'new JavaScript files must be auto-discovered before syntax checking');
     assert.throws(() => checkJavaScriptSyntax(root), /new-module\.js/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
