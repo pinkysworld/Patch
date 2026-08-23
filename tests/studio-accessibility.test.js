@@ -60,8 +60,8 @@ test('Workspace Layout v2 is keyboard and pointer resizable with one local IDE-o
     "storageKey = 'patchStudio.workspaceSplit.v2'",
     "handle.setAttribute('role', 'separator')",
     "handle.setAttribute('aria-orientation', 'horizontal')",
-    "handle.setAttribute('aria-valuemin', '25')",
-    "handle.setAttribute('aria-valuemax', '70')",
+    "handle.setAttribute('aria-valuemin', String(minPercent))",
+    "handle.setAttribute('aria-valuemax', String(Math.max(minPercent, maxPercent)))",
     "event.key === 'ArrowUp'",
     "event.key === 'ArrowDown'",
     "event.key === 'Home'",
@@ -76,12 +76,12 @@ test('Workspace Layout v2 is keyboard and pointer resizable with one local IDE-o
 test('Workspace Layout v2 preserves editor and Designer minimums and falls back on narrow screens', () => {
   for (const marker of [
     'minSource = 320',
-    'minResult = 560',
+    'minResult = 480',
     "window.matchMedia('(max-width: 760px)')",
     "--workspace-source-height",
     "--workspace-result-height",
     'min-height: 320px',
-    'min-height: 560px',
+    'min-height: 480px',
     '@media (max-width: 760px)',
     '.workspace-layout-bar { display: none; }'
   ]) assert.ok(accessibility.includes(marker), marker);
