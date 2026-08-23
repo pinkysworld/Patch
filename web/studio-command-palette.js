@@ -1,3 +1,7 @@
+import { lineSelectionRange } from '../src/studio-outline-model.js';
+import { buildStudioQuickOpenItems, rankStudioQuickOpenItems } from '../src/studio-quick-open.js';
+import { activateStudioProjectFile, getStudioProjectFiles } from './project-lifecycle.js';
+
 const dialog = document.querySelector('#commandPalette');
 const trigger = document.querySelector('#openCommandPalette');
 const statusTrigger = document.querySelector('#statusCommands');
@@ -6,7 +10,7 @@ const list = document.querySelector('#commandPaletteList');
 const empty = document.querySelector('#commandPaletteEmpty');
 
 if (dialog && trigger && input && list && empty) {
-  const commands = [
+  const staticCommands = [
     command('run', 'Run project', 'Execute the current Patch project', 'Ctrl/Cmd + Enter', 'run execute start', () => document.querySelector('#run')?.click()),
     command('build', 'Build selected target', 'Build using the current target selector', 'Ctrl/Cmd + Shift + Enter', 'build compile package target', () => document.querySelector('#build')?.click()),
     command('editor', 'Focus source editor', 'Jump to the active Patch source', '', 'source code editor main patch', () => focus('#code')),
@@ -21,6 +25,7 @@ if (dialog && trigger && input && list && empty) {
     command('help', 'Open Help', 'Keyboard shortcuts, Designer and build help', '', 'help keyboard shortcuts support', () => navigate('./help.html'))
   ];
 
+  let commands = staticCommands;
   let visible = commands;
   let activeIndex = 0;
   const defer = typeof queueMicrotask === 'function'
@@ -38,14 +43,7 @@ if (dialog && trigger && input && list && empty) {
     else openPalette();
   });
 
-  input.addEventListener('input', () => {
-    const query = normalize(input.value);
-    visible = query
-      ? commands.filter(item => normalize(`${item.label} ${item.detail} ${item.keywords}`).includes(query))
-      : commands;
-    activeIndex = 0;
-    render();
-  });
+  input.addEventListener('input', applyFilter);
 
   input.addEventListener('keydown', event => {
     if (event.key === 'ArrowDown') {
@@ -75,7 +73,10 @@ if (dialog && trigger && input && list && empty) {
     if (event.target === dialog) closePalette();
   });
   dialog.addEventListener('close', resetPalette);
+  window.addEventListener('patch:studio-project-files-changed', refreshOpenPalette);
+  window.addEventListener('patch:studio-active-file-changed', refreshOpenPalette);
 
+  refreshCommands();
   render();
 
   function openPalette() {
@@ -92,7 +93,38 @@ if (dialog && trigger && input && list && empty) {
 
   function resetPalette() {
     input.value = '';
+    refreshCommands();
     visible = commands;
+    activeIndex = 0;
+    render();
+  }
+
+  function refreshOpenPalette() {
+    if (!dialog.open) return;
+    refreshCommands();
+    applyFilter();
+  }
+
+  function refreshCommands() {
+    let projectItems = [];
+    try {
+      projectItems = buildStudioQuickOpenItems(getStudioProjectFiles()).map(item => command(
+        `quick-open:${item.id}`,
+        item.label,
+        item.detail,
+        '',
+        item.keywords,
+        () => openProjectItem(item),
+        item.type === 'file' ? 'File' : symbolTypeLabel(item.symbolKind)
+      ));
+    } catch {
+      projectItems = [];
+    }
+    commands = [...staticCommands, ...projectItems];
+  }
+
+  function applyFilter() {
+    visible = rankStudioQuickOpenItems(commands, input.value);
     activeIndex = 0;
     render();
   }
@@ -111,7 +143,13 @@ if (dialog && trigger && input && list && empty) {
 
   function execute(item) {
     closePalette();
-    defer(item.run);
+    defer(() => {
+      try {
+        item.run();
+      } catch (error) {
+        reportNavigationFailure(error);
+      }
+    });
   }
 
   function render() {
@@ -127,11 +165,20 @@ if (dialog && trigger && input && list && empty) {
 
       const copy = document.createElement('span');
       copy.className = 'command-palette-copy';
+      const labelRow = document.createElement('span');
+      labelRow.className = 'command-palette-label-row';
       const label = document.createElement('strong');
       label.textContent = item.label;
+      labelRow.appendChild(label);
+      if (item.kind) {
+        const kind = document.createElement('span');
+        kind.className = 'command-palette-kind';
+        kind.textContent = item.kind;
+        labelRow.appendChild(kind);
+      }
       const detail = document.createElement('span');
       detail.textContent = item.detail;
-      copy.append(label, detail);
+      copy.append(labelRow, detail);
       button.appendChild(copy);
 
       if (item.shortcut) {
@@ -144,12 +191,49 @@ if (dialog && trigger && input && list && empty) {
   }
 }
 
-function command(id, label, detail, shortcut, keywords, run) {
-  return { id, label, detail, shortcut, keywords, run };
+function command(id, label, detail, shortcut, keywords, run, kind = 'Command') {
+  return { id, label, detail, shortcut, keywords, run, kind };
 }
 
-function normalize(value) {
-  return String(value ?? '').trim().toLocaleLowerCase();
+function openProjectItem(item) {
+  activateStudioProjectFile(item.file);
+  const editor = document.querySelector('#code');
+  if (!editor) return;
+  editor.dispatchEvent(new Event('input', { bubbles: true }));
+  editor.dispatchEvent(new Event('change', { bubbles: true }));
+
+  if (Number.isInteger(item.line)) {
+    const range = lineSelectionRange(editor.value, item.line);
+    if (range) {
+      editor.focus({ preventScroll: true });
+      editor.setSelectionRange(range.start, range.end);
+      editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const status = document.querySelector('#projectOutlineStatus');
+      if (status) {
+        status.textContent = `${item.file} · line ${range.line}`;
+        status.dataset.state = 'ready';
+      }
+    }
+  } else {
+    editor.focus({ preventScroll: true });
+    editor.scrollIntoView({ block: 'center' });
+  }
+
+  window.dispatchEvent(new CustomEvent('patch:studio-quick-open', {
+    detail: { file: item.file, line: item.line, type: item.type }
+  }));
+}
+
+function symbolTypeLabel(kind) {
+  const labels = { window: 'Form', state: 'State', event: 'Event', recipe: 'Recipe' };
+  return labels[kind] ?? 'Symbol';
+}
+
+function reportNavigationFailure(error) {
+  const status = document.querySelector('#projectOutlineStatus');
+  if (!status) return;
+  status.textContent = error?.message || 'Quick open failed';
+  status.dataset.state = 'invalid';
 }
 
 function click(selector) {
