@@ -1,5 +1,5 @@
 import { lineSelectionRange } from '../src/studio-outline-model.js';
-import { buildStudioQuickOpenItems, rankStudioQuickOpenItems } from '../src/studio-quick-open.js';
+import { buildStudioQuickOpenItems, rankStudioQuickOpenItems } from './studio-quick-open.js';
 import { activateStudioProjectFile, getStudioProjectFiles } from './project-lifecycle.js';
 
 const dialog = document.querySelector('#commandPalette');
