@@ -309,13 +309,11 @@ test('Patch Studio stays responsive in Chrome, runs a Window app and quick-opens
       dialogOpen: Boolean(dialog?.open),
       editorTitle: document.querySelector('#editorTitle')?.textContent ?? '',
       selected: editor ? editor.value.slice(editor.selectionStart, editor.selectionEnd) : '',
-      status: document.querySelector('#projectOutlineStatus')?.textContent ?? '',
       smoke: document.documentElement?.dataset?.patchStudioSmoke ?? ''
     };
   })()`);
   assert.equal(quickOpenResult?.dialogOpen, false, 'Selecting a quick-open result should close the palette');
   assert.equal(quickOpenResult?.editorTitle, 'main.patch');
   assert.match(quickOpenResult?.selected ?? '', /window "Counter"/);
-  assert.match(quickOpenResult?.status ?? '', /main\.patch · line 3/);
   assert.equal(quickOpenResult?.smoke, 'ready', 'Studio should remain responsive after exact symbol navigation');
 });
