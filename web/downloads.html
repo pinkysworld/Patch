@@ -149,7 +149,7 @@ patch build app.patch --target wasm-direct
 patch build app.patch --target c99
 patch build app.patch --target web
 patch doctor</pre>
-    <p><code>patch doctor</code> probes the local environment and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends.</p>
+    <p><code>patch doctor</code> probes the local environment and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends. On Unix hosts with a C compiler it also compiles and runs the numeric C99 program.</p>
     <p>The browser Studio remains useful for visual Form design. The downloaded compiler is for local source editing, checking, compilation and supported application linking.</p>
   </section>
 

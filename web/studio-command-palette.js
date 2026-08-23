@@ -220,7 +220,7 @@ function openProjectItem(item) {
 }
 
 function symbolTypeLabel(kind) {
-  const labels = { window: 'Form', state: 'State', event: 'Event', recipe: 'Recipe', field: 'Field' };
+  const labels = { window: 'Form', state: 'State', event: 'Event', recipe: 'Recipe', field: 'Field', param: 'Param' };
   return labels[kind] ?? 'Symbol';
 }
 

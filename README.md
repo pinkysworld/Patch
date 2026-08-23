@@ -45,7 +45,7 @@ Patch Studio keeps visual application structure in ordinary `.patch` source. For
 
 The Studio includes source-backed Forms and controls, pointer/keyboard movement and resizing, alignment/layout actions, structural Table/TreeView/Tabs editors, multi-file project state, recovery and privacy-redacted diagnostics that name owning `file:line`.
 
-Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions and also exposes the current project files and parser-derived Project Tree symbols, including Thing fields as `player.score`. File results activate the canonical project file; symbol results select the exact source line. Palette state and its quick-open result set are transient IDE state and do not create another project, persistent index or mutation model.
+Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions and also exposes the current project files and parser-derived Project Tree symbols, including Thing fields as `player.score` and recipe parameters as `reward.bonus`. File results activate the canonical project file; symbol results select the exact source line. Palette state and its quick-open result set are transient IDE state and do not create another project, persistent index or mutation model.
 
 See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/STUDIO_COMMAND_PALETTE.md`](docs/STUDIO_COMMAND_PALETTE.md) and [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md).
 
@@ -119,7 +119,7 @@ patch link app.patch --out App
 patch doctor --json
 ```
 
-`patch doctor` reports environment probes and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends.
+`patch doctor` reports environment probes and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends. On Unix hosts with a C compiler it also compiles and runs the numeric C99 program.
 
 ## Documentation
 

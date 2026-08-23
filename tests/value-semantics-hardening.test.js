@@ -117,3 +117,9 @@ test('Window event-local values reuse the prototype-preserving semantic clone', 
   assert.match(source, /value: clone\(payload\.value\)/);
   assert.doesNotMatch(source, /structuredClone\(payload\.value\)/);
 });
+
+test('change-analysis clones signatures with the prototype-preserving semantic clone', () => {
+  const source = fs.readFileSync(new URL('../src/change-analysis.js', import.meta.url), 'utf8');
+  assert.match(source, /import \{ clone \} from '\.\/change\.js'/);
+  assert.doesNotMatch(source, /JSON\.parse\(JSON\.stringify\(value\)\)/);
+});

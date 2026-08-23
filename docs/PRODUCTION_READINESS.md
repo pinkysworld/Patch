@@ -40,6 +40,7 @@ Programmatic sample/Designer mutations and normal typing use shared source/proje
 - [x] `patch doctor` structured diagnostics core
 - [x] expose `patch doctor --json` through the installed CLI
 - [x] `patch doctor` compiler-backend self-check for interpreter, direct Wasm/C99 numeric subset and Thing fail-closed
+- [x] `patch doctor` host-compiles and runs the numeric C99 program on Unix when a C compiler is present
 - [x] stable machine-readable diagnostic/error codes for compiler/build failures
 - [x] `PATCH2003` for direct Wasm/C99 numeric-subset fail-closed errors
 - [x] one-click Copy diagnostics in Patch Studio

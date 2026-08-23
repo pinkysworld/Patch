@@ -31,6 +31,17 @@ export function buildOutlineModel(ast) {
       byKey.get('events').items.push({ kind: 'event', line: node.line, label: node.control, meta: node.event });
     } else if (node.kind === 'recipe' || node.kind === 'function') {
       byKey.get('recipes').items.push({ kind: 'recipe', line: node.line, label: node.name, meta: 'recipe' });
+      for (const param of node.params ?? []) {
+        const range = node.paramRanges?.[param];
+        byKey.get('recipes').items.push({
+          kind: 'param',
+          line: node.line,
+          label: `${node.name}.${param}`,
+          meta: range && Number.isFinite(range.min) && Number.isFinite(range.max)
+            ? `number ${range.min}..${range.max}`
+            : 'recipe param'
+        });
+      }
     }
   }
 

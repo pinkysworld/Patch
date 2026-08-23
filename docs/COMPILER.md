@@ -1,6 +1,6 @@
 # Patch Compiler Architecture
 
-Status: **0.2.0-beta.32** · Change IR **0.10**
+Status: **0.2.0-beta.35** · Change IR **0.10** · formal milestone **beta.32**
 
 Patch combines a working compiler frontend, semantic Change analysis, independent source/guard/runtime validation, direct Wasm/C99 backends, Window runtimes, desktop packaging and generated Lean certificates.
 
@@ -148,7 +148,7 @@ Beta.32 is not a complete compiler/runtime simulation proof or full compiler ver
 
 Direct Wasm supports the conservative numeric Console subset including acyclic recipes. It imports Patch's small host ABI and is not yet a standalone WASI command. Portable C99 is tested on Linux, macOS and FreeBSD 15.1.
 
-Things (`CREATE_THING`), text/boolean/list state and GUI execution are outside that numeric subset and fail closed rather than silently falling back to the interpreter. They remain outside the beta.32 Lean runtime-correspondence claim. Runtime Thing storage in the interpreter and Window Web path is prototype-free. `patch doctor` self-checks a tiny numeric program through the interpreter, direct Wasm and C99, then checks that a Thing program still fails closed on those backends. Fail-closed numeric-subset errors normalize to diagnostic code `PATCH2003` instead of a generic build failure.
+Things (`CREATE_THING`), text/boolean/list state and GUI execution are outside that numeric subset and fail closed rather than silently falling back to the interpreter. They remain outside the beta.32 Lean runtime-correspondence claim. Runtime Thing storage in the interpreter and Window Web path is prototype-free. Change Signatures are cloned with the same prototype-preserving semantic clone as runtime values, not JSON round-trips. `patch doctor` self-checks a tiny numeric program through the interpreter, direct Wasm and C99, executes host-compiled C99 when a Unix C compiler is present, then checks that a Thing program still fails closed on those backends. Fail-closed numeric-subset errors normalize to diagnostic code `PATCH2003` instead of a generic build failure.
 
 Window preflight supports button `clicked` and input `changed`; input edits remain transient until Patch source performs semantic `change`.
 
