@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Current Patch documentation for Change IR 0.10, Patch Studio, native Slider, Native GUI IR 1.3, payload v13, runtime v1.4 and the beta.32 assurance boundary.">
+  <meta name="description" content="Current Patch documentation for Change IR 0.10, polished Patch Studio, Command Palette, native Slider, Native GUI IR 1.3, payload v13, runtime v1.4 and the beta.32 assurance boundary.">
   <title>Documentation · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,12 +24,13 @@
     <div>
       <p class="page-eyebrow">Documentation · 0.2 beta.35+</p>
       <h1>One current map of Patch.</h1>
-      <p>Language, compiler, multi-file Patch Studio, native Slider, formal assurance and release engineering are documented against one current product boundary.</p>
+      <p>Language, compiler, Patch Studio, native desktop contracts, formal assurance and release engineering are documented against one current product boundary.</p>
       <div class="docs-contract-grid" aria-label="Current Patch contracts">
         <div class="docs-contract-card"><span>Language</span><strong>Change IR 0.10</strong></div>
-        <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.3 / payload v13 / runtime v1.4</strong></div>
+        <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.3 · payload v13 · runtime v1.4</strong></div>
+        <div class="docs-contract-card"><span>Studio</span><strong>Multi-file bundle v3 · Command Palette · source-backed Designer</strong></div>
         <div class="docs-contract-card"><span>Compatibility</span><strong>IR 1.2 / payload v12 / runtime v1.3 frozen</strong></div>
-        <div class="docs-contract-card"><span>Studio</span><strong>Multi-file bundle v3 · native Slider Stage 1</strong></div>
+        <div class="docs-contract-card"><span>Delivery</span><strong>Public deploy gated by real Chrome responsiveness</strong></div>
         <div class="docs-contract-card"><span>Formal milestone</span><strong>beta.32 assurance boundary</strong></div>
       </div>
     </div>
@@ -49,14 +50,15 @@ patch doctor --json</pre>
 
   <section id="start" class="page-section docs-filterable">
     <h2>Start here</h2>
-    <p>The current native line is Native GUI IR 1.3 / payload v13 / runtime v1.4 with native Slider support on Win32, AppKit and GTK. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains a frozen compatibility line and stays Slider fail-closed.</p>
+    <p>The current native line is Native GUI IR 1.3 / payload v13 / runtime v1.4 with native Slider support on Win32, AppKit and GTK. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains a frozen compatibility line and stays Slider fail-closed. Public Studio deployments are additionally exercised in real Chrome before the deployment status is marked healthy.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, examples, project bundle v3, native Slider and current development status.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, product snapshot, current native line and development status.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Browser IDE, Designer, multi-file project state, recovery, diagnostics and Ready builds.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_COMMAND_PALETTE.md"><strong>Command Palette</strong><span>Ctrl/Cmd+K navigation for Run, Build, views, Recovery, Documentation and Downloads.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_AUTHORING_SURFACE.md"><strong>Studio authoring surface</strong><span>Complete source-backed Form/control authoring inventory.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SLIDER_STAGE1.md"><strong>Slider Stage 1</strong><span>Numeric syntax, bounded transient values and current native v1.4 parity.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Normative syntax and semantic contracts.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Completed core product work and separately tracked external/research gates.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Active UX/reliability milestone plus separately tracked external and research gates.</span></a>
     </div>
   </section>
 
@@ -94,7 +96,7 @@ patch doctor --json</pre>
 
   <section id="assurance" class="page-section docs-filterable">
     <h2>Assurance and research</h2>
-    <p>Native v1.4 product work does not widen the beta.32 formal runtime-correspondence claim.</p>
+    <p>Native v1.4 product work and the current Studio UX/reliability milestone do not widen the beta.32 formal runtime-correspondence claim.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md"><strong>Formal model</strong><span>Lean-checked boundaries and exact claim scope.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CALL_SITE_VALIDATION.md"><strong>Call-site validation</strong><span>Independent raw-source static call-site binding.</span></a>
@@ -111,7 +113,7 @@ patch doctor --json</pre>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts from frozen compatibility tiers through current Slider v1.4.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Native apps</strong><span>Windows, macOS, Linux and FreeBSD paths.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Runtime integrity, diagnostics, signing and distribution boundaries.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Runtime integrity, browser deployment verification, diagnostics, signing and distribution boundaries.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RELEASE_SIGNING.md"><strong>Signing &amp; notarization</strong><span>Windows Authenticode and macOS Developer ID/notarization gates.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LINUX_PACKAGING.md"><strong>Linux packaging</strong><span>GTK3 runtime requirements and package boundaries.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/DIAGNOSTICS.md"><strong>Diagnostics</strong><span>Stable error codes and privacy-redacted Studio reports.</span></a>
