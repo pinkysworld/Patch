@@ -30,7 +30,10 @@ select, button, textarea, pre, input { font: inherit; }
 .studio {
   width: min(1460px, 100%);
   margin: 0 auto;
-  padding: 18px max(16px, env(safe-area-inset-right)) 44px max(16px, env(safe-area-inset-left));
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 10px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left));
 }
 
 .topbar {
@@ -126,6 +129,7 @@ button.small { min-height: 29px; padding: 5px 9px; font-size: 12px; }
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   min-height: 0;
+  flex: 1 1 auto;
 }
 .pane {
   overflow: hidden;
@@ -143,6 +147,13 @@ button.small { min-height: 29px; padding: 5px 9px; font-size: 12px; }
   font-weight: 750;
 }
 .pane-title { display: flex; align-items: center; gap: 7px; padding: 9px 12px; }
+.editor-caret {
+  margin-left: auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  letter-spacing: .02em;
+}
 .file-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); }
 .tabs { display: flex; align-items: center; gap: 2px; padding: 4px 6px; overflow-x: auto; }
 .tab {

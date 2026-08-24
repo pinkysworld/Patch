@@ -16,6 +16,7 @@ test('Studio has a keyboard-visible skip link and labelled editor', () => {
   assert.match(html, /id="skipToEditor"[^>]*href="#code"/);
   assert.match(html, /id="editorTitle"/);
   assert.match(html, /id="code"[^>]*aria-labelledby="editorTitle"/);
+  assert.match(html, /id="editorCaret"/);
   assert.match(css, /\.skip-link/);
   assert.match(css, /\.skip-link:focus-visible/);
 });

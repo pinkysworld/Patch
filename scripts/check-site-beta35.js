@@ -30,7 +30,8 @@ const index = read('_site/index.html');
 requireAll('beta.35+ Studio page', index, [
   'data-patch-version="0.2.0-beta.35"','0.2 beta.35+','value="sliderWindow">Slider app</option>','id="addSlider"','native Slider',
   'multi-file project bundle v3','source-backed Designer','Native GUI IR 1.3','payload v13','runtime v1.4','payload v12 / runtime v1.3 compatibility line remains Slider fail-closed',
-  'explicit <b>change</b>','./beta35-studio.js?v=','./slider-stage1.js?v=','./table-stage1.js?v='
+  'explicit <b>change</b>','./beta35-studio.js?v=','./slider-stage1.js?v=','./table-stage1.js?v=',
+  'id="editorCaret"','Contracts and quick start'
 ]);
 rejectAll('beta.35+ Studio page', index, [
   'Slider Stage 1 is browser-only until a later versioned native contract adds parity',

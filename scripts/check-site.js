@@ -46,14 +46,15 @@ requireAll('Studio shell', index, [
   'Patch Studio','id="code"','id="run"','id="build"','id="designer"','id="app"',
   'id="projectName"','id="projectKind"','id="exportProject"','id="importProject"','id="recoverProject"',
   'Project Outline','multi-file project bundle v3','value="sliderWindow">Slider app</option>','Native GUI IR 1.3','payload v13','runtime v1.4',
-  'hierarchical TreeView','native Slider','Local-first Studio','Verified desktop path','Browser-gated delivery','Quick start and shortcuts',
-  'id="addSlider"','id="addTree"','id="openCommandPalette"','id="commandPalette"','id="commandPaletteInput"',
+  'hierarchical TreeView','native Slider','Local-first Studio','Verified desktop path','Browser-gated delivery','Contracts and quick start',
+  'id="editorCaret"','id="addSlider"','id="addTree"','id="openCommandPalette"','id="commandPalette"','id="commandPaletteInput"',
   './studio-command-palette.css','./studio-command-palette.js','./studio-bootstrap.js','./slider-stage1.js','./tree-designer.js',
   './designer-workspace.js','./runtime-integrity.js','./native-build.js'
 ]);
 rejectAll('Studio shell', index, [
   'Slider Stage 1 is browser-only until a later versioned native contract adds parity',
-  'currently browser-only and native builds fail closed'
+  'currently browser-only and native builds fail closed',
+  '<details class="studio-launchpad" open'
 ]);
 
 const bootstrap = read('_site/studio-bootstrap.js');

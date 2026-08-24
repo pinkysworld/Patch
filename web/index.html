@@ -63,21 +63,23 @@
   <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.4 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.3 as payload v13, including hierarchical TreeView and native Slider. The frozen payload v12 / runtime v1.3 compatibility line remains Slider fail-closed.</span></section>
   <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Current Studio: multi-file project bundle v3, source-backed Designer, Slider, multi-select ListBox, Table, TreeView and Tabs, plus verified no-token Ready builds. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
 
-  <section class="studio-launchpad" aria-label="Patch Studio current status and quick start">
+  <details class="studio-launchpad" aria-label="Patch Studio current status and quick start">
+    <summary>Contracts and quick start <span class="summary-hint">local-first · Ready IR 1.3 / v1.4</span></summary>
+    <div class="studio-launchpad-body">
     <div class="studio-snapshot" aria-label="Current Patch contracts">
       <div class="studio-snapshot-card"><b>Local-first Studio</b><span>Projects, recovery and privacy-redacted diagnostics remain local unless you explicitly export or build.</span></div>
       <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.3 / payload v13 / runtime v1.4 Ready assets. The frozen TreeView contract remains payload v12 / runtime v1.3.</span></div>
       <div class="studio-snapshot-card"><b>Browser-gated delivery</b><span>Every public deploy now has to initialize, Run a Window app and remain responsive in real Chrome before the deployment is marked healthy.</span></div>
     </div>
-    <details class="studio-guide">
-      <summary>Quick start and shortcuts <span class="summary-hint">3 steps</span></summary>
+    <div class="studio-guide">
       <div class="studio-guide-body">
         <div class="studio-guide-step"><b>1 · Start from source</b><span>Choose an example or edit <code>main.patch</code>. The Designer always rewrites visible Patch source.</span></div>
         <div class="studio-guide-step"><b>2 · Run or navigate</b><span><code>Ctrl/Cmd+Enter</code> runs. <code>Ctrl/Cmd+K</code> opens commands for Editor, Designer, Output, Recovery and docs.</span></div>
         <div class="studio-guide-step"><b>3 · Build</b><span><code>Ctrl/Cmd+Shift+Enter</code> builds the selected target. Ready desktop downloads need no GitHub token.</span></div>
       </div>
-    </details>
-  </section>
+    </div>
+    </div>
+  </details>
 
   <section class="workspace" aria-label="Patch Studio workspace">
     <div class="source-workspace">
@@ -85,7 +87,7 @@
         <div class="pane-title"><span class="outline-title-copy">Project Outline</span><span id="projectOutlineStatus" role="status" aria-live="polite">main.patch</span></div>
         <nav id="projectOutlineTree" class="project-outline-tree" aria-label="Symbols in main.patch"><p class="outline-empty">Outline appears when main.patch parses.</p></nav>
       </aside>
-      <div class="pane editor-pane"><div id="editorTitle" class="pane-title">main.patch</div><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-labelledby="editorTitle"></textarea></div>
+      <div class="pane editor-pane"><div class="pane-title"><span id="editorTitle">main.patch</span><span id="editorCaret" class="editor-caret" aria-live="polite">Ln 1 · Col 1</span></div><textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-labelledby="editorTitle"></textarea></div>
     </div>
     <div class="pane result-pane">
       <div id="resultTabs" class="tabs" role="tablist" aria-label="Result views">

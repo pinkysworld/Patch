@@ -5,6 +5,7 @@ Patch Studio should feel like a small development environment, not a documentati
 ## Current UX principles
 
 - Keep the source editor and Designer visually dominant.
+- Keep contract/status copy collapsed until asked for, so the workspace is first.
 - Keep Designer tools compact and grouped by task.
 - Keep Form controls available without letting them consume the full toolbar.
 - Preserve visible scroll affordances in the code editor, Designer, App preview and diagnostic panes.
@@ -15,6 +16,10 @@ Patch Studio should feel like a small development environment, not a documentati
 ## Layout
 
 The code editor occupies the first full-width workspace pane. The Designer/App/Output/Changes/IR pane sits below it at full width. This gives source-backed Forms enough horizontal and vertical room while keeping diagnostics one tab away.
+
+The editor title shows the active file. A live **Ln · Col** caret sits beside it. That caret is transient IDE state only: it is not Patch application state, Change History, recovery or project persistence.
+
+Contract cards and the three-step quick start stay behind a closed **Contracts and quick start** disclosure so they do not push the workspace off the first screen.
 
 ## Scroll behavior
 
