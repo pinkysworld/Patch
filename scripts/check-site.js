@@ -113,7 +113,8 @@ requireAll('Paper page', paper, [
   'not an end-to-end compiler theorem','Patch reject / coarse accept',
   'loyalty-over-limit','balance = 80','used = 35','prototype-free Things',
   'checkedObservedTransitiveRuntimeRefinesCallerSignature','twelve invocation frames',
-  'hosted-ci','none collected','Construct validity','Contributions'
+  'hosted-ci','none collected','Construct validity','Contributions',
+  'id="open-gates"','Still open','genuine external/third-party','expert/venue feedback'
 ]);
 rejectAll('Paper page', paper, [
   'controlled paper-quality timing dataset has been collected'

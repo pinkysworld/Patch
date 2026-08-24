@@ -72,7 +72,7 @@ const docs = read('_site/docs.html');
 requireAll('beta.35 Documentation page', docs, ['docs/SLIDER_STAGE1.md','Slider Stage 1','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields such as player.score']);
 
 const paper = read('_site/paper.html');
-requireAll('beta.35 Paper page', paper, ['data-patch-version="0.2.0-beta.35"','Working manuscript','Native GUI IR 1.3','no controlled paper-quality timing dataset yet','not an end-to-end compiler theorem','checkedObservedTransitiveRuntimeRefinesCallerSignature']);
+requireAll('beta.35 Paper page', paper, ['data-patch-version="0.2.0-beta.35"','Working manuscript','Native GUI IR 1.3','no controlled paper-quality timing dataset yet','not an end-to-end compiler theorem','checkedObservedTransitiveRuntimeRefinesCallerSignature','id="open-gates"','Still open','genuine external/third-party']);
 
 const help = read('_site/help.html');
 requireAll('beta.35 Help page', help, ['data-patch-version="0.2.0-beta.35"','ListBox: single or multi-select','Ready runtime verification','Offline compiler','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields as <code>player.score</code>','patch doctor','PATCH2003','file:line']);

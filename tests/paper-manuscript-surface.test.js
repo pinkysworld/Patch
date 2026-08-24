@@ -87,6 +87,17 @@ test('paper claim boundary does not silently turn supporting evidence into perfo
   assert.match(tex, /candidate novelty is a conjunction of architectural choices/i);
 });
 
+test('public paper.html names remaining research gates without claiming results', () => {
+  const html = read('web/paper.html');
+  assert.match(html, /id="open-gates"/);
+  assert.match(html, /Still open/);
+  assert.match(html, /genuine external\/third-party/i);
+  assert.match(html, /expert\/venue feedback/i);
+  assert.match(html, /not an end-to-end compiler theorem/);
+  assert.match(html, /no controlled paper-quality timing dataset yet/);
+  assert.doesNotMatch(html, /controlled paper-quality timing dataset has been collected/);
+});
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

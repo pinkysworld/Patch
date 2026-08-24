@@ -53,7 +53,8 @@ The additive Native GUI IR history is:
 - Native GUI IR 0.9: Menu separators and shortcuts;
 - Native GUI IR 1.0: source-backed MenuItem enabled/checked state;
 - Native GUI IR 1.1: persistent text-list state and list-backed multi-select ListBox;
-- Native GUI IR 1.2: current hierarchical TreeView extension, preserving the 1.1 list-state ABI.
+- Native GUI IR 1.2: frozen hierarchical TreeView extension, preserving the 1.1 list-state ABI;
+- Native GUI IR 1.3: current Ready/offline line, preserving TreeView and adding Slider. Product import is `native-current-contract.js`; frozen TreeView remains `native-frozen-contract.js`.
 
 ## Direct native backend
 

@@ -43,4 +43,4 @@ Duplicate is intentionally disabled while more than one Designer control is sele
 
 The command reparses the rewritten source before it is accepted. It does not create a hidden Form document, does not persist Designer selection in Patch application state, and does not write IDE selection state to Change History.
 
-This is Studio-only authoring work. It does not change Patch syntax, Change IR 0.10, Native GUI IR 1.2, sealed payload v12, native runtime v1.3 or the beta.32 formal-assurance boundary.
+This is Studio-only authoring work. It does not change Patch syntax, Change IR 0.10, Native GUI IR 1.3 / payload v13 / runtime v1.4, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal-assurance boundary.

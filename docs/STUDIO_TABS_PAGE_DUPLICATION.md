@@ -28,4 +28,4 @@ The original page and its original event handlers remain unchanged. The duplicat
 
 ## Compatibility
 
-This is a Patch Studio authoring feature. It does not change Patch syntax, Change IR 0.10, Native GUI IR 1.2, sealed payload v12, native runtime v1.3 or the beta.32 formal-assurance boundary.
+This is a Patch Studio authoring feature. It does not change Patch syntax, Change IR 0.10, Native GUI IR 1.3 / payload v13 / runtime v1.4, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal-assurance boundary.
