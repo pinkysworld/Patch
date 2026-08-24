@@ -16,9 +16,9 @@
   opacity: .45;
 }
 #saveState {
-  margin-left: 4px;
-  min-width: 92px;
-  text-align: right;
+  margin-left: 0;
+  min-width: 0;
+  text-align: left;
 }
 
 @media (max-width: 720px) {

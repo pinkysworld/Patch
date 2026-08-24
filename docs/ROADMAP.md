@@ -60,6 +60,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] current/frozen native docs name Ready as IR 1.3 / v13 / v1.4 rather than IR 1.2
 - [x] public `paper.html` names remaining research gates without claiming those results
 - [x] workspace-first Studio chrome: collapsed contracts/quick-start, live editor caret Ln/Col, no second project model
+- [x] Studio IDE chrome density: feature banner inside contracts disclosure, compact brand, visible status bar with save state and Ready chip
 
 ### Next repository-controlled backlog
 

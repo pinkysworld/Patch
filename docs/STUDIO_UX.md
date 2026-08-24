@@ -19,7 +19,9 @@ The code editor occupies the first full-width workspace pane. The Designer/App/O
 
 The editor title shows the active file. A live **Ln · Col** caret sits beside it. That caret is transient IDE state only: it is not Patch application state, Change History, recovery or project persistence.
 
-Contract cards and the three-step quick start stay behind a closed **Contracts and quick start** disclosure so they do not push the workspace off the first screen.
+Contract cards and the three-step quick start stay behind a closed **Contracts and quick start** disclosure so they do not push the workspace off the first screen. The beta.35 feature boundary lives in that same disclosure, not as a banner above the editor.
+
+Empty Designer and App panes use a compact dashed card with a title, the existing guidance sentence and a keyboard hint. The status bar stays visible on narrow screens and carries save state plus the current Ready contract chip (`IR 1.3 / v1.4`).
 
 ## Scroll behavior
 

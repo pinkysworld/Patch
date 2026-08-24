@@ -11,4 +11,5 @@ test('Studio UX notes retain the source-backed and visible-scrollbar goals', () 
   assert.match(doc, /compact icon buttons/i);
   assert.match(doc, /workspace-first|visually dominant/i);
   assert.match(doc, /Ln · Col/i);
+  assert.match(doc, /status bar stays visible/i);
 });

@@ -173,7 +173,7 @@ rejectAll('Research plan obsolete current milestone', files.researchPlan, [
   'Current milestone: 0.2.0-beta.8'
 ]);
 
-requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`','workspace-first chrome']);
+requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`','workspace-first chrome','denser IDE chrome']);
 requireAll('Slider current native evidence', files.slider, ['direct native backend **1.4**','sealed payload **v13**','sealed native runtime **v1.4**','TRACKBAR','NSSlider','GtkScale','Frozen v1.3 compatibility boundary']);
 requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
@@ -194,7 +194,8 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'C99 unknown-recipe fail-closed errors classify as `PATCH2003`',
   'current/frozen native docs name Ready as IR 1.3',
   'public `paper.html` names remaining research gates',
-  'workspace-first Studio chrome'
+  'workspace-first Studio chrome',
+  'Studio IDE chrome density'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
