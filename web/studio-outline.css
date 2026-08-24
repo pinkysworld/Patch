@@ -223,6 +223,54 @@ button.outline-action:focus-visible {
   line-height: 1.45;
 }
 
+.editor-tabs {
+  display: flex;
+  gap: 2px;
+  min-height: 32px;
+  padding: 4px 8px 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+  scrollbar-width: thin;
+}
+
+.editor-tab {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.editor-tab[aria-selected="true"] {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.editor-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 32%, transparent);
+  outline-offset: 1px;
+}
+
+.editor-tab-entry {
+  padding: 1px 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 760px) {
   .source-workspace {
     grid-template-columns: minmax(0, 1fr);

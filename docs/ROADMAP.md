@@ -61,6 +61,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] public `paper.html` names remaining research gates without claiming those results
 - [x] workspace-first Studio chrome: collapsed contracts/quick-start, live editor caret Ln/Col, no second project model
 - [x] Studio IDE chrome density: feature banner inside contracts disclosure, compact brand, visible status bar with save state and Ready chip
+- [x] Studio editor file tabs and live parse status over the existing project-v3 file model
 
 ### Next repository-controlled backlog
 

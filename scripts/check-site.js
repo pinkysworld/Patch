@@ -47,7 +47,7 @@ requireAll('Studio shell', index, [
   'id="projectName"','id="projectKind"','id="exportProject"','id="importProject"','id="recoverProject"',
   'Project Outline','multi-file project bundle v3','value="sliderWindow">Slider app</option>','Native GUI IR 1.3','payload v13','runtime v1.4',
   'hierarchical TreeView','native Slider','Local-first Studio','Verified desktop path','Browser-gated delivery','Contracts and quick start',
-  'id="editorCaret"','id="saveState"','status-chip','IR 1.3 / v1.4','id="addSlider"','id="addTree"','id="openCommandPalette"','id="commandPalette"','id="commandPaletteInput"',
+  'id="editorCaret"','id="saveState"','status-chip','IR 1.3 / v1.4','id="editorTabs"','id="editorParseStatus"','id="addSlider"','id="addTree"','id="openCommandPalette"','id="commandPalette"','id="commandPaletteInput"',
   './studio-command-palette.css','./studio-command-palette.js','./studio-bootstrap.js','./slider-stage1.js','./tree-designer.js',
   './designer-workspace.js','./runtime-integrity.js','./native-build.js'
 ]);
@@ -135,7 +135,8 @@ requireAll('Help page current control surface', help, [
   'Slider Stage 1','ListBox: single or multi-select','Keyboard-only structural Properties','Ready runtime verification','Offline compiler',
   'Native GUI IR 1.3 / payload v13 / runtime v1.4','Native runtime v1.3 is TreeView-capable but Slider-free',
   'Click <strong>Edit</strong> beside a nested Table','Click <strong>Edit</strong> beside a nested TreeView',
-  'Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line'
+  'Thing fields as <code>player.score</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line',
+  'editor tabs','Parsed'
 ]);
 
 const compiler = read('_site/src/compiler.js');

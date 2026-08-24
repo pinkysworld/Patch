@@ -103,7 +103,9 @@ test('Studio ships an accessible responsive project tree without shrinking Desig
     '.project-outline-tree',
     '.outline-file-section.active',
     'button.outline-item:focus-visible',
-    'button.outline-action:focus-visible'
+    'button.outline-action:focus-visible',
+    '.editor-tabs',
+    '.editor-tab[aria-selected="true"]'
   ]) assert.ok(css.includes(marker), marker);
 
   assert.ok(html.indexOf('class="source-workspace"') < html.indexOf('class="pane result-pane"'));

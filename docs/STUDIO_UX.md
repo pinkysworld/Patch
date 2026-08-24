@@ -17,7 +17,7 @@ Patch Studio should feel like a small development environment, not a documentati
 
 The code editor occupies the first full-width workspace pane. The Designer/App/Output/Changes/IR pane sits below it at full width. This gives source-backed Forms enough horizontal and vertical room while keeping diagnostics one tab away.
 
-The editor title shows the active file. A live **Ln · Col** caret sits beside it. That caret is transient IDE state only: it is not Patch application state, Change History, recovery or project persistence.
+The editor title shows the active file. Editor tabs under that title switch files from the same v3 project bundle. A live parse status and **Ln · Col** caret sit beside the title. Those are transient IDE state only: they are not Patch application state, Change History, recovery or project persistence.
 
 Contract cards and the three-step quick start stay behind a closed **Contracts and quick start** disclosure so they do not push the workspace off the first screen. The beta.35 feature boundary lives in that same disclosure, not as a banner above the editor.
 

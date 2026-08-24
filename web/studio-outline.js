@@ -5,6 +5,7 @@ import {
   addStudioProjectFile,
   getActiveStudioProjectFile,
   getStudioProjectBuildInput,
+  getStudioProjectBundle,
   getStudioProjectFiles,
   removeStudioProjectFile,
   replaceStudioProjectSource
@@ -24,6 +25,7 @@ const lastGoodModels = new Map();
 if (code && outline && status) {
   installProjectTreeActions();
   installProjectSourceBridge();
+  installEditorTabs();
   code.addEventListener('input', scheduleRender);
   code.addEventListener('change', scheduleRender);
   window.addEventListener('patch:studio-active-file-changed', scheduleRender);
@@ -201,7 +203,11 @@ function renderOutline() {
   }
 
   const active = getActiveStudioProjectFile();
-  const entry = files.some(file => file.path === 'main.patch') ? 'main.patch' : files[0]?.path;
+  let entry = files.some(file => file.path === 'main.patch') ? 'main.patch' : files[0]?.path;
+  try {
+    const bundle = getStudioProjectBundle();
+    if (bundle?.project?.entry) entry = bundle.project.entry;
+  } catch { /* keep the visible file set */ }
   const fragment = document.createDocumentFragment();
   let invalidCount = 0;
   let symbolCount = 0;
@@ -228,8 +234,96 @@ function renderOutline() {
 
   if (!files.length) fragment.append(emptyMessage('Add a Patch source file to begin.'));
   outline.replaceChildren(fragment);
+  renderEditorTabs(files, active, entry);
+  renderParseStatus();
   const suffix = invalidCount ? ` · ${invalidCount} invalid` : symbolCount ? ` · ${symbolCount} symbols` : '';
   setTreeStatus(`${files.length} file${files.length === 1 ? '' : 's'} · ${active}${suffix}`, invalidCount ? 'invalid' : 'ready');
+}
+
+function installEditorTabs() {
+  const tabs = document.querySelector('#editorTabs');
+  if (!tabs || tabs.dataset.installed === '1') return;
+  tabs.dataset.installed = '1';
+  tabs.addEventListener('click', event => {
+    const tab = event.target.closest('[role="tab"][data-file]');
+    if (tab) activateFile(tab.dataset.file);
+  });
+  tabs.addEventListener('keydown', event => {
+    const buttons = [...tabs.querySelectorAll('[role="tab"]')];
+    const current = event.target.closest('[role="tab"]');
+    const index = buttons.indexOf(current);
+    if (index < 0) return;
+    let next = null;
+    if (event.key === 'ArrowRight') next = (index + 1) % buttons.length;
+    if (event.key === 'ArrowLeft') next = (index - 1 + buttons.length) % buttons.length;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = buttons.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    buttons[next].focus();
+    activateFile(buttons[next].dataset.file);
+  });
+  window.addEventListener('keydown', event => {
+    if (event.defaultPrevented || event.isComposing || hasOpenDialog()) return;
+    const command = event.ctrlKey || event.metaKey;
+    if (!command || event.altKey || event.shiftKey) return;
+    if (event.key !== 'PageDown' && event.key !== 'PageUp') return;
+    let files;
+    try { files = getStudioProjectFiles(); } catch { return; }
+    if (files.length < 2) return;
+    event.preventDefault();
+    const active = getActiveStudioProjectFile();
+    const index = Math.max(0, files.findIndex(file => file.path === active));
+    const delta = event.key === 'PageDown' ? 1 : -1;
+    activateFile(files[(index + delta + files.length) % files.length].path);
+  });
+}
+
+function hasOpenDialog() {
+  return Boolean(document.querySelector('dialog[open]'));
+}
+
+function renderEditorTabs(files, active, entry) {
+  const tabs = document.querySelector('#editorTabs');
+  if (!tabs) return;
+  const fragment = document.createDocumentFragment();
+  for (const file of files) {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'editor-tab';
+    tab.setAttribute('role', 'tab');
+    tab.dataset.file = file.path;
+    tab.setAttribute('aria-selected', file.path === active ? 'true' : 'false');
+    tab.tabIndex = file.path === active ? 0 : -1;
+    tab.title = file.path === entry ? `${file.path} · entry` : file.path;
+    if (file.path === entry) tab.dataset.entry = 'true';
+    const name = document.createElement('span');
+    name.className = 'editor-tab-name';
+    name.textContent = file.path.split('/').pop();
+    tab.append(name);
+    if (file.path === entry) {
+      const mark = document.createElement('span');
+      mark.className = 'editor-tab-entry';
+      mark.textContent = 'entry';
+      tab.append(mark);
+    }
+    fragment.append(tab);
+  }
+  tabs.replaceChildren(fragment);
+}
+
+function renderParseStatus() {
+  const el = document.querySelector('#editorParseStatus');
+  if (!el || !code) return;
+  try {
+    parse(code.value);
+    el.textContent = 'Parsed';
+    el.dataset.state = 'ready';
+  } catch (error) {
+    const line = Number.isInteger(error.line) ? `Line ${error.line}` : 'Parse';
+    el.textContent = `${line} · ${error.message}`.slice(0, 96);
+    el.dataset.state = 'invalid';
+  }
 }
 
 function renderFile(file, groups, options) {

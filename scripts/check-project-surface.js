@@ -131,7 +131,7 @@ requireAll('Paper reading copy', files.paperPage, [
   'id="open-gates"','Still open','genuine external/third-party','expert/venue feedback'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset','compiles and runs the numeric C99 program']);
-requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line']);
+requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line','editor tabs']);
 
 requireAll('Command Palette docs', files.commandPaletteDocs, [
   'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model',
@@ -173,7 +173,7 @@ rejectAll('Research plan obsolete current milestone', files.researchPlan, [
   'Current milestone: 0.2.0-beta.8'
 ]);
 
-requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`','workspace-first chrome','denser IDE chrome']);
+requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`','workspace-first chrome','denser IDE chrome','editor file tabs with live parse status']);
 requireAll('Slider current native evidence', files.slider, ['direct native backend **1.4**','sealed payload **v13**','sealed native runtime **v1.4**','TRACKBAR','NSSlider','GtkScale','Frozen v1.3 compatibility boundary']);
 requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
@@ -195,7 +195,8 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'current/frozen native docs name Ready as IR 1.3',
   'public `paper.html` names remaining research gates',
   'workspace-first Studio chrome',
-  'Studio IDE chrome density'
+  'Studio IDE chrome density',
+  'Studio editor file tabs'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
@@ -210,7 +211,8 @@ requireAll('Diagnostics numeric-subset code', files.diagnostics, [
   'unknown recipe calls, classify as `PATCH2003`'
 ]);
 requireAll('Studio outline consumes composition file:line', files.studioOutline, [
-  'display owning `file:line`','Generated C/C++/Rust compiler/linker locations remain unmapped','name.param'
+  'display owning `file:line`','Generated C/C++/Rust compiler/linker locations remain unmapped','name.param',
+  'editor tabs'
 ]);
 requireAll('Studio project composition diagnostics', files.studioProjects, [
   'display `file:line` without changing Patch syntax'
