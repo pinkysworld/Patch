@@ -12,10 +12,16 @@ export function buildNativeGuiPlan(compiled, options = {}) {
   }
   const features = inspectNativeGuiFeatures(compiled?.ast);
   const forceSlider = Boolean(options.sliderV14);
+  const forceChrome = Boolean(options.chromeV15);
 
-  if (forceSlider || features.slider) {
+  if (forceChrome || forceSlider || features.slider || features.chrome) {
     const gui = buildCurrentNativeGuiIR(compiled);
-    return { tier: 'slider-v14', gui, controlCount: flattenCurrentNativeGuiControls(gui).length, features };
+    return {
+      tier: features.chrome || forceChrome ? 'chrome-v15' : 'slider-v14',
+      gui,
+      controlCount: flattenCurrentNativeGuiControls(gui).length,
+      features
+    };
   }
   const gui = buildFrozenNativeGuiIR(compiled);
   return { tier: 'tree-v13', gui, controlCount: flattenFrozenNativeGuiControls(gui).length, features };
@@ -26,6 +32,7 @@ export function inspectNativeGuiFeatures(ast) {
     table: false,
     tree: false,
     slider: false,
+    chrome: false,
     listState: false,
     listBackedListBox: false,
     menuSeparators: false,
@@ -43,6 +50,7 @@ export function inspectNativeGuiFeatures(ast) {
       if (node.kind === 'uiControl' && node.control === 'table') features.table = true;
       if (node.kind === 'uiControl' && node.control === 'tree') features.tree = true;
       if (node.kind === 'uiControl' && node.control === 'slider') features.slider = true;
+      if (node.kind === 'uiControl' && ['panel', 'timer', 'picture', 'statusbar'].includes(node.control)) features.chrome = true;
       if (node.kind === 'uiControl' && node.control === 'listbox' && listNames.has(node.id)) features.listBackedListBox = true;
       if (node.kind === 'menuSeparator') features.menuSeparators = true;
       if (node.kind === 'menuItem' && node.shortcutExpr) features.menuShortcuts = true;

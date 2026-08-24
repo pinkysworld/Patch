@@ -78,6 +78,17 @@ export function parse(source) {
     if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
     return uiControl(fields, null);
   }
+  function panelNode(row, indent, id, layout) {
+    const body = optionalChildBlock(indent);
+    for (const child of body) {
+      if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls in Panel Stage 1.', child.line);
+      if (['panel', 'timer', 'statusbar', 'table', 'tree'].includes(child.control)) {
+        throw new PatchSyntaxError('Panel Stage 1 cannot nest Panel, Timer, StatusBar, Table or TreeView.', child.line);
+      }
+      if (child.layout) throw new PatchSyntaxError('Controls inside a panel use flow layout in Panel Stage 1. Remove at/size from the nested control.', child.line);
+    }
+    return uiControl({ control: 'panel', textExpr: null, id, body, line: row.line }, layout);
+  }
   function treeNodesAt(nodeIndent) {
     const nodes = [];
     while (i < lines.length) {
@@ -149,9 +160,15 @@ export function parse(source) {
       const body = childBlock(indent,row);
       for (const child of body) {
         if (child.kind !== 'uiControl') throw new PatchSyntaxError('A tab page can only contain window controls in Tabs Stage 1.',child.line);
+        if (['panel', 'timer', 'statusbar'].includes(child.control)) {
+          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer or StatusBar.',child.line);
+        }
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
       return {kind:'tabPage',titleExpr:m[1],body,line:row.line};
+    }
+    if ((m = row.text.match(/^panel\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
+      return panelNode(row, indent, m[1], m[2] !== undefined ? parseLayoutNumbers(m[2], m[3], m[4], m[5], row.line) : null);
     }
     if ((m = row.text.match(/^tree\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       return treeControlNode(row, indent, m[1], m[2], m[3], m[4], m[5]);
@@ -185,8 +202,30 @@ export function parse(source) {
       if(!(step>0))throw new PatchSyntaxError('A slider step must be greater than zero.',row.line);
       return uiControl({control:'slider',textExpr:null,id:m[3],min,max,step,line:row.line},ui.layout);
     }
+    if ((m = ui.core.match(/^timer\s+as\s+([A-Za-z_]\w*)\s+interval\s+(\d+)$/))) {
+      const interval = Number(m[2]);
+      if (!Number.isInteger(interval) || interval < 1 || interval > 3600000) {
+        throw new PatchSyntaxError('A timer interval must be a whole number of milliseconds from 1 to 3600000.', row.line);
+      }
+      return uiControl({control:'timer',textExpr:null,id:m[1],interval,line:row.line},ui.layout);
+    }
+    if ((m = ui.core.match(/^picture\s+as\s+([A-Za-z_]\w*)\s+from\s+(.+)$/))) {
+      return uiControl({control:'picture',textExpr:null,sourceExpr:m[2],id:m[1],line:row.line},ui.layout);
+    }
+    if ((m = ui.core.match(/^picture\s+as\s+([A-Za-z_]\w*)$/))) {
+      return uiControl({control:'picture',textExpr:null,sourceExpr:null,id:m[1],line:row.line},ui.layout);
+    }
+    if ((m = ui.core.match(/^picture\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
+      return uiControl({control:'picture',textExpr:m[1],sourceExpr:null,id:m[2],line:row.line},ui.layout);
+    }
+    if ((m = ui.core.match(/^statusbar\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
+      return uiControl({control:'statusbar',textExpr:m[1],id:m[2],line:row.line},ui.layout);
+    }
+    if ((m = ui.core.match(/^statusbar\s+as\s+([A-Za-z_]\w*)$/))) {
+      return uiControl({control:'statusbar',textExpr:'"Ready"',id:m[1],line:row.line},ui.layout);
+    }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
-    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled|ticked)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^confirm\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) {
       const parts=splitArgs(m[1]);
       if(parts.length!==2)throw new PatchSyntaxError('A confirm dialog needs exactly a title and message, for example confirm "Delete?", "This cannot be undone." as confirm_delete.',row.line);

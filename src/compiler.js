@@ -105,6 +105,9 @@ function lowerNode(node) {
         fields.max = node.max;
         fields.step = node.step;
       }
+      if (node.control === 'timer') fields.interval = node.interval;
+      if (node.control === 'picture' && node.sourceExpr) fields.sourceExpr = node.sourceExpr;
+      if (node.control === 'panel') fields.body = lowerBlock(node.body ?? []);
       return op('UI_CONTROL', node, fields);
     }
     case 'event':
@@ -169,6 +172,10 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'table') caps.add('ui.table');
     if (node.kind === 'uiControl' && node.control === 'tree') caps.add('ui.tree');
     if (node.kind === 'uiControl' && node.control === 'slider') caps.add('ui.slider');
+    if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
+    if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');
+    if (node.kind === 'uiControl' && node.control === 'picture') caps.add('ui.picture');
+    if (node.kind === 'uiControl' && node.control === 'statusbar') caps.add('ui.statusbar');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');
     if (node.kind === 'why') caps.add('change.provenance');
