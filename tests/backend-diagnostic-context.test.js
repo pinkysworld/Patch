@@ -20,6 +20,11 @@ test('C99 nested recipe errors map only to one matching make line', () => {
 test('C99 unknown recipe errors find one matching do line', () => {
   const source = `create number score = 0\nif true:\n  do missing(1)\n`;
   assert.equal(inferBackendPatchLine("C99 backend: unknown recipe 'missing'.", source), 3);
+  const diagnostic = diagnosticFromError(new Error("C99 backend: unknown recipe 'missing'."), {
+    phase: 'build', source, entry: 'main.patch'
+  });
+  assert.equal(diagnostic.code, 'PATCH2003');
+  assert.deepEqual(diagnostic.location, { entry: 'main.patch', line: 3, column: 3 });
 });
 
 test('C99 return and literal repeat context map when unambiguous', () => {

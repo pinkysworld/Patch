@@ -49,6 +49,11 @@ test('paper product boundary follows current and frozen native contracts without
   assert.match(paper, /frozen TreeView compatibility contract: \*\*Native GUI IR 1\.2 \/ sealed payload v12 \/ runtime v1\.3\*\*/);
   assert.match(paper, /formal runtime-correspondence milestone: \*\*beta\.32\*\*/);
   assert.match(paper, /does not widen the beta\.32 Lean claim/);
+  assert.match(paper, /historical include-chain bases, not the Ready runtime/);
+  const tex = fs.readFileSync('paper/main.tex', 'utf8');
+  assert.match(tex, /Native GUI IR 1\.3/);
+  assert.match(tex, /fail closed on Things/);
+  assert.doesNotMatch(tex, /Native GUI IR 0\.7 does not model persistent list state, so current native Window paths fail closed/);
 });
 
 test('SPEC exposes the fail-closed Thing field boundary implemented by the parser', () => {

@@ -48,6 +48,9 @@ test('build target failures receive stable build codes without source locations'
 
   const subset = diagnosticFromError(new Error('Direct Wasm: things are outside the direct numeric Wasm subset at line 1.'), { phase: 'build' });
   assert.equal(subset.code, PATCH_DIAGNOSTIC_CODES.UNSUPPORTED_NUMERIC_SUBSET);
+
+  const unknownRecipe = diagnosticFromError(new Error("C99 backend: unknown recipe 'missing'."), { phase: 'build' });
+  assert.equal(unknownRecipe.code, PATCH_DIAGNOSTIC_CODES.UNSUPPORTED_NUMERIC_SUBSET);
 });
 
 test('explicit PATCH codes survive normalization', () => {
