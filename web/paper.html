@@ -44,19 +44,30 @@ npm run bundle:reproducibility</pre>
 
   <article class="manuscript-body">
     <p class="manuscript-kicker">Michél Nguyen · August 2026 · Change IR 0.10</p>
+    <nav class="manuscript-toc" aria-label="On this page">
+      <a href="#abstract">Abstract</a>
+      <a href="#contribution">Contribution</a>
+      <a href="#mixed-guard">Mixed-guard</a>
+      <a href="#lean">Lean</a>
+      <a href="#evaluation">Evaluation</a>
+      <a href="#related">Related work</a>
+      <a href="#limitations">Limitations</a>
+      <a href="#repro">Reproduce</a>
+    </nav>
     <aside class="manuscript-claim" aria-label="Claim boundary">
       <strong>Claim boundary.</strong> This manuscript does not claim unique expressibility of bounded state relations, a fully verified compiler, a complete plugin sandbox, third-party ecosystem evidence, or any overhead/scalability result. Product work after beta.32, including Native GUI IR 1.3 and prototype-free Things, does not widen the Lean theorem.
     </aside>
-    <h2>Abstract</h2>
+    <h2 id="abstract">Abstract</h2>
     <p>General-purpose languages usually expose persistent mutation through assignment or data-structure-specific updates, while auditing, undo, provenance, replay and policy enforcement reconstruct additional semantic structure around those writes. Patch explores the opposite factorization: ordinary post-creation persistent mutation is represented and committed through a structured semantic Change. A programmer writes <code>change score: add 1</code>; ordinary reassignment is not an alternative modeled persistent-update route.</p>
     <p>Patch derives Semantic Change Signatures and optional Change Capabilities from the same mandatory mutation representation. These contracts distinguish target, semantic operation and, for a supported numeric fragment, magnitude. A Lean 4 development proves factorization, mutation transparency, signature and policy properties, integer range soundness, finite ranked call composition, exact safe-integer call binding, guarded structured traces and finite transitive exact call-tree refinement for explicit fragments.</p>
     <p>Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls and mixed-guard repeated identities. Generated certificates check each frame binding against the beta 30 exact call tree and let Lean re-evaluate frame-selected observed semantic effects. No controlled performance result, external plugin-ecosystem result, complete sandboxing result, or end-to-end compiler-verification result is claimed.</p>
 
-    <h2>Candidate contribution</h2>
+    <h2 id="contribution">Candidate contribution</h2>
     <blockquote>
       Patch factors ordinary post-creation persistent mutation through a structured semantic Change, and derives operation- and magnitude-aware summaries and authority from that same mandatory mutation substrate.
     </blockquote>
     <p>This is an architectural conjunction, not a unique-expressibility claim. Plaid, effect systems, graded and dependent effects, capabilities, typestate, HTT/F* and patch theory already occupy neighbouring points. The remaining question is whether forcing ordinary modeled persistent mutation through one semantic delta is useful.</p>
+    <p><strong>Contributions.</strong> The working manuscript packages (1) factorization and transparency for the modeled mutation machine, (2) signatures/capabilities with Lean range and policy soundness on explicit fragments, (3) the call-assurance stack through beta.32 mixed-guard invocation frames, (4) independent JavaScript source/range, guard and call-site identity checks that are not a verified parser, and (5) ablation, two-domain corpus, measurement protocol and reproducibility packaging with no performance result claimed.</p>
 
     <figure class="manuscript-figure" aria-label="Mutation architecture">
       <svg viewBox="0 0 720 220" role="img" aria-labelledby="archTitle archDesc">
@@ -94,7 +105,7 @@ npm run bundle:reproducibility</pre>
       <figcaption>Ordinary modeled persistent mutation is committed through a structured Change. Signatures, capabilities, history and provenance reuse that same object.</figcaption>
     </figure>
 
-    <h2>Mixed-guard invocation frames</h2>
+    <h2 id="mixed-guard">Mixed-guard invocation frames</h2>
     <p>Beta 32 reconstructs concrete invocation frames independently of backend call markers. The mixed-guard regression executes <code>caller(1)</code>, <code>caller(4)</code>, <code>caller(1)</code> through <code>caller → outer → middle → leaf</code>. Independent validation reconstructs twelve invocation frames and six supported transitive correspondences. The three outer witnesses keep distinct dynamic identities with effects <code>coins +4</code>, <code>score +5</code>, <code>coins +4</code>.</p>
     <pre class="manuscript-code">create number score = 0
 create number coins = 0
@@ -137,7 +148,7 @@ do caller(1)</pre>
       <figcaption>Two identical <code>caller(1)</code> roots remain distinguishable from the intervening opposite-guard <code>caller(4)</code> without trusted backend call markers.</figcaption>
     </figure>
 
-    <h2>Lean-checked statements</h2>
+    <h2 id="lean">Lean-checked statements</h2>
     <p>These names are the current formal fragment. Later product engineering does not add theorems.</p>
     <div class="manuscript-table-wrap">
       <table>
@@ -174,7 +185,7 @@ do caller(1)</pre>
       </table>
     </div>
 
-    <h2>Semantic-authority evaluation</h2>
+    <h2 id="evaluation">Semantic-authority evaluation</h2>
     <p>Eight micro-cases are evaluated by the real Patch compiler/Change Capability analysis and by an intentionally coarse internal ablation that records only transitively reachable write targets. The expected mechanized matrix is 3 Patch accept / coarse accept, 4 Patch reject / coarse accept, and 1 Patch reject / coarse reject. This is not a claim of complete malicious-code containment.</p>
     <div class="manuscript-table-wrap">
       <table>
@@ -216,7 +227,7 @@ do caller(1)</pre>
       </table>
     </div>
 
-    <h2>Related-work comparison</h2>
+    <h2 id="related">Related-work comparison</h2>
     <p>A “no” or “partial” cell means the cited mechanism does not make that property its central/default abstraction. It is not a claim that a surrounding language cannot encode it.</p>
     <div class="manuscript-table-wrap">
       <table>
@@ -268,6 +279,20 @@ do caller(1)</pre>
       <li>Semantic-authority ablation plus checkout/loyalty and usage/quota cases.</li>
       <li>Process-isolated controlled-measurement protocol and commit-bound reproducibility bundle.</li>
     </ol>
+
+    <h2 id="limitations">Limitations</h2>
+    <p><strong>Construct validity.</strong> Lean covers explicit fragments. Independent source/range, guard and call-site validators are JavaScript, not verified parsers. Runtime correspondence checks accepted reconstructed evidence; it does not prove capture completeness, lowering or the WebAssembly engine. The coarse baseline is an internal target-only ablation.</p>
+    <p><strong>Internal validity.</strong> No controlled paper-quality timing dataset exists yet, so there is no measured overhead result. Hosted-CI timing cannot be relabelled. Security cases are deterministic artifact matrices, not a sampled vulnerability corpus.</p>
+    <p><strong>External validity.</strong> Checkout/loyalty and usage/quota are not a complete plugin sandbox and not evidence about a third-party plugin ecosystem. GUI, Things and native Window runtimes stay outside beta.32. The candidate novelty is a conjunction of architectural choices and still requires expert/venue scrutiny.</p>
+
+    <h2 id="repro">Reproduce</h2>
+    <p>Core assurance and packaging. A future controlled timing run stays on a documented fixed machine; analysis may emit candidate tables and SVG plots, but manuscript inclusion remains a review step.</p>
+    <pre class="manuscript-code">npm test
+npm run transitive-runtime-certify:mixed-guards
+npm run evaluate:security
+npm run evaluate:checkout-extension
+npm run evaluate:quota-extension
+npm run bundle:reproducibility</pre>
 
     <h2>Read the full sources</h2>
     <div class="doc-links">

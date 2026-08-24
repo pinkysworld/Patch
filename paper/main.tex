@@ -72,6 +72,16 @@ The current artifact supports six connected claims:
 This manuscript does not claim unique expressibility of bounded state relations, a fully verified compiler, a complete plugin sandbox, third-party ecosystem evidence, or any overhead/scalability result. Claims 1--2 are the working architectural hypothesis; claims 3--6 are supporting formal and artifact evidence for that hypothesis.
 \end{claimboundary}
 
+\paragraph{Contributions.}
+This working manuscript packages five scoped contributions:
+\begin{enumerate}[leftmargin=*]
+\item State-Change Factorization and Mutation Transparency for the modeled persistent-mutation machine (Defs.~\ref{def:factorization} and~\ref{def:transparency});
+\item Semantic Change Signatures and Change Capabilities derived from that same mandatory mutation substrate, with Lean signature/policy and integer \texttt{RangeExpr} soundness for explicit fragments (Thms.~\ref{thm:signature} and~\ref{thm:range});
+\item a layered Lean call-assurance stack through finite transitive exact call trees and beta~32 independently reconstructed invocation-frame correspondence, including mixed-guard repeated identities (Thms.~\ref{thm:calltree} and~\ref{thm:runtime});
+\item independent JavaScript source/range, guard and static call-site identity validation that reduces selected production-extraction trust without claiming a verified parser;
+\item an eight-case semantic-authority ablation, a two-domain internally authored application corpus, a process-isolated controlled-measurement protocol, and a commit-bound reproducibility bundle, with no performance result claimed.
+\end{enumerate}
+
 \section{Language Design}
 \subsection{Progressive disclosure}
 A beginner can ignore signatures, policies, certificates, and backend details:
@@ -334,6 +344,8 @@ Observed runtime-frame correspondence & Thm.~\ref{thm:runtime}; \texttt{checkedO
 \end{tabular}
 \end{table}
 
+Supporting Lean names also include \texttt{callSignatureSoundness}, \texttt{concreteCallBinding\_sound}, \texttt{checkedConcreteBoundEffectRefinesCallerSignature} and \texttt{checkedConcreteCallBodyRefinesCallerSignature}. They remain fragment theorems, not a verified compiler.
+
 \begin{table}[t]
 \centering
 \caption{Assurance layer versus proof status. ``Accepted evidence'' means Lean checks consequences of independently reconstructed artifacts rather than proving the producer correct.}
@@ -478,18 +490,16 @@ Editable Window controls preserve the persistent-mutation rule: event-local valu
 \input{related-work}
 
 \section{Limitations and Threats to Validity}
-The current artifact has explicit limitations:
-\begin{itemize}[leftmargin=*]
-\item Patch is not a fully verified compiler; parser semantics outside independently cross-checked supported source/range, guard, and static call-site identity fragments, lowering, runtime capture, validator/frame reconstruction, and WebAssembly execution retain trusted or proof-free boundaries;
-\item the independent source/range, guard, and call-site validators are themselves JavaScript implementations rather than verified parsers/evaluators;
-\item the mechanized arithmetic/call/runtime fragments are deliberately narrower than the full language and use safe-integer restrictions where exact formal correspondence requires them;
-\item GUI/event behavior, richer values, external effects, foreign code, and full native GUI execution are not covered by the beta 32 Lean theorem;
-\item the eight security micro-cases and the checkout/quota application cases are controlled artifact cases, not evidence about the prevalence of vulnerabilities, superiority over named prior systems, or behavior in a third-party plugin ecosystem;
-\item the target-only security baseline is an internal ablation, not a faithful implementation of prior effect/capability literature;
-\item no controlled performance dataset has yet been collected, so there is no measured overhead/scalability result to generalize;
-\item the related-work review is structured and primary-source-oriented but is not claimed to be an exhaustive systematic review of every effect, refinement, capability, or state-transition formalism;
-\item the candidate novelty is a conjunction of architectural choices and still requires expert/venue scrutiny, even if no reviewed system in the current comparison uses the same default mutation factorization.
-\end{itemize}
+\label{sec:limitations}
+
+\paragraph{Construct validity.}
+The Lean theorems cover explicit fragments rather than the full language. Independent source/range, guard and call-site validators reduce selected extraction trust, but they are JavaScript rather than verified parsers. Runtime correspondence checks consequences of accepted reconstructed evidence; it does not prove capture completeness, lowering correctness or WebAssembly-engine correctness. The coarse security baseline is an internal target-only ablation, not a model of a named prior system.
+
+\paragraph{Internal validity.}
+No controlled paper-quality timing dataset has been collected, so there is no measured overhead result to interpret. Hosted-CI timing is labelled non-publication and cannot be relabelled. Semantic-authority cases are deterministic artifact cases with expected accept/reject matrices; they are not sampled from a vulnerability corpus.
+
+\paragraph{External validity.}
+Checkout/loyalty and usage/quota are internally authored engineering cases, not a complete plugin sandbox and not evidence about a third-party plugin ecosystem. GUI, Things, native Window runtimes and foreign code remain outside the beta~32 Lean fragment. The related-work review is structured but not claimed to be exhaustive. The candidate novelty is a conjunction of architectural choices and still requires expert/venue scrutiny.
 
 The highest-value remaining research work is to collect the fixed-machine controlled dataset, analyze scaling with explicit models and dispersion, validate the approach against a genuinely external or third-party extension/integration setting, obtain expert/venue feedback on the architectural conjunction, continue normal pre-submission literature surveillance, and reduce remaining lowering/runtime and out-of-fragment parser trust boundaries where doing so materially strengthens the central claim.
 
@@ -499,6 +509,22 @@ Patch investigates a language architecture in which ordinary modeled persistent 
 The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls and preserve different concrete guard-selected traces between repeated identities. Independent source/range and guard validation plus raw-source static call-site binding reduce selected production-extraction trust dependencies, while validator, remaining parser semantics, lowering, capture, and engine correctness remain explicit rather than overstating full verification.
 
 The artifact further supplies semantic-authority ablations, a two-domain checkout/loyalty and usage/quota application corpus, a controlled-measurement protocol, and commit-bound reproducibility packaging. The remaining empirical question is whether the mandatory semantic-mutation factorization provides enough security and engineering value, at acceptable measured cost, to justify the architectural restriction. That question is intentionally left to controlled measurement and genuine external application evidence rather than answered with uncollected results.
+
+\appendix
+\section{Artifact reproduction}
+\label{app:repro}
+Core assurance, evaluation and packaging commands used by this working manuscript:
+
+\begin{verbatim}
+npm test
+npm run transitive-runtime-certify:mixed-guards
+npm run evaluate:security
+npm run evaluate:checkout-extension
+npm run evaluate:quota-extension
+npm run bundle:reproducibility
+\end{verbatim}
+
+A future paper-candidate timing run uses the process-isolated controller with measurement class \texttt{controlled} on a documented fixed machine. Analysis may emit candidate tables and SVG plots; manuscript inclusion remains a review step. Hosted-CI timing must not be copied into this file.
 
 \bibliographystyle{plain}
 \bibliography{references}

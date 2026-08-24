@@ -1,6 +1,8 @@
 # Research and Evaluation Plan
 
-Patch should not be submitted to a high venue until the formal claim, executable artifact and evaluation line up. Beta 4 proved Change Signature Soundness for a structured Lean core. Beta 5 added production/formal translation validation, beta 6 a verified policy checker, beta 7 proof-free semantic evidence, and **beta 8 adds a formal source-core layer whose source mutation verbs are normalized and checked by Lean before semantic signature/policy checking**.
+Status: living plan for Patch **0.2.0-beta.35** / Change IR **0.10**, with formal runtime-correspondence milestone **beta.32**. This is not a performance result and does not widen the Lean theorem.
+
+Patch should not be submitted to a high venue until the formal claim, executable artifact and evaluation line up. Product and Studio work after beta.32 does not change that rule.
 
 ## Central question
 
@@ -212,63 +214,50 @@ Only if simplicity remains a headline empirical claim, preregister a controlled 
 
 Before systems-heavy portability claims, evaluate browser/PWA, Windows/macOS/Linux CI, portable `.patchapp`, future direct Wasm and at least one native host.
 
-## Current milestone: 0.2.0-beta.8
+## Current milestone: 0.2.0-beta.35 product / beta.32 assurance
 
-Implemented:
+Implemented relative to the working manuscript:
 
-- Change IR 0.6 and semantic change runtime;
-- Semantic Change Signatures and Change Capabilities;
-- ranged parameters and production interval analysis;
-- runtime range guards;
-- provenance and initial `why`;
-- State-Change Factorization and Mutation Transparency proofs;
-- Change Signature Soundness and formal end-to-end capability containment;
-- verified executable semantic policy checker;
-- proof-free semantic Evidence schema and Lean decoder;
-- machine-checked evidence/formal-signature correspondence;
-- **formal `SourceStmt` / `SourceChange` vocabulary preserving `add/remove/set/clear`**;
-- **Lean semantic normalization of source mutation verbs to semantic effects**;
-- **machine-checked SourceStmt→EvidenceStmt equality via `checkSourceEvidence_sound`**;
-- **machine-checked source→formal-signature chain via `checkSourceSignature_sound`**;
-- **formal source-runtime containment via `checkedSourceExecutionCannotEscape`**;
-- separate production formal-source, semantic-bridge and Change-Signature paths;
-- `patch formal` reporting both coverage layers;
-- `patch certify` source/evidence/signature/policy Lean certificates;
-- formal CI explicitly building all five Lean modules and generated certificates;
-- Patch Studio/PWA, GUI preview/Designer, `.patchapp`, bootstrap Wasm;
-- Windows/macOS/Linux Node 22/24 CI.
+- Change IR **0.10**;
+- State-Change Factorization, Mutation Transparency, signature/capability soundness and integer `RangeExpr` soundness for explicit fragments;
+- independent JavaScript source/range, guard and static call-site identity validation (not a verified parser);
+- finite ranked calls through beta.30 exact call trees and beta.32 independently reconstructed invocation frames, including mixed-guard repeated identities;
+- eight-case semantic-authority ablation plus internally authored checkout/loyalty and usage/quota cases;
+- process-isolated `development` / `hosted-ci` / `controlled` measurement protocol and commit-bound reproducibility bundle;
+- public `paper.html` reading copy with Lean/trust/measurement tables;
+- product artifact including Patch Studio bundle v3 and current/frozen native contracts (IR 1.3 / v13 / v1.4 current; IR 1.2 / v12 / v1.3 frozen), **outside** the Lean theorem.
 
-## Next formal milestone
+## Next research gates
 
-Recommended order:
+These remain open because they need data or external participation, not another product control:
 
-1. **mechanize production interval-analysis soundness** for the currently used expression subset;
-2. define/validate a stable production AST → `SourceStmt` correspondence boundary;
-3. connect production runtime traces to formal `SourceExecutes` traces;
-4. extend certification to non-recursive recipe calls/parameter substitution;
-5. then add inverse/replay/commutation proofs.
+1. collect the fixed-machine controlled overhead/scaling dataset;
+2. analyze that dataset, review it, then synchronize measured results into `paper/main.tex` by hand;
+3. a genuine external/third-party extension or integration study;
+4. expert/venue feedback on whether the architectural conjunction is distinct and useful;
+5. further reductions of parser/lowering/runtime trust that materially strengthen the central claim without overstating full compiler verification.
 
-Range soundness is now especially valuable because operation/magnitude-aware authority is the strongest candidate technical distinction.
+Range soundness and runtime-frame correspondence are now supporting assurance. They are not novelty headlines and they are not an end-to-end compiler theorem.
 
 ## Paper strategy
 
 Primary claim:
 
-> Persistent mutation is forced through a semantic Change representation, and operation-/magnitude-aware semantic Change Contracts derived from that representation can constrain modeled runtime changes. For a conservative production subset, Patch emits a formal source mutation representation, separate semantic evidence and a separate production Change Signature; Lean performs source semantic normalization and checks the source/evidence/signature/policy chain.
+> Persistent mutation is forced through a semantic Change representation, and operation-/magnitude-aware semantic Change Contracts derived from that representation can constrain modeled runtime changes.
 
-Do not make source calculi, certificates, GUI, undo, `why`, Wasm or mobile IDE support the novelty headline. They are evidence/artifact consequences.
+Do not make certificates, GUI, undo, `why`, Wasm, Studio or native packaging the novelty headline. They are evidence/artifact consequences. Do not copy hosted-CI timing into the manuscript.
 
 ## High-venue gate
 
 Before an OOPSLA/PLDI/ICFP-level attempt, require:
 
-1. systematic related-work review;
-2. production AST/source extraction assurance for a useful subset;
-3. mechanized interval-analysis soundness if magnitude-aware contracts remain central;
-4. production runtime/formal trace correspondence;
-5. direct compiled execution;
-6. two or three convincing semantic-security/engineering case studies;
-7. benchmark and certificate/checker overhead measurements;
-8. reproducibility bundle;
+1. systematic related-work review (structured 2025–2026 follow-up exists; continue surveillance);
+2. production AST/source extraction assurance for a useful subset (independent JS validators exist; not a verified parser);
+3. mechanized interval-analysis soundness if magnitude-aware contracts remain central (Lean `RangeExpr` fragment exists);
+4. production runtime/formal trace correspondence (beta.32 invocation frames on accepted evidence);
+5. direct compiled execution (direct Wasm, with named trust boundaries);
+6. two or three convincing semantic-security/engineering case studies (artifact corpus exists; not third-party);
+7. benchmark and certificate/checker overhead measurements (**not collected** on controlled hardware);
+8. reproducibility bundle (exists; excludes paper performance results);
 9. no unsupported firstness claims;
-10. controlled user evidence only if novice simplicity remains a headline empirical claim.
+10. controlled user evidence only if novice simplicity remains a headline empirical claim (it does not).

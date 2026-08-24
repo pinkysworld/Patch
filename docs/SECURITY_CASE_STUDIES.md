@@ -1,6 +1,6 @@
 # Patch semantic-authority security case studies
 
-Status: **mechanized case-study artifact for Patch 0.2.0-beta.32 / Change IR 0.10**.
+Status: **mechanized case-study artifact for Patch 0.2.0-beta.35 / Change IR 0.10**, with formal milestone **beta.32**.
 
 These cases illustrate why Patch's Semantic Change Capabilities track **target, semantic operation and optional magnitude**, rather than only whether some code may write a state location.
 

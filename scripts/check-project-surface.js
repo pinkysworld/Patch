@@ -43,6 +43,7 @@ const files = {
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
   paper: read('paper/README.md'),
   paperMain: read('paper/main.tex'),
+  researchPlan: read('docs/RESEARCH_PLAN.md'),
   semantics: read('docs/SEMANTICS.md'),
   compilerJs: read('src/compiler.js'),
   windowEvents: read('src/window-events.js'),
@@ -111,6 +112,7 @@ requireAll('Documentation current map', files.docsPage, [
 requireAll('Paper reading copy', files.paperPage, [
   'Working manuscript','beta.32','Native GUI IR 1.3','no controlled paper-quality timing dataset yet',
   'not an end-to-end compiler theorem','loyalty-over-limit','balance = 80','used = 35',
+  'twelve invocation frames','Construct validity',
   'checkedObservedTransitiveRuntimeRefinesCallerSignature','hosted-ci'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset','compiles and runs the numeric C99 program']);
@@ -141,10 +143,19 @@ requireAll('Paper manuscript current product surface', files.paperMain, [
   'Native GUI IR 1.3', 'payload v13', 'runtime v1.4',
   'Native GUI IR 1.2', 'payload v12', 'runtime v1.3',
   'prototype-free own-field product values', 'fail closed on Things',
-  'does not widen the Lean runtime-correspondence theorem'
+  'does not widen the Lean runtime-correspondence theorem',
+  'Construct validity', 'callSignatureSoundness'
 ]);
 rejectAll('Paper manuscript obsolete current-native list fail-closed claim', files.paperMain, [
   'Native GUI IR 0.7 does not model persistent list state, so current native Window paths fail closed'
+]);
+requireAll('Research plan current milestone', files.researchPlan, [
+  '0.2.0-beta.35 product / beta.32 assurance',
+  'Do not copy hosted-CI timing',
+  'fixed-machine controlled overhead/scaling dataset'
+]);
+rejectAll('Research plan obsolete current milestone', files.researchPlan, [
+  'Current milestone: 0.2.0-beta.8'
 ]);
 
 requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`']);

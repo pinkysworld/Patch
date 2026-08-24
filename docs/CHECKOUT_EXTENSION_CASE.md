@@ -1,6 +1,6 @@
 # Checkout loyalty extension case study
 
-Status: **application-level semantic-authority case for Patch 0.2.0-beta.32 / Change IR 0.10**.
+Status: **application-level semantic-authority case for Patch 0.2.0-beta.35 / Change IR 0.10**, with formal milestone **beta.32**.
 
 This case complements the eight micro-ablation programs in `docs/SECURITY_CASE_STUDIES.md` with one coherent extension-style application. It is still a controlled artifact, not a production security sandbox or a comparison against a named external system.
 

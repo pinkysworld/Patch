@@ -40,7 +40,10 @@ test('main manuscript reflects the beta32 assurance and current product-artifact
     'tab:trust-boundary',
     'tab:measurement-classes',
     'thm:runtime',
-    'def:factorization'
+    'def:factorization',
+    'Construct validity',
+    'app:repro',
+    'callSignatureSoundness'
   ]) {
     assert.match(tex, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }

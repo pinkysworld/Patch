@@ -56,6 +56,7 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] C99 unknown-recipe fail-closed errors classify as `PATCH2003`
 - [x] public `paper.html` reading copy of the working manuscript, with Lean/trust/measurement tables, mixed-guard frames and an explicit no-performance-claim boundary
 - [x] assurance analysis tooling that sketches dispersion, linear scaling and SVG plots and refuses to copy hosted-ci timing into `paper/main.tex`
+- [x] research plan and security/checkout case docs synchronized off the obsolete beta.8 / beta.32-as-current-product status lines
 
 ### Next repository-controlled backlog
 
