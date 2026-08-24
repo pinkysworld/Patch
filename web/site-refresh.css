@@ -190,10 +190,42 @@ body {
 .beta35-strip span { line-height: 1.55; }
 
 .studio-launchpad {
+  margin: 0 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.studio-launchpad > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.studio-launchpad > summary::-webkit-details-marker,
+.studio-launchpad > summary::marker { display: none; }
+
+.studio-launchpad .summary-hint {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.studio-launchpad-body { display: none; }
+
+.studio-launchpad[open] .studio-launchpad-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(340px, .48fr);
   gap: 12px;
-  margin: 0 0 14px;
+  padding: 0 12px 12px;
 }
 
 .studio-snapshot {
@@ -459,7 +491,7 @@ body {
 
 @media (max-width: 1180px) {
   .toolbar .compact-field > span { display: none; }
-  .studio-launchpad { grid-template-columns: 1fr; }
+  .studio-launchpad[open] .studio-launchpad-body { grid-template-columns: 1fr; }
   .docs-contract-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .doc-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

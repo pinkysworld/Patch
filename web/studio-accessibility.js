@@ -9,6 +9,7 @@ installSkipLink();
 installResultTabKeyboard();
 installStudioShortcuts();
 installWorkspaceLayoutV2();
+installEditorCaret();
 syncResultTabs();
 
 if (resultTabList && typeof MutationObserver !== 'undefined') {
@@ -74,6 +75,36 @@ function announceStudioReady() {
   window.dispatchEvent(new CustomEvent('patch:studio-ready', {
     detail: { module: 'studio-accessibility' }
   }));
+}
+
+function installEditorCaret() {
+  const caret = document.querySelector('#editorCaret');
+  if (!editor || !caret) return;
+
+  const update = () => {
+    const text = editor.value ?? '';
+    const offset = Math.max(0, Math.min(Number(editor.selectionStart ?? 0), text.length));
+    let line = 1;
+    let column = 1;
+    for (let i = 0; i < offset; i += 1) {
+      if (text.charCodeAt(i) === 10) {
+        line += 1;
+        column = 1;
+      } else {
+        column += 1;
+      }
+    }
+    caret.textContent = `Ln ${line} · Col ${column}`;
+  };
+
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === editor) update();
+  });
+  editor.addEventListener('input', update);
+  editor.addEventListener('keyup', update);
+  editor.addEventListener('click', update);
+  window.addEventListener('patch:studio-active-file-changed', update);
+  update();
 }
 
 function installWorkspaceLayoutV2() {
