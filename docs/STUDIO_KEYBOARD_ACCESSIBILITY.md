@@ -1,6 +1,6 @@
 # Patch Studio structural keyboard accessibility
 
-Status: **0.2.0-beta.35+** Studio accessibility refinement. This is an editor/product capability only; it does not change Patch syntax, Change IR 0.10, Native GUI IR 1.2, sealed payload v12/runtime v1.3 or the beta.32 formal assurance boundary.
+Status: **0.2.0-beta.35+** Studio accessibility refinement. This is an editor/product capability only; it does not change Patch syntax, Change IR 0.10, Native GUI IR 1.3 / payload v13 / runtime v1.4, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal assurance boundary.
 
 Patch Studio's source-backed structural Properties editors support keyboard-only operation for the current Table, TreeView and Tabs editing surface, including nested Table/TreeView editors inside Tabs pages.
 

@@ -134,22 +134,23 @@ Older formats remain reproducible compatibility contracts. Newer Menu or Tree re
 - checked state: `gtk_check_menu_item_set_active`;
 - `Primary`: `GDK_CONTROL_MASK`.
 
-Direct-backend and sealed-runtime smoke matrices execute decorated/state-bound applications on Windows, macOS and Linux. Current payload v12/runtime v1.3 additionally proves that those Menu semantics compose with the later TreeView layer.
+Direct-backend and sealed-runtime smoke matrices execute decorated/state-bound applications on Windows, macOS and Linux. Frozen payload v12/runtime v1.3 additionally proves that those Menu semantics compose with the later TreeView layer. Current payload v13/runtime v1.4 preserves that composition and adds Slider.
 
 ## Current Ready/offline boundary
 
-The token-free Ready app and ordinary offline Window linker now use **Native GUI IR 1.2 / payload v12 / runtime v1.3**. They support:
+The token-free Ready app and ordinary offline Window linker now use **Native GUI IR 1.3 / payload v13 / runtime v1.4**. They support:
 
 - separators;
 - portable shortcuts;
 - source-backed MenuItem `enabled` state;
 - source-backed MenuItem `checked` state;
 - the persistent list/ListBox contract from the earlier list layer;
-- hierarchical TreeView from the current layer.
+- hierarchical TreeView from the frozen 1.2/v12/v1.3 layer;
+- native Slider through `TRACKBAR`, `NSSlider` and `GtkScale`.
 
-The v11/runtime v1.2 Menu+list line remains independently tested as a frozen compatibility contract. The current v12 runtime does not reinterpret v11; it adds a separate Tree metadata extension over the frozen v11 prefix.
+The Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line remains independently tested as the frozen compatibility contract and is Slider fail-closed. The v11/runtime v1.2 Menu+list line remains independently tested below that. The current v13 runtime does not reinterpret v12; it adds Slider over the frozen TreeView prefix.
 
-Patch Studio's browser Ready path verifies the v1.3 runtime assets through the deployment SHA-256 manifest before sealing. The downloadable offline compiler independently builds and smoke-runs responsive, Table, ListBox, Menu and TreeView apps on its supported desktop hosts.
+Patch Studio's browser Ready path verifies the v1.4 runtime assets through the deployment SHA-256 manifest before sealing. The downloadable offline compiler independently builds and smoke-runs responsive, Table, ListBox, Menu, TreeView and Slider apps on its supported desktop hosts.
 
 ## Result-bearing dialogs
 

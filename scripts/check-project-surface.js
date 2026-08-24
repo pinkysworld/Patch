@@ -20,6 +20,7 @@ const files = {
   website: read('web/index.html'),
   language: read('web/language.html'),
   docsPage: read('web/docs.html'),
+  paperPage: read('web/paper.html'),
   downloadsPage: read('web/downloads.html'),
   helpPage: read('web/help.html'),
   spec: read('docs/SPEC.md'),
@@ -42,6 +43,7 @@ const files = {
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
   paper: read('paper/README.md'),
   paperMain: read('paper/main.tex'),
+  researchPlan: read('docs/RESEARCH_PLAN.md'),
   semantics: read('docs/SEMANTICS.md'),
   compilerJs: read('src/compiler.js'),
   windowEvents: read('src/window-events.js'),
@@ -51,6 +53,16 @@ const files = {
   nativeCurrent: read('src/native-current-contract.js'),
   nativeFrozen: read('src/native-frozen-contract.js'),
   nativeCompat: read('docs/NATIVE_COMPATIBILITY.md'),
+  menus: read('docs/MENUS_DIALOGS.md'),
+  nativeListState: read('docs/NATIVE_LIST_STATE.md'),
+  nativeTreeview: read('docs/NATIVE_TREEVIEW.md'),
+  studioTreeActions: read('docs/STUDIO_TREE_ACTIONS.md'),
+  studioTableActions: read('docs/STUDIO_TABLE_ACTIONS.md'),
+  studioSelection: read('docs/STUDIO_SELECTION_ARCHITECTURE.md'),
+  studioControlDup: read('docs/STUDIO_CONTROL_DUPLICATION.md'),
+  studioKeyboard: read('docs/STUDIO_KEYBOARD_ACCESSIBILITY.md'),
+  studioTabsControl: read('docs/STUDIO_TABS_CONTROL_ACTIONS.md'),
+  studioTabsPage: read('docs/STUDIO_TABS_PAGE_DUPLICATION.md'),
   sealed12: read('src/sealed-native-gui-v12.js'),
   sealed13: read('src/sealed-native-gui-v13.js'),
   buildSite: read('scripts/build-site.js'),
@@ -89,7 +101,7 @@ requireAll('Language SPEC current contract', files.spec, [
 rejectAll('Language SPEC obsolete assurance/product markers', files.spec, ['0.2.0-beta.8','Change IR 0.6','Beta 8 source/evidence']);
 
 for (const [label, text] of [
-  ['Studio', files.website],['Language', files.language],['Documentation page', files.docsPage],['Downloads page', files.downloadsPage],['Help page', files.helpPage]
+  ['Studio', files.website],['Language', files.language],['Documentation page', files.docsPage],['Paper page', files.paperPage],['Downloads page', files.downloadsPage],['Help page', files.helpPage]
 ]) requireAll(`${label} public version`, text, ['0.2 beta.35']);
 
 requireAll('Studio current product surface', files.website, [
@@ -105,7 +117,14 @@ requireAll('Documentation current map', files.docsPage, [
   'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
   'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages',
   'prototype-free Things','Thing fields such as player.score','recipe parameters such as reward.bonus',
-  'paper/README.md'
+  'paper/README.md','./paper.html'
+]);
+requireAll('Paper reading copy', files.paperPage, [
+  'Working manuscript','beta.32','Native GUI IR 1.3','no controlled paper-quality timing dataset yet',
+  'not an end-to-end compiler theorem','loyalty-over-limit','balance = 80','used = 35',
+  'twelve invocation frames','Construct validity',
+  'checkedObservedTransitiveRuntimeRefinesCallerSignature','hosted-ci',
+  'id="open-gates"','Still open','genuine external/third-party','expert/venue feedback'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset','compiles and runs the numeric C99 program']);
 requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line']);
@@ -135,10 +154,19 @@ requireAll('Paper manuscript current product surface', files.paperMain, [
   'Native GUI IR 1.3', 'payload v13', 'runtime v1.4',
   'Native GUI IR 1.2', 'payload v12', 'runtime v1.3',
   'prototype-free own-field product values', 'fail closed on Things',
-  'does not widen the Lean runtime-correspondence theorem'
+  'does not widen the Lean runtime-correspondence theorem',
+  'Construct validity', 'callSignatureSoundness'
 ]);
 rejectAll('Paper manuscript obsolete current-native list fail-closed claim', files.paperMain, [
   'Native GUI IR 0.7 does not model persistent list state, so current native Window paths fail closed'
+]);
+requireAll('Research plan current milestone', files.researchPlan, [
+  '0.2.0-beta.35 product / beta.32 assurance',
+  'Do not copy hosted-CI timing',
+  'fixed-machine controlled overhead/scaling dataset'
+]);
+rejectAll('Research plan obsolete current milestone', files.researchPlan, [
+  'Current milestone: 0.2.0-beta.8'
 ]);
 
 requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`']);
@@ -159,7 +187,9 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'recipe parameters as source-backed Param symbols',
   '`patch doctor` compiles and runs the numeric C99 program on Unix hosts',
   'Working manuscript names current/frozen native contracts',
-  'C99 unknown-recipe fail-closed errors classify as `PATCH2003`'
+  'C99 unknown-recipe fail-closed errors classify as `PATCH2003`',
+  'current/frozen native docs name Ready as IR 1.3',
+  'public `paper.html` names remaining research gates'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
@@ -200,6 +230,46 @@ requireAll('Production doctor self-check', files.production, [
 requireAll('Runtime correspondence Thing/GUI boundary', files.runtime, [
   'Things, lists, text/boolean state and GUI execution remain outside the beta.32'
 ]);
+requireAll('Runtime correspondence current native product', files.runtime, [
+  'Native GUI IR 1.3 / sealed payload v13 / runtime v1.4'
+]);
+requireAll('Menus/dialogs Ready boundary', files.menus, [
+  'now use **Native GUI IR 1.3 / payload v13 / runtime v1.4**'
+]);
+rejectAll('Menus/dialogs Ready boundary must not name IR 1.2 as current', files.menus, [
+  'now use **Native GUI IR 1.2'
+]);
+requireAll('List-state current IR 1.3', files.nativeListState, [
+  'Native GUI IR 1.3: current Ready/offline line'
+]);
+rejectAll('List-state history must not call IR 1.2 current', files.nativeListState, [
+  'Native GUI IR 1.2: current hierarchical'
+]);
+requireAll('TreeView current/frozen split', files.nativeTreeview, [
+  'Current Ready/offline Windows, macOS and Linux use Native GUI IR **1.3**',
+  'payload **v13** / runtime **v1.4**',
+  '**frozen** TreeView compatibility contract'
+]);
+rejectAll('TreeView docs must not title v1.3 as the current product', files.nativeTreeview, [
+  '# Native TreeView v1.3'
+]);
+for (const [label, text] of [
+  ['Tree actions', files.studioTreeActions],
+  ['Table actions', files.studioTableActions],
+  ['Selection architecture', files.studioSelection],
+  ['Control duplication', files.studioControlDup],
+  ['Keyboard accessibility', files.studioKeyboard],
+  ['Tabs control actions', files.studioTabsControl],
+  ['Tabs page duplication', files.studioTabsPage]
+]) {
+  requireAll(`${label} current/frozen native boundary`, text, [
+    'Native GUI IR 1.3 / payload v13 / runtime v1.4',
+    'frozen Native GUI IR 1.2 / payload v12 / runtime v1.3'
+  ]);
+  rejectAll(`${label} stale Ready IR 1.2 boundary`, text, [
+    'does not change Patch syntax, Change IR 0.10, Native GUI IR 1.2, sealed payload v12'
+  ]);
+}
 requireAll('Window event adapter clones event-local values', files.windowEvents, [
   "import { clone } from './change.js'", 'clone(payload.value)'
 ]);

@@ -4,7 +4,7 @@ Status: **Beta.32** · Change IR **0.10**
 
 Patch connects observed direct-WebAssembly execution to mechanized semantic-change evidence without claiming end-to-end compiler verification. The current assurance line combines independently validated target transitions, semantic effect reconstruction, finite exact call-tree witnesses and independently reconstructed concrete invocation frames.
 
-The product may advance beyond beta.32, but **Beta.32 remains the current formal runtime-correspondence milestone**. Product work such as Native GUI IR 1.2, sealed payload v12 and runtime v1.3 does not widen this assurance claim.
+The product may advance beyond beta.32, but **Beta.32 remains the current formal runtime-correspondence milestone**. Product work such as Native GUI IR 1.3 / sealed payload v13 / runtime v1.4, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line, and prototype-free Things does not widen this assurance claim.
 
 ## Current pipeline
 

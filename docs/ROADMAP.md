@@ -54,6 +54,11 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] `patch doctor` compiles and runs the numeric C99 program on Unix hosts with a C compiler
 - [x] Working manuscript names current/frozen native contracts and prototype-free Things; current native is not described as IR 0.7 list fail-closed
 - [x] C99 unknown-recipe fail-closed errors classify as `PATCH2003`
+- [x] public `paper.html` reading copy of the working manuscript, with Lean/trust/measurement tables, mixed-guard frames and an explicit no-performance-claim boundary
+- [x] assurance analysis tooling that sketches dispersion, linear scaling and SVG plots and refuses to copy hosted-ci timing into `paper/main.tex`
+- [x] research plan and security/checkout case docs synchronized off the obsolete beta.8 / beta.32-as-current-product status lines
+- [x] current/frozen native docs name Ready as IR 1.3 / v13 / v1.4 rather than IR 1.2
+- [x] public `paper.html` names remaining research gates without claiming those results
 
 ### Next repository-controlled backlog
 

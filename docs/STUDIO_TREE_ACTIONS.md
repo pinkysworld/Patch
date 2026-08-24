@@ -10,4 +10,4 @@ The copied subtree is deep and independent: later JavaScript-side editing of a c
 
 The active node selection remains transient IDE state. Duplicate does not create hidden Patch application state and does not add anything to Change History beyond the ordinary visible source edit.
 
-This feature does not change Patch syntax, Change IR 0.10, Native GUI IR 1.2, sealed payload v12, runtime v1.3 or the beta.32 formal-assurance boundary.
+This feature does not change Patch syntax, Change IR 0.10, Native GUI IR 1.3 / payload v13 / runtime v1.4, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal-assurance boundary.

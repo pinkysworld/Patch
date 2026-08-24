@@ -42,7 +42,7 @@ Completed UX/reliability work now includes Command Palette v2 project-file/symbo
 
 ## Command Palette
 
-Press **Ctrl/Cmd+K** or choose **Commands** in Studio. The palette currently delegates to the existing Run, Build, source editor, Designer, App, Output, Change Contract, Change IR, Recovery, Documentation, Downloads and Help actions. The same search also lists project files and Project Tree symbols, including Thing fields as `player.score` and recipe parameters as `reward.bonus`.
+Press **Ctrl/Cmd+K** or choose **Commands** in Studio. The palette currently delegates to the existing Run, Build, source editor, Designer, App, Output, Change Contract, Change IR, Recovery, Documentation, Paper, Downloads and Help actions. The same search also lists project files and Project Tree symbols, including Thing fields as `player.score` and recipe parameters as `reward.bonus`.
 
 Search text, selection and dialog visibility are transient IDE interaction state. The palette does not write Patch source, project persistence, Change History, `localStorage`, `sessionStorage` or IndexedDB and therefore does not create a second project or mutation model.
 
@@ -276,7 +276,7 @@ Patch Studio derives a deterministic content revision from browser-facing pages/
 
 The site builder validates the transitive relative ES-module import closure of generated `_site`. Standard CI then opens Studio in real Chrome, runs the default Window application and probes responsiveness after the delayed-freeze window. Windows CI isolates that smoke from the 12-minute full suite, treats Chrome profile cleanup as best-effort so leftover `chrome.exe` file locks cannot fail the job, and retries a stalled first-paint CDP evaluate instead of failing the 1.5s round-trip. The Pages workflow repeats the browser test against the actual public URL after deployment before publishing a healthy `patch-studio/public-site` status.
 
-The shared website presentation is responsive across Studio, Documentation, Language, Downloads and Help. Documentation uses a balanced contract grid plus local text filtering without telemetry or an external search service.
+The shared website presentation is responsive across Studio, Documentation, Paper, Language, Downloads and Help. Documentation uses a balanced contract grid plus local text filtering without telemetry or an external search service.
 
 ## Recovery and diagnostics
 

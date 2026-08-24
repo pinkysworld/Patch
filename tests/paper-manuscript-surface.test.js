@@ -8,7 +8,7 @@ const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
 if (!beta) throw new Error(`Unexpected Patch version ${pkg.version}`);
 
 test('main manuscript reflects the beta32 assurance and current product-artifact boundary', () => {
-  const tex = read('paper/main.tex');
+  const tex = `${read('paper/main.tex')}\n${read('paper/related-work.tex')}`;
 
   for (const phrase of [
     `Beta ${beta} product artifact / Beta 32 assurance manuscript`,
@@ -30,7 +30,20 @@ test('main manuscript reflects the beta32 assurance and current product-artifact
     'no controlled paper-quality timing dataset yet',
     'Patch Reproducibility Bundle',
     '\\input{related-work}',
-    '\\bibliography{references}'
+    '\\bibliography{references}',
+    'fig:architecture',
+    'fig:frames',
+    'tab:security-ablation',
+    'tab:application-corpus',
+    'tab:related-work',
+    'tab:lean-theorems',
+    'tab:trust-boundary',
+    'tab:measurement-classes',
+    'thm:runtime',
+    'def:factorization',
+    'Construct validity',
+    'app:repro',
+    'callSignatureSoundness'
   ]) {
     assert.match(tex, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }
@@ -72,6 +85,17 @@ test('paper claim boundary does not silently turn supporting evidence into perfo
   assert.match(tex, /not a complete plugin sandbox/i);
   assert.match(tex, /not evidence[^\n]*third-party plugin ecosystem/i);
   assert.match(tex, /candidate novelty is a conjunction of architectural choices/i);
+});
+
+test('public paper.html names remaining research gates without claiming results', () => {
+  const html = read('web/paper.html');
+  assert.match(html, /id="open-gates"/);
+  assert.match(html, /Still open/);
+  assert.match(html, /genuine external\/third-party/i);
+  assert.match(html, /expert\/venue feedback/i);
+  assert.match(html, /not an end-to-end compiler theorem/);
+  assert.match(html, /no controlled paper-quality timing dataset yet/);
+  assert.doesNotMatch(html, /controlled paper-quality timing dataset has been collected/);
 });
 
 function escapeRegExp(value) {

@@ -1,6 +1,6 @@
 # Patch reproducibility bundle
 
-Patch 0.2.0-beta.34 can produce a commit-bound research artifact bundle for independent inspection and reruns of the current formal/runtime and semantic-authority evidence.
+Patch 0.2.0-beta.35 can produce a commit-bound research artifact bundle for independent inspection and reruns of the current formal/runtime and semantic-authority evidence.
 
 The bundle is deliberately separate from the assurance performance benchmark. It packages the implementation, formal sources, examples and generated evidence needed to reproduce the current claims, but it does **not** manufacture paper-quality timing results on a GitHub-hosted runner.
 
@@ -61,7 +61,7 @@ node scripts/reproducibility-bundle.js build \
 
 node scripts/reproducibility-bundle.js verify \
   --bundle reproducibility/bundle \
-  --version 0.2.0-beta.34 \
+  --version 0.2.0-beta.35 \
   --commit "$(git rev-parse HEAD)"
 ```
 

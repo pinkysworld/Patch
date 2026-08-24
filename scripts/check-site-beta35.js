@@ -18,7 +18,7 @@ const rejectAll = (label, text, markers) => {
 if (pkg.version !== '0.2.0-beta.35') throw new Error(`beta.35 site validator requires package 0.2.0-beta.35, got ${pkg.version}`);
 
 for (const rel of [
-  '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
+  '_site/index.html','_site/language.html','_site/docs.html','_site/paper.html','_site/downloads.html','_site/help.html',
   '_site/beta35-studio.js','_site/slider-stage1.js','_site/table-stage1.js','_site/src/webapp.js','_site/src/window-events.js','_site/src/window-build.js',
   '_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/sw.js'
 ]) requireFile(rel);
@@ -70,6 +70,9 @@ requireAll('beta.35 Language page', language, ['data-patch-version="0.2.0-beta.3
 
 const docs = read('_site/docs.html');
 requireAll('beta.35 Documentation page', docs, ['docs/SLIDER_STAGE1.md','Slider Stage 1','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields such as player.score']);
+
+const paper = read('_site/paper.html');
+requireAll('beta.35 Paper page', paper, ['data-patch-version="0.2.0-beta.35"','Working manuscript','Native GUI IR 1.3','no controlled paper-quality timing dataset yet','not an end-to-end compiler theorem','checkedObservedTransitiveRuntimeRefinesCallerSignature','id="open-gates"','Still open','genuine external/third-party']);
 
 const help = read('_site/help.html');
 requireAll('beta.35 Help page', help, ['data-patch-version="0.2.0-beta.35"','ListBox: single or multi-select','Ready runtime verification','Offline compiler','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields as <code>player.score</code>','patch doctor','PATCH2003','file:line']);

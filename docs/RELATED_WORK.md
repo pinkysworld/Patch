@@ -1,6 +1,6 @@
 # Patch related-work review
 
-Status: structured literature pass for the Patch research claim at **0.2.0-beta.34 / Change IR 0.10**, including a targeted 2025–2026 follow-up.
+Status: structured literature pass for the Patch research claim at **0.2.0-beta.35 / Change IR 0.10**, including a targeted 2025–2026 follow-up.
 
 This document narrows the candidate contribution rather than trying to maximize novelty. Patch does not claim that semantic effects, quantitative types, permissions, state-transition types, pre/postconditions, patches, provenance, or proof-carrying evidence are individually new. Many prior systems are more expressive than Patch along one or more of those dimensions.
 
