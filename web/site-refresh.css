@@ -228,6 +228,12 @@ body {
   padding: 0 12px 12px;
 }
 
+.studio-launchpad .beta35-strip {
+  grid-column: 1 / -1;
+  margin: 0;
+  box-shadow: none;
+}
+
 .studio-snapshot {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -21,7 +21,6 @@
 
 .beta35-strip {
   min-height: 38px;
-  margin: -2px 0 10px;
   padding: 8px 10px;
   display: flex;
   align-items: center;
@@ -32,6 +31,10 @@
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
+}
+
+.studio-launchpad .beta35-strip {
+  margin: 0;
 }
 
 .beta35-strip strong {

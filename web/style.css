@@ -45,17 +45,18 @@ select, button, textarea, pre, input { font: inherit; }
 }
 .brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .brand-mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   background: var(--text);
   color: var(--surface);
+  font-size: 13px;
   font-weight: 850;
   letter-spacing: -.04em;
 }
-h1 { margin: 0; font-size: 25px; letter-spacing: -.7px; line-height: 1.05; }
+h1 { margin: 0; font-size: 18px; letter-spacing: -.5px; line-height: 1.05; }
 h1 span {
   display: inline-block;
   margin-left: 5px;
@@ -67,7 +68,7 @@ h1 span {
   letter-spacing: .04em;
   vertical-align: middle;
 }
-.brand p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+.brand p { display: none; }
 
 .toolbar,
 .projectbar {
@@ -111,9 +112,9 @@ button.secondary { background: var(--soft); color: var(--text); }
 button.small { min-height: 29px; padding: 5px 9px; font-size: 12px; }
 
 .projectbar {
-  min-height: 46px;
-  padding: 7px 10px;
-  margin-bottom: 10px;
+  min-height: 40px;
+  padding: 5px 8px;
+  margin-bottom: 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 11px;
@@ -216,7 +217,32 @@ pre {
   height: auto;
   max-height: 78vh;
 }
-.empty-preview { max-width: 330px; margin: 90px auto; color: var(--muted); text-align: center; line-height: 1.5; }
+.empty-preview {
+  max-width: 360px;
+  margin: 64px auto;
+  padding: 22px 20px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+.empty-preview strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.empty-preview p { margin: 0; }
+.empty-preview-hint {
+  display: block;
+  margin-top: 10px;
+  font-size: 11px;
+}
 .patch-window {
   max-width: 430px;
   margin: 12px auto;
@@ -265,13 +291,35 @@ pre {
 .statusbar {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-top: 8px;
   padding: 0 2px;
   color: var(--muted);
   font-size: 11px;
 }
 .statusbar strong { color: var(--text); font-weight: 700; }
+.status-left,
+.status-right {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
 
 .site-info {
   width: min(1080px, 100%);
@@ -376,7 +424,7 @@ details[open] summary::after { content: "−"; }
 @media (max-width: 640px) {
   .studio { padding-top: max(12px, env(safe-area-inset-top)); }
   .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
-  h1 { font-size: 22px; }
+  h1 { font-size: 18px; }
   .brand p { display: none; }
   .toolbar button { flex: 0 0 auto; }
   .build-field { display: none; }
@@ -387,7 +435,7 @@ details[open] summary::after { content: "−"; }
   #saveState { flex-basis: 100%; margin-left: 0; }
   .designer-toolbar { flex-wrap: wrap; }
   .designer-toolbar span { width: 100%; margin-left: 0; }
-  .statusbar { display: none; }
+  .statusbar { display: flex; }
   .site-info { margin-top: 38px; }
   .intro-card { padding-top: 24px; }
   .intro-card h2 { font-size: 34px; }
