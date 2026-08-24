@@ -41,6 +41,7 @@ const files = {
   formal: read('docs/FORMAL_MODEL.md'),
   runtime: read('docs/RUNTIME_CORRESPONDENCE.md'),
   paper: read('paper/README.md'),
+  paperMain: read('paper/main.tex'),
   semantics: read('docs/SEMANTICS.md'),
   compilerJs: read('src/compiler.js'),
   windowEvents: read('src/window-events.js'),
@@ -103,7 +104,8 @@ requireAll('Documentation current map', files.docsPage, [
   'Command Palette','Public deploy gated by real Chrome responsiveness','docs/STUDIO_COMMAND_PALETTE.md',
   'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
   'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages',
-  'prototype-free Things','Thing fields such as player.score','recipe parameters such as reward.bonus'
+  'prototype-free Things','Thing fields such as player.score','recipe parameters such as reward.bonus',
+  'paper/README.md'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset','compiles and runs the numeric C99 program']);
 requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line']);
@@ -124,7 +126,19 @@ requireAll('Paper current/frozen native boundary', files.paper, [
   'current native product contract: **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4**',
   'frozen TreeView compatibility contract: **Native GUI IR 1.2 / sealed payload v12 / runtime v1.3**',
   'formal runtime-correspondence milestone: **beta.32**',
-  'Thing records are prototype-free own-field product values'
+  'Thing records are prototype-free own-field product values',
+  'historical include-chain bases, not the Ready runtime',
+  'owning `file:line`',
+  'host-compiled C99 execution on Unix'
+]);
+requireAll('Paper manuscript current product surface', files.paperMain, [
+  'Native GUI IR 1.3', 'payload v13', 'runtime v1.4',
+  'Native GUI IR 1.2', 'payload v12', 'runtime v1.3',
+  'prototype-free own-field product values', 'fail closed on Things',
+  'does not widen the Lean runtime-correspondence theorem'
+]);
+rejectAll('Paper manuscript obsolete current-native list fail-closed claim', files.paperMain, [
+  'Native GUI IR 0.7 does not model persistent list state, so current native Window paths fail closed'
 ]);
 
 requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`']);
@@ -143,7 +157,9 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Studio diagnostics, Run/Build, Change Contract and native preflight map composed project lines to owning `file:line`',
   'Change Signatures reuse the prototype-preserving semantic clone',
   'recipe parameters as source-backed Param symbols',
-  '`patch doctor` compiles and runs the numeric C99 program on Unix hosts'
+  '`patch doctor` compiles and runs the numeric C99 program on Unix hosts',
+  'Working manuscript names current/frozen native contracts',
+  'C99 unknown-recipe fail-closed errors classify as `PATCH2003`'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'
@@ -154,7 +170,8 @@ requireAll('Compiler docs Thing/Wasm boundary', files.compiler, [
 ]);
 requireAll('Diagnostics numeric-subset code', files.diagnostics, [
   'PATCH2003','target does not support this numeric/direct subset construct',
-  'file": "logic/reward.patch"','mapStudioProjectLine','owning project-relative path'
+  'file": "logic/reward.patch"','mapStudioProjectLine','owning project-relative path',
+  'unknown recipe calls, classify as `PATCH2003`'
 ]);
 requireAll('Studio outline consumes composition file:line', files.studioOutline, [
   'display owning `file:line`','Generated C/C++/Rust compiler/linker locations remain unmapped','name.param'

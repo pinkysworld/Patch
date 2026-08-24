@@ -3,7 +3,7 @@
 \usepackage{amsmath,amssymb,booktabs,enumitem,listings,microtype,xcolor,array}
 \usepackage[hidelinks]{hyperref}
 
-\lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,why,watch,history,undo,redo,preview,if,else,repeat,make,do,return,allow,may,increase,decrease,up,to,true,false,and,or,not,from,window,form,button,input,checkbox,combobox,listbox,radio,tabs,table,menu,dialog,open,close,when,clicked,changed,closed,confirmed,chosen,cancelled,as},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
+\lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,why,watch,history,undo,redo,preview,if,else,repeat,make,do,return,allow,may,increase,decrease,up,to,true,false,and,or,not,from,window,form,button,input,checkbox,combobox,listbox,radio,slider,tabs,table,tree,menu,dialog,open,close,when,clicked,changed,closed,confirmed,chosen,cancelled,as},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
 \lstset{language=Patch,basicstyle=\ttfamily\small,columns=fullflexible,frame=single,breaklines=true,showstringspaces=false}
 
 \title{Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs}
@@ -265,11 +265,13 @@ The bundle snapshots tracked source plus explicitly regenerated evidence, record
 The bundle does not include paper performance results and deliberately does not convert heterogeneous hosted-runner timing into a performance claim.
 
 \section{Portable and Product Artifact Surface}
-Patch 0.2.0-beta.35 retains Change IR 0.10 while the product artifact includes a browser-first Patch Studio, a source-backed Window Designer, portable C99, standalone Web builds, direct native GUI backends, and token-free ready/offline runtime paths for supported desktop targets. These capabilities make the artifact easier to inspect and exercise, but they are not primary research novelty claims.
+Patch 0.2.0-beta.35 retains Change IR 0.10 while the product artifact includes a browser-first Patch Studio, a source-backed Window Designer, portable C99, standalone Web builds, direct native GUI backends, and token-free ready/offline runtime paths for supported desktop targets. These capabilities make the artifact easier to inspect and exercise, but they are not primary research novelty claims. Product and Studio work after beta 32 does not widen the Lean runtime-correspondence theorem.
+
+Current token-free desktop Window packaging uses Native GUI IR 1.3, sealed payload v13 and runtime v1.4 on Windows, macOS and Linux. That line preserves Table/Grid, persistent list-backed multi-select ListBox, Menu, hierarchical TreeView and native Slider through \texttt{TRACKBAR}, \texttt{NSSlider} and \texttt{GtkScale}. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView compatibility contract and is intentionally Slider fail-closed. Unversioned Native GUI IR 0.7 / payload v6 files are historical include-chain bases, not the Ready runtime.
+
+Thing records are prototype-free own-field product values in the interpreter and Window Web runtime. Direct WebAssembly and portable C99 stay on the numeric Console subset and fail closed on Things. They remain outside the beta 32 Lean fragment.
 
 Patch Studio's beta 34 hardening also verifies browser-consumed native runtime templates against a deployment-time SHA-256 manifest derived from GitHub Release asset digests. This is distribution integrity, not platform code signing or a formal security theorem.
-
-Beta 35 adds browser ListBox multi-selection when a ListBox id is backed by persistent list state. Studio App Preview and Standalone Web expose the selected options as a transient text list; persistence still requires an explicit semantic \texttt{change}. Native GUI IR 0.7 does not model persistent list state, so current native Window paths fail closed for that feature rather than silently degrading it. This product behavior does not widen the beta 32 Lean claim.
 
 Editable Window controls preserve the persistent-mutation rule: event-local values and renderer selection/layout state remain transient unless Patch source executes an explicit semantic \texttt{change}.
 

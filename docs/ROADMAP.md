@@ -52,6 +52,8 @@ The previous beta.35+ feature milestone closed the planned source-backed Designe
 - [x] Change Signatures reuse the prototype-preserving semantic clone instead of JSON round-trips
 - [x] Command Palette / Project Tree expose recipe parameters as source-backed Param symbols (`reward.bonus`)
 - [x] `patch doctor` compiles and runs the numeric C99 program on Unix hosts with a C compiler
+- [x] Working manuscript names current/frozen native contracts and prototype-free Things; current native is not described as IR 0.7 list fail-closed
+- [x] C99 unknown-recipe fail-closed errors classify as `PATCH2003`
 
 ### Next repository-controlled backlog
 

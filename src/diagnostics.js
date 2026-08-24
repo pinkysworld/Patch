@@ -107,7 +107,7 @@ function classifyDiagnosticCode(error, phase, message) {
 function isUnsupportedNumericSubset(message) {
   const text = String(message);
   if (/Direct Wasm:/i.test(text) && !/supports console projects only/i.test(text)) return true;
-  if (/C99 backend:/i.test(text) && /(?:subset|unsupported)/i.test(text)) return true;
+  if (/C99 backend:/i.test(text) && !/supports console projects only/i.test(text)) return true;
   return /outside the (?:direct )?(?:numeric Wasm |direct Wasm |numeric |portable numeric |portable )?subset/i.test(text);
 }
 

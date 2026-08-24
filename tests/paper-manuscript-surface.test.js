@@ -36,9 +36,19 @@ test('main manuscript reflects the beta32 assurance and current product-artifact
   }
 
   assert.match(tex, new RegExp(`Patch ${escapeRegExp(pkg.version)} retains Change IR 0\\.10`, 'i'));
+  assert.match(tex, /Native GUI IR 1\.3/i);
+  assert.match(tex, /payload v13/i);
+  assert.match(tex, /runtime v1\.4/i);
+  assert.match(tex, /Native GUI IR 1\.2/i);
+  assert.match(tex, /payload v12/i);
+  assert.match(tex, /runtime v1\.3/i);
+  assert.match(tex, /prototype-free own-field product values/i);
+  assert.match(tex, /fail closed on Things/i);
+  assert.match(tex, /does not widen the Lean runtime-correspondence theorem/i);
   assert.doesNotMatch(tex, /Beta 28 research artifact manuscript/i);
   assert.doesNotMatch(tex, /The next formal steps are guard-aware exact callee traces/i);
   assert.doesNotMatch(tex, /Beta 28 establishes complete exact semantic-effect traces[^\n]*remaining research task/i);
+  assert.doesNotMatch(tex, /Native GUI IR 0\.7 does not model persistent list state, so current native Window paths fail closed/i);
 });
 
 test('all citation keys in the synchronized paper modules exist in references.bib', () => {
