@@ -11,6 +11,10 @@ test('Designer selection context summarizes type, id, Form and multi-selection',
   assert.equal(formatDesignerSelectionSummary({ type: 'button', id: 'save', windowIndex: 0 }), 'Button · save · Form 1');
   assert.equal(formatDesignerSelectionSummary({ type: 'tree', id: 'files', windowIndex: 1 }, 3), 'TreeView · files · Form 2 · 3 selected');
   assert.equal(formatDesignerSelectionSummary({ type: 'text', windowIndex: 2 }), 'Text · Form 3');
+  assert.equal(
+    formatDesignerSelectionSummary({ type: 'button', id: 'save', windowIndex: 0, x: 24, y: 72, width: 120, height: 36 }),
+    'Button · save · Form 1 · 24,72 · 120×36'
+  );
 });
 
 test('Designer Form settings summary keeps source-backed dimensions visible', () => {

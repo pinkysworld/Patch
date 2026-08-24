@@ -7,8 +7,11 @@ import {
 import { formControlDefaultSize } from '../src/form-layout.js';
 import {
   DESIGNER_SELECTION_EVENT,
-  currentDesignerSelection
+  currentDesignerSelection,
+  designerSelectionForControl,
+  rememberDesignerSelection
 } from './designer-selection.js';
+import { reorderDesignerControl } from './designer-z-order-model.js';
 
 const CONTROL_MARGIN = 24;
 const CONTROL_GAP = 12;
@@ -110,6 +113,8 @@ function install() {
       <button id="patchCenterControlVertical" class="secondary small" type="button" title="Center the selected control vertically in its Form">Center V</button>
       <button id="patchDefaultControlSize" class="secondary small" type="button" title="Restore the selected control's standard Designer size">Default size</button>
       <button id="patchAutoPlaceControl" class="secondary small" type="button" title="Move the selected control to the first non-overlapping standard position">Auto place</button>
+      <button id="patchBringControlFront" class="secondary small" type="button" title="Bring the selected control to the front of its Form">Bring to front</button>
+      <button id="patchSendControlBack" class="secondary small" type="button" title="Send the selected control to the back of its Form">Send to back</button>
     </div>
     <p id="designerControlLayoutStatus" class="designer-control-layout-status" role="status" aria-live="polite"></p>`;
 
@@ -121,6 +126,8 @@ function install() {
   surface.querySelector('#patchCenterControlVertical')?.addEventListener('click', () => applyLayoutAction('center-vertical'));
   surface.querySelector('#patchDefaultControlSize')?.addEventListener('click', () => applyLayoutAction('default-size'));
   surface.querySelector('#patchAutoPlaceControl')?.addEventListener('click', () => applyLayoutAction('auto-place'));
+  surface.querySelector('#patchBringControlFront')?.addEventListener('click', () => applyLayoutAction('front'));
+  surface.querySelector('#patchSendControlBack')?.addEventListener('click', () => applyLayoutAction('back'));
 
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, syncLayoutActions);
   code.addEventListener('input', syncLayoutActions);
@@ -151,6 +158,29 @@ function applyLayoutAction(action) {
     const control = controls.find(item => sameLocation(item, selection));
     const windowModel = listDesignerWindows(code.value).find(item => item.windowIndex === selection.windowIndex);
     if (!control || !windowModel) throw new Error('Designer selection no longer matches Patch source.');
+
+    if (action === 'front' || action === 'back') {
+      const result = reorderDesignerControl(code.value, selection, action);
+      code.value = result.source;
+      if (result.control) {
+        rememberDesignerSelection(canvas, designerSelectionForControl(result.control), { emit: false, reason: 'z-order' });
+      }
+      code.dispatchEvent(new Event('input', { bubbles: true }));
+      code.dispatchEvent(new Event('change', { bubbles: true }));
+      message = action === 'front'
+        ? 'Brought to front in visible Patch source.'
+        : 'Sent to back in visible Patch source.';
+      if (status) {
+        status.dataset.actionMessage = 'true';
+        status.textContent = message;
+        setTimeout(() => {
+          if (!status) return;
+          delete status.dataset.actionMessage;
+          syncLayoutActions();
+        }, 1400);
+      }
+      return;
+    }
 
     let changes;
     let message;

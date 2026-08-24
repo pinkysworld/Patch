@@ -29,4 +29,4 @@ Studio scroll surfaces use explicit overflow, stable scrollbar gutters and style
 
 ## Designer controls
 
-Toolbox buttons are deliberately compact. Form selection and geometry controls should remain secondary to the canvas. Add Form and Apply Form use compact icon buttons while retaining their accessible text in the DOM.
+Toolbox buttons are deliberately compact. Form selection and geometry controls should remain secondary to the canvas. Add Form and Apply Form use compact icon buttons while retaining their accessible text in the DOM. Designer arrange commands (Bring to front / Send to back) and the optional 8 px grid stay on the existing source-backed control set.

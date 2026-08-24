@@ -76,7 +76,7 @@ const paper = read('_site/paper.html');
 requireAll('beta.35 Paper page', paper, ['data-patch-version="0.2.0-beta.35"','Working manuscript','Native GUI IR 1.3','no controlled paper-quality timing dataset yet','not an end-to-end compiler theorem','checkedObservedTransitiveRuntimeRefinesCallerSignature','id="open-gates"','Still open','genuine external/third-party']);
 
 const help = read('_site/help.html');
-requireAll('beta35 Help page', help, ['data-patch-version="0.2.0-beta.35"','ListBox: single or multi-select','Ready runtime verification','Offline compiler','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields as <code>player.score</code>','patch doctor','PATCH2003','file:line','editor tabs']);
+requireAll('beta35 Help page', help, ['data-patch-version="0.2.0-beta.35"','ListBox: single or multi-select','Ready runtime verification','Offline compiler','Native GUI IR 1.3 / payload v13 / runtime v1.4','Thing fields as <code>player.score</code>','patch doctor','PATCH2003','file:line','editor tabs','Harbor Desk']);
 
 const downloads = read('_site/downloads.html');
 requireAll('beta.35+ Downloads page', downloads, ['data-patch-version="0.2.0-beta.35"','Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native Slider','SHA256SUMS','runtime-manifest.json','Native GUI IR 1.2 / payload v12 / runtime v1.3','self-checks the interpreter, direct Wasm and C99 numeric subset']);

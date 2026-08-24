@@ -38,6 +38,19 @@
   cursor: default;
 }
 
+.designer-grid-toggle[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--surface);
+}
+
+#designerCanvas[data-designer-grid="8"] {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--border-strong) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--border-strong) 55%, transparent) 1px, transparent 1px);
+  background-size: 8px 8px;
+  background-position: 0 0;
+}
+
 #designer .designer-toolbar.designer-form-settings-open {
   overflow: visible !important;
 }

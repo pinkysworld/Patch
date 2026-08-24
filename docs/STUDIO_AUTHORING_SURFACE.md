@@ -39,6 +39,9 @@ For the supported top-level controls, Studio provides:
 - Center H / Center V;
 - Default size;
 - collision-aware Auto place;
+- Bring to front / Send to back;
+- 8 px design grid with optional snap while dragging;
+- live X,Y and W×H in the Designer selection summary;
 - transient multi-select with shared movement and primary-relative alignment.
 
 Slider additionally exposes source-backed id, minimum, maximum and step Properties plus live range preview. Slider interaction is transient and numeric; persistence still requires explicit Patch `change`.

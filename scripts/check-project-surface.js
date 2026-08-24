@@ -118,7 +118,7 @@ requireAll('Language Thing own-field contract', files.language, [
 requireAll('Documentation current map', files.docsPage, [
   'Native GUI IR 1.3 / payload v13 / runtime v1.4','IR 1.2 / payload v12 / runtime v1.3 frozen','beta.32 assurance boundary',
   'Command Palette','Public deploy gated by real Chrome responsiveness','docs/STUDIO_COMMAND_PALETTE.md',
-  'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
+  'Bring to front / Send to back and the 8 px design grid','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
   'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages',
   'prototype-free Things','Thing fields such as player.score','recipe parameters such as reward.bonus',
   'paper/README.md','./paper.html'
@@ -131,7 +131,7 @@ requireAll('Paper reading copy', files.paperPage, [
   'id="open-gates"','Still open','genuine external/third-party','expert/venue feedback'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset','compiles and runs the numeric C99 program']);
-requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line','editor tabs']);
+requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line','editor tabs','Bring to front']);
 
 requireAll('Command Palette docs', files.commandPaletteDocs, [
   'Ctrl/Cmd+K','Run project','Build selected target','transient IDE interaction state','project-file and symbol quick-open','must not introduce a second persistent project model',
@@ -173,7 +173,7 @@ rejectAll('Research plan obsolete current milestone', files.researchPlan, [
   'Current milestone: 0.2.0-beta.8'
 ]);
 
-requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`','workspace-first chrome','denser IDE chrome','editor file tabs with live parse status']);
+requireAll('Patch Studio reliability boundary', files.studio, ['Active UX and reliability milestone','Command Palette','single service-worker','real Chrome','Thing fields as `player.score`','recipe parameters as `reward.bonus`','owning `file:line`','workspace-first chrome','denser IDE chrome','editor file tabs with live parse status','Designer arrange/grid']);
 requireAll('Slider current native evidence', files.slider, ['direct native backend **1.4**','sealed payload **v13**','sealed native runtime **v1.4**','TRACKBAR','NSSlider','GtkScale','Frozen v1.3 compatibility boundary']);
 requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'Active UX and reliability milestone','real Headless Chrome startup/responsiveness test','single service-worker registration and revision-refresh owner',
@@ -196,7 +196,8 @@ requireAll('Roadmap active UX reliability milestone', files.roadmap, [
   'public `paper.html` names remaining research gates',
   'workspace-first Studio chrome',
   'Studio IDE chrome density',
-  'Studio editor file tabs'
+  'Studio editor file tabs',
+  'Designer arrange'
 ]);
 requireAll('Semantics Thing and equality contract', files.semantics, [
   'prototype-free', 'JSON serialization is not the equality oracle', '__proto__', 'constructor'

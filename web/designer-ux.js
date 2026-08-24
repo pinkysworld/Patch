@@ -6,6 +6,8 @@ import {
 } from './designer-selection.js';
 
 const STORAGE_KEY = 'patch-studio-designer-ux-v1';
+const GRID_STORAGE_KEY = 'patchStudio.designerGrid.v1';
+const GRID_SIZE = 8;
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
@@ -24,6 +26,8 @@ export function formatDesignerSelectionSummary(control, selectedCount = 1) {
   const parts = [displayControlType(control.type)];
   if (control.id) parts.push(control.id);
   if (Number.isInteger(control.windowIndex)) parts.push(`Form ${control.windowIndex + 1}`);
+  if (Number.isInteger(control.x) && Number.isInteger(control.y)) parts.push(`${control.x},${control.y}`);
+  if (Number.isInteger(control.width) && Number.isInteger(control.height)) parts.push(`${control.width}×${control.height}`);
   if (selectedCount > 1) parts.push(`${selectedCount} selected`);
   return parts.join(' · ');
 }
@@ -41,6 +45,7 @@ function install() {
   designer.dataset.patchDesignerUx = 'true';
 
   context = installContextGroup();
+  installGridToggle();
   enhanceInspector();
   bindInspectorListeners();
   scheduleFormEnhancement();
@@ -84,6 +89,49 @@ function installContextGroup() {
     syncDesignerUx();
   });
   return { group, status: group.querySelector('#designerSelectionStatus'), focus, clear };
+}
+
+function installGridToggle() {
+  if (!toolbar || !canvas || toolbar.querySelector('#designerGridToggle')) return;
+  const button = doc.createElement('button');
+  button.id = 'designerGridToggle';
+  button.className = 'secondary small designer-grid-toggle';
+  button.type = 'button';
+  button.setAttribute('aria-pressed', 'false');
+  toolbar.insertBefore(button, context?.group?.nextSibling ?? null);
+  button.addEventListener('click', () => setDesignerGrid(!isDesignerGridEnabled()));
+  setDesignerGrid(readDesignerGrid(), { persist: false });
+}
+
+function isDesignerGridEnabled() {
+  return canvas?.dataset.designerGrid === String(GRID_SIZE);
+}
+
+function readDesignerGrid() {
+  try {
+    return localStorage.getItem(GRID_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function setDesignerGrid(enabled, options = {}) {
+  if (!canvas) return;
+  const on = Boolean(enabled);
+  canvas.dataset.designerGrid = on ? String(GRID_SIZE) : '';
+  const button = toolbar?.querySelector('#designerGridToggle');
+  if (button) {
+    button.textContent = on ? 'Grid on' : 'Grid';
+    button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    button.title = on
+      ? 'Hide the 8 px design grid (local IDE preference)'
+      : 'Show an 8 px design grid and snap geometry while dragging';
+  }
+  if (options.persist === false) return;
+  try {
+    if (on) localStorage.setItem(GRID_STORAGE_KEY, '1');
+    else localStorage.removeItem(GRID_STORAGE_KEY);
+  } catch { /* private browsing keeps the current session grid only */ }
 }
 
 function enhanceInspector() {

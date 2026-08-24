@@ -54,7 +54,9 @@ select, button, textarea, pre, input { font: inherit; }
   color: var(--surface);
   font-size: 13px;
   font-weight: 850;
-  letter-spacing: -.04em;
+  letter-spacing: 0;
+  line-height: 1;
+  transform: none;
 }
 h1 { margin: 0; font-size: 18px; letter-spacing: -.5px; line-height: 1.05; }
 h1 span {
