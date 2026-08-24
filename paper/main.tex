@@ -1,7 +1,15 @@
 \documentclass[10pt]{article}
 \usepackage[margin=0.88in]{geometry}
-\usepackage{amsmath,amssymb,booktabs,enumitem,listings,microtype,xcolor,array}
+\usepackage{amsmath,amssymb,amsthm,booktabs,enumitem,listings,microtype,xcolor,array,tikz}
 \usepackage[hidelinks]{hyperref}
+\usetikzlibrary{arrows.meta,positioning}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\theoremstyle{remark}
+\newtheorem*{claimboundary}{Claim boundary}
 
 \lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,why,watch,history,undo,redo,preview,if,else,repeat,make,do,return,allow,may,increase,decrease,up,to,true,false,and,or,not,from,window,form,button,input,checkbox,combobox,listbox,radio,slider,tabs,table,tree,menu,dialog,open,close,when,clicked,changed,closed,confirmed,chosen,cancelled,as},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
 \lstset{language=Patch,basicstyle=\ttfamily\small,columns=fullflexible,frame=single,breaklines=true,showstringspaces=false}
@@ -60,6 +68,10 @@ The current artifact supports six connected claims:
 \item semantic-authority case studies, a controlled-measurement protocol, and a commit-bound reproducibility bundle evaluate and package the implementation without extending the formal theorem beyond its stated boundary.
 \end{enumerate}
 
+\begin{claimboundary}
+This manuscript does not claim unique expressibility of bounded state relations, a fully verified compiler, a complete plugin sandbox, third-party ecosystem evidence, or any overhead/scalability result. Claims 1--2 are the working architectural hypothesis; claims 3--6 are supporting formal and artifact evidence for that hypothesis.
+\end{claimboundary}
+
 \section{Language Design}
 \subsection{Progressive disclosure}
 A beginner can ignore signatures, policies, certificates, and backend details:
@@ -90,10 +102,40 @@ applyOps(\Delta,v)=v' \quad\text{and}\quad n=b+1.
 \]
 
 \paragraph{State-Change Factorization.}
+\begin{definition}[State-Change Factorization]
+\label{def:factorization}
 For every state-changing step in the current Lean machine, there exists a well-formed $\delta$ such that the resulting machine is exactly the modeled commit of $\delta$.
+\end{definition}
 
 \paragraph{Mutation Transparency.}
+\begin{definition}[Mutation Transparency]
+\label{def:transparency}
 The witnessing change appears in resulting history.
+\end{definition}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize\ttfamily,
+  node distance=7mm and 9mm,
+  box/.style={draw, rounded corners=1.6pt, align=center, inner sep=5.5pt, text width=28mm, minimum height=11mm},
+  arr/.style={-{Latex[length=2.1mm]}, thick}
+]
+\node[box] (src) {source\\change};
+\node[box, right=of src] (delta) {semantic\\Change $\delta$};
+\node[box, right=of delta] (st) {commit\\$apply(\delta,\sigma)$};
+\node[box, below=of delta] (hist) {history / undo / why};
+\node[box, below left=of hist] (sig) {Change\\Signature};
+\node[box, below right=of hist] (cap) {Change\\Capability};
+\draw[arr] (src) -- (delta);
+\draw[arr] (delta) -- (st);
+\draw[arr] (delta) -- (hist);
+\draw[arr] (delta) -- (sig);
+\draw[arr] (delta) -- (cap);
+\end{tikzpicture}
+\caption{Default mutation architecture. Ordinary modeled persistent mutation is committed through a structured Change. Signatures, capabilities, history and provenance reuse that same object rather than reconstructing meaning around a later write.}
+\label{fig:architecture}
+\end{figure}
 
 For a recipe $f$, a Change Signature conservatively describes semantic effects:
 \[
@@ -115,6 +157,10 @@ If every inferred effect is admitted by policy,
 \[
 RuntimeChanges(s) \subseteq Sig(s) \subseteq Cap(s).
 \]
+\begin{theorem}[Change Signature / Capability Soundness]
+\label{thm:signature}
+On the modeled \texttt{CoreStmt} fragment, every executed runtime change is covered by the inferred signature, and a successful policy check implies that those runtime changes are admitted by the declared capability.
+\end{theorem}
 The executable policy checker is proved sound with respect to the relational policy semantics for the modeled fragment.
 
 \subsection{Integer range soundness}
@@ -123,6 +169,10 @@ For the explicit integer \texttt{RangeExpr} grammar, Lean proves schematically:
 EnvRespects(\Gamma,\rho) \wedge analyzeRange(e,\Gamma)=I \wedge eval(e,\rho)=v
 \Longrightarrow v\in I.
 \]
+\begin{theorem}[Integer range soundness]
+\label{thm:range}
+If the environment respects $\Gamma$ and range analysis returns interval $I$ for a supported integer \texttt{RangeExpr}, every concrete evaluation of that expression lies in $I$.
+\end{theorem}
 The mechanized fragment includes integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. Decimal/floating-point semantics, division, and general multiplication are not silently included in this theorem.
 
 \subsection{Source, guard, and static call-site translation validation}
@@ -149,6 +199,11 @@ The principal checked composition is exposed through
 checkedConcreteTransitiveCallTreeRefinesCallerSignature
 \end{verbatim}
 which establishes that the selected finite exact trace is represented by the caller semantic signature, subject to the encoded fragment and executable checks.
+
+\begin{theorem}[Finite transitive call-tree refinement]
+\label{thm:calltree}
+For a selected finite exact call tree in the encoded fragment, \texttt{checkedConcreteTransitiveCallTreeRefinesCallerSignature} establishes that the selected exact trace is covered by the caller semantic signature.
+\end{theorem}
 
 A representative source shape is:
 \begin{lstlisting}
@@ -195,6 +250,56 @@ The repeated-call regression source \texttt{examples/formal-transitive-calls-rep
 
 A stronger regression, \texttt{examples/formal-transitive-calls-mixed-guards.patch}, executes \texttt{caller(1)}, \texttt{caller(4)}, and \texttt{caller(1)} through a four-frame call chain. The first and third invocations are identical and select the same guard branch, while the middle invocation selects the opposite branch. Independent validation reconstructs twelve invocation frames and six supported transitive correspondences. The three \texttt{caller -> outer} witnesses carry distinct dynamic frame identities and bindings 1, 4, and 1, while their selected effects are respectively \texttt{coins +4}, \texttt{score +5}, and \texttt{coins +4}. Lean re-checks each selected trace against its exact call-tree witness.
 
+\begin{lstlisting}
+create number score = 0
+create number coins = 0
+
+make leaf(amount number 1..5):
+  if amount >= 3:
+    change score:
+      add amount
+  else:
+    change coins:
+      add amount * 2
+
+make middle(seed number 0..4):
+  do leaf(seed + 1)
+
+make outer(seed number 0..4):
+  do middle(seed)
+
+make caller(seed number 0..4):
+  do outer(seed)
+
+do caller(1)
+do caller(4)
+do caller(1)
+\end{lstlisting}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize\ttfamily,
+  node distance=8mm,
+  box/.style={draw, rounded corners=1.6pt, align=center, inner sep=5pt, text width=28mm, minimum height=12mm},
+  arr/.style={-{Latex[length=2.1mm]}, thick}
+]
+\node[box] (a) {caller(1)\\coins +4};
+\node[box, right=of a] (b) {caller(4)\\score +5};
+\node[box, right=of b] (c) {caller(1)\\coins +4};
+\draw[arr] (a) -- (b);
+\draw[arr] (b) -- (c);
+\end{tikzpicture}
+\caption{Independently reconstructed invocation frames distinguish two identical \texttt{caller(1)} roots from the intervening opposite-guard \texttt{caller(4)}. Twelve dynamic frames and six transitive correspondences are reconstructed without backend call markers.}
+\label{fig:frames}
+\end{figure}
+
+\begin{theorem}[Observed runtime-frame correspondence]
+\label{thm:runtime}
+Given accepted independently reconstructed invocation-frame evidence whose bindings equal the beta~30 exact callee bindings, Lean re-evaluates the frame-selected observed effects and, if they match the exact call-tree statement, derives caller-signature refinement via \texttt{checkedObservedTransitiveRuntimeRefinesCallerSignature}.
+\end{theorem}
+This is a consequence of accepted evidence, not a proof that every faulty trace would be captured.
+
 Generated evidence includes \texttt{GeneratedTransitiveRuntimeCertificate.lean}, \texttt{GeneratedRepeatedTransitiveRuntimeCertificate.lean}, and \texttt{GeneratedMixedGuardTransitiveRuntimeCertificate.lean}.
 
 \subsection{Exact trust boundary}
@@ -209,6 +314,43 @@ Beta 32 checks more than beta 31, but it is not an end-to-end compiler refinemen
 \end{itemize}
 
 The certificate establishes consequences of accepted, independently reconstructed evidence for the formal fragment. The raw-source call-site check reduces one dependency on production-AST source identity, but it does not prove the production parser correct or validate arbitrary expression semantics. The runtime evidence likewise does not prove that every possible faulty trace would necessarily be captured or reconstructed correctly.
+
+\begin{table}[t]
+\centering
+\caption{Lean-checked statements in the current fragment. Product and Studio work after beta~32 does not add rows to this table.}
+\label{tab:lean-theorems}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Statement & Lean name / location \\
+\midrule
+State-Change Factorization & Def.~\ref{def:factorization}; \texttt{PatchFormal} \\
+Mutation Transparency & Def.~\ref{def:transparency}; \texttt{PatchFormal} \\
+Signature / capability soundness & Thm.~\ref{thm:signature}; \texttt{PatchSignature} \\
+Integer \texttt{RangeExpr} soundness & Thm.~\ref{thm:range}; \texttt{rangeAnalysisSound} \\
+Finite call-tree refinement & Thm.~\ref{thm:calltree}; \texttt{checkedConcreteTransitiveCallTreeRefinesCallerSignature} \\
+Observed runtime-frame correspondence & Thm.~\ref{thm:runtime}; \texttt{checkedObservedTransitiveRuntimeRefinesCallerSignature} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Assurance layer versus proof status. ``Accepted evidence'' means Lean checks consequences of independently reconstructed artifacts rather than proving the producer correct.}
+\label{tab:trust-boundary}
+\small
+\begin{tabular}{@{}llp{58mm}@{}}
+\toprule
+Layer & Status & Bound \\
+\midrule
+Factorization, signatures, ranges, call trees & Lean & explicit fragments only \\
+Runtime-frame binding equality & Lean on accepted evidence & not capture completeness \\
+Source/range, guard, static call-site identity & independent JavaScript validation & not verified parsers \\
+Runtime capture, validator, lowering, Wasm engine & proof-free trust & named, not elided \\
+Things, GUI, native Window runtimes & product artifact & outside beta~32 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Semantic-Authority Evaluation}
 \subsection{Controlled micro-case ablation}
@@ -226,6 +368,27 @@ Patch reject / coarse reject & 1 & target escape rejected by both \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\begin{table}[t]
+\centering
+\caption{Eight-case semantic-authority ablation. The coarse baseline records only transitively reachable write targets and ignores operation, magnitude and proof obligation.}
+\label{tab:security-ablation}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Case & Isolated property & Patch & Coarse write \\
+\midrule
+\texttt{loyalty-safe} & bounded increase & accept & accept \\
+\texttt{loyalty-over-limit} & magnitude & reject & accept \\
+\texttt{wallet-safe-debit} & bounded decrease & accept & accept \\
+\texttt{wallet-direction-escalation} & operation direction & reject & accept \\
+\texttt{campaign-transitive-safe} & helper within bound & accept & accept \\
+\texttt{campaign-transitive-escalation} & transitive magnitude & reject & accept \\
+\texttt{dynamic-unbounded} & unproved magnitude & reject & accept \\
+\texttt{target-escape} & undeclared target & reject & reject \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 The four differential rejections cover magnitude escalation, operation-direction escalation, transitive helper magnitude escalation, and fail-closed unknown magnitude. The shared rejection is an unauthorized target escape. These cases support a narrow ablation statement about the artifact's semantic authority dimensions, not a claim of complete malicious-code containment or superiority over prior systems.
 
@@ -247,6 +410,27 @@ The protected entry signature must contain transitive usage-increase, quota-decr
 
 Together, checkout/loyalty and usage/quota form a multi-domain artifact corpus. They are engineering/motivating cases, not a complete plugin sandbox, a real third-party integration study, or empirical evidence about an external extension ecosystem.
 
+\begin{table}[t]
+\centering
+\caption{Two-domain application corpus. Safe variants execute on the production direct-WebAssembly path. Escalations reuse the same internal target-only ablation as the micro-cases.}
+\label{tab:application-corpus}
+\small
+\begin{tabular}{@{}llccc@{}}
+\toprule
+Domain & Variant & Safe Wasm state & Patch & Coarse write \\
+\midrule
+checkout/loyalty & safe & $balance{=}80$, $points{=}8$, $cashback{=}0$ & accept & accept \\
+checkout/loyalty & reward $\times 5$ & rejected & reject & accept \\
+checkout/loyalty & balance increase & rejected & reject & accept \\
+checkout/loyalty & cashback target & rejected & reject & reject \\
+usage/quota & safe & $used{=}35$, $remaining{=}85$, $bonus{=}5$ & accept & accept \\
+usage/quota & usage magnitude & rejected & reject & accept \\
+usage/quota & remaining increase & rejected & reject & accept \\
+usage/quota & \texttt{admin\_credit} & rejected & reject & reject \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Assurance-Cost Evaluation Protocol}
 The repository contains a deterministic corpus that separates nested call depth from concrete invocation count. The phase harness measures direct-WebAssembly compilation, precompiled execution, independent validation, end-to-end beta 32 correspondence, and generated certificate-source construction. It records raw samples and artifact sizes.
 
@@ -254,8 +438,24 @@ A second controller adds process isolation. Every independent repetition runs th
 
 Timing evidence is explicitly classified as \texttt{development}, \texttt{hosted-ci}, or \texttt{controlled}. GitHub Actions is forbidden from labelling timing as \texttt{controlled}. A controlled run additionally requires an explicit machine identifier, run label, exact recorded commit equal to \texttt{git HEAD}, and a clean working tree at measurement start.
 
+\begin{table}[t]
+\centering
+\caption{Measurement classes. Only a reviewed \texttt{controlled} dataset may become a paper performance result, and no such dataset has been collected yet.}
+\label{tab:measurement-classes}
+\small
+\begin{tabular}{@{}llp{52mm}@{}}
+\toprule
+Class & Role & Manuscript status \\
+\midrule
+\texttt{development} & exploratory local timing & not a result \\
+\texttt{hosted-ci} & regression / reproducibility & not a result; cannot be relabelled \\
+\texttt{controlled} & fixed-machine paper candidate & none collected; analysis remains a review step \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Current empirical boundary.}
-The measurement pipeline is implemented and regression-tested, but this manuscript reports \emph{no controlled paper-quality timing dataset yet}. Consequently it makes no empirical overhead, scalability, or asymptotic-complexity claim. Hosted-CI timing is retained only as reproducibility/regression evidence. Controlled results and statistical models must be added only after measurements on fixed documented hardware are collected and reviewed.
+The measurement pipeline is implemented and regression-tested, but this manuscript reports \emph{no controlled paper-quality timing dataset yet}. Consequently it makes no empirical overhead, scalability, or asymptotic-complexity claim. Hosted-CI timing is retained only as reproducibility/regression evidence. Controlled results and statistical models must be added only after measurements on fixed documented hardware are collected and reviewed. Analysis tooling can emit candidate tables, OLS sketches and SVG plots from a future controlled summary; it refuses to copy non-\texttt{controlled} numbers into \texttt{paper/main.tex}.
 
 \section{Reproducibility Artifact}
 The \emph{Patch Reproducibility Bundle} binds the research artifact to an exact Patch version and 40-character source commit. CI regenerates the finite transitive call-tree certificate, direct-WebAssembly runtime certificate, repeated-call and mixed-guard invocation-frame certificates, semantic-authority report, and both checkout and quota application reports. Non-performance evidence uses \texttt{SOURCE\_DATE\_EPOCH} derived from the source commit so timestamps do not drift with workflow wall-clock time.

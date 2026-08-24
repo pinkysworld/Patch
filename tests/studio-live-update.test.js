@@ -13,7 +13,7 @@ const studioHtml = fs.readFileSync('web/index.html', 'utf8');
 test('Patch site build content-addresses every public page and service-worker cache', () => {
   assert.match(buildSite, /createHash\('sha256'\)/);
   assert.match(buildSite, /computeSiteRevision\(\)/);
-  assert.match(buildSite, /SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','help\.html'\]/);
+  assert.match(buildSite, /SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','paper\.html','help\.html'\]/);
   assert.match(buildSite, /SITE_HTML_FILES\.splice\(3, 0, 'downloads\.html'\)/);
   assert.match(buildSite, /for \(const name of SITE_HTML_FILES\)/);
   assert.match(buildSite, /versionLocalAssetReferences\(source, siteRevision\)/);
@@ -32,7 +32,7 @@ test('Patch site build content-addresses every public page and service-worker ca
     'form-window-resize.js', 'studio-diagnostics.js', 'studio-command-palette.js', 'studio-accessibility.js'
   ]) assert.ok(html.includes(`./${asset}?v=${revision}`), asset);
 
-  for (const page of ['language.html','docs.html','downloads.html','help.html']) {
+  for (const page of ['language.html','docs.html','paper.html','downloads.html','help.html']) {
     const content = fs.readFileSync(`_site/${page}`, 'utf8');
     assert.ok(content.includes(`./style.css?v=${revision}`), `${page} style revision`);
     assert.ok(content.includes(`./site-navigation.css?v=${revision}`), `${page} navigation revision`);

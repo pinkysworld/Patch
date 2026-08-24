@@ -21,6 +21,7 @@ if (dialog && trigger && input && list && empty) {
     command('ir', 'Open Change IR', 'Inspect the compiled Change IR', '', 'ir compiler change intermediate', () => click('#tabIr')),
     command('recovery', 'Open Recovery', 'Manage local project recovery snapshots', '', 'recovery restore snapshots local', () => click('#recoverProject')),
     command('documentation', 'Open Documentation', 'Browse the current Patch product map', '', 'docs documentation reference', () => navigate('./docs.html')),
+    command('paper', 'Open Paper', 'Read the working research manuscript', '', 'paper manuscript research formal assurance', () => navigate('./paper.html')),
     command('downloads', 'Open Downloads', 'Get the offline compiler and release assets', '', 'downloads compiler offline', () => navigate('./downloads.html')),
     command('help', 'Open Help', 'Keyboard shortcuts, Designer and build help', '', 'help keyboard shortcuts support', () => navigate('./help.html'))
   ];

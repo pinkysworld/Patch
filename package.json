@@ -38,6 +38,7 @@
     "evaluate:security": "node scripts/evaluate-security-cases.js",
     "evaluate:checkout-extension": "node scripts/evaluate-checkout-extension.js",
     "evaluate:quota-extension": "node scripts/evaluate-extension-case.js --case quota-extension",
+    "analyze:assurance": "node scripts/analyze-assurance-results.js",
     "bundle:reproducibility": "node scripts/reproducibility-bundle.js build --out reproducibility/bundle",
     "verify:reproducibility": "node scripts/reproducibility-bundle.js verify --bundle reproducibility/bundle",
     "build:example": "node src/cli.js build examples/score.patch --kind console --target portable --out Score.patchapp",

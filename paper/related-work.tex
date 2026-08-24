@@ -26,6 +26,31 @@ Hoare Type Theory integrates pre/post specifications with mutable higher-order s
 \paragraph{Explicit changes, edits, and patch theory.}
 COPE advocates change-oriented programming environments \cite{dig2016cope}; Edit Transactions group live program edits into dynamically scoped change sets \cite{mattis2017edittransactions}. Higher-order change calculi support incremental computation \cite{cai2014changes}, while edit lenses \cite{hofmann2012edit} and homotopical patch theory \cite{anguilhomotopical2016} provide rich theories of edits and repository patches. These works prevent any claim that programming with explicit changes or formalized patches is new. Their primary changed entities and goals differ from Patch's runtime persistent application-state commit route.
 
+\begin{table}[t]
+\centering
+\caption{Architectural comparison. A ``no'' or ``partial'' cell means the cited mechanism does not make that property its central/default abstraction; it is not a claim that a surrounding language cannot encode it.}
+\label{tab:related-work}
+\scriptsize
+\setlength{\tabcolsep}{3.4pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Family & Mandatory mutation route & Semantic operation & Magnitude & Same substrate \\
+\midrule
+Plaid \cite{sunshine2011plaid} & partial & partial & no & partial \\
+Worlds \cite{warth2011worlds} & no & no & no & no \\
+Classical/algebraic effects \cite{lucassen1988effects,kammar2012algebraic} & no & effect-op.\ level & no & no \\
+Effects-as-Capabilities / System C \cite{brachthaeuser2020effects,brachthaeuser2022boxes} & no & effect/resource & no & partial \\
+Graded / dependent effects \cite{orchard2019quantitative,kura2026dependent} & no & grade-dependent & yes & no \\
+Permissions / Mezzo \cite{naden2012borrowing,pottier2013mezzo} & no & access/typestate & no & no \\
+Revocable capabilities \cite{jia2026revocable} & no & protocol/typestate & no & partial \\
+InvalML \cite{gao2025invalidation} & no & invalidation & no & no \\
+HTT / F* / Dijkstra monads \cite{nanevski2008htt,swamy2016fstar,ahman2017dijkstra} & no & specifiable & expressible & no \\
+Edit/patch calculi \cite{dig2016cope,mattis2017edittransactions,cai2014changes,anguilhomotopical2016} & domain-specific & edit-level & no & no \\
+\textbf{Patch} & \textbf{yes, modeled persistent mutation} & \textbf{yes} & \textbf{yes, numeric fragment} & \textbf{yes} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Assurance and provenance.}
 Translation validation \cite{necula2000translation} and Proof-Carrying Code \cite{necula1997pcc} are direct prior art for checking evidence produced by unverified components. Patch's generated Lean certificates and translation/runtime validators reuse that assurance pattern and are supporting contributions, not novelty headlines. Whyline-style debugging likewise establishes rich causal/provenance querying prior art \cite{ko2008whyline}; Patch history/provenance is presented as tooling enabled by explicit semantic deltas rather than an invention of provenance debugging.
 

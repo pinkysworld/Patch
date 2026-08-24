@@ -38,7 +38,7 @@ test('command palette delegates to existing Studio actions without hidden persis
     "'Focus source editor'", "focus('#code')",
     "'Open Designer'", "click('#tabDesigner')",
     "'Open Recovery'", "click('#recoverProject')",
-    "navigate('./docs.html')", "navigate('./downloads.html')", "navigate('./help.html')"
+    "navigate('./docs.html')", "navigate('./paper.html')", "navigate('./downloads.html')", "navigate('./help.html')"
   ]) assert.ok(palette.includes(marker), marker);
   assert.doesNotMatch(palette, /localStorage|sessionStorage|indexedDB/);
   assert.doesNotMatch(quickOpen, /localStorage|sessionStorage|indexedDB/);

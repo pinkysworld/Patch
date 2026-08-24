@@ -16,6 +16,7 @@ Open it with **Ctrl/Cmd+K** or the **Commands** button in Studio. Type to filter
 - Open Change IR
 - Open Recovery
 - Open Documentation
+- Open Paper
 - Open Downloads
 - Open Help
 

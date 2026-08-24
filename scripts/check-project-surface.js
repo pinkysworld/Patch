@@ -20,6 +20,7 @@ const files = {
   website: read('web/index.html'),
   language: read('web/language.html'),
   docsPage: read('web/docs.html'),
+  paperPage: read('web/paper.html'),
   downloadsPage: read('web/downloads.html'),
   helpPage: read('web/help.html'),
   spec: read('docs/SPEC.md'),
@@ -89,7 +90,7 @@ requireAll('Language SPEC current contract', files.spec, [
 rejectAll('Language SPEC obsolete assurance/product markers', files.spec, ['0.2.0-beta.8','Change IR 0.6','Beta 8 source/evidence']);
 
 for (const [label, text] of [
-  ['Studio', files.website],['Language', files.language],['Documentation page', files.docsPage],['Downloads page', files.downloadsPage],['Help page', files.helpPage]
+  ['Studio', files.website],['Language', files.language],['Documentation page', files.docsPage],['Paper page', files.paperPage],['Downloads page', files.downloadsPage],['Help page', files.helpPage]
 ]) requireAll(`${label} public version`, text, ['0.2 beta.35']);
 
 requireAll('Studio current product surface', files.website, [
@@ -105,7 +106,12 @@ requireAll('Documentation current map', files.docsPage, [
   'Center H/Center V, Default size and collision-aware Auto place','text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
   'docs/NATIVE_COMPATIBILITY.md','two live native product contracts','do not gate Ready or Pages',
   'prototype-free Things','Thing fields such as player.score','recipe parameters such as reward.bonus',
-  'paper/README.md'
+  'paper/README.md','./paper.html'
+]);
+requireAll('Paper reading copy', files.paperPage, [
+  'Working manuscript','beta.32','Native GUI IR 1.3','no controlled paper-quality timing dataset yet',
+  'not an end-to-end compiler theorem','loyalty-over-limit','balance = 80','used = 35',
+  'checkedObservedTransitiveRuntimeRefinesCallerSignature','hosted-ci'
 ]);
 requireAll('Downloads current native contract', files.downloadsPage, ['Native GUI IR <strong>1.3</strong>','payload <strong>v13</strong>','runtime <strong>v1.4</strong>','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','self-checks the interpreter, direct Wasm and C99 numeric subset','compiles and runs the numeric C99 program']);
 requireAll('Help current product surface', files.helpPage, ['Command Palette','Ctrl/Cmd+K','Native GUI IR 1.3 / payload v13 / runtime v1.4','runtime-v1.4 releases','Native runtime v1.3 is TreeView-capable but Slider-free','Service-worker registration is owned by the early bootstrap only','NATIVE_COMPATIBILITY.md','Thing fields as <code>player.score</code>','recipe parameters as <code>reward.bonus</code>','direct Wasm or C99 build rejects a Thing','patch doctor','PATCH2003','file:line']);

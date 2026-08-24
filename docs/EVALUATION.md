@@ -1,6 +1,6 @@
 # Patch assurance evaluation
 
-Status: **evaluation harness for Patch 0.2.0-beta.34 / Change IR 0.10, with a process-isolated controlled-measurement protocol**.
+Status: **evaluation harness for Patch 0.2.0-beta.35 / Change IR 0.10, with a process-isolated controlled-measurement protocol**.
 
 This document defines a reproducible methodology for measuring the engineering cost of Patch's current assurance stack. It does **not** report publication claims by itself. Timing results depend on hardware, operating system, Node/V8, system load and Lean build state, so paper results must record the full environment and use controlled repeated runs.
 
@@ -102,6 +102,18 @@ The controller requires every run to be one of:
 The controller refuses `controlled` when `GITHUB_ACTIONS=true`. This prevents an accidental relabeling of variable GitHub-hosted timing as paper-quality measurement.
 
 A successful controlled run is still only a measurement candidate. Statistical interpretation and manuscript claims require separate review.
+
+### Analysis without manuscript mutation
+
+`scripts/analyze-assurance-results.js` reads a `controlled-summary.json`, emits median/Q1/Q3/IQR/MAD tables, ordinary-least-squares sketches and SVG plots of process-median time against `nestedDepth` and `invocations`, and refuses `--sync-paper` for any non-`controlled` measurement class. Even a controlled summary is not copied into `paper/main.tex` by the runner; manuscript inclusion remains a review step.
+
+```bash
+npm run analyze:assurance -- \
+  --summary evaluation/results/controlled/controlled-summary.json \
+  --markdown evaluation/results/controlled/analysis.md \
+  --tex evaluation/results/controlled/analysis.tex \
+  --svg evaluation/results/controlled/analysis.svg
+```
 
 ## Artifact-size measurements
 

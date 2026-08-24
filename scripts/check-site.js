@@ -18,7 +18,7 @@ const rejectAll = (label, text, markers) => {
 if (pkg.version !== '0.2.0-beta.35') throw new Error(`Unexpected Patch site package version: ${pkg.version}`);
 
 const requiredFiles = [
-  '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
+  '_site/index.html','_site/language.html','_site/docs.html','_site/paper.html','_site/downloads.html','_site/help.html',
   '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/studio-command-palette.js','_site/studio-command-palette.css',
@@ -35,9 +35,9 @@ const requiredFiles = [
 ];
 for (const rel of requiredFiles) requireFile(rel);
 
-for (const page of ['index.html','language.html','docs.html','downloads.html','help.html']) {
+for (const page of ['index.html','language.html','docs.html','paper.html','downloads.html','help.html']) {
   const html = read(`_site/${page}`);
-  requireAll(`${page} navigation`, html, ['./index.html','./language.html','./docs.html','./downloads.html','./help.html','class="site-tabs"']);
+  requireAll(`${page} navigation`, html, ['./index.html','./language.html','./docs.html','./paper.html','./downloads.html','./help.html','class="site-tabs"']);
   requireAll(`${page} version`, html, [`data-patch-version="${pkg.version}"`]);
 }
 
@@ -70,7 +70,7 @@ rejectAll('Studio accessibility service-worker ownership', accessibility, ['serv
 const palette = read('_site/studio-command-palette.js');
 requireAll('Studio command palette', palette, [
   "'Run project'","'Build selected target'","'Focus source editor'","'Open Designer'","'Open Recovery'",
-  "navigate('./docs.html')","navigate('./downloads.html')","navigate('./help.html')",'event.key.toLowerCase()','ArrowDown','ArrowUp'
+  "navigate('./docs.html')","navigate('./paper.html')","navigate('./downloads.html')","navigate('./help.html')",'event.key.toLowerCase()','ArrowDown','ArrowUp'
 ]);
 rejectAll('Studio command palette persistence boundary', palette, ['localStorage','sessionStorage','indexedDB']);
 
@@ -104,6 +104,19 @@ requireAll('Documentation page', docs, [
   'Center H/Center V, Default size and collision-aware Auto place',
   'text-backed single-select and list-backed multi-select contracts','nested Table/TreeView structural Properties editing',
   'Thing fields such as player.score'
+]);
+
+const paper = read('_site/paper.html');
+requireAll('Paper page', paper, [
+  'Working manuscript','beta.32','Native GUI IR 1.3','payload v13','runtime v1.4',
+  'no controlled paper-quality timing dataset yet','No empirical overhead claim',
+  'not an end-to-end compiler theorem','Patch reject / coarse accept',
+  'loyalty-over-limit','balance = 80','used = 35','prototype-free Things',
+  'checkedObservedTransitiveRuntimeRefinesCallerSignature','twelve invocation frames',
+  'hosted-ci','none collected'
+]);
+rejectAll('Paper page', paper, [
+  'controlled paper-quality timing dataset has been collected'
 ]);
 
 const language = read('_site/language.html');
@@ -159,7 +172,7 @@ requireAll('Website navigation refresh import', navigationCss, ['@import url("./
 const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache and type-safe fallback', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js',
-  './studio-command-palette.css','./studio-command-palette.js','./slider-stage1.js','./src/compiler.js','./src/call-site-validation.js',
+  './paper.html','./studio-command-palette.css','./studio-command-palette.js','./slider-stage1.js','./src/compiler.js','./src/call-site-validation.js',
   './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-frozen-lower.js','./src/native-gui-ir-v13.js',
   './src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'',
   'if (navigation)','throw error'

@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 
 const downloads = fs.readFileSync('web/downloads.html', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/offline-compiler.yml', 'utf8');
-const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/help.html'];
+const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/paper.html', 'web/help.html'];
 const assets = [
   'patch-windows-x64.exe',
   'patch-macos-arm64',

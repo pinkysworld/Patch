@@ -1,6 +1,6 @@
 # Mixed-guard invocation-frame evidence
 
-Status: Patch **0.2.0-beta.34**, Change IR **0.10**, beta.32 runtime-correspondence evidence.
+Status: Patch **0.2.0-beta.35**, Change IR **0.10**, beta.32 runtime-correspondence evidence.
 
 This regression strengthens the existing beta.32 invocation-frame evidence without changing the language, Change IR, direct-Wasm backend contract, or Lean theorem boundary.
 

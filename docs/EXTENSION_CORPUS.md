@@ -1,6 +1,6 @@
 # Realistic extension corpus
 
-Status: **two-domain application corpus for Patch 0.2.0-beta.34 / Change IR 0.10**.
+Status: **two-domain application corpus for Patch 0.2.0-beta.35 / Change IR 0.10**.
 
 The corpus broadens the semantic-authority evaluation beyond isolated micro cases. It currently contains two coherent application scenarios that share one evaluator and one deliberately coarse target-only write-authority ablation:
 

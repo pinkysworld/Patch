@@ -257,6 +257,7 @@ npm run evaluate:security
 npm run evaluate:checkout-extension
 npm run evaluate:quota-extension
 npm run evaluate:assurance:isolated
+npm run analyze:assurance -- --summary <controlled-summary.json> --svg analysis.svg
 ```
 
 Commit-bound artifact:
@@ -269,9 +270,9 @@ npm run verify:reproducibility
 ## Remaining high-value gaps
 
 1. collect the fixed-machine controlled overhead/scaling dataset;
-2. analyze that dataset with explicit models, dispersion and plots, then synchronize measured results into `main.tex`;
+2. analyze that dataset with `scripts/analyze-assurance-results.js` (dispersion, OLS sketches, candidate TeX tables and SVG plots), review it, then synchronize measured results into `main.tex` by hand;
 3. validate Patch in a genuinely external or third-party extension/integration setting rather than another internally authored artifact case;
 4. continue reducing parser/lowering/runtime trust where the improvement materially strengthens the claim, with source/range, guard and static call-site identity already independently cross-checked for their supported fragments;
 5. obtain expert/venue feedback on whether the architectural conjunction is sufficiently distinct and useful.
 
-Normal literature surveillance should continue before submission, but the targeted recent dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is part of the reproducible beta.32 artifact rather than an open backlog item.
+The manuscript now includes the architecture figure, mixed-guard invocation-frame figure, Lean theorem table, trust-boundary table, measurement-class table, eight-case ablation table, two-domain application table and related-work comparison table. Analysis tooling exists, can emit SVG scaling sketches, and is fail-closed against promoting hosted-CI timing. Normal literature surveillance should continue before submission, but the targeted recent dependent/state-sensitive effect follow-up for this paper iteration is complete. Richer mixed-guard repeated-call invocation-frame evidence is part of the reproducible beta.32 artifact rather than an open backlog item.

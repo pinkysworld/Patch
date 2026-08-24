@@ -9,7 +9,7 @@
 
 **Development beta `0.2.0-beta.35`** · **Change IR `0.10`** · **Native GUI IR `1.3`** · **payload `v13`** · **desktop runtime `v1.4`**
 
-[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Roadmap](docs/ROADMAP.md) · [Paper](paper/README.md)
+[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Paper](https://minh.systems/Patch/paper.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html) · [Roadmap](docs/ROADMAP.md) · [Paper sources](paper/README.md)
 
 Patch is built around one rule:
 
@@ -37,6 +37,7 @@ Values are numbers, text, booleans, lists and Things. Thing fields are applicati
 | Ready builds | Token-free Windows, macOS and Linux paths with SHA-256 verified runtime templates |
 | Web delivery | One service-worker owner, type-safe offline fallback and a real Chrome responsiveness gate on every public deployment |
 | Formal milestone | beta.32 invocation-frame-aware direct-Wasm correspondence for the supported finite safe-integer call-tree fragment |
+| Paper | Working manuscript with architecture figure, ablation/application tables and a fail-closed no-performance-claim boundary |
 | Backlog | Native two-contract collapse is complete (current IR 1.3 + frozen TreeView IR 1.2). Remaining repository work is spec/docs/CI maintenance; external signing/manual validation and research-evidence gates are tracked separately |
 
 ## Patch Studio
@@ -45,7 +46,7 @@ Patch Studio keeps visual application structure in ordinary `.patch` source. For
 
 The Studio includes source-backed Forms and controls, pointer/keyboard movement and resizing, alignment/layout actions, structural Table/TreeView/Tabs editors, multi-file project state, recovery and privacy-redacted diagnostics that name owning `file:line`.
 
-Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions and also exposes the current project files and parser-derived Project Tree symbols, including Thing fields as `player.score` and recipe parameters as `reward.bonus`. File results activate the canonical project file; symbol results select the exact source line. Palette state and its quick-open result set are transient IDE state and do not create another project, persistent index or mutation model.
+Press **Ctrl/Cmd+K** for the Command Palette. It delegates to the existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Paper, Downloads and Help actions and also exposes the current project files and parser-derived Project Tree symbols, including Thing fields as `player.score` and recipe parameters as `reward.bonus`. File results activate the canonical project file; symbol results select the exact source line. Palette state and its quick-open result set are transient IDE state and do not create another project, persistent index or mutation model.
 
 See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/STUDIO_COMMAND_PALETTE.md`](docs/STUDIO_COMMAND_PALETTE.md) and [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md).
 
