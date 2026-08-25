@@ -2,13 +2,13 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 
-// The Chrome Studio smoke is a dedicated CI step with a 2-minute timeout.
-// Skipping it here keeps a hung GUI-subsystem browser from pinning the
-// 12-minute full-suite job on windows-latest.
+// Real-browser Studio smokes are dedicated CI steps with their own timeouts.
+// Skipping them here keeps a hung GUI-subsystem browser from pinning the
+// 12-minute language/compiler/formal test suite or obscuring its failures.
 const child = spawn(process.execPath, [
   '--test',
   '--test-skip-pattern',
-  'stays responsive in Chrome'
+  'stays responsive in Chrome|Workshop Desk explicit load remains responsive in real Chrome'
 ], {
   cwd: process.cwd(),
   env: process.env,
