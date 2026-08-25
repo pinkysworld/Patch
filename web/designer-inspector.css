@@ -3,7 +3,7 @@
 }
 
 .designer-surface {
-  --designer-inspector-width: 340px;
+  --designer-inspector-width: 320px;
   flex: 1;
   min-height: 522px;
   display: grid;
@@ -22,6 +22,28 @@
 }
 .designer-surface.designer-properties-collapsed .designer-inspector {
   display: none;
+}
+.designer-surface.designer-inspector-bottom {
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: minmax(440px, 1fr) minmax(180px, 280px);
+}
+.designer-surface.designer-inspector-bottom .designer-canvas {
+  grid-column: 2;
+  grid-row: 1;
+}
+.designer-surface.designer-inspector-bottom .designer-inspector {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  max-height: 280px;
+  border-left: 0;
+  border-top: 1px solid var(--border);
+}
+.designer-surface.designer-inspector-bottom .designer-inspector-resize {
+  display: none;
+}
+.designer-surface.designer-inspector-bottom.designer-properties-collapsed {
+  grid-template-columns: 54px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 .designer-surface.designer-properties-resizing,
 .designer-surface.designer-properties-resizing * {
@@ -133,6 +155,9 @@
 
 .designer-properties-toggle {
   margin-left: auto;
+  flex: 0 0 auto;
+}
+.designer-inspector-dock {
   flex: 0 0 auto;
 }
 
@@ -277,7 +302,7 @@
   overflow: auto;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1380px) {
   .designer-surface {
     grid-template-columns: 54px minmax(0, 1fr);
     grid-template-rows: minmax(460px, auto) auto;
@@ -286,31 +311,44 @@
   .designer-inspector {
     grid-column: 1 / -1;
     grid-row: 2;
-    max-height: 420px;
+    max-height: 340px;
     border-left: 0;
     border-top: 1px solid var(--border);
   }
   .designer-inspector-resize { display: none; }
   .designer-inspector .inspector-actions { bottom: -12px; }
-  .designer-surface.designer-properties-collapsed {
+  .designer-surface.designer-properties-collapsed,
+  .designer-surface.designer-inspector-bottom.designer-properties-collapsed {
     grid-template-columns: 54px minmax(0, 1fr);
     grid-template-rows: minmax(460px, auto);
   }
+  .designer-surface.designer-inspector-bottom {
+    grid-template-columns: 54px minmax(0, 1fr);
+    grid-template-rows: minmax(460px, auto) auto;
+  }
+  .designer-surface.designer-inspector-bottom .designer-inspector {
+    max-height: 340px;
+  }
+  .designer-inspector-dock { display: none; }
 }
 
 @media (max-width: 760px) {
   .designer-view::before { display: none; }
   .designer-surface,
-  .designer-surface.designer-properties-collapsed {
+  .designer-surface.designer-inspector-bottom,
+  .designer-surface.designer-properties-collapsed,
+  .designer-surface.designer-inspector-bottom.designer-properties-collapsed {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
   }
-  .designer-surface .designer-canvas {
+  .designer-surface .designer-canvas,
+  .designer-surface.designer-inspector-bottom .designer-canvas {
     grid-column: 1;
     grid-row: 1;
     border-left: 0;
   }
-  .designer-inspector {
+  .designer-inspector,
+  .designer-surface.designer-inspector-bottom .designer-inspector {
     grid-column: 1;
     grid-row: 2;
   }
@@ -355,7 +393,7 @@
 /* The canvas itself is the desktop Designer scrollport. The previous layout
    allowed the grid track to grow with multiple Forms, so overflow never became
    scrollable even though overflow:auto was set on the canvas. */
-@media (min-width: 1181px) {
+@media (min-width: 1381px) {
   .result-pane #designer.designer-view {
     height: clamp(640px, 78vh, 900px);
     min-height: 640px;
@@ -378,9 +416,12 @@
     min-height: 0;
     max-height: 100%;
   }
+  .result-pane #designer .designer-surface.designer-inspector-bottom .designer-inspector {
+    max-height: 280px;
+  }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1380px) {
   .result-pane #designer.designer-view {
     height: auto;
     min-height: 0;

@@ -6,6 +6,8 @@ const restore = fs.readFileSync('web/project-config-restore.js', 'utf8');
 const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
 const ux = fs.readFileSync('web/designer-ux.js', 'utf8');
 const forms = fs.readFileSync('web/form-designer-workflow.js', 'utf8');
+const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
+const siteCheck = fs.readFileSync('scripts/check-site.js', 'utf8');
 
 test('Designer coordinator batches cross-observer reconciliation before reconnecting', () => {
   assert.match(restore, /installDesignerObserverCoordinator\(\)/);
@@ -35,9 +37,12 @@ test('Designer UX and Form workflow cache parsed source models across DOM-only m
   assert.match(ux, /new MutationObserver\(\(\) => \{[\s\S]*scheduleDesignerUx\(\)/);
 });
 
-test('rendered Patch brand uses the classic softer 32-unit P', () => {
+test('rendered Patch brand keeps geometry at the site-build boundary and runtime only tags diagnostics', () => {
   assert.match(workspace, /dataset\.patchBrandMark/);
-  assert.match(workspace, /viewBox=\"0 0 32 32\"/);
-  assert.match(workspace, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z/);
+  assert.doesNotMatch(workspace, /innerHTML\s*=/);
   assert.doesNotMatch(workspace, /shape-rendering=\"crispEdges\"/);
+  assert.match(buildSite, /viewBox=\"0 0 32 32\"/);
+  assert.match(buildSite, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z/);
+  assert.match(siteCheck, /viewBox=\"0 0 32 32\"/);
+  assert.match(siteCheck, /shape-rendering=\"crispEdges\"/);
 });

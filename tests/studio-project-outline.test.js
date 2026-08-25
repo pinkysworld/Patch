@@ -76,7 +76,26 @@ test('Studio Project Tree browser module is valid JavaScript and uses the shared
   assert.match(tree, /removeStudioProjectFile/);
   assert.match(tree, /data-project-action="file"/);
   assert.match(tree, /data-project-action="form"/);
+  assert.match(tree, /data-project-action="toggle"/);
   assert.match(tree, /Project Tree/);
+});
+
+test('Project Tree collapse is a persistent IDE preference and never changes project source', () => {
+  for (const marker of [
+    "const OUTLINE_STORAGE_KEY = 'patch-studio-project-tree-v1'",
+    "workspace.classList.toggle('project-outline-collapsed', value)",
+    "localStorage.setItem(OUTLINE_STORAGE_KEY, value ? 'collapsed' : 'expanded')",
+    "localStorage.getItem(OUTLINE_STORAGE_KEY) === 'collapsed'",
+    "toggle.setAttribute('aria-expanded', value ? 'false' : 'true')"
+  ]) assert.ok(tree.includes(marker), marker);
+
+  for (const marker of [
+    '.source-workspace.project-outline-collapsed',
+    'grid-template-columns: 48px minmax(0, 1fr)',
+    '.outline-toggle',
+    '.project-outline-tree',
+    'display: none'
+  ]) assert.ok(css.includes(marker), marker);
 });
 
 test('Project Tree keeps build/run consumers on the composed v3 project source without replacing the visible editor source', () => {

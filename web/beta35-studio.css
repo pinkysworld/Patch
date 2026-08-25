@@ -1,3 +1,7 @@
+.studio {
+  width: min(1720px, 100%);
+}
+
 .studio-jump {
   min-height: 36px;
   display: inline-flex;
@@ -58,6 +62,15 @@
 .beta35-strip a:hover { text-decoration: underline; }
 #designer { scroll-margin-top: 12px; }
 #designer:target { box-shadow: inset 0 0 0 2px var(--border-strong); }
+
+@media (min-width: 1381px) {
+  .result-pane #designer .designer-surface.designer-inspector-bottom {
+    grid-template-rows: minmax(360px, 1fr) minmax(160px, 240px);
+  }
+  .result-pane #designer .designer-surface.designer-inspector-bottom .designer-inspector {
+    max-height: 240px;
+  }
+}
 
 @media (max-width: 920px) {
   .studio-jump { flex: 1 1 auto; }

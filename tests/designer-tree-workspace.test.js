@@ -83,12 +83,13 @@ test('Patch Studio exposes TreeView through shared selection plus resizable and 
   assert.match(index, /\.\/tree-designer\.js/);
   assert.match(index, /\.\/designer-core-selection\.js/);
   assert.match(index, /\.\/designer-workspace\.js/);
-  assert.match(css, /--designer-inspector-width: 340px/);
+  assert.match(css, /--designer-inspector-width: 320px/);
   assert.match(css, /#designer #addSlider \{ top: 287px; \}/);
   assert.match(css, /#designer #addTable \{ top: 321px; \}/);
   assert.match(css, /#designer #addTree \{ top: 355px; \}/);
   assert.match(css, /#designer #addTabs \{ top: 389px; \}/);
   assert.match(css, /designer-properties-collapsed/);
+  assert.match(css, /designer-inspector-bottom/);
   assert.match(css, /designer-inspector-resize/);
   assert.match(treeDesigner, /addDesignerControl\(code\.value, 'tree'/);
   assert.match(treeDesigner, /selectDesignerElement/);
