@@ -11,6 +11,7 @@ import {
   replaceStudioProjectSource
 } from './project-lifecycle.js';
 
+const OUTLINE_STORAGE_KEY = 'patch-studio-project-tree-v1';
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
 const outline = doc?.querySelector('#projectOutlineTree') ?? null;
@@ -45,6 +46,7 @@ export { buildOutlineModel, lineSelectionRange };
 
 function installProjectTreeActions() {
   const pane = outline.closest('.project-outline');
+  const workspace = pane?.closest('.source-workspace');
   const title = pane?.querySelector('.pane-title');
   const titleCopy = title?.querySelector('.outline-title-copy');
   if (titleCopy) titleCopy.textContent = 'Project Tree';
@@ -54,14 +56,34 @@ function installProjectTreeActions() {
   if (title && !title.querySelector('.outline-actions')) {
     const actions = document.createElement('span');
     actions.className = 'outline-actions';
-    actions.innerHTML = '<button type="button" class="outline-action" data-project-action="file" title="Add Patch source file">+ File</button><button type="button" class="outline-action" data-project-action="form" title="Add a source-backed Form file">+ Form</button>';
+    actions.innerHTML = '<button type="button" class="outline-action" data-project-action="file" title="Add Patch source file">+ File</button><button type="button" class="outline-action" data-project-action="form" title="Add a source-backed Form file">+ Form</button><button type="button" class="outline-action outline-toggle" data-project-action="toggle" aria-controls="projectOutlineTree" aria-expanded="true" title="Collapse Project Tree">‹</button>';
     title.append(actions);
   }
+
+  const setCollapsed = (collapsed, options = {}) => {
+    if (!workspace) return;
+    const value = Boolean(collapsed);
+    workspace.classList.toggle('project-outline-collapsed', value);
+    const toggle = title?.querySelector('.outline-toggle');
+    if (toggle) {
+      toggle.textContent = value ? '›' : '‹';
+      toggle.title = value ? 'Expand Project Tree' : 'Collapse Project Tree';
+      toggle.setAttribute('aria-label', toggle.title);
+      toggle.setAttribute('aria-expanded', value ? 'false' : 'true');
+    }
+    if (options.persist === false) return;
+    try { localStorage.setItem(OUTLINE_STORAGE_KEY, value ? 'collapsed' : 'expanded'); } catch { /* local preference only */ }
+  };
+
+  let initiallyCollapsed = false;
+  try { initiallyCollapsed = localStorage.getItem(OUTLINE_STORAGE_KEY) === 'collapsed'; } catch { /* keep expanded */ }
+  setCollapsed(initiallyCollapsed, { persist: false });
 
   title?.addEventListener('click', event => {
     const action = event.target.closest('button[data-project-action]')?.dataset.projectAction;
     if (action === 'file') addSourceFile();
     if (action === 'form') addFormFile();
+    if (action === 'toggle') setCollapsed(!workspace?.classList.contains('project-outline-collapsed'));
   });
 
   outline.addEventListener('click', event => {
