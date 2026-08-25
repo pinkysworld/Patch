@@ -219,6 +219,7 @@ export class PatchInterpreter {
           item.max=node.max;
           item.step=node.step;
         }
+        if(node.control==='picture') item.source=this.uiPictureSource(node);
         items.push(item);
       } else if(node.kind==='tabs'){
         items.push({
@@ -232,6 +233,13 @@ export class PatchInterpreter {
       }
     }
     return items;
+  }
+  uiPictureSource(node){
+    if(node.id&&this.state.has(node.id)&&this.types.get(node.id)==='text') return String(this.state.get(node.id));
+    const expr=String(node.sourceExpr??'').trim();
+    if(!expr)return '';
+    let value;try{value=evaluateLoose(expr,this.env({}));}catch{return '';}
+    return typeof value==='string'?value:'';
   }
   uiTreeNodes(nodes){ return (nodes??[]).map(node=>({text:this.uiText(node.labelExpr),children:this.uiTreeNodes(node.children)})); }
   uiText(expr){
