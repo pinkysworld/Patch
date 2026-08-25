@@ -12,6 +12,10 @@ const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
 const inspector = doc?.querySelector('#designerInspector') ?? null;
 const DOUBLE_CLICK_TYPES = new Set(['button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider']);
+let cachedSource = null;
+let cachedControls = [];
+let cachedPickerSignature = null;
+let syncQueued = false;
 
 const EVENT_SPECS = Object.freeze({
   button: Object.freeze({ event: 'clicked', label: 'OnClick', value: false }),
@@ -105,12 +109,21 @@ function install() {
   tabs.querySelector('#designerEventsTab')?.addEventListener('click', () => setView('events'));
   objectPicker.querySelector('select')?.addEventListener('change', selectObjectFromPicker);
 
-  canvas.addEventListener(DESIGNER_SELECTION_EVENT, sync);
-  code.addEventListener('input', sync);
-  code.addEventListener('change', sync);
+  canvas.addEventListener(DESIGNER_SELECTION_EVENT, scheduleSync);
+  code.addEventListener('input', scheduleSync);
+  code.addEventListener('change', scheduleSync);
   canvas.addEventListener('dblclick', handleDesignerDoubleClick, { capture: true });
-  new MutationObserver(sync).observe(inspector, { childList: true, subtree: false });
+  new MutationObserver(scheduleSync).observe(inspector, { childList: true, subtree: false });
   sync();
+}
+
+function scheduleSync() {
+  if (syncQueued) return;
+  syncQueued = true;
+  queueMicrotask(() => {
+    syncQueued = false;
+    sync();
+  });
 }
 
 function setView(view) {
@@ -159,17 +172,23 @@ function syncObjectPicker() {
   const selection = currentDesignerSelection(canvas);
   const selectedKey = selection ? `${selection.windowIndex}:${selection.controlIndex}` : '';
   const previous = select.value;
-  select.replaceChildren();
-  const prompt = doc.createElement('option');
-  prompt.value = '';
-  prompt.textContent = controls.length ? 'Choose control…' : 'No controls';
-  select.appendChild(prompt);
-  for (const control of controls) {
-    const option = doc.createElement('option');
-    option.value = `${control.windowIndex}:${control.controlIndex}`;
-    option.textContent = `${control.id || displayType(control.type)} · ${displayType(control.type)} · Form ${control.windowIndex + 1}`;
-    select.appendChild(option);
+  const signature = controls.map(control => `${control.windowIndex}:${control.controlIndex}:${control.type}:${control.id ?? ''}`).join('|');
+
+  if (signature !== cachedPickerSignature) {
+    cachedPickerSignature = signature;
+    select.replaceChildren();
+    const prompt = doc.createElement('option');
+    prompt.value = '';
+    prompt.textContent = controls.length ? 'Choose control…' : 'No controls';
+    select.appendChild(prompt);
+    for (const control of controls) {
+      const option = doc.createElement('option');
+      option.value = `${control.windowIndex}:${control.controlIndex}`;
+      option.textContent = `${control.id || displayType(control.type)} · ${displayType(control.type)} · Form ${control.windowIndex + 1}`;
+      select.appendChild(option);
+    }
   }
+
   select.value = controls.some(control => `${control.windowIndex}:${control.controlIndex}` === selectedKey)
     ? selectedKey
     : controls.some(control => `${control.windowIndex}:${control.controlIndex}` === previous) ? previous : '';
@@ -247,7 +266,12 @@ function selectedControl() {
 }
 
 function safeControls() {
-  try { return listDesignerControls(code.value); } catch { return []; }
+  const source = code?.value ?? '';
+  if (source === cachedSource) return cachedControls;
+  cachedSource = source;
+  try { cachedControls = listDesignerControls(source); }
+  catch { cachedControls = []; }
+  return cachedControls;
 }
 
 function setSource(source) {
