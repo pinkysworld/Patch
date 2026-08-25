@@ -15,9 +15,10 @@ const assets = [
   'SHA256SUMS'
 ];
 
-test('offline compiler download page and release workflow share one stable asset contract', () => {
-  assert.match(downloads, /offline-compiler-v0\.1/);
-  assert.match(workflow, /TAG: offline-compiler-v0\.1/);
+test('offline compiler download page and release workflow share one stable v0.2 asset contract', () => {
+  assert.match(downloads, /offline-compiler-v0\.2/);
+  assert.match(workflow, /TAG: offline-compiler-v0\.2/);
+  assert.doesNotMatch(downloads, /releases\/download\/offline-compiler-v0\.1/);
   for (const asset of assets) {
     assert.ok(downloads.includes(asset), `downloads page: ${asset}`);
     assert.ok(workflow.includes(asset), `release workflow: ${asset}`);
@@ -31,7 +32,7 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page clearly distinguishes current v1.4, Intel macOS kit, FreeBSD and frozen v1.3 compatibility', () => {
+test('downloads page distinguishes current v1.5, Intel macOS kit, FreeBSD and historical compatibility', () => {
   assert.match(downloads, /normal local workflows do not need a GitHub token/i);
   assert.match(downloads, /macOS Intel/);
   assert.match(downloads, /portable tar\.gz kit/);
@@ -40,13 +41,15 @@ test('downloads page clearly distinguishes current v1.4, Intel macOS kit, FreeBS
   assert.match(downloads, /requires local Node 22\+ and cc/i);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
   assert.match(downloads, /patch link app\.patch --out App/);
-  assert.match(downloads, /Native GUI IR <strong>1\.3<\/strong>/);
-  assert.match(downloads, /payload <strong>v13<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.4<\/strong>/);
+  assert.match(downloads, /Native GUI IR <strong>1\.4<\/strong>/);
+  assert.match(downloads, /payload <strong>v14<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.5<\/strong>/);
   assert.match(downloads, /native Slider/i);
   assert.match(downloads, /hierarchical TreeView/);
+  assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
   assert.match(downloads, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
-  assert.match(downloads, /Slider fail-closed/);
+  assert.match(downloads, /PictureBox note/i);
+  assert.match(downloads, /portable image-source rendering/i);
 });
 
 test('generated public site contains downloads and current plus frozen native compiler assets', () => {
@@ -62,6 +65,9 @@ test('generated public site contains downloads and current plus frozen native co
     '_site/src/sealed-native-gui-v12.js',
     '_site/src/native-gui-ir-v13.js',
     '_site/src/native-slider-backend-adapter.js',
-    '_site/src/sealed-native-gui-v13.js'
+    '_site/src/sealed-native-gui-v13.js',
+    '_site/src/native-gui-ir-v14.js',
+    '_site/src/native-chrome-backend-adapter.js',
+    '_site/src/sealed-native-gui-v14.js'
   ]) assert.ok(fs.existsSync(file), file);
 });
