@@ -8,44 +8,52 @@ const paper = fs.readFileSync('paper/README.md', 'utf8');
 const parser = fs.readFileSync('src/parser.js', 'utf8');
 const compiler = fs.readFileSync('src/compiler.js', 'utf8');
 
-test('SPEC status is an explicit language snapshot and stays on the current Change IR', () => {
+test('SPEC status is synchronized exactly to the current product and Change IR', () => {
   const packageMatch = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version);
   const specMatch = /Status: \*\*0\.2\.0-beta\.(\d+) development\*\*/.exec(spec);
   assert.ok(packageMatch, `unexpected package version ${pkg.version}`);
   assert.ok(specMatch, 'SPEC must expose an explicit beta snapshot status');
-  assert.ok(Number(specMatch[1]) <= Number(packageMatch[1]), 'language SPEC snapshot cannot be newer than the product package');
+  assert.equal(specMatch[1], packageMatch[1], 'language SPEC snapshot must match the product package');
   const ir = compiler.match(/PATCH_IR_VERSION\s*=\s*'([^']+)'/)?.[1];
   assert.ok(ir, 'compiler must expose a Change IR version marker');
   assert.match(spec, new RegExp(`Change IR \\*\\*${ir.replace('.', '\\.')}`));
+  assert.match(spec, /Native GUI IR 1\.4 \/ sealed payload v14 \/ native runtime v1\.5/);
   assert.doesNotMatch(spec, /0\.2\.0-beta\.8|Change IR 0\.6|Beta 8 source\/evidence/);
 });
 
 test('SPEC documents every current user-facing parser family', () => {
   const constructs = [
-    ['window', /^window\s+/, '## Window applications and Forms'],
-    ['checkbox', /^checkbox\s+/, '- `checkbox`'],
-    ['radio', /^radio\s+/, '- `radio`'],
-    ['combo', /^combo\s+/, '- `combo`'],
-    ['listbox', /^listbox\s+/, '- `listbox`'],
-    ['slider', /^slider\s+/, '- `slider`'],
-    ['table', /^table\s+/, '## Tables'],
-    ['tree', /^tree\s+/, '## TreeView'],
-    ['tabs', /^tabs\s+/, '## Tabs'],
-    ['menu', /^menu\s+/, '## Menus'],
-    ['confirm', /^confirm\s+/, 'confirm "Delete?"'],
-    ['open file', /^open\s+file/, 'open file "Choose a file"'],
-    ['save file', /^save\s+file/, 'save file "Save project"']
+    ['window', /^\s*if \(\(m = row\.text\.match\(\/\^window\\s\+/m, '## Window applications and Forms'],
+    ['checkbox', /\^checkbox\\s\+/, '- `checkbox`'],
+    ['radio', /\^radio\\s\+/, '- `radio`'],
+    ['combo', /\^combo\\s\+/, '- `combo`'],
+    ['listbox', /\^listbox\\s\+/, '- `listbox`'],
+    ['slider', /\^slider\\s\+/, '- `slider`'],
+    ['panel', /\^panel\\s\+as\\s\+/, '- `panel`'],
+    ['timer', /\^timer\\s\+as\\s\+/, '- `timer`'],
+    ['picture', /\^picture\\s\+/, '- `picture`'],
+    ['statusbar', /\^statusbar\\s\+/, '- `statusbar`'],
+    ['table', /\^table\\s\+/, '## Tables'],
+    ['tree', /\^tree\\s\+/, '## TreeView'],
+    ['tabs', /\^tabs\\s\+/, '## Tabs'],
+    ['menu', /\^menu\\s\+/, '## Menus'],
+    ['confirm', /\^confirm\\s\+/, 'confirm "Delete?"'],
+    ['open file', /\^open\\s\+file/, 'open file "Choose a file"'],
+    ['save file', /\^save\\s\+file/, 'save file "Save project"']
   ];
   for (const [name, parserMarker, specMarker] of constructs) {
     assert.match(parser, parserMarker, `parser marker missing for ${name}`);
     assert.ok(spec.includes(specMarker), `SPEC marker missing for ${name}`);
   }
+  assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked/);
+  assert.match(spec, /cancelled\s+ticked/);
 });
 
 test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /formal assurance boundary[\s\S]*\*\*beta\.32\*\*/i);
   assert.match(spec, /not\*\* an end-to-end verified compiler\/runtime theorem/i);
   assert.match(spec, /GUI execution is outside the beta\.32 Lean runtime-correspondence claim/);
+  assert.match(spec, /PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline/);
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {
