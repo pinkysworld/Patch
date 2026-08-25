@@ -19,8 +19,43 @@ const STORAGE_KEY = 'patch-studio-designer-properties-v1';
 const DEFAULT_WIDTH = 340;
 const MIN_WIDTH = 280;
 const MAX_WIDTH = 480;
+const BULK_WINDOW_SAMPLES = new Set(['workshopDesk', 'listboxMultiWindow']);
 
+installClassicBrandMark();
+installBulkSampleLoadGuard();
 queueMicrotask(install);
+
+function installClassicBrandMark() {
+  const mark = document.querySelector('.brand-mark');
+  if (!mark || mark.dataset.patchBrandMark === 'classic-p') return;
+  mark.dataset.patchBrandMark = 'classic-p';
+  mark.innerHTML = '<svg viewBox="0 0 32 32" focusable="false" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg>';
+}
+
+function installBulkSampleLoadGuard() {
+  const sample = document.querySelector('#sample');
+  const code = document.querySelector('#code');
+  const root = document.documentElement;
+  if (!sample || !code || root.dataset.patchSampleBatchGuard === 'true') return;
+  root.dataset.patchSampleBatchGuard = 'true';
+
+  let bulkSampleLoad = false;
+  document.addEventListener('change', event => {
+    if (event.target === sample && BULK_WINDOW_SAMPLES.has(sample.value)) {
+      bulkSampleLoad = true;
+      queueMicrotask(() => { bulkSampleLoad = false; });
+      return;
+    }
+
+    // beta35-studio historically dispatched both input and change for a complete
+    // source replacement. Input already schedules persistence, parsing and Designer
+    // refresh. Let the following project-kind change perform the one immediate
+    // refresh and suppress only the redundant source change pass. This keeps a
+    // large showcase from rendering and compiling the same program several times
+    // synchronously while preserving the normal public DOM synchronization path.
+    if (bulkSampleLoad && event.target === code) event.stopImmediatePropagation();
+  }, { capture: true });
+}
 
 function install() {
   const surface = document.querySelector('#designer .designer-surface');
