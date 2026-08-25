@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const base = fs.readFileSync('web/style.css', 'utf8');
+const current = fs.readFileSync('web/beta35-studio.css', 'utf8');
 const ux = fs.readFileSync('web/forms-designer.css', 'utf8');
 const inspector = fs.readFileSync('web/designer-inspector.css', 'utf8');
+const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
 const formsJs = fs.readFileSync('web/forms-designer.js', 'utf8');
 
 test('Patch Studio keeps the Designer below the editor at full workspace width', () => {
   assert.match(base, /\.workspace\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
   assert.match(base, /\.result-pane\s*\{[^}]*min-height:\s*660px/s);
+  assert.match(current, /\.studio\s*\{[^}]*width:\s*min\(1720px,\s*100%\)/s);
 });
 
 test('Patch Studio exposes visible scroll areas for code, results and Designer', () => {
@@ -58,9 +61,9 @@ test('Designer toolbox and Form controls remain compact IDE-style controls', () 
   ]) assert.ok(ux.includes(marker), marker);
 });
 
-test('Designer presents toolbox controls as a left icon rail on desktop', () => {
+test('Designer presents toolbox controls as a left icon rail on wide desktop', () => {
   for (const marker of [
-    '--designer-inspector-width: 340px',
+    '--designer-inspector-width: 320px',
     'grid-template-columns: 54px minmax(0, 1fr) var(--designer-inspector-width)',
     '.designer-view::before',
     '#designer #addText::before',
@@ -76,7 +79,27 @@ test('Designer presents toolbox controls as a left icon rail on desktop', () => 
   ]) assert.ok(inspector.includes(marker), marker);
 });
 
-test('Designer Properties panel is resizable collapsible and responsive', () => {
+test('Object Inspector supports persistent bottom docking and adaptive laptop layout', () => {
+  for (const marker of [
+    'designer-inspector-bottom',
+    'designer-inspector-dock',
+    'grid-column: 1 / -1',
+    'border-top: 1px solid var(--border)',
+    '@media (max-width: 1380px)',
+    '@media (min-width: 1381px)',
+    '@media (max-width: 760px)'
+  ]) assert.ok(inspector.includes(marker), marker);
+
+  for (const marker of [
+    "dock.id = 'designerInspectorDock'",
+    "surface.classList.toggle('designer-inspector-bottom', dockBelow)",
+    'dockBelow: parsed.dockBelow === true',
+    "window.addEventListener('pointercancel', cancel",
+    "window.removeEventListener('pointercancel', cancel"
+  ]) assert.ok(workspace.includes(marker), marker);
+});
+
+test('Designer Properties panel remains resizable collapsible and responsive', () => {
   for (const marker of [
     'grid-column: 3',
     'min-height: 32px',
@@ -84,7 +107,7 @@ test('Designer Properties panel is resizable collapsible and responsive', () => 
     'grid-template-columns: 1fr 1fr auto',
     '.designer-inspector-resize',
     '.designer-properties-collapsed',
-    '@media (max-width: 1180px)',
+    '@media (max-width: 1380px)',
     '@media (max-width: 760px)'
   ]) assert.ok(inspector.includes(marker), marker);
 });
