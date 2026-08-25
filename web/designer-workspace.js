@@ -21,8 +21,16 @@ const MIN_WIDTH = 280;
 const MAX_WIDTH = 480;
 const BULK_WINDOW_SAMPLES = new Set(['workshopDesk', 'listboxMultiWindow']);
 
+markClassicBrand();
 installBulkSampleLoadGuard();
 queueMicrotask(install);
+
+function markClassicBrand() {
+  // The SVG itself is normalized at build time. Keep only a stable runtime marker
+  // for diagnostics and production browser smoke tests, never rewrite brand DOM here.
+  const mark = document.querySelector('.brand-mark');
+  if (mark) mark.dataset.patchBrandMark = 'classic-p';
+}
 
 function installBulkSampleLoadGuard() {
   const sample = document.querySelector('#sample');
