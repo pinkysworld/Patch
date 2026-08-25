@@ -65,6 +65,9 @@ test('Pages waits for current Chrome v1.5 and frozen runtime lines without retir
   assert.match(pages, /native-win32-runtime-v1\.5/);
   assert.match(pages, /native-linux-runtime-v1\.5/);
   assert.match(pages, /native-macos-runtime-v1\.5/);
+  assert.doesNotMatch(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.4/);
+  assert.doesNotMatch(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.4/);
+  assert.doesNotMatch(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.4/);
   assert.match(pages, /Refusing to report a successful Pages run without a deployment/);
   assert.match(pages, /exit 1/);
   assert.match(pages, /if: steps\.native_runtime\.outputs\.ready == 'true'/);
