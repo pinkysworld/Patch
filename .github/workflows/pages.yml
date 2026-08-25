@@ -11,7 +11,7 @@ on:
       - scripts/check-site.js
       - scripts/check-site-v10.js
       - scripts/check-site-v12.js
-      - scripts/check-site-beta35.js
+      - scripts/check-site-beta36.js
       - scripts/runtime-integrity-manifest.js
       - package.json
       - src/interpreter.js
@@ -71,9 +71,10 @@ on:
       - .github/workflows/native-sealed-menu-release-v12.yml
       - .github/workflows/native-sealed-tree-runtime-v13.yml
       - .github/workflows/native-sealed-slider-runtime-v14.yml
+      - .github/workflows/native-sealed-chrome-runtime-v15.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4]
+    workflows: [Patch Studio Runtime Templates, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4, Patch Native Sealed Chrome Runtime v1.5]
     types: [completed]
 
 permissions:
@@ -108,9 +109,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.4
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.4
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.4
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.5
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.5
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.5
         shell: bash
         run: |
           set -euo pipefail
@@ -133,9 +134,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.4
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.4
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.4
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.5
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.5
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.5
         shell: bash
         run: |
           set -euo pipefail
@@ -219,7 +220,7 @@ jobs:
             local base="${1%/}/" label="$2" index_file revision
             index_file="/tmp/patch-pages-index-${label}"
             fetch_asset "${base}index.html?smoke=${cache_bust}" "$index_file"
-            grep -F 'data-patch-version="0.2.0-beta.35"' "$index_file" >/dev/null
+            grep -F 'data-patch-version="0.2.0-beta.36"' "$index_file" >/dev/null
             revision="$(grep -oE '\./style\.css\?v=[0-9a-f]{16}' "$index_file" | head -n1 | sed 's/.*?v=//')"
             if [[ ! "$revision" =~ ^[0-9a-f]{16}$ ]]; then
               echo "${label} did not publish a valid Patch site revision." >&2
@@ -229,6 +230,8 @@ jobs:
             grep -F "./studio-accessibility.js?v=${revision}" "$index_file" >/dev/null
             grep -F "./studio-command-palette.js?v=${revision}" "$index_file" >/dev/null
             grep -F "./studio-command-palette.css?v=${revision}" "$index_file" >/dev/null
+            grep -F 'viewBox="0 0 22 22"' "$index_file" >/dev/null
+            grep -F 'shape-rendering="crispEdges"' "$index_file" >/dev/null
 
             assets=(
               site-navigation.css
@@ -239,6 +242,7 @@ jobs:
               studio-bootstrap.js
               studio-command-palette.js
               studio-accessibility.js
+              designer-multiselect.js
               sw.js
               src/compiler.js
               src/call-site-validation.js
@@ -257,6 +261,7 @@ jobs:
             grep -F "./src/native-current-contract.js?v=${revision}" /tmp/patch-pages-native-build >/dev/null
             fetch_asset "${base}src/native-current-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-current
             grep -F "./native-gui-ir-v14.js?v=${revision}" /tmp/patch-pages-current >/dev/null
+            grep -F "native-win32-runtime-v1.5" /tmp/patch-pages-current >/dev/null
             fetch_asset "${base}src/native-frozen-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-frozen
             grep -F "./native-gui-ir-v12.js?v=${revision}" /tmp/patch-pages-frozen >/dev/null
             fetch_asset "${base}src/compiler.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-compiler
