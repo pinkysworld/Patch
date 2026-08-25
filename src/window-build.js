@@ -70,7 +70,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   const registerControl = (child, formId) => {
     if (!child?.id) return;
     if (idTaken(child.id)) throw duplicateId(child);
-    controls.set(child.id, { type: child.control, formId });
+    controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'tree') treeViews += 1;
     if (child.control === 'slider') {
       sliders += 1;
@@ -79,6 +79,16 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         throw new WindowBuildError(
           `line ${child.line ?? '?'}: Slider '${child.id}' can bind only to number state; found ${stateType} state with the same name.`
         );
+      }
+    }
+    if (child.control === 'panel') {
+      for (const nested of child.body ?? []) {
+        if (nested.kind !== 'uiControl') {
+          throw new WindowBuildError(
+            `line ${nested.line ?? '?'}: Panel '${child.id}' supports window controls only in Chrome Stage 1.`
+          );
+        }
+        registerControl(nested, formId);
       }
     }
   };
@@ -229,12 +239,23 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: Slider '${event.control}' exposes only 'changed' for transient numeric values, not '${event.event}'.`
       );
     }
+    if (controlType === 'timer' && event.event !== 'ticked') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: Timer '${event.control}' exposes only 'ticked', not '${event.event}'.`
+      );
+    }
+    if (controlType === 'picture' && event.event !== 'clicked') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: PictureBox '${event.control}' exposes only 'clicked', not '${event.event}'.`
+      );
+    }
     const supported =
-      ((controlType === 'button' || controlType === 'menuItem') && event.event === 'clicked') ||
+      ((controlType === 'button' || controlType === 'menuItem' || controlType === 'picture') && event.event === 'clicked') ||
+      (controlType === 'timer' && event.event === 'ticked') ||
       ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'slider') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'ticked' on Timer, and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
