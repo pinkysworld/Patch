@@ -38,4 +38,37 @@ if (sample && code && projectKind) {
     projectKind.dispatchEvent(new Event('change', { bubbles: true }));
     document.querySelector('#tabDesigner')?.click();
   }, { capture: true });
+
+  // A selected <option> does not emit change when the user selects the same item
+  // again. That made the first visible "Workshop desk" entry misleading because
+  // playground.js historically restored Counter unless the select value changed.
+  // Keep sample loading explicit and repeatable without introducing a second
+  // source model: this button simply asks the canonical Playground listener to
+  // load the currently selected example.
+  const toolbar = sample.closest('.toolbar');
+  let loadButton = document.querySelector('#loadSample');
+  if (!loadButton && toolbar) {
+    loadButton = document.createElement('button');
+    loadButton.id = 'loadSample';
+    loadButton.type = 'button';
+    loadButton.className = 'secondary';
+    loadButton.textContent = 'Load example';
+    loadButton.title = 'Load or reload the selected example into main.patch';
+    loadButton.setAttribute('aria-label', 'Load selected example');
+    const field = sample.closest('.compact-field');
+    field?.after(loadButton);
+  }
+
+  const loadSelectedSample = () => {
+    if (!sample.value) return;
+    sample.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  loadButton?.addEventListener('click', loadSelectedSample);
+
+  // On a genuinely fresh Studio session the first visible example and the
+  // editor must agree. Preserve an existing local project, but otherwise load
+  // Workshop Desk immediately so Run and Designer show its Forms on first use.
+  let hasSavedProject = false;
+  try { hasSavedProject = Boolean(localStorage.getItem('patchStudio.project')); } catch { /* storage can be unavailable */ }
+  if (!hasSavedProject && sample.value === 'workshopDesk') queueMicrotask(loadSelectedSample);
 }
