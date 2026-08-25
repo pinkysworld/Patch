@@ -7,47 +7,103 @@ import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 
 const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
-const playground = fs.readFileSync('web/playground.js', 'utf8');
+const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
 const html = fs.readFileSync('web/index.html', 'utf8');
 
-test('Harbor Desk example compiles, runs and stays in the Studio Example list', () => {
+function studioWorkshopSource() {
+  const match = studioModule.match(/const WORKSHOP_DESK_SAMPLE = `([\s\S]*?)`;\n\nconst MULTISELECT_SAMPLE/);
+  assert.ok(match, 'Studio must expose a canonical Workshop Desk source block');
+  return match[1];
+}
+
+test('Workshop Desk compiles, runs and stays in the Studio Example list', () => {
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
-  assert.match(playground, /workshopDesk:/);
-  assert.match(playground, /Harbor Desk/);
-  const compiled = compile(example, { name: 'workshop-desk' });
+  assert.match(studioModule, /sample\.value === 'workshopDesk'/);
+  assert.equal(studioWorkshopSource(), example, 'Web Studio Workshop Desk must match examples/workshop-desk.patch exactly');
+
+  const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
   assert.ok(compiled.ast);
   const runtime = new PatchInterpreter();
   const result = runtime.run(example);
   assert.equal(result.state.ticket.total, 40);
-  assert.equal(result.ui.length, 2);
+  assert.equal(result.state.ticket.bench, 'Bench A');
+  assert.equal(result.ui.length, 3);
+  assert.equal(result.ui.find(window => window.id === 'main')?.visible, true);
+  assert.equal(result.ui.find(window => window.id === 'settings')?.visible, false);
+  assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);
 });
 
-test('Harbor Desk quote, settings and board events keep semantic change', () => {
+test('Workshop Desk exercises stateful controls, Forms and semantic events', () => {
   const runtime = new PatchInterpreter();
   runtime.run(example);
-  const quoted = triggerWindowEvent(runtime, 'quote_button', 'clicked');
-  assert.equal(quoted.state.ticket.total, 65);
-  assert.match(quoted.state.status, /Quoted total 65/);
-  const opened = triggerWindowEvent(runtime, 'settings_button', 'clicked');
-  assert.equal(opened.ui.find(window => window.id === 'settings')?.visible, true);
-  const selected = triggerWindowEvent(runtime, 'board', 'changed', { value: ['HD-105', 'Bench B', 'Quoted'] });
-  assert.match(selected.state.status, /Board row selected/);
+
+  let result = triggerWindowEvent(runtime, 'customer', 'changed', { value: 'Grace' });
+  assert.equal(result.state.customer, 'Grace');
+  assert.equal(result.state.ticket.customer, 'Grace');
+
+  result = triggerWindowEvent(runtime, 'qty', 'changed', { value: 4 });
+  assert.equal(result.state.qty, 4);
+  assert.equal(result.state.ticket.qty, 4);
+
+  result = triggerWindowEvent(runtime, 'services', 'changed', { value: ['Diagnostics', 'Pickup'] });
+  assert.deepEqual(result.state.services, ['Diagnostics', 'Pickup']);
+
+  result = triggerWindowEvent(runtime, 'board', 'changed', { value: ['WD-105', 'Grace', 'Bench B', 'Quoted'] });
+  assert.deepEqual(result.state.selected_job, ['WD-105', 'Grace', 'Bench B', 'Quoted']);
+  assert.equal(result.state.status, 'Workshop board row selected');
+
+  result = triggerWindowEvent(runtime, 'parts', 'changed', { value: ['Parts', 'Input', 'Keyboard'] });
+  assert.deepEqual(result.state.selected_part, ['Parts', 'Input', 'Keyboard']);
+
+  result = triggerWindowEvent(runtime, 'quote_button', 'clicked');
+  assert.equal(result.state.ticket.total, 65);
+  assert.equal(result.state.status, 'Quote increased by 25');
+
+  result = triggerWindowEvent(runtime, 'settings_button', 'clicked');
+  assert.equal(result.ui.find(window => window.id === 'settings')?.visible, true);
+
+  result = triggerWindowEvent(runtime, 'default_bench', 'changed', { value: 'Overflow' });
+  assert.equal(result.state.default_bench, 'Overflow');
+  assert.equal(result.state.ticket.bench, 'Overflow');
+
+  result = triggerWindowEvent(runtime, 'details_button', 'clicked');
+  assert.equal(result.ui.find(window => window.id === 'details')?.visible, true);
+
+  result = triggerWindowEvent(runtime, 'details_quote', 'clicked');
+  assert.equal(result.state.ticket.total, 75);
+
+  result = triggerWindowEvent(runtime, 'reset_button', 'clicked');
+  assert.equal(result.state.ticket.total, 40);
+  assert.equal(result.state.ticket.qty, 1);
+  assert.equal(result.state.qty, 1);
+  assert.deepEqual(result.state.selected_job, []);
+  assert.deepEqual(result.state.selected_part, []);
+  assert.deepEqual(result.state.services, ['Diagnostics']);
+  assert.equal(result.state.status, 'Ticket reset');
 });
 
-test('Harbor Desk covers the current Studio control surface without a second form model', () => {
+test('Workshop Desk covers the stable current Studio RAD control surface without a hidden form model', () => {
   for (const marker of [
-    'combo "', 'radio "', 'checkbox "', 'slider ', 'listbox "', 'table "',
-    'tree as parts', 'tabs as prefs', 'make quote', 'create thing ticket',
-    'open settings', 'close settings'
+    'window "Workshop Desk" as main',
+    'window "Workshop settings" as settings',
+    'window "Job details" as details',
+    'input item', 'combo "', 'radio "', 'checkbox "', 'slider ', 'listbox "',
+    'table "Ticket", "Customer", "Bench", "State" as board',
+    'tree as parts', 'tabs as prefs', 'make quote', 'allow quote:', 'create thing ticket',
+    'open settings', 'open details', 'close settings', 'close details',
+    '# @layout anchor left right bottom'
   ]) assert.ok(example.includes(marker), marker);
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
 });
 
-test('Harbor Desk builds as a Standalone Window Web App', () => {
+test('Workshop Desk builds as a Standalone Window Web App', () => {
   const out = execFileSync(process.execPath, [
     'src/cli.js', 'build', 'examples/workshop-desk.patch',
-    '--kind', 'window', '--target', 'web', '--out', '/tmp/HarborDesk-test.html'
+    '--kind', 'window', '--target', 'web', '--out', '/tmp/WorkshopDesk-test.html'
   ], { encoding: 'utf8' });
   assert.match(out, /standalone single-file Web App/);
-  assert.match(fs.readFileSync('/tmp/HarborDesk-test.html', 'utf8'), /Harbor Desk/);
+  const built = fs.readFileSync('/tmp/WorkshopDesk-test.html', 'utf8');
+  assert.match(built, /Workshop Desk/);
+  assert.match(built, /Workshop settings/);
+  assert.match(built, /Job details/);
 });
