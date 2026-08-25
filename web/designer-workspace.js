@@ -10,6 +10,7 @@ import './designer-tree-duplicate.js';
 import './designer-structure-ux.js';
 import './designer-ux.js';
 import './designer-event-inspector.js';
+import './designer-focus-order.js';
 import './designer-layout-actions.js';
 import './form-designer-workflow.js';
 import './designer-toolbox.js';
