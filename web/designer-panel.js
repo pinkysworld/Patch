@@ -42,7 +42,12 @@ function install() {
   code.addEventListener('change', scheduleSync);
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, scheduleSync);
   doc.querySelector('#patchFormSelect')?.addEventListener('change', scheduleSync);
-  new MutationObserver(scheduleSync).observe(canvas, { childList: true, subtree: true });
+  new MutationObserver(records => {
+    const panelOnly = records.length > 0 && records.every(record =>
+      record.target?.closest?.('.patch-panel-designer-layer')
+    );
+    if (!panelOnly) scheduleSync();
+  }).observe(canvas, { childList: true, subtree: true });
 
   doc.addEventListener('click', interceptCommonInspector, { capture: true });
   doc.addEventListener('keydown', interceptCommonInspectorEnter, { capture: true });
