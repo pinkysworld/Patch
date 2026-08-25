@@ -73,6 +73,10 @@ function refreshSnapshot() {
   cachedSource = source;
   try {
     cachedControls = listDesignerControls(source);
+    if (!cachedControls.some(control => control.type === 'statusbar')) {
+      cachedUi = [];
+      return;
+    }
     cachedUi = new PatchInterpreter().run(source).ui ?? [];
   } catch {
     cachedControls = [];
