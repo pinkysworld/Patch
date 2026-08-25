@@ -36,8 +36,8 @@ test('Designer UX and Form workflow cache parsed source models across DOM-only m
 });
 
 test('rendered Patch brand uses the classic softer 32-unit P', () => {
-  assert.match(workspace, /data\.patchBrandMark/);
-  assert.match(workspace, /viewBox=\\"0 0 32 32\\"/);
+  assert.match(workspace, /dataset\.patchBrandMark/);
+  assert.match(workspace, /viewBox=\"0 0 32 32\"/);
   assert.match(workspace, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z/);
-  assert.doesNotMatch(workspace, /shape-rendering=\\"crispEdges\\"/);
+  assert.doesNotMatch(workspace, /shape-rendering=\"crispEdges\"/);
 });
