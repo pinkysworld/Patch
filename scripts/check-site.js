@@ -22,6 +22,7 @@ const requiredFiles = [
   '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/designer-multiselect.js','_site/designer-layout-actions.js','_site/designer-toolbox.js',
+  '_site/designer-event-inspector.js','_site/designer-focus-order.js',
   '_site/src/compiler.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
   '_site/src/native-gui-ir-v14.js','_site/src/sealed-native-gui-v14.js','_site/src/native-chrome-backend-adapter.js'
 ];
@@ -77,10 +78,30 @@ requireAll('RAD multi-select arrange tools', multiselect, [
   "distributeSelection('horizontal')","distributeSelection('vertical')"
 ]);
 
+const eventInspector = read('_site/designer-event-inspector.js');
+requireAll('RAD Object Inspector events', eventInspector, [
+  'designerPropertiesTab','designerEventsTab','designerObjectSelect','Create handler','Open handler',
+  "event: 'clicked', label: 'OnClick'","event: 'changed', label: 'OnChange'","event: 'ticked', label: 'OnTick'",
+  'ensureDesignerEventHandler','findDesignerEventHandler'
+]);
+
+const toolbox = read('_site/designer-toolbox.js');
+requireAll('Searchable RAD Component Palette', toolbox, [
+  'designerComponentSearch','filterDesignerTools','Search Designer controls','event.key.toLowerCase()'
+]);
+
+const focusOrder = read('_site/designer-focus-order.js');
+requireAll('RAD Focus Order Stage 1', focusOrder, [
+  'Focus Order · Stage 1','listDesignerFocusOrder','Independent Delphi-style TabOrder metadata is a later contract','reorderDesignerControl'
+]);
+
 const sw = read('_site/sw.js');
-requireAll('beta36 service worker', sw, ["const PATCH_RELEASE = '0.2.0-beta.36'",'const freshFirst = navigation || codeAsset || htmlAsset || runtimeAsset','self.skipWaiting()','self.clients.claim()']);
+requireAll('beta36 service worker', sw, [
+  "const PATCH_RELEASE = '0.2.0-beta.36'",'const freshFirst = navigation || codeAsset || htmlAsset || runtimeAsset',
+  'self.skipWaiting()','self.clients.claim()','./designer-event-inspector.js','./designer-focus-order.js'
+]);
 
 const bootstrap = read('_site/studio-bootstrap.js');
 requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed for beta.36 / Native GUI IR 1.4 / payload v14 / runtime v1.5 / expanded RAD arrange surface.');
+console.log('Patch public site validation passed for beta.36 / Native GUI IR 1.4 / payload v14 / runtime v1.5 / RAD Object Inspector, Component Palette and Focus Order Stage 1.');
