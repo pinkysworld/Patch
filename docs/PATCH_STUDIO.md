@@ -38,7 +38,7 @@ Current completed work includes:
 - site-wide responsive visual polish;
 - a keyboard-first Command Palette that delegates to existing Studio actions and project-file/symbol quick-open, including Thing fields as `player.score` and recipe parameters as `reward.bonus`.
 
-Completed UX/reliability work now includes Command Palette v2 project-file/symbol quick-open, Workspace Layout v2, Studio startup diagnostics v2, workspace-first chrome (collapsed contracts/quick-start plus a live editor caret) and denser IDE chrome (status bar save state and Ready chip). Remaining repository-controlled work is tracked in `docs/ROADMAP.md`. Credentialed signing, manual assistive-technology validation and research measurements remain separate external/evidence gates.
+Completed UX/reliability work now includes Command Palette v2 project-file/symbol quick-open, Workspace Layout v2, Studio startup diagnostics v2, workspace-first chrome (collapsed contracts/quick-start plus a live editor caret), denser IDE chrome (status bar save state and Ready chip), editor file tabs with live parse status, Designer arrange/grid, and the Harbor Desk example. Remaining repository-controlled work is tracked in `docs/ROADMAP.md`. Credentialed signing, manual assistive-technology validation and research measurements remain separate external/evidence gates.
 
 ## Command Palette
 

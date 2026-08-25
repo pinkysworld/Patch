@@ -4,14 +4,17 @@ Patch Studio keeps layout in visible `.patch` source. The selected-control layou
 
 ## Selected-control actions
 
-When exactly one top-level control is selected, Properties exposes four Form-relative actions:
+When exactly one top-level control is selected, Properties exposes Form-relative and stacking actions:
 
 - **Center H** centers the control's current width inside its source-backed Form width.
 - **Center V** centers the control's current height inside its source-backed Form height.
 - **Default size** restores the shared professional Designer size for the control type from `src/form-layout.js`.
 - **Auto place** moves the control to the first non-overlapping standard position in the active Form, using the existing source-backed sibling geometry and the normal 24 px margin / 12 px gap.
+- **Bring to front** / **Send to back** reorder the selected control among its Form siblings. Later source order paints on top, the same stacking convention used by the Designer canvas.
 
 These actions apply to ordinary controls, Tabs, Table and TreeView because they use the shared Designer primary-selection location rather than control-specific Inspector fallbacks.
+
+A **Grid** toggle on the Designer toolbar shows an 8 px design grid and snaps drag geometry to that grid. The grid preference is a local IDE setting only.
 
 ## Action order is explicit
 
@@ -39,4 +42,4 @@ The layout-action surface stores no `localStorage` or `sessionStorage` applicati
 
 The controls are ordinary keyboard-focusable buttons with visible focus treatment and forced-colors support. On narrow screens the action grid becomes a single column. The JavaScript and stylesheet are included in the content-addressed public Studio build and the offline PWA cache.
 
-This is a Studio/product feature only. It does not change Patch syntax, Change IR **0.10**, Native GUI IR **1.2**, sealed payload **v12**, native runtime **v1.3**, or the beta.32 formal-assurance boundary.
+This is a Studio/product feature only. It does not change Patch syntax, Change IR **0.10**, Native GUI IR **1.3** / payload **v13** / runtime **v1.4**, the frozen Native GUI IR **1.2** / payload **v12** / runtime **v1.3** TreeView line, or the beta.32 formal-assurance boundary.

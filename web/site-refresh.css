@@ -78,16 +78,18 @@ body {
 
 .topbar {
   position: relative;
-  align-items: flex-end;
+  align-items: center;
   padding: 6px 2px 12px;
 }
 
 .brand-mark {
-  box-shadow: 0 10px 24px rgba(24,24,27,.15);
-  transform: rotate(-2deg);
+  box-shadow: 0 8px 18px rgba(24,24,27,.12);
+  transform: none;
+  line-height: 1;
+  padding: 0;
 }
 
-.brand h1 { font-size: clamp(25px, 2.2vw, 32px); }
+.brand h1 { font-size: 18px; letter-spacing: -.5px; }
 .brand p { max-width: 620px; }
 
 .toolbar {

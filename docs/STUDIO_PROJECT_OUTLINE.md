@@ -22,7 +22,7 @@ The Project Tree exposes two source-backed creation actions:
 
 The entry source is visually identified and cannot be deleted from the tree. Other files can be removed after confirmation. File paths pass through the project-v3 path and size validation rules before the canonical project changes.
 
-Selecting a file first synchronizes the current editor text into its owning project-file record, then loads the selected source into the same editor. The editor title follows the active source path.
+Selecting a file first synchronizes the current editor text into its owning project-file record, then loads the selected source into the same editor. The editor title follows the active source path. The same activation is available from editor tabs under the title; Ctrl/Cmd+PageDown and PageUp move between project files. The active file also reports Parsed or the first parse error next to the caret. That tab strip and parse status remain transient IDE chrome.
 
 ## Symbol navigation
 

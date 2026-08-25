@@ -1,6 +1,7 @@
 import { listDesignerControls } from '../src/designer.js';
 import { formControlDefaultSize } from '../src/form-layout.js';
 import { snapFormControlAlignment } from './designer-alignment.js';
+import { snapDesignerGrid } from './designer-z-order-model.js';
 
 const canvas = document.querySelector('#designerCanvas');
 const code = document.querySelector('#code');
@@ -39,7 +40,11 @@ function beginAlignmentAssist(event) {
     }
     const current = readRenderedLayout(target);
     if (!current) return;
-    const snapped = snapFormControlAlignment(current, peers, { tolerance: ALIGNMENT_TOLERANCE });
+    const grid = Number(canvas.dataset.designerGrid);
+    const aligned = snapFormControlAlignment(current, peers, { tolerance: ALIGNMENT_TOLERANCE });
+    const snapped = Number.isFinite(grid) && grid > 0
+      ? { ...aligned, x: snapDesignerGrid(aligned.x, grid), y: snapDesignerGrid(aligned.y, grid) }
+      : aligned;
     target.style.left = `${snapped.x}px`;
     target.style.top = `${snapped.y}px`;
     positionResizeHandle(target, selector);

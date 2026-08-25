@@ -1,0 +1,136 @@
+create thing ticket:
+  customer = "Ada"
+  item = "Keyboard"
+  qty = 1
+  total = 40
+
+create text customer = "Ada"
+create text item = "Keyboard"
+create number qty = 1
+create boolean rush = false
+create text pay = "Card"
+create text notes = ""
+create list extras = ["Warranty"]
+create list selected = []
+create text status = "Ready for the next repair ticket."
+create boolean notifications = true
+create list stations = ["Bench A", "Bench B"]
+
+allow quote:
+  ticket.total may increase up to 500
+
+make quote(ticket, extra number 0..50):
+  change ticket:
+    add extra to total
+
+do quote(ticket, 0)
+
+window "Harbor Desk" as main size 920, 620:
+  text "Harbor Desk" at 24, 16 size 280, 28
+  text "{status}" at 320, 16 size 420, 28
+  text "Customer" at 24, 52 size 120, 22
+  combo "Ada", "Grace", "Linus" as customer at 24, 76 size 220, 36
+  text "Pay" at 256, 52 size 80, 22
+  radio "Card", "Cash", "Account" as pay at 256, 76 size 220, 90
+  checkbox "Rush bench" as rush at 496, 76 size 160, 36
+  text "Qty {qty}" at 496, 120 size 120, 22
+  slider 1..8 as qty step 1 at 496, 144 size 200, 36
+  text "Notes" at 24, 180 size 80, 22
+  input notes at 24, 204 size 380, 36
+  text "Add-ons" at 420, 180 size 80, 22
+  listbox "Warranty", "Install", "Pickup" as extras at 420, 204 size 200, 90
+  table "Ticket", "Bench", "State" as board at 24, 312 size 420, 180:
+    row "HD-104", "Bench A", "Open"
+    row "HD-105", "Bench B", "Quoted"
+    row "HD-106", "Bench A", "Ready"
+  tree as parts at 460, 312 size 240, 180:
+    node "Parts"
+      node "Keyboard"
+      node "Trackpad"
+    node "Tools"
+      node "Driver"
+      node "Solder"
+  button "Quote" as quote_button at 720, 76 size 120, 36
+  button "Settings" as settings_button at 720, 124 size 120, 36
+  button "Reset" as reset_button at 720, 172 size 120, 36
+  # @layout anchor left right bottom
+  text "Select a board row or part, then Quote. Persistent totals use change." at 24, 512 size 680, 28
+
+window "Desk settings" as settings size 560, 420:
+  tabs as prefs at 24, 24 size 512, 300:
+    tab "Benches":
+      checkbox "Notify on quote" as notifications
+      listbox "Bench A", "Bench B", "Overflow" as stations
+    tab "About":
+      text "Harbor Desk uses the current Studio control set."
+      text "Slider, Table, TreeView, Tabs and source-backed Forms."
+      button "Close" as close_about
+  button "Close settings" as close_settings at 24, 344 size 160, 36
+
+when customer changed:
+  change ticket:
+    set customer = value
+  change status:
+    set = "Customer set to " + value
+
+when pay changed:
+  change pay:
+    set = value
+  change status:
+    set = "Pay method " + value
+
+when rush changed:
+  change rush:
+    set = value
+
+when qty changed:
+  change qty:
+    set = value
+  change ticket:
+    set qty = value
+
+when notes changed:
+  change notes:
+    set = value
+
+when extras changed:
+  change extras:
+    set = value
+
+when board changed:
+  change status:
+    set = "Board row selected"
+
+when parts changed:
+  change selected:
+    set = value
+  change status:
+    set = "Part path updated"
+
+when quote_button clicked:
+  do quote(ticket, 25)
+  change status:
+    set = "Quoted total " + ticket.total
+
+when settings_button clicked:
+  open settings
+
+when close_settings clicked:
+  close settings
+
+when close_about clicked:
+  close settings
+
+when notifications changed:
+  change notifications:
+    set = value
+
+when stations changed:
+  change stations:
+    set = value
+
+when reset_button clicked:
+  change notes:
+    set = ""
+  change status:
+    set = "Ticket cleared"
