@@ -70,11 +70,9 @@ window "State check":
   text "Score: {score}"
 
 show score`;
-
   const expected = new PatchInterpreter().run(source);
   assert.deepEqual(expected.output, ['4']);
   assert.equal(expected.state.score, 4);
-
   const built = buildStandaloneWebApp(source, { name: 'StateCheck', kind: 'window' });
   const executed = executeWindowHtml(built.html);
   assert.equal(executed.output.textContent, expected.output.join('\n'));
@@ -87,7 +85,6 @@ test('Window Web runtime enforces declared create types like the interpreter', (
 window "Bad type":
   text "Score: {score}"`;
   assert.throws(() => new PatchInterpreter().run(source), /score must start as a number/);
-
   const built = buildStandaloneWebApp(source, { name: 'BadType', kind: 'window' });
   const executed = executeWindowHtml(built.html);
   assert.match(executed.app.querySelector('p').textContent, /score must start as a number/);
@@ -106,7 +103,6 @@ window "Player":
 show player.name
 show player.constructor`;
   assert.throws(() => new PatchInterpreter().run(source), /player\.constructor/);
-
   const built = buildStandaloneWebApp(source, { name: 'ThingProto', kind: 'window' });
   assert.match(built.html, /Object\.create\(null\)/);
   const executed = executeWindowHtml(built.html);
@@ -135,11 +131,9 @@ window "Equal":
 
 show left == right
 show players`;
-
   const expected = new PatchInterpreter().run(source);
   assert.deepEqual(expected.output, ['true', '']);
   assert.deepEqual(expected.state.players, []);
-
   const built = buildStandaloneWebApp(source, { name: 'ThingEqual', kind: 'window' });
   assert.doesNotMatch(built.html, /JSON\.stringify\(a\)===JSON\.stringify\(b\)/);
   const executed = executeWindowHtml(built.html);
@@ -156,7 +150,6 @@ change player:
 window "Player":
   text "Score: {player.score}"`;
   assert.throws(() => new PatchInterpreter().run(source), /no field called 'missing'/);
-
   const built = buildStandaloneWebApp(source, { name: 'MissingField', kind: 'window' });
   const executed = executeWindowHtml(built.html);
   assert.match(executed.app.querySelector('p').textContent, /no field called 'missing'/);
@@ -172,7 +165,6 @@ window "Counter":
 when add_button clicked:
   change count:
     add 1`;
-
   const built = buildStandaloneWebApp(source, { name: 'Counter', kind: 'window' });
   const executed = executeWindowHtml(built.html);
   assert.ok(allText(executed.app).includes('Count: 0'));
@@ -189,10 +181,9 @@ test('Window builds reject parsed event forms that are not wired consistently ac
 
 when bad changed:
   show 1`;
-
   assert.throws(
     () => buildStandaloneWebApp(source, { name: 'BadEventPair', kind: 'window' }),
-    /support 'clicked' on buttons\/menu items and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios/
+    /support 'clicked' on buttons\/menu items\/PictureBox, 'ticked' on Timer, and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios\/tables\/trees\/sliders/
   );
 });
 
@@ -202,20 +193,12 @@ test('Window builds reject event handlers for sources that do not exist', () => 
 
 when missing clicked:
   show 1`;
-
-  assert.throws(
-    () => buildStandaloneWebApp(source, { name: 'BrokenEvent', kind: 'window' }),
-    /refers to a control, menu item or result dialog that is not defined/
-  );
+  assert.throws(() => buildStandaloneWebApp(source, { name: 'BrokenEvent', kind: 'window' }), /refers to a control, menu item or result dialog that is not defined/);
 });
 
 test('Window builds reject duplicate UI ids before target packaging', () => {
   const source = `window "Duplicate":
   button "One" as action
   button "Two" as action`;
-
-  assert.throws(
-    () => buildStandaloneWebApp(source, { name: 'DuplicateIds', kind: 'window' }),
-    /UI id 'action' is declared more than once/
-  );
+  assert.throws(() => buildStandaloneWebApp(source, { name: 'DuplicateIds', kind: 'window' }), /UI id 'action' is declared more than once/);
 });

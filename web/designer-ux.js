@@ -15,6 +15,10 @@ const designer = doc?.querySelector('#designer') ?? null;
 const toolbar = doc?.querySelector('#designer .designer-toolbar') ?? null;
 let context = null;
 let formEnhanceQueued = false;
+let uxSyncQueued = false;
+let cachedSource = null;
+let cachedControls = [];
+let cachedWindows = [];
 
 if (doc) {
   installStylesheet();
@@ -51,16 +55,16 @@ function install() {
   scheduleFormEnhancement();
 
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, syncDesignerUx);
-  code.addEventListener('input', syncDesignerUx);
-  code.addEventListener('change', syncDesignerUx);
+  code.addEventListener('input', scheduleDesignerUx);
+  code.addEventListener('change', scheduleDesignerUx);
   toolbar.addEventListener('change', event => {
-    if (event.target?.id === 'patchFormSelect') syncDesignerUx();
+    if (event.target?.id === 'patchFormSelect') scheduleDesignerUx();
   });
   doc.addEventListener('keydown', handleEscape, { capture: true });
 
   new MutationObserver(() => {
     scheduleFormEnhancement();
-    syncDesignerUx();
+    scheduleDesignerUx();
   }).observe(designer, { childList: true, subtree: true });
 
   syncDesignerUx();
@@ -166,6 +170,15 @@ function scheduleFormEnhancement() {
   queueMicrotask(() => {
     formEnhanceQueued = false;
     enhanceFormToolbar();
+  });
+}
+
+function scheduleDesignerUx() {
+  if (uxSyncQueued) return;
+  uxSyncQueued = true;
+  queueMicrotask(() => {
+    uxSyncQueued = false;
+    syncDesignerUx();
   });
 }
 
@@ -318,12 +331,22 @@ function handleEscape(event) {
   syncDesignerUx();
 }
 
+function refreshSourceSnapshot() {
+  const source = code?.value ?? '';
+  if (source === cachedSource) return;
+  cachedSource = source;
+  try { cachedControls = listDesignerControls(source); } catch { cachedControls = []; }
+  try { cachedWindows = listDesignerWindows(source); } catch { cachedWindows = []; }
+}
+
 function safeDesignerControls() {
-  try { return listDesignerControls(code.value); } catch { return []; }
+  refreshSourceSnapshot();
+  return cachedControls;
 }
 
 function safeDesignerWindows() {
-  try { return listDesignerWindows(code.value); } catch { return []; }
+  refreshSourceSnapshot();
+  return cachedWindows;
 }
 
 function sameLocation(control, selection) {

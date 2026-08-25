@@ -19,11 +19,11 @@ const offlineWorkflow = read('.github/workflows/offline-compiler.yml');
 const playground = read('web/playground.js');
 const studioTable = read('web/table-stage1.js');
 
-test('repository and product surfaces expose one development version', () => {
+test('current release surfaces expose one development version', () => {
   const version = packageJson.version;
-  assert.match(readme, new RegExp(version.replaceAll('.', '\\.')));
-  assert.match(studio, new RegExp(version.replaceAll('.', '\\.')));
-  assert.match(roadmap, new RegExp(version.replaceAll('.', '\\.')));
+  for (const text of [readme, downloads, offline]) {
+    assert.match(text, new RegExp(version.replaceAll('.', '\\.')));
+  }
 });
 
 test('public Table surfaces agree on transient selected-row list semantics', () => {
@@ -55,33 +55,35 @@ test('authoritative compatibility docs preserve the frozen payload v9 runtime v1
   assert.match(offline, /payload \*\*v9\*\* \/ runtime \*\*v1\.0\*\*[^\n]*frozen Table/i);
 });
 
-test('retired v07–v11 Table and list sealed workflows are no longer active', () => {
+test('retired v07-v11 Table and list sealed workflows are no longer active', () => {
   assert.equal(fs.existsSync(new URL('../.github/workflows/native-table-v09.yml', import.meta.url)), false);
   assert.equal(fs.existsSync(new URL('../.github/workflows/native-sealed-table-runtime.yml', import.meta.url)), false);
   assert.equal(fs.existsSync(new URL('../.github/workflows/native-sealed-list-runtime.yml', import.meta.url)), false);
 });
 
-test('downloadable offline compiler embeds runtime v1.4 and proves payload v13 Table ListBox Menu Tree and Slider linking', () => {
+test('downloadable offline compiler embeds runtime v1.5 and proves payload v14 current Window linking', () => {
   assert.match(offlineWorkflow, /windows-latest/);
   assert.match(offlineWorkflow, /ubuntu-latest/);
   assert.match(offlineWorkflow, /macos-15/);
   assert.match(offlineWorkflow, /macos-15-intel/);
-  assert.match(offlineWorkflow, /win32-sealed-gui-v14\.cpp/);
-  assert.match(offlineWorkflow, /appkit-sealed-gui-v14\.mm/);
-  assert.match(offlineWorkflow, /gtk-sealed-gui-v14\.cpp/);
+  assert.match(offlineWorkflow, /win32-sealed-gui-v15\.cpp/);
+  assert.match(offlineWorkflow, /appkit-sealed-gui-v15\.mm/);
+  assert.match(offlineWorkflow, /gtk-sealed-gui-v15\.cpp/);
   assert.match(offlineWorkflow, /link examples\/table-native-v09\.patch/);
   assert.match(offlineWorkflow, /link examples\/listbox-multiselect-native\.patch/);
   assert.match(offlineWorkflow, /link examples\/menu-state-window\.patch/);
   assert.match(offlineWorkflow, /link examples\/treeview-window\.patch/);
   assert.match(offlineWorkflow, /link examples\/slider-window\.patch/);
+  assert.match(offlineWorkflow, /link examples\/chrome-window\.patch/);
   assert.match(offlineWorkflow, /OfflineTable/);
   assert.match(offlineWorkflow, /OfflineMulti/);
   assert.match(offlineWorkflow, /OfflineMenu/);
   assert.match(offlineWorkflow, /OfflineTree/);
   assert.match(offlineWorkflow, /OfflineSlider/);
-  assert.match(offlineWorkflow, /payload v13/i);
-  assert.match(offlineWorkflow, /runtime v1\.4/i);
-  assert.match(offlineWorkflow, /not sealed payload v13|payload v13/i);
+  assert.match(offlineWorkflow, /OfflineChrome/);
+  assert.match(offlineWorkflow, /payload v14/i);
+  assert.match(offlineWorkflow, /runtime v1\.5/i);
+  assert.match(offlineWorkflow, /not sealed payload v14|payload v14/i);
 });
 
 test('Studio App preview Table dispatch uses the shared semantic event adapter', () => {

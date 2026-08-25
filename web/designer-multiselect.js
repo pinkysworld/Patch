@@ -145,7 +145,7 @@ function beginGroupPointerMove(event) {
 
   const finish = () => {
     cleanup();
-    if (positions?.length) commitGroupPositions(positions);
+    if (positions?.length) commitGroupLayouts(positions);
   };
   const cancel = () => cleanup();
   const cleanup = () => {
@@ -174,7 +174,7 @@ function moveGroupFromKeyboard(event) {
     y: Math.max(0, item.layout.y + dy)
   }));
   keyboardSnapshot = null;
-  if (positions.length) commitGroupPositions(positions);
+  if (positions.length) commitGroupLayouts(positions);
 }
 
 function installAlignmentTools() {
@@ -185,15 +185,27 @@ function installAlignmentTools() {
   group.innerHTML = `
     <span id="patchSelectionCount" class="designer-selection-count" role="status" aria-live="polite">1 selected</span>
     <button id="patchAlignLeft" class="secondary small" type="button" title="Align selected controls to the primary control's left edge">Left</button>
+    <button id="patchAlignRight" class="secondary small" type="button" title="Align selected controls to the primary control's right edge">Right</button>
     <button id="patchAlignTop" class="secondary small" type="button" title="Align selected controls to the primary control's top edge">Top</button>
+    <button id="patchAlignBottom" class="secondary small" type="button" title="Align selected controls to the primary control's bottom edge">Bottom</button>
     <button id="patchAlignHCenter" class="secondary small" type="button" title="Align selected controls to the primary control's horizontal center">H center</button>
-    <button id="patchAlignVCenter" class="secondary small" type="button" title="Align selected controls to the primary control's vertical center">V center</button>`;
+    <button id="patchAlignVCenter" class="secondary small" type="button" title="Align selected controls to the primary control's vertical center">V center</button>
+    <button id="patchSameWidth" class="secondary small" type="button" title="Make selected controls the same width as the primary control">Same W</button>
+    <button id="patchSameHeight" class="secondary small" type="button" title="Make selected controls the same height as the primary control">Same H</button>
+    <button id="patchDistributeHorizontal" class="secondary small" type="button" title="Distribute three or more selected controls horizontally with equal gaps">Space H</button>
+    <button id="patchDistributeVertical" class="secondary small" type="button" title="Distribute three or more selected controls vertically with equal gaps">Space V</button>`;
   const forms = toolbar.querySelector('.forms-toolbar-group');
   toolbar.insertBefore(group, forms ?? null);
   group.querySelector('#patchAlignLeft').addEventListener('click', () => alignSelection('left'));
+  group.querySelector('#patchAlignRight').addEventListener('click', () => alignSelection('right'));
   group.querySelector('#patchAlignTop').addEventListener('click', () => alignSelection('top'));
+  group.querySelector('#patchAlignBottom').addEventListener('click', () => alignSelection('bottom'));
   group.querySelector('#patchAlignHCenter').addEventListener('click', () => alignSelection('hcenter'));
   group.querySelector('#patchAlignVCenter').addEventListener('click', () => alignSelection('vcenter'));
+  group.querySelector('#patchSameWidth').addEventListener('click', () => sizeSelection('width'));
+  group.querySelector('#patchSameHeight').addEventListener('click', () => sizeSelection('height'));
+  group.querySelector('#patchDistributeHorizontal').addEventListener('click', () => distributeSelection('horizontal'));
+  group.querySelector('#patchDistributeVertical').addEventListener('click', () => distributeSelection('vertical'));
   updateAlignmentTools(0);
 }
 
@@ -203,7 +215,10 @@ function updateAlignmentTools(count) {
   const displayCount = Math.max(0, count);
   const status = group.querySelector('#patchSelectionCount');
   if (status) status.textContent = `${displayCount} selected`;
-  for (const button of group.querySelectorAll('button')) button.disabled = displayCount < 2;
+  for (const button of group.querySelectorAll('button')) {
+    const distribution = button.id === 'patchDistributeHorizontal' || button.id === 'patchDistributeVertical';
+    button.disabled = displayCount < (distribution ? 3 : 2);
+  }
 }
 
 function alignSelection(mode) {
@@ -214,7 +229,7 @@ function alignSelection(mode) {
   const primaryControl = controls.find(item => sameSelector(item, primary));
   if (!primaryControl) return;
   const anchor = effectiveLayout(primaryControl);
-  const positions = [];
+  const layouts = [];
 
   for (const selector of group) {
     if (sameSelector(selector, primary)) continue;
@@ -224,19 +239,79 @@ function alignSelection(mode) {
     let x = layout.x;
     let y = layout.y;
     if (mode === 'left') x = anchor.x;
+    if (mode === 'right') x = Math.max(0, anchor.x + anchor.width - layout.width);
     if (mode === 'top') y = anchor.y;
+    if (mode === 'bottom') y = Math.max(0, anchor.y + anchor.height - layout.height);
     if (mode === 'hcenter') x = Math.max(0, Math.round(anchor.x + anchor.width / 2 - layout.width / 2));
     if (mode === 'vcenter') y = Math.max(0, Math.round(anchor.y + anchor.height / 2 - layout.height / 2));
-    positions.push({ selector, x, y });
+    layouts.push({ selector, x, y });
   }
-  if (positions.length) commitGroupPositions(positions);
+  if (layouts.length) commitGroupLayouts(layouts);
 }
 
-function commitGroupPositions(positions) {
+function sizeSelection(axis) {
+  const primary = primarySelector();
+  const group = selectedSelectors();
+  if (!primary || group.length < 2) return;
+  const controls = listDesignerControls(code.value);
+  const primaryControl = controls.find(item => sameSelector(item, primary));
+  if (!primaryControl) return;
+  const anchor = effectiveLayout(primaryControl);
+  const layouts = [];
+  for (const selector of group) {
+    if (sameSelector(selector, primary)) continue;
+    const control = controls.find(item => sameSelector(item, selector));
+    if (!control) continue;
+    layouts.push({
+      selector,
+      ...(axis === 'width' ? { width: anchor.width } : { height: anchor.height })
+    });
+  }
+  if (layouts.length) commitGroupLayouts(layouts);
+}
+
+function distributeSelection(axis) {
+  const group = selectedSelectors();
+  if (group.length < 3) return;
+  const controls = listDesignerControls(code.value);
+  const entries = group.map(selector => {
+    const control = controls.find(item => sameSelector(item, selector));
+    return control ? { selector, layout: effectiveLayout(control) } : null;
+  }).filter(Boolean);
+  if (entries.length < 3) return;
+
+  const horizontal = axis === 'horizontal';
+  entries.sort((left, right) => horizontal
+    ? left.layout.x - right.layout.x || left.layout.y - right.layout.y
+    : left.layout.y - right.layout.y || left.layout.x - right.layout.x);
+  const start = horizontal ? entries[0].layout.x : entries[0].layout.y;
+  const end = horizontal
+    ? entries.at(-1).layout.x + entries.at(-1).layout.width
+    : entries.at(-1).layout.y + entries.at(-1).layout.height;
+  const occupied = entries.reduce((sum, item) => sum + (horizontal ? item.layout.width : item.layout.height), 0);
+  const gap = Math.max(0, (end - start - occupied) / (entries.length - 1));
+  let cursor = start;
+  const layouts = [];
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    const size = horizontal ? entry.layout.width : entry.layout.height;
+    if (index > 0 && index < entries.length - 1) {
+      layouts.push({ selector: entry.selector, ...(horizontal ? { x: Math.round(cursor) } : { y: Math.round(cursor) }) });
+    }
+    cursor += size + gap;
+  }
+  if (layouts.length) commitGroupLayouts(layouts);
+}
+
+function commitGroupLayouts(layouts) {
   try {
     let next = code.value;
-    for (const item of positions) next = updateDesignerControl(next, item.selector, { x: item.x, y: item.y });
-    for (const item of positions) next = growFormForControl(next, item.selector);
+    for (const item of layouts) {
+      const changes = {};
+      for (const key of ['x', 'y', 'width', 'height']) if (Number.isFinite(item[key])) changes[key] = Math.max(0, Math.round(item[key]));
+      if (Object.keys(changes).length) next = updateDesignerControl(next, item.selector, changes);
+    }
+    for (const item of layouts) next = growFormForControl(next, item.selector);
     setSource(next);
   } catch (error) {
     const target = document.querySelector('#designerInspectorError');

@@ -8,22 +8,31 @@ const paper = fs.readFileSync('paper/README.md', 'utf8');
 const parser = fs.readFileSync('src/parser.js', 'utf8');
 const compiler = fs.readFileSync('src/compiler.js', 'utf8');
 
-test('SPEC status is bound to the package and current Change IR', () => {
-  assert.match(spec, new RegExp(`Status: \\*\\*${pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} development\\*\\*`));
+test('SPEC status is synchronized exactly to the current product and Change IR', () => {
+  const packageMatch = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version);
+  const specMatch = /Status: \*\*0\.2\.0-beta\.(\d+) development\*\*/.exec(spec);
+  assert.ok(packageMatch, `unexpected package version ${pkg.version}`);
+  assert.ok(specMatch, 'SPEC must expose an explicit beta snapshot status');
+  assert.equal(specMatch[1], packageMatch[1], 'language SPEC snapshot must match the product package');
   const ir = compiler.match(/PATCH_IR_VERSION\s*=\s*'([^']+)'/)?.[1];
   assert.ok(ir, 'compiler must expose a Change IR version marker');
   assert.match(spec, new RegExp(`Change IR \\*\\*${ir.replace('.', '\\.')}`));
+  assert.match(spec, /Native GUI IR 1\.4 \/ sealed payload v14 \/ native runtime v1\.5/);
   assert.doesNotMatch(spec, /0\.2\.0-beta\.8|Change IR 0\.6|Beta 8 source\/evidence/);
 });
 
 test('SPEC documents every current user-facing parser family', () => {
   const constructs = [
-    ['window', /\^window\\s\+/, '## Window applications and Forms'],
+    ['window', /^\s*if \(\(m = row\.text\.match\(\/\^window\\s\+/m, '## Window applications and Forms'],
     ['checkbox', /\^checkbox\\s\+/, '- `checkbox`'],
     ['radio', /\^radio\\s\+/, '- `radio`'],
     ['combo', /\^combo\\s\+/, '- `combo`'],
     ['listbox', /\^listbox\\s\+/, '- `listbox`'],
     ['slider', /\^slider\\s\+/, '- `slider`'],
+    ['panel', /\^panel\\s\+as\\s\+/, '- `panel`'],
+    ['timer', /\^timer\\s\+as\\s\+/, '- `timer`'],
+    ['picture', /\^picture\\s\+/, '- `picture`'],
+    ['statusbar', /\^statusbar\\s\+/, '- `statusbar`'],
     ['table', /\^table\\s\+/, '## Tables'],
     ['tree', /\^tree\\s\+/, '## TreeView'],
     ['tabs', /\^tabs\\s\+/, '## Tabs'],
@@ -36,15 +45,18 @@ test('SPEC documents every current user-facing parser family', () => {
     assert.match(parser, parserMarker, `parser marker missing for ${name}`);
     assert.ok(spec.includes(specMarker), `SPEC marker missing for ${name}`);
   }
+  assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked/);
+  assert.match(spec, /cancelled\s+ticked/);
 });
 
 test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /formal assurance boundary[\s\S]*\*\*beta\.32\*\*/i);
   assert.match(spec, /not\*\* an end-to-end verified compiler\/runtime theorem/i);
   assert.match(spec, /GUI execution is outside the beta\.32 Lean runtime-correspondence claim/);
+  assert.match(spec, /PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline/);
 });
 
-test('paper product boundary follows current and frozen native contracts without widening beta.32', () => {
+test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {
   assert.match(paper, /current native product contract: \*\*Native GUI IR 1\.3 \/ sealed payload v13 \/ runtime v1\.4\*\*/);
   assert.match(paper, /frozen TreeView compatibility contract: \*\*Native GUI IR 1\.2 \/ sealed payload v12 \/ runtime v1\.3\*\*/);
   assert.match(paper, /formal runtime-correspondence milestone: \*\*beta\.32\*\*/);
@@ -67,9 +79,7 @@ test('SEMANTICS documents prototype-free Things and structural own-field equalit
   const semantics = fs.readFileSync('docs/SEMANTICS.md', 'utf8');
   assert.match(semantics, /prototype-free/);
   assert.match(semantics, /JSON serialization is not the equality oracle/);
-  for (const field of ['__proto__', 'prototype', 'constructor']) {
-    assert.ok(semantics.includes(field), `SEMANTICS must name blocked Thing field ${field}`);
-  }
+  for (const field of ['__proto__', 'prototype', 'constructor']) assert.ok(semantics.includes(field), `SEMANTICS must name blocked Thing field ${field}`);
 });
 
 test('public language surface and compiler docs keep Things outside the beta.32 Wasm subset', () => {

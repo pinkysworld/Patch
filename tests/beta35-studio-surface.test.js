@@ -9,11 +9,13 @@ const css = fs.readFileSync('web/beta35-studio.css', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
-test('beta35 multi-select workflow remains visible after current native Slider parity lands', () => {
+test('beta35 multi-select workflow remains visible after current native v1.5 parity lands', () => {
   assert.match(index, /value="sliderWindow">Slider app<\/option>/i);
-  assert.match(index, /Current Studio:[^<]*multi-file project bundle v3,[^<]*source-backed Designer,[^<]*Slider,[^<]*multi-select ListBox,[^<]*Table,[^<]*TreeView and Tabs/i);
-  assert.match(index, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/i);
-  assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
+  for (const marker of ['Current Studio:', 'multi-file project bundle v3', 'source-backed Designer', 'multi-select ListBox', 'Table', 'TreeView', 'Tabs']) {
+    assert.ok(index.includes(marker), marker);
+  }
+  assert.match(index, /Native GUI IR 1\.4 \/ payload v14 \/ runtime v1\.5/i);
+  assert.match(index, /Older versioned contracts remain compatibility lines/i);
   assert.match(index, /Persistent application state still changes only through explicit <b>change<\/b>/i);
   assert.match(index, /href="#designer"[^>]*>Designer ↓<\/a>/);
   assert.ok(index.includes('./beta35-studio.css'));
@@ -31,6 +33,17 @@ test('beta35 sample uses the canonical Studio DOM synchronization path', () => {
     "new Event('change', { bubbles: true })",
     'stopImmediatePropagation()',
     "document.querySelector('#tabDesigner')?.click()"
+  ]) assert.ok(moduleSource.includes(marker), marker);
+});
+
+test('selected examples can be explicitly reloaded and fresh Studio opens Workshop Desk', () => {
+  for (const marker of [
+    "loadButton.id = 'loadSample'",
+    "loadButton.textContent = 'Load example'",
+    "sample.dispatchEvent(new Event('change', { bubbles: true }))",
+    "localStorage.getItem('patchStudio.project')",
+    "sample.value === 'workshopDesk'",
+    'queueMicrotask(loadSelectedSample)'
   ]) assert.ok(moduleSource.includes(marker), marker);
 });
 

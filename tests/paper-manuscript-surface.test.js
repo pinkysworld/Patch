@@ -4,14 +4,17 @@ import test from 'node:test';
 
 const read = path => fs.readFileSync(path, 'utf8');
 const pkg = JSON.parse(read('package.json'));
-const beta = /^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1];
-if (!beta) throw new Error(`Unexpected Patch version ${pkg.version}`);
+const packageBeta = Number(/^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1]);
+if (!Number.isInteger(packageBeta)) throw new Error(`Unexpected Patch version ${pkg.version}`);
 
-test('main manuscript reflects the beta32 assurance and current product-artifact boundary', () => {
+test('main manuscript keeps an explicit product snapshot beside the beta32 assurance boundary', () => {
   const tex = `${read('paper/main.tex')}\n${read('paper/related-work.tex')}`;
+  const boundary = /Beta (\d+) product artifact \/ Beta 32 assurance manuscript/i.exec(tex);
+  assert.ok(boundary, 'manuscript must name its product artifact snapshot and Beta 32 assurance boundary');
+  const manuscriptBeta = Number(boundary[1]);
+  assert.ok(manuscriptBeta <= packageBeta, `paper snapshot Beta ${manuscriptBeta} cannot be newer than package Beta ${packageBeta}`);
 
   for (const phrase of [
-    `Beta ${beta} product artifact / Beta 32 assurance manuscript`,
     'Beta 30 finite transitive exact call trees',
     'Beta 31 call-aware bridge',
     'Beta 32 invocation frames',
@@ -48,7 +51,7 @@ test('main manuscript reflects the beta32 assurance and current product-artifact
     assert.match(tex, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }
 
-  assert.match(tex, new RegExp(`Patch ${escapeRegExp(pkg.version)} retains Change IR 0\\.10`, 'i'));
+  assert.match(tex, /Patch 0\.2\.0-beta\.\d+ retains Change IR 0\.10/i);
   assert.match(tex, /Native GUI IR 1\.3/i);
   assert.match(tex, /payload v13/i);
   assert.match(tex, /runtime v1\.4/i);

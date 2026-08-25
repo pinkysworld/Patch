@@ -1,8 +1,10 @@
 # Patch Language Specification
 
-Status: **0.2.0-beta.35 development**
+Status: **0.2.0-beta.36 development**
 
 This document describes the current source-language surface. Patch is indentation-sensitive; two spaces are recommended. Product/runtime compatibility details live in `docs/ROADMAP.md` and `docs/NATIVE_GUI.md`. The formal assurance boundary is intentionally narrower than the language and remains the **beta.32** milestone described in `docs/FORMAL_MODEL.md` and `docs/RUNTIME_CORRESPONDENCE.md`.
+
+The current Ready desktop Window product contract is **Native GUI IR 1.4 / sealed payload v14 / native runtime v1.5**. Older versioned contracts remain frozen compatibility and reproducibility lines. Product versioning does not widen the beta.32 Lean assurance claim.
 
 ## Core rule
 
@@ -242,7 +244,7 @@ Unnamed legacy windows remain source-compatible.
 
 ## Window controls
 
-Current top-level Window controls are:
+The current source-language Window control families are:
 
 - `text`
 - `button`
@@ -255,6 +257,10 @@ Current top-level Window controls are:
 - `table`
 - `tree`
 - `tabs`
+- `panel`
+- `timer`
+- `picture`
+- `statusbar`
 
 Examples:
 
@@ -264,7 +270,15 @@ radio "Small", "Large" as size_choice
 combo "Red", "Green", "Blue" as color_choice
 listbox "One", "Two", "Three" as choices
 slider 0..100 as volume step 5
+panel as tools:
+  text "Grouped tools"
+  button "Run" as run_tools
+timer as refresh_clock interval 1000
+picture "Preview" as preview_image
+statusbar "Ready" as app_status
 ```
+
+`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.4 / payload v14 / runtime v1.5 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. In particular, PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
 
 Controls may use source-backed layout:
 
@@ -354,14 +368,19 @@ closed
 confirmed
 chosen
 cancelled
+ticked
 ```
 
-Example:
+Examples:
 
 ```patch
 when volume changed:
   change level:
-    set = volume
+    set = value
+
+when refresh_clock ticked:
+  change ticks:
+    add 1
 ```
 
 Event-local UI values are transient until explicitly committed by source code.
@@ -421,10 +440,11 @@ if else repeat make do return
 allow may increase decrease up to
 window as size at
 text button input checkbox radio combo listbox slider step
+panel timer interval picture statusbar
 table row tree node tabs tab
 menu item separator enabled checked shortcut
 dialog confirm open close save file
-when clicked changed closed confirmed chosen cancelled
+when clicked changed closed confirmed chosen cancelled ticked
 true false and or not
 ```
 

@@ -1,6 +1,6 @@
 {
   "name": "patch-lang",
-  "version": "0.2.0-beta.35",
+  "version": "0.2.0-beta.36",
   "description": "Patch: a tiny change-oriented programming language with semantic Change Contracts, Lean-checked finite transitive exact call trees, invocation-frame-aware direct-Wasm correspondence, source-backed Patch Studio, verified native runtime templates, cross-platform builds, direct WebAssembly and portable C99/FreeBSD execution",
   "type": "module",
   "bin": {
@@ -16,7 +16,7 @@
     "serve": "node scripts/serve.js",
     "check": "node scripts/check-examples.js",
     "check:syntax": "node scripts/check-js-syntax.js",
-    "check:project": "node scripts/check-project-surface.js && node scripts/check-checkout-extension-surface.js",
+    "check:project": "node scripts/check-project-surface.js && node scripts/check-project-invariants.js && node scripts/check-checkout-extension-surface.js",
     "fuzz:compiler": "node scripts/fuzz-compiler.js --seed 20260812 --cases 500",
     "test:differential": "node scripts/differential-backends.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
@@ -52,7 +52,7 @@
     "build:offline-compiler": "node scripts/build-offline-compiler.js",
     "release:manifest:example": "node scripts/release-manifest.js --out-dir release-meta Score.patchapp Score.wasm DirectRecipes.wasm DirectRecipes.c DirectRecipes.html CounterWindow.html",
     "build:site": "node scripts/build-site.js",
-    "check:site": "node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-v12.js && node scripts/check-site-beta35.js"
+    "check:site": "node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-v12.js && node scripts/check-site-beta36.js"
   },
   "engines": { "node": ">=22" },
   "license": "MIT",

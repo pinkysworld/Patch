@@ -18,6 +18,9 @@ const designer = doc?.querySelector('#designer') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
 const toolbar = doc?.querySelector('#designer .designer-toolbar') ?? null;
 let queued = false;
+let cachedSource = null;
+let cachedWindows = [];
+let cachedControls = [];
 
 if (doc) {
   installStylesheet();
@@ -241,12 +244,22 @@ function activeFormIndex(count) {
   return Math.max(0, Math.min(Number(select?.value) || 0, count - 1));
 }
 
+function refreshSourceSnapshot() {
+  const source = code?.value ?? '';
+  if (source === cachedSource) return;
+  cachedSource = source;
+  try { cachedWindows = listDesignerWindows(source); } catch { cachedWindows = []; }
+  try { cachedControls = listDesignerControls(source); } catch { cachedControls = []; }
+}
+
 function safeWindows() {
-  try { return listDesignerWindows(code.value); } catch { return []; }
+  refreshSourceSnapshot();
+  return cachedWindows;
 }
 
 function safeControls() {
-  try { return listDesignerControls(code.value); } catch { return []; }
+  refreshSourceSnapshot();
+  return cachedControls;
 }
 
 function setSource(source) {

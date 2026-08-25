@@ -18,12 +18,16 @@ import { buildStandaloneWebApp } from '../src/webapp.js';
 
 test('shared Form defaults cover every source-backed Studio control', () => {
   assert.deepEqual(Object.keys(PATCH_FORM_CONTROL_DEFAULTS), [
-    'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs'
+    'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs',
+    'panel', 'timer', 'picture', 'statusbar'
   ]);
   assert.deepEqual(formControlDefaultLayout('radio', 2), { x: 24, y: 120, width: 220, height: 84 });
   assert.deepEqual(formControlDefaultLayout('table', 1), { x: 24, y: 72, width: 400, height: 180 });
   assert.deepEqual(formControlDefaultLayout('tree', 1), { x: 24, y: 72, width: 300, height: 220 });
   assert.deepEqual(formControlDefaultLayout('tabs', 1), { x: 24, y: 72, width: 420, height: 240 });
+  assert.deepEqual(formControlDefaultLayout('panel', 1), { x: 24, y: 72, width: 280, height: 160 });
+  assert.deepEqual(formControlDefaultLayout('timer', 1), { x: 24, y: 72, width: 160, height: 36 });
+  assert.deepEqual(formControlDefaultLayout('statusbar', 1), { x: 24, y: 72, width: 400, height: 28 });
 });
 
 test('parser keeps optional source-backed form and control geometry', () => {

@@ -36,10 +36,10 @@ requireAll('Studio page', index, [
 ]);
 
 // Table originated in Native GUI IR 0.8 / payload v9. The current Ready tier is
-// Native GUI IR 1.3 / payload v13 / runtime v1.4 and must preserve the Table
-// contract while the frozen IR 1.2/v12 TreeView line remains available as
-// compatibility evidence. Product code reaches the current tier through the
-// stable native-current-contract facade instead of importing v13 directly.
+// Native GUI IR 1.4 / payload v14 / runtime v1.5 and must preserve that Table
+// contract while historical v13 and frozen v12 implementation modules remain
+// packaged as compatibility evidence. Product code reaches the current tier
+// through the stable native-current-contract facade rather than importing v13.
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio native Ready builder', nativeBuild, [
   "./src/native-current-contract.js",
@@ -95,8 +95,8 @@ requireAll('Frozen native TreeView product facade', frozen, [
 ]);
 
 const nativeGuiV13 = read('_site/src/native-gui-ir-v13.js');
-requireAll('Current Native GUI IR 1.3 implementation module', nativeGuiV13, [
+requireAll('Historical Native GUI IR 1.3 implementation module', nativeGuiV13, [
   "PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'", 'buildNativeGuiIRV13'
 ]);
 
-console.log('ok Table-compatible current Patch Studio site surface through stable native facade on Native GUI IR 1.3 / payload v13 / runtime v1.4');
+console.log('ok Table compatibility is preserved from payload v9 through the current Native GUI IR 1.4 / payload v14 / runtime v1.5 facade.');
