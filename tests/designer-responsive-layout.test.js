@@ -12,6 +12,7 @@ import {
 } from '../web/designer-layout-policy.js';
 
 const browserModule = fs.readFileSync('web/designer-responsive-layout.js', 'utf8');
+const layoutCss = fs.readFileSync('web/designer-responsive-layout.css', 'utf8');
 const html = fs.readFileSync('web/index.html', 'utf8');
 const sw = fs.readFileSync('web/sw.js', 'utf8');
 
@@ -32,6 +33,16 @@ test('source-backed policy editor inserts replaces and removes the canonical adj
   assert.match(next, /  # @layout anchor right bottom\n  button "Save"/);
   next = setDesignerLayoutPolicy(next, parse(next)[0].body[0].line, { kind: 'fixed' });
   assert.equal(next, base);
+});
+
+test('Panel uses the same source-backed Anchors and Dock contract as ordinary top-level controls', () => {
+  const base = `window "Main" as main size 640, 420:\n  panel as tools at 24, 24 size 280, 160:\n    text "Tools"\n`;
+  let next = setDesignerLayoutPolicy(base, parse(base)[0].body[0].line, { kind: 'anchor', edges: ['left', 'right', 'top'] });
+  assert.match(next, /# @layout anchor left right top\n  panel as tools/);
+  assert.deepEqual(readDesignerLayoutPolicy(next, parse(next)[0].body[0].line), { kind: 'anchor', edges: ['left', 'right', 'top'] });
+  next = setDesignerLayoutPolicy(next, parse(next)[0].body[0].line, { kind: 'dock', side: 'fill' });
+  assert.match(next, /# @layout dock fill\n  panel as tools/);
+  assert.doesNotThrow(() => parse(next));
 });
 
 test('anchor resize policies preserve margins or stretch dimensions predictably', () => {
@@ -64,6 +75,35 @@ test('Designer preset values round-trip canonical policies', () => {
   }
 });
 
+test('Object Inspector exposes Delphi-style Layout Mode, four Anchors, Dock and presets', () => {
+  for (const marker of [
+    'PATCH_DESIGNER_LAYOUT_INSPECTOR_VERSION',
+    'designerInspectorLayoutSection',
+    'designerInspectorLayoutMode',
+    'designerInspectorAnchorFields',
+    'data-layout-anchor="top"',
+    'data-layout-anchor="left"',
+    'data-layout-anchor="right"',
+    'data-layout-anchor="bottom"',
+    'designerInspectorDockSide',
+    'anchor:left+right+top',
+    'anchor:left+right+top+bottom',
+    'dock:fill',
+    'source-backed'
+  ]) assert.ok(browserModule.includes(marker), marker);
+  assert.match(layoutCss, /designer-layout-inspector/);
+  assert.match(layoutCss, /designer-anchor-box/);
+  assert.match(layoutCss, /anchor-center/);
+});
+
+test('Object Inspector preserves component boundaries for nonvisual Timer and docked StatusBar', () => {
+  assert.match(browserModule, /type === 'timer'/);
+  assert.match(browserModule, /type === 'statusbar'/);
+  assert.match(browserModule, /kind: 'dock', side: 'bottom'/);
+  assert.match(browserModule, /Timer is nonvisual and has no Form resize policy/);
+  assert.match(browserModule, /StatusBar remains docked to the bottom/);
+});
+
 test('responsive Designer module is syntax-valid source-backed and loaded before Form resize handling', () => {
   execFileSync(process.execPath, ['--check', 'web/designer-layout-policy.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/designer-responsive-layout.js'], { stdio: 'pipe' });
@@ -74,5 +114,6 @@ test('responsive Designer module is syntax-valid source-backed and loaded before
   assert.match(sw, /\.\/designer-responsive-layout\.css/);
   assert.match(browserModule, /patch:form-resized/);
   assert.match(browserModule, /updateDesignerControl/);
+  assert.match(browserModule, /setDesignerLayoutPolicy/);
   assert.doesNotMatch(browserModule, /localStorage|sessionStorage/);
 });
