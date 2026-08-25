@@ -15,7 +15,7 @@ test('beta35 multi-select workflow remains visible after current native v1.5 par
     assert.ok(index.includes(marker), marker);
   }
   assert.match(index, /Native GUI IR 1\.4 \/ payload v14 \/ runtime v1\.5/i);
-  assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
+  assert.match(index, /Older versioned contracts remain compatibility lines/i);
   assert.match(index, /Persistent application state still changes only through explicit <b>change<\/b>/i);
   assert.match(index, /href="#designer"[^>]*>Designer ↓<\/a>/);
   assert.ok(index.includes('./beta35-studio.css'));
