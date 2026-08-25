@@ -560,10 +560,36 @@ function createControlElement(control, context) {
     if (context.interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: Number(input.value) }));
     else input.disabled = true;
     el.append(input, value);
+  } else if (control.type === 'picture') {
+    el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'patch-picture';
+    el.dataset.pictureSource = String(control.source ?? '');
+    el.setAttribute('aria-label', control.text || control.id || 'PictureBox');
+    const image = document.createElement('img');
+    image.alt = control.text || control.id || 'PictureBox';
+    image.draggable = false;
+    const fallback = document.createElement('span');
+    fallback.className = 'patch-picture-fallback';
+    fallback.textContent = control.text || control.id || 'PictureBox';
+    const source = safePictureSource(control.source);
+    if (source) {
+      image.addEventListener('load', () => el.classList.add('is-loaded'));
+      image.addEventListener('error', () => el.classList.remove('is-loaded'));
+      image.src = source;
+    }
+    el.append(image, fallback);
+    if (context.interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
   } else if (control.type === 'tree') {
     el = createTreeElement(control, context);
   }
   return el ?? null;
+}
+
+function safePictureSource(value) {
+  const source = String(value ?? '').trim();
+  if (!source || /^javascript:/i.test(source) || /^data:(?!image\/)/i.test(source)) return '';
+  return source;
 }
 
 function createTreeElement(control, context) {
