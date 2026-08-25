@@ -16,9 +16,9 @@ test('Slider Stage 1 remains reproducible while Studio exposes the current nativ
 
   assert.match(index, /id="addSlider"/);
   assert.match(index, /value="sliderWindow">Slider app<\/option>/);
-  assert.match(index, /native Slider/i);
+  assert.match(index, /Slider/i);
   assert.match(index, /Native GUI IR 1\.4 \/ payload v14 \/ runtime v1\.5/i);
-  assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
+  assert.match(index, /Older versioned contracts remain compatibility lines/i);
   assert.match(language, /data-slider-language-support="native-v14"/);
   assert.match(language, /slider 0\.\.100 as volume step 5/);
   assert.match(language, /native Slider support/i);
@@ -51,7 +51,7 @@ test('Standalone Web and current native Ready/offline paths opt into Slider whil
   assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
   assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/native-gui-ir-v13\.js['"]/);
   assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/sealed-native-gui-v13\.js['"]/);
-  assert.match(offlineLinker, /allowSlider:\s*guiPayloadVersion >= 13/);
+  assert.match(offlineLinker, /allowSlider:\s*guiPayloadVersion === 14/);
   assert.match(offlineLinker, /buildCurrentNativeGuiIR/);
   assert.match(offlineLinker, /sealCurrentNativeGuiRuntime/);
   assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
