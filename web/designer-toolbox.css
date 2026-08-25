@@ -137,8 +137,10 @@
   line-height: 1.35;
 }
 
-/* Timer joins the compact desktop rail, after Tabs. */
-#designer #addTimer { top: 423px; }
+/* Current Form chrome and nonvisual components continue the compact desktop rail. */
+#designer #addStatusbar { top: 423px; }
+#designer #addStatusbar::before { content: "▰"; }
+#designer #addTimer { top: 457px; }
 #designer #addTimer::before { content: "◷"; }
 
 @media (max-width: 1120px) {
