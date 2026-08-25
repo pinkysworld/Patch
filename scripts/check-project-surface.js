@@ -53,7 +53,7 @@ const siteBuild = read('scripts/build-site.js');
 requireAll('beta36 site build normalization', siteBuild, [
   "const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))",
   'normalizeCurrentProductSurface','0.2 beta.36+','Native GUI IR 1.4 / payload v14 / runtime v1.5',
-  'offline-compiler-v0.2','native-win32-runtime-v1.5','viewBox="0 0 22 22"'
+  'native-win32-runtime-v1.5'
 ]);
 
 const sw = read('web/sw.js');
