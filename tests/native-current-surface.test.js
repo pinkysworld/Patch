@@ -59,15 +59,17 @@ test('native compatibility documentation makes current versus frozen ownership e
   assert.equal(docs.includes('The remaining work is keeping unversioned historical bases'), false);
 });
 
-test('README and public website name both live native contracts', () => {
+test('README and public website expose the native contract boundary without requiring identical prose', () => {
   const readme = read('README.md');
   const docsPage = read('web/docs.html');
   const downloads = read('web/downloads.html');
   assert.match(readme, /native-current-contract\.js/);
   assert.match(readme, /native-frozen-contract\.js/);
   assert.match(docsPage, /docs\/NATIVE_COMPATIBILITY\.md/);
-  assert.match(docsPage, /two live native product contracts/);
-  assert.match(downloads, /Those two live contracts are the product import surface/);
+  assert.match(downloads, /Native GUI IR <strong>1\.4<\/strong>/);
+  assert.match(downloads, /payload <strong>v14<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.5<\/strong>/);
+  assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4 remains the Slider-capable compatibility line/);
 });
 
 function relativeImports(source) {

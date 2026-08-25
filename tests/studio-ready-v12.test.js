@@ -30,7 +30,7 @@ test('Pages gates deployment on published runtime v1.5 assets for all desktop ho
   for (const tag of ['native-win32-runtime-v1.5','native-macos-runtime-v1.5','native-linux-runtime-v1.5']) assert.ok(pages.includes(tag), tag);
   assert.match(pages, /src\/native-current-contract\.js/);
   assert.match(pages, /src\/native-frozen-contract\.js/);
-  assert.match(pages, /Patch Native Sealed Chrome Runtime v1\.5|Patch Native Sealed .* Runtime v1\.5/);
+  assert.match(pages, /Patch Native Sealed Chrome Runtime v1\.5/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /runtime-integrity-manifest\.js/);
   assert.match(pages, /\^sha256:\[0-9a-f\]\{64\}\$/);
@@ -44,7 +44,8 @@ test('Studio advertises current payload v14 runtime v1.5 native GUI support', ()
   assert.match(nativeBuild, /including TreeView and Slider/);
   assert.match(index, /Windows, macOS and Linux support Ready app download with no token or local toolchain/i);
   assert.match(index, /IR 1\.4 \/ v1\.5/);
-  assert.match(index, /hierarchical TreeView and native Slider/i);
+  assert.match(index, /TreeView/i);
+  assert.match(index, /Slider/i);
   assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
 });
 

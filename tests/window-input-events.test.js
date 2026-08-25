@@ -13,11 +13,9 @@ window "Hello":
 
 when name changed:
   show value`;
-
   const runtime = new PatchInterpreter();
   const started = runtime.run(source);
   assert.equal(started.state.name, 'before');
-
   const changed = triggerWindowEvent(runtime, 'name', 'changed', { value: 'Mia' });
   assert.deepEqual(changed.output, ['Mia']);
   assert.equal(changed.state.name, 'before');
@@ -34,11 +32,9 @@ window "Hello":
 when name changed:
   change name:
     set = value`;
-
   const runtime = new PatchInterpreter();
   runtime.run(source);
   const changed = triggerWindowEvent(runtime, 'name', 'changed', { value: 'Mia' });
-
   assert.equal(changed.state.name, 'Mia');
   assert.equal(changed.history.length, 1);
   assert.equal(changed.history[0].target, 'name');
@@ -58,10 +54,7 @@ when name changed:
   show value`;
   const runtime = new PatchInterpreter();
   runtime.run(source);
-  assert.throws(
-    () => triggerWindowEvent(runtime, 'name', 'changed'),
-    /needs an event-local value/
-  );
+  assert.throws(() => triggerWindowEvent(runtime, 'name', 'changed'), /needs an event-local value/);
 });
 
 test('shared Window preflight accepts input changed and still rejects unsupported pairs', () => {
@@ -80,6 +73,6 @@ when close_button changed:
   show 1`, { kind: 'window' });
   assert.throws(
     () => validateWindowRuntimeSupport(unsupported),
-    /support 'clicked' on buttons\/menu items and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios/
+    /support 'clicked' on buttons\/menu items\/PictureBox, 'ticked' on Timer, and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios\/tables\/trees\/sliders/
   );
 });
