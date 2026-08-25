@@ -202,6 +202,24 @@ function beginPointerEdit(event, element, mode) {
   if (!target) return;
   element.setPointerCapture?.(event.pointerId);
 
+  const release = pointerId => {
+    if (pointerId === undefined || !element.releasePointerCapture) return;
+    if (element.hasPointerCapture?.(pointerId) === false) return;
+    try { element.releasePointerCapture(pointerId); } catch { /* capture may already be gone after pointercancel */ }
+  };
+  const restoreStartLayout = () => {
+    target.style.left = `${startLayout.x}px`;
+    target.style.top = `${startLayout.y}px`;
+    target.style.width = `${startLayout.width}px`;
+    target.style.height = `${startLayout.height}px`;
+    positionResizeHandle(target, selector);
+  };
+  const cleanup = finishEvent => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', finish);
+    window.removeEventListener('pointercancel', cancel);
+    release(finishEvent?.pointerId);
+  };
   const move = moveEvent => {
     const dx = Math.round(moveEvent.clientX - startX);
     const dy = Math.round(moveEvent.clientY - startY);
@@ -215,14 +233,12 @@ function beginPointerEdit(event, element, mode) {
       positionResizeHandle(target, selector);
     }
   };
-
   const finish = finishEvent => {
-    window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', finish);
     const left = parseInt(target.style.left, 10);
     const top = parseInt(target.style.top, 10);
     const width = parseInt(target.style.width, 10);
     const height = parseInt(target.style.height, 10);
+    cleanup(finishEvent);
     try {
       let next = updateDesignerControl(code.value, selector, {
         x: Number.isFinite(left) ? left : startLayout.x,
@@ -233,12 +249,19 @@ function beginPointerEdit(event, element, mode) {
       next = growFormForControl(next, selector);
       pendingReveal = { kind: 'control', ...selector };
       setSource(next);
-    } catch (error) { showDesignerError(error); }
-    element.releasePointerCapture?.(finishEvent.pointerId);
+    } catch (error) {
+      restoreStartLayout();
+      showDesignerError(error);
+    }
+  };
+  const cancel = cancelEvent => {
+    cleanup(cancelEvent);
+    restoreStartLayout();
   };
 
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', finish, { once: true });
+  window.addEventListener('pointercancel', cancel, { once: true });
 }
 
 function observe(target) {
