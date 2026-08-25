@@ -112,8 +112,8 @@ function normalizeCurrentProductSurface(name, source) {
 
   if (name === 'index.html') {
     html = html.replace(
-      '<svg viewBox="0 0 32 32" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg>',
-      '<svg viewBox="0 0 22 22" focusable="false" shape-rendering="crispEdges"><path fill="currentColor" fill-rule="evenodd" d="M3 2H18V12H8V20H3ZM8 6H13V8H8Z"/></svg>'
+      '<svg viewBox="0 0 22 22" focusable="false" shape-rendering="crispEdges"><path fill="currentColor" fill-rule="evenodd" d="M3 2H18V12H8V20H3ZM8 6H13V8H8Z"/></svg>',
+      '<svg viewBox="0 0 32 32" focusable="false" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg>'
     );
   }
   return html;
