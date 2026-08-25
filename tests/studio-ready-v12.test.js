@@ -43,10 +43,11 @@ test('Studio advertises current payload v14 runtime v1.5 native GUI support', ()
   assert.match(nativeBuild, /runtime v1\.5/i);
   assert.match(nativeBuild, /including TreeView and Slider/);
   assert.match(index, /Windows, macOS and Linux support Ready app download with no token or local toolchain/i);
+  assert.match(index, /Native GUI IR 1\.4 \/ payload v14 \/ runtime v1\.5/i);
   assert.match(index, /IR 1\.4 \/ v1\.5/);
   assert.match(index, /TreeView/i);
   assert.match(index, /Slider/i);
-  assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
+  assert.match(index, /Older versioned contracts remain compatibility lines/i);
 });
 
 test('payload v12 runtime v1.3 remains an explicit frozen compatibility line', () => {
