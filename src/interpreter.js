@@ -219,6 +219,7 @@ export class PatchInterpreter {
           item.max=node.max;
           item.step=node.step;
         }
+        if(node.control==='panel') item.children=this.buildUIItems(node.body);
         items.push(item);
       } else if(node.kind==='tabs'){
         items.push({
