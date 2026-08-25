@@ -16,6 +16,43 @@ export function listDesignerFocusOrder(source, windowIndex = 0) {
     .map((control, index) => ({ ...control, focusIndex: index }));
 }
 
+export function reorderDesignerFocusOrder(source, selector, direction) {
+  const controls = listDesignerControls(source);
+  const current = controls.find(control =>
+    control.windowIndex === selector?.windowIndex && control.controlIndex === selector?.controlIndex
+  );
+  if (!current || !FOCUSABLE_TYPES.has(current.type) || !current.id) {
+    throw new Error('Focus Order selection must be a named focusable Designer control.');
+  }
+  if (direction !== 'earlier' && direction !== 'later') {
+    throw new Error(`Unknown Focus Order direction '${direction}'.`);
+  }
+
+  const focusable = controls.filter(control =>
+    control.windowIndex === current.windowIndex && FOCUSABLE_TYPES.has(control.type) && control.id
+  );
+  const focusIndex = focusable.findIndex(control => control.controlIndex === current.controlIndex);
+  const targetFocusIndex = direction === 'earlier' ? focusIndex - 1 : focusIndex + 1;
+  if (focusIndex < 0 || targetFocusIndex < 0 || targetFocusIndex >= focusable.length) {
+    return { source: String(source), moved: false, control: current };
+  }
+
+  const targetControlIndex = focusable[targetFocusIndex].controlIndex;
+  const zDirection = direction === 'earlier' ? 'backward' : 'forward';
+  let nextSource = String(source);
+  let active = current;
+  while (active.controlIndex !== targetControlIndex) {
+    const result = reorderDesignerControl(nextSource, {
+      windowIndex: active.windowIndex,
+      controlIndex: active.controlIndex
+    }, zDirection);
+    if (!result.moved) break;
+    nextSource = result.source;
+    active = result.control;
+  }
+  return { source: nextSource, moved: nextSource !== String(source), control: active };
+}
+
 function install() {
   if (!toolbar || !code || !canvas || doc.querySelector('#designerFocusOrder')) return;
   const button = doc.createElement('button');
@@ -87,9 +124,8 @@ function handleDialogAction(event, dialog) {
     dialog.close?.();
     return;
   }
-  const direction = action === 'earlier' ? 'backward' : 'forward';
   try {
-    const result = reorderDesignerControl(code.value, selector, direction);
+    const result = reorderDesignerFocusOrder(code.value, selector, action);
     if (!result.moved) return;
     setSource(result.source);
     queueMicrotask(() => {
