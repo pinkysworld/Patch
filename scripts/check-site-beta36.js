@@ -40,7 +40,7 @@ requireAll('beta36 RAD arrange surface', multi, [
 ]);
 requireAll('beta36 RAD Object Inspector', workspace, ['Object Inspector','designer-event-inspector.js','designer-focus-order.js','designer-toolbox.js']);
 requireAll('beta36 RAD event inspector', events, ['Properties','Events','Create handler','Open handler']);
-requireAll('beta36 RAD component palette', toolbox, ['Component Palette','componentSearch','Ctrl/Cmd+Shift+A']);
+requireAll('beta36 RAD component palette', toolbox, ['Component Palette','designerComponentSearch','Ctrl/Cmd+Shift+A']);
 
 requireAll('beta36 current native facade', current, [
   "native-gui-1.4/payload-14/runtime-1.5","PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.5'",
