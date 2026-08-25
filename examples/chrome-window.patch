@@ -1,0 +1,24 @@
+create number ticks = 0
+create text status = "Ready"
+create text poster = "Ship"
+
+window "Chrome Stage 1" as main size 640, 420:
+  panel as group at 24, 24 size 280, 160:
+    text "Grouped tools"
+    picture "Ship" as poster
+    button "Ping" as ping
+  timer as clock interval 1000 at 320, 24 size 180, 36
+  text "Ticks {ticks}" at 320, 76 size 200, 28
+  statusbar "{status}" as status at 0, 392 size 640, 28
+
+when clock ticked:
+  change ticks:
+    add 1
+  change status:
+    set = "Ticked"
+when ping clicked:
+  change status:
+    set = "Ping"
+when poster clicked:
+  change status:
+    set = "Picture"

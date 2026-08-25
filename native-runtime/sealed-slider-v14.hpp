@@ -69,3 +69,12 @@ static bool PatchConvertPayloadV13ToV12(const std::vector<uint8_t>& input,std::v
 
 static const PatchSliderV14* PatchSliderForNativeIndexV14(const std::vector<PatchSliderV14>& sliders,int nativeIndex){for(const auto& slider:sliders)if(slider.nativeIndex==nativeIndex)return &slider;return nullptr;}
 static const PatchSliderV14* PatchSliderForIdV14(const std::vector<PatchSliderV14>& sliders,const std::string& id){for(const auto& slider:sliders)if(slider.id==id)return &slider;return nullptr;}
+
+// Later runtimes may compile v1.4 as a private compatibility layer. These
+// aliases are opt-in only and leave ordinary runtime-v1.4 builds unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V15_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V15_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V15_RESTORE_MAIN
+#define main PATCH_RUNTIME_V15_RESTORE_MAIN
+#endif

@@ -9,6 +9,7 @@ import {
 } from '../src/native-gui-ir-v13.js';
 import { buildNativeGuiIRV12 } from '../src/native-gui-ir-v12.js';
 import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
+import { flattenCurrentNativeGuiControls } from '../src/native-current-contract.js';
 import { emitWin32GuiCppV14 } from '../src/win32-gui-v14.js';
 import { emitAppKitGuiObjCppV14 } from '../src/appkit-gui-v14.js';
 import { emitGtkGuiCppV14 } from '../src/gtk-gui-v14.js';
@@ -63,11 +64,11 @@ test('Native GUI build plan selects additive Slider backend 1.4 automatically', 
   const compiled = compile(SOURCE, { name: 'NativeSlider', kind: 'window' });
   const plan = buildNativeGuiPlan(compiled);
   assert.equal(plan.tier, 'slider-v14');
-  assert.equal(plan.gui.version, '1.3');
+  assert.equal(plan.gui.version, '1.4');
   assert.equal(plan.features.slider, true);
 });
 
-test('Native GUI 1.3 composes Slider with TreeView and nested Tabs without downgrading either', () => {
+test('Native GUI 1.4 composes Slider with TreeView and nested Tabs without downgrading either', () => {
   const mixed = `create number volume = 25
 create list selected = []
 window "Mixed" as main size 640, 420:
@@ -87,10 +88,10 @@ when files changed:
 `;
   const plan = buildNativeGuiPlan(compile(mixed, { name: 'MixedNative', kind: 'window' }));
   assert.equal(plan.tier, 'slider-v14');
-  assert.equal(plan.gui.version, '1.3');
+  assert.equal(plan.gui.version, '1.4');
   assert.equal(plan.features.slider, true);
   assert.equal(plan.features.tree, true);
-  const controls = flattenNativeGuiControlsV13(plan.gui);
+  const controls = flattenCurrentNativeGuiControls(plan.gui);
   assert.equal(controls.find(control => control.id === 'volume').type, 'slider');
   assert.equal(controls.find(control => control.id === 'files').type, 'tree');
   assert.ok(controls.find(control => control.id === 'volume').parentTabIndex >= 0);

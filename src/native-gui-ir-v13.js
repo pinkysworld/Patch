@@ -12,6 +12,7 @@ export function buildNativeGuiIRV13(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
     throw new NativeGuiError('A compiled Patch Window program is required for native GUI 1.3 lowering.');
   }
+  rejectChromeStage1(compiled.ast);
   const compatibility = cloneCompiledWithPolicies(compiled);
   const sliders = rewriteSlidersForV12Compatibility(compatibility.ast, compiled.ast);
   const ir = buildNativeGuiIRV12(compatibility);
@@ -286,6 +287,24 @@ function cloneCompiledWithPolicies(compiled) {
   return cloned;
 }
 function collectLayoutNodes(nodes, out) { for (const node of nodes ?? []) { if (node.kind === 'uiControl' || node.kind === 'tabs') out.push(node); if (node.body) collectLayoutNodes(node.body, out); if (node.thenBody) collectLayoutNodes(node.thenBody, out); if (node.elseBody) collectLayoutNodes(node.elseBody, out); } }
+function rejectChromeStage1(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && ['panel', 'timer', 'picture', 'statusbar'].includes(node.control)) {
+      throw new NativeGuiError(
+        `line ${node.line ?? '?'}: Native GUI IR 1.3 does not include ${displayChromeControl(node.control)}. ` +
+        'Use Native GUI IR 1.4 / payload v14 / runtime v1.5 for Panel, Timer, PictureBox and StatusBar.'
+      );
+    }
+    if (node.body) rejectChromeStage1(node.body);
+    if (node.thenBody) rejectChromeStage1(node.thenBody);
+    if (node.elseBody) rejectChromeStage1(node.elseBody);
+  }
+}
+function displayChromeControl(type) {
+  if (type === 'picture') return 'PictureBox';
+  if (type === 'statusbar') return 'StatusBar';
+  return type[0].toUpperCase() + type.slice(1);
+}
 function cloneNativeGuiIrWithPolicies(input) { const layouts=[]; const collect=controls=>{for(const control of controls??[]){layouts.push(control.layout?.policy?structuredClone(control.layout.policy):null);if(control.type==='tabs')for(const page of control.pages??[])collect(page.controls);}}; for(const form of input.forms??[])collect(form.controls); const cloned=structuredClone(input); let cursor=0; const restore=controls=>{for(const control of controls??[]){const policy=layouts[cursor++];if(policy&&control.layout)defineLayoutPolicy(control.layout,policy);if(control.type==='tabs')for(const page of control.pages??[])restore(page.controls);}};for(const form of cloned.forms??[])restore(form.controls);return cloned; }
 function cloneLayoutWithPolicy(layout) { if (!layout) return layout; const cloned=structuredClone(layout); if(layout.policy)defineLayoutPolicy(cloned,structuredClone(layout.policy)); return cloned; }
 function defineLayoutPolicy(layout, policy) { Object.defineProperty(layout,'policy',{value:policy,enumerable:false,configurable:true,writable:false}); }
