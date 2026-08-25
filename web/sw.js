@@ -46,6 +46,9 @@ self.addEventListener('fetch', event => {
       const cached = await caches.match(event.request, { ignoreSearch: true });
       if (cached) return cached;
 
+      // Only real document navigations may fall back to the cached Studio shell.
+      // Returning index.html for a missing JavaScript/CSS/runtime request would make
+      // the page look loaded while module evaluation fails with HTML-as-code.
       if (navigation) {
         const shell = await caches.match(versioned('./index.html'), { ignoreSearch: true });
         if (shell) return shell;
