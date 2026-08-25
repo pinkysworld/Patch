@@ -7,6 +7,7 @@ const root = process.cwd();
 const sourceWeb = path.join(root, 'web');
 const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
 const SITE_HTML_FILES = ['index.html','language.html','docs.html','paper.html','help.html'];
 const SITE_SRC_FILES = [
@@ -53,7 +54,8 @@ fs.mkdirSync(out, { recursive: true });
 
 for (const name of SITE_HTML_FILES) {
   const source = fs.readFileSync(path.join(sourceWeb, name), 'utf8');
-  fs.writeFileSync(path.join(out, name), versionLocalAssetReferences(source, siteRevision));
+  const normalized = normalizeCurrentProductSurface(name, source);
+  fs.writeFileSync(path.join(out, name), versionLocalAssetReferences(normalized, siteRevision));
 }
 
 for (const name of SITE_WEB_STATIC_FILES) {
@@ -81,14 +83,43 @@ for (const name of SITE_SRC_FILES) {
 validateGeneratedModuleClosure();
 validateGeneratedModuleRevisions();
 validateGeneratedHtmlAssetClosure();
-console.log(`built _site/ for Patch revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
+console.log(`built _site/ for Patch ${pkg.version} revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
+
+function normalizeCurrentProductSurface(name, source) {
+  let html = source
+    .replaceAll('0.2.0-beta.35', pkg.version)
+    .replaceAll('0.2 beta.35+', '0.2 beta.36+')
+    .replaceAll('0.2 beta.35', '0.2 beta.36')
+    .replaceAll('Native GUI IR 1.3 / payload v13 / runtime v1.4', 'Native GUI IR 1.4 / payload v14 / runtime v1.5')
+    .replaceAll('Native GUI IR <strong>1.3</strong>', 'Native GUI IR <strong>1.4</strong>')
+    .replaceAll('payload <strong>v13</strong>', 'payload <strong>v14</strong>')
+    .replaceAll('runtime <strong>v1.4</strong>', 'runtime <strong>v1.5</strong>')
+    .replaceAll('Native GUI IR 1.3 as payload v13', 'Native GUI IR 1.4 as payload v14')
+    .replaceAll('current runtime v1.4 templates', 'current runtime v1.5 templates')
+    .replaceAll('Current runtime v1.4 templates', 'Current runtime v1.5 templates')
+    .replaceAll('IR 1.3 / v1.4', 'IR 1.4 / v1.5')
+    .replaceAll('native-win32-runtime-v1.4', 'native-win32-runtime-v1.5')
+    .replaceAll('native-macos-runtime-v1.4', 'native-macos-runtime-v1.5')
+    .replaceAll('native-linux-runtime-v1.4', 'native-linux-runtime-v1.5')
+    .replaceAll('offline-compiler-v0.1', 'offline-compiler-v0.2')
+    .replaceAll('Patch Offline Compiler v0.1', 'Patch Offline Compiler v0.2');
+
+  if (name === 'index.html') {
+    html = html.replace(
+      '<svg viewBox="0 0 32 32" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg>',
+      '<svg viewBox="0 0 22 22" focusable="false" shape-rendering="crispEdges"><path fill="currentColor" fill-rule="evenodd" d="M3 2H18V12H8V20H3ZM8 6H13V8H8Z"/></svg>'
+    );
+  }
+  return html;
+}
 
 function computeSiteRevision() {
   const files = [
     ...SITE_HTML_FILES.map(name => path.join(sourceWeb, name)),
     ...SITE_WEB_STATIC_FILES.map(name => path.join(sourceWeb, name)),
     ...SITE_WEB_MODULE_FILES.map(name => path.join(sourceWeb, name)),
-    ...SITE_SRC_FILES.map(name => path.join(sourceSrc, name))
+    ...SITE_SRC_FILES.map(name => path.join(sourceSrc, name)),
+    path.join(root, 'package.json')
   ].sort();
   const hash = crypto.createHash('sha256');
   for (const file of files) {
@@ -106,10 +137,8 @@ function versionLocalAssetReferences(html, revision) {
 }
 
 function versionRelativeModuleSpecifiers(source, revision) {
-  // Import/export declarations may span lines. Keep the match bounded by the
-  // first quoted module specifier instead of treating a newline as a boundary.
-  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'"]*?\s+from\s+)?)(['"])(\.{1,2}\/[^'"]+\.js)\2/gm;
-  const dynamicPattern = /(\bimport\s*\(\s*)(['"])(\.{1,2}\/[^'"]+\.js)\2(\s*\))/g;
+  const staticPattern = /(^\s*(?:import|export)\s+(?:[^'\"]*?\s+from\s+)?)(['\"])(\.{1,2}\/[^'\"]+\.js)\2/gm;
+  const dynamicPattern = /(\bimport\s*\(\s*)(['\"])(\.{1,2}\/[^'\"]+\.js)\2(\s*\))/g;
   return source
     .replace(staticPattern, (_match, prefix, quote, specifier) => `${prefix}${quote}${specifier}?v=${revision}${quote}`)
     .replace(dynamicPattern, (_match, prefix, quote, specifier, suffix) => `${prefix}${quote}${specifier}?v=${revision}${quote}${suffix}`);
@@ -183,9 +212,9 @@ function walkJs(dir) {
 function relativeModuleSpecifiers(source) {
   const found = new Set();
   const patterns = [
-    /^\s*import\s+(?:[^'"]*?\s+from\s+)?['"](\.{1,2}\/[^'"]+)['"]/gm,
-    /^\s*export\s+[^'"]*?\s+from\s+['"](\.{1,2}\/[^'"]+)['"]/gm,
-    /\bimport\s*\(\s*['"](\.{1,2}\/[^'"]+)['"]\s*\)/g
+    /^\s*import\s+(?:[^'\"]*?\s+from\s+)?['\"](\.{1,2}\/[^'\"]+)['\"]/gm,
+    /^\s*export\s+[^'\"]*?\s+from\s+['\"](\.{1,2}\/[^'\"]+)['\"]/gm,
+    /\bimport\s*\(\s*['\"](\.{1,2}\/[^'\"]+)['\"]\s*\)/g
   ];
   for (const pattern of patterns) {
     for (const match of source.matchAll(pattern)) found.add(match[1]);
