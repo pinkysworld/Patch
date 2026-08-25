@@ -1,3 +1,7 @@
+.studio {
+  width: min(1720px, 100%);
+}
+
 .studio-jump {
   min-height: 36px;
   display: inline-flex;
