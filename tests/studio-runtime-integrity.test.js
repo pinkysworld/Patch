@@ -34,14 +34,15 @@ test('runtime integrity wrapper loads before the native builder and covers every
   assert.match(runtimeIntegrity, /integrity manifest is missing/);
 });
 
-test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.4 releases', () => {
+test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.5 releases', () => {
   assert.match(pages, /RUNTIME_TAG: studio-runtime-v0\.6/);
-  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.4/);
-  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.4/);
-  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.4/);
+  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.5/);
+  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.5/);
+  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.5/);
   assert.match(pages, /for tag in "\$RUNTIME_TAG" "\$WIN32_RUNTIME_TAG" "\$LINUX_NATIVE_RUNTIME_TAG" "\$MACOS_NATIVE_RUNTIME_TAG"/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
+  assert.match(pages, /Patch Native Sealed Chrome Runtime v1\.5/);
 });
 
 test('Pages refuses a false green when required runtime releases are incomplete', () => {
@@ -65,7 +66,7 @@ test('Pages deploys only after the canonical current-site gate succeeds', () => 
   assert.match(pages, /run: npm run check:site/);
   assert.doesNotMatch(pages, /run: node scripts\/check-site-beta34\.js/);
   assert.match(pages, /scripts\/check-site-v12\.js/);
-  assert.match(pages, /scripts\/check-site-beta35\.js/);
+  assert.match(pages, /scripts\/check-site-beta36\.js/);
   const validate = pages.indexOf('run: npm run check:site');
   const upload = pages.indexOf('uses: actions/upload-pages-artifact@v5');
   const deploy = pages.indexOf('uses: actions/deploy-pages@v5');
@@ -84,14 +85,14 @@ test('Pages verifies the canonical and public deployed site with one revision-co
   assert.ok(pages.includes("grep -oE '\\./style\\.css\\?v=[0-9a-f]{16}'"));
   assert.ok(pages.includes('studio-bootstrap.js?v=${revision}'));
   assert.ok(pages.includes('studio-accessibility.js?v=${revision}'));
-  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','studio-bootstrap.js','studio-accessibility.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js']) {
+  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','studio-bootstrap.js','studio-accessibility.js','designer-multiselect.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js']) {
     assert.ok(pages.includes(asset), `Pages live smoke should cover ${asset}`);
   }
   assert.match(pages, /curl --fail --silent --show-error --location/);
   assert.ok(pages.includes('src/compiler.js?v=${revision}'));
   assert.ok(pages.includes('./parser.js?v=${revision}'));
   assert.ok(pages.includes('sw.js?v=${encodeURIComponent(siteRevision)}'));
-  assert.match(pages, /data-patch-version="0\.2\.0-beta\.35"/);
+  assert.match(pages, /data-patch-version="0\.2\.0-beta\.36"/);
 });
 
 test('Pages deployment result is published as a queryable commit status', () => {
