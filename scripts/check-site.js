@@ -21,6 +21,7 @@ const requiredFiles = [
   '_site/index.html','_site/language.html','_site/docs.html','_site/paper.html','_site/downloads.html','_site/help.html',
   '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
+  '_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-structural-keyboard.js',
   '_site/designer-multiselect.js','_site/designer-layout-actions.js','_site/designer-toolbox.js',
   '_site/designer-event-inspector.js','_site/designer-focus-order.js',
   '_site/src/compiler.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
@@ -70,6 +71,21 @@ requireAll('Downloads beta36', downloads, [
 ]);
 rejectAll('Downloads beta36 current links', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"']);
 
+const selection = read('_site/designer-selection.js');
+requireAll('Shared Designer selection state', selection, [
+  'patch-designer-selection-change','currentDesignerSelection','installDesignerSelectionBridge'
+]);
+
+const coreSelection = read('_site/designer-core-selection.js');
+requireAll('Core Designer selection bridge', coreSelection, [
+  'currentDesignerSelection','installDesignerSelectionBridge','captureCoreSelection','populateSharedInspector'
+]);
+
+const structuralKeyboard = read('_site/designer-structural-keyboard.js');
+requireAll('Designer structural keyboard accessibility', structuralKeyboard, [
+  'installDesignerStructuralKeyboard','aria-keyshortcuts','Control+Enter','nextStructuralOptionIndex'
+]);
+
 const multiselect = read('_site/designer-multiselect.js');
 requireAll('RAD multi-select arrange tools', multiselect, [
   'patchAlignLeft','patchAlignRight','patchAlignTop','patchAlignBottom','patchAlignHCenter','patchAlignVCenter',
@@ -98,7 +114,8 @@ requireAll('RAD Focus Order Stage 1', focusOrder, [
 const sw = read('_site/sw.js');
 requireAll('beta36 service worker', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.36'",'const freshFirst = navigation || codeAsset || htmlAsset || runtimeAsset',
-  'self.skipWaiting()','self.clients.claim()','./designer-event-inspector.js','./designer-focus-order.js'
+  'self.skipWaiting()','self.clients.claim()','./designer-event-inspector.js','./designer-focus-order.js',
+  './designer-selection.js','./designer-core-selection.js','./designer-structural-keyboard.js'
 ]);
 
 const bootstrap = read('_site/studio-bootstrap.js');
