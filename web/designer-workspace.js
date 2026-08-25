@@ -9,6 +9,7 @@ import './designer-table-actions.js';
 import './designer-tree-duplicate.js';
 import './designer-structure-ux.js';
 import './designer-ux.js';
+import './designer-event-inspector.js';
 import './designer-layout-actions.js';
 import './form-designer-workflow.js';
 import './designer-toolbox.js';
@@ -46,8 +47,8 @@ function install() {
   toggle.id = 'designerPropertiesToggle';
   toggle.type = 'button';
   toggle.className = 'secondary small designer-properties-toggle';
-  toggle.textContent = 'Properties';
-  toggle.title = 'Show or hide the source-backed Properties panel';
+  toggle.textContent = 'Object Inspector';
+  toggle.title = 'Show or hide the source-backed Object Inspector';
   toolbar.appendChild(toggle);
 
   const handle = document.createElement('span');
@@ -55,13 +56,13 @@ function install() {
   handle.setAttribute('role', 'separator');
   handle.setAttribute('aria-orientation', 'vertical');
   handle.tabIndex = 0;
-  handle.title = 'Drag to resize Properties. Double-click to reset.';
+  handle.title = 'Drag to resize Object Inspector. Double-click to reset.';
   inspector.prepend(handle);
 
   const setCollapsed = collapsed => {
     surface.classList.toggle('designer-properties-collapsed', collapsed);
     toggle.setAttribute('aria-pressed', collapsed ? 'false' : 'true');
-    toggle.textContent = collapsed ? 'Show Properties' : 'Properties';
+    toggle.textContent = collapsed ? 'Show Inspector' : 'Object Inspector';
     saveState({ width: currentWidth(surface), collapsed });
   };
   setCollapsed(Boolean(state.collapsed));
