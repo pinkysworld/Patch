@@ -6,7 +6,7 @@ import {
   ensureDesignerEventHandler,
   findDesignerEventHandler
 } from '../web/designer-event-inspector.js';
-import { listDesignerFocusOrder } from '../web/designer-focus-order.js';
+import { listDesignerFocusOrder, reorderDesignerFocusOrder } from '../web/designer-focus-order.js';
 import {
   DESIGNER_TOOL_CATALOG,
   filterDesignerTools,
@@ -67,6 +67,22 @@ test('Focus Order Stage 1 derives focusable named controls from visible source o
   assert.deepEqual(order.map(item => item.type), ['input', 'button', 'table']);
 });
 
+test('Focus Order earlier and later cross intervening non-focusable source blocks', () => {
+  const source = `window "Demo" as main size 640, 420:\n  input first at 24, 24 size 200, 36\n  text "Decorative" at 24, 70 size 180, 30\n  button "Second" as second at 24, 112 size 120, 36\n  text "More decoration" at 24, 160 size 180, 30\n  input third at 24, 204 size 200, 36\n`;
+  const initial = listDesignerFocusOrder(source, 0);
+  assert.deepEqual(initial.map(item => item.id), ['first', 'second', 'third']);
+
+  const second = initial.find(item => item.id === 'second');
+  const earlier = reorderDesignerFocusOrder(source, second, 'earlier');
+  assert.equal(earlier.moved, true);
+  assert.deepEqual(listDesignerFocusOrder(earlier.source, 0).map(item => item.id), ['second', 'first', 'third']);
+
+  const movedSecond = listDesignerFocusOrder(earlier.source, 0).find(item => item.id === 'second');
+  const later = reorderDesignerFocusOrder(earlier.source, movedSecond, 'later');
+  assert.equal(later.moved, true);
+  assert.deepEqual(listDesignerFocusOrder(later.source, 0).map(item => item.id), ['first', 'second', 'third']);
+});
+
 test('RAD Object Inspector Component Palette and Focus Order are packaged into the Studio offline graph', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const eventInspector = fs.readFileSync('web/designer-event-inspector.js', 'utf8');
@@ -83,6 +99,7 @@ test('RAD Object Inspector Component Palette and Focus Order are packaged into t
   assert.match(eventInspector, /dblclick/);
   assert.match(focusOrder, /Focus Order · Stage 1/);
   assert.match(focusOrder, /Independent Delphi-style TabOrder metadata is a later contract/);
+  assert.match(focusOrder, /reorderDesignerFocusOrder/);
   assert.match(toolbox, /designerComponentSearch/);
   assert.match(toolbox, /filterDesignerTools/);
   assert.match(buildSite, /designer-event-inspector\.js/);
