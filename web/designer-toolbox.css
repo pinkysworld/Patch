@@ -137,10 +137,12 @@
   line-height: 1.35;
 }
 
-/* Current Form chrome and nonvisual components continue the compact desktop rail. */
-#designer #addStatusbar { top: 423px; }
+/* Containers, current Form chrome and nonvisual components continue the compact desktop rail. */
+#designer #addPanel { top: 423px; }
+#designer #addPanel::before { content: "▣"; }
+#designer #addStatusbar { top: 457px; }
 #designer #addStatusbar::before { content: "▰"; }
-#designer #addTimer { top: 457px; }
+#designer #addTimer { top: 491px; }
 #designer #addTimer::before { content: "◷"; }
 
 @media (max-width: 1120px) {
