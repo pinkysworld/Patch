@@ -24,9 +24,11 @@ const sw = read('_site/sw.js');
 
 requireAll('beta36 Studio', index, [
   'data-patch-version="0.2.0-beta.36"','0.2 beta.36+','Native GUI IR 1.4','payload v14','runtime v1.5',
-  'value="workshopDesk">Workshop desk</option>','viewBox="0 0 22 22"','shape-rendering="crispEdges"'
+  'value="workshopDesk">Workshop desk</option>','viewBox="0 0 32 32"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'
 ]);
-rejectAll('beta36 Studio', index, ['data-patch-version="0.2.0-beta.35"','Ready IR 1.3 / v1.4']);
+rejectAll('beta36 Studio', index, [
+  'data-patch-version="0.2.0-beta.35"','Ready IR 1.3 / v1.4','viewBox="0 0 22 22"','shape-rendering="crispEdges"'
+]);
 
 requireAll('beta36 Workshop Desk loader', workshop, [
   'const WORKSHOP_DESK_SAMPLE = `','window "Workshop Desk" as main','window "Workshop settings" as settings',
