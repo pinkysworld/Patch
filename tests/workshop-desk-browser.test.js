@@ -74,6 +74,64 @@ async function fetchJson(url, timeoutMs = 500) {
   } catch { return null; }
 }
 
+function matchDevTools(text) {
+  const match = String(text).match(/DevTools listening on (ws:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):(\d+)\/devtools\/browser\/[^\s]+)/);
+  return match ? { browserWsUrl: match[1], port: Number(match[2]) } : null;
+}
+
+function waitForDevTools(child, stderr, port, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const finish = (error, value) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve(value);
+    };
+    const timer = setTimeout(() => {
+      finish(new Error(`Workshop Chrome did not expose DevTools within ${timeoutMs}ms. stderr:\n${stderr.text}`));
+    }, timeoutMs);
+    const poll = async () => {
+      while (!done) {
+        const fromStderr = matchDevTools(stderr.text);
+        if (fromStderr) return finish(null, fromStderr);
+        const info = await fetchJson(`http://127.0.0.1:${port}/json/version`, 500);
+        if (info?.webSocketDebuggerUrl) return finish(null, { browserWsUrl: info.webSocketDebuggerUrl, port });
+        if (child.exitCode !== null || child.signalCode !== null) {
+          return finish(new Error(`Workshop Chrome exited before DevTools was ready (code=${child.exitCode}, signal=${child.signalCode}). stderr:\n${stderr.text}`));
+        }
+        await delay(150);
+      }
+    };
+    poll();
+  });
+}
+
+async function waitForPageTarget(port, expectedUrl, stderr, timeoutMs = 12000) {
+  const expected = new URL(expectedUrl);
+  const deadline = Date.now() + timeoutMs;
+  let lastError = 'no /json/list response';
+  while (Date.now() < deadline) {
+    const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`, 500);
+    if (Array.isArray(targets)) {
+      const target = targets.find(item => {
+        if (item.type !== 'page' || !item.url || !item.webSocketDebuggerUrl) return false;
+        try {
+          const candidate = new URL(item.url);
+          return candidate.origin === expected.origin
+            && candidate.pathname === expected.pathname
+            && candidate.searchParams.has('workshop-smoke');
+        } catch { return false; }
+      });
+      if (target) return target;
+      lastError = `no matching page in ${targets.length} targets`;
+    }
+    await delay(120);
+  }
+  throw new Error(`Workshop Chrome page target was not discoverable. ${lastError}\nstderr:\n${stderr.text}`);
+}
+
 async function connectCdp(wsUrl) {
   assert.equal(typeof WebSocket, 'function', 'Node 24 WebSocket support is required');
   const socket = new WebSocket(wsUrl);
@@ -129,7 +187,17 @@ async function waitFor(cdp, expression, predicate, timeoutMs = 15000) {
   throw new Error(`Timed out waiting for Workshop Desk state; last=${JSON.stringify(last)}`);
 }
 
-test('Workshop Desk explicit load remains responsive in real Chrome', { timeout: 40000 }, async t => {
+async function stopChrome(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  child.kill('SIGTERM');
+  await Promise.race([
+    new Promise(resolve => child.once('exit', resolve)),
+    delay(1200)
+  ]);
+  if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+}
+
+test('Workshop Desk explicit load remains responsive in real Chrome', { timeout: 50000 }, async t => {
   if (process.platform !== 'linux') return t.skip('Workshop stress smoke is Linux CI only; cross-platform startup has its own gate');
   const chrome = findLinuxChrome();
   if (!chrome) {
@@ -151,27 +219,35 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   const url = `http://127.0.0.1:${serverAddress.port}/web/index.html?workshop-smoke=${Date.now()}`;
   const child = spawn(chrome, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
-    '--disable-background-networking', '--no-first-run', '--no-default-browser-check',
-    `--remote-debugging-port=${debugPort}`, '--remote-debugging-address=127.0.0.1',
-    `--user-data-dir=${profile}`, url
+    '--disable-background-networking', '--disable-crash-reporter', '--disable-default-apps',
+    '--disable-extensions', '--disable-hang-monitor', '--no-first-run', '--no-default-browser-check',
+    '--window-size=1440,1200', `--remote-debugging-port=${debugPort}`,
+    '--remote-debugging-address=127.0.0.1', `--user-data-dir=${profile}`, 'about:blank'
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
-  let stderr = '';
-  child.stderr?.on('data', chunk => { stderr += chunk.toString(); });
-  t.after(() => {
-    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
-    try { fs.rmSync(profile, { recursive: true, force: true }); } catch {}
+  const stderr = { text: '' };
+  child.stderr?.on('data', chunk => { stderr.text += chunk.toString(); });
+  t.after(async () => {
+    await stopChrome(child);
+    try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); } catch {}
   });
 
-  let target = null;
-  const targetDeadline = Date.now() + 12000;
-  while (Date.now() < targetDeadline && !target) {
-    if (child.exitCode !== null) assert.fail(`Chrome exited early: ${stderr}`);
-    const targets = await fetchJson(`http://127.0.0.1:${debugPort}/json/list`, 500);
-    if (Array.isArray(targets)) target = targets.find(item => item.type === 'page' && item.url.startsWith(url.split('?')[0]) && item.webSocketDebuggerUrl) ?? null;
-    if (!target) await delay(120);
+  const devtools = await waitForDevTools(child, stderr, debugPort);
+  const existing = await fetchJson(`http://127.0.0.1:${devtools.port}/json/list`, 500);
+  const blankPage = Array.isArray(existing)
+    ? existing.find(item => item.type === 'page' && item.webSocketDebuggerUrl)
+    : null;
+  if (blankPage) {
+    const pageCdp = await connectCdp(blankPage.webSocketDebuggerUrl);
+    await pageCdp.command('Page.enable');
+    await pageCdp.command('Page.navigate', { url });
+    pageCdp.close();
+  } else {
+    const browserCdp = await connectCdp(devtools.browserWsUrl);
+    await browserCdp.command('Target.createTarget', { url });
+    browserCdp.close();
   }
-  assert.ok(target?.webSocketDebuggerUrl, `Workshop Desk Chrome target was not available: ${stderr}`);
 
+  const target = await waitForPageTarget(devtools.port, url, stderr);
   const cdp = await connectCdp(target.webSocketDebuggerUrl);
   t.after(() => cdp.close());
   await cdp.command('Runtime.enable');
