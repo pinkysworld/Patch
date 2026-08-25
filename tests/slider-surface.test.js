@@ -55,9 +55,9 @@ test('Standalone Web and current native Ready/offline paths opt into Slider whil
   assert.match(offlineLinker, /allowSlider:\s*guiPayloadVersion >= 13/);
   assert.match(offlineLinker, /buildCurrentNativeGuiIR/);
   assert.match(offlineLinker, /sealCurrentNativeGuiRuntime/);
-  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.3\/payload-13\/runtime-1\.4'/);
-  assert.match(currentNative, /buildNativeGuiIRV13/);
-  assert.match(currentNative, /sealNativeGuiRuntimeV13/);
+  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
+  assert.match(currentNative, /buildNativeGuiIRV14/);
+  assert.match(currentNative, /sealNativeGuiRuntimeV14/);
   assert.match(windowBuild, /if \(sliders && !options\.allowSlider\)/);
   assert.match(windowBuild, /Slider is not enabled for this Window target/);
   assert.doesNotMatch(nativeV12, /control\.type === 'slider'|control==='slider'|control === 'slider'/);

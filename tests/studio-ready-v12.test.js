@@ -19,9 +19,9 @@ test('Studio token-free Window builds lower Native GUI IR 1.3 and seal payload v
   assert.match(nativeBuild, /payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
   assert.doesNotMatch(nativeBuild, /sealed-native-gui-v13\.js/);
   assert.doesNotMatch(nativeBuild, /native-gui-ir-v13\.js/);
-  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.3\/payload-13\/runtime-1\.4'/);
-  assert.match(current, /buildNativeGuiIRV13/);
-  assert.match(current, /sealNativeGuiRuntimeV13/);
+  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
+  assert.match(current, /buildNativeGuiIRV14/);
+  assert.match(current, /sealNativeGuiRuntimeV14/);
   assert.match(nativeBuild, /allowTree: true/);
   assert.match(nativeBuild, /allowSlider: true/);
 });

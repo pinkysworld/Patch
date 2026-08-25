@@ -26,8 +26,12 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
 });
 
 test('Studio brand mark is a square geometric P with no rotation', () => {
-  assert.match(html, /class="brand-mark"[^>]*>\s*<svg /);
+  const mark = html.match(/class="brand-mark"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
+  const path = mark.match(/<path[^>]*\sd="([^"]+)"/)?.[1] || '';
+  assert.match(mark, /<svg viewBox="0 0 32 32"/);
   assert.doesNotMatch(html, /class="brand-mark"[^>]*>P</);
+  assert.match(path, /^M8 6H22V18H13V26H8ZM13 10H18V14H13Z$/);
+  assert.doesNotMatch(path, /[cqstaCQSTA.]/);
   assert.doesNotMatch(style, /rotate\(/);
   assert.doesNotMatch(refresh, /rotate\(/);
   assert.match(style, /\.brand-mark[\s\S]*?transform:\s*none/);

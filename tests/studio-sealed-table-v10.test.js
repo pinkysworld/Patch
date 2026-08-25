@@ -18,9 +18,9 @@ test('Studio Ready Window builds use the stable current facade for Native GUI IR
   assert.match(studio, /buildMacosNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION \}\)/);
   assert.doesNotMatch(studio, /from ['"]\.\.\/src\/native-gui-ir-v13\.js['"]/);
   assert.doesNotMatch(studio, /from ['"]\.\.\/src\/sealed-native-gui-v13\.js['"]/);
-  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.3\/payload-13\/runtime-1\.4'/);
-  assert.match(current, /buildNativeGuiIRV13/);
-  assert.match(current, /sealNativeGuiRuntimeV13/);
+  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
+  assert.match(current, /buildNativeGuiIRV14/);
+  assert.match(current, /sealNativeGuiRuntimeV14/);
   assert.match(studio, /allowMenuDecorations: true/);
   assert.match(studio, /allowTree: true/);
   assert.match(studio, /allowSlider: true/);

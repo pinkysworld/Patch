@@ -31,7 +31,7 @@ requireText(nativeBuild, 'allowSlider: true', 'browser current native builder');
 rejectText(nativeBuild, './src/native-gui-ir-v13.js', 'browser current native builder');
 rejectText(nativeBuild, './src/sealed-native-gui-v13.js', 'browser current native builder');
 
-requireText(current, "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.3/payload-13/runtime-1.4'", 'current native facade');
+requireText(current, "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.4/payload-14/runtime-1.5'", 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_GUI_IR_VERSION', 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION', 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_RUNTIME_VERSION', 'current native facade');
@@ -56,4 +56,4 @@ requireText(downloads, 'runtime <strong>v1.4</strong>', 'Downloads current runti
 rejectText(index, 'Slider Stage 1 is browser-only until a later versioned native contract adds parity', 'Studio index');
 rejectText(downloads, 'Native Slider parity requires a future versioned native GUI contract', 'Downloads page');
 
-console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated behind the current v1.4 facade.');
+console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated behind the current v1.5 facade. Ready copy remains IR 1.3 / v1.4.');

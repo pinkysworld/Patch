@@ -84,7 +84,7 @@ requireAll('Frozen lowering snapshot preserves Table', frozenLower, [
 
 const current = read('_site/src/native-current-contract.js');
 requireAll('Current native product facade', current, [
-  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.3/payload-13/runtime-1.4'",
+  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.4/payload-14/runtime-1.5'",
   'buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
 
