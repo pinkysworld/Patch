@@ -19,11 +19,11 @@ const offlineWorkflow = read('.github/workflows/offline-compiler.yml');
 const playground = read('web/playground.js');
 const studioTable = read('web/table-stage1.js');
 
-test('repository and product surfaces expose one development version', () => {
+test('current release surfaces expose one development version', () => {
   const version = packageJson.version;
-  assert.match(readme, new RegExp(version.replaceAll('.', '\\.')));
-  assert.match(studio, new RegExp(version.replaceAll('.', '\\.')));
-  assert.match(roadmap, new RegExp(version.replaceAll('.', '\\.')));
+  for (const text of [readme, downloads, offline]) {
+    assert.match(text, new RegExp(version.replaceAll('.', '\\.')));
+  }
 });
 
 test('public Table surfaces agree on transient selected-row list semantics', () => {
