@@ -67,6 +67,7 @@ for (const name of SITE_WEB_MODULE_FILES) {
     .replaceAll("'../src/", "'./src/")
     .replaceAll('"../src/', '"./src/');
   if (name === 'sw.js') content = content.replaceAll('__PATCH_SITE_REV__', siteRevision);
+  if (name === 'native-build.js') content = normalizeCurrentNativeBuildCopy(content);
   content = versionRelativeModuleSpecifiers(content, siteRevision);
   fs.writeFileSync(path.join(out, name), content);
 }
@@ -89,20 +90,25 @@ function normalizeCurrentProductSurface(name, source) {
   let html = source
     .replaceAll('0.2.0-beta.35', pkg.version)
     .replaceAll('0.2 beta.35+', '0.2 beta.36+')
-    .replaceAll('0.2 beta.35', '0.2 beta.36')
-    .replaceAll('Native GUI IR 1.3 / payload v13 / runtime v1.4', 'Native GUI IR 1.4 / payload v14 / runtime v1.5')
-    .replaceAll('Native GUI IR <strong>1.3</strong>', 'Native GUI IR <strong>1.4</strong>')
-    .replaceAll('payload <strong>v13</strong>', 'payload <strong>v14</strong>')
-    .replaceAll('runtime <strong>v1.4</strong>', 'runtime <strong>v1.5</strong>')
-    .replaceAll('Native GUI IR 1.3 as payload v13', 'Native GUI IR 1.4 as payload v14')
-    .replaceAll('current runtime v1.4 templates', 'current runtime v1.5 templates')
-    .replaceAll('Current runtime v1.4 templates', 'Current runtime v1.5 templates')
-    .replaceAll('IR 1.3 / v1.4', 'IR 1.4 / v1.5')
-    .replaceAll('native-win32-runtime-v1.4', 'native-win32-runtime-v1.5')
-    .replaceAll('native-macos-runtime-v1.4', 'native-macos-runtime-v1.5')
-    .replaceAll('native-linux-runtime-v1.4', 'native-linux-runtime-v1.5')
-    .replaceAll('offline-compiler-v0.1', 'offline-compiler-v0.2')
-    .replaceAll('Patch Offline Compiler v0.1', 'Patch Offline Compiler v0.2');
+    .replaceAll('0.2 beta.35', '0.2 beta.36');
+
+  // The pre-beta.36 pages used the v1.4 runtime as their current product line.
+  // downloads.html is authored directly for beta.36 and intentionally mentions
+  // v1.4 as compatibility history, so do not rewrite those historical statements.
+  if (name !== 'downloads.html') {
+    html = html
+      .replaceAll('Native GUI IR 1.3 / payload v13 / runtime v1.4', 'Native GUI IR 1.4 / payload v14 / runtime v1.5')
+      .replaceAll('Native GUI IR <strong>1.3</strong>', 'Native GUI IR <strong>1.4</strong>')
+      .replaceAll('payload <strong>v13</strong>', 'payload <strong>v14</strong>')
+      .replaceAll('runtime <strong>v1.4</strong>', 'runtime <strong>v1.5</strong>')
+      .replaceAll('Native GUI IR 1.3 as payload v13', 'Native GUI IR 1.4 as payload v14')
+      .replaceAll('current runtime v1.4 templates', 'current runtime v1.5 templates')
+      .replaceAll('Current runtime v1.4 templates', 'Current runtime v1.5 templates')
+      .replaceAll('IR 1.3 / v1.4', 'IR 1.4 / v1.5')
+      .replaceAll('native-win32-runtime-v1.4', 'native-win32-runtime-v1.5')
+      .replaceAll('native-macos-runtime-v1.4', 'native-macos-runtime-v1.5')
+      .replaceAll('native-linux-runtime-v1.4', 'native-linux-runtime-v1.5');
+  }
 
   if (name === 'index.html') {
     html = html.replace(
@@ -111,6 +117,13 @@ function normalizeCurrentProductSurface(name, source) {
     );
   }
   return html;
+}
+
+function normalizeCurrentNativeBuildCopy(source) {
+  return source
+    .replaceAll('Native GUI IR 1.3', 'Native GUI IR 1.4')
+    .replaceAll('payload v13', 'payload v14')
+    .replaceAll('runtime v1.4', 'runtime v1.5');
 }
 
 function computeSiteRevision() {
