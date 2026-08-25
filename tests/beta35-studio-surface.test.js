@@ -36,6 +36,17 @@ test('beta35 sample uses the canonical Studio DOM synchronization path', () => {
   ]) assert.ok(moduleSource.includes(marker), marker);
 });
 
+test('selected examples can be explicitly reloaded and fresh Studio opens Workshop Desk', () => {
+  for (const marker of [
+    "loadButton.id = 'loadSample'",
+    "loadButton.textContent = 'Load example'",
+    "sample.dispatchEvent(new Event('change', { bubbles: true }))",
+    "localStorage.getItem('patchStudio.project')",
+    "sample.value === 'workshopDesk'",
+    'queueMicrotask(loadSelectedSample)'
+  ]) assert.ok(moduleSource.includes(marker), marker);
+});
+
 test('beta35 Studio polish remains keyboard responsive and ships offline', () => {
   for (const marker of [
     '.studio-jump:focus-visible',
