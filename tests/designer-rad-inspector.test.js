@@ -6,6 +6,7 @@ import {
   ensureDesignerEventHandler,
   findDesignerEventHandler
 } from '../web/designer-event-inspector.js';
+import { listDesignerFocusOrder } from '../web/designer-focus-order.js';
 import {
   DESIGNER_TOOL_CATALOG,
   filterDesignerTools,
@@ -58,20 +59,34 @@ test('searchable Component Palette filters labels types and categories without a
   assert.deepEqual(groups[0].tools.map(tool => tool.type), ['table', 'tree']);
 });
 
-test('RAD Object Inspector and Component Palette are packaged into the Studio workspace and offline graph', () => {
+test('Focus Order Stage 1 derives focusable named controls from visible source order', () => {
+  const source = `window "Demo" as main size 640, 420:\n  text "Heading" at 24, 20 size 200, 30\n  input name at 24, 64 size 220, 36\n  button "Save" as save_button at 24, 112 size 120, 36\n  table "A" as rows at 24, 164 size 300, 120:\n    row "1"\n`;
+  const order = listDesignerFocusOrder(source, 0);
+  assert.deepEqual(order.map(item => item.id), ['name', 'save_button', 'rows']);
+  assert.deepEqual(order.map(item => item.focusIndex), [0, 1, 2]);
+  assert.deepEqual(order.map(item => item.type), ['input', 'button', 'table']);
+});
+
+test('RAD Object Inspector Component Palette and Focus Order are packaged into the Studio offline graph', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const eventInspector = fs.readFileSync('web/designer-event-inspector.js', 'utf8');
+  const focusOrder = fs.readFileSync('web/designer-focus-order.js', 'utf8');
   const toolbox = fs.readFileSync('web/designer-toolbox.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-event-inspector\.js'/);
+  assert.match(workspace, /import '\.\/designer-focus-order\.js'/);
   assert.match(eventInspector, /designerPropertiesTab/);
   assert.match(eventInspector, /designerEventsTab/);
   assert.match(eventInspector, /designerObjectSelect/);
   assert.match(eventInspector, /Create handler/);
   assert.match(eventInspector, /dblclick/);
+  assert.match(focusOrder, /Focus Order · Stage 1/);
+  assert.match(focusOrder, /Independent Delphi-style TabOrder metadata is a later contract/);
   assert.match(toolbox, /designerComponentSearch/);
   assert.match(toolbox, /filterDesignerTools/);
   assert.match(buildSite, /designer-event-inspector\.js/);
+  assert.match(buildSite, /designer-focus-order\.js/);
   assert.match(sw, /designer-event-inspector\.js/);
+  assert.match(sw, /designer-focus-order\.js/);
 });
