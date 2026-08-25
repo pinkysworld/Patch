@@ -62,7 +62,7 @@ The existing categorized component catalog now has a search field. Search matche
 
 `Ctrl/Cmd+Shift+A` focuses the component search. When the search has exactly one result, Enter adds that control directly.
 
-The catalog now includes **Timer** in a dedicated **Nonvisual** category. Timer authoring creates an ordinary `timer as ... interval ...` declaration without canvas geometry. Panel, PictureBox and StatusBar are still not advertised as finished drag-and-drop components merely because Native GUI IR 1.4 can transport them.
+The catalog includes **Panel** under **Containers**, **StatusBar** under **Chrome**, and **Timer** in a dedicated **Nonvisual** category. Each authoring path creates or rewrites ordinary Patch source. PictureBox remains withheld from the public authoring palette until its portable image-loading contract is complete across the current desktop runtimes.
 
 ### Nonvisual component tray and Timer
 
@@ -79,6 +79,27 @@ Timer authoring is source-backed end to end:
 
 The tray is a projection of Patch source and the shared Designer selection model. It is not a second component store.
 
+### Panel Stage 1 authoring
+
+Panel Stage 1 now has a complete source-backed Studio authoring path for the semantics already accepted by the parser and Native GUI 1.4 facade.
+
+A Panel is a normal top-level Designer control: it can be selected, named, moved, resized, duplicated and deleted through the same source-backed control pipeline as other Form controls. New Panels start with a small visible flow-layout group and can be added from **Containers → Panel** in the Component Palette.
+
+The Object Inspector adds a **Panel children** structural editor for the selected Panel. It supports:
+
+- Text;
+- Button;
+- Input;
+- Checkbox;
+- Radio group;
+- ComboBox;
+- ListBox;
+- Slider.
+
+Children can be added, edited, reordered, duplicated, removed and revealed in source. Named child duplication allocates fresh ids and duplicates matching source-visible handlers. Renaming a child rewrites its matching `when ... clicked:` or `when ... changed:` header. Deleting a child, deleting the whole Panel or duplicating the Panel performs matching handler cleanup/remapping so the visual operation cannot leave stale callbacks behind.
+
+Panel Stage 1 intentionally keeps child layout as source order / flow layout. It does not invent independent child coordinates, anchors or native containment metadata that the current language/runtime contract does not yet guarantee. That stronger Delphi-style container contract remains a later additive stage.
+
 ### Focus Order Stage 1
 
 Patch Studio now includes a **Focus Order · Stage 1** dialog for the active Form. It lists named focusable controls in current visible source order and can move an item earlier or later by rewriting the existing source block.
@@ -89,8 +110,8 @@ This stage is intentionally not presented as independent Delphi `TabOrder` parit
 
 The generated public site is normalized to the current beta.36 product contract. The Studio P uses a square 32 by 32 geometric SVG coordinate grid with horizontal and vertical edges, avoiding fractional resampling artifacts.
 
-The service worker release id is also bumped to beta.36 so older cached Studio shells are replaced. Object Inspector, Focus Order and Timer authoring remain part of the content-addressed public module graph and offline cache.
+The service worker release id is also beta.36 so older cached Studio shells are replaced. Object Inspector, Focus Order, Menu Designer, Panel authoring, StatusBar and Timer authoring are part of the content-addressed public module graph and offline cache.
 
 ## Review boundary
 
-Beta.36 does not claim that every Chrome Stage 1 control is complete. In particular, the native PictureBox source field is transported through IR/payload v14 but the v1.5 desktop runtimes do not yet load that source into an actual image on all platforms. Panel remains visual grouping rather than complete Delphi-style container semantics, and AppKit StatusBar representation is not identical to the Win32/GTK status-specific widget path. See `docs/GROK_REVIEW_2026-08-25.md`.
+Beta.36 does not claim that every Chrome Stage 1 control is complete. In particular, the native PictureBox source field is transported through IR/payload v14 but the v1.5 desktop runtimes do not yet load that source into an actual image on all platforms. Panel now has a Studio authoring path, but its current runtime meaning remains flow-layout visual grouping rather than complete Delphi-style native child-container semantics with independent nested geometry. AppKit StatusBar representation is also not identical to the Win32/GTK status-specific widget path. See `docs/GROK_REVIEW_2026-08-25.md`.
