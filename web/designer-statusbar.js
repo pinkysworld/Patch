@@ -39,6 +39,7 @@ export function statusBarPreviewText(control, uiControl = null) {
 function install() {
   if (!designer || !code || !canvas || !app || designer.dataset.patchStatusbarRad === 'true') return;
   designer.dataset.patchStatusbarRad = 'true';
+  installStylesheet();
 
   code.addEventListener('input', scheduleSync);
   code.addEventListener('change', scheduleSync);
@@ -106,15 +107,7 @@ function syncContainer(container, isDesigner) {
       element.dataset.statusbarId = control.id ?? '';
       const text = statusBarPreviewText(control, uiControls[control.controlIndex] ?? null);
       if (element.textContent !== text) element.textContent = text;
-      element.style.position = 'absolute';
-      element.style.left = '0';
-      element.style.right = '0';
-      element.style.bottom = '0';
-      element.style.top = 'auto';
-      element.style.width = '100%';
       element.style.height = `${Number(control.height) || 28}px`;
-      element.style.maxWidth = 'none';
-      element.style.margin = '0';
       body.style.position = 'relative';
 
       if (isDesigner) {
@@ -177,8 +170,21 @@ function scheduleInspectorSync() {
 
 function syncStatusBarInspector() {
   refreshSnapshot();
-  const control = currentStatusBar();
-  if (!control) return;
+  const selected = currentSelectedControl();
+  const layout = doc.querySelector('#patchResponsiveLayout');
+  const geometry = doc.querySelector('[data-form-geometry]');
+  if (selected?.type !== 'statusbar') {
+    if (layout?.dataset.patchStatusbarLocked === 'true') {
+      layout.disabled = false;
+      delete layout.dataset.patchStatusbarLocked;
+    }
+    if (geometry?.dataset.patchStatusbarHidden === 'true') {
+      geometry.hidden = selected?.type === 'timer';
+      delete geometry.dataset.patchStatusbarHidden;
+    }
+    return;
+  }
+  const control = selected;
 
   const form = doc.querySelector('#designerInspectorForm');
   const empty = doc.querySelector('#designerInspectorEmpty');
@@ -191,7 +197,6 @@ function syncStatusBarInspector() {
   const optionsField = doc.querySelector('#designerInspectorOptionsField');
   const sliderFields = doc.querySelector('#designerInspectorSliderFields');
   const timerField = doc.querySelector('#designerInspectorTimerField');
-  const geometry = doc.querySelector('[data-form-geometry]');
   const location = doc.querySelector('#designerInspectorLocation');
   const id = doc.querySelector('#designerInspectorId');
   const text = doc.querySelector('#designerInspectorText');
@@ -202,15 +207,18 @@ function syncStatusBarInspector() {
   if (optionsField) optionsField.hidden = true;
   if (sliderFields) sliderFields.hidden = true;
   if (timerField) timerField.hidden = true;
-  if (geometry) geometry.hidden = true;
+  if (geometry) {
+    geometry.hidden = true;
+    geometry.dataset.patchStatusbarHidden = 'true';
+  }
   if (location) location.textContent = `Window ${control.windowIndex + 1} · control ${control.controlIndex + 1} · line ${control.line} · dock bottom`;
   if (id && doc.activeElement !== id) id.value = control.id ?? '';
   if (text && doc.activeElement !== text) text.value = control.textExpr ?? '"Ready"';
 
-  const layout = doc.querySelector('#patchResponsiveLayout');
   if (layout) {
     layout.value = 'dock:bottom';
     layout.disabled = true;
+    layout.dataset.patchStatusbarLocked = 'true';
     layout.title = 'StatusBar is source-backed Form chrome and remains docked to the bottom.';
   }
 
@@ -230,11 +238,16 @@ function syncStatusBarInspector() {
   }
 }
 
-function currentStatusBar() {
+function currentSelectedControl() {
   const selection = currentDesignerSelection(canvas);
   if (!selection) return null;
   refreshSnapshot();
-  return cachedControls.find(control => sameLocation(control, selection) && control.type === 'statusbar') ?? null;
+  return cachedControls.find(control => sameLocation(control, selection)) ?? null;
+}
+
+function currentStatusBar() {
+  const control = currentSelectedControl();
+  return control?.type === 'statusbar' ? control : null;
 }
 
 function sameLocation(control, selection) {
@@ -254,4 +267,40 @@ function showInspectorError(error) {
   if (!target) return;
   target.textContent = error?.message ?? String(error);
   target.hidden = false;
+}
+
+function installStylesheet() {
+  if (doc.querySelector('style[data-patch-statusbar-rad]')) return;
+  const style = doc.createElement('style');
+  style.dataset.patchStatusbarRad = 'true';
+  style.textContent = `
+.patch-statusbar {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 10px;
+  border-top: 1px solid var(--border-strong);
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+#designerCanvas .patch-statusbar.designer-selected {
+  outline: 2px solid color-mix(in srgb, var(--text) 58%, transparent);
+  outline-offset: -2px;
+}
+#designerCanvas .patch-statusbar { cursor: default; }
+`;
+  doc.head.appendChild(style);
 }
