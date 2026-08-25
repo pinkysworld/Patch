@@ -5,6 +5,10 @@
   align-items: stretch;
 }
 
+.source-workspace.project-outline-collapsed {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
 .project-outline {
   min-width: 0;
   display: flex;
@@ -40,6 +44,26 @@ button.outline-action {
   color: var(--text);
   font-size: 9px;
   font-weight: 750;
+}
+
+button.outline-toggle {
+  min-width: 25px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.source-workspace.project-outline-collapsed .project-outline .pane-title {
+  justify-content: center;
+  padding-inline: 5px;
+}
+.source-workspace.project-outline-collapsed .outline-title-copy,
+.source-workspace.project-outline-collapsed #projectOutlineStatus,
+.source-workspace.project-outline-collapsed .project-outline-tree,
+.source-workspace.project-outline-collapsed .outline-actions > .outline-action:not(.outline-toggle) {
+  display: none;
+}
+.source-workspace.project-outline-collapsed .outline-actions {
+  margin-left: 0;
 }
 
 #projectOutlineStatus {
@@ -272,7 +296,8 @@ button.outline-action:focus-visible {
 }
 
 @media (max-width: 760px) {
-  .source-workspace {
+  .source-workspace,
+  .source-workspace.project-outline-collapsed {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -289,5 +314,12 @@ button.outline-action:focus-visible {
     order: 3;
     width: 100%;
     max-width: none;
+  }
+
+  .source-workspace.project-outline-collapsed .project-outline {
+    max-height: 42px;
+  }
+  .source-workspace.project-outline-collapsed .project-outline .pane-title {
+    justify-content: flex-end;
   }
 }
