@@ -1,5 +1,5 @@
 const REVISION = '__PATCH_SITE_REV__';
-const PATCH_RELEASE = '0.2.0-beta.35';
+const PATCH_RELEASE = '0.2.0-beta.36';
 const CACHE_PREFIX = 'patch-studio-';
 const CACHE = `${CACHE_PREFIX}${REVISION}`;
 const LEGACY_CACHE_ID = 'patch-studio-0.2-beta.32-forms8-ux14-a11y1';
@@ -46,9 +46,6 @@ self.addEventListener('fetch', event => {
       const cached = await caches.match(event.request, { ignoreSearch: true });
       if (cached) return cached;
 
-      // Only real document navigations may fall back to the cached Studio shell.
-      // Returning index.html for a missing JavaScript/CSS/runtime request would make
-      // the page look loaded while module evaluation fails with HTML-as-code.
       if (navigation) {
         const shell = await caches.match(versioned('./index.html'), { ignoreSearch: true });
         if (shell) return shell;
