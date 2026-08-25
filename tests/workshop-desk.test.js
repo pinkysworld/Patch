@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
@@ -97,13 +99,19 @@ test('Workshop Desk covers the stable current Studio RAD control surface without
 });
 
 test('Workshop Desk builds as a Standalone Window Web App', () => {
-  const out = execFileSync(process.execPath, [
-    'src/cli.js', 'build', 'examples/workshop-desk.patch',
-    '--kind', 'window', '--target', 'web', '--out', '/tmp/WorkshopDesk-test.html'
-  ], { encoding: 'utf8' });
-  assert.match(out, /standalone single-file Web App/);
-  const built = fs.readFileSync('/tmp/WorkshopDesk-test.html', 'utf8');
-  assert.match(built, /Workshop Desk/);
-  assert.match(built, /Workshop settings/);
-  assert.match(built, /Job details/);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-workshop-web-'));
+  const outputPath = path.join(tempDir, 'WorkshopDesk-test.html');
+  try {
+    const out = execFileSync(process.execPath, [
+      'src/cli.js', 'build', 'examples/workshop-desk.patch',
+      '--kind', 'window', '--target', 'web', '--out', outputPath
+    ], { encoding: 'utf8' });
+    assert.match(out, /standalone single-file Web App/);
+    const built = fs.readFileSync(outputPath, 'utf8');
+    assert.match(built, /Workshop Desk/);
+    assert.match(built, /Workshop settings/);
+    assert.match(built, /Job details/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });

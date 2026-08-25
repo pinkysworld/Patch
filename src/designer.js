@@ -341,7 +341,7 @@ function windowDimension(value, name) {
 
 function renameEventHeaders(lines, oldId, nextId) {
   const escapedId = escapeRegExp(oldId);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked)\\s*:\\s*$`);
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(pattern);
     if (match) lines[i] = `${match[1]}when ${nextId} ${match[2]}:`;
@@ -359,7 +359,7 @@ function renameFormActions(lines, oldId, nextId) {
 
 function removeEventBlocks(lines, id) {
   const escapedId = escapeRegExp(id);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked)\\s*:\\s*$`);
   for (let i = 0; i < lines.length;) {
     const match = lines[i].match(pattern);
     if (!match) { i += 1; continue; }
