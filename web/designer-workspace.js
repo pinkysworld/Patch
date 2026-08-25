@@ -21,16 +21,8 @@ const MIN_WIDTH = 280;
 const MAX_WIDTH = 480;
 const BULK_WINDOW_SAMPLES = new Set(['workshopDesk', 'listboxMultiWindow']);
 
-installClassicBrandMark();
 installBulkSampleLoadGuard();
 queueMicrotask(install);
-
-function installClassicBrandMark() {
-  const mark = document.querySelector('.brand-mark');
-  if (!mark || mark.dataset.patchBrandMark === 'classic-p') return;
-  mark.dataset.patchBrandMark = 'classic-p';
-  mark.innerHTML = '<svg viewBox="0 0 32 32" focusable="false" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg>';
-}
 
 function installBulkSampleLoadGuard() {
   const sample = document.querySelector('#sample');
@@ -156,12 +148,17 @@ function install() {
     handle.setPointerCapture?.(event.pointerId);
     surface.classList.add('designer-properties-resizing');
 
+    const release = pointerId => {
+      if (pointerId === undefined || !handle.releasePointerCapture) return;
+      if (handle.hasPointerCapture?.(pointerId) === false) return;
+      try { handle.releasePointerCapture(pointerId); } catch { /* capture may already be gone after pointercancel */ }
+    };
     const cleanup = finishEvent => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', cancel);
       surface.classList.remove('designer-properties-resizing');
-      if (finishEvent?.pointerId !== undefined) handle.releasePointerCapture?.(finishEvent.pointerId);
+      release(finishEvent?.pointerId);
     };
     const move = moveEvent => {
       const rect = surface.getBoundingClientRect();
