@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.35+: write, design, run and build source-backed Patch applications with multi-file projects, native Slider, ListBox, Table, Menu and TreeView support.">
+  <meta name="description" content="Patch Studio beta.36+: write, design, run and build source-backed Patch applications with multi-file projects, RAD arrangement tools and Native GUI IR 1.4 / runtime v1.5 Ready builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -31,9 +31,9 @@
   <a href="./downloads.html">Downloads</a>
   <a href="./help.html">Help</a>
 </nav>
-<main class="studio" data-patch-version="0.2.0-beta.35">
+<main class="studio" data-patch-version="0.2.0-beta.36">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.35+</span></h1><p>Source-backed visual development with explicit semantic change.</p></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 22 22" focusable="false" shape-rendering="crispEdges"><path fill="currentColor" fill-rule="evenodd" d="M3 2H18V12H8V20H3ZM8 6H13V8H8Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Source-backed visual development with explicit semantic change.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
       <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="workshopDesk">Workshop desk</option><option value="counterWindow">Window app</option><option value="tabsWindow">Tabs app</option><option value="sliderWindow">Slider app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
@@ -59,15 +59,15 @@
       <span id="diagnosticsState" role="status" aria-live="polite" aria-atomic="true">Diagnostics stay local.</span>
     </span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.4 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.3 as payload v13, including hierarchical TreeView and native Slider. The frozen payload v12 / runtime v1.3 compatibility line remains Slider fail-closed.</span></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.5 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.4 as payload v14. Chrome Stage 1 adds Panel, Timer, PictureBox and StatusBar transport while PictureBox image-source decoding remains an explicit follow-up.</span></section>
 
   <details class="studio-launchpad" aria-label="Patch Studio current status and quick start">
-    <summary>Contracts and quick start <span class="summary-hint">local-first · Ready IR 1.3 / v1.4</span></summary>
+    <summary>Contracts and quick start <span class="summary-hint">local-first · Ready IR 1.4 / v1.5</span></summary>
     <div class="studio-launchpad-body">
     <div class="studio-snapshot" aria-label="Current Patch contracts">
       <div class="studio-snapshot-card"><b>Local-first Studio</b><span>Projects, recovery and privacy-redacted diagnostics remain local unless you explicitly export or build.</span></div>
-      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.3 / payload v13 / runtime v1.4 Ready assets. The frozen TreeView contract remains payload v12 / runtime v1.3.</span></div>
-      <div class="studio-snapshot-card"><b>Browser-gated delivery</b><span>Every public deploy now has to initialize, Run a Window app and remain responsive in real Chrome before the deployment is marked healthy.</span></div>
+      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.4 / payload v14 / runtime v1.5 Ready assets. Older versioned contracts remain compatibility lines.</span></div>
+      <div class="studio-snapshot-card"><b>RAD authoring</b><span>Source-backed multi-selection now supports edge/center alignment, same-size operations and equal-gap horizontal or vertical distribution.</span></div>
     </div>
     <div class="studio-guide">
       <div class="studio-guide-body">
@@ -76,7 +76,7 @@
         <div class="studio-guide-step"><b>3 · Build</b><span><code>Ctrl/Cmd+Shift+Enter</code> builds the selected target. Ready desktop downloads need no GitHub token.</span></div>
       </div>
     </div>
-    <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.35+</strong><span>Current Studio: multi-file project bundle v3, source-backed Designer, Slider, multi-select ListBox, Table, TreeView and Tabs, plus verified no-token Ready builds. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
+    <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.36+</strong><span>Current Studio: multi-file project bundle v3, source-backed Designer, expanded RAD arrangement tools, Slider, multi-select ListBox, Table, TreeView and Tabs, plus verified no-token Ready builds. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
     </div>
   </details>
 
@@ -102,7 +102,7 @@
     </div>
   </section>
 
-  <section class="statusbar"><span class="status-left"><span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span></span><span class="status-right"><span class="status-chip" title="Current Ready native contract">IR 1.3 / v1.4</span> · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard & help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
+  <section class="statusbar"><span class="status-left"><span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span></span><span class="status-right"><span class="status-chip" title="Current Ready native contract">IR 1.4 / v1.5</span> · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard & help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
 </main>
 
 <dialog id="commandPalette" class="command-palette" aria-labelledby="commandPaletteTitle">
