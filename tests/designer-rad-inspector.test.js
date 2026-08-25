@@ -49,10 +49,12 @@ test('RAD Events inspector rejects anonymous and eventless controls', () => {
 });
 
 test('searchable Component Palette filters labels types and categories without a second component model', () => {
-  assert.equal(DESIGNER_TOOL_CATALOG.length, 12);
+  assert.equal(DESIGNER_TOOL_CATALOG.length, 13);
   assert.deepEqual(filterDesignerTools('tree').map(tool => tool.type), ['tree']);
   assert.deepEqual(filterDesignerTools('choice').map(tool => tool.type), ['radio', 'combo', 'listbox', 'slider']);
   assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox']);
+  assert.deepEqual(filterDesignerTools('chrome').map(tool => tool.type), ['statusbar']);
+  assert.deepEqual(filterDesignerTools('status').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);
   assert.deepEqual(filterDesignerTools('timer').map(tool => tool.type), ['timer']);
   assert.equal(filterDesignerTools('does-not-exist').length, 0);
@@ -85,15 +87,17 @@ test('Focus Order earlier and later cross intervening non-focusable source block
   assert.deepEqual(listDesignerFocusOrder(later.source, 0).map(item => item.id), ['first', 'second', 'third']);
 });
 
-test('RAD Object Inspector Component Palette and Focus Order are packaged into the Studio offline graph', () => {
+test('RAD Object Inspector Component Palette Focus Order and StatusBar are packaged into the Studio offline graph', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const eventInspector = fs.readFileSync('web/designer-event-inspector.js', 'utf8');
   const focusOrder = fs.readFileSync('web/designer-focus-order.js', 'utf8');
   const toolbox = fs.readFileSync('web/designer-toolbox.js', 'utf8');
+  const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-event-inspector\.js'/);
   assert.match(workspace, /import '\.\/designer-focus-order\.js'/);
+  assert.match(workspace, /import '\.\/designer-statusbar\.js'/);
   assert.match(eventInspector, /designerPropertiesTab/);
   assert.match(eventInspector, /designerEventsTab/);
   assert.match(eventInspector, /designerObjectSelect/);
@@ -105,8 +109,13 @@ test('RAD Object Inspector Component Palette and Focus Order are packaged into t
   assert.match(toolbox, /designerComponentSearch/);
   assert.match(toolbox, /filterDesignerTools/);
   assert.match(toolbox, /designerNonvisualTray/);
+  assert.match(toolbox, /addStatusbar/);
+  assert.match(statusbar, /PATCH_DESIGNER_STATUSBAR_VERSION/);
+  assert.match(statusbar, /dock bottom/);
   assert.match(buildSite, /designer-event-inspector\.js/);
   assert.match(buildSite, /designer-focus-order\.js/);
+  assert.match(buildSite, /designer-statusbar\.js/);
   assert.match(sw, /designer-event-inspector\.js/);
   assert.match(sw, /designer-focus-order\.js/);
+  assert.match(sw, /designer-statusbar\.js/);
 });
