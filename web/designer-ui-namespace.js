@@ -21,35 +21,47 @@ export function listDesignerUiNamespace(source) {
     if (!name) return;
     out.push({ id: name, kind, type, line: line ?? null });
   };
-  const visitControls = nodes => {
-    for (const node of nodes ?? []) {
-      if (node.kind === 'uiControl') {
-        add(node.id, 'control', node.control, node.line);
-        if (node.control === 'panel') visitControls(node.body);
-        continue;
+
+  const visitControl = node => {
+    if (node.kind === 'uiControl') {
+      add(node.id, 'control', node.control, node.line);
+      if (node.control === 'panel') {
+        for (const nested of node.body ?? []) visitControl(nested);
       }
-      if (node.kind === 'tabs') {
-        add(node.id, 'control', 'tabs', node.line);
-        for (const page of node.body ?? []) visitControls(page.body);
+      return;
+    }
+    if (node.kind === 'tabs') {
+      add(node.id, 'control', 'tabs', node.line);
+      for (const page of node.body ?? []) {
+        for (const nested of page.body ?? []) visitControl(nested);
       }
     }
   };
 
-  for (const node of ast) {
-    if (node.kind === 'window') {
-      visitControls(node.body);
-      for (const child of node.body ?? []) {
-        if (child.kind !== 'menu') continue;
-        for (const item of child.body ?? []) {
-          if (item.kind === 'menuItem') add(item.id, 'menuItem', 'menuItem', item.line);
+  const walk = nodes => {
+    for (const node of nodes ?? []) {
+      if (node.kind === 'window') {
+        for (const child of node.body ?? []) {
+          if (child.kind === 'uiControl' || child.kind === 'tabs') visitControl(child);
+          else if (child.kind === 'menu') {
+            for (const item of child.body ?? []) {
+              if (item.kind === 'menuItem') add(item.id, 'menuItem', 'menuItem', item.line);
+            }
+          }
         }
+      } else if (node.kind === 'confirmDialog' || node.kind === 'openFileDialog' || node.kind === 'saveFileDialog') {
+        add(node.id, 'resultDialog', node.kind, node.line);
       }
-      continue;
+
+      // Match the Window runtime validator's traversal boundary. Window/Tabs/Menu
+      // children were handled structurally above; event/action bodies remain recursive.
+      if (node.body && !['window', 'tabs', 'tabPage', 'menu'].includes(node.kind)) walk(node.body);
+      if (node.thenBody) walk(node.thenBody);
+      if (node.elseBody) walk(node.elseBody);
     }
-    if (node.kind === 'confirmDialog' || node.kind === 'openFileDialog' || node.kind === 'saveFileDialog') {
-      add(node.id, 'resultDialog', node.kind, node.line);
-    }
-  }
+  };
+
+  walk(ast);
   return out;
 }
 
