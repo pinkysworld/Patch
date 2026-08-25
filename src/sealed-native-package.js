@@ -58,7 +58,9 @@ function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVers
   if (version === PATCH_FROZEN_NATIVE_PAYLOAD_VERSION) {
     return sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform });
   }
-  throw new SealedNativePackageError(`Ready/offline native packages support payload v12 or v13, not '${payloadVersion}'.`);
+  throw new SealedNativePackageError(
+    `Ready/offline native packages support payload v${PATCH_FROZEN_NATIVE_PAYLOAD_VERSION} or v${PATCH_CURRENT_NATIVE_PAYLOAD_VERSION}, not '${payloadVersion}'.`
+  );
 }
 
 function infoPlist(name) {
