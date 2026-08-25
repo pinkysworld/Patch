@@ -63,7 +63,7 @@ function resolveControlLineIndex(rows, sourceLine) {
   if (!Number.isInteger(raw)) return -1;
   for (const candidate of [raw - 1, raw]) {
     if (candidate < 0 || candidate >= rows.length) continue;
-    if (/^\s*(?:text|button|input|checkbox|radio|combo|listbox|tabs)\b/i.test(rows[candidate])) return candidate;
+    if (/^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|statusbar)\b/i.test(rows[candidate])) return candidate;
   }
   return raw >= 1 && raw <= rows.length ? raw - 1 : -1;
 }

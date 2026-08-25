@@ -3,6 +3,7 @@ export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.2';
 export function enhanceStandaloneWindowWebApp(built) {
   if (!built || typeof built.html !== 'string' || built.metadata?.projectKind !== 'window') return built;
   const slider = containsSlider(built.compiled?.ast ?? []);
+  const statusbar = containsStatusBar(built.compiled?.ast ?? []);
   const html = built.html
     .replace('<pre id="output"></pre>', '<pre id="output" role="status" aria-live="polite" aria-atomic="true"></pre>')
     .replace('</head>', `${accessibilityStyle()}\n</head>`)
@@ -13,7 +14,8 @@ export function enhanceStandaloneWindowWebApp(built) {
     metadata: {
       ...built.metadata,
       accessibilityVersion: PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION,
-      ...(slider ? { sliderStage: 1, sliderMode: 'transient-number' } : {})
+      ...(slider ? { sliderStage: 1, sliderMode: 'transient-number' } : {}),
+      ...(statusbar ? { statusBarStage: 1, statusBarMode: 'source-backed-bottom-docked' } : {})
     }
   };
 }
@@ -27,14 +29,23 @@ function containsSlider(nodes) {
   return false;
 }
 
+function containsStatusBar(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'statusbar') return true;
+    if (node.kind === 'window' && containsStatusBar(node.body)) return true;
+  }
+  return false;
+}
+
 function accessibilityStyle() {
   return `<style data-patch-window-accessibility>
 :where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
 .patch-radio-group{min-width:260px;margin:0;padding:10px 12px;border:1px solid #d4d4d8;border-radius:9px}.patch-radio-legend{padding:0 5px;font-size:12px;font-weight:700}.patch-radio-option{display:flex;align-items:center;gap:8px;min-height:30px;cursor:pointer}.patch-radio-option input{min-width:0!important;width:18px;height:18px;margin:0;padding:0}
 .patch-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;min-width:260px}.patch-slider input[type="range"]{grid-column:1/-1;width:100%;min-width:0;padding:0;border:0;background:transparent}.patch-slider-value{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}.patch-slider-range{font-size:11px;color:#71717a}
-@media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}}
+.patch-statusbar{display:flex;align-items:center;min-width:0;overflow:hidden;padding:0 10px;border-top:1px solid #d4d4d8;background:#f4f4f5;color:#52525b;font-size:12px;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;position:absolute!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:none!important;margin:0!important}
+@media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}.patch-statusbar{border-color:#41444e;background:#24262d;color:#d4d4d8}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
-@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}}
+@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-statusbar{border-top:1px solid CanvasText;background:Canvas;color:CanvasText}}
 </style>`;
 }
 
@@ -106,6 +117,15 @@ function accessibilityRuntime() {
   }
 
   renderControl=function(control,windowId,controlIndex){
+    if(control?.type==='statusbar'){
+      const bar=document.createElement('div');
+      bar.className='patch-statusbar';
+      bar.setAttribute?.('role','status');
+      bar.setAttribute?.('aria-label',String(control.id||'StatusBar'));
+      bar.textContent=patchControlName(control,'Ready');
+      return bar;
+    }
+
     if(control?.type==='radio'){
       const group=document.createElement('fieldset');
       group.className='patch-radio-group';

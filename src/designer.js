@@ -93,6 +93,22 @@ export function addDesignerControl(source, type, options = {}) {
     return tidy(lines.join('\n'));
   }
 
+  if (type === 'statusbar') {
+    if (existing.some(item => item.type === 'statusbar')) {
+      throw new Error('This Form already has a StatusBar. Edit the existing StatusBar instead of adding another one.');
+    }
+    const width = targetWindow.width ?? DEFAULT_WINDOW.width;
+    const height = targetWindow.height ?? DEFAULT_WINDOW.height;
+    const barHeight = PATCH_FORM_CONTROL_DEFAULTS.statusbar.height;
+    const layout = { x: 0, y: Math.max(0, height - barHeight), width, height: barHeight };
+    const id = nextId(lines, 'statusbar');
+    lines.splice(insertAt, 0,
+      `${childIndent}# @layout dock bottom`,
+      `${childIndent}${formatControl('statusbar', id, '"Ready"', layout)}`
+    );
+    return tidy(lines.join('\n'));
+  }
+
   const layout = nextControlLayout(existing, type);
   growWindowToFit(lines, targetWindow, layout);
 
@@ -199,7 +215,7 @@ export function updateDesignerControl(source, selector, changes = {}) {
   }
 
   let nextTextExpr = control.textExpr;
-  if (['text', 'button', 'checkbox'].includes(control.type) && Object.hasOwn(changes, 'textExpr')) {
+  if (['text', 'button', 'checkbox', 'statusbar'].includes(control.type) && Object.hasOwn(changes, 'textExpr')) {
     nextTextExpr = String(changes.textExpr ?? '').trim();
     if (!nextTextExpr) throw new Error('Text expression cannot be empty.');
   }
@@ -244,6 +260,7 @@ export function removeDesignerControl(source, selector) {
   const control = findControl(controls, selector);
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
+  const directiveIndex = layoutDirectiveBefore(lines, lineIndex);
   if (control.type === 'tabs' || control.type === 'table' || control.type === 'tree') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
@@ -252,10 +269,12 @@ export function removeDesignerControl(source, selector) {
       if (indentOf(lines[end]).length <= baseIndent) break;
       end += 1;
     }
-    lines.splice(lineIndex, end - lineIndex);
+    const start = directiveIndex >= 0 ? directiveIndex : lineIndex;
+    lines.splice(start, end - start);
     if (control.id) removeEventBlocks(lines, control.id);
   } else {
-    lines.splice(lineIndex, 1);
+    const start = directiveIndex >= 0 ? directiveIndex : lineIndex;
+    lines.splice(start, lineIndex - start + 1);
     if (control.id) removeEventBlocks(lines, control.id);
   }
   return tidy(lines.join('\n'));
@@ -399,6 +418,11 @@ function removeEventBlocks(lines, id) {
   }
 }
 
+function layoutDirectiveBefore(lines, lineIndex) {
+  if (lineIndex < 1) return -1;
+  return /^\s*#\s*@layout\b/i.test(lines[lineIndex - 1]) ? lineIndex - 1 : -1;
+}
+
 function makeControl(type, lines, layout) {
   if (!PATCH_FORM_CONTROL_DEFAULTS[type]) throw new Error(`Designer cannot add '${type}' yet.`);
   if (type === 'text') return formatControl(type, null, '"Text"', layout);
@@ -410,6 +434,7 @@ function makeControl(type, lines, layout) {
   if (type === 'listbox') return formatControl(type, nextId(lines, 'listbox'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'slider') return formatControl(type, nextId(lines, 'slider'), null, layout, null, { min: 0, max: 100, step: 1 });
   if (type === 'timer') return formatControl(type, nextId(lines, 'timer'), null, layout, null, null, 1000);
+  if (type === 'statusbar') return formatControl(type, nextId(lines, 'statusbar'), '"Ready"', layout);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
@@ -424,6 +449,7 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
   else if (type === 'timer') core = `timer as ${id} interval ${timerIntervalNumber(timerInterval ?? 1000)}`;
+  else if (type === 'statusbar') core = `statusbar ${textExpr ?? '"Ready"'} as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
   else if (type === 'tree') core = `tree as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);

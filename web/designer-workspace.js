@@ -14,6 +14,7 @@ import './designer-focus-order.js';
 import './designer-layout-actions.js';
 import './form-designer-workflow.js';
 import './designer-toolbox.js';
+import './designer-statusbar.js';
 
 const STORAGE_KEY = 'patch-studio-designer-properties-v1';
 const DEFAULT_WIDTH = 320;

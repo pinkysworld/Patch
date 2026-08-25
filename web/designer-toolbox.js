@@ -30,6 +30,7 @@ export const DESIGNER_TOOL_CATALOG = Object.freeze([
   { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
   { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
   { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' },
+  { group: 'Chrome', type: 'statusbar', buttonId: 'addStatusbar', label: 'StatusBar' },
   { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' }
 ]);
 
@@ -101,6 +102,7 @@ function install() {
   designer.dataset.patchToolboxPicker = 'true';
   installStylesheet();
   installTimerButton();
+  installStatusBarButton();
   installNonvisualTray();
   installTimerInspector();
 
@@ -191,6 +193,39 @@ function installTimerButton() {
   }, { capture: true });
 }
 
+function installStatusBarButton() {
+  if (!toolbar || toolbar.querySelector('#addStatusbar')) return;
+  const button = doc.createElement('button');
+  button.id = 'addStatusbar';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ StatusBar';
+  button.setAttribute('aria-label', 'Add StatusBar');
+  button.title = 'Add a source-backed StatusBar docked to the bottom of the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addStatusBarFromToolbox();
+  }, { capture: true });
+}
+
+function addStatusBarFromToolbox() {
+  if (!code || !canvas) return;
+  try {
+    const windowIndex = activeFormIndex();
+    const next = addDesignerControl(code.value, 'statusbar', { windowIndex });
+    const statusbar = listDesignerControls(next)
+      .find(control => control.windowIndex === windowIndex && control.type === 'statusbar');
+    setSource(next);
+    if (statusbar) {
+      rememberDesignerSelection(canvas, designerSelectionForControl(statusbar, 'core'), { reason: 'add-statusbar' });
+    }
+  } catch (error) {
+    showToolError(error);
+  }
+}
+
 function addTimerFromToolbox() {
   if (!code || !canvas) return;
   try {
@@ -201,7 +236,7 @@ function addTimerFromToolbox() {
     renderNonvisualTray();
     syncTimerInspector();
   } catch (error) {
-    showTimerError(error);
+    showToolError(error);
   }
 }
 
@@ -364,7 +399,7 @@ function applyTimerInterval() {
     renderNonvisualTray();
     syncTimerInspector();
   } catch (error) {
-    showTimerError(error);
+    showToolError(error);
   }
 }
 
@@ -411,7 +446,7 @@ function sameLocation(control, selection) {
   return Boolean(selection && Number(control?.windowIndex) === Number(selection.windowIndex) && Number(control?.controlIndex) === Number(selection.controlIndex));
 }
 
-function showTimerError(error) {
+function showToolError(error) {
   const target = doc?.querySelector('#designerInspectorError');
   if (!target) return;
   target.textContent = error?.message ?? String(error);
