@@ -5,6 +5,7 @@ import {
   updateDesignerControl,
   updateDesignerWindow
 } from '../src/designer.js';
+import { addDesignerPanel } from '../src/designer-panel.js';
 import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
@@ -30,6 +31,7 @@ export const DESIGNER_TOOL_CATALOG = Object.freeze([
   { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
   { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
   { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' },
+  { group: 'Containers', type: 'panel', buttonId: 'addPanel', label: 'Panel' },
   { group: 'Chrome', type: 'statusbar', buttonId: 'addStatusbar', label: 'StatusBar' },
   { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' }
 ]);
@@ -102,6 +104,7 @@ function install() {
   designer.dataset.patchToolboxPicker = 'true';
   installStylesheet();
   installTimerButton();
+  installPanelButton();
   installStatusBarButton();
   installNonvisualTray();
   installTimerInspector();
@@ -193,6 +196,23 @@ function installTimerButton() {
   }, { capture: true });
 }
 
+function installPanelButton() {
+  if (!toolbar || toolbar.querySelector('#addPanel')) return;
+  const button = doc.createElement('button');
+  button.id = 'addPanel';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Panel';
+  button.setAttribute('aria-label', 'Add Panel');
+  button.title = 'Add a source-backed Panel container to the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addPanelFromToolbox();
+  }, { capture: true });
+}
+
 function installStatusBarButton() {
   if (!toolbar || toolbar.querySelector('#addStatusbar')) return;
   const button = doc.createElement('button');
@@ -208,6 +228,18 @@ function installStatusBarButton() {
     event.stopImmediatePropagation();
     addStatusBarFromToolbox();
   }, { capture: true });
+}
+
+function addPanelFromToolbox() {
+  if (!code || !canvas) return;
+  try {
+    const windowIndex = activeFormIndex();
+    const added = addDesignerPanel(code.value, { windowIndex });
+    setSource(added.source);
+    rememberDesignerSelection(canvas, designerSelectionForControl(added.panel, 'core'), { reason: 'add-panel' });
+  } catch (error) {
+    showToolError(error);
+  }
 }
 
 function addStatusBarFromToolbox() {
