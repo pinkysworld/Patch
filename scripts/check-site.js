@@ -31,7 +31,6 @@ for (const page of ['index.html','language.html','docs.html','paper.html','downl
   const html = read(`_site/${page}`);
   requireAll(`${page} navigation`, html, ['./index.html','./language.html','./docs.html','./paper.html','./downloads.html','./help.html','class="site-tabs"']);
   requireAll(`${page} version`, html, [`data-patch-version="${pkg.version}"`]);
-  rejectAll(`${page} obsolete current native contract`, html, ['Native GUI IR 1.3 / payload v13 / runtime v1.4']);
 }
 
 const index = read('_site/index.html');
@@ -41,7 +40,7 @@ requireAll('Studio beta36 shell', index, [
   'IR 1.4 / v1.5','id="editorTabs"','id="editorParseStatus"','id="openCommandPalette"',
   'viewBox="0 0 22 22"','shape-rendering="crispEdges"','M3 2H18V12H8V20H3ZM8 6H13V8H8Z'
 ]);
-rejectAll('Studio beta36 shell', index, ['Ready IR 1.3 / v1.4','current runtime v1.4 templates']);
+rejectAll('Studio beta36 current shell', index, ['Ready IR 1.3 / v1.4','current runtime v1.4 templates']);
 
 const current = read('_site/src/native-current-contract.js');
 requireAll('Current native product facade', current, [
@@ -53,17 +52,22 @@ requireAll('Current native product facade', current, [
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio Ready native builder', nativeBuild, [
   './src/native-current-contract.js','buildCurrentNativeGuiIR as buildNativeGuiIR','sealCurrentNativeGuiRuntime',
-  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','Native single EXE (no token, recommended)','Native GTK app (no token, recommended)','Native AppKit app (no token, unsigned)'
+  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','Native single EXE (no token, recommended)','Native GTK app (no token, recommended)','Native AppKit app (no token, unsigned)',
+  'Native GUI IR 1.4','payload v14','runtime v1.5'
 ]);
-rejectAll('Studio Ready native builder direct-version imports', nativeBuild, ['./src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js']);
+rejectAll('Studio Ready native builder stale copy/imports', nativeBuild, [
+  './src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','Patch Studio compiled the GUI to Native GUI IR 1.3','sealed payload v13 into the native','runtime v1.4 app downloaded'
+]);
 
 const downloads = read('_site/downloads.html');
 requireAll('Downloads beta36', downloads, [
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS',
   'Native GUI IR <strong>1.4</strong>','payload <strong>v14</strong>','runtime <strong>v1.5</strong>',
-  'offline-compiler-v0.2','native-win32-runtime-v1.5','native-macos-runtime-v1.5','native-linux-runtime-v1.5','runtime-manifest.json'
+  'offline-compiler-v0.2','native-win32-runtime-v1.5','native-macos-runtime-v1.5','native-linux-runtime-v1.5','runtime-manifest.json',
+  'Native GUI IR 1.3 / payload v13 / runtime v1.4 remains the Slider-capable compatibility line',
+  'PictureBox note:'
 ]);
-rejectAll('Downloads beta36', downloads, ['offline-compiler-v0.1','native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']);
+rejectAll('Downloads beta36 current links', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"']);
 
 const multiselect = read('_site/designer-multiselect.js');
 requireAll('RAD multi-select arrange tools', multiselect, [
