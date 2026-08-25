@@ -104,6 +104,9 @@ function collectControlIdRecords(node, out = []) {
       for (const child of page.body ?? []) collectControlIdRecords(child, out);
     }
   }
+  if (node.kind === 'uiControl' && node.control === 'panel') {
+    for (const child of node.body ?? []) collectControlIdRecords(child, out);
+  }
   return out;
 }
 
@@ -117,7 +120,10 @@ function collectAllControlIds(ast, out = []) {
 function collectNodeIds(nodes = [], out = []) {
   for (const node of nodes ?? []) {
     if ((node.kind === 'uiControl' || node.kind === 'tabs') && node.id) out.push(node.id);
-    if (node.kind === 'tabs') for (const page of node.body ?? []) collectNodeIds(page.body, out);
+    if (node.kind === 'tabs') {
+      for (const page of node.body ?? []) collectNodeIds(page.body, out);
+    }
+    if (node.kind === 'uiControl' && node.control === 'panel') collectNodeIds(node.body, out);
   }
   return out;
 }

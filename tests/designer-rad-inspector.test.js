@@ -49,10 +49,12 @@ test('RAD Events inspector rejects anonymous and eventless controls', () => {
 });
 
 test('searchable Component Palette filters labels types and categories without a second component model', () => {
-  assert.equal(DESIGNER_TOOL_CATALOG.length, 13);
+  assert.equal(DESIGNER_TOOL_CATALOG.length, 14);
   assert.deepEqual(filterDesignerTools('tree').map(tool => tool.type), ['tree']);
   assert.deepEqual(filterDesignerTools('choice').map(tool => tool.type), ['radio', 'combo', 'listbox', 'slider']);
   assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox']);
+  assert.deepEqual(filterDesignerTools('container').map(tool => tool.type), ['tabs', 'panel']);
+  assert.deepEqual(filterDesignerTools('panel').map(tool => tool.type), ['panel']);
   assert.deepEqual(filterDesignerTools('chrome').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('status').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);

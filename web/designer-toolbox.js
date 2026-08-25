@@ -30,6 +30,7 @@ export const DESIGNER_TOOL_CATALOG = Object.freeze([
   { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
   { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
   { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' },
+  { group: 'Containers', type: 'panel', buttonId: 'addPanel', label: 'Panel' },
   { group: 'Chrome', type: 'statusbar', buttonId: 'addStatusbar', label: 'StatusBar' },
   { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' }
 ]);

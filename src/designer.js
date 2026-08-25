@@ -124,6 +124,17 @@ export function addDesignerControl(source, type, options = {}) {
     return tidy(lines.join('\n'));
   }
 
+  if (type === 'panel') {
+    const id = nextId(lines, 'panel');
+    const buttonId = nextId(lines, 'button');
+    lines.splice(insertAt, 0,
+      `${childIndent}${formatControl('panel', id, null, layout)}`,
+      `${childIndent}  text "Panel"`,
+      `${childIndent}  button "Action" as ${buttonId}`
+    );
+    return tidy(lines.join('\n'));
+  }
+
   if (type === 'table') {
     const id = nextId(lines, 'table');
     const columns = ['"Column 1"', '"Column 2"'];
@@ -190,6 +201,11 @@ export function listDesignerControls(source) {
       if (child.kind === 'uiControl' && child.control === 'timer') {
         item.interval = child.interval;
       }
+      if (child.kind === 'uiControl' && child.control === 'panel') {
+        item.childCount = (child.body ?? []).length;
+        item.childIds = (child.body ?? []).map(nested => nested.id).filter(Boolean);
+        item.childTypes = (child.body ?? []).map(nested => nested.control);
+      }
       controls.push(item);
       controlIndex += 1;
     }
@@ -251,7 +267,7 @@ export function updateDesignerControl(source, selector, changes = {}) {
     lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval)}`;
   }
 
-  if (oldId && nextId !== oldId && control.type !== 'tabs') renameEventHeaders(lines, oldId, nextId);
+  if (oldId && nextId !== oldId && !['tabs', 'panel'].includes(control.type)) renameEventHeaders(lines, oldId, nextId);
   return preserveTrailingNewline(source, lines.join('\n'));
 }
 
@@ -261,7 +277,7 @@ export function removeDesignerControl(source, selector) {
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
   const directiveIndex = layoutDirectiveBefore(lines, lineIndex);
-  if (control.type === 'tabs' || control.type === 'table' || control.type === 'tree') {
+  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
     while (end < lines.length) {
@@ -272,6 +288,9 @@ export function removeDesignerControl(source, selector) {
     const start = directiveIndex >= 0 ? directiveIndex : lineIndex;
     lines.splice(start, end - start);
     if (control.id) removeEventBlocks(lines, control.id);
+    if (control.type === 'panel') {
+      for (const childId of control.childIds ?? []) removeEventBlocks(lines, childId);
+    }
   } else {
     const start = directiveIndex >= 0 ? directiveIndex : lineIndex;
     lines.splice(start, lineIndex - start + 1);
@@ -435,6 +454,7 @@ function makeControl(type, lines, layout) {
   if (type === 'slider') return formatControl(type, nextId(lines, 'slider'), null, layout, null, { min: 0, max: 100, step: 1 });
   if (type === 'timer') return formatControl(type, nextId(lines, 'timer'), null, layout, null, null, 1000);
   if (type === 'statusbar') return formatControl(type, nextId(lines, 'statusbar'), '"Ready"', layout);
+  if (type === 'panel') return formatControl(type, nextId(lines, 'panel'), null, layout);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
@@ -450,10 +470,11 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
   else if (type === 'timer') core = `timer as ${id} interval ${timerIntervalNumber(timerInterval ?? 1000)}`;
   else if (type === 'statusbar') core = `statusbar ${textExpr ?? '"Ready"'} as ${id}`;
+  else if (type === 'panel') core = `panel as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
   else if (type === 'tree') core = `tree as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);
-  const block = type === 'tabs' || type === 'tree';
+  const block = type === 'tabs' || type === 'panel' || type === 'tree';
   if (!layout) return block ? `${core}:` : core;
   const positioned = `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
   return block ? `${positioned}:` : positioned;
