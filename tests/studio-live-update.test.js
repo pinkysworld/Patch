@@ -16,7 +16,8 @@ test('Patch site build content-addresses every public page and service-worker ca
   assert.match(buildSite, /SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','paper\.html','help\.html'\]/);
   assert.match(buildSite, /SITE_HTML_FILES\.splice\(3, 0, 'downloads\.html'\)/);
   assert.match(buildSite, /for \(const name of SITE_HTML_FILES\)/);
-  assert.match(buildSite, /versionLocalAssetReferences\(source, siteRevision\)/);
+  assert.match(buildSite, /normalizeCurrentProductSurface\(name, source\)/);
+  assert.match(buildSite, /versionLocalAssetReferences\(normalized, siteRevision\)/);
   assert.match(buildSite, /replaceAll\('__PATCH_SITE_REV__', siteRevision\)/);
 
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
