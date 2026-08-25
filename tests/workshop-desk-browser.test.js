@@ -192,7 +192,7 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   const designerState = await waitFor(cdp, `(() => ({
     source: document.querySelector('#code')?.value ?? '',
     forms: document.querySelectorAll('#designerCanvas .patch-window').length,
-    options: document.querySelectorAll('#designerFormSelect option').length,
+    options: document.querySelectorAll('#patchFormSelect option').length,
     startup: document.documentElement?.dataset?.patchStudioStartup ?? ''
   }))()`, state => state?.source?.includes('window "Workshop Desk" as main')
     && state.source.includes('window "Workshop settings" as settings')
