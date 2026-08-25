@@ -16,7 +16,7 @@ import './form-designer-workflow.js';
 import './designer-toolbox.js';
 
 const STORAGE_KEY = 'patch-studio-designer-properties-v1';
-const DEFAULT_WIDTH = 340;
+const DEFAULT_WIDTH = 320;
 const MIN_WIDTH = 280;
 const MAX_WIDTH = 480;
 const BULK_WINDOW_SAMPLES = new Set(['workshopDesk', 'listboxMultiWindow']);
@@ -77,6 +77,10 @@ function install() {
   surface.dataset.patchWorkspaceEnhanced = 'true';
 
   const state = loadState();
+  const persist = changes => {
+    Object.assign(state, changes);
+    saveState(state);
+  };
   setWidth(surface, state.width ?? DEFAULT_WIDTH);
 
   const toggle = document.createElement('button');
@@ -86,6 +90,12 @@ function install() {
   toggle.textContent = 'Object Inspector';
   toggle.title = 'Show or hide the source-backed Object Inspector';
   toolbar.appendChild(toggle);
+
+  const dock = document.createElement('button');
+  dock.id = 'designerInspectorDock';
+  dock.type = 'button';
+  dock.className = 'secondary small designer-inspector-dock';
+  toolbar.appendChild(dock);
 
   const handle = document.createElement('span');
   handle.className = 'designer-inspector-resize';
@@ -99,17 +109,34 @@ function install() {
     surface.classList.toggle('designer-properties-collapsed', collapsed);
     toggle.setAttribute('aria-pressed', collapsed ? 'false' : 'true');
     toggle.textContent = collapsed ? 'Show Inspector' : 'Object Inspector';
-    saveState({ width: currentWidth(surface), collapsed });
+    persist({ width: currentWidth(surface), collapsed });
   };
+
+  const setDockBelow = dockBelow => {
+    surface.classList.toggle('designer-inspector-bottom', dockBelow);
+    dock.setAttribute('aria-pressed', dockBelow ? 'true' : 'false');
+    dock.textContent = dockBelow ? 'Inspector right' : 'Inspector below';
+    dock.title = dockBelow
+      ? 'Dock the Object Inspector to the right on wide screens'
+      : 'Dock the Object Inspector below the Designer to give the canvas more width';
+    handle.setAttribute('aria-hidden', dockBelow ? 'true' : 'false');
+    persist({ dockBelow });
+  };
+
   setCollapsed(Boolean(state.collapsed));
+  setDockBelow(state.dockBelow === true);
 
   toggle.addEventListener('click', () => {
     setCollapsed(!surface.classList.contains('designer-properties-collapsed'));
   });
 
+  dock.addEventListener('click', () => {
+    setDockBelow(!surface.classList.contains('designer-inspector-bottom'));
+  });
+
   handle.addEventListener('dblclick', () => {
     setWidth(surface, DEFAULT_WIDTH);
-    saveState({ width: DEFAULT_WIDTH, collapsed: false });
+    persist({ width: DEFAULT_WIDTH, collapsed: false });
     setCollapsed(false);
   });
 
@@ -120,34 +147,43 @@ function install() {
       ? DEFAULT_WIDTH
       : currentWidth(surface) + (event.key === 'ArrowLeft' ? 20 : -20);
     setWidth(surface, next);
-    saveState({ width: currentWidth(surface), collapsed: false });
+    persist({ width: currentWidth(surface), collapsed: false });
   });
 
   handle.addEventListener('pointerdown', event => {
-    if (surface.classList.contains('designer-properties-collapsed')) return;
+    if (surface.classList.contains('designer-properties-collapsed') || surface.classList.contains('designer-inspector-bottom')) return;
     event.preventDefault();
     handle.setPointerCapture?.(event.pointerId);
     surface.classList.add('designer-properties-resizing');
 
+    const cleanup = finishEvent => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', cancel);
+      surface.classList.remove('designer-properties-resizing');
+      if (finishEvent?.pointerId !== undefined) handle.releasePointerCapture?.(finishEvent.pointerId);
+    };
     const move = moveEvent => {
       const rect = surface.getBoundingClientRect();
       setWidth(surface, rect.right - moveEvent.clientX);
     };
     const finish = finishEvent => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', finish);
-      surface.classList.remove('designer-properties-resizing');
-      handle.releasePointerCapture?.(finishEvent.pointerId);
-      saveState({ width: currentWidth(surface), collapsed: false });
+      cleanup(finishEvent);
+      persist({ width: currentWidth(surface), collapsed: false });
+    };
+    const cancel = cancelEvent => {
+      cleanup(cancelEvent);
+      setWidth(surface, state.width ?? DEFAULT_WIDTH);
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', finish, { once: true });
+    window.addEventListener('pointercancel', cancel, { once: true });
   });
 }
 
 function setWidth(surface, value) {
   const rect = surface.getBoundingClientRect();
-  const available = rect.width > 0 ? Math.max(MIN_WIDTH, rect.width - 360) : MAX_WIDTH;
+  const available = rect.width > 0 ? Math.max(MIN_WIDTH, rect.width - 420) : MAX_WIDTH;
   const max = Math.min(MAX_WIDTH, available);
   const width = Math.max(MIN_WIDTH, Math.min(max, Math.round(Number(value) || DEFAULT_WIDTH)));
   surface.style.setProperty('--designer-inspector-width', `${width}px`);
@@ -163,10 +199,11 @@ function loadState() {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
     return {
       width: Number.isFinite(Number(parsed.width)) ? Number(parsed.width) : DEFAULT_WIDTH,
-      collapsed: parsed.collapsed === true
+      collapsed: parsed.collapsed === true,
+      dockBelow: parsed.dockBelow === true
     };
   } catch {
-    return { width: DEFAULT_WIDTH, collapsed: false };
+    return { width: DEFAULT_WIDTH, collapsed: false, dockBelow: false };
   }
 }
 
