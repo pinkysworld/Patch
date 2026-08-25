@@ -81,12 +81,13 @@ export function addDesignerTimer(source, options = {}) {
   if (beforeWindow?.width && beforeWindow?.height) {
     const afterWindow = listDesignerWindows(next).find(item => item.windowIndex === windowIndex);
     if (afterWindow && (afterWindow.width !== beforeWindow.width || afterWindow.height !== beforeWindow.height)) {
-      next = updateDesignerWindow(next, windowIndex, {
-        id: beforeWindow.id,
+      const changes = {
         titleExpr: beforeWindow.titleExpr,
         width: beforeWindow.width,
         height: beforeWindow.height
-      });
+      };
+      if (beforeWindow.id) changes.id = beforeWindow.id;
+      next = updateDesignerWindow(next, windowIndex, changes);
       timer = listDesignerControls(next).find(control =>
         control.windowIndex === windowIndex && control.controlIndex === timer.controlIndex
       ) ?? timer;
@@ -205,17 +206,31 @@ function addTimerFromToolbox() {
 }
 
 function installNonvisualTray() {
-  if (!canvas || canvas.querySelector('#designerNonvisualTray')) return;
-  const tray = doc.createElement('section');
-  tray.id = 'designerNonvisualTray';
-  tray.className = 'designer-nonvisual-tray';
-  tray.setAttribute('aria-label', 'Nonvisual components');
-  canvas.appendChild(tray);
+  if (!canvas) return;
+  ensureNonvisualTray();
+  if (canvas.dataset.patchNonvisualTrayObserver !== 'true') {
+    canvas.dataset.patchNonvisualTrayObserver = 'true';
+    new MutationObserver(() => {
+      if (!canvas.querySelector(':scope > #designerNonvisualTray')) scheduleTimerSync();
+    }).observe(canvas, { childList: true });
+  }
   code?.addEventListener('input', scheduleTimerSync);
   code?.addEventListener('change', scheduleTimerSync);
   doc.querySelector('#patchFormSelect')?.addEventListener('change', scheduleTimerSync);
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, scheduleTimerSync);
   renderNonvisualTray();
+}
+
+function ensureNonvisualTray() {
+  if (!canvas) return null;
+  let tray = canvas.querySelector(':scope > #designerNonvisualTray');
+  if (tray) return tray;
+  tray = doc.createElement('section');
+  tray.id = 'designerNonvisualTray';
+  tray.className = 'designer-nonvisual-tray';
+  tray.setAttribute('aria-label', 'Nonvisual components');
+  canvas.appendChild(tray);
+  return tray;
 }
 
 let timerSyncQueued = false;
@@ -230,7 +245,7 @@ function scheduleTimerSync() {
 }
 
 function renderNonvisualTray() {
-  const tray = canvas?.querySelector('#designerNonvisualTray');
+  const tray = ensureNonvisualTray();
   if (!tray || !code) return;
   let timers = [];
   try {
