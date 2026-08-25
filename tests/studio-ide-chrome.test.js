@@ -25,6 +25,16 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
   assert.match(style, /border: 1px dashed var\(--border-strong\)/);
 });
 
+test('Studio brand mark is a square geometric P with no rotation', () => {
+  assert.match(html, /class="brand-mark"[^>]*>\s*<svg /);
+  assert.doesNotMatch(html, /class="brand-mark"[^>]*>P</);
+  assert.doesNotMatch(style, /rotate\(/);
+  assert.doesNotMatch(refresh, /rotate\(/);
+  assert.match(style, /\.brand-mark[\s\S]*?transform:\s*none/);
+  assert.match(refresh, /\.brand-mark[\s\S]*?transform:\s*none/);
+  assert.match(style, /\.brand-mark svg/);
+});
+
 test('Studio status bar stays visible and carries save state plus the Ready chip', () => {
   assert.match(html, /id="saveState"/);
   assert.match(html, /class="status-chip"[^>]*>IR 1\.3 \/ v1\.4/);

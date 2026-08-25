@@ -20,7 +20,7 @@ if (pkg.version !== '0.2.0-beta.35') throw new Error(`beta.35 site validator req
 for (const rel of [
   '_site/index.html','_site/language.html','_site/docs.html','_site/paper.html','_site/downloads.html','_site/help.html',
   '_site/beta35-studio.js','_site/slider-stage1.js','_site/table-stage1.js','_site/src/webapp.js','_site/src/window-events.js','_site/src/window-build.js',
-  '_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/sw.js'
+  '_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-gui-ir-v14.js','_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-gui-v14.js','_site/src/native-chrome-backend-adapter.js','_site/sw.js'
 ]) requireFile(rel);
 
 // beta.35 introduced browser ListBox multi-selection. beta.35+ product work later
@@ -85,7 +85,7 @@ rejectAll('beta.35+ Downloads page', downloads, ['Native Slider parity requires 
 const sw = read('_site/sw.js');
 requireAll('beta.35 Service Worker', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')","const navigation = event.request.mode === 'navigate'","const htmlAsset = sameOrigin","freshFirst = navigation || codeAsset || htmlAsset || runtimeAsset",'./slider-stage1.js','./src/window-events.js',
-  './src/native-gui-ir-v12.js','./src/native-gui-ir-v13.js','./src/sealed-native-gui-v12.js','./src/sealed-native-gui-v13.js',
+  './src/native-gui-ir-v12.js','./src/native-gui-ir-v13.js','./src/native-gui-ir-v14.js','./src/sealed-native-gui-v12.js','./src/sealed-native-gui-v13.js','./src/sealed-native-gui-v14.js','./src/native-chrome-backend-adapter.js',
   './src/call-site-validation.js','./src/independent-range-expression.js','./src/independent-guard-expression.js','if (navigation)','throw error'
 ]);
 

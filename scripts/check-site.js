@@ -29,9 +29,9 @@ const requiredFiles = [
   '_site/designer-structural-keyboard.js','_site/designer-inspector.css',
   '_site/src/compiler.js','_site/src/call-site-validation.js','_site/src/independent-range-expression.js','_site/src/independent-guard-expression.js',
   '_site/src/studio-project.js','_site/src/window-build.js','_site/src/window-events.js',
-  '_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js','_site/src/native-gui-frozen-lower.js','_site/src/native-gui-frozen-seal.js',
-  '_site/src/native-tree-backend-adapter.js','_site/src/native-slider-backend-adapter.js',
-  '_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-package.js'
+  '_site/src/native-gui-ir-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-gui-ir-v14.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js','_site/src/native-gui-frozen-lower.js','_site/src/native-gui-frozen-seal.js',
+  '_site/src/native-tree-backend-adapter.js','_site/src/native-slider-backend-adapter.js','_site/src/native-chrome-backend-adapter.js',
+  '_site/src/sealed-native-gui-v12.js','_site/src/sealed-native-gui-v13.js','_site/src/sealed-native-gui-v14.js','_site/src/sealed-native-package.js'
 ];
 for (const rel of requiredFiles) requireFile(rel);
 
@@ -148,7 +148,7 @@ requireAll('Window Slider capability gate', windowBuild, ['allowSlider','Slider'
 const nativeCurrent = read('_site/src/native-current-contract.js');
 requireAll('current native product facade', nativeCurrent, [
   'PATCH_CURRENT_NATIVE_GUI_IR_VERSION','PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','PATCH_CURRENT_NATIVE_RUNTIME_VERSION',
-  'native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
+  'native-win32-runtime-v1.5','native-macos-runtime-v1.5','native-linux-runtime-v1.5','buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
 const nativeFrozen = read('_site/src/native-frozen-contract.js');
 requireAll('frozen native TreeView product facade', nativeFrozen, [
@@ -176,8 +176,8 @@ const sw = read('_site/sw.js');
 requireAll('Service worker current compiler cache and type-safe fallback', sw, [
   "const PATCH_RELEASE = '0.2.0-beta.35'","url.pathname.includes('/runtimes/')",'./site-refresh.css','./studio-bootstrap.js',
   './paper.html','./studio-command-palette.css','./studio-command-palette.js','./slider-stage1.js','./src/compiler.js','./src/call-site-validation.js',
-  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-frozen-lower.js','./src/native-gui-ir-v13.js',
-  './src/native-slider-backend-adapter.js','./src/sealed-native-gui-v13.js','const navigation = event.request.mode === \'navigate\'',
+  './src/independent-range-expression.js','./src/independent-guard-expression.js','./src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-frozen-lower.js','./src/native-gui-ir-v13.js','./src/native-gui-ir-v14.js',
+  './src/native-slider-backend-adapter.js','./src/native-chrome-backend-adapter.js','./src/sealed-native-gui-v13.js','./src/sealed-native-gui-v14.js','const navigation = event.request.mode === \'navigate\'',
   'if (navigation)','throw error'
 ]);
 

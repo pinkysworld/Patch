@@ -253,7 +253,7 @@ jobs:
             fetch_asset "${base}native-build.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-native-build
             grep -F "./src/native-current-contract.js?v=${revision}" /tmp/patch-pages-native-build >/dev/null
             fetch_asset "${base}src/native-current-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-current
-            grep -F "./native-gui-ir-v13.js?v=${revision}" /tmp/patch-pages-current >/dev/null
+            grep -F "./native-gui-ir-v14.js?v=${revision}" /tmp/patch-pages-current >/dev/null
             fetch_asset "${base}src/native-frozen-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-frozen
             grep -F "./native-gui-ir-v12.js?v=${revision}" /tmp/patch-pages-frozen >/dev/null
             fetch_asset "${base}src/compiler.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-compiler

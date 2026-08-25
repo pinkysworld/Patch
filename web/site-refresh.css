@@ -87,6 +87,10 @@ body {
   transform: none;
   line-height: 1;
   padding: 0;
+  font-style: normal;
+}
+.brand-mark svg {
+  transform: none;
 }
 
 .brand h1 { font-size: 18px; letter-spacing: -.5px; }
