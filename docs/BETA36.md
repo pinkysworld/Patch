@@ -56,6 +56,33 @@ It provides:
 
 Generated handlers are compiled before the edit is accepted. The Events view does not store a hidden callback table or parallel project model.
 
+### Anchors and Docking
+
+The Object Inspector exposes the existing responsive Window layout contract as Delphi-style **Layout** properties instead of requiring source comments to be typed manually.
+
+For ordinary visual top-level controls, including Panel, the Layout section provides:
+
+- **Mode**: Fixed, Anchors or Dock;
+- independent Left, Right, Top and Bottom anchor edges;
+- Dock Top, Bottom, Left, Right and Fill;
+- quick presets for Top Left, Stretch Width, Stretch Both and Fill;
+- the canonical source directive currently represented by the UI.
+
+Every change still writes the existing adjacent source directive, for example:
+
+```patch
+# @layout anchor left right top
+input search at 24, 24 size 220, 36
+
+# @layout dock fill
+panel as workspace at 0, 0 size 640, 420:
+  text "Workspace"
+```
+
+The compact Resize selector in the Designer toolbar remains as a multi-selection shortcut and uses the same policy functions. Object Inspector and toolbar therefore cannot diverge into separate layout models.
+
+Timer is excluded because it is nonvisual. StatusBar reports its component-owned `dock bottom` contract read-only. The existing responsive Web, Win32, AppKit and GTK paths consume the same policy manifest; this is an authoring improvement rather than a new Native GUI IR version.
+
 ### Searchable Component Palette
 
 The existing categorized component catalog now has a search field. Search matches component label, source type and category, shows a result count, and keeps source-backed control creation as the mutation boundary.
@@ -110,7 +137,7 @@ This stage is intentionally not presented as independent Delphi `TabOrder` parit
 
 The generated public site is normalized to the current beta.36 product contract. The Studio P uses a square 32 by 32 geometric SVG coordinate grid with horizontal and vertical edges, avoiding fractional resampling artifacts.
 
-The service worker release id is also beta.36 so older cached Studio shells are replaced. Object Inspector, Focus Order, Menu Designer, Panel authoring, StatusBar and Timer authoring are part of the content-addressed public module graph and offline cache.
+The service worker release id is also beta.36 so older cached Studio shells are replaced. Object Inspector, Anchors/Docking, Focus Order, Menu Designer, Panel authoring, StatusBar and Timer authoring are part of the content-addressed public module graph and offline cache.
 
 ## Review boundary
 
