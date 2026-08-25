@@ -4,24 +4,25 @@ import fs from 'node:fs';
 import { DESIGNER_TOOL_CATALOG, groupedDesignerTools } from '../web/designer-toolbox.js';
 
 test('Designer control picker exposes every existing top-level toolbox control exactly once', () => {
-  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs'];
+  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addTimer'];
   assert.deepEqual(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId), expected);
   assert.equal(new Set(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId)).size, expected.length);
 });
 
 test('Designer control picker groups controls by user-facing purpose', () => {
   const groups = groupedDesignerTools();
-  assert.deepEqual(groups.map(group => group.group), ['Basic','Choices','Data','Containers']);
+  assert.deepEqual(groups.map(group => group.group), ['Basic','Choices','Data','Containers','Nonvisual']);
   assert.deepEqual(groups.find(group => group.group === 'Basic').tools.map(tool => tool.label), ['Text','Button','Input','Checkbox']);
   assert.deepEqual(groups.find(group => group.group === 'Choices').tools.map(tool => tool.label), ['Radio group','ComboBox','ListBox','Slider']);
   assert.deepEqual(groups.find(group => group.group === 'Data').tools.map(tool => tool.label), ['Table','TreeView']);
+  assert.deepEqual(groups.find(group => group.group === 'Nonvisual').tools.map(tool => tool.label), ['Timer']);
 });
 
-test('Designer picker delegates additions to the existing source-backed toolbox buttons', () => {
+test('Designer picker still activates controls through toolbox buttons', () => {
   const source = fs.readFileSync('web/designer-toolbox.js', 'utf8');
   assert.match(source, /button\.click\(\)/);
-  assert.doesNotMatch(source, /addDesignerControl/);
-  assert.doesNotMatch(source, /code\.value\s*=/);
+  assert.match(source, /addDesignerControl\(source, 'timer'/);
+  assert.match(source, /stripDesignerTimerLayout/);
   assert.match(source, /Ctrl\/Cmd\+Shift\+A/);
 });
 
@@ -33,13 +34,16 @@ test('mobile Designer replaces the long icon strip with the categorized picker',
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
-test('desktop Designer rail gives Slider a stable source-backed slot and icon', () => {
-  const css = fs.readFileSync('web/designer-inspector.css', 'utf8');
-  assert.match(css, /#designer #addSlider \{ top: 287px; \}/);
-  assert.match(css, /#designer #addTable \{ top: 321px; \}/);
-  assert.match(css, /#designer #addTree \{ top: 355px; \}/);
-  assert.match(css, /#designer #addTabs \{ top: 389px; \}/);
-  assert.match(css, /#designer #addSlider::before \{ content: "↔";/);
+test('desktop Designer rail gives Slider, Tabs and Timer stable source-backed slots', () => {
+  const inspectorCss = fs.readFileSync('web/designer-inspector.css', 'utf8');
+  const toolboxCss = fs.readFileSync('web/designer-toolbox.css', 'utf8');
+  assert.match(inspectorCss, /#designer #addSlider \{ top: 287px; \}/);
+  assert.match(inspectorCss, /#designer #addTable \{ top: 321px; \}/);
+  assert.match(inspectorCss, /#designer #addTree \{ top: 355px; \}/);
+  assert.match(inspectorCss, /#designer #addTabs \{ top: 389px; \}/);
+  assert.match(inspectorCss, /#designer #addSlider::before \{ content: "↔";/);
+  assert.match(toolboxCss, /#designer #addTimer \{ top: 423px; \}/);
+  assert.match(toolboxCss, /#designer #addTimer::before \{ content: "◷"; \}/);
 });
 
 test('public Studio and offline PWA package Designer toolbox discovery assets', () => {

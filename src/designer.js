@@ -87,6 +87,12 @@ export function addDesignerControl(source, type, options = {}) {
   }
 
   const existing = listDesignerControls(normalized).filter(item => item.windowIndex === requestedWindow);
+  if (type === 'timer') {
+    const control = makeControl(type, lines, null);
+    lines.splice(insertAt, 0, `${childIndent}${control}`);
+    return tidy(lines.join('\n'));
+  }
+
   const layout = nextControlLayout(existing, type);
   growWindowToFit(lines, targetWindow, layout);
 
@@ -165,6 +171,9 @@ export function listDesignerControls(source) {
         item.max = child.max;
         item.step = child.step;
       }
+      if (child.kind === 'uiControl' && child.control === 'timer') {
+        item.interval = child.interval;
+      }
       controls.push(item);
       controlIndex += 1;
     }
@@ -213,12 +222,17 @@ export function updateDesignerControl(source, selector, changes = {}) {
     slider = { min, max, step };
   }
 
+  let timerInterval = null;
+  if (control.type === 'timer') {
+    timerInterval = timerIntervalNumber(Object.hasOwn(changes, 'interval') ? changes.interval : control.interval);
+  }
+
   const layout = normalizeControlLayout(control, changes);
   const indent = indentOf(lines[lineIndex]);
   if (control.type === 'table') {
     lines[lineIndex] = `${indent}${formatTableControl(nextId, control.columns ?? [], layout)}`;
   } else {
-    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider)}`;
+    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval)}`;
   }
 
   if (oldId && nextId !== oldId && control.type !== 'tabs') renameEventHeaders(lines, oldId, nextId);
@@ -293,11 +307,14 @@ function nextControlLayout(existing, type) {
   const defaults = PATCH_FORM_CONTROL_DEFAULTS[type];
   if (!defaults) throw new Error(`Designer cannot add '${type}' yet.`);
   let y = CONTROL_MARGIN;
-  for (const [index, control] of existing.entries()) {
+  let visualIndex = 0;
+  for (const control of existing) {
+    if (control.type === 'timer') continue;
     const currentDefaults = formControlDefaultSize(control.type);
-    const currentY = control.y ?? (CONTROL_MARGIN + index * 48);
+    const currentY = control.y ?? (CONTROL_MARGIN + visualIndex * 48);
     const currentHeight = control.height ?? currentDefaults.height;
     y = Math.max(y, currentY + currentHeight + CONTROL_GAP);
+    visualIndex += 1;
   }
   return { x: CONTROL_MARGIN, y, width: defaults.width, height: defaults.height };
 }
@@ -329,6 +346,14 @@ function controlDimension(value, name) {
 function sliderNumber(value, name) {
   const number = Number(value);
   if (!Number.isFinite(number)) throw new Error(`Slider ${name} must be a finite number.`);
+  return number;
+}
+
+function timerIntervalNumber(value) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 1 || number > 3600000) {
+    throw new Error('Timer interval must be a whole number from 1 to 3600000 milliseconds.');
+  }
   return number;
 }
 
@@ -384,10 +409,11 @@ function makeControl(type, lines, layout) {
   if (type === 'combo') return formatControl(type, nextId(lines, 'combo'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'listbox') return formatControl(type, nextId(lines, 'listbox'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'slider') return formatControl(type, nextId(lines, 'slider'), null, layout, null, { min: 0, max: 100, step: 1 });
+  if (type === 'timer') return formatControl(type, nextId(lines, 'timer'), null, layout, null, null, 1000);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
-function formatControl(type, id, textExpr, layout, options = null, slider = null) {
+function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
@@ -397,6 +423,7 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
+  else if (type === 'timer') core = `timer as ${id} interval ${timerIntervalNumber(timerInterval ?? 1000)}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
   else if (type === 'tree') core = `tree as ${id}`;
   else throw new Error(`Designer cannot edit '${type}' controls yet.`);

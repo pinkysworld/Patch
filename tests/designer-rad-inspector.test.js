@@ -49,10 +49,12 @@ test('RAD Events inspector rejects anonymous and eventless controls', () => {
 });
 
 test('searchable Component Palette filters labels types and categories without a second component model', () => {
-  assert.equal(DESIGNER_TOOL_CATALOG.length, 11);
+  assert.equal(DESIGNER_TOOL_CATALOG.length, 12);
   assert.deepEqual(filterDesignerTools('tree').map(tool => tool.type), ['tree']);
   assert.deepEqual(filterDesignerTools('choice').map(tool => tool.type), ['radio', 'combo', 'listbox', 'slider']);
   assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox']);
+  assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);
+  assert.deepEqual(filterDesignerTools('timer').map(tool => tool.type), ['timer']);
   assert.equal(filterDesignerTools('does-not-exist').length, 0);
   const groups = groupedDesignerTools(filterDesignerTools('data'));
   assert.deepEqual(groups.map(group => group.group), ['Data']);
@@ -102,6 +104,7 @@ test('RAD Object Inspector Component Palette and Focus Order are packaged into t
   assert.match(focusOrder, /reorderDesignerFocusOrder/);
   assert.match(toolbox, /designerComponentSearch/);
   assert.match(toolbox, /filterDesignerTools/);
+  assert.match(toolbox, /designerNonvisualTray/);
   assert.match(buildSite, /designer-event-inspector\.js/);
   assert.match(buildSite, /designer-focus-order\.js/);
   assert.match(sw, /designer-event-inspector\.js/);

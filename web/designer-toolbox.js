@@ -1,6 +1,22 @@
+import {
+  addDesignerControl,
+  listDesignerControls,
+  listDesignerWindows,
+  updateDesignerControl,
+  updateDesignerWindow
+} from '../src/designer.js';
+import {
+  DESIGNER_SELECTION_EVENT,
+  currentDesignerSelection,
+  designerSelectionForControl,
+  rememberDesignerSelection
+} from './designer-selection.js';
+
 const doc = typeof document === 'undefined' ? null : document;
 const designer = doc?.querySelector('#designer') ?? null;
 const toolbar = doc?.querySelector('#designer .designer-toolbar') ?? null;
+const code = doc?.querySelector('#code') ?? null;
+const canvas = doc?.querySelector('#designerCanvas') ?? null;
 
 export const DESIGNER_TOOL_CATALOG = Object.freeze([
   { group: 'Basic', type: 'text', buttonId: 'addText', label: 'Text' },
@@ -13,7 +29,8 @@ export const DESIGNER_TOOL_CATALOG = Object.freeze([
   { group: 'Choices', type: 'slider', buttonId: 'addSlider', label: 'Slider' },
   { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
   { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
-  { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' }
+  { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' },
+  { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' }
 ]);
 
 if (doc) queueMicrotask(install);
@@ -34,10 +51,58 @@ export function filterDesignerTools(query, catalog = DESIGNER_TOOL_CATALOG) {
     .some(value => String(value).toLocaleLowerCase().includes(needle)));
 }
 
+export function stripDesignerTimerLayout(source, line) {
+  const normalized = String(source).replace(/\r\n/g, '\n');
+  const lines = normalized.split('\n');
+  const index = Number(line) - 1;
+  if (!Number.isInteger(index) || index < 0 || index >= lines.length) return normalized;
+  lines[index] = lines[index].replace(/\s+at\s+\d+\s*,\s*\d+\s+size\s+\d+\s*,\s*\d+\s*$/, '');
+  const next = lines.join('\n');
+  return /\n$/.test(normalized) ? next.replace(/\n?$/, '\n') : next;
+}
+
+export function addDesignerTimer(source, options = {}) {
+  const windowIndex = Number.isInteger(options.windowIndex) ? options.windowIndex : 0;
+  const beforeWindow = listDesignerWindows(source).find(item => item.windowIndex === windowIndex) ?? null;
+  let next = addDesignerControl(source, 'timer', { windowIndex });
+  let timer = listDesignerControls(next)
+    .filter(control => control.windowIndex === windowIndex && control.type === 'timer')
+    .at(-1) ?? null;
+  if (!timer) throw new Error('Designer created a Timer but could not locate it in Patch source.');
+
+  next = stripDesignerTimerLayout(next, timer.line);
+  timer = listDesignerControls(next).find(control =>
+    control.windowIndex === windowIndex && control.controlIndex === timer.controlIndex
+  ) ?? timer;
+
+  // addDesignerControl uses the visual placement path. A nonvisual Timer must not
+  // enlarge an explicitly sized Form merely because its temporary insertion
+  // geometry happened to fall below the current visual controls.
+  if (beforeWindow?.width && beforeWindow?.height) {
+    const afterWindow = listDesignerWindows(next).find(item => item.windowIndex === windowIndex);
+    if (afterWindow && (afterWindow.width !== beforeWindow.width || afterWindow.height !== beforeWindow.height)) {
+      const changes = {
+        titleExpr: beforeWindow.titleExpr,
+        width: beforeWindow.width,
+        height: beforeWindow.height
+      };
+      if (beforeWindow.id) changes.id = beforeWindow.id;
+      next = updateDesignerWindow(next, windowIndex, changes);
+      timer = listDesignerControls(next).find(control =>
+        control.windowIndex === windowIndex && control.controlIndex === timer.controlIndex
+      ) ?? timer;
+    }
+  }
+  return { source: next, timer };
+}
+
 function install() {
   if (!designer || !toolbar || designer.dataset.patchToolboxPicker === 'true') return;
   designer.dataset.patchToolboxPicker = 'true';
   installStylesheet();
+  installTimerButton();
+  installNonvisualTray();
+  installTimerInspector();
 
   const shell = doc.createElement('div');
   shell.className = 'designer-component-palette';
@@ -109,6 +174,200 @@ function install() {
   });
 }
 
+function installTimerButton() {
+  if (!toolbar || toolbar.querySelector('#addTimer')) return;
+  const button = doc.createElement('button');
+  button.id = 'addTimer';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Timer';
+  button.setAttribute('aria-label', 'Add Timer');
+  button.title = 'Add a nonvisual source-backed Timer to the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addTimerFromToolbox();
+  }, { capture: true });
+}
+
+function addTimerFromToolbox() {
+  if (!code || !canvas) return;
+  try {
+    const windowIndex = activeFormIndex();
+    const added = addDesignerTimer(code.value, { windowIndex });
+    setSource(added.source);
+    rememberDesignerSelection(canvas, designerSelectionForControl(added.timer, 'core'), { reason: 'add-timer' });
+    renderNonvisualTray();
+    syncTimerInspector();
+  } catch (error) {
+    showTimerError(error);
+  }
+}
+
+function installNonvisualTray() {
+  if (!canvas) return;
+  ensureNonvisualTray();
+  if (canvas.dataset.patchNonvisualTrayObserver !== 'true') {
+    canvas.dataset.patchNonvisualTrayObserver = 'true';
+    new MutationObserver(() => {
+      if (!canvas.querySelector(':scope > #designerNonvisualTray')) scheduleTimerSync();
+    }).observe(canvas, { childList: true });
+  }
+  code?.addEventListener('input', scheduleTimerSync);
+  code?.addEventListener('change', scheduleTimerSync);
+  doc.querySelector('#patchFormSelect')?.addEventListener('change', scheduleTimerSync);
+  canvas.addEventListener(DESIGNER_SELECTION_EVENT, scheduleTimerSync);
+  renderNonvisualTray();
+}
+
+function ensureNonvisualTray() {
+  if (!canvas) return null;
+  let tray = canvas.querySelector(':scope > #designerNonvisualTray');
+  if (tray) return tray;
+  tray = doc.createElement('section');
+  tray.id = 'designerNonvisualTray';
+  tray.className = 'designer-nonvisual-tray';
+  tray.setAttribute('aria-label', 'Nonvisual components');
+  canvas.appendChild(tray);
+  return tray;
+}
+
+let timerSyncQueued = false;
+function scheduleTimerSync() {
+  if (timerSyncQueued) return;
+  timerSyncQueued = true;
+  queueMicrotask(() => {
+    timerSyncQueued = false;
+    renderNonvisualTray();
+    syncTimerInspector();
+  });
+}
+
+function renderNonvisualTray() {
+  const tray = ensureNonvisualTray();
+  if (!tray || !code) return;
+  let timers = [];
+  try {
+    const windowIndex = activeFormIndex();
+    timers = listDesignerControls(code.value)
+      .filter(control => control.windowIndex === windowIndex && control.type === 'timer');
+  } catch {
+    tray.innerHTML = '<strong>Nonvisual</strong><span class="designer-nonvisual-empty">Waiting for valid Patch source.</span>';
+    return;
+  }
+
+  tray.replaceChildren();
+  const title = doc.createElement('strong');
+  title.textContent = 'Nonvisual';
+  title.title = 'Components that participate in the Form but do not occupy canvas geometry';
+  tray.appendChild(title);
+
+  if (!timers.length) {
+    const empty = doc.createElement('span');
+    empty.className = 'designer-nonvisual-empty';
+    empty.textContent = 'No nonvisual components';
+    tray.appendChild(empty);
+    return;
+  }
+
+  const selection = currentDesignerSelection(canvas);
+  for (const timer of timers) {
+    const button = doc.createElement('button');
+    button.type = 'button';
+    button.className = 'designer-nonvisual-component';
+    button.dataset.windowIndex = String(timer.windowIndex);
+    button.dataset.controlIndex = String(timer.controlIndex);
+    button.setAttribute('aria-pressed', sameLocation(timer, selection) ? 'true' : 'false');
+    button.innerHTML = `<span class="designer-nonvisual-icon" aria-hidden="true">◷</span><span>${escapeHtml(timer.id ?? 'Timer')}</span><small>${Number(timer.interval ?? 1000)} ms</small>`;
+    button.addEventListener('click', () => {
+      rememberDesignerSelection(canvas, designerSelectionForControl(timer, 'core'), { reason: 'nonvisual-timer' });
+      syncTimerInspector();
+      renderNonvisualTray();
+    });
+    tray.appendChild(button);
+  }
+}
+
+function installTimerInspector() {
+  const form = doc.querySelector('#designerInspectorForm');
+  if (!form) return;
+  if (!form.querySelector('#designerInspectorTimerField')) {
+    const field = doc.createElement('label');
+    field.id = 'designerInspectorTimerField';
+    field.className = 'inspector-field';
+    field.hidden = true;
+    field.innerHTML = 'Interval (ms) <input id="designerInspectorTimerInterval" inputmode="numeric" min="1" max="3600000" step="1" aria-describedby="designerInspectorTimerHint">';
+    const hint = doc.createElement('small');
+    hint.id = 'designerInspectorTimerHint';
+    hint.className = 'inspector-hint';
+    hint.textContent = 'Nonvisual Timer. 1 ms to 1 hour. Use Events → OnTick for behavior.';
+    field.appendChild(hint);
+    const slider = form.querySelector('#designerInspectorSliderFields');
+    slider?.insertAdjacentElement('afterend', field);
+
+    const input = field.querySelector('#designerInspectorTimerInterval');
+    input?.addEventListener('change', applyTimerInterval);
+    input?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      applyTimerInterval();
+    });
+  }
+  canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncTimerInspector);
+  code?.addEventListener('input', scheduleTimerSync);
+  code?.addEventListener('change', scheduleTimerSync);
+  syncTimerInspector();
+}
+
+function syncTimerInspector() {
+  const field = doc?.querySelector('#designerInspectorTimerField');
+  if (!field || !canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  let control = null;
+  try {
+    control = selection
+      ? listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null
+      : null;
+  } catch {
+    control = null;
+  }
+  const isTimer = control?.type === 'timer';
+  field.hidden = !isTimer;
+  const geometry = doc.querySelector('[data-form-geometry]');
+  if (geometry) geometry.hidden = isTimer;
+  if (!isTimer) return;
+
+  const input = field.querySelector('#designerInspectorTimerInterval');
+  if (input && doc.activeElement !== input) input.value = String(control.interval ?? 1000);
+  const location = doc.querySelector('#designerInspectorLocation');
+  if (location && !location.textContent.includes(' ms')) location.textContent += ` · ${control.interval ?? 1000} ms`;
+}
+
+function applyTimerInterval() {
+  if (!canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  let control = null;
+  try {
+    control = listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return;
+  }
+  if (control?.type !== 'timer') return;
+  try {
+    const interval = doc.querySelector('#designerInspectorTimerInterval')?.value ?? control.interval;
+    const next = updateDesignerControl(code.value, selection, { interval });
+    setSource(next);
+    const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
+    rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    renderNonvisualTray();
+    syncTimerInspector();
+  } catch (error) {
+    showTimerError(error);
+  }
+}
+
 function renderToolOptions(select, tools, count) {
   select.replaceChildren();
   const prompt = doc.createElement('option');
@@ -134,6 +393,33 @@ function activateTool(buttonId) {
   if (!button || !toolbar.contains(button) || button.disabled) return false;
   button.click();
   return true;
+}
+
+function activeFormIndex() {
+  const value = Number(doc?.querySelector('#patchFormSelect')?.value);
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function setSource(source) {
+  if (!code) return;
+  code.value = source;
+  code.dispatchEvent(new Event('input', { bubbles: true }));
+  code.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function sameLocation(control, selection) {
+  return Boolean(selection && Number(control?.windowIndex) === Number(selection.windowIndex) && Number(control?.controlIndex) === Number(selection.controlIndex));
+}
+
+function showTimerError(error) {
+  const target = doc?.querySelector('#designerInspectorError');
+  if (!target) return;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
 }
 
 function installStylesheet() {

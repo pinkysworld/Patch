@@ -12,6 +12,7 @@ const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
 const appView = document.querySelector('#app');
 const toolbar = document.querySelector('.designer-toolbar');
+const VISUAL_CONTROL_TYPES = new Set(['text','button','input','checkbox','radio','combo','listbox','slider','table','tree','tabs']);
 let activeForm = 0;
 let scheduled = false;
 let pendingReveal = null;
@@ -154,7 +155,7 @@ function installGeometryInspector() {
 
 function applySelectedGeometry() {
   const selected = canvas?.querySelector('.designer-control.designer-selected');
-  if (!selected) return;
+  if (!selected || selected.classList.contains('designer-nonvisual-component')) return;
   const selector = selectorFromElement(selected);
   if (!selector) return;
   const fields = geometryFields();
@@ -182,7 +183,7 @@ function installDragAndResize() {
       return;
     }
     const control = event.target.closest?.('.designer-control.designer-selected');
-    if (!control || !canvas.contains(control)) return;
+    if (!control || !canvas.contains(control) || control.classList.contains('designer-nonvisual-component')) return;
     event.preventDefault();
     event.stopPropagation();
     beginPointerEdit(event, control, 'move');
@@ -194,12 +195,12 @@ function beginPointerEdit(event, element, mode) {
   if (!selector) return;
   const controls = listDesignerControls(code.value);
   const control = controls.find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
-  if (!control) return;
+  if (!control || !isVisualDesignerControl(control)) return;
   const startLayout = effectiveLayout(control);
   const startX = event.clientX;
   const startY = event.clientY;
   const target = canvas.querySelector(`.designer-control[data-window-index="${selector.windowIndex}"][data-control-index="${selector.controlIndex}"]`);
-  if (!target) return;
+  if (!target || target.classList.contains('designer-nonvisual-component')) return;
   element.setPointerCapture?.(event.pointerId);
 
   const release = pointerId => {
@@ -324,11 +325,16 @@ function applyLayouts(container, designer) {
     if (model.height) body.style.minHeight = `${model.height}px`;
 
     const windowControls = controls.filter(item => item.windowIndex === windowIndex);
+    const visualControls = windowControls.filter(isVisualDesignerControl);
     const elements = [...body.children].filter(el => !el.classList.contains('patch-form-resize-handle'));
-    elements.forEach((el, controlIndex) => {
+    elements.forEach((el, visualIndex) => {
+      const sourceControl = visualControls[visualIndex];
+      if (!sourceControl) return;
       el.dataset.windowIndex = String(windowIndex);
-      el.dataset.controlIndex = String(controlIndex);
+      el.dataset.controlIndex = String(sourceControl.controlIndex);
     });
+    const elementsByControlIndex = new Map(elements.map(el => [Number(el.dataset.controlIndex), el])
+      .filter(([controlIndex]) => Number.isInteger(controlIndex)));
 
     if (designer) {
       for (const handle of body.querySelectorAll(':scope > .patch-form-resize-handle')) handle.remove();
@@ -336,15 +342,15 @@ function applyLayouts(container, designer) {
 
     const sourceHasLayout = Boolean(
       model.width || model.height ||
-      windowControls.some(item => item.x !== null || item.y !== null || item.width !== null || item.height !== null)
+      visualControls.some(item => item.x !== null || item.y !== null || item.width !== null || item.height !== null)
     );
     if (!designer && !sourceHasLayout) return;
 
     body.classList.add('patch-form-layout');
-    windowControls.forEach((control, controlIndex) => {
-      const el = elements[controlIndex];
+    visualControls.forEach(control => {
+      const el = elementsByControlIndex.get(control.controlIndex);
       if (!el) return;
-      const layout = effectiveLayout(control, controlIndex);
+      const layout = effectiveLayout(control, control.controlIndex);
       el.classList.add('patch-form-positioned');
       Object.assign(el.style, {
         position: 'absolute',
@@ -357,7 +363,7 @@ function applyLayouts(container, designer) {
       });
       if (designer && el.classList.contains('designer-selected')) {
         selectedForm = windowIndex;
-        addResizeHandle(body, el, { windowIndex, controlIndex });
+        addResizeHandle(body, el, { windowIndex, controlIndex: control.controlIndex });
       }
     });
   });
@@ -395,11 +401,17 @@ function positionResizeHandle(target, selector) {
 function syncGeometryInspector() {
   const selected = canvas?.querySelector('.designer-control.designer-selected');
   const fields = geometryFields();
+  const geometrySection = document.querySelector('[data-form-geometry]');
   if (!selected || !fields.x) return;
+  if (selected.classList.contains('designer-nonvisual-component')) {
+    if (geometrySection) geometrySection.hidden = true;
+    return;
+  }
+  if (geometrySection) geometrySection.hidden = false;
   const selector = selectorFromElement(selected);
   if (!selector) return;
   const control = listDesignerControls(code.value).find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
-  if (!control) return;
+  if (!control || !isVisualDesignerControl(control)) return;
   const layout = effectiveLayout(control, control.controlIndex);
   fields.x.value = String(layout.x);
   fields.y.value = String(layout.y);
@@ -416,6 +428,10 @@ function geometryFields() {
   };
 }
 
+function isVisualDesignerControl(control) {
+  return VISUAL_CONTROL_TYPES.has(String(control?.type ?? ''));
+}
+
 function effectiveLayout(control, index = control.controlIndex ?? 0) {
   const defaults = formControlDefaultSize(control.type);
   return {
@@ -429,7 +445,7 @@ function effectiveLayout(control, index = control.controlIndex ?? 0) {
 function growFormForControl(source, selector) {
   const control = listDesignerControls(source).find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
   const form = listDesignerWindows(source).find(item => item.windowIndex === selector.windowIndex);
-  if (!control || !form) return source;
+  if (!control || !form || !isVisualDesignerControl(control)) return source;
   const layout = effectiveLayout(control, control.controlIndex);
   const width = Math.max(form.width ?? 640, layout.x + layout.width + 24);
   const height = Math.max(form.height ?? 420, layout.y + layout.height + 24);
