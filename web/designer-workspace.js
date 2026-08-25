@@ -13,6 +13,7 @@ import './designer-event-inspector.js';
 import './designer-focus-order.js';
 import './designer-layout-actions.js';
 import './form-designer-workflow.js';
+import './designer-menu-designer.js';
 import './designer-toolbox.js';
 import './designer-statusbar.js';
 
