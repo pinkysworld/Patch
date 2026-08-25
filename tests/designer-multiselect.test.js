@@ -53,5 +53,5 @@ test('multi-select presentation distinguishes primary and secondary controls and
   assert.match(css, /outline-style: dashed/);
   assert.match(css, /designer-multiselect-tools/);
   assert.match(css, /button:disabled/);
-  assert.match(moduleSource, /button\.disabled = displayCount < 2/);
+  assert.match(moduleSource, /button\.disabled = displayCount < \(distribution \? 3 : 2\)/);
 });

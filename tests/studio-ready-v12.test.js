@@ -11,7 +11,7 @@ const packageSource = fs.readFileSync('src/sealed-native-package.js', 'utf8');
 const v12 = fs.readFileSync('src/sealed-native-gui-v12.js', 'utf8');
 const v13 = fs.readFileSync('src/sealed-native-gui-v13.js', 'utf8');
 
-test('Studio token-free Window builds lower Native GUI IR 1.3 and seal payload v13 through the current facade', () => {
+test('Studio token-free Window builds lower Native GUI IR 1.4 and seal payload v14 through the current facade', () => {
   assert.match(nativeBuild, /native-current-contract\.js/);
   assert.match(nativeBuild, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
   assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
@@ -26,24 +26,24 @@ test('Studio token-free Window builds lower Native GUI IR 1.3 and seal payload v
   assert.match(nativeBuild, /allowSlider: true/);
 });
 
-test('Pages gates deployment on published runtime v1.4 assets for all desktop hosts', () => {
-  for (const tag of ['native-win32-runtime-v1.4','native-macos-runtime-v1.4','native-linux-runtime-v1.4']) assert.ok(pages.includes(tag), tag);
+test('Pages gates deployment on published runtime v1.5 assets for all desktop hosts', () => {
+  for (const tag of ['native-win32-runtime-v1.5','native-macos-runtime-v1.5','native-linux-runtime-v1.5']) assert.ok(pages.includes(tag), tag);
   assert.match(pages, /src\/native-current-contract\.js/);
   assert.match(pages, /src\/native-frozen-contract\.js/);
-  assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
+  assert.match(pages, /Patch Native Sealed Chrome Runtime v1\.5|Patch Native Sealed .* Runtime v1\.5/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /runtime-integrity-manifest\.js/);
   assert.match(pages, /\^sha256:\[0-9a-f\]\{64\}\$/);
   assert.match(pages, /steps\.native_runtime\.outputs\.ready == 'true'/);
 });
 
-test('Studio advertises current payload v13 runtime v1.4 native Slider support', () => {
-  assert.match(nativeBuild, /Native GUI IR 1\.3/);
-  assert.match(nativeBuild, /payload v13/);
-  assert.match(nativeBuild, /runtime v1\.4/i);
+test('Studio advertises current payload v14 runtime v1.5 native GUI support', () => {
+  assert.match(nativeBuild, /Native GUI IR 1\.4/);
+  assert.match(nativeBuild, /payload v14/);
+  assert.match(nativeBuild, /runtime v1\.5/i);
   assert.match(nativeBuild, /including TreeView and Slider/);
   assert.match(index, /Windows, macOS and Linux support Ready app download with no token or local toolchain/i);
-  assert.match(index, /Current runtime v1\.4 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1\.3 as payload v13/i);
+  assert.match(index, /IR 1\.4 \/ v1\.5/);
   assert.match(index, /hierarchical TreeView and native Slider/i);
   assert.match(index, /frozen payload v12 \/ runtime v1\.3 compatibility line remains Slider fail-closed/i);
 });

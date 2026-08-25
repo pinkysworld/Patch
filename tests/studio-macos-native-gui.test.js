@@ -10,9 +10,9 @@ const gui = buildCurrentNativeGuiIR(compile(source, { name: 'MacNativeTest', kin
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 
-test('browser package seals current Native GUI IR 1.3 payload v13 into a minimal macOS app bundle ZIP', () => {
-  assert.equal(gui.version, '1.3');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 13);
+test('browser package seals current Native GUI IR 1.4 payload v14 into a minimal macOS app bundle ZIP', () => {
+  assert.equal(gui.version, '1.4');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 14);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 10, 20, 30, 40]);
   const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App', payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION });
   assert.equal(ready.filename, 'My_Mac_App-macos-window.zip');
@@ -30,13 +30,13 @@ test('browser package seals current Native GUI IR 1.3 payload v13 into a minimal
   assert.equal((central.getUint32(38, true) >>> 16) & 0xffff, 0o100755);
 });
 
-test('Studio defaults macOS Window downloads to native AppKit runtime v1.4 sealing without token', () => {
+test('Studio defaults macOS Window downloads to native AppKit runtime v1.5 sealing without token', () => {
   assert.ok(studio.includes("const MACOS_NATIVE_GUI_RUNTIME = './runtimes/patch-macos-native-gui-runtime.bin'"));
   assert.ok(studio.includes('buildMacosNativeGuiPackage'));
   assert.ok(studio.includes('Native AppKit app (no token, unsigned)'));
-  assert.ok(studio.includes('macOS native AppKit runtime v1.4 app downloaded · unsigned · no token · no Electron'));
-  assert.ok(studio.includes('Native GUI IR 1.3'));
-  assert.ok(studio.includes('payload v13'));
+  assert.ok(studio.includes('macOS native AppKit runtime v1.5 app downloaded · unsigned · no token · no Electron'));
+  assert.ok(studio.includes('Native GUI IR 1.4'));
+  assert.ok(studio.includes('payload v14'));
   assert.ok(studio.includes('NSSlider'));
 });
 
@@ -47,23 +47,12 @@ test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatib
   assert.ok(studio.includes('Native AOT app (GitHub Actions)'));
 });
 
-test('macOS native runtime workflow smokes Result Dialogs and publishes universal accessible AppKit runtime v0.8', () => {
+test('macOS native runtime workflow keeps historical v0.8 compatibility evidence', () => {
   for (const marker of [
-    'native-runtime/appkit-sealed-gui-v08.mm',
-    'tests/sealed-native-accessibility.test.js',
-    'scripts/seal-native-macos.js',
-    '-arch arm64 -arch x86_64',
-    'lipo -archs',
-    'examples/radio-window.patch',
-    'PatchSealedRadio',
-    'examples/menu-dialog-window.patch',
-    'PatchSealedMenuDialog',
-    'examples/result-dialog-window.patch',
-    'PatchSealedResultDialog',
-    'Expected sealed native GUI payload v7',
-    'patch-macos-native-gui-runtime.bin',
-    'native-macos-runtime-v0.8',
-    'final signing/notarization remains separate'
+    'native-runtime/appkit-sealed-gui-v08.mm','tests/sealed-native-accessibility.test.js','scripts/seal-native-macos.js',
+    '-arch arm64 -arch x86_64','lipo -archs','examples/radio-window.patch','PatchSealedRadio',
+    'examples/menu-dialog-window.patch','PatchSealedMenuDialog','examples/result-dialog-window.patch','PatchSealedResultDialog',
+    'Expected sealed native GUI payload v7','patch-macos-native-gui-runtime.bin','native-macos-runtime-v0.8','final signing/notarization remains separate'
   ]) assert.ok(workflow.includes(marker), marker);
   assert.equal(workflow.includes('native-macos-runtime-v0.6'), false);
   assert.match(workflow, /unsigned universal AppKit/i);

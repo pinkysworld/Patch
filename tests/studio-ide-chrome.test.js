@@ -6,7 +6,7 @@ const html = fs.readFileSync('web/index.html', 'utf8');
 const style = fs.readFileSync('web/style.css', 'utf8');
 const refresh = fs.readFileSync('web/site-refresh.css', 'utf8');
 
-test('Studio keeps the beta.35 feature boundary inside the collapsed contracts disclosure', () => {
+test('Studio keeps the beta.36 feature boundary inside the collapsed contracts disclosure', () => {
   const launchpad = html.indexOf('class="studio-launchpad"');
   const strip = html.indexOf('class="beta35-strip"');
   const workspace = html.indexOf('class="workspace"');
@@ -28,9 +28,9 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
 test('Studio brand mark is a square geometric P with no rotation', () => {
   const mark = html.match(/class="brand-mark"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
   const path = mark.match(/<path[^>]*\sd="([^"]+)"/)?.[1] || '';
-  assert.match(mark, /<svg viewBox="0 0 32 32"/);
+  assert.match(mark, /<svg viewBox="0 0 22 22"/);
   assert.doesNotMatch(html, /class="brand-mark"[^>]*>P</);
-  assert.match(path, /^M8 6H22V18H13V26H8ZM13 10H18V14H13Z$/);
+  assert.match(path, /^M3 2H18V12H8V20H3ZM8 6H13V8H8Z$/);
   assert.doesNotMatch(path, /[cqstaCQSTA.]/);
   assert.doesNotMatch(style, /rotate\(/);
   assert.doesNotMatch(refresh, /rotate\(/);
@@ -41,7 +41,7 @@ test('Studio brand mark is a square geometric P with no rotation', () => {
 
 test('Studio status bar stays visible and carries save state plus the Ready chip', () => {
   assert.match(html, /id="saveState"/);
-  assert.match(html, /class="status-chip"[^>]*>IR 1\.3 \/ v1\.4/);
+  assert.match(html, /class="status-chip"[^>]*>IR 1\.4 \/ v1\.5/);
   assert.match(html, /<strong>Semantic changes<\/strong>/);
   assert.match(style, /\.status-chip/);
   assert.match(style, /\.statusbar\s*\{[^}]*display:\s*flex/s);

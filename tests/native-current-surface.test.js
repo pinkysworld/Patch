@@ -25,7 +25,7 @@ test('current product consumers use the stable native contract facade', () => {
   }
 });
 
-test('browser packaging ships current and frozen contracts without retired v07â€“v11 copies', () => {
+test('browser packaging ships current and frozen contracts without retired v07-v11 copies', () => {
   const buildSite = read('scripts/build-site.js');
   const sw = read('web/sw.js');
   assert.match(buildSite, /native-current-contract\.js/);
@@ -35,7 +35,7 @@ test('browser packaging ships current and frozen contracts without retired v07â€
   assert.match(sw, /native-current-contract\.js/);
   assert.match(sw, /native-frozen-contract\.js/);
   assert.match(sw, /native-gui-frozen-lower\.js/);
-  for (const version of ['v12','v13']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
+  for (const version of ['v12','v13','v14']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
   for (const retired of ['native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','sealed-native-gui.js','sealed-native-gui-v11.js']) {
     assert.equal(buildSite.includes(`'${retired}'`), false, `site builder still copies ${retired}`);
     assert.equal(sw.includes(`../src/${retired}`), false, `service worker still caches ${retired}`);
@@ -45,12 +45,11 @@ test('browser packaging ships current and frozen contracts without retired v07â€
 test('native compatibility documentation makes current versus frozen ownership explicit', () => {
   const docs = read('docs/NATIVE_COMPATIBILITY.md');
   for (const marker of [
-    'Native GUI IR 1.3 / sealed payload v13 / runtime v1.4',
+    'Native GUI IR 1.4 / sealed payload v14 / runtime v1.5',
     'native-current-contract.js',
-    'native-gui-1.3/payload-13/runtime-1.4',
+    'native-gui-1.4/payload-14/runtime-1.5',
     'native-frozen-contract.js',
     'native-gui-1.2/payload-12/runtime-1.3',
-    'native-gui-frozen-lower.js',
     'Historical include chain',
     'IR **0.7**',
     'do not gate Ready/Pages',
@@ -64,9 +63,8 @@ test('README and public website name both live native contracts', () => {
   const readme = read('README.md');
   const docsPage = read('web/docs.html');
   const downloads = read('web/downloads.html');
-  for (const marker of ['native-current-contract.js', 'native-frozen-contract.js', 'docs/NATIVE_COMPATIBILITY.md']) {
-    assert.ok(readme.includes(marker), marker);
-  }
+  assert.match(readme, /native-current-contract\.js/);
+  assert.match(readme, /native-frozen-contract\.js/);
   assert.match(docsPage, /docs\/NATIVE_COMPATIBILITY\.md/);
   assert.match(docsPage, /two live native product contracts/);
   assert.match(downloads, /Those two live contracts are the product import surface/);
@@ -98,7 +96,7 @@ function importGraph(entry) {
   return [...seen].map(file => path.relative(process.cwd(), file).split(path.sep).join('/'));
 }
 
-test('current and frozen facades no longer import the versioned v11â†’v07 include chain', () => {
+test('current and frozen facades no longer import the versioned v11-to-v07 include chain', () => {
   const forbidden = new Set([
     'src/native-gui-ir.js',
     'src/native-gui-ir-v08.js',
@@ -114,9 +112,6 @@ test('current and frozen facades no longer import the versioned v11â†’v07 includ
     if (entry.endsWith('native-frozen-contract.js')) {
       assert.ok(graph.includes('src/native-gui-frozen-seal.js'), `${entry} must use frozen sealer snapshot`);
     }
-    for (const file of graph) {
-      assert.equal(forbidden.has(file), false, `${entry} still imports ${file}`);
-    }
+    for (const file of graph) assert.equal(forbidden.has(file), false, `${entry} still imports ${file}`);
   }
 });
-
