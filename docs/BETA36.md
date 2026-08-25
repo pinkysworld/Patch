@@ -58,11 +58,26 @@ Generated handlers are compiled before the edit is accepted. The Events view doe
 
 ### Searchable Component Palette
 
-The existing categorized component catalog now has a search field. Search matches component label, source type and category, shows a result count, and keeps the existing source-backed add-control buttons as the sole mutation path.
+The existing categorized component catalog now has a search field. Search matches component label, source type and category, shows a result count, and keeps source-backed control creation as the mutation boundary.
 
 `Ctrl/Cmd+Shift+A` focuses the component search. When the search has exactly one result, Enter adds that control directly.
 
-The catalog intentionally still exposes only the authoring controls whose full Designer path is implemented. Panel, Timer, PictureBox and StatusBar are not advertised as finished drag-and-drop components merely because Native GUI IR 1.4 can transport them.
+The catalog now includes **Timer** in a dedicated **Nonvisual** category. Timer authoring creates an ordinary `timer as ... interval ...` declaration without canvas geometry. Panel, PictureBox and StatusBar are still not advertised as finished drag-and-drop components merely because Native GUI IR 1.4 can transport them.
+
+### Nonvisual component tray and Timer
+
+Patch Studio now has a Delphi/VB-style **Nonvisual** component tray beneath the Form canvas. Timer components live in this tray rather than pretending to be visible widgets on the Form.
+
+Timer authoring is source-backed end to end:
+
+- adding a Timer creates a unique Timer id with a default interval of `1000` ms;
+- the Object Inspector exposes **Interval (ms)** with a supported range from `1` to `3600000`;
+- the Events view exposes **OnTick**, backed by an ordinary `when ... ticked:` source block;
+- renaming a Timer updates its `ticked` handler header;
+- deleting a Timer removes its matching handler;
+- Timer does not consume visual auto-layout space or shift later visible controls.
+
+The tray is a projection of Patch source and the shared Designer selection model. It is not a second component store.
 
 ### Focus Order Stage 1
 
@@ -72,9 +87,9 @@ This stage is intentionally not presented as independent Delphi `TabOrder` parit
 
 ## Website and cache refresh
 
-The generated public site is normalized to the current beta.36 product contract. The Studio P is rendered on a native 22 by 22 SVG coordinate grid with only horizontal and vertical edges and `crispEdges`, avoiding the fractional resampling that could make the old mark look tilted.
+The generated public site is normalized to the current beta.36 product contract. The Studio P uses a square 32 by 32 geometric SVG coordinate grid with horizontal and vertical edges, avoiding fractional resampling artifacts.
 
-The service worker release id is also bumped to beta.36 so older cached Studio shells are replaced. New Object Inspector and Focus Order modules are part of the content-addressed public module graph and offline cache.
+The service worker release id is also bumped to beta.36 so older cached Studio shells are replaced. Object Inspector, Focus Order and Timer authoring remain part of the content-addressed public module graph and offline cache.
 
 ## Review boundary
 
