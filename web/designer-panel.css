@@ -135,6 +135,12 @@
   border-top: 1px solid var(--border);
 }
 
+/* Panel occupies the next conventional container slot in the desktop rail. */
+#designer #addPanel { top: 423px; }
+#designer #addPanel::before { content: "▣"; }
+#designer #addStatusbar { top: 457px; }
+#designer #addTimer { top: 491px; }
+
 @media (max-width: 760px) {
   .designer-panel-actions button {
     min-height: 32px;
