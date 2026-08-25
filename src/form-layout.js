@@ -18,6 +18,13 @@ export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
   statusbar: Object.freeze({ width: 400, height: 28 })
 });
 
+export const PATCH_NONVISUAL_FORM_CONTROLS = Object.freeze(['timer']);
+const NONVISUAL_FORM_CONTROLS = new Set(PATCH_NONVISUAL_FORM_CONTROLS);
+
+export function isNonvisualFormControl(type) {
+  return NONVISUAL_FORM_CONTROLS.has(String(type ?? ''));
+}
+
 export function formControlDefaultSize(type) {
   return PATCH_FORM_CONTROL_DEFAULTS[type] ?? { width: 120, height: 36 };
 }
@@ -36,11 +43,18 @@ export function buildFormLayoutManifest(ast) {
     version: PATCH_FORM_LAYOUT_VERSION,
     windows: (ast ?? []).filter(node => node.kind === 'window').map(node => {
       const controls = (node.body ?? []).filter(child => child.kind === 'uiControl' || child.kind === 'tabs');
-      const positioned = node.width !== undefined || node.height !== undefined || controls.some(child => child.layout);
+      const visualControls = controls.filter(child => !isNonvisualNode(child));
+      const positioned = node.width !== undefined || node.height !== undefined || visualControls.some(child => child.layout);
+      let visualIndex = 0;
       return {
         width: node.width ?? null,
         height: node.height ?? null,
-        controls: controls.map((child, index) => positioned ? effectiveControlLayout(child, index) : null)
+        controls: controls.map(child => {
+          if (isNonvisualNode(child)) return null;
+          const layout = positioned ? effectiveControlLayout(child, visualIndex) : null;
+          visualIndex += 1;
+          return layout;
+        })
       };
     })
   };
@@ -69,9 +83,11 @@ export function applyFormLayout(root, manifest, options = {}) {
     body.style.padding = '0';
     body.style.overflow = 'hidden';
     const elements = [...body.children];
-    form.controls.forEach((layout, controlIndex) => {
+    let visualIndex = 0;
+    form.controls.forEach(layout => {
       if (!layout) return;
-      const el = elements[controlIndex];
+      const el = elements[visualIndex];
+      visualIndex += 1;
       if (!el) return;
       el.style.position = 'absolute';
       el.style.left = `${layout.x}px`;
@@ -82,6 +98,11 @@ export function applyFormLayout(root, manifest, options = {}) {
       el.style.margin = '0';
     });
   });
+}
+
+function isNonvisualNode(control) {
+  const type = control?.kind === 'tabs' ? 'tabs' : control?.control;
+  return isNonvisualFormControl(type);
 }
 
 function effectiveControlLayout(control, index) {
