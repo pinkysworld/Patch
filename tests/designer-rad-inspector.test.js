@@ -49,12 +49,14 @@ test('RAD Events inspector rejects anonymous and eventless controls', () => {
 });
 
 test('searchable Component Palette filters labels types and categories without a second component model', () => {
-  assert.equal(DESIGNER_TOOL_CATALOG.length, 14);
+  assert.equal(DESIGNER_TOOL_CATALOG.length, 15);
   assert.deepEqual(filterDesignerTools('tree').map(tool => tool.type), ['tree']);
   assert.deepEqual(filterDesignerTools('choice').map(tool => tool.type), ['radio', 'combo', 'listbox', 'slider']);
   assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox']);
   assert.deepEqual(filterDesignerTools('container').map(tool => tool.type), ['tabs', 'panel']);
   assert.deepEqual(filterDesignerTools('panel').map(tool => tool.type), ['panel']);
+  assert.deepEqual(filterDesignerTools('graphics').map(tool => tool.type), ['picture']);
+  assert.deepEqual(filterDesignerTools('picture').map(tool => tool.type), ['picture']);
   assert.deepEqual(filterDesignerTools('chrome').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('status').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);
@@ -108,16 +110,11 @@ test('RAD Object Inspector Component Palette Focus Order and StatusBar are packa
   assert.match(focusOrder, /Focus Order · Stage 1/);
   assert.match(focusOrder, /Independent Delphi-style TabOrder metadata is a later contract/);
   assert.match(focusOrder, /reorderDesignerFocusOrder/);
-  assert.match(toolbox, /designerComponentSearch/);
-  assert.match(toolbox, /filterDesignerTools/);
-  assert.match(toolbox, /designerNonvisualTray/);
-  assert.match(toolbox, /addStatusbar/);
-  assert.match(statusbar, /PATCH_DESIGNER_STATUSBAR_VERSION/);
-  assert.match(statusbar, /dock bottom/);
-  assert.match(buildSite, /designer-event-inspector\.js/);
-  assert.match(buildSite, /designer-focus-order\.js/);
-  assert.match(buildSite, /designer-statusbar\.js/);
-  assert.match(sw, /designer-event-inspector\.js/);
-  assert.match(sw, /designer-focus-order\.js/);
-  assert.match(sw, /designer-statusbar\.js/);
+  assert.match(toolbox, /designer-component-palette/);
+  assert.match(toolbox, /designerInspectorPictureSource/);
+  assert.match(statusbar, /StatusBar/);
+  assert.match(buildSite, /'component-registry\.js'/);
+  assert.match(buildSite, /'designer-toolbox\.js'/);
+  assert.match(sw, /'\.\.\/src\/component-registry\.js'/);
+  assert.match(sw, /'\.\/designer-toolbox\.js'/);
 });

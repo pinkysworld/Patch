@@ -5,6 +5,7 @@ import {
   updateDesignerControl,
   updateDesignerWindow
 } from '../src/designer.js';
+import { listPatchComponents } from '../src/component-registry.js';
 import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
@@ -18,22 +19,12 @@ const toolbar = doc?.querySelector('#designer .designer-toolbar') ?? null;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
 
-export const DESIGNER_TOOL_CATALOG = Object.freeze([
-  { group: 'Basic', type: 'text', buttonId: 'addText', label: 'Text' },
-  { group: 'Basic', type: 'button', buttonId: 'addButton', label: 'Button' },
-  { group: 'Basic', type: 'input', buttonId: 'addInput', label: 'Input' },
-  { group: 'Basic', type: 'checkbox', buttonId: 'addCheckbox', label: 'Checkbox' },
-  { group: 'Choices', type: 'radio', buttonId: 'addRadio', label: 'Radio group' },
-  { group: 'Choices', type: 'combo', buttonId: 'addCombo', label: 'ComboBox' },
-  { group: 'Choices', type: 'listbox', buttonId: 'addListbox', label: 'ListBox' },
-  { group: 'Choices', type: 'slider', buttonId: 'addSlider', label: 'Slider' },
-  { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
-  { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
-  { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' },
-  { group: 'Containers', type: 'panel', buttonId: 'addPanel', label: 'Panel' },
-  { group: 'Chrome', type: 'statusbar', buttonId: 'addStatusbar', label: 'StatusBar' },
-  { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' }
-]);
+export const DESIGNER_TOOL_CATALOG = Object.freeze(listPatchComponents().map(component => Object.freeze({
+  group: component.category,
+  type: component.type,
+  buttonId: component.buttonId,
+  label: component.label
+})));
 
 if (doc) queueMicrotask(install);
 
@@ -102,10 +93,12 @@ function install() {
   if (!designer || !toolbar || designer.dataset.patchToolboxPicker === 'true') return;
   designer.dataset.patchToolboxPicker = 'true';
   installStylesheet();
+  installPictureButton();
   installTimerButton();
   installStatusBarButton();
   installNonvisualTray();
   installTimerInspector();
+  installPictureInspector();
 
   const shell = doc.createElement('div');
   shell.className = 'designer-component-palette';
@@ -177,6 +170,23 @@ function install() {
   });
 }
 
+function installPictureButton() {
+  if (!toolbar || toolbar.querySelector('#addPicture')) return;
+  const button = doc.createElement('button');
+  button.id = 'addPicture';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Picture';
+  button.setAttribute('aria-label', 'Add Picture');
+  button.title = 'Add a source-backed Picture to the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addPictureFromToolbox();
+  }, { capture: true });
+}
+
 function installTimerButton() {
   if (!toolbar || toolbar.querySelector('#addTimer')) return;
   const button = doc.createElement('button');
@@ -209,6 +219,23 @@ function installStatusBarButton() {
     event.stopImmediatePropagation();
     addStatusBarFromToolbox();
   }, { capture: true });
+}
+
+function addPictureFromToolbox() {
+  if (!code || !canvas) return;
+  try {
+    const windowIndex = activeFormIndex();
+    const next = addDesignerControl(code.value, 'picture', { windowIndex });
+    const picture = listDesignerControls(next)
+      .filter(control => control.windowIndex === windowIndex && control.type === 'picture')
+      .at(-1) ?? null;
+    setSource(next);
+    if (picture) {
+      rememberDesignerSelection(canvas, designerSelectionForControl(picture, 'core'), { reason: 'add-picture' });
+    }
+  } catch (error) {
+    showToolError(error);
+  }
 }
 
 function addStatusBarFromToolbox() {
@@ -399,6 +426,78 @@ function applyTimerInterval() {
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
     renderNonvisualTray();
     syncTimerInspector();
+  } catch (error) {
+    showToolError(error);
+  }
+}
+
+function installPictureInspector() {
+  const form = doc.querySelector('#designerInspectorForm');
+  if (!form || form.querySelector('#designerInspectorPictureSourceField')) return;
+  const field = doc.createElement('label');
+  field.id = 'designerInspectorPictureSourceField';
+  field.className = 'inspector-field';
+  field.hidden = true;
+  field.innerHTML = 'Source <input id="designerInspectorPictureSource" spellcheck="false" autocomplete="off" aria-describedby="designerInspectorPictureSourceHint">';
+  const hint = doc.createElement('small');
+  hint.id = 'designerInspectorPictureSourceHint';
+  hint.className = 'inspector-hint';
+  hint.textContent = 'Patch expression for the image source, for example "images/logo.png". Project Resources are the next R1 step.';
+  field.appendChild(hint);
+  const timer = form.querySelector('#designerInspectorTimerField');
+  const slider = form.querySelector('#designerInspectorSliderFields');
+  (timer ?? slider)?.insertAdjacentElement('afterend', field);
+
+  const input = field.querySelector('#designerInspectorPictureSource');
+  input?.addEventListener('change', applyPictureSource);
+  input?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    applyPictureSource();
+  });
+  canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncPictureInspector);
+  code?.addEventListener('input', syncPictureInspector);
+  code?.addEventListener('change', syncPictureInspector);
+  syncPictureInspector();
+}
+
+function syncPictureInspector() {
+  const field = doc?.querySelector('#designerInspectorPictureSourceField');
+  if (!field || !canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  let control = null;
+  try {
+    control = selection
+      ? listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null
+      : null;
+  } catch {
+    control = null;
+  }
+  const isPicture = control?.type === 'picture';
+  field.hidden = !isPicture;
+  if (!isPicture) return;
+  const input = field.querySelector('#designerInspectorPictureSource');
+  if (input && doc.activeElement !== input) input.value = control.sourceExpr ?? '';
+}
+
+function applyPictureSource() {
+  if (!canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  let control = null;
+  try {
+    control = listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return;
+  }
+  if (control?.type !== 'picture') return;
+  try {
+    const sourceExpr = doc.querySelector('#designerInspectorPictureSource')?.value ?? '';
+    const next = updateDesignerControl(code.value, selection, { sourceExpr });
+    setSource(next);
+    const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
+    rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    syncPictureInspector();
   } catch (error) {
     showToolError(error);
   }
