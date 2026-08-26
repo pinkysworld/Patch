@@ -44,10 +44,10 @@ window "Shapes":
   );
 });
 
-test('Shape Stage 1 target claims stay narrower than current native runtime support', () => {
+test('Shape Stage 1 target claims identify authoring separately from runtime support', () => {
   const shape = patchComponent('shape');
-  assert.equal(shape.targetSupport.studio, 'supported');
-  assert.equal(shape.targetSupport.web, 'supported');
+  assert.equal(shape.targetSupport.studio, 'authoring');
+  assert.equal(shape.targetSupport.web, 'unsupported');
   assert.equal(shape.targetSupport.windows, 'unsupported');
   assert.equal(shape.targetSupport.macos, 'unsupported');
   assert.equal(shape.targetSupport.linux, 'unsupported');
