@@ -57,6 +57,7 @@ function accessibilityRuntime() {
   const patchOriginalTrigger=typeof trigger==='function'?trigger:null;
   const patchOriginalControlType=typeof controlType==='function'?controlType:null;
   const patchTimerHandles=[];
+  const patchWindow=typeof window==='undefined'?null:window;
 
   function patchControlName(control,fallback){
     const text=String(control?.text||'').trim();
@@ -307,23 +308,23 @@ function accessibilityRuntime() {
   }
 
   function patchInstallTimers(){
-    if(typeof window?.setInterval!=='function'||typeof safeTrigger!=='function')return;
+    if(typeof patchWindow?.setInterval!=='function'||typeof safeTrigger!=='function')return;
     const handlers=typeof events!=='undefined'?(events||[]):[];
     for(const timer of patchTimerNodes(typeof PROGRAM!=='undefined'?(PROGRAM||[]):[])){
       if(!timer.id||!handlers.some(handler=>handler.control===timer.id&&handler.event==='ticked'))continue;
       const interval=Number(timer.interval??1000);
       if(!Number.isInteger(interval)||interval<1||interval>3600000)continue;
-      patchTimerHandles.push(window.setInterval(()=>safeTrigger(timer.id,'ticked'),interval));
+      patchTimerHandles.push(patchWindow.setInterval(()=>safeTrigger(timer.id,'ticked'),interval));
     }
   }
 
-  function patchClearTimers(){while(patchTimerHandles.length)window.clearInterval?.(patchTimerHandles.pop());}
+  function patchClearTimers(){while(patchTimerHandles.length)patchWindow?.clearInterval?.(patchTimerHandles.pop());}
 
   const output=document.getElementById?.('output');
   output?.setAttribute?.('role','status');
   output?.setAttribute?.('aria-live','polite');
   output?.setAttribute?.('aria-atomic','true');
-  window.addEventListener?.('pagehide',patchClearTimers,{once:true});
+  patchWindow?.addEventListener?.('pagehide',patchClearTimers,{once:true});
   render();
   patchInstallTimers();
 })();
