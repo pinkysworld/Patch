@@ -1,9 +1,11 @@
-export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.2';
+export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.3';
 
 export function enhanceStandaloneWindowWebApp(built) {
   if (!built || typeof built.html !== 'string' || built.metadata?.projectKind !== 'window') return built;
-  const slider = containsSlider(built.compiled?.ast ?? []);
-  const statusbar = containsStatusBar(built.compiled?.ast ?? []);
+  const slider = containsControl(built.compiled?.ast ?? [], 'slider');
+  const statusbar = containsControl(built.compiled?.ast ?? [], 'statusbar');
+  const panel = containsControl(built.compiled?.ast ?? [], 'panel');
+  const timer = containsControl(built.compiled?.ast ?? [], 'timer');
   const html = built.html
     .replace('<pre id="output"></pre>', '<pre id="output" role="status" aria-live="polite" aria-atomic="true"></pre>')
     .replace('</head>', `${accessibilityStyle()}\n</head>`)
@@ -15,24 +17,19 @@ export function enhanceStandaloneWindowWebApp(built) {
       ...built.metadata,
       accessibilityVersion: PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION,
       ...(slider ? { sliderStage: 1, sliderMode: 'transient-number' } : {}),
-      ...(statusbar ? { statusBarStage: 1, statusBarMode: 'source-backed-bottom-docked' } : {})
+      ...(statusbar ? { statusBarStage: 1, statusBarMode: 'source-backed-bottom-docked' } : {}),
+      ...(panel ? { panelStage: 1, panelMode: 'source-backed-flow-group' } : {}),
+      ...(timer ? { timerStage: 1, timerMode: 'browser-interval-ticked-event' } : {})
     }
   };
 }
 
-function containsSlider(nodes) {
+function containsControl(nodes, type) {
   for (const node of nodes ?? []) {
-    if (node.kind === 'uiControl' && node.control === 'slider') return true;
-    if (node.kind === 'window' && containsSlider(node.body)) return true;
-    if (node.kind === 'tabs' && (node.body ?? []).some(page => containsSlider(page.body))) return true;
-  }
-  return false;
-}
-
-function containsStatusBar(nodes) {
-  for (const node of nodes ?? []) {
-    if (node.kind === 'uiControl' && node.control === 'statusbar') return true;
-    if (node.kind === 'window' && containsStatusBar(node.body)) return true;
+    if (node.kind === 'uiControl' && node.control === type) return true;
+    if (node.kind === 'window' && containsControl(node.body, type)) return true;
+    if (node.kind === 'tabs' && (node.body ?? []).some(page => containsControl(page.body, type))) return true;
+    if (node.kind === 'uiControl' && node.control === 'panel' && containsControl(node.body, type)) return true;
   }
   return false;
 }
@@ -42,10 +39,11 @@ function accessibilityStyle() {
 :where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
 .patch-radio-group{min-width:260px;margin:0;padding:10px 12px;border:1px solid #d4d4d8;border-radius:9px}.patch-radio-legend{padding:0 5px;font-size:12px;font-weight:700}.patch-radio-option{display:flex;align-items:center;gap:8px;min-height:30px;cursor:pointer}.patch-radio-option input{min-width:0!important;width:18px;height:18px;margin:0;padding:0}
 .patch-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;min-width:260px}.patch-slider input[type="range"]{grid-column:1/-1;width:100%;min-width:0;padding:0;border:0;background:transparent}.patch-slider-value{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}.patch-slider-range{font-size:11px;color:#71717a}
+.patch-panel{width:100%;height:100%;min-width:0;overflow:auto;margin:0;padding:0;border:1px solid #d4d4d8;border-radius:10px;background:#fff}.patch-panel-title{padding:7px 10px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.patch-panel-flow{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px}.patch-panel-flow>.text{font-size:14px}.patch-panel-flow>.patch-slider,.patch-panel-flow>input,.patch-panel-flow>select,.patch-panel-flow>.patch-radio-group{width:100%;min-width:0}
 .patch-statusbar{display:flex;align-items:center;min-width:0;overflow:hidden;padding:0 10px;border-top:1px solid #d4d4d8;background:#f4f4f5;color:#52525b;font-size:12px;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;position:absolute!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:none!important;margin:0!important}
-@media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}.patch-statusbar{border-color:#41444e;background:#24262d;color:#d4d4d8}}
+@media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}.patch-panel{border-color:#41444e;background:#1b1d22}.patch-panel-title{border-color:#34363e;background:#24262d;color:#d4d4d8}.patch-statusbar{border-color:#41444e;background:#24262d;color:#d4d4d8}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
-@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-statusbar{border-top:1px solid CanvasText;background:Canvas;color:CanvasText}}
+@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group,.patch-panel{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-panel-title,.patch-statusbar{border-color:CanvasText;background:Canvas;color:CanvasText}}
 </style>`;
 }
 
@@ -57,6 +55,7 @@ function accessibilityRuntime() {
   const patchOriginalRender=render;
   const patchOriginalBuildUIItems=typeof buildUIItems==='function'?buildUIItems:null;
   const patchOriginalTrigger=typeof trigger==='function'?trigger:null;
+  const patchTimerHandles=[];
 
   function patchControlName(control,fallback){
     const text=String(control?.text||'').trim();
@@ -71,34 +70,41 @@ function accessibilityRuntime() {
   }
 
   function patchSliderNode(id){
-    const find=nodes=>{for(const node of nodes||[]){if(node?.kind==='uiControl'&&node.control==='slider'&&node.id===id)return node;if(node?.kind==='tabs'){for(const page of node.body||[]){const nested=find(page.body);if(nested)return nested;}}}return null;};
+    const find=nodes=>{for(const node of nodes||[]){if(node?.kind==='uiControl'&&node.control==='slider'&&node.id===id)return node;if(node?.kind==='tabs'){for(const page of node.body||[]){const nested=find(page.body);if(nested)return nested;}}if(node?.kind==='uiControl'&&node.control==='panel'){const nested=find(node.body);if(nested)return nested;}}return null;};
     for(const node of typeof PROGRAM!=='undefined'?(PROGRAM||[]):[]){if(node?.kind!=='window')continue;const slider=find(node.body);if(slider)return slider;}
     return null;
   }
 
-  function patchSliderModels(nodes,models){
+  function patchWindowModels(nodes,models){
     let modelIndex=0;
     for(const node of nodes||[]){
       if(node?.kind==='uiControl'){
         const model=models?.[modelIndex++]||null;
-        if(node.control!=='slider'||!model)continue;
-        const min=Number(node.min);const max=Number(node.max);const step=Number(node.step??1);
-        model.min=min;model.max=max;model.step=step;
-        const bound=node.id&&typeof state!=='undefined'&&state?.has?.(node.id)?state.get(node.id):min;
-        model.value=patchClampSliderValue(model,bound);
+        if(!model)continue;
+        if(node.control==='slider'){
+          const min=Number(node.min);const max=Number(node.max);const step=Number(node.step??1);
+          model.min=min;model.max=max;model.step=step;
+          const bound=node.id&&typeof state!=='undefined'&&state?.has?.(node.id)?state.get(node.id):min;
+          model.value=patchClampSliderValue(model,bound);
+        }
+        if(node.control==='panel'){
+          const nested=patchOriginalBuildUIItems?patchOriginalBuildUIItems(node.body||[]):[];
+          model.controls=patchWindowModels(node.body||[],nested);
+        }
+        if(node.control==='timer')model.interval=Number(node.interval??1000);
         continue;
       }
       if(node?.kind==='tabs'){
         const model=models?.[modelIndex++]||null;
         const pages=node.body||[];
-        pages.forEach((page,pageIndex)=>patchSliderModels(page.body,model?.pages?.[pageIndex]?.controls||[]));
+        pages.forEach((page,pageIndex)=>patchWindowModels(page.body,model?.pages?.[pageIndex]?.controls||[]));
       }
     }
     return models;
   }
 
   if(patchOriginalBuildUIItems){
-    buildUIItems=function(nodes){return patchSliderModels(nodes,patchOriginalBuildUIItems(nodes));};
+    buildUIItems=function(nodes){return patchWindowModels(nodes,patchOriginalBuildUIItems(nodes));};
   }
 
   if(patchOriginalTrigger){
@@ -117,6 +123,23 @@ function accessibilityRuntime() {
   }
 
   renderControl=function(control,windowId,controlIndex){
+    if(control?.type==='timer')return null;
+
+    if(control?.type==='panel'){
+      const panel=document.createElement('section');
+      panel.className='patch-panel';
+      panel.setAttribute?.('role','group');
+      panel.setAttribute?.('aria-label',patchControlName(control,'Panel'));
+      const title=document.createElement('div');
+      title.className='patch-panel-title';
+      title.textContent=patchControlName(control,'Panel');
+      const flow=document.createElement('div');
+      flow.className='patch-panel-flow';
+      (control.controls||[]).forEach((nested,index)=>{const child=renderControl(nested,windowId,index);if(child)flow.appendChild(child);});
+      panel.append(title,flow);
+      return panel;
+    }
+
     if(control?.type==='statusbar'){
       const bar=document.createElement('div');
       bar.className='patch-statusbar';
@@ -245,11 +268,35 @@ function accessibilityRuntime() {
     rebuiltTabs[next]?.focus?.();
   }
 
+  function patchTimerNodes(nodes,out=[]){
+    for(const node of nodes||[]){
+      if(node?.kind==='uiControl'&&node.control==='timer')out.push(node);
+      if(node?.kind==='window'||(node?.kind==='uiControl'&&node.control==='panel'))patchTimerNodes(node.body,out);
+      if(node?.kind==='tabs')for(const page of node.body||[])patchTimerNodes(page.body,out);
+    }
+    return out;
+  }
+
+  function patchInstallTimers(){
+    if(typeof window?.setInterval!=='function'||typeof safeTrigger!=='function')return;
+    const handlers=typeof events!=='undefined'?(events||[]):[];
+    for(const timer of patchTimerNodes(typeof PROGRAM!=='undefined'?(PROGRAM||[]):[])){
+      if(!timer.id||!handlers.some(handler=>handler.control===timer.id&&handler.event==='ticked'))continue;
+      const interval=Number(timer.interval??1000);
+      if(!Number.isInteger(interval)||interval<1||interval>3600000)continue;
+      patchTimerHandles.push(window.setInterval(()=>safeTrigger(timer.id,'ticked'),interval));
+    }
+  }
+
+  function patchClearTimers(){while(patchTimerHandles.length)window.clearInterval?.(patchTimerHandles.pop());}
+
   const output=document.getElementById?.('output');
   output?.setAttribute?.('role','status');
   output?.setAttribute?.('aria-live','polite');
   output?.setAttribute?.('aria-atomic','true');
+  window.addEventListener?.('pagehide',patchClearTimers,{once:true});
   render();
+  patchInstallTimers();
 })();
 </script>`;
 }
