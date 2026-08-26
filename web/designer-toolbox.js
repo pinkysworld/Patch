@@ -5,6 +5,7 @@ import {
   updateDesignerControl,
   updateDesignerWindow
 } from '../src/designer.js';
+import { listPatchComponents } from '../src/component-registry.js';
 import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
@@ -18,22 +19,12 @@ const toolbar = doc?.querySelector('#designer .designer-toolbar') ?? null;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
 
-export const DESIGNER_TOOL_CATALOG = Object.freeze([
-  { group: 'Basic', type: 'text', buttonId: 'addText', label: 'Text' },
-  { group: 'Basic', type: 'button', buttonId: 'addButton', label: 'Button' },
-  { group: 'Basic', type: 'input', buttonId: 'addInput', label: 'Input' },
-  { group: 'Basic', type: 'checkbox', buttonId: 'addCheckbox', label: 'Checkbox' },
-  { group: 'Choices', type: 'radio', buttonId: 'addRadio', label: 'Radio group' },
-  { group: 'Choices', type: 'combo', buttonId: 'addCombo', label: 'ComboBox' },
-  { group: 'Choices', type: 'listbox', buttonId: 'addListbox', label: 'ListBox' },
-  { group: 'Choices', type: 'slider', buttonId: 'addSlider', label: 'Slider' },
-  { group: 'Data', type: 'table', buttonId: 'addTable', label: 'Table' },
-  { group: 'Data', type: 'tree', buttonId: 'addTree', label: 'TreeView' },
-  { group: 'Containers', type: 'tabs', buttonId: 'addTabs', label: 'Tabs' },
-  { group: 'Containers', type: 'panel', buttonId: 'addPanel', label: 'Panel' },
-  { group: 'Chrome', type: 'statusbar', buttonId: 'addStatusbar', label: 'StatusBar' },
-  { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' }
-]);
+export const DESIGNER_TOOL_CATALOG = Object.freeze(listPatchComponents().map(component => Object.freeze({
+  group: component.category,
+  type: component.type,
+  buttonId: component.buttonId,
+  label: component.label
+})));
 
 if (doc) queueMicrotask(install);
 
@@ -102,6 +93,7 @@ function install() {
   if (!designer || !toolbar || designer.dataset.patchToolboxPicker === 'true') return;
   designer.dataset.patchToolboxPicker = 'true';
   installStylesheet();
+  installPictureButton();
   installTimerButton();
   installStatusBarButton();
   installNonvisualTray();
@@ -177,6 +169,23 @@ function install() {
   });
 }
 
+function installPictureButton() {
+  if (!toolbar || toolbar.querySelector('#addPicture')) return;
+  const button = doc.createElement('button');
+  button.id = 'addPicture';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Picture';
+  button.setAttribute('aria-label', 'Add Picture');
+  button.title = 'Add a source-backed Picture to the active Form';
+  toolbar.appendChild(button);
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addPictureFromToolbox();
+  }, { capture: true });
+}
+
 function installTimerButton() {
   if (!toolbar || toolbar.querySelector('#addTimer')) return;
   const button = doc.createElement('button');
@@ -209,6 +218,23 @@ function installStatusBarButton() {
     event.stopImmediatePropagation();
     addStatusBarFromToolbox();
   }, { capture: true });
+}
+
+function addPictureFromToolbox() {
+  if (!code || !canvas) return;
+  try {
+    const windowIndex = activeFormIndex();
+    const next = addDesignerControl(code.value, 'picture', { windowIndex });
+    const picture = listDesignerControls(next)
+      .filter(control => control.windowIndex === windowIndex && control.type === 'picture')
+      .at(-1) ?? null;
+    setSource(next);
+    if (picture) {
+      rememberDesignerSelection(canvas, designerSelectionForControl(picture, 'core'), { reason: 'add-picture' });
+    }
+  } catch (error) {
+    showToolError(error);
+  }
 }
 
 function addStatusBarFromToolbox() {
