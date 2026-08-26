@@ -17,6 +17,7 @@ test('component registry exposes the current source-backed Designer families plu
     'table', 'tree', 'tabs', 'panel',
     'picture', 'statusbar', 'timer'
   ]);
+  assert.equal(new Set(PATCH_COMPONENTS.map(component => component.buttonId)).size, PATCH_COMPONENTS.length);
 });
 
 test('Picture is discoverable as a visual Graphics component with source-backed tool and event metadata', () => {
