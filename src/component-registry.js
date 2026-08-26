@@ -43,6 +43,16 @@ const PROPERTY_BY_TYPE = Object.freeze({
   tabs: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'pages', kind: 'tabs' }), ...COMMON_LAYOUT_PROPERTIES]),
   panel: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'children', kind: 'controls' }), ...COMMON_LAYOUT_PROPERTIES]),
   picture: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'sourceExpr', kind: 'expression' }), ...COMMON_LAYOUT_PROPERTIES]),
+  shape: Object.freeze([
+    ID_PROPERTY,
+    Object.freeze({ name: 'shapeKind', kind: 'enum', values: Object.freeze(['rectangle', 'rounded', 'ellipse', 'line']) }),
+    Object.freeze({ name: 'fill', kind: 'color' }),
+    Object.freeze({ name: 'stroke', kind: 'color' }),
+    Object.freeze({ name: 'strokeWidth', kind: 'number' }),
+    Object.freeze({ name: 'cornerRadius', kind: 'number' }),
+    Object.freeze({ name: 'opacity', kind: 'number' }),
+    ...COMMON_LAYOUT_PROPERTIES
+  ]),
   statusbar: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   timer: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'interval', kind: 'integer' })])
 });
@@ -55,6 +65,17 @@ const DESKTOP_TARGETS = Object.freeze({
   linux: 'supported',
   freebsd: 'unsupported'
 });
+
+const SHAPE_STAGE1_TARGETS = Object.freeze({
+  studio: 'supported',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
+const TARGETS_BY_TYPE = Object.freeze({ shape: SHAPE_STAGE1_TARGETS });
 
 const COMPONENTS = [
   ['text', 'Text', 'Basic', true],
@@ -70,11 +91,12 @@ const COMPONENTS = [
   ['tabs', 'Tabs', 'Containers', true],
   ['panel', 'Panel', 'Containers', true],
   ['picture', 'Picture', 'Graphics', true],
+  ['shape', 'Shape', 'Graphics', true],
   ['statusbar', 'StatusBar', 'Chrome', true],
   ['timer', 'Timer', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.3';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.4';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);
@@ -90,7 +112,7 @@ export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, cate
     properties: PROPERTY_BY_TYPE[type] ?? Object.freeze([]),
     events: Object.freeze((EVENT_BY_TYPE[type] ?? []).map(event => Object.freeze({ ...event }))),
     designRenderer: type,
-    targetSupport: DESKTOP_TARGETS
+    targetSupport: TARGETS_BY_TYPE[type] ?? DESKTOP_TARGETS
   });
 }));
 
