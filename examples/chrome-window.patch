@@ -4,7 +4,7 @@ create text status = "Ready"
 window "Chrome Stage 1" as main size 640, 420:
   panel as group at 24, 24 size 280, 160:
     text "Grouped tools"
-    picture as poster from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII="
+    picture as poster from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg=="
     button "Ping" as ping
   timer as clock interval 1000 at 320, 24 size 180, 36
   text "Ticks {ticks}" at 320, 76 size 200, 28
