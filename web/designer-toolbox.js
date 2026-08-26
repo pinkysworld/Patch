@@ -98,6 +98,7 @@ function install() {
   installStatusBarButton();
   installNonvisualTray();
   installTimerInspector();
+  installPictureInspector();
 
   const shell = doc.createElement('div');
   shell.className = 'designer-component-palette';
@@ -425,6 +426,78 @@ function applyTimerInterval() {
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
     renderNonvisualTray();
     syncTimerInspector();
+  } catch (error) {
+    showToolError(error);
+  }
+}
+
+function installPictureInspector() {
+  const form = doc.querySelector('#designerInspectorForm');
+  if (!form || form.querySelector('#designerInspectorPictureSourceField')) return;
+  const field = doc.createElement('label');
+  field.id = 'designerInspectorPictureSourceField';
+  field.className = 'inspector-field';
+  field.hidden = true;
+  field.innerHTML = 'Source <input id="designerInspectorPictureSource" spellcheck="false" autocomplete="off" aria-describedby="designerInspectorPictureSourceHint">';
+  const hint = doc.createElement('small');
+  hint.id = 'designerInspectorPictureSourceHint';
+  hint.className = 'inspector-hint';
+  hint.textContent = 'Patch expression for the image source, for example "images/logo.png". Project Resources are the next R1 step.';
+  field.appendChild(hint);
+  const timer = form.querySelector('#designerInspectorTimerField');
+  const slider = form.querySelector('#designerInspectorSliderFields');
+  (timer ?? slider)?.insertAdjacentElement('afterend', field);
+
+  const input = field.querySelector('#designerInspectorPictureSource');
+  input?.addEventListener('change', applyPictureSource);
+  input?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    applyPictureSource();
+  });
+  canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncPictureInspector);
+  code?.addEventListener('input', syncPictureInspector);
+  code?.addEventListener('change', syncPictureInspector);
+  syncPictureInspector();
+}
+
+function syncPictureInspector() {
+  const field = doc?.querySelector('#designerInspectorPictureSourceField');
+  if (!field || !canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  let control = null;
+  try {
+    control = selection
+      ? listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null
+      : null;
+  } catch {
+    control = null;
+  }
+  const isPicture = control?.type === 'picture';
+  field.hidden = !isPicture;
+  if (!isPicture) return;
+  const input = field.querySelector('#designerInspectorPictureSource');
+  if (input && doc.activeElement !== input) input.value = control.sourceExpr ?? '';
+}
+
+function applyPictureSource() {
+  if (!canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  let control = null;
+  try {
+    control = listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return;
+  }
+  if (control?.type !== 'picture') return;
+  try {
+    const sourceExpr = doc.querySelector('#designerInspectorPictureSource')?.value ?? '';
+    const next = updateDesignerControl(code.value, selection, { sourceExpr });
+    setSource(next);
+    const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
+    rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    syncPictureInspector();
   } catch (error) {
     showToolError(error);
   }
