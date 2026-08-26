@@ -113,6 +113,8 @@ test('RAD Object Inspector Component Palette Focus Order and StatusBar are packa
   assert.match(toolbox, /designer-component-palette/);
   assert.match(toolbox, /designerInspectorPictureSource/);
   assert.match(statusbar, /StatusBar/);
+  assert.match(buildSite, /'component-registry\.js'/);
   assert.match(buildSite, /'designer-toolbox\.js'/);
+  assert.match(sw, /'\.\.\/src\/component-registry\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.js'/);
 });
