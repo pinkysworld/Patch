@@ -1,6 +1,6 @@
 import { parseStoredStudioProject, studioStateFromBundle } from '../src/studio-project.js';
 
-const CURRENT_KEYS = ['patchStudio.project.v3', 'patchStudio.project.v2', 'patchStudio.project.v1'];
+const CURRENT_KEYS = ['patchStudio.project.v4', 'patchStudio.project.v3', 'patchStudio.project.v2', 'patchStudio.project.v1'];
 const buildTarget = document.querySelector('#buildTarget');
 const nativeBuildMode = document.querySelector('#nativeBuildMode');
 const sample = document.querySelector('#sample');
@@ -10,7 +10,7 @@ installDesignerObserverCoordinator();
 // Example selection is an explicit load action, not project persistence. Keep the
 // fast Counter example selected at startup so the large Workshop Desk showcase is
 // never injected automatically before the Studio module graph has settled. This
-// also prevents a saved v3/v2/v1 project from being overwritten by sample startup.
+// also prevents a saved v4/v3/v2/v1 project from being overwritten by sample startup.
 if (sample && hasOption(sample, 'counterWindow')) sample.value = 'counterWindow';
 
 try {
