@@ -54,13 +54,22 @@ The current surface contains the previous responsive/Table/list/Menu/TreeView/Sl
 - Panel Stage 1 visual grouping
 - Timer Stage 1 native scheduling and `ticked` event transport
 - StatusBar Stage 1 native/status-style presentation
-- PictureBox Stage 1 source transport and control/event shell
+- Picture Stage 1 source transport, embedded PNG/JPEG decoding and `clicked` event support
 
 Toolkit interaction remains transient. Persistent Patch state changes only through explicit semantic `change`.
 
-### PictureBox readiness boundary
+### Picture readiness boundary
 
-Payload v14 carries PictureBox `source`, but beta.36 does not claim complete portable image decoding/loading. The v1.5 desktop runtimes currently restore the PictureBox control shell without proving actual image-source rendering on every platform. The offline compiler therefore treats PictureBox as Stage 1 rather than advertising complete Delphi-style image resource support.
+Payload v14 carries Picture `source`. The current runtime v1.5 portable embedded contract now decodes actual image bytes on every advertised desktop Window target:
+
+- Windows uses Windows Imaging Component and a proportional 32-bit DIB;
+- macOS uses `NSImage` with proportional image scaling;
+- Linux uses `GdkPixbuf` and a proportional `GtkImage` inside the clickable control;
+- the shared strict data-URI/base64 decoder accepts PNG and JPEG and enforces the same 2 MiB per-resource ceiling as Patch Studio;
+- logical project resources are resolved before native sealing;
+- current logical WebP/SVG Picture resources fail closed for native output rather than depending on platform-specific decoder support.
+
+Source-less or ordinary legacy Picture sources retain the existing compatibility shell. This is a deliberately narrower contract than claiming arbitrary image or network-source loading.
 
 ### Panel readiness boundary
 
@@ -77,7 +86,7 @@ The Windows, Linux, Apple Silicon macOS and Intel macOS jobs build/link and exec
 5. the decorated Menu example
 6. the hierarchical TreeView example
 7. the native Slider example
-8. the Chrome Stage 1 example
+8. the Chrome Stage 1 example with an embedded PNG Picture fixture
 
 Every current Window smoke asserts sealed payload **v14**. The native runtime used by these jobs is built from the repository's v1.5 source on the target runner.
 
