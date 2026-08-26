@@ -1,3 +1,5 @@
+import { parsePatchShapeDeclaration } from './shape-source.js';
+
 export class PatchSyntaxError extends Error {
   constructor(message, line) { super(`line ${line}: ${message}`); this.line = line; }
 }
@@ -217,6 +219,19 @@ export function parse(source) {
     }
     if ((m = ui.core.match(/^picture\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
       return uiControl({control:'picture',textExpr:m[1],sourceExpr:null,id:m[2],line:row.line},ui.layout);
+    }
+    if (/^shape\b/i.test(ui.core)) {
+      try {
+        const shape = parsePatchShapeDeclaration(ui.core);
+        return uiControl({
+          control:'shape', textExpr:null, id:shape.id,
+          shapeKind:shape.kind, fill:shape.fill, stroke:shape.stroke,
+          strokeWidth:shape.strokeWidth, cornerRadius:shape.cornerRadius,
+          opacity:shape.opacity, line:row.line
+        }, ui.layout);
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+      }
     }
     if ((m = ui.core.match(/^statusbar\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
       return uiControl({control:'statusbar',textExpr:m[1],id:m[2],line:row.line},ui.layout);
