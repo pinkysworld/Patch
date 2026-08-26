@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { buildReadinessModel } from '../web/studio-build-readiness.js';
+import { buildReadinessModel } from '../web/studio-dom-sync.js';
 
 const windowSource = `window "Ready" as main size 480, 300:
   button "Run" as run_button at 24, 24 size 120, 36
@@ -32,11 +32,11 @@ test('Studio build readiness stays neutral for targets outside the component mat
   assert.equal(buildReadinessModel('create number n = 1', 'console', 'native-linux').state, 'ready');
 });
 
-test('Studio packages build readiness through the canonical DOM synchronization module', () => {
+test('Studio packages build readiness inside the canonical DOM synchronization module', () => {
   const sync = fs.readFileSync('web/studio-dom-sync.js', 'utf8');
-  const readiness = fs.readFileSync('web/studio-build-readiness.js', 'utf8');
-  assert.match(sync, /import '\.\/studio-build-readiness\.js';/);
-  assert.match(readiness, /assessPatchComponentSupport/);
-  assert.match(readiness, /id = 'buildReadiness'/);
-  assert.match(readiness, /aria-live/);
+  assert.match(sync, /buildReadinessModel/);
+  assert.match(sync, /patchComponent/);
+  assert.match(sync, /status\.id = 'buildReadiness'/);
+  assert.match(sync, /aria-live/);
+  assert.doesNotMatch(sync, /studio-build-readiness\.js/);
 });
