@@ -80,6 +80,12 @@ export function validateStudioResource(value) {
   const mediaType = normalizeStudioImageMediaType(value.mediaType);
   const data = normalizeBase64(value.data);
   const bytes = base64ToBytes(data);
+  if (bytesToBase64(bytes) !== data) {
+    throw new StudioResourceError(
+      `Resource '${id}' data is not canonical base64.`,
+      'STUDIO_RESOURCE_DATA'
+    );
+  }
   assertResourceSize(bytes.byteLength);
   const size = Number(value.size);
   if (!Number.isInteger(size) || size < 0 || size !== bytes.byteLength) {
