@@ -1,6 +1,8 @@
 import { validateStudioResources } from './studio-resources.js';
 
 export const PATCH_NATIVE_PICTURE_RESOURCE_PREFIX = 'patch-resource:';
+export const PATCH_NATIVE_PICTURE_MEDIA_TYPES = Object.freeze(['image/png', 'image/jpeg']);
+const NATIVE_MEDIA_TYPES = new Set(PATCH_NATIVE_PICTURE_MEDIA_TYPES);
 
 export class NativePictureResourceError extends Error {
   constructor(message, code = 'NATIVE_PICTURE_RESOURCE') {
@@ -13,6 +15,8 @@ export class NativePictureResourceError extends Error {
 /**
  * Resolve Studio project image locators into self-contained Picture source data URIs.
  * The returned IR is a deep clone; the caller's Native GUI IR is never mutated.
+ * Native Ready runtimes deliberately guarantee PNG/JPEG only so every desktop host
+ * sees the same format contract instead of inheriting platform-specific decoders.
  */
 export function resolveNativePictureResources(input, resources = []) {
   if (!input || typeof input !== 'object' || !Array.isArray(input.forms)) {
@@ -35,6 +39,7 @@ export function resolveNativePictureResources(input, resources = []) {
         'NATIVE_PICTURE_RESOURCE_MISSING'
       );
     }
+    assertNativePictureMediaType(resource, control.id);
     control.source = nativePictureResourceDataUri(resource);
     resolved.push(Object.freeze({
       control: control.id ?? null,
@@ -55,7 +60,17 @@ export function resolveNativePictureResources(input, resources = []) {
 
 export function nativePictureResourceDataUri(resource) {
   const [normalized] = validateStudioResources([resource]);
+  assertNativePictureMediaType(normalized);
   return `data:${normalized.mediaType};base64,${normalized.data}`;
+}
+
+function assertNativePictureMediaType(resource, controlId = null) {
+  if (NATIVE_MEDIA_TYPES.has(resource.mediaType)) return;
+  const owner = controlId ? `Native Picture '${controlId}'` : 'Native Picture resource';
+  throw new NativePictureResourceError(
+    `${owner} uses '${resource.mediaType}'. Native Ready Picture currently guarantees PNG and JPEG project resources only; use PNG/JPEG or build the image on the Web target.`,
+    'NATIVE_PICTURE_RESOURCE_FORMAT'
+  );
 }
 
 function walkControls(forms, visit) {
