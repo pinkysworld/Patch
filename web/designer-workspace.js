@@ -18,6 +18,7 @@ import './designer-panel.js';
 import './designer-ui-namespace.js';
 import './designer-toolbox.js';
 import './designer-statusbar.js';
+import './resource-manager.js';
 
 const STORAGE_KEY = 'patch-studio-designer-properties-v1';
 const DEFAULT_WIDTH = 320;
