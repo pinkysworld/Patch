@@ -37,7 +37,7 @@ test('Picture is discoverable with source-backed properties event renderer and t
   assert.equal(patchComponentForButton('addPicture')?.type, 'picture');
 });
 
-test('Shape Stage 1 is source-backed for Studio and Web while native remains explicitly unsupported', () => {
+test('Shape Stage 1 exposes authoring metadata without overclaiming runtime renderer support', () => {
   const shape = patchComponent('shape');
   assert.equal(shape.type, 'shape');
   assert.equal(shape.label, 'Shape');
@@ -52,7 +52,7 @@ test('Shape Stage 1 is source-backed for Studio and Web while native remains exp
   assert.deepEqual(shape.events, []);
   assert.equal(shape.designRenderer, 'shape');
   assert.deepEqual(shape.targetSupport, {
-    studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addShape')?.type, 'shape');
 });
