@@ -28,7 +28,8 @@ test('Standalone Window Web advertises Panel, Timer and StatusBar Stage 1 parity
   assert.match(built.html, /control\?\.type==='panel'/);
   assert.match(built.html, /control\?\.type==='timer'/);
   assert.match(built.html, /patchInstallTimers/);
-  assert.match(built.html, /window\.setInterval\(\(\)=>safeTrigger\(timer\.id,'ticked'\),interval\)/);
+  assert.match(built.html, /const patchWindow=typeof window==='undefined'\?null:window/);
+  assert.match(built.html, /patchWindow\.setInterval\(\(\)=>safeTrigger\(timer\.id,'ticked'\),interval\)/);
   assert.match(built.html, /patch-statusbar/);
 });
 
@@ -142,4 +143,15 @@ function safeTrigger(){}
 `, context);
   vm.runInContext(script, context, { timeout: 1000 });
   assert.equal(vm.runInContext(`controlType('level')`, context), 'slider');
+});
+
+test('generated accessibility adapter remains executable when no browser window global exists', () => {
+  const built = buildStandaloneWebApp('window "Plain":\n  text "Hello"\n', { name: 'NoWindowGlobal', kind: 'window' });
+  const script = [...built.html.matchAll(/<script data-patch-window-accessibility>([\s\S]*?)<\/script>/g)][0]?.[1];
+  assert.ok(script);
+  const output = { setAttribute() {} };
+  const document = { getElementById() { return output; }, querySelectorAll() { return []; } };
+  const context = vm.createContext({ document, console });
+  vm.runInContext('function renderControl(){return null;} function render(){}', context);
+  assert.doesNotThrow(() => vm.runInContext(script, context, { timeout: 1000 }));
 });
