@@ -4,9 +4,19 @@
 #include "win32-sealed-gui-v14.cpp"
 #undef wWinMain
 #undef PATCH_WIN32_RUNTIME_V15_RESTORE_ENTRY
+#include <wincodec.h>
 #include "sealed-chrome-v15.hpp"
+#include "picture-data-v15.hpp"
 
-struct PatchWinChromeV15 { HWND hwnd = nullptr; UINT_PTR timerId = 0; };
+#pragma comment(lib, "windowscodecs.lib")
+
+struct PatchWinChromeV15 {
+  HWND hwnd = nullptr;
+  UINT_PTR timerId = 0;
+  HBITMAP bitmap = nullptr;
+  int bitmapWidth = 0;
+  int bitmapHeight = 0;
+};
 static std::vector<PatchChromeV15> gPatchChromeV15;
 static std::vector<PatchWinChromeV15> gPatchWinChromeV15;
 static int gPatchChromeDispatchCountV15 = 0;
@@ -66,6 +76,104 @@ static std::wstring PatchChromeCaptionV15(const PatchChromeV15& item) {
   return RenderText(PatchWideV11(item.text));
 }
 
+static HBITMAP PatchPictureBitmapV15(const PatchChromeV15& item, int controlWidth, int controlHeight, int& renderedWidth, int& renderedHeight) {
+  renderedWidth = renderedHeight = 0;
+  PatchPictureDataV15 picture;
+  if (!PatchDecodePictureDataUriV15(item.source, picture) || picture.bytes.empty()) return nullptr;
+
+  IWICImagingFactory* factory = nullptr;
+  IWICStream* stream = nullptr;
+  IWICBitmapDecoder* decoder = nullptr;
+  IWICBitmapFrameDecode* frame = nullptr;
+  IWICBitmapScaler* scaler = nullptr;
+  IWICFormatConverter* converter = nullptr;
+  HBITMAP bitmap = nullptr;
+
+  auto releaseAll = [&]() {
+    if (converter) converter->Release();
+    if (scaler) scaler->Release();
+    if (frame) frame->Release();
+    if (decoder) decoder->Release();
+    if (stream) stream->Release();
+    if (factory) factory->Release();
+  };
+
+  HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = factory->CreateStream(&stream);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = stream->InitializeFromMemory(picture.bytes.data(), (DWORD)picture.bytes.size());
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = factory->CreateDecoderFromStream(stream, nullptr, WICDecodeMetadataCacheOnLoad, &decoder);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = decoder->GetFrame(0, &frame);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+
+  UINT sourceWidth = 0, sourceHeight = 0;
+  hr = frame->GetSize(&sourceWidth, &sourceHeight);
+  if (FAILED(hr) || !sourceWidth || !sourceHeight) { releaseAll(); return nullptr; }
+  int targetWidth = std::max(1, controlWidth);
+  int targetHeight = std::max(1, (int)(((uint64_t)sourceHeight * (uint64_t)targetWidth) / sourceWidth));
+  if (targetHeight > std::max(1, controlHeight)) {
+    targetHeight = std::max(1, controlHeight);
+    targetWidth = std::max(1, (int)(((uint64_t)sourceWidth * (uint64_t)targetHeight) / sourceHeight));
+  }
+
+  hr = factory->CreateBitmapScaler(&scaler);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = scaler->Initialize(frame, (UINT)targetWidth, (UINT)targetHeight, WICBitmapInterpolationModeFant);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = factory->CreateFormatConverter(&converter);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+  hr = converter->Initialize(scaler, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom);
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+
+  const UINT stride = (UINT)targetWidth * 4;
+  std::vector<BYTE> pixels((size_t)stride * (size_t)targetHeight);
+  hr = converter->CopyPixels(nullptr, stride, (UINT)pixels.size(), pixels.data());
+  if (FAILED(hr)) { releaseAll(); return nullptr; }
+
+  BITMAPINFO info{};
+  info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  info.bmiHeader.biWidth = targetWidth;
+  info.bmiHeader.biHeight = -targetHeight;
+  info.bmiHeader.biPlanes = 1;
+  info.bmiHeader.biBitCount = 32;
+  info.bmiHeader.biCompression = BI_RGB;
+  void* bits = nullptr;
+  bitmap = CreateDIBSection(nullptr, &info, DIB_RGB_COLORS, &bits, nullptr, 0);
+  if (!bitmap || !bits) {
+    if (bitmap) DeleteObject(bitmap);
+    releaseAll();
+    return nullptr;
+  }
+  memcpy(bits, pixels.data(), pixels.size());
+  renderedWidth = targetWidth;
+  renderedHeight = targetHeight;
+  releaseAll();
+  return bitmap;
+}
+
+static bool PatchSetPictureBitmapV15(const PatchChromeV15& item, PatchWinChromeV15& native, int width, int height) {
+  int renderedWidth = 0, renderedHeight = 0;
+  HBITMAP bitmap = PatchPictureBitmapV15(item, width, height, renderedWidth, renderedHeight);
+  if (!bitmap) return false;
+  HBITMAP old = native.bitmap;
+  native.bitmap = bitmap;
+  native.bitmapWidth = width;
+  native.bitmapHeight = height;
+  SendMessageW(native.hwnd, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)bitmap);
+  if (old) DeleteObject(old);
+  return true;
+}
+
+static void PatchDestroyChromeImagesV15() {
+  for (auto& native : gPatchWinChromeV15) {
+    if (native.bitmap) DeleteObject(native.bitmap);
+    native.bitmap = nullptr;
+  }
+}
+
 static bool PatchInstallChromeV15() {
   gPatchWinChromeV15.assign(gControls.size(), {});
   if (!gForms.empty()) gPatchChromeHostV15 = gForms[0].hwnd;
@@ -88,13 +196,21 @@ static bool PatchInstallChromeV15() {
       ShowWindow(c.hwnd, SW_HIDE);
       continue;
     } else if (item.kind == PATCH_CHROME_PICTURE_V15) {
-      native = CreateWindowExW(0, L"STATIC", PatchChromeCaptionV15(item).c_str(), WS_CHILD | WS_VISIBLE | SS_CENTER | SS_NOTIFY | SS_CENTERIMAGE, x, y, w, h, parent, reinterpret_cast<HMENU>((INT_PTR)c.commandId), gInstance, nullptr);
+      DWORD style = WS_CHILD | WS_VISIBLE | SS_NOTIFY | SS_CENTERIMAGE;
+      if (PatchPictureEmbeddedSourceV15(item.source)) style |= SS_BITMAP;
+      else style |= SS_CENTER;
+      native = CreateWindowExW(0, L"STATIC", PatchPictureEmbeddedSourceV15(item.source) ? L"" : PatchChromeCaptionV15(item).c_str(), style, x, y, w, h, parent, reinterpret_cast<HMENU>((INT_PTR)c.commandId), gInstance, nullptr);
     } else {
       native = CreateWindowExW(0, STATUSCLASSNAMEW, PatchChromeCaptionV15(item).c_str(), WS_CHILD | WS_VISIBLE, x, y, w, h, parent, nullptr, gInstance, nullptr);
     }
     if (!native) return false;
     if (gGuiFont) SendMessageW(native, WM_SETFONT, (WPARAM)gGuiFont, TRUE);
-    gPatchWinChromeV15[(size_t)item.nativeIndex].hwnd = native;
+    auto& installed = gPatchWinChromeV15[(size_t)item.nativeIndex];
+    installed.hwnd = native;
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      PatchSetAccessibleNameV09(native, PatchControlNameV09(c));
+      if (PatchPictureEmbeddedSourceV15(item.source) && !PatchSetPictureBitmapV15(item, installed, w, h)) return false;
+    }
     ShowWindow(c.hwnd, SW_HIDE);
   }
   return true;
@@ -109,12 +225,18 @@ static void PatchRefreshChromeV15() {
     if (!c.hwnd || !native.hwnd) continue;
     HWND parent = GetParent(c.hwnd);
     RECT rect{};
+    int width = 0, height = 0;
     if (parent && GetWindowRect(c.hwnd, &rect)) {
       POINT points[2] = {{rect.left, rect.top}, {rect.right, rect.bottom}};
       MapWindowPoints(nullptr, parent, points, 2);
-      MoveWindow(native.hwnd, points[0].x, points[0].y, points[1].x - points[0].x, points[1].y - points[0].y, TRUE);
+      width = points[1].x - points[0].x; height = points[1].y - points[0].y;
+      MoveWindow(native.hwnd, points[0].x, points[0].y, width, height, TRUE);
     }
-    SetWindowTextW(native.hwnd, PatchChromeCaptionV15(item).c_str());
+    if (item.kind == PATCH_CHROME_PICTURE_V15 && PatchPictureEmbeddedSourceV15(item.source)) {
+      if (width > 0 && height > 0 && (native.bitmapWidth != width || native.bitmapHeight != height)) PatchSetPictureBitmapV15(item, native, width, height);
+    } else {
+      SetWindowTextW(native.hwnd, PatchChromeCaptionV15(item).c_str());
+    }
     bool visible = PatchChromeVisibleV15(c);
     ShowWindow(native.hwnd, visible ? SW_SHOW : SW_HIDE);
     ShowWindow(c.hwnd, SW_HIDE);
@@ -162,15 +284,20 @@ static int RunPatchChromeSmokeV15() {
       continue;
     }
     if (!native.hwnd) return code++;
-    if (item.kind == PATCH_CHROME_PICTURE_V15 && !item.events.empty()) {
-      int before = gPatchChromeDispatchCountV15;
-      if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++;
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      if (PatchPictureEmbeddedSourceV15(item.source) && !native.bitmap) return code++;
+      if (!item.events.empty()) {
+        int before = gPatchChromeDispatchCountV15;
+        if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++;
+      }
     }
   }
   return 0;
 }
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
+  PatchComScopeV09 patchCom;
+  if (FAILED(patchCom.result) && patchCom.result != RPC_E_CHANGED_MODE) return 21;
   gInstance = instance; gSmokeMode = HasArg(L"--patch-smoke");
   std::vector<uint8_t> payloadV14, payloadV13, payloadV12, payloadV11, payloadV10, payloadV9, payloadV8, payloadV7;
   if (!ReadSelfPayloadV15(payloadV14) || !PatchConvertPayloadV14ToV13(payloadV14, payloadV13, gPatchChromeV15) || !PatchConvertPayloadV13ToV12(payloadV13, payloadV12, gPatchSlidersV14) || !PatchConvertPayloadV12ToV11(payloadV12, payloadV11, gPatchTreesV13) || !PatchConvertPayloadV11ToV10(payloadV11, payloadV10, gPatchMenuEntriesV12) || !PatchConvertPayloadV10ToV9(payloadV10, payloadV9, gPatchListStatesV11, gPatchListBoxesV11, gPatchListEventsV11) || !PatchConvertPayloadV9ToV8(payloadV9, payloadV8, gPatchTablesV10) || !PatchConvertPayloadV8ToV7(payloadV8, payloadV7, gPatchLayoutPoliciesV09) || !ParsePayload(payloadV7)) return 20;
@@ -198,12 +325,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
     if (!result) result = RunPatchSliderSmokeV14();
     if (!result) result = RunPatchChromeSmokeV15();
     if (gPatchChromeHostV15) { for (const auto& item : gPatchChromeV15) if (gPatchWinChromeV15[(size_t)item.nativeIndex].timerId) KillTimer(gPatchChromeHostV15, gPatchWinChromeV15[(size_t)item.nativeIndex].timerId); }
+    PatchDestroyChromeImagesV15();
     if (gGuiFont) DeleteObject(gGuiFont);
     return result;
   }
   MSG msg{};
   while (GetMessageW(&msg, nullptr, 0, 0) > 0) { if (PatchTranslateMenuAcceleratorV12(&msg)) continue; TranslateMessage(&msg); DispatchMessageW(&msg); }
   if (gPatchChromeHostV15) { for (const auto& item : gPatchChromeV15) if (gPatchWinChromeV15[(size_t)item.nativeIndex].timerId) KillTimer(gPatchChromeHostV15, gPatchWinChromeV15[(size_t)item.nativeIndex].timerId); }
+  PatchDestroyChromeImagesV15();
   if (gGuiFont) DeleteObject(gGuiFont);
   return 0;
 }
