@@ -1,0 +1,154 @@
+# Harbor Desk is the current large Patch Window showcase.
+# It stays source-backed and uses only features that build across the advertised
+# Studio/Web/Windows/macOS/Linux Window paths.
+
+create thing ticket:
+  customer = "Ada"
+  item = "Keyboard"
+  qty = 1
+  total = 40
+
+create text customer = "Ada"
+create number qty = 1
+create boolean rush = false
+create text pay = "Card"
+create text notes = ""
+create list extras = ["Warranty"]
+create list selected = []
+create text status = "Ready for the next repair ticket."
+create boolean notifications = true
+create list stations = ["Bench A", "Bench B"]
+
+allow quote:
+  ticket.total may increase up to 500
+
+make quote(ticket, extra number 0..50):
+  change ticket:
+    add extra to total
+
+do quote(ticket, 0)
+
+window "Harbor Desk" as main size 1040, 700:
+  text "Harbor Desk" at 24, 16 size 280, 28
+  text "{status}" at 320, 16 size 500, 28
+  picture as desk_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABR0lEQVR42u3bwRGCMBBAUcjYgDMcvHKyA09YgbXYggdasBYqwJNN2AA96JVhmCHZhbgkP0dnwN3HxiS6lsfT+VtkPFyR+QAAAAAAACDncdBcXN1eZhIZukZ0XSnZCFlKXAvhUkpeEl9QBczd/P2s/p705T6IK8EbYJq8hcSXIHwQXCrJz8XlMx2c9k2sI6gBrH/oaeN3KT19SZzsBLdciizMcSoAAAAAAAAAALbfB6y1fsfaT1ABAAAAAAAARFwGYy9v5gCsnP+ZAgAAAAAAABg+DlMBAADgPeq+Leq+zRNgnLgGwe09eS3CaqvAXn46T6ICPteH12urA1g6048TniYfEufiFBi6xmybjM9TX+oUC54CVr/ZkcbnBTBVtIog6ROkUzS0WXoPbXMhDdNuy5tbT15UAVarIer/BTgNAgAAAAAAkMb4AU+7amw6u1ReAAAAAElFTkSuQmCC" at 880, 16 size 96, 96
+
+  text "Customer" at 24, 52 size 120, 22
+  combo "Ada", "Grace", "Linus" as customer at 24, 76 size 220, 36
+  text "Pay" at 256, 52 size 80, 22
+  radio "Card", "Cash", "Account" as pay at 256, 76 size 220, 90
+  checkbox "Rush bench" as rush at 496, 76 size 160, 36
+  text "Qty {qty}" at 496, 120 size 120, 22
+  slider 1..8 as qty step 1 at 496, 144 size 200, 36
+
+  text "Notes" at 24, 180 size 80, 22
+  input notes at 24, 204 size 380, 36
+  text "Add-ons" at 420, 180 size 80, 22
+  listbox "Warranty", "Install", "Pickup" as extras at 420, 204 size 200, 90
+
+  table "Ticket", "Bench", "State" as board at 24, 312 size 500, 220:
+    row "HD-104", "Bench A", "Open"
+    row "HD-105", "Bench B", "Quoted"
+    row "HD-106", "Bench A", "Ready"
+    row "HD-107", "Bench B", "Waiting"
+
+  tree as parts at 548, 312 size 250, 220:
+    node "Parts"
+      node "Keyboard"
+      node "Trackpad"
+      node "Battery"
+    node "Tools"
+      node "Driver"
+      node "Solder"
+      node "Diagnostics"
+
+  button "Quote" as quote_button at 824, 156 size 144, 36
+  button "Settings" as settings_button at 824, 204 size 144, 36
+  button "Reset" as reset_button at 824, 252 size 144, 36
+
+  # @layout anchor left right bottom
+  text "Select a board row or part, then Quote. Persistent totals change only through explicit change blocks." at 24, 574 size 760, 28
+
+  # @layout dock bottom
+  statusbar "{status}" as desk_status at 0, 672 size 1040, 28
+
+window "Desk settings" as settings size 620, 460:
+  tabs as prefs at 24, 24 size 572, 340:
+    tab "Benches":
+      checkbox "Notify on quote" as notifications
+      listbox "Bench A", "Bench B", "Overflow" as stations
+    tab "About":
+      text "Harbor Desk is Patch's cross-target RAD showcase."
+      text "Forms, Picture, StatusBar, Slider, Table, TreeView and Tabs stay in ordinary .patch source."
+      button "Close" as close_about
+  button "Close settings" as close_settings at 24, 388 size 160, 36
+
+when customer changed:
+  change ticket:
+    set customer = value
+  change status:
+    set = "Customer set to " + value
+
+when pay changed:
+  change pay:
+    set = value
+  change status:
+    set = "Pay method " + value
+
+when rush changed:
+  change rush:
+    set = value
+  change status:
+    set = "Rush bench " + value
+
+when qty changed:
+  change qty:
+    set = value
+  change ticket:
+    set qty = value
+
+when notes changed:
+  change notes:
+    set = value
+
+when extras changed:
+  change extras:
+    set = value
+
+when board changed:
+  change status:
+    set = "Board row selected"
+
+when parts changed:
+  change selected:
+    set = value
+  change status:
+    set = "Part path updated"
+
+when quote_button clicked:
+  do quote(ticket, 25)
+  change status:
+    set = "Quoted total " + ticket.total
+
+when settings_button clicked:
+  open settings
+
+when close_settings clicked:
+  close settings
+
+when close_about clicked:
+  close settings
+
+when notifications changed:
+  change notifications:
+    set = value
+
+when stations changed:
+  change stations:
+    set = value
+
+when reset_button clicked:
+  change notes:
+    set = ""
+  change status:
+    set = "Ticket cleared"
