@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildStandaloneWebApp } from '../src/webapp.js';
-import { pictureResourceDataUri } from '../src/window-web-picture.js';
+import { buildStandaloneWebApp, pictureResourceDataUri } from '../src/webapp.js';
 
 const RESOURCE = Object.freeze({
   id: 'app.logo',
