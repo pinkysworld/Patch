@@ -66,16 +66,16 @@ const DESKTOP_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
-const SHAPE_STAGE1_TARGETS = Object.freeze({
-  studio: 'supported',
-  web: 'supported',
+const SHAPE_AUTHORING_TARGETS = Object.freeze({
+  studio: 'authoring',
+  web: 'unsupported',
   windows: 'unsupported',
   macos: 'unsupported',
   linux: 'unsupported',
   freebsd: 'unsupported'
 });
 
-const TARGETS_BY_TYPE = Object.freeze({ shape: SHAPE_STAGE1_TARGETS });
+const TARGETS_BY_TYPE = Object.freeze({ shape: SHAPE_AUTHORING_TARGETS });
 
 const COMPONENTS = [
   ['text', 'Text', 'Basic', true],
