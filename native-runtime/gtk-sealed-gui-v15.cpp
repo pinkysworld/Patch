@@ -5,10 +5,12 @@
 #undef main
 #undef PATCH_RUNTIME_V15_RESTORE_MAIN
 #include "sealed-chrome-v15.hpp"
+#include "picture-data-v15.hpp"
 
 static std::vector<PatchChromeV15> gPatchChromeV15;
 static std::vector<GtkWidget*> gPatchChromeViewsV15;
 static std::vector<guint> gPatchChromeTimersV15;
+static std::vector<GdkPixbuf*> gPatchChromeImagesV15;
 static int gPatchChromeDispatchCountV15 = 0;
 
 static bool ReadSelfPayloadV15(std::vector<uint8_t>& payload) {
@@ -57,6 +59,54 @@ static std::string PatchChromeCaptionV15(const PatchChromeV15& item) {
   return item.text;
 }
 
+static GdkPixbuf* PatchPicturePixbufV15(const PatchChromeV15& item) {
+  if (!PatchPictureEmbeddedSourceV15(item.source)) return nullptr;
+  PatchPictureDataV15 picture;
+  if (!PatchDecodePictureDataUriV15(item.source, picture)) return nullptr;
+  GdkPixbufLoader* loader = gdk_pixbuf_loader_new();
+  if (!loader) return nullptr;
+  GError* error = nullptr;
+  gboolean wrote = gdk_pixbuf_loader_write(loader, picture.bytes.data(), picture.bytes.size(), &error);
+  gboolean closed = wrote ? gdk_pixbuf_loader_close(loader, &error) : FALSE;
+  GdkPixbuf* decoded = wrote && closed ? gdk_pixbuf_loader_get_pixbuf(loader) : nullptr;
+  if (decoded) g_object_ref(decoded);
+  if (error) g_error_free(error);
+  g_object_unref(loader);
+  return decoded;
+}
+
+static GdkPixbuf* PatchScalePictureV15(GdkPixbuf* source, int width, int height) {
+  if (!source || width < 1 || height < 1) return nullptr;
+  const int sourceWidth = gdk_pixbuf_get_width(source), sourceHeight = gdk_pixbuf_get_height(source);
+  if (sourceWidth < 1 || sourceHeight < 1) return nullptr;
+  int targetWidth = width, targetHeight = std::max(1, (sourceHeight * width) / sourceWidth);
+  if (targetHeight > height) {
+    targetHeight = height;
+    targetWidth = std::max(1, (sourceWidth * height) / sourceHeight);
+  }
+  return gdk_pixbuf_scale_simple(source, targetWidth, targetHeight, GDK_INTERP_BILINEAR);
+}
+
+static bool PatchApplyPictureV15(GtkWidget* button, GdkPixbuf* source, int width, int height) {
+  if (!button || !GTK_IS_BUTTON(button) || !source) return false;
+  GdkPixbuf* scaled = PatchScalePictureV15(source, std::max(1, width), std::max(1, height));
+  if (!scaled) return false;
+  GtkWidget* image = gtk_image_new_from_pixbuf(scaled);
+  g_object_unref(scaled);
+  if (!image) return false;
+  gtk_button_set_image(GTK_BUTTON(button), image);
+  gtk_button_set_always_show_image(GTK_BUTTON(button), TRUE);
+  gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
+  return true;
+}
+
+static void PatchDestroyPicturesV15() {
+  for (GdkPixbuf*& image : gPatchChromeImagesV15) {
+    if (image) g_object_unref(image);
+    image = nullptr;
+  }
+}
+
 static bool PatchExecuteChromeEventV15(const PatchChromeV15& item, const PatchChromeEventPatchV15& patch) {
   if (patch.eventIndex >= gEvents.size()) return false;
   PatchExecuteEventV11(gEvents[(size_t)patch.eventIndex], false, {}, nullptr);
@@ -85,6 +135,7 @@ static void PatchOnPictureV15(GtkWidget*, gpointer data) {
 static bool PatchInstallChromeV15() {
   gPatchChromeViewsV15.assign(gControls.size(), nullptr);
   gPatchChromeTimersV15.assign(gControls.size(), 0);
+  gPatchChromeImagesV15.assign(gControls.size(), nullptr);
   for (const auto& item : gPatchChromeV15) {
     auto& c = gControls[(size_t)item.nativeIndex];
     if (!c.widget) return false;
@@ -99,7 +150,15 @@ static bool PatchInstallChromeV15() {
       gtk_widget_hide(c.widget);
       continue;
     } else if (item.kind == PATCH_CHROME_PICTURE_V15) {
-      view = gtk_button_new_with_label(PatchChromeCaptionV15(item).c_str());
+      if (PatchPictureEmbeddedSourceV15(item.source)) {
+        GdkPixbuf* image = PatchPicturePixbufV15(item);
+        if (!image) return false;
+        gPatchChromeImagesV15[(size_t)item.nativeIndex] = image;
+        view = gtk_button_new();
+        if (!PatchApplyPictureV15(view, image, allocation.width, allocation.height)) return false;
+      } else {
+        view = gtk_button_new_with_label(PatchChromeCaptionV15(item).c_str());
+      }
       g_signal_connect(view, "clicked", G_CALLBACK(PatchOnPictureV15), GINT_TO_POINTER(item.nativeIndex));
     } else {
       view = gtk_statusbar_new();
@@ -112,7 +171,7 @@ static bool PatchInstallChromeV15() {
     if (accessible) atk_object_set_name(accessible, PatchControlNameV09(c).c_str());
     gPatchChromeViewsV15[(size_t)item.nativeIndex] = view;
     gtk_widget_hide(c.widget);
-    gtk_widget_show(view);
+    gtk_widget_show_all(view);
   }
   return true;
 }
@@ -125,15 +184,19 @@ static void PatchRefreshChromeV15() {
     if (item.kind == PATCH_CHROME_TIMER_V15) { if (c.widget) gtk_widget_hide(c.widget); continue; }
     if (!view || !c.widget) continue;
     GtkWidget* parent = gtk_widget_get_parent(c.widget);
+    GtkAllocation allocation{};
     if (parent && GTK_IS_FIXED(parent)) {
-      GtkAllocation allocation{}; gtk_widget_get_allocation(c.widget, &allocation);
+      gtk_widget_get_allocation(c.widget, &allocation);
       gtk_fixed_move(GTK_FIXED(parent), view, allocation.x, allocation.y);
       gtk_widget_set_size_request(view, std::max(1, allocation.width), std::max(1, allocation.height));
     }
     if (item.kind == PATCH_CHROME_PANEL_V15) gtk_frame_set_label(GTK_FRAME(view), PatchChromeCaptionV15(item).c_str());
-    else if (item.kind == PATCH_CHROME_PICTURE_V15) gtk_button_set_label(GTK_BUTTON(view), PatchChromeCaptionV15(item).c_str());
-    else if (GTK_IS_STATUSBAR(view)) { gtk_statusbar_pop(GTK_STATUSBAR(view), 0); gtk_statusbar_push(GTK_STATUSBAR(view), 0, PatchChromeCaptionV15(item).c_str()); }
-    gtk_widget_hide(c.widget); gtk_widget_show(view);
+    else if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      GdkPixbuf* image = gPatchChromeImagesV15[(size_t)item.nativeIndex];
+      if (image) PatchApplyPictureV15(view, image, allocation.width, allocation.height);
+      else gtk_button_set_label(GTK_BUTTON(view), PatchChromeCaptionV15(item).c_str());
+    } else if (GTK_IS_STATUSBAR(view)) { gtk_statusbar_pop(GTK_STATUSBAR(view), 0); gtk_statusbar_push(GTK_STATUSBAR(view), 0, PatchChromeCaptionV15(item).c_str()); }
+    gtk_widget_hide(c.widget); gtk_widget_show_all(view);
   }
   gRefreshing = previous;
 }
@@ -151,9 +214,12 @@ static int RunPatchChromeSmokeV15() {
     }
     GtkWidget* view = gPatchChromeViewsV15[(size_t)item.nativeIndex];
     if (!view) return code++;
-    if (item.kind == PATCH_CHROME_PICTURE_V15 && !item.events.empty()) {
-      int before = gPatchChromeDispatchCountV15;
-      if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++;
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      if (PatchPictureEmbeddedSourceV15(item.source) && !gPatchChromeImagesV15[(size_t)item.nativeIndex]) return code++;
+      if (!item.events.empty()) {
+        int before = gPatchChromeDispatchCountV15;
+        if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++;
+      }
     }
   }
   return 0;
@@ -188,11 +254,13 @@ int main(int argc, char* argv[]) {
     if (!result) result = RunPatchSliderSmokeV14();
     if (!result) result = RunPatchChromeSmokeV15();
     for (guint id : gPatchChromeTimersV15) if (id) g_source_remove(id);
+    PatchDestroyPicturesV15();
     PatchDestroyMenusV12();
     return result;
   }
   gtk_main();
   for (guint id : gPatchChromeTimersV15) if (id) g_source_remove(id);
+  PatchDestroyPicturesV15();
   PatchDestroyMenusV12();
   return 0;
 }
