@@ -1,5 +1,19 @@
 import { formControlDefaultSize, isNonvisualFormControl } from './form-layout.js';
 
+const EVENT_BY_TYPE = Object.freeze({
+  button: Object.freeze([{ name: 'clicked', label: 'OnClick', value: false }]),
+  picture: Object.freeze([{ name: 'clicked', label: 'OnClick', value: false }]),
+  timer: Object.freeze([{ name: 'ticked', label: 'OnTick', value: false }]),
+  input: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  checkbox: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  radio: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  combo: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  listbox: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  slider: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  table: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  tree: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }])
+});
+
 const COMPONENTS = [
   ['text', 'Text', 'Basic', true],
   ['button', 'Button', 'Basic', true],
@@ -18,7 +32,7 @@ const COMPONENTS = [
   ['timer', 'Timer', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.1';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.2';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);
@@ -28,12 +42,15 @@ export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, cate
     type,
     label,
     category,
+    buttonId: `add${type[0].toUpperCase()}${type.slice(1)}`,
     visual,
-    defaultSize: Object.freeze({ width: size.width, height: size.height })
+    defaultSize: Object.freeze({ width: size.width, height: size.height }),
+    events: Object.freeze((EVENT_BY_TYPE[type] ?? []).map(event => Object.freeze({ ...event })))
   });
 }));
 
 const BY_TYPE = new Map(PATCH_COMPONENTS.map(component => [component.type, component]));
+const BY_BUTTON = new Map(PATCH_COMPONENTS.map(component => [component.buttonId, component]));
 
 export function listPatchComponents(options = {}) {
   const category = options.category ? String(options.category) : null;
@@ -43,6 +60,10 @@ export function listPatchComponents(options = {}) {
 
 export function patchComponent(type) {
   return BY_TYPE.get(String(type ?? '')) ?? null;
+}
+
+export function patchComponentForButton(buttonId) {
+  return BY_BUTTON.get(String(buttonId ?? '')) ?? null;
 }
 
 export function patchComponentCategories() {
