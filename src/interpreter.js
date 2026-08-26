@@ -212,6 +212,7 @@ export class PatchInterpreter {
           text:node.textExpr?this.uiText(node.textExpr):'',
           options:Array.isArray(node.options)?node.options.map(option=>this.uiOption(option)):[],
           nodes:node.control==='tree'?this.uiTreeNodes(node.treeNodes):[],
+          source:node.control==='picture'&&node.sourceExpr?this.uiText(node.sourceExpr):'',
           value:node.id&&this.state.has(node.id)?clone(this.state.get(node.id)):(node.control==='slider'?node.min:'')
         };
         if(node.control==='slider'){
