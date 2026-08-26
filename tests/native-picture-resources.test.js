@@ -8,6 +8,7 @@ import {
   inspectCurrentNativeGuiChrome
 } from '../src/native-current-contract.js';
 import {
+  PATCH_NATIVE_PICTURE_MEDIA_TYPES,
   resolveNativePictureResources,
   nativePictureResourceDataUri
 } from '../src/native-picture-resources.js';
@@ -44,6 +45,7 @@ test('native Picture resource resolver clones IR and embeds deterministic data U
   assert.equal(picture.source, 'data:image/png;base64,AA==');
   assert.equal(JSON.stringify(input), before);
   assert.equal(nativePictureResourceDataUri(RESOURCE), 'data:image/png;base64,AA==');
+  assert.deepEqual(PATCH_NATIVE_PICTURE_MEDIA_TYPES, ['image/png', 'image/jpeg']);
 });
 
 test('current native seal contract carries resolved Picture bytes through payload v14', () => {
@@ -65,6 +67,17 @@ test('current native sealing fails closed for missing logical Picture resources'
     () => sealCurrentNativeGuiRuntime(new Uint8Array([0x4d, 0x5a]), input, { platform: 'windows' }),
     error => error?.code === 'NATIVE_PICTURE_RESOURCE_MISSING' && /app\.logo/.test(error.message)
   );
+});
+
+test('native Picture project resources reject WebP and SVG before sealing for cross-host parity', () => {
+  for (const mediaType of ['image/webp', 'image/svg+xml']) {
+    const extension = mediaType === 'image/webp' ? 'webp' : 'svg';
+    const resource = { ...RESOURCE, path: `resources/logo.${extension}`, mediaType };
+    assert.throws(
+      () => resolveNativePictureResources(nativeIr(), [resource]),
+      error => error?.code === 'NATIVE_PICTURE_RESOURCE_FORMAT' && /PNG and JPEG/.test(error.message)
+    );
+  }
 });
 
 test('ordinary native Picture sources remain unchanged', () => {
