@@ -1,3 +1,5 @@
+import './studio-build-readiness.js';
+
 const code = document.querySelector('#code');
 const projectKind = document.querySelector('#projectKind');
 
