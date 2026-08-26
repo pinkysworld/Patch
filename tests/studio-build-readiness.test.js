@@ -28,7 +28,7 @@ test('Studio build readiness surfaces fail-closed component incompatibility with
 
 test('Studio build readiness stays neutral for targets outside the component matrix and exposes source errors', () => {
   assert.equal(buildReadinessModel(windowSource, 'window', 'portable').state, 'neutral');
-  assert.equal(buildReadinessModel('window "Broken":\n    button "x" as x', 'window', 'native-windows').state, 'source-error');
+  assert.equal(buildReadinessModel('window "Broken":\n  definitely not patch syntax', 'window', 'native-windows').state, 'source-error');
   assert.equal(buildReadinessModel('create number n = 1', 'console', 'native-linux').state, 'ready');
 });
 
