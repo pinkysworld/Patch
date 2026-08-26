@@ -3,11 +3,11 @@ import { compile } from '../src/compiler.js';
 import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
 import { compileToWasm } from '../src/wasm.js';
 import { compileToDirectWasm } from '../src/wasm-direct.js';
-import { buildStandaloneWebApp } from '../src/webapp.js';
+import { buildStandaloneWebApp, pictureResourceDataUri } from '../src/webapp.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
-import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext } from './project-lifecycle.js';
+import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
 const samples = {
   workshopDesk: `create thing ticket:
@@ -560,6 +560,26 @@ function createControlElement(control, context) {
     if (context.interactive) input.addEventListener('change', () => trigger(control.id, 'changed', { value: Number(input.value) }));
     else input.disabled = true;
     el.append(input, value);
+  } else if (control.type === 'picture') {
+    el = document.createElement('img');
+    el.className = 'patch-picture';
+    el.alt = control.text || control.id || '';
+    el.style.objectFit = 'contain';
+    el.style.maxWidth = '100%';
+    el.style.maxHeight = '100%';
+    if (control.source) el.src = pictureResourceDataUri(control.source, getStudioProjectResources());
+    if (context.interactive && control.id) {
+      el.tabIndex = 0;
+      el.setAttribute('role', 'button');
+      const activate = () => trigger(control.id, 'clicked');
+      el.addEventListener('click', activate);
+      el.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          activate();
+        }
+      });
+    }
   } else if (control.type === 'tree') {
     el = createTreeElement(control, context);
   }
@@ -713,7 +733,14 @@ function showTab(name) {
   irView.hidden = name !== 'ir';
 }
 
-function projectOptions() { return { name: studioProjectFileStem(projectName.value), kind: projectKind.value, entry: 'main.patch' }; }
+function projectOptions() {
+  return {
+    name: studioProjectFileStem(projectName.value),
+    kind: projectKind.value,
+    entry: 'main.patch',
+    resources: getStudioProjectResources()
+  };
+}
 
 function formatStudioStop(error, phase) {
   try {
