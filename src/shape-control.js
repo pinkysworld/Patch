@@ -42,17 +42,19 @@ export function patchShapeSvgDescriptor(input = {}) {
     fill: shape.fill,
     stroke: shape.stroke,
     strokeWidth: shape.strokeWidth,
-    opacity: shape.opacity
+    opacity: shape.opacity,
+    vectorEffect: 'non-scaling-stroke'
   });
   if (shape.kind === 'ellipse') {
-    return Object.freeze({ element: 'ellipse', attributes: Object.freeze({ ...common, cx: '50%', cy: '50%', rx: '49%', ry: '49%' }) });
+    return Object.freeze({ viewBox: '0 0 100 100', element: 'ellipse', attributes: Object.freeze({ ...common, cx: 50, cy: 50, rx: 49, ry: 49 }) });
   }
   if (shape.kind === 'line') {
-    return Object.freeze({ element: 'line', attributes: Object.freeze({ ...common, x1: '0%', y1: '50%', x2: '100%', y2: '50%' }) });
+    return Object.freeze({ viewBox: '0 0 100 100', element: 'line', attributes: Object.freeze({ ...common, x1: 0, y1: 50, x2: 100, y2: 50 }) });
   }
   return Object.freeze({
+    viewBox: '0 0 100 100',
     element: 'rect',
-    attributes: Object.freeze({ ...common, x: 1, y: 1, width: 'calc(100% - 2px)', height: 'calc(100% - 2px)', rx: shape.kind === 'rounded' ? shape.cornerRadius : 0, ry: shape.kind === 'rounded' ? shape.cornerRadius : 0 })
+    attributes: Object.freeze({ ...common, x: 1, y: 1, width: 98, height: 98, rx: shape.kind === 'rounded' ? shape.cornerRadius : 0, ry: shape.kind === 'rounded' ? shape.cornerRadius : 0 })
   });
 }
 
