@@ -73,6 +73,16 @@ test('Studio resource validation fails closed on size metadata base64 and SHA-25
   const resource = await svgResource();
   assert.throws(() => validateStudioResource({ ...resource, size: resource.size + 1 }), error => error.code === 'STUDIO_RESOURCE_SIZE');
   assert.throws(() => validateStudioResource({ ...resource, data: 'not-base64' }), error => error.code === 'STUDIO_RESOURCE_DATA');
+  const oneZeroByte = await buildStudioImageResource({
+    id: 'zero.byte',
+    mediaType: 'image/png',
+    bytes: new Uint8Array([0])
+  });
+  assert.equal(oneZeroByte.data, 'AA==');
+  assert.throws(
+    () => validateStudioResource({ ...oneZeroByte, data: 'AB==' }),
+    error => error.code === 'STUDIO_RESOURCE_DATA'
+  );
   await assert.rejects(
     () => verifyStudioResource({ ...resource, sha256: '0'.repeat(64) }),
     error => error.code === 'STUDIO_RESOURCE_HASH_MISMATCH'
