@@ -9,8 +9,9 @@ const playground = fs.readFileSync('web/playground.js', 'utf8');
 // This regression protects the v2 canonical project store from programmatic Designer/sample edits
 // that historically updated only playground.js's legacy patchStudio.project compatibility key.
 test('Studio programmatic source and kind mutations are normalized into shared DOM signals', () => {
-  assert.match(sync, /const code = document\.querySelector\('#code'\)/);
-  assert.match(sync, /const projectKind = document\.querySelector\('#projectKind'\)/);
+  assert.match(sync, /const doc = typeof document === 'undefined' \? null : document/);
+  assert.match(sync, /const code = doc\?\.querySelector\('#code'\) \?\? null/);
+  assert.match(sync, /const projectKind = doc\?\.querySelector\('#projectKind'\) \?\? null/);
   assert.match(sync, /queueMicrotask/);
   assert.match(sync, /code\.dispatchEvent\(new Event\('input'/);
   assert.match(sync, /code\.dispatchEvent\(new Event\('change'/);
@@ -30,5 +31,6 @@ test('Studio loads the DOM sync bridge after playground and Designer mutation mo
 
 test('legacy playground persistence remains only a compatibility surface behind the canonical sync bridge', () => {
   assert.match(playground, /patchStudio\.project/);
-  assert.match(sync, /document\.addEventListener\(type, captureProgrammaticMutation/);
+  assert.match(sync, /doc\.addEventListener\(type, captureProgrammaticMutation/);
+  assert.match(sync, /if \(doc\) \{/);
 });
