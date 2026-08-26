@@ -11,19 +11,22 @@ import {
   studioStateFromBundle,
   validateStudioProjectBundle
 } from '../src/studio-project.js';
+import { PATCH_STUDIO_MAX_RESOURCE_TOTAL_BYTES } from '../src/studio-resources.js';
 import { patchArtifactFilename, patchArtifactStem } from '../src/artifact-name.js';
 
-const CURRENT_KEY = 'patchStudio.project.v3';
-const PENDING_KEY = 'patchStudio.project.pending.v3';
+const CURRENT_KEY = 'patchStudio.project.v4';
+const PENDING_KEY = 'patchStudio.project.pending.v4';
+const V3_CURRENT_KEY = 'patchStudio.project.v3';
+const V3_PENDING_KEY = 'patchStudio.project.pending.v3';
 const V2_CURRENT_KEY = 'patchStudio.project.v2';
 const V2_PENDING_KEY = 'patchStudio.project.pending.v2';
 const V1_CURRENT_KEY = 'patchStudio.project.v1';
 const V1_PENDING_KEY = 'patchStudio.project.pending.v1';
 const RECOVERY_KEY = 'patchStudio.recovery.v1';
-const CORRUPT_KEY = 'patchStudio.project.corrupt.v3';
+const CORRUPT_KEY = 'patchStudio.project.corrupt.v4';
 const LEGACY_KEY = 'patchStudio.project';
 const RECOVERY_INTERVAL_MS = 60_000;
-const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_PROJECT_BYTES + 1024 * 1024;
+const MAX_IMPORT_BYTES = PATCH_STUDIO_MAX_PROJECT_BYTES + Math.ceil(PATCH_STUDIO_MAX_RESOURCE_TOTAL_BYTES * 4 / 3) + 2 * 1024 * 1024;
 const encoder = new TextEncoder();
 
 installStylesheet();
@@ -51,14 +54,14 @@ updateRecoveryControl();
 function bootstrapProjectStorage() {
   try {
     const warnings = [];
-    const pendingKeys = [PENDING_KEY, V2_PENDING_KEY, V1_PENDING_KEY];
+    const pendingKeys = [PENDING_KEY, V3_PENDING_KEY, V2_PENDING_KEY, V1_PENDING_KEY];
     for (const key of pendingKeys) {
       const pending = readBundleAttempt(key);
       if (pending.bundle) {
         adoptCanonicalBundle(pending.bundle);
         removeMigrationStores();
         writeLegacyCompatibility(pending.bundle);
-        setStatus(key === PENDING_KEY ? 'Recovered interrupted local save' : 'Migrated interrupted Studio save to v3');
+        setStatus(key === PENDING_KEY ? 'Recovered interrupted local save' : 'Migrated interrupted Studio save to v4');
         return;
       }
       if (pending.error) {
@@ -67,14 +70,14 @@ function bootstrapProjectStorage() {
       }
     }
 
-    const currentKeys = [CURRENT_KEY, V2_CURRENT_KEY, V1_CURRENT_KEY];
+    const currentKeys = [CURRENT_KEY, V3_CURRENT_KEY, V2_CURRENT_KEY, V1_CURRENT_KEY];
     for (const key of currentKeys) {
       const current = readBundleAttempt(key);
       if (current.bundle) {
         adoptCanonicalBundle(current.bundle);
         removeMigrationStores();
         writeLegacyCompatibility(current.bundle);
-        if (key !== CURRENT_KEY) setStatus('Migrated Studio project to v3');
+        if (key !== CURRENT_KEY) setStatus('Migrated Studio project to v4');
         else if (warnings.length) setStatus('Saved project restored', warnings.join(' '));
         return;
       }
@@ -91,7 +94,7 @@ function bootstrapProjectStorage() {
         if (migrated) {
           adoptCanonicalBundle(migrated);
           writeLegacyCompatibility(migrated);
-          setStatus(warnings.length ? 'Recovered legacy local project' : 'Migrated local project to v3', warnings.join(' '));
+          setStatus(warnings.length ? 'Recovered legacy local project' : 'Migrated local project to v4', warnings.join(' '));
           return;
         }
       } catch (error) {
@@ -138,7 +141,7 @@ export function getStudioProjectBundle() {
 
 export function getStudioProjectBuildInput() {
   const bundle = syncBundleFromDom();
-  return { bundle, composition: composeStudioProjectSource(bundle) };
+  return { bundle, composition: composeStudioProjectSource(bundle), resources: bundle.resources.map(resource => ({ ...resource })) };
 }
 
 export function getStudioProjectDiagnosticContext() {
@@ -163,6 +166,11 @@ export function getStudioProjectDiagnosticContext() {
 export function getStudioProjectFiles() {
   const bundle = syncBundleFromDom();
   return bundle.files.map(file => ({ ...file }));
+}
+
+export function getStudioProjectResources() {
+  const bundle = syncBundleFromDom();
+  return bundle.resources.map(resource => ({ ...resource }));
 }
 
 export function getActiveStudioProjectFile() {
@@ -192,6 +200,7 @@ export function addStudioProjectFile(path, content = '') {
     kind: bundle.project.kind,
     entry: bundle.project.entry,
     files: [...bundle.files, { path, content }],
+    resources: bundle.resources,
     buildTarget: bundle.project.build.target,
     nativeBuildMode: bundle.project.build.nativeMode
   });
@@ -212,6 +221,7 @@ export function removeStudioProjectFile(path) {
     kind: bundle.project.kind,
     entry: bundle.project.entry,
     files: bundle.files.filter(file => file.path !== path),
+    resources: bundle.resources,
     buildTarget: bundle.project.build.target,
     nativeBuildMode: bundle.project.build.nativeMode
   });
@@ -232,6 +242,7 @@ export function replaceStudioProjectSource(source, options = {}) {
     kind,
     entry: 'main.patch',
     files: [{ path: 'main.patch', content: String(source ?? '') }],
+    resources: currentBundle?.resources ?? [],
     buildTarget: buildTarget?.value ?? currentBundle?.project.build.target ?? 'web',
     nativeBuildMode: nativeBuildMode?.value ?? currentBundle?.project.build.nativeMode ?? 'prebuilt'
   });
@@ -240,6 +251,50 @@ export function replaceStudioProjectSource(source, options = {}) {
   persistBundle(next, { snapshot: options.snapshot ?? 'force' });
   dispatchProjectEvent('patch:studio-project-files-changed');
   return next;
+}
+
+export function addStudioProjectResource(resource) {
+  const bundle = syncBundleFromDom();
+  if (bundle.resources.some(item => item.id === resource?.id)) throw new Error(`Project resource '${resource?.id}' already exists.`);
+  const next = rebuildWithResources(bundle, [...bundle.resources, resource]);
+  persistBundle(next, { snapshot: 'force' });
+  setStatus(`Added resource ${resource.id}`);
+  dispatchProjectEvent('patch:studio-project-resources-changed');
+  return next;
+}
+
+export function replaceStudioProjectResource(id, resource) {
+  const bundle = syncBundleFromDom();
+  const index = bundle.resources.findIndex(item => item.id === id);
+  if (index < 0) throw new Error(`Project resource '${id}' is no longer available.`);
+  const resources = bundle.resources.map((item, resourceIndex) => resourceIndex === index ? resource : item);
+  const next = rebuildWithResources(bundle, resources);
+  persistBundle(next, { snapshot: 'force' });
+  setStatus(`Updated resource ${resource.id}`);
+  dispatchProjectEvent('patch:studio-project-resources-changed');
+  return next;
+}
+
+export function removeStudioProjectResource(id) {
+  const bundle = syncBundleFromDom();
+  if (!bundle.resources.some(item => item.id === id)) throw new Error(`Project resource '${id}' is no longer available.`);
+  const next = rebuildWithResources(bundle, bundle.resources.filter(item => item.id !== id));
+  persistBundle(next, { snapshot: 'force' });
+  setStatus(`Removed resource ${id}`);
+  dispatchProjectEvent('patch:studio-project-resources-changed');
+  return next;
+}
+
+function rebuildWithResources(bundle, resources) {
+  return buildStudioProjectBundle({
+    name: bundle.project.name,
+    kind: bundle.project.kind,
+    entry: bundle.project.entry,
+    files: bundle.files,
+    resources,
+    buildTarget: bundle.project.build.target,
+    nativeBuildMode: bundle.project.build.nativeMode
+  });
 }
 
 function exportProject() {
@@ -266,6 +321,7 @@ async function importProjectFile() {
     persistBundle(bundle, { snapshot: 'none' });
     setStatus(`Imported ${file.name}`);
     dispatchProjectEvent('patch:studio-project-files-changed');
+    dispatchProjectEvent('patch:studio-project-resources-changed');
   } catch (error) {
     setStatus('Import stopped', error?.message);
   } finally {
@@ -283,7 +339,9 @@ export function getRecoverySnapshotSummaries() {
       kind: state.kind,
       buildTarget: state.buildTarget,
       fileCount: state.files.length,
-      sourceBytes: state.files.reduce((sum, file) => sum + encoder.encode(file.content).length, 0)
+      resourceCount: state.resources.length,
+      sourceBytes: state.files.reduce((sum, file) => sum + encoder.encode(file.content).length, 0),
+      resourceBytes: state.resources.reduce((sum, resource) => sum + resource.size, 0)
     };
   });
 }
@@ -305,6 +363,7 @@ export function restoreRecoverySnapshot(index) {
   persistBundle(selected.project, { snapshot: 'none' });
   setStatus(`Recovered snapshot from ${when}`);
   dispatchProjectEvent('patch:studio-project-files-changed');
+  dispatchProjectEvent('patch:studio-project-resources-changed');
   return getRecoverySnapshotSummaries();
 }
 
@@ -390,6 +449,7 @@ function syncBundleFromDom(options = {}) {
       name: projectName?.value ?? 'PatchApp',
       kind: projectKind?.value ?? 'console',
       code: code?.value ?? '',
+      resources: [],
       buildTarget: buildTarget?.value ?? 'web',
       nativeBuildMode: nativeBuildMode?.value ?? 'prebuilt'
     });
@@ -406,6 +466,7 @@ function syncBundleFromDom(options = {}) {
     kind: projectKind?.value ?? base.project.kind,
     entry: base.project.entry,
     files,
+    resources: base.resources,
     buildTarget: buildTarget?.value ?? base.project.build.target,
     nativeBuildMode: nativeBuildMode?.value ?? base.project.build.nativeMode
   });
@@ -445,7 +506,7 @@ function adoptCanonicalBundle(bundle) {
 }
 
 function removeMigrationStores() {
-  for (const key of [V2_CURRENT_KEY, V2_PENDING_KEY, V1_CURRENT_KEY, V1_PENDING_KEY]) localStorage.removeItem(key);
+  for (const key of [V3_CURRENT_KEY, V3_PENDING_KEY, V2_CURRENT_KEY, V2_PENDING_KEY, V1_CURRENT_KEY, V1_PENDING_KEY]) localStorage.removeItem(key);
 }
 
 function writeLegacyCompatibility(bundle) {
@@ -522,8 +583,9 @@ function dispatchProjectEvent(type) {
   const detail = currentBundle ? {
     entry: currentBundle.project.entry,
     activeFile: activeFilePath,
-    files: currentBundle.files.map(file => file.path)
-  } : { entry: 'main.patch', activeFile: 'main.patch', files: ['main.patch'] };
+    files: currentBundle.files.map(file => file.path),
+    resources: currentBundle.resources.map(resource => resource.id)
+  } : { entry: 'main.patch', activeFile: 'main.patch', files: ['main.patch'], resources: [] };
   window.dispatchEvent(new CustomEvent(type, { detail }));
 }
 

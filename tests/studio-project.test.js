@@ -20,16 +20,26 @@ import {
   validateStudioProjectBundle
 } from '../src/studio-project.js';
 
-test('Studio project bundle v3 round-trips one source and centralized build settings deterministically', () => {
+const LOGO_RESOURCE = Object.freeze({
+  id: 'app.logo',
+  path: 'resources/logo.png',
+  mediaType: 'image/png',
+  size: 1,
+  sha256: '0'.repeat(64),
+  data: 'AA=='
+});
+
+test('Studio project bundle v4 round-trips source resources and centralized build settings deterministically', () => {
   const bundle = buildStudioProjectBundle({
     name: 'Counter',
     kind: 'window',
     code: 'window "Counter":\n  text "Hello"\n',
+    resources: [LOGO_RESOURCE],
     buildTarget: 'native-macos',
     nativeBuildMode: 'prebuilt'
   });
   assert.equal(bundle.format, PATCH_STUDIO_PROJECT_FORMAT);
-  assert.equal(bundle.version, 3);
+  assert.equal(bundle.version, 4);
   assert.equal(bundle.version, PATCH_STUDIO_PROJECT_VERSION);
   assert.deepEqual(bundle.project, {
     name: 'Counter',
@@ -37,6 +47,7 @@ test('Studio project bundle v3 round-trips one source and centralized build sett
     entry: 'main.patch',
     build: { target: 'native-macos', nativeMode: 'prebuilt' }
   });
+  assert.deepEqual(bundle.resources, [LOGO_RESOURCE]);
   const serialized = serializeStudioProjectBundle(bundle);
   assert.deepEqual(parseStudioProjectBundle(serialized), bundle);
   assert.deepEqual(studioStateFromBundle(bundle), {
@@ -44,13 +55,14 @@ test('Studio project bundle v3 round-trips one source and centralized build sett
     kind: 'window',
     entry: 'main.patch',
     files: [{ path: 'main.patch', content: 'window "Counter":\n  text "Hello"\n' }],
+    resources: [LOGO_RESOURCE],
     code: 'window "Counter":\n  text "Hello"\n',
     buildTarget: 'native-macos',
     nativeBuildMode: 'prebuilt'
   });
 });
 
-test('Studio project v3 preserves multiple Patch sources and composes entry first', () => {
+test('Studio project v4 preserves multiple Patch sources and composes only source files entry-first', () => {
   const bundle = buildStudioProjectBundle({
     name: 'SplitForms',
     kind: 'window',
@@ -59,19 +71,22 @@ test('Studio project v3 preserves multiple Patch sources and composes entry firs
       { path: 'forms/settings.patch', content: 'window "Settings" as settings:\n  text "Settings"\n' },
       { path: 'main.patch', content: 'create text title = "Patch"\n' },
       { path: 'recipes/reset.patch', content: 'make reset():\n  return\n' }
-    ]
+    ],
+    resources: [LOGO_RESOURCE]
   });
   assert.equal(bundle.files.length, 3);
+  assert.equal(bundle.resources.length, 1);
   assert.deepEqual(bundle.files.map(file => file.path), ['forms/settings.patch', 'main.patch', 'recipes/reset.patch']);
   const composition = composeStudioProjectSource(bundle);
   assert.deepEqual(composition.files, ['main.patch', 'forms/settings.patch', 'recipes/reset.patch']);
   assert.match(composition.source, /^create text title/);
+  assert.doesNotMatch(composition.source, /patch-resource/);
   assert.match(composition.source, /window "Settings"/);
   assert.equal(mapStudioProjectLine(composition, composition.segments[1].startLine)?.path, 'forms/settings.patch');
   assert.deepEqual(parseStudioProjectBundle(serializeStudioProjectBundle(bundle)), bundle);
 });
 
-test('Studio project v1 and v2 migrate explicitly to v3', () => {
+test('Studio project v1 v2 and v3 migrate explicitly to v4 with empty resources', () => {
   const source = 'window "Legacy":\n  text "Hello"\n';
   const v1 = {
     format: PATCH_STUDIO_PROJECT_FORMAT,
@@ -85,15 +100,30 @@ test('Studio project v1 and v2 migrate explicitly to v3', () => {
     project: { name: 'LegacyV2', kind: 'window', entry: 'main.patch', build: { target: 'portable', nativeMode: 'local' } },
     files: [{ path: 'main.patch', content: source }]
   };
+  const v3 = {
+    format: PATCH_STUDIO_PROJECT_FORMAT,
+    version: 3,
+    project: { name: 'LegacyV3', kind: 'window', entry: 'main.patch', build: { target: 'web', nativeMode: 'prebuilt' } },
+    files: [
+      { path: 'main.patch', content: source },
+      { path: 'forms/other.patch', content: 'window "Other":\n  text "Other"\n' }
+    ]
+  };
   const migratedV1 = validateStudioProjectBundle(v1);
-  assert.equal(migratedV1.version, 3);
+  assert.equal(migratedV1.version, 4);
+  assert.deepEqual(migratedV1.resources, []);
   assert.deepEqual(migratedV1.project.build, {
     target: PATCH_STUDIO_DEFAULT_BUILD_TARGET,
     nativeMode: PATCH_STUDIO_DEFAULT_NATIVE_BUILD_MODE
   });
   const migratedV2 = validateStudioProjectBundle(v2);
-  assert.equal(migratedV2.version, 3);
+  assert.equal(migratedV2.version, 4);
+  assert.deepEqual(migratedV2.resources, []);
   assert.deepEqual(migratedV2.project.build, { target: 'portable', nativeMode: 'local' });
+  const migratedV3 = validateStudioProjectBundle(v3);
+  assert.equal(migratedV3.version, 4);
+  assert.equal(migratedV3.files.length, 2);
+  assert.deepEqual(migratedV3.resources, []);
 });
 
 test('historical v2 layout remains fail-closed for multiple files', () => {
@@ -117,7 +147,7 @@ test('Studio project validator rejects unknown future schemas instead of guessin
   );
 });
 
-test('Studio project v3 rejects invalid centralized build settings', () => {
+test('Studio project v4 rejects invalid centralized build settings and resource metadata', () => {
   const base = buildStudioProjectBundle({ name: 'Safe', kind: 'console', code: 'show 1\n' });
   assert.throws(
     () => validateStudioProjectBundle({ ...base, project: { ...base.project, build: { ...base.project.build, target: 'mystery' } } }),
@@ -126,6 +156,10 @@ test('Studio project v3 rejects invalid centralized build settings', () => {
   assert.throws(
     () => validateStudioProjectBundle({ ...base, project: { ...base.project, build: { ...base.project.build, nativeMode: 'magic' } } }),
     error => error.code === 'STUDIO_PROJECT_NATIVE_MODE'
+  );
+  assert.throws(
+    () => validateStudioProjectBundle({ ...base, resources: [{ ...LOGO_RESOURCE, path: '../logo.png' }] }),
+    error => error.code === 'STUDIO_RESOURCE_PATH'
   );
 });
 
@@ -137,7 +171,7 @@ test('Studio project validator rejects path traversal duplicates missing entry a
   assert.throws(() => buildStudioProjectBundle({ name: 'NoText', kind: 'console', files: [{ path: 'README.md', content: 'nope' }], entry: 'README.md' }), error => error.code === 'STUDIO_PROJECT_FILE_TYPE');
 });
 
-test('legacy local Studio state migrates into v3 and preserves legacy build settings when present', () => {
+test('legacy local Studio state migrates into v4 and preserves legacy build settings when present', () => {
   const migrated = parseStoredStudioProject(JSON.stringify({
     name: 'Legacy',
     kind: 'window',
@@ -146,14 +180,15 @@ test('legacy local Studio state migrates into v3 and preserves legacy build sett
     nativeBuildMode: 'local'
   }));
   assert.equal(migrated.format, PATCH_STUDIO_PROJECT_FORMAT);
-  assert.equal(migrated.version, 3);
+  assert.equal(migrated.version, 4);
   assert.equal(migrated.project.name, 'Legacy');
   assert.equal(migrated.project.build.target, 'native-windows');
   assert.equal(migrated.project.build.nativeMode, 'local');
   assert.equal(migrated.files[0].path, 'main.patch');
+  assert.deepEqual(migrated.resources, []);
 });
 
-test('recovery snapshots migrate embedded v1 projects to v3', () => {
+test('recovery snapshots migrate embedded v1 projects to v4', () => {
   const v1Project = {
     format: PATCH_STUDIO_PROJECT_FORMAT,
     version: 1,
@@ -168,11 +203,12 @@ test('recovery snapshots migrate embedded v1 projects to v3', () => {
   }]);
   const parsed = parseRecoverySnapshots(encoded);
   assert.equal(parsed.length, 1);
-  assert.equal(parsed[0].project.version, 3);
+  assert.equal(parsed[0].project.version, 4);
+  assert.deepEqual(parsed[0].project.resources, []);
   assert.deepEqual(parsed[0].project.project.build, { target: 'web', nativeMode: 'prebuilt' });
 });
 
-test('recovery snapshots preserve all v3 project files and stay bounded newest-first', () => {
+test('recovery snapshots preserve all v4 project files and resources and stay bounded newest-first', () => {
   let snapshots = [];
   for (let i = 0; i < PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS + 2; i += 1) {
     const bundle = buildStudioProjectBundle({
@@ -182,6 +218,7 @@ test('recovery snapshots preserve all v3 project files and stay bounded newest-f
         { path: 'main.patch', content: `create number x = ${i}\n` },
         { path: 'extra.patch', content: 'show x\n' }
       ],
+      resources: [{ ...LOGO_RESOURCE, id: `app.logo${i}`, path: `resources/logo${i}.png` }],
       buildTarget: i % 2 ? 'web' : 'portable'
     });
     snapshots = addRecoverySnapshot(snapshots, bundle, new Date(Date.UTC(2026, 0, 1, 0, i, 0)));
@@ -189,17 +226,19 @@ test('recovery snapshots preserve all v3 project files and stay bounded newest-f
   assert.equal(snapshots.length, PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS);
   assert.equal(snapshots[0].project.project.name, `P${PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS + 1}`);
   assert.equal(snapshots[0].project.files.length, 2);
+  assert.equal(snapshots[0].project.resources.length, 1);
   const duplicate = addRecoverySnapshot(snapshots, snapshots[0].project, new Date(Date.UTC(2026, 0, 1, 1, 0, 0)));
   assert.equal(duplicate.length, PATCH_STUDIO_MAX_RECOVERY_SNAPSHOTS);
   assert.equal(duplicate.filter(item => item.project.project.name === snapshots[0].project.project.name).length, 1);
 });
 
 test('recovery parser ignores corrupt slots but preserves valid snapshots', () => {
-  const project = buildStudioProjectBundle({ name: 'Good', kind: 'console', code: 'show 1\n' });
+  const project = buildStudioProjectBundle({ name: 'Good', kind: 'console', code: 'show 1\n', resources: [LOGO_RESOURCE] });
   const snapshot = createRecoverySnapshot(project, new Date('2026-08-12T09:00:00Z'));
   const encoded = JSON.stringify([snapshot, { nope: true }]);
   const parsed = parseRecoverySnapshots(encoded);
   assert.equal(parsed.length, 1);
   assert.equal(parsed[0].project.project.name, 'Good');
+  assert.equal(parsed[0].project.resources[0].id, 'app.logo');
   assert.deepEqual(parseRecoverySnapshots(serializeRecoverySnapshots(parsed)), parsed);
 });
