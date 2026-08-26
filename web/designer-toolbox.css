@@ -131,18 +131,21 @@
   font-size: 9px;
   font-variant-numeric: tabular-nums;
 }
-#designerInspectorTimerField small {
+#designerInspectorTimerField small,
+#designerInspectorPictureSourceField small {
   display: block;
   margin-top: 4px;
   line-height: 1.35;
 }
 
-/* Current containers, Form chrome and nonvisual components continue the compact desktop rail. */
+/* Current containers, graphics, Form chrome and nonvisual components continue the compact desktop rail. */
 #designer #addPanel { top: 423px; }
 #designer #addPanel::before { content: "▣"; }
-#designer #addStatusbar { top: 457px; }
+#designer #addPicture { top: 457px; }
+#designer #addPicture::before { content: "▧"; }
+#designer #addStatusbar { top: 491px; }
 #designer #addStatusbar::before { content: "▰"; }
-#designer #addTimer { top: 491px; }
+#designer #addTimer { top: 525px; }
 #designer #addTimer::before { content: "◷"; }
 
 @media (max-width: 1120px) {
