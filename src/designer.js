@@ -201,6 +201,9 @@ export function listDesignerControls(source) {
       if (child.kind === 'uiControl' && child.control === 'timer') {
         item.interval = child.interval;
       }
+      if (child.kind === 'uiControl' && child.control === 'picture') {
+        item.sourceExpr = child.sourceExpr ?? null;
+      }
       if (child.kind === 'uiControl' && child.control === 'panel') {
         item.childCount = (child.body ?? []).length;
         item.childIds = (child.body ?? []).map(nested => nested.id).filter(Boolean);
@@ -259,12 +262,18 @@ export function updateDesignerControl(source, selector, changes = {}) {
     timerInterval = timerIntervalNumber(Object.hasOwn(changes, 'interval') ? changes.interval : control.interval);
   }
 
+  let pictureSourceExpr = control.sourceExpr ?? null;
+  if (control.type === 'picture' && Object.hasOwn(changes, 'sourceExpr')) {
+    const sourceExpr = String(changes.sourceExpr ?? '').trim();
+    pictureSourceExpr = sourceExpr || null;
+  }
+
   const layout = normalizeControlLayout(control, changes);
   const indent = indentOf(lines[lineIndex]);
   if (control.type === 'table') {
     lines[lineIndex] = `${indent}${formatTableControl(nextId, control.columns ?? [], layout)}`;
   } else {
-    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval)}`;
+    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval, pictureSourceExpr)}`;
   }
 
   if (oldId && nextId !== oldId && !['tabs', 'panel'].includes(control.type)) renameEventHeaders(lines, oldId, nextId);
@@ -453,12 +462,13 @@ function makeControl(type, lines, layout) {
   if (type === 'listbox') return formatControl(type, nextId(lines, 'listbox'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'slider') return formatControl(type, nextId(lines, 'slider'), null, layout, null, { min: 0, max: 100, step: 1 });
   if (type === 'timer') return formatControl(type, nextId(lines, 'timer'), null, layout, null, null, 1000);
+  if (type === 'picture') return formatControl(type, nextId(lines, 'picture'), null, layout);
   if (type === 'statusbar') return formatControl(type, nextId(lines, 'statusbar'), '"Ready"', layout);
   if (type === 'panel') return formatControl(type, nextId(lines, 'panel'), null, layout);
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
-function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null) {
+function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null, pictureSourceExpr = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
@@ -469,6 +479,11 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
   else if (type === 'timer') core = `timer as ${id} interval ${timerIntervalNumber(timerInterval ?? 1000)}`;
+  else if (type === 'picture') {
+    if (pictureSourceExpr) core = `picture as ${id} from ${pictureSourceExpr}`;
+    else if (textExpr) core = `picture ${textExpr} as ${id}`;
+    else core = `picture as ${id}`;
+  }
   else if (type === 'statusbar') core = `statusbar ${textExpr ?? '"Ready"'} as ${id}`;
   else if (type === 'panel') core = `panel as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
