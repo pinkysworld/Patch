@@ -11,7 +11,7 @@ const RESOURCE = Object.freeze({
   data: 'AA=='
 });
 
-const SOURCE = `window "Photos" as main size 420, 260:\n  picture "Logo" as logo source "patch-resource:app.logo" at 24, 24 size 180, 120\n\nwhen logo clicked:\n  show "logo clicked"\n`;
+const SOURCE = `window "Photos" as main size 420, 260:\n  picture as logo from "patch-resource:app.logo" at 24, 24 size 180, 120\n\nwhen logo clicked:\n  show "logo clicked"\n`;
 
 test('Standalone Window Web embeds v4 Picture resources and renders a real image control', () => {
   const built = buildStandaloneWebApp(SOURCE, {
@@ -40,7 +40,7 @@ test('Standalone Window Web fails closed when static Picture source names a miss
 });
 
 test('ordinary quoted Picture sources remain usable without project resources', () => {
-  const source = `window "Remote":\n  picture "Remote" as photo source "https://example.test/photo.png"\n`;
+  const source = `window "Remote":\n  picture as photo from "https://example.test/photo.png"\n`;
   const built = buildStandaloneWebApp(source, { name: 'Remote', kind: 'window' });
   assert.equal(built.metadata.pictureStage, 1);
   assert.equal(built.metadata.pictureResourceModel, 'quoted-source');
