@@ -31,6 +31,8 @@ test('runtime v1.5 sources wrap v1.4 and decode payload 14 / PCHC', () => {
   assert.match(appkit, /NSImage/);
   assert.match(appkit, /NSImageScaleProportionallyUpOrDown/);
   assert.match(header, /"PCHC"/);
+  assert.match(pictureData, /PATCH_PICTURE_MAX_BYTES_V15\s*=\s*2u\s*\*\s*1024u\s*\*\s*1024u/);
+  assert.match(pictureData, /decodedSize\s*>\s*PATCH_PICTURE_MAX_BYTES_V15/);
   assert.match(pictureData, /data:image\/png;base64,/);
   assert.match(pictureData, /data:image\/jpeg;base64,/);
   assert.doesNotMatch(pictureData, /image\/webp/);
