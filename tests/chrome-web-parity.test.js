@@ -67,10 +67,11 @@ test('generated Chrome parity adapter renders Panel children and schedules only 
   };
   const timerCalls = [];
   const cleared = [];
+  let pagehide = null;
   const window = {
     setInterval(callback, interval) { timerCalls.push({ callback, interval }); return timerCalls.length; },
     clearInterval(id) { cleared.push(id); },
-    addEventListener() {}
+    addEventListener(type, callback) { if (type === 'pagehide') pagehide = callback; }
   };
   const context = vm.createContext({ document, window, console });
   vm.runInContext(`
@@ -80,6 +81,7 @@ var PROGRAM=[{kind:'window',body:[
     {kind:'uiControl',control:'button',id:'run_button',textExpr:'"Run"'}
   ]},
   {kind:'uiControl',control:'timer',id:'heartbeat',interval:250},
+  {kind:'uiControl',control:'timer',id:'unused_timer',interval:100},
   {kind:'uiControl',control:'statusbar',id:'bar',textExpr:'"Ready"'}
 ]}];
 var events=[{control:'heartbeat',event:'ticked'}];
@@ -99,11 +101,45 @@ function safeTrigger(control,event,payload){triggered.push({control,event,payloa
   const flow = context.rendered.children.find(child => child.className === 'patch-panel-flow');
   assert.ok(flow);
   assert.equal(flow.children.length, 2);
-  assert.equal(timerCalls.length, 1);
+  assert.equal(timerCalls.length, 1, 'Timer without a ticked handler must not be scheduled');
   assert.equal(timerCalls[0].interval, 250);
   timerCalls[0].callback();
   assert.equal(context.triggered.length, 1);
   assert.equal(context.triggered[0].control, 'heartbeat');
   assert.equal(context.triggered[0].event, 'ticked');
   assert.equal(cleared.length, 0);
+  assert.equal(typeof pagehide, 'function');
+  pagehide();
+  assert.deepEqual(cleared, [1]);
+});
+
+test('generated Chrome adapter resolves control types recursively inside Panel children', () => {
+  const built = buildStandaloneWebApp(`create number level = 2
+window "Nested" as main size 480, 300:
+  panel as controls at 24, 24 size 300, 180:
+    slider 0..10 as level step 1
+when level changed:
+  change level:
+    set = value
+`, { name: 'NestedPanelType', kind: 'window' });
+  const script = [...built.html.matchAll(/<script data-patch-window-accessibility>([\s\S]*?)<\/script>/g)][0]?.[1];
+  assert.ok(script);
+
+  const output = { setAttribute() {} };
+  const document = { getElementById() { return output; }, querySelectorAll() { return []; }, createElement() { return { append() {}, appendChild() {}, setAttribute() {}, addEventListener() {} }; } };
+  const window = { setInterval() { return 1; }, clearInterval() {}, addEventListener() {} };
+  const context = vm.createContext({ document, window, console });
+  vm.runInContext(`
+var PROGRAM=[{kind:'window',body:[{kind:'uiControl',control:'panel',id:'controls',body:[{kind:'uiControl',control:'slider',id:'level',min:0,max:10,step:1}]}]}];
+var events=[];
+var state=new Map([['level',2]]);
+function buildUIItems(nodes){return (nodes||[]).filter(node=>node.kind==='uiControl').map(node=>({type:node.control,id:node.id,text:'',options:[],value:node.id&&state.has(node.id)?state.get(node.id):''}));}
+function controlType(){return null;}
+function renderControl(){return null;}
+function render(){}
+function trigger(){return null;}
+function safeTrigger(){}
+`, context);
+  vm.runInContext(script, context, { timeout: 1000 });
+  assert.equal(vm.runInContext(`controlType('level')`, context), 'slider');
 });
