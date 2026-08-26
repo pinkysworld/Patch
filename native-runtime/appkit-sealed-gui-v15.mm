@@ -5,6 +5,7 @@
 #undef main
 #undef PATCH_RUNTIME_V15_RESTORE_MAIN
 #include "sealed-chrome-v15.hpp"
+#include "picture-data-v15.hpp"
 
 static std::vector<PatchChromeV15> gPatchChromeV15;
 static NSView* gPatchChromeViewsV15[10000] = {};
@@ -55,6 +56,15 @@ static NSString* PatchChromeCaptionV15(const PatchChromeV15& item) {
     if (it != gStateByName.end() && gStates[(size_t)it->second].type == ST_TEXT) return NS(gStates[(size_t)it->second].text);
   }
   return NS(item.text);
+}
+
+static NSImage* PatchPictureImageV15(const PatchChromeV15& item) {
+  if (!PatchPictureEmbeddedSourceV15(item.source)) return nil;
+  PatchPictureDataV15 picture;
+  if (!PatchDecodePictureDataUriV15(item.source, picture)) return nil;
+  NSData* data = [NSData dataWithBytes:picture.bytes.data() length:picture.bytes.size()];
+  if (!data) return nil;
+  return [[NSImage alloc] initWithData:data];
 }
 
 static bool PatchExecuteChromeEventV15(const PatchChromeV15& item, const PatchChromeEventPatchV15& patch) {
@@ -113,8 +123,17 @@ static bool PatchInstallChromeV15() {
       view = box;
     } else if (item.kind == PATCH_CHROME_PICTURE_V15) {
       NSButton* button = [[NSButton alloc] initWithFrame:shadow.frame];
-      button.title = PatchChromeCaptionV15(item);
-      button.bezelStyle = NSBezelStyleRegularSquare;
+      if (PatchPictureEmbeddedSourceV15(item.source)) {
+        NSImage* image = PatchPictureImageV15(item);
+        if (!image) return false;
+        button.image = image;
+        button.imagePosition = NSImageOnly;
+        button.imageScaling = NSImageScaleProportionallyUpOrDown;
+        button.bordered = NO;
+      } else {
+        button.title = PatchChromeCaptionV15(item);
+        button.bezelStyle = NSBezelStyleRegularSquare;
+      }
       button.tag = 3000 + index;
       button.target = gPatchChromeTargetV15;
       button.action = @selector(handlePicture:);
@@ -144,7 +163,7 @@ static void PatchRefreshChromeV15() {
     if (!view) continue;
     if (shadow) view.frame = shadow.frame;
     if (item.kind == PATCH_CHROME_PANEL_V15 && [view isKindOfClass:[NSBox class]]) ((NSBox*)view).title = PatchChromeCaptionV15(item);
-    else if (item.kind == PATCH_CHROME_PICTURE_V15 && [view isKindOfClass:[NSButton class]]) ((NSButton*)view).title = PatchChromeCaptionV15(item);
+    else if (item.kind == PATCH_CHROME_PICTURE_V15 && [view isKindOfClass:[NSButton class]] && !PatchPictureEmbeddedSourceV15(item.source)) ((NSButton*)view).title = PatchChromeCaptionV15(item);
     else if ([view isKindOfClass:[NSTextField class]]) ((NSTextField*)view).stringValue = PatchChromeCaptionV15(item);
     view.hidden = NO; if (shadow) shadow.hidden = YES;
   }
@@ -167,10 +186,14 @@ static int RunPatchChromeSmokeV15() {
       if (!item.events.empty()) { NSInteger before = gPatchChromeDispatchCountV15; if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++; }
       continue;
     }
-    if (!gPatchChromeViewsV15[item.nativeIndex]) return code++;
-    if (item.kind == PATCH_CHROME_PICTURE_V15 && !item.events.empty()) {
-      NSInteger before = gPatchChromeDispatchCountV15;
-      if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++;
+    NSView* view = gPatchChromeViewsV15[item.nativeIndex];
+    if (!view) return code++;
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      if (PatchPictureEmbeddedSourceV15(item.source) && (![view isKindOfClass:[NSButton class]] || !((NSButton*)view).image)) return code++;
+      if (!item.events.empty()) {
+        NSInteger before = gPatchChromeDispatchCountV15;
+        if (!PatchDispatchChromeV15(item) || gPatchChromeDispatchCountV15 <= before) return code++;
+      }
     }
   }
   return 0;
