@@ -13,21 +13,22 @@ test('Studio Ready Window builds use the stable current facade for Native GUI IR
   assert.match(studio, /native-current-contract\.js/);
   assert.match(studio, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
   assert.match(studio, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
-  assert.match(studio, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows' \}\)/);
-  assert.match(studio, /buildLinuxNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION \}\)/);
-  assert.match(studio, /buildMacosNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION \}\)/);
+  assert.match(studio, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows', resources \}\)/);
+  assert.match(studio, /buildLinuxNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, resources \}\)/);
+  assert.match(studio, /buildMacosNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, resources \}\)/);
   assert.doesNotMatch(studio, /from ['"]\.\.\/src\/native-gui-ir-v13\.js['"]/);
   assert.doesNotMatch(studio, /from ['"]\.\.\/src\/sealed-native-gui-v13\.js['"]/);
   assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
   assert.match(current, /buildNativeGuiIRV14/);
   assert.match(current, /sealNativeGuiRuntimeV14/);
+  assert.match(current, /resolveNativePictureResources/);
   assert.match(studio, /allowMenuDecorations: true/);
   assert.match(studio, /allowTree: true/);
   assert.match(studio, /allowSlider: true/);
 });
 
 test('Studio site and offline PWA cache contain current v14 plus frozen compatibility modules without retired v07-v11 copies', () => {
-  for (const module of ['native-gui-ir-v12.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-current-contract.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','native-chrome-backend-adapter.js']) {
+  for (const module of ['native-gui-ir-v12.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-current-contract.js','native-picture-resources.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','native-chrome-backend-adapter.js']) {
     assert.ok(siteBuilder.includes(`'${module}'`), `site builder missing ${module}`);
     assert.ok(serviceWorker.includes(`../src/${module}`), `service worker missing ${module}`);
   }
@@ -43,9 +44,10 @@ test('sealed native package helpers route payload v14 and frozen v12 through liv
   assert.match(packageSource, /native-current-contract\.js/);
   assert.match(packageSource, /native-frozen-contract\.js/);
   assert.match(packageSource, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
-  assert.match(packageSource, /sealCurrentNativeGuiRuntime\(runtime, nativeGui, \{ platform \}\)/);
+  assert.match(packageSource, /sealCurrentNativeGuiRuntime\(runtime, nativeGui, \{ platform, resources \}\)/);
   assert.match(packageSource, /PATCH_FROZEN_NATIVE_PAYLOAD_VERSION/);
   assert.match(packageSource, /sealFrozenNativeGuiRuntime\(runtime, nativeGui, \{ platform \}\)/);
+  assert.match(packageSource, /Project Picture resources require the current native payload\/runtime contract/);
   assert.match(packageSource, /payload v\$\{PATCH_FROZEN_NATIVE_PAYLOAD_VERSION\} or v\$\{PATCH_CURRENT_NATIVE_PAYLOAD_VERSION\}/);
   assert.doesNotMatch(packageSource, /payload v12 or v13/);
   assert.doesNotMatch(packageSource, /sealed-native-gui-v11\.js/);

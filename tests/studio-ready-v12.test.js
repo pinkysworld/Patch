@@ -15,13 +15,14 @@ test('Studio token-free Window builds lower Native GUI IR 1.4 and seal payload v
   assert.match(nativeBuild, /native-current-contract\.js/);
   assert.match(nativeBuild, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
   assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
-  assert.match(nativeBuild, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows' \}\)/);
+  assert.match(nativeBuild, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows', resources \}\)/);
   assert.match(nativeBuild, /payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
   assert.doesNotMatch(nativeBuild, /sealed-native-gui-v13\.js/);
   assert.doesNotMatch(nativeBuild, /native-gui-ir-v13\.js/);
   assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
   assert.match(current, /buildNativeGuiIRV14/);
   assert.match(current, /sealNativeGuiRuntimeV14/);
+  assert.match(current, /resolveNativePictureResources/);
   assert.match(nativeBuild, /allowTree: true/);
   assert.match(nativeBuild, /allowSlider: true/);
 });

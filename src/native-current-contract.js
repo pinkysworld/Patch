@@ -15,6 +15,7 @@ import {
   inspectNativeGuiChromeV14,
   inspectNativeGuiSlidersV14
 } from './sealed-native-gui-v14.js';
+import { resolveNativePictureResources } from './native-picture-resources.js';
 
 /**
  * Stable product-facing entry point for the current Patch native GUI contract.
@@ -39,12 +40,16 @@ export const validateCurrentNativeGuiIR = validateNativeGuiIRV14;
 export const flattenCurrentNativeGuiControls = flattenNativeGuiControlsV14;
 export const flattenCurrentNativeGuiMenuItems = flattenNativeGuiMenuItemsV14;
 export const encodeCurrentNativeGuiPayload = encodeNativeGuiPayloadV14;
-export const sealCurrentNativeGuiRuntime = sealNativeGuiRuntimeV14;
 export const decodeCurrentNativeGuiPayload = decodeNativeGuiPayloadV14;
 export const inspectCurrentNativeGuiChrome = inspectNativeGuiChromeV14;
 export const inspectCurrentNativeGuiSliders = inspectNativeGuiSlidersV14;
 export const toLegacyV13NativeGuiIR = toV13CompatibleV14;
 export const currentNativeHasChromeStage1 = hasNativeChromeStage1;
+
+export function sealCurrentNativeGuiRuntime(runtimeBytes, nativeGui, options = {}) {
+  const resolved = resolveNativePictureResources(nativeGui, options.resources ?? []);
+  return sealNativeGuiRuntimeV14(runtimeBytes, resolved.ir, options);
+}
 
 export function currentNativeContract() {
   return Object.freeze({
