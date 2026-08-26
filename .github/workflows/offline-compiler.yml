@@ -311,7 +311,7 @@ jobs:
           test -s dist-freebsd/patch-freebsd-x64.tar.gz
           node --test tests/offline-linker.test.js
       - name: Smoke portable kit inside FreeBSD 15.1
-        uses: vmactions/freebsd-vm@v1.5.3
+        uses: vmactions/freebsd-vm@v1.5.4
         with:
           release: '15.1'
           usesh: true
