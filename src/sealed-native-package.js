@@ -8,7 +8,7 @@ export class SealedNativePackageError extends Error {}
 export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'linux', payloadVersion: options.payloadVersion });
+  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'linux', payloadVersion: options.payloadVersion, resources: options.resources });
   return {
     format: 'patch-sealed-linux-native-gui-package',
     version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
@@ -25,7 +25,7 @@ export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}
 export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'macos', payloadVersion: options.payloadVersion });
+  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'macos', payloadVersion: options.payloadVersion, resources: options.resources });
   const bundle = `${name}.app`;
   const executablePath = `${bundle}/Contents/MacOS/${name}`;
   const plistPath = `${bundle}/Contents/Info.plist`;
@@ -50,12 +50,15 @@ export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}
   };
 }
 
-function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion }) {
+function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion, resources }) {
   const version = Number(payloadVersion);
   if (version === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
-    return sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
+    return sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform, resources });
   }
   if (version === PATCH_FROZEN_NATIVE_PAYLOAD_VERSION) {
+    if (Array.isArray(resources) && resources.length) {
+      throw new SealedNativePackageError('Project Picture resources require the current native payload/runtime contract.');
+    }
     return sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform });
   }
   throw new SealedNativePackageError(
