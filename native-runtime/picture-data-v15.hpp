@@ -1,7 +1,10 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
+
+static constexpr size_t PATCH_PICTURE_MAX_BYTES_V15 = 2u * 1024u * 1024u;
 
 struct PatchPictureDataV15 {
   std::string mediaType;
@@ -24,7 +27,10 @@ static int PatchPictureBase64ValueV15(char ch) {
 static bool PatchDecodePictureBase64V15(const std::string& input, std::vector<uint8_t>& out) {
   out.clear();
   if (input.empty() || input.size() % 4 != 0) return false;
-  out.reserve((input.size() / 4) * 3);
+  const size_t padding = input.back() == '=' ? (input[input.size() - 2] == '=' ? 2u : 1u) : 0u;
+  const size_t decodedSize = (input.size() / 4u) * 3u - padding;
+  if (!decodedSize || decodedSize > PATCH_PICTURE_MAX_BYTES_V15) return false;
+  out.reserve(decodedSize);
   for (size_t offset = 0; offset < input.size(); offset += 4) {
     const bool last = offset + 4 == input.size();
     const char a = input[offset], b = input[offset + 1], c = input[offset + 2], d = input[offset + 3];
@@ -48,7 +54,7 @@ static bool PatchDecodePictureBase64V15(const std::string& input, std::vector<ui
     out.push_back((uint8_t)(((vb & 0x0f) << 4) | (vc >> 2)));
     out.push_back((uint8_t)(((vc & 0x03) << 6) | vd));
   }
-  return !out.empty();
+  return out.size() == decodedSize;
 }
 
 static bool PatchDecodePictureDataUriV15(const std::string& source, PatchPictureDataV15& out) {
