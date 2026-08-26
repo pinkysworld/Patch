@@ -55,6 +55,7 @@ function accessibilityRuntime() {
   const patchOriginalRender=render;
   const patchOriginalBuildUIItems=typeof buildUIItems==='function'?buildUIItems:null;
   const patchOriginalTrigger=typeof trigger==='function'?trigger:null;
+  const patchOriginalControlType=typeof controlType==='function'?controlType:null;
   const patchTimerHandles=[];
 
   function patchControlName(control,fallback){
@@ -67,6 +68,26 @@ function accessibilityRuntime() {
     const min=Number(control?.min??0);const max=Number(control?.max??100);const fallback=min;
     const number=Number(value);if(!Number.isFinite(number))return fallback;
     return Math.min(max,Math.max(min,number));
+  }
+
+  function patchFindControlType(nodes,id){
+    for(const node of nodes||[]){
+      if(node?.kind==='uiControl'){
+        if(node.id===id)return node.control;
+        if(node.control==='panel'){
+          const nested=patchFindControlType(node.body,id);
+          if(nested)return nested;
+        }
+      }
+      if(node?.kind==='tabs'){
+        for(const page of node.body||[]){const nested=patchFindControlType(page.body,id);if(nested)return nested;}
+      }
+      if(node?.kind==='window'){
+        const nested=patchFindControlType(node.body,id);
+        if(nested)return nested;
+      }
+    }
+    return null;
   }
 
   function patchSliderNode(id){
@@ -105,6 +126,14 @@ function accessibilityRuntime() {
 
   if(patchOriginalBuildUIItems){
     buildUIItems=function(nodes){return patchWindowModels(nodes,patchOriginalBuildUIItems(nodes));};
+  }
+
+  if(patchOriginalControlType){
+    controlType=function(id){
+      const direct=patchOriginalControlType(id);
+      if(direct)return direct;
+      return patchFindControlType(typeof PROGRAM!=='undefined'?(PROGRAM||[]):[],id);
+    };
   }
 
   if(patchOriginalTrigger){
