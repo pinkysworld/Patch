@@ -2,6 +2,7 @@ import { compile } from './compiler.js';
 import { compileToDirectWasm } from './wasm-direct.js';
 import { buildStandaloneWindowWebApp } from './window-webapp.js';
 import { enhanceStandaloneWindowWebApp } from './window-web-accessibility.js';
+import { addStandaloneWindowPictures } from './window-web-picture.js';
 import { PATCH_FORM_LAYOUT_VERSION, buildFormLayoutManifest } from './form-layout.js';
 import { PATCH_WINDOW_LAYOUT_POLICY_VERSION, validateWindowLayoutPolicyManifest } from './window-layout-policy.js';
 
@@ -14,13 +15,13 @@ export function buildStandaloneWebApp(source, options = {}) {
 
   if (requestedKind === 'window') {
     const compiled = compile(source, { ...options, name, kind: 'window', entry });
-    return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(compiled, name)))));
+    return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addStandaloneWindowPictures(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(compiled, name))), options.resources)));
   }
 
   if (!requestedKind) {
     const inferred = compile(source, { ...options, name, entry });
     if (inferred.project.kind === 'window') {
-      return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(inferred, name)))));
+      return enhanceStandaloneWindowWebApp(addSourceBackedWindowLayout(addStandaloneWindowPictures(addWindowListboxMultiselect(addReadOnlyWindowTables(buildStandaloneWindowWebApp(inferred, name))), options.resources)));
     }
   }
 
