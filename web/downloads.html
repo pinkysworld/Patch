@@ -25,7 +25,7 @@
     <div>
       <p class="page-eyebrow">Patch offline compiler · 0.2 beta.36+</p>
       <h1>Compile Patch without opening the browser.</h1>
-      <p>Download one local Patch compiler for your platform. Windows, macOS and Linux packages include the current compiler and native Window runtime v1.5. Supported <code>patch link</code> applications include responsive Forms, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, hierarchical TreeView, native Slider and Chrome Stage 1 controls. After download, normal local workflows do not need a GitHub token.</p>
+      <p>Download one local Patch compiler for your platform. Windows, macOS and Linux packages include the current compiler and native Window runtime v1.5. Supported <code>patch link</code> applications include responsive Forms, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, hierarchical TreeView, native Slider, Panel, Timer, Picture and StatusBar. After download, normal local workflows do not need a GitHub token.</p>
     </div>
     <pre class="page-code">patch check app.patch
 patch run app.patch
@@ -48,8 +48,8 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Current native boundary</h2>
-    <p><strong>The current desktop line is Native GUI IR 1.4 / payload v14 / runtime v1.5.</strong> It retains the v1.4 Slider support through Win32 <code>TRACKBAR</code>, AppKit <code>NSSlider</code> and GTK3 <code>GtkScale</code>, then adds Chrome Stage 1 transport/runtime support for Panel, Timer, PictureBox and StatusBar. The previous Native GUI IR 1.3 / payload v13 / runtime v1.4 line remains a versioned compatibility boundary rather than being silently reinterpreted.</p>
-    <p><strong>PictureBox note:</strong> beta.36 does not claim complete portable image-source rendering yet. IR/payload v14 transports the source and the v1.5 control/event shell exists, but image decoding/loading still needs a defined cross-platform Ready contract and behavioral tests.</p>
+    <p><strong>The current desktop line is Native GUI IR 1.4 / payload v14 / runtime v1.5.</strong> It retains the v1.4 Slider support through Win32 <code>TRACKBAR</code>, AppKit <code>NSSlider</code> and GTK3 <code>GtkScale</code>, then adds Chrome Stage 1 support for Panel, Timer, Picture and StatusBar. The previous Native GUI IR 1.3 / payload v13 / runtime v1.4 line remains a versioned compatibility boundary rather than being silently reinterpreted.</p>
+    <p><strong>Picture:</strong> current embedded PNG/JPEG Picture sources are decoded on every advertised desktop Window target. Windows uses WIC, macOS uses <code>NSImage</code> and Linux uses <code>GdkPixbuf</code>. Logical WebP/SVG project resources remain available for Studio/Web but fail closed for current native Picture output. The shared native decoder enforces the same 2 MiB per-resource ceiling as the Studio Resource Manager.</p>
   </section>
 
   <section class="page-section">
@@ -85,7 +85,7 @@ Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
       <li><strong>Panel:</strong> Stage 1 native visual grouping. Full Delphi-style child-container semantics are not claimed yet.</li>
       <li><strong>Timer:</strong> native scheduling with Patch <code>ticked</code> events.</li>
       <li><strong>StatusBar:</strong> native/status-style text surface, with platform widget differences kept behind the semantic contract.</li>
-      <li><strong>PictureBox:</strong> Stage 1 source transport and click path; portable image loading remains an explicit follow-up.</li>
+      <li><strong>Picture:</strong> embedded PNG/JPEG decoding with proportional display and the existing <code>clicked</code> path.</li>
     </ul>
     <p>The offline compiler matrix links and executes canonical responsive, Table, multi-select ListBox, Menu, TreeView, Slider and Chrome Stage 1 Window programs on Windows, Linux, Apple Silicon macOS and Intel macOS before the rolling downloads are published.</p>
   </section>
@@ -99,6 +99,13 @@ when volume changed:
   change volume:
     set = value</pre>
     <p>Moving the native control exposes a bounded numeric event-local <code>value</code>. Persistent state changes only because the example explicitly executes <code>change volume</code>.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>Picture</h2>
+    <pre class="page-code">window "Photo" as main size 560, 380:
+  picture as poster from "data:image/png;base64,..." at 24, 56 size 300, 240</pre>
+    <p>The current portable native embedded contract accepts PNG/JPEG data. Studio project resources can use logical IDs and are resolved into deterministic embedded Picture data before current native sealing.</p>
   </section>
 
   <section class="page-section">
