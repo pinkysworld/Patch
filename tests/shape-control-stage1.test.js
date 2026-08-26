@@ -29,21 +29,28 @@ test('Shape Stage 1 normalizes deterministic fill stroke radius and opacity', ()
   });
 });
 
-test('Shape line is non-filled and has a deterministic SVG line descriptor', () => {
+test('Shape line is non-filled and has a deterministic normalized SVG line descriptor', () => {
   const descriptor = patchShapeSvgDescriptor({ kind: 'line', stroke: '#334155', strokeWidth: 4 });
+  assert.equal(descriptor.viewBox, '0 0 100 100');
   assert.equal(descriptor.element, 'line');
   assert.equal(descriptor.attributes.fill, 'transparent');
   assert.equal(descriptor.attributes.stroke, '#334155');
   assert.equal(descriptor.attributes.strokeWidth, 4);
-  assert.equal(descriptor.attributes.x1, '0%');
-  assert.equal(descriptor.attributes.x2, '100%');
+  assert.equal(descriptor.attributes.vectorEffect, 'non-scaling-stroke');
+  assert.equal(descriptor.attributes.x1, 0);
+  assert.equal(descriptor.attributes.y1, 50);
+  assert.equal(descriptor.attributes.x2, 100);
+  assert.equal(descriptor.attributes.y2, 50);
 });
 
-test('Shape ellipse and rounded rectangle produce distinct renderer metadata', () => {
+test('Shape ellipse and rounded rectangle produce distinct normalized renderer metadata', () => {
   const ellipse = patchShapeCssStyle({ kind: 'ellipse' });
   const rounded = patchShapeSvgDescriptor({ kind: 'rounded', cornerRadius: 16 });
   assert.equal(ellipse.borderRadius, '50%');
+  assert.equal(rounded.viewBox, '0 0 100 100');
   assert.equal(rounded.element, 'rect');
+  assert.equal(rounded.attributes.x, 1);
+  assert.equal(rounded.attributes.width, 98);
   assert.equal(rounded.attributes.rx, 16);
   assert.equal(rounded.attributes.ry, 16);
 });
