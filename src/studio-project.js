@@ -1,8 +1,9 @@
 import { patchArtifactStem } from './artifact-name.js';
+import { validateStudioResources } from './studio-resources.js';
 
 export const PATCH_STUDIO_PROJECT_FORMAT = 'patch-studio-project';
-export const PATCH_STUDIO_PROJECT_VERSION = 3;
-export const PREVIOUS_PATCH_STUDIO_PROJECT_VERSION = 2;
+export const PATCH_STUDIO_PROJECT_VERSION = 4;
+export const PREVIOUS_PATCH_STUDIO_PROJECT_VERSION = 3;
 export const PATCH_STUDIO_RECOVERY_FORMAT = 'patch-studio-recovery';
 export const PATCH_STUDIO_RECOVERY_VERSION = 1;
 export const PATCH_STUDIO_MAX_SOURCE_BYTES = 2 * 1024 * 1024;
@@ -44,7 +45,8 @@ export function buildStudioProjectBundle(state) {
         nativeMode: normalized.nativeBuildMode
       }
     },
-    files: normalized.files.map(file => ({ path: file.path, content: file.content }))
+    files: normalized.files.map(file => ({ path: file.path, content: file.content })),
+    resources: normalized.resources.map(resource => ({ ...resource }))
   };
 }
 
@@ -66,19 +68,21 @@ export function validateStudioProjectBundle(value) {
 
   const entry = normalizedPath(value.project.entry ?? 'main.patch', 'Project entry');
   const files = validateProjectFiles(value.files, entry);
-  if (version <= PREVIOUS_PATCH_STUDIO_PROJECT_VERSION && (entry !== 'main.patch' || files.length !== 1 || files[0].path !== 'main.patch')) {
+  if (version <= 2 && (entry !== 'main.patch' || files.length !== 1 || files[0].path !== 'main.patch')) {
     throw new StudioProjectError(`Patch Studio project version ${version} supports exactly one main.patch source file.`, 'STUDIO_PROJECT_UNSUPPORTED_LAYOUT');
   }
 
   const migratedBuild = version === 1
     ? { target: PATCH_STUDIO_DEFAULT_BUILD_TARGET, nativeMode: PATCH_STUDIO_DEFAULT_NATIVE_BUILD_MODE }
     : validateBuildSettings(value.project.build);
+  const resources = version >= 4 ? validateStudioResources(value.resources) : [];
 
   return buildStudioProjectBundle({
     name: value.project.name,
     kind: value.project.kind,
     entry,
     files,
+    resources,
     buildTarget: migratedBuild.target,
     nativeBuildMode: migratedBuild.nativeMode
   });
@@ -106,6 +110,7 @@ export function studioStateFromBundle(bundle) {
     kind: normalized.project.kind,
     entry: normalized.project.entry,
     files: normalized.files.map(file => ({ ...file })),
+    resources: normalized.resources.map(resource => ({ ...resource })),
     code: entryFile?.content ?? '',
     buildTarget: normalized.project.build.target,
     nativeBuildMode: normalized.project.build.nativeMode
@@ -245,9 +250,10 @@ function normalizeStudioState(state) {
     ? state.files
     : [{ path: entry, content: typeof state.code === 'string' ? state.code : '' }];
   const files = validateProjectFiles(rawFiles, entry);
+  const resources = validateStudioResources(state.resources);
   const buildTarget = normalizeBuildTarget(state.buildTarget);
   const nativeBuildMode = normalizeNativeBuildMode(state.nativeBuildMode);
-  return { name, kind, entry, files, buildTarget, nativeBuildMode };
+  return { name, kind, entry, files, resources, buildTarget, nativeBuildMode };
 }
 
 function validateProjectFiles(value, entry) {
