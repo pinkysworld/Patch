@@ -1,4 +1,4 @@
-import { listDesignerControls, updateDesignerControl } from '../src/designer.js';
+import { addDesignerControl, listDesignerControls, updateDesignerControl } from '../src/designer.js';
 import { normalizeImageListItemName } from '../src/imagelist-control.js';
 import { studioResourceSourceExpression } from '../src/studio-resources.js';
 import { chooseStudioImageResource, openStudioResourceManager } from './resource-manager.js';
@@ -43,13 +43,7 @@ function installButton() {
 function addImageList() {
   try {
     const windowIndex = activeFormIndex();
-    const { addDesignerControl } = window.__patchDesignerApi ?? {};
-    let next;
-    if (typeof addDesignerControl === 'function') {
-      next = addDesignerControl(code.value, 'imagelist', { windowIndex });
-    } else {
-      throw new Error('ImageList Designer API is not ready.');
-    }
+    const next = addDesignerControl(code.value, 'imagelist', { windowIndex });
     const list = listDesignerControls(next)
       .filter(control => control.windowIndex === windowIndex && control.type === 'imagelist')
       .at(-1) ?? null;
