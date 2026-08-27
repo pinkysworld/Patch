@@ -30,6 +30,8 @@ imagelist as toolbar_images size 16, 16:
 
   <section class="page-section"><h2>Designer and Object Inspector</h2><p>The Designer rewrites visible <code>.patch</code> source. The searchable Component Palette includes Basic, Choices, Data, Containers, Graphics, Chrome and Nonvisual groups. Graphics contains Picture, Shape and PaintBox; Nonvisual contains Timer and ImageList.</p><p>Properties and Events share one Object Inspector. Current layout tools include move/resize, alignment, same size, equal spacing, z-order actions, grid snapping and source-backed Anchors/Dock.</p></section>
 
+  <section class="page-section"><h2>Runtime event values</h2><p>Table exposes the selected row as transient list-valued <code>value</code>, represented as a transient text-list of display strings. Toolkit selection itself does not mutate persistent Patch state; source must execute an explicit <code>change</code> to persist it.</p></section>
+
   <section class="page-section"><h2>Nonvisual components</h2><p>Timer and ImageList live in the nonvisual tray and never expose Form geometry or Anchors/Dock. Timer exposes Interval and OnTick. ImageList exposes logical size plus ordered project-resource entries and has no event in Stage 1.</p></section>
 
   <section class="page-section"><h2>Graphics capability boundary</h2><p>Picture supports project-resource authoring, Web rendering and current bounded native PNG/JPEG decoding. Shape and PaintBox support Studio authoring plus Standalone Web while current native targets remain fail-closed. ImageList is authoring-only until a real runtime consumer exists.</p><p>PaintBox <code>paint</code> handlers are pure drawing handlers; persistent <code>change</code> operations are rejected inside them.</p></section>
