@@ -99,10 +99,30 @@ function installInspector() {
 function syncInspector() {
   const field = doc?.querySelector('#designerInspectorImageListField');
   if (!field || !code || !canvas) return;
-  const control = selectedImageList();
+  const selection = currentDesignerSelection(canvas);
+  let selected = null;
+  try {
+    selected = selection
+      ? listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null
+      : null;
+  } catch {
+    selected = null;
+  }
+  const control = selected?.type === 'imagelist' ? selected : null;
+  const geometry = doc.querySelector('[data-form-geometry]');
   field.hidden = !control;
-  if (!control) return;
+  if (!control) {
+    if (geometry?.dataset.patchImagelistHidden === 'true') {
+      geometry.hidden = selected?.type === 'timer';
+      delete geometry.dataset.patchImagelistHidden;
+    }
+    return;
+  }
 
+  if (geometry) {
+    geometry.hidden = true;
+    geometry.dataset.patchImagelistHidden = 'true';
+  }
   const width = field.querySelector('#designerImageListWidth');
   const height = field.querySelector('#designerImageListHeight');
   if (width && doc.activeElement !== width) width.value = String(control.logicalWidth ?? 16);
