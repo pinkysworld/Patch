@@ -1,5 +1,6 @@
 import { parse } from './parser.js';
-import { PATCH_FORM_CONTROL_DEFAULTS, formControlDefaultSize } from './form-layout.js';
+import { PATCH_FORM_CONTROL_DEFAULTS, formControlDefaultSize, isNonvisualFormControl } from './form-layout.js';
+import { formatPatchImageListSource, normalizeImageListDefinition } from './imagelist-control.js';
 
 const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_MARGIN = 24;
@@ -90,6 +91,13 @@ export function addDesignerControl(source, type, options = {}) {
   if (type === 'timer') {
     const control = makeControl(type, lines, null);
     lines.splice(insertAt, 0, `${childIndent}${control}`);
+    return tidy(lines.join('\n'));
+  }
+
+  if (type === 'imagelist') {
+    const id = nextId(lines, 'imagelist');
+    const control = formatPatchImageListSource({ id, width: 16, height: 16, items: [] }, { indent: childIndent });
+    lines.splice(insertAt, 0, ...control.split('\n'));
     return tidy(lines.join('\n'));
   }
 
@@ -201,6 +209,15 @@ export function listDesignerControls(source) {
       if (child.kind === 'uiControl' && child.control === 'timer') {
         item.interval = child.interval;
       }
+      if (child.kind === 'uiControl' && child.control === 'imagelist') {
+        item.logicalWidth = child.logicalWidth;
+        item.logicalHeight = child.logicalHeight;
+        item.items = (child.items ?? []).map(image => ({
+          name: image.name,
+          sourceExpr: image.sourceExpr,
+          resourceId: image.resourceId
+        }));
+      }
       if (child.kind === 'uiControl' && child.control === 'picture') {
         item.sourceExpr = child.sourceExpr ?? null;
       }
@@ -231,6 +248,26 @@ export function updateDesignerControl(source, selector, changes = {}) {
     if (nextId !== oldId && controls.some(item => item.id === nextId)) {
       throw new Error(`Control id '${nextId}' is already used in this Patch window project.`);
     }
+  }
+
+  if (control.type === 'imagelist') {
+    const definition = normalizeImageListDefinition({
+      id: nextId,
+      width: Object.hasOwn(changes, 'logicalWidth') ? changes.logicalWidth : control.logicalWidth,
+      height: Object.hasOwn(changes, 'logicalHeight') ? changes.logicalHeight : control.logicalHeight,
+      items: Object.hasOwn(changes, 'items') ? changes.items : (control.items ?? [])
+    });
+    const indent = indentOf(lines[lineIndex]);
+    const baseIndent = indent.length;
+    let end = lineIndex + 1;
+    while (end < lines.length) {
+      if (!lines[end].trim()) { end += 1; continue; }
+      if (indentOf(lines[end]).length <= baseIndent) break;
+      end += 1;
+    }
+    const replacement = formatPatchImageListSource(definition, { indent }).split('\n');
+    lines.splice(lineIndex, end - lineIndex, ...replacement);
+    return preserveTrailingNewline(source, lines.join('\n'));
   }
 
   let nextTextExpr = control.textExpr;
@@ -286,7 +323,7 @@ export function removeDesignerControl(source, selector) {
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
   const directiveIndex = layoutDirectiveBefore(lines, lineIndex);
-  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree') {
+  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree' || control.type === 'imagelist') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
     while (end < lines.length) {
@@ -356,7 +393,7 @@ function nextControlLayout(existing, type) {
   let y = CONTROL_MARGIN;
   let visualIndex = 0;
   for (const control of existing) {
-    if (control.type === 'timer') continue;
+    if (isNonvisualFormControl(control.type)) continue;
     const currentDefaults = formControlDefaultSize(control.type);
     const currentY = control.y ?? (CONTROL_MARGIN + visualIndex * 48);
     const currentHeight = control.height ?? currentDefaults.height;
@@ -413,7 +450,7 @@ function windowDimension(value, name) {
 
 function renameEventHeaders(lines, oldId, nextId) {
   const escapedId = escapeRegExp(oldId);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked|paint)\\s*:\\s*$`);
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(pattern);
     if (match) lines[i] = `${match[1]}when ${nextId} ${match[2]}:`;
@@ -431,7 +468,7 @@ function renameFormActions(lines, oldId, nextId) {
 
 function removeEventBlocks(lines, id) {
   const escapedId = escapeRegExp(id);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked|paint)\\s*:\\s*$`);
   for (let i = 0; i < lines.length;) {
     const match = lines[i].match(pattern);
     if (!match) { i += 1; continue; }
