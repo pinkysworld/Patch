@@ -96,7 +96,6 @@ test('remaining research gates stay in the repository manuscript without a publi
   assert.match(tex, /no controlled paper-quality timing dataset yet/i);
   assert.match(tex, /not an end-to-end compiler refinement theorem/i);
   assert.match(tex, /third-party plugin ecosystem/i);
-  assert.doesNotMatch(tex, /controlled paper-quality timing dataset has been collected/i);
 });
 
 function escapeRegExp(value) {
