@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { DESIGNER_TOOL_CATALOG, groupedDesignerTools } from '../web/designer-toolbox.js';
 
 test('Designer control picker exposes every existing top-level toolbox control exactly once', () => {
-  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addShape','addPaintbox','addStatusbar','addTimer'];
+  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addShape','addPaintbox','addStatusbar','addTimer','addImagelist'];
   assert.deepEqual(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId), expected);
   assert.equal(new Set(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId)).size, expected.length);
 });
@@ -18,12 +18,13 @@ test('Designer control picker groups controls by user-facing purpose', () => {
   assert.deepEqual(groups.find(group => group.group === 'Containers').tools.map(tool => tool.label), ['Tabs','Panel']);
   assert.deepEqual(groups.find(group => group.group === 'Graphics').tools.map(tool => tool.label), ['Picture','Shape','PaintBox']);
   assert.deepEqual(groups.find(group => group.group === 'Chrome').tools.map(tool => tool.label), ['StatusBar']);
-  assert.deepEqual(groups.find(group => group.group === 'Nonvisual').tools.map(tool => tool.label), ['Timer']);
+  assert.deepEqual(groups.find(group => group.group === 'Nonvisual').tools.map(tool => tool.label), ['Timer','ImageList']);
 });
 
 test('Designer picker still activates controls through source-backed toolbox buttons', () => {
   const source = fs.readFileSync('web/designer-toolbox.js', 'utf8');
   const paintbox = fs.readFileSync('web/designer-paintbox.js', 'utf8');
+  const imagelist = fs.readFileSync('web/designer-imagelist.js', 'utf8');
   assert.match(source, /button\.click\(\)/);
   assert.match(source, /addDesignerControl\(code\.value, 'picture'/);
   assert.match(source, /designerInspectorPictureSource/);
@@ -33,6 +34,9 @@ test('Designer picker still activates controls through source-backed toolbox but
   assert.match(source, /Ctrl\/Cmd\+Shift\+A/);
   assert.match(paintbox, /addDesignerPaintBox\(code\.value/);
   assert.match(paintbox, /id = 'addPaintbox'/);
+  assert.match(imagelist, /addDesignerControl\(code\.value, 'imagelist'/);
+  assert.match(imagelist, /id = 'addImagelist'/);
+  assert.match(imagelist, /designerInspectorImageListField/);
 });
 
 test('mobile Designer replaces the long icon strip with the categorized picker', () => {
@@ -43,9 +47,10 @@ test('mobile Designer replaces the long icon strip with the categorized picker',
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
-test('desktop Designer rail gives graphics Chrome and Timer stable source-backed slots', () => {
+test('desktop Designer rail gives graphics Chrome and nonvisual components stable source-backed slots', () => {
   const inspectorCss = fs.readFileSync('web/designer-inspector.css', 'utf8');
   const toolboxCss = fs.readFileSync('web/designer-toolbox.css', 'utf8');
+  const imageListCss = fs.readFileSync('web/designer-imagelist.css', 'utf8');
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   assert.match(inspectorCss, /#designer #addSlider \{ top: 287px; \}/);
   assert.match(inspectorCss, /#designer #addTable \{ top: 321px; \}/);
@@ -63,6 +68,8 @@ test('desktop Designer rail gives graphics Chrome and Timer stable source-backed
   assert.match(toolboxCss, /#designer #addStatusbar::before \{ content: "▰"; \}/);
   assert.match(toolboxCss, /#designer #addTimer \{ top: 593px !important; \}/);
   assert.match(toolboxCss, /#designer #addTimer::before \{ content: "◷"; \}/);
+  assert.match(imageListCss, /#designer #addImagelist \{ top: 627px !important; \}/);
+  assert.match(imageListCss, /#designer #addImagelist::before \{ content: "▤"; \}/);
 });
 
 test('public Studio and offline PWA package Designer toolbox discovery assets', () => {
@@ -70,10 +77,17 @@ test('public Studio and offline PWA package Designer toolbox discovery assets', 
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-toolbox\.js'/);
+  assert.match(workspace, /import '\.\/designer-imagelist\.js'/);
   assert.match(buildSite, /'designer-toolbox\.js'/);
   assert.match(buildSite, /'designer-toolbox\.css'/);
   assert.match(buildSite, /'designer-paintbox\.js'/);
+  assert.match(buildSite, /'designer-imagelist\.js'/);
+  assert.match(buildSite, /'designer-imagelist\.css'/);
+  assert.match(buildSite, /'imagelist-control\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.css'/);
   assert.match(sw, /'\.\/designer-paintbox\.js'/);
+  assert.match(sw, /'\.\/designer-imagelist\.js'/);
+  assert.match(sw, /'\.\/designer-imagelist\.css'/);
+  assert.match(sw, /'\.\.\/src\/imagelist-control\.js'/);
 });
