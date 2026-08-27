@@ -1,5 +1,5 @@
 import { listDesignerControls, listDesignerWindows, updateDesignerControl } from '../src/designer.js';
-import { formControlDefaultSize } from '../src/form-layout.js';
+import { formControlDefaultSize, isNonvisualFormControl } from '../src/form-layout.js';
 import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection
@@ -39,7 +39,7 @@ if (code && canvas && toolbar) {
 
 export function designerLayoutInspectorModel(policy, controlType = 'button') {
   const type = String(controlType ?? 'button').toLowerCase();
-  if (type === 'timer') {
+  if (isNonvisualFormControl(type)) {
     return {
       visible: false,
       locked: true,
@@ -170,7 +170,9 @@ function applyPolicyToSelection(preset) {
   const edits = selectors.map(selector => {
     const control = controls.find(item => sameSelector(item, selector));
     return control ? { selector, line: control.line, type: control.type } : null;
-  }).filter(Boolean).filter(edit => edit.type !== 'timer' && edit.type !== 'statusbar').sort((a, b) => b.line - a.line);
+  }).filter(Boolean)
+    .filter(edit => !isNonvisualFormControl(edit.type) && edit.type !== 'statusbar')
+    .sort((a, b) => b.line - a.line);
 
   let next = code.value;
   for (const edit of edits) next = setDesignerLayoutPolicy(next, edit.line, policy);
@@ -180,7 +182,7 @@ function applyPolicyToSelection(preset) {
 
 function applyInspectorPreset(preset) {
   const control = currentInspectorControl();
-  if (!control || control.type === 'timer' || control.type === 'statusbar') return;
+  if (!control || isNonvisualFormControl(control.type) || control.type === 'statusbar') return;
   try {
     const next = setDesignerLayoutPolicy(code.value, control.line, parseDesignerLayoutPreset(preset));
     setSource(next);
@@ -192,7 +194,7 @@ function applyInspectorPreset(preset) {
 
 function applyInspectorPolicy() {
   const control = currentInspectorControl();
-  if (!control || control.type === 'timer' || control.type === 'statusbar') return;
+  if (!control || isNonvisualFormControl(control.type) || control.type === 'statusbar') return;
   const section = document.querySelector('#designerInspectorLayoutSection');
   if (!section) return;
   try {
@@ -217,7 +219,7 @@ function captureFormResizeStart(event) {
   const form = listDesignerWindows(code.value).find(item => item.windowIndex === windowIndex);
   if (!form) return;
   const controls = listDesignerControls(code.value)
-    .filter(item => item.windowIndex === windowIndex)
+    .filter(item => item.windowIndex === windowIndex && !isNonvisualFormControl(item.type))
     .map(item => ({
       selector: { windowIndex: item.windowIndex, controlIndex: item.controlIndex },
       layout: effectiveLayout(item),
@@ -294,10 +296,10 @@ function syncLayoutControl() {
   }
   const controls = listDesignerControls(code.value);
   const selectedControls = selectors.map(selector => controls.find(item => sameSelector(item, selector))).filter(Boolean);
-  if (selectedControls.some(control => control.type === 'timer')) {
+  if (selectedControls.some(control => isNonvisualFormControl(control.type))) {
     select.value = 'fixed';
     select.disabled = true;
-    select.title = 'Timer is nonvisual and has no Form resize policy.';
+    select.title = 'Nonvisual components have no Form resize policy.';
     return;
   }
   if (selectedControls.length === 1 && selectedControls[0].type === 'statusbar') {
