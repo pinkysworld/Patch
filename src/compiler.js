@@ -112,6 +112,8 @@ function lowerNode(node) {
     }
     case 'event':
       return op('EVENT', node, { control: node.control, event: node.event, body: lowerBlock(node.body) });
+    case 'drawPaint':
+      return op('DRAW_PAINT', node, { command: { ...node.command } });
     case 'openForm': return op('OPEN_FORM', node, { form: node.form });
     case 'closeForm': return op('CLOSE_FORM', node, { form: node.form });
     case 'allow':
@@ -175,6 +177,9 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
     if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');
     if (node.kind === 'uiControl' && node.control === 'picture') caps.add('ui.picture');
+    if (node.kind === 'uiControl' && node.control === 'shape') caps.add('ui.shape');
+    if (node.kind === 'uiControl' && node.control === 'paintbox') caps.add('ui.paintbox');
+    if (node.kind === 'drawPaint') caps.add('ui.paintbox-draw');
     if (node.kind === 'uiControl' && node.control === 'statusbar') caps.add('ui.statusbar');
     if (node.kind === 'openForm' || node.kind === 'closeForm') caps.add('ui.form-lifecycle');
     if (node.kind === 'watch' || node.kind === 'history' || node.kind === 'undo' || node.kind === 'redo' || node.kind === 'why') caps.add('change.history');

@@ -30,7 +30,7 @@ export function normalizePatchPaintCommand(input = {}) {
   }
 
   if (operation === 'clear') {
-    return freezeCommand({ operation, color: paintColor(input.color ?? '#ffffff', 'clear color', false) });
+    return freezeCommand({ operation, color: paintColor(input.color ?? '#ffffff', 'clear color', true) });
   }
 
   if (operation === 'line') {
@@ -80,7 +80,7 @@ export function parsePatchPaintCommand(source) {
   const text = String(source ?? '').trim();
   let match;
 
-  if ((match = text.match(/^draw\s+clear\s+(#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)$/))) {
+  if ((match = text.match(/^draw\s+clear\s+(transparent|#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?)$/))) {
     return normalizePatchPaintCommand({ operation: 'clear', color: match[1] });
   }
 

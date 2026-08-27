@@ -21,6 +21,9 @@ test('PaintBox commands normalize colors geometry pens brushes and font size det
   assert.deepEqual(normalizePatchPaintCommand({ operation: 'clear', color: '#AABBCC' }), {
     operation: 'clear', color: '#aabbcc'
   });
+  assert.deepEqual(normalizePatchPaintCommand({ operation: 'clear', color: 'transparent' }), {
+    operation: 'clear', color: 'transparent'
+  });
   assert.deepEqual(normalizePatchPaintCommand({ operation: 'line', x1: -5, y1: 2.5, x2: 40, y2: 80, stroke: '#ABCDEF', strokeWidth: 3 }), {
     operation: 'line', x1: -5, y1: 2.5, x2: 40, y2: 80, stroke: '#abcdef', strokeWidth: 3
   });
@@ -35,6 +38,7 @@ test('PaintBox commands normalize colors geometry pens brushes and font size det
 test('canonical PaintBox draw source round-trips without hidden canvas state', () => {
   const source = [
     'draw clear #ffffff',
+    'draw clear transparent',
     'draw line 0, 10 to 120, 10 stroke #334455 width 2',
     'draw rectangle 10, 20 size 100, 60 fill #dbeafe stroke #2563eb width 3',
     'draw ellipse 14, 18 size 80, 80 fill transparent stroke #112233 width 1',

@@ -143,9 +143,11 @@
 #designer #addPanel::before { content: "▣"; }
 #designer #addPicture { top: 457px; }
 #designer #addPicture::before { content: "▧"; }
-#designer #addStatusbar { top: 491px; }
+#designer #addPaintbox { top: 525px !important; }
+#designer #addPaintbox::before { content: "▦"; }
+#designer #addStatusbar { top: 559px !important; }
 #designer #addStatusbar::before { content: "▰"; }
-#designer #addTimer { top: 525px; }
+#designer #addTimer { top: 593px !important; }
 #designer #addTimer::before { content: "◷"; }
 
 @media (max-width: 1120px) {
