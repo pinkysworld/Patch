@@ -260,6 +260,9 @@ The current source-language Window control families are:
 - `panel`
 - `timer`
 - `picture`
+- `shape`
+- `paintbox`
+- `imagelist`
 - `statusbar`
 
 Examples:
@@ -275,10 +278,18 @@ panel as tools:
   button "Run" as run_tools
 timer as refresh_clock interval 1000
 picture "Preview" as preview_image
+shape ellipse as badge
+paintbox as canvas
+imagelist as app_images size 16, 16:
+  image open from "patch-resource:icons.open"
 statusbar "Ready" as app_status
 ```
 
 `panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.4 / payload v14 / runtime v1.5 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. In particular, PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
+
+Shape and PaintBox are additive graphics contracts. Their current component capability metadata advertises Standalone Web support and keeps current native targets fail-closed rather than silently dropping unsupported graphics. PaintBox drawing is pure UI rendering and does not create a second persistent mutation path.
+
+ImageList Stage 1 is Studio authoring-only. It is a nonvisual Form-scoped component whose named entries refer to existing project resources through quoted `patch-resource:` locators. Logical image width and height are whole numbers from 1 through 512 and one ImageList may contain at most 256 named images. ImageList has no events in Stage 1. Standalone Web and native Window builds fail closed until a versioned runtime consumer contract exists for controls such as future ToolBar, TreeView or Button image bindings.
 
 Controls may use source-backed layout:
 
@@ -287,7 +298,43 @@ at x, y
 at x, y size width, height
 ```
 
-Control positions must be non-negative. Explicit control sizes must be at least 16 by 16. Explicit Window sizes must be at least 120 by 80.
+Control positions must be non-negative. Explicit control sizes must be at least 16 by 16. Explicit Window sizes must be at least 120 by 80. Nonvisual controls such as Timer and ImageList do not occupy Form geometry and therefore do not use Anchors or Dock policies.
+
+## Graphics
+
+Shape source keeps deterministic geometry and style properties visible in `.patch` source. The concise form uses canonical defaults:
+
+```patch
+shape ellipse as badge
+```
+
+A styled Shape may specify its kind, fill, stroke, stroke width, rounded radius and opacity:
+
+```patch
+shape rounded as card fill #dbeafe stroke #2563eb stroke-width 3 radius 18 opacity 0.75 at 24, 32 size 220, 140
+```
+
+PaintBox defines a drawing surface. Drawing commands are legal only inside its `paint` handler. Stage 1 paint handlers may use `draw`, `if` and `repeat`; persistent `change` operations are rejected inside the paint handler.
+
+```patch
+paintbox as canvas at 24, 24 size 320, 200
+
+when canvas paint:
+  draw clear #ffffff
+  draw rectangle 10, 12 size 100, 50 fill #ff0000 stroke #000000 width 2
+  draw line 0, 0 to 100, 100 stroke #000000 width 1
+  draw text "Patch" at 12, 20 color #111111 size 14
+```
+
+ImageList is source-backed metadata over project resources rather than another image store:
+
+```patch
+imagelist as toolbar_images size 16, 16:
+  image open from "patch-resource:icons.open"
+  image save from "patch-resource:icons.save"
+```
+
+Item names must be valid Patch names and unique within the ImageList. Resource bytes remain in the project v4 resource bundle; the ImageList source stores only their logical locators.
 
 ## Tables
 
@@ -326,7 +373,7 @@ tabs as settings_tabs:
     checkbox "Enabled" as advanced_enabled
 ```
 
-Nested Tabs controls use the same source-backed control/event semantics as their top-level counterparts where supported.
+Nested Tabs controls use the same source-backed control/event semantics as their top-level counterparts where supported. Nonvisual Form components such as Timer and ImageList remain top-level Form components in Stage 1.
 
 ## Menus
 
@@ -369,6 +416,7 @@ confirmed
 chosen
 cancelled
 ticked
+paint
 ```
 
 Examples:
@@ -381,9 +429,12 @@ when volume changed:
 when refresh_clock ticked:
   change ticks:
     add 1
+
+when canvas paint:
+  draw clear transparent
 ```
 
-Event-local UI values are transient until explicitly committed by source code.
+Event-local UI values are transient until explicitly committed by source code. `paint` is a rendering event with the narrower pure-drawing body described above; it cannot commit persistent changes. ImageList exposes no event in Stage 1.
 
 ## Application kind
 
@@ -441,10 +492,13 @@ allow may increase decrease up to
 window as size at
 text button input checkbox radio combo listbox slider step
 panel timer interval picture statusbar
+shape rectangle rounded ellipse line fill stroke stroke-width radius opacity
+paintbox draw color width
+imagelist image from
 table row tree node tabs tab
 menu item separator enabled checked shortcut
 dialog confirm open close save file
-when clicked changed closed confirmed chosen cancelled ticked
+when clicked changed closed confirmed chosen cancelled ticked paint
 true false and or not
 ```
 
