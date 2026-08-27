@@ -20,6 +20,10 @@ This roadmap separates repository-controlled product work from credential/manual
 
 Product, Studio and native work after beta.32 does not widen the formal assurance claim.
 
+### Preserved native compatibility evidence
+
+Older versioned native contracts remain reproducibility/compatibility evidence even when they are no longer product defaults. In particular, the **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the frozen Table compatibility origin. Its platform evidence is preserved separately from the current Native GUI IR 1.4 / payload v14 / runtime v1.5 product line. Retaining this history is intentional and does not make payload v9 or runtime v1.0 current targets.
+
 ## Current product milestone: RAD R1
 
 The beta.35+ multi-file/Designer foundation and the beta.36 native 1.4/v14/v1.5 integration are complete. Current repository-controlled work is the first graphics/resource RAD milestone from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
