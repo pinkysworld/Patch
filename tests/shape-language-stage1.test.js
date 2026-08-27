@@ -44,10 +44,10 @@ window "Shapes":
   );
 });
 
-test('Shape Stage 1 target claims identify authoring separately from runtime support', () => {
+test('Shape Stage 1 target claims expose Web rendering but keep native targets fail-closed', () => {
   const shape = patchComponent('shape');
   assert.equal(shape.targetSupport.studio, 'authoring');
-  assert.equal(shape.targetSupport.web, 'unsupported');
+  assert.equal(shape.targetSupport.web, 'supported');
   assert.equal(shape.targetSupport.windows, 'unsupported');
   assert.equal(shape.targetSupport.macos, 'unsupported');
   assert.equal(shape.targetSupport.linux, 'unsupported');
