@@ -10,6 +10,7 @@ import {
   readDesignerLayoutPolicy,
   setDesignerLayoutPolicy
 } from '../web/designer-layout-policy.js';
+import { designerLayoutInspectorModel } from '../web/designer-responsive-layout.js';
 
 const browserModule = fs.readFileSync('web/designer-responsive-layout.js', 'utf8');
 const layoutCss = fs.readFileSync('web/designer-responsive-layout.css', 'utf8');
@@ -96,11 +97,21 @@ test('Object Inspector exposes Delphi-style Layout Mode, four Anchors, Dock and 
   assert.match(layoutCss, /anchor-center/);
 });
 
-test('Object Inspector preserves component boundaries for nonvisual Timer and docked StatusBar', () => {
-  assert.match(browserModule, /type === 'timer'/);
+test('Object Inspector preserves shared nonvisual boundaries for Timer and ImageList plus docked StatusBar', () => {
+  assert.equal(designerLayoutInspectorModel({ kind: 'fixed' }, 'timer').visible, false);
+  assert.equal(designerLayoutInspectorModel({ kind: 'fixed' }, 'imagelist').visible, false);
+  assert.deepEqual(designerLayoutInspectorModel({ kind: 'anchor', edges: ['right'] }, 'imagelist'), {
+    visible: false,
+    locked: true,
+    mode: 'fixed',
+    anchors: { left: false, right: false, top: false, bottom: false },
+    dock: 'top',
+    source: 'Nonvisual component'
+  });
+  assert.match(browserModule, /isNonvisualFormControl/);
   assert.match(browserModule, /type === 'statusbar'/);
   assert.match(browserModule, /kind: 'dock', side: 'bottom'/);
-  assert.match(browserModule, /Timer is nonvisual and has no Form resize policy/);
+  assert.match(browserModule, /Nonvisual components have no Form resize policy/);
   assert.match(browserModule, /StatusBar remains docked to the bottom/);
 });
 
