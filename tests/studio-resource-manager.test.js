@@ -42,7 +42,8 @@ test('Picture resource picker writes an ordinary visible patch-resource source e
 });
 
 test('public Site and PWA contain the Resources manager and canonical resource model', () => {
-  assert.match(buildSite, /'designer-workspace\.js','resource-manager\.js'/);
+  assert.ok(buildSite.includes("'designer-workspace.js'"));
+  assert.ok(buildSite.includes("'resource-manager.js'"));
   assert.ok(sw.includes("'./resource-manager.js'"));
   assert.ok(sw.includes("'../src/studio-resources.js'"));
 });
