@@ -96,7 +96,7 @@ jobs:
           node src/cli.js check freebsd.patch
           node src/cli.js build freebsd.patch --kind console --target c99 --out dist/PatchFreeBSD.c
       - name: Compile and run inside FreeBSD
-        uses: vmactions/freebsd-vm@v1.5.3
+        uses: vmactions/freebsd-vm@v1.5.4
         with:
           release: '15.1'
           usesh: true
