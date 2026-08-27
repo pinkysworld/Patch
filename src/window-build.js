@@ -51,6 +51,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let treeViews = 0;
   let sliders = 0;
   let paintboxes = 0;
+  let imageLists = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -74,6 +75,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'tree') treeViews += 1;
     if (child.control === 'paintbox') paintboxes += 1;
+    if (child.control === 'imagelist') imageLists += 1;
     if (child.control === 'slider') {
       sliders += 1;
       const stateType = stateTypes.get(child.id);
@@ -226,6 +228,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       continue;
     }
     const controlType = menuItem ? 'menuItem' : control.type;
+    if (controlType === 'imagelist') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: ImageList '${event.control}' is nonvisual and exposes no Patch events in ImageList Stage 1.`
+      );
+    }
     if (controlType === 'table' && event.event !== 'changed') {
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: Table '${event.control}' exposes only 'changed' for transient row selection, not '${event.event}'.`
@@ -296,6 +303,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (imageLists && !options.allowImageList) {
+    throw new WindowBuildError(
+      'ImageList is authoring-only in Stage 1. This Window target has no ImageList consumer contract yet; validation fails closed rather than silently dropping the nonvisual image collection.'
+    );
+  }
+
   const menuStateBindings = menuEnabledBindings + menuCheckedBindings;
   if ((menuSeparators || menuShortcutCount || menuStateBindings) && !options.allowMenuDecorations) {
     const required = menuStateBindings
@@ -314,6 +327,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     treeViews,
     sliders,
     paintboxes,
+    imageLists,
     tabs: tabs.size,
     menuItems: menuItems.size,
     menuSeparators,
