@@ -3,6 +3,7 @@ import { formControlDefaultSize, isNonvisualFormControl } from './form-layout.js
 const EVENT_BY_TYPE = Object.freeze({
   button: Object.freeze([{ name: 'clicked', label: 'OnClick', value: false }]),
   picture: Object.freeze([{ name: 'clicked', label: 'OnClick', value: false }]),
+  paintbox: Object.freeze([{ name: 'paint', label: 'OnPaint', value: false }]),
   timer: Object.freeze([{ name: 'ticked', label: 'OnTick', value: false }]),
   input: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   checkbox: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
@@ -53,6 +54,7 @@ const PROPERTY_BY_TYPE = Object.freeze({
     Object.freeze({ name: 'opacity', kind: 'number' }),
     ...COMMON_LAYOUT_PROPERTIES
   ]),
+  paintbox: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   statusbar: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   timer: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'interval', kind: 'integer' })])
 });
@@ -75,7 +77,19 @@ const SHAPE_STAGE1_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
-const TARGETS_BY_TYPE = Object.freeze({ shape: SHAPE_STAGE1_TARGETS });
+const PAINTBOX_STAGE1_TARGETS = Object.freeze({
+  studio: 'authoring',
+  web: 'unsupported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
+const TARGETS_BY_TYPE = Object.freeze({
+  shape: SHAPE_STAGE1_TARGETS,
+  paintbox: PAINTBOX_STAGE1_TARGETS
+});
 
 const COMPONENTS = [
   ['text', 'Text', 'Basic', true],
@@ -92,11 +106,12 @@ const COMPONENTS = [
   ['panel', 'Panel', 'Containers', true],
   ['picture', 'Picture', 'Graphics', true],
   ['shape', 'Shape', 'Graphics', true],
+  ['paintbox', 'PaintBox', 'Graphics', true],
   ['statusbar', 'StatusBar', 'Chrome', true],
   ['timer', 'Timer', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.5';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.6';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);
