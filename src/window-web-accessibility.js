@@ -1,3 +1,5 @@
+import { patchShapeSvgDescriptor } from './shape-control.js';
+
 export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.3';
 
 export function enhanceStandaloneWindowWebApp(built) {
@@ -6,10 +8,12 @@ export function enhanceStandaloneWindowWebApp(built) {
   const statusbar = containsControl(built.compiled?.ast ?? [], 'statusbar');
   const panel = containsControl(built.compiled?.ast ?? [], 'panel');
   const timer = containsControl(built.compiled?.ast ?? [], 'timer');
+  const shape = containsControl(built.compiled?.ast ?? [], 'shape');
+  const descriptors = shape ? collectShapeDescriptors(built.compiled?.ast ?? []) : {};
   const html = built.html
     .replace('<pre id="output"></pre>', '<pre id="output" role="status" aria-live="polite" aria-atomic="true"></pre>')
     .replace('</head>', `${accessibilityStyle()}\n</head>`)
-    .replace('</body>', `${accessibilityRuntime()}\n</body>`);
+    .replace('</body>', `${accessibilityRuntime(descriptors)}\n</body>`);
   return {
     ...built,
     html,
@@ -19,7 +23,8 @@ export function enhanceStandaloneWindowWebApp(built) {
       ...(slider ? { sliderStage: 1, sliderMode: 'transient-number' } : {}),
       ...(statusbar ? { statusBarStage: 1, statusBarMode: 'source-backed-bottom-docked' } : {}),
       ...(panel ? { panelStage: 1, panelMode: 'source-backed-flow-group' } : {}),
-      ...(timer ? { timerStage: 1, timerMode: 'browser-interval-ticked-event' } : {})
+      ...(timer ? { timerStage: 1, timerMode: 'browser-interval-ticked-event' } : {}),
+      ...(shape ? { shapeStage: 1, shapeMode: 'source-backed-svg' } : {})
     }
   };
 }
@@ -34,6 +39,28 @@ function containsControl(nodes, type) {
   return false;
 }
 
+function collectShapeDescriptors(nodes, out = {}) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'shape' && node.id) {
+      out[node.id] = patchShapeSvgDescriptor({
+        kind: node.shapeKind,
+        fill: node.fill,
+        stroke: node.stroke,
+        strokeWidth: node.strokeWidth,
+        cornerRadius: node.cornerRadius,
+        opacity: node.opacity
+      });
+    }
+    if (node.kind === 'window' || (node.kind === 'uiControl' && node.control === 'panel')) {
+      collectShapeDescriptors(node.body, out);
+    }
+    if (node.kind === 'tabs') {
+      for (const page of node.body ?? []) collectShapeDescriptors(page.body, out);
+    }
+  }
+  return out;
+}
+
 function accessibilityStyle() {
   return `<style data-patch-window-accessibility>
 :where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
@@ -41,13 +68,15 @@ function accessibilityStyle() {
 .patch-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;min-width:260px}.patch-slider input[type="range"]{grid-column:1/-1;width:100%;min-width:0;padding:0;border:0;background:transparent}.patch-slider-value{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}.patch-slider-range{font-size:11px;color:#71717a}
 .patch-panel{width:100%;height:100%;min-width:0;overflow:auto;margin:0;padding:0;border:1px solid #d4d4d8;border-radius:10px;background:#fff}.patch-panel-title{padding:7px 10px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.patch-panel-flow{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px}.patch-panel-flow>.text{font-size:14px}.patch-panel-flow>.patch-slider,.patch-panel-flow>input,.patch-panel-flow>select,.patch-panel-flow>.patch-radio-group{width:100%;min-width:0}
 .patch-statusbar{display:flex;align-items:center;min-width:0;overflow:hidden;padding:0 10px;border-top:1px solid #d4d4d8;background:#f4f4f5;color:#52525b;font-size:12px;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;position:absolute!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:none!important;margin:0!important}
+.patch-shape{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:visible;pointer-events:none}
 @media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}.patch-panel{border-color:#41444e;background:#1b1d22}.patch-panel-title{border-color:#34363e;background:#24262d;color:#d4d4d8}.patch-statusbar{border-color:#41444e;background:#24262d;color:#d4d4d8}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
-@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group,.patch-panel{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-panel-title,.patch-statusbar{border-color:CanvasText;background:Canvas;color:CanvasText}}
+@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group,.patch-panel{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-panel-title,.patch-statusbar{border-color:CanvasText;background:Canvas;color:CanvasText}.patch-shape{forced-color-adjust:auto}}
 </style>`;
 }
 
-function accessibilityRuntime() {
+function accessibilityRuntime(shapeDescriptors = {}) {
+  const shapeJson = JSON.stringify(shapeDescriptors).replace(/</g, '\\u003c');
   return `<script data-patch-window-accessibility>
 (function(){
   if(typeof renderControl!=='function'||typeof render!=='function')return;
@@ -58,6 +87,8 @@ function accessibilityRuntime() {
   const patchOriginalControlType=typeof controlType==='function'?controlType:null;
   const patchTimerHandles=[];
   const patchWindow=typeof window==='undefined'?null:window;
+  const PATCH_SHAPE_DESCRIPTORS=Object.freeze(${shapeJson});
+  const PATCH_SVG_NS='http://www.w3.org/2000/svg';
 
   function patchControlName(control,fallback){
     const text=String(control?.text||'').trim();
@@ -152,8 +183,28 @@ function accessibilityRuntime() {
     };
   }
 
+  function patchShapeElement(control){
+    const descriptor=PATCH_SHAPE_DESCRIPTORS[String(control?.id||'')];
+    if(!descriptor)throw new PatchAppError("Shape '"+String(control?.id||'?')+"' has no generated SVG descriptor.");
+    const svg=document.createElementNS(PATCH_SVG_NS,'svg');
+    svg.classList.add('patch-shape');
+    svg.setAttribute('viewBox',descriptor.viewBox);
+    svg.setAttribute('preserveAspectRatio','none');
+    svg.setAttribute('role','img');
+    svg.setAttribute('aria-label',patchControlName(control,'Shape')+' shape');
+    const primitive=document.createElementNS(PATCH_SVG_NS,descriptor.element);
+    for(const [name,value] of Object.entries(descriptor.attributes||{})){
+      const attribute=name==='strokeWidth'?'stroke-width':name==='vectorEffect'?'vector-effect':name;
+      primitive.setAttribute(attribute,String(value));
+    }
+    svg.appendChild(primitive);
+    return svg;
+  }
+
   renderControl=function(control,windowId,controlIndex){
     if(control?.type==='timer')return null;
+
+    if(control?.type==='shape')return patchShapeElement(control);
 
     if(control?.type==='panel'){
       const panel=document.createElement('section');
