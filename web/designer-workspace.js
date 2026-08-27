@@ -229,34 +229,7 @@ function installShapeStudio(inspector, toolbar) {
     toolbar.appendChild(add);
   }
 
-  const shapeFields = document.createElement('section');
-  shapeFields.id = 'designerShapeInspectorFields';
-  shapeFields.className = 'designer-shape-inspector';
-  shapeFields.hidden = true;
-  shapeFields.innerHTML = `
-    <strong>Shape</strong>
-    <label class="inspector-field">Name <input id="designerShapeId" autocomplete="off" spellcheck="false"></label>
-    <label class="inspector-field">Kind <select id="designerShapeKind"><option value="rectangle">Rectangle</option><option value="rounded">Rounded rectangle</option><option value="ellipse">Ellipse</option><option value="line">Line</option></select></label>
-    <div class="designer-shape-style-grid">
-      <label>Fill <input id="designerShapeFill" autocomplete="off" spellcheck="false"></label>
-      <label>Stroke <input id="designerShapeStroke" autocomplete="off" spellcheck="false"></label>
-      <label>Stroke W <input id="designerShapeStrokeWidth" inputmode="decimal"></label>
-      <label>Radius <input id="designerShapeRadius" inputmode="decimal"></label>
-      <label>Opacity <input id="designerShapeOpacity" inputmode="decimal"></label>
-    </div>
-    <div class="forms-geometry-grid designer-shape-geometry">
-      <strong>Layout</strong>
-      <label>X <input id="designerShapeX" inputmode="numeric"></label>
-      <label>Y <input id="designerShapeY" inputmode="numeric"></label>
-      <label>W <input id="designerShapeWidth" inputmode="numeric"></label>
-      <label>H <input id="designerShapeHeight" inputmode="numeric"></label>
-    </div>
-    <p class="inspector-hint">Designer-only Shape Stage 1. Web and native build targets remain capability-gated until their renderer slices land.</p>
-    <div class="inspector-actions designer-shape-actions">
-      <button id="designerShapeApply" type="button">Apply Shape</button>
-      <button id="designerShapeSource" class="secondary" type="button">Source</button>
-      <button id="designerShapeDelete" class="danger" type="button">Delete</button>
-    </div>`;
+  const shapeFields = createShapeInspectorFields();
   const genericActions = form.querySelector(':scope > .inspector-actions');
   form.insertBefore(shapeFields, genericActions ?? null);
 
@@ -299,6 +272,102 @@ function installShapeStudio(inspector, toolbar) {
     schedule();
   }).observe(canvas, { childList: true, subtree: true });
   schedule();
+}
+
+function createShapeInspectorFields() {
+  const section = document.createElement('section');
+  section.id = 'designerShapeInspectorFields';
+  section.className = 'designer-shape-inspector';
+  section.hidden = true;
+
+  const heading = document.createElement('strong');
+  heading.textContent = 'Shape';
+  section.appendChild(heading);
+
+  section.appendChild(shapeInputField('Name', 'designerShapeId', { autocomplete: 'off', spellcheck: false }));
+  section.appendChild(shapeKindField());
+
+  const styleGrid = document.createElement('div');
+  styleGrid.className = 'designer-shape-style-grid';
+  styleGrid.append(
+    shapeInputField('Fill', 'designerShapeFill', { autocomplete: 'off', spellcheck: false }),
+    shapeInputField('Stroke', 'designerShapeStroke', { autocomplete: 'off', spellcheck: false }),
+    shapeInputField('Stroke W', 'designerShapeStrokeWidth', { inputMode: 'decimal' }),
+    shapeInputField('Radius', 'designerShapeRadius', { inputMode: 'decimal' }),
+    shapeInputField('Opacity', 'designerShapeOpacity', { inputMode: 'decimal' })
+  );
+  section.appendChild(styleGrid);
+
+  const geometry = document.createElement('div');
+  geometry.className = 'forms-geometry-grid designer-shape-geometry';
+  const geometryHeading = document.createElement('strong');
+  geometryHeading.textContent = 'Layout';
+  geometry.append(
+    geometryHeading,
+    shapeInputField('X', 'designerShapeX', { inputMode: 'numeric' }),
+    shapeInputField('Y', 'designerShapeY', { inputMode: 'numeric' }),
+    shapeInputField('W', 'designerShapeWidth', { inputMode: 'numeric' }),
+    shapeInputField('H', 'designerShapeHeight', { inputMode: 'numeric' })
+  );
+  section.appendChild(geometry);
+
+  const hint = document.createElement('p');
+  hint.className = 'inspector-hint';
+  hint.textContent = 'Designer-only Shape Stage 1. Web and native build targets remain capability-gated until their renderer slices land.';
+  section.appendChild(hint);
+
+  const actions = document.createElement('div');
+  actions.className = 'inspector-actions designer-shape-actions';
+  actions.append(
+    shapeButton('designerShapeApply', 'Apply Shape'),
+    shapeButton('designerShapeSource', 'Source', 'secondary'),
+    shapeButton('designerShapeDelete', 'Delete', 'danger')
+  );
+  section.appendChild(actions);
+  return section;
+}
+
+function shapeInputField(labelText, id, options = {}) {
+  const label = document.createElement('label');
+  if (options.inspector !== false) label.className = 'inspector-field';
+  label.appendChild(document.createTextNode(`${labelText} `));
+  const input = document.createElement('input');
+  input.id = id;
+  if (options.autocomplete !== undefined) input.autocomplete = options.autocomplete;
+  if (options.spellcheck !== undefined) input.spellcheck = options.spellcheck;
+  if (options.inputMode) input.inputMode = options.inputMode;
+  label.appendChild(input);
+  return label;
+}
+
+function shapeKindField() {
+  const label = document.createElement('label');
+  label.className = 'inspector-field';
+  label.appendChild(document.createTextNode('Kind '));
+  const select = document.createElement('select');
+  select.id = 'designerShapeKind';
+  for (const [value, text] of [
+    ['rectangle', 'Rectangle'],
+    ['rounded', 'Rounded rectangle'],
+    ['ellipse', 'Ellipse'],
+    ['line', 'Line']
+  ]) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    select.appendChild(option);
+  }
+  label.appendChild(select);
+  return label;
+}
+
+function shapeButton(id, text, className = '') {
+  const button = document.createElement('button');
+  button.id = id;
+  button.type = 'button';
+  button.textContent = text;
+  if (className) button.className = className;
+  return button;
 }
 
 function makeShapeScheduler(sync) {
