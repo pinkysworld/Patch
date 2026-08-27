@@ -1,7 +1,6 @@
 import { addDesignerControl, listDesignerControls, updateDesignerControl } from '../src/designer.js';
 import { normalizeImageListItemName } from '../src/imagelist-control.js';
 import { studioResourceSourceExpression } from '../src/studio-resources.js';
-import { chooseStudioImageResource, openStudioResourceManager } from './resource-manager.js';
 import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
@@ -88,7 +87,7 @@ function installInspector() {
     });
   }
   field.querySelector('#designerImageListAdd')?.addEventListener('click', addResourceItem);
-  field.querySelector('#designerImageListManage')?.addEventListener('click', openStudioResourceManager);
+  field.querySelector('#designerImageListManage')?.addEventListener('click', openResources);
 
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, syncInspector);
   code.addEventListener('input', syncInspector);
@@ -179,7 +178,7 @@ async function addResourceItem() {
   const control = selectedImageList();
   if (!control) return;
   try {
-    const resource = await chooseStudioImageResource();
+    const resource = await chooseResource();
     if (!resource) return;
     const items = [...(control.items ?? [])];
     const name = uniqueItemName(resource.id, items);
@@ -194,12 +193,26 @@ async function replaceResourceItem(index) {
   const control = selectedImageList();
   if (!control) return;
   try {
-    const resource = await chooseStudioImageResource();
+    const resource = await chooseResource();
     if (!resource) return;
     const items = [...(control.items ?? [])];
     if (!items[index]) return;
     items[index] = { ...items[index], sourceExpr: studioResourceSourceExpression(resource.id) };
     commit(control, { items });
+  } catch (error) {
+    showError(error);
+  }
+}
+
+async function chooseResource() {
+  const { chooseStudioImageResource } = await import('./resource-manager.js');
+  return chooseStudioImageResource();
+}
+
+async function openResources() {
+  try {
+    const { openStudioResourceManager } = await import('./resource-manager.js');
+    openStudioResourceManager();
   } catch (error) {
     showError(error);
   }
