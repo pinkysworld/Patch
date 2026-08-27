@@ -11,7 +11,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 
 const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
 const SITE_SRC_FILES = [
-  'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
+  'interpreter.js','parser.js','shape-control.js','shape-source.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','component-registry.js','designer-menu.js','designer-panel.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-resources.js','studio-outline-model.js','studio-diagnostics.js',
