@@ -10,7 +10,7 @@ import {
 } from '../src/component-registry.js';
 
 test('component registry exposes the current source-backed Designer families plus Graphics Stage 1', () => {
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.6');
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.7');
   assert.deepEqual(PATCH_COMPONENTS.map(component => component.type), [
     'text', 'button', 'input', 'checkbox',
     'radio', 'combo', 'listbox', 'slider',
@@ -57,7 +57,7 @@ test('Shape Stage 1 exposes Studio authoring and Standalone Web without overclai
   assert.equal(patchComponentForButton('addShape')?.type, 'shape');
 });
 
-test('PaintBox Stage 1 is authoring-only until Web and native canvas runtimes land', () => {
+test('PaintBox Stage 1 exposes Studio authoring and Standalone Web while native remains gated', () => {
   const paintbox = patchComponent('paintbox');
   assert.equal(paintbox.type, 'paintbox');
   assert.equal(paintbox.label, 'PaintBox');
@@ -69,7 +69,7 @@ test('PaintBox Stage 1 is authoring-only until Web and native canvas runtimes la
   assert.deepEqual(paintbox.events, [{ name: 'paint', label: 'OnPaint', value: false }]);
   assert.equal(paintbox.designRenderer, 'paintbox');
   assert.deepEqual(paintbox.targetSupport, {
-    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addPaintbox')?.type, 'paintbox');
 });
