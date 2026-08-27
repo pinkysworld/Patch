@@ -16,6 +16,7 @@ export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
   timer: Object.freeze({ width: 160, height: 36 }),
   picture: Object.freeze({ width: 180, height: 120 }),
   shape: Object.freeze({ width: 180, height: 120 }),
+  paintbox: Object.freeze({ width: 320, height: 200 }),
   statusbar: Object.freeze({ width: 400, height: 28 })
 });
 
