@@ -1,4 +1,5 @@
 import { parsePatchShapeDeclaration } from './shape-source.js';
+import { parsePatchPaintCommand } from './paintbox-control.js';
 
 export class PatchSyntaxError extends Error {
   constructor(message, line) { super(`line ${line}: ${message}`); this.line = line; }
@@ -84,8 +85,8 @@ export function parse(source) {
     const body = optionalChildBlock(indent);
     for (const child of body) {
       if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls in Panel Stage 1.', child.line);
-      if (['panel', 'timer', 'statusbar', 'table', 'tree'].includes(child.control)) {
-        throw new PatchSyntaxError('Panel Stage 1 cannot nest Panel, Timer, StatusBar, Table or TreeView.', child.line);
+      if (['panel', 'timer', 'statusbar', 'table', 'tree', 'paintbox'].includes(child.control)) {
+        throw new PatchSyntaxError('Panel Stage 1 cannot nest Panel, Timer, StatusBar, Table, TreeView or PaintBox.', child.line);
       }
       if (child.layout) throw new PatchSyntaxError('Controls inside a panel use flow layout in Panel Stage 1. Remove at/size from the nested control.', child.line);
     }
@@ -233,6 +234,9 @@ export function parse(source) {
         throw new PatchSyntaxError(error?.message ?? String(error), row.line);
       }
     }
+    if ((m = ui.core.match(/^paintbox\s+as\s+([A-Za-z_]\w*)$/))) {
+      return uiControl({control:'paintbox',textExpr:null,id:m[1],line:row.line},ui.layout);
+    }
     if ((m = ui.core.match(/^statusbar\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
       return uiControl({control:'statusbar',textExpr:m[1],id:m[2],line:row.line},ui.layout);
     }
@@ -240,7 +244,7 @@ export function parse(source) {
       return uiControl({control:'statusbar',textExpr:'"Ready"',id:m[1],line:row.line},ui.layout);
     }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
-    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled|ticked)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
+    if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled|ticked|paint)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^confirm\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) {
       const parts=splitArgs(m[1]);
       if(parts.length!==2)throw new PatchSyntaxError('A confirm dialog needs exactly a title and message, for example confirm "Delete?", "This cannot be undone." as confirm_delete.',row.line);
@@ -264,6 +268,13 @@ export function parse(source) {
       const maxAmount=m[4]===undefined?null:Number(m[4]);
       if(maxAmount!==null&&!['increase','decrease','add','remove'].includes(m[3])) throw new PatchSyntaxError(`'up to' is only meaningful for increase, decrease, add, or remove.`,row.line);
       return {kind:'capRule',target:m[1],field:m[2]??null,operation:m[3],maxAmount,line:row.line};
+    }
+    if (/^draw\b/i.test(row.text)) {
+      try {
+        return {kind:'drawPaint',command:parsePatchPaintCommand(row.text),line:row.line};
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+      }
     }
     if ((m = row.text.match(/^show\s+(.+)$/))) return {kind:'show',expr:m[1],line:row.line};
     if ((m = row.text.match(/^why\s+(.+)$/))) return {kind:'why',expr:m[1],line:row.line};
@@ -295,7 +306,43 @@ export function parse(source) {
     if ((m = row.text.match(/^return(?:\s+(.+))?$/))) return {kind:'return',expr:m[1]??null,line:row.line};
     throw new PatchSyntaxError(`I do not understand '${row.text}'.`,row.line);
   }
-  return block(0);
+  const program = block(0);
+  validatePaintBoxProgram(program);
+  return program;
+}
+
+function validatePaintBoxProgram(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'event' && node.event === 'paint') {
+      validatePaintBody(node.body);
+      continue;
+    }
+    if (node.kind === 'drawPaint') {
+      throw new PatchSyntaxError('A draw command belongs only inside a PaintBox paint handler such as when canvas paint:.', node.line);
+    }
+    if (node.body) validatePaintBoxProgram(node.body);
+    if (node.thenBody) validatePaintBoxProgram(node.thenBody);
+    if (node.elseBody) validatePaintBoxProgram(node.elseBody);
+  }
+}
+
+function validatePaintBody(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'drawPaint') continue;
+    if (node.kind === 'if') {
+      validatePaintBody(node.thenBody);
+      validatePaintBody(node.elseBody);
+      continue;
+    }
+    if (node.kind === 'repeat') {
+      validatePaintBody(node.body);
+      continue;
+    }
+    throw new PatchSyntaxError(
+      'PaintBox Stage 1 paint handlers may contain only draw, if and repeat. Persistent application changes belong outside paint handlers.',
+      node.line
+    );
+  }
 }
 
 function uiControl(fields,layout) { return layout ? {kind:'uiControl',...fields,layout} : {kind:'uiControl',...fields}; }
