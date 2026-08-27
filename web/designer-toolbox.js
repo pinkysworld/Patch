@@ -12,6 +12,7 @@ import {
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
+import './designer-imagelist.js';
 
 const doc = typeof document === 'undefined' ? null : document;
 const designer = doc?.querySelector('#designer') ?? null;
@@ -310,11 +311,11 @@ function scheduleTimerSync() {
 function renderNonvisualTray() {
   const tray = ensureNonvisualTray();
   if (!tray || !code) return;
-  let timers = [];
+  let components = [];
   try {
     const windowIndex = activeFormIndex();
-    timers = listDesignerControls(code.value)
-      .filter(control => control.windowIndex === windowIndex && control.type === 'timer');
+    components = listDesignerControls(code.value)
+      .filter(control => control.windowIndex === windowIndex && (control.type === 'timer' || control.type === 'imagelist'));
   } catch {
     tray.innerHTML = '<strong>Nonvisual</strong><span class="designer-nonvisual-empty">Waiting for valid Patch source.</span>';
     return;
@@ -326,7 +327,7 @@ function renderNonvisualTray() {
   title.title = 'Components that participate in the Form but do not occupy canvas geometry';
   tray.appendChild(title);
 
-  if (!timers.length) {
+  if (!components.length) {
     const empty = doc.createElement('span');
     empty.className = 'designer-nonvisual-empty';
     empty.textContent = 'No nonvisual components';
@@ -335,16 +336,24 @@ function renderNonvisualTray() {
   }
 
   const selection = currentDesignerSelection(canvas);
-  for (const timer of timers) {
+  for (const component of components) {
     const button = doc.createElement('button');
     button.type = 'button';
     button.className = 'designer-nonvisual-component';
-    button.dataset.windowIndex = String(timer.windowIndex);
-    button.dataset.controlIndex = String(timer.controlIndex);
-    button.setAttribute('aria-pressed', sameLocation(timer, selection) ? 'true' : 'false');
-    button.innerHTML = `<span class="designer-nonvisual-icon" aria-hidden="true">◷</span><span>${escapeHtml(timer.id ?? 'Timer')}</span><small>${Number(timer.interval ?? 1000)} ms</small>`;
+    button.dataset.windowIndex = String(component.windowIndex);
+    button.dataset.controlIndex = String(component.controlIndex);
+    button.dataset.componentType = component.type;
+    button.setAttribute('aria-pressed', sameLocation(component, selection) ? 'true' : 'false');
+    const isTimer = component.type === 'timer';
+    const icon = isTimer ? '◷' : '▤';
+    const fallbackName = isTimer ? 'Timer' : 'ImageList';
+    const itemCount = component.items?.length ?? 0;
+    const detail = isTimer
+      ? `${Number(component.interval ?? 1000)} ms`
+      : `${component.logicalWidth ?? 16}×${component.logicalHeight ?? 16} · ${itemCount} image${itemCount === 1 ? '' : 's'}`;
+    button.innerHTML = `<span class="designer-nonvisual-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(component.id ?? fallbackName)}</span><small>${escapeHtml(detail)}</small>`;
     button.addEventListener('click', () => {
-      rememberDesignerSelection(canvas, designerSelectionForControl(timer, 'core'), { reason: 'nonvisual-timer' });
+      rememberDesignerSelection(canvas, designerSelectionForControl(component, 'core'), { reason: `nonvisual-${component.type}` });
       syncTimerInspector();
       renderNonvisualTray();
     });
@@ -398,7 +407,7 @@ function syncTimerInspector() {
   const isTimer = control?.type === 'timer';
   field.hidden = !isTimer;
   const geometry = doc.querySelector('[data-form-geometry]');
-  if (geometry) geometry.hidden = isTimer;
+  if (geometry) geometry.hidden = isTimer || control?.type === 'imagelist';
   if (!isTimer) return;
 
   const input = field.querySelector('#designerInspectorTimerInterval');
