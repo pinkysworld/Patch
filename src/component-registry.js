@@ -56,7 +56,13 @@ const PROPERTY_BY_TYPE = Object.freeze({
   ]),
   paintbox: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   statusbar: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
-  timer: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'interval', kind: 'integer' })])
+  timer: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'interval', kind: 'integer' })]),
+  imagelist: Object.freeze([
+    ID_PROPERTY,
+    Object.freeze({ name: 'logicalWidth', kind: 'integer' }),
+    Object.freeze({ name: 'logicalHeight', kind: 'integer' }),
+    Object.freeze({ name: 'items', kind: 'imagelist-items' })
+  ])
 });
 
 const DESKTOP_TARGETS = Object.freeze({
@@ -86,9 +92,19 @@ const PAINTBOX_STAGE1_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
+const IMAGELIST_STAGE1_TARGETS = Object.freeze({
+  studio: 'authoring',
+  web: 'unsupported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
 const TARGETS_BY_TYPE = Object.freeze({
   shape: SHAPE_STAGE1_TARGETS,
-  paintbox: PAINTBOX_STAGE1_TARGETS
+  paintbox: PAINTBOX_STAGE1_TARGETS,
+  imagelist: IMAGELIST_STAGE1_TARGETS
 });
 
 const COMPONENTS = [
@@ -108,10 +124,11 @@ const COMPONENTS = [
   ['shape', 'Shape', 'Graphics', true],
   ['paintbox', 'PaintBox', 'Graphics', true],
   ['statusbar', 'StatusBar', 'Chrome', true],
-  ['timer', 'Timer', 'Nonvisual', false]
+  ['timer', 'Timer', 'Nonvisual', false],
+  ['imagelist', 'ImageList', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.7';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.8';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);
