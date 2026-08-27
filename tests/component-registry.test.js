@@ -9,13 +9,13 @@ import {
   patchComponentForButton
 } from '../src/component-registry.js';
 
-test('component registry exposes the current source-backed Designer families plus Graphics Stage 1', () => {
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.7');
+test('component registry exposes the current source-backed Designer families plus RAD R1 components', () => {
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.8');
   assert.deepEqual(PATCH_COMPONENTS.map(component => component.type), [
     'text', 'button', 'input', 'checkbox',
     'radio', 'combo', 'listbox', 'slider',
     'table', 'tree', 'tabs', 'panel',
-    'picture', 'shape', 'paintbox', 'statusbar', 'timer'
+    'picture', 'shape', 'paintbox', 'statusbar', 'timer', 'imagelist'
   ]);
   assert.equal(new Set(PATCH_COMPONENTS.map(component => component.buttonId)).size, PATCH_COMPONENTS.length);
 });
@@ -82,6 +82,22 @@ test('Timer remains nonvisual and carries source-backed property and OnTick cont
   assert.equal(patchComponent('button').visual, true);
 });
 
+test('ImageList is nonvisual authoring metadata and remains runtime fail-closed in Stage 1', () => {
+  const imagelist = patchComponent('imagelist');
+  assert.equal(imagelist.type, 'imagelist');
+  assert.equal(imagelist.label, 'ImageList');
+  assert.equal(imagelist.category, 'Nonvisual');
+  assert.equal(imagelist.buttonId, 'addImagelist');
+  assert.equal(imagelist.visual, false);
+  assert.deepEqual(imagelist.properties.map(property => property.name), ['id', 'logicalWidth', 'logicalHeight', 'items']);
+  assert.deepEqual(imagelist.events, []);
+  assert.equal(imagelist.designRenderer, 'imagelist');
+  assert.deepEqual(imagelist.targetSupport, {
+    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+  });
+  assert.equal(patchComponentForButton('addImagelist')?.type, 'imagelist');
+});
+
 test('component registry descriptors are immutable metadata rather than a second UI model', () => {
   const button = patchComponent('button');
   assert.equal(Object.isFrozen(button), true);
@@ -93,6 +109,7 @@ test('component registry descriptors are immutable metadata rather than a second
 test('component registry supports category discovery without a second mutable model', () => {
   assert.deepEqual(patchComponentCategories(), ['Basic', 'Choices', 'Data', 'Containers', 'Graphics', 'Chrome', 'Nonvisual']);
   assert.deepEqual(listPatchComponents({ category: 'Graphics' }).map(component => component.type), ['picture', 'shape', 'paintbox']);
+  assert.deepEqual(listPatchComponents({ category: 'Nonvisual' }).map(component => component.type), ['timer', 'imagelist']);
   assert.equal(patchComponent('missing'), null);
   assert.equal(patchComponentForButton('missing'), null);
 });
