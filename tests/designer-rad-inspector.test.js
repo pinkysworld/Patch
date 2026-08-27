@@ -19,6 +19,7 @@ test('RAD Events inspector maps current control types to Patch event contracts',
   assert.deepEqual(designerEventSpec('timer'), { event: 'ticked', label: 'OnTick', value: false });
   assert.deepEqual(designerEventSpec('picture'), { event: 'clicked', label: 'OnClick', value: false });
   assert.deepEqual(designerEventSpec('paintbox'), { event: 'paint', label: 'OnPaint', value: false });
+  assert.equal(designerEventSpec('imagelist'), null);
   assert.equal(designerEventSpec('panel'), null);
   assert.equal(designerEventSpec('statusbar'), null);
 });
@@ -47,10 +48,11 @@ test('RAD Events inspector creates value-aware changed handlers and locates sour
 test('RAD Events inspector rejects anonymous and eventless controls', () => {
   assert.throws(() => ensureDesignerEventHandler('window "X":\n  text "Hi"\n', '', 'text'), /needs a named Patch id/i);
   assert.throws(() => ensureDesignerEventHandler('window "X":\n  panel as p:\n    text "Hi"\n', 'p', 'panel'), /does not expose a Patch event/i);
+  assert.throws(() => ensureDesignerEventHandler('window "X":\n  imagelist as images size 16, 16:\n', 'images', 'imagelist'), /does not expose a Patch event/i);
 });
 
 test('searchable Component Palette filters labels types and categories without a second component model', () => {
-  assert.equal(DESIGNER_TOOL_CATALOG.length, 17);
+  assert.equal(DESIGNER_TOOL_CATALOG.length, 18);
   assert.deepEqual(filterDesignerTools('tree').map(tool => tool.type), ['tree']);
   assert.deepEqual(filterDesignerTools('choice').map(tool => tool.type), ['radio', 'combo', 'listbox', 'slider']);
   assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox', 'paintbox']);
@@ -62,8 +64,9 @@ test('searchable Component Palette filters labels types and categories without a
   assert.deepEqual(filterDesignerTools('paint').map(tool => tool.type), ['paintbox']);
   assert.deepEqual(filterDesignerTools('chrome').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('status').map(tool => tool.type), ['statusbar']);
-  assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);
+  assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer', 'imagelist']);
   assert.deepEqual(filterDesignerTools('timer').map(tool => tool.type), ['timer']);
+  assert.deepEqual(filterDesignerTools('image').map(tool => tool.type), ['imagelist']);
   assert.equal(filterDesignerTools('does-not-exist').length, 0);
   const groups = groupedDesignerTools(filterDesignerTools('data'));
   assert.deepEqual(groups.map(group => group.group), ['Data']);
@@ -94,13 +97,14 @@ test('Focus Order earlier and later cross intervening non-focusable source block
   assert.deepEqual(listDesignerFocusOrder(later.source, 0).map(item => item.id), ['first', 'second', 'third']);
 });
 
-test('RAD Object Inspector Component Palette Focus Order StatusBar and PaintBox are packaged into the Studio offline graph', () => {
+test('RAD Object Inspector Component Palette Focus Order and R1 components are packaged into the Studio offline graph', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const eventInspector = fs.readFileSync('web/designer-event-inspector.js', 'utf8');
   const focusOrder = fs.readFileSync('web/designer-focus-order.js', 'utf8');
   const toolbox = fs.readFileSync('web/designer-toolbox.js', 'utf8');
   const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
   const paintbox = fs.readFileSync('web/designer-paintbox.js', 'utf8');
+  const imagelist = fs.readFileSync('web/designer-imagelist.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-event-inspector\.js'/);
@@ -119,12 +123,22 @@ test('RAD Object Inspector Component Palette Focus Order StatusBar and PaintBox 
   assert.match(toolbox, /designer-component-palette/);
   assert.match(toolbox, /designerInspectorPictureSource/);
   assert.match(statusbar, /import '\.\/designer-paintbox\.js'/);
+  assert.match(statusbar, /import '\.\/designer-imagelist\.js'/);
   assert.match(statusbar, /StatusBar/);
   assert.match(paintbox, /patch-paintbox-designer-control/);
+  assert.match(imagelist, /designerInspectorImageListField/);
+  assert.match(imagelist, /import\('\.\/resource-manager\.js'\)/);
+  assert.match(imagelist, /patchImagelistHidden/);
   assert.match(buildSite, /'component-registry\.js'/);
+  assert.match(buildSite, /'imagelist-control\.js'/);
   assert.match(buildSite, /'designer-toolbox\.js'/);
   assert.match(buildSite, /'designer-paintbox\.js'/);
+  assert.match(buildSite, /'designer-imagelist\.js'/);
+  assert.match(buildSite, /'designer-imagelist\.css'/);
   assert.match(sw, /'\.\.\/src\/component-registry\.js'/);
+  assert.match(sw, /'\.\.\/src\/imagelist-control\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.js'/);
   assert.match(sw, /'\.\/designer-paintbox\.js'/);
+  assert.match(sw, /'\.\/designer-imagelist\.js'/);
+  assert.match(sw, /'\.\/designer-imagelist\.css'/);
 });
