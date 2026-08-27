@@ -36,6 +36,12 @@ test('PaintBox descriptors retain pure drawing source and logical source-backed 
   assert.equal(Object.isFrozen(descriptors.canvas.body), true);
 });
 
+test('multiple OnPaint handlers compose in visible source order like ordinary Patch events', () => {
+  const ast = parse(`window "Canvas" as main size 400, 260:\n  paintbox as canvas at 20, 20 size 200, 120\n\nwhen canvas paint:\n  draw clear #ffffff\n\nwhen canvas paint:\n  draw line 0, 0 to 20, 20 stroke #000000 width 1\n`);
+  const descriptor = collectPaintBoxDescriptors(ast).canvas;
+  assert.deepEqual(descriptor.body.map(node => node.command.operation), ['clear', 'line']);
+});
+
 test('PaintBox without OnPaint remains a deterministic empty drawing surface', () => {
   const ast = parse(`window "Canvas" as main size 400, 260:\n  paintbox as empty_canvas at 20, 20 size 200, 120\n`);
   const descriptors = collectPaintBoxDescriptors(ast);
