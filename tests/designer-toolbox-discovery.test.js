@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { DESIGNER_TOOL_CATALOG, groupedDesignerTools } from '../web/designer-toolbox.js';
 
 test('Designer control picker exposes every existing top-level toolbox control exactly once', () => {
-  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addStatusbar','addTimer'];
+  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addShape','addStatusbar','addTimer'];
   assert.deepEqual(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId), expected);
   assert.equal(new Set(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId)).size, expected.length);
 });
@@ -16,7 +16,7 @@ test('Designer control picker groups controls by user-facing purpose', () => {
   assert.deepEqual(groups.find(group => group.group === 'Choices').tools.map(tool => tool.label), ['Radio group','ComboBox','ListBox','Slider']);
   assert.deepEqual(groups.find(group => group.group === 'Data').tools.map(tool => tool.label), ['Table','TreeView']);
   assert.deepEqual(groups.find(group => group.group === 'Containers').tools.map(tool => tool.label), ['Tabs','Panel']);
-  assert.deepEqual(groups.find(group => group.group === 'Graphics').tools.map(tool => tool.label), ['Picture']);
+  assert.deepEqual(groups.find(group => group.group === 'Graphics').tools.map(tool => tool.label), ['Picture','Shape']);
   assert.deepEqual(groups.find(group => group.group === 'Chrome').tools.map(tool => tool.label), ['StatusBar']);
   assert.deepEqual(groups.find(group => group.group === 'Nonvisual').tools.map(tool => tool.label), ['Timer']);
 });
