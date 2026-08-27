@@ -18,6 +18,7 @@ test('RAD Events inspector maps current control types to Patch event contracts',
   assert.deepEqual(designerEventSpec('input'), { event: 'changed', label: 'OnChange', value: true });
   assert.deepEqual(designerEventSpec('timer'), { event: 'ticked', label: 'OnTick', value: false });
   assert.deepEqual(designerEventSpec('picture'), { event: 'clicked', label: 'OnClick', value: false });
+  assert.deepEqual(designerEventSpec('paintbox'), { event: 'paint', label: 'OnPaint', value: false });
   assert.equal(designerEventSpec('panel'), null);
   assert.equal(designerEventSpec('statusbar'), null);
 });
@@ -49,15 +50,16 @@ test('RAD Events inspector rejects anonymous and eventless controls', () => {
 });
 
 test('searchable Component Palette filters labels types and categories without a second component model', () => {
-  assert.equal(DESIGNER_TOOL_CATALOG.length, 16);
+  assert.equal(DESIGNER_TOOL_CATALOG.length, 17);
   assert.deepEqual(filterDesignerTools('tree').map(tool => tool.type), ['tree']);
   assert.deepEqual(filterDesignerTools('choice').map(tool => tool.type), ['radio', 'combo', 'listbox', 'slider']);
-  assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox']);
+  assert.deepEqual(filterDesignerTools('box').map(tool => tool.type), ['checkbox', 'combo', 'listbox', 'paintbox']);
   assert.deepEqual(filterDesignerTools('container').map(tool => tool.type), ['tabs', 'panel']);
   assert.deepEqual(filterDesignerTools('panel').map(tool => tool.type), ['panel']);
-  assert.deepEqual(filterDesignerTools('graphics').map(tool => tool.type), ['picture', 'shape']);
+  assert.deepEqual(filterDesignerTools('graphics').map(tool => tool.type), ['picture', 'shape', 'paintbox']);
   assert.deepEqual(filterDesignerTools('picture').map(tool => tool.type), ['picture']);
   assert.deepEqual(filterDesignerTools('shape').map(tool => tool.type), ['shape']);
+  assert.deepEqual(filterDesignerTools('paint').map(tool => tool.type), ['paintbox']);
   assert.deepEqual(filterDesignerTools('chrome').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('status').map(tool => tool.type), ['statusbar']);
   assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);
@@ -92,12 +94,13 @@ test('Focus Order earlier and later cross intervening non-focusable source block
   assert.deepEqual(listDesignerFocusOrder(later.source, 0).map(item => item.id), ['first', 'second', 'third']);
 });
 
-test('RAD Object Inspector Component Palette Focus Order and StatusBar are packaged into the Studio offline graph', () => {
+test('RAD Object Inspector Component Palette Focus Order StatusBar and PaintBox are packaged into the Studio offline graph', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const eventInspector = fs.readFileSync('web/designer-event-inspector.js', 'utf8');
   const focusOrder = fs.readFileSync('web/designer-focus-order.js', 'utf8');
   const toolbox = fs.readFileSync('web/designer-toolbox.js', 'utf8');
   const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
+  const paintbox = fs.readFileSync('web/designer-paintbox.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-event-inspector\.js'/);
@@ -107,15 +110,21 @@ test('RAD Object Inspector Component Palette Focus Order and StatusBar are packa
   assert.match(eventInspector, /designerEventsTab/);
   assert.match(eventInspector, /designerObjectSelect/);
   assert.match(eventInspector, /Create handler/);
+  assert.match(eventInspector, /paintbox: Object\.freeze\(\{ event: 'paint', label: 'OnPaint'/);
+  assert.match(eventInspector, /draw clear transparent/);
   assert.match(eventInspector, /dblclick/);
   assert.match(focusOrder, /Focus Order · Stage 1/);
   assert.match(focusOrder, /Independent Delphi-style TabOrder metadata is a later contract/);
   assert.match(focusOrder, /reorderDesignerFocusOrder/);
   assert.match(toolbox, /designer-component-palette/);
   assert.match(toolbox, /designerInspectorPictureSource/);
+  assert.match(statusbar, /import '\.\/designer-paintbox\.js'/);
   assert.match(statusbar, /StatusBar/);
+  assert.match(paintbox, /patch-paintbox-designer-control/);
   assert.match(buildSite, /'component-registry\.js'/);
   assert.match(buildSite, /'designer-toolbox\.js'/);
+  assert.match(buildSite, /'designer-paintbox\.js'/);
   assert.match(sw, /'\.\.\/src\/component-registry\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.js'/);
+  assert.match(sw, /'\.\/designer-paintbox\.js'/);
 });
