@@ -10,11 +10,12 @@ const bootstrap = fs.readFileSync('web/studio-bootstrap.js', 'utf8');
 const playgroundSource = fs.readFileSync('web/playground.js', 'utf8');
 const studioHtml = fs.readFileSync('web/index.html', 'utf8');
 
-test('Patch site build content-addresses every public page and service-worker cache', () => {
+test('Patch site build content-addresses every public product page and service-worker cache', () => {
   assert.match(buildSite, /createHash\('sha256'\)/);
   assert.match(buildSite, /computeSiteRevision\(\)/);
-  assert.match(buildSite, /SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','paper\.html','help\.html'\]/);
+  assert.match(buildSite, /SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','help\.html'\]/);
   assert.match(buildSite, /SITE_HTML_FILES\.splice\(3, 0, 'downloads\.html'\)/);
+  assert.match(buildSite, /validatePaperPrivacyBoundary\(\)/);
   assert.match(buildSite, /for \(const name of SITE_HTML_FILES\)/);
   assert.match(buildSite, /normalizeCurrentProductSurface\(name, source\)/);
   assert.match(buildSite, /versionLocalAssetReferences\(normalized, siteRevision\)/);
@@ -25,6 +26,7 @@ test('Patch site build content-addresses every public page and service-worker ca
   const builtWorker = fs.readFileSync('_site/sw.js', 'utf8');
   const revision = /\.\/style\.css\?v=([a-f0-9]{16})/.exec(html)?.[1];
   assert.ok(revision, 'generated Studio HTML should expose a 16-hex content revision');
+  assert.equal(fs.existsSync('_site/paper.html'), false, 'research paper must not enter the public site artifact');
 
   for (const asset of [
     'site-navigation.css', 'studio-accessibility.css', 'studio-command-palette.css', 'designer-multiselect.css', 'form-window-resize.css', 'manifest.webmanifest',
@@ -33,13 +35,15 @@ test('Patch site build content-addresses every public page and service-worker ca
     'form-window-resize.js', 'studio-diagnostics.js', 'studio-command-palette.js', 'studio-accessibility.js'
   ]) assert.ok(html.includes(`./${asset}?v=${revision}`), asset);
 
-  for (const page of ['language.html','docs.html','paper.html','downloads.html','help.html']) {
+  for (const page of ['language.html','docs.html','downloads.html','help.html']) {
     const content = fs.readFileSync(`_site/${page}`, 'utf8');
     assert.ok(content.includes(`./style.css?v=${revision}`), `${page} style revision`);
     assert.ok(content.includes(`./site-navigation.css?v=${revision}`), `${page} navigation revision`);
+    assert.equal(content.includes('./paper.html'), false, `${page} must not expose the paper route`);
   }
 
   assert.equal(builtWorker.includes('__PATCH_SITE_REV__'), false);
+  assert.equal(builtWorker.includes('./paper.html'), false);
   assert.ok(builtWorker.includes(`const REVISION = '${revision}'`));
   assert.match(builtWorker, /const CACHE_PREFIX = 'patch-studio-'/);
   assert.match(builtWorker, /const CACHE = `\$\{CACHE_PREFIX\}\$\{REVISION\}`/);

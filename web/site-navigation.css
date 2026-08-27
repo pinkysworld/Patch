@@ -1,5 +1,10 @@
 @import url("./site-refresh.css");
 
+/* The research manuscript stays under paper/ in the repository and is not a Patch Studio website route. */
+a[href="./paper.html"] {
+  display: none !important;
+}
+
 .site-tabs {
   width: min(1500px, calc(100% - 32px));
   margin: 10px auto 0;

@@ -38,8 +38,9 @@ test('command palette delegates to existing Studio actions without hidden persis
     "'Focus source editor'", "focus('#code')",
     "'Open Designer'", "click('#tabDesigner')",
     "'Open Recovery'", "click('#recoverProject')",
-    "navigate('./docs.html')", "navigate('./paper.html')", "navigate('./downloads.html')", "navigate('./help.html')"
+    "navigate('./docs.html')", "navigate('./downloads.html')", "navigate('./help.html')"
   ]) assert.ok(palette.includes(marker), marker);
+  assert.doesNotMatch(palette, /command\('paper'|navigate\('\.\/paper\.html'\)|Open Paper|working research manuscript/);
   assert.doesNotMatch(palette, /localStorage|sessionStorage|indexedDB/);
   assert.doesNotMatch(quickOpen, /localStorage|sessionStorage|indexedDB/);
 });
@@ -98,12 +99,12 @@ make reward(bonus number 0..5):
   assert.equal(ranked[0]?.label, 'reward.bonus');
 });
 
-
 test('command palette and quick-open model are packaged for offline Studio use', () => {
   assert.match(sw, /'\.\/studio-command-palette\.css'/);
   assert.match(sw, /'\.\/studio-command-palette\.js'/);
   assert.match(sw, /'\.\/studio-quick-open\.js'/);
   assert.doesNotMatch(sw, /'\.\.\/src\/studio-quick-open\.js'/);
+  assert.doesNotMatch(sw, /\.\/paper\.html/);
   assert.match(buildSite, /'studio-quick-open\.js'/);
   assert.match(paletteCss, /\.command-palette::backdrop/);
   assert.match(paletteCss, /\.command-palette-kind/);

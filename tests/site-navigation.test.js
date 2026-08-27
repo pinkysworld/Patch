@@ -10,19 +10,18 @@ const pages = new Map([
   ['Studio', fs.readFileSync('web/index.html', 'utf8')],
   ['Language', fs.readFileSync('web/language.html', 'utf8')],
   ['Documentation', fs.readFileSync('web/docs.html', 'utf8')],
-  ['Paper', fs.readFileSync('web/paper.html', 'utf8')],
   ['Downloads', fs.readFileSync('web/downloads.html', 'utf8')],
   ['Help', fs.readFileSync('web/help.html', 'utf8')]
 ]);
 const navigationCss = fs.readFileSync('web/site-navigation.css', 'utf8');
 const pageCss = fs.readFileSync('web/site-pages.css', 'utf8');
+const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
-test('every public page exposes the same six top-level navigation tabs', () => {
+test('public Patch Studio build exposes five product pages and keeps the research paper repository-only', () => {
   const markers = [
     'href="./index.html"',
     'href="./language.html"',
     'href="./docs.html"',
-    'href="./paper.html"',
     'href="./downloads.html"',
     'href="./help.html"'
   ];
@@ -30,6 +29,10 @@ test('every public page exposes the same six top-level navigation tabs', () => {
     assert.match(html, /class="site-tabs"/);
     for (const marker of markers) assert.ok(html.includes(marker), `${name}: ${marker}`);
   }
+  assert.match(buildSite, /const SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','help\.html'\]/);
+  assert.match(buildSite, /href="\\\.\\\/paper\\\.html"/);
+  assert.match(buildSite, /validatePaperPrivacyBoundary/);
+  assert.equal(fs.existsSync('web/paper.html'), false);
 });
 
 test('Studio stays focused on the IDE instead of duplicating the language landing page', () => {
@@ -45,7 +48,6 @@ test('language documentation downloads and help content live on dedicated pages'
   assert.match(pages.get('Downloads'), /Compile Patch without opening the browser\./);
   assert.match(pages.get('Downloads'), /patch-windows-x64\.exe/);
   assert.match(pages.get('Downloads'), /patch-freebsd-x64\.tar\.gz/);
-  assert.match(pages.get('Paper'), /Working manuscript/);
   assert.match(pages.get('Help'), /Design a Window app/);
   assert.match(pages.get('Help'), /Designer scrollbars/);
 });
