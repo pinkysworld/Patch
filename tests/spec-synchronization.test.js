@@ -32,6 +32,9 @@ test('SPEC documents every current user-facing parser family', () => {
     ['panel', /\^panel\\s\+as\\s\+/, '- `panel`'],
     ['timer', /\^timer\\s\+as\\s\+/, '- `timer`'],
     ['picture', /\^picture\\s\+/, '- `picture`'],
+    ['shape', /\^shape\\b/, '- `shape`'],
+    ['paintbox', /\^paintbox\\s\+as\\s\+/, '- `paintbox`'],
+    ['imagelist', /\^imagelist\\s\+as\\s\+/, '- `imagelist`'],
     ['statusbar', /\^statusbar\\s\+/, '- `statusbar`'],
     ['table', /\^table\\s\+/, '## Tables'],
     ['tree', /\^tree\\s\+/, '## TreeView'],
@@ -45,8 +48,10 @@ test('SPEC documents every current user-facing parser family', () => {
     assert.match(parser, parserMarker, `parser marker missing for ${name}`);
     assert.ok(spec.includes(specMarker), `SPEC marker missing for ${name}`);
   }
-  assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked/);
-  assert.match(spec, /cancelled\s+ticked/);
+  assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked\|paint/);
+  assert.match(spec, /cancelled\s+ticked\s+paint/);
+  assert.match(spec, /image open from "patch-resource:icons\.open"/);
+  assert.match(spec, /ImageList Stage 1 is Studio authoring-only/);
 });
 
 test('SPEC keeps the formal claim narrower than the current language', () => {
@@ -54,6 +59,7 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /not\*\* an end-to-end verified compiler\/runtime theorem/i);
   assert.match(spec, /GUI execution is outside the beta\.32 Lean runtime-correspondence claim/);
   assert.match(spec, /PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline/);
+  assert.match(spec, /ImageList Stage 1 is Studio authoring-only/);
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {
