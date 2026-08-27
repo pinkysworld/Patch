@@ -38,11 +38,11 @@ test('Shape Studio renderer is wired to the canonical Shape API and shared selec
   assert.match(workspace, /patch-shape-resize-handle/);
 });
 
-test('Shape stays Designer-only until Web and native renderer slices land', () => {
+test('Shape Studio and Web are enabled while native renderer slices remain explicit future work', () => {
   const shape = patchComponent('shape');
   assert.ok(shape);
   assert.equal(shape.targetSupport.studio, 'authoring');
-  assert.equal(shape.targetSupport.web, 'unsupported');
+  assert.equal(shape.targetSupport.web, 'supported');
   assert.equal(shape.targetSupport.windows, 'unsupported');
   assert.equal(shape.targetSupport.macos, 'unsupported');
   assert.equal(shape.targetSupport.linux, 'unsupported');
