@@ -45,7 +45,8 @@ export function collectPaintBoxDescriptors(ast) {
       });
     }
     if (node.kind === 'event' && node.event === 'paint' && node.control) {
-      handlers.set(node.control, clonePaintNodes(node.body ?? []));
+      const previous = handlers.get(node.control) ?? [];
+      handlers.set(node.control, [...previous, ...clonePaintNodes(node.body ?? [])]);
     }
   });
 
