@@ -1,144 +1,141 @@
 # Patch 0.2.0-beta.36
 
-Patch beta.36 is an integration and RAD-authoring release. It aligns the product surface with the already-versioned Native GUI 1.4 contract and makes Patch Studio more like a conventional Delphi/Visual Basic visual development environment without introducing a hidden form resource format.
+Patch beta.36 is the current integration and RAD-authoring development line. It aligns Patch Studio with project bundle v4 resources, the Native GUI IR 1.4 desktop contract, and the first graphics/resource RAD milestone while preserving the rule that ordinary `.patch` source remains authoritative for Form/component authoring.
 
-## Compiler and native contract
+## Current contracts
 
-The current compiler version is `0.2.0-beta.36`.
+- Patch package: `0.2.0-beta.36`
+- Change IR: `0.10`
+- Studio project bundle: `v4`
+- Component Registry: `0.8`
+- Native GUI IR: `1.4`
+- sealed payload: `v14`
+- desktop runtime: `v1.5`
+- Win32 release: `native-win32-runtime-v1.5`
+- AppKit release: `native-macos-runtime-v1.5`
+- GTK release: `native-linux-runtime-v1.5`
+- offline compiler line: `offline-compiler-v0.2`
 
-The current native Window contract is:
+Older project/native versions remain explicit migration/compatibility inputs and are never silently reinterpreted.
 
-- Native GUI IR `1.4`
-- sealed payload `v14`
-- desktop runtime `v1.5`
-- Win32 release `native-win32-runtime-v1.5`
-- AppKit release `native-macos-runtime-v1.5`
-- GTK release `native-linux-runtime-v1.5`
+## Studio project bundle v4 and resources
 
-The previous contracts remain versioned compatibility lines. They are not silently rewritten.
+Project bundle v4 extends the multi-file project model with bounded project resources. Existing v1, v2 and v3 projects migrate explicitly to v4; unknown future versions fail closed.
 
-The shared Window validator now understands Panel child controls and the Chrome Stage 1 event contracts used by the current native facade: Timer exposes `ticked` and PictureBox exposes `clicked`. The token-free/offline linker defaults to the current payload v14 contract. Payload v12 remains the explicit frozen TreeView compatibility selection.
+The Resource Manager provides:
 
-## Offline compiler v0.2
+- stable logical resource ids and project-relative paths;
+- PNG, JPEG, WebP and SVG image resources;
+- deterministic SHA-256 metadata;
+- per-resource, total-size and resource-count bounds;
+- preview, import, replace, rename/remove validation and resource selection;
+- persistence through project export/import, local saves and recovery snapshots.
 
-The offline release line moves to `offline-compiler-v0.2`.
+Resources are explicit project data, not a hidden `.dfm`/`.frm` visual state model. Controls reference logical `patch-resource:<id>` locators.
 
-Windows x64, Linux x64, macOS Apple Silicon and the macOS Intel kit now build/link against runtime v1.5 and assert payload v14 in smoke tests. The FreeBSD kit remains console-only.
+## Current Native Window line
 
-The offline compiler test matrix also links `examples/chrome-window.patch`, so Panel, Timer, PictureBox and StatusBar Stage 1 cannot be added to the compiler facade without exercising the current native sealing path.
+Native GUI IR 1.4 / payload v14 / runtime v1.5 is the current Ready/offline desktop line for Windows, macOS and Linux. It composes the previous Table, list, menu, TreeView and Slider capabilities with Chrome Stage 1 Panel, Timer, Picture and StatusBar transport.
+
+Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. WebP/SVG are not silently treated as current native-supported formats. The browser/Standalone Web path can embed project resources directly.
+
+The previous Slider line Native GUI IR 1.3 / payload v13 / runtime v1.4 and the frozen TreeView line Native GUI IR 1.2 / payload v12 / runtime v1.3 remain compatibility evidence.
 
 ## Patch Studio RAD authoring
 
-### Arrange and sizing
+### Searchable Component Palette and canonical registry
 
-Multi-selection includes common form-designer arrangement operations expected from classic RAD IDEs:
+The Component Palette is driven from the canonical component registry instead of an independent hard-coded component model. Registry metadata includes component type, label/category, visual/nonvisual status, default size, property schemas, event schemas, design renderer and target-support metadata.
 
-- align left / right
-- align top / bottom
-- align horizontal / vertical centers
-- make same width / height
-- distribute horizontally / vertically with equal gaps
+The current palette contains:
 
-These operations rewrite visible Patch source through the existing source-backed Designer API. There is no `.dfm`-style hidden layout state.
+- Basic: Text, Button, Input, Checkbox
+- Choices: Radio group, ComboBox, ListBox, Slider
+- Data: Table, TreeView
+- Containers: Tabs, Panel
+- Graphics: Picture, Shape, PaintBox
+- Chrome: StatusBar
+- Nonvisual: Timer, ImageList
+
+`Ctrl/Cmd+Shift+A` focuses component search. Search matches label, source type and category.
 
 ### Object Inspector
 
-The existing source-backed Properties pane is extended into an **Object Inspector** rather than replaced by a second designer model.
+The source-backed Properties pane is now an Object Inspector with Properties and Events views. It supports handler creation/navigation for the component events currently exposed by Patch source, including `OnClick`, `OnChange`, `OnTick` and PaintBox `OnPaint`.
 
-It provides:
+Generated handlers remain ordinary visible `when ...:` source. ImageList is eventless in Stage 1.
 
-- an Object selector for named Designer controls;
-- **Properties** and **Events** views;
-- Delphi/VB-style event names such as `OnClick`, `OnChange` and `OnTick`;
-- **Create handler**, which inserts an ordinary visible `when ...:` block into Patch source;
-- **Open handler**, which moves the source editor directly to an existing handler;
-- default-handler double-click for safe core controls such as Button, Input, Checkbox, Radio, ComboBox, ListBox and Slider.
+### Layout and Designer operations
 
-Generated handlers are compiled before the edit is accepted. The Events view does not store a hidden callback table or parallel project model.
+Current source-backed Form Designer operations include:
 
-### Anchors and Docking
+- pointer/keyboard move and resize;
+- multi-select alignment and center operations;
+- same width/height;
+- equal horizontal/vertical distribution;
+- Center H / Center V;
+- Default size and collision-aware Auto place;
+- Bring to front / Send to back;
+- 8 px grid support;
+- source-backed Anchors and Docking;
+- Focus Order Stage 1 based on source order.
 
-The Object Inspector exposes the existing responsive Window layout contract as Delphi-style **Layout** properties instead of requiring source comments to be typed manually.
+Timer and ImageList are nonvisual and therefore never receive Form geometry, Anchors or Dock. StatusBar owns its bottom-docked contract.
 
-For ordinary visual top-level controls, including Panel, the Layout section provides:
+### Nonvisual tray
 
-- **Mode**: Fixed, Anchors or Dock;
-- independent Left, Right, Top and Bottom anchor edges;
-- Dock Top, Bottom, Left, Right and Fill;
-- quick presets for Top Left, Stretch Width, Stretch Both and Fill;
-- the canonical source directive currently represented by the UI.
+Patch Studio has a Delphi/VB-style nonvisual component tray. Timer and ImageList are projections of ordinary Form source and share the central Designer selection model.
 
-Every change still writes the existing adjacent source directive, for example:
+Timer exposes interval editing and `OnTick`. ImageList exposes logical image size plus ordered named resource references.
+
+### Panel Stage 1
+
+Panel is a source-backed top-level container with a structural child editor for the currently supported flow-layout child controls. Stage 1 deliberately does not claim independent nested coordinates/native child containment. Panel Stage 2 remains a later contract.
+
+### Picture and Resource Manager
+
+Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources. Current native PNG/JPEG resource decoding is covered by platform smoke tests.
+
+Richer display properties such as portable scale mode, aspect/center behavior, opacity and accessible description remain explicit follow-up work and are not presented as finished cross-target parity.
+
+### Shape Stage 1
+
+Shape supports deterministic rectangle/rounded/ellipse/line source declarations with fill, stroke, stroke width, radius and opacity. Studio authoring and Standalone Web rendering are implemented. Current native targets remain explicitly unsupported until Win32/AppKit/GTK lowering/rendering is versioned and tested.
+
+### PaintBox Stage 1
+
+PaintBox is a source-backed drawing surface with a pure `paint` event and deterministic drawing commands. Stage 1 permits drawing logic without creating a hidden persistent mutation path; persistent `change` operations are rejected from the paint handler.
+
+Studio authoring and Standalone Web rendering are implemented. Native drawing parity remains explicitly fail-closed until a shared versioned drawing-command contract is consumed by the desktop backends.
+
+### ImageList Stage 1
+
+ImageList is the first richer reusable nonvisual graphics component:
 
 ```patch
-# @layout anchor left right top
-input search at 24, 24 size 220, 36
-
-# @layout dock fill
-panel as workspace at 0, 0 size 640, 420:
-  text "Workspace"
+imagelist as toolbar_images size 16, 16:
+  image open from "patch-resource:icons.open"
+  image save from "patch-resource:icons.save"
 ```
 
-The compact Resize selector in the Designer toolbar remains as a multi-selection shortcut and uses the same policy functions. Object Inspector and toolbar therefore cannot diverge into separate layout models.
+It provides named ordered project-resource references and a logical size. The Object Inspector can add/replace/reorder/rename/remove entries through the existing Resource Manager. It consumes no Form geometry and exposes no event in Stage 1.
 
-Timer is excluded because it is nonvisual. StatusBar reports its component-owned `dock bottom` contract read-only. The existing responsive Web, Win32, AppKit and GTK paths consume the same policy manifest; this is an authoring improvement rather than a new Native GUI IR version.
+ImageList is intentionally authoring-only until a real consumer such as ToolBar/ToolButton, TreeView or Button image binding exists. Standalone Web and native Window builds fail closed instead of silently dropping it.
 
-### Searchable Component Palette
+## Website, PWA and CI
 
-The existing categorized component catalog now has a search field. Search matches component label, source type and category, shows a result count, and keeps source-backed control creation as the mutation boundary.
+The public Studio uses the beta.36 product contract and a content-addressed browser module graph. Service Worker routing is type-safe: missing JavaScript/CSS/runtime assets never receive `index.html` as a substitute. Real Chrome startup/responsiveness checks exercise Studio before a public deployment is considered healthy.
 
-`Ctrl/Cmd+Shift+A` focuses the component search. When the search has exactly one result, Enter adds that control directly.
+The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox and ImageList authoring.
 
-The catalog includes **Panel** under **Containers**, **StatusBar** under **Chrome**, and **Timer** in a dedicated **Nonvisual** category. Each authoring path creates or rewrites ordinary Patch source. PictureBox remains withheld from the public authoring palette until its portable image-loading contract is complete across the current desktop runtimes.
+## Offline compiler v0.2
 
-### Nonvisual component tray and Timer
+Windows x64, Linux x64, macOS Apple Silicon and macOS Intel kits use runtime v1.5 and assert payload v14. FreeBSD remains Console-only through portable C99.
 
-Patch Studio now has a Delphi/VB-style **Nonvisual** component tray beneath the Form canvas. Timer components live in this tray rather than pretending to be visible widgets on the Form.
+Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional cloud/AOT workflows remain separate from the default download/link experience.
 
-Timer authoring is source-backed end to end:
+## Formal and review boundary
 
-- adding a Timer creates a unique Timer id with a default interval of `1000` ms;
-- the Object Inspector exposes **Interval (ms)** with a supported range from `1` to `3600000`;
-- the Events view exposes **OnTick**, backed by an ordinary `when ... ticked:` source block;
-- renaming a Timer updates its `ticked` handler header;
-- deleting a Timer removes its matching handler;
-- Timer does not consume visual auto-layout space or shift later visible controls.
+beta.36 product work does not widen the beta.32 formal runtime-correspondence claim. Patch does not claim full compiler/runtime verification.
 
-The tray is a projection of Patch source and the shared Designer selection model. It is not a second component store.
-
-### Panel Stage 1 authoring
-
-Panel Stage 1 now has a complete source-backed Studio authoring path for the semantics already accepted by the parser and Native GUI 1.4 facade.
-
-A Panel is a normal top-level Designer control: it can be selected, named, moved, resized, duplicated and deleted through the same source-backed control pipeline as other Form controls. New Panels start with a small visible flow-layout group and can be added from **Containers → Panel** in the Component Palette.
-
-The Object Inspector adds a **Panel children** structural editor for the selected Panel. It supports:
-
-- Text;
-- Button;
-- Input;
-- Checkbox;
-- Radio group;
-- ComboBox;
-- ListBox;
-- Slider.
-
-Children can be added, edited, reordered, duplicated, removed and revealed in source. Named child duplication allocates fresh ids and duplicates matching source-visible handlers. Renaming a child rewrites its matching `when ... clicked:` or `when ... changed:` header. Deleting a child, deleting the whole Panel or duplicating the Panel performs matching handler cleanup/remapping so the visual operation cannot leave stale callbacks behind.
-
-Panel Stage 1 intentionally keeps child layout as source order / flow layout. It does not invent independent child coordinates, anchors or native containment metadata that the current language/runtime contract does not yet guarantee. That stronger Delphi-style container contract remains a later additive stage.
-
-### Focus Order Stage 1
-
-Patch Studio now includes a **Focus Order · Stage 1** dialog for the active Form. It lists named focusable controls in current visible source order and can move an item earlier or later by rewriting the existing source block.
-
-This stage is intentionally not presented as independent Delphi `TabOrder` parity. Current Patch desktop/web control creation order follows source order, and the existing block-reorder operation can also affect z-order. A future independent TabOrder contract therefore needs explicit source/runtime metadata rather than a hidden IDE-only integer.
-
-## Website and cache refresh
-
-The generated public site is normalized to the current beta.36 product contract. The Studio P uses a square 32 by 32 geometric SVG coordinate grid with horizontal and vertical edges, avoiding fractional resampling artifacts.
-
-The service worker release id is also beta.36 so older cached Studio shells are replaced. Object Inspector, Anchors/Docking, Focus Order, Menu Designer, Panel authoring, StatusBar and Timer authoring are part of the content-addressed public module graph and offline cache.
-
-## Review boundary
-
-Beta.36 does not claim that every Chrome Stage 1 control is complete. In particular, the native PictureBox source field is transported through IR/payload v14 but the v1.5 desktop runtimes do not yet load that source into an actual image on all platforms. Panel now has a Studio authoring path, but its current runtime meaning remains flow-layout visual grouping rather than complete Delphi-style native child-container semantics with independent nested geometry. AppKit StatusBar representation is also not identical to the Win32/GTK status-specific widget path. See `docs/GROK_REVIEW_2026-08-25.md`.
+Likewise, target capability metadata is intentionally truthful: Shape/PaintBox native runtime support and ImageList consumers are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.
