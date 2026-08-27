@@ -19,7 +19,7 @@ import { buildStandaloneWebApp } from '../src/webapp.js';
 test('shared Form defaults cover every source-backed Studio control', () => {
   assert.deepEqual(Object.keys(PATCH_FORM_CONTROL_DEFAULTS), [
     'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs',
-    'panel', 'timer', 'picture', 'shape', 'statusbar'
+    'panel', 'timer', 'picture', 'shape', 'paintbox', 'statusbar'
   ]);
   assert.deepEqual(formControlDefaultLayout('radio', 2), { x: 24, y: 120, width: 220, height: 84 });
   assert.deepEqual(formControlDefaultLayout('table', 1), { x: 24, y: 72, width: 400, height: 180 });
@@ -28,6 +28,7 @@ test('shared Form defaults cover every source-backed Studio control', () => {
   assert.deepEqual(formControlDefaultLayout('panel', 1), { x: 24, y: 72, width: 280, height: 160 });
   assert.deepEqual(formControlDefaultLayout('timer', 1), { x: 24, y: 72, width: 160, height: 36 });
   assert.deepEqual(formControlDefaultLayout('shape', 1), { x: 24, y: 72, width: 180, height: 120 });
+  assert.deepEqual(formControlDefaultLayout('paintbox', 1), { x: 24, y: 72, width: 320, height: 200 });
   assert.deepEqual(formControlDefaultLayout('statusbar', 1), { x: 24, y: 72, width: 400, height: 28 });
 });
 
