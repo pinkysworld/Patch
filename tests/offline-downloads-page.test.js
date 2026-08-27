@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 
 const downloads = fs.readFileSync('web/downloads.html', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/offline-compiler.yml', 'utf8');
-const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/paper.html', 'web/help.html'];
+const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/help.html'];
 const assets = [
   'patch-windows-x64.exe',
   'patch-macos-arm64',
@@ -52,8 +52,9 @@ test('downloads page distinguishes current v1.5, Intel macOS kit, FreeBSD and hi
   assert.match(downloads, /portable image-source rendering/i);
 });
 
-test('generated public site contains downloads and current plus frozen native compiler assets', () => {
+test('generated public site contains downloads and current plus frozen native compiler assets but no paper page', () => {
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
+  assert.equal(fs.existsSync('_site/paper.html'), false, 'paper.html must remain outside the public site');
   for (const file of [
     '_site/downloads.html',
     '_site/designer-alignment.js',
