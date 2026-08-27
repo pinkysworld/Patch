@@ -18,7 +18,7 @@ const rejectAll = (label, text, markers) => {
 if (pkg.version !== '0.2.0-beta.36') throw new Error(`Unexpected Patch site package version: ${pkg.version}`);
 
 const requiredFiles = [
-  '_site/index.html','_site/language.html','_site/docs.html','_site/paper.html','_site/downloads.html','_site/help.html',
+  '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-structural-keyboard.js',
@@ -28,10 +28,12 @@ const requiredFiles = [
   '_site/src/native-gui-ir-v14.js','_site/src/sealed-native-gui-v14.js','_site/src/native-chrome-backend-adapter.js'
 ];
 for (const rel of requiredFiles) requireFile(rel);
+if (fs.existsSync(path.join(root, '_site/paper.html'))) throw new Error('Patch Studio public site must not publish _site/paper.html.');
 
-for (const page of ['index.html','language.html','docs.html','paper.html','downloads.html','help.html']) {
+for (const page of ['index.html','language.html','docs.html','downloads.html','help.html']) {
   const html = read(`_site/${page}`);
-  requireAll(`${page} navigation`, html, ['./index.html','./language.html','./docs.html','./paper.html','./downloads.html','./help.html','class="site-tabs"']);
+  requireAll(`${page} navigation`, html, ['./index.html','./language.html','./docs.html','./downloads.html','./help.html','class="site-tabs"']);
+  rejectAll(`${page} private paper boundary`, html, ['./paper.html']);
   requireAll(`${page} version`, html, [`data-patch-version="${pkg.version}"`]);
 }
 
@@ -43,7 +45,7 @@ requireAll('Studio beta36 shell', index, [
   'viewBox="0 0 32 32"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'
 ]);
 rejectAll('Studio beta36 current shell', index, [
-  'Ready IR 1.3 / v1.4','current runtime v1.4 templates','shape-rendering="crispEdges"','M3 2H18V12H8V20H3ZM8 6H13V8H8Z'
+  'Ready IR 1.3 / v1.4','current runtime v1.4 templates','shape-rendering="crispEdges"','M3 2H18V12H8V20H3ZM8 6H13V8H8Z','./paper.html'
 ]);
 
 const current = read('_site/src/native-current-contract.js');
@@ -71,7 +73,7 @@ requireAll('Downloads beta36', downloads, [
   'Native GUI IR 1.3 / payload v13 / runtime v1.4 remains the Slider-capable compatibility line',
   'PictureBox note:'
 ]);
-rejectAll('Downloads beta36 current links', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"']);
+rejectAll('Downloads beta36 current links', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html']);
 
 const selection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection state', selection, [
@@ -119,8 +121,12 @@ requireAll('beta36 service worker', sw, [
   'self.skipWaiting()','self.clients.claim()','./designer-event-inspector.js','./designer-focus-order.js',
   './designer-selection.js','./designer-core-selection.js','./designer-structural-keyboard.js'
 ]);
+rejectAll('beta36 service worker paper privacy', sw, ['./paper.html']);
+
+const palette = read('_site/studio-command-palette.js');
+rejectAll('Studio command palette paper privacy', palette, ["command('paper'",'./paper.html','Open Paper']);
 
 const bootstrap = read('_site/studio-bootstrap.js');
 requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed for beta.36 / Native GUI IR 1.4 / payload v14 / runtime v1.5 / RAD Object Inspector, Component Palette and Focus Order Stage 1.');
+console.log('Patch public site validation passed for beta.36 / Native GUI IR 1.4 / payload v14 / runtime v1.5 / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
