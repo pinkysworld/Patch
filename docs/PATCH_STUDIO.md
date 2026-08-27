@@ -1,297 +1,364 @@
 # Patch Studio
 
-Patch Studio is the browser-first IDE for Patch. The product goal remains QuickBASIC/Visual-Basic/Delphi-style immediacy while keeping one readable source-backed Patch application model across browser and desktop targets.
+Patch Studio is the browser-first RAD IDE for Patch. Its product goal is QuickBASIC / Visual Basic / Delphi-style immediacy while keeping one readable source-backed application model across browser and desktop targets.
 
-## Current status: 0.2 beta.35+
+## Current status
 
-Patch Studio provides:
+Patch Studio currently tracks:
 
-- source editing, local autosave and privacy-redacted local diagnostics;
-- canonical **multi-file project bundle v3** plus Project Tree/Outline and deterministic Run/Build composition;
-- Console and Window Run;
-- a source-backed visual Designer with named Forms;
-- Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, **Slider Stage 1**, Table, TreeView and Tabs authoring;
-- Form/control drag, resize, keyboard movement and source-backed layout actions;
-- structural Table, TreeView and Tabs Properties editors;
-- top-level/nested duplicate, reorder and source-reveal workflows;
-- Change Contract and Change IR views;
-- keyboard-first **Command Palette** with `Ctrl/Cmd+K`;
-- portable `.patchapp`, Web, direct/bootstrap Wasm and portable C99 builds;
-- token-free Ready Windows/macOS/Linux Console and Window builds;
-- downloadable offline compiler/linker;
-- FreeBSD Console through portable C99.
+- Patch package **0.2.0-beta.36**;
+- Change IR **0.10**;
+- Studio project bundle **v4**;
+- Component Registry **0.8**;
+- Native GUI IR **1.4**;
+- sealed payload **v14**;
+- Ready/offline desktop runtime **v1.5** on Windows, macOS and Linux;
+- formal runtime-correspondence milestone **beta.32**.
 
-The default Windows/macOS/Linux desktop workflow is **Ready app download (no token)**. No personal GitHub token, Node.js, Rust/Cargo or local compiler is required for those Ready builds. Optional cloud/AOT remains a separate advanced route.
+Product/native/RAD work after beta.32 does not widen that formal claim.
 
-Patch package **0.2.0-beta.35** keeps Change IR **0.10**. Current native desktop consumers use Native GUI IR **1.3**, sealed payload **v13** and token-free Ready/offline runtime **v1.4** through `src/native-current-contract.js`. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line through `src/native-frozen-contract.js` and intentionally stays Slider fail-closed. See `docs/NATIVE_COMPATIBILITY.md`. The beta.32 invocation-frame result remains the current formal runtime-correspondence milestone; later product work does not widen it.
+## Product model
 
-## Active UX and reliability milestone
+Patch Studio keeps ordinary `.patch` source authoritative for Forms, controls, handlers, layout directives and structural control content. Project-level binary/image assets live in the explicit versioned **project-v4 resource store**.
 
-The previous beta.35+ feature milestone completed the planned multi-file, source-backed Designer, Table/TreeView/Tabs, ListBox and Slider work. The repository now has an active UX/reliability milestone rather than claiming that all product work is permanently closed.
+There is no hidden `.dfm`, `.frm` or private persistent component graph.
 
-Current completed work includes:
+Transient IDE state such as selection, panel widths, workspace split, search text and tabs does not become Patch application state. Persistent application state changes only through explicit semantic `change` operations in source.
 
-- real Chrome startup/responsiveness verification locally and against the deployed public site;
-- protection against self-triggering Designer `MutationObserver` reconciliation loops;
-- a single service-worker owner in the early Studio bootstrap;
-- type-safe offline fallback that never substitutes HTML for a missing JavaScript/CSS/runtime asset;
-- site-wide responsive visual polish;
-- a keyboard-first Command Palette that delegates to existing Studio actions and project-file/symbol quick-open, including Thing fields as `player.score` and recipe parameters as `reward.bonus`.
+## Project bundle v4
 
-Completed UX/reliability work now includes Command Palette v2 project-file/symbol quick-open, Workspace Layout v2, Studio startup diagnostics v2, workspace-first chrome (collapsed contracts/quick-start plus a live editor caret), denser IDE chrome (status bar save state and Ready chip), editor file tabs with live parse status, Designer arrange/grid, and the Harbor Desk example. Remaining repository-controlled work is tracked in `docs/ROADMAP.md`. Credentialed signing, manual assistive-technology validation and research measurements remain separate external/evidence gates.
+The canonical browser project is `patch-studio-project` version **4**.
 
-## Command Palette
+It contains:
 
-Press **Ctrl/Cmd+K** or choose **Commands** in Studio. The palette currently delegates to the existing Run, Build, source editor, Designer, App, Output, Change Contract, Change IR, Recovery, Documentation, Paper, Downloads and Help actions. The same search also lists project files and Project Tree symbols, including Thing fields as `player.score` and recipe parameters as `reward.bonus`.
+- project name and Console/Window kind;
+- entry file;
+- build target/native build mode;
+- bounded `.patch` source files;
+- bounded project resources.
 
-Search text, selection and dialog visibility are transient IDE interaction state. The palette does not write Patch source, project persistence, Change History, `localStorage`, `sessionStorage` or IndexedDB and therefore does not create a second project or mutation model.
+Versions 1, 2 and 3 migrate explicitly to v4. Unknown future versions fail closed.
 
-See `docs/STUDIO_COMMAND_PALETTE.md`.
+Before Run/Build, Studio synchronizes the active editor file into the canonical project and deterministically composes all `.patch` files. Composition metadata maps diagnostics back to the owning `file:line`.
 
-## Canonical multi-file project state
+Resources are supplied separately to build/runtime consumers and are never concatenated into source.
 
-The canonical browser project is `patch-studio-project` bundle **version 3**. It carries bounded multi-file Patch sources, deterministic composition/provenance, project name, Console/Window kind, selected build target and native build mode. Older versions migrate explicitly; unknown future versions fail closed.
+See `docs/STUDIO_PROJECTS.md`.
 
-Typing, sample switching and source-backed Designer mutations feed the same project/source signals. Source, recovery, Designer, Change Contract, Project Tree and native-build UI therefore observe one canonical project state rather than parallel editor models.
+## Resource Manager
 
-Recovery snapshots preserve the complete project, not only the active editor buffer.
+The Resource Manager is the project-level graphics asset tool for the current RAD milestone.
+
+Current image-resource support:
+
+- PNG;
+- JPEG;
+- WebP;
+- SVG.
+
+Each resource has:
+
+- stable logical id;
+- normalized project-relative path;
+- media type;
+- byte size;
+- SHA-256 digest;
+- canonical base64 project bytes.
+
+Per-resource, total-byte and resource-count limits are validated. Duplicate ids/paths and malformed resource metadata fail closed.
+
+Source-backed controls use logical locators such as:
+
+```patch
+picture as logo from "patch-resource:app.logo"
+
+imagelist as toolbar_images size 16, 16:
+  image open from "patch-resource:icons.open"
+```
+
+The locator stays readable in `.patch` source while bytes remain in the explicit v4 project resource store.
 
 ## Source-backed Designer
 
-Form dimensions, control geometry, Slider range/step, Table rows, TreeView hierarchy, Tabs pages and Menu structure remain in `.patch` source. There is no hidden `.dfm`, `.frm` or second persistent visual-designer document.
+The Designer supports named Forms and a searchable, categorized Component Palette.
 
-### Forms
+Current palette groups:
 
-The current source-backed Form lifecycle supports:
+### Basic
 
-- Add Form;
-- active Form selection and canvas activation;
-- Name, Title, Width and Height Properties;
-- pointer resize;
-- **Fit controls** source rewrite;
-- **Default 640×420** source rewrite;
-- full Form duplication with fresh Form/control ids and copied handlers;
-- confirmed deletion with orphan-handler cleanup;
-- last-Form protection.
+- Text
+- Button
+- Input
+- Checkbox
 
-The active Form is highlighted in the canvas; clicking or keyboard-activating a Form title switches to it. Previous/next controls plus Alt+PageUp / Alt+PageDown navigate named Forms. That active-Form state is transient IDE state only.
+### Choices
 
-**Fit controls** computes the bounding box of the active Form's source-backed controls plus padding and rewrites the ordinary `window ... size W, H` source. **Default 640×420** restores the ordinary source-backed default dimensions. Neither action creates hidden layout state.
+- Radio group
+- ComboBox
+- ListBox
+- Slider
 
-### Control discovery and Properties
+### Data
 
-The desktop Designer exposes a compact control rail and a categorized **Add control** picker. The picker groups controls into Basic, Choices, Data and Containers and is the narrow/mobile discovery surface as well. `Ctrl/Cmd+Shift+A` focuses it.
+- Table
+- TreeView
 
-All top-level controls share one authoritative primary-selection and common Properties action boundary. The Properties pane is wider by default, resizable, collapsible and responsive. Its width preference is local IDE state rather than Patch application state.
+### Containers
 
-A selected control can be moved/resized visually. Pointer and keyboard changes rewrite visible source. Common source-backed actions include Center H, Center V, Default size and collision-aware Auto place.
+- Tabs
+- Panel
 
-Table, TreeView and Tabs additionally expose source-backed structural editors inside Properties. These editors rewrite only the selected source block and validate the resulting Patch source before accepting the edit. They do not introduce a second hidden data model.
+### Graphics
 
-The structural Properties surface adds a common **Structure** summary with the current Table/TreeView/Tabs size, quick source-backed actions, filters for TreeView nodes, Tabs pages and controls inside the selected page, visible match counts, and explicit no-match states. Empty Tables show **No rows yet** plus an add-row action. These are IDE-only affordances: quick actions call the existing source-backed editor buttons and filters only hide/show editor rows, so there is no second structural mutation path or persistent filter state in the Patch application.
+- Picture
+- Shape
+- PaintBox
 
-`web/designer-selection.js` owns the adapter-aware selection record, while `web/designer-core-selection.js` resolves common Properties actions for core controls, Tabs, Table and TreeView. The historical private control-selection mirror and old Table/TreeView Inspector fallbacks are not separate mutation paths.
+### Chrome
 
-Designer multi-select remains an explicit transient secondary set over the shared primary selection. This IDE interaction state never becomes Patch application state or Change History.
+- StatusBar
 
-## Slider Stage 1
+### Nonvisual
 
-Slider Stage 1 is the current numeric range/data-input control beyond Table/ListBox/TreeView:
+- Timer
+- ImageList
+
+`Ctrl/Cmd+Shift+A` focuses Component Palette search.
+
+## Canonical component registry
+
+The Component Palette consumes the same canonical registry metadata used for component discovery and capability reporting. Registry descriptors include:
+
+- type and label;
+- category;
+- visual/nonvisual status;
+- default size;
+- property schema;
+- event schema;
+- design renderer;
+- target support metadata.
+
+The registry is metadata, not another persistent UI model.
+
+## Object Inspector
+
+The source-backed properties pane is an Object Inspector with **Properties** and **Events** views.
+
+Current behavior includes:
+
+- object selection;
+- common identity/text/layout properties;
+- component-specific property editors;
+- event discovery from component metadata/adapter contracts;
+- Create handler;
+- Open handler;
+- default event navigation for supported controls.
+
+Handlers are ordinary visible `when ...:` blocks in source.
+
+Current event examples include:
+
+- Button/Picture `OnClick`;
+- Input/Checkbox/Radio/ComboBox/ListBox/Slider/Table/TreeView `OnChange`;
+- Timer `OnTick`;
+- PaintBox `OnPaint`.
+
+ImageList exposes no event in Stage 1.
+
+## Layout and Form Designer operations
+
+Current source-backed operations include:
+
+- add/select/duplicate/delete Form;
+- pointer and keyboard move/resize;
+- default size / Fit controls;
+- Center H / Center V;
+- align left/right/top/bottom;
+- align horizontal/vertical centers;
+- same width/height;
+- equal horizontal/vertical distribution;
+- collision-aware Auto place;
+- Bring to front / Send to back;
+- 8 px grid support;
+- source-backed Anchors;
+- source-backed Dock;
+- Focus Order Stage 1.
+
+Timer and ImageList are nonvisual and therefore never expose Form X/Y/Width/Height, Anchors or Dock. StatusBar owns a read-only bottom dock contract.
+
+Independent Delphi-style `TabOrder` remains a later source/runtime contract; current Focus Order Stage 1 follows source order.
+
+## Nonvisual component tray
+
+Patch Studio includes a nonvisual tray beneath the Form canvas.
+
+### Timer
+
+Timer authoring is source-backed end to end:
 
 ```patch
-create number volume = 50
-window "Mixer" as main size 560, 300:
-  text "Volume: {volume}"
-  slider 0..100 as volume step 5 at 24, 80 size 300, 44
-when volume changed:
-  change volume:
-    set = value
+timer as refresh_clock interval 1000
+
+when refresh_clock ticked:
+  show "tick"
 ```
 
-Studio provides:
+The Object Inspector edits interval. Renaming/deleting Timer keeps its source-visible handler lifecycle consistent.
 
-- **+ Slider** source-backed insertion;
-- default `0..100 step 1` generation;
-- id/min/max/step Properties;
-- normal source-backed X/Y/width/height geometry;
-- App Preview range rendering and live transient display;
-- bounded finite numeric `changed` dispatch;
-- insertion inside source-backed Tabs pages;
-- a Slider sample application.
+### ImageList
 
-Slider interaction itself never persists application state. The event-local `value` is a finite number inside the declared range; state changes only when source executes ordinary semantic `change`.
-
-Standalone Window Web supports the same contract. Native parity is current through Native GUI IR **1.3**, direct backend **1.4**, payload **v13** and runtime **v1.4**. Windows uses `TRACKBAR`, macOS uses `NSSlider`, and Linux uses GTK3 `GtkScale`. The same line is consumed by direct AOT, token-free Ready and offline `patch link` paths.
-
-The previous Native GUI IR 1.2 / payload v12 / runtime v1.3 contract remains frozen and rejects Slider explicitly. It is compatibility evidence, not the current product consumer.
-
-See `docs/SLIDER_STAGE1.md`.
-
-## ListBox multi-selection
-
-The state type behind a ListBox id determines its interaction contract:
+ImageList is a nonvisual ordered collection of named project-resource references:
 
 ```patch
-create list fruits = ["Banana", "Mango"]
-window "Fruit Picker":
-  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
-when fruits changed:
-  change fruits:
-    set = value
+imagelist as app_images size 16, 16:
+  image open from "patch-resource:icons.open"
+  image save from "patch-resource:icons.save"
 ```
 
-Text-backed ListBox remains single-select. List-backed ListBox is multi-select in Studio App Preview, Standalone Window Web, direct Win32/AppKit/GTK AOT and current token-free Ready/offline Windows/macOS/Linux paths.
+The Object Inspector can:
 
-Native GUI IR 1.1 introduced persistent text-list state and the list-backed ListBox event ABI. Current Native GUI IR **1.3** / payload **v13** / runtime **v1.4** preserves it unchanged while composing Table, Menu, TreeView and Slider. The older v12/v1.3 line remains frozen compatibility.
+- edit logical width/height;
+- add images from Resource Manager;
+- replace resources;
+- rename image keys;
+- reorder items;
+- remove items;
+- open Resource Manager.
 
-## Table / Grid
+ImageList Stage 1 is **authoring-only** until a real runtime consumer such as ToolBar/ToolButton, TreeView or Button image binding exists. Standalone Web/native Window targets fail closed rather than silently dropping it.
 
-Table is source-backed and runtime selection remains transient:
+## Picture
+
+Picture is a first-class Graphics component with source-backed id/source/layout and project-resource selection.
+
+Browser preview and Standalone Web can resolve project resources. Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf.
+
+WebP/SVG are not silently treated as current native-supported formats.
+
+Still open for full Delphi-style parity:
+
+- scale/fit mode;
+- portable aspect behavior;
+- center behavior;
+- opacity;
+- accessible description;
+- complete cross-target property parity.
+
+## Shape
+
+Shape Stage 1 supports deterministic source-visible geometry/style:
 
 ```patch
-window "People" as main size 520, 320:
-  table "Name", "Role" as people at 24, 64 size 440, 180:
-    row "Ada", "Engineer"
-    row "Grace", "Scientist"
-when people changed:
-  show value
+shape rounded as card fill #dbeafe stroke #2563eb stroke-width 3 radius 18 opacity 0.75 at 24, 32 size 220, 140
 ```
 
-Top-level and nested Table Properties support editable columns/cells, add/remove, reorder and duplicate row/column operations. Column movement always keeps the header and corresponding cells aligned. Invalid row widths fail closed instead of silently truncating/padding data.
+Supported kinds are rectangle, rounded, ellipse and line.
 
-Current payload v13/runtime v1.4 preserves the existing Table structure, responsive layout and transient selected-row semantics. Payload v9/runtime v1.0 remains the frozen Table-origin compatibility line.
+Studio authoring and Standalone Web rendering are implemented. Windows/macOS/Linux native Shape runtime parity remains explicitly unsupported/fail-closed until versioned lowering/rendering exists.
 
-## TreeView
+## PaintBox
 
-TreeView hierarchy is ordinary Patch source:
+PaintBox is the custom-drawing surface:
 
 ```patch
-create list selected = []
-window "Files" as main size 560, 380:
-  tree as files at 24, 56 size 300, 240:
-    node "src"
-      node "compiler.js"
-      node "parser.js"
-    node "docs"
-      node "README.md"
-when files changed:
-  change selected:
-    set = value
+paintbox as canvas at 24, 24 size 320, 200
+
+when canvas paint:
+  draw clear #ffffff
+  draw rectangle 10, 12 size 100, 50 fill #ff0000 stroke #000000 width 2
+  draw line 0, 0 to 100, 100 stroke #000000 width 1
 ```
 
-Top-level and nested TreeView Properties support add root/child, rename, move, indent/outdent, delete and deep-copy subtree duplication. The editor refuses to leave an invalid empty TreeView.
+The `paint` handler is intentionally pure UI drawing. Persistent `change` operations are rejected inside it, preventing PaintBox from creating another hidden mutation path.
 
-Selecting `compiler.js` exposes `['src', 'compiler.js']` as transient event-local `value`. Persistence occurs only because source explicitly executes `change selected`.
+Studio authoring and Standalone Web rendering are implemented. Native drawing parity remains fail-closed until a shared versioned drawing-command contract is consumed by Win32/AppKit/GTK.
 
-Current direct native and token-free Ready/offline consumers use Native GUI IR **1.3**, sealed payload **v13** and runtime **v1.4** on Windows, macOS and Linux. The original TreeView ABI remains frozen in Native GUI IR **1.2** / payload **v12** / runtime **v1.3** and is preserved by the additive v1.4 line.
+## Panel
 
-## Tabs and nested controls
+Panel Stage 1 is a source-backed top-level visual group with a structural child editor. Supported child operations reuse ordinary Patch source.
 
-Tabs page structure and nested controls are source-backed. Studio supports page add/rename/reorder/delete/duplicate and nested insertion/removal/reorder/duplicate for:
+Stage 1 child layout remains source-order/flow based. Independent child coordinates, nested Panels, clipping and native parent/child containment belong to Panel Stage 2.
 
-- Text;
-- Button;
-- Input;
-- Checkbox;
-- Radio;
-- ComboBox;
-- ListBox;
-- **Slider**;
-- Table;
-- TreeView.
+## Table, TreeView and Tabs
 
-Nested Table and TreeView use dedicated structural Properties editors. Multi-line blocks move/copy atomically. Named duplicates receive globally unique ids and matching handlers are copied to the remapped id.
+Table, TreeView and Tabs structural editors rewrite their selected source block directly and validate the resulting source before accepting changes.
 
-Tabs-inside-Tabs remains intentionally outside the current stage and fails closed.
+Current workflows cover common add/edit/reorder/duplicate/remove operations. Nested Tabs content remains intentionally bounded by the current source/runtime contract.
 
-See `docs/TABS.md`.
+## Command Palette and navigation
 
-## Keyboard and accessibility refinement
+`Ctrl/Cmd+K` opens the Command Palette.
 
-The automated structural/nested editor baseline includes:
+It delegates to existing Studio actions rather than persisting a duplicate command/project model. Search includes:
 
-- roving TreeView/Tabs selection with ArrowUp/ArrowDown/Home/End;
-- `Ctrl/Cmd+Arrow` structural move/indent/outdent shortcuts;
-- `Ctrl/Cmd+Enter` commit/focus actions;
-- Escape to close nested structure editors and restore focus;
-- `aria-keyshortcuts` projection;
-- explicit `:focus-visible` treatment;
-- focus restoration after supported source-backed rewrites.
+- Run/Build/navigation commands;
+- project files;
+- Forms/events/state/recipes;
+- Thing fields such as `player.score`;
+- recipe parameters such as `reward.bonus`.
 
-The Command Palette adds `Ctrl/Cmd+K`, searchable commands and Arrow/Enter/Escape operation without changing application state.
+Project Tree/Outline and editor tabs operate on the same canonical v4 project.
 
-This is an automated accessibility baseline, **not** a WCAG conformance statement. Manual Narrator, VoiceOver, Orca and comparable assistive-technology testing remains an external validation gate.
+## Run and Build
 
-See `docs/STUDIO_KEYBOARD_ACCESSIBILITY.md` and `docs/STUDIO_COMMAND_PALETTE.md`.
+Studio can Run Console and Window projects and exposes build targets for:
 
-## Transient GUI event values
+- Standalone Web App;
+- Windows App;
+- macOS App;
+- Linux App;
+- FreeBSD Console;
+- portable `.patchapp`;
+- direct/bootstrap WebAssembly where applicable.
 
-Current event values are:
+The default Windows/macOS/Linux workflow is **Ready app download / offline link with no user GitHub token**. Optional cloud/AOT is a separate advanced route.
 
-- Input, ComboBox, Radio and text-backed ListBox: text;
-- Checkbox: Boolean;
-- Slider: bounded finite number;
-- list-backed ListBox: text-list of selected display strings;
-- Table: text-list for the selected row;
-- TreeView: text-list for the selected root-to-node display path.
+## Native desktop contract
 
-Persistent application state changes only through explicit Patch `change`. Tabs page selection and Designer/editor selection remain renderer/IDE state.
+The current Ready/offline Window product contract is:
 
-## Native desktop path
+- Native GUI IR **1.4**;
+- sealed payload **v14**;
+- runtime **v1.5**.
 
-Current mappings include Win32, AppKit and GTK3 controls for the Slider-capable Native GUI IR 1.3 surface. Unsupported behavior on an explicitly selected older native contract fails closed. There is no implicit Electron fallback; the separately labelled compatibility package is the only Electron-based GUI path.
+The previous Slider compatibility line is Native GUI IR 1.3 / payload v13 / runtime v1.4. The frozen TreeView compatibility line is Native GUI IR 1.2 / payload v12 / runtime v1.3.
 
-Current release tags are:
-
-- `native-win32-runtime-v1.4`;
-- `native-macos-runtime-v1.4`;
-- `native-linux-runtime-v1.4`.
-
-Frozen compatibility lines remain explicit: Native GUI IR 1.2 / payload v12 / runtime v1.3 for TreeView, v11/runtime v1.2 for Menu+list, v10/runtime v1.1 for list state, v9/runtime v1.0 for Table and earlier responsive/base contracts below them.
-
-## Runtime integrity
-
-The token-free Ready path is protected by the release/deployment integrity chain:
-
-1. Pages requires the current v1.4 runtime releases.
-2. It downloads the exact browser-consumed assets.
-3. GitHub Release SHA-256 digests are read.
-4. `scripts/runtime-integrity-manifest.js` independently re-hashes the assets.
-5. Pages publishes `runtimes/runtime-manifest.json`.
-6. `web/runtime-integrity.js` hashes the selected runtime again with Web Crypto before packaging.
-
-A missing entry or mismatch stops packaging. This proves byte identity inside the release/deployment path; it is not Authenticode or Developer ID/notarization evidence.
+Product paths import the stable `native-current-contract.js` / `native-frozen-contract.js` facades. Unsupported selected-contract behavior fails closed.
 
 ## Offline compiler
 
-The downloadable compiler is the command-line counterpart to Ready builds. Windows/macOS/Linux `patch link` defaults to Native GUI IR **1.3**, payload **v13** and runtime **v1.4**, preserving responsive layout, Table, multi-select ListBox, Menu and TreeView semantics while adding native Slider numeric events.
+The downloadable `offline-compiler-v0.2` supports current Windows x64, Linux x64, macOS Apple Silicon and macOS Intel kits. Current Window linking uses payload v14/runtime v1.5. FreeBSD remains Console-only via portable C99.
 
-The offline-compiler CI independently links and executes canonical current Window apps, including Slider, on Windows, Linux, Apple Silicon macOS and Intel macOS. Explicit compatibility targets remain fail-closed when a source needs a newer capability. FreeBSD remains Console-only via portable C99.
+## PWA and website
 
-## PWA and public website
+Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. `studio-bootstrap.js` owns Service Worker registration/refresh.
 
-Patch Studio derives a deterministic content revision from browser-facing pages/assets/compiler/runtime modules. Generated local asset references carry that revision and the Service Worker uses it as the active cache identity.
-
-`web/studio-bootstrap.js` is the single registration/refresh owner. Playground and Accessibility no longer register a worker later in startup. Online code/runtime requests are fresh-first with successful exact bytes retained for offline use. If a JavaScript, CSS or runtime fetch fails and no exact cached asset exists, the request fails rather than receiving `index.html`; the cached Studio shell is a fallback only for real document navigation.
-
-The site builder validates the transitive relative ES-module import closure of generated `_site`. Standard CI then opens Studio in real Chrome, runs the default Window application and probes responsiveness after the delayed-freeze window. Windows CI isolates that smoke from the 12-minute full suite, treats Chrome profile cleanup as best-effort so leftover `chrome.exe` file locks cannot fail the job, and retries a stalled first-paint CDP evaluate instead of failing the 1.5s round-trip. The Pages workflow repeats the browser test against the actual public URL after deployment before publishing a healthy `patch-studio/public-site` status.
-
-The shared website presentation is responsive across Studio, Documentation, Paper, Language, Downloads and Help. Documentation uses a balanced contract grid plus local text filtering without telemetry or an external search service.
+Missing JavaScript/CSS/runtime requests never receive `index.html` as a substitute. Real Chrome startup/responsiveness tests exercise Studio in CI and production deployment gates.
 
 ## Recovery and diagnostics
 
-Recovery keeps deduplicated local snapshots and supports Snapshot now, Restore, Export, Delete and Clear all.
+Recovery snapshots protect the complete v4 project, including resources. Import/export/recovery all pass through the same validation rules.
 
-`Copy diagnostics` and `.patchreport` create local privacy-redacted support bundles. They include version, target, source size/hash, compiler state, browser/PWA state and bounded recent errors but omit project source. Compiler failures in a multi-file v3 project report the owning `file:line` after mapping the composed stream. No diagnostics upload path exists in Studio.
+Diagnostics remain privacy-redacted/local unless the user explicitly exports a report. Multi-file diagnostics map composed source positions back to owning `file:line`.
 
-## Formal/research boundary
+## Current capability boundary
 
-The ordinary Studio does not need Lean. Beta.32 remains the independent invocation-frame direct-Wasm correspondence layer over the supported finite safe-integer call-tree fragment.
+Patch Studio deliberately distinguishes **authoring** from **runtime support**:
 
-Product/UI/runtime work through Native GUI IR 1.3 / payload v13 / runtime v1.4 and the current UX/reliability milestone does not expand those claims. Runtime capture, validator/frame reconstruction, remaining parser/extractor correctness, JS-to-Wasm lowering and the Wasm engine remain explicit proof-free boundaries.
+| Component | Studio | Standalone Web | Windows/macOS/Linux native |
+|---|---|---|---|
+| Picture | supported | supported | supported for current bounded native image formats |
+| Shape | authoring | supported | unsupported/fail-closed |
+| PaintBox | authoring | supported | unsupported/fail-closed |
+| ImageList | authoring | unsupported until consumer contract | unsupported until consumer contract |
 
-## Where future work belongs
+This table is intentionally conservative. A component is not called cross-platform Ready merely because the Designer can place it.
 
-Command Palette v2, Workspace Layout v2, startup diagnostics v2 and composed `file:line` diagnostics are complete. Remaining repository-controlled work is specification/documentation synchronization, semantic object hardening and CI maintenance before any new product surface. See `docs/ROADMAP.md`.
+## Next work
 
-Distribution credentials, manual accessibility validation and research evidence remain in their separate roadmap gates.
+The current execution order is maintained in `docs/ROADMAP.md` and the detailed RAD plans:
+
+- `docs/RAD_STUDIO_MASTERPLAN.md`
+- `docs/RAD_STUDIO_MASTER_BACKLOG.md`
+
+The immediate remaining R1 gates are Picture display-property parity, native Shape/PaintBox support, the first real ImageList consumer, application icons/branding and generation of a canonical component capability matrix.
