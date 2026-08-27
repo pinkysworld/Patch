@@ -79,7 +79,7 @@ const SHAPE_STAGE1_TARGETS = Object.freeze({
 
 const PAINTBOX_STAGE1_TARGETS = Object.freeze({
   studio: 'authoring',
-  web: 'unsupported',
+  web: 'supported',
   windows: 'unsupported',
   macos: 'unsupported',
   linux: 'unsupported',
@@ -111,7 +111,7 @@ const COMPONENTS = [
   ['timer', 'Timer', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.6';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.7';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);

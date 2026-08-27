@@ -50,6 +50,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuCheckedBindings = 0;
   let treeViews = 0;
   let sliders = 0;
+  let paintboxes = 0;
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -72,6 +73,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'tree') treeViews += 1;
+    if (child.control === 'paintbox') paintboxes += 1;
     if (child.control === 'slider') {
       sliders += 1;
       const stateType = stateTypes.get(child.id);
@@ -249,13 +251,19 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: PictureBox '${event.control}' exposes only 'clicked', not '${event.event}'.`
       );
     }
+    if (controlType === 'paintbox' && event.event !== 'paint') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: PaintBox '${event.control}' exposes only 'paint', not '${event.event}'.`
+      );
+    }
     const supported =
       ((controlType === 'button' || controlType === 'menuItem' || controlType === 'picture') && event.event === 'clicked') ||
       (controlType === 'timer' && event.event === 'ticked') ||
+      (controlType === 'paintbox' && event.event === 'paint') ||
       ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'slider') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'ticked' on Timer, and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'paint' on PaintBox, 'ticked' on Timer, and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
@@ -282,6 +290,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (paintboxes && !options.allowPaintBox) {
+    throw new WindowBuildError(
+      'PaintBox is not enabled for this Window target. Select a PaintBox-capable browser target or enable its versioned pure drawing contract; validation fails closed otherwise.'
+    );
+  }
+
   const menuStateBindings = menuEnabledBindings + menuCheckedBindings;
   if ((menuSeparators || menuShortcutCount || menuStateBindings) && !options.allowMenuDecorations) {
     const required = menuStateBindings
@@ -299,6 +313,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls: controls.size,
     treeViews,
     sliders,
+    paintboxes,
     tabs: tabs.size,
     menuItems: menuItems.size,
     menuSeparators,

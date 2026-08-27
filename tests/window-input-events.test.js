@@ -73,6 +73,6 @@ when close_button changed:
   show 1`, { kind: 'window' });
   assert.throws(
     () => validateWindowRuntimeSupport(unsupported),
-    /support 'clicked' on buttons\/menu items\/PictureBox, 'ticked' on Timer, and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios\/tables\/trees\/sliders/
+    /support 'clicked' on buttons\/menu items\/PictureBox, 'paint' on PaintBox, 'ticked' on Timer, and 'changed' on inputs\/checkboxes\/combos\/listboxes\/radios\/tables\/trees\/sliders/
   );
 });
