@@ -99,16 +99,19 @@ when canvas paint:
   );
 });
 
-test('PaintBox target support remains authoring-only until renderer contracts land', () => {
+test('PaintBox runtime support is explicit: Web may opt in while other Window targets remain fail closed', () => {
   const component = patchComponent('paintbox');
   assert.deepEqual(component.targetSupport, {
-    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
   });
   const compiled = compile(source, { name: 'PaintBoxBoundary', kind: 'window' });
   assert.throws(
     () => validateWindowRuntimeSupport(compiled, { allowTree: true, allowSlider: true, allowMenuDecorations: true }),
-    /paintbox.*paint/i
+    /PaintBox is not enabled for this Window target/i
   );
+  assert.doesNotThrow(() => validateWindowRuntimeSupport(compiled, {
+    allowTree: true, allowSlider: true, allowMenuDecorations: true, allowPaintBox: true
+  }));
 });
 
 test('source-backed PaintBox Designer add update rename and delete preserve OnPaint source', () => {
@@ -157,16 +160,18 @@ test('Object Inspector creates a valid pure OnPaint handler instead of a mutatin
   assert.equal(existing.source, created.source);
 });
 
-test('PaintBox Studio modules ship through the content-addressed public and offline module graph', () => {
+test('PaintBox Studio and Web modules ship through the content-addressed public and offline module graph', () => {
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const worker = fs.readFileSync('web/sw.js', 'utf8');
   const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
   const studio = fs.readFileSync('web/designer-paintbox.js', 'utf8');
   assert.match(buildSite, /'paintbox-control\.js'/);
   assert.match(buildSite, /'designer-paintbox\.js'/);
+  assert.match(buildSite, /'window-web-paintbox\.js'/);
   assert.match(worker, /\.\/designer-paintbox\.js/);
   assert.match(worker, /\.\.\/src\/designer-paintbox\.js/);
   assert.match(worker, /\.\.\/src\/paintbox-control\.js/);
+  assert.match(worker, /\.\.\/src\/window-web-paintbox\.js/);
   assert.match(statusbar, /import '\.\/designer-paintbox\.js';/);
   assert.match(studio, /addPaintbox/);
   assert.match(studio, /patch-paintbox-designer-control/);
