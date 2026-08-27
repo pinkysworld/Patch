@@ -90,15 +90,13 @@ test('paper claim boundary does not silently turn supporting evidence into perfo
   assert.match(tex, /candidate novelty is a conjunction of architectural choices/i);
 });
 
-test('public paper.html names remaining research gates without claiming results', () => {
-  const html = read('web/paper.html');
-  assert.match(html, /id="open-gates"/);
-  assert.match(html, /Still open/);
-  assert.match(html, /genuine external\/third-party/i);
-  assert.match(html, /expert\/venue feedback/i);
-  assert.match(html, /not an end-to-end compiler theorem/);
-  assert.match(html, /no controlled paper-quality timing dataset yet/);
-  assert.doesNotMatch(html, /controlled paper-quality timing dataset has been collected/);
+test('remaining research gates stay in the repository manuscript without a public paper HTML route', () => {
+  const tex = `${read('paper/main.tex')}\n${read('paper/related-work.tex')}`;
+  assert.equal(fs.existsSync('web/paper.html'), false, 'working manuscript must not be published as a Patch Studio HTML page');
+  assert.match(tex, /no controlled paper-quality timing dataset yet/i);
+  assert.match(tex, /not an end-to-end compiler refinement theorem/i);
+  assert.match(tex, /third-party plugin ecosystem/i);
+  assert.doesNotMatch(tex, /controlled paper-quality timing dataset has been collected/i);
 });
 
 function escapeRegExp(value) {
