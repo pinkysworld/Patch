@@ -1,63 +1,61 @@
 # Patch Studio Project Tree
 
-Patch Studio now uses a source-backed **Project Tree** as the Stage 2 project-navigation model. Stage 1 provided navigation over `main.patch`; Stage 2 extends the same source ownership to multiple files without introducing a hidden Form document or secondary mutation model.
+Patch Studio uses a source-backed **Project Tree** as the project-navigation model. It spans every `.patch` file in the canonical project bundle while keeping source ownership explicit and avoiding a hidden Form document or duplicate AST.
 
-## Current Stage 2 scope
+## Current scope
 
-The tree reads every `.patch` source in the canonical project v3 bundle. Each file is a real project source and expands into the same parser-derived groups used by the original outline:
+The tree reads every `.patch` source in the canonical **project v4** bundle. Each file expands into parser-derived groups:
 
 - **Forms** for `window` declarations;
-- **State** for `create` declarations, including Thing records and their own fields as `name.field`;
+- **State** for `create` declarations, including Thing fields such as `name.field`;
 - **Events** for `when ...` handlers;
-- **Recipes** for recipe declarations and their parameters as `name.param`.
+- **Recipes** for recipe declarations and parameters such as `name.param`.
 
-The Patch parser remains the only source of symbol structure. The tree does not persist a duplicate AST, Form definition or private UI state.
+Project-v4 image resources are owned by the same canonical project but are managed through the Resource Manager rather than being parsed as source symbols. Controls refer to them through logical `patch-resource:<id>` locators.
+
+The Patch parser remains the source of symbol structure. The tree does not persist a duplicate AST, Form definition or private application model.
 
 ## Files and Forms
 
-The Project Tree exposes two source-backed creation actions:
+The Project Tree exposes source-backed creation actions such as:
 
-- **+ File** creates another `.patch` source path;
-- **+ Form** creates a `.patch` file containing an ordinary named `window` declaration and switches the project kind to Window.
+- **+ File** for another `.patch` source path;
+- **+ Form** for a `.patch` file containing an ordinary named `window` declaration.
 
-The entry source is visually identified and cannot be deleted from the tree. Other files can be removed after confirmation. File paths pass through the project-v3 path and size validation rules before the canonical project changes.
+The entry source is identified and cannot be deleted. Other files pass through project-v4 path/size validation before the canonical project changes.
 
-Selecting a file first synchronizes the current editor text into its owning project-file record, then loads the selected source into the same editor. The editor title follows the active source path. The same activation is available from editor tabs under the title; Ctrl/Cmd+PageDown and PageUp move between project files. The active file also reports Parsed or the first parse error next to the caret. That tab strip and parse status remain transient IDE chrome.
+Selecting a file first synchronizes current editor text into its owning project-file record, then loads the selected source into the same editor. Editor tabs provide the same activation. The active file reports parse status and caret position as transient IDE state.
 
 ## Symbol navigation
 
-Each symbol stores its local source line and owning file. Selecting a symbol activates that file, focuses the editor and selects the exact line. Selecting a Form also activates the Designer tab so source navigation and visual editing stay close together.
+Each symbol stores its local line and owning file. Selecting it activates that file, focuses the editor and navigates to the exact source line. Selecting a Form also brings the Designer into view.
 
-The tree is keyboard reachable because file and symbol entries are ordinary buttons with accessible names. The entry/non-entry distinction is not communicated by color alone.
+Thing fields and recipe parameters are exposed as source-backed symbols, so navigation remains useful as the project grows without creating a second semantic index.
 
 ## Editing resilience
 
-Normal editing frequently creates temporarily invalid source between keystrokes. Stage 2 therefore keeps a separate last-successful outline model for each project file.
-
-If one file becomes invalid, its most recent valid symbols remain visible while that file is marked invalid. Other project files continue to parse and navigate normally. As soon as the source parses again, only that file's outline model is replaced.
+Normal editing temporarily creates invalid source. The outline keeps a last-successful model per file. If one file becomes invalid, its last valid symbols can remain visible with an invalid marker while other files continue to parse/navigate. Once source parses again, that file's model is replaced.
 
 The tree never invents or persists symbols independently of source.
 
 ## Run and Build ownership
 
-The visible editor always owns only the active file. Before Run or Build, the project lifecycle synchronizes that file into the canonical v3 bundle and creates a deterministic composed source stream for existing compiler/build consumers.
+The visible editor owns only the active file. Before Run/Build, project lifecycle synchronizes it into the canonical v4 bundle and creates the deterministic composed source stream expected by compiler/build consumers.
 
-This compatibility bridge means all source files participate in one Patch program while Designer edits remain attached to the selected file rather than to an invisible concatenated document. The project model also records composition segments so a composed line can be mapped back to file and local line.
+Resources remain a separate build input and are never concatenated into source. The composition records line segments so diagnostics can map composed lines back to `file:line`.
 
-Multi-file execution is covered by a repository test that stores state in `main.patch`, a Form in a second source and an event handler in a third source, then compiles and executes the composition and dispatches the cross-file event.
+This compatibility bridge lets all source files participate in one Patch program while Designer edits remain attached to their real file rather than an invisible concatenated document.
 
-## Layout
+## Layout and accessibility
 
-On wider screens the Project Tree occupies a compact column beside the source editor. The Designer/App/Output area remains below that source workspace at full Studio width.
-
-Below 760 px the source workspace becomes one column and the tree turns into a shallow scrollable panel above the editor. This avoids returning to the old narrow right-side Designer layout.
+On wider screens the Project Tree sits beside the source editor. On narrow screens it becomes a shallow scrollable panel above the editor. File and symbol entries are ordinary accessible controls; entry/non-entry distinctions are not communicated by color alone.
 
 ## Offline and deployment contract
 
-`web/studio-outline.js`, `web/studio-outline.css` and the pure shared `src/studio-outline-model.js` are included in the content-addressed public-site revision and Service Worker core cache. The deployed tree imports the same browser copy of `src/parser.js` that Patch Studio already ships.
+`web/studio-outline.js`, its CSS and `src/studio-outline-model.js` are included in the content-addressed public-site revision and Service Worker cache. The deployed tree consumes the same parser shipped with Studio.
 
-## Remaining boundary
+## Boundary
 
-Stage 2 establishes real multi-file project storage, editing, recovery and Run/Build composition. It does not claim a module/import system: project files are deliberately composed into one Patch program and share one global declaration namespace.
+Project v4 establishes multi-file source storage plus explicit project resources. It is not a module/import system: source files are deliberately composed into one global Patch program. Resource Manager entries are explicit project assets, not source modules.
 
-Studio diagnostics, Run/Build errors, Change Contract failures, `.patchreport` files and native preflight errors consume the composition segments and display owning `file:line`. Generated C/C++/Rust compiler/linker locations remain unmapped.
+Studio diagnostics, Run/Build errors, Change Contract failures, `.patchreport` files and native preflight errors consume composition provenance and display owning `file:line`. Generated backend/compiler locations remain separate.
