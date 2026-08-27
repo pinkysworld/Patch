@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
 import { parse, PatchSyntaxError } from '../src/parser.js';
 import { PatchInterpreter } from '../src/interpreter.js';
@@ -11,6 +12,7 @@ import {
   removeDesignerPaintBox,
   updateDesignerPaintBox
 } from '../src/designer-paintbox.js';
+import { designerEventSpec, ensureDesignerEventHandler } from '../web/designer-event-inspector.js';
 
 const source = `create number count = 2
 
@@ -140,4 +142,32 @@ test('Designer PaintBox ids and dimensions fail closed', () => {
 
   const first = addDesignerPaintBox(initial, { id: 'canvas' });
   assert.throws(() => addDesignerPaintBox(first.source, { id: 'canvas' }), /already used/);
+});
+
+test('Object Inspector creates a valid pure OnPaint handler instead of a mutating or console placeholder', () => {
+  const initial = `window "Designer" as main size 640, 420:\n  paintbox as canvas at 24, 24 size 320, 200\n`;
+  assert.deepEqual(designerEventSpec('paintbox'), { event: 'paint', label: 'OnPaint', value: false });
+  const created = ensureDesignerEventHandler(initial, 'canvas', 'paintbox');
+  assert.equal(created.created, true);
+  assert.match(created.source, /when canvas paint:\n  draw clear transparent/);
+  assert.doesNotMatch(created.source, /show "canvas paint"/);
+  assert.doesNotThrow(() => compile(created.source, { name: 'PaintBoxInspector', kind: 'window' }));
+  const existing = ensureDesignerEventHandler(created.source, 'canvas', 'paintbox');
+  assert.equal(existing.created, false);
+  assert.equal(existing.source, created.source);
+});
+
+test('PaintBox Studio modules ship through the content-addressed public and offline module graph', () => {
+  const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
+  const worker = fs.readFileSync('web/sw.js', 'utf8');
+  const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
+  const studio = fs.readFileSync('web/designer-paintbox.js', 'utf8');
+  assert.match(buildSite, /'paintbox-control\.js'/);
+  assert.match(buildSite, /'designer-paintbox\.js'/);
+  assert.match(worker, /\.\/designer-paintbox\.js/);
+  assert.match(worker, /\.\.\/src\/designer-paintbox\.js/);
+  assert.match(worker, /\.\.\/src\/paintbox-control\.js/);
+  assert.match(statusbar, /import '\.\/designer-paintbox\.js';/);
+  assert.match(studio, /addPaintbox/);
+  assert.match(studio, /patch-paintbox-designer-control/);
 });
