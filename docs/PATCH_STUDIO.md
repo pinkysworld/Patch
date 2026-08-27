@@ -283,6 +283,8 @@ Stage 1 child layout remains source-order/flow based. Independent child coordina
 
 Table, TreeView and Tabs structural editors rewrite their selected source block directly and validate the resulting source before accepting changes.
 
+**Table: text-list for the selected row.** The selected row is a transient event value in Studio App Preview, Standalone Web and supported native paths; it becomes persistent only when source explicitly commits it through `change`.
+
 Current workflows cover common add/edit/reorder/duplicate/remove operations. Nested Tabs content remains intentionally bounded by the current source/runtime contract.
 
 ## Command Palette and navigation
