@@ -74,10 +74,12 @@ test('desktop Designer rail gives graphics Chrome and nonvisual components stabl
 
 test('public Studio and offline PWA package Designer toolbox discovery assets', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
+  const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-toolbox\.js'/);
-  assert.match(workspace, /import '\.\/designer-imagelist\.js'/);
+  assert.match(workspace, /import '\.\/designer-statusbar\.js'/);
+  assert.match(statusbar, /import '\.\/designer-imagelist\.js'/);
   assert.match(buildSite, /'designer-toolbox\.js'/);
   assert.match(buildSite, /'designer-toolbox\.css'/);
   assert.match(buildSite, /'designer-paintbox\.js'/);
