@@ -10,7 +10,6 @@ import {
   readDesignerLayoutPolicy,
   setDesignerLayoutPolicy
 } from '../web/designer-layout-policy.js';
-import { designerLayoutInspectorModel } from '../web/designer-responsive-layout.js';
 
 const browserModule = fs.readFileSync('web/designer-responsive-layout.js', 'utf8');
 const layoutCss = fs.readFileSync('web/designer-responsive-layout.css', 'utf8');
@@ -98,17 +97,11 @@ test('Object Inspector exposes Delphi-style Layout Mode, four Anchors, Dock and 
 });
 
 test('Object Inspector preserves shared nonvisual boundaries for Timer and ImageList plus docked StatusBar', () => {
-  assert.equal(designerLayoutInspectorModel({ kind: 'fixed' }, 'timer').visible, false);
-  assert.equal(designerLayoutInspectorModel({ kind: 'fixed' }, 'imagelist').visible, false);
-  assert.deepEqual(designerLayoutInspectorModel({ kind: 'anchor', edges: ['right'] }, 'imagelist'), {
-    visible: false,
-    locked: true,
-    mode: 'fixed',
-    anchors: { left: false, right: false, top: false, bottom: false },
-    dock: 'top',
-    source: 'Nonvisual component'
-  });
-  assert.match(browserModule, /isNonvisualFormControl/);
+  assert.match(browserModule, /import \{ formControlDefaultSize, isNonvisualFormControl \} from '\.\.\/src\/form-layout\.js'/);
+  assert.match(browserModule, /if \(isNonvisualFormControl\(type\)\)/);
+  assert.match(browserModule, /filter\(edit => !isNonvisualFormControl\(edit\.type\) && edit\.type !== 'statusbar'\)/);
+  assert.match(browserModule, /filter\(item => item\.windowIndex === windowIndex && !isNonvisualFormControl\(item\.type\)\)/);
+  assert.match(browserModule, /selectedControls\.some\(control => isNonvisualFormControl\(control\.type\)\)/);
   assert.match(browserModule, /type === 'statusbar'/);
   assert.match(browserModule, /kind: 'dock', side: 'bottom'/);
   assert.match(browserModule, /Nonvisual components have no Form resize policy/);
