@@ -14,13 +14,14 @@ export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
   tabs: Object.freeze({ width: 420, height: 240 }),
   panel: Object.freeze({ width: 280, height: 160 }),
   timer: Object.freeze({ width: 160, height: 36 }),
+  imagelist: Object.freeze({ width: 160, height: 36 }),
   picture: Object.freeze({ width: 180, height: 120 }),
   shape: Object.freeze({ width: 180, height: 120 }),
   paintbox: Object.freeze({ width: 320, height: 200 }),
   statusbar: Object.freeze({ width: 400, height: 28 })
 });
 
-export const PATCH_NONVISUAL_FORM_CONTROLS = Object.freeze(['timer']);
+export const PATCH_NONVISUAL_FORM_CONTROLS = Object.freeze(['timer', 'imagelist']);
 const NONVISUAL_FORM_CONTROLS = new Set(PATCH_NONVISUAL_FORM_CONTROLS);
 
 export function isNonvisualFormControl(type) {
