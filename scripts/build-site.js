@@ -9,7 +9,7 @@ const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-const SITE_HTML_FILES = ['index.html','language.html','docs.html','paper.html','help.html'];
+const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
@@ -84,6 +84,7 @@ for (const name of SITE_SRC_FILES) {
 validateGeneratedModuleClosure();
 validateGeneratedModuleRevisions();
 validateGeneratedHtmlAssetClosure();
+validatePaperPrivacyBoundary();
 console.log(`built _site/ for Patch ${pkg.version} revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
 
 function normalizeCurrentProductSurface(name, source) {
@@ -91,6 +92,10 @@ function normalizeCurrentProductSurface(name, source) {
     .replaceAll('0.2.0-beta.35', pkg.version)
     .replaceAll('0.2 beta.35+', '0.2 beta.36+')
     .replaceAll('0.2 beta.35', '0.2 beta.36');
+
+  // Research sources stay in paper/, but the working manuscript is deliberately
+  // not part of the public Patch Studio website or its navigation.
+  html = html.replace(/\s*<a\b[^>]*href="\.\/paper\.html"[^>]*>[\s\S]*?<\/a>/g, '');
 
   // The pre-beta.36 pages used the v1.4 runtime as their current product line.
   // downloads.html is authored directly for beta.36 and intentionally mentions
@@ -210,6 +215,22 @@ function validateGeneratedHtmlAssetClosure() {
   if (missing.length) {
     throw new Error(`Generated Patch Studio has unresolved local HTML assets:\n${missing.map(item => `- ${item}`).join('\n')}`);
   }
+}
+
+function validatePaperPrivacyBoundary() {
+  if (fs.existsSync(path.join(out, 'paper.html'))) {
+    throw new Error('Generated Patch Studio must not publish paper.html. Keep research sources under paper/ only.');
+  }
+  const leaked = [];
+  for (const name of SITE_HTML_FILES) {
+    const html = fs.readFileSync(path.join(out, name), 'utf8');
+    if (html.includes('./paper.html')) leaked.push(name);
+  }
+  const palette = fs.readFileSync(path.join(out, 'studio-command-palette.js'), 'utf8');
+  const worker = fs.readFileSync(path.join(out, 'sw.js'), 'utf8');
+  if (palette.includes('./paper.html')) leaked.push('studio-command-palette.js');
+  if (worker.includes('./paper.html')) leaked.push('sw.js');
+  if (leaked.length) throw new Error(`Generated Patch Studio leaks the private paper web route through: ${leaked.join(', ')}`);
 }
 
 function walkJs(dir) {
