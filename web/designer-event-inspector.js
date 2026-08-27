@@ -11,7 +11,7 @@ const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
 const inspector = doc?.querySelector('#designerInspector') ?? null;
-const DOUBLE_CLICK_TYPES = new Set(['button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider']);
+const DOUBLE_CLICK_TYPES = new Set(['button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'paintbox']);
 let cachedSource = null;
 let cachedControls = [];
 let cachedPickerSignature = null;
@@ -20,6 +20,7 @@ let syncQueued = false;
 const EVENT_SPECS = Object.freeze({
   button: Object.freeze({ event: 'clicked', label: 'OnClick', value: false }),
   picture: Object.freeze({ event: 'clicked', label: 'OnClick', value: false }),
+  paintbox: Object.freeze({ event: 'paint', label: 'OnPaint', value: false }),
   timer: Object.freeze({ event: 'ticked', label: 'OnTick', value: false }),
   input: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
   checkbox: Object.freeze({ event: 'changed', label: 'OnChange', value: true }),
@@ -64,9 +65,11 @@ export function ensureDesignerEventHandler(source, id, type) {
 
   const original = String(source ?? '').replace(/\r\n/g, '\n');
   const trimmed = original.replace(/\s+$/, '');
-  const statement = spec.value
-    ? '  show value'
-    : `  show ${JSON.stringify(`${safeId} ${spec.event}`)}`;
+  const statement = type === 'paintbox'
+    ? '  draw clear transparent'
+    : spec.value
+      ? '  show value'
+      : `  show ${JSON.stringify(`${safeId} ${spec.event}`)}`;
   const next = `${trimmed}${trimmed ? '\n\n' : ''}when ${safeId} ${spec.event}:\n${statement}\n`;
 
   // Event generation must never leave the visible source in a syntactically invalid state.
@@ -231,7 +234,7 @@ function renderEventsPanel() {
       <button id="designerEventHandlerAction" class="secondary" type="button">${handler ? 'Open handler' : 'Create handler'}</button>
     </div>
     <p class="designer-event-state">${handler ? `Source-backed handler · line ${handler.line}` : 'No handler yet. Creating one writes ordinary visible Patch source.'}</p>
-    <p class="designer-event-hint">${spec.value ? 'The event-local value is available as value.' : 'This event has no implicit value.'}</p>`;
+    <p class="designer-event-hint">${control.type === 'paintbox' ? 'OnPaint is pure Stage 1 drawing: use draw, if and repeat. Persistent state changes stay outside paint handlers.' : spec.value ? 'The event-local value is available as value.' : 'This event has no implicit value.'}</p>`;
   panel.querySelector('#designerEventHandlerAction')?.addEventListener('click', () => openOrCreateHandler(control));
 }
 
@@ -298,6 +301,7 @@ function displayType(type) {
   if (type === 'listbox') return 'ListBox';
   if (type === 'tree') return 'TreeView';
   if (type === 'picture') return 'PictureBox';
+  if (type === 'paintbox') return 'PaintBox';
   const text = String(type ?? 'Control');
   return text ? text[0].toUpperCase() + text.slice(1) : 'Control';
 }
