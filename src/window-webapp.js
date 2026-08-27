@@ -4,13 +4,13 @@ export const PATCH_WINDOW_WEB_VERSION = '0.9';
 
 const WINDOW_WEB_SUPPORTED = new Set([
   'create', 'createThing', 'window', 'uiControl', 'tabs', 'tabPage', 'event', 'openForm', 'closeForm', 'allow', 'show',
-  'change', 'if', 'repeat', 'function', 'call', 'return'
+  'change', 'if', 'repeat', 'function', 'call', 'return', 'drawPaint'
 ]);
 
 /** Build a single-file executable browser app from the parsed Patch AST. */
 export function buildStandaloneWindowWebApp(compiled, name) {
   const windowCount = validateWindowBuild(compiled);
-  validateWindowRuntimeSupport(compiled, { allowTree: true, allowSlider: true });
+  validateWindowRuntimeSupport(compiled, { allowTree: true, allowSlider: true, allowPaintBox: true });
   validateWindowWebSubset(compiled.ast);
   const programJson = scriptJson(compiled.ast);
   const appName = String(name || 'PatchApp');
