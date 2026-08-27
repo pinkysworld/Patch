@@ -66,16 +66,16 @@ const DESKTOP_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
-const SHAPE_AUTHORING_TARGETS = Object.freeze({
+const SHAPE_STAGE1_TARGETS = Object.freeze({
   studio: 'authoring',
-  web: 'unsupported',
+  web: 'supported',
   windows: 'unsupported',
   macos: 'unsupported',
   linux: 'unsupported',
   freebsd: 'unsupported'
 });
 
-const TARGETS_BY_TYPE = Object.freeze({ shape: SHAPE_AUTHORING_TARGETS });
+const TARGETS_BY_TYPE = Object.freeze({ shape: SHAPE_STAGE1_TARGETS });
 
 const COMPONENTS = [
   ['text', 'Text', 'Basic', true],
@@ -96,7 +96,7 @@ const COMPONENTS = [
   ['timer', 'Timer', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.4';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.5';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);
