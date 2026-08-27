@@ -11,7 +11,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 
 const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
 const SITE_SRC_FILES = [
-  'interpreter.js','parser.js','shape-control.js','shape-source.js','paintbox-control.js','expression.js','change.js','change-analysis.js','range-analysis.js',
+  'interpreter.js','parser.js','shape-control.js','shape-source.js','paintbox-control.js','imagelist-control.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-web-paintbox.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-shape.js','designer-paintbox.js','component-registry.js','designer-menu.js','designer-panel.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-resources.js','studio-outline-model.js','studio-diagnostics.js',
@@ -20,12 +20,12 @@ const SITE_SRC_FILES = [
 ];
 
 const SITE_WEB_STATIC_FILES = [
-  'style.css','site-navigation.css','site-refresh.css','site-pages.css','studio-accessibility.css','studio-command-palette.css','designer-inspector.css','designer-data-editor.css','designer-structure-ux.css','designer-ux.css','designer-toolbox.css','designer-menu-designer.css','designer-panel.css','form-designer-workflow.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
+  'style.css','site-navigation.css','site-refresh.css','site-pages.css','studio-accessibility.css','studio-command-palette.css','designer-inspector.css','designer-data-editor.css','designer-structure-ux.css','designer-ux.css','designer-toolbox.css','designer-imagelist.css','designer-menu-designer.css','designer-panel.css','form-designer-workflow.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
 ];
 
 const SITE_WEB_MODULE_FILES = [
   'studio-bootstrap.js','runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
-  'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-paintbox.js','resource-manager.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-event-inspector.js','designer-focus-order.js','designer-menu-designer.js','designer-panel.js','designer-ui-namespace.js','designer-toolbox.js','designer-statusbar.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
+  'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-paintbox.js','resource-manager.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-event-inspector.js','designer-focus-order.js','designer-menu-designer.js','designer-panel.js','designer-ui-namespace.js','designer-toolbox.js','designer-imagelist.js','designer-statusbar.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
   'studio-dom-sync.js','studio-diagnostics.js','studio-quick-open.js','studio-command-palette.js','studio-accessibility.js','sw.js'
 ];
 
