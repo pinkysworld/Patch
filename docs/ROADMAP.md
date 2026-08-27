@@ -1,108 +1,129 @@
 # Patch roadmap
 
-Current development beta: **0.2.0-beta.35**
+Current development beta: **0.2.0-beta.36**
 
-The roadmap separates repository-controlled product work from credential/manual distribution work and research evidence that cannot be manufactured by CI.
+This roadmap separates repository-controlled product work from credential/manual distribution work and research evidence that cannot be manufactured by CI.
 
 ## Current contract
 
-- Patch package: **0.2.0-beta.35**
-- public product surface: **0.2 beta.35+**
+- Patch package: **0.2.0-beta.36**
+- public product surface: **0.2 beta.36+**
 - Change IR: **0.10**
-- Window event adapter: **0.9**
-- Native GUI IR: **1.3**
-- current sealed native GUI payload: **v13**
-- current token-free Ready/offline runtime: **v1.4** on Windows, macOS and Linux
+- Native GUI IR: **1.4**
+- current sealed native GUI payload: **v14**
+- current token-free Ready/offline runtime: **v1.5** on Windows, macOS and Linux
 - frozen TreeView compatibility line: Native GUI IR **1.2** / payload **v12** / runtime **v1.3**
-- project format: **multi-file bundle v3**
+- previous Slider compatibility line: Native GUI IR **1.3** / payload **v13** / runtime **v1.4**
+- Studio project format: **multi-file/resource bundle v4** with explicit v1-v3 migration
+- Component Registry: **0.8**
 - formal runtime-correspondence milestone: **beta.32**
 
 Product, Studio and native work after beta.32 does not widen the formal assurance claim.
 
-## Active UX and reliability milestone
+## Current product milestone: RAD R1
 
-The previous beta.35+ feature milestone closed the planned source-backed Designer, multi-file project, Table/TreeView/Tabs, ListBox and Slider work. A new repository-controlled milestone is now active for product polish, browser reliability and faster IDE navigation.
+The beta.35+ multi-file/Designer foundation and the beta.36 native 1.4/v14/v1.5 integration are complete. Current repository-controlled work is the first graphics/resource RAD milestone from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
 
-### Completed in the current milestone
+### Completed foundation
 
-- [x] real Headless Chrome startup/responsiveness test that loads Studio, runs the default Window application and probes the main thread after the delayed-freeze window
-- [x] production Pages gate that runs the same Chrome behavior test against `https://minh.systems/Patch/` before `patch-studio/public-site` can become healthy
-- [x] prevent self-triggering Designer `MutationObserver` reconciliation loops from starving the browser main thread
-- [x] make `studio-bootstrap.js` the **single service-worker registration and revision-refresh owner**
-- [x] remove late service-worker registration from Playground and Accessibility modules
-- [x] type-safe offline routing: missing JavaScript/CSS/runtime assets never receive `index.html`; only real document navigation may fall back to the cached Studio shell
-- [x] site-wide responsive visual polish for Studio, Documentation, Language, Downloads and Help
-- [x] balanced Documentation contract layout with 3-column desktop, 2-column medium and 1-column narrow behavior instead of the squeezed four-plus-one card row
-- [x] keyboard-first **Command Palette** (`Ctrl/Cmd+K`) delegating to existing Run, Build, Editor, Designer, result views, Recovery, Documentation, Downloads and Help actions
-- [x] Command Palette kept transient and navigation-only, with no second project/mutation model or local persistent state
-- [x] **Command Palette v2: project-file and symbol quick-open** using the existing multi-file bundle v3, parser and Project Outline models; fuzzy token-aware filtering, exact file/line editor navigation, keyboard-only operation and no second persistent project index
-- [x] **Workspace Layout v2** with pointer/keyboard source-result resizing, real constrained ARIA separator values, editor/Designer minimums, one local IDE-only preference, reset and narrow-screen fallback
-- [x] **Studio startup diagnostics v2** with bootstrap-time module/error/rejection/timeout capture, visible non-blocking redacted details, local copy support, handoff into ordinary `.patchreport` diagnostics and production Chrome exercise of the failure path
-- [x] README, public Documentation and Help synchronized to the current UX/reliability and native/runtime boundaries
-- [x] CI/site validation expanded for Command Palette packaging, single-worker ownership and type-safe offline fallback
-- [x] Windows Chrome smoke isolated from the 12-minute full suite; DevTools waits abort and a hung browser tree is killed
-- [x] Windows Chrome profile cleanup is best-effort after the browser tree is killed so leftover user-data-dir file locks cannot fail the smoke
-- [x] Window Web structural equality matches the interpreter own-field contract; event-local values reuse the prototype-preserving clone
-- [x] Public language/docs/README name Things as prototype-free own-field records; direct Wasm/C99 fail closed and stay outside beta.32
-- [x] Windows Chrome smoke retries a stalled first-paint Runtime.evaluate instead of failing the 1.5s CDP timeout
-- [x] Command Palette / Project Tree expose Thing fields as source-backed Field symbols (`player.score`) using the existing outline model
-- [x] `patch doctor` self-checks interpreter, direct Wasm and C99 numeric subset, including Thing fail-closed
-- [x] Direct Wasm/C99 numeric-subset failures classify as `PATCH2003`; production Chrome smoke waits through a slower first Run after deploy
-- [x] Studio diagnostics, Run/Build, Change Contract and native preflight map composed project lines to owning `file:line`
-- [x] Change Signatures reuse the prototype-preserving semantic clone instead of JSON round-trips
-- [x] Command Palette / Project Tree expose recipe parameters as source-backed Param symbols (`reward.bonus`)
-- [x] `patch doctor` compiles and runs the numeric C99 program on Unix hosts with a C compiler
-- [x] Working manuscript names current/frozen native contracts and prototype-free Things; current native is not described as IR 0.7 list fail-closed
-- [x] C99 unknown-recipe fail-closed errors classify as `PATCH2003`
-- [x] public `paper.html` reading copy of the working manuscript, with Lean/trust/measurement tables, mixed-guard frames and an explicit no-performance-claim boundary
-- [x] assurance analysis tooling that sketches dispersion, linear scaling and SVG plots and refuses to copy hosted-ci timing into `paper/main.tex`
-- [x] research plan and security/checkout case docs synchronized off the obsolete beta.8 / beta.32-as-current-product status lines
-- [x] current/frozen native docs name Ready as IR 1.3 / v13 / v1.4 rather than IR 1.2
-- [x] public `paper.html` names remaining research gates without claiming those results
-- [x] workspace-first Studio chrome: collapsed contracts/quick-start, live editor caret Ln/Col, no second project model
-- [x] Studio IDE chrome density: feature banner inside contracts disclosure, compact brand, visible status bar with save state and Ready chip
-- [x] Studio editor file tabs and live parse status over the existing project-v3 file model
-- [x] Designer arrange (Bring to front / Send to back), 8 px grid snap, and the Harbor Desk example
+- [x] canonical multi-file Studio project model with deterministic Run/Build composition and `file:line` provenance
+- [x] **project bundle v4** with bounded project resources and explicit migration from v1/v2/v3
+- [x] project-level Resource Manager for PNG/JPEG/WebP/SVG with logical ids, paths, deterministic SHA-256 metadata, preview and bounded storage
+- [x] deterministic resource export/import/recovery persistence
+- [x] Picture source-backed Designer authoring and resource picker
+- [x] Standalone Web Picture resource embedding
+- [x] bounded native PNG/JPEG Picture decoding on Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf with unsupported formats fail-closed
+- [x] canonical Component Registry carrying property/event/renderer/target-support metadata
+- [x] searchable Component Palette and Object Inspector Properties/Events views
+- [x] source-backed Anchors/Dock, multi-select alignment/sizing/distribution, grid, z-order actions and Focus Order Stage 1
+- [x] Panel Stage 1, StatusBar and nonvisual Timer authoring
+- [x] Shape Stage 1 source syntax, Designer authoring and Standalone Web rendering
+- [x] PaintBox Stage 1 source syntax, pure `paint` event/drawing commands, Designer authoring and Standalone Web rendering
+- [x] ImageList Stage 1 source syntax, compiler transport, registry metadata, nonvisual tray and Resource Manager-backed Object Inspector
+- [x] ImageList runtime targets fail closed until a consumer contract exists
+- [x] content-addressed public site, PWA/offline closure validation and real Chrome startup/responsiveness gate
+- [x] token-free Ready/offline Native GUI IR 1.4 / payload v14 / runtime v1.5 Windows/macOS/Linux paths
+- [x] Command Palette, project-file/symbol quick-open, editor tabs, Workspace Layout v2 and startup diagnostics v2
 
-### Next repository-controlled backlog
+### RAD R1 remaining work
 
-The reliability backlog is intentionally not being extended with another control or runtime tier. Native two-contract collapse is complete: **current** (IR 1.3 / payload v13 / runtime v1.4) and **frozen** (IR 1.2 / payload v12 / runtime v1.3) are the only product import surfaces. Remaining repository-controlled work is specification/documentation synchronization, semantic object hardening and CI maintenance before any new product surface is added.
+These are real remaining gaps and must not be advertised as complete until their target tests are green.
 
-Native collapse means keeping **current** (IR 1.3 / payload v13 / runtime v1.4) and **frozen** (IR 1.2 / payload v12 / runtime v1.3) as the only product import surfaces. Current and frozen lowering/sealing use standalone snapshots instead of importing versioned v07–v11 modules. Product JavaScript, the Studio site bundle and Ready/offline linking no longer consume those versioned modules. Unversioned `native-gui-ir.js` / `native-runtime/*-sealed-gui.cpp` files remain the historical include-chain base, not the Ready runtime. Historical v0.8 runtime workflows are named as such, require an explicit payload v7/v8 sealer, and do not gate Pages or Ready releases.
+- [ ] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/runtime targets
+- [ ] decide and version native SVG/WebP policy rather than broadening format support implicitly
+- [ ] Shape native lowering/runtime parity for Win32, AppKit and GTK
+- [ ] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK
+- [ ] PaintBox `draw image` resource consumption after the image/drawing contract is versioned
+- [ ] first ImageList consumer, preferably ToolBar/ToolButton or TreeView/Button image binding
+- [ ] ImageList Web/native runtime contract only after a consumer exists; no empty standalone runtime claim
+- [ ] application/window icon resource and packaging contract
+- [ ] component capability matrix generated from canonical registry metadata rather than duplicated documentation
 
-- [x] stable current native facade (`src/native-current-contract.js`)
-- [x] stable frozen TreeView facade (`src/native-frozen-contract.js`)
-- [x] README, public docs and Studio website name both live contracts and the include-chain rule
-- [x] flatten current and frozen so they no longer import the v11→v07 chain
-- [x] retire v07–v11 consumers, site-bundle copies and manual workflows together
-- [x] keep unversioned historical bases from being mistaken for the Ready runtime
+## RAD R2: Form Designer parity
 
-New product items should have a concrete implementation target and acceptance test before being added here.
+After R1 is closed:
 
-## Completed beta.35+ product foundation
+- [ ] independent source-backed `TabOrder` that does not alter source/z-order
+- [ ] visual Tab Order mode
+- [ ] Move Forward / Move Backward in addition to current front/back actions
+- [ ] configurable grid and richer smart guides
+- [ ] source-backed clipboard schema for copy/cut/paste across Forms/projects
+- [ ] Lock Controls and design-only guide visibility
+- [ ] Layers/Object Tree for visual z-order and containment
+- [ ] complete Panel Stage 2 native child containment with relative coordinates, clipping and nested Panels
 
-### Studio / Designer
+## RAD R3-R6: component and project expansion
 
-- [x] canonical multi-file project bundle v3 with Project Tree/Outline, deterministic Run/Build composition, full-project recovery and explicit migrations
-- [x] source-backed Form add/select/resize/fit/default-size/duplicate/delete lifecycle
-- [x] shared top-level control selection and source-backed Properties actions
-- [x] pointer and keyboard positioning/resizing, alignment, Center H / Center V, Default size and collision-aware Auto place
-- [x] transient Designer multi-select with shared group movement/alignment
-- [x] source-backed Anchor/Dock layout policy and runtime reflow
-- [x] Text, Button, Input, Checkbox, Radio, ComboBox and ListBox authoring
-- [x] list-backed multi-select ListBox with transient text-list semantics across browser and current native lines
-- [x] Table/Grid Stage 1 with selected-row events and source-backed structural Properties editing
-- [x] TreeView hierarchy, source-backed structural editing, browser preview and current native parity
-- [x] Tabs page lifecycle plus nested Text/Button/Input/Checkbox/Radio/ComboBox/ListBox/Slider/Table/TreeView editing
-- [x] Slider Stage 1 source syntax, Designer, Tabs, browser preview, Standalone Web and native Windows/macOS/Linux parity
-- [x] Native GUI IR 1.3 / payload v13 / runtime v1.4 additive Slider line while v12/v1.3 remains frozen
-- [x] structural/nested keyboard refinement, focus restoration and explicit focus-visible treatment
-- [x] deterministic content-addressed public site and complete browser module/HTML asset closure validation
-- [x] runtime-template SHA-256 integrity chain for token-free Ready builds
+See `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the complete long-term list. Near-term priorities are:
 
-All current input/selection/result events remain transient. Persistent application state changes through ordinary semantic `change` only.
+- [ ] GroupBox, ScrollBox and SplitContainer
+- [ ] Memo/TextArea, PasswordEdit, ProgressBar, SpinEdit/NumberEdit, Date/Time controls
+- [ ] richer TreeView/ListView/Table metadata and image bindings
+- [ ] ToolBar / ToolButton / PopupMenu
+- [ ] ActionList-style reusable commands
+- [ ] nonvisual standard dialogs
+- [ ] Project Explorer 2.0 with resources/build configurations/dependencies
+- [ ] project settings, application branding and templates
 
-### Compiler / language / assurance infrastructure
+## RAD R7-R11: professional IDE
+
+- [ ] syntax highlighting and semantic completion
+- [ ] go to definition / find references / rename
+- [ ] formatting and quick fixes
+- [ ] breakpoint debugger with Step Into/Over/Out
+- [ ] Patch semantic change/event timeline
+- [ ] watch/locals/state inspection
+- [ ] safe hot reload boundary
+- [ ] property/data binding contracts
+- [ ] dockable/persisted IDE layouts
+- [ ] package/component ecosystem
+
+## Desktop / distribution status
+
+### Implemented repository-controlled surface
+
+- [x] Ready Windows/macOS/Linux Console packages
+- [x] Ready Windows/macOS/Linux Window packages for the current native GUI surface
+- [x] direct-native Win32/AppKit/GTK backends
+- [x] token-free runtime v1.5 release workflows for Windows/macOS/Linux
+- [x] ordinary offline `patch link` defaults to payload v14/runtime v1.5
+- [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
+- [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
+- [x] fail-closed Windows signing and macOS signing/notarization machinery
+- [x] truthful Pages deployment status with required-runtime checks, HTTP asset verification and live Chrome behavior verification
+
+### Externally gated distribution work
+
+- [ ] real credentialed Windows signing evidence
+- [ ] real credentialed macOS signing/notarization evidence
+- [ ] installer/package formats with explicit uninstall path after a distribution-format decision
+- [ ] release-integrity verification across any future installer/update channel
+- [ ] fresh remote native build service without a user-supplied GitHub token
+- [ ] FreeBSD native GUI backend
+- [ ] more self-contained Linux distribution formats where deployment evidence justifies them
+- [ ] manual assistive-technology validation with Narrator, VoiceOver, Orca or comparable tools; no WCAG conformance claim is made without that work
+
+## Compiler / language / assurance infrastructure
 
 - [x] Change IR **0.10** with semantic Change Signatures and magnitude-aware authority
 - [x] exact safe-integer positional binding and quantitative effect refinement
@@ -118,43 +139,6 @@ All current input/selection/result events remain transient. Persistent applicati
 - [x] semantic-authority security ablation
 - [x] internally authored checkout/loyalty and usage/quota extension corpus
 - [x] process-isolated controlled-measurement protocol and aggregation tooling
-
-## Frozen native compatibility evidence
-
-The current consumer is Native GUI IR 1.3 / payload v13 / runtime v1.4. Older lines remain tested compatibility evidence:
-
-- [x] Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line
-- [x] payload v10 / runtime v1.1 persistent text-list state and list-backed ListBox line
-- [x] payload v11 / runtime v1.2 Menu + list line
-- [x] Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line, intentionally Slider fail-closed
-- [x] Native GUI IR 1.3 / payload v13 / runtime v1.4 additive Slider line
-
-## Desktop / distribution status
-
-### Implemented repository-controlled surface
-
-- [x] Ready Windows/macOS/Linux Console packages
-- [x] Ready Windows/macOS/Linux Window packages for the current native GUI surface
-- [x] direct-native Win32/AppKit/GTK backends
-- [x] token-free v1.4 runtime release workflows for Windows/macOS/Linux
-- [x] ordinary offline `patch link` defaults to payload v13/runtime v1.4
-- [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
-- [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
-- [x] fail-closed Windows signing and macOS signing/notarization machinery
-- [x] truthful Pages deployment status with required-runtime checks, HTTP asset verification and live Chrome behavior verification
-
-### Externally gated distribution work
-
-These require credentials, real platform testing or a distribution decision and are not ordinary repository implementation claims.
-
-- [ ] real credentialed Windows signing evidence
-- [ ] real credentialed macOS signing/notarization evidence
-- [ ] installer/package formats with explicit uninstall path after a distribution-format decision
-- [ ] release-integrity verification across any future installer/update channel
-- [ ] fresh remote native build service without a user-supplied GitHub token
-- [ ] FreeBSD native GUI backend
-- [ ] more self-contained Linux distribution formats where deployment evidence justifies them
-- [ ] manual assistive-technology validation with Narrator, VoiceOver, Orca or comparable tools; no WCAG conformance claim is made without that work
 
 ## Research evidence gates
 
@@ -203,5 +187,6 @@ Evidence still requiring new data or external participation:
 - **beta.33:** Studio/project/recovery/diagnostics production-readiness layer
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
-- **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs, Slider and native runtime v1.4
-- **current UX/reliability milestone:** MutationObserver freeze fix, live Chrome deployment gate, single service-worker ownership, type-safe offline fallback, site-wide visual polish, Command Palette, project-file/symbol quick-open, resizable Workspace Layout v2 and bootstrap-time startup diagnostics v2
+- **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
+- **beta.36:** project bundle v4 resources, Native GUI IR 1.4 / payload v14 / runtime v1.5, expanded RAD authoring and graphics/resource R1 work
+- **current:** finish truthful cross-target RAD R1 parity, then move into full Form Designer parity
