@@ -1,5 +1,11 @@
 import { parsePatchShapeDeclaration } from './shape-source.js';
 import { parsePatchPaintCommand } from './paintbox-control.js';
+import {
+  PATCH_IMAGELIST_MAX_ITEMS,
+  normalizeImageListItemName,
+  normalizeImageListLogicalSize,
+  normalizeImageListResourceExpression
+} from './imagelist-control.js';
 
 export class PatchSyntaxError extends Error {
   constructor(message, line) { super(`line ${line}: ${message}`); this.line = line; }
@@ -81,12 +87,55 @@ export function parse(source) {
     if (xText !== undefined) return uiControl(fields, parseLayoutNumbers(xText,yText,widthText,heightText,row.line));
     return uiControl(fields, null);
   }
+  function imageListNode(row, indent, id, widthText, heightText) {
+    let size;
+    try {
+      size = normalizeImageListLogicalSize(Number(widthText), Number(heightText));
+    } catch (error) {
+      throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+    }
+    const items = [];
+    const names = new Set();
+    if (i < lines.length && lines[i].indent > indent) {
+      const itemIndent = lines[i].indent;
+      while (i < lines.length && lines[i].indent > indent) {
+        const child = lines[i];
+        if (child.indent !== itemIndent) {
+          throw new PatchSyntaxError('ImageList items must use one consistent indentation level.', child.line);
+        }
+        const match = child.text.match(/^image\s+([A-Za-z_]\w*)\s+from\s+(.+)$/);
+        if (!match) {
+          throw new PatchSyntaxError('An ImageList can only contain items like image open from "patch-resource:icons.open".', child.line);
+        }
+        let name;
+        let resource;
+        try {
+          name = normalizeImageListItemName(match[1]);
+          resource = normalizeImageListResourceExpression(match[2]);
+        } catch (error) {
+          throw new PatchSyntaxError(error?.message ?? String(error), child.line);
+        }
+        if (names.has(name)) throw new PatchSyntaxError(`ImageList item '${name}' appears more than once.`, child.line);
+        names.add(name);
+        items.push({ name, sourceExpr: resource.sourceExpr, resourceId: resource.resourceId, line: child.line });
+        if (items.length > PATCH_IMAGELIST_MAX_ITEMS) {
+          throw new PatchSyntaxError(`ImageList contains more than ${PATCH_IMAGELIST_MAX_ITEMS} images.`, child.line);
+        }
+        i += 1;
+      }
+    }
+    return uiControl({
+      control:'imagelist', textExpr:null, id,
+      logicalWidth:size.width, logicalHeight:size.height,
+      items, line:row.line
+    }, null);
+  }
   function panelNode(row, indent, id, layout) {
     const body = optionalChildBlock(indent);
     for (const child of body) {
       if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls in Panel Stage 1.', child.line);
-      if (['panel', 'timer', 'statusbar', 'table', 'tree', 'paintbox'].includes(child.control)) {
-        throw new PatchSyntaxError('Panel Stage 1 cannot nest Panel, Timer, StatusBar, Table, TreeView or PaintBox.', child.line);
+      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox'].includes(child.control)) {
+        throw new PatchSyntaxError('Panel Stage 1 cannot nest Panel, Timer, ImageList, StatusBar, Table, TreeView or PaintBox.', child.line);
       }
       if (child.layout) throw new PatchSyntaxError('Controls inside a panel use flow layout in Panel Stage 1. Remove at/size from the nested control.', child.line);
     }
@@ -151,6 +200,9 @@ export function parse(source) {
       };
     }
 
+    if ((m = row.text.match(/^imagelist\s+as\s+([A-Za-z_]\w*)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) {
+      return imageListNode(row, indent, m[1], m[2], m[3]);
+    }
     if ((m = row.text.match(/^tabs\s+as\s+([A-Za-z_]\w*)(?:\s+at\s+(-?\d+)\s*,\s*(-?\d+)(?:\s+size\s+(\d+)\s*,\s*(\d+))?)?\s*:\s*$/))) {
       const pages = childBlock(indent,row);
       if (pages.length < 2) throw new PatchSyntaxError('Tabs needs at least two tab pages.',row.line);
@@ -163,8 +215,8 @@ export function parse(source) {
       const body = childBlock(indent,row);
       for (const child of body) {
         if (child.kind !== 'uiControl') throw new PatchSyntaxError('A tab page can only contain window controls in Tabs Stage 1.',child.line);
-        if (['panel', 'timer', 'statusbar'].includes(child.control)) {
-          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer or StatusBar.',child.line);
+        if (['panel', 'timer', 'imagelist', 'statusbar'].includes(child.control)) {
+          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList or StatusBar.',child.line);
         }
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
