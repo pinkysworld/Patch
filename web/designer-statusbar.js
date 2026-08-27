@@ -1,5 +1,4 @@
 import './designer-paintbox.js';
-import './designer-imagelist.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { listDesignerControls, updateDesignerControl } from '../src/designer.js';
 import {
