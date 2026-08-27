@@ -1,3 +1,18 @@
+import {
+  addDesignerShape,
+  listDesignerShapes,
+  removeDesignerShape,
+  updateDesignerShape
+} from '../src/designer-shape.js';
+import { formControlDefaultLayout } from '../src/form-layout.js';
+import { patchShapeSvgDescriptor } from '../src/shape-control.js';
+import {
+  DESIGNER_SELECTION_EVENT,
+  clearDesignerSelection,
+  currentDesignerSelection,
+  designerSelectionForControl,
+  rememberDesignerSelection
+} from './designer-selection.js';
 import './designer-data-editor.js';
 import './designer-tabs-nested.js';
 import './designer-tabs-control-actions.js';
@@ -25,6 +40,7 @@ const DEFAULT_WIDTH = 320;
 const MIN_WIDTH = 280;
 const MAX_WIDTH = 480;
 const BULK_WINDOW_SAMPLES = new Set(['workshopDesk', 'listboxMultiWindow']);
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 markClassicBrand();
 installBulkSampleLoadGuard();
@@ -78,6 +94,8 @@ function install() {
     observer.observe(document.documentElement, { childList: true, subtree: true });
     return;
   }
+
+  installShapeStudio(inspector, toolbar);
   if (surface.dataset.patchWorkspaceEnhanced === 'true') return;
   surface.dataset.patchWorkspaceEnhanced = 'true';
 
@@ -189,6 +207,394 @@ function install() {
     window.addEventListener('pointerup', finish, { once: true });
     window.addEventListener('pointercancel', cancel, { once: true });
   });
+}
+
+function installShapeStudio(inspector, toolbar) {
+  const canvas = document.querySelector('#designerCanvas');
+  const code = document.querySelector('#code');
+  const form = inspector.querySelector('#designerInspectorForm');
+  if (!canvas || !code || !form || canvas.dataset.patchShapeStudio === 'true') return;
+  canvas.dataset.patchShapeStudio = 'true';
+  installShapeStyles();
+
+  let add = toolbar.querySelector('#addShape');
+  if (!add) {
+    add = document.createElement('button');
+    add.id = 'addShape';
+    add.className = 'secondary small';
+    add.type = 'button';
+    add.textContent = '+ Shape';
+    add.setAttribute('aria-label', 'Add Shape');
+    add.title = 'Add a source-backed Shape to the active Form';
+    toolbar.appendChild(add);
+  }
+
+  const shapeFields = document.createElement('section');
+  shapeFields.id = 'designerShapeInspectorFields';
+  shapeFields.className = 'designer-shape-inspector';
+  shapeFields.hidden = true;
+  shapeFields.innerHTML = `
+    <strong>Shape</strong>
+    <label class="inspector-field">Name <input id="designerShapeId" autocomplete="off" spellcheck="false"></label>
+    <label class="inspector-field">Kind <select id="designerShapeKind"><option value="rectangle">Rectangle</option><option value="rounded">Rounded rectangle</option><option value="ellipse">Ellipse</option><option value="line">Line</option></select></label>
+    <div class="designer-shape-style-grid">
+      <label>Fill <input id="designerShapeFill" autocomplete="off" spellcheck="false"></label>
+      <label>Stroke <input id="designerShapeStroke" autocomplete="off" spellcheck="false"></label>
+      <label>Stroke W <input id="designerShapeStrokeWidth" inputmode="decimal"></label>
+      <label>Radius <input id="designerShapeRadius" inputmode="decimal"></label>
+      <label>Opacity <input id="designerShapeOpacity" inputmode="decimal"></label>
+    </div>
+    <div class="forms-geometry-grid designer-shape-geometry">
+      <strong>Layout</strong>
+      <label>X <input id="designerShapeX" inputmode="numeric"></label>
+      <label>Y <input id="designerShapeY" inputmode="numeric"></label>
+      <label>W <input id="designerShapeWidth" inputmode="numeric"></label>
+      <label>H <input id="designerShapeHeight" inputmode="numeric"></label>
+    </div>
+    <p class="inspector-hint">Designer-only Shape Stage 1. Web and native build targets remain capability-gated until their renderer slices land.</p>
+    <div class="inspector-actions designer-shape-actions">
+      <button id="designerShapeApply" type="button">Apply Shape</button>
+      <button id="designerShapeSource" class="secondary" type="button">Source</button>
+      <button id="designerShapeDelete" class="danger" type="button">Delete</button>
+    </div>`;
+  const genericActions = form.querySelector(':scope > .inspector-actions');
+  form.insertBefore(shapeFields, genericActions ?? null);
+
+  const schedule = makeShapeScheduler(() => {
+    renderDesignerShapes(canvas, code);
+    syncShapeInspector(canvas, code, form, shapeFields, genericActions);
+  });
+
+  add.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    try {
+      const windowIndex = Number(document.querySelector('#patchFormSelect')?.value) || 0;
+      const result = addDesignerShape(code.value, { windowIndex });
+      setShapeSource(code, result.source);
+      rememberDesignerSelection(canvas, designerSelectionForControl(result.shape, 'core'), { reason: 'add-shape' });
+      schedule();
+    } catch (error) {
+      showShapeError(error);
+    }
+  }, { capture: true });
+
+  shapeFields.querySelector('#designerShapeApply')?.addEventListener('click', () => applyShapeInspector(canvas, code, schedule));
+  shapeFields.querySelector('#designerShapeDelete')?.addEventListener('click', () => deleteShapeInspector(canvas, code, schedule));
+  shapeFields.querySelector('#designerShapeSource')?.addEventListener('click', () => revealSelectedShapeSource(canvas, code));
+  for (const input of shapeFields.querySelectorAll('input, select')) {
+    input.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      applyShapeInspector(canvas, code, schedule);
+    });
+  }
+
+  canvas.addEventListener(DESIGNER_SELECTION_EVENT, schedule);
+  code.addEventListener('input', schedule);
+  code.addEventListener('change', schedule);
+  canvas.addEventListener('pointerdown', event => beginShapePointerEdit(event, canvas, code, schedule), { capture: true });
+  new MutationObserver(mutations => {
+    if (mutations.every(shapeOnlyMutation)) return;
+    schedule();
+  }).observe(canvas, { childList: true, subtree: true });
+  schedule();
+}
+
+function makeShapeScheduler(sync) {
+  let queued = false;
+  return () => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      try { sync(); } catch { /* normal while visible source is temporarily invalid */ }
+    });
+  };
+}
+
+function shapeOnlyMutation(mutation) {
+  const nodes = [...mutation.addedNodes, ...mutation.removedNodes].filter(node => node.nodeType === 1);
+  return nodes.length > 0 && nodes.every(node => node.classList?.contains('patch-shape-designer-control'));
+}
+
+function renderDesignerShapes(canvas, code) {
+  const bodies = [...canvas.querySelectorAll('.patch-window-body')];
+  for (const existing of canvas.querySelectorAll('.patch-shape-designer-control')) existing.remove();
+  if (!bodies.length) return;
+
+  const shapes = listDesignerShapes(code.value);
+  const selection = currentDesignerSelection(canvas);
+  for (const shape of shapes) {
+    const body = bodies[shape.windowIndex];
+    if (!body) continue;
+    const fallback = formControlDefaultLayout('shape', shape.controlIndex);
+    const layout = {
+      x: shape.x ?? fallback.x,
+      y: shape.y ?? fallback.y,
+      width: shape.width ?? fallback.width,
+      height: shape.height ?? fallback.height
+    };
+    const descriptor = patchShapeSvgDescriptor({
+      kind: shape.shapeKind,
+      fill: shape.fill,
+      stroke: shape.stroke,
+      strokeWidth: shape.strokeWidth,
+      cornerRadius: shape.cornerRadius,
+      opacity: shape.opacity
+    });
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.classList.add('designer-control', 'patch-shape-designer-control');
+    if (sameShapeLocation(shape, selection)) svg.classList.add('designer-selected');
+    svg.dataset.windowIndex = String(shape.windowIndex);
+    svg.dataset.controlIndex = String(shape.controlIndex);
+    svg.dataset.patchShapeKind = shape.shapeKind;
+    svg.setAttribute('viewBox', descriptor.viewBox);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', `${shape.shapeKind} Shape ${shape.id}`);
+    svg.tabIndex = 0;
+    Object.assign(svg.style, {
+      position: 'absolute',
+      left: `${layout.x}px`,
+      top: `${layout.y}px`,
+      width: `${layout.width}px`,
+      height: `${layout.height}px`,
+      margin: '0',
+      maxWidth: 'none'
+    });
+
+    const primitive = document.createElementNS(SVG_NS, descriptor.element);
+    for (const [name, value] of Object.entries(descriptor.attributes)) {
+      primitive.setAttribute(svgAttributeName(name), String(value));
+    }
+    primitive.classList.add('patch-shape-primitive');
+    svg.appendChild(primitive);
+
+    if (sameShapeLocation(shape, selection)) {
+      const handle = document.createElementNS(SVG_NS, 'rect');
+      handle.classList.add('patch-shape-resize-handle');
+      handle.setAttribute('x', '88');
+      handle.setAttribute('y', '88');
+      handle.setAttribute('width', '12');
+      handle.setAttribute('height', '12');
+      handle.setAttribute('rx', '2');
+      handle.setAttribute('aria-hidden', 'true');
+      svg.appendChild(handle);
+    }
+    body.classList.add('patch-form-layout');
+    body.appendChild(svg);
+  }
+}
+
+function svgAttributeName(name) {
+  if (name === 'strokeWidth') return 'stroke-width';
+  if (name === 'vectorEffect') return 'vector-effect';
+  return name;
+}
+
+function syncShapeInspector(canvas, code, form, shapeFields, genericActions) {
+  const shape = selectedShape(canvas, code);
+  shapeFields.hidden = !shape;
+  if (genericActions) genericActions.hidden = Boolean(shape);
+  if (!shape) return;
+
+  for (const id of [
+    'designerInspectorIdField', 'designerInspectorTextField', 'designerInspectorOptionsField',
+    'designerInspectorSliderFields', 'designerInspectorTimerField', 'designerInspectorPictureSourceField'
+  ]) {
+    const field = form.querySelector(`#${id}`);
+    if (field) field.hidden = true;
+  }
+  const genericGeometry = form.querySelector('[data-form-geometry]');
+  if (genericGeometry) genericGeometry.hidden = true;
+  setShapeField('designerShapeId', shape.id);
+  setShapeField('designerShapeKind', shape.shapeKind);
+  setShapeField('designerShapeFill', shape.fill);
+  setShapeField('designerShapeStroke', shape.stroke);
+  setShapeField('designerShapeStrokeWidth', shape.strokeWidth);
+  setShapeField('designerShapeRadius', shape.cornerRadius);
+  setShapeField('designerShapeOpacity', shape.opacity);
+  const fallback = formControlDefaultLayout('shape', shape.controlIndex);
+  setShapeField('designerShapeX', shape.x ?? fallback.x);
+  setShapeField('designerShapeY', shape.y ?? fallback.y);
+  setShapeField('designerShapeWidth', shape.width ?? fallback.width);
+  setShapeField('designerShapeHeight', shape.height ?? fallback.height);
+}
+
+function setShapeField(id, value) {
+  const field = document.querySelector(`#${id}`);
+  if (field && document.activeElement !== field) field.value = String(value ?? '');
+}
+
+function applyShapeInspector(canvas, code, schedule) {
+  const shape = selectedShape(canvas, code);
+  if (!shape) return;
+  try {
+    const result = updateDesignerShape(code.value, shape, {
+      id: shapeValue('designerShapeId'),
+      shapeKind: shapeValue('designerShapeKind'),
+      fill: shapeValue('designerShapeFill'),
+      stroke: shapeValue('designerShapeStroke'),
+      strokeWidth: shapeValue('designerShapeStrokeWidth'),
+      cornerRadius: shapeValue('designerShapeRadius'),
+      opacity: shapeValue('designerShapeOpacity'),
+      x: shapeValue('designerShapeX'),
+      y: shapeValue('designerShapeY'),
+      width: shapeValue('designerShapeWidth'),
+      height: shapeValue('designerShapeHeight')
+    });
+    setShapeSource(code, result.source);
+    rememberDesignerSelection(canvas, designerSelectionForControl(result.shape, 'core'), { emit: false });
+    schedule();
+  } catch (error) {
+    showShapeError(error);
+  }
+}
+
+function deleteShapeInspector(canvas, code, schedule) {
+  const shape = selectedShape(canvas, code);
+  if (!shape) return;
+  try {
+    const next = removeDesignerShape(code.value, shape);
+    clearDesignerSelection(canvas, { reason: 'delete-shape' });
+    setShapeSource(code, next);
+    schedule();
+  } catch (error) {
+    showShapeError(error);
+  }
+}
+
+function revealSelectedShapeSource(canvas, code) {
+  const shape = selectedShape(canvas, code);
+  if (!shape) return;
+  const lines = code.value.replace(/\r\n/g, '\n').split('\n');
+  let start = 0;
+  for (let index = 0; index < shape.line - 1; index += 1) start += lines[index].length + 1;
+  const end = start + (lines[shape.line - 1]?.length ?? 0);
+  code.focus();
+  code.setSelectionRange(start, end);
+}
+
+function selectedShape(canvas, code) {
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  try {
+    return listDesignerShapes(code.value).find(shape => sameShapeLocation(shape, selection)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function sameShapeLocation(shape, selection) {
+  return Boolean(selection && Number(shape.windowIndex) === Number(selection.windowIndex) && Number(shape.controlIndex) === Number(selection.controlIndex));
+}
+
+function shapeValue(id) {
+  return document.querySelector(`#${id}`)?.value ?? '';
+}
+
+function beginShapePointerEdit(event, canvas, code, schedule) {
+  const element = event.target?.closest?.('.patch-shape-designer-control');
+  if (!element || !canvas.contains(element)) return;
+  const windowIndex = Number(element.dataset.windowIndex);
+  const controlIndex = Number(element.dataset.controlIndex);
+  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return;
+  const shape = listDesignerShapes(code.value).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex);
+  if (!shape) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  rememberDesignerSelection(canvas, designerSelectionForControl(shape, 'core'), { reason: 'shape-pointer' });
+  const fallback = formControlDefaultLayout('shape', shape.controlIndex);
+  const start = {
+    x: shape.x ?? fallback.x,
+    y: shape.y ?? fallback.y,
+    width: shape.width ?? fallback.width,
+    height: shape.height ?? fallback.height
+  };
+  const resize = Boolean(event.target?.closest?.('.patch-shape-resize-handle'));
+  const startX = event.clientX;
+  const startY = event.clientY;
+  element.setPointerCapture?.(event.pointerId);
+
+  const move = moveEvent => {
+    const dx = Math.round(moveEvent.clientX - startX);
+    const dy = Math.round(moveEvent.clientY - startY);
+    if (resize) {
+      element.style.width = `${Math.max(16, start.width + dx)}px`;
+      element.style.height = `${Math.max(16, start.height + dy)}px`;
+    } else {
+      element.style.left = `${Math.max(0, start.x + dx)}px`;
+      element.style.top = `${Math.max(0, start.y + dy)}px`;
+    }
+  };
+  const cleanup = finishEvent => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', finish);
+    window.removeEventListener('pointercancel', cancel);
+    if (element.releasePointerCapture && element.hasPointerCapture?.(finishEvent?.pointerId)) {
+      try { element.releasePointerCapture(finishEvent.pointerId); } catch { /* capture may already be gone */ }
+    }
+  };
+  const finish = finishEvent => {
+    cleanup(finishEvent);
+    const changes = resize
+      ? { width: parseInt(element.style.width, 10), height: parseInt(element.style.height, 10) }
+      : { x: parseInt(element.style.left, 10), y: parseInt(element.style.top, 10) };
+    try {
+      const result = updateDesignerShape(code.value, shape, changes);
+      setShapeSource(code, result.source);
+      rememberDesignerSelection(canvas, designerSelectionForControl(result.shape, 'core'), { emit: false });
+      schedule();
+    } catch (error) {
+      showShapeError(error);
+      schedule();
+    }
+  };
+  const cancel = cancelEvent => {
+    cleanup(cancelEvent);
+    schedule();
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', finish, { once: true });
+  window.addEventListener('pointercancel', cancel, { once: true });
+}
+
+function setShapeSource(code, source) {
+  code.value = source;
+  code.dispatchEvent(new Event('input', { bubbles: true }));
+  code.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function showShapeError(error) {
+  const target = document.querySelector('#designerInspectorError');
+  if (!target) return;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+}
+
+function installShapeStyles() {
+  if (document.querySelector('#patchDesignerShapeStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'patchDesignerShapeStyles';
+  style.textContent = `
+    .patch-shape-designer-control { cursor: move; overflow: visible; touch-action: none; }
+    .patch-shape-designer-control .patch-shape-primitive { pointer-events: none; }
+    .patch-shape-designer-control.designer-selected { outline: 2px solid currentColor; outline-offset: 3px; }
+    .patch-shape-resize-handle { fill: Canvas; stroke: currentColor; stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: nwse-resize; pointer-events: all; }
+    .designer-shape-inspector { display: grid; gap: 10px; margin-top: 10px; }
+    .designer-shape-inspector[hidden] { display: none; }
+    .designer-shape-style-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .designer-shape-style-grid label { display: grid; gap: 4px; }
+    #designer #addShape { top: 491px; }
+    #designer #addShape::before { content: "◇"; }
+    #designer #addStatusbar { top: 525px; }
+    #designer #addTimer { top: 559px; }
+    @media (max-width: 760px) { .designer-shape-style-grid { grid-template-columns: 1fr; } }
+    @media (forced-colors: active) { .patch-shape-resize-handle { fill: Canvas; stroke: CanvasText; } }
+  `;
+  document.head.appendChild(style);
 }
 
 function setWidth(surface, value) {
