@@ -10,7 +10,7 @@ import {
 } from '../src/component-registry.js';
 
 test('component registry exposes the current source-backed Designer families plus Graphics Stage 1', () => {
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.4');
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.5');
   assert.deepEqual(PATCH_COMPONENTS.map(component => component.type), [
     'text', 'button', 'input', 'checkbox',
     'radio', 'combo', 'listbox', 'slider',
@@ -37,7 +37,7 @@ test('Picture is discoverable with source-backed properties event renderer and t
   assert.equal(patchComponentForButton('addPicture')?.type, 'picture');
 });
 
-test('Shape Stage 1 exposes authoring metadata without overclaiming runtime renderer support', () => {
+test('Shape Stage 1 exposes Studio authoring and Standalone Web without overclaiming native runtime support', () => {
   const shape = patchComponent('shape');
   assert.equal(shape.type, 'shape');
   assert.equal(shape.label, 'Shape');
@@ -52,7 +52,7 @@ test('Shape Stage 1 exposes authoring metadata without overclaiming runtime rend
   assert.deepEqual(shape.events, []);
   assert.equal(shape.designRenderer, 'shape');
   assert.deepEqual(shape.targetSupport, {
-    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addShape')?.type, 'shape');
 });
