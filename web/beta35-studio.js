@@ -39,7 +39,7 @@ make quote(ticket, extra number 0..50):
   change ticket:
     add extra to total
 
-window "Workshop Desk" as main size 1080, 660:
+window "Workshop Desk" as main size 1080, 700:
   text "Workshop Desk" at 24, 16 size 260, 30
   text "{status}" at 300, 16 size 520, 30
   text "Quote {ticket.total} · {ticket.state}" at 840, 16 size 210, 30
@@ -48,26 +48,26 @@ window "Workshop Desk" as main size 1080, 660:
   combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 82 size 220, 36
   text "Item" at 260, 58 size 80, 22
   input item at 260, 82 size 250, 36
-  text "Payment" at 528, 58 size 90, 22
-  radio "Card", "Cash", "Account" as pay at 528, 82 size 200, 96
-  text "Priority" at 744, 58 size 90, 22
-  radio "Normal", "High", "Critical" as priority at 744, 82 size 180, 96
-  checkbox "Rush bench" as rush at 936, 82 size 120, 36
+  text "Quantity {qty}" at 528, 58 size 130, 22
+  slider 1..8 as qty step 1 at 528, 82 size 240, 38
+  checkbox "Rush bench" as rush at 788, 82 size 150, 36
 
-  text "Quantity {qty}" at 24, 138 size 130, 22
-  slider 1..8 as qty step 1 at 24, 162 size 260, 38
-  text "Notes" at 304, 138 size 80, 22
-  input notes at 304, 162 size 370, 38
-  text "Services" at 694, 138 size 90, 22
-  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 694, 162 size 230, 110
+  text "Payment" at 24, 136 size 90, 22
+  radio "Card", "Cash", "Account" as pay at 24, 160 size 280, 82
+  text "Priority" at 324, 136 size 90, 22
+  radio "Normal", "High", "Critical" as priority at 324, 160 size 280, 82
+  text "Notes" at 624, 136 size 80, 22
+  input notes at 624, 160 size 404, 38
+  text "Services" at 624, 210 size 90, 22
+  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 624, 234 size 404, 72
 
-  table "Ticket", "Customer", "Bench", "State" as board at 24, 294 size 540, 220:
+  table "Ticket", "Customer", "Bench", "State" as board at 24, 320 size 540, 220:
     row "WD-104", "Ada", "Bench A", "Open"
     row "WD-105", "Grace", "Bench B", "Quoted"
     row "WD-106", "Linus", "Bench A", "Ready"
     row "WD-107", "Margaret", "Overflow", "Waiting"
 
-  tree as parts at 584, 294 size 270, 220:
+  tree as parts at 584, 320 size 270, 220:
     node "Parts"
       node "Input"
         node "Keyboard"
@@ -80,16 +80,16 @@ window "Workshop Desk" as main size 1080, 660:
       node "Solder"
       node "Meter"
 
-  button "Create quote" as quote_button at 878, 294 size 150, 38
-  button "Job details" as details_button at 878, 342 size 150, 38
-  button "Settings" as settings_button at 878, 390 size 150, 38
-  button "Mark ready" as complete_button at 878, 438 size 150, 38
-  button "Reset ticket" as reset_button at 878, 486 size 150, 38
+  button "Create quote" as quote_button at 878, 320 size 150, 38
+  button "Job details" as details_button at 878, 368 size 150, 38
+  button "Settings" as settings_button at 878, 416 size 150, 38
+  button "Mark ready" as complete_button at 878, 464 size 150, 38
+  button "Reset ticket" as reset_button at 878, 512 size 150, 38
 
-  text "Board and inventory selections stay transient until source commits them." at 24, 536 size 980, 26
+  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 588 size 980, 26
-  statusbar "{status}" as desk_status at 0, 632 size 1080, 28
+  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26
+  statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
 window "Workshop settings" as settings size 720, 520:
   tabs as prefs at 24, 24 size 672, 400:
