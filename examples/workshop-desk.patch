@@ -16,14 +16,13 @@ create text priority = "Normal"
 create text pay = "Card"
 create text notes = ""
 create list services = ["Diagnostics"]
-create list selected_part = []
-create list selected_job = []
 create text status = "Ready for the next workshop ticket."
 create boolean notifications = true
 create text default_bench = "Bench A"
 create list stations = ["Bench A", "Bench B"]
 create text density = "Comfortable"
 create number labor_limit = 50
+create number heartbeat = 0
 
 allow quote:
   ticket.total may increase up to 500
@@ -79,9 +78,10 @@ window "Workshop Desk" as main size 1080, 700:
   button "Mark ready" as complete_button at 878, 464 size 150, 38
   button "Reset ticket" as reset_button at 878, 512 size 150, 38
 
-  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26
+  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26
+  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
+  timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
 window "Workshop settings" as settings size 720, 520:
@@ -101,11 +101,11 @@ window "Workshop settings" as settings size 720, 520:
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
       text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."
+      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
-window "Job details" as details size 640, 470:
+window "Job details" as details size 640, 520:
   text "Current workshop ticket" at 24, 24 size 300, 28
   text "Customer: {ticket.customer}" at 24, 70 size 280, 24
   text "Item: {ticket.item}" at 24, 104 size 280, 24
@@ -115,10 +115,13 @@ window "Job details" as details size 640, 470:
   text "Payment: {ticket.payment}" at 326, 70 size 280, 24
   text "State: {ticket.state}" at 326, 104 size 280, 24
   text "Current quote: {ticket.total}" at 326, 138 size 280, 24
-  text "{status}" at 24, 278 size 560, 28
-  button "Add inspection" as details_quote at 24, 366 size 160, 38
-  button "Mark ready" as details_ready at 202, 366 size 150, 38
-  button "Close details" as close_details at 370, 366 size 160, 38
+  panel as runtime_panel at 326, 172 size 280, 170:
+    text "Native runtime pulse {heartbeat}"
+    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
+  text "{status}" at 24, 360 size 560, 28
+  button "Add inspection" as details_quote at 24, 414 size 160, 38
+  button "Mark ready" as details_ready at 202, 414 size 150, 38
+  button "Close details" as close_details at 370, 414 size 160, 38
 
 when customer changed:
   change customer:
@@ -179,16 +182,16 @@ when services changed:
     set = "Services updated"
 
 when board changed:
-  change selected_job:
-    set = value
   change status:
     set = "Workshop board row selected"
 
 when parts changed:
-  change selected_part:
-    set = value
   change status:
     set = "Inventory tree path selected"
+
+when workshop_clock ticked:
+  change heartbeat:
+    add 1
 
 when quote_button clicked:
   do quote(ticket, 25)
@@ -284,10 +287,8 @@ when reset_button clicked:
     set = ""
   change services:
     set = ["Diagnostics"]
-  change selected_part:
-    clear
-  change selected_job:
-    clear
+  change heartbeat:
+    set = 0
   change ticket:
     set customer = "Ada"
     set item = "Keyboard"
