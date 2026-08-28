@@ -34,8 +34,14 @@ static NSImage* PatchPaintCachedImageV18(const std::string& source) {
   }
   NSData* data = [NSData dataWithBytes:picture.bytes.data() length:picture.bytes.size()];
   NSImage* image = data ? [[NSImage alloc] initWithData:data] : nil;
+  if (image && (image.size.width <= 0 || image.size.height <= 0)) { [image release]; image = nil; }
   gPatchPaintImagesV18[source] = image;
   return image;
+}
+
+static void PatchDestroyPaintImagesV18() {
+  for (auto& item : gPatchPaintImagesV18) if (item.second) [item.second release];
+  gPatchPaintImagesV18.clear();
 }
 
 static bool PatchResolvePaintImageBoxesV18() {
@@ -176,6 +182,91 @@ static void PatchRefreshPaintImageBoxesV18() {
   gRefreshing = previous;
 }
 
+@interface PatchEventTargetV18 : PatchEventTargetV17
+@end
+@implementation PatchEventTargetV18
+- (void)handleControl:(id)sender { [super handleControl:sender]; PatchRefreshPaintImageBoxesV18(); }
+- (void)controlTextDidChange:(NSNotification*)notification { [super controlTextDidChange:notification]; PatchRefreshPaintImageBoxesV18(); }
+@end
+
+@interface PatchTableTargetV18 : PatchTableTargetV17
+@end
+@implementation PatchTableTargetV18
+- (void)tableViewSelectionDidChange:(NSNotification*)notification { [super tableViewSelectionDidChange:notification]; PatchRefreshPaintImageBoxesV18(); }
+@end
+
+@interface PatchTreeTargetV18 : PatchTreeTargetV17
+@end
+@implementation PatchTreeTargetV18
+- (void)outlineViewSelectionDidChange:(NSNotification*)notification { [super outlineViewSelectionDidChange:notification]; PatchRefreshPaintImageBoxesV18(); }
+@end
+
+@interface PatchSliderTargetV18 : PatchSliderTargetV17
+@end
+@implementation PatchSliderTargetV18
+- (void)handleSlider:(id)sender { [super handleSlider:sender]; PatchRefreshPaintImageBoxesV18(); }
+@end
+
+@interface PatchChromeTargetV18 : PatchChromeTargetV17
+@end
+@implementation PatchChromeTargetV18
+- (void)handlePicture:(id)sender { [super handlePicture:sender]; PatchRefreshPaintImageBoxesV18(); }
+- (void)handleTimer:(NSTimer*)timer { [super handleTimer:timer]; PatchRefreshPaintImageBoxesV18(); }
+@end
+
+static PatchTableTargetV18* gPatchTableTargetV18 = nil;
+static PatchTreeTargetV18* gPatchTreeTargetV18 = nil;
+static PatchSliderTargetV18* gPatchSliderTargetV18 = nil;
+static PatchChromeTargetV18* gPatchChromeTargetV18 = nil;
+
+static bool PatchUpgradePaintImageTargetsV18() {
+  gPatchTableTargetV18 = [PatchTableTargetV18 new];
+  for (const auto& table : gPatchTablesV10) {
+    NSTableView* view = (NSTableView*)gControls[(size_t)table.nativeIndex].widget;
+    if (!view) return false;
+    view.dataSource = gPatchTableTargetV18;
+    view.delegate = gPatchTableTargetV18;
+  }
+
+  gPatchTreeTargetV18 = [PatchTreeTargetV18 new];
+  gPatchTreeTargetV13 = gPatchTreeTargetV18;
+  for (const auto& tree : gPatchTreesV13) {
+    NSOutlineView* outline = gPatchTreeViewsV13[tree.nativeIndex];
+    if (!outline) return false;
+    outline.dataSource = gPatchTreeTargetV18;
+    outline.delegate = gPatchTreeTargetV18;
+  }
+
+  gPatchSliderTargetV18 = [PatchSliderTargetV18 new];
+  for (const auto& slider : gPatchSlidersV14) {
+    NSSlider* view = gPatchSliderViewsV14[slider.nativeIndex];
+    if (!view) return false;
+    view.target = gPatchSliderTargetV18;
+    view.action = @selector(handleSlider:);
+  }
+
+  gPatchChromeTargetV18 = [PatchChromeTargetV18 new];
+  for (const auto& item : gPatchChromeV15) {
+    const int index = item.nativeIndex;
+    if (item.kind == PATCH_CHROME_TIMER_V15) {
+      NSTimer* previous = gPatchChromeTimersV15[index];
+      if (previous) [previous invalidate];
+      NSTimer* timer = [NSTimer timerWithTimeInterval:(item.interval / 1000.0) target:gPatchChromeTargetV18 selector:@selector(handleTimer:) userInfo:@(index) repeats:YES];
+      if (!timer) return false;
+      [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
+      gPatchChromeTimersV15[index] = timer;
+      continue;
+    }
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      NSView* view = gPatchChromeViewsV15[index];
+      if (![view isKindOfClass:[NSButton class]]) return false;
+      ((NSButton*)view).target = gPatchChromeTargetV18;
+      ((NSButton*)view).action = @selector(handlePicture:);
+    }
+  }
+  return true;
+}
+
 @interface PatchPaintBoxImageResizeObserverV18 : NSObject
 - (void)windowDidResize:(NSNotification*)notification;
 @end
@@ -188,6 +279,10 @@ static int RunPatchPaintBoxImageSmokeV18() {
   int code = 410;
   for (const auto& item : gPatchPaintImageBoxesV18) {
     if (!gPatchPaintImageViewsV18[item.nativeIndex]) return code++;
+    const std::string* source = PatchPaintFirstImageSourceV18(item.program);
+    if (!source) return code++;
+    NSImage* image = PatchPaintCachedImageV18(*source);
+    if (!image || image.size.width <= 0 || image.size.height <= 0) return code++;
   }
   return 0;
 }
@@ -201,10 +296,10 @@ int main(int argc, const char* argv[]) {
     if (!ReadSelfPayloadV18(payloadV17) || !PatchConvertPayloadV17ToV16(payloadV17, payloadV16, gPatchPaintImageBoxesV18) || !PatchConvertPayloadV16ToV15(payloadV16, payloadV15, gPatchPaintBoxesV17) || !PatchConvertPayloadV15ToV14(payloadV15, payloadV14, gPatchShapesV16) || !PatchConvertPayloadV14ToV13(payloadV14, payloadV13, gPatchChromeV15) || !PatchConvertPayloadV13ToV12(payloadV13, payloadV12, gPatchSlidersV14) || !PatchConvertPayloadV12ToV11(payloadV12, payloadV11, gPatchTreesV13) || !PatchConvertPayloadV11ToV10(payloadV11, payloadV10, gPatchMenuEntriesV12) || !PatchConvertPayloadV10ToV9(payloadV10, payloadV9, gPatchListStatesV11, gPatchListBoxesV11, gPatchListEventsV11) || !PatchConvertPayloadV9ToV8(payloadV9, payloadV8, gPatchTablesV10) || !PatchConvertPayloadV8ToV7(payloadV8, payloadV7, gPatchLayoutPoliciesV09) || !ParsePayload(payloadV7)) return 20;
     if (gPatchLayoutPoliciesV09.size() != gControls.size() || !PatchResolveTablesV10() || !PatchResolveListsV11() || !PatchResolveTreesV13() || !PatchResolveSlidersV14() || !PatchResolveChromeV15() || !PatchResolveShapesV16() || !PatchResolvePaintBoxesV17() || !PatchResolvePaintImageBoxesV18()) return 22;
     PatchSyncListShadowsV11();
-    gEventTarget = [PatchEventTargetV14 new];
+    gEventTarget = [PatchEventTargetV18 new];
     gWindowDelegates = [NSMutableArray arrayWithCapacity:gForms.size()];
     CreateMenus();
-    if (!CreateForms() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchUpgradeTableTargetV12() || !PatchUpgradeTableTargetV13() || !PatchInstallTreesV13() || !PatchUpgradeTargetsV14() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16() || !PatchInstallPaintBoxesV17() || !PatchInstallPaintImageBoxesV18() || !PatchInstallMenusV12()) return 21;
+    if (!CreateForms() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchUpgradeTableTargetV12() || !PatchUpgradeTableTargetV13() || !PatchInstallTreesV13() || !PatchUpgradeTargetsV14() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16() || !PatchInstallPaintBoxesV17() || !PatchInstallPaintImageBoxesV18() || !PatchInstallMenusV12() || !PatchUpgradePaintTargetsV17() || !PatchUpgradePaintImageTargetsV18()) return 21;
     gPatchResponsiveObserverV11 = [PatchResponsiveObserverV11 new];
     [[NSNotificationCenter defaultCenter] addObserver:gPatchResponsiveObserverV11 selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:nil];
     gPatchSliderResizeObserverV14 = [PatchSliderResizeObserverV14 new];
@@ -235,10 +330,12 @@ int main(int argc, const char* argv[]) {
       if (!result) result = RunPatchPaintBoxSmokeV17();
       if (!result) result = RunPatchPaintBoxImageSmokeV18();
       for (const auto& item : gPatchChromeV15) if (gPatchChromeTimersV15[item.nativeIndex]) [gPatchChromeTimersV15[item.nativeIndex] invalidate];
+      PatchDestroyPaintImagesV18();
       return result;
     }
     [NSApp activateIgnoringOtherApps:YES];
     [NSApp run];
+    PatchDestroyPaintImagesV18();
   }
   return 0;
 }
