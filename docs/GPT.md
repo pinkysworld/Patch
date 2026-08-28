@@ -2,7 +2,7 @@
 
 Living briefing for ChatGPT, Grok and other coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-28** by Grok on `grok/rad-window-icon-r1` ([#272](https://github.com/pinkysworld/Patch/pull/272)).
+Last refreshed: **2026-08-28** by Grok on `grok/rad-shape-native-r1`.
 
 ## What Patch is
 
@@ -18,11 +18,12 @@ Do not silently widen or flatten these labels.
 |---|---|
 | Package | `0.2.0-beta.36` |
 | Change IR | `0.10` |
-| Native GUI IR | `1.4` |
-| Sealed payload | `v14` |
-| Ready/offline runtime | `v1.5` (Windows, macOS, Linux; token-free) |
+| Native GUI IR | `1.5` |
+| Sealed payload | `v15` |
+| Ready/offline runtime | `v1.6` (Windows, macOS, Linux; token-free) |
 | Frozen TreeView line | Native GUI IR **1.2** / payload **v12** / runtime **v1.3** (Slider fail-closed) |
 | Previous Slider line | Native GUI IR **1.3** / payload **v13** / runtime **v1.4** |
+| Previous Chrome line | Native GUI IR **1.4** / payload **v14** / runtime **v1.5** |
 | Studio project | multi-file/resource bundle **v4** |
 | Component registry | **0.8** |
 | Formal claim | **beta.32** invocation-frame-aware direct-Wasm correspondence for the finite safe-integer call-tree fragment. Studio/native/RAD work does **not** widen that claim. |
@@ -33,7 +34,7 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 ## Collaboration
 
 - GPT branches: `gpt/...`. Current RAD PR: [#268](https://github.com/pinkysworld/Patch/pull/268) `gpt/rad-imagelist-r1`.
-- Grok branches: `grok/...` when the work is a separate slice. Current stacked PRs: [#269](https://github.com/pinkysworld/Patch/pull/269) Picture display, [#270](https://github.com/pinkysworld/Patch/pull/270) native Picture formats, [#271](https://github.com/pinkysworld/Patch/pull/271) Button ImageList consumer, [#272](https://github.com/pinkysworld/Patch/pull/272) Window/application icons.
+- Grok branches: `grok/...` when the work is a separate slice. Current stacked PRs: [#269](https://github.com/pinkysworld/Patch/pull/269) Picture display, [#270](https://github.com/pinkysworld/Patch/pull/270) native Picture formats, [#271](https://github.com/pinkysworld/Patch/pull/271) Button ImageList consumer, [#272](https://github.com/pinkysworld/Patch/pull/272) Window/application icons, [#273](https://github.com/pinkysworld/Patch/pull/273) Shape native.
 - Tracking issue: [#247](https://github.com/pinkysworld/Patch/issues/247) RAD R1.
 - After every slice: tests, docs, public site copy, this file, and regenerate `docs/COMPONENT_CAPABILITY_MATRIX.md`.
 - Do not merge stale planning PRs [#245](https://github.com/pinkysworld/Patch/pull/245) / [#246](https://github.com/pinkysworld/Patch/pull/246); the canonical plans now live in `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
@@ -58,17 +59,16 @@ Completed:
 - Picture authoring + Web embed + bounded native PNG/JPEG
 - Picture display properties: source-backed fit/center/opacity/description, Designer/Object Inspector, Web preview; native non-default fit/center/opacity fail closed
 - Explicit native Picture format policy `native-picture-formats/1.0`: Studio/Web keep PNG/JPEG/WebP/SVG; native Ready PNG/JPEG; WebP/SVG deferred/fail-closed without an IR bump
-- Shape Stage 1 authoring + Standalone Web; native fail-closed
+- Shape Stage 1 authoring + Standalone Web + native lowering/runtime parity (IR 1.5 / payload v15 / runtime v1.6)
 - PaintBox Stage 1 authoring + `paint` drawing + Standalone Web; native fail-closed
 - ImageList Stage 1 authoring (nonvisual tray, resource-backed items)
-- First ImageList consumer: Button `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images
-- Window/application icons: source-backed `icon` on the window line, Studio/Web favicon packaging under `window-icon/1.0`; native GUI IR 1.4 fail-closes
+- First ImageList consumer: Button `image list.item` on Studio/Web; native GUI still fail-closes ImageList and Button images
+- Window/application icons: source-backed `icon` on the window line, Studio/Web favicon packaging under `window-icon/1.0`; native GUI still fail-closes
 - Generated component capability matrix (`patch components`, `docs/COMPONENT_CAPABILITY_MATRIX.md`)
 
 Remaining, in this order:
 
-1. Shape native lowering/runtime parity
-2. PaintBox native drawing parity, then `draw image`
+1. PaintBox native drawing parity, then `draw image`
 
 Do not bump Native GUI IR / payload / runtime for Window icons or Button images. Native `.ico` / AppKit / Linux desktop icon packaging waits until those backends move together.
 
@@ -122,12 +122,15 @@ node src/cli-entry.js doctor --json
 | `docs/WINDOW_ICONS.md` | `window-icon/1.0` policy |
 | `src/component-matrix.js` | Generated matrix/JSON/CLI projection |
 | `src/component-support.js` | Build-target support assessment |
-| `src/native-current-contract.js` | Current IR 1.4 / v14 / v1.5 facade |
+| `src/native-current-contract.js` | Current IR 1.5 / v15 / v1.6 facade |
+| `src/native-gui-ir-v15.js` | Native GUI IR 1.5 Shape lowering |
+| `src/sealed-native-gui-v15.js` | Payload v15 Shape trailer (`PSHP`) |
 | `src/native-picture-format-policy.js` | `native-picture-formats/1.0` Ready PNG/JPEG vs deferred WebP/SVG |
 | `src/native-picture-resources.js` | Native Picture resource embed + format-policy enforcement |
 | `docs/NATIVE_PICTURE_FORMATS.md` | Native Picture format policy |
 | `web/` | Patch Studio site/PWA |
 | `examples/workshop-desk.patch` | Acceptance showcase. Interpreter/Web may persist Table/Tree text-lists; current native lowering still fail-closes `set = value` from Table `changed` because that event value is list-valued. Do not interpolate lists into `text`. |
+| `examples/shape-window.patch` | Native Shape Stage 1 rectangle/rounded/ellipse/line showcase |
 | `docs/RAD_STUDIO_MASTERPLAN.md` | Architecture |
 | `docs/RAD_STUDIO_MASTER_BACKLOG.md` | Long-term backlog |
 | `docs/COMPONENT_CAPABILITY_MATRIX.md` | Generated capability table |
@@ -135,4 +138,4 @@ node src/cli-entry.js doctor --json
 
 ## Next ChatGPT slice
 
-**Shape native lowering/runtime parity.** Application/window icons are source-backed on Studio/Web under `window-icon/1.0`. Native GUI IR 1.4 still fail-closes Window icons, ImageList and Button image bindings. Do not bump Native GUI IR / payload / runtime unless native backends move together. Native `.ico`/AppKit/Linux desktop icon packaging and ToolBar/TreeView image bindings can wait.
+**PaintBox native drawing parity, then `draw image`.** Shape Stage 1 is native on IR 1.5 / payload v15 / runtime v1.6. Native GUI IR 1.5 still fail-closes Window icons, ImageList and Button image bindings. Do not bump Native GUI IR / payload / runtime unless native backends move together. Native `.ico`/AppKit/Linux desktop icon packaging and ToolBar/TreeView image bindings can wait.

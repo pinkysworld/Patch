@@ -44,11 +44,11 @@ window "Shapes":
   );
 });
 
-test('Shape Stage 1 target claims expose Web rendering but keep native targets fail-closed', () => {
+test('Shape Stage 1 target claims expose Web and native desktop rendering', () => {
   const shape = patchComponent('shape');
-  assert.equal(shape.targetSupport.studio, 'authoring');
+  assert.equal(shape.targetSupport.studio, 'supported');
   assert.equal(shape.targetSupport.web, 'supported');
-  assert.equal(shape.targetSupport.windows, 'unsupported');
-  assert.equal(shape.targetSupport.macos, 'unsupported');
-  assert.equal(shape.targetSupport.linux, 'unsupported');
+  assert.equal(shape.targetSupport.windows, 'supported');
+  assert.equal(shape.targetSupport.macos, 'supported');
+  assert.equal(shape.targetSupport.linux, 'supported');
 });

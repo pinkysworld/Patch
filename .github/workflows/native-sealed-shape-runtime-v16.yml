@@ -1,0 +1,243 @@
+name: Patch Native Sealed Shape Runtime v1.6
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/sealed-native-gui-v15.js'
+      - 'src/native-gui-ir-v15.js'
+      - 'src/native-shape-backend-adapter.js'
+      - 'src/native-current-contract.js'
+      - 'native-runtime/sealed-shape-v16.hpp'
+      - 'native-runtime/sealed-chrome-v15.hpp'
+      - 'native-runtime/picture-data-v15.hpp'
+      - 'native-runtime/win32-sealed-gui-v16.cpp'
+      - 'native-runtime/appkit-sealed-gui-v16.mm'
+      - 'native-runtime/gtk-sealed-gui-v16.cpp'
+      - 'examples/shape-window.patch'
+      - 'examples/chrome-window.patch'
+      - 'tests/native-shape.test.js'
+      - 'tests/native-runtime-v16-sources.test.js'
+      - '.github/workflows/native-sealed-shape-runtime-v16.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/sealed-native-gui-v15.js'
+      - 'src/native-gui-ir-v15.js'
+      - 'src/native-shape-backend-adapter.js'
+      - 'src/native-current-contract.js'
+      - 'native-runtime/sealed-shape-v16.hpp'
+      - 'native-runtime/sealed-chrome-v15.hpp'
+      - 'native-runtime/picture-data-v15.hpp'
+      - 'native-runtime/win32-sealed-gui-v16.cpp'
+      - 'native-runtime/appkit-sealed-gui-v16.mm'
+      - 'native-runtime/gtk-sealed-gui-v16.cpp'
+      - 'examples/shape-window.patch'
+      - 'examples/chrome-window.patch'
+      - 'tests/native-shape.test.js'
+      - 'tests/native-runtime-v16-sources.test.js'
+      - '.github/workflows/native-sealed-shape-runtime-v16.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test sealed Shape payload v15 / runtime v1.6 contract
+        run: node --test tests/native-runtime-v16-sources.test.js tests/native-shape.test.js
+
+  windows:
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build Win32 sealed Shape runtime v1.6
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-runtime-v16 | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v16.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime-v16\patch-windows-native-gui-runtime.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content dist-runtime-v16\build-shape-runtime.cmd -Encoding ascii
+          & cmd.exe /d /c dist-runtime-v16\build-shape-runtime.cmd
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal payload v15 and smoke Win32 runtime
+        shell: pwsh
+        run: |
+          @'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV15 } from './src/native-gui-ir-v15.js';
+          import { sealNativeGuiRuntimeV15 } from './src/sealed-native-gui-v15.js';
+          const source = fs.readFileSync('examples/shape-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV15(compile(source, { name: 'SealedShape', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v16/patch-windows-native-gui-runtime.exe');
+          const sealed = sealNativeGuiRuntimeV15(runtime, ir, { platform: 'windows' });
+          fs.writeFileSync('SealedShape.exe', sealed);
+          '@ | Set-Content seal-shape.mjs -Encoding utf8
+          node seal-shape.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Payload v15 sealing failed.' }
+          $process = Start-Process -FilePath (Resolve-Path './SealedShape.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed Shape runtime smoke failed with exit code $($process.ExitCode)." }
+      - name: Seal Chrome example through Shape runtime
+        shell: pwsh
+        run: |
+          @'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV15 } from './src/native-gui-ir-v15.js';
+          import { sealNativeGuiRuntimeV15 } from './src/sealed-native-gui-v15.js';
+          const source = fs.readFileSync('examples/chrome-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV15(compile(source, { name: 'SealedChrome', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v16/patch-windows-native-gui-runtime.exe');
+          const sealed = sealNativeGuiRuntimeV15(runtime, ir, { platform: 'windows' });
+          fs.writeFileSync('SealedChrome.exe', sealed);
+          '@ | Set-Content seal-chrome.mjs -Encoding utf8
+          node seal-chrome.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Chrome-on-v16 sealing failed.' }
+          $process = Start-Process -FilePath (Resolve-Path './SealedChrome.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed Chrome-on-v16 smoke failed with exit code $($process.ExitCode)." }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-windows-native-gui-runtime-v16
+          path: dist-runtime-v16/patch-windows-native-gui-runtime.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  macos:
+    needs: contract
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build universal AppKit sealed Shape runtime v1.6
+        run: |
+          mkdir -p dist-runtime-v16
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -framework Cocoa native-runtime/appkit-sealed-gui-v16.mm -o dist-runtime-v16/patch-macos-native-gui-runtime.bin
+          chmod +x dist-runtime-v16/patch-macos-native-gui-runtime.bin
+          ARCHS="$(lipo -archs dist-runtime-v16/patch-macos-native-gui-runtime.bin)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal payload v15 and smoke AppKit runtime
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV15 } from './src/native-gui-ir-v15.js';
+          import { sealNativeGuiRuntimeV15 } from './src/sealed-native-gui-v15.js';
+          const source = fs.readFileSync('examples/shape-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV15(compile(source, { name: 'SealedShape', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v16/patch-macos-native-gui-runtime.bin');
+          const sealed = sealNativeGuiRuntimeV15(runtime, ir, { platform: 'macos' });
+          fs.writeFileSync('SealedShape', sealed); fs.chmodSync('SealedShape', 0o755);
+          NODE
+          ./SealedShape --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-macos-native-gui-runtime-v16
+          path: dist-runtime-v16/patch-macos-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  linux:
+    needs: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Build GTK3 sealed Shape runtime v1.6
+        run: |
+          mkdir -p dist-runtime-v16
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v16.cpp -o dist-runtime-v16/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x dist-runtime-v16/patch-linux-native-gui-runtime.bin
+      - name: Seal payload v15 and smoke GTK runtime
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV15 } from './src/native-gui-ir-v15.js';
+          import { sealNativeGuiRuntimeV15 } from './src/sealed-native-gui-v15.js';
+          const source = fs.readFileSync('examples/shape-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV15(compile(source, { name: 'SealedShape', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v16/patch-linux-native-gui-runtime.bin');
+          const sealed = sealNativeGuiRuntimeV15(runtime, ir, { platform: 'linux' });
+          fs.writeFileSync('SealedShape', sealed); fs.chmodSync('SealedShape', 0o755);
+          NODE
+          xvfb-run -a ./SealedShape --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-linux-native-gui-runtime-v16
+          path: dist-runtime-v16/patch-linux-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-windows-native-gui-runtime-v16
+          path: runtime/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-macos-native-gui-runtime-v16
+          path: runtime/macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-linux-native-gui-runtime-v16
+          path: runtime/linux
+      - name: Publish native runtime v1.6 templates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          publish_runtime() {
+            local tag="$1" title="$2" asset="$3" notes="$4"
+            if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$title" --notes "$notes"
+            fi
+            gh release upload "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --clobber
+          }
+          publish_runtime native-win32-runtime-v1.6 'Patch Native Win32 Runtime v1.6' runtime/windows/patch-windows-native-gui-runtime.exe 'Token-free Win32 sealed GUI runtime v1.6 for payload v15 / Native GUI IR 1.5. Adds native Shape rectangle/rounded/ellipse/line while retaining Chrome, Slider, TreeView, Table, ListBox and Menu behavior.'
+          publish_runtime native-macos-runtime-v1.6 'Patch Native macOS Runtime v1.6' runtime/macos/patch-macos-native-gui-runtime.bin 'Unsigned universal AppKit sealed GUI runtime v1.6 for payload v15 / Native GUI IR 1.5. Adds NSBezierPath Shape drawing while retaining the frozen v1.5 Chrome contract.'
+          publish_runtime native-linux-runtime-v1.6 'Patch Native Linux Runtime v1.6' runtime/linux/patch-linux-native-gui-runtime.bin 'GTK3 sealed GUI runtime v1.6 for payload v15 / Native GUI IR 1.5. Adds GtkDrawingArea Shape drawing while retaining the frozen v1.5 Chrome contract.'

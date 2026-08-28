@@ -36,15 +36,15 @@ These descriptors are projections of the same normalized Shape model. They are n
 
 ## Current boundary
 
-This foundation release does **not** expose Shape in Patch source or the Component Palette yet. The next additive slice must provide:
+Shape Stage 1 is source-backed in Patch Studio, Standalone Web and the current native Ready/offline line:
 
-1. a canonical source syntax and parser round-trip;
-2. source-backed Designer add/list/update/delete operations;
-3. Object Inspector properties using the canonical Shape metadata;
-4. Studio/Web rendering and accessibility behavior;
-5. explicit native capability/lowering behavior before Windows, macOS or Linux are advertised as supported.
+- Native GUI IR **1.5**
+- sealed payload **v15** (`PSHP` trailer over payload v14)
+- runtime **v1.6** (Win32 GDI+, AppKit `NSBezierPath`, GTK cairo)
 
-Until those gates exist, Shape remains implementation groundwork rather than a user-visible claim.
+Native drawing uses the same `0 0 100 100` mapping as `patchShapeSvgDescriptor()`, with `non-scaling-stroke` semantics so `strokeWidth` stays in device pixels. Shape exposes no Patch events. Panel may contain Shape; Shape cannot nest another Shape.
+
+Frozen Native GUI IR 1.4 remains fail-closed for Shape source. PaintBox native drawing remains the next RAD R1 gate.
 
 ## Source-backed rule
 

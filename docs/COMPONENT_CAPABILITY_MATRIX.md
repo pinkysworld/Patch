@@ -2,7 +2,7 @@
 
 Generated from `src/component-registry.js` registry **0.8**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
 
-Current product contract: Change IR **0.10**, Native GUI IR **1.4**, sealed payload **v14**, runtime **v1.5** (`native-gui-1.4/payload-14/runtime-1.5`).
+Current product contract: Change IR **0.10**, Native GUI IR **1.5**, sealed payload **v15**, runtime **v1.6** (`native-gui-1.5/payload-15/runtime-1.6`).
 
 Status values come from the canonical Designer registry:
 
@@ -27,7 +27,7 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | `tabs` | Tabs | Containers | visual | supported | supported | supported | supported | supported | unsupported | id, pages, x, y, width, height | — |
 | `panel` | Panel | Containers | visual | supported | supported | supported | supported | supported | unsupported | id, children, x, y, width, height | — |
 | `picture` | Picture | Graphics | visual | supported | supported | supported | supported | supported | unsupported | id, sourceExpr, fit, center, opacity, description, x, y, width, height | clicked |
-| `shape` | Shape | Graphics | visual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, shapeKind, fill, stroke, strokeWidth, cornerRadius, opacity, x, y, width, height | — |
+| `shape` | Shape | Graphics | visual | supported | supported | supported | supported | supported | unsupported | id, shapeKind, fill, stroke, strokeWidth, cornerRadius, opacity, x, y, width, height | — |
 | `paintbox` | PaintBox | Graphics | visual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, x, y, width, height | paint |
 | `statusbar` | StatusBar | Chrome | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | — |
 | `timer` | Timer | Nonvisual | nonvisual | supported | supported | supported | supported | supported | unsupported | id, interval | ticked |

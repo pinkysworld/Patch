@@ -36,7 +36,7 @@ requireAll('Studio page', index, [
 ]);
 
 // Table originated in Native GUI IR 0.8 / payload v9. The current Ready tier is
-// Native GUI IR 1.4 / payload v14 / runtime v1.5 and must preserve that Table
+// Native GUI IR 1.5 / payload v15 / runtime v1.6 and must preserve that Table
 // contract while historical v13 and frozen v12 implementation modules remain
 // packaged as compatibility evidence. Product code reaches the current tier
 // through the stable native-current-contract facade rather than importing v13.
@@ -84,7 +84,7 @@ requireAll('Frozen lowering snapshot preserves Table', frozenLower, [
 
 const current = read('_site/src/native-current-contract.js');
 requireAll('Current native product facade', current, [
-  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.4/payload-14/runtime-1.5'",
+  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.5/payload-15/runtime-1.6'",
   'buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
 
@@ -99,4 +99,4 @@ requireAll('Historical Native GUI IR 1.3 implementation module', nativeGuiV13, [
   "PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'", 'buildNativeGuiIRV13'
 ]);
 
-console.log('ok Table compatibility is preserved from payload v9 through the current Native GUI IR 1.4 / payload v14 / runtime v1.5 facade.');
+console.log('ok Table compatibility is preserved from payload v9 through the current Native GUI IR 1.5 / payload v15 / runtime v1.6 facade.');

@@ -21,9 +21,9 @@ function rejectText(text, marker, label) {
 // The public Ready surface is beta.36/current. This compatibility gate must never
 // force the current copy backwards merely to prove that the frozen TreeView line
 // remains packaged and documented.
-requireText(index, 'Native GUI IR 1.4', 'Studio current native status');
-requireText(index, 'payload v14', 'Studio current native status');
-requireText(index, 'runtime v1.5', 'Studio current native status');
+requireText(index, 'Native GUI IR 1.5', 'Studio current native status');
+requireText(index, 'payload v15', 'Studio current native status');
+requireText(index, 'runtime v1.6', 'Studio current native status');
 rejectText(index, 'Ready IR 1.3 / v1.4', 'Studio current native status');
 
 requireText(nativeBuild, './src/native-current-contract.js', 'browser current native builder');
@@ -34,8 +34,8 @@ requireText(nativeBuild, 'allowSlider: true', 'browser current native builder');
 rejectText(nativeBuild, './src/native-gui-ir-v13.js', 'browser current native builder');
 rejectText(nativeBuild, './src/sealed-native-gui-v13.js', 'browser current native builder');
 
-requireText(current, "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.4/payload-14/runtime-1.5'", 'current native facade');
-requireText(current, "PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.5'", 'current native facade');
+requireText(current, "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.5/payload-15/runtime-1.6'", 'current native facade');
+requireText(current, "PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.6'", 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_GUI_IR_VERSION', 'current native facade');
 requireText(current, 'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION', 'current native facade');
 
@@ -54,11 +54,11 @@ requireText(docs, 'docs/NATIVE_COMPATIBILITY.md', 'Documentation native compatib
 requireText(docs, 'two live native product contracts', 'Documentation two-contract wording');
 requireText(downloads, 'Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView line', 'Downloads frozen compatibility line');
 requireText(downloads, 'Explicit legacy linking fails closed when a program requires a newer feature', 'Downloads frozen compatibility behavior');
-requireText(downloads, 'Native GUI IR <strong>1.4</strong>', 'Downloads current IR');
-requireText(downloads, 'payload <strong>v14</strong>', 'Downloads current payload');
-requireText(downloads, 'runtime <strong>v1.5</strong>', 'Downloads current runtime');
+requireText(downloads, 'Native GUI IR <strong>1.5</strong>', 'Downloads current IR');
+requireText(downloads, 'payload <strong>v15</strong>', 'Downloads current payload');
+requireText(downloads, 'runtime <strong>v1.6</strong>', 'Downloads current runtime');
 
 rejectText(index, 'Slider Stage 1 is browser-only until a later versioned native contract adds parity', 'Studio index');
 rejectText(downloads, 'Native Slider parity requires a future versioned native GUI contract', 'Downloads page');
 
-console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated separately behind the current IR 1.4 / payload v14 / runtime v1.5 facade.');
+console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated separately behind the current IR 1.5 / payload v15 / runtime v1.6 facade.');

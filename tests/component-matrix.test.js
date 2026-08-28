@@ -20,10 +20,10 @@ test('capability matrix is generated from the canonical registry rather than a s
   assert.equal(matrix.schema, PATCH_COMPONENT_MATRIX_SCHEMA);
   assert.equal(matrix.version, PATCH_COMPONENT_MATRIX_VERSION);
   assert.equal(matrix.registryVersion, PATCH_COMPONENT_REGISTRY_VERSION);
-  assert.equal(matrix.contract.id, 'native-gui-1.4/payload-14/runtime-1.5');
-  assert.equal(matrix.contract.nativeGuiIR, '1.4');
-  assert.equal(matrix.contract.payload, 14);
-  assert.equal(matrix.contract.runtime, '1.5');
+  assert.equal(matrix.contract.id, 'native-gui-1.5/payload-15/runtime-1.6');
+  assert.equal(matrix.contract.nativeGuiIR, '1.5');
+  assert.equal(matrix.contract.payload, 15);
+  assert.equal(matrix.contract.runtime, '1.6');
   assert.deepEqual(matrix.components.map(component => component.type), PATCH_COMPONENTS.map(component => component.type));
   const imagelist = matrix.components.find(component => component.type === 'imagelist');
   assert.equal(imagelist.visual, false);
@@ -32,7 +32,7 @@ test('capability matrix is generated from the canonical registry rather than a s
   assert.equal(imagelist.targets.windows, 'unsupported');
   const shape = matrix.components.find(component => component.type === 'shape');
   assert.equal(shape.targets.web, 'supported');
-  assert.equal(shape.targets.windows, 'unsupported');
+  assert.equal(shape.targets.windows, 'supported');
   assert.equal(Object.isFrozen(matrix), true);
   assert.equal(Object.isFrozen(matrix.components), true);
 });
