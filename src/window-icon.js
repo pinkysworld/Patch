@@ -22,18 +22,17 @@ export class PatchWindowIconError extends Error {
  * window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
  *
  * Studio and Standalone Web package the icon as a Form chrome image and as the
- * application favicon (first Form that declares icon). Native GUI IR 1.4 has no
- * Form icon field, so desktop builds fail closed. This module is not an IR bump.
+ * application favicon (first Form that declares icon). Native GUI Forms do not
+ * transport an application icon yet, so desktop builds fail closed. This
+ * module remains independent from the current native IR version.
  */
 export const PATCH_WINDOW_ICON_POLICY = Object.freeze({
   id: PATCH_WINDOW_ICON_POLICY_ID,
   version: PATCH_WINDOW_ICON_VERSION,
-  nativeGuiIR: '1.4',
-  payload: 14,
-  runtime: '1.5',
-  studioWeb: Object.freeze(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
+  introducedAgainstNativeGuiIR: '1.4',
   native: 'fail-closed',
-  reason: 'Native GUI IR 1.4 Forms carry title, size and controls only. Win32 .ico, AppKit and Linux desktop icon packaging wait for a versioned native contract that moves those backends together.'
+  studioWeb: Object.freeze(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
+  reason: 'The current native GUI Form contract does not transport application/window icon metadata. Win32 .ico, AppKit and Linux desktop icon packaging wait for a versioned native contract that moves those backends together.'
 });
 
 export function parsePatchWindowDeclaration(value) {
@@ -167,7 +166,7 @@ export function selectApplicationWindowIcon(nodes) {
 
 export function nativeWindowIconUnsupportedMessage(node, line = null) {
   if (!node?.iconExpr) return null;
-  const where = line == null ? 'native GUI 1.4 Form' : `line ${line}: native GUI 1.4 Form`;
+  const where = line == null ? 'native GUI Form' : `line ${line}: native GUI Form`;
   const name = node.id ? `'${node.id}'` : 'window';
   return `${where} ${name} does not transport icon ${node.iconExpr}. Application/window icons remain fail-closed on desktop until a versioned native contract packages Win32, AppKit and GTK icons together.`;
 }
@@ -200,7 +199,12 @@ function freezeWindow(input) {
 
   let width = null;
   let height = null;
-  if (input.width !== undefined && input.width !== null && String(input.width).trim() !== '') {
+  const hasWidth = input.width !== undefined && input.width !== null && String(input.width).trim() !== '';
+  const hasHeight = input.height !== undefined && input.height !== null && String(input.height).trim() !== '';
+  if (hasWidth !== hasHeight) {
+    throw new PatchWindowIconError('Window size needs both width and height.', 'WINDOW_SOURCE_SIZE');
+  }
+  if (hasWidth) {
     width = Number(input.width);
     height = Number(input.height);
     if (!Number.isInteger(width) || !Number.isInteger(height)) {
