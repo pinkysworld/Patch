@@ -59,11 +59,11 @@ test('nested Tabs implementation and current Studio docs stay aligned', () => {
   assert.match(nestedWeb, /Nested TreeView nodes/);
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
-  assert.match(studio, /Table, TreeView and Tabs structural editors rewrite their selected source block directly/);
+  assert.match(studio, /Table, TreeView and Tabs structural editors rewrite the selected source block directly/);
   assert.match(studio, /Native GUI IR \*\*1\.6\*\*/);
   assert.match(studio, /payload \*\*v16\*\*/);
   assert.match(studio, /runtime \*\*v1\.7\*\*/);
-  assert.match(studio, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
+  assert.match(studio, /frozen TreeView line is 1\.2\/v12\/v1\.3/);
 });
 
 test('Studio structural Properties usability remains source-backed without a second mutation path', () => {
@@ -100,10 +100,13 @@ test('Studio keeps core structural controls on one shared transient primary sele
   assert.match(selectionArchitecture, /There is no longer a private `playground\.js` control-selection mirror/);
 });
 
-test('Studio implementation exposes the current source-backed active Form workflow', () => {
+test('Studio implementation exposes current Forms, source history and large-project behavior', () => {
   assert.match(authoring, /activate a Form from its canvas title/);
   assert.match(authoring, /fit the Form to its controls/);
   assert.match(authoring, /restore the 640×420 default size/);
+  assert.match(authoring, /renders only the active Form at full browser cost/);
+  assert.match(authoring, /bounded source-backed Undo\/Redo history/);
+  assert.match(authoring, /10-Form \/ 200-control benchmark/);
   assert.match(formWorkflow, /suggestDesignerFormSize/);
   assert.match(formWorkflow, /updateDesignerWindow\(code\.value, windowIndex, size\)/);
   assert.match(formWorkflow, /patchPreviousForm/);
@@ -119,5 +122,6 @@ test('roadmap records beta36 current Studio/native line and truthful RAD backlog
   assert.match(roadmap, /project bundle v4/);
   assert.match(roadmap, /ImageList Stage 1/);
   assert.match(roadmap, /Shape native lowering\/runtime parity/);
+  assert.match(roadmap, /PaintBox `draw image`/);
   assert.match(roadmap, /Memo\/TextArea, PasswordEdit, ProgressBar, SpinEdit\/NumberEdit, Date\/Time controls/);
 });
