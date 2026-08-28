@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
 import {
@@ -35,7 +36,7 @@ test('Studio benchmark reports deterministic workload metadata without a flaky t
   }
 });
 
-test('Studio benchmark CLI is syntax-valid and machine-readable', () => {
+test('Studio benchmark CLI is syntax-valid, machine-readable and exposed through npm', () => {
   execFileSync(process.execPath, ['--check', 'scripts/benchmark-studio-large-project.js'], { stdio: 'pipe' });
   const output = execFileSync(process.execPath, [
     'scripts/benchmark-studio-large-project.js', '--iterations', '1', '--warmup', '0'
@@ -44,4 +45,7 @@ test('Studio benchmark CLI is syntax-valid and machine-readable', () => {
   assert.equal(parsed.forms, 10);
   assert.equal(parsed.controls, 200);
   assert.equal(parsed.iterations, 1);
+
+  const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+  assert.equal(pkg.scripts?.['benchmark:studio'], 'node scripts/benchmark-studio-large-project.js');
 });
