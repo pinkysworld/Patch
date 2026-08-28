@@ -28,7 +28,7 @@ Older versioned native contracts remain reproducibility/compatibility evidence e
 
 ## Current product milestone: RAD R1
 
-The beta.35+ multi-file/Designer foundation and the beta.36 native 1.6/v16/v1.7 integration are complete. Current repository-controlled work is the first graphics/resource RAD milestone from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+The beta.35+ multi-file/Designer foundation and the beta.36 native 1.6/v16/v1.7 integration are complete. Current repository-controlled work is the final resource-consumer parity portion of RAD R1 from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
 
 ### Completed foundation
 
@@ -41,26 +41,31 @@ The beta.35+ multi-file/Designer foundation and the beta.36 native 1.6/v16/v1.7 
 - [x] bounded native PNG/JPEG Picture decoding on Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf with unsupported formats fail-closed
 - [x] canonical Component Registry carrying property/event/renderer/target-support metadata
 - [x] searchable Component Palette and Object Inspector Properties/Events views
-- [x] source-backed Anchors/Dock, multi-select alignment/sizing/distribution, grid, z-order actions and Focus Order Stage 1
+- [x] source-backed Anchors/Dock, multi-select alignment/sizing/distribution, configurable design-grid snap, complete front/back/forward/backward z-order actions and Focus Order Stage 1
+- [x] source-backed editor/Designer Undo/Redo transactions for typing and atomic source rewrites
+- [x] active-Form full-cost rendering plus deterministic 10-Form / 200-control Studio stress benchmark
 - [x] Panel Stage 1, StatusBar and nonvisual Timer authoring
 - [x] Shape Stage 1 source syntax, Designer authoring, Standalone Web rendering and native Win32/AppKit/GTK lowering
-- [x] PaintBox Stage 1 source syntax, pure `paint` event/drawing commands, Designer authoring and Standalone Web rendering
+- [x] PaintBox Stage 1 source syntax, pure `paint` event/drawing commands, Designer/Web rendering and native Win32/AppKit/GTK lowering for clear/line/rectangle/ellipse/text
 - [x] ImageList Stage 1 source syntax, compiler transport, registry metadata, nonvisual tray and Resource Manager-backed Object Inspector
-- [x] ImageList Web metadata for Button `image list.item`; native GUI IR 1.4 still fail-closes ImageList and Button images
+- [x] ImageList Web metadata for Button `image list.item`; current Native GUI IR 1.6 still fails closed for ImageList and Button images
+- [x] application/window icon source declaration and Studio/Web favicon/chrome packaging under `window-icon/1.0`; current Native GUI IR 1.6 remains fail-closed
+- [x] generated component capability matrix from canonical registry metadata
 - [x] content-addressed public site, PWA/offline closure validation and real Chrome startup/responsiveness gate
 - [x] token-free Ready/offline Native GUI IR 1.6 / payload v16 / runtime v1.7 Windows/macOS/Linux paths
 - [x] Command Palette, project-file/symbol quick-open, editor tabs, Workspace Layout v2 and startup diagnostics v2
+- [x] Workshop Desk acceptance showcase covering every integrated cross-platform Ready visual/control family while native-fail-closed resource consumers remain separate demonstrations
 
 ### RAD R1 remaining work
 
 These are real remaining gaps and must not be advertised as complete until their target tests are green.
 
-- [x] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/Web; native GUI 1.4 keeps default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values
+- [x] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/Web; current native Ready keeps default contain/centered/opaque PictureBox and fail-closes unsupported display combinations
 - [x] decide and version native SVG/WebP policy rather than broadening format support implicitly (`native-picture-formats/1.0`: Ready PNG/JPEG, deferred WebP/SVG, no IR bump)
-- [x] first ImageList consumer: Button `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images
+- [x] first ImageList consumer: Button `image list.item` on Studio/Web; current Native GUI IR 1.6 fail-closes ImageList and Button images
 - [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
-- [x] application/window icon resource packaging (`window-icon/1.0`: source-backed Form icon and Web favicon; native GUI IR 1.4 fail-closes)
-- [x] Shape native lowering/runtime parity for Win32, AppKit and GTK (IR 1.5 / payload v15 / runtime v1.6)
+- [x] application/window icon resource packaging (`window-icon/1.0`: source-backed Form icon and Web favicon; current native Ready fail-closes)
+- [x] Shape native lowering/runtime parity for Win32, AppKit and GTK (IR 1.5 / payload v15 / runtime v1.6, preserved by current IR 1.6)
 - [x] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK (IR 1.6 / payload v16 / runtime v1.7)
 - [ ] PaintBox `draw image` resource consumption after the image/drawing contract is versioned
 - [ ] ImageList native runtime contract only after desktop backends transport Button/ToolBar images; no empty standalone native claim
@@ -72,8 +77,7 @@ After R1 is closed:
 
 - [ ] independent source-backed `TabOrder` that does not alter source/z-order
 - [ ] visual Tab Order mode
-- [ ] Move Forward / Move Backward in addition to current front/back actions
-- [ ] configurable grid and richer smart guides
+- [ ] richer smart-guide configuration beyond the current grid/alignment guides
 - [ ] source-backed clipboard schema for copy/cut/paste across Forms/projects
 - [ ] Lock Controls and design-only guide visibility
 - [ ] Layers/Object Tree for visual z-order and containment
@@ -196,4 +200,4 @@ Evidence still requiring new data or external participation:
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, Native GUI IR 1.6 / payload v16 / runtime v1.7, expanded RAD authoring and graphics/resource R1 work
-- **current:** finish truthful cross-target RAD R1 parity, then move into full Form Designer parity
+- **current:** close the three remaining resource-consumer R1 gaps, then move into full Form Designer parity
