@@ -121,11 +121,21 @@ It provides named ordered project-resource references and a logical size. The Ob
 
 Buttons bind one ImageList item with `image list.item`. Standalone Web renders that image. Native GUI IR 1.4 fail-closes ImageList and Button image bindings instead of silently dropping them.
 
+### Window icon Stage 1
+
+Forms may declare an optional `icon` on the window line:
+
+```patch
+window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
+```
+
+The first Form that declares `icon` is the application favicon for Standalone Web. Studio preview shows the same resource in Form chrome. Native GUI IR 1.4 fail-closes Window icons under `window-icon/1.0` rather than silently dropping them. ICO/ICNS Resource Manager support and Win32/AppKit/Linux desktop packaging remain later native work.
+
 ## Website, PWA and CI
 
 The public Studio uses the beta.36 product contract and a content-addressed browser module graph. Service Worker routing is type-safe: missing JavaScript/CSS/runtime assets never receive `index.html` as a substitute. Real Chrome startup/responsiveness checks exercise Studio before a public deployment is considered healthy.
 
-The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox, ImageList and Button image bindings, including `native-picture-format-policy.js` and `button-image.js`.
+The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox, ImageList, Button image bindings and Window icons, including `native-picture-format-policy.js`, `button-image.js` and `window-icon.js`.
 
 ## Offline compiler v0.2
 
@@ -137,4 +147,4 @@ Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional 
 
 beta.36 product work does not widen the beta.32 formal runtime-correspondence claim. Patch does not claim full compiler/runtime verification.
 
-Likewise, target capability metadata is intentionally truthful: Shape/PaintBox native runtime support and native ImageList/Button-image transport are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.
+Likewise, target capability metadata is intentionally truthful: Shape/PaintBox native runtime support, native ImageList/Button-image transport and native application/window icon packaging are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.

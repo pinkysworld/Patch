@@ -4,6 +4,7 @@ import { formatPatchImageListSource, normalizeImageListDefinition } from './imag
 import { applyPatchPictureProportional } from './picture-control.js';
 import { formatPatchPictureDeclaration } from './picture-source.js';
 import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
+import { formatPatchWindowDeclaration, normalizeWindowIconExpression } from './window-icon.js';
 
 const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_MARGIN = 24;
@@ -19,7 +20,7 @@ export function addDesignerWindow(source, options = {}) {
   const height = windowDimension(options.height ?? DEFAULT_WINDOW.height, 'height');
   const id = Object.hasOwn(options, 'id') ? validateId(options.id) : nextFormId(lines);
   if (windows.some(item => item.id === id)) throw new Error(`Form name '${id}' is already used.`);
-  lines.push(`window ${titleExpr} as ${id} size ${width}, ${height}:`);
+  lines.push(formatPatchWindowDeclaration({ titleExpr, id, width, height, iconExpr: options.iconExpr ?? options.icon ?? null }));
   return tidy(lines.join('\n'));
 }
 
@@ -35,7 +36,8 @@ export function listDesignerWindows(source) {
       id: node.id ?? null,
       titleExpr: node.titleExpr,
       width: node.width ?? null,
-      height: node.height ?? null
+      height: node.height ?? null,
+      iconExpr: node.iconExpr ?? null
     });
     windowIndex += 1;
   }
@@ -58,8 +60,12 @@ export function updateDesignerWindow(source, selector, changes = {}) {
     id = validateId(changes.id);
     if (id !== window.id && windows.some(item => item.id === id)) throw new Error(`Form name '${id}' is already used.`);
   }
-  const idPart = id ? ` as ${id}` : '';
-  lines[lineIndex] = `${indent}window ${titleExpr}${idPart} size ${width}, ${height}:`;
+  let iconExpr = window.iconExpr;
+  if (Object.hasOwn(changes, 'iconExpr') || Object.hasOwn(changes, 'icon')) {
+    const raw = Object.hasOwn(changes, 'iconExpr') ? changes.iconExpr : changes.icon;
+    iconExpr = String(raw ?? '').trim() ? normalizeWindowIconExpression(raw).sourceExpr : null;
+  }
+  lines[lineIndex] = `${indent}${formatPatchWindowDeclaration({ titleExpr, id, width, height, iconExpr })}`;
   if (window.id && id && window.id !== id) renameFormActions(lines, window.id, id);
   return preserveTrailingNewline(source, lines.join('\n'));
 }
@@ -434,8 +440,13 @@ function growWindowToFit(lines, window, layout) {
   if (lineIndex < 0 || lineIndex >= lines.length) throw new Error('Designer window selection no longer matches Patch source.');
   const indent = indentOf(lines[lineIndex]);
   const width = window.width ?? DEFAULT_WINDOW.width;
-  const idPart = window.id ? ` as ${window.id}` : '';
-  lines[lineIndex] = `${indent}window ${window.titleExpr}${idPart} size ${width}, ${requiredHeight}:`;
+  lines[lineIndex] = `${indent}${formatPatchWindowDeclaration({
+    titleExpr: window.titleExpr,
+    id: window.id,
+    width,
+    height: requiredHeight,
+    iconExpr: window.iconExpr
+  })}`;
 }
 
 function coordinate(value, name) {

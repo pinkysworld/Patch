@@ -455,7 +455,20 @@ function renderWindows(container, windows, interactive) {
     shell.hidden = Boolean(interactive && model.visible === false);
     const title = document.createElement('div');
     title.className = 'patch-window-title';
-    title.textContent = model.title;
+    if (model.icon) {
+      const img = document.createElement('img');
+      img.className = 'patch-window-icon';
+      img.alt = '';
+      img.width = 16;
+      img.height = 16;
+      try {
+        img.src = pictureResourceDataUri(model.icon, getStudioProjectResources());
+      } catch {
+        img.src = model.icon;
+      }
+      title.appendChild(img);
+    }
+    title.append(model.title);
     const body = document.createElement('div');
     body.className = 'patch-window-body';
     model.controls.forEach((control, controlIndex) => {

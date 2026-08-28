@@ -11,7 +11,7 @@ The current Form lifecycle is complete for ordinary source-backed authoring:
 - add a Form;
 - select and navigate Forms from the canonical Form selector;
 - activate a Form from its canvas title;
-- edit source-backed name, title, width and height;
+- edit source-backed name, title, icon, width and height;
 - resize visually;
 - fit the Form to its controls;
 - restore the 640×420 default size;
@@ -107,7 +107,7 @@ Tabs-inside-Tabs remains intentionally outside the current stage and fails close
 
 Project bundle v4 contains an explicit bounded resource store. Picture references logical `patch-resource:<id>` values rather than machine-local file paths. Resource Manager supports PNG, JPEG, WebP and SVG project assets, stable ids, hashes, preview and project persistence.
 
-Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred. Shape and PaintBox have Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images.
+Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred. Shape and PaintBox have Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and the first Form icon as the application favicon, while native GUI IR 1.4 fail-closes Form icons.
 
 ## Selection, Properties and keyboard boundary
 
@@ -149,8 +149,8 @@ Remaining product work includes:
 - Memo/TextArea, ProgressBar, Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
 - true independent TabOrder and richer container/layout semantics;
 - Undo/Redo transactions, large-project performance work and professional code-editor/debugger features;
-- application/window icons, native Shape/PaintBox parity and native ImageList/Button-image transport;
-- application icons/branding and richer packaging/signing workflows;
+- native Shape/PaintBox parity, native ImageList/Button-image transport and native application/window icon packaging;
+- application branding and richer packaging/signing workflows;
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
 

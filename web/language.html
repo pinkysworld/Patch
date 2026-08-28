@@ -113,13 +113,14 @@ when files changed:
 
   <section class="page-section">
     <h2>Graphics stay source-backed</h2>
-    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support on the v1.5 desktop line under <code>native-picture-formats/1.0</code> plus source-backed Web display properties, Shape and PaintBox currently have Studio plus Standalone Web support, and Buttons may bind <code>image list.item</code> on Web while native GUI IR 1.4 fail-closes ImageList and Button images.</p>
-    <pre class="page-code">picture as logo from "patch-resource:app.logo" fit cover description "Product logo"
-shape ellipse as badge
-paintbox as canvas
-imagelist as icons size 16, 16:
-  image open from "patch-resource:icons.open"
-button "Open" as open_button image icons.open</pre>
+    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support on the v1.5 desktop line under <code>native-picture-formats/1.0</code> plus source-backed Web display properties, Shape and PaintBox currently have Studio plus Standalone Web support, and Buttons may bind <code>image list.item</code> on Web while native GUI IR 1.4 fail-closes ImageList and Button images. Forms may declare <code>icon</code> under <code>window-icon/1.0</code>; Studio/Web package Form chrome and the first Form icon as the application favicon, while native GUI IR 1.4 fail-closes Form icons.</p>
+    <pre class="page-code">window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
+  picture as logo from "patch-resource:app.logo" fit cover description "Product logo"
+  shape ellipse as badge
+  paintbox as canvas
+  imagelist as icons size 16, 16:
+    image open from "patch-resource:icons.open"
+  button "Open" as open_button image icons.open</pre>
     <p>PaintBox <code>paint</code> handlers are pure drawing handlers and cannot commit persistent <code>change</code>. ImageList exposes no event in Stage 1. Native Picture keeps default contain/centered/opaque rendering and fail-closes other fit/center/opacity values.</p>
   </section>
 

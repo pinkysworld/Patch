@@ -42,7 +42,7 @@ patch doctor --json</pre>
   </section>
 
   <div class="docs-commandbar" role="search" aria-label="Filter Patch documentation">
-    <label class="docs-search"><span>Find docs</span><input id="docFilter" type="search" placeholder="Studio, resources, ImageList, native, formal…" autocomplete="off" aria-describedby="docFilterStatus"></label>
+    <label class="docs-search"><span>Find docs</span><input id="docFilter" type="search" placeholder="Studio, resources, ImageList, window icons, native, formal…" autocomplete="off" aria-describedby="docFilterStatus"></label>
     <span id="docFilterStatus" class="docs-search-status" role="status" aria-live="polite">Showing all documentation.</span>
   </div>
   <nav class="docs-jumps" aria-label="Documentation sections">
@@ -58,7 +58,7 @@ patch doctor --json</pre>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECTS.md"><strong>Studio project v4</strong><span>Multi-file source plus explicit resource bundle, migration and recovery rules.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTERPLAN.md"><strong>RAD Studio masterplan</strong><span>Architecture and phased path toward a complete source-backed RAD environment.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTER_BACKLOG.md"><strong>RAD master backlog</strong><span>Long-term components, debugger, project tools, packaging and ecosystem backlog.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Current source syntax including Shape, PaintBox and ImageList.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Current source syntax including Shape, PaintBox, ImageList and Window icons.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Current RAD R1 completion state plus external and research gates.</span></a>
     </div>
   </section>
@@ -75,6 +75,7 @@ patch doctor --json</pre>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md"><strong>Keyboard accessibility</strong><span>Keyboard structural editing and focus behavior.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SHAPE_STAGE1.md"><strong>Shape Stage 1</strong><span>Deterministic shape model and target boundary.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPONENT_CAPABILITY_MATRIX.md"><strong>Component capability matrix</strong><span>Generated registry/target matrix. Authoring is not runtime parity.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/WINDOW_ICONS.md"><strong>Window and application icons</strong><span>window-icon/1.0: source-backed Form icon and Web favicon; native fail-closed.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/GPT.md"><strong>GPT / Grok handoff</strong><span>Current contracts, RAD R1 status and the next recommended slice.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA36.md"><strong>Beta.36 notes</strong><span>Project v4, current native line and RAD R1 integration status.</span></a>
     </div>
@@ -109,7 +110,7 @@ patch doctor --json</pre>
 
   <section id="native-release" class="page-section docs-filterable">
     <h2>Native applications and release engineering</h2>
-    <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.4 / payload v14 / runtime v1.5. Native Ready Picture follows <code>native-picture-formats/1.0</code>: PNG/JPEG decoding is Ready, WebP/SVG remain deferred. Shape/PaintBox native parity and native ImageList/Button-image transport remain explicit fail-closed follow-ups. IR 1.2 / payload v12 / runtime v1.3 frozen remains the packaged TreeView compatibility line; current Ready and that frozen line are two live native product contracts, with the previous Slider 1.3/v13/v1.4 line as additional compatibility evidence.</p>
+    <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.4 / payload v14 / runtime v1.5. Native Ready Picture follows <code>native-picture-formats/1.0</code>: PNG/JPEG decoding is Ready, WebP/SVG remain deferred. Window icons package on Studio/Web under <code>window-icon/1.0</code>. Shape/PaintBox native parity and native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups. IR 1.2 / payload v12 / runtime v1.3 frozen remains the packaged TreeView compatibility line; current Ready and that frozen line are two live native product contracts, with the previous Slider 1.3/v13/v1.4 line as additional compatibility evidence.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts through the current v1.5 line.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_PICTURE_FORMATS.md"><strong>Native Picture formats</strong><span>native-picture-formats/1.0: PNG/JPEG Ready, WebP/SVG deferred.</span></a>
