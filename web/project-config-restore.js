@@ -32,6 +32,7 @@ function installDesignerObserverCoordinator() {
   window.__patchStudioDesignerObserverCoordinator = true;
 
   const pendingObservers = new Set();
+  const designerObservers = new Set();
   let flushQueued = false;
   let flushing = false;
 
@@ -60,7 +61,10 @@ function installDesignerObserverCoordinator() {
       const record = { target, options: { ...(options ?? {}) } };
       if (existing >= 0) this.observations[existing] = record;
       else this.observations.push(record);
-      if (isDesignerTarget(target)) this.designerBound = true;
+      if (isDesignerTarget(target)) {
+        this.designerBound = true;
+        designerObservers.add(this);
+      }
       this.base.observe(target, options);
     }
 
@@ -69,6 +73,7 @@ function installDesignerObserverCoordinator() {
       this.pending = [];
       this.observations = [];
       pendingObservers.delete(this);
+      designerObservers.delete(this);
       this.base.disconnect();
     }
 
@@ -100,20 +105,23 @@ function installDesignerObserverCoordinator() {
     if (!batch.length) return;
 
     flushing = true;
-    // Pause every participating Designer observer before invoking any callback.
-    // DOM reconciliation performed by one callback therefore cannot synchronously
-    // wake another observer and create A -> B -> A mutation ping-pong.
-    for (const observer of batch) observer.pause();
+    // Pause every live Designer observer, not only those already present in this
+    // mutation batch. A callback commonly rewrites DOM that belongs to another
+    // Designer module. Keeping the complete observer set paused prevents the
+    // cross-module A -> B -> C -> A feedback chain that can otherwise monopolize
+    // Chrome's microtask queue while a large Form project is reconciled.
+    const paused = [...designerObservers].filter(observer => observer.active);
+    for (const observer of paused) observer.pause();
     try {
       for (const observer of batch) {
         const records = observer.pending.splice(0);
         if (records.length && observer.active) observer.callback(records, observer);
       }
     } finally {
-      // Keep the whole batch paused through callbacks' own reconciliation
-      // microtasks. Reconnect once those writes have settled.
+      // Keep the complete Designer observer set paused through callbacks' own
+      // reconciliation microtasks. Reconnect once those writes have settled.
       queueMicrotask(() => {
-        for (const observer of batch) observer.reconnect();
+        for (const observer of paused) observer.reconnect();
         flushing = false;
         if (pendingObservers.size) scheduleFlush();
       });
