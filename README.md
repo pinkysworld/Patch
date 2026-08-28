@@ -98,9 +98,12 @@ patch check app.patch --json
 patch build app.patch --target web
 patch link app.patch --out App
 patch doctor --json
+patch components --json
 ```
 
 `patch doctor` reports environment probes and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends. On Unix hosts with a C compiler it also compiles and runs the numeric C99 program.
+
+`patch components` prints the canonical Designer registry/target matrix so product docs and coding agents do not scrape a second catalog.
 
 ## Documentation
 
@@ -109,6 +112,8 @@ patch doctor --json
 | [`docs/SPEC.md`](docs/SPEC.md) | Current language surface |
 | [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) | IDE, project and build contracts |
 | [`docs/STUDIO_PROJECTS.md`](docs/STUDIO_PROJECTS.md) | Project bundle v4 and resources |
+| [`AGENTS.md`](AGENTS.md) / [`docs/GPT.md`](docs/GPT.md) | ChatGPT/Grok handoff: current contracts, RAD R1 status and next slice |
+| [`docs/COMPONENT_CAPABILITY_MATRIX.md`](docs/COMPONENT_CAPABILITY_MATRIX.md) | Generated registry target matrix |
 | [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md) | RAD architecture plan |
 | [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md) | Long-term RAD backlog |
 | [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) | Designer inventory |

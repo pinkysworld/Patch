@@ -61,7 +61,7 @@ These are real remaining gaps and must not be advertised as complete until their
 - [ ] first ImageList consumer, preferably ToolBar/ToolButton or TreeView/Button image binding
 - [ ] ImageList Web/native runtime contract only after a consumer exists; no empty standalone runtime claim
 - [ ] application/window icon resource and packaging contract
-- [ ] component capability matrix generated from canonical registry metadata rather than duplicated documentation
+- [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
 
 ## RAD R2: Form Designer parity
 

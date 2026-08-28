@@ -73,3 +73,14 @@ Local `native`/`app` JSON builds run Cargo quietly so toolchain progress cannot 
 Without `--json`, the existing human-readable output remains the default. `run`, `run-wasm`, `changes` and `runtime-certify` retain their existing text behavior in this contract version. `doctor --json` predates the generic CLI result envelope and continues to expose its existing dedicated doctor-report schema. That report includes environment probes plus a `compiler-backends` self-check of the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends. On Unix hosts with a C compiler the self-check also compiles and runs the numeric C99 program.
 
 Scripts should not parse the human-readable prose when an equivalent JSON mode exists.
+
+## `components`
+
+`patch components` and `patch components --json` dump the canonical Designer registry as a target-capability matrix. The command does not take source and uses a dedicated `patch-components` JSON schema rather than the generic `patch-cli-result` envelope, matching `doctor`.
+
+```bash
+patch components
+patch components --json
+```
+
+The JSON object includes `registryVersion`, the current native contract identity, and one row per component with properties, events and per-target status (`supported`, `authoring`, `unsupported`). Markdown in `docs/COMPONENT_CAPABILITY_MATRIX.md` is generated from the same module; `node scripts/generate-component-matrix.js --check` fails if the file drifts.

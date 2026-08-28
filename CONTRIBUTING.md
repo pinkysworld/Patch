@@ -40,4 +40,4 @@ A useful pull request explains:
 - whether the change affects source/project/artifact compatibility;
 - whether it changes a security or release trust boundary.
 
-The prioritized operational backlog is in [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md).
+The prioritized operational backlog is in [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md). Coding agents should start from [docs/GPT.md](docs/GPT.md) and regenerate [docs/COMPONENT_CAPABILITY_MATRIX.md](docs/COMPONENT_CAPABILITY_MATRIX.md) when component metadata changes.

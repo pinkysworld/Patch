@@ -58,6 +58,8 @@ Tabs and their nested ordinary controls are implemented in:
 
 The current v1.4/v14/v1.5 line preserves the earlier Table, multi-select ListBox, Menu, TreeView and Slider contracts while adding Chrome Stage 1 Panel, Timer, Picture and StatusBar transport. Existing Tabs semantics are not redefined by that addition.
 
+The frozen TreeView compatibility line remains Native GUI IR **1.2** / payload **v12** / runtime **v1.3**. The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**.
+
 ## Native mappings
 
 The native representation preserves the real page hierarchy. Backends may use internal parent-tab/page indices when a flat native handle table is useful, but selected-page state is never added to Patch state or serialized as persistent application state.

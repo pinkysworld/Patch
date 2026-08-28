@@ -79,8 +79,7 @@ window "Workshop Desk" as main size 1080, 660:
   button "Mark ready" as complete_button at 878, 438 size 150, 38
   button "Reset ticket" as reset_button at 878, 486 size 150, 38
 
-  text "Selected job: {selected_job}" at 24, 536 size 520, 26
-  text "Selected part: {selected_part}" at 584, 536 size 420, 26
+  text "Board and inventory selections stay transient until source commits them." at 24, 536 size 980, 26
   # @layout anchor left right bottom
   text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 588 size 980, 26
   statusbar "{status}" as desk_status at 0, 632 size 1080, 28

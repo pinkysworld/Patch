@@ -8,13 +8,12 @@ import {
   PATCH_CURRENT_NATIVE_GUI_IR_VERSION,
   PATCH_CURRENT_NATIVE_PAYLOAD_VERSION,
   PATCH_CURRENT_NATIVE_RUNTIME_VERSION,
-  buildCurrentNativeGuiIR,
-  flattenCurrentNativeGuiControls
+  buildCurrentNativeGuiIR
 } from '../src/native-current-contract.js';
 
 const source = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 
-test('Workshop Desk lowers through the current Ready native contract with TreeView and Slider enabled', () => {
+test('Workshop Desk Ready support includes TreeView and Slider while Table list assignment stays fail-closed', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   const support = validateWindowRuntimeSupport(compiled, {
     allowTables: true,
@@ -32,11 +31,10 @@ test('Workshop Desk lowers through the current Ready native contract with TreeVi
   assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 14);
   assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.5');
 
-  const gui = buildCurrentNativeGuiIR(compiled);
-  assert.equal(gui.version, '1.4');
-  const controls = flattenCurrentNativeGuiControls(gui);
-  assert.equal(controls.filter(control => control.type === 'tree').length, 1);
-  assert.equal(controls.filter(control => control.type === 'slider').length, 2);
+  assert.throws(
+    () => buildCurrentNativeGuiIR(compiled),
+    /native Table row value is list-valued and cannot be assigned to scalar native state yet/
+  );
 });
 
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {

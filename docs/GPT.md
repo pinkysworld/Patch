@@ -1,0 +1,129 @@
+# GPT / Grok handoff
+
+Living briefing for ChatGPT, Grok and other coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
+
+Last refreshed: **2026-08-28** by Grok on `gpt/rad-imagelist-r1`.
+
+## What Patch is
+
+Patch is a small **change-oriented** language plus **Patch Studio**, a source-backed RAD IDE. Persistent application state does not mutate invisibly. Ordinary post-creation mutation is a semantic `change`. There is no hidden `.frm` / `.dfm`. Designer operations rewrite ordinary `.patch` source or the explicit project-v4 resource store.
+
+Public Studio: https://minh.systems/Patch/
+
+## Current product contract
+
+Do not silently widen or flatten these labels.
+
+| Surface | Current |
+|---|---|
+| Package | `0.2.0-beta.36` |
+| Change IR | `0.10` |
+| Native GUI IR | `1.4` |
+| Sealed payload | `v14` |
+| Ready/offline runtime | `v1.5` (Windows, macOS, Linux; token-free) |
+| Frozen TreeView line | Native GUI IR **1.2** / payload **v12** / runtime **v1.3** (Slider fail-closed) |
+| Previous Slider line | Native GUI IR **1.3** / payload **v13** / runtime **v1.4** |
+| Studio project | multi-file/resource bundle **v4** |
+| Component registry | **0.8** |
+| Formal claim | **beta.32** invocation-frame-aware direct-Wasm correspondence for the finite safe-integer call-tree fragment. Studio/native/RAD work does **not** widen that claim. |
+
+Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Older versioned modules are compatibility evidence, not current Ready.
+
+## Collaboration
+
+- GPT branches: `gpt/...`. Current RAD PR: [#268](https://github.com/pinkysworld/Patch/pull/268) `gpt/rad-imagelist-r1`.
+- Grok branches: `grok/...` when the work is a separate slice. Small CI/docs/matrix fixes may land on the open GPT branch so ChatGPT continues from green CI.
+- Tracking issue: [#247](https://github.com/pinkysworld/Patch/issues/247) RAD R1.
+- After every slice: tests, docs, public site copy, this file, and regenerate `docs/COMPONENT_CAPABILITY_MATRIX.md`.
+- Do not merge stale planning PRs [#245](https://github.com/pinkysworld/Patch/pull/245) / [#246](https://github.com/pinkysworld/Patch/pull/246); the canonical plans now live in `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+
+## Non-negotiable rules
+
+1. Source is authoritative. No second persistent UI model, no Designer-only component graph, no `localStorage` application state.
+2. UI toolkit interaction is transient until source commits it through `change`.
+3. Unsupported targets **fail closed**. Authoring is not runtime support.
+4. Do not bump Native GUI IR / payload / runtime unless the native C++/AppKit/GTK runtimes, sealers, smokes and docs all move together.
+5. Do not claim PictureBox image loading beyond bounded native PNG/JPEG. WebP/SVG remain fail-closed on native Picture sealing until a versioned policy exists.
+6. Panel Stage 1 is visual grouping, not Delphi-style native child containment.
+7. Keep beginner syntax small. Sophistication stays in compiler/runtime.
+8. Add a test for every semantic rule. Public site/PWA/offline asset closure must include new Studio modules.
+
+## RAD R1 status
+
+Completed:
+
+- Component registry v0.8 with property/event/renderer/target metadata
+- Resource Manager Stage 1 (logical ids, SHA-256, bounds, missing-resource rejection)
+- Picture authoring + Web embed + bounded native PNG/JPEG
+- Shape Stage 1 authoring + Standalone Web; native fail-closed
+- PaintBox Stage 1 authoring + `paint` drawing + Standalone Web; native fail-closed
+- ImageList Stage 1 authoring (nonvisual tray, resource-backed items); all runtimes fail-closed until a consumer exists
+- Generated component capability matrix (`patch components`, `docs/COMPONENT_CAPABILITY_MATRIX.md`)
+
+Remaining, in this order:
+
+1. Picture display properties: fit/scale, proportional, center, opacity, accessible description
+2. Explicit native SVG/WebP policy (do not silently broaden formats)
+3. First ImageList consumer (ToolBar/ToolButton or Button/TreeView image binding), then a versioned runtime contract
+4. Application/window icon resource packaging
+5. Shape native lowering/runtime parity
+6. PaintBox native drawing parity, then `draw image`
+
+Do not start native Shape/PaintBox before Picture display properties. Do not claim ImageList runtime support without a consumer.
+
+## How to add a component
+
+Follow an existing Stage 1 (Shape/PaintBox/ImageList) rather than inventing a second catalog.
+
+Required coverage from issue #247:
+
+1. parser if syntax changes
+2. source serialization round-trip
+3. Designer add/edit/delete
+4. Object Inspector
+5. browser preview
+6. event behavior where applicable
+7. accessibility
+8. native lowering or an explicit fail-closed diagnostic
+9–11. Windows/macOS/Linux runtime where advertised
+12. docs/example
+13. public site/offline asset closure
+
+Then:
+
+- add the descriptor to `src/component-registry.js`
+- run `node scripts/generate-component-matrix.js`
+- update `docs/GPT.md`, authoring surface, README/site copy if the user-visible inventory changed
+
+## Useful commands
+
+```bash
+npm test
+npm run check:project
+npm run check:site
+node scripts/generate-component-matrix.js --check
+node src/cli-entry.js components
+node src/cli-entry.js components --json
+node src/cli-entry.js doctor --json
+```
+
+`patch components` prints the canonical registry/target matrix. Prefer that over scraping Designer HTML.
+
+## File map
+
+| Path | Role |
+|---|---|
+| `src/component-registry.js` | Canonical component metadata |
+| `src/component-matrix.js` | Generated matrix/JSON/CLI projection |
+| `src/component-support.js` | Build-target support assessment |
+| `src/native-current-contract.js` | Current IR 1.4 / v14 / v1.5 facade |
+| `web/` | Patch Studio site/PWA |
+| `examples/workshop-desk.patch` | Acceptance showcase. Interpreter/Web may persist Table/Tree text-lists; current native lowering still fail-closes `set = value` from Table `changed` because that event value is list-valued. Do not interpolate lists into `text`. |
+| `docs/RAD_STUDIO_MASTERPLAN.md` | Architecture |
+| `docs/RAD_STUDIO_MASTER_BACKLOG.md` | Long-term backlog |
+| `docs/COMPONENT_CAPABILITY_MATRIX.md` | Generated capability table |
+| `docs/ROADMAP.md` | Current remaining R1 gates |
+
+## Next ChatGPT slice
+
+**Picture display properties.** Keep Patch source authoritative. Add fit/scale, proportional/aspect, center, opacity and accessible description through parser, Designer/Object Inspector, Web preview and explicit native behavior. Do not treat missing native properties as silent no-ops.
