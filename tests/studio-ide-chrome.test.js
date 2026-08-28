@@ -5,13 +5,14 @@ import fs from 'node:fs';
 const html = fs.readFileSync('web/index.html', 'utf8');
 const style = fs.readFileSync('web/style.css', 'utf8');
 const refresh = fs.readFileSync('web/site-refresh.css', 'utf8');
+const beta35 = fs.readFileSync('web/beta35-studio.css', 'utf8');
 
 test('Studio keeps the beta.36 feature boundary inside the collapsed contracts disclosure', () => {
   const launchpad = html.indexOf('class="studio-launchpad"');
   const strip = html.indexOf('class="beta35-strip"');
   const workspace = html.indexOf('class="workspace"');
   assert.ok(launchpad > 0 && strip > launchpad && strip < workspace);
-  assert.match(html, /Current Studio:[^<]*multi-file project bundle v3/);
+  assert.match(html, /Current Studio:[^<]*multi-file project bundle v4/);
   assert.match(refresh, /\.studio-launchpad \.beta35-strip/);
 });
 
@@ -25,18 +26,16 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
   assert.match(style, /border: 1px dashed var\(--border-strong\)/);
 });
 
-test('Studio brand mark is a square geometric P with no rotation', () => {
+test('Studio brand mark restores the softer upright P instead of exposing the angular SVG', () => {
   const mark = html.match(/class="brand-mark"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
-  const path = mark.match(/<path[^>]*\sd="([^"]+)"/)?.[1] || '';
   assert.match(mark, /<svg viewBox="0 0 22 22"/);
-  assert.doesNotMatch(html, /class="brand-mark"[^>]*>P</);
-  assert.match(path, /^M3 2H18V12H8V20H3ZM8 6H13V8H8Z$/);
-  assert.doesNotMatch(path, /[cqstaCQSTA.]/);
+  assert.match(beta35, /\.brand-mark svg \{ display: none; \}/);
+  assert.match(beta35, /\.brand-mark::before[\s\S]*?content: "P"/);
+  assert.match(beta35, /border-radius: 9px/);
+  assert.match(beta35, /font-weight: 850/);
   assert.doesNotMatch(style, /rotate\(/);
   assert.doesNotMatch(refresh, /rotate\(/);
-  assert.match(style, /\.brand-mark[\s\S]*?transform:\s*none/);
-  assert.match(refresh, /\.brand-mark[\s\S]*?transform:\s*none/);
-  assert.match(style, /\.brand-mark svg/);
+  assert.doesNotMatch(beta35, /rotate\(/);
 });
 
 test('Studio status bar stays visible and carries save state plus the Ready chip', () => {
