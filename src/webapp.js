@@ -6,6 +6,7 @@ import { enhanceStandaloneWindowPaintBoxes } from './window-web-paintbox.js';
 import { validateStudioResources } from './studio-resources.js';
 import { PATCH_FORM_LAYOUT_VERSION, buildFormLayoutManifest } from './form-layout.js';
 import { PATCH_WINDOW_LAYOUT_POLICY_VERSION, validateWindowLayoutPolicyManifest } from './window-layout-policy.js';
+import { collectWindowIcons, selectApplicationWindowIcon } from './window-icon.js';
 
 export const PATCH_STANDALONE_WEB_VERSION = '0.2';
 const PICTURE_RESOURCE_PREFIX = 'patch-resource:';
@@ -123,38 +124,73 @@ function containsTable(nodes) {
 }
 
 function addStandaloneWindowPictures(built, resources = []) {
-  if (!hasPicture(built?.compiled?.ast ?? [])) return built;
+  const ast = built?.compiled?.ast ?? [];
+  const pictures = hasPicture(ast);
+  const buttonImages = hasButtonImage(ast);
+  const windowIcons = collectWindowIcons(ast);
+  if (!pictures && !buttonImages && !windowIcons.length) return built;
   const normalized = validateStudioResources(resources);
-  validateStaticPictureReferences(built.compiled.ast, normalized);
+  if (pictures) validateStaticPictureReferences(ast, normalized);
+  if (buttonImages) validateStaticButtonImageReferences(ast, normalized);
+  if (windowIcons.length) validateStaticWindowIconReferences(ast, normalized);
   const table = Object.fromEntries(normalized.map(resource => [resource.id, { mediaType: resource.mediaType, data: resource.data }]));
   const resourceJson = JSON.stringify(table).replace(/</g, '\\u003c');
   let html = String(built.html ?? '');
 
   const modelNeedle = "nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[],";
-  if (!html.includes(modelNeedle)) throw new Error('Standalone Window Picture model hook is unavailable.');
-  html = html.replace(modelNeedle, `${modelNeedle}source:node.control==='picture'&&node.sourceExpr?uiText(node.sourceExpr):'',`);
+  if (pictures) {
+    if (!html.includes(modelNeedle)) throw new Error('Standalone Window Picture model hook is unavailable.');
+    html = html.replace(modelNeedle, `${modelNeedle}source:node.control==='picture'&&node.sourceExpr?uiText(node.sourceExpr):'',fit:node.control==='picture'?(node.fit||'contain'):'contain',center:node.control==='picture'?node.center!==false:true,opacity:node.control==='picture'&&Number.isFinite(Number(node.opacity))?Number(node.opacity):1,description:node.control==='picture'?(node.description||''):'',`);
+  }
 
   const outputNeedle = "const outputEl=document.getElementById('output');";
   if (!html.includes(outputNeedle)) throw new Error('Standalone Window Picture resource hook is unavailable.');
-  html = html.replace(outputNeedle, `${outputNeedle}\nconst PATCH_IMAGE_RESOURCES=Object.freeze(${resourceJson});\nfunction patchPictureSource(source){const value=String(source??'');if(!value.startsWith('${PICTURE_RESOURCE_PREFIX}'))return value;const id=value.slice(${PICTURE_RESOURCE_PREFIX.length});const resource=PATCH_IMAGE_RESOURCES[id];if(!resource)throw new PatchAppError("Picture resource '"+id+"' is not embedded in this app.");return 'data:'+resource.mediaType+';base64,'+resource.data;}`);
+  if (!html.includes('const PATCH_IMAGE_RESOURCES=')) {
+    html = html.replace(outputNeedle, `${outputNeedle}\nconst PATCH_IMAGE_RESOURCES=Object.freeze(${resourceJson});\nfunction patchPictureSource(source){const value=String(source??'');if(!value.startsWith('${PICTURE_RESOURCE_PREFIX}'))return value;const id=value.slice(${PICTURE_RESOURCE_PREFIX.length});const resource=PATCH_IMAGE_RESOURCES[id];if(!resource)throw new PatchAppError("Picture resource '"+id+"' is not embedded in this app.");return 'data:'+resource.mediaType+';base64,'+resource.data;}`);
+  }
 
-  const renderNeedle = "if(control.type==='tree')return renderTree(control);";
-  if (!html.includes(renderNeedle)) throw new Error('Standalone Window Picture renderer hook is unavailable.');
-  const pictureRenderer = "if(control.type==='picture'){const el=document.createElement('img');el.className='patch-picture';el.src=patchPictureSource(control.source);el.alt=control.text||'';const clickable=Boolean(control.id)&&events.some(handler=>handler.control===control.id&&handler.event==='clicked');if(clickable){el.tabIndex=0;el.setAttribute('role','button');const activate=()=>safeTrigger(control.id,'clicked');el.addEventListener('click',activate);el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}});}return el;}";
-  html = html.replace(renderNeedle, pictureRenderer + renderNeedle);
+  if (pictures) {
+    const renderNeedle = "if(control.type==='tree')return renderTree(control);";
+    if (!html.includes(renderNeedle)) throw new Error('Standalone Window Picture renderer hook is unavailable.');
+    const pictureRenderer = "if(control.type==='picture'){const el=document.createElement('img');el.className='patch-picture';el.src=patchPictureSource(control.source);el.alt=control.text||control.description||'';if(control.description||control.text)el.setAttribute('aria-label',control.description||control.text);el.style.objectFit=control.fit||'contain';el.style.objectPosition=control.center===false?'0% 0%':'50% 50%';el.style.opacity=String(Number.isFinite(Number(control.opacity))?control.opacity:1);const clickable=Boolean(control.id)&&events.some(handler=>handler.control===control.id&&handler.event==='clicked');if(clickable){el.tabIndex=0;el.setAttribute('role','button');const activate=()=>safeTrigger(control.id,'clicked');el.addEventListener('click',activate);el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}});}return el;}";
+    html = html.replace(renderNeedle, pictureRenderer + renderNeedle);
 
-  const cssNeedle = '.console{padding:20px}';
-  if (!html.includes(cssNeedle)) throw new Error('Standalone Window Picture stylesheet hook is unavailable.');
-  html = html.replace(cssNeedle, ".patch-picture{display:block;max-width:100%;max-height:100%;object-fit:contain;border:0;background:transparent}.patch-picture[role='button']{cursor:pointer}.patch-picture[role='button']:focus-visible{outline:3px solid #2563eb;outline-offset:2px}.console{padding:20px}");
+    const cssNeedle = '.console{padding:20px}';
+    if (!html.includes(cssNeedle)) throw new Error('Standalone Window Picture stylesheet hook is unavailable.');
+    html = html.replace(cssNeedle, ".patch-picture{display:block;max-width:100%;max-height:100%;object-fit:contain;border:0;background:transparent}.patch-picture[role='button']{cursor:pointer}.patch-picture[role='button']:focus-visible{outline:3px solid #2563eb;outline-offset:2px}.console{padding:20px}");
+  }
+
+  const applicationIcon = selectApplicationWindowIcon(ast);
+  if (applicationIcon?.locator) {
+    const href = pictureResourceDataUri(applicationIcon.locator, normalized);
+    const titleNeedle = '<title>';
+    if (!html.includes(titleNeedle)) throw new Error('Standalone Window application icon title hook is unavailable.');
+    if (!html.includes('rel="icon"')) {
+      html = html.replace(titleNeedle, `<link rel="icon" href="${escapeHtml(href)}">\n<title>`);
+    }
+  }
 
   return {
     ...built,
     html,
     metadata: {
       ...built.metadata,
-      pictureStage: 1,
-      pictureResourceModel: normalized.length ? 'embedded-project-resources' : 'quoted-source',
-      pictureResourceCount: normalized.length
+      ...(pictures ? {
+        pictureStage: 1,
+        pictureResourceModel: normalized.length ? 'embedded-project-resources' : 'quoted-source',
+        pictureResourceCount: normalized.length
+      } : {}),
+      ...(buttonImages ? {
+        buttonImageStage: 1,
+        buttonImageResourceModel: normalized.length ? 'embedded-project-resources' : 'quoted-source',
+        buttonImageResourceCount: collectButtonImageResourceIds(ast).length
+      } : {}),
+      ...(windowIcons.length ? {
+        windowIconStage: 1,
+        windowIconPolicy: 'window-icon/1.0',
+        windowIconResourceModel: applicationIcon?.resourceId && normalized.length ? 'embedded-project-resources' : 'quoted-source',
+        windowIconCount: windowIcons.length
+      } : {})
     }
   };
 }
@@ -196,6 +232,61 @@ function hasPicture(nodes) {
     if (node.kind === 'uiControl' && node.control === 'picture') found = true;
   });
   return found;
+}
+
+function hasButtonImage(nodes) {
+  let found = false;
+  walkPictureNodes(nodes, node => {
+    if (node.kind === 'uiControl' && node.control === 'button' && node.imageListId && node.imageItem) found = true;
+  });
+  return found;
+}
+
+function collectButtonImageResourceIds(ast) {
+  const ids = [];
+  walkPictureNodes(ast, node => {
+    if (node.kind !== 'uiControl' || node.control !== 'imagelist') return;
+    for (const item of node.items ?? []) {
+      const source = quotedPictureValue(item.sourceExpr);
+      if (source?.startsWith(PICTURE_RESOURCE_PREFIX)) ids.push(source.slice(PICTURE_RESOURCE_PREFIX.length));
+    }
+  });
+  return ids;
+}
+
+function validateStaticButtonImageReferences(ast, resources) {
+  const ids = new Set(resources.map(resource => resource.id));
+  const windows = (ast ?? []).filter(node => node.kind === 'window');
+  for (const windowNode of windows) {
+    const lists = new Map();
+    for (const child of windowNode.body ?? []) {
+      if (child.kind === 'uiControl' && child.control === 'imagelist' && child.id) lists.set(child.id, child);
+    }
+    walkPictureNodes([windowNode], node => {
+      if (node.kind !== 'uiControl' || node.control !== 'button' || !node.imageListId || !node.imageItem) return;
+      const list = lists.get(node.imageListId);
+      const item = (list?.items ?? []).find(entry => entry.name === node.imageItem);
+      const source = quotedPictureValue(item?.sourceExpr);
+      if (!source?.startsWith(PICTURE_RESOURCE_PREFIX)) return;
+      const id = source.slice(PICTURE_RESOURCE_PREFIX.length);
+      if (!ids.has(id)) {
+        throw new Error(`line ${node.line ?? '?'}: Button '${node.id ?? 'unnamed'}' image ${node.imageListId}.${node.imageItem} references missing project resource '${id}'.`);
+      }
+    });
+  }
+}
+
+function validateStaticWindowIconReferences(ast, resources) {
+  const ids = new Set(resources.map(resource => resource.id));
+  for (const node of ast ?? []) {
+    if (node.kind !== 'window' || !node.iconExpr) continue;
+    const source = quotedPictureValue(node.iconExpr);
+    if (!source?.startsWith(PICTURE_RESOURCE_PREFIX)) continue;
+    const id = source.slice(PICTURE_RESOURCE_PREFIX.length);
+    if (!ids.has(id)) {
+      throw new Error(`line ${node.line ?? '?'}: Window '${node.id ?? 'unnamed'}' icon references missing project resource '${id}'.`);
+    }
+  }
 }
 
 function walkPictureNodes(nodes, visit) {

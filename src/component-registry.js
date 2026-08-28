@@ -26,7 +26,13 @@ const TEXT_PROPERTY = Object.freeze({ name: 'textExpr', kind: 'expression' });
 
 const PROPERTY_BY_TYPE = Object.freeze({
   text: Object.freeze([TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
-  button: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
+  button: Object.freeze([
+    ID_PROPERTY,
+    TEXT_PROPERTY,
+    Object.freeze({ name: 'imageListId', kind: 'name' }),
+    Object.freeze({ name: 'imageItem', kind: 'name' }),
+    ...COMMON_LAYOUT_PROPERTIES
+  ]),
   input: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   checkbox: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   radio: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'options', kind: 'expression-list' }), ...COMMON_LAYOUT_PROPERTIES]),
@@ -43,7 +49,15 @@ const PROPERTY_BY_TYPE = Object.freeze({
   tree: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'treeNodes', kind: 'tree' }), ...COMMON_LAYOUT_PROPERTIES]),
   tabs: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'pages', kind: 'tabs' }), ...COMMON_LAYOUT_PROPERTIES]),
   panel: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'children', kind: 'controls' }), ...COMMON_LAYOUT_PROPERTIES]),
-  picture: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'sourceExpr', kind: 'expression' }), ...COMMON_LAYOUT_PROPERTIES]),
+  picture: Object.freeze([
+    ID_PROPERTY,
+    Object.freeze({ name: 'sourceExpr', kind: 'expression' }),
+    Object.freeze({ name: 'fit', kind: 'enum', values: Object.freeze(['contain', 'cover', 'fill', 'none']) }),
+    Object.freeze({ name: 'center', kind: 'boolean' }),
+    Object.freeze({ name: 'opacity', kind: 'number' }),
+    Object.freeze({ name: 'description', kind: 'text' }),
+    ...COMMON_LAYOUT_PROPERTIES
+  ]),
   shape: Object.freeze([
     ID_PROPERTY,
     Object.freeze({ name: 'shapeKind', kind: 'enum', values: Object.freeze(['rectangle', 'rounded', 'ellipse', 'line']) }),
@@ -56,7 +70,13 @@ const PROPERTY_BY_TYPE = Object.freeze({
   ]),
   paintbox: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   statusbar: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
-  timer: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'interval', kind: 'integer' })])
+  timer: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'interval', kind: 'integer' })]),
+  imagelist: Object.freeze([
+    ID_PROPERTY,
+    Object.freeze({ name: 'logicalWidth', kind: 'integer' }),
+    Object.freeze({ name: 'logicalHeight', kind: 'integer' }),
+    Object.freeze({ name: 'items', kind: 'imagelist-items' })
+  ])
 });
 
 const DESKTOP_TARGETS = Object.freeze({
@@ -69,11 +89,11 @@ const DESKTOP_TARGETS = Object.freeze({
 });
 
 const SHAPE_STAGE1_TARGETS = Object.freeze({
-  studio: 'authoring',
+  studio: 'supported',
   web: 'supported',
-  windows: 'unsupported',
-  macos: 'unsupported',
-  linux: 'unsupported',
+  windows: 'supported',
+  macos: 'supported',
+  linux: 'supported',
   freebsd: 'unsupported'
 });
 
@@ -86,9 +106,19 @@ const PAINTBOX_STAGE1_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
+const IMAGELIST_STAGE1_TARGETS = Object.freeze({
+  studio: 'authoring',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
 const TARGETS_BY_TYPE = Object.freeze({
   shape: SHAPE_STAGE1_TARGETS,
-  paintbox: PAINTBOX_STAGE1_TARGETS
+  paintbox: PAINTBOX_STAGE1_TARGETS,
+  imagelist: IMAGELIST_STAGE1_TARGETS
 });
 
 const COMPONENTS = [
@@ -108,10 +138,11 @@ const COMPONENTS = [
   ['shape', 'Shape', 'Graphics', true],
   ['paintbox', 'PaintBox', 'Graphics', true],
   ['statusbar', 'StatusBar', 'Chrome', true],
-  ['timer', 'Timer', 'Nonvisual', false]
+  ['timer', 'Timer', 'Nonvisual', false],
+  ['imagelist', 'ImageList', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.7';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.8';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);

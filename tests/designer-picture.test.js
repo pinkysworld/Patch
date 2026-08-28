@@ -66,3 +66,21 @@ test('legacy text-form Picture remains stable when only its layout changes', () 
   assert.match(next, /picture "Preview" as preview at 12, 24 size 180, 120/);
   assert.doesNotThrow(() => compile(next, { name: 'LegacyPictureDesigner' }));
 });
+
+test('Designer writes Picture display properties into source and treats proportional as fit sugar', () => {
+  const source = `window "Gallery":\n  picture as logo from "logo.png" at 10, 20 size 180, 120\n`;
+  const picture = listDesignerControls(source)[0];
+  assert.equal(picture.fit, 'contain');
+  assert.equal(picture.center, true);
+  assert.equal(picture.proportional, true);
+  const fitted = updateDesignerControl(source, picture, {
+    fit: 'cover',
+    center: false,
+    opacity: 0.25,
+    description: 'Logo'
+  });
+  assert.match(fitted, /picture as logo from "logo\.png" fit cover center false opacity 0\.25 description "Logo" at 10, 20 size 180, 120/);
+  const stretched = updateDesignerControl(fitted, listDesignerControls(fitted)[0], { proportional: false });
+  assert.match(stretched, /fit fill/);
+  assert.equal(listDesignerControls(stretched)[0].proportional, false);
+});

@@ -24,8 +24,9 @@ test('Designer event lifecycle includes Timer ticked handlers', () => {
 test('Timer is a first-class nonvisual Component Palette entry', () => {
   const timer = DESIGNER_TOOL_CATALOG.find(tool => tool.type === 'timer');
   assert.deepEqual(timer, { group: 'Nonvisual', type: 'timer', buttonId: 'addTimer', label: 'Timer' });
-  assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer']);
+  assert.deepEqual(filterDesignerTools('nonvisual').map(tool => tool.type), ['timer', 'imagelist']);
   assert.equal(isNonvisualFormControl('timer'), true);
+  assert.equal(isNonvisualFormControl('imagelist'), true);
   assert.equal(isNonvisualFormControl('button'), false);
 });
 

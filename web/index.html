@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.36+: write, design, run and build source-backed Patch applications with multi-file projects, RAD arrangement tools and Native GUI IR 1.4 / runtime v1.5 Ready builds.">
+  <meta name="description" content="Patch Studio beta.36+: source-backed RAD development with project bundle v4 resources, Picture/Shape/PaintBox/ImageList authoring, window icons and Native GUI IR 1.5 / runtime v1.6 Ready builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -33,7 +33,7 @@
 </nav>
 <main class="studio" data-patch-version="0.2.0-beta.36">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 22 22" focusable="false" shape-rendering="crispEdges"><path fill="currentColor" fill-rule="evenodd" d="M3 2H18V12H8V20H3ZM8 6H13V8H8Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Source-backed visual development with explicit semantic change.</p></div></div>
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 22 22" focusable="false" shape-rendering="crispEdges"><path fill="currentColor" fill-rule="evenodd" d="M3 2H18V12H8V20H3ZM8 6H13V8H8Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Source-backed RAD development with explicit semantic change.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
       <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="workshopDesk">Workshop desk</option><option value="counterWindow">Window app</option><option value="tabsWindow">Tabs app</option><option value="sliderWindow">Slider app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
@@ -59,24 +59,24 @@
       <span id="diagnosticsState" role="status" aria-live="polite" aria-atomic="true">Diagnostics stay local.</span>
     </span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.5 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.4 as payload v14. Chrome Stage 1 adds Panel, Timer, PictureBox and StatusBar transport while PictureBox image-source decoding remains an explicit follow-up.</span></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.6 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.5 as payload v15. Native Picture follows native-picture-formats/1.0: PNG/JPEG decoding is Ready; WebP/SVG and unsupported graphics/runtime contracts fail closed.</span></section>
 
   <details class="studio-launchpad" aria-label="Patch Studio current status and quick start">
-    <summary>Contracts and quick start <span class="summary-hint">local-first · Ready IR 1.4 / v1.5</span></summary>
+    <summary>Contracts and quick start <span class="summary-hint">local-first · project v4 · Ready IR 1.5 / v1.6</span></summary>
     <div class="studio-launchpad-body">
     <div class="studio-snapshot" aria-label="Current Patch contracts">
-      <div class="studio-snapshot-card"><b>Local-first Studio</b><span>Projects, recovery and privacy-redacted diagnostics remain local unless you explicitly export or build.</span></div>
-      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.4 / payload v14 / runtime v1.5 Ready assets. Older versioned contracts remain compatibility lines.</span></div>
-      <div class="studio-snapshot-card"><b>RAD authoring</b><span>Source-backed multi-selection now supports edge/center alignment, same-size operations and equal-gap horizontal or vertical distribution.</span></div>
+      <div class="studio-snapshot-card"><b>Local-first project v4</b><span>Multi-file source, project resources, recovery and privacy-redacted diagnostics remain local unless you explicitly export or build.</span></div>
+      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.5 / payload v15 / runtime v1.6 Ready assets. Older versioned contracts remain compatibility lines.</span></div>
+      <div class="studio-snapshot-card"><b>RAD R1 authoring</b><span>Picture, Shape, PaintBox, StatusBar, Timer, ImageList and Window icons extend the source-backed Designer; target capability boundaries remain explicit and fail closed.</span></div>
     </div>
     <div class="studio-guide">
       <div class="studio-guide-body">
-        <div class="studio-guide-step"><b>1 · Start from source</b><span>Choose an example or edit <code>main.patch</code>. The Designer always rewrites visible Patch source.</span></div>
-        <div class="studio-guide-step"><b>2 · Run or navigate</b><span><code>Ctrl/Cmd+Enter</code> runs. <code>Ctrl/Cmd+K</code> opens commands for Editor, Designer, Output, Recovery and docs.</span></div>
+        <div class="studio-guide-step"><b>1 · Start from source</b><span>Choose an example or edit <code>main.patch</code>. The Designer rewrites visible Patch source and project resources stay in the explicit v4 resource store.</span></div>
+        <div class="studio-guide-step"><b>2 · Run or navigate</b><span><code>Ctrl/Cmd+Enter</code> runs. <code>Ctrl/Cmd+K</code> opens commands for files, symbols, Designer, Output, Recovery and docs.</span></div>
         <div class="studio-guide-step"><b>3 · Build</b><span><code>Ctrl/Cmd+Shift+Enter</code> builds the selected target. Ready desktop downloads need no GitHub token.</span></div>
       </div>
     </div>
-    <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.36+</strong><span>Current Studio: multi-file project bundle v3, source-backed Designer, expanded RAD arrangement tools, Slider, multi-select ListBox, Table, TreeView and Tabs, plus verified no-token Ready builds. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
+    <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.36+</strong><span>Current Studio: multi-file project bundle v4 with image resources; source-backed Designer with Forms, Object Inspector and searchable Component Palette; multi-select ListBox, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer and ImageList R1 authoring; Button <code>image list.item</code> on Web; Window <code>icon</code> chrome and favicon packaging under <code>window-icon/1.0</code>; plus verified no-token Ready builds. PaintBox native parity and native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
     </div>
   </details>
 
@@ -96,13 +96,13 @@
         <button id="tabChanges" class="tab" role="tab" data-tab="changes" aria-controls="changes" aria-selected="false" tabindex="-1">Changes</button>
         <button id="tabIr" class="tab" role="tab" data-tab="ir" aria-controls="ir" aria-selected="false" tabindex="-1">IR</button>
       </div>
-      <div id="designer" class="designer-view" role="tabpanel" aria-labelledby="tabDesigner" tabindex="0"><div class="designer-toolbar" aria-label="Designer toolbox"><strong>Toolbox</strong><button id="addText" class="secondary small" aria-label="Add Text">+ Text</button><button id="addButton" class="secondary small" aria-label="Add Button">+ Button</button><button id="addInput" class="secondary small" aria-label="Add Input">+ Input</button><button id="addCheckbox" class="secondary small" aria-label="Add Checkbox">+ Checkbox</button><button id="addRadio" class="secondary small" aria-label="Add Radio group">+ Radio</button><button id="addCombo" class="secondary small" aria-label="Add ComboBox">+ Combo</button><button id="addListbox" class="secondary small" aria-label="Add ListBox">+ ListBox</button><button id="addSlider" class="secondary small" aria-label="Add Slider">+ Slider</button><button id="addTable" class="secondary small" aria-label="Add Table">+ Table</button><button id="addTree" class="secondary small" aria-label="Add TreeView">+ Tree</button><button id="addTabs" class="secondary small" aria-label="Add Tabs">+ Tabs</button></div><div id="designerCanvas" class="app-preview designer-canvas"><div class="empty-preview"><strong>Designer</strong><p>Window projects appear here while you edit.</p><span class="empty-preview-hint">Run with Ctrl/Cmd+Enter, or add a control from the toolbox.</span></div></div></div>
+      <div id="designer" class="designer-view" role="tabpanel" aria-labelledby="tabDesigner" tabindex="0"><div class="designer-toolbar" aria-label="Designer toolbox"><strong>Toolbox</strong><button id="addText" class="secondary small" aria-label="Add Text">+ Text</button><button id="addButton" class="secondary small" aria-label="Add Button">+ Button</button><button id="addInput" class="secondary small" aria-label="Add Input">+ Input</button><button id="addCheckbox" class="secondary small" aria-label="Add Checkbox">+ Checkbox</button><button id="addRadio" class="secondary small" aria-label="Add Radio group">+ Radio</button><button id="addCombo" class="secondary small" aria-label="Add ComboBox">+ Combo</button><button id="addListbox" class="secondary small" aria-label="Add ListBox">+ ListBox</button><button id="addSlider" class="secondary small" aria-label="Add Slider">+ Slider</button><button id="addTable" class="secondary small" aria-label="Add Table">+ Table</button><button id="addTree" class="secondary small" aria-label="Add TreeView">+ Tree</button><button id="addTabs" class="secondary small" aria-label="Add Tabs">+ Tabs</button></div><div id="designerCanvas" class="app-preview designer-canvas"><div class="empty-preview"><strong>Designer</strong><p>Window projects appear here while you edit.</p><span class="empty-preview-hint">Run with Ctrl/Cmd+Enter, or add a control from the Component Palette.</span></div></div></div>
       <div id="app" class="app-preview" role="tabpanel" aria-labelledby="tabApp" tabindex="0" hidden><div class="empty-preview"><strong>App preview</strong><p>Run a window project to preview it here.</p><span class="empty-preview-hint">Ctrl/Cmd+Enter runs the current project.</span></div></div>
       <pre id="output" role="tabpanel" aria-labelledby="tabOutput" tabindex="0" hidden>Press Run.</pre><pre id="changes" role="tabpanel" aria-labelledby="tabChanges" tabindex="0" hidden>Run or build to inspect the Change Contract.</pre><pre id="ir" role="tabpanel" aria-labelledby="tabIr" tabindex="0" hidden>Run or build to inspect Change IR.</pre>
     </div>
   </section>
 
-  <section class="statusbar"><span class="status-left"><span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span></span><span class="status-right"><span class="status-chip" title="Current Ready native contract">IR 1.4 / v1.5</span> · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard & help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
+  <section class="statusbar"><span class="status-left"><span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span></span><span class="status-right"><span class="status-chip" title="Current Ready native contract">IR 1.5 / v1.6</span> · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard & help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
 </main>
 
 <dialog id="commandPalette" class="command-palette" aria-labelledby="commandPaletteTitle">

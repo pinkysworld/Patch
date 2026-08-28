@@ -30,6 +30,8 @@ test('Standalone Window Web embeds v4 Picture resources and renders a real image
   assert.match(built.html, /patchPictureSource\(control\.source\)/);
   assert.match(built.html, /handler\.event==='clicked'/);
   assert.match(built.html, /object-fit:contain/);
+  assert.match(built.html, /el\.style\.objectFit=control\.fit\|\|'contain'/);
+  assert.match(built.html, /el\.alt=control\.text\|\|control\.description\|\|''/);
 });
 
 test('Standalone Window Web fails closed when static Picture source names a missing project resource', () => {

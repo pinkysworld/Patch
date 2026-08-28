@@ -61,29 +61,31 @@ test('retired v07-v11 Table and list sealed workflows are no longer active', () 
   assert.equal(fs.existsSync(new URL('../.github/workflows/native-sealed-list-runtime.yml', import.meta.url)), false);
 });
 
-test('downloadable offline compiler embeds runtime v1.5 and proves payload v14 current Window linking', () => {
+test('downloadable offline compiler embeds runtime v1.6 and proves payload v15 current Window linking', () => {
   assert.match(offlineWorkflow, /windows-latest/);
   assert.match(offlineWorkflow, /ubuntu-latest/);
   assert.match(offlineWorkflow, /macos-15/);
   assert.match(offlineWorkflow, /macos-15-intel/);
-  assert.match(offlineWorkflow, /win32-sealed-gui-v15\.cpp/);
-  assert.match(offlineWorkflow, /appkit-sealed-gui-v15\.mm/);
-  assert.match(offlineWorkflow, /gtk-sealed-gui-v15\.cpp/);
+  assert.match(offlineWorkflow, /win32-sealed-gui-v16\.cpp/);
+  assert.match(offlineWorkflow, /appkit-sealed-gui-v16\.mm/);
+  assert.match(offlineWorkflow, /gtk-sealed-gui-v16\.cpp/);
   assert.match(offlineWorkflow, /link examples\/table-native-v09\.patch/);
   assert.match(offlineWorkflow, /link examples\/listbox-multiselect-native\.patch/);
   assert.match(offlineWorkflow, /link examples\/menu-state-window\.patch/);
   assert.match(offlineWorkflow, /link examples\/treeview-window\.patch/);
   assert.match(offlineWorkflow, /link examples\/slider-window\.patch/);
   assert.match(offlineWorkflow, /link examples\/chrome-window\.patch/);
+  assert.match(offlineWorkflow, /link examples\/shape-window\.patch/);
   assert.match(offlineWorkflow, /OfflineTable/);
   assert.match(offlineWorkflow, /OfflineMulti/);
   assert.match(offlineWorkflow, /OfflineMenu/);
   assert.match(offlineWorkflow, /OfflineTree/);
   assert.match(offlineWorkflow, /OfflineSlider/);
   assert.match(offlineWorkflow, /OfflineChrome/);
-  assert.match(offlineWorkflow, /payload v14/i);
-  assert.match(offlineWorkflow, /runtime v1\.5/i);
-  assert.match(offlineWorkflow, /not sealed payload v14|payload v14/i);
+  assert.match(offlineWorkflow, /OfflineShape/);
+  assert.match(offlineWorkflow, /payload v15/i);
+  assert.match(offlineWorkflow, /runtime v1\.6/i);
+  assert.match(offlineWorkflow, /not sealed payload v15|payload v15/i);
 });
 
 test('Studio App preview Table dispatch uses the shared semantic event adapter', () => {

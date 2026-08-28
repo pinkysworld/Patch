@@ -132,10 +132,31 @@
   font-variant-numeric: tabular-nums;
 }
 #designerInspectorTimerField small,
-#designerInspectorPictureSourceField small {
+#designerInspectorPictureSourceField small,
+#designerInspectorPictureDisplayFields small {
   display: block;
   margin-top: 4px;
   line-height: 1.35;
+}
+.designer-picture-display {
+  display: grid;
+  gap: 6px;
+}
+.designer-picture-display label {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.designer-picture-display .designer-picture-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+}
+.designer-picture-display input,
+.designer-picture-display select {
+  min-width: 0;
 }
 
 /* Current containers, graphics, Form chrome and nonvisual components continue the compact desktop rail. */

@@ -11,10 +11,10 @@ const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
 test('beta35 multi-select workflow remains visible after current native v1.5 parity lands', () => {
   assert.match(index, /value="sliderWindow">Slider app<\/option>/i);
-  for (const marker of ['Current Studio:', 'multi-file project bundle v3', 'source-backed Designer', 'multi-select ListBox', 'Table', 'TreeView', 'Tabs']) {
+  for (const marker of ['Current Studio:', 'multi-file project bundle v4', 'source-backed Designer', 'multi-select ListBox', 'Table', 'TreeView', 'Tabs']) {
     assert.ok(index.includes(marker), marker);
   }
-  assert.match(index, /Native GUI IR 1\.4 \/ payload v14 \/ runtime v1\.5/i);
+  assert.match(index, /Native GUI IR 1\.5 \/ payload v15 \/ runtime v1\.6/i);
   assert.match(index, /Older versioned contracts remain compatibility lines/i);
   assert.match(index, /Persistent application state still changes only through explicit <b>change<\/b>/i);
   assert.match(index, /href="#designer"[^>]*>Designer ↓<\/a>/);

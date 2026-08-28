@@ -78,8 +78,8 @@ test('responsive runtime workflow retains the frozen v0.9 release line for repro
   assert.match(workflow, /readUInt32LE\(sealed\.length-12\)!==8/);
 });
 
-test('Pages and offline compiler use current runtime v1.5 while frozen responsive v0.9 stays separate', () => {
-  for (const tag of ['native-win32-runtime-v1.5','native-macos-runtime-v1.5','native-linux-runtime-v1.5']) {
+test('Pages and offline compiler use current runtime v1.6 while frozen responsive v0.9 stays separate', () => {
+  for (const tag of ['native-win32-runtime-v1.6','native-macos-runtime-v1.6','native-linux-runtime-v1.6']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
   }
   assert.doesNotMatch(pages, /Patch Native Sealed Table Runtime/);
@@ -87,14 +87,14 @@ test('Pages and offline compiler use current runtime v1.5 while frozen responsiv
   assert.match(pages, /Patch Native Sealed Menu Runtime v1\.2 Release/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
-  assert.match(pages, /Patch Native Sealed Chrome Runtime v1\.5/);
+  assert.match(pages, /Patch Native Sealed Shape Runtime v1\.6/);
   assert.match(pages, /steps\.native_runtime\.outputs\.ready == 'true'/);
   assert.match(pages, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 
   for (const runtimeSource of [
-    'native-runtime\\win32-sealed-gui-v15.cpp',
-    'native-runtime/appkit-sealed-gui-v15.mm',
-    'native-runtime/gtk-sealed-gui-v15.cpp'
+    'native-runtime\\win32-sealed-gui-v16.cpp',
+    'native-runtime/appkit-sealed-gui-v16.mm',
+    'native-runtime/gtk-sealed-gui-v16.cpp'
   ]) assert.ok(offline.includes(runtimeSource), `offline compiler missing ${runtimeSource}`);
   assert.match(offline, /examples\/responsive-window\.patch/);
   assert.match(offline, /examples\/table-native-v09\.patch/);
@@ -103,13 +103,14 @@ test('Pages and offline compiler use current runtime v1.5 while frozen responsiv
   assert.match(offline, /examples\/treeview-window\.patch/);
   assert.match(offline, /examples\/slider-window\.patch/);
   assert.match(offline, /examples\/chrome-window\.patch/);
+  assert.match(offline, /examples\/shape-window\.patch/);
   assert.match(offline, /OfflineTable/);
   assert.match(offline, /OfflineMulti/);
   assert.match(offline, /OfflineMenu/);
   assert.match(offline, /OfflineTree/);
   assert.match(offline, /OfflineSlider/);
   assert.match(offline, /OfflineChrome/);
-  assert.match(offline, /payload v14\/runtime v1\.5/);
+  assert.match(offline, /payload v15\/runtime v1\.6/);
   assert.match(offline, /--patch-smoke/);
   assert.doesNotMatch(offline, /native-win32-runtime-v0\.9/);
   assert.doesNotMatch(offline, /native-macos-runtime-v0\.9/);

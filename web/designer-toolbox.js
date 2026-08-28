@@ -12,6 +12,7 @@ import {
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
+import './designer-imagelist.js';
 
 const doc = typeof document === 'undefined' ? null : document;
 const designer = doc?.querySelector('#designer') ?? null;
@@ -99,6 +100,7 @@ function install() {
   installNonvisualTray();
   installTimerInspector();
   installPictureInspector();
+  installButtonImageInspector();
 
   const shell = doc.createElement('div');
   shell.className = 'designer-component-palette';
@@ -310,11 +312,11 @@ function scheduleTimerSync() {
 function renderNonvisualTray() {
   const tray = ensureNonvisualTray();
   if (!tray || !code) return;
-  let timers = [];
+  let components = [];
   try {
     const windowIndex = activeFormIndex();
-    timers = listDesignerControls(code.value)
-      .filter(control => control.windowIndex === windowIndex && control.type === 'timer');
+    components = listDesignerControls(code.value)
+      .filter(control => control.windowIndex === windowIndex && (control.type === 'timer' || control.type === 'imagelist'));
   } catch {
     tray.innerHTML = '<strong>Nonvisual</strong><span class="designer-nonvisual-empty">Waiting for valid Patch source.</span>';
     return;
@@ -326,7 +328,7 @@ function renderNonvisualTray() {
   title.title = 'Components that participate in the Form but do not occupy canvas geometry';
   tray.appendChild(title);
 
-  if (!timers.length) {
+  if (!components.length) {
     const empty = doc.createElement('span');
     empty.className = 'designer-nonvisual-empty';
     empty.textContent = 'No nonvisual components';
@@ -335,16 +337,24 @@ function renderNonvisualTray() {
   }
 
   const selection = currentDesignerSelection(canvas);
-  for (const timer of timers) {
+  for (const component of components) {
     const button = doc.createElement('button');
     button.type = 'button';
     button.className = 'designer-nonvisual-component';
-    button.dataset.windowIndex = String(timer.windowIndex);
-    button.dataset.controlIndex = String(timer.controlIndex);
-    button.setAttribute('aria-pressed', sameLocation(timer, selection) ? 'true' : 'false');
-    button.innerHTML = `<span class="designer-nonvisual-icon" aria-hidden="true">◷</span><span>${escapeHtml(timer.id ?? 'Timer')}</span><small>${Number(timer.interval ?? 1000)} ms</small>`;
+    button.dataset.windowIndex = String(component.windowIndex);
+    button.dataset.controlIndex = String(component.controlIndex);
+    button.dataset.componentType = component.type;
+    button.setAttribute('aria-pressed', sameLocation(component, selection) ? 'true' : 'false');
+    const isTimer = component.type === 'timer';
+    const icon = isTimer ? '◷' : '▤';
+    const fallbackName = isTimer ? 'Timer' : 'ImageList';
+    const itemCount = component.items?.length ?? 0;
+    const detail = isTimer
+      ? `${Number(component.interval ?? 1000)} ms`
+      : `${component.logicalWidth ?? 16}×${component.logicalHeight ?? 16} · ${itemCount} image${itemCount === 1 ? '' : 's'}`;
+    button.innerHTML = `<span class="designer-nonvisual-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(component.id ?? fallbackName)}</span><small>${escapeHtml(detail)}</small>`;
     button.addEventListener('click', () => {
-      rememberDesignerSelection(canvas, designerSelectionForControl(timer, 'core'), { reason: 'nonvisual-timer' });
+      rememberDesignerSelection(canvas, designerSelectionForControl(component, 'core'), { reason: `nonvisual-${component.type}` });
       syncTimerInspector();
       renderNonvisualTray();
     });
@@ -398,7 +408,7 @@ function syncTimerInspector() {
   const isTimer = control?.type === 'timer';
   field.hidden = !isTimer;
   const geometry = doc.querySelector('[data-form-geometry]');
-  if (geometry) geometry.hidden = isTimer;
+  if (geometry) geometry.hidden = isTimer || control?.type === 'imagelist';
   if (!isTimer) return;
 
   const input = field.querySelector('#designerInspectorTimerInterval');
@@ -442,11 +452,29 @@ function installPictureInspector() {
   const hint = doc.createElement('small');
   hint.id = 'designerInspectorPictureSourceHint';
   hint.className = 'inspector-hint';
-  hint.textContent = 'Patch expression for the image source, for example "images/logo.png". Project Resources are the next R1 step.';
+  hint.textContent = 'Patch expression for the image source, for example "images/logo.png" or a project resource locator.';
   field.appendChild(hint);
   const timer = form.querySelector('#designerInspectorTimerField');
   const slider = form.querySelector('#designerInspectorSliderFields');
   (timer ?? slider)?.insertAdjacentElement('afterend', field);
+
+  const display = doc.createElement('section');
+  display.id = 'designerInspectorPictureDisplayFields';
+  display.className = 'inspector-field designer-picture-display';
+  display.hidden = true;
+  display.innerHTML = `
+    <label>Fit <select id="designerInspectorPictureFit" aria-label="Picture fit">
+      <option value="contain">contain</option>
+      <option value="cover">cover</option>
+      <option value="fill">fill</option>
+      <option value="none">none</option>
+    </select></label>
+    <label class="designer-picture-check"><input id="designerInspectorPictureProportional" type="checkbox"> Proportional</label>
+    <label class="designer-picture-check"><input id="designerInspectorPictureCenter" type="checkbox"> Center</label>
+    <label>Opacity <input id="designerInspectorPictureOpacity" type="number" min="0" max="1" step="0.05" inputmode="decimal" aria-label="Picture opacity"></label>
+    <label>Description <input id="designerInspectorPictureDescription" spellcheck="true" autocomplete="off" aria-label="Picture accessible description"></label>
+    <small class="inspector-hint">Fit, center and opacity are source-backed. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other display values.</small>`;
+  field.insertAdjacentElement('afterend', display);
 
   const input = field.querySelector('#designerInspectorPictureSource');
   input?.addEventListener('change', applyPictureSource);
@@ -455,49 +483,191 @@ function installPictureInspector() {
     event.preventDefault();
     applyPictureSource();
   });
+  display.querySelector('#designerInspectorPictureFit')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureProportional')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureCenter')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureOpacity')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureDescription')?.addEventListener('change', applyPictureDisplay);
+  for (const id of ['designerInspectorPictureOpacity', 'designerInspectorPictureDescription']) {
+    display.querySelector(`#${id}`)?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      applyPictureDisplay();
+    });
+  }
   canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncPictureInspector);
   code?.addEventListener('input', syncPictureInspector);
   code?.addEventListener('change', syncPictureInspector);
   syncPictureInspector();
 }
 
+function selectedPictureControl() {
+  if (!canvas || !code) return null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  try {
+    return listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function syncPictureInspector() {
   const field = doc?.querySelector('#designerInspectorPictureSourceField');
-  if (!field || !canvas || !code) return;
-  const selection = currentDesignerSelection(canvas);
-  let control = null;
-  try {
-    control = selection
-      ? listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null
-      : null;
-  } catch {
-    control = null;
-  }
+  const display = doc?.querySelector('#designerInspectorPictureDisplayFields');
+  if (!field) return;
+  const control = selectedPictureControl();
   const isPicture = control?.type === 'picture';
   field.hidden = !isPicture;
+  if (display) display.hidden = !isPicture;
   if (!isPicture) return;
   const input = field.querySelector('#designerInspectorPictureSource');
   if (input && doc.activeElement !== input) input.value = control.sourceExpr ?? '';
+  setPictureField('designerInspectorPictureFit', control.fit ?? 'contain');
+  setPictureCheckbox('designerInspectorPictureProportional', control.fit !== 'fill');
+  setPictureCheckbox('designerInspectorPictureCenter', control.center !== false);
+  setPictureField('designerInspectorPictureOpacity', control.opacity ?? 1);
+  setPictureField('designerInspectorPictureDescription', control.description ?? '');
+}
+
+function setPictureField(id, value) {
+  const input = doc?.querySelector(`#${id}`);
+  if (!input || doc.activeElement === input) return;
+  input.value = value ?? '';
+}
+
+function setPictureCheckbox(id, checked) {
+  const input = doc?.querySelector(`#${id}`);
+  if (!input || doc.activeElement === input) return;
+  input.checked = Boolean(checked);
 }
 
 function applyPictureSource() {
+  applyPictureChanges({ sourceExpr: doc.querySelector('#designerInspectorPictureSource')?.value ?? '' });
+}
+
+function applyPictureDisplay(event) {
+  const target = event?.currentTarget ?? event?.target;
+  const id = target?.id ?? '';
+  const changes = {};
+  if (id === 'designerInspectorPictureFit') changes.fit = target.value;
+  else if (id === 'designerInspectorPictureProportional') changes.proportional = Boolean(target.checked);
+  else if (id === 'designerInspectorPictureCenter') changes.center = Boolean(target.checked);
+  else if (id === 'designerInspectorPictureOpacity') changes.opacity = target.value;
+  else if (id === 'designerInspectorPictureDescription') changes.description = target.value ?? '';
+  else {
+    changes.fit = doc.querySelector('#designerInspectorPictureFit')?.value ?? 'contain';
+    changes.center = Boolean(doc.querySelector('#designerInspectorPictureCenter')?.checked);
+    changes.opacity = doc.querySelector('#designerInspectorPictureOpacity')?.value ?? 1;
+    changes.description = doc.querySelector('#designerInspectorPictureDescription')?.value ?? '';
+  }
+  applyPictureChanges(changes);
+}
+
+function applyPictureChanges(changes) {
   if (!canvas || !code) return;
   const selection = currentDesignerSelection(canvas);
   if (!selection) return;
-  let control = null;
-  try {
-    control = listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
-  } catch {
-    return;
-  }
+  const control = selectedPictureControl();
   if (control?.type !== 'picture') return;
   try {
-    const sourceExpr = doc.querySelector('#designerInspectorPictureSource')?.value ?? '';
-    const next = updateDesignerControl(code.value, selection, { sourceExpr });
+    const next = updateDesignerControl(code.value, selection, changes);
     setSource(next);
     const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
     syncPictureInspector();
+  } catch (error) {
+    showToolError(error);
+  }
+}
+
+function installButtonImageInspector() {
+  const form = doc.querySelector('#designerInspectorForm');
+  if (!form || form.querySelector('#designerInspectorButtonImageField')) return;
+  const field = doc.createElement('label');
+  field.id = 'designerInspectorButtonImageField';
+  field.className = 'inspector-field';
+  field.hidden = true;
+  field.innerHTML = 'Image <input id="designerInspectorButtonImage" list="designerInspectorButtonImageOptions" spellcheck="false" autocomplete="off" aria-describedby="designerInspectorButtonImageHint">';
+  const options = doc.createElement('datalist');
+  options.id = 'designerInspectorButtonImageOptions';
+  field.appendChild(options);
+  const hint = doc.createElement('small');
+  hint.id = 'designerInspectorButtonImageHint';
+  hint.className = 'inspector-hint';
+  hint.textContent = 'ImageList item as list.item, for example app_images.open. Empty clears the binding. Native GUI IR 1.4 fail-closes Button images.';
+  field.appendChild(hint);
+  const pictureDisplay = form.querySelector('#designerInspectorPictureDisplayFields');
+  const picture = form.querySelector('#designerInspectorPictureSourceField');
+  (pictureDisplay ?? picture ?? form.lastElementChild)?.insertAdjacentElement('afterend', field);
+
+  const input = field.querySelector('#designerInspectorButtonImage');
+  input?.addEventListener('change', applyButtonImage);
+  input?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    applyButtonImage();
+  });
+  canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncButtonImageInspector);
+  code?.addEventListener('input', syncButtonImageInspector);
+  code?.addEventListener('change', syncButtonImageInspector);
+  syncButtonImageInspector();
+}
+
+function selectedButtonControl() {
+  if (!canvas || !code) return null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  try {
+    return listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function syncButtonImageInspector() {
+  const field = doc?.querySelector('#designerInspectorButtonImageField');
+  if (!field) return;
+  const control = selectedButtonControl();
+  const isButton = control?.type === 'button';
+  field.hidden = !isButton;
+  if (!isButton) return;
+  const input = field.querySelector('#designerInspectorButtonImage');
+  const binding = control.imageListId && control.imageItem ? `${control.imageListId}.${control.imageItem}` : '';
+  if (input && doc.activeElement !== input) input.value = binding;
+  const datalist = field.querySelector('#designerInspectorButtonImageOptions');
+  if (datalist && code) {
+    const options = [];
+    try {
+      for (const item of listDesignerControls(code.value)) {
+        if (item.type !== 'imagelist') continue;
+        for (const image of item.items ?? []) options.push(`${item.id}.${image.name}`);
+      }
+    } catch {
+      options.length = 0;
+    }
+    datalist.replaceChildren(...options.map(value => {
+      const option = doc.createElement('option');
+      option.value = value;
+      return option;
+    }));
+  }
+}
+
+function applyButtonImage() {
+  if (!canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  const control = selectedButtonControl();
+  if (control?.type !== 'button') return;
+  try {
+    const next = updateDesignerControl(code.value, selection, {
+      image: doc.querySelector('#designerInspectorButtonImage')?.value ?? ''
+    });
+    setSource(next);
+    const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
+    rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    syncButtonImageInspector();
   } catch (error) {
     showToolError(error);
   }

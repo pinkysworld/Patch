@@ -1,6 +1,223 @@
 import { lineSelectionRange } from '../src/studio-outline-model.js';
 import { buildStudioQuickOpenItems, rankStudioQuickOpenItems } from './studio-quick-open.js';
-import { activateStudioProjectFile, getStudioProjectFiles } from './project-lifecycle.js';
+import {
+  activateStudioProjectFile,
+  getActiveStudioProjectFile,
+  getStudioProjectFiles
+} from './project-lifecycle.js';
+
+export const STUDIO_EDIT_HISTORY_VERSION = '0.1';
+export const STUDIO_EDIT_HISTORY_LIMIT = 80;
+export const STUDIO_EDIT_HISTORY_COALESCE_MS = 850;
+
+const sourceEditor = document.querySelector('#code');
+const saveState = document.querySelector('#saveState');
+const editUndo = [];
+const editRedo = [];
+const sourceByFile = new Map();
+let historyReady = false;
+let replayingHistory = false;
+let typingGroup = null;
+let typingTimer = null;
+
+installStudioEditHistory();
+
+function installStudioEditHistory() {
+  if (!sourceEditor) return;
+
+  sourceEditor.addEventListener('input', captureSourceEdit);
+  sourceEditor.addEventListener('change', captureSourceEdit);
+  window.addEventListener('keydown', handleHistoryShortcut, { capture: true });
+  window.addEventListener('patch:studio-active-file-changed', refreshActiveFileBaseline);
+  window.addEventListener('patch:studio-project-files-changed', resetStudioEditHistory);
+  window.addEventListener('patch:studio-project-resources-changed', resetStudioEditHistory);
+  window.addEventListener('patch:studio-project-loaded', resetStudioEditHistory);
+
+  queueMicrotask(resetStudioEditHistory);
+}
+
+function captureSourceEdit(event) {
+  if (replayingHistory || !historyReady || !sourceEditor) return;
+  const file = safeActiveFile();
+  if (!file) return;
+  const after = sourceEditor.value;
+  const before = sourceByFile.get(file);
+  if (before == null) {
+    sourceByFile.set(file, after);
+    return;
+  }
+  if (before === after) return;
+
+  const now = Date.now();
+  const trustedTyping = event?.type === 'input' && event.isTrusted === true;
+  const coalesce = trustedTyping
+    && typingGroup?.file === file
+    && now - typingGroup.at <= STUDIO_EDIT_HISTORY_COALESCE_MS
+    && editUndo.at(-1)?.kind === 'typing'
+    && editUndo.at(-1)?.file === file;
+
+  if (coalesce) {
+    const previous = editUndo.at(-1);
+    editUndo[editUndo.length - 1] = Object.freeze({ ...previous, after });
+  } else {
+    pushBounded(editUndo, Object.freeze({
+      file,
+      before,
+      after,
+      kind: trustedTyping ? 'typing' : 'studio'
+    }));
+  }
+
+  editRedo.length = 0;
+  sourceByFile.set(file, after);
+  if (trustedTyping) beginTypingGroup(file, now);
+  else clearTypingGroup();
+  announceHistoryAvailability();
+}
+
+function beginTypingGroup(file, at) {
+  typingGroup = { file, at };
+  if (typingTimer) clearTimeout(typingTimer);
+  typingTimer = setTimeout(clearTypingGroup, STUDIO_EDIT_HISTORY_COALESCE_MS);
+}
+
+function clearTypingGroup() {
+  typingGroup = null;
+  if (typingTimer) clearTimeout(typingTimer);
+  typingTimer = null;
+}
+
+function pushBounded(stack, transaction) {
+  stack.push(transaction);
+  if (stack.length > STUDIO_EDIT_HISTORY_LIMIT) stack.splice(0, stack.length - STUDIO_EDIT_HISTORY_LIMIT);
+}
+
+function refreshActiveFileBaseline() {
+  if (replayingHistory) return;
+  try {
+    for (const file of getStudioProjectFiles()) sourceByFile.set(file.path, file.content);
+    historyReady = true;
+  } catch {
+    // A transient parse/storage problem must not create guessed history entries.
+  }
+}
+
+export function resetStudioEditHistory() {
+  if (replayingHistory) return;
+  clearTypingGroup();
+  editUndo.length = 0;
+  editRedo.length = 0;
+  sourceByFile.clear();
+  try {
+    for (const file of getStudioProjectFiles()) sourceByFile.set(file.path, file.content);
+    historyReady = true;
+  } catch {
+    historyReady = false;
+  }
+  announceHistoryAvailability();
+}
+
+export function canUndoStudioEdit() {
+  return editUndo.length > 0;
+}
+
+export function canRedoStudioEdit() {
+  return editRedo.length > 0;
+}
+
+export function undoStudioEdit() {
+  const transaction = editUndo.pop();
+  if (!transaction) {
+    announceHistoryStatus('Nothing to undo');
+    return false;
+  }
+  try {
+    replaySourceTransaction(transaction.file, transaction.before, 'Undo applied');
+    pushBounded(editRedo, transaction);
+    announceHistoryAvailability();
+    return true;
+  } catch (error) {
+    editUndo.push(transaction);
+    resetStudioEditHistory();
+    reportNavigationFailure(error);
+    return false;
+  }
+}
+
+export function redoStudioEdit() {
+  const transaction = editRedo.pop();
+  if (!transaction) {
+    announceHistoryStatus('Nothing to redo');
+    return false;
+  }
+  try {
+    replaySourceTransaction(transaction.file, transaction.after, 'Redo applied');
+    pushBounded(editUndo, transaction);
+    announceHistoryAvailability();
+    return true;
+  } catch (error) {
+    editRedo.push(transaction);
+    resetStudioEditHistory();
+    reportNavigationFailure(error);
+    return false;
+  }
+}
+
+function replaySourceTransaction(file, source, status) {
+  if (!sourceEditor) return;
+  replayingHistory = true;
+  clearTypingGroup();
+  try {
+    if (safeActiveFile() !== file) activateStudioProjectFile(file);
+    sourceEditor.value = source;
+    sourceByFile.set(file, source);
+    sourceEditor.dispatchEvent(new Event('input', { bubbles: true }));
+    sourceEditor.dispatchEvent(new Event('change', { bubbles: true }));
+    announceHistoryStatus(status);
+    sourceEditor.focus({ preventScroll: true });
+  } finally {
+    replayingHistory = false;
+  }
+}
+
+function safeActiveFile() {
+  try {
+    return getActiveStudioProjectFile();
+  } catch {
+    return null;
+  }
+}
+
+function handleHistoryShortcut(event) {
+  if (event.defaultPrevented || event.isComposing || event.altKey) return;
+  const commandKey = event.ctrlKey || event.metaKey;
+  if (!commandKey) return;
+
+  const target = event.target;
+  if (target && target !== sourceEditor && (target.matches?.('input, textarea, select') || target.isContentEditable)) return;
+  if (document.querySelector('dialog[open]')) return;
+
+  const key = event.key.toLowerCase();
+  const redo = (key === 'z' && event.shiftKey) || (key === 'y' && !event.shiftKey);
+  const undo = key === 'z' && !event.shiftKey;
+  if (!undo && !redo) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  if (redo) redoStudioEdit();
+  else undoStudioEdit();
+}
+
+function announceHistoryAvailability() {
+  document.documentElement.dataset.patchUndo = canUndoStudioEdit() ? 'available' : 'empty';
+  document.documentElement.dataset.patchRedo = canRedoStudioEdit() ? 'available' : 'empty';
+}
+
+function announceHistoryStatus(message) {
+  if (!saveState) return;
+  saveState.textContent = message;
+  saveState.title = `${canUndoStudioEdit() ? 'Undo available' : 'Undo empty'} · ${canRedoStudioEdit() ? 'Redo available' : 'Redo empty'}`;
+}
 
 const dialog = document.querySelector('#commandPalette');
 const trigger = document.querySelector('#openCommandPalette');
@@ -13,6 +230,8 @@ if (dialog && trigger && input && list && empty) {
   const staticCommands = [
     command('run', 'Run project', 'Execute the current Patch project', 'Ctrl/Cmd + Enter', 'run execute start', () => document.querySelector('#run')?.click()),
     command('build', 'Build selected target', 'Build using the current target selector', 'Ctrl/Cmd + Shift + Enter', 'build compile package target', () => document.querySelector('#build')?.click()),
+    command('undo-edit', 'Undo Studio edit', 'Undo the most recent source or Designer transaction', 'Ctrl/Cmd + Z', 'undo history designer source edit', undoStudioEdit),
+    command('redo-edit', 'Redo Studio edit', 'Replay the most recently undone Studio transaction', 'Ctrl/Cmd + Shift + Z', 'redo history designer source edit', redoStudioEdit),
     command('editor', 'Focus source editor', 'Jump to the active Patch source', '', 'source code editor main patch', () => focus('#code')),
     command('designer', 'Open Designer', 'Show the source-backed visual Designer', '', 'designer form controls visual', () => click('#tabDesigner')),
     command('app', 'Open App preview', 'Show the last running Window app', '', 'app preview window', () => click('#tabApp')),

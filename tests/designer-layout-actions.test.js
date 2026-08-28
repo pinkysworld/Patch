@@ -90,7 +90,7 @@ test('public Studio, docs and offline PWA package single-control layout actions'
   assert.match(sw, /'\.\/designer-layout-actions\.js'/);
   assert.match(sw, /'\.\/designer-layout-actions\.css'/);
   assert.match(docs, /docs\/STUDIO_LAYOUT_ACTIONS\.md/);
-  assert.match(docs, /Bring to front \/ Send to back/);
+  assert.match(docs, /z-order actions and design grid/);
   assert.match(layoutDocs, /does not change Patch syntax, Change IR \*\*0\.10\*\*/);
   assert.match(layoutDocs, /does not silently combine layout operations/);
 });

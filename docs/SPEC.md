@@ -4,7 +4,7 @@ Status: **0.2.0-beta.36 development**
 
 This document describes the current source-language surface. Patch is indentation-sensitive; two spaces are recommended. Product/runtime compatibility details live in `docs/ROADMAP.md` and `docs/NATIVE_GUI.md`. The formal assurance boundary is intentionally narrower than the language and remains the **beta.32** milestone described in `docs/FORMAL_MODEL.md` and `docs/RUNTIME_CORRESPONDENCE.md`.
 
-The current Ready desktop Window product contract is **Native GUI IR 1.4 / sealed payload v14 / native runtime v1.5**. Older versioned contracts remain frozen compatibility and reproducibility lines. Product versioning does not widen the beta.32 Lean assurance claim.
+The current Ready desktop Window product contract is **Native GUI IR 1.5 / sealed payload v15 / native runtime v1.6**. Older versioned contracts remain frozen compatibility and reproducibility lines. Product versioning does not widen the beta.32 Lean assurance claim.
 
 ## Core rule
 
@@ -233,6 +233,12 @@ when add_button clicked:
     add 1
 ```
 
+An optional Form icon uses a quoted project resource. The first Form that declares `icon` is the application icon for Standalone Web:
+
+```patch
+window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
+```
+
 Named Forms can be opened and closed:
 
 ```patch
@@ -240,7 +246,7 @@ open settings
 close settings
 ```
 
-Unnamed legacy windows remain source-compatible.
+Unnamed legacy windows remain source-compatible. Optional `icon` binds a quoted project resource or image source to that Form. The first Form that declares `icon` is the application icon for Standalone Web. Native GUI IR 1.4 fail-closes window icons under `window-icon/1.0` rather than silently dropping them.
 
 ## Window controls
 
@@ -260,6 +266,9 @@ The current source-language Window control families are:
 - `panel`
 - `timer`
 - `picture`
+- `shape`
+- `paintbox`
+- `imagelist`
 - `statusbar`
 
 Examples:
@@ -275,10 +284,20 @@ panel as tools:
   button "Run" as run_tools
 timer as refresh_clock interval 1000
 picture "Preview" as preview_image
+picture as logo from "patch-resource:app.logo" fit cover center false opacity 0.85 description "Product logo"
+shape ellipse as badge
+paintbox as canvas
+imagelist as app_images size 16, 16:
+  image open from "patch-resource:icons.open"
+button "Open" as open_button image app_images.open
 statusbar "Ready" as app_status
 ```
 
-`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.4 / payload v14 / runtime v1.5 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. In particular, PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
+`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.5 / payload v15 / runtime v1.6 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. Picture display properties (`fit`, `center`, `opacity`, `description`) are source-backed. Standalone Web applies them. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than silently ignoring them. Accessible `description` maps onto the existing native PictureBox `text` field. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG and JPEG are Ready; WebP and SVG remain deferred and fail closed, as do other `data:image/*` sources. PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
+
+Shape Stage 1 is native on Native GUI IR 1.5 / payload v15 / runtime v1.6. PaintBox remains an additive graphics contract whose current component capability metadata advertises Standalone Web support and keeps native targets fail-closed rather than silently dropping unsupported drawing. PaintBox drawing is pure UI rendering and does not create a second persistent mutation path.
+
+ImageList is nonvisual source-backed metadata. It is a Form-scoped component whose named entries refer to existing project resources through quoted `patch-resource:` locators. Logical image width and height are whole numbers from 1 through 512 and one ImageList may contain at most 256 named images. ImageList has no events in Stage 1. Standalone Web Buttons may bind `image list.item`. Native GUI IR 1.4 still fail-closes ImageList and Button image bindings rather than silently dropping them.
 
 Controls may use source-backed layout:
 
@@ -287,7 +306,52 @@ at x, y
 at x, y size width, height
 ```
 
-Control positions must be non-negative. Explicit control sizes must be at least 16 by 16. Explicit Window sizes must be at least 120 by 80.
+Control positions must be non-negative. Explicit control sizes must be at least 16 by 16. Explicit Window sizes must be at least 120 by 80. Nonvisual controls such as Timer and ImageList do not occupy Form geometry and therefore do not use Anchors or Dock policies.
+
+## Graphics
+
+Picture source stays visible. The concise form uses canonical display defaults (`fit contain`, `center true`, `opacity 1`, empty description):
+
+```patch
+picture as logo from "patch-resource:app.logo"
+```
+
+Display properties may appear in any order after `from`. Formatting omits canonical defaults. Proportional is Designer sugar for `fit !== fill` and is not a second source token. The legacy caption form `picture "Preview" as preview_image` remains valid.
+
+Shape source keeps deterministic geometry and style properties visible in `.patch` source. The concise form uses canonical defaults:
+
+```patch
+shape ellipse as badge
+```
+
+A styled Shape may specify its kind, fill, stroke, stroke width, rounded radius and opacity:
+
+```patch
+shape rounded as card fill #dbeafe stroke #2563eb stroke-width 3 radius 18 opacity 0.75 at 24, 32 size 220, 140
+```
+
+PaintBox defines a drawing surface. Drawing commands are legal only inside its `paint` handler. Stage 1 paint handlers may use `draw`, `if` and `repeat`; persistent `change` operations are rejected inside the paint handler.
+
+```patch
+paintbox as canvas at 24, 24 size 320, 200
+
+when canvas paint:
+  draw clear #ffffff
+  draw rectangle 10, 12 size 100, 50 fill #ff0000 stroke #000000 width 2
+  draw line 0, 0 to 100, 100 stroke #000000 width 1
+  draw text "Patch" at 12, 20 color #111111 size 14
+```
+
+ImageList is source-backed metadata over project resources rather than another image store:
+
+```patch
+imagelist as toolbar_images size 16, 16:
+  image open from "patch-resource:icons.open"
+  image save from "patch-resource:icons.save"
+button "Open" as open_button image toolbar_images.open
+```
+
+Item names must be valid Patch names and unique within the ImageList. Resource bytes remain in the project v4 resource bundle; the ImageList source stores only their logical locators. A Button binds one item with `image list.item`. Formatting omits the image token when no binding is set.
 
 ## Tables
 
@@ -326,7 +390,7 @@ tabs as settings_tabs:
     checkbox "Enabled" as advanced_enabled
 ```
 
-Nested Tabs controls use the same source-backed control/event semantics as their top-level counterparts where supported.
+Nested Tabs controls use the same source-backed control/event semantics as their top-level counterparts where supported. Nonvisual Form components such as Timer and ImageList remain top-level Form components in Stage 1.
 
 ## Menus
 
@@ -369,6 +433,7 @@ confirmed
 chosen
 cancelled
 ticked
+paint
 ```
 
 Examples:
@@ -381,9 +446,12 @@ when volume changed:
 when refresh_clock ticked:
   change ticks:
     add 1
+
+when canvas paint:
+  draw clear transparent
 ```
 
-Event-local UI values are transient until explicitly committed by source code.
+Event-local UI values are transient until explicitly committed by source code. `paint` is a rendering event with the narrower pure-drawing body described above; it cannot commit persistent changes. ImageList exposes no event in Stage 1.
 
 ## Application kind
 
@@ -438,13 +506,16 @@ change called set add remove clear
 show why watch history undo redo preview
 if else repeat make do return
 allow may increase decrease up to
-window as size at
+window as size at icon
 text button input checkbox radio combo listbox slider step
 panel timer interval picture statusbar
+shape rectangle rounded ellipse line fill stroke stroke-width radius opacity
+paintbox draw color width
+imagelist image from
 table row tree node tabs tab
 menu item separator enabled checked shortcut
 dialog confirm open close save file
-when clicked changed closed confirmed chosen cancelled ticked
+when clicked changed closed confirmed chosen cancelled ticked paint
 true false and or not
 ```
 

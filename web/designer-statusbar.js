@@ -184,7 +184,7 @@ function syncStatusBarInspector() {
       delete layout.dataset.patchStatusbarLocked;
     }
     if (geometry?.dataset.patchStatusbarHidden === 'true') {
-      geometry.hidden = selected?.type === 'timer';
+      geometry.hidden = selected?.type === 'timer' || selected?.type === 'imagelist';
       delete geometry.dataset.patchStatusbarHidden;
     }
     return;

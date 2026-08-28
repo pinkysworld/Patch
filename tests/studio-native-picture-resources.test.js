@@ -27,7 +27,8 @@ test('frozen native payload and cloud AOT paths fail closed for project Picture 
   assert.match(nativeBuild, /code\.value\.includes\('patch-resource:'\)/);
 });
 
-test('public Studio module graph packages and caches the native Picture resource resolver', () => {
-  assert.match(buildSite, /'native-current-contract\.js','native-picture-resources\.js','native-frozen-contract\.js'/);
+test('public Studio module graph packages and caches the native Picture format policy and resource resolver', () => {
+  assert.match(buildSite, /'native-current-contract\.js','native-picture-format-policy\.js','native-picture-resources\.js','native-frozen-contract\.js'/);
+  assert.ok(sw.includes("'../src/native-picture-format-policy.js'"));
   assert.ok(sw.includes("'../src/native-picture-resources.js'"));
 });

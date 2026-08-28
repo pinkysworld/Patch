@@ -50,7 +50,7 @@ when people changed:
 
 Runtime v1.4 reconstructs this as a real report-mode `WC_LISTVIEWW`. `changed` exposes the selected row as a transient list of display strings. Selection alone does not persist Patch state or create Change History.
 
-The current sealed-runtime CI compiles the v1.4 runtime, seals Window examples as payload v13, executes the resulting `.exe` with `--patch-smoke`, and publishes `native-win32-runtime-v1.4`. Table originated as payload v9 / runtime v1.0; that line remains historical evidence rather than the Ready path.
+The current sealed-runtime CI compiles the v1.6 runtime, seals Window examples as payload v15, executes the resulting `.exe` with `--patch-smoke`, and publishes `native-win32-runtime-v1.6`. Table originated as payload v9 / runtime v1.0; that line remains historical evidence rather than the Ready path.
 
 ## Native AOT EXE
 
@@ -97,13 +97,13 @@ with asset:
 patch-windows-native-gui-runtime.exe
 ```
 
-The Pages deployment waits for the current v1.4 platform releases before replacing the deployed Studio runtime set. This prevents a new browser compiler from being paired with an older payload template during release ordering.
+The Pages deployment waits for the current v1.6 platform releases before replacing the deployed Studio runtime set. This prevents a new browser compiler from being paired with an older payload template during release ordering.
 
 The runtime asset itself is not a project until Studio or `patch link` seals a project-specific payload into it.
 
 ## Offline compiler
 
-The Windows offline compiler builds/embeds the same Win32 runtime v1.4 contract. Its CI links the Table example through the ordinary CLI:
+The Windows offline compiler builds/embeds the same Win32 runtime v1.6 contract. Its CI links the Table example through the ordinary CLI:
 
 ```text
 patch link examples/table-native-v09.patch --name OfflineTable --out OfflineTable

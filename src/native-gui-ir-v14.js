@@ -1,4 +1,7 @@
 import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
+import { nativePictureDisplayUnsupportedMessage } from './picture-control.js';
+import { nativeButtonImageUnsupportedMessage } from './button-image.js';
+import { nativeWindowIconUnsupportedMessage } from './window-icon.js';
 import {
   buildNativeGuiIRV13,
   validateNativeGuiIRV13,
@@ -15,6 +18,7 @@ export function buildNativeGuiIRV14(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
     throw new NativeGuiError('A compiled Patch Window program is required for native GUI 1.4 lowering.');
   }
+  rejectShapeStage1(compiled.ast);
   const compatibility = cloneCompiledWithPolicies(compiled);
   const chrome = rewriteChromeForV13Compatibility(compatibility.ast, compiled.ast);
   const ir = buildNativeGuiIRV13(compatibility);
@@ -184,6 +188,11 @@ export function toV13CompatibleV14(input) {
 }
 
 function rewriteChromeForV13Compatibility(ast, originalAst) {
+  for (const node of originalAst ?? []) {
+    if (node.kind !== 'window') continue;
+    const unsupported = nativeWindowIconUnsupportedMessage(node, node.line);
+    if (unsupported) throw new NativeGuiError(unsupported);
+  }
   const chrome = [];
   const usedNames = collectUsedNames(originalAst);
   const textStates = new Map((originalAst ?? []).filter(node => node.kind === 'create' && node.valueType === 'text').map(node => [node.name, node]));
@@ -200,6 +209,10 @@ function rewriteChromeForV13Compatibility(ast, originalAst) {
   const rewriteNodes = nodes => {
     const out = [];
     for (const node of nodes ?? []) {
+      if (node.kind === 'uiControl' && node.control === 'button') {
+        const unsupported = nativeButtonImageUnsupportedMessage(node, node.line);
+        if (unsupported) throw new NativeGuiError(unsupported);
+      }
       if (node.kind === 'uiControl' && node.control === 'panel') {
         if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI 1.4 Panel needs a simple Patch name after 'as'.`);
         const children = rewriteNodes(node.body ?? []);
@@ -237,6 +250,8 @@ function rewriteChromeForV13Compatibility(ast, originalAst) {
       }
       if (node.kind === 'uiControl' && node.control === 'picture') {
         if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI 1.4 PictureBox needs a simple Patch name after 'as'.`);
+        const unsupported = nativePictureDisplayUnsupportedMessage(node, node.line);
+        if (unsupported) throw new NativeGuiError(unsupported);
         const text = optionalQuotedText(node.textExpr, node.line, 'PictureBox caption');
         const source = pictureSource(node, textStates);
         const metadata = {
@@ -544,4 +559,18 @@ function displayChrome(type) {
 
 function identifier(value) {
   return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+}
+
+function rejectShapeStage1(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'shape') {
+      throw new NativeGuiError(
+        `line ${node.line ?? '?'}: Native GUI IR 1.4 does not include Shape. ` +
+        'Use Native GUI IR 1.5 / payload v15 / runtime v1.6 for rectangle, rounded, ellipse and line.'
+      );
+    }
+    if (node.body) rejectShapeStage1(node.body);
+    if (node.thenBody) rejectShapeStage1(node.thenBody);
+    if (node.elseBody) rejectShapeStage1(node.elseBody);
+  }
 }

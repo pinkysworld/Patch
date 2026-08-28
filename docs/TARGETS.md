@@ -2,7 +2,7 @@
 
 Patch uses one source language and one compiler pipeline for Console and Window applications. Target support is versioned by language/compiler surface, Native GUI IR, AOT backend and sealed runtime rather than treating every desktop path as interchangeable.
 
-Current product baseline: **0.2.0-beta.35+** · Change IR **0.10** · Native GUI IR **1.3** · sealed desktop payload **v13** / runtime **v1.4**.
+Current product baseline: **0.2.0-beta.36** · Change IR **0.10** · Native GUI IR **1.5** · sealed desktop payload **v15** / runtime **v1.6**.
 
 ## Current portable targets
 
@@ -20,12 +20,12 @@ Current product baseline: **0.2.0-beta.35+** · Change IR **0.10** · Native GUI
 | Application | Windows | macOS | Linux | FreeBSD | Browser |
 |---|---|---|---|---|---|
 | Console | sealed `.exe` | native `.app`/CLI package | sealed executable | C99 + `cc` | direct Wasm/runtime |
-| Window, token-free Ready/offline | payload v13 / runtime v1.4 | payload v13 / runtime v1.4 | payload v13 / runtime v1.4 | unsupported | Standalone Web |
-| Window, direct AOT | current Win32 backend 1.4 | current AppKit backend 1.4 | current GTK3 backend 1.4 | unsupported | Standalone Web |
+| Window, token-free Ready/offline | payload v15 / runtime v1.6 | payload v15 / runtime v1.6 | payload v15 / runtime v1.6 | unsupported | Standalone Web |
+| Window, direct AOT | current Win32 AOT | current AppKit AOT | current GTK3 AOT | unsupported | Standalone Web |
 | Portable | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / C99 where applicable | `.patchapp` / `.wasm` |
 | IDE | browser/PWA | browser/PWA | browser/PWA | browser where available | browser/PWA |
 
-The current Window surface includes source-backed Form geometry and responsive Anchor/Dock policies, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Tabs, Table/Grid, menus/dialogs, persistent list-backed multi-select ListBox, hierarchical TreeView and Slider. Unsupported native constructs fail closed rather than selecting Electron implicitly.
+The current Window surface includes source-backed Form geometry and responsive Anchor/Dock policies, Text/Button/Input/Checkbox/ComboBox/ListBox/Radio/Tabs, Table/Grid, menus/dialogs, persistent list-backed multi-select ListBox, hierarchical TreeView, Slider, Chrome Stage 1 Panel/Timer/PictureBox/StatusBar and Shape Stage 1. Unsupported native constructs fail closed rather than selecting Electron implicitly.
 
 ## Native Window contracts
 
@@ -47,11 +47,11 @@ Native GUI IR **1.1** added persistent text-list state and list-backed multi-sel
 
 These formats remain independently smoke-tested and are not redefined by newer runtimes.
 
-### Current Native GUI IR 1.3 / payload v13 / runtime v1.4
+### Current Native GUI IR 1.5 / payload v15 / runtime v1.6
 
 These two lines are the live native product contracts. Current Ready/offline and ordinary `patch link` consumers import `src/native-current-contract.js`. Frozen TreeView / payload-v12 consumers import `src/native-frozen-contract.js`. Older IR/payload/runtime files remain executable include-chain evidence; see `docs/NATIVE_COMPATIBILITY.md`.
 
-Native GUI IR **1.3** adds Slider range, step, optional numeric binding and numeric `changed` event metadata while preserving all earlier supported semantics. Current token-free Ready apps and ordinary offline `patch link` on Windows, macOS and Linux seal **payload v13** into **runtime v1.4**.
+Native GUI IR **1.5** adds Shape Stage 1 rectangle, rounded, ellipse and line drawing while preserving Slider, Chrome Stage 1, TreeView, Table, ListBox and Menu semantics. Current token-free Ready apps and ordinary offline `patch link` on Windows, macOS and Linux seal **payload v15** into **runtime v1.6**.
 
 Slider interaction exposes a finite numeric transient `value` inside the declared range. TreeView selection exposes a transient root-to-node text-list path. Table and list-backed ListBox selections remain transient list-valued events. Persistent application state changes only through an explicit semantic Patch `change`.
 
@@ -61,17 +61,17 @@ Current native Slider mappings are:
 - macOS: `NSSlider`;
 - Linux: GTK3 `GtkScale`.
 
-TreeView mappings remain common-controls TreeView, `NSOutlineView`, and `GtkTreeView` + `GtkTreeStore` respectively.
+TreeView mappings remain common-controls TreeView, `NSOutlineView`, and `GtkTreeView` + `GtkTreeStore` respectively. Shape mappings are Win32 GDI+, AppKit `NSBezierPath` and GTK cairo in 0–100 space with device-pixel strokes.
 
-The v1.4 runtime workflow builds, seals and executes the canonical Slider program independently on all three desktop hosts and verifies that the existing Table/ListBox/Menu/Tree action engine remains intact.
+The v1.6 runtime workflow builds, seals and executes the canonical Shape program independently on all three desktop hosts and verifies that the existing Chrome/Slider/Table/ListBox/Menu/Tree action engine remains intact.
 
 ## Windows
 
 Current Windows paths include:
 
 - Console: project-named sealed PE executable;
-- Window Ready/offline: native Win32 runtime v1.4 consuming payload v13 / Native GUI IR 1.3;
-- direct AOT: native Win32 backend 1.4;
+- Window Ready/offline: native Win32 runtime v1.6 consuming payload v15 / Native GUI IR 1.5;
+- direct AOT: current Win32 AOT;
 - Table: report-mode `WC_LISTVIEWW`;
 - list-backed ListBox: `LBS_EXTENDEDSEL` with semantic text-list event values;
 - TreeView: native common-controls hierarchy with transient root-to-node path events;
@@ -84,14 +84,14 @@ Current Windows paths include:
 Current macOS paths include:
 
 - Console: native package/CLI path;
-- Window Ready/offline: AppKit runtime v1.4 consuming payload v13 / Native GUI IR 1.3;
-- direct AOT: native AppKit backend 1.4;
+- Window Ready/offline: AppKit runtime v1.6 consuming payload v15 / Native GUI IR 1.5;
+- direct AOT: current AppKit AOT;
 - Table: multi-column `NSTableView`;
 - multi-select ListBox: AppKit multi-selection;
 - TreeView: `NSOutlineView`;
 - Slider: `NSSlider`;
 - Apple Silicon offline compiler: standalone binary;
-- Intel offline compiler: portable kit with bundled Intel Node runtime and x86-64 AppKit runtime v1.4;
+- Intel offline compiler: portable kit with bundled Intel Node runtime and x86-64 AppKit runtime v1.6;
 - Developer ID notarization is not claimed without separate evidence.
 
 The browser-sealed Ready `.app` is unsigned because sealing changes the executable after the generic runtime template was built.
@@ -101,8 +101,8 @@ The browser-sealed Ready `.app` is unsigned because sealing changes the executab
 Current Linux paths include:
 
 - Console: native executable;
-- Window Ready/offline: GTK3 runtime v1.4 consuming payload v13 / Native GUI IR 1.3;
-- direct AOT: native GTK3 backend 1.4;
+- Window Ready/offline: GTK3 runtime v1.6 consuming payload v15 / Native GUI IR 1.5;
+- direct AOT: current GTK3 AOT;
 - Table: `GtkTreeView` + `GtkListStore`;
 - list-backed ListBox: GTK multi-selection;
 - TreeView: `GtkTreeView` + `GtkTreeStore`;
@@ -128,7 +128,7 @@ Patch source -> Change IR -> Standalone Window Web runtime
 Patch source -> direct Wasm subset -> browser host
 ```
 
-Table/Grid display and transient row-selection events are implemented in Standalone Web. Patch Studio App Preview exposes the same transient selected-row list through the shared semantic Window event adapter. List-backed ListBox is multi-select. TreeView exposes the same transient root-to-node display path used by native targets. Slider exposes the same bounded numeric transient value contract as current native v1.4. None of these interactions implicitly persists Patch state.
+Table/Grid display and transient row-selection events are implemented in Standalone Web. Patch Studio App Preview exposes the same transient selected-row list through the shared semantic Window event adapter. List-backed ListBox is multi-select. TreeView exposes the same transient root-to-node display path used by native targets. Slider exposes the same bounded numeric transient value contract as current native v1.6. None of these interactions implicitly persists Patch state.
 
 ## `.patchapp`
 
@@ -144,7 +144,7 @@ This is distinct from the narrower direct-Wasm backend, which executes supported
 
 ## Build from phones/tablets
 
-Patch Studio on iOS/Android can run browser-compatible programs and generate portable/Web artifacts locally. Token-free Ready desktop artifacts use published platform runtime templates. The current Ready Window path lowers Native GUI IR **1.3** in the browser and seals payload **v13** into runtime **v1.4**. Runtime bytes are SHA-256 checked against the Pages deployment integrity manifest before sealing.
+Patch Studio on iOS/Android can run browser-compatible programs and generate portable/Web artifacts locally. Token-free Ready desktop artifacts use published platform runtime templates. The current Ready Window path lowers Native GUI IR **1.5** in the browser and seals payload **v15** into runtime **v1.6**. Runtime bytes are SHA-256 checked against the Pages deployment integrity manifest before sealing.
 
 The optional direct AOT cloud path delegates project-specific code generation to the corresponding GitHub-hosted platform runner. The ordinary Ready path does not need the user's GitHub token.
 
@@ -152,9 +152,9 @@ The optional direct AOT cloud path delegates project-specific code generation to
 
 Current native Ready runtime release tags are:
 
-- `native-win32-runtime-v1.4`;
-- `native-macos-runtime-v1.4`;
-- `native-linux-runtime-v1.4`.
+- `native-win32-runtime-v1.6`;
+- `native-macos-runtime-v1.6`;
+- `native-linux-runtime-v1.6`.
 
 Pages waits for all three runtime assets plus the compatibility/Console `studio-runtime-v0.6` release, validates their GitHub-recorded SHA-256 digests against the downloaded bytes and publishes the runtime integrity manifest. Patch Studio re-hashes the selected template in the browser before packaging.
 

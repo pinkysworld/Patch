@@ -17,13 +17,14 @@ test('SPEC status is synchronized exactly to the current product and Change IR',
   const ir = compiler.match(/PATCH_IR_VERSION\s*=\s*'([^']+)'/)?.[1];
   assert.ok(ir, 'compiler must expose a Change IR version marker');
   assert.match(spec, new RegExp(`Change IR \\*\\*${ir.replace('.', '\\.')}`));
-  assert.match(spec, /Native GUI IR 1\.4 \/ sealed payload v14 \/ native runtime v1\.5/);
+  assert.match(spec, /Native GUI IR 1\.5 \/ sealed payload v15 \/ native runtime v1\.6/);
   assert.doesNotMatch(spec, /0\.2\.0-beta\.8|Change IR 0\.6|Beta 8 source\/evidence/);
 });
 
 test('SPEC documents every current user-facing parser family', () => {
   const constructs = [
-    ['window', /^\s*if \(\(m = row\.text\.match\(\/\^window\\s\+/m, '## Window applications and Forms'],
+    ['window', /\^window\\b/, '## Window applications and Forms'],
+    ['button', /\^button\\b/, '- `button`'],
     ['checkbox', /\^checkbox\\s\+/, '- `checkbox`'],
     ['radio', /\^radio\\s\+/, '- `radio`'],
     ['combo', /\^combo\\s\+/, '- `combo`'],
@@ -31,7 +32,10 @@ test('SPEC documents every current user-facing parser family', () => {
     ['slider', /\^slider\\s\+/, '- `slider`'],
     ['panel', /\^panel\\s\+as\\s\+/, '- `panel`'],
     ['timer', /\^timer\\s\+as\\s\+/, '- `timer`'],
-    ['picture', /\^picture\\s\+/, '- `picture`'],
+    ['picture', /\^picture\\b/, '- `picture`'],
+    ['shape', /\^shape\\b/, '- `shape`'],
+    ['paintbox', /\^paintbox\\s\+as\\s\+/, '- `paintbox`'],
+    ['imagelist', /\^imagelist\\s\+as\\s\+/, '- `imagelist`'],
     ['statusbar', /\^statusbar\\s\+/, '- `statusbar`'],
     ['table', /\^table\\s\+/, '## Tables'],
     ['tree', /\^tree\\s\+/, '## TreeView'],
@@ -45,8 +49,12 @@ test('SPEC documents every current user-facing parser family', () => {
     assert.match(parser, parserMarker, `parser marker missing for ${name}`);
     assert.ok(spec.includes(specMarker), `SPEC marker missing for ${name}`);
   }
-  assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked/);
-  assert.match(spec, /cancelled\s+ticked/);
+  assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked\|paint/);
+  assert.match(spec, /cancelled\s+ticked\s+paint/);
+  assert.match(spec, /image open from "patch-resource:icons\.open"/);
+  assert.match(spec, /button "Open" as open_button image app_images.open/);
+  assert.match(spec, /icon "patch-resource:app\.icon"/);
+  assert.match(spec, /ImageList is nonvisual source-backed metadata/);
 });
 
 test('SPEC keeps the formal claim narrower than the current language', () => {
@@ -54,6 +62,11 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /not\*\* an end-to-end verified compiler\/runtime theorem/i);
   assert.match(spec, /GUI execution is outside the beta\.32 Lean runtime-correspondence claim/);
   assert.match(spec, /PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline/);
+  assert.match(spec, /native-picture-formats\/1\.0/);
+  assert.match(spec, /WebP and SVG remain deferred/);
+  assert.match(spec, /ImageList is nonvisual source-backed metadata/);
+  assert.match(spec, /Native GUI IR 1\.4 still fail-closes ImageList and Button image bindings/);
+  assert.match(spec, /window-icon\/1\.0/);
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {

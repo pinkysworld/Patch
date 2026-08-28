@@ -1,5 +1,10 @@
 import { parse } from './parser.js';
-import { PATCH_FORM_CONTROL_DEFAULTS, formControlDefaultSize } from './form-layout.js';
+import { PATCH_FORM_CONTROL_DEFAULTS, formControlDefaultSize, isNonvisualFormControl } from './form-layout.js';
+import { formatPatchImageListSource, normalizeImageListDefinition } from './imagelist-control.js';
+import { applyPatchPictureProportional } from './picture-control.js';
+import { formatPatchPictureDeclaration } from './picture-source.js';
+import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
+import { formatPatchWindowDeclaration, normalizeWindowIconExpression } from './window-icon.js';
 
 const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_MARGIN = 24;
@@ -15,7 +20,7 @@ export function addDesignerWindow(source, options = {}) {
   const height = windowDimension(options.height ?? DEFAULT_WINDOW.height, 'height');
   const id = Object.hasOwn(options, 'id') ? validateId(options.id) : nextFormId(lines);
   if (windows.some(item => item.id === id)) throw new Error(`Form name '${id}' is already used.`);
-  lines.push(`window ${titleExpr} as ${id} size ${width}, ${height}:`);
+  lines.push(formatPatchWindowDeclaration({ titleExpr, id, width, height, iconExpr: options.iconExpr ?? options.icon ?? null }));
   return tidy(lines.join('\n'));
 }
 
@@ -31,7 +36,8 @@ export function listDesignerWindows(source) {
       id: node.id ?? null,
       titleExpr: node.titleExpr,
       width: node.width ?? null,
-      height: node.height ?? null
+      height: node.height ?? null,
+      iconExpr: node.iconExpr ?? null
     });
     windowIndex += 1;
   }
@@ -54,8 +60,12 @@ export function updateDesignerWindow(source, selector, changes = {}) {
     id = validateId(changes.id);
     if (id !== window.id && windows.some(item => item.id === id)) throw new Error(`Form name '${id}' is already used.`);
   }
-  const idPart = id ? ` as ${id}` : '';
-  lines[lineIndex] = `${indent}window ${titleExpr}${idPart} size ${width}, ${height}:`;
+  let iconExpr = window.iconExpr;
+  if (Object.hasOwn(changes, 'iconExpr') || Object.hasOwn(changes, 'icon')) {
+    const raw = Object.hasOwn(changes, 'iconExpr') ? changes.iconExpr : changes.icon;
+    iconExpr = String(raw ?? '').trim() ? normalizeWindowIconExpression(raw).sourceExpr : null;
+  }
+  lines[lineIndex] = `${indent}${formatPatchWindowDeclaration({ titleExpr, id, width, height, iconExpr })}`;
   if (window.id && id && window.id !== id) renameFormActions(lines, window.id, id);
   return preserveTrailingNewline(source, lines.join('\n'));
 }
@@ -90,6 +100,13 @@ export function addDesignerControl(source, type, options = {}) {
   if (type === 'timer') {
     const control = makeControl(type, lines, null);
     lines.splice(insertAt, 0, `${childIndent}${control}`);
+    return tidy(lines.join('\n'));
+  }
+
+  if (type === 'imagelist') {
+    const id = nextId(lines, 'imagelist');
+    const control = formatPatchImageListSource({ id, width: 16, height: 16, items: [] }, { indent: childIndent });
+    lines.splice(insertAt, 0, ...control.split('\n'));
     return tidy(lines.join('\n'));
   }
 
@@ -201,8 +218,27 @@ export function listDesignerControls(source) {
       if (child.kind === 'uiControl' && child.control === 'timer') {
         item.interval = child.interval;
       }
+      if (child.kind === 'uiControl' && child.control === 'imagelist') {
+        item.logicalWidth = child.logicalWidth;
+        item.logicalHeight = child.logicalHeight;
+        item.items = (child.items ?? []).map(image => ({
+          name: image.name,
+          sourceExpr: image.sourceExpr,
+          resourceId: image.resourceId
+        }));
+      }
       if (child.kind === 'uiControl' && child.control === 'picture') {
         item.sourceExpr = child.sourceExpr ?? null;
+        item.fit = child.fit;
+        item.center = child.center;
+        item.opacity = child.opacity;
+        item.description = child.description ?? '';
+        item.proportional = child.proportional;
+        item.legacyCaption = child.legacyCaption === true;
+      }
+      if (child.kind === 'uiControl' && child.control === 'button' && (child.imageListId || child.imageItem)) {
+        item.imageListId = child.imageListId ?? null;
+        item.imageItem = child.imageItem ?? null;
       }
       if (child.kind === 'uiControl' && child.control === 'panel') {
         item.childCount = (child.body ?? []).length;
@@ -231,6 +267,26 @@ export function updateDesignerControl(source, selector, changes = {}) {
     if (nextId !== oldId && controls.some(item => item.id === nextId)) {
       throw new Error(`Control id '${nextId}' is already used in this Patch window project.`);
     }
+  }
+
+  if (control.type === 'imagelist') {
+    const definition = normalizeImageListDefinition({
+      id: nextId,
+      width: Object.hasOwn(changes, 'logicalWidth') ? changes.logicalWidth : control.logicalWidth,
+      height: Object.hasOwn(changes, 'logicalHeight') ? changes.logicalHeight : control.logicalHeight,
+      items: Object.hasOwn(changes, 'items') ? changes.items : (control.items ?? [])
+    });
+    const indent = indentOf(lines[lineIndex]);
+    const baseIndent = indent.length;
+    let end = lineIndex + 1;
+    while (end < lines.length) {
+      if (!lines[end].trim()) { end += 1; continue; }
+      if (indentOf(lines[end]).length <= baseIndent) break;
+      end += 1;
+    }
+    const replacement = formatPatchImageListSource(definition, { indent }).split('\n');
+    lines.splice(lineIndex, end - lineIndex, ...replacement);
+    return preserveTrailingNewline(source, lines.join('\n'));
   }
 
   let nextTextExpr = control.textExpr;
@@ -262,10 +318,20 @@ export function updateDesignerControl(source, selector, changes = {}) {
     timerInterval = timerIntervalNumber(Object.hasOwn(changes, 'interval') ? changes.interval : control.interval);
   }
 
-  let pictureSourceExpr = control.sourceExpr ?? null;
-  if (control.type === 'picture' && Object.hasOwn(changes, 'sourceExpr')) {
-    const sourceExpr = String(changes.sourceExpr ?? '').trim();
-    pictureSourceExpr = sourceExpr || null;
+  if (control.type === 'picture') {
+    const layout = normalizeControlLayout(control, changes);
+    const indent = indentOf(lines[lineIndex]);
+    lines[lineIndex] = `${indent}${formatPictureControl(control, nextId, changes, layout)}`;
+    if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
+    return preserveTrailingNewline(source, lines.join('\n'));
+  }
+
+  if (control.type === 'button') {
+    const layout = normalizeControlLayout(control, changes);
+    const indent = indentOf(lines[lineIndex]);
+    lines[lineIndex] = `${indent}${formatButtonControl(control, nextId, nextTextExpr, changes, layout)}`;
+    if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
+    return preserveTrailingNewline(source, lines.join('\n'));
   }
 
   const layout = normalizeControlLayout(control, changes);
@@ -273,7 +339,7 @@ export function updateDesignerControl(source, selector, changes = {}) {
   if (control.type === 'table') {
     lines[lineIndex] = `${indent}${formatTableControl(nextId, control.columns ?? [], layout)}`;
   } else {
-    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval, pictureSourceExpr)}`;
+    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval)}`;
   }
 
   if (oldId && nextId !== oldId && !['tabs', 'panel'].includes(control.type)) renameEventHeaders(lines, oldId, nextId);
@@ -286,7 +352,7 @@ export function removeDesignerControl(source, selector) {
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
   const directiveIndex = layoutDirectiveBefore(lines, lineIndex);
-  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree') {
+  if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree' || control.type === 'imagelist') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
     while (end < lines.length) {
@@ -356,7 +422,7 @@ function nextControlLayout(existing, type) {
   let y = CONTROL_MARGIN;
   let visualIndex = 0;
   for (const control of existing) {
-    if (control.type === 'timer') continue;
+    if (isNonvisualFormControl(control.type)) continue;
     const currentDefaults = formControlDefaultSize(control.type);
     const currentY = control.y ?? (CONTROL_MARGIN + visualIndex * 48);
     const currentHeight = control.height ?? currentDefaults.height;
@@ -374,8 +440,13 @@ function growWindowToFit(lines, window, layout) {
   if (lineIndex < 0 || lineIndex >= lines.length) throw new Error('Designer window selection no longer matches Patch source.');
   const indent = indentOf(lines[lineIndex]);
   const width = window.width ?? DEFAULT_WINDOW.width;
-  const idPart = window.id ? ` as ${window.id}` : '';
-  lines[lineIndex] = `${indent}window ${window.titleExpr}${idPart} size ${width}, ${requiredHeight}:`;
+  lines[lineIndex] = `${indent}${formatPatchWindowDeclaration({
+    titleExpr: window.titleExpr,
+    id: window.id,
+    width,
+    height: requiredHeight,
+    iconExpr: window.iconExpr
+  })}`;
 }
 
 function coordinate(value, name) {
@@ -413,7 +484,7 @@ function windowDimension(value, name) {
 
 function renameEventHeaders(lines, oldId, nextId) {
   const escapedId = escapeRegExp(oldId);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked|paint)\\s*:\\s*$`);
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(pattern);
     if (match) lines[i] = `${match[1]}when ${nextId} ${match[2]}:`;
@@ -431,7 +502,7 @@ function renameFormActions(lines, oldId, nextId) {
 
 function removeEventBlocks(lines, id) {
   const escapedId = escapeRegExp(id);
-  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked)\\s*:\\s*$`);
+  const pattern = new RegExp(`^(\\s*)when\\s+${escapedId}\\s+(clicked|changed|closed|ticked|paint)\\s*:\\s*$`);
   for (let i = 0; i < lines.length;) {
     const match = lines[i].match(pattern);
     if (!match) { i += 1; continue; }
@@ -468,10 +539,10 @@ function makeControl(type, lines, layout) {
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
-function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null, pictureSourceExpr = null) {
+function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
-  else if (type === 'button') core = `button ${textExpr} as ${id}`;
+  else if (type === 'button') core = formatPatchButtonDeclaration({ id, textExpr });
   else if (type === 'input') core = `input ${id}`;
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
   else if (type === 'radio') core = `radio ${(options ?? []).join(', ')} as ${id}`;
@@ -479,11 +550,7 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
   else if (type === 'timer') core = `timer as ${id} interval ${timerIntervalNumber(timerInterval ?? 1000)}`;
-  else if (type === 'picture') {
-    if (pictureSourceExpr) core = `picture as ${id} from ${pictureSourceExpr}`;
-    else if (textExpr) core = `picture ${textExpr} as ${id}`;
-    else core = `picture as ${id}`;
-  }
+  else if (type === 'picture') core = formatPatchPictureDeclaration({ id });
   else if (type === 'statusbar') core = `statusbar ${textExpr ?? '"Ready"'} as ${id}`;
   else if (type === 'panel') core = `panel as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
@@ -499,6 +566,45 @@ function formatTableControl(id, columns, layout) {
   const core = `table ${(columns ?? []).join(', ')} as ${id}`;
   if (!layout) return `${core}:`;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
+}
+
+function formatButtonControl(control, id, textExpr, changes, layout) {
+  let imageListId = Object.hasOwn(changes, 'imageListId') ? changes.imageListId : control.imageListId;
+  let imageItem = Object.hasOwn(changes, 'imageItem') ? changes.imageItem : control.imageItem;
+  if (Object.hasOwn(changes, 'image')) {
+    const binding = parseButtonImageBinding(changes.image);
+    imageListId = binding?.imageListId ?? null;
+    imageItem = binding?.imageItem ?? null;
+  }
+  const core = formatPatchButtonDeclaration({ id, textExpr, imageListId, imageItem });
+  if (!layout) return core;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
+}
+
+function formatPictureControl(control, id, changes, layout) {
+  const next = {
+    id,
+    sourceExpr: Object.hasOwn(changes, 'sourceExpr') ? changes.sourceExpr : control.sourceExpr,
+    fit: Object.hasOwn(changes, 'fit') ? changes.fit : control.fit,
+    center: Object.hasOwn(changes, 'center') ? changes.center : control.center,
+    opacity: Object.hasOwn(changes, 'opacity') ? changes.opacity : control.opacity,
+    description: Object.hasOwn(changes, 'description') ? changes.description : control.description,
+    textExpr: control.textExpr,
+    legacyCaption: control.legacyCaption === true
+  };
+  if (Object.hasOwn(changes, 'sourceExpr') && String(changes.sourceExpr ?? '').trim()) {
+    next.legacyCaption = false;
+  }
+  if (Object.hasOwn(changes, 'proportional')) {
+    next.fit = applyPatchPictureProportional(next.fit, changes.proportional);
+    next.legacyCaption = false;
+  }
+  if (['fit', 'center', 'opacity', 'description'].some(key => Object.hasOwn(changes, key))) {
+    next.legacyCaption = false;
+  }
+  const core = formatPatchPictureDeclaration(next);
+  if (!layout) return core;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
 }
 
 function formatNumber(value) {

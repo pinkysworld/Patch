@@ -12,8 +12,8 @@ test('Studio defaults Windows Window builds to token-free native single EXE seal
   assert.match(studio, /buildCurrentNativeGuiIR as buildNativeGuiIR/);
   assert.match(studio, /sealCurrentNativeGuiRuntime/);
   assert.match(studio, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
-  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.4\/payload-14\/runtime-1\.5'/);
-  assert.match(current, /sealNativeGuiRuntimeV14/);
+  assert.match(current, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.5\/payload-15\/runtime-1\.6'/);
+  assert.match(current, /sealNativeGuiRuntimeV15/);
   assert.match(studio, /Native single EXE \(no token, recommended\)/);
   assert.match(studio, /nativeBuildMode\.value = 'prebuilt'/);
   assert.match(studio, /downloadBytes\(sealed, `\$\{name\}\.exe`/);

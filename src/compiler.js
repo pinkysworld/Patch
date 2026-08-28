@@ -68,6 +68,7 @@ function lowerNode(node) {
     case 'window': {
       const fields = { titleExpr: node.titleExpr, body: lowerBlock(node.body) };
       if (node.id) fields.id = node.id;
+      if (node.iconExpr) fields.iconExpr = node.iconExpr;
       return op('WINDOW', node, fields);
     }
     case 'tabs':
@@ -106,7 +107,27 @@ function lowerNode(node) {
         fields.step = node.step;
       }
       if (node.control === 'timer') fields.interval = node.interval;
-      if (node.control === 'picture' && node.sourceExpr) fields.sourceExpr = node.sourceExpr;
+      if (node.control === 'imagelist') {
+        fields.logicalWidth = node.logicalWidth;
+        fields.logicalHeight = node.logicalHeight;
+        fields.items = (node.items ?? []).map(item => ({
+          name: item.name,
+          sourceExpr: item.sourceExpr,
+          resourceId: item.resourceId,
+          line: item.line ?? null
+        }));
+      }
+      if (node.control === 'picture') {
+        if (node.sourceExpr) fields.sourceExpr = node.sourceExpr;
+        fields.fit = node.fit;
+        fields.center = node.center;
+        fields.opacity = node.opacity;
+        if (node.description) fields.description = node.description;
+      }
+      if (node.control === 'button') {
+        if (node.imageListId) fields.imageListId = node.imageListId;
+        if (node.imageItem) fields.imageItem = node.imageItem;
+      }
       if (node.control === 'panel') fields.body = lowerBlock(node.body ?? []);
       return op('UI_CONTROL', node, fields);
     }
@@ -176,6 +197,9 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'slider') caps.add('ui.slider');
     if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
     if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');
+    if (node.kind === 'uiControl' && node.control === 'imagelist') caps.add('ui.imagelist');
+    if (node.kind === 'window' && node.iconExpr) caps.add('ui.window-icon');
+    if (node.kind === 'uiControl' && node.control === 'button' && node.imageListId && node.imageItem) caps.add('ui.button-image');
     if (node.kind === 'uiControl' && node.control === 'picture') caps.add('ui.picture');
     if (node.kind === 'uiControl' && node.control === 'shape') caps.add('ui.shape');
     if (node.kind === 'uiControl' && node.control === 'paintbox') caps.add('ui.paintbox');

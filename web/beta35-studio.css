@@ -2,6 +2,21 @@
   width: min(1720px, 100%);
 }
 
+/* Keep the proven softer Patch P and remove the square-badge impression. The
+   generated site rewrites the legacy 22x22 source mark to the earlier 32x32
+   geometry and we deliberately avoid crisp pixel rendering here. */
+.brand-mark {
+  border-radius: 50%;
+}
+.brand-mark svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  shape-rendering: auto;
+  transform: none;
+}
+.brand-mark::before { content: none; display: none; }
+
 .studio-jump {
   min-height: 36px;
   display: inline-flex;

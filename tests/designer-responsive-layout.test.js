@@ -96,11 +96,15 @@ test('Object Inspector exposes Delphi-style Layout Mode, four Anchors, Dock and 
   assert.match(layoutCss, /anchor-center/);
 });
 
-test('Object Inspector preserves component boundaries for nonvisual Timer and docked StatusBar', () => {
-  assert.match(browserModule, /type === 'timer'/);
+test('Object Inspector preserves shared nonvisual boundaries for Timer and ImageList plus docked StatusBar', () => {
+  assert.match(browserModule, /import \{ formControlDefaultSize, isNonvisualFormControl \} from '\.\.\/src\/form-layout\.js'/);
+  assert.match(browserModule, /if \(isNonvisualFormControl\(type\)\)/);
+  assert.match(browserModule, /filter\(edit => !isNonvisualFormControl\(edit\.type\) && edit\.type !== 'statusbar'\)/);
+  assert.match(browserModule, /filter\(item => item\.windowIndex === windowIndex && !isNonvisualFormControl\(item\.type\)\)/);
+  assert.match(browserModule, /selectedControls\.some\(control => isNonvisualFormControl\(control\.type\)\)/);
   assert.match(browserModule, /type === 'statusbar'/);
   assert.match(browserModule, /kind: 'dock', side: 'bottom'/);
-  assert.match(browserModule, /Timer is nonvisual and has no Form resize policy/);
+  assert.match(browserModule, /Nonvisual components have no Form resize policy/);
   assert.match(browserModule, /StatusBar remains docked to the bottom/);
 });
 

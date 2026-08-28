@@ -199,10 +199,18 @@ export class PatchInterpreter {
       id:windowNode.id??`window${index+1}`,
       visible:windowNode.id?this.formVisibility.get(windowNode.id)!==false:true,
       title:this.uiText(windowNode.titleExpr),
-      controls:this.buildUIItems(windowNode.body)
+      icon:windowNode.iconExpr?this.uiText(windowNode.iconExpr):'',
+      controls:this.buildUIItems(windowNode.body, this.collectImageLists(windowNode.body))
     }));
   }
-  buildUIItems(nodes){
+  collectImageLists(nodes){
+    const lists=new Map();
+    for(const node of nodes??[]){
+      if(node.kind==='uiControl'&&node.control==='imagelist'&&node.id) lists.set(node.id,node);
+    }
+    return lists;
+  }
+  buildUIItems(nodes, lists=new Map()){
     const items=[];
     for(const node of nodes??[]){
       if(node.kind==='uiControl'){
@@ -220,6 +228,23 @@ export class PatchInterpreter {
           item.max=node.max;
           item.step=node.step;
         }
+        if(node.control==='picture'){
+          item.fit=node.fit??'contain';
+          item.center=node.center!==false;
+          item.opacity=Number.isFinite(Number(node.opacity))?Number(node.opacity):1;
+          item.description=node.description||item.text;
+        }
+        if(node.control==='button'){
+          item.imageListId=node.imageListId??null;
+          item.imageItem=node.imageItem??null;
+          const resolved=node.imageListId&&node.imageItem
+            ? lists.get(node.imageListId)?.items?.find(image=>image.name===node.imageItem)
+            : null;
+          const list=node.imageListId?lists.get(node.imageListId):null;
+          item.imageSource=resolved?this.uiText(resolved.sourceExpr):'';
+          item.imageWidth=Number(list?.logicalWidth)||16;
+          item.imageHeight=Number(list?.logicalHeight)||16;
+        }
         items.push(item);
       } else if(node.kind==='tabs'){
         items.push({
@@ -227,7 +252,7 @@ export class PatchInterpreter {
           id:node.id,
           pages:(node.body??[]).map(page=>({
             title:this.uiText(page.titleExpr),
-            controls:this.buildUIItems(page.body)
+            controls:this.buildUIItems(page.body, lists)
           }))
         });
       }

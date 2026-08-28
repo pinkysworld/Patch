@@ -116,3 +116,12 @@ static const PatchChromeV15* PatchChromeForIdV15(const std::vector<PatchChromeV1
   for (const auto& item : chrome) if (item.id == id) return &item;
   return nullptr;
 }
+
+// Runtime v1.6 compiles v1.5 as a private compatibility layer before restoring
+// Shape controls. These aliases are opt-in and leave ordinary v1.5 builds unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V16_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V16_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V16_RESTORE_MAIN
+#define main PATCH_RUNTIME_V16_RESTORE_MAIN
+#endif

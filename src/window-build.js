@@ -1,4 +1,6 @@
 import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
+import { resolveButtonImageBinding } from './button-image.js';
+import { hasWindowIcon } from './window-icon.js';
 
 export class WindowBuildError extends Error {}
 
@@ -51,6 +53,10 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let treeViews = 0;
   let sliders = 0;
   let paintboxes = 0;
+  let imageLists = 0;
+  let buttonImages = 0;
+  let windowIcons = 0;
+  const imageListsByForm = new Map();
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
   const duplicateId = node => new WindowBuildError(
@@ -74,6 +80,16 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'tree') treeViews += 1;
     if (child.control === 'paintbox') paintboxes += 1;
+    if (child.control === 'imagelist') {
+      imageLists += 1;
+      let lists = imageListsByForm.get(formId);
+      if (!lists) {
+        lists = new Map();
+        imageListsByForm.set(formId, lists);
+      }
+      lists.set(child.id, child);
+    }
+    if (child.control === 'button' && child.imageListId && child.imageItem) buttonImages += 1;
     if (child.control === 'slider') {
       sliders += 1;
       const stateType = stateTypes.get(child.id);
@@ -180,6 +196,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
           }
           forms.set(node.id, node);
         }
+        if (hasWindowIcon(node)) windowIcons += 1;
         for (const child of node.body ?? []) {
           if (child.kind === 'uiControl') registerControl(child, formId);
           else if (child.kind === 'tabs') registerTabs(child, formId);
@@ -198,6 +215,19 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     }
   };
   walk(compiled?.ast);
+
+  for (const control of controls.values()) {
+    if (control.type !== 'button' || !control.node?.imageListId || !control.node?.imageItem) continue;
+    try {
+      resolveButtonImageBinding(
+        imageListsByForm.get(control.formId) ?? new Map(),
+        { imageListId: control.node.imageListId, imageItem: control.node.imageItem },
+        control.node.line
+      );
+    } catch (error) {
+      throw new WindowBuildError(error?.message ?? String(error));
+    }
+  }
 
   for (const event of events) {
     const control = controls.get(event.control);
@@ -226,6 +256,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       continue;
     }
     const controlType = menuItem ? 'menuItem' : control.type;
+    if (controlType === 'imagelist') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: ImageList '${event.control}' is nonvisual and exposes no Patch events in ImageList Stage 1.`
+      );
+    }
     if (controlType === 'table' && event.event !== 'changed') {
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: Table '${event.control}' exposes only 'changed' for transient row selection, not '${event.event}'.`
@@ -296,6 +331,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     );
   }
 
+  if (imageLists && !options.allowImageList) {
+    throw new WindowBuildError(
+      'ImageList is not enabled for this Window target. Native GUI IR 1.4 has no ImageList consumer contract; validation fails closed rather than silently dropping the nonvisual image collection.'
+    );
+  }
+
   const menuStateBindings = menuEnabledBindings + menuCheckedBindings;
   if ((menuSeparators || menuShortcutCount || menuStateBindings) && !options.allowMenuDecorations) {
     const required = menuStateBindings
@@ -314,6 +355,9 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     treeViews,
     sliders,
     paintboxes,
+    imageLists,
+    buttonImages,
+    windowIcons,
     tabs: tabs.size,
     menuItems: menuItems.size,
     menuSeparators,

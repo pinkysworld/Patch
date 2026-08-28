@@ -35,7 +35,7 @@ test('browser packaging ships current and frozen contracts without retired v07-v
   assert.match(sw, /native-current-contract\.js/);
   assert.match(sw, /native-frozen-contract\.js/);
   assert.match(sw, /native-gui-frozen-lower\.js/);
-  for (const version of ['v12','v13','v14']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
+  for (const version of ['v12','v13','v14','v15']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
   for (const retired of ['native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','sealed-native-gui.js','sealed-native-gui-v11.js']) {
     assert.equal(buildSite.includes(`'${retired}'`), false, `site builder still copies ${retired}`);
     assert.equal(sw.includes(`../src/${retired}`), false, `service worker still caches ${retired}`);
@@ -45,9 +45,9 @@ test('browser packaging ships current and frozen contracts without retired v07-v
 test('native compatibility documentation makes current versus frozen ownership explicit', () => {
   const docs = read('docs/NATIVE_COMPATIBILITY.md');
   for (const marker of [
-    'Native GUI IR 1.4 / sealed payload v14 / runtime v1.5',
+    'Native GUI IR 1.5 / sealed payload v15 / runtime v1.6',
     'native-current-contract.js',
-    'native-gui-1.4/payload-14/runtime-1.5',
+    'native-gui-1.5/payload-15/runtime-1.6',
     'native-frozen-contract.js',
     'native-gui-1.2/payload-12/runtime-1.3',
     'Historical include chain',
@@ -66,9 +66,9 @@ test('README and public website expose the native contract boundary without requ
   assert.match(readme, /native-current-contract\.js/);
   assert.match(readme, /native-frozen-contract\.js/);
   assert.match(docsPage, /docs\/NATIVE_COMPATIBILITY\.md/);
-  assert.match(downloads, /Native GUI IR <strong>1\.4<\/strong>/);
-  assert.match(downloads, /payload <strong>v14<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.5<\/strong>/);
+  assert.match(downloads, /Native GUI IR <strong>1\.5<\/strong>/);
+  assert.match(downloads, /payload <strong>v15<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.6<\/strong>/);
   assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4 remains the Slider-capable compatibility line/);
 });
 

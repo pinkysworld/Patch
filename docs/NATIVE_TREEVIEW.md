@@ -64,9 +64,9 @@ Current Ready runtime release tags are:
 
 The dedicated **Patch Native Sealed TreeView Runtime v1.3** workflow builds each runtime from source, seals the canonical TreeView example as payload v12 and executes the finished application on Windows, macOS and Linux. Only successful `main` runs publish those frozen runtime assets.
 
-Patch Studio's no-token Window path lowers current Native GUI IR 1.3 in the browser and seals it into verified v1.4 runtime templates. The frozen TreeView path still lowers Native GUI IR 1.2 into the v1.3 templates. Pages waits for the current runtime assets, validates their GitHub-recorded SHA-256 digests and publishes the runtime integrity manifest before deploying a browser compiler that consumes payload v13.
+Patch Studio's no-token Window path lowers current Native GUI IR 1.5 in the browser and seals it into verified v1.6 runtime templates. The frozen TreeView path still lowers Native GUI IR 1.2 into the v1.3 templates. Pages waits for the current runtime assets, validates their GitHub-recorded SHA-256 digests and publishes the runtime integrity manifest before deploying a browser compiler that consumes payload v15.
 
-The downloadable offline compiler independently embeds/builds runtime v1.4 by default and smoke-tests responsive Window, Table, multi-select ListBox, Menu, TreeView and Slider applications on its supported desktop hosts. Frozen v1.3 remains available as an explicit compatibility line.
+The downloadable offline compiler independently embeds/builds runtime v1.6 by default and smoke-tests responsive Window, Table, multi-select ListBox, Menu, TreeView, Slider, Chrome and Shape applications on its supported desktop hosts. Frozen v1.3 remains available as an explicit compatibility line.
 
 ## Compatibility
 

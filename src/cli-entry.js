@@ -4,6 +4,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { generateLeanCallCertificate } from './call-certificate.js';
+import {
+  formatPatchComponentCapabilityMatrixText,
+  patchComponentCapabilityMatrix
+} from './component-matrix.js';
 import { collectDoctorReport, formatDoctorReport } from './doctor.js';
 import { linkPatchSource } from './offline-linker.js';
 
@@ -15,6 +19,13 @@ if (command === 'doctor') {
   if (argv.includes('--json')) console.log(JSON.stringify(report, null, 2));
   else console.log(formatDoctorReport(report));
   process.exit(report.status === 'error' ? 2 : 0);
+}
+
+if (command === 'components') {
+  const matrix = patchComponentCapabilityMatrix();
+  if (argv.includes('--json')) console.log(JSON.stringify(matrix, null, 2));
+  else process.stdout.write(formatPatchComponentCapabilityMatrixText(matrix));
+  process.exit(0);
 }
 
 if (command === 'link') {

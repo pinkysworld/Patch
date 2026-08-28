@@ -455,7 +455,20 @@ function renderWindows(container, windows, interactive) {
     shell.hidden = Boolean(interactive && model.visible === false);
     const title = document.createElement('div');
     title.className = 'patch-window-title';
-    title.textContent = model.title;
+    if (model.icon) {
+      const img = document.createElement('img');
+      img.className = 'patch-window-icon';
+      img.alt = '';
+      img.width = 16;
+      img.height = 16;
+      try {
+        img.src = pictureResourceDataUri(model.icon, getStudioProjectResources());
+      } catch {
+        img.src = model.icon;
+      }
+      title.appendChild(img);
+    }
+    title.append(model.title);
     const body = document.createElement('div');
     body.className = 'patch-window-body';
     model.controls.forEach((control, controlIndex) => {
@@ -488,8 +501,21 @@ function createControlElement(control, context) {
   } else if (control.type === 'button') {
     el = document.createElement('button');
     el.className = 'patch-button';
-    el.textContent = control.text;
     el.type = 'button';
+    if (control.imageSource) {
+      const img = document.createElement('img');
+      img.className = 'patch-button-image';
+      img.alt = '';
+      img.width = control.imageWidth || 16;
+      img.height = control.imageHeight || 16;
+      try {
+        img.src = pictureResourceDataUri(control.imageSource, getStudioProjectResources());
+      } catch {
+        img.src = control.imageSource;
+      }
+      el.appendChild(img);
+    }
+    el.append(control.text);
     if (context.interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
   } else if (control.type === 'input') {
     el = document.createElement('input');
@@ -563,8 +589,11 @@ function createControlElement(control, context) {
   } else if (control.type === 'picture') {
     el = document.createElement('img');
     el.className = 'patch-picture';
-    el.alt = control.text || control.id || '';
-    el.style.objectFit = 'contain';
+    el.alt = control.text || control.description || control.id || '';
+    if (control.description || control.text) el.setAttribute('aria-label', control.description || control.text);
+    el.style.objectFit = control.fit || 'contain';
+    el.style.objectPosition = control.center === false ? '0% 0%' : '50% 50%';
+    el.style.opacity = String(Number.isFinite(Number(control.opacity)) ? control.opacity : 1);
     el.style.maxWidth = '100%';
     el.style.maxHeight = '100%';
     if (control.source) el.src = pictureResourceDataUri(control.source, getStudioProjectResources());

@@ -12,6 +12,8 @@ const WORKSHOP_DESK_SAMPLE = `create thing ticket:
   total = 40
   bench = "Bench A"
   priority = "Normal"
+  payment = "Card"
+  state = "Open"
 
 create text customer = "Ada"
 create text item = "Keyboard"
@@ -37,35 +39,35 @@ make quote(ticket, extra number 0..50):
   change ticket:
     add extra to total
 
-window "Workshop Desk" as main size 1080, 740:
+window "Workshop Desk" as main size 1080, 700:
   text "Workshop Desk" at 24, 16 size 260, 30
   text "{status}" at 300, 16 size 520, 30
-  text "Quote {ticket.total}" at 840, 16 size 180, 30
+  text "Quote {ticket.total} · {ticket.state}" at 840, 16 size 210, 30
 
   text "Customer" at 24, 58 size 100, 22
   combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 82 size 220, 36
   text "Item" at 260, 58 size 80, 22
   input item at 260, 82 size 250, 36
-  text "Payment" at 528, 58 size 90, 22
-  radio "Card", "Cash", "Account" as pay at 528, 82 size 200, 96
-  text "Priority" at 744, 58 size 90, 22
-  radio "Normal", "High", "Critical" as priority at 744, 82 size 180, 96
-  checkbox "Rush bench" as rush at 936, 82 size 120, 36
+  text "Quantity {qty}" at 528, 58 size 130, 22
+  slider 1..8 as qty step 1 at 528, 82 size 240, 38
+  checkbox "Rush bench" as rush at 788, 82 size 150, 36
 
-  text "Quantity {qty}" at 24, 138 size 130, 22
-  slider 1..8 as qty step 1 at 24, 162 size 260, 38
-  text "Notes" at 304, 138 size 80, 22
-  input notes at 304, 162 size 370, 38
-  text "Services" at 694, 138 size 90, 22
-  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 694, 162 size 230, 110
+  text "Payment" at 24, 136 size 90, 22
+  radio "Card", "Cash", "Account" as pay at 24, 160 size 280, 82
+  text "Priority" at 324, 136 size 90, 22
+  radio "Normal", "High", "Critical" as priority at 324, 160 size 280, 82
+  text "Notes" at 624, 136 size 80, 22
+  input notes at 624, 160 size 404, 38
+  text "Services" at 624, 210 size 90, 22
+  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 624, 234 size 404, 72
 
-  table "Ticket", "Customer", "Bench", "State" as board at 24, 300 size 540, 230:
+  table "Ticket", "Customer", "Bench", "State" as board at 24, 320 size 540, 220:
     row "WD-104", "Ada", "Bench A", "Open"
     row "WD-105", "Grace", "Bench B", "Quoted"
     row "WD-106", "Linus", "Bench A", "Ready"
     row "WD-107", "Margaret", "Overflow", "Waiting"
 
-  tree as parts at 584, 300 size 270, 230:
+  tree as parts at 584, 320 size 270, 220:
     node "Parts"
       node "Input"
         node "Keyboard"
@@ -78,15 +80,16 @@ window "Workshop Desk" as main size 1080, 740:
       node "Solder"
       node "Meter"
 
-  button "Create quote" as quote_button at 878, 300 size 150, 38
-  button "Job details" as details_button at 878, 350 size 150, 38
-  button "Settings" as settings_button at 878, 400 size 150, 38
-  button "Reset ticket" as reset_button at 878, 450 size 150, 38
+  button "Create quote" as quote_button at 878, 320 size 150, 38
+  button "Job details" as details_button at 878, 368 size 150, 38
+  button "Settings" as settings_button at 878, 416 size 150, 38
+  button "Mark ready" as complete_button at 878, 464 size 150, 38
+  button "Reset ticket" as reset_button at 878, 512 size 150, 38
 
-  text "Selected job: {selected_job}" at 24, 548 size 520, 26
-  text "Selected part: {selected_part}" at 584, 548 size 420, 26
+  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "All persistent edits are explicit semantic changes. Resize the Form to exercise source-backed layout policies." at 24, 680 size 980, 28
+  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26
+  statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
 window "Workshop settings" as settings size 720, 520:
   tabs as prefs at 24, 24 size 672, 400:
@@ -105,21 +108,24 @@ window "Workshop settings" as settings size 720, 520:
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
       text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses Forms, Tabs, Table, TreeView, Slider and source-backed event handlers."
+      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
-window "Job details" as details size 640, 430:
+window "Job details" as details size 640, 470:
   text "Current workshop ticket" at 24, 24 size 300, 28
   text "Customer: {ticket.customer}" at 24, 70 size 280, 24
   text "Item: {ticket.item}" at 24, 104 size 280, 24
   text "Quantity: {ticket.qty}" at 24, 138 size 280, 24
   text "Bench: {ticket.bench}" at 24, 172 size 280, 24
   text "Priority: {ticket.priority}" at 24, 206 size 280, 24
-  text "Current quote: {ticket.total}" at 24, 240 size 280, 24
+  text "Payment: {ticket.payment}" at 326, 70 size 280, 24
+  text "State: {ticket.state}" at 326, 104 size 280, 24
+  text "Current quote: {ticket.total}" at 326, 138 size 280, 24
   text "{status}" at 24, 278 size 560, 28
-  button "Add inspection" as details_quote at 24, 330 size 160, 38
-  button "Close details" as close_details at 202, 330 size 160, 38
+  button "Add inspection" as details_quote at 24, 366 size 160, 38
+  button "Mark ready" as details_ready at 202, 366 size 150, 38
+  button "Close details" as close_details at 370, 366 size 160, 38
 
 when customer changed:
   change customer:
@@ -140,6 +146,8 @@ when item changed:
 when pay changed:
   change pay:
     set = value
+  change ticket:
+    set payment = value
   change status:
     set = "Payment method changed"
 
@@ -191,13 +199,29 @@ when parts changed:
 
 when quote_button clicked:
   do quote(ticket, 25)
+  change ticket:
+    set state = "Quoted"
   change status:
     set = "Quote increased by 25"
 
 when details_quote clicked:
   do quote(ticket, 10)
+  change ticket:
+    set state = "Quoted"
   change status:
     set = "Inspection added to quote"
+
+when complete_button clicked:
+  change ticket:
+    set state = "Ready"
+  change status:
+    set = "Ticket marked ready"
+
+when details_ready clicked:
+  change ticket:
+    set state = "Ready"
+  change status:
+    set = "Ticket marked ready"
 
 when settings_button clicked:
   open settings
@@ -206,9 +230,13 @@ when details_button clicked:
   open details
 
 when close_settings clicked:
+  change status:
+    set = "Settings closed"
   close settings
 
 when close_about clicked:
+  change status:
+    set = "Settings closed"
   close settings
 
 when close_details clicked:
@@ -217,6 +245,8 @@ when close_details clicked:
 when notifications changed:
   change notifications:
     set = value
+  change status:
+    set = "Notification preference changed"
 
 when default_bench changed:
   change default_bench:
@@ -229,16 +259,34 @@ when default_bench changed:
 when stations changed:
   change stations:
     set = value
+  change status:
+    set = "Available stations changed"
 
 when labor_limit changed:
   change labor_limit:
     set = value
+  change status:
+    set = "Labor approval limit changed"
 
 when density changed:
   change density:
     set = value
+  change status:
+    set = "Appearance density changed"
 
 when reset_button clicked:
+  change customer:
+    set = "Ada"
+  change item:
+    set = "Keyboard"
+  change qty:
+    set = 1
+  change rush:
+    set = false
+  change priority:
+    set = "Normal"
+  change pay:
+    set = "Card"
   change notes:
     set = ""
   change services:
@@ -247,17 +295,15 @@ when reset_button clicked:
     clear
   change selected_job:
     clear
-  change qty:
-    set = 1
-  change rush:
-    set = false
   change ticket:
+    set customer = "Ada"
+    set item = "Keyboard"
     set qty = 1
     set total = 40
-    set priority = "Normal"
     set bench = default_bench
-  change priority:
-    set = "Normal"
+    set priority = "Normal"
+    set payment = "Card"
+    set state = "Open"
   change status:
     set = "Ticket reset"
 `;
@@ -335,4 +381,62 @@ if (sample && code && projectKind) {
   let hasSavedProject = false;
   try { hasSavedProject = Boolean(localStorage.getItem('patchStudio.project')); } catch { /* storage can be unavailable */ }
   if (!hasSavedProject && sample.value === 'workshopDesk') queueMicrotask(loadSelectedSample);
+}
+
+// Multi-Form projects can contain hundreds of controls. Keep every Form in the
+// source-backed DOM so structural adapters and selection indices stay stable,
+// but let the browser fully render only the active Form. The Form selector is
+// already the canonical active-Form control used by forms-designer.js.
+queueMicrotask(installActiveFormRendering);
+
+function installActiveFormRendering() {
+  const canvas = document.querySelector('#designerCanvas');
+  if (!canvas || canvas.dataset.patchActiveFormRendering === 'true') return;
+
+  const attach = () => {
+    const select = document.querySelector('#patchFormSelect');
+    if (!select) return false;
+    canvas.dataset.patchActiveFormRendering = 'true';
+
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      queueMicrotask(() => {
+        queued = false;
+        syncActiveFormRendering(canvas, select);
+      });
+    };
+
+    select.addEventListener('change', schedule);
+    canvas.addEventListener('patch-designer-selection-change', schedule);
+    code?.addEventListener('input', schedule);
+    code?.addEventListener('change', schedule);
+    new MutationObserver(schedule).observe(canvas, { childList: true, subtree: true });
+    schedule();
+    return true;
+  };
+
+  if (attach()) return;
+  const observer = new MutationObserver(() => {
+    if (!attach()) return;
+    observer.disconnect();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function syncActiveFormRendering(canvas, select) {
+  const shells = [...canvas.querySelectorAll(':scope .patch-window')];
+  if (!shells.length) return;
+  const requested = Number(select.value);
+  const active = Number.isInteger(requested)
+    ? Math.max(0, Math.min(requested, shells.length - 1))
+    : 0;
+
+  shells.forEach((shell, index) => {
+    const isActive = index === active;
+    shell.hidden = !isActive;
+    shell.dataset.patchDesignerFormDetail = isActive ? 'full' : 'deferred';
+  });
+  canvas.dataset.patchDesignerActiveForm = String(active);
 }
