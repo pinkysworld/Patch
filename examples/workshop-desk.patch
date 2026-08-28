@@ -67,7 +67,7 @@ window "Workshop Desk" as main size 1080, 700:
 
   text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
+  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
   timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
@@ -88,7 +88,7 @@ window "Workshop settings" as settings size 720, 520:
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
       text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
+      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
@@ -179,6 +179,7 @@ when ticket_canvas paint:
   draw clear #f8fafc
   draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
   draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
   if rush:
     draw line 12, 58 to 258, 58 stroke #dc2626 width 3
   draw text "Live quote" at 12, 78 color #111827 size 16
