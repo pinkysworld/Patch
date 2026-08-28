@@ -29,7 +29,14 @@ export class PatchWindowIconError extends Error {
 export const PATCH_WINDOW_ICON_POLICY = Object.freeze({
   id: PATCH_WINDOW_ICON_POLICY_ID,
   version: PATCH_WINDOW_ICON_VERSION,
+  // Retained compatibility metadata for consumers that adopted contract 1.0
+  // when it was introduced. Current Ready is tracked separately because icons
+  // remain fail-closed there too.
+  nativeGuiIR: '1.4',
+  payload: 14,
+  runtime: '1.5',
   introducedAgainstNativeGuiIR: '1.4',
+  currentReady: Object.freeze({ nativeGuiIR: '1.5', payload: 15, runtime: '1.6' }),
   native: 'fail-closed',
   studioWeb: Object.freeze(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
   reason: 'The current native GUI Form contract does not transport application/window icon metadata. Win32 .ico, AppKit and Linux desktop icon packaging wait for a versioned native contract that moves those backends together.'
