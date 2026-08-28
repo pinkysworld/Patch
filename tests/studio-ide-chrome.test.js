@@ -27,15 +27,15 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
   assert.match(style, /border: 1px dashed var\(--border-strong\)/);
 });
 
-test('Studio brand mark restores the proven softer P geometry and removes the square-badge impression', () => {
+test('Studio brand renders a genuinely rounded P instead of the legacy angular SVG', () => {
   const mark = html.match(/class="brand-mark"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
   assert.match(mark, /<svg viewBox="0 0 22 22"/);
-  assert.match(beta35, /\.brand-mark svg \{[\s\S]*?display: block;/);
-  assert.match(beta35, /shape-rendering: auto/);
+  assert.match(beta35, /\.brand-mark svg \{[\s\S]*?display: none;/);
+  assert.match(beta35, /\.brand-mark::before,[\s\S]*\.brand-mark::after/);
+  assert.match(beta35, /border-radius: 999px/);
+  assert.match(beta35, /border-radius: 0 999px 999px 0/);
   assert.match(beta35, /border-radius: 50%/);
-  assert.match(beta35, /\.brand-mark::before \{ content: none; display: none; \}/);
   assert.match(buildSite, /<svg viewBox="0 0 32 32" focusable="false" aria-hidden="true">/);
-  assert.match(buildSite, /M8 6H22V18H13V26H8/);
   assert.doesNotMatch(style, /rotate\(/);
   assert.doesNotMatch(refresh, /rotate\(/);
   assert.doesNotMatch(beta35, /rotate\(/);
