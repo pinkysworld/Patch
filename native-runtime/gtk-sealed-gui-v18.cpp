@@ -41,6 +41,10 @@ static GdkPixbuf* PatchPaintCachedImageV18(const std::string& source) {
   if (decoded) g_object_ref(decoded);
   if (error) g_error_free(error);
   g_object_unref(loader);
+  if (decoded && (gdk_pixbuf_get_width(decoded) < 1 || gdk_pixbuf_get_height(decoded) < 1)) {
+    g_object_unref(decoded);
+    decoded = nullptr;
+  }
   gPatchPaintImagesV18[source] = decoded;
   return decoded;
 }
@@ -206,14 +210,92 @@ static void PatchRefreshPaintImageBoxesV18() {
   gRefreshing = previous;
 }
 
-static void PatchOnClickedV18(GtkWidget* widget, gpointer data) { PatchOnClickedV17(widget, data); PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterClickedV18(GtkWidget*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterToggledV18(GtkToggleButton*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterInputV18(GtkEditable*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterComboV18(GtkComboBox*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterListSingleV18(GtkListBox*, GtkListBoxRow*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterListMultiV18(GtkListBox*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterTableV18(GtkTreeSelection*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterMenuV18(GtkWidget*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterTreeV18(GtkTreeSelection*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterSliderV18(GtkRange*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+static void PatchAfterPictureV18(GtkWidget*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
 static void PatchOnFormAllocateV18(GtkWidget*, GtkAllocation*, gpointer) { PatchRefreshPaintImageBoxesV18(); }
+
+static gboolean PatchOnTimerV18(gpointer data) {
+  gboolean keep = PatchOnTimerV17(data);
+  PatchRefreshPaintImageBoxesV18();
+  return keep;
+}
+
+static bool PatchWirePaintImageRefreshV18() {
+  for (int index = 0; index < (int)gControls.size(); ++index) {
+    auto& c = gControls[(size_t)index];
+    if (!c.widget || c.kind == 9 || PatchSliderForNativeIndexV14(gPatchSlidersV14, index)) continue;
+    gpointer data = GINT_TO_POINTER(index);
+    if (c.kind == CK_BUTTON) g_signal_connect_after(c.widget, "clicked", G_CALLBACK(PatchAfterClickedV18), data);
+    else if (c.kind == CK_CHECKBOX) g_signal_connect_after(c.widget, "toggled", G_CALLBACK(PatchAfterToggledV18), data);
+    else if (c.kind == CK_INPUT) g_signal_connect_after(c.widget, "changed", G_CALLBACK(PatchAfterInputV18), data);
+    else if (c.kind == CK_COMBO) g_signal_connect_after(c.widget, "changed", G_CALLBACK(PatchAfterComboV18), data);
+    else if (c.kind == CK_LISTBOX) {
+      const bool multi = PatchFindListBoxV11(gPatchListBoxesV11, c.id) != nullptr;
+      if (multi) g_signal_connect_after(c.widget, "selected-rows-changed", G_CALLBACK(PatchAfterListMultiV18), data);
+      else g_signal_connect_after(c.widget, "row-selected", G_CALLBACK(PatchAfterListSingleV18), data);
+    } else if (c.kind == CK_RADIO) {
+      for (GtkWidget* radio : c.radioItems) g_signal_connect_after(radio, "toggled", G_CALLBACK(PatchAfterToggledV18), data);
+    }
+  }
+
+  for (const auto& table : gPatchTablesV10) {
+    GtkWidget* view = gPatchTableViewsV10[(size_t)table.nativeIndex];
+    if (!view) return false;
+    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+    g_signal_connect_after(selection, "changed", G_CALLBACK(PatchAfterTableV18), GINT_TO_POINTER(table.nativeIndex));
+  }
+  for (int index = 0; index < (int)gMenuItems.size(); ++index) {
+    auto& item = gMenuItems[(size_t)index];
+    if (item.widget) g_signal_connect_after(item.widget, "activate", G_CALLBACK(PatchAfterMenuV18), GINT_TO_POINTER(index));
+  }
+  for (const auto& tree : gPatchTreesV13) {
+    auto& native = gPatchGtkTreesV13[(size_t)tree.nativeIndex];
+    if (!native.view) return false;
+    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(native.view));
+    g_signal_connect_after(selection, "changed", G_CALLBACK(PatchAfterTreeV18), GINT_TO_POINTER(tree.nativeIndex));
+  }
+  for (const auto& slider : gPatchSlidersV14) {
+    GtkWidget* view = gPatchSliderViewsV14[(size_t)slider.nativeIndex];
+    if (!view) return false;
+    g_signal_connect_after(view, "value-changed", G_CALLBACK(PatchAfterSliderV18), GINT_TO_POINTER(slider.nativeIndex));
+  }
+  for (const auto& item : gPatchChromeV15) {
+    const int index = item.nativeIndex;
+    if (item.kind == PATCH_CHROME_TIMER_V15) {
+      guint previous = gPatchChromeTimersV15[(size_t)index];
+      if (previous) g_source_remove(previous);
+      guint timer = g_timeout_add(item.interval, PatchOnTimerV18, GINT_TO_POINTER(index));
+      if (!timer) return false;
+      gPatchChromeTimersV15[(size_t)index] = timer;
+      continue;
+    }
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      GtkWidget* view = gPatchChromeViewsV15[(size_t)index];
+      if (!view) return false;
+      g_signal_connect_after(view, "clicked", G_CALLBACK(PatchAfterPictureV18), GINT_TO_POINTER(index));
+    }
+  }
+  return true;
+}
 
 static int RunPatchPaintBoxImageSmokeV18() {
   int code = 410;
   for (const auto& item : gPatchPaintImageBoxesV18) {
     GtkWidget* view = gPatchPaintImageViewsV18[(size_t)item.nativeIndex];
     if (!view) return code++;
+    const std::string* source = PatchPaintFirstImageSourceV18(item.program);
+    if (!source) return code++;
+    GdkPixbuf* image = PatchPaintCachedImageV18(*source);
+    if (!image || gdk_pixbuf_get_width(image) < 1 || gdk_pixbuf_get_height(image) < 1) return code++;
   }
   return 0;
 }
@@ -224,7 +306,7 @@ int main(int argc, char* argv[]) {
   if (!ReadSelfPayloadV18(payloadV17) || !PatchConvertPayloadV17ToV16(payloadV17, payloadV16, gPatchPaintImageBoxesV18) || !PatchConvertPayloadV16ToV15(payloadV16, payloadV15, gPatchPaintBoxesV17) || !PatchConvertPayloadV15ToV14(payloadV15, payloadV14, gPatchShapesV16) || !PatchConvertPayloadV14ToV13(payloadV14, payloadV13, gPatchChromeV15) || !PatchConvertPayloadV13ToV12(payloadV13, payloadV12, gPatchSlidersV14) || !PatchConvertPayloadV12ToV11(payloadV12, payloadV11, gPatchTreesV13) || !PatchConvertPayloadV11ToV10(payloadV11, payloadV10, gPatchMenuEntriesV12) || !PatchConvertPayloadV10ToV9(payloadV10, payloadV9, gPatchListStatesV11, gPatchListBoxesV11, gPatchListEventsV11) || !PatchConvertPayloadV9ToV8(payloadV9, payloadV8, gPatchTablesV10) || !PatchConvertPayloadV8ToV7(payloadV8, payloadV7, gPatchLayoutPoliciesV09) || !ParsePayload(payloadV7)) return 20;
   if (gPatchLayoutPoliciesV09.size() != gControls.size() || !PatchResolveTablesV10() || !PatchResolveListsV11() || !PatchResolveTreesV13() || !PatchResolveSlidersV14() || !PatchResolveChromeV15() || !PatchResolveShapesV16() || !PatchResolvePaintBoxesV17() || !PatchResolvePaintImageBoxesV18()) return 22;
   PatchSyncListShadowsV11(); gtk_init(&argc, &argv);
-  if (!CreateForms() || !PatchInstallTablesV10() || !PatchRewireEventsV11() || !PatchInstallMenusV12() || !PatchRewireEventsV12() || !PatchRewireTableEventsV12() || !PatchInstallTreesV13() || !PatchRewireEventsV13() || !PatchInstallSlidersV14() || !PatchRewireEventsV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16() || !PatchInstallPaintBoxesV17() || !PatchInstallPaintImageBoxesV18()) return 21;
+  if (!CreateForms() || !PatchInstallTablesV10() || !PatchRewireEventsV11() || !PatchInstallMenusV12() || !PatchRewireEventsV12() || !PatchRewireTableEventsV12() || !PatchInstallTreesV13() || !PatchRewireEventsV13() || !PatchInstallSlidersV14() || !PatchRewireEventsV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16() || !PatchInstallPaintBoxesV17() || !PatchInstallPaintImageBoxesV18() || !PatchRewireEventsV17() || !PatchWirePaintImageRefreshV18()) return 21;
   for (int index = 0; index < (int)gForms.size(); ++index) if (gForms[(size_t)index].fixed) {
     g_signal_connect(gForms[(size_t)index].fixed, "size-allocate", G_CALLBACK(OnPatchFormAllocateV09), GINT_TO_POINTER(index));
     g_signal_connect(gForms[(size_t)index].fixed, "size-allocate", G_CALLBACK(PatchOnFormAllocateV13), GINT_TO_POINTER(index));
