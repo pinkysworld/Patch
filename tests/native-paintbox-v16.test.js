@@ -97,6 +97,44 @@ when canvas paint:
   assert.equal(canvas.paintProgram[1].command.operation, 'line');
 });
 
+test('native PaintBox scalar expressions coexist with unrelated list state', () => {
+  const mixedState = `create number total = 3
+create list jobs = ["A", "B"]
+
+window "Paint" as main size 400, 300:
+  paintbox as canvas at 20, 20 size 200, 160
+
+when canvas paint:
+  if total > 0:
+    draw text total at 10, 10 color #111111 size 14
+`;
+  const ir = buildNativeGuiIRV16(compile(mixedState, { name: 'NativePaintBoxMixedState', kind: 'window' }));
+  assert.equal(flattenNativeGuiControlsV16(ir).find(control => control.id === 'canvas').type, 'paintbox');
+});
+
+test('native PaintBox expressions fail closed on list references and out-of-scope count', () => {
+  const listReference = `create list jobs = ["A", "B"]
+window "Paint" as main size 400, 300:
+  paintbox as canvas at 20, 20 size 200, 160
+when canvas paint:
+  draw text jobs at 10, 10 color #111111 size 14
+`;
+  assert.throws(
+    () => buildNativeGuiIRV16(compile(listReference, { name: 'NativePaintBoxListReference', kind: 'window' })),
+    /unsupported type 'list'/i
+  );
+
+  const badCount = `window "Paint" as main size 400, 300:
+  paintbox as canvas at 20, 20 size 200, 160
+when canvas paint:
+  draw text count at 10, 10 color #111111 size 14
+`;
+  assert.throws(
+    () => buildNativeGuiIRV16(compile(badCount, { name: 'NativePaintBoxBadCount', kind: 'window' })),
+    /available only inside a repeat body/i
+  );
+});
+
 test('Native GUI IR 1.6 rejects runtime paint events and malformed programs', () => {
   const ir = buildNativeGuiIRV16(compile(source, { name: 'NativePaintBoxInvalid', kind: 'window' }));
   const badEvent = structuredClone(ir);
