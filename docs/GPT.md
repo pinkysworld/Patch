@@ -2,7 +2,7 @@
 
 Living briefing for ChatGPT, Grok and other coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-28** by Grok on `grok/rad-window-icon-r1`.
+Last refreshed: **2026-08-28** by Grok on `grok/rad-window-icon-r1` ([#272](https://github.com/pinkysworld/Patch/pull/272)).
 
 ## What Patch is
 
@@ -33,7 +33,7 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 ## Collaboration
 
 - GPT branches: `gpt/...`. Current RAD PR: [#268](https://github.com/pinkysworld/Patch/pull/268) `gpt/rad-imagelist-r1`.
-- Grok branches: `grok/...` when the work is a separate slice. Current stacked PRs: [#269](https://github.com/pinkysworld/Patch/pull/269) Picture display, [#270](https://github.com/pinkysworld/Patch/pull/270) native Picture formats, [#271](https://github.com/pinkysworld/Patch/pull/271) Button ImageList consumer, then `grok/rad-window-icon-r1`.
+- Grok branches: `grok/...` when the work is a separate slice. Current stacked PRs: [#269](https://github.com/pinkysworld/Patch/pull/269) Picture display, [#270](https://github.com/pinkysworld/Patch/pull/270) native Picture formats, [#271](https://github.com/pinkysworld/Patch/pull/271) Button ImageList consumer, [#272](https://github.com/pinkysworld/Patch/pull/272) Window/application icons.
 - Tracking issue: [#247](https://github.com/pinkysworld/Patch/issues/247) RAD R1.
 - After every slice: tests, docs, public site copy, this file, and regenerate `docs/COMPONENT_CAPABILITY_MATRIX.md`.
 - Do not merge stale planning PRs [#245](https://github.com/pinkysworld/Patch/pull/245) / [#246](https://github.com/pinkysworld/Patch/pull/246); the canonical plans now live in `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
