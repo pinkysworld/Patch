@@ -147,7 +147,7 @@ static void PatchPaintDrawNodeV18(Graphics& g, const PatchPaintNodeV18& node, in
   }
 }
 
-static void PatchPaintBoxV18(Graphics& g, const PatchPaintBoxV18& item, int width, int height) {
+static void PatchRenderPaintBoxV18(Graphics& g, const PatchPaintBoxV18& item, int width, int height) {
   PatchPaintMetricsV17 metrics;
   PatchPaintBoxV17 box;
   box.width = item.width;
@@ -169,7 +169,7 @@ static LRESULT CALLBACK PatchPaintBoxWndProcV18(HWND hwnd, UINT msg, WPARAM wPar
     const PatchPaintBoxV18* item = PatchPaintBoxForNativeIndexV18(gPatchPaintImageBoxesV18, nativeIndex);
     if (item) {
       Graphics g(hdc);
-      PatchPaintBoxV18(g, *item, client.right - client.left, client.bottom - client.top);
+      PatchRenderPaintBoxV18(g, *item, static_cast<int>(client.right - client.left), static_cast<int>(client.bottom - client.top));
     }
     EndPaint(hwnd, &ps);
     return 0;
@@ -202,7 +202,9 @@ static bool PatchInstallPaintImageBoxesV18(HINSTANCE instance) {
     RECT rect{}; if (!GetWindowRect(host, &rect)) return false;
     POINT points[2] = {{rect.left, rect.top}, {rect.right, rect.bottom}};
     MapWindowPoints(nullptr, parent, points, 2);
-    const int x = points[0].x, y = points[0].y, w = std::max(1, points[1].x - points[0].x), h = std::max(1, points[1].y - points[0].y);
+    const int x = static_cast<int>(points[0].x), y = static_cast<int>(points[0].y);
+    const int w = std::max(1, static_cast<int>(points[1].x - points[0].x));
+    const int h = std::max(1, static_cast<int>(points[1].y - points[0].y));
     HWND native = CreateWindowExW(0, L"PatchPaintBoxV18", L"", WS_CHILD | WS_VISIBLE, x, y, w, h, parent, nullptr, instance, nullptr);
     if (!native) return false;
     SetWindowLongPtrW(native, GWLP_USERDATA, (LONG_PTR)item.nativeIndex);
@@ -227,7 +229,10 @@ static void PatchRefreshPaintImageBoxesV18() {
     if (parent && GetWindowRect(host, &rect)) {
       POINT points[2] = {{rect.left, rect.top}, {rect.right, rect.bottom}};
       MapWindowPoints(nullptr, parent, points, 2);
-      MoveWindow(native, points[0].x, points[0].y, std::max(1, points[1].x - points[0].x), std::max(1, points[1].y - points[0].y), TRUE);
+      const int x = static_cast<int>(points[0].x), y = static_cast<int>(points[0].y);
+      const int w = std::max(1, static_cast<int>(points[1].x - points[0].x));
+      const int h = std::max(1, static_cast<int>(points[1].y - points[0].y));
+      MoveWindow(native, x, y, w, h, TRUE);
     }
     bool visible = true;
     if (c.parentTabIndex >= 0 && c.parentTabIndex < (int)gControls.size()) visible = gControls[(size_t)c.parentTabIndex].selectedPage == c.pageIndex;
