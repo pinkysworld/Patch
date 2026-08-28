@@ -8,7 +8,11 @@
 
 static std::vector<PatchPaintBoxV18> gPatchPaintImageBoxesV18;
 static std::vector<HWND> gPatchPaintImageHwndsV18;
-static std::map<std::string, Image*> gPatchPaintImagesV18;
+struct PatchPaintImageCacheEntryV18 {
+  Image* image = nullptr;
+  IStream* stream = nullptr;
+};
+static std::map<std::string, PatchPaintImageCacheEntryV18> gPatchPaintImagesV18;
 static ATOM gPatchPaintBoxClassV18 = 0;
 
 static bool ReadSelfPayloadV18(std::vector<uint8_t>& payload) {
@@ -27,10 +31,10 @@ static bool ReadSelfPayloadV18(std::vector<uint8_t>& payload) {
 
 static Image* PatchPaintCachedImageV18(const std::string& source) {
   auto it = gPatchPaintImagesV18.find(source);
-  if (it != gPatchPaintImagesV18.end()) return it->second;
+  if (it != gPatchPaintImagesV18.end()) return it->second.image;
   PatchPictureDataV15 picture;
   if (!PatchDecodePictureDataUriV15(source, picture) || picture.bytes.empty()) {
-    gPatchPaintImagesV18[source] = nullptr;
+    gPatchPaintImagesV18[source] = {};
     return nullptr;
   }
   HGLOBAL heap = GlobalAlloc(GMEM_MOVEABLE, picture.bytes.size());
@@ -42,18 +46,22 @@ static Image* PatchPaintCachedImageV18(const std::string& source) {
   IStream* stream = nullptr;
   if (CreateStreamOnHGlobal(heap, TRUE, &stream) != S_OK || !stream) { GlobalFree(heap); return nullptr; }
   Image* image = Image::FromStream(stream);
-  stream->Release();
-  if (!image || image->GetLastStatus() != Ok) {
+  if (!image || image->GetLastStatus() != Ok || image->GetWidth() == 0 || image->GetHeight() == 0) {
     delete image;
-    gPatchPaintImagesV18[source] = nullptr;
+    stream->Release();
+    gPatchPaintImagesV18[source] = {};
     return nullptr;
   }
-  gPatchPaintImagesV18[source] = image;
+  // GDI+ requires the source stream to remain alive for the Image lifetime.
+  gPatchPaintImagesV18[source] = {image, stream};
   return image;
 }
 
 static void PatchDestroyPaintImagesV18() {
-  for (auto& item : gPatchPaintImagesV18) delete item.second;
+  for (auto& item : gPatchPaintImagesV18) {
+    delete item.second.image;
+    if (item.second.stream) item.second.stream->Release();
+  }
   gPatchPaintImagesV18.clear();
 }
 
@@ -245,7 +253,10 @@ static int RunPatchPaintBoxImageSmokeV18() {
   for (const auto& item : gPatchPaintImageBoxesV18) {
     HWND native = gPatchPaintImageHwndsV18[(size_t)item.nativeIndex];
     if (!native) return code++;
-    if (!PatchPaintCachedImageV18("") && item.program.empty()) return code++;
+    const std::string* source = PatchPaintFirstImageSourceV18(item.program);
+    if (!source) return code++;
+    Image* image = PatchPaintCachedImageV18(*source);
+    if (!image || image->GetLastStatus() != Ok || image->GetWidth() == 0 || image->GetHeight() == 0) return code++;
   }
   return 0;
 }
