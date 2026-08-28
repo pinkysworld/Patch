@@ -65,8 +65,8 @@ public:
     return out;
   }
   bool done() const { return off_ == size_; }
-  PatchPaintNodeV18 readNode(int& remaining) {
-    if (--remaining < 0) throw 1;
+  PatchPaintNodeV18 readNode(int& remaining, int depth) {
+    if (depth > 32 || --remaining < 0) throw 1;
     PatchPaintNodeV18 node;
     node.kind = u32();
     if (node.kind == PATCH_PAINT_DRAW_V18) {
@@ -88,22 +88,24 @@ public:
     }
     if (node.kind == PATCH_PAINT_IF_V18) {
       node.expr = text();
-      node.thenBody = readProgram(remaining);
-      node.elseBody = readProgram(remaining);
+      node.thenBody = readProgram(remaining, depth + 1);
+      node.elseBody = readProgram(remaining, depth + 1);
       return node;
     }
     if (node.kind == PATCH_PAINT_REPEAT_V18) {
       node.expr = text();
-      node.body = readProgram(remaining);
+      node.body = readProgram(remaining, depth + 1);
       return node;
     }
     throw 1;
   }
-  std::vector<PatchPaintNodeV18> readProgram(int& remaining) {
+  std::vector<PatchPaintNodeV18> readProgram(int& remaining, int depth = 0) {
+    if (depth > 32) throw 1;
     uint32_t count = u32();
+    if (count > (uint32_t)std::max(remaining, 0)) throw 1;
     std::vector<PatchPaintNodeV18> nodes;
     nodes.reserve(count);
-    for (uint32_t index = 0; index < count; ++index) nodes.push_back(readNode(remaining));
+    for (uint32_t index = 0; index < count; ++index) nodes.push_back(readNode(remaining, depth));
     return nodes;
   }
 private:
@@ -121,7 +123,7 @@ static bool PatchConvertPayloadV17ToV16(const std::vector<uint8_t>& input, std::
     if (std::memcmp(input.data() + trailer, "PIMG", 4) != 0) return false;
     const uint8_t* p = input.data() + trailer + 4;
     uint32_t extLen = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-    if ((size_t)extLen > trailer) return false;
+    if ((size_t)extLen > trailer || extLen > 16u * 1024u * 1024u) return false;
     const size_t extStart = trailer - (size_t)extLen;
     if (extStart == 0) return false;
     payloadV16.assign(input.begin(), input.begin() + (std::ptrdiff_t)extStart);
@@ -151,6 +153,21 @@ static bool PatchConvertPayloadV17ToV16(const std::vector<uint8_t>& input, std::
 
 static const PatchPaintBoxV18* PatchPaintBoxForNativeIndexV18(const std::vector<PatchPaintBoxV18>& overlays, int nativeIndex) {
   for (const auto& item : overlays) if (item.nativeIndex == nativeIndex) return &item;
+  return nullptr;
+}
+
+static const std::string* PatchPaintFirstImageSourceV18(const std::vector<PatchPaintNodeV18>& nodes, int depth = 0) {
+  if (depth > 32) return nullptr;
+  for (const auto& node : nodes) {
+    if (node.kind == PATCH_PAINT_DRAW_V18 && node.operation == PATCH_PAINT_IMAGE_V18 && !node.source.empty()) return &node.source;
+    if (node.kind == PATCH_PAINT_IF_V18) {
+      if (const std::string* source = PatchPaintFirstImageSourceV18(node.thenBody, depth + 1)) return source;
+      if (const std::string* source = PatchPaintFirstImageSourceV18(node.elseBody, depth + 1)) return source;
+    }
+    if (node.kind == PATCH_PAINT_REPEAT_V18) {
+      if (const std::string* source = PatchPaintFirstImageSourceV18(node.body, depth + 1)) return source;
+    }
+  }
   return nullptr;
 }
 
