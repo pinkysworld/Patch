@@ -73,10 +73,10 @@ test('Button image resolution is Form-scoped and names the missing list or item'
   );
 });
 
-test('native GUI 1.4 reports Button image bindings instead of silently dropping them', () => {
+test('current native GUI reports Button image bindings instead of silently dropping them', () => {
   assert.equal(nativeButtonImageUnsupportedMessage({ imageListId: null, imageItem: null }), null);
   assert.match(
     nativeButtonImageUnsupportedMessage({ imageListId: 'app_images', imageItem: 'open' }, 3),
-    /line 3: native GUI 1.4 Button does not transport image app_images.open/
+    /line 3: native GUI Button does not transport image app_images.open/
   );
 });
