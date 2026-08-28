@@ -88,7 +88,9 @@ Multi-Form projects keep all Form shells structurally present but render only th
 
 ## Structural editors
 
-Table, TreeView and Tabs structural editors rewrite the selected source block directly and validate the result before accepting it. Current workflows cover common add/edit/reorder/duplicate/remove operations. Table row selection and TreeView path selection remain transient event values unless a handler explicitly commits them through `change`.
+Table, TreeView and Tabs structural editors rewrite the selected source block directly and validate the result before accepting it. Current workflows cover common add/edit/reorder/duplicate/remove operations.
+
+**Table: text-list for the selected row.** The selected Table row is a transient event value in Studio App Preview, Standalone Web and supported native paths. TreeView likewise exposes its selected root-to-node path as a transient text-list. Neither becomes persistent application state unless a handler explicitly commits the event value through `change`.
 
 Panel Stage 1 is a source-backed visual group with structural child editing. It does not yet claim Delphi-style independent nested coordinates, clipping or native child-container semantics; those belong to Panel Stage 2.
 
