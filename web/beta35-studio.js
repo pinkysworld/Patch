@@ -382,3 +382,61 @@ if (sample && code && projectKind) {
   try { hasSavedProject = Boolean(localStorage.getItem('patchStudio.project')); } catch { /* storage can be unavailable */ }
   if (!hasSavedProject && sample.value === 'workshopDesk') queueMicrotask(loadSelectedSample);
 }
+
+// Multi-Form projects can contain hundreds of controls. Keep every Form in the
+// source-backed DOM so structural adapters and selection indices stay stable,
+// but let the browser fully render only the active Form. The Form selector is
+// already the canonical active-Form control used by forms-designer.js.
+queueMicrotask(installActiveFormRendering);
+
+function installActiveFormRendering() {
+  const canvas = document.querySelector('#designerCanvas');
+  if (!canvas || canvas.dataset.patchActiveFormRendering === 'true') return;
+
+  const attach = () => {
+    const select = document.querySelector('#patchFormSelect');
+    if (!select) return false;
+    canvas.dataset.patchActiveFormRendering = 'true';
+
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      queueMicrotask(() => {
+        queued = false;
+        syncActiveFormRendering(canvas, select);
+      });
+    };
+
+    select.addEventListener('change', schedule);
+    canvas.addEventListener('patch-designer-selection-change', schedule);
+    code?.addEventListener('input', schedule);
+    code?.addEventListener('change', schedule);
+    new MutationObserver(schedule).observe(canvas, { childList: true, subtree: true });
+    schedule();
+    return true;
+  };
+
+  if (attach()) return;
+  const observer = new MutationObserver(() => {
+    if (!attach()) return;
+    observer.disconnect();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function syncActiveFormRendering(canvas, select) {
+  const shells = [...canvas.querySelectorAll(':scope .patch-window')];
+  if (!shells.length) return;
+  const requested = Number(select.value);
+  const active = Number.isInteger(requested)
+    ? Math.max(0, Math.min(requested, shells.length - 1))
+    : 0;
+
+  shells.forEach((shell, index) => {
+    const isActive = index === active;
+    shell.hidden = !isActive;
+    shell.dataset.patchDesignerFormDetail = isActive ? 'full' : 'deferred';
+  });
+  canvas.dataset.patchDesignerActiveForm = String(active);
+}
