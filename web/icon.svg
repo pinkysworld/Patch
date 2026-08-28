@@ -1,6 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Patch Studio icon">
-  <rect width="512" height="512" rx="112" fill="#15171c"/>
-  <path d="M142 116h126c82 0 132 42 132 112 0 72-52 116-137 116h-45v72h-76V116Zm76 64v101h46c38 0 59-18 59-51 0-32-21-50-59-50h-46Z" fill="#ffffff"/>
-  <circle cx="371" cy="371" r="49" fill="#ffffff"/>
-  <path d="M349 371h44M371 349v44" stroke="#15171c" stroke-width="16" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="128" fill="#15171c"/>
+  <g fill="none" stroke="#ffffff" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M170 400V121"/>
+    <path d="M170 121h103c88 0 143 43 143 119s-55 119-143 119H170"/>
+  </g>
+  <circle cx="382" cy="382" r="46" fill="#ffffff"/>
+  <path d="M361 382h42M382 361v42" stroke="#15171c" stroke-width="14" stroke-linecap="round"/>
 </svg>
