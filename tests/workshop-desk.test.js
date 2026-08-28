@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
-import { upgradeWorkshopDeskSource } from '../web/studio-dom-sync.js';
+import { upgradeWorkshopDeskSource, WORKSHOP_DESK_CURRENT_SAMPLE_VERSION } from '../web/studio-dom-sync.js';
 
 const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
@@ -19,7 +19,8 @@ function embeddedWorkshopBaseline() {
   return match[1];
 }
 
-test('Workshop Desk compiles, runs and the Studio upgrades its compatibility sample to the canonical example', () => {
+test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to the canonical current example', () => {
+  assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.4');
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
   assert.match(studioModule, /sample\.value === 'workshopDesk'/);
   assert.equal(
@@ -43,7 +44,7 @@ test('Workshop Desk compiles, runs and the Studio upgrades its compatibility sam
   assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);
 });
 
-test('Workshop Desk exercises stateful controls, Forms, transient structural selection and Timer events', () => {
+test('Workshop Desk exercises stateful controls, Forms, transient structural selection, Picture and Timer events', () => {
   const runtime = new PatchInterpreter();
   runtime.run(example);
 
@@ -64,6 +65,9 @@ test('Workshop Desk exercises stateful controls, Forms, transient structural sel
 
   result = triggerWindowEvent(runtime, 'parts', 'changed', { value: ['Parts', 'Input', 'Keyboard'] });
   assert.equal(result.state.status, 'Inventory tree path selected');
+
+  result = triggerWindowEvent(runtime, 'workshop_logo', 'clicked');
+  assert.equal(result.state.status, 'Workshop mark clicked');
 
   result = triggerWindowEvent(runtime, 'workshop_clock', 'ticked');
   assert.equal(result.state.heartbeat, 1);
@@ -104,15 +108,19 @@ test('Workshop Desk exercises stateful controls, Forms, transient structural sel
   assert.equal(result.state.status, 'Ticket reset');
 });
 
-test('Workshop Desk covers the current native-ready RAD control surface without hidden unsupported app state', () => {
+test('Workshop Desk covers every integrated cross-platform Ready component without hidden unsupported app state', () => {
   for (const marker of [
     'window "Workshop Desk" as main',
     'window "Workshop settings" as settings',
     'window "Job details" as details',
-    'input item', 'combo "', 'radio "', 'checkbox "', 'slider ', 'listbox "',
+    'text "Workshop Desk"', 'input item', 'combo "', 'radio "', 'checkbox "', 'slider ', 'listbox "',
     'table "Ticket", "Customer", "Bench", "State" as board',
     'tree as parts', 'tabs as prefs', 'statusbar "{status}" as desk_status',
-    'panel as runtime_panel', 'shape rounded as runtime_shape', 'timer as workshop_clock interval 5000',
+    'picture as workshop_logo from "data:image/png;base64,',
+    'panel as runtime_panel', 'shape rounded as runtime_shape', 'paintbox as ticket_canvas',
+    'timer as workshop_clock interval 5000', 'when ticket_canvas paint:',
+    'draw clear #f8fafc', 'draw rectangle 12, 12', 'draw ellipse 146, 12', 'draw line 12, 58',
+    'draw text "Live quote"', 'draw text ticket_state',
     'button "Mark ready" as complete_button', 'create number ticket_total = 40',
     'open settings', 'open details', 'close settings', 'close details',
     '# @layout anchor left right bottom'
@@ -120,9 +128,10 @@ test('Workshop Desk covers the current native-ready RAD control surface without 
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
   assert.doesNotMatch(example, /change selected_(?:job|part)/);
   assert.doesNotMatch(example, /create thing ticket:|do quote\(|allow quote:|change ticket:/);
+  assert.doesNotMatch(example, /imagelist as|\bicon\s+"patch-resource:/, 'native-fail-closed resource consumers stay out of the Ready acceptance source');
 });
 
-test('Workshop Desk builds as a Standalone Window Web App with the current visual controls', () => {
+test('Workshop Desk builds as a Standalone Window Web App with Picture and PaintBox', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-workshop-web-'));
   const outputPath = path.join(tempDir, 'WorkshopDesk-test.html');
   try {
@@ -138,6 +147,9 @@ test('Workshop Desk builds as a Standalone Window Web App with the current visua
     assert.match(built, /Mark ready/);
     assert.match(built, /runtime_shape/);
     assert.match(built, /workshop_clock/);
+    assert.match(built, /workshop_logo/);
+    assert.match(built, /ticket_canvas/);
+    assert.match(built, /data:image\/png;base64/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

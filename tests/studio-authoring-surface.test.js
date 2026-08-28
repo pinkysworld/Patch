@@ -66,7 +66,7 @@ test('current Studio authoring surface explicitly separates future work from cur
   assert.match(surface, /complete current authoring surface for the \*\*existing Patch UI\/control vocabulary\*\*/);
   assert.match(surface, /new\/richer data controls beyond the current Table, ListBox and TreeView vocabulary/);
   assert.match(surface, /Memo\/TextArea, ProgressBar, Number\/SpinEdit/);
-  assert.match(surface, /Undo\/Redo transactions/);
+  assert.match(surface, /Undo\/Redo (?:history|transactions)/);
   assert.match(surface, /manual assistive-technology verification with Narrator, VoiceOver, Orca/);
   assert.match(surface, /makes no WCAG conformance claim/);
   assert.match(surface, /distribution work such as installer\/uninstaller formats/);
