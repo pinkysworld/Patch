@@ -10,9 +10,9 @@ Patch Studio currently tracks:
 - Change IR **0.10**;
 - Studio project bundle **v4**;
 - Component Registry **0.8**;
-- Native GUI IR **1.6**;
-- sealed payload **v16**;
-- Ready/offline desktop runtime **v1.7** on Windows, macOS and Linux;
+- Native GUI IR **1.7**;
+- sealed payload **v17**;
+- Ready/offline desktop runtime **v1.8** on Windows, macOS and Linux;
 - formal runtime-correspondence milestone **beta.32**.
 
 Product/native/RAD work after beta.32 does not widen that formal claim.
@@ -104,7 +104,7 @@ when refresh_clock ticked:
   show "tick"
 ```
 
-ImageList is an ordered collection of named project-resource references. The Object Inspector can edit logical size and add/replace/rename/reorder/remove entries through the Resource Manager. Buttons may bind one item with `image list.item` on Studio and Standalone Web. Current Native GUI IR 1.6 deliberately fails closed for ImageList/Button-image bindings.
+ImageList is an ordered collection of named project-resource references. The Object Inspector can edit logical size and add/replace/rename/reorder/remove entries through the Resource Manager. Buttons may bind one item with `image list.item` on Studio and Standalone Web. Current Native GUI IR 1.7 deliberately fails closed for ImageList/Button-image bindings.
 
 ## Picture
 
@@ -114,7 +114,7 @@ Native Ready Picture follows `native-picture-formats/1.0`: PNG/JPEG are supporte
 
 ## Shape
 
-Shape supports rectangle, rounded rectangle, ellipse and line with fill, stroke, stroke width, radius and opacity. Studio, Standalone Web and current Ready Windows/macOS/Linux support Shape. Native GUI IR 1.5 introduced the Shape transport; current IR 1.6 / payload v16 / runtime v1.7 preserves it.
+Shape supports rectangle, rounded rectangle, ellipse and line with fill, stroke, stroke width, radius and opacity. Studio, Standalone Web and current Ready Windows/macOS/Linux support Shape. Native GUI IR 1.5 introduced the Shape transport; current IR 1.7 / payload v17 / runtime v1.8 preserves it.
 
 ## PaintBox
 
@@ -127,12 +127,13 @@ when canvas paint:
   draw clear #ffffff
   draw rectangle 10, 12 size 100, 50 fill #ff0000 stroke #000000 width 2
   draw line 0, 0 to 100, 100 stroke #000000 width 1
+  draw image "patch-resource:app.logo" at 140, 12 size 48, 48
   draw text "Ready" at 20, 100 color #111827 size 16
 ```
 
-The `paint` handler is pure UI drawing. Persistent `change` operations are rejected inside it. Studio, Standalone Web and current Ready Windows/macOS/Linux implement `clear`, `line`, `rectangle`, `ellipse` and `text` through Native GUI IR **1.6**, payload **v16** and runtime **v1.7**.
+The `paint` handler is pure UI drawing. Persistent `change` operations are rejected inside it. Studio, Standalone Web and current Ready Windows/macOS/Linux implement `clear`, `line`, `rectangle`, `ellipse`, `text` and `draw image`. The image operation was added by Native GUI IR **1.7**, payload **v17** and runtime **v1.8** while the previous five-operation PaintBox Stage 1 contract remains frozen at 1.6/v16/v1.7.
 
-Native PaintBox expressions intentionally use a bounded subset: literals, `count` inside `repeat`, and simple number/text/boolean state names. Invalid or unsupported state references fail closed. **PaintBox `draw image` remains deferred.**
+Native PaintBox expressions intentionally use a bounded subset: literals, `count` inside `repeat`, and simple number/text/boolean state names. Invalid or unsupported state references fail closed. Native `draw image` accepts quoted `patch-resource:` or `data:` locators; PNG/JPEG are Ready under `native-picture-formats/1.0`, while native WebP/SVG fail closed.
 
 ## Window/application icons
 
@@ -142,11 +143,11 @@ Forms may declare a source-backed resource icon:
 window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
 ```
 
-Studio preview shows it in Form chrome and Standalone Web packages the first Form icon as the favicon under `window-icon/1.0`. Current Native GUI IR 1.6 fails closed for Form icons. Native `.ico`, AppKit and Linux desktop icon packaging remains an R1 gap.
+Studio preview shows it in Form chrome and Standalone Web packages the first Form icon as the favicon under `window-icon/1.0`. Current Native GUI IR 1.7 fails closed for Form icons. Native `.ico`, AppKit and Linux desktop icon packaging remains an R1 gap.
 
 ## Workshop Desk acceptance example
 
-`examples/workshop-desk.patch` is the current cross-platform Ready showcase. It deliberately uses every integrated component family that the current native Ready line can transport together: Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Panel, Shape, PaintBox, StatusBar and Timer.
+`examples/workshop-desk.patch` is the current cross-platform Ready showcase. It deliberately uses every integrated component family that the current native Ready line can transport together: Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Panel, Shape, PaintBox including `draw image`, StatusBar and Timer.
 
 It intentionally does **not** add ImageList/Button images or a Window icon to the native Ready acceptance source, because those consumers still fail closed on native targets. Their Studio/Web authoring contracts remain covered separately rather than making the showcase target-dependent.
 
@@ -158,13 +159,13 @@ It intentionally does **not** add ImageList/Button images or a Window icon to th
 
 Studio supports Standalone Web, Windows, macOS, Linux, FreeBSD Console, portable `.patchapp` and direct/bootstrap WebAssembly where applicable. The default Windows/macOS/Linux workflow is **Ready app download / offline link with no user GitHub token**. Optional cloud/AOT remains a separate advanced route.
 
-The current Ready/offline Window contract is Native GUI IR **1.6**, sealed payload **v16**, runtime **v1.7**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
+The current Ready/offline Window contract is Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
 
-The previous Shape line is 1.5/v15/v1.6, previous Chrome line 1.4/v14/v1.5, previous Slider line 1.3/v13/v1.4, and frozen TreeView line 1.2/v12/v1.3.
+The previous PaintBox Stage 1 line is 1.6/v16/v1.7, previous Shape line is 1.5/v15/v1.6, previous Chrome line is 1.4/v14/v1.5, previous Slider line is 1.3/v13/v1.4, and frozen TreeView line is 1.2/v12/v1.3.
 
 ## Offline compiler, PWA and diagnostics
 
-The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking uses payload v16/runtime v1.7. FreeBSD remains Console-only via portable C99.
+The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking uses payload v17/runtime v1.8. FreeBSD remains Console-only via portable C99.
 
 Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. Missing JavaScript/CSS/runtime requests never receive `index.html` as a substitute. Real Chrome startup/responsiveness tests exercise Studio in CI and deployment gates.
 
@@ -176,8 +177,8 @@ Recovery snapshots protect the complete v4 project including resources. Diagnost
 |---|---|---|---|
 | Picture | supported | supported | bounded PNG/JPEG + default display contract |
 | Shape | supported | supported | supported |
-| PaintBox | supported | supported | clear/line/rectangle/ellipse/text supported; `draw image` deferred |
+| PaintBox | supported | supported | clear/line/rectangle/ellipse/text + PNG/JPEG `draw image` supported |
 | ImageList | authoring | Button image consumer supported | unsupported/fail-closed |
 | Window icon | authoring | chrome + favicon supported | unsupported/fail-closed |
 
-Authoring is not runtime parity. The remaining RAD R1 gates are PaintBox `draw image`, native ImageList/Button-image transport and native application/window icon packaging. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+Authoring is not runtime parity. The remaining RAD R1 gates are native ImageList/Button-image transport and native application/window icon packaging. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
