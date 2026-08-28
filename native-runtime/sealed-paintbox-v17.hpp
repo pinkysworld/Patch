@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdlib>
+#include <cctype>
 #include <string>
 #include <vector>
 #include <set>
@@ -161,6 +162,28 @@ static bool PatchPaintUnquoteV17(const std::string& expr, std::string& out) {
   return true;
 }
 
+static bool PatchPaintSimpleIdentV17(const std::string& value) {
+  if (value.empty()) return false;
+  const unsigned char first = (unsigned char)value.front();
+  if (!(std::isalpha(first) || value.front() == '_')) return false;
+  for (size_t i = 1; i < value.size(); ++i) {
+    const unsigned char c = (unsigned char)value[i];
+    if (!(std::isalnum(c) || value[i] == '_')) return false;
+  }
+  return true;
+}
+
+static bool PatchPaintParseNumberTextV17(const std::string& value, double& out) {
+  size_t start = 0, endIndex = value.size();
+  while (start < endIndex && std::isspace((unsigned char)value[start])) ++start;
+  while (endIndex > start && std::isspace((unsigned char)value[endIndex - 1])) --endIndex;
+  if (start == endIndex) { out = 0; return true; }
+  const std::string trimmed = value.substr(start, endIndex - start);
+  char* end = nullptr;
+  out = std::strtod(trimmed.c_str(), &end);
+  return end && end != trimmed.c_str() && *end == 0 && std::isfinite(out);
+}
+
 static bool PatchPaintLookupStateV17(const std::string& name, const State*& out) {
 #ifdef _WIN32
   auto it = gStateByName.find(PatchWideV11(name));
@@ -185,9 +208,7 @@ static std::string PatchPaintNarrowV17(const std::wstring& value) {
 
 static bool PatchPaintEvalNumberV17(const std::string& expr, int loopCount, double& out) {
   if (loopCount > 0 && expr == "count") { out = (double)loopCount; return true; }
-  char* end = nullptr;
-  out = std::strtod(expr.c_str(), &end);
-  if (end && *end == 0 && std::isfinite(out)) return true;
+  if (PatchPaintParseNumberTextV17(expr, out)) return true;
   const State* state = nullptr;
   if (!PatchPaintLookupStateV17(expr, state)) return false;
   if (state->type == ST_NUMBER) { out = state->number; return std::isfinite(out); }
@@ -198,9 +219,7 @@ static bool PatchPaintEvalNumberV17(const std::string& expr, int loopCount, doub
 #else
     const std::string& text = state->text;
 #endif
-    char* textEnd = nullptr;
-    out = std::strtod(text.c_str(), &textEnd);
-    return textEnd && *textEnd == 0 && std::isfinite(out);
+    return PatchPaintParseNumberTextV17(text, out);
   }
   return false;
 }
@@ -208,12 +227,15 @@ static bool PatchPaintEvalNumberV17(const std::string& expr, int loopCount, doub
 static bool PatchPaintEvalBoolV17(const std::string& expr, int loopCount, bool& out) {
   if (expr == "true") { out = true; return true; }
   if (expr == "false") { out = false; return true; }
-  if (loopCount > 0 && expr == "count") { out = loopCount != 0; return true; }
-  double number = 0;
-  if (PatchPaintEvalNumberV17(expr, loopCount, number)) { out = number != 0; return true; }
+  if (loopCount > 0 && expr == "count") { out = true; return true; }
+
+  double literal = 0;
+  if (PatchPaintParseNumberTextV17(expr, literal)) { out = literal != 0; return true; }
+
   const State* state = nullptr;
   if (!PatchPaintLookupStateV17(expr, state)) return false;
   if (state->type == ST_BOOLEAN) { out = state->boolean; return true; }
+  if (state->type == ST_NUMBER) { out = state->number != 0; return std::isfinite(state->number); }
   if (state->type == ST_TEXT) {
 #ifdef _WIN32
     out = !state->text.empty();
@@ -229,16 +251,17 @@ static bool PatchPaintEvalTextV17(const std::string& expr, int loopCount, std::s
   if (PatchPaintUnquoteV17(expr, out)) return true;
   if (loopCount > 0 && expr == "count") { out = std::to_string(loopCount); return true; }
   double number = 0;
-  char* end = nullptr;
-  number = std::strtod(expr.c_str(), &end);
-  if (end && *end == 0 && std::isfinite(number)) {
+  if (PatchPaintParseNumberTextV17(expr, number)) {
     std::ostringstream stream;
     stream << number;
     out = stream.str();
     return true;
   }
   const State* state = nullptr;
-  if (!PatchPaintLookupStateV17(expr, state)) return false;
+  if (!PatchPaintLookupStateV17(expr, state)) {
+    if (PatchPaintSimpleIdentV17(expr)) { out = expr; return true; }
+    return false;
+  }
 #ifdef _WIN32
   out = PatchPaintNarrowV17(StateText(*state));
 #else
