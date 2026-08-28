@@ -69,8 +69,8 @@ requireAll('RAD multi-selection', multi, [
 
 const beta36 = read('docs/BETA36.md');
 requireAll('beta36 milestone', beta36, [
-  'Patch 0.2.0-beta.36','Native GUI IR `1.4`','sealed payload `v14`','desktop runtime `v1.5`','offline-compiler-v0.2',
-  'align left / right','make same width / height','distribute horizontally / vertically'
+  'Patch 0.2.0-beta.36','Native GUI IR: `1.4`','sealed payload: `v14`','desktop runtime: `v1.5`','offline compiler line: `offline-compiler-v0.2`',
+  'multi-select alignment and center operations','same width/height','equal horizontal/vertical distribution'
 ]);
 
 const audit = read('docs/GROK_REVIEW_2026-08-25.md');
