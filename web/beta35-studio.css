@@ -2,20 +2,40 @@
   width: min(1720px, 100%);
 }
 
-/* Keep the proven softer Patch P and remove the square-badge impression. The
-   generated site rewrites the legacy 22x22 source mark to the earlier 32x32
-   geometry and we deliberately avoid crisp pixel rendering here. */
+/* The legacy SVG stays in the HTML for old cached-site compatibility, but the
+   visible Studio mark is drawn from two fully rounded CSS primitives. This
+   avoids the blocky/pixel P while keeping the badge compact and deterministic. */
 .brand-mark {
+  position: relative;
   border-radius: 50%;
 }
 .brand-mark svg {
-  display: block;
-  width: 24px;
-  height: 24px;
-  shape-rendering: auto;
-  transform: none;
+  display: none;
 }
-.brand-mark::before { content: none; display: none; }
+.brand-mark::before,
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+.brand-mark::before {
+  left: 7px;
+  top: 5px;
+  width: 5px;
+  height: 18px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.brand-mark::after {
+  left: 10px;
+  top: 5px;
+  width: 11px;
+  height: 8px;
+  border: 4px solid currentColor;
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+}
 
 .studio-jump {
   min-height: 36px;

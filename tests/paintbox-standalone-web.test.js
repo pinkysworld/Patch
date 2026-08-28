@@ -73,9 +73,9 @@ test('Standalone Window Web embeds the pure Canvas2D PaintBox renderer', () => {
   assert.match(built.html, /render\(\);/);
 });
 
-test('PaintBox Web support is explicit while native targets remain fail closed', () => {
+test('PaintBox Web and native Ready targets are explicit while FreeBSD remains fail closed', () => {
   assert.deepEqual(patchComponent('paintbox').targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   const built = buildStandaloneWebApp(source, { name: 'PaintBoxBoundary', kind: 'window' });
   assert.equal(built.compiled.ir.capabilities.includes('ui.paintbox'), true);

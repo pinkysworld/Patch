@@ -60,10 +60,10 @@ test('responsive accessibility-capable v0.9 remains a frozen published compatibi
   assert.match(responsiveWorkflow, /responsive-window\.patch/);
 });
 
-test('Pages consumes current Shape runtime v1.6 and frozen historical accessibility lines separately', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.6/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.6/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.6/);
+test('Pages consumes current PaintBox runtime v1.7 and frozen historical accessibility lines separately', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.7/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.7/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.7/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Win32 Runtime,/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Linux Runtime,/);
@@ -74,5 +74,7 @@ test('Pages consumes current Shape runtime v1.6 and frozen historical accessibil
   assert.match(pagesWorkflow, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pagesWorkflow, /Patch Native Sealed Slider Runtime v1\.4/);
   assert.match(pagesWorkflow, /Patch Native Sealed Chrome Runtime v1\.5/);
+  assert.match(pagesWorkflow, /Patch Native Sealed Shape Runtime v1\.6/);
+  assert.match(pagesWorkflow, /Patch Native Sealed PaintBox Runtime v1\.7/);
   assert.match(pagesWorkflow, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 });

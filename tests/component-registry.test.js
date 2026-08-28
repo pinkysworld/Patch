@@ -71,7 +71,7 @@ test('PaintBox Stage 1 exposes Studio authoring and Standalone Web while native 
   assert.deepEqual(paintbox.events, [{ name: 'paint', label: 'OnPaint', value: false }]);
   assert.equal(paintbox.designRenderer, 'paintbox');
   assert.deepEqual(paintbox.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addPaintbox')?.type, 'paintbox');
 });

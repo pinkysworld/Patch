@@ -71,11 +71,11 @@ The original list-state compatibility line remains:
 
 Current Windows, macOS and Linux Ready/offline Window builds use:
 
-- Native GUI IR **1.5**;
-- sealed payload **v15**;
-- native runtime **v1.6**.
+- Native GUI IR **1.6**;
+- sealed payload **v16**;
+- native runtime **v1.7**.
 
-Payload v15/runtime v1.6 preserves Table, persistent list/ListBox, Menu, TreeView, Slider and Chrome Stage 1 semantics while adding Shape Stage 1 transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
+Payload v16/runtime v1.7 preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 semantics while adding PaintBox Stage 1 transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
 
 Relevant additive progression:
 
@@ -86,7 +86,8 @@ Native GUI IR 1.1   persistent text-list state + multi-select ListBox
 Native GUI IR 1.2   hierarchical TreeView, preserving the 1.1 list ABI
 Native GUI IR 1.3   Slider, preserving the 1.1 list ABI
 Native GUI IR 1.4   previous Chrome Stage 1, preserving ListBox/TreeView/Slider
-Native GUI IR 1.5   current Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
+Native GUI IR 1.5   previous Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
+Native GUI IR 1.6   current PaintBox Stage 1, preserving ListBox/TreeView/Slider/Chrome/Shape
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state/multi-select line
@@ -94,14 +95,15 @@ payload v11 / runtime v1.2   frozen Menu+list line
 payload v12 / runtime v1.3   frozen TreeView-capable line
 payload v13 / runtime v1.4   previous Slider-capable line
 payload v14 / runtime v1.5   previous Chrome Ready/offline line
-payload v15 / runtime v1.6   current Ready/offline line preserving ListBox semantics
+payload v15 / runtime v1.6   previous Shape Ready/offline line
+payload v16 / runtime v1.7   current Ready/offline line preserving ListBox semantics
 ```
 
 Older payloads are not reinterpreted in place. Explicit legacy linking fails closed when a requested control/state contract is newer than the selected payload.
 
 ## Runtime integrity
 
-Patch Studio verifies current Windows/macOS/Linux runtime-v1.6 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v15/v1.6 line and retains compatibility tests for earlier payloads.
+Patch Studio verifies current Windows/macOS/Linux runtime-v1.7 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v16/v1.7 line and retains compatibility tests for earlier payloads.
 
 This protects version/byte consistency of the published Ready runtime path. It is not Authenticode, Developer ID signing or notarization.
 

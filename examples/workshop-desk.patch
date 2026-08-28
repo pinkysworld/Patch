@@ -29,6 +29,7 @@ window "Workshop Desk" as main size 1080, 700:
   text "Quantity {qty}" at 528, 58 size 130, 22
   slider 1..8 as qty step 1 at 528, 82 size 240, 38
   checkbox "Rush bench" as rush at 788, 82 size 150, 36
+  picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 958, 58 size 70, 70
 
   text "Payment" at 24, 136 size 90, 22
   radio "Card", "Cash", "Account" as pay at 24, 160 size 280, 82
@@ -66,7 +67,7 @@ window "Workshop Desk" as main size 1080, 700:
 
   text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
+  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
   timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
@@ -87,11 +88,11 @@ window "Workshop settings" as settings size 720, 520:
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
       text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
+      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
-window "Job details" as details size 640, 520:
+window "Job details" as details size 640, 560:
   text "Current workshop ticket" at 24, 24 size 300, 28
   text "Customer: {customer}" at 24, 70 size 280, 24
   text "Item: {item}" at 24, 104 size 280, 24
@@ -104,10 +105,11 @@ window "Job details" as details size 640, 520:
   panel as runtime_panel at 326, 172 size 280, 170:
     text "Native runtime pulse {heartbeat}"
     shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
-  text "{status}" at 24, 360 size 560, 28
-  button "Add inspection" as details_quote at 24, 414 size 160, 38
-  button "Mark ready" as details_ready at 202, 414 size 150, 38
-  button "Close details" as close_details at 370, 414 size 160, 38
+  paintbox as ticket_canvas at 24, 244 size 280, 120
+  text "{status}" at 24, 386 size 560, 28
+  button "Add inspection" as details_quote at 24, 470 size 160, 38
+  button "Mark ready" as details_ready at 202, 470 size 150, 38
+  button "Close details" as close_details at 370, 470 size 160, 38
 
 when customer changed:
   change customer:
@@ -165,9 +167,22 @@ when parts changed:
   change status:
     set = "Inventory tree path selected"
 
+when workshop_logo clicked:
+  change status:
+    set = "Workshop mark clicked"
+
 when workshop_clock ticked:
   change heartbeat:
     add 1
+
+when ticket_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
+  if rush:
+    draw line 12, 58 to 258, 58 stroke #dc2626 width 3
+  draw text "Live quote" at 12, 78 color #111827 size 16
+  draw text ticket_state at 126, 78 color #334155 size 16
 
 when quote_button clicked:
   change ticket_total:

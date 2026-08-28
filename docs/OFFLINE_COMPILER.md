@@ -80,14 +80,16 @@ The Windows, Linux, Apple Silicon macOS and Intel macOS jobs build/link and exec
 7. the native Slider example
 8. the Chrome Stage 1 example
 9. the Shape Stage 1 example
+10. the PaintBox Stage 1 example
 
-Every current Window smoke asserts sealed payload **v15**. The native runtime used by these jobs is built from the repository's v1.6 source on the target runner.
+Every current Window smoke asserts sealed payload **v16**. The native runtime used by these jobs is built from the repository's v1.7 source on the target runner.
 
 ## Versioned compatibility
 
 Published formats are not silently redefined:
 
-- Native GUI IR **1.5** / payload **v15** / runtime **v1.6** is the current product line
+- Native GUI IR **1.6** / payload **v16** / runtime **v1.7** is the current product line
+- Native GUI IR **1.5** / payload **v15** / runtime **v1.6** is the previous Shape compatibility line
 - Native GUI IR **1.4** / payload **v14** / runtime **v1.5** is the previous Chrome compatibility line
 - Native GUI IR **1.3** / payload **v13** / runtime **v1.4** is the Slider-capable compatibility line
 - Native GUI IR **1.2** / payload **v12** / runtime **v1.3** is the frozen TreeView line and stays Slider fail-closed
@@ -102,10 +104,10 @@ Explicitly selected older contracts continue to fail closed when source requires
 
 | Host | Console output | Window output | Local runtime requirement |
 | --- | --- | --- | --- |
-| Windows x64 | `.exe` | native Win32 `.exe`, runtime v1.6 | none for compiler |
-| macOS arm64 | `.app` | native AppKit `.app`, runtime v1.6 | none |
-| macOS Intel | portable `.app` with embedded Node + Wasm | native AppKit `.app`, runtime v1.6 | none; Intel Node ships in kit |
-| Linux x64 | executable | native GTK3 executable, runtime v1.6 | compatible system GTK3/system libraries |
+| Windows x64 | `.exe` | native Win32 `.exe`, runtime v1.7 | none for compiler |
+| macOS arm64 | `.app` | native AppKit `.app`, runtime v1.7 | none |
+| macOS Intel | portable `.app` with embedded Node + Wasm | native AppKit `.app`, runtime v1.7 | none; Intel Node ships in kit |
+| Linux x64 | executable | native GTK3 executable, runtime v1.7 | compatible system GTK3/system libraries |
 | FreeBSD x64 | executable via C99 + `cc` | unsupported | Node 22+ and `cc` |
 
 The Apple Silicon compiler binary is ad-hoc signed by the build workflow. Neither macOS distribution is claimed to be Developer ID notarized. Windows compiler releases are not claimed to be Authenticode-signed unless separate signing evidence is published.
@@ -114,13 +116,13 @@ The Apple Silicon compiler binary is ad-hoc signed by the build workflow. Neithe
 
 Windows, Linux and macOS Apple Silicon use Node single-executable application support as a launcher. `scripts/build-offline-compiler.js` embeds the exact Patch source graph plus compressed copies of a plain Node runtime and platform runtime templates. `scripts/offline-compiler-runner.cjs` extracts those assets into a content-addressed temporary cache and starts the ordinary `src/cli-entry.js`.
 
-The macOS Intel distribution deliberately remains a portable tar.gz kit with an Intel Node runtime and x86-64 AppKit runtime v1.6. The offline compiler does not maintain a second parser, compiler, Change IR implementation or native linker model.
+The macOS Intel distribution deliberately remains a portable tar.gz kit with an Intel Node runtime and x86-64 AppKit runtime v1.7. The offline compiler does not maintain a second parser, compiler, Change IR implementation or native linker model.
 
 ## Patch Studio runtime integrity
 
 The offline compiler is self-contained and does not fetch browser Ready runtime templates while linking. Its release assets are covered by `SHA256SUMS`.
 
-Patch Studio's browser Ready path has a separate integrity gate. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.5 releases, verifies every downloaded release asset against GitHub's recorded SHA-256 digest, publishes `runtime-manifest.json`, and the browser re-hashes the selected runtime with Web Crypto before sealing.
+Patch Studio's browser Ready path has a separate integrity gate. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.7 releases, verifies every downloaded release asset against GitHub's recorded SHA-256 digest, publishes `runtime-manifest.json`, and the browser re-hashes the selected runtime with Web Crypto before sealing.
 
 This validates byte consistency inside the existing GitHub Release -> Pages -> browser trust path. It remains separate from code signing/notarization.
 

@@ -14,7 +14,7 @@ import {
 
 const source = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 
-test('Workshop Desk builds on current Ready with TreeView, Slider, Panel, Timer and Shape', () => {
+test('Workshop Desk builds on current Ready across the integrated cross-platform control surface', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   const support = validateWindowRuntimeSupport(compiled, {
     allowTables: true,
@@ -22,30 +22,34 @@ test('Workshop Desk builds on current Ready with TreeView, Slider, Panel, Timer 
     allowListControls: true,
     allowMenuDecorations: true,
     allowTree: true,
-    allowSlider: true
+    allowSlider: true,
+    allowPaintBox: true
   });
 
   assert.equal(support.treeViews, 1);
   assert.equal(support.sliders, 2);
-  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.5/payload-15/runtime-1.6');
-  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.5');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 15);
-  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.6');
+  assert.equal(support.paintboxes, 1);
+  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.6/payload-16/runtime-1.7');
+  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.6');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 16);
+  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.7');
 
   const ir = buildCurrentNativeGuiIR(compiled);
   const controls = flattenCurrentNativeGuiControls(ir);
-  assert.equal(ir.version, '1.5');
+  assert.equal(ir.version, '1.6');
   assert.equal(controls.filter(control => control.type === 'tree').length, 1);
   assert.equal(controls.filter(control => control.type === 'slider').length, 2);
   assert.equal(controls.filter(control => control.type === 'timer').length, 1);
   assert.equal(controls.filter(control => control.type === 'panel').length, 1);
   assert.equal(controls.filter(control => control.type === 'shape').length, 1);
+  assert.equal(controls.filter(control => control.type === 'picture').length, 1);
+  assert.equal(controls.filter(control => control.type === 'paintbox').length, 1);
 });
 
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   assert.throws(
-    () => validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true, allowSlider: true }),
+    () => validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true, allowSlider: true, allowPaintBox: true }),
     /TreeView is not enabled for this Window target/
   );
 });

@@ -134,7 +134,7 @@ test('native GUI 1.4 fail-closes Button image bindings instead of dropping them'
   button "Open" as open_button
 `, { name: 'Plain', kind: 'window', entry: 'main.patch' });
   const ir = buildCurrentNativeGuiIR(plain);
-  assert.equal(ir.version, '1.5');
+  assert.equal(ir.version, '1.6');
   assert.equal(ir.forms[0].controls.find(control => control.type === 'button').id, 'open_button');
 });
 
