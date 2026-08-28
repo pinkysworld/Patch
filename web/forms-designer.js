@@ -49,6 +49,7 @@ function installFormTools() {
     <button id="patchAddForm" class="secondary small" type="button">+ Form</button>
     <label>Name <input id="patchFormName" spellcheck="false" aria-label="Form name"></label>
     <label>Title <input id="patchFormTitle" spellcheck="false" aria-label="Form title expression"></label>
+    <label>Icon <input id="patchFormIcon" spellcheck="false" autocomplete="off" aria-label="Form icon resource"></label>
     <label>W <input id="patchFormWidth" inputmode="numeric" aria-label="Form width"></label>
     <label>H <input id="patchFormHeight" inputmode="numeric" aria-label="Form height"></label>
     <button id="patchApplyForm" class="secondary small" type="button">Apply form</button>`;
@@ -57,6 +58,7 @@ function installFormTools() {
   const select = group.querySelector('#patchFormSelect');
   const id = group.querySelector('#patchFormName');
   const title = group.querySelector('#patchFormTitle');
+  const icon = group.querySelector('#patchFormIcon');
   const width = group.querySelector('#patchFormWidth');
   const height = group.querySelector('#patchFormHeight');
   const add = group.querySelector('#patchAddForm');
@@ -76,12 +78,12 @@ function installFormTools() {
     } catch (error) { showDesignerError(error); }
   });
   apply.addEventListener('click', applyFormProperties);
-  for (const input of [id, title, width, height]) {
+  for (const input of [id, title, icon, width, height]) {
     input.addEventListener('keydown', event => {
       if (event.key === 'Enter') { event.preventDefault(); applyFormProperties(); }
     });
   }
-  return { group, select, id, title, width, height, add, apply };
+  return { group, select, id, title, icon, width, height, add, apply };
 }
 
 function applyFormProperties() {
@@ -92,7 +94,8 @@ function applyFormProperties() {
     const changes = {
       titleExpr: formTools.title.value,
       width: formTools.width.value,
-      height: formTools.height.value
+      height: formTools.height.value,
+      iconExpr: formTools.icon.value
     };
     if (formTools.id.value.trim()) changes.id = formTools.id.value;
     const next = updateDesignerWindow(code.value, activeForm, changes);
@@ -290,7 +293,7 @@ function syncFormTools() {
   const windows = listDesignerWindows(code.value);
   if (!windows.length) {
     formTools.select.innerHTML = '<option value="0">No forms</option>';
-    for (const input of [formTools.id, formTools.title, formTools.width, formTools.height]) input.value = '';
+    for (const input of [formTools.id, formTools.title, formTools.icon, formTools.width, formTools.height]) input.value = '';
     return;
   }
   activeForm = Math.min(activeForm, windows.length - 1);
@@ -303,6 +306,7 @@ function syncFormTools() {
   const current = windows[activeForm];
   formTools.id.value = current.id ?? '';
   formTools.title.value = current.titleExpr;
+  formTools.icon.value = current.iconExpr ?? '';
   formTools.width.value = String(current.width ?? 640);
   formTools.height.value = String(current.height ?? 420);
 }

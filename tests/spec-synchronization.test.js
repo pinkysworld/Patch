@@ -23,7 +23,7 @@ test('SPEC status is synchronized exactly to the current product and Change IR',
 
 test('SPEC documents every current user-facing parser family', () => {
   const constructs = [
-    ['window', /^\s*if \(\(m = row\.text\.match\(\/\^window\\s\+/m, '## Window applications and Forms'],
+    ['window', /\^window\\b/, '## Window applications and Forms'],
     ['button', /\^button\\b/, '- `button`'],
     ['checkbox', /\^checkbox\\s\+/, '- `checkbox`'],
     ['radio', /\^radio\\s\+/, '- `radio`'],
@@ -53,6 +53,7 @@ test('SPEC documents every current user-facing parser family', () => {
   assert.match(spec, /cancelled\s+ticked\s+paint/);
   assert.match(spec, /image open from "patch-resource:icons\.open"/);
   assert.match(spec, /button "Open" as open_button image app_images.open/);
+  assert.match(spec, /icon "patch-resource:app\.icon"/);
   assert.match(spec, /ImageList is nonvisual source-backed metadata/);
 });
 
@@ -65,6 +66,7 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /WebP and SVG remain deferred/);
   assert.match(spec, /ImageList is nonvisual source-backed metadata/);
   assert.match(spec, /Native GUI IR 1\.4 still fail-closes ImageList and Button image bindings/);
+  assert.match(spec, /window-icon\/1\.0/);
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {

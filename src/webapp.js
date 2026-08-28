@@ -6,6 +6,7 @@ import { enhanceStandaloneWindowPaintBoxes } from './window-web-paintbox.js';
 import { validateStudioResources } from './studio-resources.js';
 import { PATCH_FORM_LAYOUT_VERSION, buildFormLayoutManifest } from './form-layout.js';
 import { PATCH_WINDOW_LAYOUT_POLICY_VERSION, validateWindowLayoutPolicyManifest } from './window-layout-policy.js';
+import { collectWindowIcons, selectApplicationWindowIcon } from './window-icon.js';
 
 export const PATCH_STANDALONE_WEB_VERSION = '0.2';
 const PICTURE_RESOURCE_PREFIX = 'patch-resource:';
@@ -126,10 +127,12 @@ function addStandaloneWindowPictures(built, resources = []) {
   const ast = built?.compiled?.ast ?? [];
   const pictures = hasPicture(ast);
   const buttonImages = hasButtonImage(ast);
-  if (!pictures && !buttonImages) return built;
+  const windowIcons = collectWindowIcons(ast);
+  if (!pictures && !buttonImages && !windowIcons.length) return built;
   const normalized = validateStudioResources(resources);
   if (pictures) validateStaticPictureReferences(ast, normalized);
   if (buttonImages) validateStaticButtonImageReferences(ast, normalized);
+  if (windowIcons.length) validateStaticWindowIconReferences(ast, normalized);
   const table = Object.fromEntries(normalized.map(resource => [resource.id, { mediaType: resource.mediaType, data: resource.data }]));
   const resourceJson = JSON.stringify(table).replace(/</g, '\\u003c');
   let html = String(built.html ?? '');
@@ -157,6 +160,16 @@ function addStandaloneWindowPictures(built, resources = []) {
     html = html.replace(cssNeedle, ".patch-picture{display:block;max-width:100%;max-height:100%;object-fit:contain;border:0;background:transparent}.patch-picture[role='button']{cursor:pointer}.patch-picture[role='button']:focus-visible{outline:3px solid #2563eb;outline-offset:2px}.console{padding:20px}");
   }
 
+  const applicationIcon = selectApplicationWindowIcon(ast);
+  if (applicationIcon?.locator) {
+    const href = pictureResourceDataUri(applicationIcon.locator, normalized);
+    const titleNeedle = '<title>';
+    if (!html.includes(titleNeedle)) throw new Error('Standalone Window application icon title hook is unavailable.');
+    if (!html.includes('rel="icon"')) {
+      html = html.replace(titleNeedle, `<link rel="icon" href="${escapeHtml(href)}">\n<title>`);
+    }
+  }
+
   return {
     ...built,
     html,
@@ -171,6 +184,12 @@ function addStandaloneWindowPictures(built, resources = []) {
         buttonImageStage: 1,
         buttonImageResourceModel: normalized.length ? 'embedded-project-resources' : 'quoted-source',
         buttonImageResourceCount: collectButtonImageResourceIds(ast).length
+      } : {}),
+      ...(windowIcons.length ? {
+        windowIconStage: 1,
+        windowIconPolicy: 'window-icon/1.0',
+        windowIconResourceModel: applicationIcon?.resourceId && normalized.length ? 'embedded-project-resources' : 'quoted-source',
+        windowIconCount: windowIcons.length
       } : {})
     }
   };
@@ -254,6 +273,19 @@ function validateStaticButtonImageReferences(ast, resources) {
         throw new Error(`line ${node.line ?? '?'}: Button '${node.id ?? 'unnamed'}' image ${node.imageListId}.${node.imageItem} references missing project resource '${id}'.`);
       }
     });
+  }
+}
+
+function validateStaticWindowIconReferences(ast, resources) {
+  const ids = new Set(resources.map(resource => resource.id));
+  for (const node of ast ?? []) {
+    if (node.kind !== 'window' || !node.iconExpr) continue;
+    const source = quotedPictureValue(node.iconExpr);
+    if (!source?.startsWith(PICTURE_RESOURCE_PREFIX)) continue;
+    const id = source.slice(PICTURE_RESOURCE_PREFIX.length);
+    if (!ids.has(id)) {
+      throw new Error(`line ${node.line ?? '?'}: Window '${node.id ?? 'unnamed'}' icon references missing project resource '${id}'.`);
+    }
   }
 }
 

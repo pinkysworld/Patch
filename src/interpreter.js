@@ -199,6 +199,7 @@ export class PatchInterpreter {
       id:windowNode.id??`window${index+1}`,
       visible:windowNode.id?this.formVisibility.get(windowNode.id)!==false:true,
       title:this.uiText(windowNode.titleExpr),
+      icon:windowNode.iconExpr?this.uiText(windowNode.iconExpr):'',
       controls:this.buildUIItems(windowNode.body, this.collectImageLists(windowNode.body))
     }));
   }

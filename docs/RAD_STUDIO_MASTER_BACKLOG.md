@@ -209,8 +209,7 @@ This requires a versioned drawing command contract shared by Web/Win32/AppKit/GT
 
 ## P1.6 Icons and application branding
 
-- project application icon;
-- Form/window icon;
+- source-backed Form/window `icon` and Standalone Web favicon under `window-icon/1.0` (Studio/Web);
 - Windows `.ico` packaging;
 - macOS app icon/resource packaging;
 - Linux desktop icon;

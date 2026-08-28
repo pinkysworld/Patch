@@ -57,11 +57,12 @@ These are real remaining gaps and must not be advertised as complete until their
 - [x] decide and version native SVG/WebP policy rather than broadening format support implicitly (`native-picture-formats/1.0`: Ready PNG/JPEG, deferred WebP/SVG, no IR bump)
 - [x] first ImageList consumer: Button `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images
 - [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
-- [ ] application/window icon resource and packaging contract
+- [x] application/window icon resource packaging (`window-icon/1.0`: source-backed Form icon and Web favicon; native GUI IR 1.4 fail-closes)
 - [ ] Shape native lowering/runtime parity for Win32, AppKit and GTK
 - [ ] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK
 - [ ] PaintBox `draw image` resource consumption after the image/drawing contract is versioned
 - [ ] ImageList native runtime contract only after desktop backends transport Button/ToolBar images; no empty standalone native claim
+- [ ] native application/window icon packaging for Win32 `.ico`, AppKit and Linux desktop after a versioned native contract
 
 ## RAD R2: Form Designer parity
 

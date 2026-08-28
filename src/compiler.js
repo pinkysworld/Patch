@@ -68,6 +68,7 @@ function lowerNode(node) {
     case 'window': {
       const fields = { titleExpr: node.titleExpr, body: lowerBlock(node.body) };
       if (node.id) fields.id = node.id;
+      if (node.iconExpr) fields.iconExpr = node.iconExpr;
       return op('WINDOW', node, fields);
     }
     case 'tabs':
@@ -197,6 +198,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
     if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');
     if (node.kind === 'uiControl' && node.control === 'imagelist') caps.add('ui.imagelist');
+    if (node.kind === 'window' && node.iconExpr) caps.add('ui.window-icon');
     if (node.kind === 'uiControl' && node.control === 'button' && node.imageListId && node.imageItem) caps.add('ui.button-image');
     if (node.kind === 'uiControl' && node.control === 'picture') caps.add('ui.picture');
     if (node.kind === 'uiControl' && node.control === 'shape') caps.add('ui.shape');

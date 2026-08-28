@@ -233,6 +233,17 @@ button "Open" as open_button image app_images.open
 
 Standalone Web renders the bound image on the Button. Native GUI IR 1.4 fail-closes ImageList and Button image bindings rather than silently dropping them. ToolBar/ToolButton and TreeView image bindings remain later consumers.
 
+## Window and application icons
+
+Forms may declare an optional source-backed `icon` on the window line:
+
+```patch
+window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
+  text "Hello"
+```
+
+The Object Inspector Form tools edit the quoted resource locator. Studio preview shows the icon in Form chrome. Standalone Web also packages the first Form that declares `icon` as the document favicon. Native GUI IR 1.4 has no Form icon field and fail-closes under `window-icon/1.0` rather than silently dropping the source. This slice does not add ICO/ICNS to Resource Manager and does not claim Win32 `.ico`, AppKit or Linux desktop packaging.
+
 ## Picture
 
 Picture is a first-class Graphics component with source-backed id/source/layout, fit/center/opacity/description and project-resource selection.
@@ -354,6 +365,7 @@ Patch Studio deliberately distinguishes **authoring** from **runtime support**:
 | Shape | authoring | supported | unsupported/fail-closed |
 | PaintBox | authoring | supported | unsupported/fail-closed |
 | ImageList | authoring | supported as Button image metadata | unsupported/fail-closed |
+| Window icon | authoring | supported (chrome + favicon) | unsupported/fail-closed |
 
 This table is intentionally conservative. A component is not called cross-platform Ready merely because the Designer can place it.
 
@@ -364,4 +376,4 @@ The current execution order is maintained in `docs/ROADMAP.md` and the detailed 
 - `docs/RAD_STUDIO_MASTERPLAN.md`
 - `docs/RAD_STUDIO_MASTER_BACKLOG.md`
 
-The immediate remaining R1 gates are application/window icons, native Shape/PaintBox support and a native ImageList/Button-image contract.
+The immediate remaining R1 gates are native Shape/PaintBox support, a native ImageList/Button-image contract, and native application/window icon packaging.

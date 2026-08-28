@@ -279,7 +279,8 @@ pre {
   box-shadow: 0 18px 44px rgba(24, 24, 27, .12);
 }
 .result-pane .patch-window { max-width: min(100%, 920px); }
-.patch-window-title { padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--soft); font-size: 12px; font-weight: 750; }
+.patch-window-title { padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--soft); font-size: 12px; font-weight: 750; display: flex; align-items: center; gap: 8px; }
+.patch-window-icon { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; border: 0; }
 .patch-window-body { min-height: 180px; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
 .patch-text { margin: 0; font-size: 18px; }
 .patch-button { padding: 8px 15px; display: inline-flex; align-items: center; gap: 8px; }

@@ -1,5 +1,6 @@
 import { parseMenuShortcutExpression, menuShortcutIdentity } from './menu-shortcut.js';
 import { resolveButtonImageBinding } from './button-image.js';
+import { hasWindowIcon } from './window-icon.js';
 
 export class WindowBuildError extends Error {}
 
@@ -54,6 +55,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let paintboxes = 0;
   let imageLists = 0;
   let buttonImages = 0;
+  let windowIcons = 0;
   const imageListsByForm = new Map();
 
   const idTaken = id => controls.has(id) || tabs.has(id) || menuItems.has(id) || resultDialogs.has(id);
@@ -194,6 +196,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
           }
           forms.set(node.id, node);
         }
+        if (hasWindowIcon(node)) windowIcons += 1;
         for (const child of node.body ?? []) {
           if (child.kind === 'uiControl') registerControl(child, formId);
           else if (child.kind === 'tabs') registerTabs(child, formId);
@@ -354,6 +357,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     paintboxes,
     imageLists,
     buttonImages,
+    windowIcons,
     tabs: tabs.size,
     menuItems: menuItems.size,
     menuSeparators,

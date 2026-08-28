@@ -1,6 +1,7 @@
 import { parsePatchPictureDeclaration } from './picture-source.js';
 import { parsePatchShapeDeclaration } from './shape-source.js';
 import { parsePatchButtonDeclaration } from './button-image.js';
+import { parsePatchWindowDeclaration } from './window-icon.js';
 import { parsePatchPaintCommand } from './paintbox-control.js';
 import {
   PATCH_IMAGELIST_MAX_ITEMS,
@@ -54,11 +55,14 @@ export function parse(source) {
     if (i >= lines.length || lines[i].indent <= parentIndent) return [];
     return block(lines[i].indent);
   }
-  function windowNode(row, indent, titleExpr, id, width = null, height = null) {
+  function windowNode(row, indent, parsed) {
+    const width = parsed.width;
+    const height = parsed.height;
     if (width !== null && (width < 120 || height < 80)) throw new PatchSyntaxError('A window size must be at least 120 by 80.', row.line);
-    const fields = { kind:'window', titleExpr, body:optionalChildBlock(indent), line:row.line };
-    if (id) fields.id = id;
+    const fields = { kind:'window', titleExpr: parsed.titleExpr, body:optionalChildBlock(indent), line:row.line };
+    if (parsed.id) fields.id = parsed.id;
     if (width !== null) { fields.width = width; fields.height = height; }
+    if (parsed.iconExpr) fields.iconExpr = parsed.iconExpr;
     return fields;
   }
   function tableNode(row, indent, columnsText, id, xText, yText, widthText, heightText) {
@@ -165,10 +169,16 @@ export function parse(source) {
       const fields = childBlock(indent,row).map(n=>{ if(n.kind!=='field') throw new PatchSyntaxError('A thing can only contain fields like name = "Sam".',n.line); return n; });
       return {kind:'createThing',name:m[1],fields,line:row.line};
     }
-    if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) return windowNode(row,indent,m[1],m[2],Number(m[3]),Number(m[4]));
-    if ((m = row.text.match(/^window\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*:\s*$/))) return windowNode(row,indent,m[1],m[2]);
-    if ((m = row.text.match(/^window\s+(.+?)\s+size\s+(\d+)\s*,\s*(\d+)\s*:\s*$/))) return windowNode(row,indent,m[1],null,Number(m[2]),Number(m[3]));
-    if ((m = row.text.match(/^window\s+(.+)\s*:\s*$/))) return windowNode(row,indent,m[1],null);
+    if ((m = row.text.match(/^window\b/))) {
+      if (!/:\s*$/.test(row.text)) throw new PatchSyntaxError('A window declaration must end with a colon.', row.line);
+      let parsed;
+      try {
+        parsed = parsePatchWindowDeclaration(row.text);
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+      }
+      return windowNode(row, indent, parsed);
+    }
 
     if ((m = row.text.match(/^menu\s+(.+)\s*:\s*$/))) {
       const items = childBlock(indent,row);

@@ -14,7 +14,7 @@ test('current Studio authoring surface records the complete Form lifecycle', () 
   for (const marker of [
     'add a Form',
     'select and navigate Forms',
-    'edit source-backed name, title, width and height',
+    'edit source-backed name, title, icon, width and height',
     'fit the Form to its controls',
     'duplicate the complete Form',
     'delete a Form with explicit confirmation',

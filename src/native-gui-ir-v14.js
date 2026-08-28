@@ -1,6 +1,7 @@
 import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
 import { nativePictureDisplayUnsupportedMessage } from './picture-control.js';
 import { nativeButtonImageUnsupportedMessage } from './button-image.js';
+import { nativeWindowIconUnsupportedMessage } from './window-icon.js';
 import {
   buildNativeGuiIRV13,
   validateNativeGuiIRV13,
@@ -186,6 +187,11 @@ export function toV13CompatibleV14(input) {
 }
 
 function rewriteChromeForV13Compatibility(ast, originalAst) {
+  for (const node of originalAst ?? []) {
+    if (node.kind !== 'window') continue;
+    const unsupported = nativeWindowIconUnsupportedMessage(node, node.line);
+    if (unsupported) throw new NativeGuiError(unsupported);
+  }
   const chrome = [];
   const usedNames = collectUsedNames(originalAst);
   const textStates = new Map((originalAst ?? []).filter(node => node.kind === 'create' && node.valueType === 'text').map(node => [node.name, node]));

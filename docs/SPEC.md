@@ -233,6 +233,12 @@ when add_button clicked:
     add 1
 ```
 
+An optional Form icon uses a quoted project resource. The first Form that declares `icon` is the application icon for Standalone Web:
+
+```patch
+window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
+```
+
 Named Forms can be opened and closed:
 
 ```patch
@@ -240,7 +246,7 @@ open settings
 close settings
 ```
 
-Unnamed legacy windows remain source-compatible.
+Unnamed legacy windows remain source-compatible. Optional `icon` binds a quoted project resource or image source to that Form. The first Form that declares `icon` is the application icon for Standalone Web. Native GUI IR 1.4 fail-closes window icons under `window-icon/1.0` rather than silently dropping them.
 
 ## Window controls
 
@@ -500,7 +506,7 @@ change called set add remove clear
 show why watch history undo redo preview
 if else repeat make do return
 allow may increase decrease up to
-window as size at
+window as size at icon
 text button input checkbox radio combo listbox slider step
 panel timer interval picture statusbar
 shape rectangle rounded ellipse line fill stroke stroke-width radius opacity
