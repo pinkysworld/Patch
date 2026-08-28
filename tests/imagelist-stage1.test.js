@@ -122,13 +122,13 @@ test('ImageList does not consume visible Form geometry or shift following contro
   assert.deepEqual(manifest.windows[0].controls[1], { x: 24, y: 24, width: 120, height: 36 });
 });
 
-test('ImageList Stage 1 is authoring-only and every runtime target fails closed until a consumer contract exists', () => {
+test('ImageList Stage 1 is Web metadata for Button images and remains native fail-closed', () => {
   const component = patchComponent('imagelist');
   assert.deepEqual(component.targetSupport, {
-    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
   });
   const compiled = compile(source, { name: 'ImageListBoundary', kind: 'window' });
-  assert.throws(() => validateWindowRuntimeSupport(compiled), /ImageList is authoring-only in Stage 1/);
+  assert.throws(() => validateWindowRuntimeSupport(compiled), /ImageList is not enabled for this Window target/);
   const internal = validateWindowRuntimeSupport(compiled, { allowImageList: true });
   assert.equal(internal.imageLists, 1);
   assert.equal(internal.controls, 2);

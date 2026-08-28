@@ -1,4 +1,5 @@
 import { parse } from './parser.js';
+import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
 
 export const PATCH_DESIGNER_PANEL_MODEL_VERSION = '0.1';
 export const PANEL_CHILD_TYPES = Object.freeze([
@@ -85,7 +86,19 @@ export function updateDesignerPanelChild(source, selector, changes = {}) {
     if (!(step > 0)) throw new Error('Slider step must be greater than zero.');
   }
 
-  lines[lineIndex] = `${indent}${formatChild({ type: child.type, id, textExpr, options, min, max, step })}`;
+  let imageListId = child.imageListId;
+  let imageItem = child.imageItem;
+  if (child.type === 'button') {
+    if (Object.hasOwn(changes, 'imageListId')) imageListId = changes.imageListId;
+    if (Object.hasOwn(changes, 'imageItem')) imageItem = changes.imageItem;
+    if (Object.hasOwn(changes, 'image')) {
+      const binding = parseButtonImageBinding(changes.image);
+      imageListId = binding?.imageListId ?? null;
+      imageItem = binding?.imageItem ?? null;
+    }
+  }
+
+  lines[lineIndex] = `${indent}${formatChild({ type: child.type, id, textExpr, options, min, max, step, imageListId, imageItem })}`;
   if (oldId && id !== oldId) renameEventHeaders(lines, oldId, id);
   const next = preserveTrailingNewline(source, lines.join('\n'));
   parse(next);
@@ -144,7 +157,7 @@ export function duplicateDesignerPanelChild(source, selector) {
 }
 
 function panelChild(node, windowIndex, panelIndex, childIndex) {
-  return {
+  const item = {
     windowIndex,
     panelIndex,
     childIndex,
@@ -157,11 +170,16 @@ function panelChild(node, windowIndex, panelIndex, childIndex) {
     max: node.control === 'slider' ? node.max : null,
     step: node.control === 'slider' ? node.step : null
   };
+  if (node.control === 'button' && (node.imageListId || node.imageItem)) {
+    item.imageListId = node.imageListId ?? null;
+    item.imageItem = node.imageItem ?? null;
+  }
+  return item;
 }
 
 function makeChildDeclaration(lines, type) {
   if (type === 'text') return 'text "Text"';
-  if (type === 'button') return `button "Button" as ${uniqueId(lines, 'panel_button')}`;
+  if (type === 'button') return formatPatchButtonDeclaration({ id: uniqueId(lines, 'panel_button'), textExpr: '"Button"' });
   if (type === 'input') return `input ${uniqueId(lines, 'panel_input')}`;
   if (type === 'checkbox') return `checkbox "Checkbox" as ${uniqueId(lines, 'panel_checkbox')}`;
   if (type === 'radio') return `radio "Option 1", "Option 2", "Option 3" as ${uniqueId(lines, 'panel_radio')}`;
@@ -173,7 +191,14 @@ function makeChildDeclaration(lines, type) {
 
 function formatChild(child) {
   if (child.type === 'text') return `text ${child.textExpr}`;
-  if (child.type === 'button') return `button ${child.textExpr} as ${child.id}`;
+  if (child.type === 'button') {
+    return formatPatchButtonDeclaration({
+      id: child.id,
+      textExpr: child.textExpr,
+      imageListId: child.imageListId,
+      imageItem: child.imageItem
+    });
+  }
   if (child.type === 'input') return `input ${child.id}`;
   if (child.type === 'checkbox') return `checkbox ${child.textExpr} as ${child.id}`;
   if (child.type === 'radio') return `radio ${(child.options ?? []).join(', ')} as ${child.id}`;

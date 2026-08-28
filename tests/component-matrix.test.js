@@ -28,7 +28,7 @@ test('capability matrix is generated from the canonical registry rather than a s
   const imagelist = matrix.components.find(component => component.type === 'imagelist');
   assert.equal(imagelist.visual, false);
   assert.equal(imagelist.targets.studio, 'authoring');
-  assert.equal(imagelist.targets.web, 'unsupported');
+  assert.equal(imagelist.targets.web, 'supported');
   assert.equal(imagelist.targets.windows, 'unsupported');
   const shape = matrix.components.find(component => component.type === 'shape');
   assert.equal(shape.targets.web, 'supported');

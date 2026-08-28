@@ -84,7 +84,7 @@ test('Timer remains nonvisual and carries source-backed property and OnTick cont
   assert.equal(patchComponent('button').visual, true);
 });
 
-test('ImageList is nonvisual authoring metadata and remains runtime fail-closed in Stage 1', () => {
+test('ImageList is nonvisual metadata consumed by Web Button images and remains native fail-closed', () => {
   const imagelist = patchComponent('imagelist');
   assert.equal(imagelist.type, 'imagelist');
   assert.equal(imagelist.label, 'ImageList');
@@ -95,7 +95,7 @@ test('ImageList is nonvisual authoring metadata and remains runtime fail-closed 
   assert.deepEqual(imagelist.events, []);
   assert.equal(imagelist.designRenderer, 'imagelist');
   assert.deepEqual(imagelist.targetSupport, {
-    studio: 'authoring', web: 'unsupported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addImagelist')?.type, 'imagelist');
 });
@@ -105,7 +105,7 @@ test('component registry descriptors are immutable metadata rather than a second
   assert.equal(Object.isFrozen(button), true);
   assert.equal(Object.isFrozen(button.properties), true);
   assert.equal(Object.isFrozen(button.targetSupport), true);
-  assert.deepEqual(button.properties.map(property => property.name), ['id', 'textExpr', 'x', 'y', 'width', 'height']);
+  assert.deepEqual(button.properties.map(property => property.name), ['id', 'textExpr', 'imageListId', 'imageItem', 'x', 'y', 'width', 'height']);
 });
 
 test('component registry supports category discovery without a second mutable model', () => {

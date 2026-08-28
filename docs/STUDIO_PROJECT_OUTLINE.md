@@ -24,7 +24,7 @@ The Project Tree exposes source-backed creation actions such as:
 
 The entry source is identified and cannot be deleted. Other files pass through project-v4 path/size validation before the canonical project changes.
 
-Selecting a file first synchronizes current editor text into its owning project-file record, then loads the selected source into the same editor. Editor tabs provide the same activation. The active file reports parse status and caret position as transient IDE state.
+Selecting a file first synchronizes current editor text into its owning project-file record, then loads the selected source into the same editor. The editor tabs provide the same activation. The active file reports parse status and caret position as transient IDE state.
 
 ## Symbol navigation
 

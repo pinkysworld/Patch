@@ -100,6 +100,7 @@ function install() {
   installNonvisualTray();
   installTimerInspector();
   installPictureInspector();
+  installButtonImageInspector();
 
   const shell = doc.createElement('div');
   shell.className = 'designer-component-palette';
@@ -575,6 +576,98 @@ function applyPictureChanges(changes) {
     const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
     syncPictureInspector();
+  } catch (error) {
+    showToolError(error);
+  }
+}
+
+function installButtonImageInspector() {
+  const form = doc.querySelector('#designerInspectorForm');
+  if (!form || form.querySelector('#designerInspectorButtonImageField')) return;
+  const field = doc.createElement('label');
+  field.id = 'designerInspectorButtonImageField';
+  field.className = 'inspector-field';
+  field.hidden = true;
+  field.innerHTML = 'Image <input id="designerInspectorButtonImage" list="designerInspectorButtonImageOptions" spellcheck="false" autocomplete="off" aria-describedby="designerInspectorButtonImageHint">';
+  const options = doc.createElement('datalist');
+  options.id = 'designerInspectorButtonImageOptions';
+  field.appendChild(options);
+  const hint = doc.createElement('small');
+  hint.id = 'designerInspectorButtonImageHint';
+  hint.className = 'inspector-hint';
+  hint.textContent = 'ImageList item as list.item, for example app_images.open. Empty clears the binding. Native GUI IR 1.4 fail-closes Button images.';
+  field.appendChild(hint);
+  const pictureDisplay = form.querySelector('#designerInspectorPictureDisplayFields');
+  const picture = form.querySelector('#designerInspectorPictureSourceField');
+  (pictureDisplay ?? picture ?? form.lastElementChild)?.insertAdjacentElement('afterend', field);
+
+  const input = field.querySelector('#designerInspectorButtonImage');
+  input?.addEventListener('change', applyButtonImage);
+  input?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    applyButtonImage();
+  });
+  canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncButtonImageInspector);
+  code?.addEventListener('input', syncButtonImageInspector);
+  code?.addEventListener('change', syncButtonImageInspector);
+  syncButtonImageInspector();
+}
+
+function selectedButtonControl() {
+  if (!canvas || !code) return null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  try {
+    return listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function syncButtonImageInspector() {
+  const field = doc?.querySelector('#designerInspectorButtonImageField');
+  if (!field) return;
+  const control = selectedButtonControl();
+  const isButton = control?.type === 'button';
+  field.hidden = !isButton;
+  if (!isButton) return;
+  const input = field.querySelector('#designerInspectorButtonImage');
+  const binding = control.imageListId && control.imageItem ? `${control.imageListId}.${control.imageItem}` : '';
+  if (input && doc.activeElement !== input) input.value = binding;
+  const datalist = field.querySelector('#designerInspectorButtonImageOptions');
+  if (datalist && code) {
+    const options = [];
+    try {
+      for (const item of listDesignerControls(code.value)) {
+        if (item.type !== 'imagelist') continue;
+        for (const image of item.items ?? []) options.push(`${item.id}.${image.name}`);
+      }
+    } catch {
+      options.length = 0;
+    }
+    datalist.replaceChildren(...options.map(value => {
+      const option = doc.createElement('option');
+      option.value = value;
+      return option;
+    }));
+  }
+}
+
+function applyButtonImage() {
+  if (!canvas || !code) return;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  const control = selectedButtonControl();
+  if (control?.type !== 'button') return;
+  try {
+    const next = updateDesignerControl(code.value, selection, {
+      image: doc.querySelector('#designerInspectorButtonImage')?.value ?? ''
+    });
+    setSource(next);
+    const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
+    rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    syncButtonImageInspector();
   } catch (error) {
     showToolError(error);
   }

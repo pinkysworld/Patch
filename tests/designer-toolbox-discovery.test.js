@@ -85,10 +85,12 @@ test('public Studio and offline PWA package Designer toolbox discovery assets', 
   assert.match(buildSite, /'designer-imagelist\.js'/);
   assert.match(buildSite, /'designer-imagelist\.css'/);
   assert.match(buildSite, /'imagelist-control\.js'/);
+  assert.match(buildSite, /'button-image\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.js'/);
   assert.match(sw, /'\.\/designer-toolbox\.css'/);
   assert.match(sw, /'\.\/designer-paintbox\.js'/);
   assert.match(sw, /'\.\/designer-imagelist\.js'/);
   assert.match(sw, /'\.\/designer-imagelist\.css'/);
   assert.match(sw, /'\.\.\/src\/imagelist-control\.js'/);
+  assert.match(sw, /'\.\.\/src\/button-image\.js'/);
 });

@@ -3,6 +3,7 @@ import { PATCH_FORM_CONTROL_DEFAULTS, formControlDefaultSize, isNonvisualFormCon
 import { formatPatchImageListSource, normalizeImageListDefinition } from './imagelist-control.js';
 import { applyPatchPictureProportional } from './picture-control.js';
 import { formatPatchPictureDeclaration } from './picture-source.js';
+import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
 
 const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_MARGIN = 24;
@@ -229,6 +230,10 @@ export function listDesignerControls(source) {
         item.proportional = child.proportional;
         item.legacyCaption = child.legacyCaption === true;
       }
+      if (child.kind === 'uiControl' && child.control === 'button' && (child.imageListId || child.imageItem)) {
+        item.imageListId = child.imageListId ?? null;
+        item.imageItem = child.imageItem ?? null;
+      }
       if (child.kind === 'uiControl' && child.control === 'panel') {
         item.childCount = (child.body ?? []).length;
         item.childIds = (child.body ?? []).map(nested => nested.id).filter(Boolean);
@@ -311,6 +316,14 @@ export function updateDesignerControl(source, selector, changes = {}) {
     const layout = normalizeControlLayout(control, changes);
     const indent = indentOf(lines[lineIndex]);
     lines[lineIndex] = `${indent}${formatPictureControl(control, nextId, changes, layout)}`;
+    if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
+    return preserveTrailingNewline(source, lines.join('\n'));
+  }
+
+  if (control.type === 'button') {
+    const layout = normalizeControlLayout(control, changes);
+    const indent = indentOf(lines[lineIndex]);
+    lines[lineIndex] = `${indent}${formatButtonControl(control, nextId, nextTextExpr, changes, layout)}`;
     if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
     return preserveTrailingNewline(source, lines.join('\n'));
   }
@@ -518,7 +531,7 @@ function makeControl(type, lines, layout) {
 function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
-  else if (type === 'button') core = `button ${textExpr} as ${id}`;
+  else if (type === 'button') core = formatPatchButtonDeclaration({ id, textExpr });
   else if (type === 'input') core = `input ${id}`;
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
   else if (type === 'radio') core = `radio ${(options ?? []).join(', ')} as ${id}`;
@@ -542,6 +555,19 @@ function formatTableControl(id, columns, layout) {
   const core = `table ${(columns ?? []).join(', ')} as ${id}`;
   if (!layout) return `${core}:`;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
+}
+
+function formatButtonControl(control, id, textExpr, changes, layout) {
+  let imageListId = Object.hasOwn(changes, 'imageListId') ? changes.imageListId : control.imageListId;
+  let imageItem = Object.hasOwn(changes, 'imageItem') ? changes.imageItem : control.imageItem;
+  if (Object.hasOwn(changes, 'image')) {
+    const binding = parseButtonImageBinding(changes.image);
+    imageListId = binding?.imageListId ?? null;
+    imageItem = binding?.imageItem ?? null;
+  }
+  const core = formatPatchButtonDeclaration({ id, textExpr, imageListId, imageItem });
+  if (!layout) return core;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
 }
 
 function formatPictureControl(control, id, changes, layout) {

@@ -124,6 +124,9 @@ test('RAD Object Inspector Component Palette Focus Order and R1 components are p
   assert.match(toolbox, /designerInspectorPictureSource/);
   assert.match(toolbox, /designerInspectorPictureFit/);
   assert.match(toolbox, /designerInspectorPictureDescription/);
+  assert.match(toolbox, /designerInspectorButtonImage/);
+  assert.match(buildSite, /'button-image\.js'/);
+  assert.match(sw, /'\.\.\/src\/button-image\.js'/);
   assert.match(toolbox, /import '\.\/designer-imagelist\.js'/);
   assert.match(statusbar, /import '\.\/designer-paintbox\.js'/);
   assert.doesNotMatch(statusbar, /import '\.\/designer-imagelist\.js'/);
@@ -134,6 +137,7 @@ test('RAD Object Inspector Component Palette Focus Order and R1 components are p
   assert.match(imagelist, /patchImagelistHidden/);
   assert.match(buildSite, /'component-registry\.js'/);
   assert.match(buildSite, /'imagelist-control\.js'/);
+  assert.match(buildSite, /'button-image\.js'/);
   assert.match(buildSite, /'designer-toolbox\.js'/);
   assert.match(buildSite, /'designer-paintbox\.js'/);
   assert.match(buildSite, /'designer-imagelist\.js'/);

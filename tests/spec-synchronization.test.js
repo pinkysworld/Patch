@@ -24,6 +24,7 @@ test('SPEC status is synchronized exactly to the current product and Change IR',
 test('SPEC documents every current user-facing parser family', () => {
   const constructs = [
     ['window', /^\s*if \(\(m = row\.text\.match\(\/\^window\\s\+/m, '## Window applications and Forms'],
+    ['button', /\^button\\b/, '- `button`'],
     ['checkbox', /\^checkbox\\s\+/, '- `checkbox`'],
     ['radio', /\^radio\\s\+/, '- `radio`'],
     ['combo', /\^combo\\s\+/, '- `combo`'],
@@ -51,7 +52,8 @@ test('SPEC documents every current user-facing parser family', () => {
   assert.match(parser, /clicked\|changed\|closed\|confirmed\|chosen\|cancelled\|ticked\|paint/);
   assert.match(spec, /cancelled\s+ticked\s+paint/);
   assert.match(spec, /image open from "patch-resource:icons\.open"/);
-  assert.match(spec, /ImageList Stage 1 is Studio authoring-only/);
+  assert.match(spec, /button "Open" as open_button image app_images.open/);
+  assert.match(spec, /ImageList is nonvisual source-backed metadata/);
 });
 
 test('SPEC keeps the formal claim narrower than the current language', () => {
@@ -61,7 +63,8 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline/);
   assert.match(spec, /native-picture-formats\/1\.0/);
   assert.match(spec, /WebP and SVG remain deferred/);
-  assert.match(spec, /ImageList Stage 1 is Studio authoring-only/);
+  assert.match(spec, /ImageList is nonvisual source-backed metadata/);
+  assert.match(spec, /Native GUI IR 1\.4 still fail-closes ImageList and Button image bindings/);
 });
 
 test('paper product snapshot and frozen contract stay explicit without widening beta.32', () => {
