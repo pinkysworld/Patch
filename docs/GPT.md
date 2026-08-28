@@ -2,7 +2,7 @@
 
 Living briefing for ChatGPT, Grok and other coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-28** on `grok/rad-paintbox-draw-image-r1`, after #276 merged to `main`.
+Last refreshed: **2026-08-28** by Grok on `grok/rad-imagelist-native-r1`, stacked after #277.
 
 ## What Patch is
 
@@ -18,13 +18,14 @@ Do not silently widen or flatten these labels.
 |---|---|
 | Package | `0.2.0-beta.36` |
 | Change IR | `0.10` |
-| Native GUI IR | `1.7` |
-| Sealed payload | `v17` |
-| Ready/offline runtime | `v1.8` (Windows, macOS, Linux; token-free) |
+| Native GUI IR | `1.8` |
+| Sealed payload | `v18` |
+| Ready/offline runtime | `v1.9` (Windows, macOS, Linux; token-free) |
 | Frozen TreeView line | Native GUI IR **1.2** / payload **v12** / runtime **v1.3** (Slider fail-closed) |
 | Previous Slider line | Native GUI IR **1.3** / payload **v13** / runtime **v1.4** |
 | Previous Chrome line | Native GUI IR **1.4** / payload **v14** / runtime **v1.5** |
 | Previous Shape line | Native GUI IR **1.5** / payload **v15** / runtime **v1.6** |
+| Previous PaintBox draw image line | Native GUI IR **1.7** / payload **v17** / runtime **v1.8** |
 | Previous PaintBox Stage 1 line | Native GUI IR **1.6** / payload **v16** / runtime **v1.7** |
 | Studio project | multi-file/resource bundle **v4** |
 | Component registry | **0.8** |
@@ -61,22 +62,24 @@ Completed or integrated in #277:
 - Component registry v0.8 with property/event/renderer/target metadata
 - Resource Manager Stage 1 and project bundle v4 resources
 - Picture authoring + Web embed + bounded native PNG/JPEG
-- Picture display properties and explicit `native-picture-formats/1.0`
-- Shape Stage 1 authoring + Web + native parity
-- PaintBox Stage 1 authoring + pure `paint` + Web + native clear/line/rectangle/ellipse/text parity on IR 1.6 / payload v16 / runtime v1.7
-- PaintBox `draw image` with quoted `patch-resource:` or `data:` locator, Studio/Web rendering and native PNG/JPEG transport on IR 1.7 / payload v17 / runtime v1.8
-- ImageList Stage 1 authoring and Button `image list.item` on Studio/Web
-- Window/application icon source declaration and Studio/Web favicon packaging under `window-icon/1.0`
-- generated component capability matrix
+- Picture display properties: source-backed fit/center/opacity/description, Designer/Object Inspector, Web preview; native non-default fit/center/opacity fail closed
+- Explicit native Picture format policy `native-picture-formats/1.0`: Studio/Web keep PNG/JPEG/WebP/SVG; native Ready PNG/JPEG; WebP/SVG deferred/fail-closed without an IR bump
+- Shape Stage 1 authoring + Standalone Web + native lowering/runtime parity (IR 1.5 / payload v15 / runtime v1.6)
+- PaintBox Stage 1 authoring + `paint` drawing + Standalone Web + native lowering/runtime parity (IR 1.6 / payload v16 / runtime v1.7)
+- PaintBox `draw image` resource consumption: quoted `patch-resource:` / `data:` locators, native PNG/JPEG Ready, WebP/SVG fail-closed (IR 1.7 / payload v17 / runtime v1.8)
+- ImageList Stage 1 authoring (nonvisual tray, resource-backed items)
+- First ImageList consumer: Button `image list.item` on Studio/Web
+- ImageList native runtime / Button PNG/JPEG images on IR 1.8 / payload v18 / runtime v1.9
+- Window/application icons: source-backed `icon` on the window line, Studio/Web favicon packaging under `window-icon/1.0`; native GUI still fail-closes
+- Generated component capability matrix (`patch components`, `docs/COMPONENT_CAPABILITY_MATRIX.md`)
 - complete z-order front/back/forward/backward actions, source-backed editor/Designer Undo/Redo, active-Form full-cost rendering and the 10-Form / 200-control benchmark
 - Workshop Desk current Ready acceptance source covering Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Panel, Shape, PaintBox including `draw image`, StatusBar and Timer
 
 Remaining R1 resource-consumer gaps:
 
-1. native ImageList/Button-image transport, with later ToolBar/Tree bindings sharing the same contract rather than a fake standalone ImageList claim
-2. native application/window icon packaging across Win32, AppKit and Linux desktop
+1. native application/window icon packaging for Win32 `.ico`, AppKit and Linux desktop
 
-Do not label these gaps complete until all advertised desktop backends move together and their workflows are green.
+Do not bump Native GUI IR / payload / runtime unless native backends move together. Native `.ico` / AppKit / Linux desktop icon packaging waits until those backends move together. ToolBar/TreeView image bindings can wait.
 
 ## Review corrections in #277
 
@@ -104,22 +107,35 @@ node src/cli-entry.js doctor --json
 | Path | Role |
 |---|---|
 | `src/component-registry.js` | Canonical component metadata |
-| `src/picture-control.js` / `src/picture-source.js` | Picture display and source contracts |
-| `src/button-image.js` | Button `image list.item` codec and native fail-closed boundary |
-| `src/window-icon.js` | Window/application icon codec and native fail-closed boundary |
-| `src/native-current-contract.js` | Current IR 1.7 / v17 / v1.8 facade |
+| `src/picture-control.js` | Picture display normalization, CSS and native fail-closed diagnostic |
+| `src/picture-source.js` | Picture declaration codec |
+| `src/button-image.js` | Button `image list.item` codec, Form-scoped resolve, native fail-closed diagnostic on IR 1.4–1.7 |
+| `src/window-icon.js` | Window/application `icon` codec, Web favicon selection, native fail-closed diagnostic |
+| `docs/WINDOW_ICONS.md` | `window-icon/1.0` policy |
+| `src/component-matrix.js` | Generated matrix/JSON/CLI projection |
+| `src/component-support.js` | Build-target support assessment |
+| `src/native-current-contract.js` | Current IR 1.8 / v18 / v1.9 facade |
+| `src/native-gui-ir-v18.js` | Native GUI IR 1.8 ImageList / Button image lowering |
+| `src/sealed-native-gui-v18.js` | Payload v18 ImageList trailer (`PILT`) |
 | `src/native-gui-ir-v17.js` | Native GUI IR 1.7 PaintBox `draw image` lowering |
 | `src/sealed-native-gui-v17.js` | Payload v17 PaintBox image trailer (`PIMG`) |
-| `src/native-gui-ir-v16.js` | Frozen PaintBox Stage 1 lowering |
-| `src/sealed-native-gui-v16.js` | Frozen payload v16 PaintBox trailer (`PPBX`) |
-| `src/native-picture-format-policy.js` | PNG/JPEG Ready vs WebP/SVG deferred policy |
-| `examples/workshop-desk.patch` | Current cross-platform Ready acceptance showcase; excludes native-fail-closed ImageList/Button-image and Window-icon consumers |
-| `examples/paintbox-window.patch` | Focused native PaintBox five-operation Stage 1 example |
-| `examples/paintbox-image-window.patch` | Focused native PaintBox `draw image` example |
+| `src/native-gui-ir-v16.js` | Native GUI IR 1.6 PaintBox Stage 1 lowering |
+| `src/sealed-native-gui-v16.js` | Payload v16 PaintBox trailer (`PPBX`) |
+| `src/native-gui-ir-v15.js` | Native GUI IR 1.5 Shape lowering |
+| `src/sealed-native-gui-v15.js` | Payload v15 Shape trailer (`PSHP`) |
+| `src/native-picture-format-policy.js` | `native-picture-formats/1.0` Ready PNG/JPEG vs deferred WebP/SVG |
+| `src/native-picture-resources.js` | Native Picture resource embed + format-policy enforcement |
+| `docs/NATIVE_PICTURE_FORMATS.md` | Native Picture format policy |
+| `web/` | Patch Studio site/PWA |
+| `examples/workshop-desk.patch` | Current cross-platform Ready acceptance showcase; excludes native-fail-closed Window-icon consumers |
+| `examples/shape-window.patch` | Native Shape Stage 1 rectangle/rounded/ellipse/line showcase |
+| `examples/paintbox-window.patch` | Native PaintBox Stage 1 clear/line/rectangle/ellipse/text showcase |
+| `examples/paintbox-image-window.patch` | Native PaintBox `draw image` showcase with inline PNG data URI |
+| `examples/imagelist-window.patch` | Native ImageList Button `image list.item` showcase |
 | `docs/RAD_STUDIO_MASTERPLAN.md` | Architecture |
 | `docs/RAD_STUDIO_MASTER_BACKLOG.md` | Long-term backlog |
 | `docs/ROADMAP.md` | Current remaining gates |
 
 ## Next slice
 
-After #277 is fully green and merged, the remaining R1 choices are **native ImageList/Button images** and **native application/window icons**. Keep them explicit resource-consumer contracts and move all advertised native hosts together. Do not regress the current PaintBox v1.8 line or widen the beta.32 formal claim.
+**Native window icons.** ImageList Button `image list.item` is native on IR 1.8 / payload v18 / runtime v1.9 (PNG/JPEG Ready, WebP/SVG fail-closed). Native GUI IR 1.8 still fail-closes Window icons. Do not bump Native GUI IR / payload / runtime unless native backends move together. Native `.ico`/AppKit/Linux desktop icon packaging and ToolBar/TreeView image bindings can wait.

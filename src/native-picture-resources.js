@@ -19,10 +19,10 @@ export class NativePictureResourceError extends Error {
 }
 
 /**
- * Resolve Studio project image locators into self-contained Picture and PaintBox
- * `draw image` source data URIs. The returned IR is a deep clone; the caller's
- * Native GUI IR is never mutated. Native Ready runtimes follow
- * native-picture-formats/1.0: PNG/JPEG only.
+ * Resolve Studio project image locators into self-contained Picture, PaintBox
+ * `draw image`, ImageList and Button image source data URIs. The returned IR is a
+ * deep clone; the caller's Native GUI IR is never mutated. Native Ready runtimes
+ * follow native-picture-formats/1.0: PNG/JPEG only.
  */
 export function resolveNativePictureResources(input, resources = []) {
   if (!input || typeof input !== 'object' || !Array.isArray(input.forms)) {
@@ -39,7 +39,9 @@ export function resolveNativePictureResources(input, resources = []) {
       return;
     }
     if (control?.type === 'paintbox') resolvePaintImageProgram(control, byId, resolved);
+    if (control?.type === 'button') resolveButtonImage(control, byId, resolved);
   });
+  resolveImageLists(ir, byId, resolved);
 
   return Object.freeze({
     ir,
@@ -119,6 +121,48 @@ function resolvePaintImageSource(value, controlId, byId, resolved) {
     sha256: resource.sha256,
     policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID,
     consumer: 'paintbox-image'
+  }));
+  return nativePictureResourceDataUri(resource);
+}
+
+function resolveImageLists(ir, byId, resolved) {
+  for (const list of ir.imageLists ?? []) {
+    for (const item of list.items ?? []) {
+      item.source = resolveNamedImageSource(item.source || `${PATCH_NATIVE_PICTURE_RESOURCE_PREFIX}${item.resourceId}`, `imagelist:${list.id}.${item.name}`, byId, resolved, 'imagelist');
+    }
+  }
+}
+
+function resolveButtonImage(control, byId, resolved) {
+  if (!control?.imageListId || !control?.imageItem) return;
+  const locator = control.imageSource || (control.imageResourceId ? `${PATCH_NATIVE_PICTURE_RESOURCE_PREFIX}${control.imageResourceId}` : '');
+  if (!locator) return;
+  control.imageSource = resolveNamedImageSource(locator, control.id, byId, resolved, 'button-image');
+}
+
+function resolveNamedImageSource(value, controlId, byId, resolved, consumer) {
+  const source = String(value ?? '');
+  if (!source.startsWith(PATCH_NATIVE_PICTURE_RESOURCE_PREFIX)) {
+    assertNativePictureSourceFormat(source, { controlId });
+    return source;
+  }
+  const resourceId = source.slice(PATCH_NATIVE_PICTURE_RESOURCE_PREFIX.length);
+  const resource = byId.get(resourceId);
+  if (!resource) {
+    throw new NativePictureResourceError(
+      `Native ${consumer === 'button-image' ? 'Button' : 'ImageList'} '${controlId ?? 'unnamed'}' references missing project resource '${resourceId}'.`,
+      'NATIVE_PICTURE_RESOURCE_MISSING'
+    );
+  }
+  assertNativePictureResourceMediaType(resource, controlId);
+  resolved.push(Object.freeze({
+    control: controlId ?? null,
+    resourceId,
+    mediaType: resource.mediaType,
+    size: resource.size,
+    sha256: resource.sha256,
+    policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID,
+    consumer
   }));
   return nativePictureResourceDataUri(resource);
 }

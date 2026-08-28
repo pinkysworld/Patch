@@ -51,7 +51,7 @@ Standalone Window Web renders text-backed ListBox as a single-select multi-row H
 
 ## Direct native support
 
-Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics. Current Native GUI IR **1.5** preserves that ABI while composing later TreeView, Slider, Chrome Stage 1 and Shape Stage 1 capabilities.
+Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics. Current Native GUI IR **1.8** preserves that ABI while composing later TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox and ImageList capabilities.
 
 Native mappings are:
 
@@ -71,11 +71,11 @@ The original list-state compatibility line remains:
 
 Current Windows, macOS and Linux Ready/offline Window builds use:
 
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
-- native runtime **v1.8**.
+- Native GUI IR **1.8**;
+- sealed payload **v18**;
+- native runtime **v1.9**.
 
-Payload v17/runtime v1.8 preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 semantics while adding PaintBox draw image transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
+Payload v18/runtime v1.9 preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image semantics while adding native ImageList Button images. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
 
 Relevant additive progression:
 
@@ -88,7 +88,8 @@ Native GUI IR 1.3   Slider, preserving the 1.1 list ABI
 Native GUI IR 1.4   previous Chrome Stage 1, preserving ListBox/TreeView/Slider
 Native GUI IR 1.5   previous Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
 Native GUI IR 1.6   previous PaintBox Stage 1, preserving ListBox/TreeView/Slider/Chrome/Shape
-Native GUI IR 1.7   current PaintBox draw image, preserving ListBox/TreeView/Slider/Chrome/Shape/PaintBox
+Native GUI IR 1.7   previous PaintBox draw image, preserving ListBox/TreeView/Slider/Chrome/Shape/PaintBox
+Native GUI IR 1.8   current ImageList Button images, preserving ListBox/TreeView/Slider/Chrome/Shape/PaintBox
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state/multi-select line
@@ -98,14 +99,15 @@ payload v13 / runtime v1.4   previous Slider-capable line
 payload v14 / runtime v1.5   previous Chrome Ready/offline line
 payload v15 / runtime v1.6   previous Shape Ready/offline line
 payload v16 / runtime v1.7   previous PaintBox Ready/offline line preserving ListBox semantics
-payload v17 / runtime v1.8   current Ready/offline line preserving ListBox semantics
+payload v17 / runtime v1.8   previous PaintBox draw image Ready/offline line preserving ListBox semantics
+payload v18 / runtime v1.9   current Ready/offline line preserving ListBox semantics
 ```
 
 Older payloads are not reinterpreted in place. Explicit legacy linking fails closed when a requested control/state contract is newer than the selected payload.
 
 ## Runtime integrity
 
-Patch Studio verifies current Windows/macOS/Linux runtime-v1.7 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v16/v1.7 line and retains compatibility tests for earlier payloads.
+Patch Studio verifies current Windows/macOS/Linux runtime-v1.9 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v18/v1.9 line and retains compatibility tests for earlier payloads.
 
 This protects version/byte consistency of the published Ready runtime path. It is not Authenticode, Developer ID signing or notarization.
 

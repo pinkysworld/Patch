@@ -54,9 +54,9 @@ Standalone Window Web renders an accessible `<input type="range">` and validates
 
 Slider was introduced on the additive Native GUI IR **1.3** / payload **v13** / runtime **v1.4** line. The current product-facing contract is now:
 
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
-- native runtime **v1.8**;
+- Native GUI IR **1.8**;
+- sealed payload **v18**;
+- native runtime **v1.9**;
 - Windows: native `TRACKBAR`;
 - macOS: native `NSSlider`;
 - Linux: native GTK3 `GtkScale`;

@@ -72,7 +72,7 @@ function installInspector() {
       <button id="designerImageListManage" class="secondary small" type="button">Resources…</button>
     </div>
     <div id="designerImageListItems" class="designer-imagelist-items" aria-label="ImageList items"></div>
-    <small class="inspector-hint">Nonvisual source-backed image collection. Buttons bind items with <code>image list.item</code>. Native GUI IR 1.4 still fail-closes ImageList and Button images.</small>`;
+    <small class="inspector-hint">Nonvisual source-backed image collection. Buttons bind items with <code>image list.item</code>. Native GUI IR 1.8 transports PNG/JPEG Button images; WebP/SVG fail closed. Native window icons remain deferred.</small>`;
 
   const timer = form.querySelector('#designerInspectorTimerField');
   const pictureDisplay = form.querySelector('#designerInspectorPictureDisplayFields');

@@ -82,13 +82,14 @@ The Windows, Linux, Apple Silicon macOS and Intel macOS jobs build/link and exec
 9. the Shape Stage 1 example
 10. the PaintBox Stage 1 example
 
-Every current Window smoke asserts sealed payload **v16**. The native runtime used by these jobs is built from the repository's v1.7 source on the target runner.
+Every current Window smoke asserts sealed payload **v18**. The native runtime used by these jobs is built from the repository's v1.9 source on the target runner.
 
 ## Versioned compatibility
 
 Published formats are not silently redefined:
 
-- Native GUI IR **1.7** / payload **v17** / runtime **v1.8** is the current product line
+- Native GUI IR **1.8** / payload **v18** / runtime **v1.9** is the current product line
+- Native GUI IR **1.7** / payload **v17** / runtime **v1.8** is the previous PaintBox draw image line
 - Native GUI IR **1.5** / payload **v15** / runtime **v1.6** is the previous Shape compatibility line
 - Native GUI IR **1.4** / payload **v14** / runtime **v1.5** is the previous Chrome compatibility line
 - Native GUI IR **1.3** / payload **v13** / runtime **v1.4** is the Slider-capable compatibility line

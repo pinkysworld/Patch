@@ -28,10 +28,10 @@ test('native Picture format policy 1.0 is independent of Native GUI IR 1.4', () 
     'image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'
   ]);
   assert.deepEqual(currentNativeContract(), {
-    id: 'native-gui-1.7/payload-17/runtime-1.8',
-    guiIr: '1.7',
-    payload: 17,
-    runtime: '1.8',
+    id: 'native-gui-1.8/payload-18/runtime-1.9',
+    guiIr: '1.8',
+    payload: 18,
+    runtime: '1.9',
     runtimeTags: currentNativeContract().runtimeTags
   });
   assert.equal('pictureFormats' in currentNativeContract(), false);

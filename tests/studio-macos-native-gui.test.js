@@ -10,9 +10,9 @@ const gui = buildCurrentNativeGuiIR(compile(source, { name: 'MacNativeTest', kin
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-macos-runtime.yml', 'utf8');
 
-test('browser package seals current Native GUI IR 1.7 payload v17 into a minimal macOS app bundle ZIP', () => {
-  assert.equal(gui.version, '1.7');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 17);
+test('browser package seals current Native GUI IR 1.8 payload v18 into a minimal macOS app bundle ZIP', () => {
+  assert.equal(gui.version, '1.8');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 18);
   const fakeMachO = Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 12, 0, 0, 1, 10, 20, 30, 40]);
   const ready = buildMacosNativeGuiPackage(fakeMachO, gui, { name: 'My Mac App', payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION });
   assert.equal(ready.filename, 'My_Mac_App-macos-window.zip');
@@ -30,13 +30,13 @@ test('browser package seals current Native GUI IR 1.7 payload v17 into a minimal
   assert.equal((central.getUint32(38, true) >>> 16) & 0xffff, 0o100755);
 });
 
-test('Studio defaults macOS Window downloads to native AppKit runtime v1.8 sealing without token', () => {
+test('Studio defaults macOS Window downloads to native AppKit runtime v1.9 sealing without token', () => {
   assert.ok(studio.includes("const MACOS_NATIVE_GUI_RUNTIME = './runtimes/patch-macos-native-gui-runtime.bin'"));
   assert.ok(studio.includes('buildMacosNativeGuiPackage'));
   assert.ok(studio.includes('Native AppKit app (no token, unsigned)'));
-  assert.ok(studio.includes('macOS native AppKit runtime v1.8 app downloaded · unsigned · no token · no Electron'));
-  assert.ok(studio.includes('Native GUI IR 1.7'));
-  assert.ok(studio.includes('payload v17'));
+  assert.ok(studio.includes('macOS native AppKit runtime v1.9 app downloaded · unsigned · no token · no Electron'));
+  assert.ok(studio.includes('Native GUI IR 1.8'));
+  assert.ok(studio.includes('payload v18'));
   assert.ok(studio.includes('NSSlider'));
 });
 

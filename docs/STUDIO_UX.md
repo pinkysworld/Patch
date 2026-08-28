@@ -25,7 +25,7 @@ Project resources are explicit v4 project data and are managed by the Resource M
 
 Contract cards and the quick-start guidance stay behind **Contracts and quick start** so they do not push the workspace off the first screen.
 
-Empty Designer and App panes use a compact guidance card. The status bar stays visible on narrow screens and carries save state plus the current Ready contract chip **IR 1.7 / runtime v1.8**.
+Empty Designer and App panes use a compact guidance card. The status bar stays visible on narrow screens and carries save state plus the current Ready contract chip **IR 1.8 / runtime v1.9**.
 
 ## Designer discovery
 
@@ -52,9 +52,9 @@ Toolbox controls remain compact. Form selection and geometry tools stay secondar
 Studio may author a component before every runtime target supports it, but the UI/docs must say so. Current examples:
 
 - Picture has project-resource authoring, source-backed fit/center/opacity/description and current native PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed;
-- Shape has Studio, Standalone Web and current native Ready support on IR 1.5 / payload v15 / runtime v1.6, preserved by the current IR 1.7 / payload v17 / runtime v1.8 line;
-- PaintBox Stage 1 clear/line/rectangle/ellipse/text has Studio, Standalone Web and current native Ready support; `draw image` remains deferred;
-- ImageList is Web metadata for Button `image list.item`; native GUI IR 1.4 fail-closes ImageList and Button images;
+- Shape has Studio, Standalone Web and current native Ready support on IR 1.5 / payload v15 / runtime v1.6, preserved by the current IR 1.8 / payload v18 / runtime v1.9 line;
+- PaintBox Stage 1 clear/line/rectangle/ellipse/text and quoted `draw image` have Studio, Standalone Web and current native Ready support;
+- ImageList Button `image list.item` is Ready on Studio/Web and current native Windows, macOS and Linux for PNG/JPEG; WebP/SVG fail closed;
 - Window icons are source-backed Studio/Web chrome and favicon packaging under `window-icon/1.0`; native GUI IR 1.4 fail-closes Form icons.
 
 The Designer therefore prioritizes clear capability boundaries over cosmetic parity claims.

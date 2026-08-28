@@ -19,10 +19,10 @@ const selectionArchitecture = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTUR
 const tableActionsDoc = fs.readFileSync('docs/STUDIO_TABLE_ACTIONS.md', 'utf8');
 const tableActionsWeb = fs.readFileSync('web/designer-table-actions.js', 'utf8');
 
-test('current Tabs documentation names native v1.7 and retains explicit compatibility lines', () => {
-  assert.match(tabs, /Native GUI IR \*\*1\.6\*\*/);
-  assert.match(tabs, /payload \*\*v16\*\*/);
-  assert.match(tabs, /native runtime \*\*v1\.7\*\*/);
+test('current Tabs documentation names native v1.9 and retains explicit compatibility lines', () => {
+  assert.match(tabs, /Native GUI IR \*\*1\.8\*\*/);
+  assert.match(tabs, /payload \*\*v18\*\*/);
+  assert.match(tabs, /native runtime \*\*v1\.9\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.5\*\* \/ payload \*\*v15\*\* \/ runtime \*\*v1\.6\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.4\*\* \/ payload \*\*v14\*\* \/ runtime \*\*v1\.5\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.3\*\* \/ payload \*\*v13\*\* \/ runtime \*\*v1\.4\*\*/);
@@ -31,14 +31,14 @@ test('current Tabs documentation names native v1.7 and retains explicit compatib
   assert.match(tabs, /Slider/);
 });
 
-test('current ListBox documentation reflects native single/multi-select preservation on v1.7', () => {
+test('current ListBox documentation reflects native single/multi-select preservation on v1.9', () => {
   assert.match(listbox, /direct native Win32\/AppKit\/GTK/);
   assert.match(listbox, /create text/);
   assert.match(listbox, /create list/);
   assert.match(listbox, /Native GUI IR \*\*1\.1\*\*/);
-  assert.match(listbox, /Native GUI IR \*\*1\.6\*\*/);
-  assert.match(listbox, /payload \*\*v16\*\*/);
-  assert.match(listbox, /runtime \*\*v1\.7\*\*/);
+  assert.match(listbox, /Native GUI IR \*\*1\.8\*\*/);
+  assert.match(listbox, /payload \*\*v18\*\*/);
+  assert.match(listbox, /runtime \*\*v1\.9\*\*/);
   assert.match(listbox, /payload v12 \/ runtime v1\.3/);
   assert.match(docs, /docs\/LISTBOX\.md/);
 });
@@ -59,11 +59,11 @@ test('nested Tabs implementation and current Studio docs stay aligned', () => {
   assert.match(nestedWeb, /Nested TreeView nodes/);
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
-  assert.match(studio, /Table, TreeView and Tabs structural editors rewrite the selected source block directly/);
-  assert.match(studio, /Native GUI IR \*\*1\.6\*\*/);
-  assert.match(studio, /payload \*\*v16\*\*/);
-  assert.match(studio, /runtime \*\*v1\.7\*\*/);
-  assert.match(studio, /frozen TreeView line(?: is)? 1\.2\/v12\/v1\.3/);
+  assert.match(studio, /Table, TreeView and Tabs structural editors rewrite their selected source block directly/);
+  assert.match(studio, /Native GUI IR \*\*1\.8\*\*/);
+  assert.match(studio, /payload \*\*v18\*\*/);
+  assert.match(studio, /runtime \*\*v1\.9\*\*/);
+  assert.match(studio, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
 });
 
 test('Studio structural Properties usability remains source-backed without a second mutation path', () => {
@@ -100,13 +100,10 @@ test('Studio keeps core structural controls on one shared transient primary sele
   assert.match(selectionArchitecture, /There is no longer a private `playground\.js` control-selection mirror/);
 });
 
-test('Studio implementation exposes current Forms, source history and large-project behavior', () => {
+test('Studio implementation exposes the current source-backed active Form workflow', () => {
   assert.match(authoring, /activate a Form from its canvas title/);
   assert.match(authoring, /fit the Form to its controls/);
   assert.match(authoring, /restore the 640×420 default size/);
-  assert.match(authoring, /renders only the active Form at full browser cost/);
-  assert.match(authoring, /bounded source-backed Undo\/Redo history/);
-  assert.match(authoring, /10-Form \/ 200-control benchmark/);
   assert.match(formWorkflow, /suggestDesignerFormSize/);
   assert.match(formWorkflow, /updateDesignerWindow\(code\.value, windowIndex, size\)/);
   assert.match(formWorkflow, /patchPreviousForm/);
@@ -115,13 +112,12 @@ test('Studio implementation exposes current Forms, source history and large-proj
 
 test('roadmap records beta36 current Studio/native line and truthful RAD backlog', () => {
   assert.match(roadmap, /Current development beta: \*\*0\.2\.0-beta\.36\*\*/);
-  assert.match(roadmap, /Native GUI IR: \*\*1\.6\*\*/);
-  assert.match(roadmap, /current sealed native GUI payload: \*\*v16\*\*/);
-  assert.match(roadmap, /current token-free Ready\/offline runtime: \*\*v1\.7\*\*/);
+  assert.match(roadmap, /Native GUI IR: \*\*1\.8\*\*/);
+  assert.match(roadmap, /current sealed native GUI payload: \*\*v18\*\*/);
+  assert.match(roadmap, /current token-free Ready\/offline runtime: \*\*v1\.9\*\*/);
   assert.match(roadmap, /frozen TreeView compatibility line: Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\*/);
   assert.match(roadmap, /project bundle v4/);
   assert.match(roadmap, /ImageList Stage 1/);
   assert.match(roadmap, /Shape native lowering\/runtime parity/);
-  assert.match(roadmap, /PaintBox `draw image`/);
   assert.match(roadmap, /Memo\/TextArea, PasswordEdit, ProgressBar, SpinEdit\/NumberEdit, Date\/Time controls/);
 });

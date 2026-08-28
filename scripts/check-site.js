@@ -25,7 +25,7 @@ const requiredFiles = [
   '_site/designer-multiselect.js','_site/designer-layout-actions.js','_site/designer-toolbox.js',
   '_site/designer-event-inspector.js','_site/designer-focus-order.js',
   '_site/src/compiler.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
-  '_site/src/native-gui-ir-v14.js','_site/src/native-gui-ir-v15.js','_site/src/native-gui-ir-v16.js','_site/src/native-gui-ir-v17.js','_site/src/sealed-native-gui-v14.js','_site/src/sealed-native-gui-v15.js','_site/src/sealed-native-gui-v16.js','_site/src/sealed-native-gui-v17.js','_site/src/native-chrome-backend-adapter.js','_site/src/native-shape-backend-adapter.js','_site/src/native-paintbox-backend-adapter.js','_site/src/native-paintbox-image-backend-adapter.js'
+  '_site/src/native-gui-ir-v14.js','_site/src/native-gui-ir-v15.js','_site/src/native-gui-ir-v16.js','_site/src/native-gui-ir-v17.js','_site/src/native-gui-ir-v18.js','_site/src/sealed-native-gui-v14.js','_site/src/sealed-native-gui-v15.js','_site/src/sealed-native-gui-v16.js','_site/src/sealed-native-gui-v17.js','_site/src/sealed-native-gui-v18.js','_site/src/native-chrome-backend-adapter.js','_site/src/native-shape-backend-adapter.js','_site/src/native-paintbox-backend-adapter.js','_site/src/native-paintbox-image-backend-adapter.js','_site/src/native-imagelist-backend-adapter.js'
 ];
 for (const rel of requiredFiles) requireFile(rel);
 if (fs.existsSync(path.join(root, '_site/paper.html'))) throw new Error('Patch Studio public site must not publish _site/paper.html.');
@@ -40,8 +40,8 @@ for (const page of ['index.html','language.html','docs.html','downloads.html','h
 const index = read('_site/index.html');
 requireAll('Studio beta36 shell', index, [
   'Patch Studio','0.2 beta.36+','id="code"','id="run"','id="build"','id="designer"','id="app"',
-  'multi-file project bundle v4','source-backed Designer','Native GUI IR 1.7','payload v17','runtime v1.8',
-  'IR 1.7 / v1.8','id="editorTabs"','id="editorParseStatus"','id="openCommandPalette"',
+  'multi-file project bundle v4','source-backed Designer','Native GUI IR 1.8','payload v18','runtime v1.9',
+  'IR 1.8 / v1.9','id="editorTabs"','id="editorParseStatus"','id="openCommandPalette"',
   'viewBox="0 0 32 32"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'
 ]);
 rejectAll('Studio beta36 current shell', index, [
@@ -50,16 +50,16 @@ rejectAll('Studio beta36 current shell', index, [
 
 const current = read('_site/src/native-current-contract.js');
 requireAll('Current native product facade', current, [
-  "native-gui-1.7/payload-17/runtime-1.8","PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V17_VERSION",
-  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_PAINTBOX_IMAGE_VERSION',"PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.8'",
-  'native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8'
+  "native-gui-1.8/payload-18/runtime-1.9","PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V18_VERSION",
+  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_IMAGELIST_VERSION',"PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.9'",
+  'native-win32-runtime-v1.9','native-macos-runtime-v1.9','native-linux-runtime-v1.9'
 ]);
 
 const nativeBuild = read('_site/native-build.js');
 requireAll('Studio Ready native builder', nativeBuild, [
   './src/native-current-contract.js','buildCurrentNativeGuiIR as buildNativeGuiIR','sealCurrentNativeGuiRuntime',
   'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION','Native single EXE (no token, recommended)','Native GTK app (no token, recommended)','Native AppKit app (no token, unsigned)',
-  'Native GUI IR 1.7','payload v17','runtime v1.8'
+  'Native GUI IR 1.8','payload v18','runtime v1.9'
 ]);
 rejectAll('Studio Ready native builder stale copy/imports', nativeBuild, [
   './src/native-gui-ir-v13.js','./src/sealed-native-gui-v13.js','Patch Studio compiled the GUI to Native GUI IR 1.3','sealed payload v13 into the native','runtime v1.4 app downloaded'
@@ -68,8 +68,9 @@ rejectAll('Studio Ready native builder stale copy/imports', nativeBuild, [
 const downloads = read('_site/downloads.html');
 requireAll('Downloads beta36', downloads, [
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS',
-  'Native GUI IR <strong>1.7</strong>','payload <strong>v17</strong>','runtime <strong>v1.8</strong>',
-  'offline-compiler-v0.2','native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8','runtime-manifest.json',
+  'Native GUI IR <strong>1.8</strong>','payload <strong>v18</strong>','runtime <strong>v1.9</strong>',
+  'offline-compiler-v0.2','native-win32-runtime-v1.9','native-macos-runtime-v1.9','native-linux-runtime-v1.9','runtime-manifest.json',
+  'Native GUI IR 1.7 / payload v17 / runtime v1.8 remains the previous PaintBox draw image line',
   'Native GUI IR 1.6 / payload v16 / runtime v1.7 remains the previous PaintBox Stage 1 line',
   'Native GUI IR 1.5 / payload v15 / runtime v1.6 remains the previous Shape line',
   'PictureBox note:'
@@ -130,4 +131,4 @@ rejectAll('Studio command palette paper privacy', palette, ["command('paper'",'.
 const bootstrap = read('_site/studio-bootstrap.js');
 requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.7 / payload v17 / runtime v1.8 / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
+console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.8 / payload v18 / runtime v1.9 / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');

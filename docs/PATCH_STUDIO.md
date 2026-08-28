@@ -10,9 +10,9 @@ Patch Studio currently tracks:
 - Change IR **0.10**;
 - Studio project bundle **v4**;
 - Component Registry **0.8**;
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
-- Ready/offline desktop runtime **v1.8** on Windows, macOS and Linux;
+- Native GUI IR **1.8**;
+- sealed payload **v18**;
+- Ready/offline desktop runtime **v1.9** on Windows, macOS and Linux;
 - formal runtime-correspondence milestone **beta.32**.
 
 Product/native/RAD work after beta.32 does not widen that formal claim.
@@ -104,7 +104,46 @@ when refresh_clock ticked:
   show "tick"
 ```
 
-ImageList is an ordered collection of named project-resource references. The Object Inspector can edit logical size and add/replace/rename/reorder/remove entries through the Resource Manager. Buttons may bind one item with `image list.item` on Studio and Standalone Web. Current Native GUI IR 1.7 deliberately fails closed for ImageList/Button-image bindings.
+The Object Inspector edits interval. Renaming/deleting Timer keeps its source-visible handler lifecycle consistent.
+
+### ImageList
+
+ImageList is a nonvisual ordered collection of named project-resource references:
+
+```patch
+imagelist as app_images size 16, 16:
+  image open from "patch-resource:icons.open"
+  image save from "patch-resource:icons.save"
+```
+
+The Object Inspector can:
+
+- edit logical width/height;
+- add images from Resource Manager;
+- replace resources;
+- rename image keys;
+- reorder items;
+- remove items;
+- open Resource Manager.
+
+Buttons bind one ImageList item with source-backed `image list.item`:
+
+```patch
+button "Open" as open_button image app_images.open
+```
+
+Standalone Web and current native Ready/offline Windows, macOS and Linux render the bound PNG/JPEG image on the Button. Native WebP/SVG fail closed. ToolBar/ToolButton and TreeView image bindings remain later consumers.
+
+## Window and application icons
+
+Forms may declare an optional source-backed `icon` on the window line:
+
+```patch
+window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
+  text "Hello"
+```
+
+The Object Inspector Form tools edit the quoted resource locator. Studio preview shows the icon in Form chrome. Standalone Web also packages the first Form that declares `icon` as the document favicon. Native GUI IR 1.8 has no Form icon field and fail-closes under `window-icon/1.0` rather than silently dropping the source. This slice does not add ICO/ICNS to Resource Manager and does not claim Win32 `.ico`, AppKit or Linux desktop packaging.
 
 ## Picture
 
@@ -149,7 +188,7 @@ Studio preview shows it in Form chrome and Standalone Web packages the first For
 
 `examples/workshop-desk.patch` is the current cross-platform Ready showcase. It deliberately uses every integrated component family that the current native Ready line can transport together: Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Panel, Shape, PaintBox including `draw image`, StatusBar and Timer.
 
-It intentionally does **not** add ImageList/Button images or a Window icon to the native Ready acceptance source, because those consumers still fail closed on native targets. Their Studio/Web authoring contracts remain covered separately rather than making the showcase target-dependent.
+It intentionally does **not** add a Window icon to the native Ready acceptance source, because that consumer still fails closed on native targets. ImageList/Button images are now native Ready PNG/JPEG; Window-icon Studio/Web authoring remains covered separately rather than making the showcase target-dependent.
 
 ## Command Palette and navigation
 
@@ -159,26 +198,39 @@ It intentionally does **not** add ImageList/Button images or a Window icon to th
 
 Studio supports Standalone Web, Windows, macOS, Linux, FreeBSD Console, portable `.patchapp` and direct/bootstrap WebAssembly where applicable. The default Windows/macOS/Linux workflow is **Ready app download / offline link with no user GitHub token**. Optional cloud/AOT remains a separate advanced route.
 
-The current Ready/offline Window contract is Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
+The current Ready/offline Window contract is Native GUI IR **1.8**, sealed payload **v18**, runtime **v1.9**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
 
-The previous PaintBox Stage 1 line is 1.6/v16/v1.7, previous Shape line is 1.5/v15/v1.6, previous Chrome line is 1.4/v14/v1.5, previous Slider line is 1.3/v13/v1.4, and frozen TreeView line is 1.2/v12/v1.3.
+The previous PaintBox draw image line is 1.7/v17/v1.8, previous PaintBox Stage 1 line is 1.6/v16/v1.7, previous Shape line is 1.5/v15/v1.6, previous Chrome line is 1.4/v14/v1.5, previous Slider line is 1.3/v13/v1.4, and frozen TreeView line is 1.2/v12/v1.3.
 
 ## Offline compiler, PWA and diagnostics
 
-The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking uses payload v17/runtime v1.8. FreeBSD remains Console-only via portable C99.
+The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking uses payload v18/runtime v1.9. FreeBSD remains Console-only via portable C99.
 
-Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. Missing JavaScript/CSS/runtime requests never receive `index.html` as a substitute. Real Chrome startup/responsiveness tests exercise Studio in CI and deployment gates.
+Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. `studio-bootstrap.js` owns Service Worker registration/refresh.
 
-Recovery snapshots protect the complete v4 project including resources. Diagnostics stay privacy-redacted/local unless explicitly exported, and multi-file locations map back to owning `file:line`.
+Missing JavaScript/CSS/runtime requests never receive `index.html` as a substitute. Real Chrome startup/responsiveness tests exercise Studio in CI and production deployment gates.
+
+Recovery snapshots protect the complete v4 project, including resources. Import/export/recovery all pass through the same validation rules.
+
+Diagnostics remain privacy-redacted/local unless the user explicitly exports a report. Multi-file diagnostics map composed source positions back to owning `file:line`.
 
 ## Current capability boundary
 
 | Component | Studio | Standalone Web | Windows/macOS/Linux native |
 |---|---|---|---|
-| Picture | supported | supported | bounded PNG/JPEG + default display contract |
-| Shape | supported | supported | supported |
-| PaintBox | supported | supported | clear/line/rectangle/ellipse/text + PNG/JPEG `draw image` supported |
-| ImageList | authoring | Button image consumer supported | unsupported/fail-closed |
-| Window icon | authoring | chrome + favicon supported | unsupported/fail-closed |
+| Picture | supported | supported | supported for current bounded native image formats |
+| Shape | supported | supported | supported (IR 1.5 / payload v15 / runtime v1.6, preserved by current 1.8/v18/v1.9) |
+| PaintBox | supported | supported | supported (IR 1.7 / payload v17 / runtime v1.8, including `draw image`, preserved by current 1.8/v18/v1.9) |
+| ImageList | authoring | supported as Button image metadata | supported (IR 1.8 / payload v18 / runtime v1.9, PNG/JPEG Button images) |
+| Window icon | authoring | supported (chrome + favicon) | unsupported/fail-closed |
 
-Authoring is not runtime parity. The remaining RAD R1 gates are native ImageList/Button-image transport and native application/window icon packaging. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+This table is intentionally conservative. A component is not called cross-platform Ready merely because the Designer can place it.
+
+## Next work
+
+The current execution order is maintained in `docs/ROADMAP.md` and the detailed RAD plans:
+
+- `docs/RAD_STUDIO_MASTERPLAN.md`
+- `docs/RAD_STUDIO_MASTER_BACKLOG.md`
+
+The immediate remaining R1 gate is native application/window icon packaging.

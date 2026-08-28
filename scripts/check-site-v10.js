@@ -84,7 +84,7 @@ requireAll('Frozen lowering snapshot preserves Table', frozenLower, [
 
 const current = read('_site/src/native-current-contract.js');
 requireAll('Current native product facade', current, [
-  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.7/payload-17/runtime-1.8'",
+  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.8/payload-18/runtime-1.9'",
   'buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
 
@@ -99,4 +99,4 @@ requireAll('Historical Native GUI IR 1.3 implementation module', nativeGuiV13, [
   "PATCH_NATIVE_GUI_IR_V13_VERSION = '1.3'", 'buildNativeGuiIRV13'
 ]);
 
-console.log('ok Table compatibility is preserved from payload v9 through the current Native GUI IR 1.7 / payload v17 / runtime v1.8 facade.');
+console.log('ok Table compatibility is preserved from payload v9 through the current Native GUI IR 1.8 / payload v18 / runtime v1.9 facade.');

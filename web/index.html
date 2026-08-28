@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch Studio beta.36+: source-backed RAD development with project bundle v4 resources, Picture/Shape/PaintBox/ImageList authoring, window icons and Native GUI IR 1.7 / runtime v1.8 Ready builds.">
+  <meta name="description" content="Patch Studio beta.36+: source-backed RAD development with project bundle v4 resources, Picture/Shape/PaintBox/ImageList authoring, window icons and Native GUI IR 1.8 / runtime v1.9 Ready builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Patch Studio">
@@ -59,14 +59,14 @@
       <span id="diagnosticsState" role="status" aria-live="polite" aria-atomic="true">Diagnostics stay local.</span>
     </span>
   </section>
-  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.8 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.7 as payload v17. Native Picture follows native-picture-formats/1.0: PNG/JPEG decoding is Ready; WebP/SVG and unsupported graphics/runtime contracts fail closed.</span></section>
+  <section id="nativeBuildPanel" class="projectbar" aria-label="Native build options" hidden><label>GitHub build token <input id="nativeBuildToken" type="password" placeholder="Cloud build token" autocomplete="off"></label><span id="nativeBuildStatus" role="status" aria-live="polite">Windows, macOS and Linux support Ready app download with no token or local toolchain. Current runtime v1.9 templates are SHA-256 verified before Patch Studio seals Native GUI IR 1.8 as payload v18. Native Picture follows native-picture-formats/1.0: PNG/JPEG decoding is Ready; WebP/SVG and unsupported graphics/runtime contracts fail closed.</span></section>
 
   <details class="studio-launchpad" aria-label="Patch Studio current status and quick start">
-    <summary>Contracts and quick start <span class="summary-hint">local-first · project v4 · Ready IR 1.7 / v1.8</span></summary>
+    <summary>Contracts and quick start <span class="summary-hint">local-first · project v4 · Ready IR 1.8 / v1.9</span></summary>
     <div class="studio-launchpad-body">
     <div class="studio-snapshot" aria-label="Current Patch contracts">
       <div class="studio-snapshot-card"><b>Local-first project v4</b><span>Multi-file source, project resources, recovery and privacy-redacted diagnostics remain local unless you explicitly export or build.</span></div>
-      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.7 / payload v17 / runtime v1.8 Ready assets. Older versioned contracts remain compatibility lines.</span></div>
+      <div class="studio-snapshot-card"><b>Verified desktop path</b><span>Windows, macOS and Linux use SHA-256 checked Native GUI IR 1.8 / payload v18 / runtime v1.9 Ready assets. Older versioned contracts remain compatibility lines.</span></div>
       <div class="studio-snapshot-card"><b>RAD R1 authoring</b><span>Picture, Shape, PaintBox, StatusBar, Timer, ImageList and Window icons extend the source-backed Designer; target capability boundaries remain explicit and fail closed.</span></div>
     </div>
     <div class="studio-guide">
@@ -76,7 +76,7 @@
         <div class="studio-guide-step"><b>3 · Build</b><span><code>Ctrl/Cmd+Shift+Enter</code> builds the selected target. Ready desktop downloads need no GitHub token.</span></div>
       </div>
     </div>
-    <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.36+</strong><span>Current Studio: multi-file project bundle v4 with image resources; source-backed Designer with Forms, Object Inspector and searchable Component Palette; multi-select ListBox, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer and ImageList R1 authoring; Button <code>image list.item</code> on Web; Window <code>icon</code> chrome and favicon packaging under <code>window-icon/1.0</code>; plus verified no-token Ready builds. PaintBox <code>draw image</code> and native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
+    <section class="beta35-strip" aria-label="Patch current feature boundary"><strong>beta.36+</strong><span>Current Studio: multi-file project bundle v4 with image resources; source-backed Designer with Forms, Object Inspector and searchable Component Palette; multi-select ListBox, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer and ImageList R1 authoring; Button <code>image list.item</code> on Web; Window <code>icon</code> chrome and favicon packaging under <code>window-icon/1.0</code>; plus verified no-token Ready builds. PaintBox <code>draw image</code> and Button <code>image list.item</code> are Ready on native Windows, macOS and Linux. Native window-icon transport remains an explicit fail-closed follow-up. Persistent application state still changes only through explicit <b>change</b>.</span><a href="./docs.html">Current contracts</a></section>
     </div>
   </details>
 
@@ -102,7 +102,7 @@
     </div>
   </section>
 
-  <section class="statusbar"><span class="status-left"><span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span></span><span class="status-right"><span class="status-chip" title="Current Ready native contract">IR 1.7 / v1.8</span> · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard & help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
+  <section class="statusbar"><span class="status-left"><span id="saveState" role="status" aria-live="polite" aria-atomic="true">Saved locally</span><span><strong>Semantic changes</strong> keep persistent mutation explicit.</span></span><span class="status-right"><span class="status-chip" title="Current Ready native contract">IR 1.8 / v1.9</span> · <button id="statusCommands" class="status-command" type="button" aria-label="Open Studio commands">Commands</button> · <a href="./help.html">Keyboard & help</a> · <a href="./downloads.html">Offline compiler</a></span></section>
 </main>
 
 <dialog id="commandPalette" class="command-palette" aria-labelledby="commandPaletteTitle">

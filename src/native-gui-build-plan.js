@@ -16,17 +16,20 @@ export function buildNativeGuiPlan(compiled, options = {}) {
   const forceShape = Boolean(options.shapeV16);
   const forcePaintBox = Boolean(options.paintboxV17);
   const forcePaintBoxImage = Boolean(options.paintboxImageV18);
+  const forceImageList = Boolean(options.imagelistV19);
 
-  if (forcePaintBoxImage || forcePaintBox || forceShape || forceChrome || forceSlider || features.slider || features.chrome || features.shape || features.paintbox) {
+  if (forceImageList || forcePaintBoxImage || forcePaintBox || forceShape || forceChrome || forceSlider || features.slider || features.chrome || features.shape || features.paintbox || features.imageList || features.buttonImage) {
     const gui = buildCurrentNativeGuiIR(compiled);
     return {
-      tier: features.paintboxImage || forcePaintBoxImage
-        ? 'paintbox-image-v18'
-        : features.paintbox || forcePaintBox
-          ? 'paintbox-v17'
-          : features.shape || forceShape
-            ? 'shape-v16'
-            : features.chrome || forceChrome ? 'chrome-v15' : 'slider-v14',
+      tier: features.imageList || features.buttonImage || forceImageList
+        ? 'imagelist-v19'
+        : features.paintboxImage || forcePaintBoxImage
+          ? 'paintbox-image-v18'
+          : features.paintbox || forcePaintBox
+            ? 'paintbox-v17'
+            : features.shape || forceShape
+              ? 'shape-v16'
+              : features.chrome || forceChrome ? 'chrome-v15' : 'slider-v14',
       gui,
       controlCount: flattenCurrentNativeGuiControls(gui).length,
       features
@@ -45,6 +48,8 @@ export function inspectNativeGuiFeatures(ast) {
     shape: false,
     paintbox: false,
     paintboxImage: false,
+    imageList: false,
+    buttonImage: false,
     listState: false,
     listBackedListBox: false,
     menuSeparators: false,
@@ -66,6 +71,8 @@ export function inspectNativeGuiFeatures(ast) {
       if (node.kind === 'uiControl' && node.control === 'shape') features.shape = true;
       if (node.kind === 'uiControl' && node.control === 'paintbox') features.paintbox = true;
       if (node.kind === 'drawPaint' && node.command?.operation === 'image') features.paintboxImage = true;
+      if (node.kind === 'uiControl' && node.control === 'imagelist') features.imageList = true;
+      if (node.kind === 'uiControl' && node.control === 'button' && node.imageListId && node.imageItem) features.buttonImage = true;
       if (node.kind === 'uiControl' && node.control === 'listbox' && listNames.has(node.id)) features.listBackedListBox = true;
       if (node.kind === 'menuSeparator') features.menuSeparators = true;
       if (node.kind === 'menuItem' && node.shortcutExpr) features.menuShortcuts = true;

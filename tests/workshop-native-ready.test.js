@@ -29,15 +29,15 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
   assert.equal(support.treeViews, 1);
   assert.equal(support.sliders, 2);
   assert.equal(support.paintboxes, 1);
-  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.7');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 17);
-  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.8');
+  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.8/payload-18/runtime-1.9');
+  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.8');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 18);
+  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.9');
 
   const ir = buildCurrentNativeGuiIR(compiled);
   const controls = flattenCurrentNativeGuiControls(ir);
   const paintbox = controls.find(control => control.type === 'paintbox');
-  assert.equal(ir.version, '1.7');
+  assert.equal(ir.version, '1.8');
   assert.equal(controls.filter(control => control.type === 'tree').length, 1);
   assert.equal(controls.filter(control => control.type === 'slider').length, 2);
   assert.equal(controls.filter(control => control.type === 'timer').length, 1);

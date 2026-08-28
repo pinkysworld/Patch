@@ -2,7 +2,7 @@
 
 Generated from `src/component-registry.js` registry **0.8**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
 
-Current product contract: Change IR **0.10**, Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8** (`native-gui-1.7/payload-17/runtime-1.8`).
+Current product contract: Change IR **0.10**, Native GUI IR **1.8**, sealed payload **v18**, runtime **v1.9** (`native-gui-1.8/payload-18/runtime-1.9`).
 
 Status values come from the canonical Designer registry:
 
@@ -31,4 +31,4 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | `paintbox` | PaintBox | Graphics | visual | supported | supported | supported | supported | supported | unsupported | id, x, y, width, height | paint |
 | `statusbar` | StatusBar | Chrome | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | — |
 | `timer` | Timer | Nonvisual | nonvisual | supported | supported | supported | supported | supported | unsupported | id, interval | ticked |
-| `imagelist` | ImageList | Nonvisual | nonvisual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, logicalWidth, logicalHeight, items | — |
+| `imagelist` | ImageList | Nonvisual | nonvisual | authoring | supported | supported | supported | supported | unsupported | id, logicalWidth, logicalHeight, items | — |

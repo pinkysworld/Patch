@@ -109,9 +109,9 @@ const PAINTBOX_STAGE1_TARGETS = Object.freeze({
 const IMAGELIST_STAGE1_TARGETS = Object.freeze({
   studio: 'authoring',
   web: 'supported',
-  windows: 'unsupported',
-  macos: 'unsupported',
-  linux: 'unsupported',
+  windows: 'supported',
+  macos: 'supported',
+  linux: 'supported',
   freebsd: 'unsupported'
 });
 

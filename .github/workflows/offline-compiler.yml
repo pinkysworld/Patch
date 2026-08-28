@@ -98,7 +98,7 @@ jobs:
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Build Win32 runtime v1.8
+      - name: Build Win32 runtime v1.9
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
@@ -112,23 +112,23 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v18.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v19.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
           if ($LASTEXITCODE -ne 0) { throw "MSVC GUI runtime build failed with exit code $LASTEXITCODE." }
-      - name: Build GTK runtime v1.8
+      - name: Build GTK runtime v1.9
         if: matrix.platform == 'linux'
         shell: bash
         run: |
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v18.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v19.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x offline-runtime/gui.bin
-      - name: Build AppKit runtime v1.8
+      - name: Build AppKit runtime v1.9
         if: matrix.platform == 'macos'
         shell: bash
         run: |
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v18.mm -o offline-runtime/gui.bin
+            native-runtime/appkit-sealed-gui-v19.mm -o offline-runtime/gui.bin
           chmod +x offline-runtime/gui.bin
           test "$(lipo -archs offline-runtime/gui.bin)" = "arm64"
       - name: Build standalone Patch compiler
@@ -167,7 +167,7 @@ jobs:
             & "./dist-smoke/$name.exe" --patch-smoke
             if ($LASTEXITCODE -ne 0) { throw "$name smoke failed with exit code $LASTEXITCODE." }
             $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path "dist-smoke/$name.exe"))
-            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 17) { throw "$name is not sealed payload v17." }
+            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 18) { throw "$name is not sealed payload v18." }
           }
       - name: Smoke linked Window apps on Linux
         if: matrix.platform == 'linux'
@@ -184,7 +184,7 @@ jobs:
           const fs=require('fs');
           for(const name of ['OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider','OfflineChrome','OfflineShape','OfflinePaintBox','OfflinePaintImage']){
             const sealed=fs.readFileSync(`dist-smoke/${name}`);
-            if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error(`${name} is not sealed payload v17.`);
+            if(sealed.readUInt32LE(sealed.length-12)!==18) throw new Error(`${name} is not sealed payload v18.`);
           }
           NODE
       - name: Smoke linked Window apps on macOS
@@ -203,7 +203,7 @@ jobs:
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error(`${process.argv[2]} is not sealed payload v17.`);
+          if(sealed.readUInt32LE(sealed.length-12)!==18) throw new Error(`${process.argv[2]} is not sealed payload v18.`);
           NODE
           done
       - uses: actions/upload-artifact@v7
@@ -223,7 +223,7 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Build portable Intel macOS compiler kit with runtime v1.8
+      - name: Build portable Intel macOS compiler kit with runtime v1.9
         shell: bash
         run: |
           ROOT=dist-intel/patch-macos-x64
@@ -233,7 +233,7 @@ jobs:
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch x86_64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v18.mm -o "$ROOT/runtime/gui.bin"
+            native-runtime/appkit-sealed-gui-v19.mm -o "$ROOT/runtime/gui.bin"
           chmod +x "$ROOT/runtime/gui.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
@@ -252,7 +252,7 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals Native GUI IR 1.7 into payload v17/runtime v1.8, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image controls.
+          Window link seals Native GUI IR 1.8 into payload v18/runtime v1.9, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1, PaintBox draw image and ImageList Button image controls.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
@@ -279,7 +279,7 @@ jobs:
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error('Intel offline compiler Window output is not sealed payload v17.');
+          if(sealed.readUInt32LE(sealed.length-12)!==18) throw new Error('Intel offline compiler Window output is not sealed payload v18.');
           NODE
           done
       - uses: actions/upload-artifact@v7
@@ -371,5 +371,5 @@ jobs:
         shell: bash
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes 'Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds Native GUI IR 1.7 as sealed payload v17/runtime v1.8 with responsive layout, Table/Grid, ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image controls. Supported run/build/link workflows work locally without a GitHub token.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes 'Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds Native GUI IR 1.8 as sealed payload v18/runtime v1.9 with responsive layout, Table/Grid, ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1, PaintBox draw image and ImageList Button image controls. Supported run/build/link workflows work locally without a GitHub token.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

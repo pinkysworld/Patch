@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch programming language beta.36: explicit semantic change, Change IR 0.10, transient GUI event values, source-backed graphics controls and the current Native GUI IR 1.6 / runtime v1.7 desktop line.">
+  <meta name="description" content="Patch programming language beta.36: explicit semantic change, Change IR 0.10, transient GUI event values, source-backed graphics controls and the current Native GUI IR 1.8 / runtime v1.9 desktop line.">
   <title>Patch Language · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -58,7 +58,7 @@ show player.name</pre>
     <p>Thing equality is structural: two Things compare equal when they have the same own field names and values, independent of declaration order. JSON serialization is not the equality oracle. Direct Wasm and portable C99 stay on the numeric Console subset and fail closed on Things. Thing records are product runtime, not part of the beta.32 Lean runtime-correspondence claim.</p>
   </section>
 
-  <section class="page-section" data-slider-language-support="native-v17">
+  <section class="page-section" data-slider-language-support="native-v18">
     <h2>Slider Stage 1 uses transient numbers</h2>
     <p>A Slider declares its numeric range directly in Patch source. Its <code>changed</code> event receives a finite numeric <code>value</code>. Moving the toolkit control does not itself mutate persistent Patch state.</p>
     <pre class="page-code">create number volume = 50
@@ -67,7 +67,7 @@ window "Mixer":
 when volume changed:
   change volume:
     set = value</pre>
-    <p><code>step</code> defaults to <code>1</code>; signed and decimal ranges are supported. A same-name persistent binding must be number state. Patch Studio, Standalone Window Web and the current Windows, macOS and Linux Ready/offline paths implement native Slider support through Native GUI IR 1.6 / payload v16 / runtime v1.7 using Win32 TRACKBAR, AppKit NSSlider and GTK GtkScale.</p>
+    <p><code>step</code> defaults to <code>1</code>; signed and decimal ranges are supported. A same-name persistent binding must be number state. Patch Studio, Standalone Window Web and the current Windows, macOS and Linux Ready/offline paths implement native Slider support through Native GUI IR 1.8 / payload v18 / runtime v1.9 using Win32 TRACKBAR, AppKit NSSlider and GTK GtkScale.</p>
     <p>The Native GUI IR 1.3, payload v13 and runtime v1.4 Slider line remains a versioned compatibility boundary. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen compatibility TreeView line and intentionally stays Slider fail-closed. Versioned contracts are not redefined in place.</p>
   </section>
 
@@ -80,7 +80,7 @@ window "Fruit Picker":
 when fruits changed:
   change fruits:
     set = value</pre>
-    <p>The toolkit selection itself is not persistent Patch state. Persistence occurs only because the handler executes an explicit semantic <code>change</code>. Native GUI IR 1.1 introduced the list-state ABI; the current Native GUI IR 1.6 / payload v16 / runtime v1.7 line preserves it together with later Menu, TreeView, Slider, Chrome, Shape and PaintBox extensions.</p>
+    <p>The toolkit selection itself is not persistent Patch state. Persistence occurs only because the handler executes an explicit semantic <code>change</code>. Native GUI IR 1.1 introduced the list-state ABI; the current Native GUI IR 1.8 / payload v18 / runtime v1.9 line preserves it together with later Menu, TreeView, Slider, Chrome and Shape extensions.</p>
   </section>
 
   <section class="page-section" data-table-language-support="transient-list">
@@ -92,7 +92,7 @@ when fruits changed:
     row "Grace", "Scientist"
 when people changed:
   show value</pre>
-    <p>Table originated in Native GUI IR 0.8 / sealed payload v9 / runtime v1.0. The current Native GUI IR 1.6 / payload v16 / runtime v1.7 contract preserves that representation while composing later list, Menu, TreeView, Slider, Chrome, Shape and PaintBox extensions.</p>
+    <p>Table originated in Native GUI IR 0.8 / sealed payload v9 / runtime v1.0. The current Native GUI IR 1.8 / payload v18 / runtime v1.9 contract preserves that representation while composing later list, Menu, TreeView, Slider, Chrome and Shape extensions.</p>
   </section>
 
   <section class="page-section" data-tree-language-support="transient-path-list">
@@ -107,12 +107,12 @@ window "Files" as main size 560, 380:
 when files changed:
   change selected:
     set = value</pre>
-    <p>Selecting <code>compiler.js</code> yields <code>["src", "compiler.js"]</code> as transient <code>value</code>. Renderer or native-toolkit selection alone does not mutate persistent state. Native GUI IR 1.2 introduced TreeView; the current IR 1.6 / payload v16 / runtime v1.7 line preserves that hierarchy while composing later Slider, Chrome, Shape and PaintBox support.</p>
+    <p>Selecting <code>compiler.js</code> yields <code>["src", "compiler.js"]</code> as transient <code>value</code>. Renderer or native-toolkit selection alone does not mutate persistent state. Native GUI IR 1.2 introduced TreeView; the current IR 1.8 / payload v18 / runtime v1.9 line preserves that hierarchy while composing later Slider, Chrome and Shape support.</p>
   </section>
 
   <section class="page-section">
     <h2>Graphics stay source-backed</h2>
-    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support under <code>native-picture-formats/1.0</code> plus source-backed Web display properties; Shape has Studio, Standalone Web and current native Ready support; PaintBox Stage 1 has Studio, Standalone Web and current native Ready support for <code>clear</code>, <code>line</code>, <code>rectangle</code>, <code>ellipse</code> and <code>text</code>. PaintBox <code>draw image</code> remains deferred. Buttons may bind <code>image list.item</code> on Web while current Native GUI IR 1.6 fail-closes ImageList and Button images. Forms may declare <code>icon</code> under <code>window-icon/1.0</code>; Studio/Web package Form chrome and the first Form icon as the application favicon, while current Native GUI IR 1.6 fail-closes Form icons.</p>
+    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support on the v1.9 desktop line under <code>native-picture-formats/1.0</code> plus source-backed Web display properties; Shape and PaintBox Stage 1 including quoted <code>draw image</code> for PNG/JPEG are Ready on Studio, Standalone Web and current native Windows, macOS and Linux. Native WebP/SVG remain deferred. Buttons may bind <code>image list.item</code> on Studio, Standalone Web and current native Windows, macOS and Linux. Native PNG/JPEG ImageList items are Ready; WebP/SVG fail closed. Forms may declare <code>icon</code> under <code>window-icon/1.0</code>; Studio/Web package Form chrome and the first Form icon as the application favicon, while current Native GUI IR 1.8 fail-closes Form icons.</p>
     <pre class="page-code">window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
   picture as logo from "patch-resource:app.logo" fit cover description "Product logo"
   shape ellipse as badge
@@ -120,7 +120,7 @@ when files changed:
   imagelist as icons size 16, 16:
     image open from "patch-resource:icons.open"
   button "Open" as open_button image icons.open</pre>
-    <p>PaintBox <code>paint</code> handlers are pure drawing handlers and cannot commit persistent <code>change</code>. Native PaintBox expressions deliberately use bounded literals, <code>count</code> inside repeat and simple number/text/boolean state names; unsupported state references fail closed. ImageList exposes no event in Stage 1. Native Picture keeps default contain/centered/opaque rendering and fail-closes other fit/center/opacity values.</p>
+    <p>PaintBox <code>paint</code> handlers are pure drawing handlers and cannot commit persistent <code>change</code>. ImageList exposes no event in Stage 1. Native Picture keeps default contain/centered/opaque rendering and fail-closes other fit/center/opacity values.</p>
   </section>
 
   <section class="page-section">

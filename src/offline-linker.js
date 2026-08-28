@@ -47,17 +47,18 @@ export function createOfflineLinkPlan(source, options = {}) {
     return binaryPlan({ platform, kind, name, sealed });
   }
 
-  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 17);
+  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 18);
   validateWindowRuntimeSupport(compiled, {
     allowTables: true,
     allowLists: true,
     allowListControls: true,
     allowMenuDecorations: true,
     allowTree: true,
-    allowSlider: guiPayloadVersion === 17,
-    allowPaintBox: guiPayloadVersion === 17
+    allowSlider: guiPayloadVersion === 18,
+    allowPaintBox: guiPayloadVersion === 18,
+    allowImageList: guiPayloadVersion === 18
   });
-  const nativeGui = guiPayloadVersion === 17
+  const nativeGui = guiPayloadVersion === 18
     ? buildCurrentNativeGuiIR(compiled)
     : buildFrozenNativeGuiIR(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
@@ -180,8 +181,8 @@ function requiredRuntime(value, label) {
 
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
-  if (version === 12 || version === 17) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v17, not '${value}'.`);
+  if (version === 12 || version === 18) return version;
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v18, not '${value}'.`);
 }
 
 function normalizePlatform(value) {

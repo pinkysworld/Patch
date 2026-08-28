@@ -41,11 +41,11 @@ Current Studio capabilities include:
 - `Ctrl/Cmd+K` Command Palette with project files, Thing fields such as `player.score`, and recipe parameters such as `reward.bonus`;
 - token-free Ready Windows/macOS/Linux downloads plus offline compiler/linker kits.
 
-ImageList stores ordered named references to project resources. Buttons bind one item with `image list.item` on Studio and Standalone Web. The current Ready Native GUI IR 1.6 line deliberately fails closed for ImageList and Button images until a versioned desktop contract transports them.
+ImageList stores ordered named references to project resources. Buttons bind one item with `image list.item` on Studio, Standalone Web and current native Ready Windows, macOS and Linux (PNG/JPEG). Native WebP/SVG remain fail-closed.
 
 Forms may declare `icon "patch-resource:app.icon"` on the window line. Studio and Standalone Web show that icon in Form chrome; the first Form icon is the application favicon. The current Ready Native GUI IR 1.6 line deliberately fails closed for Window icons under `window-icon/1.0`.
 
-Shape and PaintBox Stage 1 both advertise Studio, Standalone Web and current native Ready support. Native GUI IR 1.6 / payload v16 / runtime v1.7 renders Shape rectangle/rounded/ellipse/line and PaintBox `clear`, `line`, `rectangle`, `ellipse` and `text` across Win32, AppKit and GTK. PaintBox `draw image` remains deferred and fails closed. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
+Shape and PaintBox Stage 1 both advertise Studio, Standalone Web and current native Ready support. Native GUI IR 1.8 / payload v18 / runtime v1.9 renders Shape rectangle/rounded/ellipse/line, PaintBox `clear`, `line`, `rectangle`, `ellipse`, `text` and quoted `draw image`, and ImageList Button PNG/JPEG images across Win32, AppKit and GTK. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
 
 Open **Workshop desk** in Example for the current showcase application. It exercises the current cross-platform Ready control surface, including Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar and Timer, while structural selection remains transient. See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md), [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md), [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) and [`docs/BETA36.md`](docs/BETA36.md).
 
@@ -66,11 +66,11 @@ Toolkit interaction stays transient until source commits it through `change`:
 
 ## Native desktop
 
-The product-facing current contract is **Native GUI IR 1.7 / sealed payload v17 / runtime v1.8**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
+The product-facing current contract is **Native GUI IR 1.8 / sealed payload v18 / runtime v1.9**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
 
 | Line | IR / payload / runtime | Role |
 |---|---|---|
-| Current Ready/offline | Native GUI IR 1.7 / payload v17 / runtime v1.8 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image |
+| Current Ready/offline | Native GUI IR 1.8 / payload v18 / runtime v1.9 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1, PaintBox draw image and ImageList Button images |
 | Previous PaintBox Stage 1 | Native GUI IR 1.6 / payload v16 / runtime v1.7 | Previous PaintBox Stage 1 compatibility line |
 | Previous Shape | Native GUI IR 1.5 / payload v15 / runtime v1.6 | Previous Shape-capable compatibility line |
 | Slider compatibility | Native GUI IR 1.3 / payload v13 / runtime v1.4 | Previous Slider-capable compatibility line |
@@ -78,11 +78,11 @@ The product-facing current contract is **Native GUI IR 1.7 / sealed payload v17 
 
 Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Ready/offline Windows, macOS and Linux paths are token-free. TreeView is enabled explicitly by the current Ready Studio build preflight and remains fail-closed only at older or deliberately restricted target boundaries. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
 
-Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native Picture keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox Stage 1 `clear`/`line`/`rectangle`/`ellipse`/`text` is native on the current Ready line; `draw image`, ImageList/Button images and Window icons remain explicit fail-closed follow-ups.
+Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native Picture keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox Stage 1 `clear`/`line`/`rectangle`/`ellipse`/`text` and quoted `draw image` plus ImageList Button PNG/JPEG images are native on the current Ready line; Window icons remain an explicit fail-closed follow-up.
 
 ## Offline compiler
 
-The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.8 Window path and assert sealed payload v17 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
+The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.9 Window path and assert sealed payload v18 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
 
 See [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) and the public [Downloads](https://minh.systems/Patch/downloads.html) page.
 

@@ -78,8 +78,8 @@ test('responsive runtime workflow retains the frozen v0.9 release line for repro
   assert.match(workflow, /readUInt32LE\(sealed\.length-12\)!==8/);
 });
 
-test('Pages and offline compiler use current runtime v1.8 while frozen responsive v0.9 stays separate', () => {
-  for (const tag of ['native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8']) {
+test('Pages and offline compiler use current runtime v1.9 while frozen responsive v0.9 stays separate', () => {
+  for (const tag of ['native-win32-runtime-v1.9','native-macos-runtime-v1.9','native-linux-runtime-v1.9']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
   }
   assert.doesNotMatch(pages, /Patch Native Sealed Table Runtime/);
@@ -90,13 +90,14 @@ test('Pages and offline compiler use current runtime v1.8 while frozen responsiv
   assert.match(pages, /Patch Native Sealed Shape Runtime v1\.6/);
   assert.match(pages, /Patch Native Sealed PaintBox Runtime v1\.7/);
   assert.match(pages, /Patch Native Sealed PaintBox Image Runtime v1\.8/);
+  assert.match(pages, /Patch Native Sealed ImageList Runtime v1\.9/);
   assert.match(pages, /steps\.native_runtime\.outputs\.ready == 'true'/);
   assert.match(pages, /cancel-in-progress: \$\{\{ github\.event_name == 'push' \}\}/);
 
   for (const runtimeSource of [
-    'native-runtime\\win32-sealed-gui-v18.cpp',
-    'native-runtime/appkit-sealed-gui-v18.mm',
-    'native-runtime/gtk-sealed-gui-v18.cpp'
+    'native-runtime\\win32-sealed-gui-v19.cpp',
+    'native-runtime/appkit-sealed-gui-v19.mm',
+    'native-runtime/gtk-sealed-gui-v19.cpp'
   ]) assert.ok(offline.includes(runtimeSource), `offline compiler missing ${runtimeSource}`);
   assert.match(offline, /examples\/responsive-window\.patch/);
   assert.match(offline, /examples\/table-native-v09\.patch/);
@@ -113,7 +114,7 @@ test('Pages and offline compiler use current runtime v1.8 while frozen responsiv
   assert.match(offline, /OfflineTree/);
   assert.match(offline, /OfflineSlider/);
   assert.match(offline, /OfflineChrome/);
-  assert.match(offline, /payload v17\/runtime v1\.8/);
+  assert.match(offline, /payload v18\/runtime v1\.9/);
   assert.match(offline, /--patch-smoke/);
   assert.doesNotMatch(offline, /native-win32-runtime-v0\.9/);
   assert.doesNotMatch(offline, /native-macos-runtime-v0\.9/);
