@@ -23,7 +23,10 @@ test('runtime v1.8 sources wrap v1.7 and decode payload 17 / PIMG', () => {
   assert.match(win32, /gPatchPaintImagesV18\[source\] = \{image, stream\}/);
   assert.match(win32, /item\.second\.stream->Release\(\)/);
   assert.match(win32, /image->GetWidth\(\) == 0/);
-  assert.match(win32, /PatchPaintBoxV18/);
+  assert.match(win32, /PatchRenderPaintBoxV18/);
+  assert.doesNotMatch(win32, /static void PatchPaintBoxV18\(/);
+  assert.match(win32, /std::max\(1, static_cast<int>\(points\[1\]\.x - points\[0\]\.x\)\)/);
+  assert.match(win32, /std::max\(1, static_cast<int>\(points\[1\]\.y - points\[0\]\.y\)\)/);
 
   assert.match(gtk, /gdk_pixbuf_loader_new/);
   assert.match(gtk, /gdk_cairo_set_source_pixbuf/);
