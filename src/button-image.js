@@ -128,7 +128,7 @@ export function resolveButtonImageBinding(lists, binding, line = null) {
 
 export function nativeButtonImageUnsupportedMessage(node, line = null) {
   if (!node?.imageListId || !node?.imageItem) return null;
-  const where = line == null ? 'native GUI 1.4 Button' : `line ${line}: native GUI 1.4 Button`;
+  const where = line == null ? 'native GUI Button' : `line ${line}: native GUI Button`;
   return `${where} does not transport image ${node.imageListId}.${node.imageItem}. ImageList consumers remain fail-closed on desktop until a versioned native contract transports them.`;
 }
 

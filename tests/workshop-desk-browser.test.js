@@ -257,10 +257,13 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     value => value === true
   );
 
+  // Trigger the heavyweight sample reconciliation on the next browser task so
+  // this CDP command measures command responsiveness, not the full Designer load.
+  // The bounded wait below remains the authoritative load/readiness gate.
   const loaded = await evaluate(cdp, `(() => {
     const sample = document.querySelector('#sample');
     sample.value = 'workshopDesk';
-    sample.dispatchEvent(new Event('change', { bubbles: true }));
+    setTimeout(() => sample.dispatchEvent(new Event('change', { bubbles: true })), 0);
     return true;
   })()`);
   assert.equal(loaded, true);

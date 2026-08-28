@@ -1,13 +1,3 @@
-create thing ticket:
-  customer = "Ada"
-  item = "Keyboard"
-  qty = 1
-  total = 40
-  bench = "Bench A"
-  priority = "Normal"
-  payment = "Card"
-  state = "Open"
-
 create text customer = "Ada"
 create text item = "Keyboard"
 create number qty = 1
@@ -16,26 +6,21 @@ create text priority = "Normal"
 create text pay = "Card"
 create text notes = ""
 create list services = ["Diagnostics"]
-create list selected_part = []
-create list selected_job = []
 create text status = "Ready for the next workshop ticket."
 create boolean notifications = true
 create text default_bench = "Bench A"
 create list stations = ["Bench A", "Bench B"]
 create text density = "Comfortable"
 create number labor_limit = 50
-
-allow quote:
-  ticket.total may increase up to 500
-
-make quote(ticket, extra number 0..50):
-  change ticket:
-    add extra to total
+create number heartbeat = 0
+create number ticket_total = 40
+create text ticket_bench = "Bench A"
+create text ticket_state = "Open"
 
 window "Workshop Desk" as main size 1080, 700:
   text "Workshop Desk" at 24, 16 size 260, 30
   text "{status}" at 300, 16 size 520, 30
-  text "Quote {ticket.total} · {ticket.state}" at 840, 16 size 210, 30
+  text "Quote {ticket_total} · {ticket_state}" at 840, 16 size 210, 30
 
   text "Customer" at 24, 58 size 100, 22
   combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 82 size 220, 36
@@ -79,9 +64,10 @@ window "Workshop Desk" as main size 1080, 700:
   button "Mark ready" as complete_button at 878, 464 size 150, 38
   button "Reset ticket" as reset_button at 878, 512 size 150, 38
 
-  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26
+  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26
+  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
+  timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
 window "Workshop settings" as settings size 720, 520:
@@ -101,54 +87,49 @@ window "Workshop settings" as settings size 720, 520:
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
       text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."
+      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
-window "Job details" as details size 640, 470:
+window "Job details" as details size 640, 520:
   text "Current workshop ticket" at 24, 24 size 300, 28
-  text "Customer: {ticket.customer}" at 24, 70 size 280, 24
-  text "Item: {ticket.item}" at 24, 104 size 280, 24
-  text "Quantity: {ticket.qty}" at 24, 138 size 280, 24
-  text "Bench: {ticket.bench}" at 24, 172 size 280, 24
-  text "Priority: {ticket.priority}" at 24, 206 size 280, 24
-  text "Payment: {ticket.payment}" at 326, 70 size 280, 24
-  text "State: {ticket.state}" at 326, 104 size 280, 24
-  text "Current quote: {ticket.total}" at 326, 138 size 280, 24
-  text "{status}" at 24, 278 size 560, 28
-  button "Add inspection" as details_quote at 24, 366 size 160, 38
-  button "Mark ready" as details_ready at 202, 366 size 150, 38
-  button "Close details" as close_details at 370, 366 size 160, 38
+  text "Customer: {customer}" at 24, 70 size 280, 24
+  text "Item: {item}" at 24, 104 size 280, 24
+  text "Quantity: {qty}" at 24, 138 size 280, 24
+  text "Bench: {ticket_bench}" at 24, 172 size 280, 24
+  text "Priority: {priority}" at 24, 206 size 280, 24
+  text "Payment: {pay}" at 326, 70 size 280, 24
+  text "State: {ticket_state}" at 326, 104 size 280, 24
+  text "Current quote: {ticket_total}" at 326, 138 size 280, 24
+  panel as runtime_panel at 326, 172 size 280, 170:
+    text "Native runtime pulse {heartbeat}"
+    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
+  text "{status}" at 24, 360 size 560, 28
+  button "Add inspection" as details_quote at 24, 414 size 160, 38
+  button "Mark ready" as details_ready at 202, 414 size 150, 38
+  button "Close details" as close_details at 370, 414 size 160, 38
 
 when customer changed:
   change customer:
     set = value
-  change ticket:
-    set customer = value
   change status:
     set = "Customer changed"
 
 when item changed:
   change item:
     set = value
-  change ticket:
-    set item = value
   change status:
     set = "Item description updated"
 
 when pay changed:
   change pay:
     set = value
-  change ticket:
-    set payment = value
   change status:
     set = "Payment method changed"
 
 when priority changed:
   change priority:
     set = value
-  change ticket:
-    set priority = value
   change status:
     set = "Priority changed"
 
@@ -161,8 +142,6 @@ when rush changed:
 when qty changed:
   change qty:
     set = value
-  change ticket:
-    set qty = value
   change status:
     set = "Quantity changed"
 
@@ -179,40 +158,42 @@ when services changed:
     set = "Services updated"
 
 when board changed:
-  change selected_job:
-    set = value
   change status:
     set = "Workshop board row selected"
 
 when parts changed:
-  change selected_part:
-    set = value
   change status:
     set = "Inventory tree path selected"
 
+when workshop_clock ticked:
+  change heartbeat:
+    add 1
+
 when quote_button clicked:
-  do quote(ticket, 25)
-  change ticket:
-    set state = "Quoted"
+  change ticket_total:
+    add 25
+  change ticket_state:
+    set = "Quoted"
   change status:
     set = "Quote increased by 25"
 
 when details_quote clicked:
-  do quote(ticket, 10)
-  change ticket:
-    set state = "Quoted"
+  change ticket_total:
+    add 10
+  change ticket_state:
+    set = "Quoted"
   change status:
     set = "Inspection added to quote"
 
 when complete_button clicked:
-  change ticket:
-    set state = "Ready"
+  change ticket_state:
+    set = "Ready"
   change status:
     set = "Ticket marked ready"
 
 when details_ready clicked:
-  change ticket:
-    set state = "Ready"
+  change ticket_state:
+    set = "Ready"
   change status:
     set = "Ticket marked ready"
 
@@ -244,8 +225,8 @@ when notifications changed:
 when default_bench changed:
   change default_bench:
     set = value
-  change ticket:
-    set bench = value
+  change ticket_bench:
+    set = value
   change status:
     set = "Default bench changed"
 
@@ -284,18 +265,13 @@ when reset_button clicked:
     set = ""
   change services:
     set = ["Diagnostics"]
-  change selected_part:
-    clear
-  change selected_job:
-    clear
-  change ticket:
-    set customer = "Ada"
-    set item = "Keyboard"
-    set qty = 1
-    set total = 40
-    set bench = default_bench
-    set priority = "Normal"
-    set payment = "Card"
-    set state = "Open"
+  change heartbeat:
+    set = 0
+  change ticket_total:
+    set = 40
+  change ticket_bench:
+    set = "Bench A"
+  change ticket_state:
+    set = "Open"
   change status:
     set = "Ticket reset"
