@@ -2,20 +2,20 @@
   width: min(1720px, 100%);
 }
 
-/* Keep the softer Patch Studio P used before the angular SVG redesign. */
+/* Keep the proven softer Patch P. The generated site rewrites the legacy
+   22x22 source mark to the earlier 32x32 geometry and we deliberately avoid
+   crisp pixel rendering here. */
 .brand-mark {
   border-radius: 9px;
-  font-size: 13px;
-  font-weight: 850;
-  letter-spacing: 0;
-  line-height: 1;
 }
-.brand-mark svg { display: none; }
-.brand-mark::before {
-  content: "P";
+.brand-mark svg {
   display: block;
+  width: 24px;
+  height: 24px;
+  shape-rendering: auto;
   transform: none;
 }
+.brand-mark::before { content: none; display: none; }
 
 .studio-jump {
   min-height: 36px;
