@@ -36,6 +36,7 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
 
   const ir = buildCurrentNativeGuiIR(compiled);
   const controls = flattenCurrentNativeGuiControls(ir);
+  const paintbox = controls.find(control => control.type === 'paintbox');
   assert.equal(ir.version, '1.7');
   assert.equal(controls.filter(control => control.type === 'tree').length, 1);
   assert.equal(controls.filter(control => control.type === 'slider').length, 2);
@@ -44,6 +45,9 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
   assert.equal(controls.filter(control => control.type === 'shape').length, 1);
   assert.equal(controls.filter(control => control.type === 'picture').length, 1);
   assert.equal(controls.filter(control => control.type === 'paintbox').length, 1);
+  assert.ok(paintbox);
+  assert.match(JSON.stringify(paintbox.paintProgram), /"operation":"image"/);
+  assert.match(JSON.stringify(paintbox.paintProgram), /data:image\/png;base64,/);
 });
 
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
