@@ -48,7 +48,7 @@ requireAll('Diagnostics numeric-subset code', diagnostics, [
   'unknown recipe calls, classify as `PATCH2003`'
 ]);
 requireAll('Studio outline composition mapping', studioOutline, [
-  'display owning `file:line`','Generated backend/compiler locations remain separate','name.param','editor tabs'
+  'display owning `file:line`','Generated backend/compiler locations remain separate','name.param','Editor tabs'
 ]);
 requireAll('Studio project composition diagnostics', studioProjects, ['display `file:line` without changing Patch syntax']);
 requireAll('Doctor compiler self-check', doctor, [
