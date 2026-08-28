@@ -4,8 +4,7 @@ import {
   buildNativeGuiIRV15,
   validateNativeGuiIRV15,
   flattenNativeGuiControlsV15,
-  flattenNativeGuiMenuItemsV15,
-  PATCH_NATIVE_SHAPE_CONTROLS
+  flattenNativeGuiMenuItemsV15
 } from './native-gui-ir-v15.js';
 
 export const PATCH_NATIVE_GUI_IR_V16_VERSION = '1.6';
@@ -110,10 +109,9 @@ function rewritePaintBoxesForV15Compatibility(ast, originalAst) {
       if (node.kind === 'event' && node.event === 'paint') continue;
       if (node.kind === 'uiControl' && node.control === 'paintbox') {
         if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI 1.6 PaintBox needs a simple Patch name after 'as'.`);
-        const handler = handlers.get(node.id);
         const metadata = {
           kind: 'paintbox', id: node.id, compatId: allocCompat(node.id),
-          paintProgram: lowerPaintProgram(handler?.body ?? []), line: node.line
+          paintProgram: lowerPaintProgram(handlers.get(node.id) ?? []), line: node.line
         };
         paintboxes.push(metadata);
         node.control = 'text';
@@ -161,8 +159,9 @@ function collectPaintHandlers(ast) {
   const walk = nodes => {
     for (const node of nodes ?? []) {
       if (node.kind === 'event' && node.event === 'paint') {
-        if (handlers.has(node.control)) throw new NativeGuiError(`PaintBox '${node.control}' has more than one paint handler.`);
-        handlers.set(node.control, node);
+        const body = handlers.get(node.control) ?? [];
+        body.push(...(node.body ?? []));
+        handlers.set(node.control, body);
       }
       if (node.body && node.kind !== 'event') walk(node.body);
     }
