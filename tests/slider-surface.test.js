@@ -19,7 +19,7 @@ test('Slider Stage 1 remains reproducible while Studio exposes the current nativ
   assert.match(index, /Slider/i);
   assert.match(index, /Native GUI IR 1\.6 \/ payload v16 \/ runtime v1\.7/i);
   assert.match(index, /Older versioned contracts remain compatibility lines/i);
-  assert.match(language, /data-slider-language-support="native-v14"/);
+  assert.match(language, /data-slider-language-support="native-v17"/);
   assert.match(language, /slider 0\.\.100 as volume step 5/);
   assert.match(language, /native Slider support/i);
   assert.match(language, /frozen compatibility/i);
