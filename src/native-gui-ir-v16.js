@@ -1,5 +1,6 @@
 import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
 import { normalizePatchPaintCommand } from './paintbox-control.js';
+import { validateNativePaintProgramExpressions } from './native-paintbox-expression.js';
 import {
   buildNativeGuiIRV15,
   validateNativeGuiIRV15,
@@ -43,6 +44,11 @@ export function validateNativeGuiIRV16(ir) {
       throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${control.id}' contains incompatible control metadata.`);
     }
     validatePaintProgram(control.paintProgram ?? [], control.id);
+    try {
+      validateNativePaintProgramExpressions(control.paintProgram ?? [], ir.states ?? []);
+    } catch (error) {
+      throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${control.id}' expression is unsupported: ${error?.message ?? error}`);
+    }
   });
 
   for (const event of ir.events ?? []) {
