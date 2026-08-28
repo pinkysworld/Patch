@@ -20,7 +20,7 @@ import {
 const source = `create number count = 2
 
 window "Paint Native" as main size 720, 480:
-  shape rounded as frame fill #eeeeee stroke #222222 width 2 radius 12 opacity 1 at 20, 20 size 360, 260
+  shape rounded as frame fill #eeeeee stroke #222222 stroke-width 2 radius 12 opacity 1 at 20, 20 size 360, 260
   paintbox as canvas at 40, 40 size 320, 200
 
 when canvas paint:
@@ -78,6 +78,23 @@ test('sealed payload v16 appends bounded PaintBox program over exact payload v15
   const shapeInfo = inspectNativeGuiShapesV16(payload);
   assert.equal(shapeInfo.shapes.length, 1);
   assert.equal(shapeInfo.shapes[0].id, 'frame');
+});
+
+test('Native GUI IR 1.6 composes multiple source-visible OnPaint handlers in order', () => {
+  const multiple = `window "Paint" as main size 400, 300:
+  paintbox as canvas at 20, 20 size 200, 160
+
+when canvas paint:
+  draw clear #ffffff
+
+when canvas paint:
+  draw line 0, 0 to 100, 100 stroke #111111 width 2
+`;
+  const ir = buildNativeGuiIRV16(compile(multiple, { name: 'NativePaintBoxMultiple', kind: 'window' }));
+  const canvas = flattenNativeGuiControlsV16(ir).find(control => control.type === 'paintbox');
+  assert.equal(canvas.paintProgram.length, 2);
+  assert.equal(canvas.paintProgram[0].command.operation, 'clear');
+  assert.equal(canvas.paintProgram[1].command.operation, 'line');
 });
 
 test('Native GUI IR 1.6 rejects runtime paint events and malformed programs', () => {
