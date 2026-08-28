@@ -63,7 +63,7 @@ test('nested Tabs implementation and current Studio docs stay aligned', () => {
   assert.match(studio, /Native GUI IR \*\*1\.6\*\*/);
   assert.match(studio, /payload \*\*v16\*\*/);
   assert.match(studio, /runtime \*\*v1\.7\*\*/);
-  assert.match(studio, /frozen TreeView line is 1\.2\/v12\/v1\.3/);
+  assert.match(studio, /frozen TreeView line(?: is)? 1\.2\/v12\/v1\.3/);
 });
 
 test('Studio structural Properties usability remains source-backed without a second mutation path', () => {
