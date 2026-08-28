@@ -39,7 +39,7 @@ Native GUI IR 1.6 / payload v16 / runtime v1.7 is the current Ready/offline desk
 
 Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under `native-picture-formats/1.0`. WebP/SVG remain deferred native formats and fail closed rather than being silently treated as Ready. The browser/Standalone Web path can embed PNG, JPEG, WebP and SVG project resources directly.
 
-The previous Slider line Native GUI IR 1.3 / payload v13 / runtime v1.4 and the frozen TreeView line Native GUI IR 1.2 / payload v12 / runtime v1.3 remain compatibility evidence.
+The previous Shape line Native GUI IR 1.5 / payload v15 / runtime v1.6, the previous Slider line Native GUI IR 1.3 / payload v13 / runtime v1.4 and the frozen TreeView line Native GUI IR 1.2 / payload v12 / runtime v1.3 remain explicit compatibility evidence.
 
 ## Patch Studio RAD authoring
 
@@ -95,7 +95,7 @@ Panel is a source-backed top-level container with a structural child editor for 
 
 ### Picture and Resource Manager
 
-Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources and apply source-backed display properties: `fit`, proportional inspector sugar, `center`, `opacity` and accessible `description`. Current native PNG/JPEG resource decoding is covered by platform smoke tests and versioned as `native-picture-formats/1.0`. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than ignoring them. Accessible description maps onto the existing native Picture caption. Native WebP/SVG sources fail closed until a later versioned native contract expands Win32, AppKit and GTK together.
+Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources and apply source-backed display properties: `fit`, proportional inspector sugar, `center`, `opacity` and accessible `description`. Current native PNG/JPEG resource decoding is covered by platform smoke tests and versioned as `native-picture-formats/1.0`. The current Ready line preserves the Native GUI IR 1.4 default contain/centered/opaque PictureBox contract and fail-closes other fit/center/opacity values rather than ignoring them. Accessible description maps onto the existing native Picture caption. Native WebP/SVG sources fail closed until a later versioned native contract expands Win32, AppKit and GTK together.
 
 ### Shape Stage 1
 
@@ -105,7 +105,9 @@ Shape supports deterministic rectangle/rounded/ellipse/line source declarations 
 
 PaintBox is a source-backed drawing surface with a pure `paint` event and deterministic drawing commands. Stage 1 permits drawing logic without creating a hidden persistent mutation path; persistent `change` operations are rejected from the paint handler.
 
-Studio authoring and Standalone Web rendering are implemented. Native drawing parity remains explicitly fail-closed until a shared versioned drawing-command contract is consumed by the desktop backends.
+Studio, Standalone Web and current Ready Windows/macOS/Linux implement `clear`, `line`, `rectangle`, `ellipse` and `text`. Native GUI IR 1.6 transports the paint program in payload v16 and runtime v1.7 renders it with Win32 GDI+, AppKit drawing primitives and GTK cairo. PaintBox is redrawn after relevant control, Slider, Timer/Picture and resize events so simple state-dependent paint programs stay live.
+
+The native Paint VM intentionally accepts a narrower expression subset than general Patch: literals, `count` inside `repeat`, and simple number/text/boolean state names. Unknown state names and list/Thing state references in native `if`/`repeat` fail closed during native IR validation instead of being silently skipped. Complex arithmetic expressions remain deferred. `draw image` is not part of payload v16 and remains fail-closed.
 
 ### ImageList Stage 1
 
@@ -119,7 +121,7 @@ imagelist as toolbar_images size 16, 16:
 
 It provides named ordered project-resource references and a logical size. The Object Inspector can add/replace/reorder/rename/remove entries through the existing Resource Manager. It consumes no Form geometry and exposes no event in Stage 1.
 
-Buttons bind one ImageList item with `image list.item`. Standalone Web renders that image. Native GUI IR 1.4 fail-closes ImageList and Button image bindings instead of silently dropping them.
+Buttons bind one ImageList item with `image list.item`. Standalone Web renders that image. Current Native GUI IR 1.6 fail-closes ImageList and Button image bindings instead of silently dropping them.
 
 ### Window icon Stage 1
 
@@ -129,7 +131,7 @@ Forms may declare an optional `icon` on the window line:
 window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
 ```
 
-The first Form that declares `icon` is the application favicon for Standalone Web. Studio preview shows the same resource in Form chrome. Native GUI IR 1.4 fail-closes Window icons under `window-icon/1.0` rather than silently dropping them. ICO/ICNS Resource Manager support and Win32/AppKit/Linux desktop packaging remain later native work.
+The first Form that declares `icon` is the application favicon for Standalone Web. Studio preview shows the same resource in Form chrome. Current Native GUI IR 1.6 fail-closes Window icons under `window-icon/1.0` rather than silently dropping them. ICO/ICNS Resource Manager support and Win32/AppKit/Linux desktop packaging remain later native work.
 
 ## Website, PWA and CI
 
