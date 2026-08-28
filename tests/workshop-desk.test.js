@@ -7,21 +7,27 @@ import { execFileSync } from 'node:child_process';
 import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
+import { upgradeWorkshopDeskSource } from '../web/studio-dom-sync.js';
 
 const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
 const html = fs.readFileSync('web/index.html', 'utf8');
 
-function studioWorkshopSource() {
+function embeddedWorkshopBaseline() {
   const match = studioModule.match(/const WORKSHOP_DESK_SAMPLE = `([\s\S]*?)`;\n\nconst MULTISELECT_SAMPLE/);
-  assert.ok(match, 'Studio must expose a canonical Workshop Desk source block');
+  assert.ok(match, 'Studio must retain the beta35 Workshop Desk compatibility source block');
   return match[1];
 }
 
-test('Workshop Desk compiles, runs and stays in the Studio Example list', () => {
+test('Workshop Desk compiles, runs and the Studio upgrades its compatibility sample to the canonical example', () => {
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
   assert.match(studioModule, /sample\.value === 'workshopDesk'/);
-  assert.equal(studioWorkshopSource(), example, 'Web Studio Workshop Desk must match examples/workshop-desk.patch exactly');
+  assert.equal(
+    upgradeWorkshopDeskSource(embeddedWorkshopBaseline()),
+    example,
+    'Studio Workshop Desk upgrade must resolve to examples/workshop-desk.patch exactly'
+  );
+  assert.equal(upgradeWorkshopDeskSource(example), example, 'Workshop upgrade must be idempotent');
 
   const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
   assert.ok(compiled.ast);
@@ -31,13 +37,14 @@ test('Workshop Desk compiles, runs and stays in the Studio Example list', () => 
   assert.equal(result.state.ticket.bench, 'Bench A');
   assert.equal(result.state.ticket.payment, 'Card');
   assert.equal(result.state.ticket.state, 'Open');
+  assert.equal(result.state.heartbeat, 0);
   assert.equal(result.ui.length, 3);
   assert.equal(result.ui.find(window => window.id === 'main')?.visible, true);
   assert.equal(result.ui.find(window => window.id === 'settings')?.visible, false);
   assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);
 });
 
-test('Workshop Desk exercises stateful controls, Forms and complete ticket events', () => {
+test('Workshop Desk exercises stateful controls, Forms, transient structural selection and Timer events', () => {
   const runtime = new PatchInterpreter();
   runtime.run(example);
 
@@ -57,11 +64,13 @@ test('Workshop Desk exercises stateful controls, Forms and complete ticket event
   assert.deepEqual(result.state.services, ['Diagnostics', 'Pickup']);
 
   result = triggerWindowEvent(runtime, 'board', 'changed', { value: ['WD-105', 'Grace', 'Bench B', 'Quoted'] });
-  assert.deepEqual(result.state.selected_job, ['WD-105', 'Grace', 'Bench B', 'Quoted']);
   assert.equal(result.state.status, 'Workshop board row selected');
 
   result = triggerWindowEvent(runtime, 'parts', 'changed', { value: ['Parts', 'Input', 'Keyboard'] });
-  assert.deepEqual(result.state.selected_part, ['Parts', 'Input', 'Keyboard']);
+  assert.equal(result.state.status, 'Inventory tree path selected');
+
+  result = triggerWindowEvent(runtime, 'workshop_clock', 'ticked');
+  assert.equal(result.state.heartbeat, 1);
 
   result = triggerWindowEvent(runtime, 'quote_button', 'clicked');
   assert.equal(result.state.ticket.total, 65);
@@ -97,13 +106,12 @@ test('Workshop Desk exercises stateful controls, Forms and complete ticket event
   assert.equal(result.state.ticket.total, 40);
   assert.equal(result.state.ticket.qty, 1);
   assert.equal(result.state.qty, 1);
-  assert.deepEqual(result.state.selected_job, []);
-  assert.deepEqual(result.state.selected_part, []);
+  assert.equal(result.state.heartbeat, 0);
   assert.deepEqual(result.state.services, ['Diagnostics']);
   assert.equal(result.state.status, 'Ticket reset');
 });
 
-test('Workshop Desk covers the stable current Studio RAD control surface without a hidden form model', () => {
+test('Workshop Desk covers the current native-ready RAD control surface without a hidden form model', () => {
   for (const marker of [
     'window "Workshop Desk" as main',
     'window "Workshop settings" as settings',
@@ -111,14 +119,16 @@ test('Workshop Desk covers the stable current Studio RAD control surface without
     'input item', 'combo "', 'radio "', 'checkbox "', 'slider ', 'listbox "',
     'table "Ticket", "Customer", "Bench", "State" as board',
     'tree as parts', 'tabs as prefs', 'statusbar "{status}" as desk_status',
+    'panel as runtime_panel', 'shape rounded as runtime_shape', 'timer as workshop_clock interval 5000',
     'button "Mark ready" as complete_button', 'make quote', 'allow quote:', 'create thing ticket',
     'open settings', 'open details', 'close settings', 'close details',
     '# @layout anchor left right bottom'
   ]) assert.ok(example.includes(marker), marker);
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
+  assert.doesNotMatch(example, /change selected_(?:job|part)/);
 });
 
-test('Workshop Desk builds as a Standalone Window Web App', () => {
+test('Workshop Desk builds as a Standalone Window Web App with the current visual controls', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-workshop-web-'));
   const outputPath = path.join(tempDir, 'WorkshopDesk-test.html');
   try {
@@ -132,6 +142,8 @@ test('Workshop Desk builds as a Standalone Window Web App', () => {
     assert.match(built, /Workshop settings/);
     assert.match(built, /Job details/);
     assert.match(built, /Mark ready/);
+    assert.match(built, /runtime_shape/);
+    assert.match(built, /workshop_clock/);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
