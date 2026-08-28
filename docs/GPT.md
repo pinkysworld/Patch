@@ -2,7 +2,7 @@
 
 Living briefing for ChatGPT, Grok and other coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-28** by Grok on `gpt/rad-imagelist-r1`.
+Last refreshed: **2026-08-28** by Grok on `grok/rad-picture-display-r1`.
 
 ## What Patch is
 
@@ -32,7 +32,7 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 ## Collaboration
 
 - GPT branches: `gpt/...`. Current RAD PR: [#268](https://github.com/pinkysworld/Patch/pull/268) `gpt/rad-imagelist-r1`.
-- Grok branches: `grok/...` when the work is a separate slice. Small CI/docs/matrix fixes may land on the open GPT branch so ChatGPT continues from green CI.
+- Grok branches: `grok/...` when the work is a separate slice. Current Picture display PR branch: `grok/rad-picture-display-r1`.
 - Tracking issue: [#247](https://github.com/pinkysworld/Patch/issues/247) RAD R1.
 - After every slice: tests, docs, public site copy, this file, and regenerate `docs/COMPONENT_CAPABILITY_MATRIX.md`.
 - Do not merge stale planning PRs [#245](https://github.com/pinkysworld/Patch/pull/245) / [#246](https://github.com/pinkysworld/Patch/pull/246); the canonical plans now live in `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
@@ -55,6 +55,7 @@ Completed:
 - Component registry v0.8 with property/event/renderer/target metadata
 - Resource Manager Stage 1 (logical ids, SHA-256, bounds, missing-resource rejection)
 - Picture authoring + Web embed + bounded native PNG/JPEG
+- Picture display properties: source-backed fit/center/opacity/description, Designer/Object Inspector, Web preview; native non-default fit/center/opacity fail closed
 - Shape Stage 1 authoring + Standalone Web; native fail-closed
 - PaintBox Stage 1 authoring + `paint` drawing + Standalone Web; native fail-closed
 - ImageList Stage 1 authoring (nonvisual tray, resource-backed items); all runtimes fail-closed until a consumer exists
@@ -62,14 +63,13 @@ Completed:
 
 Remaining, in this order:
 
-1. Picture display properties: fit/scale, proportional, center, opacity, accessible description
-2. Explicit native SVG/WebP policy (do not silently broaden formats)
-3. First ImageList consumer (ToolBar/ToolButton or Button/TreeView image binding), then a versioned runtime contract
-4. Application/window icon resource packaging
-5. Shape native lowering/runtime parity
-6. PaintBox native drawing parity, then `draw image`
+1. Explicit native SVG/WebP policy (do not silently broaden formats)
+2. First ImageList consumer (ToolBar/ToolButton or Button/TreeView image binding), then a versioned runtime contract
+3. Application/window icon resource packaging
+4. Shape native lowering/runtime parity
+5. PaintBox native drawing parity, then `draw image`
 
-Do not start native Shape/PaintBox before Picture display properties. Do not claim ImageList runtime support without a consumer.
+Do not start native Shape/PaintBox before the SVG/WebP policy is explicit. Do not claim ImageList runtime support without a consumer.
 
 ## How to add a component
 
@@ -114,6 +114,8 @@ node src/cli-entry.js doctor --json
 | Path | Role |
 |---|---|
 | `src/component-registry.js` | Canonical component metadata |
+| `src/picture-control.js` | Picture display normalization, CSS and native fail-closed diagnostic |
+| `src/picture-source.js` | Picture declaration codec |
 | `src/component-matrix.js` | Generated matrix/JSON/CLI projection |
 | `src/component-support.js` | Build-target support assessment |
 | `src/native-current-contract.js` | Current IR 1.4 / v14 / v1.5 facade |
@@ -126,4 +128,4 @@ node src/cli-entry.js doctor --json
 
 ## Next ChatGPT slice
 
-**Picture display properties.** Keep Patch source authoritative. Add fit/scale, proportional/aspect, center, opacity and accessible description through parser, Designer/Object Inspector, Web preview and explicit native behavior. Do not treat missing native properties as silent no-ops.
+**Explicit native SVG/WebP policy.** Picture display properties are source-backed for Studio/Web. Native GUI IR 1.4 still only transports PictureBox `text` + `source` and must keep failing closed for WebP/SVG and for non-default fit/center/opacity. Do not silently broaden native image formats. Do not bump Native GUI IR / payload / runtime unless native backends move together.

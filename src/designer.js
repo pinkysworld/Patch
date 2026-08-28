@@ -1,6 +1,8 @@
 import { parse } from './parser.js';
 import { PATCH_FORM_CONTROL_DEFAULTS, formControlDefaultSize, isNonvisualFormControl } from './form-layout.js';
 import { formatPatchImageListSource, normalizeImageListDefinition } from './imagelist-control.js';
+import { applyPatchPictureProportional } from './picture-control.js';
+import { formatPatchPictureDeclaration } from './picture-source.js';
 
 const DEFAULT_WINDOW = { width: 640, height: 420 };
 const CONTROL_MARGIN = 24;
@@ -220,6 +222,12 @@ export function listDesignerControls(source) {
       }
       if (child.kind === 'uiControl' && child.control === 'picture') {
         item.sourceExpr = child.sourceExpr ?? null;
+        item.fit = child.fit;
+        item.center = child.center;
+        item.opacity = child.opacity;
+        item.description = child.description ?? '';
+        item.proportional = child.proportional;
+        item.legacyCaption = child.legacyCaption === true;
       }
       if (child.kind === 'uiControl' && child.control === 'panel') {
         item.childCount = (child.body ?? []).length;
@@ -299,10 +307,12 @@ export function updateDesignerControl(source, selector, changes = {}) {
     timerInterval = timerIntervalNumber(Object.hasOwn(changes, 'interval') ? changes.interval : control.interval);
   }
 
-  let pictureSourceExpr = control.sourceExpr ?? null;
-  if (control.type === 'picture' && Object.hasOwn(changes, 'sourceExpr')) {
-    const sourceExpr = String(changes.sourceExpr ?? '').trim();
-    pictureSourceExpr = sourceExpr || null;
+  if (control.type === 'picture') {
+    const layout = normalizeControlLayout(control, changes);
+    const indent = indentOf(lines[lineIndex]);
+    lines[lineIndex] = `${indent}${formatPictureControl(control, nextId, changes, layout)}`;
+    if (oldId && nextId !== oldId) renameEventHeaders(lines, oldId, nextId);
+    return preserveTrailingNewline(source, lines.join('\n'));
   }
 
   const layout = normalizeControlLayout(control, changes);
@@ -310,7 +320,7 @@ export function updateDesignerControl(source, selector, changes = {}) {
   if (control.type === 'table') {
     lines[lineIndex] = `${indent}${formatTableControl(nextId, control.columns ?? [], layout)}`;
   } else {
-    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval, pictureSourceExpr)}`;
+    lines[lineIndex] = `${indent}${formatControl(control.type, nextId, nextTextExpr, layout, nextOptions, slider, timerInterval)}`;
   }
 
   if (oldId && nextId !== oldId && !['tabs', 'panel'].includes(control.type)) renameEventHeaders(lines, oldId, nextId);
@@ -505,7 +515,7 @@ function makeControl(type, lines, layout) {
   throw new Error(`Designer cannot add '${type}' yet.`);
 }
 
-function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null, pictureSourceExpr = null) {
+function formatControl(type, id, textExpr, layout, options = null, slider = null, timerInterval = null) {
   let core;
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = `button ${textExpr} as ${id}`;
@@ -516,11 +526,7 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   else if (type === 'listbox') core = `listbox ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'slider') core = `slider ${formatNumber(slider?.min ?? 0)}..${formatNumber(slider?.max ?? 100)} as ${id} step ${formatNumber(slider?.step ?? 1)}`;
   else if (type === 'timer') core = `timer as ${id} interval ${timerIntervalNumber(timerInterval ?? 1000)}`;
-  else if (type === 'picture') {
-    if (pictureSourceExpr) core = `picture as ${id} from ${pictureSourceExpr}`;
-    else if (textExpr) core = `picture ${textExpr} as ${id}`;
-    else core = `picture as ${id}`;
-  }
+  else if (type === 'picture') core = formatPatchPictureDeclaration({ id });
   else if (type === 'statusbar') core = `statusbar ${textExpr ?? '"Ready"'} as ${id}`;
   else if (type === 'panel') core = `panel as ${id}`;
   else if (type === 'tabs') core = `tabs as ${id}`;
@@ -536,6 +542,32 @@ function formatTableControl(id, columns, layout) {
   const core = `table ${(columns ?? []).join(', ')} as ${id}`;
   if (!layout) return `${core}:`;
   return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}:`;
+}
+
+function formatPictureControl(control, id, changes, layout) {
+  const next = {
+    id,
+    sourceExpr: Object.hasOwn(changes, 'sourceExpr') ? changes.sourceExpr : control.sourceExpr,
+    fit: Object.hasOwn(changes, 'fit') ? changes.fit : control.fit,
+    center: Object.hasOwn(changes, 'center') ? changes.center : control.center,
+    opacity: Object.hasOwn(changes, 'opacity') ? changes.opacity : control.opacity,
+    description: Object.hasOwn(changes, 'description') ? changes.description : control.description,
+    textExpr: control.textExpr,
+    legacyCaption: control.legacyCaption === true
+  };
+  if (Object.hasOwn(changes, 'sourceExpr') && String(changes.sourceExpr ?? '').trim()) {
+    next.legacyCaption = false;
+  }
+  if (Object.hasOwn(changes, 'proportional')) {
+    next.fit = applyPatchPictureProportional(next.fit, changes.proportional);
+    next.legacyCaption = false;
+  }
+  if (['fit', 'center', 'opacity', 'description'].some(key => Object.hasOwn(changes, key))) {
+    next.legacyCaption = false;
+  }
+  const core = formatPatchPictureDeclaration(next);
+  if (!layout) return core;
+  return `${core} at ${layout.x}, ${layout.y} size ${layout.width}, ${layout.height}`;
 }
 
 function formatNumber(value) {

@@ -451,11 +451,29 @@ function installPictureInspector() {
   const hint = doc.createElement('small');
   hint.id = 'designerInspectorPictureSourceHint';
   hint.className = 'inspector-hint';
-  hint.textContent = 'Patch expression for the image source, for example "images/logo.png". Project Resources are the next R1 step.';
+  hint.textContent = 'Patch expression for the image source, for example "images/logo.png" or a project resource locator.';
   field.appendChild(hint);
   const timer = form.querySelector('#designerInspectorTimerField');
   const slider = form.querySelector('#designerInspectorSliderFields');
   (timer ?? slider)?.insertAdjacentElement('afterend', field);
+
+  const display = doc.createElement('section');
+  display.id = 'designerInspectorPictureDisplayFields';
+  display.className = 'inspector-field designer-picture-display';
+  display.hidden = true;
+  display.innerHTML = `
+    <label>Fit <select id="designerInspectorPictureFit" aria-label="Picture fit">
+      <option value="contain">contain</option>
+      <option value="cover">cover</option>
+      <option value="fill">fill</option>
+      <option value="none">none</option>
+    </select></label>
+    <label class="designer-picture-check"><input id="designerInspectorPictureProportional" type="checkbox"> Proportional</label>
+    <label class="designer-picture-check"><input id="designerInspectorPictureCenter" type="checkbox"> Center</label>
+    <label>Opacity <input id="designerInspectorPictureOpacity" type="number" min="0" max="1" step="0.05" inputmode="decimal" aria-label="Picture opacity"></label>
+    <label>Description <input id="designerInspectorPictureDescription" spellcheck="true" autocomplete="off" aria-label="Picture accessible description"></label>
+    <small class="inspector-hint">Fit, center and opacity are source-backed. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other display values.</small>`;
+  field.insertAdjacentElement('afterend', display);
 
   const input = field.querySelector('#designerInspectorPictureSource');
   input?.addEventListener('change', applyPictureSource);
@@ -464,45 +482,95 @@ function installPictureInspector() {
     event.preventDefault();
     applyPictureSource();
   });
+  display.querySelector('#designerInspectorPictureFit')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureProportional')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureCenter')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureOpacity')?.addEventListener('change', applyPictureDisplay);
+  display.querySelector('#designerInspectorPictureDescription')?.addEventListener('change', applyPictureDisplay);
+  for (const id of ['designerInspectorPictureOpacity', 'designerInspectorPictureDescription']) {
+    display.querySelector(`#${id}`)?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      applyPictureDisplay();
+    });
+  }
   canvas?.addEventListener(DESIGNER_SELECTION_EVENT, syncPictureInspector);
   code?.addEventListener('input', syncPictureInspector);
   code?.addEventListener('change', syncPictureInspector);
   syncPictureInspector();
 }
 
+function selectedPictureControl() {
+  if (!canvas || !code) return null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  try {
+    return listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function syncPictureInspector() {
   const field = doc?.querySelector('#designerInspectorPictureSourceField');
-  if (!field || !canvas || !code) return;
-  const selection = currentDesignerSelection(canvas);
-  let control = null;
-  try {
-    control = selection
-      ? listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null
-      : null;
-  } catch {
-    control = null;
-  }
+  const display = doc?.querySelector('#designerInspectorPictureDisplayFields');
+  if (!field) return;
+  const control = selectedPictureControl();
   const isPicture = control?.type === 'picture';
   field.hidden = !isPicture;
+  if (display) display.hidden = !isPicture;
   if (!isPicture) return;
   const input = field.querySelector('#designerInspectorPictureSource');
   if (input && doc.activeElement !== input) input.value = control.sourceExpr ?? '';
+  setPictureField('designerInspectorPictureFit', control.fit ?? 'contain');
+  setPictureCheckbox('designerInspectorPictureProportional', control.fit !== 'fill');
+  setPictureCheckbox('designerInspectorPictureCenter', control.center !== false);
+  setPictureField('designerInspectorPictureOpacity', control.opacity ?? 1);
+  setPictureField('designerInspectorPictureDescription', control.description ?? '');
+}
+
+function setPictureField(id, value) {
+  const input = doc?.querySelector(`#${id}`);
+  if (!input || doc.activeElement === input) return;
+  input.value = value ?? '';
+}
+
+function setPictureCheckbox(id, checked) {
+  const input = doc?.querySelector(`#${id}`);
+  if (!input || doc.activeElement === input) return;
+  input.checked = Boolean(checked);
 }
 
 function applyPictureSource() {
+  applyPictureChanges({ sourceExpr: doc.querySelector('#designerInspectorPictureSource')?.value ?? '' });
+}
+
+function applyPictureDisplay(event) {
+  const target = event?.currentTarget ?? event?.target;
+  const id = target?.id ?? '';
+  const changes = {};
+  if (id === 'designerInspectorPictureFit') changes.fit = target.value;
+  else if (id === 'designerInspectorPictureProportional') changes.proportional = Boolean(target.checked);
+  else if (id === 'designerInspectorPictureCenter') changes.center = Boolean(target.checked);
+  else if (id === 'designerInspectorPictureOpacity') changes.opacity = target.value;
+  else if (id === 'designerInspectorPictureDescription') changes.description = target.value ?? '';
+  else {
+    changes.fit = doc.querySelector('#designerInspectorPictureFit')?.value ?? 'contain';
+    changes.center = Boolean(doc.querySelector('#designerInspectorPictureCenter')?.checked);
+    changes.opacity = doc.querySelector('#designerInspectorPictureOpacity')?.value ?? 1;
+    changes.description = doc.querySelector('#designerInspectorPictureDescription')?.value ?? '';
+  }
+  applyPictureChanges(changes);
+}
+
+function applyPictureChanges(changes) {
   if (!canvas || !code) return;
   const selection = currentDesignerSelection(canvas);
   if (!selection) return;
-  let control = null;
-  try {
-    control = listDesignerControls(code.value).find(item => sameLocation(item, selection)) ?? null;
-  } catch {
-    return;
-  }
+  const control = selectedPictureControl();
   if (control?.type !== 'picture') return;
   try {
-    const sourceExpr = doc.querySelector('#designerInspectorPictureSource')?.value ?? '';
-    const next = updateDesignerControl(code.value, selection, { sourceExpr });
+    const next = updateDesignerControl(code.value, selection, changes);
     setSource(next);
     const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });

@@ -220,6 +220,12 @@ export class PatchInterpreter {
           item.max=node.max;
           item.step=node.step;
         }
+        if(node.control==='picture'){
+          item.fit=node.fit??'contain';
+          item.center=node.center!==false;
+          item.opacity=Number.isFinite(Number(node.opacity))?Number(node.opacity):1;
+          item.description=node.description||item.text;
+        }
         items.push(item);
       } else if(node.kind==='tabs'){
         items.push({

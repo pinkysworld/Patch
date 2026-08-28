@@ -278,6 +278,7 @@ panel as tools:
   button "Run" as run_tools
 timer as refresh_clock interval 1000
 picture "Preview" as preview_image
+picture as logo from "patch-resource:app.logo" fit cover center false opacity 0.85 description "Product logo"
 shape ellipse as badge
 paintbox as canvas
 imagelist as app_images size 16, 16:
@@ -285,7 +286,7 @@ imagelist as app_images size 16, 16:
 statusbar "Ready" as app_status
 ```
 
-`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.4 / payload v14 / runtime v1.5 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. In particular, PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
+`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.4 / payload v14 / runtime v1.5 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. Picture display properties (`fit`, `center`, `opacity`, `description`) are source-backed. Standalone Web applies them. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than silently ignoring them. Accessible `description` maps onto the existing native PictureBox `text` field. PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
 
 Shape and PaintBox are additive graphics contracts. Their current component capability metadata advertises Standalone Web support and keeps current native targets fail-closed rather than silently dropping unsupported graphics. PaintBox drawing is pure UI rendering and does not create a second persistent mutation path.
 
@@ -301,6 +302,14 @@ at x, y size width, height
 Control positions must be non-negative. Explicit control sizes must be at least 16 by 16. Explicit Window sizes must be at least 120 by 80. Nonvisual controls such as Timer and ImageList do not occupy Form geometry and therefore do not use Anchors or Dock policies.
 
 ## Graphics
+
+Picture source stays visible. The concise form uses canonical display defaults (`fit contain`, `center true`, `opacity 1`, empty description):
+
+```patch
+picture as logo from "patch-resource:app.logo"
+```
+
+Display properties may appear in any order after `from`. Formatting omits canonical defaults. Proportional is Designer sugar for `fit !== fill` and is not a second source token. The legacy caption form `picture "Preview" as preview_image` remains valid.
 
 Shape source keeps deterministic geometry and style properties visible in `.patch` source. The concise form uses canonical defaults:
 

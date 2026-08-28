@@ -563,8 +563,11 @@ function createControlElement(control, context) {
   } else if (control.type === 'picture') {
     el = document.createElement('img');
     el.className = 'patch-picture';
-    el.alt = control.text || control.id || '';
-    el.style.objectFit = 'contain';
+    el.alt = control.text || control.description || control.id || '';
+    if (control.description || control.text) el.setAttribute('aria-label', control.description || control.text);
+    el.style.objectFit = control.fit || 'contain';
+    el.style.objectPosition = control.center === false ? '0% 0%' : '50% 50%';
+    el.style.opacity = String(Number.isFinite(Number(control.opacity)) ? control.opacity : 1);
     el.style.maxWidth = '100%';
     el.style.maxHeight = '100%';
     if (control.source) el.src = pictureResourceDataUri(control.source, getStudioProjectResources());

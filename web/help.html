@@ -23,7 +23,7 @@ Components Ctrl/Cmd + Shift + A</pre></section>
 
   <section class="page-section"><h2>Current contracts</h2><p>Patch Studio uses <strong>project bundle v4</strong>, Change IR 0.10 and Native GUI IR 1.4 / payload v14 / runtime v1.5 on the current Ready/offline Windows, macOS and Linux line. Project v1-v3 inputs migrate explicitly.</p></section>
 
-  <section class="page-section"><h2>Projects and resources</h2><p>Project v4 keeps bounded multi-file Patch source plus explicit image resources. The Resource Manager stores logical ids, project-relative paths, media type, size, SHA-256 and canonical project bytes. Current resource types are PNG, JPEG, WebP and SVG.</p><pre class="page-code">picture as logo from "patch-resource:app.logo"
+  <section class="page-section"><h2>Projects and resources</h2><p>Project v4 keeps bounded multi-file Patch source plus explicit image resources. The Resource Manager stores logical ids, project-relative paths, media type, size, SHA-256 and canonical project bytes. Current resource types are PNG, JPEG, WebP and SVG. Picture can name a resource and source-backed fit, center, opacity and description.</p><pre class="page-code">picture as logo from "patch-resource:app.logo" fit contain description "Product logo"
 
 imagelist as toolbar_images size 16, 16:
   image open from "patch-resource:icons.open"</pre><p>Export, Import and Recovery preserve source and resources together.</p></section>

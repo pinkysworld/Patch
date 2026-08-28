@@ -26,7 +26,7 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | `tree` | TreeView | Data | visual | supported | supported | supported | supported | supported | unsupported | id, treeNodes, x, y, width, height | changed |
 | `tabs` | Tabs | Containers | visual | supported | supported | supported | supported | supported | unsupported | id, pages, x, y, width, height | — |
 | `panel` | Panel | Containers | visual | supported | supported | supported | supported | supported | unsupported | id, children, x, y, width, height | — |
-| `picture` | Picture | Graphics | visual | supported | supported | supported | supported | supported | unsupported | id, sourceExpr, x, y, width, height | clicked |
+| `picture` | Picture | Graphics | visual | supported | supported | supported | supported | supported | unsupported | id, sourceExpr, fit, center, opacity, description, x, y, width, height | clicked |
 | `shape` | Shape | Graphics | visual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, shapeKind, fill, stroke, strokeWidth, cornerRadius, opacity, x, y, width, height | — |
 | `paintbox` | PaintBox | Graphics | visual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, x, y, width, height | paint |
 | `statusbar` | StatusBar | Chrome | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | — |

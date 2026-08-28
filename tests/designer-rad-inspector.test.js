@@ -122,6 +122,8 @@ test('RAD Object Inspector Component Palette Focus Order and R1 components are p
   assert.match(focusOrder, /reorderDesignerFocusOrder/);
   assert.match(toolbox, /designer-component-palette/);
   assert.match(toolbox, /designerInspectorPictureSource/);
+  assert.match(toolbox, /designerInspectorPictureFit/);
+  assert.match(toolbox, /designerInspectorPictureDescription/);
   assert.match(toolbox, /import '\.\/designer-imagelist\.js'/);
   assert.match(statusbar, /import '\.\/designer-paintbox\.js'/);
   assert.doesNotMatch(statusbar, /import '\.\/designer-imagelist\.js'/);

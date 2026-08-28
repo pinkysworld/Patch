@@ -116,7 +116,13 @@ function lowerNode(node) {
           line: item.line ?? null
         }));
       }
-      if (node.control === 'picture' && node.sourceExpr) fields.sourceExpr = node.sourceExpr;
+      if (node.control === 'picture') {
+        if (node.sourceExpr) fields.sourceExpr = node.sourceExpr;
+        fields.fit = node.fit;
+        fields.center = node.center;
+        fields.opacity = node.opacity;
+        if (node.description) fields.description = node.description;
+      }
       if (node.control === 'panel') fields.body = lowerBlock(node.body ?? []);
       return op('UI_CONTROL', node, fields);
     }

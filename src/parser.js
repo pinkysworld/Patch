@@ -1,3 +1,4 @@
+import { parsePatchPictureDeclaration } from './picture-source.js';
 import { parsePatchShapeDeclaration } from './shape-source.js';
 import { parsePatchPaintCommand } from './paintbox-control.js';
 import {
@@ -264,14 +265,25 @@ export function parse(source) {
       }
       return uiControl({control:'timer',textExpr:null,id:m[1],interval,line:row.line},ui.layout);
     }
-    if ((m = ui.core.match(/^picture\s+as\s+([A-Za-z_]\w*)\s+from\s+(.+)$/))) {
-      return uiControl({control:'picture',textExpr:null,sourceExpr:m[2],id:m[1],line:row.line},ui.layout);
-    }
-    if ((m = ui.core.match(/^picture\s+as\s+([A-Za-z_]\w*)$/))) {
-      return uiControl({control:'picture',textExpr:null,sourceExpr:null,id:m[1],line:row.line},ui.layout);
-    }
-    if ((m = ui.core.match(/^picture\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
-      return uiControl({control:'picture',textExpr:m[1],sourceExpr:null,id:m[2],line:row.line},ui.layout);
+    if (/^picture\b/i.test(ui.core)) {
+      try {
+        const picture = parsePatchPictureDeclaration(ui.core);
+        return uiControl({
+          control:'picture',
+          textExpr:picture.textExpr,
+          sourceExpr:picture.sourceExpr,
+          id:picture.id,
+          fit:picture.fit,
+          center:picture.center,
+          opacity:picture.opacity,
+          description:picture.description,
+          proportional:picture.proportional,
+          legacyCaption:picture.legacyCaption,
+          line:row.line
+        },ui.layout);
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+      }
     }
     if (/^shape\b/i.test(ui.core)) {
       try {
