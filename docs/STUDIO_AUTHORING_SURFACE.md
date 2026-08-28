@@ -107,7 +107,7 @@ Tabs-inside-Tabs remains intentionally outside the current stage and fails close
 
 Project bundle v4 contains an explicit bounded resource store. Picture references logical `patch-resource:<id>` values rather than machine-local file paths. Resource Manager supports PNG, JPEG, WebP and SVG project assets, stable ids, hashes, preview and project persistence.
 
-Picture has Studio, Standalone Web and current bounded native PNG/JPEG support. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Shape and PaintBox have Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList Stage 1 provides ordered named project-resource entries but remains authoring-only until a real control consumer is versioned and tested.
+Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred. Shape and PaintBox have Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList Stage 1 provides ordered named project-resource entries but remains authoring-only until a real control consumer is versioned and tested.
 
 ## Selection, Properties and keyboard boundary
 

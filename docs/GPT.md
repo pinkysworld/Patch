@@ -2,7 +2,7 @@
 
 Living briefing for ChatGPT, Grok and other coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-28** by Grok on `grok/rad-picture-display-r1`.
+Last refreshed: **2026-08-28** by Grok on `grok/rad-native-picture-formats-r1`.
 
 ## What Patch is
 
@@ -26,13 +26,14 @@ Do not silently widen or flatten these labels.
 | Studio project | multi-file/resource bundle **v4** |
 | Component registry | **0.8** |
 | Formal claim | **beta.32** invocation-frame-aware direct-Wasm correspondence for the finite safe-integer call-tree fragment. Studio/native/RAD work does **not** widen that claim. |
+| Native Picture formats | **native-picture-formats/1.0** (Ready PNG/JPEG; deferred WebP/SVG). Not an IR bump. |
 
 Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Older versioned modules are compatibility evidence, not current Ready.
 
 ## Collaboration
 
 - GPT branches: `gpt/...`. Current RAD PR: [#268](https://github.com/pinkysworld/Patch/pull/268) `gpt/rad-imagelist-r1`.
-- Grok branches: `grok/...` when the work is a separate slice. Current Picture display PR branch: `grok/rad-picture-display-r1`.
+- Grok branches: `grok/...` when the work is a separate slice. Current stacked PRs: [#269](https://github.com/pinkysworld/Patch/pull/269) Picture display, then `grok/rad-native-picture-formats-r1`.
 - Tracking issue: [#247](https://github.com/pinkysworld/Patch/issues/247) RAD R1.
 - After every slice: tests, docs, public site copy, this file, and regenerate `docs/COMPONENT_CAPABILITY_MATRIX.md`.
 - Do not merge stale planning PRs [#245](https://github.com/pinkysworld/Patch/pull/245) / [#246](https://github.com/pinkysworld/Patch/pull/246); the canonical plans now live in `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
@@ -43,7 +44,7 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 2. UI toolkit interaction is transient until source commits it through `change`.
 3. Unsupported targets **fail closed**. Authoring is not runtime support.
 4. Do not bump Native GUI IR / payload / runtime unless the native C++/AppKit/GTK runtimes, sealers, smokes and docs all move together.
-5. Do not claim PictureBox image loading beyond bounded native PNG/JPEG. WebP/SVG remain fail-closed on native Picture sealing until a versioned policy exists.
+5. Do not claim PictureBox image loading beyond `native-picture-formats/1.0` (PNG/JPEG Ready). WebP/SVG remain deferred/fail-closed on native Picture sealing until a later versioned native contract expands Win32/AppKit/GTK together.
 6. Panel Stage 1 is visual grouping, not Delphi-style native child containment.
 7. Keep beginner syntax small. Sophistication stays in compiler/runtime.
 8. Add a test for every semantic rule. Public site/PWA/offline asset closure must include new Studio modules.
@@ -56,6 +57,7 @@ Completed:
 - Resource Manager Stage 1 (logical ids, SHA-256, bounds, missing-resource rejection)
 - Picture authoring + Web embed + bounded native PNG/JPEG
 - Picture display properties: source-backed fit/center/opacity/description, Designer/Object Inspector, Web preview; native non-default fit/center/opacity fail closed
+- Explicit native Picture format policy `native-picture-formats/1.0`: Studio/Web keep PNG/JPEG/WebP/SVG; native Ready PNG/JPEG; WebP/SVG deferred/fail-closed without an IR bump
 - Shape Stage 1 authoring + Standalone Web; native fail-closed
 - PaintBox Stage 1 authoring + `paint` drawing + Standalone Web; native fail-closed
 - ImageList Stage 1 authoring (nonvisual tray, resource-backed items); all runtimes fail-closed until a consumer exists
@@ -63,13 +65,12 @@ Completed:
 
 Remaining, in this order:
 
-1. Explicit native SVG/WebP policy (do not silently broaden formats)
-2. First ImageList consumer (ToolBar/ToolButton or Button/TreeView image binding), then a versioned runtime contract
-3. Application/window icon resource packaging
-4. Shape native lowering/runtime parity
-5. PaintBox native drawing parity, then `draw image`
+1. First ImageList consumer (ToolBar/ToolButton or Button/TreeView image binding), then a versioned runtime contract
+2. Application/window icon resource packaging
+3. Shape native lowering/runtime parity
+4. PaintBox native drawing parity, then `draw image`
 
-Do not start native Shape/PaintBox before the SVG/WebP policy is explicit. Do not claim ImageList runtime support without a consumer.
+Do not start native Shape/PaintBox before the first ImageList consumer unless that consumer is blocked. Do not claim ImageList runtime support without a consumer.
 
 ## How to add a component
 
@@ -119,6 +120,9 @@ node src/cli-entry.js doctor --json
 | `src/component-matrix.js` | Generated matrix/JSON/CLI projection |
 | `src/component-support.js` | Build-target support assessment |
 | `src/native-current-contract.js` | Current IR 1.4 / v14 / v1.5 facade |
+| `src/native-picture-format-policy.js` | `native-picture-formats/1.0` Ready PNG/JPEG vs deferred WebP/SVG |
+| `src/native-picture-resources.js` | Native Picture resource embed + format-policy enforcement |
+| `docs/NATIVE_PICTURE_FORMATS.md` | Native Picture format policy |
 | `web/` | Patch Studio site/PWA |
 | `examples/workshop-desk.patch` | Acceptance showcase. Interpreter/Web may persist Table/Tree text-lists; current native lowering still fail-closes `set = value` from Table `changed` because that event value is list-valued. Do not interpolate lists into `text`. |
 | `docs/RAD_STUDIO_MASTERPLAN.md` | Architecture |
@@ -128,4 +132,4 @@ node src/cli-entry.js doctor --json
 
 ## Next ChatGPT slice
 
-**Explicit native SVG/WebP policy.** Picture display properties are source-backed for Studio/Web. Native GUI IR 1.4 still only transports PictureBox `text` + `source` and must keep failing closed for WebP/SVG and for non-default fit/center/opacity. Do not silently broaden native image formats. Do not bump Native GUI IR / payload / runtime unless native backends move together.
+**First ImageList consumer.** Picture display properties and `native-picture-formats/1.0` are explicit. Native GUI IR 1.4 still only transports PictureBox `text` + `source`, keeps default contain/centered/opaque display, and fail-closes WebP/SVG plus non-default fit/center/opacity. Do not bump Native GUI IR / payload / runtime unless native backends move together. Do not claim ImageList runtime support until a real consumer (ToolBar/ToolButton or Button/TreeView image binding) exists.

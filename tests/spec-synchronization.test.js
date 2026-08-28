@@ -59,6 +59,8 @@ test('SPEC keeps the formal claim narrower than the current language', () => {
   assert.match(spec, /not\*\* an end-to-end verified compiler\/runtime theorem/i);
   assert.match(spec, /GUI execution is outside the beta\.32 Lean runtime-correspondence claim/);
   assert.match(spec, /PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline/);
+  assert.match(spec, /native-picture-formats\/1\.0/);
+  assert.match(spec, /WebP and SVG remain deferred/);
   assert.match(spec, /ImageList Stage 1 is Studio authoring-only/);
 });
 

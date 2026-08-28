@@ -113,7 +113,7 @@ when files changed:
 
   <section class="page-section">
     <h2>Graphics stay source-backed</h2>
-    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded project-resource support on the v1.5 desktop line plus source-backed Web display properties, Shape and PaintBox currently have Studio plus Standalone Web support, and ImageList remains authoring-only until a real consumer/runtime contract exists.</p>
+    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support on the v1.5 desktop line under <code>native-picture-formats/1.0</code> plus source-backed Web display properties, Shape and PaintBox currently have Studio plus Standalone Web support, and ImageList remains authoring-only until a real consumer/runtime contract exists.</p>
     <pre class="page-code">picture as logo from "patch-resource:app.logo" fit cover description "Product logo"
 shape ellipse as badge
 paintbox as canvas

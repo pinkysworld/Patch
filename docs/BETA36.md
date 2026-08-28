@@ -37,7 +37,7 @@ Resources are explicit project data, not a hidden `.dfm`/`.frm` visual state mod
 
 Native GUI IR 1.4 / payload v14 / runtime v1.5 is the current Ready/offline desktop line for Windows, macOS and Linux. It composes the previous Table, list, menu, TreeView and Slider capabilities with Chrome Stage 1 Panel, Timer, Picture and StatusBar transport.
 
-Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. WebP/SVG are not silently treated as current native-supported formats. The browser/Standalone Web path can embed project resources directly.
+Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under `native-picture-formats/1.0`. WebP/SVG remain deferred native formats and fail closed rather than being silently treated as Ready. The browser/Standalone Web path can embed PNG, JPEG, WebP and SVG project resources directly.
 
 The previous Slider line Native GUI IR 1.3 / payload v13 / runtime v1.4 and the frozen TreeView line Native GUI IR 1.2 / payload v12 / runtime v1.3 remain compatibility evidence.
 
@@ -95,7 +95,7 @@ Panel is a source-backed top-level container with a structural child editor for 
 
 ### Picture and Resource Manager
 
-Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources and apply source-backed display properties: `fit`, proportional inspector sugar, `center`, `opacity` and accessible `description`. Current native PNG/JPEG resource decoding is covered by platform smoke tests. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than ignoring them. Accessible description maps onto the existing native Picture caption.
+Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources and apply source-backed display properties: `fit`, proportional inspector sugar, `center`, `opacity` and accessible `description`. Current native PNG/JPEG resource decoding is covered by platform smoke tests and versioned as `native-picture-formats/1.0`. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than ignoring them. Accessible description maps onto the existing native Picture caption. Native WebP/SVG sources fail closed until a later versioned native contract expands Win32, AppKit and GTK together.
 
 ### Shape Stage 1
 
@@ -125,7 +125,7 @@ ImageList is intentionally authoring-only until a real consumer such as ToolBar/
 
 The public Studio uses the beta.36 product contract and a content-addressed browser module graph. Service Worker routing is type-safe: missing JavaScript/CSS/runtime assets never receive `index.html` as a substitute. Real Chrome startup/responsiveness checks exercise Studio before a public deployment is considered healthy.
 
-The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox and ImageList authoring.
+The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox and ImageList authoring, including `native-picture-format-policy.js`.
 
 ## Offline compiler v0.2
 

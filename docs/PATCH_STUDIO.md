@@ -233,11 +233,10 @@ Picture is a first-class Graphics component with source-backed id/source/layout,
 
 Browser preview and Standalone Web can resolve project resources and apply Picture display properties (`contain`/`cover`/`fill`/`none`, center, opacity, accessible description). Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox; non-default fit, center and opacity fail closed rather than becoming silent no-ops. Accessible description maps onto the existing native PictureBox `text` field.
 
-WebP/SVG are not silently treated as current native-supported formats.
+Native Ready Picture follows `native-picture-formats/1.0`. Studio and Web may store PNG, JPEG, WebP and SVG. Native Ready decoding is PNG/JPEG only. WebP/SVG are deferred: native sealing fail-closes rather than inheriting host-specific decoders or producing empty PictureBoxes.
 
 Still open:
 
-- explicit native SVG/WebP policy;
 - complete cross-target non-default display-property parity on desktop runtimes.
 
 ## Shape
@@ -359,4 +358,4 @@ The current execution order is maintained in `docs/ROADMAP.md` and the detailed 
 - `docs/RAD_STUDIO_MASTERPLAN.md`
 - `docs/RAD_STUDIO_MASTER_BACKLOG.md`
 
-The immediate remaining R1 gates are an explicit native SVG/WebP policy, native Shape/PaintBox support, the first real ImageList consumer and application icons/branding.
+The immediate remaining R1 gates are the first real ImageList consumer, native Shape/PaintBox support and application icons/branding.
