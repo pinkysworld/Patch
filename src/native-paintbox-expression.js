@@ -11,13 +11,14 @@ export class NativePaintBoxExpressionError extends Error {}
 /**
  * Native PaintBox runtime v1.7 deliberately starts with the scalar expression
  * subset already owned by the native GUI state model. Lists, Thing paths and
- * list literals fail closed rather than gaining a second cross-platform model.
+ * list literals fail closed when referenced rather than making an unrelated
+ * list declaration disable a PaintBox that uses only scalar state.
  * `count` is available only while executing the body of a Patch repeat.
  */
 export function validateNativePaintExpression(source, states, options = {}) {
   const expression = String(source ?? '').trim();
   if (!expression) throw new NativePaintBoxExpressionError('PaintBox native expression cannot be empty.');
-  const stateByName = normalizeScalarStates(states);
+  const stateByName = normalizeStates(states);
   const allowCount = options.allowCount === true;
   const loose = options.loose === true;
 
@@ -28,8 +29,7 @@ export function validateNativePaintExpression(source, states, options = {}) {
   const tokens = tokenize(expression);
   const references = new Set();
   let usesCount = false;
-  for (let index = 0; index < tokens.length; index += 1) {
-    const token = tokens[index];
+  for (const token of tokens) {
     if (token.type === '[' || token.type === ']' || token.type === ',') {
       throw new NativePaintBoxExpressionError('Native PaintBox expressions do not support list literals yet.');
     }
@@ -43,12 +43,19 @@ export function validateNativePaintExpression(source, states, options = {}) {
       continue;
     }
     const state = stateByName.get(token.value);
-    if (!state) throw new NativePaintBoxExpressionError(`Native PaintBox expression refers to unknown or unsupported state '${token.value}'.`);
+    if (!state) throw new NativePaintBoxExpressionError(`Native PaintBox expression refers to unknown state '${token.value}'.`);
+    if (!SUPPORTED_STATE_TYPES.has(state.type)) {
+      throw new NativePaintBoxExpressionError(`Native PaintBox expression state '${token.value}' has unsupported type '${state.type ?? '?'}'.`);
+    }
     references.add(token.value);
   }
 
+  const envState = new Map();
+  for (const [name, state] of stateByName) {
+    if (SUPPORTED_STATE_TYPES.has(state.type)) envState.set(name, placeholderValue(state.type));
+  }
   const env = {
-    state: new Map([...stateByName].map(([name, state]) => [name, placeholderValue(state.type)])),
+    state: envState,
     locals: allowCount ? { count: 1 } : {}
   };
   try {
@@ -68,7 +75,7 @@ export function validateNativePaintExpression(source, states, options = {}) {
 }
 
 export function validateNativePaintProgramExpressions(program, states) {
-  const stateByName = normalizeScalarStates(states);
+  const stateByName = normalizeStates(states);
   const visit = (nodes, allowCount, depth) => {
     if (!Array.isArray(nodes) || depth > 32) throw new NativePaintBoxExpressionError('PaintBox native expression program is malformed or too deeply nested.');
     for (const node of nodes) {
@@ -89,13 +96,14 @@ export function validateNativePaintProgramExpressions(program, states) {
         visit(node.body ?? [], true, depth + 1);
         continue;
       }
+      throw new NativePaintBoxExpressionError(`PaintBox native expression program contains unsupported node '${node?.kind ?? '?'}'.`);
     }
   };
   visit(program, false, 0);
   return true;
 }
 
-function normalizeScalarStates(states) {
+function normalizeStates(states) {
   if (states instanceof Map) {
     const normalized = new Map();
     for (const [name, state] of states) normalized.set(name, normalizeState(name, state));
@@ -110,11 +118,7 @@ function normalizeScalarStates(states) {
 }
 
 function normalizeState(name, state) {
-  const type = state?.type;
-  if (!SUPPORTED_STATE_TYPES.has(type)) {
-    throw new NativePaintBoxExpressionError(`Native PaintBox expression state '${name}' has unsupported type '${type ?? '?'}'.`);
-  }
-  return Object.freeze({ name, type });
+  return Object.freeze({ name, type: state?.type ?? null });
 }
 
 function tokenize(source) {
