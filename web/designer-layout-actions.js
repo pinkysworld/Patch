@@ -114,6 +114,8 @@ function install() {
       <button id="patchDefaultControlSize" class="secondary small" type="button" title="Restore the selected control's standard Designer size">Default size</button>
       <button id="patchAutoPlaceControl" class="secondary small" type="button" title="Move the selected control to the first non-overlapping standard position">Auto place</button>
       <button id="patchBringControlFront" class="secondary small" type="button" title="Bring the selected control to the front of its Form">Bring to front</button>
+      <button id="patchMoveControlForward" class="secondary small" type="button" title="Move the selected control one step forward in source-backed z-order">Move forward</button>
+      <button id="patchMoveControlBackward" class="secondary small" type="button" title="Move the selected control one step backward in source-backed z-order">Move backward</button>
       <button id="patchSendControlBack" class="secondary small" type="button" title="Send the selected control to the back of its Form">Send to back</button>
     </div>
     <p id="designerControlLayoutStatus" class="designer-control-layout-status" role="status" aria-live="polite"></p>`;
@@ -127,6 +129,8 @@ function install() {
   surface.querySelector('#patchDefaultControlSize')?.addEventListener('click', () => applyLayoutAction('default-size'));
   surface.querySelector('#patchAutoPlaceControl')?.addEventListener('click', () => applyLayoutAction('auto-place'));
   surface.querySelector('#patchBringControlFront')?.addEventListener('click', () => applyLayoutAction('front'));
+  surface.querySelector('#patchMoveControlForward')?.addEventListener('click', () => applyLayoutAction('forward'));
+  surface.querySelector('#patchMoveControlBackward')?.addEventListener('click', () => applyLayoutAction('backward'));
   surface.querySelector('#patchSendControlBack')?.addEventListener('click', () => applyLayoutAction('back'));
 
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, syncLayoutActions);
@@ -146,7 +150,7 @@ function syncLayoutActions() {
   if (!status) return;
   if (!selection) status.textContent = 'Select one control to use Form-relative layout actions.';
   else if (selectedCount > 1) status.textContent = 'Use the multi-select alignment tools for grouped controls.';
-  else if (!status.dataset.actionMessage) status.textContent = 'Center, size or place the selected control without creating hidden layout state.';
+  else if (!status.dataset.actionMessage) status.textContent = 'Center, size, place or change z-order without creating hidden layout state.';
 }
 
 function applyLayoutAction(action) {
@@ -159,7 +163,8 @@ function applyLayoutAction(action) {
     const windowModel = listDesignerWindows(code.value).find(item => item.windowIndex === selection.windowIndex);
     if (!control || !windowModel) throw new Error('Designer selection no longer matches Patch source.');
 
-    if (action === 'front' || action === 'back') {
+    let message;
+    if (['front', 'back', 'forward', 'backward'].includes(action)) {
       const result = reorderDesignerControl(code.value, selection, action);
       code.value = result.source;
       if (result.control) {
@@ -167,9 +172,19 @@ function applyLayoutAction(action) {
       }
       code.dispatchEvent(new Event('input', { bubbles: true }));
       code.dispatchEvent(new Event('change', { bubbles: true }));
-      message = action === 'front'
-        ? 'Brought to front in visible Patch source.'
-        : 'Sent to back in visible Patch source.';
+      const movedMessages = {
+        front: 'Brought to front in visible Patch source.',
+        back: 'Sent to back in visible Patch source.',
+        forward: 'Moved one step forward in visible Patch source.',
+        backward: 'Moved one step backward in visible Patch source.'
+      };
+      const boundaryMessages = {
+        front: 'Control is already at the front.',
+        back: 'Control is already at the back.',
+        forward: 'Control is already at the front boundary.',
+        backward: 'Control is already at the back boundary.'
+      };
+      message = result.moved ? movedMessages[action] : boundaryMessages[action];
       if (status) {
         status.dataset.actionMessage = 'true';
         status.textContent = message;
@@ -183,7 +198,6 @@ function applyLayoutAction(action) {
     }
 
     let changes;
-    let message;
     if (action === 'center-horizontal') {
       changes = centeredDesignerControlPosition(control, windowModel, 'horizontal');
       message = 'Centered horizontally in visible Patch source.';
