@@ -2,6 +2,7 @@ import { listDesignerControls } from '../src/designer.js';
 import { patchComponent } from '../src/component-registry.js';
 
 export const STUDIO_BUILD_READINESS_VERSION = '0.1';
+export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.2';
 
 const doc = typeof document === 'undefined' ? null : document;
 const win = typeof window === 'undefined' ? null : window;
@@ -20,6 +21,7 @@ if (doc) {
     doc.addEventListener(type, captureProgrammaticMutation, { capture: true });
   }
 
+  installWorkshopSampleUpgrade();
   queueMicrotask(installStudioBuildReadiness);
 }
 
@@ -39,6 +41,72 @@ function captureProgrammaticMutation() {
       projectKind.dispatchEvent(new Event('change', { bubbles: true }));
     }
   });
+}
+
+/**
+ * Upgrade the older embedded Workshop Desk literal to the current canonical
+ * repository example. Keeping the transform here avoids a second giant sample
+ * copy while the beta35 compatibility module is still retained.
+ */
+export function upgradeWorkshopDeskSource(source) {
+  let next = String(source ?? '');
+  if (!next.includes('window "Workshop Desk" as main size 1080, 700:')) return next;
+  if (next.includes('timer as workshop_clock interval 5000') && next.includes('panel as runtime_panel')) return next;
+
+  next = next
+    .replace('create list selected_part = []\ncreate list selected_job = []\n', '')
+    .replace('create number labor_limit = 50\n', 'create number labor_limit = 50\ncreate number heartbeat = 0\n')
+    .replace(
+      '  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28',
+      '  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26\n  timer as workshop_clock interval 5000\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28'
+    )
+    .replace(
+      '      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."',
+      '      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
+    )
+    .replace(
+      'window "Job details" as details size 640, 470:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {ticket.customer}" at 24, 70 size 280, 24\n  text "Item: {ticket.item}" at 24, 104 size 280, 24\n  text "Quantity: {ticket.qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket.bench}" at 24, 172 size 280, 24\n  text "Priority: {ticket.priority}" at 24, 206 size 280, 24\n  text "Payment: {ticket.payment}" at 326, 70 size 280, 24\n  text "State: {ticket.state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket.total}" at 326, 138 size 280, 24\n  text "{status}" at 24, 278 size 560, 28\n  button "Add inspection" as details_quote at 24, 366 size 160, 38\n  button "Mark ready" as details_ready at 202, 366 size 150, 38\n  button "Close details" as close_details at 370, 366 size 160, 38',
+      'window "Job details" as details size 640, 520:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {ticket.customer}" at 24, 70 size 280, 24\n  text "Item: {ticket.item}" at 24, 104 size 280, 24\n  text "Quantity: {ticket.qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket.bench}" at 24, 172 size 280, 24\n  text "Priority: {ticket.priority}" at 24, 206 size 280, 24\n  text "Payment: {ticket.payment}" at 326, 70 size 280, 24\n  text "State: {ticket.state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket.total}" at 326, 138 size 280, 24\n  panel as runtime_panel at 326, 172 size 280, 170:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1\n  text "{status}" at 24, 360 size 560, 28\n  button "Add inspection" as details_quote at 24, 414 size 160, 38\n  button "Mark ready" as details_ready at 202, 414 size 150, 38\n  button "Close details" as close_details at 370, 414 size 160, 38'
+    )
+    .replace(
+      'when board changed:\n  change selected_job:\n    set = value\n  change status:\n    set = "Workshop board row selected"\n\nwhen parts changed:\n  change selected_part:\n    set = value\n  change status:\n    set = "Inventory tree path selected"',
+      'when board changed:\n  change status:\n    set = "Workshop board row selected"\n\nwhen parts changed:\n  change status:\n    set = "Inventory tree path selected"\n\nwhen workshop_clock ticked:\n  change heartbeat:\n    add 1'
+    )
+    .replace(
+      '  change selected_part:\n    clear\n  change selected_job:\n    clear\n  change ticket:',
+      '  change heartbeat:\n    set = 0\n  change ticket:'
+    );
+
+  return next;
+}
+
+function installWorkshopSampleUpgrade() {
+  const sample = doc?.querySelector('#sample');
+  const loadSample = doc?.querySelector('#loadSample');
+  if (!sample || !code) return;
+
+  let queued = false;
+  const schedule = () => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      if (sample.value !== 'workshopDesk') return;
+      const upgraded = upgradeWorkshopDeskSource(code.value);
+      if (upgraded === code.value) return;
+      code.value = upgraded;
+      code.dispatchEvent(new Event('input', { bubbles: true }));
+      code.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  };
+
+  doc.addEventListener('change', event => {
+    if (event.target === sample && sample.value === 'workshopDesk') schedule();
+  }, { capture: true });
+  doc.addEventListener('click', event => {
+    if ((event.target === loadSample || event.target?.closest?.('#loadSample')) && sample.value === 'workshopDesk') schedule();
+  }, { capture: true });
+  schedule();
 }
 
 export function buildReadinessModel(source, kind, buildTarget) {
