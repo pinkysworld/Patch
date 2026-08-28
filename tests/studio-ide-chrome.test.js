@@ -6,6 +6,7 @@ const html = fs.readFileSync('web/index.html', 'utf8');
 const style = fs.readFileSync('web/style.css', 'utf8');
 const refresh = fs.readFileSync('web/site-refresh.css', 'utf8');
 const beta35 = fs.readFileSync('web/beta35-studio.css', 'utf8');
+const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
 test('Studio keeps the beta.36 feature boundary inside the collapsed contracts disclosure', () => {
   const launchpad = html.indexOf('class="studio-launchpad"');
@@ -26,13 +27,15 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
   assert.match(style, /border: 1px dashed var\(--border-strong\)/);
 });
 
-test('Studio brand mark restores the softer upright P instead of exposing the angular SVG', () => {
+test('Studio brand mark restores the proven softer P geometry without crisp pixel rendering', () => {
   const mark = html.match(/class="brand-mark"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
   assert.match(mark, /<svg viewBox="0 0 22 22"/);
-  assert.match(beta35, /\.brand-mark svg \{ display: none; \}/);
-  assert.match(beta35, /\.brand-mark::before[\s\S]*?content: "P"/);
+  assert.match(beta35, /\.brand-mark svg \{[\s\S]*?display: block;/);
+  assert.match(beta35, /shape-rendering: auto/);
   assert.match(beta35, /border-radius: 9px/);
-  assert.match(beta35, /font-weight: 850/);
+  assert.match(beta35, /\.brand-mark::before \{ content: none; display: none; \}/);
+  assert.match(buildSite, /<svg viewBox="0 0 32 32" focusable="false" aria-hidden="true">/);
+  assert.match(buildSite, /M8 6H22V18H13V26H8/);
   assert.doesNotMatch(style, /rotate\(/);
   assert.doesNotMatch(refresh, /rotate\(/);
   assert.doesNotMatch(beta35, /rotate\(/);
