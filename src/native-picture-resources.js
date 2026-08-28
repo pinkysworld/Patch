@@ -1,22 +1,27 @@
 import { validateStudioResources } from './studio-resources.js';
+import {
+  PATCH_NATIVE_PICTURE_MEDIA_TYPES,
+  PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID,
+  assertNativePictureMediaTypeAllowed,
+  assertNativePictureSourceFormat
+} from './native-picture-format-policy.js';
 
 export const PATCH_NATIVE_PICTURE_RESOURCE_PREFIX = 'patch-resource:';
-export const PATCH_NATIVE_PICTURE_MEDIA_TYPES = Object.freeze(['image/png', 'image/jpeg']);
-const NATIVE_MEDIA_TYPES = new Set(PATCH_NATIVE_PICTURE_MEDIA_TYPES);
+export { PATCH_NATIVE_PICTURE_MEDIA_TYPES, PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID };
 
 export class NativePictureResourceError extends Error {
   constructor(message, code = 'NATIVE_PICTURE_RESOURCE') {
     super(message);
     this.name = 'NativePictureResourceError';
     this.code = code;
+    this.policy = PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID;
   }
 }
 
 /**
  * Resolve Studio project image locators into self-contained Picture source data URIs.
  * The returned IR is a deep clone; the caller's Native GUI IR is never mutated.
- * Native Ready runtimes deliberately guarantee PNG/JPEG only so every desktop host
- * sees the same format contract instead of inheriting platform-specific decoders.
+ * Native Ready runtimes follow native-picture-formats/1.0: PNG/JPEG only.
  */
 export function resolveNativePictureResources(input, resources = []) {
   if (!input || typeof input !== 'object' || !Array.isArray(input.forms)) {
@@ -30,7 +35,10 @@ export function resolveNativePictureResources(input, resources = []) {
   walkControls(ir.forms, control => {
     if (control?.type !== 'picture') return;
     const source = String(control.source ?? '');
-    if (!source.startsWith(PATCH_NATIVE_PICTURE_RESOURCE_PREFIX)) return;
+    if (!source.startsWith(PATCH_NATIVE_PICTURE_RESOURCE_PREFIX)) {
+      assertNativePictureSourceFormat(source, { controlId: control.id });
+      return;
+    }
     const resourceId = source.slice(PATCH_NATIVE_PICTURE_RESOURCE_PREFIX.length);
     const resource = byId.get(resourceId);
     if (!resource) {
@@ -39,14 +47,15 @@ export function resolveNativePictureResources(input, resources = []) {
         'NATIVE_PICTURE_RESOURCE_MISSING'
       );
     }
-    assertNativePictureMediaType(resource, control.id);
+    assertNativePictureResourceMediaType(resource, control.id);
     control.source = nativePictureResourceDataUri(resource);
     resolved.push(Object.freeze({
       control: control.id ?? null,
       resourceId,
       mediaType: resource.mediaType,
       size: resource.size,
-      sha256: resource.sha256
+      sha256: resource.sha256,
+      policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID
     }));
   });
 
@@ -54,23 +63,33 @@ export function resolveNativePictureResources(input, resources = []) {
     ir,
     resolved: Object.freeze(resolved),
     resolvedCount: resolved.length,
-    resourceCount: normalized.length
+    resourceCount: normalized.length,
+    policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID
   });
 }
 
 export function nativePictureResourceDataUri(resource) {
   const [normalized] = validateStudioResources([resource]);
-  assertNativePictureMediaType(normalized);
+  assertNativePictureResourceMediaType(normalized);
   return `data:${normalized.mediaType};base64,${normalized.data}`;
 }
 
-function assertNativePictureMediaType(resource, controlId = null) {
-  if (NATIVE_MEDIA_TYPES.has(resource.mediaType)) return;
-  const owner = controlId ? `Native Picture '${controlId}'` : 'Native Picture resource';
-  throw new NativePictureResourceError(
-    `${owner} uses '${resource.mediaType}'. Native Ready Picture currently guarantees PNG and JPEG project resources only; use PNG/JPEG or build the image on the Web target.`,
-    'NATIVE_PICTURE_RESOURCE_FORMAT'
-  );
+function assertNativePictureResourceMediaType(resource, controlId = null) {
+  try {
+    assertNativePictureMediaTypeAllowed(resource.mediaType, {
+      controlId,
+      code: 'NATIVE_PICTURE_RESOURCE_FORMAT'
+    });
+  } catch (error) {
+    throw wrapFormatError(error, 'NATIVE_PICTURE_RESOURCE_FORMAT');
+  }
+}
+
+function wrapFormatError(error, code = error?.code) {
+  if (error instanceof NativePictureResourceError) return error;
+  const wrapped = new NativePictureResourceError(error?.message ?? String(error), code ?? 'NATIVE_PICTURE_FORMAT');
+  wrapped.policy = error?.policy ?? PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID;
+  return wrapped;
 }
 
 function walkControls(forms, visit) {

@@ -109,4 +109,4 @@ Recovery is a convenience feature, not a backup service. Export important projec
 
 ## Current boundary
 
-Project bundle v4 establishes deterministic portable project resources. It does not imply that every resource-consuming control has cross-target parity. Target capability gates remain component-specific: current native Picture supports the explicitly versioned image formats, Shape/PaintBox native parity remains open, and ImageList remains authoring-only until a runtime consumer contract exists.
+Project bundle v4 establishes deterministic portable project resources. It does not imply that every resource-consuming control has cross-target parity. Target capability gates remain component-specific: current native Picture follows `native-picture-formats/1.0` (Ready PNG/JPEG, deferred WebP/SVG), Shape/PaintBox native parity remains open, and ImageList remains authoring-only until a runtime consumer contract exists.

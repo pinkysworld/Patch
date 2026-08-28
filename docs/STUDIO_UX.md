@@ -51,7 +51,7 @@ Toolbox controls remain compact. Form selection and geometry tools stay secondar
 
 Studio may author a component before every runtime target supports it, but the UI/docs must say so. Current examples:
 
-- Picture has project-resource authoring, source-backed fit/center/opacity/description and current native PNG/JPEG decoding; non-default native display properties fail closed;
+- Picture has project-resource authoring, source-backed fit/center/opacity/description and current native PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed;
 - Shape and PaintBox have Studio/Standalone Web support while native targets remain fail-closed;
 - ImageList is authoring-only until a real consumer/runtime contract exists.
 

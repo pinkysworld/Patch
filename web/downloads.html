@@ -49,7 +49,7 @@ patch link app.patch --out App</pre>
   <section class="page-section">
     <h2>Current native boundary</h2>
     <p><strong>The current desktop line is Native GUI IR 1.4 / payload v14 / runtime v1.5.</strong> It retains the v1.4 Slider support through Win32 <code>TRACKBAR</code>, AppKit <code>NSSlider</code> and GTK3 <code>GtkScale</code>, then adds Chrome Stage 1 transport/runtime support for Panel, Timer, PictureBox and StatusBar. The previous Native GUI IR 1.3 / payload v13 / runtime v1.4 line remains a versioned compatibility boundary rather than being silently reinterpreted.</p>
-    <p><strong>PictureBox note:</strong> beta.36 still does not claim complete portable image-source rendering across every project image type and display property. The current v1.5 desktop line already decodes bounded project-resource PNG/JPEG images through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. Native WebP/SVG policy plus portable fit/aspect/center/opacity/accessibility behavior remain explicit follow-up contracts and fail closed where unsupported.</p>
+    <p><strong>PictureBox note:</strong> beta.36 still does not claim complete portable image-source rendering across every project image type and display property. The current v1.5 desktop line already decodes bounded project-resource PNG/JPEG images through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under <code>native-picture-formats/1.0</code>. Native WebP/SVG remain deferred and fail closed. Portable fit/aspect/center/opacity behavior on desktop remains an explicit follow-up and fail-closes where unsupported.</p>
   </section>
 
   <section class="page-section">
@@ -85,7 +85,7 @@ Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
       <li><strong>Panel:</strong> Stage 1 native visual grouping. Full Delphi-style child-container semantics are not claimed yet.</li>
       <li><strong>Timer:</strong> native scheduling with Patch <code>ticked</code> events.</li>
       <li><strong>StatusBar:</strong> native/status-style text surface, with platform widget differences kept behind the semantic contract.</li>
-      <li><strong>PictureBox:</strong> project-resource PNG/JPEG decoding plus the current click path are supported on the v1.5 desktop line; unsupported resource formats and richer display properties remain fail-closed follow-ups.</li>
+      <li><strong>PictureBox:</strong> project-resource PNG/JPEG decoding plus the current click path are supported on the v1.5 desktop line under <code>native-picture-formats/1.0</code>; deferred WebP/SVG and richer display properties remain fail-closed.</li>
     </ul>
     <p>The offline compiler matrix links and executes canonical responsive, Table, multi-select ListBox, Menu, TreeView, Slider and Chrome Stage 1 Window programs on Windows, Linux, Apple Silicon macOS and Intel macOS before the rolling downloads are published.</p>
   </section>
