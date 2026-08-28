@@ -182,7 +182,7 @@ Forms may declare a source-backed resource icon:
 window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
 ```
 
-Studio preview shows it in Form chrome and Standalone Web packages the first Form icon as the favicon under `window-icon/1.0`. Current Native GUI IR 1.7 fails closed for Form icons. Native `.ico`, AppKit and Linux desktop icon packaging remains an R1 gap.
+Studio preview shows it in Form chrome and Standalone Web packages the first Form icon as the favicon under `window-icon/1.0`. Current Native GUI IR 1.8 fails closed for Form icons. Native `.ico`, AppKit and Linux desktop icon packaging remains an R1 gap.
 
 ## Workshop Desk acceptance example
 

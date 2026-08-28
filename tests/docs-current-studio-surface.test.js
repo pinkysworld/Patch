@@ -59,11 +59,11 @@ test('nested Tabs implementation and current Studio docs stay aligned', () => {
   assert.match(nestedWeb, /Nested TreeView nodes/);
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
-  assert.match(studio, /Table, TreeView and Tabs structural editors rewrite their selected source block directly/);
+  assert.match(studio, /Table, TreeView and Tabs structural editors rewrite the selected source block directly/);
   assert.match(studio, /Native GUI IR \*\*1\.8\*\*/);
   assert.match(studio, /payload \*\*v18\*\*/);
   assert.match(studio, /runtime \*\*v1\.9\*\*/);
-  assert.match(studio, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
+  assert.match(studio, /frozen TreeView line(?: is)? 1\.2\/v12\/v1\.3/);
 });
 
 test('Studio structural Properties usability remains source-backed without a second mutation path', () => {

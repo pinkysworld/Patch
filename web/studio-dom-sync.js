@@ -49,9 +49,10 @@ function captureProgrammaticMutation() {
  * Upgrade the retained beta35 Workshop Desk literal to the current canonical
  * repository example. The showcase stays inside the current native-ready
  * scalar/list action subset and exercises every integrated cross-platform visual
- * component whose current desktop contract is Ready. Resource-only ImageList
- * authoring remains outside this single-source native acceptance example because
- * the native ImageList/Button-image contract intentionally fails closed.
+ * component whose current desktop contract is Ready and can live in one source
+ * file. ImageList/Button images are native Ready PNG/JPEG but remain outside
+ * this single-source acceptance example because items are project-resource
+ * locators; native Window icons still fail closed.
  */
 export function upgradeWorkshopDeskSource(source) {
   let next = String(source ?? '');
@@ -61,6 +62,8 @@ export function upgradeWorkshopDeskSource(source) {
     next.includes('panel as runtime_panel') &&
     next.includes('picture as workshop_logo') &&
     next.includes('paintbox as ticket_canvas') &&
+    next.includes('draw image') &&
+    next.includes('PaintBox draw image') &&
     next.includes('create number ticket_total = 40') &&
     !next.includes('create thing ticket:')
   ) return next;
@@ -86,19 +89,27 @@ export function upgradeWorkshopDeskSource(source) {
     )
     .replace(
       '  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28',
-      '  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26\n  timer as workshop_clock interval 5000\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28'
+      '  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26\n  timer as workshop_clock interval 5000\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28'
     )
     .replace(
       '  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26',
-      '  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26'
+      '  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26'
+    )
+    .replace(
+      '  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26',
+      '  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26'
     )
     .replace(
       '      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."',
-      '      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
+      '      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
     )
     .replace(
       '      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."',
-      '      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
+      '      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
+    )
+    .replace(
+      '      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."',
+      '      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
     )
     .replace(
       'window "Job details" as details size 640, 470:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {ticket.customer}" at 24, 70 size 280, 24\n  text "Item: {ticket.item}" at 24, 104 size 280, 24\n  text "Quantity: {ticket.qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket.bench}" at 24, 172 size 280, 24\n  text "Priority: {ticket.priority}" at 24, 206 size 280, 24\n  text "Payment: {ticket.payment}" at 326, 70 size 280, 24\n  text "State: {ticket.state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket.total}" at 326, 138 size 280, 24\n  text "{status}" at 24, 278 size 560, 28\n  button "Add inspection" as details_quote at 24, 366 size 160, 38\n  button "Mark ready" as details_ready at 202, 366 size 150, 38\n  button "Close details" as close_details at 370, 366 size 160, 38',
@@ -123,7 +134,11 @@ export function upgradeWorkshopDeskSource(source) {
     )
     .replace(
       'when workshop_clock ticked:\n  change heartbeat:\n    add 1\n\nwhen quote_button clicked:',
-      'when workshop_clock ticked:\n  change heartbeat:\n    add 1\n\nwhen ticket_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n  if rush:\n    draw line 12, 58 to 258, 58 stroke #dc2626 width 3\n  draw text "Live quote" at 12, 78 color #111827 size 16\n  draw text ticket_state at 126, 78 color #334155 size 16\n\nwhen quote_button clicked:'
+      'when workshop_clock ticked:\n  change heartbeat:\n    add 1\n\nwhen ticket_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42\n  if rush:\n    draw line 12, 58 to 258, 58 stroke #dc2626 width 3\n  draw text "Live quote" at 12, 78 color #111827 size 16\n  draw text ticket_state at 126, 78 color #334155 size 16\n\nwhen quote_button clicked:'
+    )
+    .replace(
+      'when ticket_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n  if rush:',
+      'when ticket_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42\n  if rush:'
     )
     .replace(
       'when quote_button clicked:\n  do quote(ticket, 25)\n  change ticket:\n    set state = "Quoted"',

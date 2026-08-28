@@ -38,6 +38,7 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 
 - `main` includes merged #276 with native PaintBox Stage 1, current Workshop Desk, Studio/site synchronization and the rounded Patch P branding.
 - Current RAD PR: [#277](https://github.com/pinkysworld/Patch/pull/277) `grok/rad-paintbox-draw-image-r1`.
+- Stacked after #277: `grok/rad-imagelist-native-r1` native ImageList Button PNG/JPEG images on IR 1.8 / payload v18 / runtime v1.9.
 - #277 is based on current `main`, not on the stale pre-merge #276 stack.
 - Earlier RAD slices #268 through #276 are historical/merged foundations, not bases for new work.
 - Tracking issue: [#247](https://github.com/pinkysworld/Patch/issues/247) RAD R1.
