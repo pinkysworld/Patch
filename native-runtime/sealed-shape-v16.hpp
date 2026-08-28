@@ -150,3 +150,12 @@ static const PatchShapeV16* PatchShapeForNativeIndexV16(const std::vector<PatchS
   for (const auto& item : shapes) if (item.nativeIndex == nativeIndex) return &item;
   return nullptr;
 }
+
+// Later runtimes may compile v1.6 as a private compatibility layer. These
+// aliases are opt-in only and leave ordinary runtime-v1.6 builds unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V17_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V17_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V17_RESTORE_MAIN
+#define main PATCH_RUNTIME_V17_RESTORE_MAIN
+#endif

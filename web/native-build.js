@@ -105,7 +105,8 @@ buildButton.addEventListener('click', async event => {
         allowListControls: true,
         allowMenuDecorations: true,
         allowTree: true,
-        allowSlider: true
+        allowSlider: true,
+        allowPaintBox: true
       });
       compiledWindow = buildCompiledWindowArtifact(preflight);
       const needsNativeGui = (nativeBuildMode.value === 'prebuilt' && ['windows', 'macos', 'linux'].includes(platform))
@@ -126,8 +127,8 @@ buildButton.addEventListener('click', async event => {
       const runtimeBytes = new Uint8Array(await response.arrayBuffer());
       const sealed = sealCurrentNativeGuiRuntime(runtimeBytes, nativeGui, { platform: 'windows', resources });
       downloadBytes(sealed, `${name}.exe`, 'application/vnd.microsoft.portable-executable');
-      output.textContent = `Native Windows app built ✓\n\nTarget: Windows\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${name}.exe\nNo GitHub token was used. No build queue, Electron, Chromium, Node.js, patch-app.json or sidecar runtime is required. Patch Studio compiled the GUI to Native GUI IR 1.5 in this browser and sealed payload v15 into the native Win32 runtime v1.6.\n\nThis is a real single-file native Win32 application using native Windows controls, including Slider. The no-token build uses a precompiled native runtime plus embedded checked GUI IR; choose “Native AOT EXE” if you specifically want MSVC to generate project-specific machine code.`;
-      status.textContent = `Windows native ${name}.exe downloaded · runtime v1.6 · no token · no Electron`;
+      output.textContent = `Native Windows app built ✓\n\nTarget: Windows\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${name}.exe\nNo GitHub token was used. No build queue, Electron, Chromium, Node.js, patch-app.json or sidecar runtime is required. Patch Studio compiled the GUI to Native GUI IR 1.6 in this browser and sealed payload v16 into the native Win32 runtime v1.7.\n\nThis is a real single-file native Win32 application using native Windows controls, including Slider. The no-token build uses a precompiled native runtime plus embedded checked GUI IR; choose “Native AOT EXE” if you specifically want MSVC to generate project-specific machine code.`;
+      status.textContent = `Windows native ${name}.exe downloaded · runtime v1.7 · no token · no Electron`;
       return;
     }
 
@@ -139,8 +140,8 @@ buildButton.addEventListener('click', async event => {
       const runtimeBytes = new Uint8Array(await response.arrayBuffer());
       const ready = buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, { name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, resources });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
-      output.textContent = `Native Linux app built ✓\n\nTarget: Linux\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR 1.5 in this browser and sealed payload v15 into a native GTK3 runtime v1.6.\n\nUnzip the package and run ${ready.executable}. The ZIP preserves the executable bit. Native Slider uses GtkScale; the target Linux system needs a compatible GTK3 runtime and its normal system libraries. Choose “Native AOT app” if you specifically want project-specific g++ machine-code generation in GitHub Actions.`;
-      status.textContent = `Linux native GTK runtime v1.6 app downloaded · no token · no Electron`;
+      output.textContent = `Native Linux app built ✓\n\nTarget: Linux\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR 1.6 in this browser and sealed payload v16 into a native GTK3 runtime v1.7.\n\nUnzip the package and run ${ready.executable}. The ZIP preserves the executable bit. Native Slider uses GtkScale; the target Linux system needs a compatible GTK3 runtime and its normal system libraries. Choose “Native AOT app” if you specifically want project-specific g++ machine-code generation in GitHub Actions.`;
+      status.textContent = `Linux native GTK runtime v1.7 app downloaded · no token · no Electron`;
       return;
     }
 
@@ -152,8 +153,8 @@ buildButton.addEventListener('click', async event => {
       const runtimeBytes = new Uint8Array(await response.arrayBuffer());
       const ready = buildMacosNativeGuiPackage(runtimeBytes, nativeGui, { name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, resources });
       downloadBytes(ready.bytes, ready.filename, 'application/zip');
-      output.textContent = `Native macOS app built ✓\n\nTarget: macOS\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR 1.5 in this browser, sealed payload v15 into native AppKit runtime v1.6, and packaged ${ready.bundle}. Native Slider uses NSSlider.\n\nImportant: this token-free app is unsigned because browser-side sealing changes the executable after the runtime template was built. macOS Gatekeeper may therefore require Control-click → Open on first launch. Choose “Native AOT app” for project-specific clang code generation; signing/notarization remains a separate packaging stage.`;
-      status.textContent = `macOS native AppKit runtime v1.6 app downloaded · unsigned · no token · no Electron`;
+      output.textContent = `Native macOS app built ✓\n\nTarget: macOS\nType: ${kindLabel}\nPreflight: ${preflightText}.\n\nDownloaded: ${ready.filename}\nNo GitHub token, cloud build, Electron, Chromium, Node.js, patch-app.json or sidecar Patch runtime is required. Patch Studio compiled the GUI to Native GUI IR 1.6 in this browser, sealed payload v16 into native AppKit runtime v1.7, and packaged ${ready.bundle}. Native Slider uses NSSlider.\n\nImportant: this token-free app is unsigned because browser-side sealing changes the executable after the runtime template was built. macOS Gatekeeper may therefore require Control-click → Open on first launch. Choose “Native AOT app” for project-specific clang code generation; signing/notarization remains a separate packaging stage.`;
+      status.textContent = `macOS native AppKit runtime v1.7 app downloaded · unsigned · no token · no Electron`;
       return;
     }
 
@@ -281,11 +282,11 @@ function refreshNativePanel() {
   if (platform === 'freebsd' && kind === 'window') {
     status.textContent = 'FreeBSD currently supports Console builds only.';
   } else if (platform === 'windows' && kind === 'window' && nativeBuildMode.value === 'prebuilt') {
-    status.textContent = 'Recommended: native Win32 single EXE with no token. Studio compiles Native GUI IR 1.5 in your browser and seals payload v15 into runtime v1.6, including TreeView and Slider.';
+    status.textContent = 'Recommended: native Win32 single EXE with no token. Studio compiles Native GUI IR 1.6 in your browser and seals payload v16 into runtime v1.7, including TreeView and Slider.';
   } else if (platform === 'linux' && kind === 'window' && nativeBuildMode.value === 'prebuilt') {
-    status.textContent = 'Recommended: native GTK3 application with no token. Studio compiles Native GUI IR 1.5 in your browser and seals payload v15 into runtime v1.6, including TreeView and Slider.';
+    status.textContent = 'Recommended: native GTK3 application with no token. Studio compiles Native GUI IR 1.6 in your browser and seals payload v16 into runtime v1.7, including TreeView and Slider.';
   } else if (platform === 'macos' && kind === 'window' && nativeBuildMode.value === 'prebuilt') {
-    status.textContent = 'Recommended: native AppKit application with no token. Studio seals Native GUI IR 1.5 / payload v15 into runtime v1.6, including TreeView and Slider, and creates an unsigned .app ZIP. Gatekeeper may require Control-click → Open on first launch.';
+    status.textContent = 'Recommended: native AppKit application with no token. Studio seals Native GUI IR 1.6 / payload v16 into runtime v1.7, including TreeView and Slider, and creates an unsigned .app ZIP. Gatekeeper may require Control-click → Open on first launch.';
   } else if (platform === 'windows' && kind === 'window' && nativeBuildMode.value === 'cloud') {
     status.textContent = 'Optional AOT build: GitHub Actions runs MSVC and returns an artifact ZIP containing only your project-specific .exe. A token is needed only for this Actions route.';
   } else if ((platform === 'macos' || platform === 'linux') && kind === 'window' && nativeBuildMode.value === 'cloud') {

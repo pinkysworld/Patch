@@ -331,17 +331,17 @@ The default Windows/macOS/Linux workflow is **Ready app download / offline link 
 
 The current Ready/offline Window product contract is:
 
-- Native GUI IR **1.5**;
-- sealed payload **v15**;
-- runtime **v1.6**.
+- Native GUI IR **1.6**;
+- sealed payload **v16**;
+- runtime **v1.7**.
 
-The previous Chrome compatibility line is Native GUI IR 1.4 / payload v14 / runtime v1.5. The previous Slider compatibility line is Native GUI IR 1.3 / payload v13 / runtime v1.4. The frozen TreeView compatibility line is Native GUI IR 1.2 / payload v12 / runtime v1.3.
+The previous Shape compatibility line is Native GUI IR 1.5 / payload v15 / runtime v1.6. The previous Chrome compatibility line is Native GUI IR 1.4 / payload v14 / runtime v1.5. The previous Slider compatibility line is Native GUI IR 1.3 / payload v13 / runtime v1.4. The frozen TreeView compatibility line is Native GUI IR 1.2 / payload v12 / runtime v1.3.
 
 Product paths import the stable `native-current-contract.js` / `native-frozen-contract.js` facades. Unsupported selected-contract behavior fails closed.
 
 ## Offline compiler
 
-The downloadable `offline-compiler-v0.2` supports current Windows x64, Linux x64, macOS Apple Silicon and macOS Intel kits. Current Window linking uses payload v15/runtime v1.6. FreeBSD remains Console-only via portable C99.
+The downloadable `offline-compiler-v0.2` supports current Windows x64, Linux x64, macOS Apple Silicon and macOS Intel kits. Current Window linking uses payload v16/runtime v1.7. FreeBSD remains Console-only via portable C99.
 
 ## PWA and website
 
@@ -362,8 +362,8 @@ Patch Studio deliberately distinguishes **authoring** from **runtime support**:
 | Component | Studio | Standalone Web | Windows/macOS/Linux native |
 |---|---|---|---|
 | Picture | supported | supported | supported for current bounded native image formats |
-| Shape | supported | supported | supported (IR 1.5 / payload v15 / runtime v1.6) |
-| PaintBox | authoring | supported | unsupported/fail-closed |
+| Shape | supported | supported | supported (IR 1.5 / payload v15 / runtime v1.6, preserved by current 1.6/v16/v1.7) |
+| PaintBox | supported | supported | supported (IR 1.6 / payload v16 / runtime v1.7; `draw image` deferred) |
 | ImageList | authoring | supported as Button image metadata | unsupported/fail-closed |
 | Window icon | authoring | supported (chrome + favicon) | unsupported/fail-closed |
 
@@ -376,4 +376,4 @@ The current execution order is maintained in `docs/ROADMAP.md` and the detailed 
 - `docs/RAD_STUDIO_MASTERPLAN.md`
 - `docs/RAD_STUDIO_MASTER_BACKLOG.md`
 
-The immediate remaining R1 gates are PaintBox native drawing, a native ImageList/Button-image contract, and native application/window icon packaging.
+The immediate remaining R1 gates are PaintBox `draw image`, a native ImageList/Button-image contract, and native application/window icon packaging.

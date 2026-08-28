@@ -1,0 +1,14 @@
+create number ticks = 2
+
+window "PaintBox" as main size 640, 420:
+  paintbox as canvas at 24, 24 size 320, 200
+  text "Stage 1 drawing" at 24, 240 size 280, 28
+
+when canvas paint:
+  draw clear #ffffff
+  draw rectangle 16, 16 size 120, 64 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 160, 24 size 96, 64 fill #dcfce7 stroke #16a34a width 3
+  if true:
+    draw line 16, 120 to 300, 120 stroke #334155 width 2
+  repeat ticks:
+    draw text "Tick" at 24, 140 color #111827 size 16

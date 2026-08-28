@@ -99,10 +99,10 @@ when canvas paint:
   );
 });
 
-test('PaintBox runtime support is explicit: Web may opt in while other Window targets remain fail closed', () => {
+test('PaintBox runtime support is explicit across Studio, Web and native Ready targets', () => {
   const component = patchComponent('paintbox');
   assert.deepEqual(component.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   const compiled = compile(source, { name: 'PaintBoxBoundary', kind: 'window' });
   assert.throws(

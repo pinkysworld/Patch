@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 
 function read(path) { return fs.readFileSync(path, 'utf8'); }
 
-test('Slider Stage 1 remains reproducible while Studio exposes the current native v1.6 contract', () => {
+test('Slider Stage 1 remains reproducible while Studio exposes the current native v1.7 contract', () => {
   const index = read('web/index.html');
   const language = read('web/language.html');
   const docs = read('web/docs.html');
@@ -17,19 +17,19 @@ test('Slider Stage 1 remains reproducible while Studio exposes the current nativ
   assert.match(index, /id="addSlider"/);
   assert.match(index, /value="sliderWindow">Slider app<\/option>/);
   assert.match(index, /Slider/i);
-  assert.match(index, /Native GUI IR 1\.5 \/ payload v15 \/ runtime v1\.6/i);
+  assert.match(index, /Native GUI IR 1\.6 \/ payload v16 \/ runtime v1\.7/i);
   assert.match(index, /Older versioned contracts remain compatibility lines/i);
   assert.match(language, /data-slider-language-support="native-v14"/);
   assert.match(language, /slider 0\.\.100 as volume step 5/);
   assert.match(language, /native Slider support/i);
   assert.match(language, /frozen compatibility/i);
-  assert.match(docs, /Native GUI IR 1\.5 · payload v15 · runtime v1\.6/);
+  assert.match(docs, /Native GUI IR 1\.6 · payload v16 · runtime v1\.7/);
   assert.match(contract, /Slider Stage 1/);
   assert.match(contract, /Window event adapter \*\*0\.9\*\*/);
   assert.match(contract, /Change IR remains \*\*0\.10\*\*/);
-  assert.match(contract, /Native GUI IR \*\*1\.5\*\*/);
-  assert.match(contract, /payload \*\*v15\*\*/);
-  assert.match(contract, /runtime \*\*v1\.6\*\*/);
+  assert.match(contract, /Native GUI IR \*\*1\.6\*\*/);
+  assert.match(contract, /payload \*\*v16\*\*/);
+  assert.match(contract, /runtime \*\*v1\.7\*\*/);
   assert.match(contract, /Native GUI IR \*\*1\.3\*\* \/ payload \*\*v13\*\* \/ runtime \*\*v1\.4\*\*/);
   assert.match(slider, /addDesignerControl\(code\.value, 'slider'/);
   assert.match(buildSite, /'slider-stage1\.js'/);
@@ -52,12 +52,12 @@ test('Standalone Web and current native Ready/offline paths opt into Slider whil
   assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
   assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/native-gui-ir-v13\.js['"]/);
   assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/sealed-native-gui-v13\.js['"]/);
-  assert.match(offlineLinker, /allowSlider:\s*guiPayloadVersion === 15/);
+  assert.match(offlineLinker, /allowSlider: guiPayloadVersion === 16/);
   assert.match(offlineLinker, /buildCurrentNativeGuiIR/);
   assert.match(offlineLinker, /sealCurrentNativeGuiRuntime/);
-  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.5\/payload-15\/runtime-1\.6'/);
-  assert.match(currentNative, /buildNativeGuiIRV15/);
-  assert.match(currentNative, /sealNativeGuiRuntimeV15/);
+  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.6\/payload-16\/runtime-1\.7'/);
+  assert.match(currentNative, /buildNativeGuiIRV16/);
+  assert.match(currentNative, /sealNativeGuiRuntimeV16/);
   assert.match(windowBuild, /if \(sliders && !options\.allowSlider\)/);
   assert.match(windowBuild, /Slider is not enabled for this Window target/);
   assert.doesNotMatch(nativeV12, /control\.type === 'slider'|control==='slider'|control === 'slider'/);

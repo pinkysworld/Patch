@@ -20,8 +20,12 @@ on:
       - examples/treeview-window.patch
       - examples/slider-window.patch
       - examples/chrome-window.patch
+      - examples/shape-window.patch
+      - examples/paintbox-window.patch
       - .github/workflows/offline-compiler.yml
       - .github/workflows/native-sealed-chrome-runtime-v15.yml
+      - .github/workflows/native-sealed-shape-runtime-v16.yml
+      - .github/workflows/native-sealed-paintbox-runtime-v17.yml
   push:
     branches: [main]
     paths:
@@ -40,8 +44,12 @@ on:
       - examples/treeview-window.patch
       - examples/slider-window.patch
       - examples/chrome-window.patch
+      - examples/shape-window.patch
+      - examples/paintbox-window.patch
       - .github/workflows/offline-compiler.yml
       - .github/workflows/native-sealed-chrome-runtime-v15.yml
+      - .github/workflows/native-sealed-shape-runtime-v16.yml
+      - .github/workflows/native-sealed-paintbox-runtime-v17.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -86,7 +94,7 @@ jobs:
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Build Win32 runtime v1.6
+      - name: Build Win32 runtime v1.7
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
@@ -100,23 +108,23 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v16.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v17.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
           if ($LASTEXITCODE -ne 0) { throw "MSVC GUI runtime build failed with exit code $LASTEXITCODE." }
-      - name: Build GTK runtime v1.6
+      - name: Build GTK runtime v1.7
         if: matrix.platform == 'linux'
         shell: bash
         run: |
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v16.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v17.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x offline-runtime/gui.bin
-      - name: Build AppKit runtime v1.6
+      - name: Build AppKit runtime v1.7
         if: matrix.platform == 'macos'
         shell: bash
         run: |
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v16.mm -o offline-runtime/gui.bin
+            native-runtime/appkit-sealed-gui-v17.mm -o offline-runtime/gui.bin
           chmod +x offline-runtime/gui.bin
           test "$(lipo -archs offline-runtime/gui.bin)" = "arm64"
       - name: Build standalone Patch compiler
@@ -140,6 +148,7 @@ jobs:
           "dist-offline/${{ matrix.asset }}" link examples/slider-window.patch --name OfflineSlider --out dist-smoke/OfflineSlider
           "dist-offline/${{ matrix.asset }}" link examples/chrome-window.patch --name OfflineChrome --out dist-smoke/OfflineChrome
           "dist-offline/${{ matrix.asset }}" link examples/shape-window.patch --name OfflineShape --out dist-smoke/OfflineShape
+          "dist-offline/${{ matrix.asset }}" link examples/paintbox-window.patch --name OfflinePaintBox --out dist-smoke/OfflinePaintBox
           test -s dist-smoke/OfflineSmoke.html
       - name: Smoke linked Window apps on Windows
         if: matrix.platform == 'windows'
@@ -149,11 +158,11 @@ jobs:
         run: |
           & ./dist-smoke/OfflineLinked.exe
           if ($LASTEXITCODE -ne 0) { throw "Linked Console smoke failed with exit code $LASTEXITCODE." }
-          foreach ($name in @('OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider','OfflineChrome','OfflineShape')) {
+          foreach ($name in @('OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider','OfflineChrome','OfflineShape','OfflinePaintBox')) {
             & "./dist-smoke/$name.exe" --patch-smoke
             if ($LASTEXITCODE -ne 0) { throw "$name smoke failed with exit code $LASTEXITCODE." }
             $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path "dist-smoke/$name.exe"))
-            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 15) { throw "$name is not sealed payload v15." }
+            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 16) { throw "$name is not sealed payload v16." }
           }
       - name: Smoke linked Window apps on Linux
         if: matrix.platform == 'linux'
@@ -161,16 +170,16 @@ jobs:
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable dist-smoke/OfflineMulti dist-smoke/OfflineMenu dist-smoke/OfflineTree dist-smoke/OfflineSlider dist-smoke/OfflineChrome dist-smoke/OfflineShape
+          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable dist-smoke/OfflineMulti dist-smoke/OfflineMenu dist-smoke/OfflineTree dist-smoke/OfflineSlider dist-smoke/OfflineChrome dist-smoke/OfflineShape dist-smoke/OfflinePaintBox
           ./dist-smoke/OfflineLinked
-          for name in OfflineResponsive OfflineTable OfflineMulti OfflineMenu OfflineTree OfflineSlider OfflineChrome OfflineShape; do
+          for name in OfflineResponsive OfflineTable OfflineMulti OfflineMenu OfflineTree OfflineSlider OfflineChrome OfflineShape OfflinePaintBox; do
             xvfb-run -a "./dist-smoke/$name" --patch-smoke
           done
           node - <<'NODE'
           const fs=require('fs');
-          for(const name of ['OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider','OfflineChrome','OfflineShape']){
+          for(const name of ['OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider','OfflineChrome','OfflineShape','OfflinePaintBox']){
             const sealed=fs.readFileSync(`dist-smoke/${name}`);
-            if(sealed.readUInt32LE(sealed.length-12)!==15) throw new Error(`${name} is not sealed payload v15.`);
+            if(sealed.readUInt32LE(sealed.length-12)!==16) throw new Error(`${name} is not sealed payload v16.`);
           }
           NODE
       - name: Smoke linked Window apps on macOS
@@ -182,14 +191,14 @@ jobs:
           CONSOLE_APP=dist-smoke/OfflineLinked.app/Contents/MacOS/OfflineLinked
           test -x "$CONSOLE_APP"
           "$CONSOLE_APP"
-          for name in OfflineResponsive OfflineTable OfflineMulti OfflineMenu OfflineTree OfflineSlider OfflineChrome OfflineShape; do
+          for name in OfflineResponsive OfflineTable OfflineMulti OfflineMenu OfflineTree OfflineSlider OfflineChrome OfflineShape OfflinePaintBox; do
             APP="dist-smoke/$name.app/Contents/MacOS/$name"
             test -x "$APP"
             "$APP" --patch-smoke
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==15) throw new Error(`${process.argv[2]} is not sealed payload v15.`);
+          if(sealed.readUInt32LE(sealed.length-12)!==16) throw new Error(`${process.argv[2]} is not sealed payload v16.`);
           NODE
           done
       - uses: actions/upload-artifact@v7
@@ -209,7 +218,7 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Build portable Intel macOS compiler kit with runtime v1.6
+      - name: Build portable Intel macOS compiler kit with runtime v1.7
         shell: bash
         run: |
           ROOT=dist-intel/patch-macos-x64
@@ -219,7 +228,7 @@ jobs:
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch x86_64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v16.mm -o "$ROOT/runtime/gui.bin"
+            native-runtime/appkit-sealed-gui-v17.mm -o "$ROOT/runtime/gui.bin"
           chmod +x "$ROOT/runtime/gui.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
@@ -238,7 +247,7 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals Native GUI IR 1.5 into payload v15/runtime v1.6, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 controls.
+          Window link seals Native GUI IR 1.6 into payload v16/runtime v1.7, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 controls.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
@@ -256,7 +265,7 @@ jobs:
           test -x "$CONSOLE_APP"
           actual="$("$CONSOLE_APP")"
           test "$actual" = "8"
-          for pair in "responsive-window.patch IntelWindow" "table-native-v09.patch IntelTable" "listbox-multiselect-native.patch IntelMulti" "menu-state-window.patch IntelMenu" "treeview-window.patch IntelTree" "slider-window.patch IntelSlider" "chrome-window.patch IntelChrome" "shape-window.patch IntelShape"; do
+          for pair in "responsive-window.patch IntelWindow" "table-native-v09.patch IntelTable" "listbox-multiselect-native.patch IntelMulti" "menu-state-window.patch IntelMenu" "treeview-window.patch IntelTree" "slider-window.patch IntelSlider" "chrome-window.patch IntelChrome" "shape-window.patch IntelShape" "paintbox-window.patch IntelPaintBox"; do
             set -- $pair
             "$KIT/patch" link "examples/$1" --name "$2" --out "dist-smoke/$2"
             APP="dist-smoke/$2.app/Contents/MacOS/$2"
@@ -265,7 +274,7 @@ jobs:
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==15) throw new Error('Intel offline compiler Window output is not sealed payload v15.');
+          if(sealed.readUInt32LE(sealed.length-12)!==16) throw new Error('Intel offline compiler Window output is not sealed payload v16.');
           NODE
           done
       - uses: actions/upload-artifact@v7
@@ -357,5 +366,5 @@ jobs:
         shell: bash
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes 'Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds Native GUI IR 1.5 as sealed payload v15/runtime v1.6 with responsive layout, Table/Grid, ListBox, Menu, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 controls. Supported run/build/link workflows work locally without a GitHub token.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes 'Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds Native GUI IR 1.6 as sealed payload v16/runtime v1.7 with responsive layout, Table/Grid, ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 controls. Supported run/build/link workflows work locally without a GitHub token.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

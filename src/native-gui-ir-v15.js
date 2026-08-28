@@ -17,6 +17,7 @@ export function buildNativeGuiIRV15(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
     throw new NativeGuiError('A compiled Patch Window program is required for native GUI 1.5 lowering.');
   }
+  rejectPaintBoxStage1(compiled.ast);
   const compatibility = cloneCompiledWithPolicies(compiled);
   const shapes = rewriteShapesForV14Compatibility(compatibility.ast, compiled.ast);
   const ir = buildNativeGuiIRV14(compatibility);
@@ -355,4 +356,18 @@ function defineLayoutPolicy(layout, policy) {
 
 function identifier(value) {
   return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+}
+
+function rejectPaintBoxStage1(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'paintbox') {
+      throw new NativeGuiError(
+        `line ${node.line ?? '?'}: Native GUI IR 1.5 does not include PaintBox. ` +
+        'Use Native GUI IR 1.6 / payload v16 / runtime v1.7 for clear, line, rectangle, ellipse and text.'
+      );
+    }
+    if (node.body) rejectPaintBoxStage1(node.body);
+    if (node.thenBody) rejectPaintBoxStage1(node.thenBody);
+    if (node.elseBody) rejectPaintBoxStage1(node.elseBody);
+  }
 }

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Patch programming language beta.36: explicit semantic change, Change IR 0.10, transient GUI event values, source-backed graphics controls and the current Native GUI IR 1.5 / runtime v1.6 desktop line.">
+  <meta name="description" content="Patch programming language beta.36: explicit semantic change, Change IR 0.10, transient GUI event values, source-backed graphics controls and the current Native GUI IR 1.6 / runtime v1.7 desktop line.">
   <title>Patch Language · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -68,7 +68,7 @@ window "Mixer":
 when volume changed:
   change volume:
     set = value</pre>
-    <p><code>step</code> defaults to <code>1</code>; signed and decimal ranges are supported. A same-name persistent binding must be number state. Patch Studio, Standalone Window Web and the current Windows, macOS and Linux Ready/offline paths implement native Slider support through Native GUI IR 1.5 / payload v15 / runtime v1.6 using Win32 TRACKBAR, AppKit NSSlider and GTK GtkScale.</p>
+    <p><code>step</code> defaults to <code>1</code>; signed and decimal ranges are supported. A same-name persistent binding must be number state. Patch Studio, Standalone Window Web and the current Windows, macOS and Linux Ready/offline paths implement native Slider support through Native GUI IR 1.6 / payload v16 / runtime v1.7 using Win32 TRACKBAR, AppKit NSSlider and GTK GtkScale.</p>
     <p>The Native GUI IR 1.3, payload v13 and runtime v1.4 Slider line remains a versioned compatibility boundary. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen compatibility TreeView line and intentionally stays Slider fail-closed. Versioned contracts are not redefined in place.</p>
   </section>
 
@@ -81,7 +81,7 @@ window "Fruit Picker":
 when fruits changed:
   change fruits:
     set = value</pre>
-    <p>The toolkit selection itself is not persistent Patch state. Persistence occurs only because the handler executes an explicit semantic <code>change</code>. Native GUI IR 1.1 introduced the list-state ABI; the current Native GUI IR 1.5 / payload v15 / runtime v1.6 line preserves it together with later Menu, TreeView, Slider, Chrome and Shape extensions.</p>
+    <p>The toolkit selection itself is not persistent Patch state. Persistence occurs only because the handler executes an explicit semantic <code>change</code>. Native GUI IR 1.1 introduced the list-state ABI; the current Native GUI IR 1.6 / payload v16 / runtime v1.7 line preserves it together with later Menu, TreeView, Slider, Chrome and Shape extensions.</p>
   </section>
 
   <section class="page-section" data-table-language-support="transient-list">
@@ -93,7 +93,7 @@ when fruits changed:
     row "Grace", "Scientist"
 when people changed:
   show value</pre>
-    <p>Table originated in Native GUI IR 0.8 / sealed payload v9 / runtime v1.0. The current Native GUI IR 1.5 / payload v15 / runtime v1.6 contract preserves that representation while composing later list, Menu, TreeView, Slider, Chrome and Shape extensions.</p>
+    <p>Table originated in Native GUI IR 0.8 / sealed payload v9 / runtime v1.0. The current Native GUI IR 1.6 / payload v16 / runtime v1.7 contract preserves that representation while composing later list, Menu, TreeView, Slider, Chrome and Shape extensions.</p>
   </section>
 
   <section class="page-section" data-tree-language-support="transient-path-list">
@@ -108,7 +108,7 @@ window "Files" as main size 560, 380:
 when files changed:
   change selected:
     set = value</pre>
-    <p>Selecting <code>compiler.js</code> yields <code>["src", "compiler.js"]</code> as transient <code>value</code>. Renderer or native-toolkit selection alone does not mutate persistent state. Native GUI IR 1.2 introduced TreeView; the current IR 1.5 / payload v15 / runtime v1.6 line preserves that hierarchy while composing later Slider, Chrome and Shape support.</p>
+    <p>Selecting <code>compiler.js</code> yields <code>["src", "compiler.js"]</code> as transient <code>value</code>. Renderer or native-toolkit selection alone does not mutate persistent state. Native GUI IR 1.2 introduced TreeView; the current IR 1.6 / payload v16 / runtime v1.7 line preserves that hierarchy while composing later Slider, Chrome and Shape support.</p>
   </section>
 
   <section class="page-section">

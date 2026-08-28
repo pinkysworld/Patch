@@ -66,16 +66,16 @@ requireAll('Workspace layout accessibility', accessibility, [
 ]);
 requireAll('Site build browser graph', buildSite, [
   "'site-navigation.css','site-refresh.css','site-pages.css'",'studio-command-palette.css','studio-command-palette.js','call-site-validation.js',
-  'independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-ir-v13.js','native-gui-ir-v14.js',
-  'sealed-native-gui-v13.js','sealed-native-gui-v14.js','native-chrome-backend-adapter.js'
+  'independent-range-expression.js','independent-guard-expression.js','native-current-contract.js','native-frozen-contract.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-gui-ir-v15.js','native-gui-ir-v16.js',
+  'sealed-native-gui-v13.js','sealed-native-gui-v14.js','sealed-native-gui-v15.js','sealed-native-gui-v16.js','native-chrome-backend-adapter.js','native-shape-backend-adapter.js','native-paintbox-backend-adapter.js'
 ]);
 requireAll('Single service-worker ownership', bootstrap, ['navigator.serviceWorker.register','patch-studio-sw-reload-guard','Date.now() + 14000']);
 rejectAll('Accessibility worker ownership', accessibility, ['serviceWorker.register']);
 rejectAll('Playground worker ownership', playground, ['serviceWorker.register']);
 requireAll('Service worker graph and fallback', sw, [
   './studio-command-palette.css','./studio-command-palette.js','./src/call-site-validation.js','./src/independent-range-expression.js','./src/independent-guard-expression.js',
-  './src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-ir-v13.js','./src/native-gui-ir-v14.js','./src/sealed-native-gui-v13.js','./src/sealed-native-gui-v14.js',
-  './src/native-chrome-backend-adapter.js',"const navigation = event.request.mode === 'navigate'",'throw error'
+  './src/native-current-contract.js','./src/native-frozen-contract.js','./src/native-gui-ir-v13.js','./src/native-gui-ir-v14.js','./src/native-gui-ir-v15.js','./src/native-gui-ir-v16.js','./src/sealed-native-gui-v13.js','./src/sealed-native-gui-v14.js','./src/sealed-native-gui-v15.js','./src/sealed-native-gui-v16.js',
+  './src/native-chrome-backend-adapter.js','./src/native-shape-backend-adapter.js','./src/native-paintbox-backend-adapter.js',"const navigation = event.request.mode === 'navigate'",'throw error'
 ]);
 requireAll('Formal claim boundary', formal, ['beta.32']);
 requireAll('Runtime correspondence boundary', runtime, ['beta.32']);

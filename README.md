@@ -64,21 +64,22 @@ Toolkit interaction stays transient until source commits it through `change`:
 
 ## Native desktop
 
-The product-facing current contract is **Native GUI IR 1.5 / sealed payload v15 / runtime v1.6**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
+The product-facing current contract is **Native GUI IR 1.6 / sealed payload v16 / runtime v1.7**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
 
 | Line | IR / payload / runtime | Role |
 |---|---|---|
-| Current Ready/offline | Native GUI IR 1.5 / payload v15 / runtime v1.6 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1 and Shape Stage 1 |
+| Current Ready/offline | Native GUI IR 1.6 / payload v16 / runtime v1.7 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 |
+| Previous Shape | Native GUI IR 1.5 / payload v15 / runtime v1.6 | Previous Shape-capable compatibility line |
 | Slider compatibility | Native GUI IR 1.3 / payload v13 / runtime v1.4 | Previous Slider-capable compatibility line |
 | Frozen TreeView | Native GUI IR 1.2 / payload v12 / runtime v1.3 | Frozen TreeView line; Slider remains fail-closed |
 
 Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Ready/offline Windows, macOS and Linux paths are token-free. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
 
-Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native GUI IR 1.4 PictureBox keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox, ImageList and Window icons have separate target capability metadata and remain fail-closed where runtime support has not been implemented. Shape Stage 1 is native on the current Ready line.
+Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native GUI IR 1.4 PictureBox keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox Stage 1 clear/line/rectangle/ellipse/text is native on the current Ready line; `draw image`, ImageList and Window icons have separate target capability metadata and remain fail-closed where runtime support has not been implemented. Shape Stage 1 is native on the current Ready line.
 
 ## Offline compiler
 
-The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.6 Window path and assert sealed payload v15 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
+The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.7 Window path and assert sealed payload v16 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
 
 See [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) and the public [Downloads](https://minh.systems/Patch/downloads.html) page.
 

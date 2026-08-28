@@ -149,7 +149,7 @@ Remaining product work includes:
 - Memo/TextArea, ProgressBar, Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
 - true independent TabOrder and richer container/layout semantics;
 - Undo/Redo transactions, large-project performance work and professional code-editor/debugger features;
-- PaintBox native parity, native ImageList/Button-image transport and native application/window icon packaging;
+- PaintBox `draw image`, native ImageList/Button-image transport and native application/window icon packaging;
 - application branding and richer packaging/signing workflows;
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
