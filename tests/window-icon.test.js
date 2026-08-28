@@ -34,6 +34,17 @@ test('Window declaration codec omits icon by default and preserves titles that m
   assert.equal(titled.iconExpr, null);
 });
 
+test('Window declaration codec requires width and height as one pair', () => {
+  assert.throws(
+    () => formatPatchWindowDeclaration({ titleExpr: '"Main"', id: 'main', width: 640, height: null }),
+    /both width and height/
+  );
+  assert.throws(
+    () => formatPatchWindowDeclaration({ titleExpr: '"Main"', id: 'main', width: null, height: 420 }),
+    /both width and height/
+  );
+});
+
 test('Window icon resolution prefers the first Form icon as the application icon', () => {
   const app = selectApplicationWindowIcon([
     { kind: 'window', id: 'plain', titleExpr: '"Plain"' },
@@ -44,11 +55,11 @@ test('Window icon resolution prefers the first Form icon as the application icon
   assert.equal(app.line, 6);
 });
 
-test('native GUI 1.4 reports Window icons instead of silently dropping them', () => {
+test('current native GUI reports Window icons instead of silently dropping them', () => {
   assert.equal(nativeWindowIconUnsupportedMessage({ titleExpr: '"Main"' }), null);
   assert.match(
     nativeWindowIconUnsupportedMessage({ id: 'main', iconExpr: '"patch-resource:app.icon"' }, 2),
-    /line 2: native GUI 1\.4 Form 'main' does not transport icon/
+    /line 2: native GUI Form 'main' does not transport icon/
   );
   assert.match(
     nativeWindowIconUnsupportedMessage({ id: 'main', iconExpr: '"patch-resource:app.icon"' }, 2),
