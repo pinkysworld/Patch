@@ -26,7 +26,13 @@ const TEXT_PROPERTY = Object.freeze({ name: 'textExpr', kind: 'expression' });
 
 const PROPERTY_BY_TYPE = Object.freeze({
   text: Object.freeze([TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
-  button: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
+  button: Object.freeze([
+    ID_PROPERTY,
+    TEXT_PROPERTY,
+    Object.freeze({ name: 'imageListId', kind: 'name' }),
+    Object.freeze({ name: 'imageItem', kind: 'name' }),
+    ...COMMON_LAYOUT_PROPERTIES
+  ]),
   input: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   checkbox: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   radio: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'options', kind: 'expression-list' }), ...COMMON_LAYOUT_PROPERTIES]),
@@ -102,7 +108,7 @@ const PAINTBOX_STAGE1_TARGETS = Object.freeze({
 
 const IMAGELIST_STAGE1_TARGETS = Object.freeze({
   studio: 'authoring',
-  web: 'unsupported',
+  web: 'supported',
   windows: 'unsupported',
   macos: 'unsupported',
   linux: 'unsupported',

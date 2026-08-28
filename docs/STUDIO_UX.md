@@ -53,6 +53,6 @@ Studio may author a component before every runtime target supports it, but the U
 
 - Picture has project-resource authoring, source-backed fit/center/opacity/description and current native PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed;
 - Shape and PaintBox have Studio/Standalone Web support while native targets remain fail-closed;
-- ImageList is authoring-only until a real consumer/runtime contract exists.
+- ImageList is Web metadata for Button `image list.item`; native GUI IR 1.4 fail-closes ImageList and Button images.
 
 The Designer therefore prioritizes clear capability boundaries over cosmetic parity claims.

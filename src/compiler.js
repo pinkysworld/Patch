@@ -123,6 +123,10 @@ function lowerNode(node) {
         fields.opacity = node.opacity;
         if (node.description) fields.description = node.description;
       }
+      if (node.control === 'button') {
+        if (node.imageListId) fields.imageListId = node.imageListId;
+        if (node.imageItem) fields.imageItem = node.imageItem;
+      }
       if (node.control === 'panel') fields.body = lowerBlock(node.body ?? []);
       return op('UI_CONTROL', node, fields);
     }
@@ -193,6 +197,7 @@ function inferRuntimeCapabilities(ast) {
     if (node.kind === 'uiControl' && node.control === 'panel') caps.add('ui.panel');
     if (node.kind === 'uiControl' && node.control === 'timer') caps.add('ui.timer');
     if (node.kind === 'uiControl' && node.control === 'imagelist') caps.add('ui.imagelist');
+    if (node.kind === 'uiControl' && node.control === 'button' && node.imageListId && node.imageItem) caps.add('ui.button-image');
     if (node.kind === 'uiControl' && node.control === 'picture') caps.add('ui.picture');
     if (node.kind === 'uiControl' && node.control === 'shape') caps.add('ui.shape');
     if (node.kind === 'uiControl' && node.control === 'paintbox') caps.add('ui.paintbox');

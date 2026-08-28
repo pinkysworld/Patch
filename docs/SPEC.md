@@ -283,6 +283,7 @@ shape ellipse as badge
 paintbox as canvas
 imagelist as app_images size 16, 16:
   image open from "patch-resource:icons.open"
+button "Open" as open_button image app_images.open
 statusbar "Ready" as app_status
 ```
 
@@ -290,7 +291,7 @@ statusbar "Ready" as app_status
 
 Shape and PaintBox are additive graphics contracts. Their current component capability metadata advertises Standalone Web support and keeps current native targets fail-closed rather than silently dropping unsupported graphics. PaintBox drawing is pure UI rendering and does not create a second persistent mutation path.
 
-ImageList Stage 1 is Studio authoring-only. It is a nonvisual Form-scoped component whose named entries refer to existing project resources through quoted `patch-resource:` locators. Logical image width and height are whole numbers from 1 through 512 and one ImageList may contain at most 256 named images. ImageList has no events in Stage 1. Standalone Web and native Window builds fail closed until a versioned runtime consumer contract exists for controls such as future ToolBar, TreeView or Button image bindings.
+ImageList is nonvisual source-backed metadata. It is a Form-scoped component whose named entries refer to existing project resources through quoted `patch-resource:` locators. Logical image width and height are whole numbers from 1 through 512 and one ImageList may contain at most 256 named images. ImageList has no events in Stage 1. Standalone Web Buttons may bind `image list.item`. Native GUI IR 1.4 still fail-closes ImageList and Button image bindings rather than silently dropping them.
 
 Controls may use source-backed layout:
 
@@ -341,9 +342,10 @@ ImageList is source-backed metadata over project resources rather than another i
 imagelist as toolbar_images size 16, 16:
   image open from "patch-resource:icons.open"
   image save from "patch-resource:icons.save"
+button "Open" as open_button image toolbar_images.open
 ```
 
-Item names must be valid Patch names and unique within the ImageList. Resource bytes remain in the project v4 resource bundle; the ImageList source stores only their logical locators.
+Item names must be valid Patch names and unique within the ImageList. Resource bytes remain in the project v4 resource bundle; the ImageList source stores only their logical locators. A Button binds one item with `image list.item`. Formatting omits the image token when no binding is set.
 
 ## Tables
 

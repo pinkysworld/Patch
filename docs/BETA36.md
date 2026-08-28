@@ -8,9 +8,9 @@ Patch beta.36 is the current integration and RAD-authoring development line. It 
 - Change IR: `0.10`
 - Studio project bundle: `v4`
 - Component Registry: `0.8`
-- Native GUI IR `1.4`
-- sealed payload `v14`
-- desktop runtime `v1.5`
+- Native GUI IR: `1.4`
+- sealed payload: `v14`
+- desktop runtime: `v1.5`
 - Win32 release: `native-win32-runtime-v1.5`
 - AppKit release: `native-macos-runtime-v1.5`
 - GTK release: `native-linux-runtime-v1.5`
@@ -71,8 +71,8 @@ Current source-backed Form Designer operations include:
 
 - pointer/keyboard move and resize;
 - align left / right, top / bottom and center operations;
-- make same width / height;
-- distribute horizontally / vertically;
+- same width/height;
+- equal horizontal/vertical distribution;
 - multi-select alignment and center operations;
 - Center H / Center V;
 - Default size and collision-aware Auto place;
@@ -119,13 +119,13 @@ imagelist as toolbar_images size 16, 16:
 
 It provides named ordered project-resource references and a logical size. The Object Inspector can add/replace/reorder/rename/remove entries through the existing Resource Manager. It consumes no Form geometry and exposes no event in Stage 1.
 
-ImageList is intentionally authoring-only until a real consumer such as ToolBar/ToolButton, TreeView or Button image binding exists. Standalone Web and native Window builds fail closed instead of silently dropping it.
+Buttons bind one ImageList item with `image list.item`. Standalone Web renders that image. Native GUI IR 1.4 fail-closes ImageList and Button image bindings instead of silently dropping them.
 
 ## Website, PWA and CI
 
 The public Studio uses the beta.36 product contract and a content-addressed browser module graph. Service Worker routing is type-safe: missing JavaScript/CSS/runtime assets never receive `index.html` as a substitute. Real Chrome startup/responsiveness checks exercise Studio before a public deployment is considered healthy.
 
-The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox and ImageList authoring, including `native-picture-format-policy.js`.
+The site/offline closure now includes the graphics/resource modules used by Picture, Shape, PaintBox, ImageList and Button image bindings, including `native-picture-format-policy.js` and `button-image.js`.
 
 ## Offline compiler v0.2
 
@@ -137,4 +137,4 @@ Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional 
 
 beta.36 product work does not widen the beta.32 formal runtime-correspondence claim. Patch does not claim full compiler/runtime verification.
 
-Likewise, target capability metadata is intentionally truthful: Shape/PaintBox native runtime support and ImageList consumers are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.
+Likewise, target capability metadata is intentionally truthful: Shape/PaintBox native runtime support and native ImageList/Button-image transport are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.

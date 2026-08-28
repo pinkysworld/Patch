@@ -15,7 +15,7 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | Type | Label | Category | Kind | Studio | Web | Windows | macOS | Linux | FreeBSD | Properties | Events |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `text` | Text | Basic | visual | supported | supported | supported | supported | supported | unsupported | textExpr, x, y, width, height | — |
-| `button` | Button | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | clicked |
+| `button` | Button | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, imageListId, imageItem, x, y, width, height | clicked |
 | `input` | Input | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, x, y, width, height | changed |
 | `checkbox` | Checkbox | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | changed |
 | `radio` | Radio group | Choices | visual | supported | supported | supported | supported | supported | unsupported | id, options, x, y, width, height | changed |
@@ -31,4 +31,4 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | `paintbox` | PaintBox | Graphics | visual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, x, y, width, height | paint |
 | `statusbar` | StatusBar | Chrome | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | — |
 | `timer` | Timer | Nonvisual | nonvisual | supported | supported | supported | supported | supported | unsupported | id, interval | ticked |
-| `imagelist` | ImageList | Nonvisual | nonvisual | authoring | unsupported | unsupported | unsupported | unsupported | unsupported | id, logicalWidth, logicalHeight, items | — |
+| `imagelist` | ImageList | Nonvisual | nonvisual | authoring | supported | unsupported | unsupported | unsupported | unsupported | id, logicalWidth, logicalHeight, items | — |

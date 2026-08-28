@@ -488,8 +488,21 @@ function createControlElement(control, context) {
   } else if (control.type === 'button') {
     el = document.createElement('button');
     el.className = 'patch-button';
-    el.textContent = control.text;
     el.type = 'button';
+    if (control.imageSource) {
+      const img = document.createElement('img');
+      img.className = 'patch-button-image';
+      img.alt = '';
+      img.width = control.imageWidth || 16;
+      img.height = control.imageHeight || 16;
+      try {
+        img.src = pictureResourceDataUri(control.imageSource, getStudioProjectResources());
+      } catch {
+        img.src = control.imageSource;
+      }
+      el.appendChild(img);
+    }
+    el.append(control.text);
     if (context.interactive) el.addEventListener('click', () => trigger(control.id, 'clicked'));
   } else if (control.type === 'input') {
     el = document.createElement('input');

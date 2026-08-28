@@ -282,7 +282,8 @@ pre {
 .patch-window-title { padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--soft); font-size: 12px; font-weight: 750; }
 .patch-window-body { min-height: 180px; padding: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
 .patch-text { margin: 0; font-size: 18px; }
-.patch-button { padding: 8px 15px; }
+.patch-button { padding: 8px 15px; display: inline-flex; align-items: center; gap: 8px; }
+.patch-button-image { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; border: 0; }
 .patch-input { width: 100%; max-width: 280px; }
 .patch-tabs { width: 100%; min-height: 180px; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--text); }
 .patch-tabs-list { display: flex; align-items: center; gap: 2px; min-height: 39px; padding: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); background: var(--soft); }

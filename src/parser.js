@@ -1,5 +1,6 @@
 import { parsePatchPictureDeclaration } from './picture-source.js';
 import { parsePatchShapeDeclaration } from './shape-source.js';
+import { parsePatchButtonDeclaration } from './button-image.js';
 import { parsePatchPaintCommand } from './paintbox-control.js';
 import {
   PATCH_IMAGELIST_MAX_ITEMS,
@@ -235,7 +236,21 @@ export function parse(source) {
 
     const ui=parseUILayout(row.text,row.line);
     if ((m = ui.core.match(/^text\s+(.+)$/))) return uiControl({control:'text',textExpr:m[1],id:null,line:row.line},ui.layout);
-    if ((m = ui.core.match(/^button\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'button',textExpr:m[1],id:m[2],line:row.line},ui.layout);
+    if (/^button\b/i.test(ui.core)) {
+      try {
+        const button = parsePatchButtonDeclaration(ui.core);
+        return uiControl({
+          control:'button',
+          textExpr:button.textExpr,
+          id:button.id,
+          imageListId:button.imageListId,
+          imageItem:button.imageItem,
+          line:row.line
+        },ui.layout);
+      } catch (error) {
+        throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+      }
+    }
     if ((m = ui.core.match(/^checkbox\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) return uiControl({control:'checkbox',textExpr:m[1],id:m[2],line:row.line},ui.layout);
     if ((m = ui.core.match(/^radio\s+(.+?)\s+as\s+([A-Za-z_]\w*)$/))) {
       const options=splitArgs(m[1]);

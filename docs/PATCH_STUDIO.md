@@ -225,7 +225,13 @@ The Object Inspector can:
 - remove items;
 - open Resource Manager.
 
-ImageList Stage 1 is **authoring-only** until a real runtime consumer such as ToolBar/ToolButton, TreeView or Button image binding exists. Standalone Web/native Window targets fail closed rather than silently dropping it.
+Buttons bind one ImageList item with source-backed `image list.item`:
+
+```patch
+button "Open" as open_button image app_images.open
+```
+
+Standalone Web renders the bound image on the Button. Native GUI IR 1.4 fail-closes ImageList and Button image bindings rather than silently dropping them. ToolBar/ToolButton and TreeView image bindings remain later consumers.
 
 ## Picture
 
@@ -347,7 +353,7 @@ Patch Studio deliberately distinguishes **authoring** from **runtime support**:
 | Picture | supported | supported | supported for current bounded native image formats |
 | Shape | authoring | supported | unsupported/fail-closed |
 | PaintBox | authoring | supported | unsupported/fail-closed |
-| ImageList | authoring | unsupported until consumer contract | unsupported until consumer contract |
+| ImageList | authoring | supported as Button image metadata | unsupported/fail-closed |
 
 This table is intentionally conservative. A component is not called cross-platform Ready merely because the Designer can place it.
 
@@ -358,4 +364,4 @@ The current execution order is maintained in `docs/ROADMAP.md` and the detailed 
 - `docs/RAD_STUDIO_MASTERPLAN.md`
 - `docs/RAD_STUDIO_MASTER_BACKLOG.md`
 
-The immediate remaining R1 gates are the first real ImageList consumer, native Shape/PaintBox support and application icons/branding.
+The immediate remaining R1 gates are application/window icons, native Shape/PaintBox support and a native ImageList/Button-image contract.

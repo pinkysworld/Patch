@@ -1,5 +1,6 @@
 import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
 import { nativePictureDisplayUnsupportedMessage } from './picture-control.js';
+import { nativeButtonImageUnsupportedMessage } from './button-image.js';
 import {
   buildNativeGuiIRV13,
   validateNativeGuiIRV13,
@@ -201,6 +202,10 @@ function rewriteChromeForV13Compatibility(ast, originalAst) {
   const rewriteNodes = nodes => {
     const out = [];
     for (const node of nodes ?? []) {
+      if (node.kind === 'uiControl' && node.control === 'button') {
+        const unsupported = nativeButtonImageUnsupportedMessage(node, node.line);
+        if (unsupported) throw new NativeGuiError(unsupported);
+      }
       if (node.kind === 'uiControl' && node.control === 'panel') {
         if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI 1.4 Panel needs a simple Patch name after 'as'.`);
         const children = rewriteNodes(node.body ?? []);

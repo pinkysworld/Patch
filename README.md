@@ -39,7 +39,7 @@ Current Studio capabilities include:
 - `Ctrl/Cmd+K` Command Palette with project files, Thing fields such as `player.score`, and recipe parameters such as `reward.bonus`;
 - token-free Ready Windows/macOS/Linux downloads plus offline compiler/linker kits.
 
-ImageList Stage 1 is intentionally authoring-only. It stores ordered named references to project resources and is designed for future ToolBar/Menu/Button/TreeView image consumers. Web/native Window builds fail closed if ImageList is present until that consumer/runtime contract is versioned.
+ImageList stores ordered named references to project resources. Buttons bind one item with `image list.item` on Studio and Standalone Web. Native GUI IR 1.4 fail-closes ImageList and Button images until a versioned desktop contract transports them.
 
 Shape and PaintBox currently advertise Studio authoring plus Standalone Web support. Native Shape/PaintBox parity remains an explicit later gate rather than silently degrading. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
 

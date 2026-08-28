@@ -44,7 +44,7 @@ The beta.35+ multi-file/Designer foundation and the beta.36 native 1.4/v14/v1.5 
 - [x] Shape Stage 1 source syntax, Designer authoring and Standalone Web rendering
 - [x] PaintBox Stage 1 source syntax, pure `paint` event/drawing commands, Designer authoring and Standalone Web rendering
 - [x] ImageList Stage 1 source syntax, compiler transport, registry metadata, nonvisual tray and Resource Manager-backed Object Inspector
-- [x] ImageList runtime targets fail closed until a consumer contract exists
+- [x] ImageList Web metadata for Button `image list.item`; native GUI IR 1.4 still fail-closes ImageList and Button images
 - [x] content-addressed public site, PWA/offline closure validation and real Chrome startup/responsiveness gate
 - [x] token-free Ready/offline Native GUI IR 1.4 / payload v14 / runtime v1.5 Windows/macOS/Linux paths
 - [x] Command Palette, project-file/symbol quick-open, editor tabs, Workspace Layout v2 and startup diagnostics v2
@@ -55,13 +55,13 @@ These are real remaining gaps and must not be advertised as complete until their
 
 - [x] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/Web; native GUI 1.4 keeps default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values
 - [x] decide and version native SVG/WebP policy rather than broadening format support implicitly (`native-picture-formats/1.0`: Ready PNG/JPEG, deferred WebP/SVG, no IR bump)
+- [x] first ImageList consumer: Button `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images
+- [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
+- [ ] application/window icon resource and packaging contract
 - [ ] Shape native lowering/runtime parity for Win32, AppKit and GTK
 - [ ] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK
 - [ ] PaintBox `draw image` resource consumption after the image/drawing contract is versioned
-- [ ] first ImageList consumer, preferably ToolBar/ToolButton or TreeView/Button image binding
-- [ ] ImageList Web/native runtime contract only after a consumer exists; no empty standalone runtime claim
-- [ ] application/window icon resource and packaging contract
-- [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
+- [ ] ImageList native runtime contract only after desktop backends transport Button/ToolBar images; no empty standalone native claim
 
 ## RAD R2: Form Designer parity
 
