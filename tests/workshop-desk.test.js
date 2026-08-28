@@ -33,10 +33,9 @@ test('Workshop Desk compiles, runs and the Studio upgrades its compatibility sam
   assert.ok(compiled.ast);
   const runtime = new PatchInterpreter();
   const result = runtime.run(example);
-  assert.equal(result.state.ticket.total, 40);
-  assert.equal(result.state.ticket.bench, 'Bench A');
-  assert.equal(result.state.ticket.payment, 'Card');
-  assert.equal(result.state.ticket.state, 'Open');
+  assert.equal(result.state.ticket_total, 40);
+  assert.equal(result.state.ticket_bench, 'Bench A');
+  assert.equal(result.state.ticket_state, 'Open');
   assert.equal(result.state.heartbeat, 0);
   assert.equal(result.ui.length, 3);
   assert.equal(result.ui.find(window => window.id === 'main')?.visible, true);
@@ -50,15 +49,12 @@ test('Workshop Desk exercises stateful controls, Forms, transient structural sel
 
   let result = triggerWindowEvent(runtime, 'customer', 'changed', { value: 'Grace' });
   assert.equal(result.state.customer, 'Grace');
-  assert.equal(result.state.ticket.customer, 'Grace');
 
   result = triggerWindowEvent(runtime, 'pay', 'changed', { value: 'Cash' });
   assert.equal(result.state.pay, 'Cash');
-  assert.equal(result.state.ticket.payment, 'Cash');
 
   result = triggerWindowEvent(runtime, 'qty', 'changed', { value: 4 });
   assert.equal(result.state.qty, 4);
-  assert.equal(result.state.ticket.qty, 4);
 
   result = triggerWindowEvent(runtime, 'services', 'changed', { value: ['Diagnostics', 'Pickup'] });
   assert.deepEqual(result.state.services, ['Diagnostics', 'Pickup']);
@@ -73,8 +69,8 @@ test('Workshop Desk exercises stateful controls, Forms, transient structural sel
   assert.equal(result.state.heartbeat, 1);
 
   result = triggerWindowEvent(runtime, 'quote_button', 'clicked');
-  assert.equal(result.state.ticket.total, 65);
-  assert.equal(result.state.ticket.state, 'Quoted');
+  assert.equal(result.state.ticket_total, 65);
+  assert.equal(result.state.ticket_state, 'Quoted');
   assert.equal(result.state.status, 'Quote increased by 25');
 
   result = triggerWindowEvent(runtime, 'settings_button', 'clicked');
@@ -82,36 +78,33 @@ test('Workshop Desk exercises stateful controls, Forms, transient structural sel
 
   result = triggerWindowEvent(runtime, 'default_bench', 'changed', { value: 'Overflow' });
   assert.equal(result.state.default_bench, 'Overflow');
-  assert.equal(result.state.ticket.bench, 'Overflow');
+  assert.equal(result.state.ticket_bench, 'Overflow');
 
   result = triggerWindowEvent(runtime, 'details_button', 'clicked');
   assert.equal(result.ui.find(window => window.id === 'details')?.visible, true);
 
   result = triggerWindowEvent(runtime, 'details_quote', 'clicked');
-  assert.equal(result.state.ticket.total, 75);
-  assert.equal(result.state.ticket.state, 'Quoted');
+  assert.equal(result.state.ticket_total, 75);
+  assert.equal(result.state.ticket_state, 'Quoted');
 
   result = triggerWindowEvent(runtime, 'details_ready', 'clicked');
-  assert.equal(result.state.ticket.state, 'Ready');
+  assert.equal(result.state.ticket_state, 'Ready');
   assert.equal(result.state.status, 'Ticket marked ready');
 
   result = triggerWindowEvent(runtime, 'reset_button', 'clicked');
   assert.equal(result.state.customer, 'Ada');
   assert.equal(result.state.item, 'Keyboard');
   assert.equal(result.state.pay, 'Card');
-  assert.equal(result.state.ticket.customer, 'Ada');
-  assert.equal(result.state.ticket.item, 'Keyboard');
-  assert.equal(result.state.ticket.payment, 'Card');
-  assert.equal(result.state.ticket.state, 'Open');
-  assert.equal(result.state.ticket.total, 40);
-  assert.equal(result.state.ticket.qty, 1);
+  assert.equal(result.state.ticket_state, 'Open');
+  assert.equal(result.state.ticket_total, 40);
+  assert.equal(result.state.ticket_bench, 'Bench A');
   assert.equal(result.state.qty, 1);
   assert.equal(result.state.heartbeat, 0);
   assert.deepEqual(result.state.services, ['Diagnostics']);
   assert.equal(result.state.status, 'Ticket reset');
 });
 
-test('Workshop Desk covers the current native-ready RAD control surface without a hidden form model', () => {
+test('Workshop Desk covers the current native-ready RAD control surface without hidden unsupported app state', () => {
   for (const marker of [
     'window "Workshop Desk" as main',
     'window "Workshop settings" as settings',
@@ -120,12 +113,13 @@ test('Workshop Desk covers the current native-ready RAD control surface without 
     'table "Ticket", "Customer", "Bench", "State" as board',
     'tree as parts', 'tabs as prefs', 'statusbar "{status}" as desk_status',
     'panel as runtime_panel', 'shape rounded as runtime_shape', 'timer as workshop_clock interval 5000',
-    'button "Mark ready" as complete_button', 'make quote', 'allow quote:', 'create thing ticket',
+    'button "Mark ready" as complete_button', 'create number ticket_total = 40',
     'open settings', 'open details', 'close settings', 'close details',
     '# @layout anchor left right bottom'
   ]) assert.ok(example.includes(marker), marker);
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
   assert.doesNotMatch(example, /change selected_(?:job|part)/);
+  assert.doesNotMatch(example, /create thing ticket:|do quote\(|allow quote:|change ticket:/);
 });
 
 test('Workshop Desk builds as a Standalone Window Web App with the current visual controls', () => {
