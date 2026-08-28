@@ -11,7 +11,7 @@ A small **change-oriented** programming language with a browser-first RAD IDE, f
 
 **Development beta `0.2.0-beta.36`** · **Change IR `0.10`** · **Native GUI IR `1.5`** · **sealed payload `v15`** · **desktop runtime `v1.6`** · **Studio project bundle `v4`**
 
-[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Paper](https://minh.systems/Patch/paper.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html)
+[Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html)
 
 ```patch
 create number score = 0
@@ -34,18 +34,20 @@ Current Studio capabilities include:
 - Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer and ImageList authoring;
 - a Delphi-style nonvisual component tray for Timer and ImageList;
 - Object Inspector Properties / Events, handler creation/navigation and source-backed Anchors/Dock;
-- multi-select alignment, sizing, distribution, z-order actions, grid snapping and Focus Order Stage 1;
+- multi-select alignment, sizing, distribution, complete z-order actions, grid snapping and Focus Order Stage 1;
+- source-backed Undo/Redo for editor typing and atomic Designer source rewrites;
 - structural editors for Table, TreeView, Tabs and Panel;
+- active-Form rendering for large multi-Form Designer projects plus the 10-Form / 200-control stress benchmark;
 - `Ctrl/Cmd+K` Command Palette with project files, Thing fields such as `player.score`, and recipe parameters such as `reward.bonus`;
 - token-free Ready Windows/macOS/Linux downloads plus offline compiler/linker kits.
 
-ImageList stores ordered named references to project resources. Buttons bind one item with `image list.item` on Studio and Standalone Web. Native GUI IR 1.4 fail-closes ImageList and Button images until a versioned desktop contract transports them.
+ImageList stores ordered named references to project resources. Buttons bind one item with `image list.item` on Studio and Standalone Web. The current Ready Native GUI IR 1.5 line deliberately fails closed for ImageList and Button images until a versioned desktop contract transports them.
 
-Forms may declare `icon "patch-resource:app.icon"` on the window line. Studio and Standalone Web show that icon in Form chrome; the first Form icon is the application favicon. Native GUI IR 1.4 fail-closes Window icons under `window-icon/1.0`.
+Forms may declare `icon "patch-resource:app.icon"` on the window line. Studio and Standalone Web show that icon in Form chrome; the first Form icon is the application favicon. The current Ready Native GUI IR 1.5 line deliberately fails closed for Window icons under `window-icon/1.0`.
 
-Shape advertises Studio, Standalone Web and current native Ready support. PaintBox currently advertises Studio authoring plus Standalone Web support; native PaintBox parity remains an explicit later gate rather than silently degrading. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
+Shape advertises Studio, Standalone Web and current native Ready support. Rectangle, rounded rectangle, ellipse and line are transported by Native GUI IR 1.5 / payload v15 and rendered by runtime v1.6 on Win32, AppKit and GTK. PaintBox currently advertises Studio authoring plus Standalone Web support; the additive IR 1.6 / payload v16 native transport is under development and is not the Ready facade until runtime v1.7 reaches Win32, AppKit and GTK parity. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
 
-Open **Workshop desk** in Example for the current showcase application. See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md), [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md), [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) and [`docs/BETA36.md`](docs/BETA36.md).
+Open **Workshop desk** in Example for the current showcase application. It exercises Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar while keeping structural selection transient on the cross-platform Ready path. See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md), [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md), [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) and [`docs/BETA36.md`](docs/BETA36.md).
 
 ## GUI events
 
@@ -72,9 +74,9 @@ The product-facing current contract is **Native GUI IR 1.5 / sealed payload v15 
 | Slider compatibility | Native GUI IR 1.3 / payload v13 / runtime v1.4 | Previous Slider-capable compatibility line |
 | Frozen TreeView | Native GUI IR 1.2 / payload v12 / runtime v1.3 | Frozen TreeView line; Slider remains fail-closed |
 
-Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Ready/offline Windows, macOS and Linux paths are token-free. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
+Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Ready/offline Windows, macOS and Linux paths are token-free. TreeView is enabled explicitly by the current Ready Studio build preflight and remains fail-closed only at older or deliberately restricted target boundaries. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
 
-Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native GUI IR 1.4 PictureBox keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox, ImageList and Window icons have separate target capability metadata and remain fail-closed where runtime support has not been implemented. Shape Stage 1 is native on the current Ready line.
+Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native Picture keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox, ImageList/Button images and Window icons have separate target capability metadata and remain fail-closed where runtime support has not been implemented. Shape Stage 1 is native on the current Ready line.
 
 ## Offline compiler
 
@@ -126,6 +128,6 @@ patch components --json
 | [`docs/BETA36.md`](docs/BETA36.md) | beta.36 integration milestone |
 | [`docs/FORMAL_MODEL.md`](docs/FORMAL_MODEL.md) | Assurance scope |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Current backlog and evidence gates |
-| [`paper/README.md`](paper/README.md) | Paper sources |
+| [`paper/README.md`](paper/README.md) | Repository-only paper sources |
 
 Patch is an active research/prototype language and IDE. Version labels and capability matrices are explicit so product work does not silently broaden older runtime or formal claims.
