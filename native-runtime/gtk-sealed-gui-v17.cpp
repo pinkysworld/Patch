@@ -157,8 +157,124 @@ static void PatchRefreshPaintBoxesV17() {
   gRefreshing = previous;
 }
 
-static void PatchOnClickedV17(GtkWidget* widget, gpointer data) { PatchOnClickedV16(widget, data); PatchRefreshPaintBoxesV17(); }
+static void PatchRefreshExtendedV17() {
+  PatchRefreshChromeV15();
+  PatchRefreshPaintBoxesV17();
+}
+
+static void PatchOnClickedV17(GtkWidget* widget, gpointer data) { PatchOnClickedV14(widget, data); PatchRefreshExtendedV17(); }
+static void PatchOnToggledV17(GtkToggleButton* widget, gpointer data) { PatchOnToggledV14(widget, data); PatchRefreshExtendedV17(); }
+static void PatchOnRadioV17(GtkToggleButton* widget, gpointer data) { PatchOnRadioV14(widget, data); PatchRefreshExtendedV17(); }
+static void PatchOnInputV17(GtkEditable* widget, gpointer data) { PatchOnInputV14(widget, data); PatchRefreshExtendedV17(); }
+static void PatchOnComboV17(GtkComboBox* widget, gpointer data) { PatchOnComboV14(widget, data); PatchRefreshExtendedV17(); }
+static void PatchOnListSingleV17(GtkListBox* box, GtkListBoxRow* row, gpointer data) { PatchOnListSingleV14(box, row, data); PatchRefreshExtendedV17(); }
+static void PatchOnListMultiV17(GtkListBox* box, gpointer data) { PatchOnListMultiV14(box, data); PatchRefreshExtendedV17(); }
+static void PatchOnTableChangedV17(GtkTreeSelection* selection, gpointer data) { PatchOnTableChangedV14(selection, data); PatchRefreshExtendedV17(); }
+static void PatchOnMenuV17(GtkWidget* widget, gpointer data) { PatchOnMenuV14(widget, data); PatchRefreshExtendedV17(); }
+static void PatchOnTreeRefreshV17(GtkTreeSelection*, gpointer) { PatchRefreshExtendedV17(); }
+static void PatchOnSliderChangedV17(GtkRange* range, gpointer data) { PatchOnSliderChangedV14(range, data); PatchRefreshExtendedV17(); }
 static void PatchOnFormAllocateV17(GtkWidget*, GtkAllocation*, gpointer) { PatchRefreshPaintBoxesV17(); }
+
+static gboolean PatchOnTimerV17(gpointer data) {
+  const auto* item = PatchChromeForNativeIndexV15(gPatchChromeV15, GPOINTER_TO_INT(data));
+  if (item) PatchDispatchChromeV15(*item);
+  PatchRefreshExtendedV17();
+  return TRUE;
+}
+
+static void PatchOnPictureV17(GtkWidget*, gpointer data) {
+  const auto* item = PatchChromeForNativeIndexV15(gPatchChromeV15, GPOINTER_TO_INT(data));
+  if (item) PatchDispatchChromeV15(*item);
+  PatchRefreshExtendedV17();
+}
+
+static bool PatchRewireEventsV17() {
+  for (int index = 0; index < (int)gControls.size(); ++index) {
+    auto& c = gControls[(size_t)index];
+    if (!c.widget || c.kind == 9) continue;
+    gpointer data = GINT_TO_POINTER(index);
+    if (PatchSliderForNativeIndexV14(gPatchSlidersV14, index)) continue;
+    if (c.kind == CK_BUTTON) {
+      g_signal_handlers_disconnect_by_func(c.widget, (gpointer)PatchOnClickedV14, data);
+      g_signal_connect(c.widget, "clicked", G_CALLBACK(PatchOnClickedV17), data);
+    } else if (c.kind == CK_CHECKBOX) {
+      g_signal_handlers_disconnect_by_func(c.widget, (gpointer)PatchOnToggledV14, data);
+      g_signal_connect(c.widget, "toggled", G_CALLBACK(PatchOnToggledV17), data);
+    } else if (c.kind == CK_INPUT) {
+      g_signal_handlers_disconnect_by_func(c.widget, (gpointer)PatchOnInputV14, data);
+      g_signal_connect(c.widget, "changed", G_CALLBACK(PatchOnInputV17), data);
+    } else if (c.kind == CK_COMBO) {
+      g_signal_handlers_disconnect_by_func(c.widget, (gpointer)PatchOnComboV14, data);
+      g_signal_connect(c.widget, "changed", G_CALLBACK(PatchOnComboV17), data);
+    } else if (c.kind == CK_LISTBOX) {
+      const bool multi = PatchFindListBoxV11(gPatchListBoxesV11, c.id) != nullptr;
+      if (multi) {
+        g_signal_handlers_disconnect_by_func(c.widget, (gpointer)PatchOnListMultiV14, data);
+        g_signal_connect(c.widget, "selected-rows-changed", G_CALLBACK(PatchOnListMultiV17), data);
+      } else {
+        g_signal_handlers_disconnect_by_func(c.widget, (gpointer)PatchOnListSingleV14, data);
+        g_signal_connect(c.widget, "row-selected", G_CALLBACK(PatchOnListSingleV17), data);
+      }
+    } else if (c.kind == CK_RADIO) {
+      for (GtkWidget* item : c.radioItems) {
+        g_signal_handlers_disconnect_by_func(item, (gpointer)PatchOnRadioV14, data);
+        g_signal_connect(item, "toggled", G_CALLBACK(PatchOnRadioV17), data);
+      }
+    }
+  }
+
+  for (const auto& table : gPatchTablesV10) {
+    GtkWidget* view = gPatchTableViewsV10[(size_t)table.nativeIndex];
+    if (!view) return false;
+    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+    gpointer data = GINT_TO_POINTER(table.nativeIndex);
+    g_signal_handlers_disconnect_by_func(selection, (gpointer)PatchOnTableChangedV14, data);
+    g_signal_connect(selection, "changed", G_CALLBACK(PatchOnTableChangedV17), data);
+  }
+
+  for (int index = 0; index < (int)gMenuItems.size(); ++index) {
+    auto& item = gMenuItems[(size_t)index];
+    if (!item.widget) continue;
+    gpointer data = GINT_TO_POINTER(index);
+    g_signal_handlers_disconnect_by_func(item.widget, (gpointer)PatchOnMenuV14, data);
+    g_signal_connect(item.widget, "activate", G_CALLBACK(PatchOnMenuV17), data);
+  }
+
+  for (const auto& tree : gPatchTreesV13) {
+    auto& native = gPatchGtkTreesV13[(size_t)tree.nativeIndex];
+    if (!native.view) return false;
+    GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(native.view));
+    g_signal_connect_after(selection, "changed", G_CALLBACK(PatchOnTreeRefreshV17), nullptr);
+  }
+
+  for (const auto& slider : gPatchSlidersV14) {
+    GtkWidget* view = gPatchSliderViewsV14[(size_t)slider.nativeIndex];
+    if (!view) return false;
+    gpointer data = GINT_TO_POINTER(slider.nativeIndex);
+    g_signal_handlers_disconnect_by_func(view, (gpointer)PatchOnSliderChangedV14, data);
+    g_signal_connect(view, "value-changed", G_CALLBACK(PatchOnSliderChangedV17), data);
+  }
+
+  for (const auto& item : gPatchChromeV15) {
+    const int index = item.nativeIndex;
+    if (item.kind == PATCH_CHROME_TIMER_V15) {
+      guint previous = gPatchChromeTimersV15[(size_t)index];
+      if (previous) g_source_remove(previous);
+      guint timer = g_timeout_add(item.interval, PatchOnTimerV17, GINT_TO_POINTER(index));
+      if (!timer) return false;
+      gPatchChromeTimersV15[(size_t)index] = timer;
+      continue;
+    }
+    if (item.kind == PATCH_CHROME_PICTURE_V15) {
+      GtkWidget* view = gPatchChromeViewsV15[(size_t)index];
+      if (!view) return false;
+      gpointer data = GINT_TO_POINTER(index);
+      g_signal_handlers_disconnect_by_func(view, (gpointer)PatchOnPictureV15, data);
+      g_signal_connect(view, "clicked", G_CALLBACK(PatchOnPictureV17), data);
+    }
+  }
+  return true;
+}
 
 static int RunPatchPaintBoxSmokeV17() {
   int code = 400;
@@ -175,7 +291,7 @@ int main(int argc, char* argv[]) {
   if (!ReadSelfPayloadV17(payloadV16) || !PatchConvertPayloadV16ToV15(payloadV16, payloadV15, gPatchPaintBoxesV17) || !PatchConvertPayloadV15ToV14(payloadV15, payloadV14, gPatchShapesV16) || !PatchConvertPayloadV14ToV13(payloadV14, payloadV13, gPatchChromeV15) || !PatchConvertPayloadV13ToV12(payloadV13, payloadV12, gPatchSlidersV14) || !PatchConvertPayloadV12ToV11(payloadV12, payloadV11, gPatchTreesV13) || !PatchConvertPayloadV11ToV10(payloadV11, payloadV10, gPatchMenuEntriesV12) || !PatchConvertPayloadV10ToV9(payloadV10, payloadV9, gPatchListStatesV11, gPatchListBoxesV11, gPatchListEventsV11) || !PatchConvertPayloadV9ToV8(payloadV9, payloadV8, gPatchTablesV10) || !PatchConvertPayloadV8ToV7(payloadV8, payloadV7, gPatchLayoutPoliciesV09) || !ParsePayload(payloadV7)) return 20;
   if (gPatchLayoutPoliciesV09.size() != gControls.size() || !PatchResolveTablesV10() || !PatchResolveListsV11() || !PatchResolveTreesV13() || !PatchResolveSlidersV14() || !PatchResolveChromeV15() || !PatchResolveShapesV16() || !PatchResolvePaintBoxesV17()) return 22;
   PatchSyncListShadowsV11(); gtk_init(&argc, &argv);
-  if (!CreateForms() || !PatchInstallTablesV10() || !PatchRewireEventsV11() || !PatchInstallMenusV12() || !PatchRewireEventsV12() || !PatchRewireTableEventsV12() || !PatchInstallTreesV13() || !PatchRewireEventsV13() || !PatchInstallSlidersV14() || !PatchRewireEventsV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16() || !PatchInstallPaintBoxesV17()) return 21;
+  if (!CreateForms() || !PatchInstallTablesV10() || !PatchRewireEventsV11() || !PatchInstallMenusV12() || !PatchRewireEventsV12() || !PatchRewireTableEventsV12() || !PatchInstallTreesV13() || !PatchRewireEventsV13() || !PatchInstallSlidersV14() || !PatchRewireEventsV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16() || !PatchInstallPaintBoxesV17() || !PatchRewireEventsV17()) return 21;
   for (int index = 0; index < (int)gForms.size(); ++index) if (gForms[(size_t)index].fixed) {
     g_signal_connect(gForms[(size_t)index].fixed, "size-allocate", G_CALLBACK(OnPatchFormAllocateV09), GINT_TO_POINTER(index));
     g_signal_connect(gForms[(size_t)index].fixed, "size-allocate", G_CALLBACK(PatchOnFormAllocateV13), GINT_TO_POINTER(index));
