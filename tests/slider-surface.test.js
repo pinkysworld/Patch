@@ -23,13 +23,14 @@ test('Slider Stage 1 remains reproducible while Studio exposes the current nativ
   assert.match(language, /slider 0\.\.100 as volume step 5/);
   assert.match(language, /native Slider support/i);
   assert.match(language, /frozen compatibility/i);
-  assert.match(docs, /docs\/SLIDER_STAGE1\.md/);
+  assert.match(docs, /Native GUI IR 1\.4 · payload v14 · runtime v1\.5/);
   assert.match(contract, /Slider Stage 1/);
   assert.match(contract, /Window event adapter \*\*0\.9\*\*/);
   assert.match(contract, /Change IR remains \*\*0\.10\*\*/);
-  assert.match(contract, /Native GUI IR \*\*1\.3\*\*/);
-  assert.match(contract, /sealed payload \*\*v13\*\*/);
-  assert.match(contract, /native runtime \*\*v1\.4\*\*/);
+  assert.match(contract, /Native GUI IR \*\*1\.4\*\*/);
+  assert.match(contract, /payload \*\*v14\*\*/);
+  assert.match(contract, /runtime \*\*v1\.5\*\*/);
+  assert.match(contract, /Native GUI IR \*\*1\.3\*\* \/ payload \*\*v13\*\* \/ runtime \*\*v1\.4\*\*/);
   assert.match(slider, /addDesignerControl\(code\.value, 'slider'/);
   assert.match(buildSite, /'slider-stage1\.js'/);
   assert.match(sw, /'\.\/slider-stage1\.js'/);
