@@ -32,7 +32,7 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page distinguishes current v1.7, Intel macOS kit, FreeBSD and historical compatibility', () => {
+test('downloads page distinguishes current v1.8, Intel macOS kit, FreeBSD and historical compatibility', () => {
   assert.match(downloads, /normal local workflows do not need a GitHub token/i);
   assert.match(downloads, /macOS Intel/);
   assert.match(downloads, /portable tar\.gz kit/);
@@ -41,9 +41,9 @@ test('downloads page distinguishes current v1.7, Intel macOS kit, FreeBSD and hi
   assert.match(downloads, /requires local Node 22\+ and cc/i);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
   assert.match(downloads, /patch link app\.patch --out App/);
-  assert.match(downloads, /Native GUI IR <strong>1\.6<\/strong>/);
-  assert.match(downloads, /payload <strong>v16<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.7<\/strong>/);
+  assert.match(downloads, /Native GUI IR <strong>1\.7<\/strong>/);
+  assert.match(downloads, /payload <strong>v17<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.8<\/strong>/);
   assert.match(downloads, /native Slider/i);
   assert.match(downloads, /hierarchical TreeView/);
   assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
@@ -70,11 +70,14 @@ test('generated public site contains downloads and current plus frozen native co
     '_site/src/native-gui-ir-v14.js',
     '_site/src/native-gui-ir-v15.js',
     '_site/src/native-gui-ir-v16.js',
+    '_site/src/native-gui-ir-v17.js',
     '_site/src/native-chrome-backend-adapter.js',
     '_site/src/native-shape-backend-adapter.js',
     '_site/src/native-paintbox-backend-adapter.js',
     '_site/src/sealed-native-gui-v14.js',
     '_site/src/sealed-native-gui-v15.js',
-    '_site/src/sealed-native-gui-v16.js'
+    '_site/src/sealed-native-gui-v16.js',
+    '_site/src/sealed-native-gui-v17.js',
+    '_site/src/native-paintbox-image-backend-adapter.js'
   ]) assert.ok(fs.existsSync(file), file);
 });

@@ -1,5 +1,5 @@
 export const PATCH_PAINTBOX_STAGE_VERSION = '0.1';
-export const PATCH_PAINTBOX_OPERATIONS = Object.freeze(['clear', 'line', 'rectangle', 'ellipse', 'text']);
+export const PATCH_PAINTBOX_OPERATIONS = Object.freeze(['clear', 'line', 'rectangle', 'ellipse', 'text', 'image']);
 
 const OPERATION_SET = new Set(PATCH_PAINTBOX_OPERATIONS);
 const HEX_COLOR = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i;
@@ -24,7 +24,7 @@ export function normalizePatchPaintCommand(input = {}) {
   const operation = String(input.operation ?? '').trim().toLowerCase();
   if (!OPERATION_SET.has(operation)) {
     throw new PatchPaintBoxError(
-      `PaintBox operation '${operation || '?'}' is not supported. Use clear, line, rectangle, ellipse or text.`,
+      `PaintBox operation '${operation || '?'}' is not supported. Use clear, line, rectangle, ellipse, text or image.`,
       'PAINTBOX_OPERATION'
     );
   }
@@ -55,6 +55,17 @@ export function normalizePatchPaintCommand(input = {}) {
       fill: paintColor(input.fill ?? 'transparent', 'fill', true),
       stroke: paintColor(input.stroke ?? '#000000', 'stroke', false),
       strokeWidth: boundedNumber(input.strokeWidth ?? 1, 'stroke width', 0, 64)
+    });
+  }
+
+  if (operation === 'image') {
+    return freezeCommand({
+      operation,
+      source: paintImageLocator(input.source),
+      x: coordinate(input.x, 'x'),
+      y: coordinate(input.y, 'y'),
+      width: positiveNumber(input.width, 'width'),
+      height: positiveNumber(input.height, 'height')
     });
   }
 
@@ -103,8 +114,14 @@ export function parsePatchPaintCommand(source) {
     });
   }
 
+  if ((match = text.match(/^draw\s+image\s+("(?:[^"\\]|\\.)*")\s+at\s+([^,]+)\s*,\s*([^\s]+)\s+size\s+([^,]+)\s*,\s*([^\s]+)$/))) {
+    return normalizePatchPaintCommand({
+      operation: 'image', source: unquoteLocator(match[1]), x: match[2], y: match[3], width: match[4], height: match[5]
+    });
+  }
+
   throw new PatchPaintBoxError(
-    `I do not understand PaintBox command '${text}'. Use draw clear, line, rectangle, ellipse or text.`,
+    `I do not understand PaintBox command '${text}'. Use draw clear, line, rectangle, ellipse, text or image.`,
     'PAINTBOX_SYNTAX'
   );
 }
@@ -121,6 +138,8 @@ export function formatPatchPaintCommand(command) {
       return `draw ${normalized.operation} ${numberText(normalized.x)}, ${numberText(normalized.y)} size ${numberText(normalized.width)}, ${numberText(normalized.height)} fill ${normalized.fill} stroke ${normalized.stroke} width ${numberText(normalized.strokeWidth)}`;
     case 'text':
       return `draw text ${normalized.textExpr} at ${numberText(normalized.x)}, ${numberText(normalized.y)} color ${normalized.color} size ${numberText(normalized.fontSize)}`;
+    case 'image':
+      return `draw image ${JSON.stringify(normalized.source)} at ${numberText(normalized.x)}, ${numberText(normalized.y)} size ${numberText(normalized.width)}, ${numberText(normalized.height)}`;
     default:
       throw new PatchPaintBoxError(`Cannot format PaintBox operation '${normalized.operation}'.`, 'PAINTBOX_FORMAT');
   }
@@ -130,6 +149,17 @@ export function validatePatchPaintBoxId(value) {
   const id = String(value ?? '').trim();
   if (!PATCH_NAME.test(id)) throw new PatchPaintBoxError(`'${id || '?'}' is not a valid PaintBox name.`, 'PAINTBOX_NAME');
   return id;
+}
+
+export function paintProgramHasImage(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'draw' && node.command?.operation === 'image') return true;
+    if (node?.kind === 'drawPaint' && node.command?.operation === 'image') return true;
+    if (paintProgramHasImage(node?.thenBody) || paintProgramHasImage(node?.elseBody) || paintProgramHasImage(node?.body)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function freezeCommand(command) {
@@ -163,6 +193,36 @@ function paintColor(value, name, allowTransparent) {
     throw new PatchPaintBoxError(`PaintBox ${name} must be a six- or eight-digit hex color${allowTransparent ? ' or transparent' : ''}.`, 'PAINTBOX_COLOR');
   }
   return color;
+}
+
+function paintImageLocator(value) {
+  const source = String(value ?? '').trim();
+  if (!source) {
+    throw new PatchPaintBoxError(
+      'PaintBox image needs a quoted locator such as "patch-resource:logo".',
+      'PAINTBOX_IMAGE'
+    );
+  }
+  return source;
+}
+
+function unquoteLocator(quoted) {
+  try {
+    const value = JSON.parse(quoted);
+    if (typeof value !== 'string' || !value.trim()) {
+      throw new PatchPaintBoxError(
+        'PaintBox image needs a quoted locator such as "patch-resource:logo".',
+        'PAINTBOX_IMAGE'
+      );
+    }
+    return value;
+  } catch (error) {
+    if (error instanceof PatchPaintBoxError) throw error;
+    throw new PatchPaintBoxError(
+      'PaintBox image needs a quoted locator such as "patch-resource:logo".',
+      'PAINTBOX_IMAGE'
+    );
+  }
 }
 
 function numberText(value) {

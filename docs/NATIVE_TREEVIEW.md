@@ -48,7 +48,7 @@ Selecting `compiler.js` exposes `['src', 'compiler.js']` as transient event-loca
 
 ## Sealed Ready/offline boundary
 
-TreeView is the additive feature that advanced the sealed contract from the frozen payload v11/runtime v1.2 Menu+list line to **payload v12/runtime v1.3**. That v12/v1.3 line is now frozen. Current Ready/offline uses **payload v16/runtime v1.7** and does not reinterpret v12.
+TreeView is the additive feature that advanced the sealed contract from the frozen payload v11/runtime v1.2 Menu+list line to **payload v12/runtime v1.3**. That v12/v1.3 line is now frozen. Current Ready/offline uses **payload v17/runtime v1.8** and does not reinterpret v12.
 
 Frozen TreeView runtime release tags remain:
 
@@ -58,15 +58,15 @@ Frozen TreeView runtime release tags remain:
 
 Current Ready runtime release tags are:
 
-- `native-win32-runtime-v1.7`;
-- `native-macos-runtime-v1.7`;
-- `native-linux-runtime-v1.7`.
+- `native-win32-runtime-v1.8`;
+- `native-macos-runtime-v1.8`;
+- `native-linux-runtime-v1.8`.
 
 The dedicated **Patch Native Sealed TreeView Runtime v1.3** workflow builds each runtime from source, seals the canonical TreeView example as payload v12 and executes the finished application on Windows, macOS and Linux. Only successful `main` runs publish those frozen runtime assets.
 
-Patch Studio's no-token Window path lowers current Native GUI IR 1.6 in the browser and seals it into verified v1.7 runtime templates. The frozen TreeView path still lowers Native GUI IR 1.2 into the v1.3 templates. Pages waits for the current runtime assets, validates their GitHub-recorded SHA-256 digests and publishes the runtime integrity manifest before deploying a browser compiler that consumes payload v16.
+Patch Studio's no-token Window path lowers current Native GUI IR 1.7 in the browser and seals it into verified v1.8 runtime templates. The frozen TreeView path still lowers Native GUI IR 1.2 into the v1.3 templates. Pages waits for the current runtime assets, validates their GitHub-recorded SHA-256 digests and publishes the runtime integrity manifest before deploying a browser compiler that consumes payload v17.
 
-The downloadable offline compiler independently embeds/builds runtime v1.7 by default and smoke-tests responsive Window, Table, multi-select ListBox, Menu, TreeView, Slider, Chrome, Shape and PaintBox applications on its supported desktop hosts. Frozen v1.3 remains available as an explicit compatibility line.
+The downloadable offline compiler independently embeds/builds runtime v1.8 by default and smoke-tests responsive Window, Table, multi-select ListBox, Menu, TreeView, Slider, Chrome, Shape and PaintBox applications on its supported desktop hosts. Frozen v1.3 remains available as an explicit compatibility line.
 
 ## Compatibility
 
@@ -79,6 +79,6 @@ The sealed desktop progression remains explicit:
 - payload v13/runtime v1.4: previous Slider-capable line;
 - payload v14/runtime v1.5: previous Chrome Ready/offline line;
 - payload v15/runtime v1.6: previous Shape Ready/offline line;
-- payload v16/runtime v1.7: current Ready/offline line with TreeView, Slider, Chrome, Shape and PaintBox.
+- payload v17/runtime v1.8: current Ready/offline line with TreeView, Slider, Chrome, Shape and PaintBox.
 
 Explicit legacy linking fails closed when TreeView is requested on a payload version that predates v12, and when Slider is requested on the frozen v12/v1.3 line. FreeBSD native GUI remains unsupported.

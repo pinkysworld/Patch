@@ -9,7 +9,7 @@ A small **change-oriented** programming language with a browser-first RAD IDE, f
 [![Formal Verification](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml)
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 
-**Development beta `0.2.0-beta.36`** · **Change IR `0.10`** · **Native GUI IR `1.6`** · **sealed payload `v16`** · **desktop runtime `v1.7`** · **Studio project bundle `v4`**
+**Development beta `0.2.0-beta.36`** · **Change IR `0.10`** · **Native GUI IR `1.7`** · **sealed payload `v17`** · **desktop runtime `v1.8`** · **Studio project bundle `v4`**
 
 [Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html)
 
@@ -66,11 +66,12 @@ Toolkit interaction stays transient until source commits it through `change`:
 
 ## Native desktop
 
-The product-facing current contract is **Native GUI IR 1.6 / sealed payload v16 / runtime v1.7**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
+The product-facing current contract is **Native GUI IR 1.7 / sealed payload v17 / runtime v1.8**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
 
 | Line | IR / payload / runtime | Role |
 |---|---|---|
-| Current Ready/offline | Native GUI IR 1.6 / payload v16 / runtime v1.7 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 |
+| Current Ready/offline | Native GUI IR 1.7 / payload v17 / runtime v1.8 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image |
+| Previous PaintBox Stage 1 | Native GUI IR 1.6 / payload v16 / runtime v1.7 | Previous PaintBox Stage 1 compatibility line |
 | Previous Shape | Native GUI IR 1.5 / payload v15 / runtime v1.6 | Previous Shape-capable compatibility line |
 | Slider compatibility | Native GUI IR 1.3 / payload v13 / runtime v1.4 | Previous Slider-capable compatibility line |
 | Frozen TreeView | Native GUI IR 1.2 / payload v12 / runtime v1.3 | Frozen TreeView line; Slider remains fail-closed |
@@ -81,7 +82,7 @@ Picture resources use deterministic project-v4 resource metadata. Native Ready P
 
 ## Offline compiler
 
-The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.7 Window path and assert sealed payload v16 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
+The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.8 Window path and assert sealed payload v17 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
 
 See [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) and the public [Downloads](https://minh.systems/Patch/downloads.html) page.
 

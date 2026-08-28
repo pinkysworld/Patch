@@ -317,3 +317,12 @@ static void PatchPaintRunProgramV17(const std::vector<PatchPaintNodeV17>& nodes,
     if (node.kind == PATCH_PAINT_DRAW_V17) draw(node, loopCount);
   }
 }
+
+// Later runtimes may compile v1.7 as a private compatibility layer. These
+// aliases are opt-in only and leave ordinary runtime-v1.7 builds unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V18_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V18_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V18_RESTORE_MAIN
+#define main PATCH_RUNTIME_V18_RESTORE_MAIN
+#endif

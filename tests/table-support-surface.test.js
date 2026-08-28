@@ -61,14 +61,14 @@ test('retired v07-v11 Table and list sealed workflows are no longer active', () 
   assert.equal(fs.existsSync(new URL('../.github/workflows/native-sealed-list-runtime.yml', import.meta.url)), false);
 });
 
-test('downloadable offline compiler embeds runtime v1.7 and proves payload v16 current Window linking', () => {
+test('downloadable offline compiler embeds runtime v1.8 and proves payload v17 current Window linking', () => {
   assert.match(offlineWorkflow, /windows-latest/);
   assert.match(offlineWorkflow, /ubuntu-latest/);
   assert.match(offlineWorkflow, /macos-15/);
   assert.match(offlineWorkflow, /macos-15-intel/);
-  assert.match(offlineWorkflow, /win32-sealed-gui-v17\.cpp/);
-  assert.match(offlineWorkflow, /appkit-sealed-gui-v17\.mm/);
-  assert.match(offlineWorkflow, /gtk-sealed-gui-v17\.cpp/);
+  assert.match(offlineWorkflow, /win32-sealed-gui-v18\.cpp/);
+  assert.match(offlineWorkflow, /appkit-sealed-gui-v18\.mm/);
+  assert.match(offlineWorkflow, /gtk-sealed-gui-v18\.cpp/);
   assert.match(offlineWorkflow, /link examples\/table-native-v09\.patch/);
   assert.match(offlineWorkflow, /link examples\/listbox-multiselect-native\.patch/);
   assert.match(offlineWorkflow, /link examples\/menu-state-window\.patch/);
@@ -83,9 +83,9 @@ test('downloadable offline compiler embeds runtime v1.7 and proves payload v16 c
   assert.match(offlineWorkflow, /OfflineSlider/);
   assert.match(offlineWorkflow, /OfflineChrome/);
   assert.match(offlineWorkflow, /OfflineShape/);
-  assert.match(offlineWorkflow, /payload v16/i);
-  assert.match(offlineWorkflow, /runtime v1\.7/i);
-  assert.match(offlineWorkflow, /not sealed payload v16|payload v16/i);
+  assert.match(offlineWorkflow, /payload v17/i);
+  assert.match(offlineWorkflow, /runtime v1\.8/i);
+  assert.match(offlineWorkflow, /not sealed payload v17|payload v17/i);
 });
 
 test('Studio App preview Table dispatch uses the shared semantic event adapter', () => {

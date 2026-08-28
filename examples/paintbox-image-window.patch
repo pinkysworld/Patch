@@ -1,0 +1,12 @@
+create number ticks = 1
+
+window "Paint image" as main size 640, 420:
+  paintbox as canvas at 24, 24 size 320, 200
+  text "draw image" at 24, 240 size 280, 28
+
+when canvas paint:
+  draw clear #ffffff
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==" at 16, 16 size 64, 64
+  draw rectangle 16, 96 size 120, 40 fill #dbeafe stroke #2563eb width 2
+  if true:
+    draw text "logo" at 16, 148 color #111827 size 16

@@ -71,11 +71,11 @@ The original list-state compatibility line remains:
 
 Current Windows, macOS and Linux Ready/offline Window builds use:
 
-- Native GUI IR **1.6**;
-- sealed payload **v16**;
-- native runtime **v1.7**.
+- Native GUI IR **1.7**;
+- sealed payload **v17**;
+- native runtime **v1.8**.
 
-Payload v16/runtime v1.7 preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 semantics while adding PaintBox Stage 1 transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
+Payload v17/runtime v1.8 preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 semantics while adding PaintBox draw image transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
 
 Relevant additive progression:
 
@@ -87,7 +87,8 @@ Native GUI IR 1.2   hierarchical TreeView, preserving the 1.1 list ABI
 Native GUI IR 1.3   Slider, preserving the 1.1 list ABI
 Native GUI IR 1.4   previous Chrome Stage 1, preserving ListBox/TreeView/Slider
 Native GUI IR 1.5   previous Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
-Native GUI IR 1.6   current PaintBox Stage 1, preserving ListBox/TreeView/Slider/Chrome/Shape
+Native GUI IR 1.6   previous PaintBox Stage 1, preserving ListBox/TreeView/Slider/Chrome/Shape
+Native GUI IR 1.7   current PaintBox draw image, preserving ListBox/TreeView/Slider/Chrome/Shape/PaintBox
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state/multi-select line
@@ -96,7 +97,8 @@ payload v12 / runtime v1.3   frozen TreeView-capable line
 payload v13 / runtime v1.4   previous Slider-capable line
 payload v14 / runtime v1.5   previous Chrome Ready/offline line
 payload v15 / runtime v1.6   previous Shape Ready/offline line
-payload v16 / runtime v1.7   current Ready/offline line preserving ListBox semantics
+payload v16 / runtime v1.7   previous PaintBox Ready/offline line preserving ListBox semantics
+payload v17 / runtime v1.8   current Ready/offline line preserving ListBox semantics
 ```
 
 Older payloads are not reinterpreted in place. Explicit legacy linking fails closed when a requested control/state contract is newer than the selected payload.

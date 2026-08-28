@@ -20,13 +20,13 @@ requireScript('check:site', 'node scripts/check-site.js && node scripts/check-si
 
 const current = read('src/native-current-contract.js');
 requireAll('current native facade', current, [
-  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.6/payload-16/runtime-1.7'",
-  "PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.7'",
-  'PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V16_VERSION',
-  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_PAINTBOX_VERSION',
-  "windows: 'native-win32-runtime-v1.7'",
-  "macos: 'native-macos-runtime-v1.7'",
-  "linux: 'native-linux-runtime-v1.7'",
+  "PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.7/payload-17/runtime-1.8'",
+  "PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.8'",
+  'PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V17_VERSION',
+  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_PAINTBOX_IMAGE_VERSION',
+  "windows: 'native-win32-runtime-v1.8'",
+  "macos: 'native-macos-runtime-v1.8'",
+  "linux: 'native-linux-runtime-v1.8'",
   'buildCurrentNativeGuiIR','sealCurrentNativeGuiRuntime'
 ]);
 
@@ -54,11 +54,18 @@ requireAll('Native GUI IR 1.6', ir16, [
 ]);
 const sealed16 = read('src/sealed-native-gui-v16.js');
 requireAll('sealed native payload v16', sealed16, ['sealNativeGuiRuntimeV16','PATCH_SEALED_NATIVE_GUI_PAINTBOX_VERSION']);
+const ir17 = read('src/native-gui-ir-v17.js');
+requireAll('Native GUI IR 1.7', ir17, [
+  "PATCH_NATIVE_GUI_IR_V17_VERSION = '1.7'",
+  'buildNativeGuiIRV17','validateNativeGuiIRV17'
+]);
+const sealed17 = read('src/sealed-native-gui-v17.js');
+requireAll('sealed native payload v17', sealed17, ['sealNativeGuiRuntimeV17','PATCH_SEALED_NATIVE_GUI_PAINTBOX_IMAGE_VERSION']);
 
 const offline = read('.github/workflows/offline-compiler.yml');
 requireAll('offline compiler v0.2 workflow', offline, [
-  'native-runtime\\win32-sealed-gui-v17.cpp','native-runtime/gtk-sealed-gui-v17.cpp','native-runtime/appkit-sealed-gui-v17.mm',
-  'examples/chrome-window.patch','examples/shape-window.patch','examples/paintbox-window.patch','payload v16','offline-compiler-v0.2','Patch Offline Compiler v0.2'
+  'native-runtime\\win32-sealed-gui-v18.cpp','native-runtime/gtk-sealed-gui-v18.cpp','native-runtime/appkit-sealed-gui-v18.mm',
+  'examples/chrome-window.patch','examples/shape-window.patch','examples/paintbox-window.patch','examples/paintbox-image-window.patch','payload v17','offline-compiler-v0.2','Patch Offline Compiler v0.2'
 ]);
 rejectAll('offline compiler current path', offline, [
   'Build Slider-capable Win32 runtime v1.4','Build Slider-capable GTK runtime v1.4','Build Slider-capable AppKit runtime v1.4',
@@ -68,8 +75,8 @@ rejectAll('offline compiler current path', offline, [
 const siteBuild = read('scripts/build-site.js');
 requireAll('beta36 site build normalization', siteBuild, [
   "const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))",
-  'normalizeCurrentProductSurface','0.2 beta.36+','Native GUI IR 1.6 / payload v16 / runtime v1.7',
-  'native-win32-runtime-v1.7'
+  'normalizeCurrentProductSurface','0.2 beta.36+','Native GUI IR 1.7 / payload v17 / runtime v1.8',
+  'native-win32-runtime-v1.8'
 ]);
 
 const sw = read('web/sw.js');
@@ -85,7 +92,7 @@ requireAll('RAD multi-selection', multi, [
 
 const beta36 = read('docs/BETA36.md');
 requireAll('beta36 milestone', beta36, [
-  'Patch 0.2.0-beta.36','Native GUI IR: `1.6`','sealed payload: `v16`','desktop runtime: `v1.7`','offline compiler line: `offline-compiler-v0.2`',
+  'Patch 0.2.0-beta.36','Native GUI IR: `1.7`','sealed payload: `v17`','desktop runtime: `v1.8`','offline compiler line: `offline-compiler-v0.2`',
   'multi-select alignment and center operations','same width/height','equal horizontal/vertical distribution'
 ]);
 
@@ -96,7 +103,7 @@ requireAll('Grok review record', audit, [
 ]);
 
 const pages = read('.github/workflows/pages.yml');
-requireAll('Pages current runtime acquisition', pages, ['native-win32-runtime-v1.7','native-macos-runtime-v1.7','native-linux-runtime-v1.7']);
-rejectAll('Pages current runtime acquisition', pages, ['WIN32_RUNTIME_TAG: native-win32-runtime-v1.6','LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.6','MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.6']);
+requireAll('Pages current runtime acquisition', pages, ['native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8']);
+rejectAll('Pages current runtime acquisition', pages, ['WIN32_RUNTIME_TAG: native-win32-runtime-v1.7','LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.7','MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.7']);
 
-console.log('Patch project surface is coherent for beta.36 / IR 1.6 / payload v16 / runtime v1.7 / offline compiler v0.2.');
+console.log('Patch project surface is coherent for beta.36 / IR 1.7 / payload v17 / runtime v1.8 / offline compiler v0.2.');

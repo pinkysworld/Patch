@@ -2,7 +2,7 @@
 
 Generated from `src/component-registry.js` registry **0.8**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
 
-Current product contract: Change IR **0.10**, Native GUI IR **1.6**, sealed payload **v16**, runtime **v1.7** (`native-gui-1.6/payload-16/runtime-1.7`).
+Current product contract: Change IR **0.10**, Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8** (`native-gui-1.7/payload-17/runtime-1.8`).
 
 Status values come from the canonical Designer registry:
 

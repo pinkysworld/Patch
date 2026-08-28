@@ -2,7 +2,7 @@ import { listDesignerControls } from '../src/designer.js';
 import { patchComponent } from '../src/component-registry.js';
 
 export const STUDIO_BUILD_READINESS_VERSION = '0.1';
-export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.3';
+export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.4';
 
 const doc = typeof document === 'undefined' ? null : document;
 const win = typeof window === 'undefined' ? null : window;
@@ -56,6 +56,8 @@ export function upgradeWorkshopDeskSource(source) {
     next.includes('timer as workshop_clock interval 5000') &&
     next.includes('panel as runtime_panel') &&
     next.includes('create number ticket_total = 40') &&
+    next.includes('picture as workshop_logo') &&
+    next.includes('paintbox as ticket_canvas') &&
     !next.includes('create thing ticket:')
   ) return next;
 
@@ -119,6 +121,34 @@ export function upgradeWorkshopDeskSource(source) {
       '  change selected_part:\n    clear\n  change selected_job:\n    clear\n  change ticket:\n    set customer = "Ada"\n    set item = "Keyboard"\n    set qty = 1\n    set total = 40\n    set bench = default_bench\n    set priority = "Normal"\n    set payment = "Card"\n    set state = "Open"',
       '  change heartbeat:\n    set = 0\n  change ticket_total:\n    set = 40\n  change ticket_bench:\n    set = "Bench A"\n  change ticket_state:\n    set = "Open"'
     );
+
+  if (next.includes('window "Workshop Desk" as main size 1080, 700:') && !next.includes('picture as workshop_logo')) {
+    next = next
+      .replace(
+        '  checkbox "Rush bench" as rush at 788, 82 size 150, 36\n',
+        '  checkbox "Rush bench" as rush at 788, 82 size 150, 36\n  picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 958, 58 size 70, 70\n'
+      )
+      .replace(
+        '  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar."',
+        '  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar."'
+      )
+      .replace(
+        '      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."',
+        '      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
+      )
+      .replace(
+        'window "Job details" as details size 640, 520:\n',
+        'window "Job details" as details size 640, 560:\n'
+      )
+      .replace(
+        '    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1\n  text "{status}" at 24, 360 size 560, 28\n  button "Add inspection" as details_quote at 24, 414 size 160, 38\n  button "Mark ready" as details_ready at 202, 414 size 150, 38\n  button "Close details" as close_details at 370, 414 size 160, 38',
+        '    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1\n  paintbox as ticket_canvas at 24, 244 size 280, 120\n  text "{status}" at 24, 386 size 560, 28\n  button "Add inspection" as details_quote at 24, 470 size 160, 38\n  button "Mark ready" as details_ready at 202, 470 size 150, 38\n  button "Close details" as close_details at 370, 470 size 160, 38'
+      )
+      .replace(
+        'when parts changed:\n  change status:\n    set = "Inventory tree path selected"\n\nwhen workshop_clock ticked:\n  change heartbeat:\n    add 1\n',
+        'when parts changed:\n  change status:\n    set = "Inventory tree path selected"\n\nwhen workshop_logo clicked:\n  change status:\n    set = "Workshop mark clicked"\n\nwhen workshop_clock ticked:\n  change heartbeat:\n    add 1\n\nwhen ticket_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n  if rush:\n    draw line 12, 58 to 258, 58 stroke #dc2626 width 3\n  draw text "Live quote" at 12, 78 color #111827 size 16\n  draw text ticket_state at 126, 78 color #334155 size 16\n'
+      );
+  }
 
   return next;
 }

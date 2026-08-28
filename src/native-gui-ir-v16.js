@@ -1,5 +1,5 @@
 import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
-import { normalizePatchPaintCommand, PATCH_PAINTBOX_OPERATIONS } from './paintbox-control.js';
+import { normalizePatchPaintCommand } from './paintbox-control.js';
 import {
   buildNativeGuiIRV15,
   validateNativeGuiIRV15,
@@ -9,7 +9,7 @@ import {
 
 export const PATCH_NATIVE_GUI_IR_V16_VERSION = '1.6';
 export const PATCH_NATIVE_PAINTBOX_CONTROLS = Object.freeze(['paintbox']);
-export const PATCH_NATIVE_PAINTBOX_OPERATIONS = PATCH_PAINTBOX_OPERATIONS;
+export const PATCH_NATIVE_PAINTBOX_OPERATIONS = Object.freeze(['clear', 'line', 'rectangle', 'ellipse', 'text']);
 const PAINTBOX = new Set(PATCH_NATIVE_PAINTBOX_CONTROLS);
 const IDENT = /^[A-Za-z_]\w*$/;
 const NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
@@ -235,6 +235,11 @@ function lowerPaintProgram(nodes, id) {
   for (const node of nodes ?? []) {
     if (node.kind === 'drawPaint') {
       const command = normalizePatchPaintCommand(node.command);
+      if (command.operation === 'image') {
+        throw new NativeGuiError(
+          `Native GUI IR 1.6 PaintBox '${id}' does not include draw image. Use Native GUI IR 1.7 / payload v17 / runtime v1.8.`
+        );
+      }
       if (command.operation === 'text') classifyPaintExpression(command.textExpr, 'text', id);
       out.push(Object.freeze({ kind: 'draw', command }));
       continue;
@@ -274,6 +279,11 @@ function validatePaintProgram(nodes, id, stateTypes, repeatDepth = 0) {
   return Object.freeze(nodes.map(node => {
     if (node?.kind === 'draw') {
       const command = normalizePatchPaintCommand(node.command);
+      if (command.operation === 'image') {
+        throw new NativeGuiError(
+          `Native GUI IR 1.6 PaintBox '${id}' does not include draw image. Use Native GUI IR 1.7 / payload v17 / runtime v1.8.`
+        );
+      }
       if (command.operation === 'text') classifyPaintExpression(command.textExpr, 'text', id, stateTypes, repeatDepth);
       return Object.freeze({ kind: 'draw', command });
     }

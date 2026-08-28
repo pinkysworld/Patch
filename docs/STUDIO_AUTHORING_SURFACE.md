@@ -137,9 +137,9 @@ PaintBox `paint` is a pure drawing event. It cannot commit persistent `change`; 
 
 ## Native delivery boundary
 
-The current desktop consumer contract is Native GUI IR **1.6**, sealed payload **v16** and runtime **v1.7**. It preserves Table, text-list/ListBox, Menu, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 semantics and adds PaintBox Stage 1 clear/line/rectangle/ellipse/text transport.
+The current desktop consumer contract is Native GUI IR **1.7**, sealed payload **v17** and runtime **v1.8**. It preserves Table, text-list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 semantics and adds PaintBox `draw image` transport.
 
-The prior Shape compatibility line is Native GUI IR **1.5** / payload **v15** / runtime **v1.6**. The prior Chrome compatibility line is Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
+The prior PaintBox Stage 1 compatibility line is Native GUI IR **1.6** / payload **v16** / runtime **v1.7**. The prior Shape compatibility line is Native GUI IR **1.5** / payload **v15** / runtime **v1.6**. The prior Chrome compatibility line is Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
 
 The current Ready/offline Windows, macOS and Linux path uses the same stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
@@ -158,10 +158,10 @@ Remaining product work includes:
 - new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
 - Memo/TextArea, ProgressBar, Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
 - true independent TabOrder and richer container/layout semantics;
-- Undo/Redo coverage for resource/non-source transactions, further large-project virtualization and professional code-editor/debugger features;
-- PaintBox `draw image`, native ImageList/Button-image transport and native application/window icon packaging;
+- Undo/Redo transactions for resource/non-source coverage, further large-project virtualization and professional code-editor/debugger features;
+- native ImageList/Button-image transport and native application/window icon packaging;
 - application branding and richer packaging/signing workflows;
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
 
-Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.6**, sealed payload **v16**, token-free Ready/offline runtime **v1.7**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.
+Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.7**, sealed payload **v17**, token-free Ready/offline runtime **v1.8**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.

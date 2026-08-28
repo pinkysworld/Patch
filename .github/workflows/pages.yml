@@ -48,6 +48,7 @@ on:
       - src/native-gui-ir-v14.js
       - src/native-gui-ir-v15.js
       - src/native-gui-ir-v16.js
+      - src/native-gui-ir-v17.js
       - src/native-current-contract.js
       - src/native-frozen-contract.js
       - src/native-gui-frozen-lower.js
@@ -57,11 +58,13 @@ on:
       - src/native-chrome-backend-adapter.js
       - src/native-shape-backend-adapter.js
       - src/native-paintbox-backend-adapter.js
+      - src/native-paintbox-image-backend-adapter.js
       - src/sealed-native-gui-v12.js
       - src/sealed-native-gui-v13.js
       - src/sealed-native-gui-v14.js
       - src/sealed-native-gui-v15.js
       - src/sealed-native-gui-v16.js
+      - src/sealed-native-gui-v17.js
       - src/sealed-native-package.js
       - src/prebuilt-native.js
       - src/prebuilt-window.js
@@ -80,9 +83,10 @@ on:
       - .github/workflows/native-sealed-chrome-runtime-v15.yml
       - .github/workflows/native-sealed-shape-runtime-v16.yml
       - .github/workflows/native-sealed-paintbox-runtime-v17.yml
+      - .github/workflows/native-sealed-paintbox-image-runtime-v18.yml
   workflow_dispatch:
   workflow_run:
-    workflows: [Patch Studio Runtime Templates, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4, Patch Native Sealed Chrome Runtime v1.5, Patch Native Sealed Shape Runtime v1.6, Patch Native Sealed PaintBox Runtime v1.7]
+    workflows: [Patch Studio Runtime Templates, Patch Native Responsive Runtime, Patch Native Sealed Menu Runtime v1.2 Release, Patch Native Sealed TreeView Runtime v1.3, Patch Native Sealed Slider Runtime v1.4, Patch Native Sealed Chrome Runtime v1.5, Patch Native Sealed Shape Runtime v1.6, Patch Native Sealed PaintBox Runtime v1.7, Patch Native Sealed PaintBox Image Runtime v1.8]
     types: [completed]
 
 permissions:
@@ -117,9 +121,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.7
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.7
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.7
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.8
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.8
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.8
         shell: bash
         run: |
           set -euo pipefail
@@ -142,9 +146,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUNTIME_TAG: studio-runtime-v0.6
-          WIN32_RUNTIME_TAG: native-win32-runtime-v1.7
-          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.7
-          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.7
+          WIN32_RUNTIME_TAG: native-win32-runtime-v1.8
+          LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1.8
+          MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1.8
         shell: bash
         run: |
           set -euo pipefail
@@ -272,8 +276,8 @@ jobs:
             fetch_asset "${base}native-build.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-native-build
             grep -F "./src/native-current-contract.js?v=${revision}" /tmp/patch-pages-native-build >/dev/null
             fetch_asset "${base}src/native-current-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-current
-            grep -F "./native-gui-ir-v15.js?v=${revision}" /tmp/patch-pages-current >/dev/null
-            grep -F "native-win32-runtime-v1.6" /tmp/patch-pages-current >/dev/null
+            grep -F "./native-gui-ir-v17.js?v=${revision}" /tmp/patch-pages-current >/dev/null
+            grep -F "native-win32-runtime-v1.8" /tmp/patch-pages-current >/dev/null
             fetch_asset "${base}src/native-frozen-contract.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-frozen
             grep -F "./native-gui-ir-v12.js?v=${revision}" /tmp/patch-pages-frozen >/dev/null
             fetch_asset "${base}src/compiler.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-compiler

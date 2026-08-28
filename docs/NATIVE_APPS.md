@@ -93,7 +93,7 @@ The frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 contract remains Slide
 
 ## Native multi-select ListBox
 
-List-backed ListBox has parity across browser preview, Standalone Web, direct AOT and current token-free Ready/offline Windows/macOS/Linux paths. Native GUI IR 1.1 introduced the persistent text-list state/event ABI. Current Native GUI IR 1.6 / payload v16 / runtime v1.7 preserves it unchanged while adding Slider, Chrome Stage 1, Shape and PaintBox. The v10 compatibility line remains frozen and independently tested.
+List-backed ListBox has parity across browser preview, Standalone Web, direct AOT and current token-free Ready/offline Windows/macOS/Linux paths. Native GUI IR 1.1 introduced the persistent text-list state/event ABI. Current Native GUI IR 1.7 / payload v17 / runtime v1.8 preserves it unchanged while adding Slider, Chrome Stage 1, Shape, PaintBox and PaintBox draw image. The v10 compatibility line remains frozen and independently tested.
 
 ## Table support
 
@@ -103,7 +103,7 @@ Table/Grid continues to use the specialized Table representation introduced at N
 - **macOS:** multi-column `NSTableView` inside `NSScrollView`;
 - **Linux:** `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow`.
 
-Standalone Web and Studio App Preview expose the selected row as a transient row list through the shared semantic Window event adapter. Direct AOT and current token-free sealed Ready/offline paths preserve the same semantic selected-row contract. Current payload v16/runtime v1.7 carries the unchanged Table representation; payload v9/runtime v1.0 remains the frozen Table compatibility line.
+Standalone Web and Studio App Preview expose the selected row as a transient row list through the shared semantic Window event adapter. Direct AOT and current token-free sealed Ready/offline paths preserve the same semantic selected-row contract. Current payload v17/runtime v1.8 carries the unchanged Table representation; payload v9/runtime v1.0 remains the frozen Table compatibility line.
 
 A Table row remains transient UI selection unless source explicitly persists it.
 
@@ -115,13 +115,13 @@ Current native mappings are Win32 common-controls TreeView, AppKit `NSOutlineVie
 
 ## Token-free sealed runtimes
 
-Current Ready Window builds use **payload v16 / runtime v1.7** on Windows, macOS and Linux. Runtime release tags are:
+Current Ready Window builds use **payload v17 / runtime v1.8** on Windows, macOS and Linux. Runtime release tags are:
 
-- `native-win32-runtime-v1.7`;
-- `native-linux-runtime-v1.7`;
-- `native-macos-runtime-v1.7`.
+- `native-win32-runtime-v1.8`;
+- `native-linux-runtime-v1.8`;
+- `native-macos-runtime-v1.8`.
 
-The **Patch Native Sealed PaintBox Runtime v1.7** workflow validates payload v16, builds each runtime from source, seals the canonical PaintBox app and executes the finished artifact on all three desktop hosts. It verifies native PaintBox drawing and preservation of existing Shape/Chrome/Slider/Table/ListBox/Menu/Tree semantics before publishing the versioned runtime assets on `main`.
+The **Patch Native Sealed PaintBox Image Runtime v1.8** workflow validates payload v17, builds each runtime from source, seals the canonical PaintBox image app and executes the finished artifact on all three desktop hosts. It verifies native PaintBox drawing including PNG/JPEG `draw image` and preservation of existing Shape/Chrome/Slider/Table/ListBox/Menu/Tree semantics before publishing the versioned runtime assets on `main`.
 
 ### Frozen compatibility
 
@@ -129,7 +129,7 @@ Payload **v12** / runtime **v1.3** remains the frozen TreeView line. Payload **v
 
 ## Runtime-template integrity
 
-The runtime integrity mechanism protects the current runtime v1.7 assets. During Pages deployment:
+The runtime integrity mechanism protects the current runtime v1.8 assets. During Pages deployment:
 
 1. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.7 releases.
 2. GitHub Release provides the runtime assets and recorded `sha256:` digests.
@@ -149,7 +149,7 @@ See `docs/OFFLINE_COMPILER.md` for platform packaging and verification details.
 
 ## Menu capability
 
-Direct AOT and current sealed Ready/offline paths support Menu separators, portable shortcuts and source-backed enabled/checked state. Payload v11/runtime v1.2 established the frozen Menu+list compatibility line; payload v16/runtime v1.7 preserves it while composing TreeView, Slider, Chrome, Shape and PaintBox without redefining v11.
+Direct AOT and current sealed Ready/offline paths support Menu separators, portable shortcuts and source-backed enabled/checked state. Payload v11/runtime v1.2 established the frozen Menu+list compatibility line; payload v17/runtime v1.8 preserves it while composing TreeView, Slider, Chrome, Shape and PaintBox without redefining v11.
 
 ## Native accessibility baseline
 
