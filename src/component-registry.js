@@ -43,7 +43,15 @@ const PROPERTY_BY_TYPE = Object.freeze({
   tree: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'treeNodes', kind: 'tree' }), ...COMMON_LAYOUT_PROPERTIES]),
   tabs: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'pages', kind: 'tabs' }), ...COMMON_LAYOUT_PROPERTIES]),
   panel: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'children', kind: 'controls' }), ...COMMON_LAYOUT_PROPERTIES]),
-  picture: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'sourceExpr', kind: 'expression' }), ...COMMON_LAYOUT_PROPERTIES]),
+  picture: Object.freeze([
+    ID_PROPERTY,
+    Object.freeze({ name: 'sourceExpr', kind: 'expression' }),
+    Object.freeze({ name: 'fit', kind: 'enum', values: Object.freeze(['contain', 'cover', 'fill', 'none']) }),
+    Object.freeze({ name: 'center', kind: 'boolean' }),
+    Object.freeze({ name: 'opacity', kind: 'number' }),
+    Object.freeze({ name: 'description', kind: 'text' }),
+    ...COMMON_LAYOUT_PROPERTIES
+  ]),
   shape: Object.freeze([
     ID_PROPERTY,
     Object.freeze({ name: 'shapeKind', kind: 'enum', values: Object.freeze(['rectangle', 'rounded', 'ellipse', 'line']) }),

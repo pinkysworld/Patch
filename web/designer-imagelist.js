@@ -75,8 +75,9 @@ function installInspector() {
     <small class="inspector-hint">Nonvisual source-backed image collection. Items reference project resources; runtime consumers are a later contract.</small>`;
 
   const timer = form.querySelector('#designerInspectorTimerField');
+  const pictureDisplay = form.querySelector('#designerInspectorPictureDisplayFields');
   const picture = form.querySelector('#designerInspectorPictureSourceField');
-  (picture ?? timer ?? form.lastElementChild)?.insertAdjacentElement('afterend', field);
+  (pictureDisplay ?? picture ?? timer ?? form.lastElementChild)?.insertAdjacentElement('afterend', field);
 
   for (const id of ['designerImageListWidth', 'designerImageListHeight']) {
     field.querySelector(`#${id}`)?.addEventListener('change', applyLogicalSize);

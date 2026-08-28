@@ -229,20 +229,16 @@ ImageList Stage 1 is **authoring-only** until a real runtime consumer such as To
 
 ## Picture
 
-Picture is a first-class Graphics component with source-backed id/source/layout and project-resource selection.
+Picture is a first-class Graphics component with source-backed id/source/layout, fit/center/opacity/description and project-resource selection.
 
-Browser preview and Standalone Web can resolve project resources. Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf.
+Browser preview and Standalone Web can resolve project resources and apply Picture display properties (`contain`/`cover`/`fill`/`none`, center, opacity, accessible description). Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox; non-default fit, center and opacity fail closed rather than becoming silent no-ops. Accessible description maps onto the existing native PictureBox `text` field.
 
 WebP/SVG are not silently treated as current native-supported formats.
 
-Still open for full Delphi-style parity:
+Still open:
 
-- scale/fit mode;
-- portable aspect behavior;
-- center behavior;
-- opacity;
-- accessible description;
-- complete cross-target property parity.
+- explicit native SVG/WebP policy;
+- complete cross-target non-default display-property parity on desktop runtimes.
 
 ## Shape
 
@@ -363,4 +359,4 @@ The current execution order is maintained in `docs/ROADMAP.md` and the detailed 
 - `docs/RAD_STUDIO_MASTERPLAN.md`
 - `docs/RAD_STUDIO_MASTER_BACKLOG.md`
 
-The immediate remaining R1 gates are Picture display-property parity, native Shape/PaintBox support, the first real ImageList consumer, application icons/branding and generation of a canonical component capability matrix.
+The immediate remaining R1 gates are an explicit native SVG/WebP policy, native Shape/PaintBox support, the first real ImageList consumer and application icons/branding.

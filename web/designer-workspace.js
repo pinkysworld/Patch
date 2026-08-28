@@ -470,7 +470,8 @@ function syncShapeInspector(canvas, code, form, shapeFields, genericActions) {
 
   for (const id of [
     'designerInspectorIdField', 'designerInspectorTextField', 'designerInspectorOptionsField',
-    'designerInspectorSliderFields', 'designerInspectorTimerField', 'designerInspectorPictureSourceField'
+    'designerInspectorSliderFields', 'designerInspectorTimerField', 'designerInspectorPictureSourceField',
+    'designerInspectorPictureDisplayFields'
   ]) {
     const field = form.querySelector(`#${id}`);
     if (field) field.hidden = true;

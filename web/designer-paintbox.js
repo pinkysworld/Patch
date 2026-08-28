@@ -188,6 +188,7 @@ function syncInspector() {
   for (const id of [
     'designerInspectorIdField', 'designerInspectorTextField', 'designerInspectorOptionsField',
     'designerInspectorSliderFields', 'designerInspectorTimerField', 'designerInspectorPictureSourceField',
+    'designerInspectorPictureDisplayFields',
     'designerShapeInspectorFields'
   ]) {
     const field = form.querySelector(`#${id}`);

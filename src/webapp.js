@@ -132,7 +132,7 @@ function addStandaloneWindowPictures(built, resources = []) {
 
   const modelNeedle = "nodes:node.control==='tree'?uiTreeNodes(node.treeNodes):[],";
   if (!html.includes(modelNeedle)) throw new Error('Standalone Window Picture model hook is unavailable.');
-  html = html.replace(modelNeedle, `${modelNeedle}source:node.control==='picture'&&node.sourceExpr?uiText(node.sourceExpr):'',`);
+  html = html.replace(modelNeedle, `${modelNeedle}source:node.control==='picture'&&node.sourceExpr?uiText(node.sourceExpr):'',fit:node.control==='picture'?(node.fit||'contain'):'contain',center:node.control==='picture'?node.center!==false:true,opacity:node.control==='picture'&&Number.isFinite(Number(node.opacity))?Number(node.opacity):1,description:node.control==='picture'?(node.description||''):'',`);
 
   const outputNeedle = "const outputEl=document.getElementById('output');";
   if (!html.includes(outputNeedle)) throw new Error('Standalone Window Picture resource hook is unavailable.');
@@ -140,7 +140,7 @@ function addStandaloneWindowPictures(built, resources = []) {
 
   const renderNeedle = "if(control.type==='tree')return renderTree(control);";
   if (!html.includes(renderNeedle)) throw new Error('Standalone Window Picture renderer hook is unavailable.');
-  const pictureRenderer = "if(control.type==='picture'){const el=document.createElement('img');el.className='patch-picture';el.src=patchPictureSource(control.source);el.alt=control.text||'';const clickable=Boolean(control.id)&&events.some(handler=>handler.control===control.id&&handler.event==='clicked');if(clickable){el.tabIndex=0;el.setAttribute('role','button');const activate=()=>safeTrigger(control.id,'clicked');el.addEventListener('click',activate);el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}});}return el;}";
+  const pictureRenderer = "if(control.type==='picture'){const el=document.createElement('img');el.className='patch-picture';el.src=patchPictureSource(control.source);el.alt=control.text||control.description||'';if(control.description||control.text)el.setAttribute('aria-label',control.description||control.text);el.style.objectFit=control.fit||'contain';el.style.objectPosition=control.center===false?'0% 0%':'50% 50%';el.style.opacity=String(Number.isFinite(Number(control.opacity))?control.opacity:1);const clickable=Boolean(control.id)&&events.some(handler=>handler.control===control.id&&handler.event==='clicked');if(clickable){el.tabIndex=0;el.setAttribute('role','button');const activate=()=>safeTrigger(control.id,'clicked');el.addEventListener('click',activate);el.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate();}});}return el;}";
   html = html.replace(renderNeedle, pictureRenderer + renderNeedle);
 
   const cssNeedle = '.console{padding:20px}';

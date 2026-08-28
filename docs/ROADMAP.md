@@ -53,7 +53,7 @@ The beta.35+ multi-file/Designer foundation and the beta.36 native 1.4/v14/v1.5 
 
 These are real remaining gaps and must not be advertised as complete until their target tests are green.
 
-- [ ] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/runtime targets
+- [x] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/Web; native GUI 1.4 keeps default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values
 - [ ] decide and version native SVG/WebP policy rather than broadening format support implicitly
 - [ ] Shape native lowering/runtime parity for Win32, AppKit and GTK
 - [ ] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK

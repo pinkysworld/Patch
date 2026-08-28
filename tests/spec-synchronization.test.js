@@ -31,7 +31,7 @@ test('SPEC documents every current user-facing parser family', () => {
     ['slider', /\^slider\\s\+/, '- `slider`'],
     ['panel', /\^panel\\s\+as\\s\+/, '- `panel`'],
     ['timer', /\^timer\\s\+as\\s\+/, '- `timer`'],
-    ['picture', /\^picture\\s\+/, '- `picture`'],
+    ['picture', /\^picture\\b/, '- `picture`'],
     ['shape', /\^shape\\b/, '- `shape`'],
     ['paintbox', /\^paintbox\\s\+as\\s\+/, '- `paintbox`'],
     ['imagelist', /\^imagelist\\s\+as\\s\+/, '- `imagelist`'],

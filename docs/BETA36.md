@@ -8,9 +8,9 @@ Patch beta.36 is the current integration and RAD-authoring development line. It 
 - Change IR: `0.10`
 - Studio project bundle: `v4`
 - Component Registry: `0.8`
-- Native GUI IR: `1.4`
-- sealed payload: `v14`
-- desktop runtime: `v1.5`
+- Native GUI IR `1.4`
+- sealed payload `v14`
+- desktop runtime `v1.5`
 - Win32 release: `native-win32-runtime-v1.5`
 - AppKit release: `native-macos-runtime-v1.5`
 - GTK release: `native-linux-runtime-v1.5`
@@ -70,9 +70,10 @@ Generated handlers remain ordinary visible `when ...:` source. ImageList is even
 Current source-backed Form Designer operations include:
 
 - pointer/keyboard move and resize;
+- align left / right, top / bottom and center operations;
+- make same width / height;
+- distribute horizontally / vertically;
 - multi-select alignment and center operations;
-- same width/height;
-- equal horizontal/vertical distribution;
 - Center H / Center V;
 - Default size and collision-aware Auto place;
 - Bring to front / Send to back;
@@ -94,9 +95,7 @@ Panel is a source-backed top-level container with a structural child editor for 
 
 ### Picture and Resource Manager
 
-Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources. Current native PNG/JPEG resource decoding is covered by platform smoke tests.
-
-Richer display properties such as portable scale mode, aspect/center behavior, opacity and accessible description remain explicit follow-up work and are not presented as finished cross-target parity.
+Picture is a first-class Graphics component. Its source expression can use a project resource locator and the Object Inspector can choose project images. Browser preview/Standalone Web resolve bundled resources and apply source-backed display properties: `fit`, proportional inspector sugar, `center`, `opacity` and accessible `description`. Current native PNG/JPEG resource decoding is covered by platform smoke tests. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than ignoring them. Accessible description maps onto the existing native Picture caption.
 
 ### Shape Stage 1
 

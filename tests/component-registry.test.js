@@ -28,7 +28,9 @@ test('Picture is discoverable with source-backed properties event renderer and t
   assert.equal(picture.buttonId, 'addPicture');
   assert.equal(picture.visual, true);
   assert.deepEqual(picture.defaultSize, { width: 180, height: 120 });
-  assert.deepEqual(picture.properties.map(property => property.name), ['id', 'sourceExpr', 'x', 'y', 'width', 'height']);
+  assert.deepEqual(picture.properties.map(property => property.name), [
+    'id', 'sourceExpr', 'fit', 'center', 'opacity', 'description', 'x', 'y', 'width', 'height'
+  ]);
   assert.deepEqual(picture.events, [{ name: 'clicked', label: 'OnClick', value: false }]);
   assert.equal(picture.designRenderer, 'picture');
   assert.deepEqual(picture.targetSupport, {

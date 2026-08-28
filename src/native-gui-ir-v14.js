@@ -1,4 +1,5 @@
 import { NativeGuiError, PATCH_NATIVE_GUI_IR_FORMAT } from './native-gui-frozen-lower.js';
+import { nativePictureDisplayUnsupportedMessage } from './picture-control.js';
 import {
   buildNativeGuiIRV13,
   validateNativeGuiIRV13,
@@ -237,6 +238,8 @@ function rewriteChromeForV13Compatibility(ast, originalAst) {
       }
       if (node.kind === 'uiControl' && node.control === 'picture') {
         if (!node.id) throw new NativeGuiError(`line ${node.line ?? '?'}: native GUI 1.4 PictureBox needs a simple Patch name after 'as'.`);
+        const unsupported = nativePictureDisplayUnsupportedMessage(node, node.line);
+        if (unsupported) throw new NativeGuiError(unsupported);
         const text = optionalQuotedText(node.textExpr, node.line, 'PictureBox caption');
         const source = pictureSource(node, textStates);
         const metadata = {

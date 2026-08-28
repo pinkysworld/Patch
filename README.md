@@ -41,7 +41,7 @@ Current Studio capabilities include:
 
 ImageList Stage 1 is intentionally authoring-only. It stores ordered named references to project resources and is designed for future ToolBar/Menu/Button/TreeView image consumers. Web/native Window builds fail closed if ImageList is present until that consumer/runtime contract is versioned.
 
-Shape and PaintBox currently advertise Studio authoring plus Standalone Web support. Native Shape/PaintBox parity remains an explicit later gate rather than silently degrading. Picture has real project-resource transport and current desktop PNG/JPEG decoding; unsupported resource formats fail closed on native targets.
+Shape and PaintBox currently advertise Studio authoring plus Standalone Web support. Native Shape/PaintBox parity remains an explicit later gate rather than silently degrading. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding; unsupported resource formats and non-default native display properties fail closed.
 
 Open **Workshop desk** in Example for the current showcase application. See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md), [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md), [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) and [`docs/BETA36.md`](docs/BETA36.md).
 
@@ -72,7 +72,7 @@ The product-facing current contract is **Native GUI IR 1.4 / sealed payload v14 
 
 Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Ready/offline Windows, macOS and Linux paths are token-free. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
 
-Picture resources use deterministic project-v4 resource metadata. Current native Picture decoding is bounded to the explicitly supported formats; WebP/SVG are not silently treated as native-supported. Shape, PaintBox and ImageList have separate target capability metadata and remain fail-closed where runtime support has not been implemented.
+Picture resources use deterministic project-v4 resource metadata. Current native Picture decoding is bounded to the explicitly supported formats; WebP/SVG are not silently treated as native-supported. Native GUI IR 1.4 PictureBox keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. Shape, PaintBox and ImageList have separate target capability metadata and remain fail-closed where runtime support has not been implemented.
 
 ## Offline compiler
 
