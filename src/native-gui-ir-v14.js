@@ -18,6 +18,7 @@ export function buildNativeGuiIRV14(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
     throw new NativeGuiError('A compiled Patch Window program is required for native GUI 1.4 lowering.');
   }
+  rejectShapeStage1(compiled.ast);
   const compatibility = cloneCompiledWithPolicies(compiled);
   const chrome = rewriteChromeForV13Compatibility(compatibility.ast, compiled.ast);
   const ir = buildNativeGuiIRV13(compatibility);
@@ -558,4 +559,18 @@ function displayChrome(type) {
 
 function identifier(value) {
   return String(value).replace(/[^A-Za-z0-9_]/g, '_').replace(/^[0-9]/, '_$&');
+}
+
+function rejectShapeStage1(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'shape') {
+      throw new NativeGuiError(
+        `line ${node.line ?? '?'}: Native GUI IR 1.4 does not include Shape. ` +
+        'Use Native GUI IR 1.5 / payload v15 / runtime v1.6 for rectangle, rounded, ellipse and line.'
+      );
+    }
+    if (node.body) rejectShapeStage1(node.body);
+    if (node.thenBody) rejectShapeStage1(node.thenBody);
+    if (node.elseBody) rejectShapeStage1(node.elseBody);
+  }
 }

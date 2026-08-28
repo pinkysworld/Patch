@@ -107,7 +107,7 @@ Tabs-inside-Tabs remains intentionally outside the current stage and fails close
 
 Project bundle v4 contains an explicit bounded resource store. Picture references logical `patch-resource:<id>` values rather than machine-local file paths. Resource Manager supports PNG, JPEG, WebP and SVG project assets, stable ids, hashes, preview and project persistence.
 
-Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred. Shape and PaintBox have Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and the first Form icon as the application favicon, while native GUI IR 1.4 fail-closes Form icons.
+Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred. Shape has Studio, Standalone Web and current native Ready support. PaintBox has Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and the first Form icon as the application favicon, while native GUI IR 1.4 fail-closes Form icons.
 
 ## Selection, Properties and keyboard boundary
 
@@ -129,9 +129,9 @@ Slider `changed` exposes a bounded finite numeric transient `value`. List-backed
 
 ## Native delivery boundary
 
-The current desktop consumer contract is Native GUI IR **1.4**, sealed payload **v14** and runtime **v1.5**. It preserves Table, text-list/ListBox, Menu, TreeView and Slider semantics and adds the current Chrome Stage 1 Panel, Timer, Picture and StatusBar transport.
+The current desktop consumer contract is Native GUI IR **1.5**, sealed payload **v15** and runtime **v1.6**. It preserves Table, text-list/ListBox, Menu, TreeView, Slider and Chrome Stage 1 semantics and adds Shape Stage 1 rectangle, rounded, ellipse and line transport.
 
-The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
+The prior Chrome compatibility line is Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
 
 The current Ready/offline Windows, macOS and Linux path uses the same stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
@@ -149,9 +149,9 @@ Remaining product work includes:
 - Memo/TextArea, ProgressBar, Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
 - true independent TabOrder and richer container/layout semantics;
 - Undo/Redo transactions, large-project performance work and professional code-editor/debugger features;
-- native Shape/PaintBox parity, native ImageList/Button-image transport and native application/window icon packaging;
+- PaintBox native parity, native ImageList/Button-image transport and native application/window icon packaging;
 - application branding and richer packaging/signing workflows;
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
 
-Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.4**, sealed payload **v14**, token-free Ready/offline runtime **v1.5**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.
+Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.5**, sealed payload **v15**, token-free Ready/offline runtime **v1.6**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.

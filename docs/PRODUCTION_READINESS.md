@@ -62,11 +62,11 @@ Patch Studio diagnostics are local-only. Reports record Patch version, project k
 
 `docs/LINUX_PACKAGING.md` defines the current GTK3/Console runtime assumptions, ABI limitations, unsigned status, user-space removal behavior and package formats Patch does not yet claim. This documentation item is separate from the still-open installer/uninstall milestone.
 
-The runtime-integrity mechanism protects the **current payload v13/runtime v1.4 Ready path**. Pages requires `studio-runtime-v0.6` plus these native releases:
+The runtime-integrity mechanism protects the **current payload v15/runtime v1.6 Ready path**. Pages requires `studio-runtime-v0.6` plus these native releases:
 
-- `native-win32-runtime-v1.4`;
-- `native-macos-runtime-v1.4`;
-- `native-linux-runtime-v1.4`.
+- `native-win32-runtime-v1.6`;
+- `native-macos-runtime-v1.6`;
+- `native-linux-runtime-v1.6`.
 
 Pages downloads the exact runtime assets, reads GitHub's recorded `sha256:` digest, independently re-hashes the bytes and writes a verified `runtime-manifest.json`. Patch Studio hashes the selected runtime again with Web Crypto before browser-side sealing and fails closed on mismatch. The service worker treats same-origin `/runtimes/` requests as fresh-first while online so an older cache cannot silently override the current deployment.
 
@@ -78,7 +78,7 @@ Ready Windows, macOS and Linux application downloads already work without a pers
 
 ### Native Window release contract
 
-The current token-free Ready/offline Window line is **Native GUI IR 1.3 / sealed payload v13 / runtime v1.4** on Windows, macOS and Linux. It preserves responsive Anchor/Dock behavior, Table/Grid, persistent list-backed multi-select ListBox, Menu separators/shortcuts/state and hierarchical TreeView while adding native Slider.
+The current token-free Ready/offline Window line is **Native GUI IR 1.5 / sealed payload v15 / runtime v1.6** on Windows, macOS and Linux. It preserves responsive Anchor/Dock behavior, Table/Grid, persistent list-backed multi-select ListBox, Menu separators/shortcuts/state, hierarchical TreeView, Slider and Chrome Stage 1 while adding native Shape.
 
 Slider `changed` exposes only a finite numeric transient value inside the declared range. TreeView `changed` exposes a transient root-to-node text-list path. Table row selection and list-backed ListBox selection are likewise transient event values. Persistent application state still changes only through explicit semantic `change`.
 

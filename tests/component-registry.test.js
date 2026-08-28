@@ -39,7 +39,7 @@ test('Picture is discoverable with source-backed properties event renderer and t
   assert.equal(patchComponentForButton('addPicture')?.type, 'picture');
 });
 
-test('Shape Stage 1 exposes Studio authoring and Standalone Web without overclaiming native runtime support', () => {
+test('Shape Stage 1 exposes Studio, Standalone Web and native desktop runtime support', () => {
   const shape = patchComponent('shape');
   assert.equal(shape.type, 'shape');
   assert.equal(shape.label, 'Shape');
@@ -54,7 +54,7 @@ test('Shape Stage 1 exposes Studio authoring and Standalone Web without overclai
   assert.deepEqual(shape.events, []);
   assert.equal(shape.designRenderer, 'shape');
   assert.deepEqual(shape.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addShape')?.type, 'shape');
 });

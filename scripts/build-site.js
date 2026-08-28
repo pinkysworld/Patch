@@ -15,7 +15,7 @@ const SITE_SRC_FILES = [
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-web-paintbox.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-shape.js','designer-paintbox.js','component-registry.js','designer-menu.js','designer-panel.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-resources.js','studio-outline-model.js','studio-diagnostics.js',
-  'window-compiled.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-current-contract.js','native-picture-format-policy.js','native-picture-resources.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','native-chrome-backend-adapter.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-gui-v14.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
+  'window-compiled.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-gui-ir-v15.js','native-current-contract.js','native-picture-format-policy.js','native-picture-resources.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','native-chrome-backend-adapter.js','native-shape-backend-adapter.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-gui-v14.js','sealed-native-gui-v15.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
@@ -97,9 +97,8 @@ function normalizeCurrentProductSurface(name, source) {
   // not part of the public Patch Studio website or its navigation.
   html = html.replace(/\s*<a\b[^>]*href="\.\/paper\.html"[^>]*>[\s\S]*?<\/a>/g, '');
 
-  // The pre-beta.36 pages used the v1.4 runtime as their current product line.
-  // downloads.html is authored directly for beta.36 and intentionally mentions
-  // v1.4 as compatibility history, so do not rewrite those historical statements.
+  // downloads.html is authored directly for the current contract and intentionally
+  // mentions older IR/payload/runtime lines as compatibility history.
   if (name !== 'downloads.html') {
     html = html
       .replaceAll('Native GUI IR 1.3 / payload v13 / runtime v1.4', 'Native GUI IR 1.4 / payload v14 / runtime v1.5')
@@ -112,7 +111,18 @@ function normalizeCurrentProductSurface(name, source) {
       .replaceAll('IR 1.3 / v1.4', 'IR 1.4 / v1.5')
       .replaceAll('native-win32-runtime-v1.4', 'native-win32-runtime-v1.5')
       .replaceAll('native-macos-runtime-v1.4', 'native-macos-runtime-v1.5')
-      .replaceAll('native-linux-runtime-v1.4', 'native-linux-runtime-v1.5');
+      .replaceAll('native-linux-runtime-v1.4', 'native-linux-runtime-v1.5')
+      .replaceAll('Native GUI IR 1.4 / payload v14 / runtime v1.5', 'Native GUI IR 1.5 / payload v15 / runtime v1.6')
+      .replaceAll('Native GUI IR <strong>1.4</strong>', 'Native GUI IR <strong>1.5</strong>')
+      .replaceAll('payload <strong>v14</strong>', 'payload <strong>v15</strong>')
+      .replaceAll('runtime <strong>v1.5</strong>', 'runtime <strong>v1.6</strong>')
+      .replaceAll('Native GUI IR 1.4 as payload v14', 'Native GUI IR 1.5 as payload v15')
+      .replaceAll('current runtime v1.5 templates', 'current runtime v1.6 templates')
+      .replaceAll('Current runtime v1.5 templates', 'Current runtime v1.6 templates')
+      .replaceAll('IR 1.4 / v1.5', 'IR 1.5 / v1.6')
+      .replaceAll('native-win32-runtime-v1.5', 'native-win32-runtime-v1.6')
+      .replaceAll('native-macos-runtime-v1.5', 'native-macos-runtime-v1.6')
+      .replaceAll('native-linux-runtime-v1.5', 'native-linux-runtime-v1.6');
   }
 
   if (name === 'index.html') {
@@ -128,7 +138,10 @@ function normalizeCurrentNativeBuildCopy(source) {
   return source
     .replaceAll('Native GUI IR 1.3', 'Native GUI IR 1.4')
     .replaceAll('payload v13', 'payload v14')
-    .replaceAll('runtime v1.4', 'runtime v1.5');
+    .replaceAll('runtime v1.4', 'runtime v1.5')
+    .replaceAll('Native GUI IR 1.4', 'Native GUI IR 1.5')
+    .replaceAll('payload v14', 'payload v15')
+    .replaceAll('runtime v1.5', 'runtime v1.6');
 }
 
 function computeSiteRevision() {

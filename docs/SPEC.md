@@ -4,7 +4,7 @@ Status: **0.2.0-beta.36 development**
 
 This document describes the current source-language surface. Patch is indentation-sensitive; two spaces are recommended. Product/runtime compatibility details live in `docs/ROADMAP.md` and `docs/NATIVE_GUI.md`. The formal assurance boundary is intentionally narrower than the language and remains the **beta.32** milestone described in `docs/FORMAL_MODEL.md` and `docs/RUNTIME_CORRESPONDENCE.md`.
 
-The current Ready desktop Window product contract is **Native GUI IR 1.4 / sealed payload v14 / native runtime v1.5**. Older versioned contracts remain frozen compatibility and reproducibility lines. Product versioning does not widen the beta.32 Lean assurance claim.
+The current Ready desktop Window product contract is **Native GUI IR 1.5 / sealed payload v15 / native runtime v1.6**. Older versioned contracts remain frozen compatibility and reproducibility lines. Product versioning does not widen the beta.32 Lean assurance claim.
 
 ## Core rule
 
@@ -293,9 +293,9 @@ button "Open" as open_button image app_images.open
 statusbar "Ready" as app_status
 ```
 
-`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.4 / payload v14 / runtime v1.5 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. Picture display properties (`fit`, `center`, `opacity`, `description`) are source-backed. Standalone Web applies them. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than silently ignoring them. Accessible `description` maps onto the existing native PictureBox `text` field. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG and JPEG are Ready; WebP and SVG remain deferred and fail closed, as do other `data:image/*` sources. PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
+`panel`, `timer`, `picture` and `statusbar` belong to the Native GUI IR 1.5 / payload v15 / runtime v1.6 Chrome Stage 1 source surface. Their Studio authoring/runtime parity is intentionally tracked separately. Picture display properties (`fit`, `center`, `opacity`, `description`) are source-backed. Standalone Web applies them. Native GUI IR 1.4 keeps the default contain/centered/opaque PictureBox and fail-closes other fit/center/opacity values rather than silently ignoring them. Accessible `description` maps onto the existing native PictureBox `text` field. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG and JPEG are Ready; WebP and SVG remain deferred and fail closed, as do other `data:image/*` sources. PictureBox image-source decoding is not yet claimed as a complete cross-platform asset pipeline.
 
-Shape and PaintBox are additive graphics contracts. Their current component capability metadata advertises Standalone Web support and keeps current native targets fail-closed rather than silently dropping unsupported graphics. PaintBox drawing is pure UI rendering and does not create a second persistent mutation path.
+Shape Stage 1 is native on Native GUI IR 1.5 / payload v15 / runtime v1.6. PaintBox remains an additive graphics contract whose current component capability metadata advertises Standalone Web support and keeps native targets fail-closed rather than silently dropping unsupported drawing. PaintBox drawing is pure UI rendering and does not create a second persistent mutation path.
 
 ImageList is nonvisual source-backed metadata. It is a Form-scoped component whose named entries refer to existing project resources through quoted `patch-resource:` locators. Logical image width and height are whole numbers from 1 through 512 and one ImageList may contain at most 256 named images. ImageList has no events in Stage 1. Standalone Web Buttons may bind `image list.item`. Native GUI IR 1.4 still fail-closes ImageList and Button image bindings rather than silently dropping them.
 

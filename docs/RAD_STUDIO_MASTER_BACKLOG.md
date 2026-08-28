@@ -34,7 +34,7 @@ Already available or substantially implemented:
 - Focus Order Stage 1 based on source order;
 - drag/resize cancellation hardening;
 - large Workshop Desk browser stress test;
-- native Windows/macOS/Linux runtime line v1.5 and payload v14;
+- native Windows/macOS/Linux runtime line v1.6 and payload v15;
 - token-free/offline compiler builds;
 - public Patch Studio/PWA with content-addressed module graph.
 

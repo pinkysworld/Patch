@@ -44,7 +44,7 @@ Nested Slider interaction exposes bounded finite numeric transient `value`; nest
 
 ## Current runtime support
 
-The current product line keeps Change IR at **0.10** and uses Native GUI IR **1.4**, sealed native GUI payload **v14** and native runtime **v1.5** for token-free Ready/offline Windows, macOS and Linux Window apps.
+The current product line keeps Change IR at **0.10** and uses Native GUI IR **1.5**, sealed native GUI payload **v15** and native runtime **v1.6** for token-free Ready/offline Windows, macOS and Linux Window apps.
 
 Tabs and their nested ordinary controls are implemented in:
 
@@ -56,9 +56,9 @@ Tabs and their nested ordinary controls are implemented in:
 - direct native GTK3 AOT;
 - current token-free sealed Ready apps and ordinary offline `patch link` on Windows/macOS/Linux.
 
-The current v1.4/v14/v1.5 line preserves the earlier Table, multi-select ListBox, Menu, TreeView and Slider contracts while adding Chrome Stage 1 Panel, Timer, Picture and StatusBar transport. Existing Tabs semantics are not redefined by that addition.
+The current v1.5/v15/v1.6 line preserves the earlier Table, multi-select ListBox, Menu, TreeView, Slider and Chrome Stage 1 contracts while adding Shape Stage 1 rectangle, rounded, ellipse and line transport. Existing Tabs semantics are not redefined by that addition.
 
-The frozen TreeView compatibility line remains Native GUI IR **1.2** / payload **v12** / runtime **v1.3**. The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**.
+The frozen TreeView compatibility line remains Native GUI IR **1.2** / payload **v12** / runtime **v1.3**. The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. The previous Chrome line remains Native GUI IR **1.4** / payload **v14** / runtime **v1.5**.
 
 ## Native mappings
 
@@ -83,14 +83,16 @@ Native GUI IR 1.0   Menu enabled/checked state
 Native GUI IR 1.1   persistent text-list state + multi-select ListBox
 Native GUI IR 1.2   hierarchical TreeView
 Native GUI IR 1.3   Slider range/step/numeric event contract
-Native GUI IR 1.4   current Chrome Stage 1 line preserving Tabs/Tree/Slider
+Native GUI IR 1.4   previous Chrome Stage 1 line preserving Tabs/Tree/Slider
+Native GUI IR 1.5   current Shape Stage 1 line preserving Tabs/Tree/Slider/Chrome
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state line
 payload v11 / runtime v1.2   frozen Menu+list line
 payload v12 / runtime v1.3   frozen TreeView-capable line, Slider fail-closed
 payload v13 / runtime v1.4   previous Slider-capable line
-payload v14 / runtime v1.5   current Ready/offline line
+payload v14 / runtime v1.5   previous Chrome Ready/offline line
+payload v15 / runtime v1.6   current Ready/offline line
 ```
 
 Older payloads are not silently upgraded or reinterpreted when newer controls are used. Unsupported version/feature combinations fail closed.

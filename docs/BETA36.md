@@ -1,6 +1,6 @@
 # Patch 0.2.0-beta.36
 
-Patch beta.36 is the current integration and RAD-authoring development line. It aligns Patch Studio with project bundle v4 resources, the Native GUI IR 1.4 desktop contract, and the first graphics/resource RAD milestone while preserving the rule that ordinary `.patch` source remains authoritative for Form/component authoring.
+Patch beta.36 is the current integration and RAD-authoring development line. It aligns Patch Studio with project bundle v4 resources, the Native GUI IR 1.5 desktop contract, and the first graphics/resource RAD milestone while preserving the rule that ordinary `.patch` source remains authoritative for Form/component authoring.
 
 ## Current contracts
 
@@ -8,12 +8,12 @@ Patch beta.36 is the current integration and RAD-authoring development line. It 
 - Change IR: `0.10`
 - Studio project bundle: `v4`
 - Component Registry: `0.8`
-- Native GUI IR: `1.4`
-- sealed payload: `v14`
-- desktop runtime: `v1.5`
-- Win32 release: `native-win32-runtime-v1.5`
-- AppKit release: `native-macos-runtime-v1.5`
-- GTK release: `native-linux-runtime-v1.5`
+- Native GUI IR: `1.5`
+- sealed payload: `v15`
+- desktop runtime: `v1.6`
+- Win32 release: `native-win32-runtime-v1.6`
+- AppKit release: `native-macos-runtime-v1.6`
+- GTK release: `native-linux-runtime-v1.6`
 - offline compiler line: `offline-compiler-v0.2`
 
 Older project/native versions remain explicit migration/compatibility inputs and are never silently reinterpreted.
@@ -35,7 +35,7 @@ Resources are explicit project data, not a hidden `.dfm`/`.frm` visual state mod
 
 ## Current Native Window line
 
-Native GUI IR 1.4 / payload v14 / runtime v1.5 is the current Ready/offline desktop line for Windows, macOS and Linux. It composes the previous Table, list, menu, TreeView and Slider capabilities with Chrome Stage 1 Panel, Timer, Picture and StatusBar transport.
+Native GUI IR 1.5 / payload v15 / runtime v1.6 is the current Ready/offline desktop line for Windows, macOS and Linux. It composes the previous Table, list, menu, TreeView, Slider and Chrome Stage 1 capabilities with Shape Stage 1 rectangle, rounded, ellipse and line drawing.
 
 Current native Picture resource support includes bounded PNG/JPEG decoding through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under `native-picture-formats/1.0`. WebP/SVG remain deferred native formats and fail closed rather than being silently treated as Ready. The browser/Standalone Web path can embed PNG, JPEG, WebP and SVG project resources directly.
 
@@ -99,7 +99,7 @@ Picture is a first-class Graphics component. Its source expression can use a pro
 
 ### Shape Stage 1
 
-Shape supports deterministic rectangle/rounded/ellipse/line source declarations with fill, stroke, stroke width, radius and opacity. Studio authoring and Standalone Web rendering are implemented. Current native targets remain explicitly unsupported until Win32/AppKit/GTK lowering/rendering is versioned and tested.
+Shape supports deterministic rectangle/rounded/ellipse/line source declarations with fill, stroke, stroke width, radius and opacity. Studio authoring, Standalone Web SVG rendering and current native Win32 GDI+, AppKit NSBezierPath and GTK cairo drawing share the same 0–100 mapping with device-pixel strokes. Shape exposes no Patch events in Stage 1.
 
 ### PaintBox Stage 1
 
@@ -139,7 +139,7 @@ The site/offline closure now includes the graphics/resource modules used by Pict
 
 ## Offline compiler v0.2
 
-Windows x64, Linux x64, macOS Apple Silicon and macOS Intel kits use runtime v1.5 and assert payload v14. FreeBSD remains Console-only through portable C99.
+Windows x64, Linux x64, macOS Apple Silicon and macOS Intel kits use runtime v1.6 and assert payload v15. FreeBSD remains Console-only through portable C99.
 
 Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional cloud/AOT workflows remain separate from the default download/link experience.
 
@@ -147,4 +147,4 @@ Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional 
 
 beta.36 product work does not widen the beta.32 formal runtime-correspondence claim. Patch does not claim full compiler/runtime verification.
 
-Likewise, target capability metadata is intentionally truthful: Shape/PaintBox native runtime support, native ImageList/Button-image transport and native application/window icon packaging are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.
+Likewise, target capability metadata is intentionally truthful: PaintBox native runtime support, native ImageList/Button-image transport and native application/window icon packaging are not advertised until their contracts and tests exist. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the remaining work.

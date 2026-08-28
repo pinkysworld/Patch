@@ -31,4 +31,4 @@ A Table may have zero data rows, so row actions are disabled in that state. A Ta
 
 ## Compatibility
 
-These are Patch Studio authoring operations only. They do not change Patch syntax, Change IR 0.10, the current Native GUI IR 1.4 / payload v14 / runtime v1.5 product line, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal-assurance boundary. The previous Native GUI IR 1.3 / payload v13 / runtime v1.4 Slider line remains compatibility evidence.
+These are Patch Studio authoring operations only. They do not change Patch syntax, Change IR 0.10, the current Native GUI IR 1.5 / payload v15 / runtime v1.6 product line, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal-assurance boundary. The previous Native GUI IR 1.3 / payload v13 / runtime v1.4 Slider line remains compatibility evidence.

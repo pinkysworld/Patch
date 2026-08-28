@@ -1,0 +1,5 @@
+window "Shapes" as main size 640, 360:
+  shape rectangle as box fill #dbeafe stroke #2563eb stroke-width 2 opacity 1 at 24, 24 size 180, 100
+  shape rounded as card fill #fef3c7 stroke #d97706 stroke-width 3 radius 16 opacity 1 at 224, 24 size 180, 100
+  shape ellipse as badge fill #dcfce7 stroke #16a34a stroke-width 4 opacity 0.85 at 424, 24 size 180, 100
+  shape line as divider stroke #334155 stroke-width 5 opacity 1 at 24, 160 size 580, 40

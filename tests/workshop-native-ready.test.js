@@ -26,10 +26,10 @@ test('Workshop Desk Ready support includes TreeView and Slider while Table list 
 
   assert.equal(support.treeViews, 1);
   assert.equal(support.sliders, 2);
-  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.4/payload-14/runtime-1.5');
-  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.4');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 14);
-  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.5');
+  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.5/payload-15/runtime-1.6');
+  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.5');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 15);
+  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.6');
 
   assert.throws(
     () => buildCurrentNativeGuiIR(compiled),

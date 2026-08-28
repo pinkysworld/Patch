@@ -9,7 +9,7 @@ A small **change-oriented** programming language with a browser-first RAD IDE, f
 [![Formal Verification](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml)
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 
-**Development beta `0.2.0-beta.36`** · **Change IR `0.10`** · **Native GUI IR `1.4`** · **sealed payload `v14`** · **desktop runtime `v1.5`** · **Studio project bundle `v4`**
+**Development beta `0.2.0-beta.36`** · **Change IR `0.10`** · **Native GUI IR `1.5`** · **sealed payload `v15`** · **desktop runtime `v1.6`** · **Studio project bundle `v4`**
 
 [Open Patch Studio](https://minh.systems/Patch/) · [Language](https://minh.systems/Patch/language.html) · [Documentation](https://minh.systems/Patch/docs.html) · [Paper](https://minh.systems/Patch/paper.html) · [Downloads](https://minh.systems/Patch/downloads.html) · [Help](https://minh.systems/Patch/help.html)
 
@@ -43,7 +43,7 @@ ImageList stores ordered named references to project resources. Buttons bind one
 
 Forms may declare `icon "patch-resource:app.icon"` on the window line. Studio and Standalone Web show that icon in Form chrome; the first Form icon is the application favicon. Native GUI IR 1.4 fail-closes Window icons under `window-icon/1.0`.
 
-Shape and PaintBox currently advertise Studio authoring plus Standalone Web support. Native Shape/PaintBox parity remains an explicit later gate rather than silently degrading. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
+Shape advertises Studio, Standalone Web and current native Ready support. PaintBox currently advertises Studio authoring plus Standalone Web support; native PaintBox parity remains an explicit later gate rather than silently degrading. Picture has real project-resource transport, source-backed fit/center/opacity/description and current desktop PNG/JPEG decoding under `native-picture-formats/1.0`; deferred WebP/SVG and non-default native display properties fail closed.
 
 Open **Workshop desk** in Example for the current showcase application. See [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md), [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md), [`docs/RAD_STUDIO_MASTER_BACKLOG.md`](docs/RAD_STUDIO_MASTER_BACKLOG.md), [`docs/STUDIO_AUTHORING_SURFACE.md`](docs/STUDIO_AUTHORING_SURFACE.md) and [`docs/BETA36.md`](docs/BETA36.md).
 
@@ -64,21 +64,21 @@ Toolkit interaction stays transient until source commits it through `change`:
 
 ## Native desktop
 
-The product-facing current contract is **Native GUI IR 1.4 / sealed payload v14 / runtime v1.5**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
+The product-facing current contract is **Native GUI IR 1.5 / sealed payload v15 / runtime v1.6**. Versioned older contracts remain compatibility evidence and are not silently reinterpreted.
 
 | Line | IR / payload / runtime | Role |
 |---|---|---|
-| Current Ready/offline | Native GUI IR 1.4 / payload v14 / runtime v1.5 | Table, menus, TreeView, multi-select ListBox and Slider plus Chrome Stage 1 Panel, Timer, Picture and StatusBar |
+| Current Ready/offline | Native GUI IR 1.5 / payload v15 / runtime v1.6 | Table, menus, TreeView, multi-select ListBox, Slider, Chrome Stage 1 and Shape Stage 1 |
 | Slider compatibility | Native GUI IR 1.3 / payload v13 / runtime v1.4 | Previous Slider-capable compatibility line |
 | Frozen TreeView | Native GUI IR 1.2 / payload v12 / runtime v1.3 | Frozen TreeView line; Slider remains fail-closed |
 
 Product JavaScript imports `src/native-current-contract.js` and `src/native-frozen-contract.js`. Ready/offline Windows, macOS and Linux paths are token-free. See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md).
 
-Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native GUI IR 1.4 PictureBox keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. Shape, PaintBox, ImageList and Window icons have separate target capability metadata and remain fail-closed where runtime support has not been implemented.
+Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native GUI IR 1.4 PictureBox keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox, ImageList and Window icons have separate target capability metadata and remain fail-closed where runtime support has not been implemented. Shape Stage 1 is native on the current Ready line.
 
 ## Offline compiler
 
-The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.5 Window path and assert sealed payload v14 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
+The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.6 Window path and assert sealed payload v15 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
 
 See [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md) and the public [Downloads](https://minh.systems/Patch/downloads.html) page.
 

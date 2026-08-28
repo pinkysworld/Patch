@@ -93,7 +93,7 @@ The frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 contract remains Slide
 
 ## Native multi-select ListBox
 
-List-backed ListBox has parity across browser preview, Standalone Web, direct AOT and current token-free Ready/offline Windows/macOS/Linux paths. Native GUI IR 1.1 introduced the persistent text-list state/event ABI. Current Native GUI IR 1.3 / payload v13 / runtime v1.4 preserves it unchanged while adding Slider. The v10 compatibility line remains frozen and independently tested.
+List-backed ListBox has parity across browser preview, Standalone Web, direct AOT and current token-free Ready/offline Windows/macOS/Linux paths. Native GUI IR 1.1 introduced the persistent text-list state/event ABI. Current Native GUI IR 1.5 / payload v15 / runtime v1.6 preserves it unchanged while adding Slider, Chrome Stage 1 and Shape. The v10 compatibility line remains frozen and independently tested.
 
 ## Table support
 
@@ -103,7 +103,7 @@ Table/Grid continues to use the specialized Table representation introduced at N
 - **macOS:** multi-column `NSTableView` inside `NSScrollView`;
 - **Linux:** `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow`.
 
-Standalone Web and Studio App Preview expose the selected row as a transient row list through the shared semantic Window event adapter. Direct AOT and current token-free sealed Ready/offline paths preserve the same semantic selected-row contract. Current payload v13/runtime v1.4 carries the unchanged Table representation; payload v9/runtime v1.0 remains the frozen Table compatibility line.
+Standalone Web and Studio App Preview expose the selected row as a transient row list through the shared semantic Window event adapter. Direct AOT and current token-free sealed Ready/offline paths preserve the same semantic selected-row contract. Current payload v15/runtime v1.6 carries the unchanged Table representation; payload v9/runtime v1.0 remains the frozen Table compatibility line.
 
 A Table row remains transient UI selection unless source explicitly persists it.
 
@@ -129,9 +129,9 @@ Payload **v12** / runtime **v1.3** remains the frozen TreeView line. Payload **v
 
 ## Runtime-template integrity
 
-The runtime integrity mechanism protects the current runtime v1.4 assets. During Pages deployment:
+The runtime integrity mechanism protects the current runtime v1.6 assets. During Pages deployment:
 
-1. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.4 releases.
+1. Pages requires `studio-runtime-v0.6` plus the three native runtime-v1.6 releases.
 2. GitHub Release provides the runtime assets and recorded `sha256:` digests.
 3. `scripts/runtime-integrity-manifest.js` independently hashes every downloaded runtime and fails when bytes differ.
 4. Pages publishes `runtimes/runtime-manifest.json` for all browser-consumed runtime templates.
@@ -143,13 +143,13 @@ This establishes byte consistency across the GitHub Release -> Pages -> browser 
 
 ## Offline compiler
 
-Current Windows, Linux, Apple Silicon macOS and Intel macOS offline compiler paths embed/package runtime **v1.4** and seal Window payload **v13**. Their matrix executes Console, responsive Window, Table, native multi-select ListBox, decorated Menu, TreeView and Slider smokes. FreeBSD remains Console-only through portable C99 + local `cc`.
+Current Windows, Linux, Apple Silicon macOS and Intel macOS offline compiler paths embed/package runtime **v1.6** and seal Window payload **v15**. Their matrix executes Console, responsive Window, Table, native multi-select ListBox, decorated Menu, TreeView, Slider, Chrome and Shape smokes. FreeBSD remains Console-only through portable C99 + local `cc`.
 
 See `docs/OFFLINE_COMPILER.md` for platform packaging and verification details.
 
 ## Menu capability
 
-Direct AOT and current sealed Ready/offline paths support Menu separators, portable shortcuts and source-backed enabled/checked state. Payload v11/runtime v1.2 established the frozen Menu+list compatibility line; payload v13/runtime v1.4 preserves it while composing TreeView and Slider without redefining v11.
+Direct AOT and current sealed Ready/offline paths support Menu separators, portable shortcuts and source-backed enabled/checked state. Payload v11/runtime v1.2 established the frozen Menu+list compatibility line; payload v15/runtime v1.6 preserves it while composing TreeView, Slider, Chrome and Shape without redefining v11.
 
 ## Native accessibility baseline
 

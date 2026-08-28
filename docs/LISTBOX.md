@@ -51,7 +51,7 @@ Standalone Window Web renders text-backed ListBox as a single-select multi-row H
 
 ## Direct native support
 
-Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics. Current Native GUI IR **1.4** preserves that ABI while composing later TreeView, Slider and Chrome Stage 1 capabilities.
+Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics. Current Native GUI IR **1.5** preserves that ABI while composing later TreeView, Slider, Chrome Stage 1 and Shape Stage 1 capabilities.
 
 Native mappings are:
 
@@ -71,11 +71,11 @@ The original list-state compatibility line remains:
 
 Current Windows, macOS and Linux Ready/offline Window builds use:
 
-- Native GUI IR **1.4**;
-- sealed payload **v14**;
-- native runtime **v1.5**.
+- Native GUI IR **1.5**;
+- sealed payload **v15**;
+- native runtime **v1.6**.
 
-Payload v14/runtime v1.5 preserves Table, persistent list/ListBox, Menu, TreeView and Slider semantics while adding the current Chrome Stage 1 transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
+Payload v15/runtime v1.6 preserves Table, persistent list/ListBox, Menu, TreeView, Slider and Chrome Stage 1 semantics while adding Shape Stage 1 transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
 
 Relevant additive progression:
 
@@ -85,21 +85,23 @@ Native GUI IR 1.0   Menu enabled/checked state
 Native GUI IR 1.1   persistent text-list state + multi-select ListBox
 Native GUI IR 1.2   hierarchical TreeView, preserving the 1.1 list ABI
 Native GUI IR 1.3   Slider, preserving the 1.1 list ABI
-Native GUI IR 1.4   Chrome Stage 1, preserving ListBox/TreeView/Slider
+Native GUI IR 1.4   previous Chrome Stage 1, preserving ListBox/TreeView/Slider
+Native GUI IR 1.5   current Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state/multi-select line
 payload v11 / runtime v1.2   frozen Menu+list line
 payload v12 / runtime v1.3   frozen TreeView-capable line
 payload v13 / runtime v1.4   previous Slider-capable line
-payload v14 / runtime v1.5   current Ready/offline line preserving ListBox semantics
+payload v14 / runtime v1.5   previous Chrome Ready/offline line
+payload v15 / runtime v1.6   current Ready/offline line preserving ListBox semantics
 ```
 
 Older payloads are not reinterpreted in place. Explicit legacy linking fails closed when a requested control/state contract is newer than the selected payload.
 
 ## Runtime integrity
 
-Patch Studio verifies current Windows/macOS/Linux runtime-v1.5 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v14/v1.5 line and retains compatibility tests for earlier payloads.
+Patch Studio verifies current Windows/macOS/Linux runtime-v1.6 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v15/v1.6 line and retains compatibility tests for earlier payloads.
 
 This protects version/byte consistency of the published Ready runtime path. It is not Authenticode, Developer ID signing or notarization.
 

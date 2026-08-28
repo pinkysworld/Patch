@@ -19,24 +19,25 @@ const selectionArchitecture = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTUR
 const tableActionsDoc = fs.readFileSync('docs/STUDIO_TABLE_ACTIONS.md', 'utf8');
 const tableActionsWeb = fs.readFileSync('web/designer-table-actions.js', 'utf8');
 
-test('current Tabs documentation names native v1.5 and retains explicit compatibility lines', () => {
-  assert.match(tabs, /Native GUI IR \*\*1\.4\*\*/);
-  assert.match(tabs, /payload \*\*v14\*\*/);
-  assert.match(tabs, /native runtime \*\*v1\.5\*\*/);
+test('current Tabs documentation names native v1.6 and retains explicit compatibility lines', () => {
+  assert.match(tabs, /Native GUI IR \*\*1\.5\*\*/);
+  assert.match(tabs, /payload \*\*v15\*\*/);
+  assert.match(tabs, /native runtime \*\*v1\.6\*\*/);
+  assert.match(tabs, /Native GUI IR \*\*1\.4\*\* \/ payload \*\*v14\*\* \/ runtime \*\*v1\.5\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.3\*\* \/ payload \*\*v13\*\* \/ runtime \*\*v1\.4\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\*/);
   assert.match(tabs, /TreeView/);
   assert.match(tabs, /Slider/);
 });
 
-test('current ListBox documentation reflects native single/multi-select preservation on v1.5', () => {
+test('current ListBox documentation reflects native single/multi-select preservation on v1.6', () => {
   assert.match(listbox, /direct native Win32\/AppKit\/GTK/);
   assert.match(listbox, /create text/);
   assert.match(listbox, /create list/);
   assert.match(listbox, /Native GUI IR \*\*1\.1\*\*/);
-  assert.match(listbox, /Native GUI IR \*\*1\.4\*\*/);
-  assert.match(listbox, /payload \*\*v14\*\*/);
-  assert.match(listbox, /runtime \*\*v1\.5\*\*/);
+  assert.match(listbox, /Native GUI IR \*\*1\.5\*\*/);
+  assert.match(listbox, /payload \*\*v15\*\*/);
+  assert.match(listbox, /runtime \*\*v1\.6\*\*/);
   assert.match(listbox, /payload v12 \/ runtime v1\.3/);
   assert.match(docs, /docs\/LISTBOX\.md/);
 });
@@ -58,9 +59,9 @@ test('nested Tabs implementation and current Studio docs stay aligned', () => {
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
   assert.match(studio, /Table, TreeView and Tabs structural editors rewrite their selected source block directly/);
-  assert.match(studio, /Native GUI IR \*\*1\.4\*\*/);
-  assert.match(studio, /payload \*\*v14\*\*/);
-  assert.match(studio, /runtime \*\*v1\.5\*\*/);
+  assert.match(studio, /Native GUI IR \*\*1\.5\*\*/);
+  assert.match(studio, /payload \*\*v15\*\*/);
+  assert.match(studio, /runtime \*\*v1\.6\*\*/);
   assert.match(studio, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
 });
 
@@ -110,9 +111,9 @@ test('Studio implementation exposes the current source-backed active Form workfl
 
 test('roadmap records beta36 current Studio/native line and truthful RAD backlog', () => {
   assert.match(roadmap, /Current development beta: \*\*0\.2\.0-beta\.36\*\*/);
-  assert.match(roadmap, /Native GUI IR: \*\*1\.4\*\*/);
-  assert.match(roadmap, /current sealed native GUI payload: \*\*v14\*\*/);
-  assert.match(roadmap, /current token-free Ready\/offline runtime: \*\*v1\.5\*\*/);
+  assert.match(roadmap, /Native GUI IR: \*\*1\.5\*\*/);
+  assert.match(roadmap, /current sealed native GUI payload: \*\*v15\*\*/);
+  assert.match(roadmap, /current token-free Ready\/offline runtime: \*\*v1\.6\*\*/);
   assert.match(roadmap, /frozen TreeView compatibility line: Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\*/);
   assert.match(roadmap, /project bundle v4/);
   assert.match(roadmap, /ImageList Stage 1/);

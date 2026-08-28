@@ -60,10 +60,10 @@ test('responsive accessibility-capable v0.9 remains a frozen published compatibi
   assert.match(responsiveWorkflow, /responsive-window\.patch/);
 });
 
-test('Pages consumes current Chrome runtime v1.5 and frozen historical accessibility lines separately', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.5/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.5/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.5/);
+test('Pages consumes current Shape runtime v1.6 and frozen historical accessibility lines separately', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.6/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.6/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.6/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Win32 Runtime,/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Linux Runtime,/);
