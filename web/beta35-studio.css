@@ -2,6 +2,21 @@
   width: min(1720px, 100%);
 }
 
+/* Keep the softer Patch Studio P used before the angular SVG redesign. */
+.brand-mark {
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.brand-mark svg { display: none; }
+.brand-mark::before {
+  content: "P";
+  display: block;
+  transform: none;
+}
+
 .studio-jump {
   min-height: 36px;
   display: inline-flex;
