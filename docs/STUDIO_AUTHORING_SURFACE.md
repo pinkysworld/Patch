@@ -19,7 +19,7 @@ The current Form lifecycle is complete for ordinary source-backed authoring:
 - delete a Form with explicit confirmation and orphan-handler cleanup;
 - refuse deletion of the last remaining Form.
 
-Duplicate/Delete activation always returns through the existing Form selector. There is no second persistent active-Form model.
+Duplicate/Delete activation always returns through the existing Form selector. There is no second persistent active-Form model. Multi-Form Designer rendering keeps every source-backed Form shell in the DOM but renders only the active Form at full browser cost by default.
 
 ## Visual and nonvisual components
 
@@ -39,7 +39,7 @@ For supported top-level visual controls, Studio provides:
 - Center H / Center V;
 - Default size;
 - collision-aware Auto place;
-- Bring to front / Send to back;
+- Bring to front / Send to back plus one-step Move forward / Move backward;
 - 8 px design grid with optional snap while dragging;
 - live X,Y and W×H in the Designer selection summary;
 - transient multi-select with shared movement and primary-relative alignment;
@@ -107,7 +107,11 @@ Tabs-inside-Tabs remains intentionally outside the current stage and fails close
 
 Project bundle v4 contains an explicit bounded resource store. Picture references logical `patch-resource:<id>` values rather than machine-local file paths. Resource Manager supports PNG, JPEG, WebP and SVG project assets, stable ids, hashes, preview and project persistence.
 
-Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. Native GUI IR 1.4 keeps default contain/centered/opaque PictureBox display and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred. Shape has Studio, Standalone Web and current native Ready support. PaintBox has Studio plus Standalone Web support while native runtime support remains explicitly fail-closed. ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; native GUI IR 1.4 fail-closes ImageList and Button images. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and the first Form icon as the application favicon, while native GUI IR 1.4 fail-closes Form icons.
+Picture has Studio, Standalone Web and current bounded native PNG/JPEG support under `native-picture-formats/1.0`. Object Inspector can edit Picture source, fit, proportional sugar, center, opacity and accessible description. The inherited PictureBox display contract keeps default contain/centered/opaque native rendering and fail-closes other fit/center/opacity values. Native WebP/SVG remain deferred.
+
+Shape has Studio, Standalone Web and current native Ready support. PaintBox Stage 1 now has Studio, Standalone Web and current native Ready support for `clear`, `line`, `rectangle`, `ellipse` and `text` through Native GUI IR 1.6 / payload v16 / runtime v1.7. Native PaintBox expressions intentionally use a smaller deterministic subset than general Patch: literals, `count` inside repeat and simple number/text/boolean state names. Unknown/non-scalar state references fail closed. `draw image` remains deferred.
+
+ImageList provides ordered named project-resource entries. Buttons bind one item with `image list.item` on Studio/Web; current Native GUI IR 1.6 fail-closes ImageList and Button images. Forms may declare source-backed `icon` under `window-icon/1.0`; Studio/Web package Form chrome and the first Form icon as the application favicon, while current Native GUI IR 1.6 fail-closes Form icons.
 
 ## Selection, Properties and keyboard boundary
 
@@ -116,6 +120,8 @@ Picture has Studio, Standalone Web and current bounded native PNG/JPEG support u
 The Properties workspace is resizable/collapsible, exposes source-backed dirty/current status, has structural summaries and filters, and maintains keyboard focus after supported structural rewrites. Filters and focus state are transient IDE state only.
 
 The current structural/nested keyboard refinement is documented in `docs/STUDIO_KEYBOARD_ACCESSIBILITY.md`: Tree/Tabs roving selection, structural shortcuts, `Ctrl/Cmd+Enter` commits, Escape close/focus restoration and explicit focus-visible treatment are implemented. Manual screen-reader/assistive-technology verification remains a separate validation activity rather than an unimplemented keyboard feature.
+
+Studio source edits and Designer source rewrites participate in a bounded source-backed Undo/Redo history. Trusted typing coalesces; Designer rewrites remain atomic. Project/resource replacement boundaries reset history so stale source is never replayed into a different project. Resource/non-source transactions are still a later extension of the same model.
 
 ## Source and semantic boundary
 
@@ -127,17 +133,21 @@ Application persistence still occurs only through ordinary Patch semantic `chang
 
 Slider `changed` exposes a bounded finite numeric transient `value`. List-backed ListBox exposes a transient text-list selection, Table exposes the selected row as a transient text list, and TreeView exposes the selected root-to-node display path as a transient text list. None of those renderer/toolkit values implicitly persist application state.
 
+PaintBox `paint` is a pure drawing event. It cannot commit persistent `change`; state-dependent native drawing is refreshed after relevant UI, Slider, Timer/Picture and resize activity on the current runtime.
+
 ## Native delivery boundary
 
-The current desktop consumer contract is Native GUI IR **1.5**, sealed payload **v15** and runtime **v1.6**. It preserves Table, text-list/ListBox, Menu, TreeView, Slider and Chrome Stage 1 semantics and adds Shape Stage 1 rectangle, rounded, ellipse and line transport.
+The current desktop consumer contract is Native GUI IR **1.6**, sealed payload **v16** and runtime **v1.7**. It preserves Table, text-list/ListBox, Menu, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 semantics and adds PaintBox Stage 1 clear/line/rectangle/ellipse/text transport.
 
-The prior Chrome compatibility line is Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
+The prior Shape compatibility line is Native GUI IR **1.5** / payload **v15** / runtime **v1.6**. The prior Chrome compatibility line is Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The prior Slider compatibility line is Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains the frozen TreeView compatibility line. Unsupported selected-contract features fail closed instead of being silently dropped.
 
 The current Ready/offline Windows, macOS and Linux path uses the same stable `native-current-contract.js` facade. FreeBSD remains Console-only.
 
 ## Public/offline delivery
 
 The current authoring modules are part of the deterministic content-addressed public Patch Studio build and the offline PWA cache. The generated site validates both the transitive relative ES-module import closure and the local HTML JS/CSS/manifest/icon asset closure, so a browser dependency cannot be omitted silently. Studio-only authoring additions remain in `web/` so they do not unnecessarily trigger native-runtime build matrices.
+
+Large-project work now includes a deterministic 10-Form / 200-control benchmark, parsed-model reuse, observer reconciliation batching and active-Form full-cost rendering. Further virtualization and profiling remain ongoing rather than being represented as a completed performance guarantee.
 
 ## What “complete” means here
 
@@ -148,10 +158,10 @@ Remaining product work includes:
 - new/richer data controls beyond the current Table, ListBox and TreeView vocabulary;
 - Memo/TextArea, ProgressBar, Number/SpinEdit, date/time controls and richer shell controls from the RAD master backlog;
 - true independent TabOrder and richer container/layout semantics;
-- Undo/Redo transactions, large-project performance work and professional code-editor/debugger features;
+- Undo/Redo coverage for resource/non-source transactions, further large-project virtualization and professional code-editor/debugger features;
 - PaintBox `draw image`, native ImageList/Button-image transport and native application/window icon packaging;
 - application branding and richer packaging/signing workflows;
 - manual assistive-technology verification with Narrator, VoiceOver, Orca or comparable tools, which makes no WCAG conformance claim;
 - distribution work such as installer/uninstaller formats and credentialed signing evidence.
 
-Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.5**, sealed payload **v15**, token-free Ready/offline runtime **v1.6**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.
+Current contracts remain Patch **0.2.0-beta.36**, Studio project bundle **v4**, Component Registry **0.8**, Change IR **0.10**, Native GUI IR **1.6**, sealed payload **v16**, token-free Ready/offline runtime **v1.7**, with Native GUI IR **1.2** / payload **v12** / runtime **v1.3** preserved as frozen TreeView compatibility and the formal runtime-correspondence milestone remaining **beta.32**.
