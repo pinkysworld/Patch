@@ -48,7 +48,7 @@ patch link app.patch --out App</pre>
   <section class="page-section">
     <h2>Current native boundary</h2>
     <p><strong>The current desktop line is Native GUI IR 1.6 / payload v16 / runtime v1.7.</strong> It adds PaintBox Stage 1 clear/line/rectangle/ellipse/text to the previous Shape-capable line. Native GUI IR 1.5 / payload v15 / runtime v1.6 remains the previous Shape line, Native GUI IR 1.4 / payload v14 / runtime v1.5 the previous Chrome line, and Native GUI IR 1.3 / payload v13 / runtime v1.4 the Slider-capable compatibility boundary. Versioned contracts are not silently reinterpreted.</p>
-    <p><strong>PictureBox note:</strong> current desktop Picture decoding supports bounded project-resource and data-URI PNG/JPEG images through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under <code>native-picture-formats/1.0</code>. Native WebP/SVG remain deferred and fail closed. Portable non-default fit/aspect/center/opacity behavior on desktop remains an explicit follow-up and fail-closes where unsupported.</p>
+    <p><strong>PictureBox note:</strong> current desktop Picture decoding supports bounded project-resource and data-URI PNG/JPEG images through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under <code>native-picture-formats/1.0</code>. This is not a claim of complete <strong>portable image-source rendering</strong> across every project image type or display property. Native WebP/SVG remain deferred and fail closed. Portable non-default fit/aspect/center/opacity behavior on desktop remains an explicit follow-up and fail-closes where unsupported.</p>
   </section>
 
   <section class="page-section">
