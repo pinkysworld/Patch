@@ -40,12 +40,12 @@ for (const page of ['index.html','language.html','docs.html','downloads.html','h
 const index = read('_site/index.html');
 requireAll('Studio beta36 shell', index, [
   'Patch Studio','0.2 beta.36+','id="code"','id="run"','id="build"','id="designer"','id="app"',
-  'multi-file project bundle v3','source-backed Designer','Native GUI IR 1.4','payload v14','runtime v1.5',
+  'multi-file project bundle v4','source-backed Designer','Native GUI IR 1.4','payload v14','runtime v1.5',
   'IR 1.4 / v1.5','id="editorTabs"','id="editorParseStatus"','id="openCommandPalette"',
   'viewBox="0 0 32 32"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'
 ]);
 rejectAll('Studio beta36 current shell', index, [
-  'Ready IR 1.3 / v1.4','current runtime v1.4 templates','shape-rendering="crispEdges"','M3 2H18V12H8V20H3ZM8 6H13V8H8Z','./paper.html'
+  'multi-file project bundle v3','Ready IR 1.3 / v1.4','current runtime v1.4 templates','shape-rendering="crispEdges"','M3 2H18V12H8V20H3ZM8 6H13V8H8Z','./paper.html'
 ]);
 
 const current = read('_site/src/native-current-contract.js');
@@ -129,4 +129,4 @@ rejectAll('Studio command palette paper privacy', palette, ["command('paper'",'.
 const bootstrap = read('_site/studio-bootstrap.js');
 requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed for beta.36 / Native GUI IR 1.4 / payload v14 / runtime v1.5 / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
+console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.4 / payload v14 / runtime v1.5 / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
