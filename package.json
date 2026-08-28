@@ -18,6 +18,7 @@
     "check": "node scripts/check-examples.js",
     "check:syntax": "node scripts/check-js-syntax.js",
     "check:project": "node scripts/check-project-surface.js && node scripts/check-project-invariants.js && node scripts/check-checkout-extension-surface.js && node scripts/generate-component-matrix.js --check",
+    "benchmark:studio": "node scripts/benchmark-studio-large-project.js",
     "fuzz:compiler": "node scripts/fuzz-compiler.js --seed 20260812 --cases 500",
     "test:differential": "node scripts/differential-backends.js",
     "formal:example": "node src/cli.js formal examples/range-soundness.patch",
