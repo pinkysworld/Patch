@@ -9,9 +9,10 @@ This roadmap separates repository-controlled product work from credential/manual
 - Patch package: **0.2.0-beta.36**
 - public product surface: **0.2 beta.36+**
 - Change IR: **0.10**
-- Native GUI IR: **1.6**
-- current sealed native GUI payload: **v16**
-- current token-free Ready/offline runtime: **v1.7** on Windows, macOS and Linux
+- Native GUI IR: **1.7**
+- current sealed native GUI payload: **v17**
+- current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
+- previous PaintBox Stage 1 line: Native GUI IR **1.6** / payload **v16** / runtime **v1.7**
 - previous Shape line: Native GUI IR **1.5** / payload **v15** / runtime **v1.6**
 - previous Chrome line: Native GUI IR **1.4** / payload **v14** / runtime **v1.5**
 - frozen TreeView compatibility line: Native GUI IR **1.2** / payload **v12** / runtime **v1.3**
@@ -24,11 +25,11 @@ Product, Studio and native work after beta.32 does not widen the formal assuranc
 
 ### Preserved native compatibility evidence
 
-Older versioned native contracts remain reproducibility/compatibility evidence even when they are no longer product defaults. In particular, the **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the frozen Table compatibility origin. Its platform evidence is preserved separately from the current Native GUI IR 1.6 / payload v16 / runtime v1.7 product line. Retaining this history is intentional and does not make payload v9 or runtime v1.0 current targets.
+Older versioned native contracts remain reproducibility/compatibility evidence even when they are no longer product defaults. In particular, the **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the frozen Table compatibility origin. Its platform evidence is preserved separately from the current Native GUI IR 1.7 / payload v17 / runtime v1.8 product line. Retaining this history is intentional and does not make payload v9 or runtime v1.0 current targets.
 
 ## Current product milestone: RAD R1
 
-The beta.35+ multi-file/Designer foundation and the beta.36 native 1.6/v16/v1.7 integration are complete. Current repository-controlled work is the final resource-consumer parity portion of RAD R1 from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+The beta.35+ multi-file/Designer foundation and the beta.36 native 1.7/v17/v1.8 integration are complete through PaintBox `draw image`. Current repository-controlled work is the final native resource-consumer parity portion of RAD R1 from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
 
 ### Completed foundation
 
@@ -47,14 +48,15 @@ The beta.35+ multi-file/Designer foundation and the beta.36 native 1.6/v16/v1.7 
 - [x] Panel Stage 1, StatusBar and nonvisual Timer authoring
 - [x] Shape Stage 1 source syntax, Designer authoring, Standalone Web rendering and native Win32/AppKit/GTK lowering
 - [x] PaintBox Stage 1 source syntax, pure `paint` event/drawing commands, Designer/Web rendering and native Win32/AppKit/GTK lowering for clear/line/rectangle/ellipse/text
+- [x] PaintBox `draw image` with quoted `patch-resource:` / `data:` locators, Studio/Web rendering and native PNG/JPEG transport on Win32/AppKit/GTK through IR 1.7 / payload v17 / runtime v1.8
 - [x] ImageList Stage 1 source syntax, compiler transport, registry metadata, nonvisual tray and Resource Manager-backed Object Inspector
-- [x] ImageList Web metadata for Button `image list.item`; current Native GUI IR 1.6 still fails closed for ImageList and Button images
-- [x] application/window icon source declaration and Studio/Web favicon/chrome packaging under `window-icon/1.0`; current Native GUI IR 1.6 remains fail-closed
+- [x] ImageList Web metadata for Button `image list.item`; current Native GUI IR 1.7 still fails closed for ImageList and Button images
+- [x] application/window icon source declaration and Studio/Web favicon/chrome packaging under `window-icon/1.0`; current Native GUI IR 1.7 remains fail-closed
 - [x] generated component capability matrix from canonical registry metadata
 - [x] content-addressed public site, PWA/offline closure validation and real Chrome startup/responsiveness gate
-- [x] token-free Ready/offline Native GUI IR 1.6 / payload v16 / runtime v1.7 Windows/macOS/Linux paths
+- [x] token-free Ready/offline Native GUI IR 1.7 / payload v17 / runtime v1.8 Windows/macOS/Linux paths
 - [x] Command Palette, project-file/symbol quick-open, editor tabs, Workspace Layout v2 and startup diagnostics v2
-- [x] Workshop Desk acceptance showcase covering every integrated cross-platform Ready visual/control family while native-fail-closed resource consumers remain separate demonstrations
+- [x] Workshop Desk acceptance showcase covering every integrated cross-platform Ready visual/control family, including PaintBox `draw image`, while native-fail-closed ImageList/Button-image and Window-icon consumers remain separate demonstrations
 
 ### RAD R1 remaining work
 
@@ -62,12 +64,12 @@ These are real remaining gaps and must not be advertised as complete until their
 
 - [x] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/Web; current native Ready keeps default contain/centered/opaque PictureBox and fail-closes unsupported display combinations
 - [x] decide and version native SVG/WebP policy rather than broadening format support implicitly (`native-picture-formats/1.0`: Ready PNG/JPEG, deferred WebP/SVG, no IR bump)
-- [x] first ImageList consumer: Button `image list.item` on Studio/Web; current Native GUI IR 1.6 fail-closes ImageList and Button images
+- [x] first ImageList consumer: Button `image list.item` on Studio/Web; current Native GUI IR 1.7 fail-closes ImageList and Button images
 - [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
 - [x] application/window icon resource packaging (`window-icon/1.0`: source-backed Form icon and Web favicon; current native Ready fail-closes)
-- [x] Shape native lowering/runtime parity for Win32, AppKit and GTK (IR 1.5 / payload v15 / runtime v1.6, preserved by current IR 1.6)
+- [x] Shape native lowering/runtime parity for Win32, AppKit and GTK (IR 1.5 / payload v15 / runtime v1.6, preserved by current IR 1.7)
 - [x] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK (IR 1.6 / payload v16 / runtime v1.7)
-- [ ] PaintBox `draw image` resource consumption after the image/drawing contract is versioned
+- [x] PaintBox `draw image` resource consumption with native PNG/JPEG parity (IR 1.7 / payload v17 / runtime v1.8)
 - [ ] ImageList native runtime contract only after desktop backends transport Button/ToolBar images; no empty standalone native claim
 - [ ] native application/window icon packaging for Win32 `.ico`, AppKit and Linux desktop after a versioned native contract
 
@@ -116,8 +118,8 @@ See `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the complete long-term list. Near-te
 - [x] Ready Windows/macOS/Linux Console packages
 - [x] Ready Windows/macOS/Linux Window packages for the current native GUI surface
 - [x] direct-native Win32/AppKit/GTK backends
-- [x] token-free runtime v1.7 release workflows for Windows/macOS/Linux
-- [x] ordinary offline `patch link` defaults to payload v16/runtime v1.7
+- [x] token-free runtime v1.8 release workflows for Windows/macOS/Linux
+- [x] ordinary offline `patch link` defaults to payload v17/runtime v1.8
 - [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
@@ -190,8 +192,8 @@ Evidence still requiring new data or external participation:
 
 ## Milestone history
 
-- **beta.25–27:** finite call composition, exact binding and quantitative range evidence
-- **beta.28–29:** structured and guard-aware exact callee traces
+- **beta.25-27:** finite call composition, exact binding and quantitative range evidence
+- **beta.28-29:** structured and guard-aware exact callee traces
 - **beta.30:** finite transitive exact call-tree traces
 - **beta.31:** first call-aware direct-Wasm correspondence
 - **beta.32:** independently reconstructed invocation frames and repeated-call correspondence
@@ -199,5 +201,5 @@ Evidence still requiring new data or external participation:
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
-- **beta.36:** project bundle v4 resources, Native GUI IR 1.6 / payload v16 / runtime v1.7, expanded RAD authoring and graphics/resource R1 work
-- **current:** close the three remaining resource-consumer R1 gaps, then move into full Form Designer parity
+- **beta.36:** project bundle v4 resources, native progression through Native GUI IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
+- **current:** close the two remaining native resource-consumer R1 gaps, then move into full Form Designer parity
