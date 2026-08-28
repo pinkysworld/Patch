@@ -14,6 +14,7 @@ const PAINTBOX = new Set(PATCH_NATIVE_PAINTBOX_CONTROLS);
 const IDENT = /^[A-Za-z_]\w*$/;
 const NUMBER = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;
 const QUOTED = /^"(?:[^"\\]|\\.)*"$/;
+const PAINT_SCALAR_TYPES = new Set(['number', 'text', 'boolean']);
 
 /** Native GUI IR 1.6 adds source-backed PaintBox Stage 1 drawing. */
 export function buildNativeGuiIRV16(compiled) {
@@ -32,6 +33,7 @@ export function validateNativeGuiIRV16(ir) {
   if (!ir || ir.format !== PATCH_NATIVE_GUI_IR_FORMAT || ir.version !== PATCH_NATIVE_GUI_IR_V16_VERSION) {
     throw new NativeGuiError('Native GUI IR 1.6 format/version is unsupported.');
   }
+  const stateTypes = collectPaintStateTypes(ir.states);
   const paintboxIds = new Set();
   walkControls(ir, control => {
     if (!PAINTBOX.has(control.type)) return;
@@ -45,7 +47,7 @@ export function validateNativeGuiIRV16(ir) {
     if (control.binding !== null) {
       throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${control.id}' does not bind persistent state.`);
     }
-    control.paintProgram = validatePaintProgram(control.paintProgram, control.id);
+    control.paintProgram = validatePaintProgram(control.paintProgram, control.id, stateTypes, 0);
     const width = Number(control.layout?.width);
     const height = Number(control.layout?.height);
     if (!Number.isFinite(width) || width < 16 || !Number.isFinite(height) || height < 16) {
@@ -128,7 +130,6 @@ function rewritePaintBoxesForV15Compatibility(ast, originalAst) {
   const paintboxes = [];
   const usedNames = collectUsedNames(originalAst);
   const handlers = collectPaintHandlers(originalAst);
-  const byId = new Map();
   let sequence = 0;
 
   const allocCompat = id => {
@@ -165,7 +166,6 @@ function rewritePaintBoxesForV15Compatibility(ast, originalAst) {
           line: node.line
         };
         paintboxes.push(metadata);
-        byId.set(metadata.id, metadata);
         node.control = 'text';
         node.id = metadata.compatId;
         node.textExpr = null;
@@ -267,40 +267,40 @@ function lowerPaintProgram(nodes, id) {
   return Object.freeze(out);
 }
 
-function validatePaintProgram(nodes, id) {
+function validatePaintProgram(nodes, id, stateTypes, repeatDepth = 0) {
   if (!Array.isArray(nodes)) {
     throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${id}' needs a paint program list.`);
   }
   return Object.freeze(nodes.map(node => {
     if (node?.kind === 'draw') {
       const command = normalizePatchPaintCommand(node.command);
-      if (command.operation === 'text') classifyPaintExpression(command.textExpr, 'text', id);
+      if (command.operation === 'text') classifyPaintExpression(command.textExpr, 'text', id, stateTypes, repeatDepth);
       return Object.freeze({ kind: 'draw', command });
     }
     if (node?.kind === 'if') {
       const expr = String(node.expr ?? '').trim();
-      classifyPaintExpression(expr, 'if', id);
+      classifyPaintExpression(expr, 'if', id, stateTypes, repeatDepth);
       return Object.freeze({
         kind: 'if',
         expr,
-        thenBody: validatePaintProgram(node.thenBody, id),
-        elseBody: validatePaintProgram(node.elseBody, id)
+        thenBody: validatePaintProgram(node.thenBody, id, stateTypes, repeatDepth),
+        elseBody: validatePaintProgram(node.elseBody, id, stateTypes, repeatDepth)
       });
     }
     if (node?.kind === 'repeat') {
       const expr = String(node.expr ?? '').trim();
-      classifyPaintExpression(expr, 'repeat', id);
+      classifyPaintExpression(expr, 'repeat', id, stateTypes, repeatDepth);
       return Object.freeze({
         kind: 'repeat',
         expr,
-        body: validatePaintProgram(node.body, id)
+        body: validatePaintProgram(node.body, id, stateTypes, repeatDepth + 1)
       });
     }
     throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${id}' contains an unsupported paint node.`);
   }));
 }
 
-function classifyPaintExpression(expr, role, id) {
+function classifyPaintExpression(expr, role, id, stateTypes = null, repeatDepth = 0) {
   const text = String(expr ?? '').trim();
   if (!text) {
     throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${id}' ${role} expression is empty.`);
@@ -326,10 +326,36 @@ function classifyPaintExpression(expr, role, id) {
     }
     return 'string';
   }
-  if (IDENT.test(text)) return 'ident';
+  if (IDENT.test(text)) {
+    if (text === 'count' && repeatDepth > 0) return 'count';
+    if (!stateTypes) return 'ident';
+    if (stateTypes.has(text)) {
+      const stateType = stateTypes.get(text);
+      if (!PAINT_SCALAR_TYPES.has(stateType)) {
+        throw new NativeGuiError(
+          `Native GUI IR 1.6 PaintBox '${id}' ${role} state '${text}' has unsupported type '${stateType}'; native PaintBox expressions support number, text and boolean state only.`
+        );
+      }
+      return `state-${stateType}`;
+    }
+    if (role === 'text') return 'loose-text';
+    throw new NativeGuiError(`Native GUI IR 1.6 PaintBox '${id}' ${role} expression '${text}' refers to unknown state '${text}'.`);
+  }
   throw new NativeGuiError(
     `Native GUI IR 1.6 PaintBox '${id}' ${role} expression '${text}' must be a literal or simple state name.`
   );
+}
+
+function collectPaintStateTypes(states) {
+  const out = new Map();
+  for (const state of states ?? []) {
+    if (!state?.name || typeof state.type !== 'string') continue;
+    if (out.has(state.name)) {
+      throw new NativeGuiError(`Native GUI IR 1.6 state '${state.name}' is duplicated.`);
+    }
+    out.set(state.name, state.type);
+  }
+  return out;
 }
 
 function collectUsedNames(ast) {
