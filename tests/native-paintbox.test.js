@@ -120,6 +120,56 @@ when canvas paint:
   );
 });
 
+test('native PaintBox state expressions reject unresolved and non-scalar state instead of silently skipping drawing', () => {
+  assert.throws(
+    () => build(`window "PaintBox" as main:
+  paintbox as canvas at 24, 24 size 320, 200
+when canvas paint:
+  if missing:
+    draw clear #ffffff
+`),
+    /unknown state 'missing'/
+  );
+  assert.throws(
+    () => build(`window "PaintBox" as main:
+  paintbox as canvas at 24, 24 size 320, 200
+when canvas paint:
+  repeat missing:
+    draw clear #ffffff
+`),
+    /unknown state 'missing'/
+  );
+  assert.throws(
+    () => build(`create list labels = ["A", "B"]
+window "PaintBox" as main:
+  paintbox as canvas at 24, 24 size 320, 200
+when canvas paint:
+  if labels:
+    draw clear #ffffff
+`),
+    /unsupported type 'list'.*number, text and boolean state only/
+  );
+});
+
+test('native PaintBox runtime refresh hooks cover ordinary, Slider and Timer state changes', () => {
+  const win32 = readFileSync('native-runtime/win32-sealed-gui-v17.cpp', 'utf8');
+  const appkit = readFileSync('native-runtime/appkit-sealed-gui-v17.mm', 'utf8');
+  const gtk = readFileSync('native-runtime/gtk-sealed-gui-v17.cpp', 'utf8');
+  const shared = readFileSync('native-runtime/sealed-paintbox-v17.hpp', 'utf8');
+
+  assert.match(win32, /WM_TIMER[^\n]*PatchRefreshPaintBoxesV17|msg == WM_TIMER[\s\S]*PatchRefreshPaintBoxesV17/);
+  assert.match(appkit, /PatchEventTargetV17/);
+  assert.match(appkit, /PatchSliderTargetV17/);
+  assert.match(appkit, /PatchChromeTargetV17/);
+  assert.match(appkit, /PatchUpgradePaintTargetsV17/);
+  assert.match(gtk, /PatchRewireEventsV17/);
+  assert.match(gtk, /PatchOnSliderChangedV17/);
+  assert.match(gtk, /PatchOnTimerV17/);
+  assert.match(gtk, /PatchRefreshExtendedV17/);
+  assert.match(shared, /state->type == ST_TEXT[\s\S]*!state->text\.empty\(\)/);
+  assert.match(shared, /PatchPaintSimpleIdentV17/);
+});
+
 test('Panel Stage 1 still cannot contain PaintBox', () => {
   assert.throws(
     () => parse(`window "Panel PaintBox" as main:
