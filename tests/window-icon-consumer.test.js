@@ -95,10 +95,10 @@ test('Standalone Web fails closed when a Window icon names a missing project res
   );
 });
 
-test('native GUI 1.4 fail-closes Window icons instead of dropping them', () => {
+test('current native GUI fail-closes Window icons instead of dropping them', () => {
   const compiled = compile(SOURCE, { name: 'Counter', kind: 'window' });
   assert.throws(
     () => buildCurrentNativeGuiIR(compiled),
-    error => error instanceof NativeGuiError && /native GUI 1\.4 Form 'main' does not transport icon/.test(error.message)
+    error => error instanceof NativeGuiError && /native GUI Form 'main' does not transport icon/.test(error.message)
   );
 });

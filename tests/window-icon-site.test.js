@@ -22,5 +22,6 @@ test('public Studio and offline PWA package Window icon modules', () => {
   assert.match(docs, /docs\/WINDOW_ICONS\.md/);
   assert.match(docs, /window-icon\/1\.0/);
   assert.match(policy, /PATCH_WINDOW_ICON_POLICY_ID = 'window-icon\/1\.0'/);
-  assert.match(policy, /This module is not an IR bump/);
+  assert.match(policy, /module remains independent from the current native IR version/i);
+  assert.match(policy, /currentReady: Object\.freeze\(\{ nativeGuiIR: '1\.5', payload: 15, runtime: '1\.6' \}\)/);
 });

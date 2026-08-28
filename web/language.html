@@ -16,7 +16,6 @@
   <a href="./index.html">Studio</a>
   <a href="./language.html" aria-current="page">Language</a>
   <a href="./docs.html">Documentation</a>
-  <a href="./paper.html">Paper</a>
   <a href="./downloads.html">Downloads</a>
   <a href="./help.html">Help</a>
 </nav>
@@ -59,7 +58,7 @@ show player.name</pre>
     <p>Thing equality is structural: two Things compare equal when they have the same own field names and values, independent of declaration order. JSON serialization is not the equality oracle. Direct Wasm and portable C99 stay on the numeric Console subset and fail closed on Things. Thing records are product runtime, not part of the beta.32 Lean runtime-correspondence claim.</p>
   </section>
 
-  <section class="page-section" data-slider-language-support="native-v14">
+  <section class="page-section" data-slider-language-support="native-v16">
     <h2>Slider Stage 1 uses transient numbers</h2>
     <p>A Slider declares its numeric range directly in Patch source. Its <code>changed</code> event receives a finite numeric <code>value</code>. Moving the toolkit control does not itself mutate persistent Patch state.</p>
     <pre class="page-code">create number volume = 50
@@ -113,7 +112,7 @@ when files changed:
 
   <section class="page-section">
     <h2>Graphics stay source-backed</h2>
-    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support on the v1.5 desktop line under <code>native-picture-formats/1.0</code> plus source-backed Web display properties, Shape has Studio, Standalone Web and current native Ready support; PaintBox currently has Studio plus Standalone Web support, and Buttons may bind <code>image list.item</code> on Web while native GUI IR 1.4 fail-closes ImageList and Button images. Forms may declare <code>icon</code> under <code>window-icon/1.0</code>; Studio/Web package Form chrome and the first Form icon as the application favicon, while native GUI IR 1.4 fail-closes Form icons.</p>
+    <p>Picture, Shape and PaintBox declarations are ordinary Patch source. ImageList is a nonvisual source-backed collection of project-resource references. Target support remains explicit: current Picture has bounded native PNG/JPEG support on the v1.6 desktop line under <code>native-picture-formats/1.0</code> plus source-backed Web display properties; Shape has Studio, Standalone Web and current native Ready support; PaintBox currently has Studio plus Standalone Web support, with additive Native GUI IR 1.6 / payload v16 transport under development but not yet the Ready facade. Buttons may bind <code>image list.item</code> on Web while current Native GUI IR 1.5 fail-closes ImageList/Button images. Forms may declare <code>icon</code> under <code>window-icon/1.0</code>; Studio/Web package Form chrome and the first Form icon as the application favicon, while current Native GUI IR 1.5 fail-closes Form icons.</p>
     <pre class="page-code">window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
   picture as logo from "patch-resource:app.logo" fit cover description "Product logo"
   shape ellipse as badge

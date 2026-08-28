@@ -9,13 +9,16 @@ const forms = fs.readFileSync('web/form-designer-workflow.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 const siteCheck = fs.readFileSync('scripts/check-site.js', 'utf8');
 
-test('Designer coordinator batches cross-observer reconciliation before reconnecting', () => {
+test('Designer coordinator pauses the complete observer set during reconciliation', () => {
   assert.match(restore, /installDesignerObserverCoordinator\(\)/);
   assert.match(restore, /pendingObservers = new Set\(\)/);
-  assert.match(restore, /for \(const observer of batch\) observer\.pause\(\)/);
+  assert.match(restore, /designerObservers = new Set\(\)/);
+  assert.match(restore, /designerObservers\.add\(this\)/);
+  assert.match(restore, /const paused = \[\.\.\.designerObservers\]\.filter\(observer => observer\.active\)/);
+  assert.match(restore, /for \(const observer of paused\) observer\.pause\(\)/);
   assert.match(restore, /queueMicrotask\(\(\) => \{/);
-  assert.match(restore, /for \(const observer of batch\) observer\.reconnect\(\)/);
-  assert.match(restore, /A -> B -> A mutation ping-pong/);
+  assert.match(restore, /for \(const observer of paused\) observer\.reconnect\(\)/);
+  assert.match(restore, /cross-module A -> B -> C -> A feedback chain/);
   assert.match(restore, /window\.MutationObserver = CoordinatedDesignerObserver/);
 });
 
