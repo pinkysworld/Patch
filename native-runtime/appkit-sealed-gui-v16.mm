@@ -1,9 +1,8 @@
 // Patch sealed AppKit GUI runtime v1.6.
 // Payload v15 adds Shape Stage 1 rectangle/rounded/ellipse/line over payload-v14/runtime-v1.5.
-#define PATCH_RUNTIME_V16_RESTORE_MAIN PatchRuntimeV15CompatibilityMain
+#define main PatchRuntimeV15CompatibilityMain
 #include "appkit-sealed-gui-v15.mm"
 #undef main
-#undef PATCH_RUNTIME_V16_RESTORE_MAIN
 #include "sealed-shape-v16.hpp"
 
 static std::vector<PatchShapeV16> gPatchShapesV16;
