@@ -13,12 +13,12 @@ test('runtime v1.9 wraps v1.8 and retains ImageList/PILT decoding on all hosts',
     assert.match(source, /PatchConvertPayloadV18ToV17/);
     assert.match(source, /RunPatchImageListSmokeV19/);
     assert.match(source, /sealed-imagelist-v19\.hpp/);
-    assert.match(source, /int code = 420/);
     assert.match(source, /RunPatchPaintBoxSmokeV17/);
     assert.match(source, /RunPatchPaintBoxImageSmokeV18/);
   }
-  assert.match(win32, /BM_SETIMAGE/);
-  assert.match(win32, /BM_GETIMAGE/);
+  assert.match(win32, /BS_OWNERDRAW/);
+  assert.match(win32, /WM_DRAWITEM/);
+  assert.match(win32, /PatchDrawButtonV19/);
   assert.doesNotMatch(win32, /BCM_SETIMAGELIST/);
   assert.match(gtk, /gtk_button_set_image/);
   assert.match(gtk, /gdk_pixbuf_loader_new/);
@@ -52,12 +52,15 @@ test('Win32 keeps the GDI+ source stream alive until the decoded Bitmap is finis
   assert.match(source, /original->GetWidth\(\) < 1 \|\| original->GetHeight\(\) < 1/);
 });
 
-test('Win32 v1.9 keeps Button image handles alive until runtime shutdown', () => {
+test('Win32 v1.9 keeps Button image handles alive and owner-draw preserves image plus caption', () => {
   const source = readFileSync('native-runtime/win32-sealed-gui-v19.cpp', 'utf8');
   assert.match(source, /std::vector<HBITMAP> gPatchButtonBitmapsV19/);
-  assert.match(source, /gPatchButtonBitmapsV19\.push_back\(handle\)/);
+  assert.match(source, /gPatchButtonBitmapsV19\[index\] = handle/);
+  assert.match(source, /WindowText\(control\.hwnd\)/);
+  assert.match(source, /graphics\.DrawImage/);
+  assert.match(source, /DrawTextW/);
   assert.match(source, /DeleteObject\(bitmap\)/);
-  assert.match(source, /installed != handle/);
+  assert.match(source, /BS_TYPEMASK\) != BS_OWNERDRAW/);
 });
 
 test('AppKit v1.9 preserves both PaintBox target upgrade layers', () => {
