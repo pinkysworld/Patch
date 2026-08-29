@@ -114,6 +114,7 @@ function resolveImageListSources(ir, byId, resolved) {
         listId,
         itemName,
         resourceId,
+        originalSource: source,
         source: linkedSource,
         width: Number(list.width),
         height: Number(list.height)
@@ -142,6 +143,13 @@ function resolveButtonImageSource(control, imageListItems) {
   if (String(control.imageResourceId ?? '') !== item.resourceId) {
     throw new NativePictureResourceError(
       `Native Button '${control.id ?? 'unnamed'}' image resource does not match '${listId}.${itemName}'.`,
+      'NATIVE_IMAGELIST_RESOURCE_MISMATCH'
+    );
+  }
+  const currentSource = String(control.imageSource ?? '');
+  if (currentSource !== item.originalSource && currentSource !== item.source) {
+    throw new NativePictureResourceError(
+      `Native Button '${control.id ?? 'unnamed'}' image source does not match '${listId}.${itemName}'.`,
       'NATIVE_IMAGELIST_RESOURCE_MISMATCH'
     );
   }
