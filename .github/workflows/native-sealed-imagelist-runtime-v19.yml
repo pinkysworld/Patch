@@ -1,0 +1,205 @@
+name: Patch Native Sealed ImageList Runtime v1.9
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/sealed-native-gui-v18.js'
+      - 'src/native-gui-ir-v18.js'
+      - 'src/native-imagelist-backend-adapter.js'
+      - 'src/native-picture-resources.js'
+      - 'native-runtime/sealed-imagelist-v19.hpp'
+      - 'native-runtime/sealed-paintbox-image-v18.hpp'
+      - 'native-runtime/win32-sealed-gui-v19.cpp'
+      - 'native-runtime/appkit-sealed-gui-v19.mm'
+      - 'native-runtime/gtk-sealed-gui-v19.cpp'
+      - 'examples/imagelist-window.patch'
+      - 'examples/paintbox-image-window.patch'
+      - 'tests/native-imagelist.test.js'
+      - 'tests/native-runtime-v19-sources.test.js'
+      - '.github/workflows/native-sealed-imagelist-runtime-v19.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/sealed-native-gui-v18.js'
+      - 'src/native-gui-ir-v18.js'
+      - 'src/native-imagelist-backend-adapter.js'
+      - 'src/native-picture-resources.js'
+      - 'native-runtime/sealed-imagelist-v19.hpp'
+      - 'native-runtime/sealed-paintbox-image-v18.hpp'
+      - 'native-runtime/win32-sealed-gui-v19.cpp'
+      - 'native-runtime/appkit-sealed-gui-v19.mm'
+      - 'native-runtime/gtk-sealed-gui-v19.cpp'
+      - 'examples/imagelist-window.patch'
+      - 'examples/paintbox-image-window.patch'
+      - 'tests/native-imagelist.test.js'
+      - 'tests/native-runtime-v19-sources.test.js'
+      - '.github/workflows/native-sealed-imagelist-runtime-v19.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test sealed ImageList payload v18 and runtime v1.9 regressions
+        run: node --test tests/native-runtime-v19-sources.test.js tests/native-imagelist.test.js
+
+  windows:
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build Win32 sealed ImageList runtime v1.9
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-runtime-v19 | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v19.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime-v19\patch-windows-native-gui-runtime.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content dist-runtime-v19\build-imagelist-runtime.cmd -Encoding ascii
+          & cmd.exe /d /c dist-runtime-v19\build-imagelist-runtime.cmd
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal and smoke ImageList plus PaintBox-image compatibility
+        shell: pwsh
+        run: |
+          @'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV18 } from './src/native-gui-ir-v18.js';
+          import { sealNativeGuiRuntimeV18 } from './src/sealed-native-gui-v18.js';
+          import { resolveNativePictureResources } from './src/native-picture-resources.js';
+          const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const resource = { id: 'icons.open', path: 'resources/open.png', mediaType: 'image/png', size: Buffer.from(TINY_PNG, 'base64').length, sha256: '0'.repeat(64), data: TINY_PNG };
+          const runtime = fs.readFileSync('dist-runtime-v19/patch-windows-native-gui-runtime.exe');
+          const imageListSource = fs.readFileSync('examples/imagelist-window.patch', 'utf8');
+          const imageListIr = resolveNativePictureResources(buildNativeGuiIRV18(compile(imageListSource, { name: 'SealedImageList', kind: 'window' })), [resource]).ir;
+          fs.writeFileSync('SealedImageList.exe', sealNativeGuiRuntimeV18(runtime, imageListIr, { platform: 'windows' }));
+          const paintSource = fs.readFileSync('examples/paintbox-image-window.patch', 'utf8');
+          const paintIr = buildNativeGuiIRV18(compile(paintSource, { name: 'SealedPaintImage', kind: 'window' }));
+          fs.writeFileSync('SealedPaintImage.exe', sealNativeGuiRuntimeV18(runtime, paintIr, { platform: 'windows' }));
+          '@ | Set-Content seal-v19.mjs -Encoding utf8
+          node seal-v19.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Payload v18 sealing failed.' }
+          foreach ($app in @('SealedImageList.exe', 'SealedPaintImage.exe')) {
+            $process = Start-Process -FilePath (Resolve-Path $app) -ArgumentList '--patch-smoke' -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "$app smoke failed with exit code $($process.ExitCode)." }
+          }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-windows-native-gui-runtime-v19
+          path: dist-runtime-v19/patch-windows-native-gui-runtime.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  macos:
+    needs: contract
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build universal AppKit sealed ImageList runtime v1.9
+        run: |
+          mkdir -p dist-runtime-v19
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -framework Cocoa native-runtime/appkit-sealed-gui-v19.mm -o dist-runtime-v19/patch-macos-native-gui-runtime.bin
+          chmod +x dist-runtime-v19/patch-macos-native-gui-runtime.bin
+          ARCHS="$(lipo -archs dist-runtime-v19/patch-macos-native-gui-runtime.bin)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal and smoke ImageList plus PaintBox-image compatibility
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV18 } from './src/native-gui-ir-v18.js';
+          import { sealNativeGuiRuntimeV18 } from './src/sealed-native-gui-v18.js';
+          import { resolveNativePictureResources } from './src/native-picture-resources.js';
+          const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const resource = { id: 'icons.open', path: 'resources/open.png', mediaType: 'image/png', size: Buffer.from(TINY_PNG, 'base64').length, sha256: '0'.repeat(64), data: TINY_PNG };
+          const runtime = fs.readFileSync('dist-runtime-v19/patch-macos-native-gui-runtime.bin');
+          const imageListIr = resolveNativePictureResources(buildNativeGuiIRV18(compile(fs.readFileSync('examples/imagelist-window.patch', 'utf8'), { name: 'SealedImageList', kind: 'window' })), [resource]).ir;
+          fs.writeFileSync('SealedImageList', sealNativeGuiRuntimeV18(runtime, imageListIr, { platform: 'macos' }));
+          const paintIr = buildNativeGuiIRV18(compile(fs.readFileSync('examples/paintbox-image-window.patch', 'utf8'), { name: 'SealedPaintImage', kind: 'window' }));
+          fs.writeFileSync('SealedPaintImage', sealNativeGuiRuntimeV18(runtime, paintIr, { platform: 'macos' }));
+          NODE
+          chmod +x SealedImageList SealedPaintImage
+          ./SealedImageList --patch-smoke
+          ./SealedPaintImage --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-macos-native-gui-runtime-v19
+          path: dist-runtime-v19/patch-macos-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
+
+  linux:
+    needs: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK build/runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libgtk-3-dev xvfb
+      - name: Build GTK sealed ImageList runtime v1.9
+        run: |
+          mkdir -p dist-runtime-v19
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v19.cpp $(pkg-config --cflags --libs gtk+-3.0) -o dist-runtime-v19/patch-linux-native-gui-runtime.bin
+          chmod +x dist-runtime-v19/patch-linux-native-gui-runtime.bin
+      - name: Seal and smoke ImageList plus PaintBox-image compatibility
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV18 } from './src/native-gui-ir-v18.js';
+          import { sealNativeGuiRuntimeV18 } from './src/sealed-native-gui-v18.js';
+          import { resolveNativePictureResources } from './src/native-picture-resources.js';
+          const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const resource = { id: 'icons.open', path: 'resources/open.png', mediaType: 'image/png', size: Buffer.from(TINY_PNG, 'base64').length, sha256: '0'.repeat(64), data: TINY_PNG };
+          const runtime = fs.readFileSync('dist-runtime-v19/patch-linux-native-gui-runtime.bin');
+          const imageListIr = resolveNativePictureResources(buildNativeGuiIRV18(compile(fs.readFileSync('examples/imagelist-window.patch', 'utf8'), { name: 'SealedImageList', kind: 'window' })), [resource]).ir;
+          fs.writeFileSync('SealedImageList', sealNativeGuiRuntimeV18(runtime, imageListIr, { platform: 'linux' }));
+          const paintIr = buildNativeGuiIRV18(compile(fs.readFileSync('examples/paintbox-image-window.patch', 'utf8'), { name: 'SealedPaintImage', kind: 'window' }));
+          fs.writeFileSync('SealedPaintImage', sealNativeGuiRuntimeV18(runtime, paintIr, { platform: 'linux' }));
+          NODE
+          chmod +x SealedImageList SealedPaintImage
+          xvfb-run -a ./SealedImageList --patch-smoke
+          xvfb-run -a ./SealedPaintImage --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-linux-native-gui-runtime-v19
+          path: dist-runtime-v19/patch-linux-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 30
