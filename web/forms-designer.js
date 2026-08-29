@@ -7,6 +7,7 @@ import {
   updateDesignerWindow
 } from '../src/designer.js';
 import { formControlDefaultSize } from '../src/form-layout.js';
+import { getStudioDesignerControls, getStudioDesignerWindows } from './studio-design-snapshots.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -91,7 +92,7 @@ function installFormTools() {
 
 function applyFormProperties() {
   try {
-    const windows = listDesignerWindows(code.value);
+    const windows = getStudioDesignerWindows(code.value);
     if (!windows.length) return;
     activeForm = Math.min(activeForm, windows.length - 1);
     const changes = {
@@ -199,7 +200,7 @@ function installDragAndResize() {
 function beginPointerEdit(event, element, mode) {
   const selector = selectorFromElement(element);
   if (!selector) return;
-  const controls = listDesignerControls(code.value);
+  const controls = getStudioDesignerControls(code.value);
   const control = controls.find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
   if (!control || !isVisualDesignerControl(control)) return;
   const startLayout = effectiveLayout(control);
@@ -294,7 +295,7 @@ function scheduleApply() {
 
 function syncFormTools() {
   if (!formTools) return;
-  const windows = listDesignerWindows(code.value);
+  const windows = getStudioDesignerWindows(code.value);
   if (!windows.length) {
     formTools.select.innerHTML = '<option value="0">No forms</option>';
     for (const input of [formTools.id, formTools.title, formTools.icon, formTools.width, formTools.height]) input.value = '';
@@ -338,8 +339,8 @@ function requestActiveFormMaterialization() {
 
 function applyLayouts(container, designer) {
   if (!container) return;
-  const windows = listDesignerWindows(code.value);
-  const controls = listDesignerControls(code.value);
+  const windows = getStudioDesignerWindows(code.value);
+  const controls = getStudioDesignerControls(code.value);
   const shells = [...container.querySelectorAll('.patch-window')];
   let selectedForm = null;
 
@@ -439,7 +440,7 @@ function syncGeometryInspector() {
   if (geometrySection) geometrySection.hidden = false;
   const selector = selectorFromElement(selected);
   if (!selector) return;
-  const control = listDesignerControls(code.value).find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
+  const control = getStudioDesignerControls(code.value).find(item => item.windowIndex === selector.windowIndex && item.controlIndex === selector.controlIndex);
   if (!control || !isVisualDesignerControl(control)) return;
   const layout = effectiveLayout(control, control.controlIndex);
   fields.x.value = String(layout.x);

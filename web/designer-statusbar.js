@@ -1,6 +1,6 @@
 import './designer-paintbox.js';
-import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
 import { listDesignerControls, updateDesignerControl } from '../src/designer.js';
+import { getStudioDesignerControls, getStudioDesignSnapshot } from './studio-design-snapshots.js';
 import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
@@ -19,7 +19,6 @@ let queued = false;
 let cachedSource = null;
 let cachedControls = [];
 let cachedUi = [];
-const statusBarDesignCache = createStudioDesignSnapshotCache();
 
 if (doc) queueMicrotask(install);
 
@@ -74,12 +73,12 @@ function refreshSnapshot() {
   if (source === cachedSource) return;
   cachedSource = source;
   try {
-    cachedControls = listDesignerControls(source);
+    cachedControls = getStudioDesignerControls(source);
     if (!cachedControls.some(control => control.type === 'statusbar')) {
       cachedUi = [];
       return;
     }
-    cachedUi = statusBarDesignCache.get(source).ui ?? [];
+    cachedUi = getStudioDesignSnapshot(source).ui ?? [];
   } catch {
     cachedControls = [];
     cachedUi = [];
