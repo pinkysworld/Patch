@@ -104,8 +104,8 @@ static int PatchInstallButtonImagesV19() {
 
     // A classic Win32 push Button does not reliably retain BM_SETIMAGE unless
     // its image style is changed, which would hide the source-backed caption.
-    // Owner draw preserves both caption and image without a ComCtl32-v6-only
-    // BCM_SETIMAGELIST dependency.
+    // Owner draw preserves both caption and image without a version-specific
+    // common-controls dependency.
     const LONG_PTR style = GetWindowLongPtrW(c.hwnd, GWL_STYLE);
     SetLastError(0);
     const LONG_PTR previous = SetWindowLongPtrW(c.hwnd, GWL_STYLE, (style & ~((LONG_PTR)BS_TYPEMASK)) | BS_OWNERDRAW);
@@ -143,11 +143,13 @@ static bool PatchDrawButtonV19(DRAWITEMSTRUCT* item) {
   if (gGuiFont) oldFont = (HFONT)SelectObject(item->hDC, gGuiFont);
   RECT measured{0, 0, 0, 0};
   if (!text.empty()) DrawTextW(item->hDC, text.c_str(), (int)text.size(), &measured, DT_SINGLELINE | DT_CALCRECT | DT_NOPREFIX);
-  const int textWidth = std::max(0L, measured.right - measured.left);
+  const int textWidth = std::max(0, static_cast<int>(measured.right - measured.left));
   const int gap = text.empty() ? 0 : 6;
   const int totalWidth = imageWidth + gap + textWidth;
-  int x = content.left + std::max(0, ((content.right - content.left) - totalWidth) / 2);
-  const int imageY = content.top + std::max(0, ((content.bottom - content.top) - imageHeight) / 2);
+  const int contentWidth = static_cast<int>(content.right - content.left);
+  const int contentHeight = static_cast<int>(content.bottom - content.top);
+  int x = static_cast<int>(content.left) + std::max(0, (contentWidth - totalWidth) / 2);
+  const int imageY = static_cast<int>(content.top) + std::max(0, (contentHeight - imageHeight) / 2);
 
   Bitmap image(bitmap, nullptr);
   Graphics graphics(item->hDC);
