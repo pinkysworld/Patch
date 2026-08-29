@@ -15,15 +15,18 @@ export function buildNativeGuiPlan(compiled, options = {}) {
   const forceChrome = Boolean(options.chromeV15);
   const forceShape = Boolean(options.shapeV16);
   const forcePaintBox = Boolean(options.paintboxV17);
+  const forcePaintBoxImage = Boolean(options.paintboxImageV18);
 
-  if (forcePaintBox || forceShape || forceChrome || forceSlider || features.slider || features.chrome || features.shape || features.paintbox) {
+  if (forcePaintBoxImage || forcePaintBox || forceShape || forceChrome || forceSlider || features.slider || features.chrome || features.shape || features.paintbox) {
     const gui = buildCurrentNativeGuiIR(compiled);
     return {
-      tier: features.paintbox || forcePaintBox
-        ? 'paintbox-v17'
-        : features.shape || forceShape
-          ? 'shape-v16'
-          : features.chrome || forceChrome ? 'chrome-v15' : 'slider-v14',
+      tier: features.paintboxImage || forcePaintBoxImage
+        ? 'paintbox-image-v18'
+        : features.paintbox || forcePaintBox
+          ? 'paintbox-v17'
+          : features.shape || forceShape
+            ? 'shape-v16'
+            : features.chrome || forceChrome ? 'chrome-v15' : 'slider-v14',
       gui,
       controlCount: flattenCurrentNativeGuiControls(gui).length,
       features
@@ -41,6 +44,7 @@ export function inspectNativeGuiFeatures(ast) {
     chrome: false,
     shape: false,
     paintbox: false,
+    paintboxImage: false,
     listState: false,
     listBackedListBox: false,
     menuSeparators: false,
@@ -61,6 +65,7 @@ export function inspectNativeGuiFeatures(ast) {
       if (node.kind === 'uiControl' && ['panel', 'timer', 'picture', 'statusbar'].includes(node.control)) features.chrome = true;
       if (node.kind === 'uiControl' && node.control === 'shape') features.shape = true;
       if (node.kind === 'uiControl' && node.control === 'paintbox') features.paintbox = true;
+      if (node.kind === 'drawPaint' && node.command?.operation === 'image') features.paintboxImage = true;
       if (node.kind === 'uiControl' && node.control === 'listbox' && listNames.has(node.id)) features.listBackedListBox = true;
       if (node.kind === 'menuSeparator') features.menuSeparators = true;
       if (node.kind === 'menuItem' && node.shortcutExpr) features.menuShortcuts = true;

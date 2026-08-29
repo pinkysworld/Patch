@@ -128,11 +128,13 @@ function addStandaloneWindowPictures(built, resources = []) {
   const pictures = hasPicture(ast);
   const buttonImages = hasButtonImage(ast);
   const windowIcons = collectWindowIcons(ast);
-  if (!pictures && !buttonImages && !windowIcons.length) return built;
+  const paintImages = hasPaintImage(ast);
+  if (!pictures && !buttonImages && !windowIcons.length && !paintImages) return built;
   const normalized = validateStudioResources(resources);
   if (pictures) validateStaticPictureReferences(ast, normalized);
   if (buttonImages) validateStaticButtonImageReferences(ast, normalized);
   if (windowIcons.length) validateStaticWindowIconReferences(ast, normalized);
+  if (paintImages) validateStaticPaintImageReferences(ast, normalized);
   const table = Object.fromEntries(normalized.map(resource => [resource.id, { mediaType: resource.mediaType, data: resource.data }]));
   const resourceJson = JSON.stringify(table).replace(/</g, '\\u003c');
   let html = String(built.html ?? '');
@@ -190,6 +192,11 @@ function addStandaloneWindowPictures(built, resources = []) {
         windowIconPolicy: 'window-icon/1.0',
         windowIconResourceModel: applicationIcon?.resourceId && normalized.length ? 'embedded-project-resources' : 'quoted-source',
         windowIconCount: windowIcons.length
+      } : {}),
+      ...(paintImages ? {
+        paintBoxImageStage: 1,
+        paintBoxImageResourceModel: normalized.length ? 'embedded-project-resources' : 'quoted-source',
+        paintBoxImageResourceCount: collectPaintImageResourceIds(ast).length
       } : {})
     }
   };
@@ -287,6 +294,38 @@ function validateStaticWindowIconReferences(ast, resources) {
       throw new Error(`line ${node.line ?? '?'}: Window '${node.id ?? 'unnamed'}' icon references missing project resource '${id}'.`);
     }
   }
+}
+
+function hasPaintImage(nodes) {
+  let found = false;
+  walkPictureNodes(nodes, node => {
+    if (node.kind === 'drawPaint' && node.command?.operation === 'image') found = true;
+  });
+  return found;
+}
+
+function collectPaintImageResourceIds(ast) {
+  const ids = [];
+  walkPictureNodes(ast, node => {
+    if (node.kind !== 'drawPaint' || node.command?.operation !== 'image') return;
+    const source = String(node.command?.source ?? '');
+    if (!source.startsWith(PICTURE_RESOURCE_PREFIX)) return;
+    ids.push(source.slice(PICTURE_RESOURCE_PREFIX.length));
+  });
+  return ids;
+}
+
+function validateStaticPaintImageReferences(ast, resources) {
+  const ids = new Set(resources.map(resource => resource.id));
+  walkPictureNodes(ast, node => {
+    if (node.kind !== 'drawPaint' || node.command?.operation !== 'image') return;
+    const source = String(node.command?.source ?? '');
+    if (!source.startsWith(PICTURE_RESOURCE_PREFIX)) return;
+    const id = source.slice(PICTURE_RESOURCE_PREFIX.length);
+    if (!ids.has(id)) {
+      throw new Error(`line ${node.line ?? '?'}: PaintBox draw image references missing project resource '${id}'.`);
+    }
+  });
 }
 
 function walkPictureNodes(nodes, visit) {

@@ -2,7 +2,7 @@
 
 Patch uses one source language and one compiler pipeline for Console and Window applications. Target support is versioned by language/compiler surface, Native GUI IR, AOT backend and sealed runtime rather than treating every desktop path as interchangeable.
 
-Current product baseline: **0.2.0-beta.36** · Change IR **0.10** · Native GUI IR **1.6** · sealed desktop payload **v16** / runtime **v1.7**.
+Current product baseline: **0.2.0-beta.36** · Change IR **0.10** · Native GUI IR **1.6** · sealed desktop payload **v17** / runtime **v1.8**.
 
 ## Current portable targets
 
@@ -20,7 +20,7 @@ Current product baseline: **0.2.0-beta.36** · Change IR **0.10** · Native GUI 
 | Application | Windows | macOS | Linux | FreeBSD | Browser |
 |---|---|---|---|---|---|
 | Console | sealed `.exe` | native `.app`/CLI package | sealed executable | C99 + `cc` | direct Wasm/runtime |
-| Window, token-free Ready/offline | payload v16 / runtime v1.7 | payload v16 / runtime v1.7 | payload v16 / runtime v1.7 | unsupported | Standalone Web |
+| Window, token-free Ready/offline | payload v17 / runtime v1.8 | payload v17 / runtime v1.8 | payload v17 / runtime v1.8 | unsupported | Standalone Web |
 | Window, direct AOT | current Win32 AOT | current AppKit AOT | current GTK3 AOT | unsupported | Standalone Web |
 | Portable | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / `.wasm` | `.patchapp` / C99 where applicable | `.patchapp` / `.wasm` |
 | IDE | browser/PWA | browser/PWA | browser/PWA | browser where available | browser/PWA |
@@ -47,11 +47,11 @@ Native GUI IR **1.1** added persistent text-list state and list-backed multi-sel
 
 These formats remain independently smoke-tested and are not redefined by newer runtimes.
 
-### Current Native GUI IR 1.6 / payload v16 / runtime v1.7
+### Current Native GUI IR 1.7 / payload v17 / runtime v1.8
 
 These two lines are the live native product contracts. Current Ready/offline and ordinary `patch link` consumers import `src/native-current-contract.js`. Frozen TreeView / payload-v12 consumers import `src/native-frozen-contract.js`. Older IR/payload/runtime files remain executable include-chain evidence; see `docs/NATIVE_COMPATIBILITY.md`.
 
-Native GUI IR **1.6** adds PaintBox Stage 1 clear, line, rectangle, ellipse and text drawing while preserving Shape, Slider, Chrome Stage 1, TreeView, Table, ListBox and Menu semantics. Current token-free Ready apps and ordinary offline `patch link` on Windows, macOS and Linux seal **payload v16** into **runtime v1.7**.
+Native GUI IR **1.7** adds PaintBox `draw image` while preserving PaintBox Stage 1, Shape, Slider, Chrome Stage 1, TreeView, Table, ListBox and Menu semantics. Current token-free Ready apps and ordinary offline `patch link` on Windows, macOS and Linux seal **payload v17** into **runtime v1.8**.
 
 Slider interaction exposes a finite numeric transient `value` inside the declared range. TreeView selection exposes a transient root-to-node text-list path. Table and list-backed ListBox selections remain transient list-valued events. Persistent application state changes only through an explicit semantic Patch `change`.
 
@@ -70,7 +70,7 @@ The v1.7 runtime workflow builds, seals and executes the canonical PaintBox prog
 Current Windows paths include:
 
 - Console: project-named sealed PE executable;
-- Window Ready/offline: native Win32 runtime v1.7 consuming payload v16 / Native GUI IR 1.6;
+- Window Ready/offline: native Win32 runtime v1.8 consuming payload v17 / Native GUI IR 1.7;
 - direct AOT: current Win32 AOT;
 - Table: report-mode `WC_LISTVIEWW`;
 - list-backed ListBox: `LBS_EXTENDEDSEL` with semantic text-list event values;
@@ -84,14 +84,14 @@ Current Windows paths include:
 Current macOS paths include:
 
 - Console: native package/CLI path;
-- Window Ready/offline: AppKit runtime v1.7 consuming payload v16 / Native GUI IR 1.6;
+- Window Ready/offline: AppKit runtime v1.8 consuming payload v17 / Native GUI IR 1.7;
 - direct AOT: current AppKit AOT;
 - Table: multi-column `NSTableView`;
 - multi-select ListBox: AppKit multi-selection;
 - TreeView: `NSOutlineView`;
 - Slider: `NSSlider`;
 - Apple Silicon offline compiler: standalone binary;
-- Intel offline compiler: portable kit with bundled Intel Node runtime and x86-64 AppKit runtime v1.7;
+- Intel offline compiler: portable kit with bundled Intel Node runtime and x86-64 AppKit runtime v1.8;
 - Developer ID notarization is not claimed without separate evidence.
 
 The browser-sealed Ready `.app` is unsigned because sealing changes the executable after the generic runtime template was built.
@@ -101,7 +101,7 @@ The browser-sealed Ready `.app` is unsigned because sealing changes the executab
 Current Linux paths include:
 
 - Console: native executable;
-- Window Ready/offline: GTK3 runtime v1.7 consuming payload v16 / Native GUI IR 1.6;
+- Window Ready/offline: GTK3 runtime v1.8 consuming payload v17 / Native GUI IR 1.7;
 - direct AOT: current GTK3 AOT;
 - Table: `GtkTreeView` + `GtkListStore`;
 - list-backed ListBox: GTK multi-selection;

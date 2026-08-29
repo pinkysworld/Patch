@@ -44,7 +44,7 @@ Nested Slider interaction exposes bounded finite numeric transient `value`; nest
 
 ## Current runtime support
 
-The current product line keeps Change IR at **0.10** and uses Native GUI IR **1.6**, sealed native GUI payload **v16** and native runtime **v1.7** for token-free Ready/offline Windows, macOS and Linux Window apps.
+The current product line keeps Change IR at **0.10** and uses Native GUI IR **1.7**, sealed native GUI payload **v17** and native runtime **v1.8** for token-free Ready/offline Windows, macOS and Linux Window apps.
 
 Tabs and their nested ordinary controls are implemented in:
 
@@ -56,9 +56,9 @@ Tabs and their nested ordinary controls are implemented in:
 - direct native GTK3 AOT;
 - current token-free sealed Ready apps and ordinary offline `patch link` on Windows/macOS/Linux.
 
-The current v1.6/v16/v1.7 line preserves the earlier Table, multi-select ListBox, Menu, TreeView, Slider, Chrome Stage 1 and Shape Stage 1 contracts while adding PaintBox Stage 1 transport. Existing Tabs semantics are not redefined by that addition.
+The current v1.7/v17/v1.8 line preserves the earlier Table, multi-select ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 contracts while adding PaintBox draw image transport. Existing Tabs semantics are not redefined by that addition.
 
-The frozen TreeView compatibility line remains Native GUI IR **1.2** / payload **v12** / runtime **v1.3**. The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. The previous Chrome line remains Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The previous Shape line remains Native GUI IR **1.5** / payload **v15** / runtime **v1.6**.
+The frozen TreeView compatibility line remains Native GUI IR **1.2** / payload **v12** / runtime **v1.3**. The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. The previous Chrome line remains Native GUI IR **1.4** / payload **v14** / runtime **v1.5**. The previous PaintBox Stage 1 line remains Native GUI IR **1.6** / payload **v16** / runtime **v1.7**. The previous Shape line remains Native GUI IR **1.5** / payload **v15** / runtime **v1.6**.
 
 ## Native mappings
 
@@ -85,7 +85,8 @@ Native GUI IR 1.2   hierarchical TreeView
 Native GUI IR 1.3   Slider range/step/numeric event contract
 Native GUI IR 1.4   previous Chrome Stage 1 line preserving Tabs/Tree/Slider
 Native GUI IR 1.5   previous Shape Stage 1 line preserving Tabs/Tree/Slider/Chrome
-Native GUI IR 1.6   current PaintBox Stage 1 line preserving Tabs/Tree/Slider/Chrome/Shape
+Native GUI IR 1.6   previous PaintBox Stage 1 line preserving Tabs/Tree/Slider/Chrome/Shape
+Native GUI IR 1.7   current PaintBox draw image line preserving Tabs/Tree/Slider/Chrome/Shape/PaintBox
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state line
@@ -94,7 +95,8 @@ payload v12 / runtime v1.3   frozen TreeView-capable line, Slider fail-closed
 payload v13 / runtime v1.4   previous Slider-capable line
 payload v14 / runtime v1.5   previous Chrome Ready/offline line
 payload v15 / runtime v1.6   previous Shape Ready/offline line
-payload v16 / runtime v1.7   current Ready/offline line
+payload v16 / runtime v1.7   previous PaintBox Ready/offline line
+payload v17 / runtime v1.8   current Ready/offline line
 ```
 
 Older payloads are not silently upgraded or reinterpreted when newer controls are used. Unsupported version/feature combinations fail closed.

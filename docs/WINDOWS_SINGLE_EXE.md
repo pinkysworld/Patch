@@ -50,7 +50,7 @@ when people changed:
 
 Runtime v1.4 reconstructs this as a real report-mode `WC_LISTVIEWW`. `changed` exposes the selected row as a transient list of display strings. Selection alone does not persist Patch state or create Change History.
 
-The current sealed-runtime CI compiles the v1.7 runtime, seals Window examples as payload v16, executes the resulting `.exe` with `--patch-smoke`, and publishes `native-win32-runtime-v1.7`. Table originated as payload v9 / runtime v1.0; that line remains historical evidence rather than the Ready path.
+The current sealed-runtime CI compiles the v1.8 runtime, seals Window examples as payload v17, executes the resulting `.exe` with `--patch-smoke`, and publishes `native-win32-runtime-v1.8`. Table originated as payload v9 / runtime v1.0; that line remains historical evidence rather than the Ready path.
 
 ## Native AOT EXE
 
@@ -97,19 +97,19 @@ with asset:
 patch-windows-native-gui-runtime.exe
 ```
 
-The Pages deployment waits for the current v1.7 platform releases before replacing the deployed Studio runtime set. This prevents a new browser compiler from being paired with an older payload template during release ordering.
+The Pages deployment waits for the current v1.8 platform releases before replacing the deployed Studio runtime set. This prevents a new browser compiler from being paired with an older payload template during release ordering.
 
 The runtime asset itself is not a project until Studio or `patch link` seals a project-specific payload into it.
 
 ## Offline compiler
 
-The Windows offline compiler builds/embeds the same Win32 runtime v1.7 contract. Its CI links the Table example through the ordinary CLI:
+The Windows offline compiler builds/embeds the same Win32 runtime v1.8 contract. Its CI links the Table example through the ordinary CLI:
 
 ```text
 patch link examples/table-native-v09.patch --name OfflineTable --out OfflineTable
 ```
 
-and executes `OfflineTable.exe --patch-smoke`, verifying that the produced application contains payload v16 and the native Table contract works without Studio, GitHub or a local C++ toolchain after the compiler has been downloaded.
+and executes `OfflineTable.exe --patch-smoke`, verifying that the produced application contains payload v17 and the native Table contract works without Studio, GitHub or a local C++ toolchain after the compiler has been downloaded.
 
 ## Compatibility lines
 

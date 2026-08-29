@@ -17,7 +17,7 @@ test('SPEC status is synchronized exactly to the current product and Change IR',
   const ir = compiler.match(/PATCH_IR_VERSION\s*=\s*'([^']+)'/)?.[1];
   assert.ok(ir, 'compiler must expose a Change IR version marker');
   assert.match(spec, new RegExp(`Change IR \\*\\*${ir.replace('.', '\\.')}`));
-  assert.match(spec, /Native GUI IR 1\.6 \/ sealed payload v16 \/ native runtime v1\.7/);
+  assert.match(spec, /Native GUI IR 1\.7 \/ sealed payload v17 \/ native runtime v1\.8/);
   assert.doesNotMatch(spec, /0\.2\.0-beta\.8|Change IR 0\.6|Beta 8 source\/evidence/);
 });
 

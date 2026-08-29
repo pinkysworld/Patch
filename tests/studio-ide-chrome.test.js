@@ -29,7 +29,8 @@ test('Studio empty panes use titled cards with keyboard hints', () => {
 
 test('Studio brand renders a genuinely rounded P instead of the legacy angular SVG', () => {
   const mark = html.match(/class="brand-mark"[^>]*>([\s\S]*?)<\/div>/)?.[1] || '';
-  assert.match(mark, /<svg viewBox="0 0 22 22"/);
+  assert.match(mark, /<svg viewBox="0 0 32 32"/);
+  assert.match(mark, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z/);
   assert.match(beta35, /\.brand-mark svg \{[\s\S]*?display: none;/);
   assert.match(beta35, /\.brand-mark::before,[\s\S]*\.brand-mark::after/);
   assert.match(beta35, /border-radius: 999px/);
@@ -43,7 +44,7 @@ test('Studio brand renders a genuinely rounded P instead of the legacy angular S
 
 test('Studio status bar stays visible and carries save state plus the Ready chip', () => {
   assert.match(html, /id="saveState"/);
-  assert.match(html, /class="status-chip"[^>]*>IR 1\.6 \/ v1\.7/);
+  assert.match(html, /class="status-chip"[^>]*>IR 1\.7 \/ v1\.8/);
   assert.match(html, /<strong>Semantic changes<\/strong>/);
   assert.match(style, /\.status-chip/);
   assert.match(style, /\.statusbar\s*\{[^}]*display:\s*flex/s);

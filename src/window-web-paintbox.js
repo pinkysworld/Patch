@@ -168,8 +168,28 @@ function paintBoxRuntime(descriptors) {
         ctx.fillStyle=command.color;ctx.font=String(Number(command.fontSize))+'px ui-sans-serif,system-ui,sans-serif';ctx.textBaseline='top';
         ctx.fillText(String(value),Number(command.x),Number(command.y));return;
       }
+      if(operation==='image'){
+        const src=typeof patchPictureSource==='function'?patchPictureSource(command.source):String(command.source||'');
+        const img=patchPaintBoxImage(src);
+        if(img&&img.complete&&img.naturalWidth)ctx.drawImage(img,Number(command.x),Number(command.y),Number(command.width),Number(command.height));
+        return;
+      }
       throw new PatchAppError("PaintBox operation '"+operation+"' is not supported by the Web renderer.");
     }finally{ctx.restore();}
+  }
+
+  function patchPaintBoxImage(source){
+    const src=String(source||'');
+    if(!src)return null;
+    window.__PATCH_PAINTBOX_IMAGES=window.__PATCH_PAINTBOX_IMAGES||new Map();
+    let img=window.__PATCH_PAINTBOX_IMAGES.get(src);
+    if(!img){
+      img=new Image();
+      img.onload=function(){ if(typeof render==='function') render(); };
+      img.src=src;
+      window.__PATCH_PAINTBOX_IMAGES.set(src,img);
+    }
+    return img;
   }
 
   function patchPaintBoxElement(control){

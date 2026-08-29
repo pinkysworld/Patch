@@ -1,7 +1,7 @@
 import { adaptNativePaintBoxForV16Backend } from './native-paintbox-backend-adapter.js';
 import { validateNativeGuiIRV16 } from './native-gui-ir-v16.js';
 import { encodeNativeGuiPayloadV15, inspectNativeGuiShapesV15, inspectNativeGuiChromeV15, inspectNativeGuiSlidersV15 } from './sealed-native-gui-v15.js';
-import { PATCH_PAINTBOX_OPERATIONS } from './paintbox-control.js';
+import { PATCH_NATIVE_PAINTBOX_OPERATIONS } from './native-gui-ir-v16.js';
 
 export const PATCH_SEALED_NATIVE_GUI_PAINTBOX_VERSION = 16;
 export const PATCH_SEALED_NATIVE_GUI_MAGIC_V16 = 'PCHGUI01';
@@ -11,8 +11,8 @@ const EXTENSION_TRAILER_SIZE = 8;
 const MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
 const MAX_PAINTBOXES = 1024;
 const MAX_PAINT_NODES = 4096;
-const OP = Object.freeze(Object.fromEntries(PATCH_PAINTBOX_OPERATIONS.map((operation, index) => [operation, index])));
-const OP_NAME = PATCH_PAINTBOX_OPERATIONS;
+const OP = Object.freeze(Object.fromEntries(PATCH_NATIVE_PAINTBOX_OPERATIONS.map((operation, index) => [operation, index])));
+const OP_NAME = PATCH_NATIVE_PAINTBOX_OPERATIONS;
 const NODE_DRAW = 0;
 const NODE_IF = 1;
 const NODE_REPEAT = 2;

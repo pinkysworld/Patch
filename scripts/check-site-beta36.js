@@ -23,7 +23,7 @@ const workshop = read('_site/beta35-studio.js');
 const sw = read('_site/sw.js');
 
 requireAll('beta36 Studio', index, [
-  'data-patch-version="0.2.0-beta.36"','0.2 beta.36+','Native GUI IR 1.6','payload v16','runtime v1.7',
+  'data-patch-version="0.2.0-beta.36"','0.2 beta.36+','Native GUI IR 1.7','payload v17','runtime v1.8',
   'value="workshopDesk">Workshop desk</option>','viewBox="0 0 32 32"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'
 ]);
 rejectAll('beta36 Studio', index, [
@@ -45,14 +45,14 @@ requireAll('beta36 RAD event inspector', events, ['Properties','Events','Create 
 requireAll('beta36 RAD component palette', toolbox, ['Component Palette','designerComponentSearch','Ctrl/Cmd+Shift+A']);
 
 requireAll('beta36 current native facade', current, [
-  "native-gui-1.6/payload-16/runtime-1.7","PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.7'",
-  'native-win32-runtime-v1.7','native-macos-runtime-v1.7','native-linux-runtime-v1.7'
+  "native-gui-1.7/payload-17/runtime-1.8","PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.8'",
+  'native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8'
 ]);
 
 requireAll('beta36 downloads', downloads, [
-  'offline-compiler-v0.2','Native GUI IR <strong>1.6</strong>','payload <strong>v16</strong>','runtime <strong>v1.7</strong>'
+  'offline-compiler-v0.2','Native GUI IR <strong>1.7</strong>','payload <strong>v17</strong>','runtime <strong>v1.8</strong>'
 ]);
-rejectAll('beta36 downloads', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.6"']);
+rejectAll('beta36 downloads', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.7"']);
 requireAll('beta36 worker', sw, ["const PATCH_RELEASE = '0.2.0-beta.36'"]);
 
 console.log('beta.36 Studio surface gate passed.');

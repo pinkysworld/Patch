@@ -12,7 +12,7 @@ import {
 
 test('PaintBox Stage 1 exposes a bounded ephemeral drawing vocabulary', () => {
   assert.equal(PATCH_PAINTBOX_STAGE_VERSION, '0.1');
-  assert.deepEqual(PATCH_PAINTBOX_OPERATIONS, ['clear', 'line', 'rectangle', 'ellipse', 'text']);
+  assert.deepEqual(PATCH_PAINTBOX_OPERATIONS, ['clear', 'line', 'rectangle', 'ellipse', 'text', 'image']);
   assert.equal(validatePatchPaintBoxId('preview_canvas'), 'preview_canvas');
   assert.throws(() => validatePatchPaintBoxId('bad-name'), /valid PaintBox name/);
 });
@@ -42,7 +42,8 @@ test('canonical PaintBox draw source round-trips without hidden canvas state', (
     'draw line 0, 10 to 120, 10 stroke #334455 width 2',
     'draw rectangle 10, 20 size 100, 60 fill #dbeafe stroke #2563eb width 3',
     'draw ellipse 14, 18 size 80, 80 fill transparent stroke #112233 width 1',
-    'draw text "Patch" at 24, 48 color #111827 size 16'
+    'draw text "Patch" at 24, 48 color #111827 size 16',
+    'draw image "patch-resource:logo" at 8, 8 size 32, 32'
   ];
   const parsed = source.map(parsePatchPaintCommand);
   assert.deepEqual(parsed.map(formatPatchPaintCommand), source);
@@ -58,5 +59,6 @@ test('PaintBox Stage 1 fails closed for ambiguous or unsafe drawing values', () 
   assert.throws(() => parsePatchPaintCommand('draw line 0, 0 to 10, 10 stroke red width 1'), /do not understand PaintBox command/i);
   assert.throws(() => normalizePatchPaintCommand({ operation: 'line', x1: 0, y1: 0, x2: 10, y2: 10, stroke: '#000000', strokeWidth: 100 }), /0 to 64/);
   assert.throws(() => normalizePatchPaintCommand({ operation: 'text', textExpr: '', x: 0, y: 0 }), /text expression/);
-  assert.throws(() => normalizePatchPaintCommand({ operation: 'image' }), /not supported/);
+  assert.throws(() => parsePatchPaintCommand('draw image logo at 0, 0 size 16, 16'), /do not understand PaintBox command/i);
+  assert.throws(() => parsePatchPaintCommand('draw image "patch-resource:logo" at 0, 0 size 0, 16'), /greater than zero/);
 });

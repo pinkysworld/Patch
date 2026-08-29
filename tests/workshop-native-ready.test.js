@@ -29,14 +29,15 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
   assert.equal(support.treeViews, 1);
   assert.equal(support.sliders, 2);
   assert.equal(support.paintboxes, 1);
-  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.6/payload-16/runtime-1.7');
-  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.6');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 16);
-  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.7');
+  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.7/payload-17/runtime-1.8');
+  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.7');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 17);
+  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.8');
 
   const ir = buildCurrentNativeGuiIR(compiled);
   const controls = flattenCurrentNativeGuiControls(ir);
-  assert.equal(ir.version, '1.6');
+  const paintbox = controls.find(control => control.type === 'paintbox');
+  assert.equal(ir.version, '1.7');
   assert.equal(controls.filter(control => control.type === 'tree').length, 1);
   assert.equal(controls.filter(control => control.type === 'slider').length, 2);
   assert.equal(controls.filter(control => control.type === 'timer').length, 1);
@@ -44,6 +45,9 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
   assert.equal(controls.filter(control => control.type === 'shape').length, 1);
   assert.equal(controls.filter(control => control.type === 'picture').length, 1);
   assert.equal(controls.filter(control => control.type === 'paintbox').length, 1);
+  assert.ok(paintbox);
+  assert.match(JSON.stringify(paintbox.paintProgram), /"operation":"image"/);
+  assert.match(JSON.stringify(paintbox.paintProgram), /data:image\/png;base64,/);
 });
 
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {

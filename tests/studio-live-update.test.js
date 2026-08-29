@@ -64,8 +64,9 @@ test('site builder content-addresses the complete transitive browser module grap
   assert.ok(playground.includes(`from './src/interpreter.js?v=${revision}''`) === false);
   assert.ok(playground.includes(`from './src/interpreter.js?v=${revision}'`));
   assert.ok(nativeBuild.includes(`from './src/native-current-contract.js?v=${revision}'`), 'multiline current-native facade import must be revisioned');
-  assert.ok(currentFacade.includes(`from './native-gui-ir-v16.js?v=${revision}'`), 'multiline current facade IR import must be revisioned');
-  assert.ok(currentFacade.includes(`from './sealed-native-gui-v16.js?v=${revision}'`), 'multiline current facade sealer import must be revisioned');
+  assert.ok(currentFacade.includes(`from './native-gui-ir-v17.js?v=${revision}'`), 'multiline current facade IR import must be revisioned');
+  assert.ok(currentFacade.includes(`from './native-gui-ir-v16.js?v=${revision}'`), 'multiline current facade still revisiones IR 1.6 import');
+  assert.ok(currentFacade.includes(`from './sealed-native-gui-v17.js?v=${revision}'`), 'multiline current facade sealer import must be revisioned');
   assert.ok(frozenFacade.includes(`from './native-gui-ir-v12.js?v=${revision}'`), 'multiline frozen facade IR import must be revisioned');
   assert.ok(compiler.includes(`from './parser.js?v=${revision}'`));
   assert.ok(compiler.includes(`from './call-site-validation.js?v=${revision}'`));
