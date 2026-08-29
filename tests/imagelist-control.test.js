@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PATCH_IMAGELIST_MAX_ITEMS,
+  PATCH_IMAGELIST_MAX_INLINE_SOURCE_CHARS,
   PATCH_IMAGELIST_STAGE,
   formatPatchImageListSource,
   normalizeImageListDefinition,
@@ -9,6 +10,8 @@ import {
   normalizeImageListLogicalSize,
   normalizeImageListResourceExpression
 } from '../src/imagelist-control.js';
+
+const TINY_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEAQH/6F3+WQAAAABJRU5ErkJggg==';
 
 test('ImageList Stage 1 normalizes logical size and static project resource items', () => {
   assert.equal(PATCH_IMAGELIST_STAGE, 1);
@@ -55,15 +58,23 @@ test('ImageList may start empty and later receive resources through Designer', (
   assert.equal(formatPatchImageListSource({ id: 'images', width: 16, height: 16, items: [] }), 'imagelist as images size 16, 16:');
 });
 
-test('ImageList source accepts only canonical static patch-resource expressions', () => {
+test('ImageList source accepts canonical project resources and bounded inline PNG/JPEG data', () => {
   assert.deepEqual(normalizeImageListResourceExpression('"patch-resource:app.logo"'), {
     resourceId: 'app.logo',
     locator: 'patch-resource:app.logo',
     sourceExpr: '"patch-resource:app.logo"'
   });
-  assert.throws(() => normalizeImageListResourceExpression('"https://example.test/icon.png"'), /patch-resource locator/);
-  assert.throws(() => normalizeImageListResourceExpression('dynamic_icon'), /quoted project locator/);
+  const inline = normalizeImageListResourceExpression(JSON.stringify(TINY_PNG));
+  assert.match(inline.resourceId, /^inline-[0-9a-f]{8}$/);
+  assert.equal(inline.locator, TINY_PNG);
+  assert.equal(inline.sourceExpr, JSON.stringify(TINY_PNG));
+  assert.throws(() => normalizeImageListResourceExpression('"https://example.test/icon.png"'), /patch-resource locator or bounded inline PNG\/JPEG/);
+  assert.throws(() => normalizeImageListResourceExpression('dynamic_icon'), /quoted project locator or bounded inline PNG\/JPEG/);
   assert.throws(() => normalizeImageListResourceExpression('"patch-resource:../escape"'), /resource id/);
+  assert.throws(
+    () => normalizeImageListResourceExpression(JSON.stringify(`data:image/png;base64,${'A'.repeat(PATCH_IMAGELIST_MAX_INLINE_SOURCE_CHARS)}`)),
+    /exceeds/
+  );
 });
 
 test('ImageList rejects duplicate names, unsafe names and excessive items', () => {
