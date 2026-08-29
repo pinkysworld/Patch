@@ -83,6 +83,23 @@ jobs:
               "function requestActiveFormMaterialization() {\n  if (!canvas) return;\n  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);\n  if (Number.isInteger(materialized) && materialized === activeForm) return;\n  canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {\n    bubbles: false,\n    detail: { windowIndex: activeForm }\n  }));\n}\n\nfunction applyLayouts(container, designer) {",
           )
 
+          # Specialized visual adapters must obey the same active-Form boundary.
+          replace_once(
+              'web/designer-paintbox.js',
+              "  const selection = currentDesignerSelection(canvas);\n  for (const paintbox of listDesignerPaintBoxes(code.value)) {\n    const body = bodies[paintbox.windowIndex];",
+              "  const selection = currentDesignerSelection(canvas);\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const paintbox of listDesignerPaintBoxes(code.value)) {\n    if (Number.isInteger(materializedWindow) && paintbox.windowIndex !== materializedWindow) continue;\n    const body = bodies[paintbox.windowIndex];",
+          )
+          replace_once(
+              'web/designer-workspace.js',
+              "  const shapes = listDesignerShapes(code.value);\n  const selection = currentDesignerSelection(canvas);\n  for (const shape of shapes) {\n    const body = bodies[shape.windowIndex];",
+              "  const shapes = listDesignerShapes(code.value);\n  const selection = currentDesignerSelection(canvas);\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const shape of shapes) {\n    if (Number.isInteger(materializedWindow) && shape.windowIndex !== materializedWindow) continue;\n    const body = bodies[shape.windowIndex];",
+          )
+          replace_once(
+              'web/designer-statusbar.js',
+              "  const shells = [...container.querySelectorAll('.patch-window')];\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');",
+              "  const shells = [...container.querySelectorAll('.patch-window')];\n  const materializedValue = isDesigner ? container.dataset.patchDesignerMaterializedForm : undefined;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    if (isDesigner && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {\n      for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter=\"true\"]')) stale.remove();\n      return;\n    }\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');",
+          )
+
           replace_once(
               'scripts/build-site.js',
               "'studio-diagnostics.js','studio-design-model.js','studio-design-cache.js',",
@@ -105,6 +122,24 @@ jobs:
               "  assert.notEqual(designerState.startup, 'failed');\n  assert.equal(designerState.materialized, '0');\n  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');\n  assert.deepEqual(designerState.controlsByForm.slice(1, 3), [0, 0], 'inactive Workshop Forms should remain lightweight shells');\n\n  const switchedDesignerForm = await evaluate(cdp, `(() => {\n    const select = document.querySelector('#patchFormSelect');\n    if (!select) return false;\n    select.value = '1';\n    select.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  })()`);\n  assert.equal(switchedDesignerForm, true);\n  const materializedSettings = await waitFor(cdp, `(() => ({\n    active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',\n    controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length)\n  }))()`, state => state?.active === '1' && state.controls?.[1] > 0);\n  assert.equal(materializedSettings.controls[0], 0);\n  assert.ok(materializedSettings.controls[1] > 0);\n  assert.equal(materializedSettings.controls[2], 0);\n\n  await evaluate(cdp, `(() => {\n    const select = document.querySelector('#patchFormSelect');\n    select.value = '0';\n    select.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  })()`);\n  await waitFor(cdp, `document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? ''`, value => value === '0');\n\n  // The reported failure appears after the initial render.",
           )
 
+          # Strengthen the integration contract so specialized adapters cannot regress.
+          test_path = Path('tests/studio-active-form-materialization-integration.test.js')
+          test_text = test_path.read_text()
+          needle = "const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');\n"
+          replacement = needle + "const paintboxStudio = fs.readFileSync('web/designer-paintbox.js', 'utf8');\nconst designerWorkspace = fs.readFileSync('web/designer-workspace.js', 'utf8');\nconst statusbarStudio = fs.readFileSync('web/designer-statusbar.js', 'utf8');\n"
+          if test_text.count(needle) != 1:
+              raise SystemExit('integration test import anchor mismatch')
+          test_text = test_text.replace(needle, replacement, 1)
+          append = """
+
+test('specialized visual adapters obey the active Form materialization boundary', () => {
+  assert.match(paintboxStudio, /paintbox\.windowIndex !== materializedWindow/);
+  assert.match(designerWorkspace, /shape\.windowIndex !== materializedWindow/);
+  assert.match(statusbarStudio, /windowIndex !== materializedWindow/);
+});
+"""
+          test_path.write_text(test_text + append)
+
           Path('.github/workflows/r0-form-materialization-once.yml').unlink()
           PY
       - name: Verify active Form materialization
@@ -112,6 +147,9 @@ jobs:
         run: |
           node --check web/playground.js
           node --check web/forms-designer.js
+          node --check web/designer-paintbox.js
+          node --check web/designer-workspace.js
+          node --check web/designer-statusbar.js
           node --test tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
           node --test tests/workshop-desk-browser.test.js
           npm run build:site
@@ -121,6 +159,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/playground.js web/forms-designer.js scripts/build-site.js web/sw.js tests/workshop-desk-browser.test.js .github/workflows/r0-form-materialization-once.yml
+          git add web/playground.js web/forms-designer.js web/designer-paintbox.js web/designer-workspace.js web/designer-statusbar.js scripts/build-site.js web/sw.js tests/workshop-desk-browser.test.js tests/studio-active-form-materialization-integration.test.js .github/workflows/r0-form-materialization-once.yml
           git commit -m "Materialize only the active Designer Form controls"
           git push origin HEAD:gpt/r0-active-form-materialization-282
