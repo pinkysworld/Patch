@@ -59,7 +59,7 @@ test('Shape Stage 1 exposes Studio, Standalone Web and native desktop runtime su
   assert.equal(patchComponentForButton('addShape')?.type, 'shape');
 });
 
-test('PaintBox Stage 1 exposes Studio authoring and Standalone Web while native remains gated', () => {
+test('PaintBox exposes Studio Web and native desktop runtime support', () => {
   const paintbox = patchComponent('paintbox');
   assert.equal(paintbox.type, 'paintbox');
   assert.equal(paintbox.label, 'PaintBox');
@@ -84,7 +84,7 @@ test('Timer remains nonvisual and carries source-backed property and OnTick cont
   assert.equal(patchComponent('button').visual, true);
 });
 
-test('ImageList is nonvisual metadata consumed by Web Button images and remains native fail-closed', () => {
+test('ImageList is nonvisual metadata consumed by Web and native Button images', () => {
   const imagelist = patchComponent('imagelist');
   assert.equal(imagelist.type, 'imagelist');
   assert.equal(imagelist.label, 'ImageList');
@@ -95,7 +95,7 @@ test('ImageList is nonvisual metadata consumed by Web Button images and remains 
   assert.deepEqual(imagelist.events, []);
   assert.equal(imagelist.designRenderer, 'imagelist');
   assert.deepEqual(imagelist.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'authoring', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addImagelist')?.type, 'imagelist');
 });
