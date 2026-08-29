@@ -497,21 +497,26 @@ function runtimeWindowFingerprint(model) {
   return JSON.stringify(model ?? null);
 }
 
-function createWindowShell(container, windows, model, windowIndex, interactive, materialization, tabSelections) {
-  const shell = document.createElement('section');
-  shell.className = 'patch-window';
-  const deferHiddenForm = Boolean(interactive && model.visible === false);
-  const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');
-  const deferForm = deferHiddenForm || deferDesignerForm;
-  const windowKey = runtimeWindowKey(model, windowIndex);
-  shell.hidden = deferForm;
-  shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
-  shell.dataset.patchWindowKey = windowKey;
-  shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';
-  shell.__patchWindowFingerprint = runtimeWindowFingerprint(model);
-  if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';
-  const title = document.createElement('div');
-  title.className = 'patch-window-title';
+const RUNTIME_CORE_CONTROL_TYPES = new Set([
+  'tabs', 'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'picture', 'tree'
+]);
+
+function runtimeControlFingerprint(control) {
+  return JSON.stringify(control ?? null);
+}
+
+function runtimeSpecializedControlsFingerprint(model) {
+  return JSON.stringify((model?.controls ?? []).filter(control => !RUNTIME_CORE_CONTROL_TYPES.has(control?.type)));
+}
+
+function runtimeWindowTitleFingerprint(model) {
+  return JSON.stringify([model?.title ?? '', model?.icon ?? null]);
+}
+
+function syncRuntimeWindowTitle(title, model) {
+  const fingerprint = runtimeWindowTitleFingerprint(model);
+  if (title.__patchWindowTitleFingerprint === fingerprint) return;
+  title.replaceChildren();
   if (model.icon) {
     const img = document.createElement('img');
     img.className = 'patch-window-icon';
@@ -526,6 +531,92 @@ function createWindowShell(container, windows, model, windowIndex, interactive, 
     title.appendChild(img);
   }
   title.append(model.title);
+  title.__patchWindowTitleFingerprint = fingerprint;
+}
+
+function runtimeCoreControlContext(container, windows, tabSelections, model, windowIndex, controlIndex) {
+  return {
+    interactive: true,
+    container,
+    windows,
+    tabSelections,
+    materialization: null,
+    windowIndex,
+    controlIndex,
+    controlPath: String(controlIndex),
+    windowId: model.id,
+    topLevel: true
+  };
+}
+
+function reconcileRuntimeCoreControls(container, shell, windows, model, windowIndex, tabSelections) {
+  const body = shell.querySelector(':scope > .patch-window-body');
+  if (!body) return null;
+  const expected = [];
+  (model.controls ?? []).forEach((control, controlIndex) => {
+    if (!RUNTIME_CORE_CONTROL_TYPES.has(control?.type)) return;
+    const context = runtimeCoreControlContext(container, windows, tabSelections, model, windowIndex, controlIndex);
+    expected.push({ control, context, key: runtimeControlKey(control, context) });
+  });
+  const rendered = [...body.children].filter(child => child.dataset.patchControlKey);
+  if (rendered.length !== expected.length) return null;
+  for (let index = 0; index < expected.length; index += 1) {
+    if (rendered[index].dataset.patchControlKey !== expected[index].key) return null;
+  }
+
+  let reusedControls = 0;
+  const replacements = [];
+  for (let index = 0; index < expected.length; index += 1) {
+    const existingElement = rendered[index];
+    const { control, context } = expected[index];
+    const fingerprint = runtimeControlFingerprint(control);
+    if (existingElement.__patchControlFingerprint === fingerprint) {
+      reusedControls += 1;
+      continue;
+    }
+    const nextElement = createControlElement(control, context);
+    if (!nextElement) return null;
+    replacements.push({ existingElement, nextElement });
+  }
+  for (const { existingElement, nextElement } of replacements) existingElement.replaceWith(nextElement);
+  return { reusedControls, replacedControls: replacements.length };
+}
+
+function reconcileRuntimeWindowShell(container, shell, windows, model, windowIndex, tabSelections) {
+  if (model.visible === false || shell.dataset.patchRenderDetail !== 'full') return null;
+  const title = shell.querySelector(':scope > .patch-window-title');
+  if (!title) return null;
+  const specializedFingerprint = runtimeSpecializedControlsFingerprint(model);
+  if (shell.__patchRuntimeSpecializedFingerprint !== specializedFingerprint) return null;
+  const stats = reconcileRuntimeCoreControls(container, shell, windows, model, windowIndex, tabSelections);
+  if (!stats) return null;
+  syncRuntimeWindowTitle(title, model);
+  shell.hidden = false;
+  shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
+  shell.dataset.patchWindowKey = runtimeWindowKey(model, windowIndex);
+  shell.dataset.patchRenderDetail = 'full';
+  shell.__patchWindowFingerprint = runtimeWindowFingerprint(model);
+  shell.__patchRuntimeSpecializedFingerprint = specializedFingerprint;
+  return stats;
+}
+
+function createWindowShell(container, windows, model, windowIndex, interactive, materialization, tabSelections) {
+  const shell = document.createElement('section');
+  shell.className = 'patch-window';
+  const deferHiddenForm = Boolean(interactive && model.visible === false);
+  const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');
+  const deferForm = deferHiddenForm || deferDesignerForm;
+  const windowKey = runtimeWindowKey(model, windowIndex);
+  shell.hidden = deferForm;
+  shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
+  shell.dataset.patchWindowKey = windowKey;
+  shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';
+  shell.__patchWindowFingerprint = runtimeWindowFingerprint(model);
+  shell.__patchRuntimeSpecializedFingerprint = runtimeSpecializedControlsFingerprint(model);
+  if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';
+  const title = document.createElement('div');
+  title.className = 'patch-window-title';
+  syncRuntimeWindowTitle(title, model);
   const body = document.createElement('div');
   body.className = 'patch-window-body';
   if (!deferForm) {
@@ -679,7 +770,12 @@ function reconcileRuntimeWindows(container, windows) {
   const tabSelections = container.__patchTabSelections ??= new Map();
   if (!windows?.length) {
     container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
-    container.dataset.patchRuntimeReconcile = 'keyed-window-v1';
+    container.dataset.patchRuntimeReconcile = 'keyed-control-v2';
+    container.dataset.patchRuntimeReusedForms = '0';
+    container.dataset.patchRuntimeReplacedForms = '0';
+    container.dataset.patchRuntimeReconciledForms = '0';
+    container.dataset.patchRuntimeReusedControls = '0';
+    container.dataset.patchRuntimeReplacedControls = '0';
     return;
   }
   const transient = captureRuntimeTransientState(container);
@@ -691,17 +787,32 @@ function reconcileRuntimeWindows(container, windows) {
   const desired = [];
   let reusedForms = 0;
   let replacedForms = 0;
+  let reconciledForms = 0;
+  let reusedControls = 0;
+  let replacedControls = 0;
   windows.forEach((model, windowIndex) => {
     const key = runtimeWindowKey(model, windowIndex);
     const fingerprint = runtimeWindowFingerprint(model);
     const detail = model.visible === false ? 'deferred' : 'full';
     let shell = existing.get(key) ?? null;
-    if (!shell || shell.__patchWindowFingerprint !== fingerprint || shell.dataset.patchRenderDetail !== detail) {
+    if (!shell || shell.dataset.patchRenderDetail !== detail) {
       shell?.remove();
       shell = createWindowShell(container, windows, model, windowIndex, true, null, tabSelections);
       replacedForms += 1;
-    } else {
+    } else if (shell.__patchWindowFingerprint === fingerprint) {
       reusedForms += 1;
+    } else {
+      const controlStats = reconcileRuntimeWindowShell(container, shell, windows, model, windowIndex, tabSelections);
+      if (controlStats) {
+        reusedForms += 1;
+        reconciledForms += 1;
+        reusedControls += controlStats.reusedControls;
+        replacedControls += controlStats.replacedControls;
+      } else {
+        shell.remove();
+        shell = createWindowShell(container, windows, model, windowIndex, true, null, tabSelections);
+        replacedForms += 1;
+      }
     }
     existing.delete(key);
     desired.push(shell);
@@ -711,9 +822,12 @@ function reconcileRuntimeWindows(container, windows) {
     const current = container.querySelectorAll(':scope > .patch-window')[index] ?? null;
     if (current !== shell) container.insertBefore(shell, current);
   });
-  container.dataset.patchRuntimeReconcile = 'keyed-window-v1';
+  container.dataset.patchRuntimeReconcile = 'keyed-control-v2';
   container.dataset.patchRuntimeReusedForms = String(reusedForms);
   container.dataset.patchRuntimeReplacedForms = String(replacedForms);
+  container.dataset.patchRuntimeReconciledForms = String(reconciledForms);
+  container.dataset.patchRuntimeReusedControls = String(reusedControls);
+  container.dataset.patchRuntimeReplacedControls = String(replacedControls);
   restoreRuntimeTransientState(container, transient);
 }
 
@@ -852,7 +966,10 @@ function createControlElement(control, context) {
   } else if (control.type === 'tree') {
     el = createTreeElement(control, context);
   }
-  if (el) el.dataset.patchControlKey = runtimeControlKey(control, context);
+  if (el) {
+    el.dataset.patchControlKey = runtimeControlKey(control, context);
+    el.__patchControlFingerprint = runtimeControlFingerprint(control);
+  }
   return el ?? null;
 }
 

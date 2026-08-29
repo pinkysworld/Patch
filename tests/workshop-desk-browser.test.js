@@ -375,8 +375,8 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
       replacedForms: Number(document.querySelector('#app')?.dataset?.patchRuntimeReplacedForms ?? 0),
       key: input.dataset.patchControlKey ?? ''
     } : null;
-  })()`, state => state?.value === 'Keyboard Pro' && state.active === true && state.reconcile === 'keyed-window-v1');
-  assert.equal(keyedInputState.mainReplaced, true, 'changed main Form should be replaced at the Stage 1 Form boundary');
+  })()`, state => state?.value === 'Keyboard Pro' && state.active === true && state.reconcile === 'keyed-control-v2');
+  assert.equal(keyedInputState.mainReplaced, true, 'main Form keeps the safe full-Form fallback while its adapter-owned StatusBar model changes');
   assert.equal(keyedInputState.settingsStable, true, 'unchanged hidden Form DOM should retain identity across an event');
   assert.ok(keyedInputState.reusedForms >= 1, `expected keyed Form reuse, got ${JSON.stringify(keyedInputState)}`);
   assert.ok(keyedInputState.replacedForms >= 1, `expected a changed Form replacement, got ${JSON.stringify(keyedInputState)}`);
@@ -423,6 +423,49 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(settingsState.hidden, false);
   assert.equal(settingsState.detail, 'full');
   assert.ok(settingsState.children > 0);
+
+  const controlReconcileStarted = await evaluate(cdp, `(() => {
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const tabs = settings?.querySelector('.patch-tabs[data-tabs-id="prefs"]');
+    const close = [...(settings?.querySelectorAll('button.patch-button') ?? [])].find(node => node.textContent.trim() === 'Close settings');
+    const checkbox = [...(settings?.querySelectorAll('.patch-checkbox') ?? [])].find(node => node.textContent.includes('Notify when a quote changes'))?.querySelector('input');
+    if (!main || !settings || !tabs || !close || !checkbox) return false;
+    window.__patchMainBeforeControlReconcile = main;
+    window.__patchSettingsBeforeControlReconcile = settings;
+    window.__patchTabsBeforeControlReconcile = tabs;
+    window.__patchCloseBeforeControlReconcile = close;
+    checkbox.focus();
+    checkbox.click();
+    return true;
+  })()`);
+  assert.equal(controlReconcileStarted, true);
+  const controlReconcileState = await waitFor(cdp, `(() => {
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const tabs = settings?.querySelector('.patch-tabs[data-tabs-id="prefs"]');
+    const close = [...(settings?.querySelectorAll('button.patch-button') ?? [])].find(node => node.textContent.trim() === 'Close settings');
+    const checkbox = [...(settings?.querySelectorAll('.patch-checkbox') ?? [])].find(node => node.textContent.includes('Notify when a quote changes'))?.querySelector('input');
+    const app = document.querySelector('#app');
+    return checkbox ? {
+      checked: checkbox.checked,
+      focused: document.activeElement === checkbox,
+      mainReplaced: window.__patchMainBeforeControlReconcile !== main,
+      settingsStable: window.__patchSettingsBeforeControlReconcile === settings,
+      tabsReplaced: window.__patchTabsBeforeControlReconcile !== tabs,
+      closeStable: window.__patchCloseBeforeControlReconcile === close,
+      reconcile: app?.dataset?.patchRuntimeReconcile ?? '',
+      reconciledForms: Number(app?.dataset?.patchRuntimeReconciledForms ?? 0),
+      reusedControls: Number(app?.dataset?.patchRuntimeReusedControls ?? 0),
+      replacedControls: Number(app?.dataset?.patchRuntimeReplacedControls ?? 0)
+    } : null;
+  })()`, state => state?.checked === false && state.focused === true && state.reconcile === 'keyed-control-v2' && state.reconciledForms >= 1);
+  assert.equal(controlReconcileState.settingsStable, true, 'changed settings Form should retain its shell when core control keys remain stable');
+  assert.equal(controlReconcileState.tabsReplaced, true, 'changed Tabs control should be replaced at the control boundary');
+  assert.equal(controlReconcileState.closeStable, true, 'unchanged sibling Button should retain DOM identity inside the changed Form');
+  assert.equal(controlReconcileState.mainReplaced, true, 'adapter-owned StatusBar drift in main should keep the safe full-Form fallback');
+  assert.ok(controlReconcileState.reusedControls >= 1, JSON.stringify(controlReconcileState));
+  assert.ok(controlReconcileState.replacedControls >= 1, JSON.stringify(controlReconcileState));
 
   const tabsSwitched = await evaluate(cdp, `(() => {
     const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
