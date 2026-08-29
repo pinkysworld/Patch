@@ -36,109 +36,58 @@ jobs:
                   raise SystemExit(f"{path}: expected exactly one guarded match, found {count}: {old!r}")
               p.write_text(text.replace(old, new, 1))
 
-          replace_once(
-              'web/playground.js',
+          replace_once('web/playground.js',
               "import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';\n",
-              "import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';\nimport { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';\n",
-          )
-          replace_once(
-              'web/playground.js',
+              "import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';\nimport { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';\n")
+          replace_once('web/playground.js',
               "runButton?.addEventListener('click', runProject);\nappView.addEventListener('patch-studio-table-changed', event => {",
-              "runButton?.addEventListener('click', runProject);\ndesignerCanvas?.addEventListener('patch-designer-active-form-change', event => {\n  const requested = Number(event.detail?.windowIndex);\n  refreshDesigner(Number.isInteger(requested) ? requested : null);\n});\nappView.addEventListener('patch-studio-table-changed', event => {",
-          )
-          replace_once(
-              'web/playground.js',
+              "runButton?.addEventListener('click', runProject);\ndesignerCanvas?.addEventListener('patch-designer-active-form-change', event => {\n  const requested = Number(event.detail?.windowIndex);\n  refreshDesigner(Number.isInteger(requested) ? requested : null);\n});\nappView.addEventListener('patch-studio-table-changed', event => {")
+          replace_once('web/playground.js',
               "function refreshDesigner() {\n  clearTimeout(designerTimer);\n  try {\n    const preview = designerDesignCache.get(code.value);\n    renderWindows(designerCanvas, preview.ui, false);\n    if (!preview.ui.length) designerCanvas.innerHTML = '<p class=\"empty-preview\">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';\n  } catch (err) {\n    designerCanvas.innerHTML = `<p class=\"empty-preview\">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;\n  }\n}\n",
-              "function refreshDesigner(requestedFormIndex = null) {\n  clearTimeout(designerTimer);\n  try {\n    const preview = designerDesignCache.get(code.value);\n    const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined\n      ? document.querySelector('#patchFormSelect')?.value\n      : requestedFormIndex;\n    const materialization = createStudioFormMaterializationPlan(preview.ui.length, selectedFormIndex);\n    renderWindows(designerCanvas, preview.ui, false, { materialization });\n    if (!preview.ui.length) designerCanvas.innerHTML = '<p class=\"empty-preview\">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';\n  } catch (err) {\n    designerCanvas.innerHTML = `<p class=\"empty-preview\">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;\n  }\n}\n",
-          )
-          replace_once(
-              'web/playground.js',
+              "function refreshDesigner(requestedFormIndex = null) {\n  clearTimeout(designerTimer);\n  try {\n    const preview = designerDesignCache.get(code.value);\n    const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined\n      ? document.querySelector('#patchFormSelect')?.value\n      : requestedFormIndex;\n    const materialization = createStudioFormMaterializationPlan(preview.ui.length, selectedFormIndex);\n    renderWindows(designerCanvas, preview.ui, false, { materialization });\n    if (!preview.ui.length) designerCanvas.innerHTML = '<p class=\"empty-preview\">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';\n  } catch (err) {\n    designerCanvas.innerHTML = `<p class=\"empty-preview\">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;\n  }\n}\n")
+          replace_once('web/playground.js',
               "function renderWindows(container, windows, interactive) {\n  const tabSelections = container.__patchTabSelections ??= new Map();\n  container.innerHTML = '';",
-              "function renderWindows(container, windows, interactive, options = {}) {\n  const tabSelections = container.__patchTabSelections ??= new Map();\n  const materialization = interactive ? null : options.materialization ?? null;\n  container.innerHTML = '';\n  if (materialization) container.dataset.patchDesignerMaterializedForm = String(materialization.activeIndex);",
-          )
-          replace_once(
-              'web/playground.js',
+              "function renderWindows(container, windows, interactive, options = {}) {\n  const tabSelections = container.__patchTabSelections ??= new Map();\n  const materialization = interactive ? null : options.materialization ?? null;\n  container.innerHTML = '';\n  if (materialization) container.dataset.patchDesignerMaterializedForm = String(materialization.activeIndex);")
+          replace_once('web/playground.js',
               "    const deferHiddenForm = Boolean(interactive && model.visible === false);\n    shell.hidden = deferHiddenForm;\n    shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;\n    shell.dataset.patchRenderDetail = deferHiddenForm ? 'deferred' : 'full';",
-              "    const deferHiddenForm = Boolean(interactive && model.visible === false);\n    const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');\n    const deferForm = deferHiddenForm || deferDesignerForm;\n    shell.hidden = deferForm;\n    shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;\n    shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';\n    if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';",
-          )
-          replace_once(
-              'web/playground.js',
+              "    const deferHiddenForm = Boolean(interactive && model.visible === false);\n    const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');\n    const deferForm = deferHiddenForm || deferDesignerForm;\n    shell.hidden = deferForm;\n    shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;\n    shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';\n    if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';")
+          replace_once('web/playground.js',
               "    body.className = 'patch-window-body';\n    if (!deferHiddenForm) {",
-              "    body.className = 'patch-window-body';\n    if (!deferForm) {",
-          )
+              "    body.className = 'patch-window-body';\n    if (!deferForm) {")
 
-          replace_once(
-              'web/forms-designer.js',
+          replace_once('web/forms-designer.js',
               "    activeForm = Number(select.value) || 0;\n    syncFormTools();\n    revealTarget(canvas?.querySelectorAll('.patch-window')[activeForm], 'smooth');",
-              "    activeForm = Number(select.value) || 0;\n    syncFormTools();\n    requestActiveFormMaterialization();\n    revealTarget(canvas?.querySelectorAll('.patch-window')[activeForm], 'smooth');",
-          )
-          replace_once(
-              'web/forms-designer.js',
+              "    activeForm = Number(select.value) || 0;\n    syncFormTools();\n    requestActiveFormMaterialization();\n    revealTarget(canvas?.querySelectorAll('.patch-window')[activeForm], 'smooth');")
+          replace_once('web/forms-designer.js',
               "      syncFormTools();\n      applyLayouts(canvas, true);",
-              "      syncFormTools();\n      requestActiveFormMaterialization();\n      applyLayouts(canvas, true);",
-          )
-          replace_once(
-              'web/forms-designer.js',
+              "      syncFormTools();\n      requestActiveFormMaterialization();\n      applyLayouts(canvas, true);")
+          replace_once('web/forms-designer.js',
               "function applyLayouts(container, designer) {",
-              "function requestActiveFormMaterialization() {\n  if (!canvas) return;\n  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);\n  if (Number.isInteger(materialized) && materialized === activeForm) return;\n  canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {\n    bubbles: false,\n    detail: { windowIndex: activeForm }\n  }));\n}\n\nfunction applyLayouts(container, designer) {",
-          )
+              "function requestActiveFormMaterialization() {\n  if (!canvas) return;\n  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);\n  if (Number.isInteger(materialized) && materialized === activeForm) return;\n  canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {\n    bubbles: false,\n    detail: { windowIndex: activeForm }\n  }));\n}\n\nfunction applyLayouts(container, designer) {")
 
-          # Specialized visual adapters must obey the same active-Form boundary.
-          replace_once(
-              'web/designer-paintbox.js',
+          replace_once('web/designer-paintbox.js',
               "  const selection = currentDesignerSelection(canvas);\n  for (const paintbox of listDesignerPaintBoxes(code.value)) {\n    const body = bodies[paintbox.windowIndex];",
-              "  const selection = currentDesignerSelection(canvas);\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const paintbox of listDesignerPaintBoxes(code.value)) {\n    if (Number.isInteger(materializedWindow) && paintbox.windowIndex !== materializedWindow) continue;\n    const body = bodies[paintbox.windowIndex];",
-          )
-          replace_once(
-              'web/designer-workspace.js',
+              "  const selection = currentDesignerSelection(canvas);\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const paintbox of listDesignerPaintBoxes(code.value)) {\n    if (Number.isInteger(materializedWindow) && paintbox.windowIndex !== materializedWindow) continue;\n    const body = bodies[paintbox.windowIndex];")
+          replace_once('web/designer-workspace.js',
               "  const shapes = listDesignerShapes(code.value);\n  const selection = currentDesignerSelection(canvas);\n  for (const shape of shapes) {\n    const body = bodies[shape.windowIndex];",
-              "  const shapes = listDesignerShapes(code.value);\n  const selection = currentDesignerSelection(canvas);\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const shape of shapes) {\n    if (Number.isInteger(materializedWindow) && shape.windowIndex !== materializedWindow) continue;\n    const body = bodies[shape.windowIndex];",
-          )
-          replace_once(
-              'web/designer-statusbar.js',
+              "  const shapes = listDesignerShapes(code.value);\n  const selection = currentDesignerSelection(canvas);\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const shape of shapes) {\n    if (Number.isInteger(materializedWindow) && shape.windowIndex !== materializedWindow) continue;\n    const body = bodies[shape.windowIndex];")
+          replace_once('web/designer-statusbar.js',
               "  const shells = [...container.querySelectorAll('.patch-window')];\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');",
-              "  const shells = [...container.querySelectorAll('.patch-window')];\n  const materializedValue = isDesigner ? container.dataset.patchDesignerMaterializedForm : undefined;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    if (isDesigner && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {\n      for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter=\"true\"]')) stale.remove();\n      return;\n    }\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');",
-          )
+              "  const shells = [...container.querySelectorAll('.patch-window')];\n  const materializedValue = isDesigner ? container.dataset.patchDesignerMaterializedForm : undefined;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    if (isDesigner && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {\n      for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter=\"true\"]')) stale.remove();\n      return;\n    }\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');")
 
-          replace_once(
-              'scripts/build-site.js',
+          replace_once('scripts/build-site.js',
               "'studio-diagnostics.js','studio-design-model.js','studio-design-cache.js',",
-              "'studio-diagnostics.js','studio-design-model.js','studio-design-cache.js','studio-form-materialization.js',",
-          )
-          replace_once(
-              'web/sw.js',
+              "'studio-diagnostics.js','studio-design-model.js','studio-design-cache.js','studio-form-materialization.js',")
+          replace_once('web/sw.js',
               "'../src/studio-diagnostics.js', '../src/studio-design-model.js', '../src/studio-design-cache.js', '../src/window-compiled.js'",
-              "'../src/studio-diagnostics.js', '../src/studio-design-model.js', '../src/studio-design-cache.js', '../src/studio-form-materialization.js', '../src/window-compiled.js'",
-          )
+              "'../src/studio-diagnostics.js', '../src/studio-design-model.js', '../src/studio-design-cache.js', '../src/studio-form-materialization.js', '../src/window-compiled.js'")
 
-          replace_once(
-              'tests/workshop-desk-browser.test.js',
+          replace_once('tests/workshop-desk-browser.test.js',
               "    options: document.querySelectorAll('#patchFormSelect option').length,\n    startup: document.documentElement?.dataset?.patchStudioStartup ?? ''",
-              "    options: document.querySelectorAll('#patchFormSelect option').length,\n    materialized: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',\n    controlsByForm: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length),\n    startup: document.documentElement?.dataset?.patchStudioStartup ?? ''",
-          )
-          replace_once(
-              'tests/workshop-desk-browser.test.js',
+              "    options: document.querySelectorAll('#patchFormSelect option').length,\n    materialized: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',\n    controlsByForm: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length),\n    startup: document.documentElement?.dataset?.patchStudioStartup ?? ''")
+          replace_once('tests/workshop-desk-browser.test.js',
               "  assert.notEqual(designerState.startup, 'failed');\n\n  // The reported failure appears after the initial render.",
-              "  assert.notEqual(designerState.startup, 'failed');\n  assert.equal(designerState.materialized, '0');\n  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');\n  assert.deepEqual(designerState.controlsByForm.slice(1, 3), [0, 0], 'inactive Workshop Forms should remain lightweight shells');\n\n  const switchedDesignerForm = await evaluate(cdp, `(() => {\n    const select = document.querySelector('#patchFormSelect');\n    if (!select) return false;\n    select.value = '1';\n    select.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  })()`);\n  assert.equal(switchedDesignerForm, true);\n  const materializedSettings = await waitFor(cdp, `(() => ({\n    active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',\n    controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length)\n  }))()`, state => state?.active === '1' && state.controls?.[1] > 0);\n  assert.equal(materializedSettings.controls[0], 0);\n  assert.ok(materializedSettings.controls[1] > 0);\n  assert.equal(materializedSettings.controls[2], 0);\n\n  await evaluate(cdp, `(() => {\n    const select = document.querySelector('#patchFormSelect');\n    select.value = '0';\n    select.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  })()`);\n  await waitFor(cdp, `document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? ''`, value => value === '0');\n\n  // The reported failure appears after the initial render.",
-          )
-
-          # Strengthen the integration contract so specialized adapters cannot regress.
-          test_path = Path('tests/studio-active-form-materialization-integration.test.js')
-          test_text = test_path.read_text()
-          needle = "const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');\n"
-          replacement = needle + "const paintboxStudio = fs.readFileSync('web/designer-paintbox.js', 'utf8');\nconst designerWorkspace = fs.readFileSync('web/designer-workspace.js', 'utf8');\nconst statusbarStudio = fs.readFileSync('web/designer-statusbar.js', 'utf8');\n"
-          if test_text.count(needle) != 1:
-              raise SystemExit('integration test import anchor mismatch')
-          test_text = test_text.replace(needle, replacement, 1)
-          append = """
-
-test('specialized visual adapters obey the active Form materialization boundary', () => {
-  assert.match(paintboxStudio, /paintbox\.windowIndex !== materializedWindow/);
-  assert.match(designerWorkspace, /shape\.windowIndex !== materializedWindow/);
-  assert.match(statusbarStudio, /windowIndex !== materializedWindow/);
-});
-"""
-          test_path.write_text(test_text + append)
+              "  assert.notEqual(designerState.startup, 'failed');\n  assert.equal(designerState.materialized, '0');\n  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');\n  assert.deepEqual(designerState.controlsByForm.slice(1, 3), [0, 0], 'inactive Workshop Forms should remain lightweight shells');\n\n  const switchedDesignerForm = await evaluate(cdp, `(() => {\n    const select = document.querySelector('#patchFormSelect');\n    if (!select) return false;\n    select.value = '1';\n    select.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  })()`);\n  assert.equal(switchedDesignerForm, true);\n  const materializedSettings = await waitFor(cdp, `(() => ({\n    active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',\n    controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length)\n  }))()`, state => state?.active === '1' && state.controls?.[1] > 0);\n  assert.equal(materializedSettings.controls[0], 0);\n  assert.ok(materializedSettings.controls[1] > 0);\n  assert.equal(materializedSettings.controls[2], 0);\n\n  await evaluate(cdp, `(() => {\n    const select = document.querySelector('#patchFormSelect');\n    select.value = '0';\n    select.dispatchEvent(new Event('change', { bubbles: true }));\n    return true;\n  })()`);\n  await waitFor(cdp, `document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? ''`, value => value === '0');\n\n  // The reported failure appears after the initial render.")
 
           Path('.github/workflows/r0-form-materialization-once.yml').unlink()
           PY
@@ -159,6 +108,6 @@ test('specialized visual adapters obey the active Form materialization boundary'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/playground.js web/forms-designer.js web/designer-paintbox.js web/designer-workspace.js web/designer-statusbar.js scripts/build-site.js web/sw.js tests/workshop-desk-browser.test.js tests/studio-active-form-materialization-integration.test.js .github/workflows/r0-form-materialization-once.yml
+          git add web/playground.js web/forms-designer.js web/designer-paintbox.js web/designer-workspace.js web/designer-statusbar.js scripts/build-site.js web/sw.js tests/workshop-desk-browser.test.js .github/workflows/r0-form-materialization-once.yml
           git commit -m "Materialize only the active Designer Form controls"
           git push origin HEAD:gpt/r0-active-form-materialization-282
