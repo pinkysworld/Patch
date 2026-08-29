@@ -299,12 +299,58 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   const appState = await waitFor(cdp, `(() => ({
     windows: document.querySelectorAll('#app .patch-window').length,
     visible: [...document.querySelectorAll('#app .patch-window')].filter(node => !node.hidden).length,
+    deferred: [...document.querySelectorAll('#app .patch-window')].filter(node => node.dataset.patchRenderDetail === 'deferred').length,
+    mainDetail: document.querySelector('#app .patch-window[data-patch-window-id="main"]')?.dataset.patchRenderDetail ?? '',
+    settingsChildren: document.querySelector('#app .patch-window[data-patch-window-id="settings"] .patch-window-body')?.childElementCount ?? -1,
     output: document.querySelector('#output')?.textContent ?? ''
   }))()`, state => state?.windows >= 3 && state.visible >= 1, 10000);
   assert.ok(appState.windows >= 3);
   assert.ok(appState.visible >= 1);
+  assert.ok(appState.deferred >= 2, 'hidden Workshop Forms should defer their control DOM until opened');
+  assert.equal(appState.mainDetail, 'full');
+  assert.equal(appState.settingsChildren, 0);
+
+  const multiBefore = await evaluate(cdp, `(() => {
+    const list = [...document.querySelectorAll('#app select.patch-listbox')].find(node => node.multiple);
+    return list ? { multiple: list.multiple, selected: [...list.selectedOptions].map(item => item.value) } : null;
+  })()`);
+  assert.equal(multiBefore?.multiple, true, 'list-backed Workshop ListBox should be multi-select in Studio Run');
+  assert.deepEqual(multiBefore?.selected, ['Diagnostics']);
+
+  const multiChanged = await evaluate(cdp, `(() => {
+    const list = [...document.querySelectorAll('#app select.patch-listbox')].find(node => node.multiple);
+    if (!list) return false;
+    for (const item of list.options) item.selected = item.value === 'Diagnostics' || item.value === 'Pickup';
+    list.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert.equal(multiChanged, true);
+  const multiAfter = await waitFor(cdp, `(() => {
+    const list = [...document.querySelectorAll('#app select.patch-listbox')].find(node => node.multiple);
+    return list ? [...list.selectedOptions].map(item => item.value) : [];
+  })()`, values => Array.isArray(values) && values.includes('Diagnostics') && values.includes('Pickup'));
+  assert.deepEqual(multiAfter, ['Diagnostics', 'Pickup']);
+
+  const openedSettings = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('#app button.patch-button')].find(node => node.textContent.trim() === 'Settings');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert.equal(openedSettings, true);
+  const settingsState = await waitFor(cdp, `(() => {
+    const form = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    return form ? {
+      hidden: form.hidden,
+      detail: form.dataset.patchRenderDetail ?? '',
+      children: form.querySelector('.patch-window-body')?.childElementCount ?? 0
+    } : null;
+  })()`, state => state && state.hidden === false && state.detail === 'full' && state.children > 0);
+  assert.equal(settingsState.hidden, false);
+  assert.equal(settingsState.detail, 'full');
+  assert.ok(settingsState.children > 0);
 
   await delay(1000);
   assert.equal(await evaluate(cdp, `document.querySelector('#code')?.value?.includes('window "Job details" as details') === true`, 3000), true,
-    'Workshop Desk page stopped responding after Run');
+    'Workshop Desk page stopped responding after Run and Form materialization');
 });
