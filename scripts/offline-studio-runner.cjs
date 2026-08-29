@@ -14,6 +14,8 @@ if (manifest?.format !== 'patch-offline-studio-manifest' || !Array.isArray(manif
 const files = new Map(manifest.files.map(entry => [entry.path, entry]));
 const session = crypto.randomBytes(18).toString('hex');
 const prefix = `/${session}/`;
+const smokeMode = process.env.PATCH_OFFLINE_STUDIO_SMOKE === '1';
+const noOpen = smokeMode || process.env.PATCH_OFFLINE_STUDIO_NO_OPEN === '1';
 
 const server = http.createServer((request, response) => {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -79,13 +81,26 @@ server.on('clientError', (_error, socket) => {
   socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
 });
 
-server.listen(0, '127.0.0.1', () => {
+server.listen(0, '127.0.0.1', async () => {
   const address = server.address();
   const url = `http://127.0.0.1:${address.port}${prefix}`;
   console.log(`Patch Offline Studio ${manifest.patchVersion ?? ''}`.trim());
   console.log(`Local IDE: ${url}`);
   console.log('Network access is not required; the IDE is served only on this machine.');
-  if (!openBrowser(url)) console.log('Open the Local IDE URL above in a browser.');
+
+  if (smokeMode) {
+    try {
+      await runSelfSmoke(url);
+      console.log('Offline Studio executable smoke: OK');
+      server.close(() => process.exit(0));
+    } catch (error) {
+      console.error(`Offline Studio executable smoke failed: ${error?.message ?? error}`);
+      server.close(() => process.exit(2));
+    }
+    return;
+  }
+
+  if (!noOpen && !openBrowser(url)) console.log('Open the Local IDE URL above in a browser.');
 });
 
 process.on('SIGINT', shutdown);
@@ -94,6 +109,33 @@ process.on('SIGTERM', shutdown);
 function shutdown() {
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 1500).unref();
+}
+
+function runSelfSmoke(url) {
+  return new Promise((resolve, reject) => {
+    const request = http.get(url, { timeout: 5000 }, response => {
+      const chunks = [];
+      response.on('data', chunk => chunks.push(chunk));
+      response.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        if (response.statusCode !== 200) {
+          reject(new Error(`expected HTTP 200, received ${response.statusCode}`));
+          return;
+        }
+        if (!/Patch Studio/i.test(body)) {
+          reject(new Error('embedded index.html did not contain the Patch Studio marker'));
+          return;
+        }
+        if (!String(response.headers['content-security-policy'] ?? '').includes("connect-src 'self'")) {
+          reject(new Error('offline CSP did not retain the local-only connect-src policy'));
+          return;
+        }
+        resolve();
+      });
+    });
+    request.on('timeout', () => request.destroy(new Error('self-smoke timed out')));
+    request.on('error', reject);
+  });
 }
 
 function openBrowser(url) {
