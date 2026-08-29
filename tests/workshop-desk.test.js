@@ -8,6 +8,7 @@ import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { upgradeWorkshopDeskSource, WORKSHOP_DESK_CURRENT_SAMPLE_VERSION } from '../web/studio-dom-sync.js';
+import { upgradeWorkshopDeskImageSurface, WORKSHOP_DESK_IMAGE_SAMPLE_VERSION } from '../web/workshop-sample-current.js';
 
 const example = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 const studioModule = fs.readFileSync('web/beta35-studio.js', 'utf8');
@@ -19,16 +20,22 @@ function embeddedWorkshopBaseline() {
   return match[1];
 }
 
+function upgradeEmbeddedWorkshop() {
+  return upgradeWorkshopDeskImageSurface(upgradeWorkshopDeskSource(embeddedWorkshopBaseline()));
+}
+
 test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to the canonical current example', () => {
   assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.4');
+  assert.equal(WORKSHOP_DESK_IMAGE_SAMPLE_VERSION, '0.1');
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
+  assert.match(html, /src="\.\/workshop-sample-current\.js"/);
   assert.match(studioModule, /sample\.value === 'workshopDesk'/);
   assert.equal(
-    upgradeWorkshopDeskSource(embeddedWorkshopBaseline()),
+    upgradeEmbeddedWorkshop(),
     example,
-    'Studio Workshop Desk upgrade must resolve to examples/workshop-desk.patch exactly'
+    'Studio Workshop Desk upgrades must resolve to examples/workshop-desk.patch exactly'
   );
-  assert.equal(upgradeWorkshopDeskSource(example), example, 'Workshop upgrade must be idempotent');
+  assert.equal(upgradeWorkshopDeskImageSurface(example), example, 'current Workshop image upgrade must be idempotent');
 
   const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
   assert.ok(compiled.ast);
@@ -117,6 +124,9 @@ test('Workshop Desk covers every integrated cross-platform Ready component witho
     'table "Ticket", "Customer", "Bench", "State" as board',
     'tree as parts', 'tabs as prefs', 'statusbar "{status}" as desk_status',
     'picture as workshop_logo from "data:image/png;base64,',
+    'imagelist as workshop_icons size 24, 24:',
+    'image quote from "data:image/png;base64,',
+    'button "Create quote" as quote_button image workshop_icons.quote',
     'panel as runtime_panel', 'shape rounded as runtime_shape', 'paintbox as ticket_canvas',
     'timer as workshop_clock interval 5000', 'when ticket_canvas paint:',
     'draw clear #f8fafc', 'draw rectangle 12, 12', 'draw ellipse 146, 12', 'draw line 12, 58',
@@ -128,10 +138,10 @@ test('Workshop Desk covers every integrated cross-platform Ready component witho
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
   assert.doesNotMatch(example, /change selected_(?:job|part)/);
   assert.doesNotMatch(example, /create thing ticket:|do quote\(|allow quote:|change ticket:/);
-  assert.doesNotMatch(example, /imagelist as|\bicon\s+"patch-resource:/, 'native-fail-closed resource consumers stay out of the Ready acceptance source');
+  assert.doesNotMatch(example, /\bicon\s+"patch-resource:/, 'native Window/application icon transport remains outside the Ready acceptance source');
 });
 
-test('Workshop Desk builds as a Standalone Window Web App with Picture and PaintBox', () => {
+test('Workshop Desk builds as a Standalone Window Web App with Picture, ImageList and PaintBox', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-workshop-web-'));
   const outputPath = path.join(tempDir, 'WorkshopDesk-test.html');
   try {
@@ -148,6 +158,8 @@ test('Workshop Desk builds as a Standalone Window Web App with Picture and Paint
     assert.match(built, /runtime_shape/);
     assert.match(built, /workshop_clock/);
     assert.match(built, /workshop_logo/);
+    assert.match(built, /workshop_icons/);
+    assert.match(built, /quote_button/);
     assert.match(built, /ticket_canvas/);
     assert.match(built, /data:image\/png;base64/);
   } finally {
