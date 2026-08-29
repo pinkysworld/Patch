@@ -3,7 +3,7 @@
 \section{Related Work and Claim Boundary}
 \label{sec:related-work}
 
-Patch intersects mature work on first-class state change, effect systems, quantitative typing, capabilities and permissions, Hoare/refinement verification, explicit program changes, provenance, translation validation, and proof-carrying evidence. Our claim is therefore not that bounded state relations, semantic effects, capabilities, or first-class changes are individually inexpressible elsewhere. The narrower hypothesis concerns their architectural coupling to the persistent-mutation route.
+Patch intersects mature work on first-class state change, effect systems, quantitative typing, capabilities and permissions, Hoare/refinement verification, explicit program changes, reversible programming, event-sourced histories, provenance, translation validation, and proof-carrying evidence. Our claim is therefore not that bounded state relations, semantic effects, capabilities, histories, or first-class changes are individually inexpressible elsewhere. The narrower hypothesis concerns their architectural coupling to the persistent-mutation route.
 
 \paragraph{First-class and reified state change.}
 Plaid makes state change first class and models objects as changing abstract states \cite{sunshine2011plaid}; Worlds reifies program state to control the scope of side effects \cite{warth2011worlds}. These systems are direct prior art against any broad claim that Patch invents first-class state transition or reified state. Patch instead asks whether ordinary modeled persistent mutation can be forced through a general semantic state-delta representation whose operation and magnitude are also the vocabulary of authority and history.
@@ -26,6 +26,9 @@ Hoare Type Theory integrates pre/post specifications with mutable higher-order s
 \paragraph{Explicit changes, edits, and patch theory.}
 COPE advocates change-oriented programming environments \cite{dig2016cope}; Edit Transactions group live program edits into dynamically scoped change sets \cite{mattis2017edittransactions}. Higher-order change calculi support incremental computation \cite{cai2014changes}, while edit lenses \cite{hofmann2012edit} and homotopical patch theory \cite{anguilhomotopical2016} provide rich theories of edits and repository patches. These works prevent any claim that programming with explicit changes or formalized patches is new. Their primary changed entities and goals differ from Patch's runtime persistent application-state commit route.
 
+\paragraph{Reversible programming and event-sourced histories.}
+Reversible languages such as Janus provide backward as well as forward execution and can derive inverse behavior from reversible program structure \cite{yokoyama2007janus,schordan2020reversible}. Patch does not require programs or control flow to be reversible and does not claim the semantics of a reversible language. Its history/undo facilities instead reuse recorded semantic Changes; a \texttt{set} operation, for example, may require the recorded before-value rather than being intrinsically invertible. Event sourcing likewise treats state-changing operations as an authoritative history from which application state can be reconstructed, and has been studied both as an evolution challenge and as an observability-oriented architecture \cite{overeem2017eventsourcing,alongi2022eventsourced}. This is close architectural prior art for the idea that state changes themselves should be durable, inspectable units. Patch's narrower proposed distinction is language-level: the modeled mutation route, operation/magnitude authority, history, and formal effect evidence are coupled to the same semantic Change representation rather than introducing an application-architecture event log around an otherwise ordinary mutation language.
+
 \begin{table}[t]
 \centering
 \caption{Architectural comparison. A ``no'' or ``partial'' cell means the cited mechanism does not make that property its central/default abstraction; it is not a claim that a surrounding language cannot encode it.}
@@ -46,6 +49,8 @@ Revocable capabilities \cite{jia2026revocable} & no & protocol/typestate & no & 
 InvalML \cite{gao2025invalidation} & no & invalidation & no & no \\
 HTT / F* / Dijkstra monads \cite{nanevski2008htt,swamy2016fstar,ahman2017dijkstra} & no & specifiable & expressible & no \\
 Edit/patch calculi \cite{dig2016cope,mattis2017edittransactions,cai2014changes,anguilhomotopical2016} & domain-specific & edit-level & no & no \\
+Reversible languages \cite{yokoyama2007janus,schordan2020reversible} & reversible update discipline & reversible op. & not Patch-style & partial \\
+Event sourcing \cite{overeem2017eventsourcing,alongi2022eventsourced} & application architecture & event/op. & domain-defined & history-centric \\
 \textbf{Patch} & \textbf{yes, modeled persistent mutation} & \textbf{yes} & \textbf{yes, numeric fragment} & \textbf{yes} \\
 \bottomrule
 \end{tabular}
@@ -58,7 +63,7 @@ Translation validation \cite{necula2000translation} and Proof-Carrying Code \cit
 The comparison leaves the following working hypothesis:
 
 \begin{quote}
-Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides first-class state transitions, rich effects, value-dependent quantitative grades, flow-sensitive typestate capabilities, permissions, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
+Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides first-class state transitions, rich effects, value-dependent quantitative grades, flow-sensitive typestate capabilities, permissions, reversible execution, event-sourced state histories, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
 \end{quote}
 
-The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, or unsupported language fragments. This is a contribution hypothesis to be evaluated by the formal results, semantic-authority case studies, controlled performance measurements, and further expert/venue scrutiny, not a firstness assertion.
+The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, or unsupported language fragments. This is a contribution hypothesis evaluated here by the formal results, runtime correspondence, and semantic-authority cases. External integrations and controlled performance measurements remain possible strengthening evidence rather than prerequisites silently assumed by the current claims.
