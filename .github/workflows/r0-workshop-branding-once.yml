@@ -1,5 +1,6 @@
 name: R0 Workshop and branding integration
 # One-shot guarded integration workflow. It deletes itself after a verified commit.
+# Site validation expects revisioned local assets from build-site.js.
 
 on:
   push:
