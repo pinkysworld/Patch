@@ -17,7 +17,7 @@ const navigationCss = fs.readFileSync('web/site-navigation.css', 'utf8');
 const pageCss = fs.readFileSync('web/site-pages.css', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 
-test('public Patch Studio build exposes five product pages and keeps the research paper repository-only', () => {
+test('public Patch Studio keeps five primary product pages and packages handbook subpages', () => {
   const markers = [
     'href="./index.html"',
     'href="./language.html"',
@@ -29,7 +29,7 @@ test('public Patch Studio build exposes five product pages and keeps the researc
     assert.match(html, /class="site-tabs"/);
     for (const marker of markers) assert.ok(html.includes(marker), `${name}: ${marker}`);
   }
-  assert.match(buildSite, /const SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','help\.html'\]/);
+  assert.match(buildSite, /const SITE_HTML_FILES = \['index\.html','language\.html','docs\.html','tutorials\.html','examples\.html','help\.html'\]/);
   assert.match(buildSite, /href="\\\.\\\/paper\\\.html"/);
   assert.match(buildSite, /validatePaperPrivacyBoundary/);
   assert.equal(fs.existsSync('web/paper.html'), false);
