@@ -17,7 +17,7 @@ window "Current surface" as main size 640, 480:
   slider 0..10 as slider_value step 1 at 220, 20 size 200, 36
   paintbox as canvas at 20, 210 size 220, 120
   imagelist as icons size 16, 16:
-    image ok = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEAQH/6F3+WQAAAABJRU5ErkJggg=="
+    image ok from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg=="
   button "OK" as ok_button image icons.ok at 260, 210 size 120, 36
 when tree1 changed:
   show value
@@ -25,8 +25,8 @@ when slider_value changed:
   change slider_value:
     set = value
 when canvas paint:
-  draw clear "#ffffff"
-  draw text "Ready" at 10, 20 color "#111111"
+  draw clear #ffffff
+  draw text "Ready" at 10, 20 color #111111
 `;
   const artifact = buildCompiledWindowArtifact(compileWindow(source));
   assert.equal(artifact.format, 'patch-compiled-window-program');
