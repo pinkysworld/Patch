@@ -1,0 +1,2 @@
+window "Hello Patch" size 420, 220:
+  text "Hello, Patch!" at 24, 24 size 240, 32
