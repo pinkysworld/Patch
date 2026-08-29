@@ -7,13 +7,9 @@
 #include "sealed-imagelist-v19.hpp"
 #include <commctrl.h>
 
-#if defined(_MSC_VER)
-#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#endif
-
 static std::vector<PatchImageListV19> gPatchImageListsV19;
 static std::vector<PatchButtonImageV19> gPatchButtonImagesV19;
-static std::vector<HIMAGELIST> gPatchButtonImageListsV19;
+static std::vector<HBITMAP> gPatchButtonBitmapsV19;
 
 static bool ReadSelfPayloadV19(std::vector<uint8_t>& payload) {
   wchar_t path[MAX_PATH]; DWORD n = GetModuleFileNameW(nullptr, path, MAX_PATH); if (!n || n >= MAX_PATH) return false;
@@ -42,7 +38,7 @@ static Bitmap* PatchButtonBitmapV19(const std::string& source, int width, int he
   IStream* stream = nullptr;
   if (CreateStreamOnHGlobal(heap, TRUE, &stream) != S_OK || !stream) { GlobalFree(heap); return nullptr; }
 
-  // GDI+ requires the source stream to remain alive for the entire Image lifetime.
+  // GDI+ requires the source stream to remain alive for the entire source Image lifetime.
   Bitmap* original = Bitmap::FromStream(stream);
   if (!original || original->GetLastStatus() != Ok || original->GetWidth() < 1 || original->GetHeight() < 1) {
     delete original;
@@ -94,22 +90,20 @@ static bool PatchInstallButtonImagesV19() {
     HBITMAP handle = nullptr;
     if (bitmap->GetHBITMAP(Color(0, 0, 0, 0), &handle) != Ok || !handle) { delete bitmap; return false; }
     delete bitmap;
-    HIMAGELIST list = ImageList_Create((int)item.width, (int)item.height, ILC_COLOR32, 1, 1);
-    if (!list) { DeleteObject(handle); return false; }
-    if (ImageList_Add(list, handle, nullptr) < 0) { ImageList_Destroy(list); DeleteObject(handle); return false; }
-    DeleteObject(handle);
-    BUTTON_IMAGELIST info{};
-    info.himl = list;
-    info.uAlign = BUTTON_IMAGELIST_ALIGN_LEFT;
-    if (!SendMessageW(c.hwnd, BCM_SETIMAGELIST, 0, (LPARAM)&info)) { ImageList_Destroy(list); return false; }
-    gPatchButtonImageListsV19.push_back(list);
+
+    // BM_SETIMAGE works for ordinary push buttons without requiring ComCtl32 v6.
+    // With no BS_BITMAP style Windows renders the bitmap together with the text.
+    SendMessageW(c.hwnd, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)handle);
+    HBITMAP installed = reinterpret_cast<HBITMAP>(SendMessageW(c.hwnd, BM_GETIMAGE, IMAGE_BITMAP, 0));
+    if (installed != handle) { DeleteObject(handle); return false; }
+    gPatchButtonBitmapsV19.push_back(handle);
   }
   return true;
 }
 
 static void PatchDestroyButtonImagesV19() {
-  for (HIMAGELIST list : gPatchButtonImageListsV19) if (list) ImageList_Destroy(list);
-  gPatchButtonImageListsV19.clear();
+  for (HBITMAP bitmap : gPatchButtonBitmapsV19) if (bitmap) DeleteObject(bitmap);
+  gPatchButtonBitmapsV19.clear();
 }
 
 static LRESULT CALLBACK PatchWndProcV19(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -121,8 +115,7 @@ static int RunPatchImageListSmokeV19() {
   for (const auto& item : gPatchButtonImagesV19) {
     const auto& c = gControls[(size_t)item.nativeIndex];
     if (!c.hwnd || c.kind != CK_BUTTON) return code++;
-    BUTTON_IMAGELIST info{};
-    if (!SendMessageW(c.hwnd, BCM_GETIMAGELIST, 0, (LPARAM)&info) || !info.himl) return code++;
+    if (!SendMessageW(c.hwnd, BM_GETIMAGE, IMAGE_BITMAP, 0)) return code++;
   }
   return 0;
 }
