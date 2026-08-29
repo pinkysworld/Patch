@@ -54,15 +54,15 @@ Standalone Window Web renders an accessible `<input type="range">` and validates
 
 Slider was introduced on the additive Native GUI IR **1.3** / payload **v13** / runtime **v1.4** line. The current product-facing contract is now:
 
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
-- native runtime **v1.8**;
+- Native GUI IR **1.8**;
+- sealed payload **v18**;
+- native runtime **v1.9**;
 - Windows: native `TRACKBAR`;
 - macOS: native `NSSlider`;
 - Linux: native GTK3 `GtkScale`;
 - product import: `src/native-current-contract.js`.
 
-Native GUI IR 1.7 preserves the exact Slider range/step/binding/event semantics introduced by 1.3 while adding Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image transport. Current direct AOT, token-free Ready Window downloads and Windows/macOS/Linux offline Window linking therefore all preserve Slider behavior.
+Native GUI IR 1.8 preserves the exact Slider range/step/binding/event semantics introduced by 1.3 while composing later Chrome Stage 1, Shape Stage 1, PaintBox Stage 1, PaintBox draw-image and ImageList/Button-image transport. Current direct AOT, token-free Ready Window downloads and Windows/macOS/Linux offline Window linking therefore all preserve Slider behavior.
 
 Native smoke execution verifies that the real native control exists, numeric `changed` values are delivered, explicit `change ... set = value` stores the selected number, and older Table/ListBox/Menu/TreeView behavior remains intact.
 
@@ -74,7 +74,7 @@ The frozen TreeView compatibility line intentionally fails closed for Slider:
 - sealed payload **v12**;
 - native runtime **v1.3**.
 
-The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Older payloads are not silently upgraded or reinterpreted.
+The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Native GUI IR 1.7 / payload v17 / runtime v1.8 remains the previous PaintBox-image compatibility line. Older payloads are not silently upgraded or reinterpreted.
 
 ## Assurance boundary
 
