@@ -30,11 +30,19 @@ The Stage 1 implementation adds:
 - GET/HEAD-only serving with traversal rejection and restrictive security headers;
 - CSP `connect-src 'self'` so this offline executable does not silently depend on remote network resources;
 - automatic browser launch with a printed local URL as fallback;
+- an executable self-smoke mode that serves the embedded Studio, requests it over loopback, validates HTTP/CSP and exits;
+- Windows, macOS and Linux CI jobs that build and self-smoke their own platform executable;
 - fail-closed build validation if critical Studio assets are missing.
 
 Stage 1 is useful offline for Studio authoring, Designer/Run, Standalone Web, portable bundle and browser-side targets already implemented by Patch Studio.
 
 The executable deliberately uses the same generated site closure as the hosted Studio. The offline IDE is therefore not a forked second IDE implementation.
+
+### Build requirement
+
+The self-contained executable builder uses Node's direct `--build-sea` support and therefore requires **Node 25.5.0 or newer**. Normal Patch development may continue on the repository's broader supported Node range. `npm run check:offline-studio` only builds and verifies the deterministic site/manifest closure and does not require SEA support.
+
+Official release workflows should pin a known Node SEA-capable version rather than silently depending on whichever runtime happens to be installed on a developer machine.
 
 ## Stage 2: fully local native build path
 
@@ -84,7 +92,7 @@ npm run build:offline-studio
 npm run check:offline-studio
 ```
 
-`check:offline-studio` performs the deterministic site/manifest closure step without requiring Node SEA support. Building the executable requires a Node release with `--build-sea` support, matching the existing offline compiler release approach.
+`check:offline-studio` performs the deterministic site/manifest closure step on the normal development runtime. `build:offline-studio` additionally requires Node >=25.5.0 to produce the self-contained executable.
 
 ## Definition of Offline IDE Ready
 
