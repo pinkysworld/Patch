@@ -98,13 +98,64 @@
 #designer { scroll-margin-top: 12px; }
 #designer:target { box-shadow: inset 0 0 0 2px var(--border-strong); }
 
-@media (min-width: 1381px) {
+/* Wide-screen RAD mode. Source/outline stay on the left while Designer, App,
+   Output and IR occupy a real peer workspace on the right. The previous single
+   vertical stack wasted most of a desktop monitor and made the Designer feel
+   like a small output console rather than a first-class editor. */
+@media (min-width: 1380px) {
+  .topbar { margin-bottom: 7px; }
+  .projectbar { margin-bottom: 6px; }
+  .studio-launchpad { margin-bottom: 8px; }
+
+  .workspace {
+    grid-template-columns: minmax(760px, 1.16fr) minmax(610px, .84fr);
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .source-workspace,
+  .result-pane {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .editor-pane textarea {
+    min-height: 610px;
+    height: clamp(610px, 72vh, 900px);
+    resize: none;
+  }
+
+  .result-pane {
+    min-height: 0;
+    height: clamp(654px, calc(72vh + 44px), 944px);
+  }
+
+  .result-pane pre,
+  .result-pane .app-preview,
+  .result-pane .designer-view,
+  .result-pane .designer-surface,
+  .result-pane .designer-surface .designer-canvas {
+    min-height: 0;
+    height: calc(100% - 42px);
+    max-height: none;
+  }
+
+  .result-pane .designer-view {
+    height: calc(100% - 42px);
+  }
+
   .result-pane #designer .designer-surface.designer-inspector-bottom {
     grid-template-rows: minmax(360px, 1fr) minmax(160px, 240px);
   }
   .result-pane #designer .designer-surface.designer-inspector-bottom .designer-inspector {
     max-height: 240px;
   }
+}
+
+@media (max-width: 1379px) and (min-width: 921px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .editor-pane textarea { height: clamp(420px, 48vh, 620px); }
+  .result-pane { min-height: 560px; }
 }
 
 @media (max-width: 920px) {
