@@ -8,11 +8,11 @@ import { currentNativeContract } from '../src/native-current-contract.js';
 
 const chromeSource = readFileSync('examples/chrome-window.patch', 'utf8');
 
-test('current native contract is IR 1.7 / payload 17 / runtime 1.8', () => {
+test('current native contract is IR 1.8 / payload 18 / runtime 1.9', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.payload, 17);
-  assert.equal(contract.runtime, '1.8');
+  assert.equal(contract.id, 'native-gui-1.8/payload-18/runtime-1.9');
+  assert.equal(contract.payload, 18);
+  assert.equal(contract.runtime, '1.9');
 });
 
 test('payload v14 records Chrome Stage 1 metadata for runtime v1.5', () => {
