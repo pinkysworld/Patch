@@ -30,6 +30,8 @@ window "Workshop Desk" as main size 1080, 700:
   slider 1..8 as qty step 1 at 528, 82 size 240, 38
   checkbox "Rush bench" as rush at 788, 82 size 150, 36
   picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 958, 58 size 70, 70
+  imagelist as workshop_icons size 24, 24:
+    image quote from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg=="
 
   text "Payment" at 24, 136 size 90, 22
   radio "Card", "Cash", "Account" as pay at 24, 160 size 280, 82
@@ -59,7 +61,7 @@ window "Workshop Desk" as main size 1080, 700:
       node "Solder"
       node "Meter"
 
-  button "Create quote" as quote_button at 878, 320 size 150, 38
+  button "Create quote" as quote_button image workshop_icons.quote at 878, 320 size 150, 38
   button "Job details" as details_button at 878, 368 size 150, 38
   button "Settings" as settings_button at 878, 416 size 150, 38
   button "Mark ready" as complete_button at 878, 464 size 150, 38
@@ -67,7 +69,7 @@ window "Workshop Desk" as main size 1080, 700:
 
   text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
+  text "Current Ready demo: Forms, Picture, ImageList/Button image, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
   timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
@@ -88,7 +90,7 @@ window "Workshop settings" as settings size 720, 520:
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
       text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
+      text "It uses current native-ready Picture, ImageList/Button image, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
