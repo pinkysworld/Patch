@@ -7,6 +7,10 @@
 #include "sealed-imagelist-v19.hpp"
 #include <commctrl.h>
 
+#if defined(_MSC_VER)
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
 static std::vector<PatchImageListV19> gPatchImageListsV19;
 static std::vector<PatchButtonImageV19> gPatchButtonImagesV19;
 static std::vector<HIMAGELIST> gPatchButtonImageListsV19;
@@ -19,7 +23,7 @@ static bool ReadSelfPayloadV19(std::vector<uint8_t>& payload) {
   uint8_t footer[20]{}; DWORD got = 0; if (!ReadFile(file, footer, 20, &got, nullptr) || got != 20 || memcmp(footer, PATCH_MAGIC, 8) != 0) { CloseHandle(file); return false; }
   auto le32 = [](const uint8_t* p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); };
   const uint32_t version = le32(footer + 8), length = le32(footer + 12), crc = le32(footer + 16);
-  if (version != 18 || !length || (uint64_t)length > (uint64_t)(size.QuadPart - 20)) { CloseHandle(file); return false; }
+  if (version != 18 || !length || length > 16u * 1024u * 1024u || (uint64_t)length > (uint64_t)(size.QuadPart - 20)) { CloseHandle(file); return false; }
   pos.QuadPart = size.QuadPart - 20 - length; if (!SetFilePointerEx(file, pos, nullptr, FILE_BEGIN)) { CloseHandle(file); return false; }
   payload.resize(length); got = 0; BOOL ok = ReadFile(file, payload.data(), length, &got, nullptr); CloseHandle(file);
   return ok && got == length && Crc32(payload.data(), payload.size()) == crc;
@@ -139,7 +143,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV19"; wc.lpszClassName = PATCH_WINDOW_CLASS; if (!RegisterClassW(&wc)) { GdiplusShutdown(gPatchGdiplusTokenV16); return 21; }
   NONCLIENTMETRICSW metrics{}; metrics.cbSize = sizeof(metrics);
   if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0)) gGuiFont = CreateFontIndirectW(&metrics.lfMessageFont);
-  if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance) || !PatchInstallButtonImagesV19() || !PatchInstallMenusV12()) { GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 21; }
+  if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance)) {
+    GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 21;
+  }
+  if (!PatchInstallButtonImagesV19()) {
+    GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 23;
+  }
+  if (!PatchInstallMenusV12()) {
+    GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 21;
+  }
   for (auto& form : gForms) SetWindowLongPtrW(form.hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(PatchWndProcV19));
   ApplyPatchAccessibilityV09(); ApplyPatchTableAccessibilityV10(); RefreshUI(); PatchRefreshListsV11(); PatchRefreshMenusV12(); PatchRefreshTreesV13(); PatchRefreshSlidersV14(); PatchRefreshChromeV15(); PatchRefreshShapesV16(); PatchRefreshPaintBoxesV17(); PatchRefreshPaintImageBoxesV18();
   for (auto& form : gForms) if (form.visible) ShowWindow(form.hwnd, showCommand == 0 ? SW_SHOWNORMAL : showCommand);
