@@ -83,14 +83,21 @@ Completed foundations:
 - Run yields before the large compile/execute/render task;
 - compiler-oriented `compiler-p-v1` branding is shared by Studio header, favicon/PWA and Offline Studio packaging.
 
+Current incremental-runtime additions:
+
+- Stage 1 keyed Form/control identities keep unchanged Form DOM stable across runtime events;
+- changed Form replacement restores bounded focus, caret, scroll and unchanged-model multi-selection state;
+- Tabs switch locally inside their panel instead of rebuilding the complete app tree.
+
 Next R0 work:
 
 1. share revision snapshots across remaining Designer adapters and define the Worker boundary;
-2. stable keyed/incremental runtime rendering with focus/caret/selection preservation;
-3. measurable six-Form Workshop/large-project performance gates;
-4. preserve Explorer/Inspector/selection contracts across materialized Form switches;
-5. split runtime/render/build responsibilities out of `web/playground.js`;
-6. make Pages deployment release-aware without weakening fail-closed runtime verification.
+2. move from changed-Form replacement to fine-grained changed-control reconciliation;
+3. preserve richer transient Table/Tree adapter selection through the canonical keyed-state layer;
+4. add measurable six-Form Workshop event-to-paint performance gates;
+5. preserve Explorer/Inspector/selection contracts across materialized Form switches;
+6. split runtime/render/build responsibilities out of `web/playground.js`;
+7. make Pages deployment release-aware without weakening fail-closed runtime verification.
 
 Broad R2 component expansion should not displace this P0 architecture work.
 

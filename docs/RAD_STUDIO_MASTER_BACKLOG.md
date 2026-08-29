@@ -118,10 +118,12 @@ Remaining:
 
 ## P0.4 Incremental runtime renderer
 
-- [ ] stable keyed Form/control identities;
-- [ ] update only changed visible Forms/controls where safe;
-- [ ] preserve focus, caret, scroll and transient Table/Tree/List selections;
-- [ ] avoid complete app-tree rebuild on Tabs page changes;
+- [x] stable keyed Form/control identities in the browser runtime surface;
+- [x] Stage 1 event reconciliation reuses unchanged Form DOM and replaces only changed Form shells;
+- [x] bounded focus, caret, Form/control scroll and unchanged-model multi-selection restoration across changed-Form replacement;
+- [x] Tabs page changes update only the local tab panel and preserve parent/unrelated Form DOM identity;
+- [ ] reconcile only changed controls inside a changed Form rather than replacing its complete shell;
+- [ ] preserve richer transient Table/Tree adapter selections through the same canonical keyed-state contract;
 - [ ] deterministic full rerender fallback/debug mode;
 - [ ] event-to-paint regression gates.
 

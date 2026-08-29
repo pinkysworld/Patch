@@ -54,15 +54,15 @@ Completed or landed as concrete foundations:
 - [x] real-Chrome Workshop Form 1 → Form 2 → Form 1 switching proves inactive Forms settle with zero Designer controls
 - [x] Run yields to the browser task queue before the large compile/execute/render pipeline, keeping the command surface responsive
 - [x] Workshop Desk expanded from three to six Forms as the canonical large RAD showcase/stress fixture
+- [x] Stage 1 keyed runtime Form/control identities reuse unchanged Form DOM across events and restore bounded focus, caret, scroll and unchanged-model multi-selection state when a changed Form is replaced
+- [x] Tabs page switches update only their local tab panel instead of rebuilding the complete runtime window tree
 
 Remaining R0 work:
 - [ ] share parsed/compiled AST/design snapshots across Designer adapters by project revision
 - [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization
 - [ ] define and implement the Worker boundary for parse/compile/design-model work
 - [ ] bounded evaluation policy for any remaining design-time expressions
-- [ ] stable keyed Form/control identities in the browser runtime renderer
-- [ ] incremental event rendering with focus/caret/scroll/transient-selection preservation
-- [ ] avoid complete window-tree rebuild on Tabs page switches
+- [ ] fine-grained keyed control reconciliation inside a changed Form rather than replacing that whole Form shell
 - [ ] Workshop click-to-first-app-paint, large-form event-to-paint and Form-switch performance gates
 - [ ] split runtime lifecycle, Window rendering, transient UI state and Build controller out of `web/playground.js`
 - [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
