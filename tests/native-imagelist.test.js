@@ -53,6 +53,46 @@ function mutableButtonOf(ir) {
   return null;
 }
 
+function firstButtonFieldSpans(payload, extensionOffset) {
+  const bytes = Buffer.from(payload.buffer, payload.byteOffset, payload.byteLength);
+  let offset = extensionOffset;
+  const u32 = () => {
+    const value = bytes.readUInt32LE(offset);
+    offset += 4;
+    return value;
+  };
+  const text = () => {
+    const length = u32();
+    const span = { start: offset, length };
+    offset += length;
+    return span;
+  };
+  const listCount = u32();
+  for (let listIndex = 0; listIndex < listCount; listIndex += 1) {
+    text();
+    u32();
+    u32();
+    const itemCount = u32();
+    for (let itemIndex = 0; itemIndex < itemCount; itemIndex += 1) {
+      text();
+      text();
+      text();
+    }
+  }
+  const buttonCount = u32();
+  assert.ok(buttonCount > 0);
+  u32();
+  const id = text();
+  const imageListId = text();
+  const imageItem = text();
+  const source = text();
+  const widthOffset = offset;
+  u32();
+  const heightOffset = offset;
+  u32();
+  return { id, imageListId, imageItem, source, widthOffset, heightOffset };
+}
+
 test('Native GUI IR 1.8 carries ImageList and Button image metadata over an exact 1.7 compatibility boundary', () => {
   const ir = build();
   assert.equal(ir.version, '1.8');
@@ -157,27 +197,24 @@ test('payload v18 preserves the payload-v17 prefix and validates PILT Button/lis
   assert.ok(inspected.payloadV17.length > 0);
 });
 
-test('payload v18 inspector rejects a tampered Button item and source', () => {
+test('payload v18 inspector rejects tampered Button item, source and dimensions', () => {
   const ir = resolveNativePictureResources(build(), [RESOURCE]).ir;
   const original = encodeNativeGuiPayloadV18(ir);
   const inspected = inspectNativeGuiImageListsV18(original);
-  const extensionStart = inspected.extensionOffset;
+  const spans = firstButtonFieldSpans(original, inspected.extensionOffset);
 
-  const itemBytes = Buffer.from('open');
   const payloadItem = Buffer.from(original);
-  const firstOpen = payloadItem.indexOf(itemBytes, extensionStart);
-  const secondOpen = payloadItem.indexOf(itemBytes, firstOpen + itemBytes.length);
-  assert.ok(firstOpen >= extensionStart && secondOpen > firstOpen);
-  Buffer.from('nope').copy(payloadItem, secondOpen);
+  assert.equal(spans.imageItem.length, 4);
+  Buffer.from('nope').copy(payloadItem, spans.imageItem.start);
   assert.throws(() => inspectNativeGuiImageListsV18(payloadItem), /missing ImageList item/i);
 
-  const sourceBytes = Buffer.from(inspected.buttons[0].source);
   const payloadSource = Buffer.from(original);
-  const firstSource = payloadSource.indexOf(sourceBytes, extensionStart);
-  const secondSource = payloadSource.indexOf(sourceBytes, firstSource + sourceBytes.length);
-  assert.ok(firstSource >= extensionStart && secondSource > firstSource);
-  payloadSource[secondSource + sourceBytes.length - 1] ^= 1;
+  payloadSource[spans.source.start + spans.source.length - 1] ^= 1;
   assert.throws(() => inspectNativeGuiImageListsV18(payloadSource), /image source does not match/i);
+
+  const payloadWidth = Buffer.from(original);
+  payloadWidth.writeUInt32LE(24, spans.widthOffset);
+  assert.throws(() => inspectNativeGuiImageListsV18(payloadWidth), /image size does not match/i);
 });
 
 test('payload v18 can be sealed directly without promoting the current facade', () => {
