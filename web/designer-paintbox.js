@@ -131,7 +131,10 @@ function renderPaintBoxes() {
   const bodies = [...canvas.querySelectorAll('.patch-window-body')];
   if (!bodies.length) return;
   const selection = currentDesignerSelection(canvas);
+  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;
+  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);
   for (const paintbox of listDesignerPaintBoxes(code.value)) {
+    if (Number.isInteger(materializedWindow) && paintbox.windowIndex !== materializedWindow) continue;
     const body = bodies[paintbox.windowIndex];
     if (!body) continue;
     const fallback = formControlDefaultLayout('paintbox', paintbox.controlIndex);

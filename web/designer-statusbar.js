@@ -88,9 +88,15 @@ function refreshSnapshot() {
 function syncContainer(container, isDesigner) {
   if (!container) return;
   const shells = [...container.querySelectorAll('.patch-window')];
+  const materializedValue = isDesigner ? container.dataset.patchDesignerMaterializedForm : undefined;
+  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);
   shells.forEach((shell, windowIndex) => {
     const body = shell.querySelector(':scope > .patch-window-body');
     if (!body) return;
+    if (isDesigner && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {
+      for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter="true"]')) stale.remove();
+      return;
+    }
     const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');
     const live = new Set(bars.map(control => String(control.controlIndex)));
     for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter="true"]')) {

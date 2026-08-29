@@ -272,6 +272,8 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     source: document.querySelector('#code')?.value ?? '',
     forms: document.querySelectorAll('#designerCanvas .patch-window').length,
     options: document.querySelectorAll('#patchFormSelect option').length,
+    materialized: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',
+    controlsByForm: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length),
     startup: document.documentElement?.dataset?.patchStudioStartup ?? ''
   }))()`, state => state?.source?.includes('window "Workshop Desk" as main')
     && state.source.includes('window "Workshop settings" as settings')
@@ -280,6 +282,37 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     && state.options >= 3
   );
   assert.notEqual(designerState.startup, 'failed');
+  assert.equal(designerState.materialized, '0');
+  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');
+  assert.ok(designerState.controlsByForm.slice(1).every(count => count === 0), 'inactive Workshop Forms should remain lightweight shells');
+
+  const switchedDesignerForm = await evaluate(cdp, `(() => {
+    const select = document.querySelector('#patchFormSelect');
+    if (!select) return false;
+    select.value = '1';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  assert.equal(switchedDesignerForm, true);
+  const materializedSettings = await waitFor(cdp, `(() => ({
+    active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',
+    controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length),
+    leaks: [...document.querySelectorAll('#designerCanvas .patch-window')].map((form, index) => index === 1 ? [] : [...form.querySelectorAll('.designer-control')].map(control => ({ className: control.className?.baseVal ?? control.className ?? '', tag: control.tagName, id: control.id ?? '', type: control.dataset?.componentType ?? control.dataset?.patchControlType ?? '' })))
+  }))()`, state => state?.active === '1' && state.controls?.[1] > 0 && state.controls.every((count, index) => index === 1 ? count > 0 : count === 0));
+  assert.equal(materializedSettings.controls[0], 0, JSON.stringify(materializedSettings.leaks));
+  assert.ok(materializedSettings.controls[1] > 0);
+  assert.ok(materializedSettings.controls.slice(2).every(count => count === 0), JSON.stringify(materializedSettings.leaks));
+
+  await evaluate(cdp, `(() => {
+    const select = document.querySelector('#patchFormSelect');
+    select.value = '0';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await waitFor(cdp, `(() => ({
+    active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',
+    controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length)
+  }))()`, state => state?.active === '0' && state.controls?.[0] > 0 && state.controls.slice(1).every(count => count === 0));
 
   // The reported failure appears after the initial render. Keep the real page alive
   // for several seconds, then make multiple CDP round-trips and run the application.

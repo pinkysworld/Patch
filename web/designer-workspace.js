@@ -394,7 +394,10 @@ function renderDesignerShapes(canvas, code) {
 
   const shapes = listDesignerShapes(code.value);
   const selection = currentDesignerSelection(canvas);
+  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;
+  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);
   for (const shape of shapes) {
+    if (Number.isInteger(materializedWindow) && shape.windowIndex !== materializedWindow) continue;
     const body = bodies[shape.windowIndex];
     if (!body) continue;
     const fallback = formControlDefaultLayout('shape', shape.controlIndex);

@@ -78,12 +78,15 @@ function syncContainer(container, designer) {
     .map(node => node.control));
   const listInitials = collectListInitials(ast);
   const shells = [...container.querySelectorAll('.patch-window')];
+  const materializedValue = designer ? container.dataset.patchDesignerMaterializedForm : undefined;
+  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);
   shells.forEach((shell, windowIndex) => {
     const body = shell.querySelector('.patch-window-body');
     const windowNode = windows[windowIndex];
     if (!body || !windowNode) return;
 
     for (const old of body.querySelectorAll(':scope > .patch-table-stage1-control')) old.remove();
+    if (designer && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) return;
     const baseChildren = [...body.children].filter(child => !child.classList.contains('patch-form-resize-handle'));
     const sourceControls = (windowNode.body ?? []).filter(node => node.kind === 'uiControl' || node.kind === 'tabs');
     let renderedIndex = 0;

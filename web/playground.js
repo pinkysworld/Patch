@@ -8,6 +8,7 @@ import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
 import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
+import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
 const samples = {
@@ -305,6 +306,10 @@ for (const input of [code, projectName, projectKind]) {
 }
 
 runButton?.addEventListener('click', runProject);
+designerCanvas?.addEventListener('patch-designer-active-form-change', event => {
+  const requested = Number(event.detail?.windowIndex);
+  refreshDesigner(Number.isInteger(requested) ? requested : null);
+});
 appView.addEventListener('patch-studio-table-changed', event => {
   const detail = event.detail ?? {};
   if (typeof detail.control !== 'string' || !Array.isArray(detail.value) || !detail.value.every(cell => typeof cell === 'string')) return;
@@ -449,11 +454,15 @@ function formatChangeAnalysis(ir) {
   return lines.join('\n').trimEnd();
 }
 
-function refreshDesigner() {
+function refreshDesigner(requestedFormIndex = null) {
   clearTimeout(designerTimer);
   try {
     const preview = designerDesignCache.get(code.value);
-    renderWindows(designerCanvas, preview.ui, false);
+    const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined
+      ? document.querySelector('#patchFormSelect')?.value
+      : requestedFormIndex;
+    const materialization = createStudioFormMaterializationPlan(preview.ui.length, selectedFormIndex);
+    renderWindows(designerCanvas, preview.ui, false, { materialization });
     if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';
   } catch (err) {
     designerCanvas.innerHTML = `<p class="empty-preview">Designer is waiting for valid Patch code.<br>${escapeHtml(err.message)}</p>`;
@@ -465,9 +474,11 @@ function scheduleDesigner() {
   designerTimer = setTimeout(refreshDesigner, 220);
 }
 
-function renderWindows(container, windows, interactive) {
+function renderWindows(container, windows, interactive, options = {}) {
   const tabSelections = container.__patchTabSelections ??= new Map();
+  const materialization = interactive ? null : options.materialization ?? null;
   container.innerHTML = '';
+  if (materialization) container.dataset.patchDesignerMaterializedForm = String(materialization.activeIndex);
   if (!windows?.length) {
     container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
     return;
@@ -476,9 +487,12 @@ function renderWindows(container, windows, interactive) {
     const shell = document.createElement('section');
     shell.className = 'patch-window';
     const deferHiddenForm = Boolean(interactive && model.visible === false);
-    shell.hidden = deferHiddenForm;
+    const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');
+    const deferForm = deferHiddenForm || deferDesignerForm;
+    shell.hidden = deferForm;
     shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
-    shell.dataset.patchRenderDetail = deferHiddenForm ? 'deferred' : 'full';
+    shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';
+    if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';
     const title = document.createElement('div');
     title.className = 'patch-window-title';
     if (model.icon) {
@@ -497,7 +511,7 @@ function renderWindows(container, windows, interactive) {
     title.append(model.title);
     const body = document.createElement('div');
     body.className = 'patch-window-body';
-    if (!deferHiddenForm) {
+    if (!deferForm) {
       model.controls.forEach((control, controlIndex) => {
         const el = createControlElement(control, {
           interactive,

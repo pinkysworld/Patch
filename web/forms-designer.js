@@ -67,6 +67,7 @@ function installFormTools() {
   select.addEventListener('change', () => {
     activeForm = Number(select.value) || 0;
     syncFormTools();
+    requestActiveFormMaterialization();
     revealTarget(canvas?.querySelectorAll('.patch-window')[activeForm], 'smooth');
   });
   add.addEventListener('click', () => {
@@ -280,6 +281,7 @@ function scheduleApply() {
     scheduled = false;
     try {
       syncFormTools();
+      requestActiveFormMaterialization();
       applyLayouts(canvas, true);
       applyLayouts(appView, false);
       syncGeometryInspector();
@@ -309,6 +311,16 @@ function syncFormTools() {
   formTools.icon.value = current.iconExpr ?? '';
   formTools.width.value = String(current.width ?? 640);
   formTools.height.value = String(current.height ?? 420);
+}
+
+function requestActiveFormMaterialization() {
+  if (!canvas) return;
+  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);
+  if (Number.isInteger(materialized) && materialized === activeForm) return;
+  canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {
+    bubbles: false,
+    detail: { windowIndex: activeForm }
+  }));
 }
 
 function applyLayouts(container, designer) {
