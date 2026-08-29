@@ -55,7 +55,7 @@ test('source changes invalidate design and descriptor revisions together', () =>
 
 test('shared design service remains declaration-only for application behavior', () => {
   clearStudioDesignSnapshots();
-  const snapshot = getStudioDesignSnapshot(`${SOURCE}\n\ndo dangerous():\n  change count:\n    add 99`);
+  const snapshot = getStudioDesignSnapshot(`${SOURCE}\n\nmake dangerous():\n  change count:\n    add 99\n\ndo dangerous()`);
   assert.equal(snapshot.state.count, 0);
   assert.ok(snapshot.skipped.some(item => item.kind === 'call'));
 });
