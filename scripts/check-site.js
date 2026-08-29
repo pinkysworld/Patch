@@ -9,10 +9,12 @@ const requireFile = rel => {
   if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
 };
 const requireAll = (label, text, markers) => {
-  for (const marker of markers) if (!text.includes(marker)) throw new Error(`${label} is missing: ${marker}`);
+  const missing = markers.filter(marker => !text.includes(marker));
+  if (missing.length) throw new Error(`${label} is missing:\n- ${missing.join('\n- ')}`);
 };
 const rejectAll = (label, text, markers) => {
-  for (const marker of markers) if (text.includes(marker)) throw new Error(`${label} contains obsolete text: ${marker}`);
+  const obsolete = markers.filter(marker => text.includes(marker));
+  if (obsolete.length) throw new Error(`${label} contains obsolete text:\n- ${obsolete.join('\n- ')}`);
 };
 
 if (pkg.version !== '0.2.0-beta.36') throw new Error(`Unexpected Patch site package version: ${pkg.version}`);
@@ -66,17 +68,24 @@ rejectAll('Studio Ready native builder stale copy/imports', nativeBuild, [
 ]);
 
 const downloads = read('_site/downloads.html');
-requireAll('Downloads beta36', downloads, [
-  'Patch Studio Offline IDE + compiler','offline-studio-v0.2','PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json',
-  'Host-native Windows/macOS/Linux Build from inside the IDE remains Stage 2','does not yet expose the standalone native compiler/runtime through a privileged local Build bridge',
-  'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS',
+requireAll('Downloads beta36 release contract', downloads, [
+  'Patch Studio Offline IDE + compiler',
+  'offline-studio-v0.2',
+  'PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS',
+  'Stage 2','privileged local Build bridge',
+  'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz',
   'Native GUI IR <strong>1.7</strong>','payload <strong>v17</strong>','runtime <strong>v1.8</strong>',
   'offline-compiler-v0.2','native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8','runtime-manifest.json',
-  'Native GUI IR 1.6 / payload v16 / runtime v1.7 remains the previous PaintBox Stage 1 line',
-  'Native GUI IR 1.5 / payload v15 / runtime v1.6 remains the previous Shape line',
+  'Native GUI IR 1.6 / payload v16 / runtime v1.7',
+  'Native GUI IR 1.5 / payload v15 / runtime v1.6',
   'PictureBox note:'
 ]);
-rejectAll('Downloads beta36 current links', downloads, ['offline-studio-v0.1','offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html']);
+rejectAll('Downloads beta36 current links', downloads, [
+  'offline-studio-v0.1','offline-compiler-v0.1',
+  'href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"',
+  'href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"',
+  'href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html'
+]);
 
 const selection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection state', selection, [
