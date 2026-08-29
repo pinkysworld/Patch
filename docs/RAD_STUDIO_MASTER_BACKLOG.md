@@ -44,8 +44,9 @@ Current product contract:
 - Standalone Web and Ready native Windows/macOS/Linux paths for the currently supported native component contract;
 - token-free offline compiler/linker and sealed native runtime templates;
 - public content-addressed PWA plus real-Chrome startup/Workshop checks;
-- Workshop Desk acceptance application;
+- six-Form Workshop Desk acceptance application and real-Chrome large-project stress fixture;
 - R0 `studio-design-model/0.1` and `studio-design-cache/0.1`, wired into the primary non-executing Designer refresh path;
+- R0 `studio-form-materialization/0.1`, with only the active Form fully materialized and sibling Forms retained as lightweight source-backed shells;
 - R1 `native-imagelist-asset-plan/0.1`, explicitly not yet a Ready native ImageList contract;
 - Offline Studio manifest **v1** and rolling Stage 1 release channel **`offline-studio-v0.2`** for Windows x64, macOS Apple Silicon and Linux x64;
 - Offline Studio release bundle validates platform self-smokes, identical embedded-site manifests and SHA-256 checksums before publication.
@@ -98,14 +99,18 @@ Completed:
 - [x] `studio-design-model/0.1` builds initial design UI/state without executing calls, changes, loops, conditionals, previews or Form visibility actions;
 - [x] bounded top-level design-model budget;
 - [x] `studio-design-cache/0.1` bounded LRU source-revision snapshot cache;
-- [x] Workshop Desk preserves all three Forms in the declaration-only model;
+- [x] six-Form Workshop Desk is preserved in the declaration-only model and serves as the canonical large RAD showcase;
 - [x] 10-Form / 200-control design-model/cache acceptance coverage;
 - [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache and no longer executes application behavior;
-- [x] public hosted/Offline Studio module closure packages the design model and cache.
+- [x] public hosted/Offline Studio module closure packages the design model and cache;
+- [x] `studio-form-materialization/0.1` fully materializes only the canonical active Designer Form and leaves inactive Forms as lightweight shells;
+- [x] specialized PaintBox, Shape, Panel, StatusBar and Table adapters obey the active-Form boundary;
+- [x] StatusBar design-time rendering uses a declaration-only snapshot instead of `PatchInterpreter.run()`;
+- [x] real-Chrome Form switching proves inactive Forms settle with zero Designer controls;
+- [x] Run yields one browser task before the large compile/execute/render pipeline.
 
 Remaining:
 - [ ] share the design snapshot cache across Designer adapters;
-- [ ] true active-Form Designer materialization/virtualization, not post-render hiding;
 - [ ] preserve Project Explorer, Object Inspector, selection and structural-editor behavior across materialization;
 - [ ] virtualize very large Table/Tree previews where justified;
 - [ ] define a versioned Web Worker boundary for parse/compile/design-model work;
