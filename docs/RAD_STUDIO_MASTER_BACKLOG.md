@@ -71,6 +71,7 @@ Status: **core transaction model implemented**.
 
 - [x] source-backed Designer transaction boundary;
 - [x] Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z;
+- [x] coalesce one drag/resize into one history entry;
 - [x] editor/Designer Undo/Redo for typing and atomic source rewrites;
 - [x] drag/resize and structural operations routed through transaction-aware source updates where implemented;
 - [ ] close any remaining adapter-specific mutations that bypass the canonical transaction path;
