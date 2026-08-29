@@ -26,6 +26,7 @@ jobs:
         run: |
           python3 .github/scripts/r0_workshop_branding_once.py
           python3 .github/scripts/r0_async_run_once.py
+          python3 .github/scripts/r0_runtime_adapter_defer_once.py
       - name: Verify Studio, Workshop and branding
         run: |
           node --check web/playground.js
@@ -34,6 +35,7 @@ jobs:
           node --check web/designer-workspace.js
           node --check web/forms-designer.js
           node --check web/designer-statusbar.js
+          node --check web/table-stage1.js
           node --test tests/studio-branding.test.js tests/workshop-desk.test.js tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
           node --test tests/workshop-desk-browser.test.js
           npm run build:site
