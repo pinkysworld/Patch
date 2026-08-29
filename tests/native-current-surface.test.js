@@ -32,10 +32,12 @@ test('browser packaging ships current and frozen contracts without retired v07-v
   assert.match(buildSite, /native-frozen-contract\.js/);
   assert.match(buildSite, /native-gui-frozen-lower\.js/);
   assert.match(buildSite, /native-gui-frozen-seal\.js/);
+  assert.match(buildSite, /native-imagelist-backend-adapter\.js/);
   assert.match(sw, /native-current-contract\.js/);
   assert.match(sw, /native-frozen-contract\.js/);
   assert.match(sw, /native-gui-frozen-lower\.js/);
-  for (const version of ['v12','v13','v14','v15','v16','v17']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
+  assert.match(sw, /native-imagelist-backend-adapter\.js/);
+  for (const version of ['v12','v13','v14','v15','v16','v17','v18']) assert.match(buildSite, new RegExp('native-gui-ir-' + version + '\\.js'));
   for (const retired of ['native-gui-ir.js','native-gui-ir-v08.js','native-gui-ir-v09.js','native-gui-ir-v10.js','native-gui-ir-v11.js','sealed-native-gui.js','sealed-native-gui-v11.js']) {
     assert.equal(buildSite.includes(`'${retired}'`), false, `site builder still copies ${retired}`);
     assert.equal(sw.includes(`../src/${retired}`), false, `service worker still caches ${retired}`);
@@ -45,9 +47,9 @@ test('browser packaging ships current and frozen contracts without retired v07-v
 test('native compatibility documentation makes current versus frozen ownership explicit', () => {
   const docs = read('docs/NATIVE_COMPATIBILITY.md');
   for (const marker of [
-    'Native GUI IR 1.7 / sealed payload v17 / runtime v1.8',
+    'Native GUI IR 1.8 / sealed payload v18 / runtime v1.9',
     'native-current-contract.js',
-    'native-gui-1.7/payload-17/runtime-1.8',
+    'native-gui-1.8/payload-18/runtime-1.9',
     'native-frozen-contract.js',
     'native-gui-1.2/payload-12/runtime-1.3',
     'Historical include chain',
@@ -66,9 +68,9 @@ test('README and public website expose the native contract boundary without requ
   assert.match(readme, /native-current-contract\.js/);
   assert.match(readme, /native-frozen-contract\.js/);
   assert.match(docsPage, /docs\/NATIVE_COMPATIBILITY\.md/);
-  assert.match(downloads, /Native GUI IR <strong>1\.7<\/strong>/);
-  assert.match(downloads, /payload <strong>v17<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.8<\/strong>/);
+  assert.match(downloads, /Native GUI IR <strong>1\.8<\/strong>/);
+  assert.match(downloads, /payload <strong>v18<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.9<\/strong>/);
   assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4 remains the Slider-capable compatibility line/);
 });
 
