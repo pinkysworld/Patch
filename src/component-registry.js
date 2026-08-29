@@ -88,30 +88,14 @@ const DESKTOP_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
-const SHAPE_STAGE1_TARGETS = Object.freeze({
-  studio: 'supported',
-  web: 'supported',
-  windows: 'supported',
-  macos: 'supported',
-  linux: 'supported',
-  freebsd: 'unsupported'
-});
-
-const PAINTBOX_STAGE1_TARGETS = Object.freeze({
-  studio: 'supported',
-  web: 'supported',
-  windows: 'supported',
-  macos: 'supported',
-  linux: 'supported',
-  freebsd: 'unsupported'
-});
-
+const SHAPE_STAGE1_TARGETS = Object.freeze({ ...DESKTOP_TARGETS });
+const PAINTBOX_STAGE1_TARGETS = Object.freeze({ ...DESKTOP_TARGETS });
 const IMAGELIST_STAGE1_TARGETS = Object.freeze({
   studio: 'authoring',
   web: 'supported',
-  windows: 'unsupported',
-  macos: 'unsupported',
-  linux: 'unsupported',
+  windows: 'supported',
+  macos: 'supported',
+  linux: 'supported',
   freebsd: 'unsupported'
 });
 
