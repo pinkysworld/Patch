@@ -8,6 +8,7 @@ const ux = fs.readFileSync('web/designer-ux.js', 'utf8');
 const forms = fs.readFileSync('web/form-designer-workflow.js', 'utf8');
 const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
 const siteCheck = fs.readFileSync('scripts/check-site.js', 'utf8');
+const icon = fs.readFileSync('web/icon.svg', 'utf8');
 
 test('Designer coordinator pauses the complete observer set during reconciliation', () => {
   assert.match(restore, /installDesignerObserverCoordinator\(\)/);
@@ -40,12 +41,20 @@ test('Designer UX and Form workflow cache parsed source models across DOM-only m
   assert.match(ux, /new MutationObserver\(\(\) => \{[\s\S]*scheduleDesignerUx\(\)/);
 });
 
-test('rendered Patch brand keeps geometry at the site-build boundary and runtime only tags diagnostics', () => {
+test('rendered Patch brand keeps geometry in the shared compiler icon while runtime only tags diagnostics', () => {
   assert.match(workspace, /dataset\.patchBrandMark/);
+  assert.match(workspace, /compiler-p-v1/);
   assert.doesNotMatch(workspace, /innerHTML\s*=/);
   assert.doesNotMatch(workspace, /shape-rendering=\"crispEdges\"/);
-  assert.match(buildSite, /viewBox=\"0 0 32 32\"/);
-  assert.match(buildSite, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z/);
-  assert.match(siteCheck, /viewBox=\"0 0 32 32\"/);
-  assert.match(siteCheck, /shape-rendering=\"crispEdges\"/);
+
+  assert.match(icon, /viewBox="0 0 512 512"/);
+  assert.match(icon, /aria-label="Patch Studio compiler mark"/);
+  assert.match(icon, /id="patch-circuit-cuts"/);
+  assert.match(icon, /id="patch-pass"/);
+  assert.match(icon, /id="patch-accent"/);
+
+  assert.match(buildSite, /'manifest\.webmanifest','icon\.svg'/);
+  assert.match(siteCheck, /'_site\/icon\.svg'/);
+  assert.match(siteCheck, /data-patch-brand-mark=\"compiler-p-v1\"/);
+  assert.doesNotMatch(siteCheck, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z[^']*'/);
 });
