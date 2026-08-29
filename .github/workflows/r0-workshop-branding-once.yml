@@ -1,6 +1,6 @@
 name: R0 Workshop and branding integration
 # One-shot guarded integration workflow. It deletes itself after a verified commit.
-# Site validation expects revisioned local assets from build-site.js.
+# Site validation expects revisioned local assets from build-site.js and an explicit large Workshop load.
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
           node --check web/forms-designer.js
           node --check web/designer-statusbar.js
           node --check web/table-stage1.js
-          node --test tests/studio-branding.test.js tests/workshop-desk.test.js tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
+          node --test tests/beta35-studio-surface.test.js tests/studio-branding.test.js tests/workshop-desk.test.js tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
           node --test tests/workshop-desk-browser.test.js
           npm run build:site
           npm run check:site
