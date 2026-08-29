@@ -23,13 +23,15 @@ test('Form selector remains the active-Form owner and requests rematerialization
   assert.match(playground, /patch-designer-active-form-change/);
 });
 
-test('nested Designer tab switches preserve the current active-Form materialization plan', () => {
+test('nested Designer tab-page rerenders preserve the current active-Form materialization plan', () => {
   const renderStart = playground.indexOf('function renderWindows(');
   const tabsStart = playground.indexOf('function createTabsElement(');
   assert.notEqual(renderStart, -1);
   assert.notEqual(tabsStart, -1);
   assert.match(playground.slice(renderStart, tabsStart), /materialization,\s*windowIndex/);
-  assert.match(playground.slice(tabsStart), /renderWindows\(context\.container, context\.windows, context\.interactive, \{ materialization: context\.materialization \}\)/);
+  const tabsRenderer = playground.slice(tabsStart);
+  assert.match(tabsRenderer, /renderWindows\(context\.container, context\.windows, context\.interactive, \{ materialization: context\.materialization \}\)/);
+  assert.doesNotMatch(tabsRenderer, /renderWindows\(context\.container, context\.windows, context\.interactive\);/);
 });
 
 test('active Form materialization preserves lightweight shells for every source Form', () => {
