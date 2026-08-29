@@ -81,9 +81,19 @@ static bool PatchResolveButtonImagesV19() {
   return true;
 }
 
+static int PatchButtonImageSlotV19(HWND hwnd) {
+  for (size_t index = 0; index < gPatchButtonImagesV19.size(); ++index) {
+    const int nativeIndex = gPatchButtonImagesV19[index].nativeIndex;
+    if (nativeIndex >= 0 && nativeIndex < (int)gControls.size() && gControls[(size_t)nativeIndex].hwnd == hwnd) return (int)index;
+  }
+  return -1;
+}
+
 // Returns zero on success, or a stable runtime diagnostic code in the 230 range.
 static int PatchInstallButtonImagesV19() {
-  for (const auto& item : gPatchButtonImagesV19) {
+  gPatchButtonBitmapsV19.assign(gPatchButtonImagesV19.size(), nullptr);
+  for (size_t index = 0; index < gPatchButtonImagesV19.size(); ++index) {
+    const auto& item = gPatchButtonImagesV19[index];
     auto& c = gControls[(size_t)item.nativeIndex];
     if (!c.hwnd) return 231;
     Bitmap* bitmap = PatchButtonBitmapV19(item.source, (int)item.width, (int)item.height);
@@ -92,14 +102,75 @@ static int PatchInstallButtonImagesV19() {
     if (bitmap->GetHBITMAP(Color(0, 0, 0, 0), &handle) != Ok || !handle) { delete bitmap; return 233; }
     delete bitmap;
 
-    // BM_SETIMAGE works for ordinary push buttons without requiring ComCtl32 v6.
-    // With no BS_BITMAP style Windows renders the bitmap together with the text.
-    SendMessageW(c.hwnd, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)handle);
-    HBITMAP installed = reinterpret_cast<HBITMAP>(SendMessageW(c.hwnd, BM_GETIMAGE, IMAGE_BITMAP, 0));
-    if (installed != handle) { DeleteObject(handle); return 234; }
-    gPatchButtonBitmapsV19.push_back(handle);
+    // A classic Win32 push Button does not reliably retain BM_SETIMAGE unless
+    // its image style is changed, which would hide the source-backed caption.
+    // Owner draw preserves both caption and image without a ComCtl32-v6-only
+    // BCM_SETIMAGELIST dependency.
+    const LONG_PTR style = GetWindowLongPtrW(c.hwnd, GWL_STYLE);
+    SetLastError(0);
+    const LONG_PTR previous = SetWindowLongPtrW(c.hwnd, GWL_STYLE, (style & ~((LONG_PTR)BS_TYPEMASK)) | BS_OWNERDRAW);
+    if (!previous && GetLastError() != 0) { DeleteObject(handle); return 234; }
+    gPatchButtonBitmapsV19[index] = handle;
+    SetWindowPos(c.hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    InvalidateRect(c.hwnd, nullptr, TRUE);
   }
   return 0;
+}
+
+static bool PatchDrawButtonV19(DRAWITEMSTRUCT* item) {
+  if (!item || item->CtlType != ODT_BUTTON) return false;
+  const int slot = PatchButtonImageSlotV19(item->hwndItem);
+  if (slot < 0 || slot >= (int)gPatchButtonImagesV19.size() || slot >= (int)gPatchButtonBitmapsV19.size()) return false;
+  HBITMAP bitmap = gPatchButtonBitmapsV19[(size_t)slot];
+  if (!bitmap) return false;
+  const auto& binding = gPatchButtonImagesV19[(size_t)slot];
+  const auto& control = gControls[(size_t)binding.nativeIndex];
+
+  RECT frame = item->rcItem;
+  UINT frameState = DFCS_BUTTONPUSH;
+  if (item->itemState & ODS_SELECTED) frameState |= DFCS_PUSHED;
+  if (item->itemState & ODS_DISABLED) frameState |= DFCS_INACTIVE;
+  DrawFrameControl(item->hDC, &frame, DFC_BUTTON, frameState);
+
+  RECT content = frame;
+  InflateRect(&content, -6, -4);
+  if (item->itemState & ODS_SELECTED) OffsetRect(&content, 1, 1);
+
+  const int imageWidth = std::max(1, (int)binding.width);
+  const int imageHeight = std::max(1, (int)binding.height);
+  std::wstring text = WindowText(control.hwnd);
+  HFONT oldFont = nullptr;
+  if (gGuiFont) oldFont = (HFONT)SelectObject(item->hDC, gGuiFont);
+  RECT measured{0, 0, 0, 0};
+  if (!text.empty()) DrawTextW(item->hDC, text.c_str(), (int)text.size(), &measured, DT_SINGLELINE | DT_CALCRECT | DT_NOPREFIX);
+  const int textWidth = std::max(0L, measured.right - measured.left);
+  const int gap = text.empty() ? 0 : 6;
+  const int totalWidth = imageWidth + gap + textWidth;
+  int x = content.left + std::max(0, ((content.right - content.left) - totalWidth) / 2);
+  const int imageY = content.top + std::max(0, ((content.bottom - content.top) - imageHeight) / 2);
+
+  Bitmap image(bitmap, nullptr);
+  Graphics graphics(item->hDC);
+  if (image.GetLastStatus() != Ok || graphics.GetLastStatus() != Ok || graphics.DrawImage(&image, x, imageY, imageWidth, imageHeight) != Ok) {
+    if (oldFont) SelectObject(item->hDC, oldFont);
+    return false;
+  }
+  x += imageWidth + gap;
+
+  if (!text.empty()) {
+    RECT textRect{x, content.top, content.right, content.bottom};
+    SetBkMode(item->hDC, TRANSPARENT);
+    SetTextColor(item->hDC, GetSysColor((item->itemState & ODS_DISABLED) ? COLOR_GRAYTEXT : COLOR_BTNTEXT));
+    DrawTextW(item->hDC, text.c_str(), (int)text.size(), &textRect, DT_SINGLELINE | DT_VCENTER | DT_LEFT | DT_NOPREFIX | DT_END_ELLIPSIS);
+  }
+  if (oldFont) SelectObject(item->hDC, oldFont);
+
+  if ((item->itemState & ODS_FOCUS) && !(item->itemState & ODS_NOFOCUSRECT)) {
+    RECT focus = frame;
+    InflateRect(&focus, -3, -3);
+    DrawFocusRect(item->hDC, &focus);
+  }
+  return true;
 }
 
 static void PatchDestroyButtonImagesV19() {
@@ -108,15 +179,18 @@ static void PatchDestroyButtonImagesV19() {
 }
 
 static LRESULT CALLBACK PatchWndProcV19(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+  if (msg == WM_DRAWITEM && lParam && PatchDrawButtonV19(reinterpret_cast<DRAWITEMSTRUCT*>(lParam))) return TRUE;
   return PatchWndProcV18(hwnd, msg, wParam, lParam);
 }
 
 static int RunPatchImageListSmokeV19() {
-  int code = 420;
-  for (const auto& item : gPatchButtonImagesV19) {
-    const auto& c = gControls[(size_t)item.nativeIndex];
-    if (!c.hwnd || c.kind != CK_BUTTON) return code++;
-    if (!SendMessageW(c.hwnd, BM_GETIMAGE, IMAGE_BITMAP, 0)) return code++;
+  if (gPatchButtonBitmapsV19.size() != gPatchButtonImagesV19.size()) return 420;
+  int code = 421;
+  for (size_t index = 0; index < gPatchButtonImagesV19.size(); ++index) {
+    const auto& binding = gPatchButtonImagesV19[index];
+    const auto& c = gControls[(size_t)binding.nativeIndex];
+    if (!c.hwnd || c.kind != CK_BUTTON || !gPatchButtonBitmapsV19[index]) return code++;
+    if ((GetWindowLongPtrW(c.hwnd, GWL_STYLE) & BS_TYPEMASK) != BS_OWNERDRAW) return code++;
   }
   return 0;
 }
