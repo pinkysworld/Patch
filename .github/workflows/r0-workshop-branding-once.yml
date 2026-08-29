@@ -27,6 +27,7 @@ jobs:
           python3 .github/scripts/r0_workshop_branding_once.py
           python3 .github/scripts/r0_async_run_once.py
           python3 .github/scripts/r0_runtime_adapter_defer_once.py
+          python3 .github/scripts/r0_site_brand_contract_once.py
       - name: Verify Studio, Workshop and branding
         run: |
           node --check web/playground.js
