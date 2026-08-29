@@ -27,7 +27,6 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
 
           def replace_once(path, old, new):
               p = Path(path)
@@ -40,12 +39,13 @@ jobs:
           example = Path('examples/workshop-desk.patch').read_text().rstrip('\n')
           studio = Path('web/beta35-studio.js')
           text = studio.read_text()
-          pattern = r"const WORKSHOP_DESK_SAMPLE = `(?:[^`]|`(?!;\n\nconst MULTISELECT_SAMPLE))*`;\n\nconst MULTISELECT_SAMPLE"
-          match = re.search(pattern, text, flags=re.S)
-          if not match:
+          start_marker = 'const WORKSHOP_DESK_SAMPLE = `'
+          end_marker = '`;\n\nconst MULTISELECT_SAMPLE'
+          start = text.find(start_marker)
+          end = text.find(end_marker, start + len(start_marker))
+          if start < 0 or end < 0:
               raise SystemExit('web/beta35-studio.js: Workshop Desk sample block not found')
-          replacement = f"const WORKSHOP_DESK_SAMPLE = `{example}`;\n\nconst MULTISELECT_SAMPLE"
-          studio.write_text(text[:match.start()] + replacement + text[match.end():])
+          studio.write_text(text[:start] + start_marker + example + text[end:])
 
           replace_once('web/studio-dom-sync.js',
               "export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.4';",
@@ -59,9 +59,7 @@ jobs:
               "function markClassicBrand() {\n  // The SVG itself is normalized at build time. Keep only a stable runtime marker\n  // for diagnostics and production browser smoke tests, never rewrite brand DOM here.\n  const mark = document.querySelector('.brand-mark');\n  if (mark) mark.dataset.patchBrandMark = 'classic-p';\n}",
               "function markCompilerBrand() {\n  // Keep a stable runtime marker for diagnostics and production browser smoke tests.\n  // The visible mark itself is the shared compiler-oriented icon.svg used by the\n  // browser favicon, PWA/Offline Studio manifest and Studio header.\n  const mark = document.querySelector('.brand-mark');\n  if (mark) mark.dataset.patchBrandMark = 'compiler-p-v1';\n}")
 
-          replace_once('web/index.html',
-              '<meta name="theme-color" content="#15171c">',
-              '<meta name="theme-color" content="#1d4ed8">')
+          replace_once('web/index.html', '<meta name="theme-color" content="#15171c">', '<meta name="theme-color" content="#1d4ed8">')
           replace_once('web/index.html',
               '<div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Source-backed RAD development with explicit semantic change.</p></div></div>',
               '<div class="brand"><img class="brand-mark" src="./icon.svg" alt="" aria-hidden="true" data-patch-brand-mark="compiler-p-v1"><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Patch language · compiler · source-backed RAD Studio.</p></div></div>')
@@ -96,29 +94,31 @@ jobs:
           b = b.replace('assert.ok(appState.windows >= 3);', 'assert.ok(appState.windows >= 6);')
           browser.write_text(b)
 
-          Path('tests/studio-branding.test.js').write_text("""import test from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-
-const icon = fs.readFileSync('web/icon.svg', 'utf8');
-const html = fs.readFileSync('web/index.html', 'utf8');
-const manifest = fs.readFileSync('web/manifest.webmanifest', 'utf8');
-const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
-
-test('Patch Studio uses the compiler-oriented brand mark across browser and installed surfaces', () => {
-  assert.match(icon, /Patch Studio compiler mark/);
-  assert.match(icon, /patch-circuit-cuts/);
-  assert.match(icon, /patch-main/);
-  assert.match(icon, /patch-accent/);
-  assert.match(html, /class=\"brand-mark\" src=\"\.\/icon\.svg\"/);
-  assert.match(html, /data-patch-brand-mark=\"compiler-p-v1\"/);
-  assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);
-  assert.match(manifest, /\"src\": \"\.\/icon\.svg\"/);
-  assert.match(manifest, /\"theme_color\": \"#1d4ed8\"/);
-  assert.match(workspace, /compiler-p-v1/);
-});
-""")
-
+          branding_lines = [
+              "import test from 'node:test';",
+              "import assert from 'node:assert/strict';",
+              "import fs from 'node:fs';",
+              "",
+              "const icon = fs.readFileSync('web/icon.svg', 'utf8');",
+              "const html = fs.readFileSync('web/index.html', 'utf8');",
+              "const manifest = fs.readFileSync('web/manifest.webmanifest', 'utf8');",
+              "const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');",
+              "",
+              "test('Patch Studio uses the compiler-oriented brand mark across browser and installed surfaces', () => {",
+              "  assert.match(icon, /Patch Studio compiler mark/);",
+              "  assert.match(icon, /patch-circuit-cuts/);",
+              "  assert.match(icon, /patch-main/);",
+              "  assert.match(icon, /patch-accent/);",
+              "  assert.match(html, /class=\\\"brand-mark\\\" src=\\\"\\.\\/icon\\.svg\\\"/);",
+              "  assert.match(html, /data-patch-brand-mark=\\\"compiler-p-v1\\\"/);",
+              "  assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);",
+              "  assert.match(manifest, /\\\"src\\\": \\\"\\.\\/icon\\.svg\\\"/);",
+              "  assert.match(manifest, /\\\"theme_color\\\": \\\"#1d4ed8\\\"/);",
+              "  assert.match(workspace, /compiler-p-v1/);",
+              "});",
+              ""
+          ]
+          Path('tests/studio-branding.test.js').write_text('\n'.join(branding_lines))
           Path('.github/workflows/r0-workshop-branding-once.yml').unlink()
           PY
       - name: Verify Workshop, branding and active Form virtualization
