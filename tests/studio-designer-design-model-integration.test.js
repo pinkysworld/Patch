@@ -6,6 +6,9 @@ import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
 const playground = fs.readFileSync('web/playground.js', 'utf8');
 const siteBuilder = fs.readFileSync('scripts/build-site.js', 'utf8');
 const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
+const roadmap = fs.readFileSync('docs/ROADMAP.md', 'utf8');
+const backlog = fs.readFileSync('docs/RAD_STUDIO_MASTER_BACKLOG.md', 'utf8');
+const handoff = fs.readFileSync('docs/GPT.md', 'utf8');
 
 test('Designer refresh consumes the declaration-only design snapshot cache', () => {
   assert.match(playground, /import \{ createStudioDesignSnapshotCache \} from '\.\.\/src\/studio-design-cache\.js';/);
@@ -58,5 +61,21 @@ test('public and Offline Studio module closure packages the design model and cac
   for (const name of ['studio-design-model.js', 'studio-design-cache.js']) {
     assert.ok(siteBuilder.includes(`'${name}'`), `site builder must package src/${name}`);
     assert.ok(serviceWorker.includes(`../src/${name}`), `offline cache must package src/${name}`);
+  }
+});
+
+test('R0 status documents do not keep primary Designer integration in the open queue', () => {
+  assert.match(roadmap, /primary `refreshDesigner\(\)` consumes the shared declaration-only design cache/);
+  assert.match(backlog, /primary `refreshDesigner\(\)` consumes the bounded declaration-only design snapshot cache/);
+  assert.match(handoff, /primary `refreshDesigner\(\)` uses the bounded declaration-only design snapshot cache/);
+
+  const stale = [
+    /\[ \] wire the non-executing design model into the primary `refreshDesigner\(\)` path/,
+    /wire the design model\/cache into primary `refreshDesigner\(\)`;/
+  ];
+  for (const pattern of stale) {
+    assert.doesNotMatch(roadmap, pattern);
+    assert.doesNotMatch(backlog, pattern);
+    assert.doesNotMatch(handoff, pattern);
   }
 });
