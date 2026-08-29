@@ -1,0 +1,11 @@
+create number clicks = 0
+
+window "Image buttons" as main size 420, 180:
+  imagelist as icons size 16, 16:
+    image open from "patch-resource:icons.open"
+  button "Open" as open_button image icons.open at 24, 24 size 140, 36
+  text "native ImageList" at 24, 80 size 280, 28
+
+when open_button clicked:
+  change clicks:
+    add 1
