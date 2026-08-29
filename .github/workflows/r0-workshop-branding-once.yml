@@ -1,0 +1,52 @@
+name: R0 Workshop and branding integration
+# One-shot guarded integration workflow. It deletes itself after a verified commit.
+# Final gate synchronizes the large Workshop, compiler brand, beta36 compatibility, and fast default startup.
+
+on:
+  push:
+    branches:
+      - gpt/r0-active-form-materialization-282
+    paths:
+      - .github/workflows/r0-workshop-branding-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gpt/r0-active-form-materialization-282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply guarded Studio transformations
+        run: |
+          python3 .github/scripts/r0_workshop_branding_once.py
+          python3 .github/scripts/r0_async_run_once.py
+          python3 .github/scripts/r0_runtime_adapter_defer_once.py
+          python3 .github/scripts/r0_site_brand_contract_once.py
+      - name: Verify Studio, Workshop and branding
+        run: |
+          node --check web/playground.js
+          node --check web/beta35-studio.js
+          node --check web/studio-dom-sync.js
+          node --check web/designer-workspace.js
+          node --check web/forms-designer.js
+          node --check web/designer-statusbar.js
+          node --check web/table-stage1.js
+          node --test tests/beta35-studio-surface.test.js tests/studio-branding.test.js tests/workshop-desk.test.js tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
+          node --test tests/workshop-desk-browser.test.js
+          npm run build:site
+          npm run check:site
+      - name: Commit verified Studio work
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Expand Workshop Desk and integrate compiler branding"
+          git push origin HEAD:gpt/r0-active-form-materialization-282
