@@ -19,10 +19,10 @@ export class NativePictureResourceError extends Error {
 }
 
 /**
- * Resolve Studio project image locators into self-contained Picture and PaintBox
- * `draw image` source data URIs. The returned IR is a deep clone; the caller's
- * Native GUI IR is never mutated. Native Ready runtimes follow
- * native-picture-formats/1.0: PNG/JPEG only.
+ * Resolve Studio project image locators into self-contained Picture, PaintBox
+ * `draw image`, and ImageList/Button source data URIs. The returned IR is a
+ * deep clone; the caller's Native GUI IR is never mutated. Native Ready
+ * runtimes follow native-picture-formats/1.0: PNG/JPEG only.
  */
 export function resolveNativePictureResources(input, resources = []) {
   if (!input || typeof input !== 'object' || !Array.isArray(input.forms)) {
@@ -32,13 +32,20 @@ export function resolveNativePictureResources(input, resources = []) {
   const byId = new Map(normalized.map(resource => [resource.id, resource]));
   const ir = cloneJson(input);
   const resolved = [];
+  const imageListItems = resolveImageListSources(ir, byId, resolved);
 
   walkControls(ir.forms, control => {
     if (control?.type === 'picture') {
       resolvePictureSource(control, byId, resolved);
       return;
     }
-    if (control?.type === 'paintbox') resolvePaintImageProgram(control, byId, resolved);
+    if (control?.type === 'paintbox') {
+      resolvePaintImageProgram(control, byId, resolved);
+      return;
+    }
+    if (control?.type === 'button' && (control.imageListId || control.imageItem || control.imageSource)) {
+      resolveButtonImageSource(control, imageListItems);
+    }
   });
 
   return Object.freeze({
@@ -54,6 +61,97 @@ export function nativePictureResourceDataUri(resource) {
   const [normalized] = validateStudioResources([resource]);
   assertNativePictureResourceMediaType(normalized);
   return `data:${normalized.mediaType};base64,${normalized.data}`;
+}
+
+function resolveImageListSources(ir, byId, resolved) {
+  const linked = new Map();
+  for (const list of ir.imageLists ?? []) {
+    const listId = String(list?.id ?? '').trim();
+    if (!listId || !Array.isArray(list.items)) {
+      throw new NativePictureResourceError('Native ImageList resource metadata is malformed.', 'NATIVE_IMAGELIST_RESOURCE');
+    }
+    for (const item of list.items) {
+      const itemName = String(item?.name ?? '').trim();
+      const resourceId = String(item?.resourceId ?? '').trim();
+      if (!itemName || !resourceId) {
+        throw new NativePictureResourceError(`Native ImageList '${listId}' contains incomplete image metadata.`, 'NATIVE_IMAGELIST_RESOURCE');
+      }
+      const expectedLocator = `${PATCH_NATIVE_PICTURE_RESOURCE_PREFIX}${resourceId}`;
+      const source = String(item.source ?? expectedLocator);
+      let linkedSource = source;
+      if (source.startsWith(PATCH_NATIVE_PICTURE_RESOURCE_PREFIX)) {
+        if (source !== expectedLocator) {
+          throw new NativePictureResourceError(
+            `Native ImageList '${listId}.${itemName}' source does not match resource '${resourceId}'.`,
+            'NATIVE_IMAGELIST_RESOURCE_MISMATCH'
+          );
+        }
+        const resource = byId.get(resourceId);
+        if (!resource) {
+          throw new NativePictureResourceError(
+            `Native ImageList '${listId}.${itemName}' references missing project resource '${resourceId}'.`,
+            'NATIVE_PICTURE_RESOURCE_MISSING'
+          );
+        }
+        assertNativePictureResourceMediaType(resource, `${listId}.${itemName}`);
+        linkedSource = nativePictureResourceDataUri(resource);
+        resolved.push(Object.freeze({
+          control: null,
+          resourceId,
+          mediaType: resource.mediaType,
+          size: resource.size,
+          sha256: resource.sha256,
+          policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID,
+          consumer: 'imagelist',
+          imageList: listId,
+          imageItem: itemName
+        }));
+      } else {
+        assertNativePictureSourceFormat(source, { controlId: `${listId}.${itemName}` });
+      }
+      item.source = linkedSource;
+      linked.set(`${listId}\u0000${itemName}`, Object.freeze({
+        listId,
+        itemName,
+        resourceId,
+        source: linkedSource,
+        width: Number(list.width),
+        height: Number(list.height)
+      }));
+    }
+  }
+  return linked;
+}
+
+function resolveButtonImageSource(control, imageListItems) {
+  const listId = String(control.imageListId ?? '').trim();
+  const itemName = String(control.imageItem ?? '').trim();
+  if (!listId || !itemName) {
+    throw new NativePictureResourceError(
+      `Native Button '${control.id ?? 'unnamed'}' has incomplete ImageList metadata.`,
+      'NATIVE_IMAGELIST_BUTTON_BINDING'
+    );
+  }
+  const item = imageListItems.get(`${listId}\u0000${itemName}`);
+  if (!item) {
+    throw new NativePictureResourceError(
+      `Native Button '${control.id ?? 'unnamed'}' references missing ImageList item '${listId}.${itemName}'.`,
+      'NATIVE_IMAGELIST_BUTTON_BINDING'
+    );
+  }
+  if (String(control.imageResourceId ?? '') !== item.resourceId) {
+    throw new NativePictureResourceError(
+      `Native Button '${control.id ?? 'unnamed'}' image resource does not match '${listId}.${itemName}'.`,
+      'NATIVE_IMAGELIST_RESOURCE_MISMATCH'
+    );
+  }
+  if (Number(control.imageWidth) !== item.width || Number(control.imageHeight) !== item.height) {
+    throw new NativePictureResourceError(
+      `Native Button '${control.id ?? 'unnamed'}' image size does not match ImageList '${listId}'.`,
+      'NATIVE_IMAGELIST_SIZE_MISMATCH'
+    );
+  }
+  control.imageSource = item.source;
 }
 
 function resolvePictureSource(control, byId, resolved) {
