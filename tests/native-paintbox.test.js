@@ -26,13 +26,13 @@ function build(source = SOURCE) {
   return buildNativeGuiIRV16(compile(source, { name: 'NativePaintBox', kind: 'window' }));
 }
 
-test('current native contract is IR 1.7 / payload 17 / runtime 1.8', () => {
+test('current native contract is IR 1.8 / payload 18 / runtime 1.9', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.guiIr, '1.7');
-  assert.equal(contract.payload, 17);
-  assert.equal(contract.runtime, '1.8');
-  assert.equal(contract.runtimeTags.windows, 'native-win32-runtime-v1.8');
+  assert.equal(contract.id, 'native-gui-1.8/payload-18/runtime-1.9');
+  assert.equal(contract.guiIr, '1.8');
+  assert.equal(contract.payload, 18);
+  assert.equal(contract.runtime, '1.9');
+  assert.equal(contract.runtimeTags.windows, 'native-win32-runtime-v1.9');
 });
 
 test('Native GUI IR 1.6 carries PaintBox Stage 1 programs without leaking Text shadows', () => {
@@ -71,7 +71,7 @@ test('Native GUI build plan selects additive PaintBox runtime 1.7 automatically'
   const compiled = compile(SOURCE, { name: 'NativePaintBox', kind: 'window' });
   const plan = buildNativeGuiPlan(compiled);
   assert.equal(plan.tier, 'paintbox-v17');
-  assert.equal(plan.gui.version, '1.7');
+  assert.equal(plan.gui.version, '1.8');
   assert.equal(plan.features.paintbox, true);
   assert.equal(flattenCurrentNativeGuiControls(plan.gui).filter(control => control.type === 'paintbox').length, 1);
 });
