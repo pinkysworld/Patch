@@ -2,7 +2,7 @@
 
 Living briefing for coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-29**, after the R0/R1/Offline Studio foundation merge and the Offline Studio public-download work.
+Last refreshed: **2026-08-29**, after the Offline Studio public release and primary R0 Designer design-model/cache integration.
 
 ## What Patch is
 
@@ -39,7 +39,7 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 
 ## Current collaboration state
 
-- `main` includes merged PR #283, commit `560e94b34ec76b2fd7832aeba7cb9698709c303b`, with R0 design-model/cache foundations, R1 ImageList pretransport and Offline Studio Stage 1 executable foundations.
+- `main` includes the public Offline Studio release work from PR #285 (`offline-studio-v0.2`); current R0 work wires the existing design-model/cache foundations into the primary Designer refresh without widening runtime/formal contracts.
 - Active R0 tracker: [#282](https://github.com/pinkysworld/Patch/issues/282).
 - Current status source: `docs/ROADMAP.md`.
 - Long-term execution backlog: `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
@@ -71,12 +71,14 @@ Completed foundations:
 - Workshop real-Chrome freeze regression;
 - `studio-design-model/0.1`, which builds design UI/state without executing application behavior;
 - `studio-design-cache/0.1` bounded source-revision snapshots;
-- Workshop and 10-Form / 200-control design-model/cache acceptance coverage.
+- Workshop and 10-Form / 200-control design-model/cache acceptance coverage;
+- primary `refreshDesigner()` uses the bounded declaration-only design snapshot cache and no longer executes unrelated application behavior;
+- hosted and Offline Studio package the same design-model/cache module closure.
 
 Next R0 work:
 
-1. wire the design model/cache into primary `refreshDesigner()`;
-2. true active-Form Designer materialization/virtualization;
+1. true active-Form Designer materialization/virtualization;
+2. share revision snapshots across remaining Designer adapters and define the Worker boundary;
 3. stable keyed/incremental runtime rendering with focus/caret/selection preservation;
 4. measurable Workshop/large-project performance gates;
 5. split runtime/render/build responsibilities out of `web/playground.js`;
@@ -165,4 +167,4 @@ node src/cli-entry.js doctor --json
 
 ## Next slice
 
-Prioritize **R0 #282 integration** first: primary Designer use of the non-executing model/cache and true Form virtualization. In parallel, close the two explicit native R1 resource-consumer gaps. Offline Studio Stage 2 may progress alongside these only through a narrow local-build bridge that reuses the existing compiler/runtime rather than creating a second build system.
+Prioritize **R0 #282 virtualization** first: true active-Form materialization on top of the now non-executing cached Designer model, followed by the Worker and keyed-renderer boundaries. In parallel, close the two explicit native R1 resource-consumer gaps. Offline Studio Stage 2 may progress alongside these only through a narrow local-build bridge that reuses the existing compiler/runtime rather than creating a second build system.

@@ -12,7 +12,7 @@ This roadmap separates repository-controlled product work from credential/manual
 - Native GUI IR: **1.7**
 - current sealed native GUI payload: **v17**
 - current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
-- Studio design-model foundation: **0.1** (non-executing declaration model; browser Designer integration still pending)
+- Studio design model/cache: **0.1**, with primary browser Designer refresh using the declaration-only cached snapshot path
 - native ImageList asset pretransport plan: **0.1** (not a Ready native runtime contract)
 - Offline Studio manifest: **v1**, rolling Stage 1 release channel **`offline-studio-v0.2`**
 - previous PaintBox Stage 1 line: Native GUI IR **1.6** / payload **v16** / runtime **v1.7**
@@ -47,10 +47,9 @@ Completed or landed as concrete foundations:
 - [x] `studio-design-model/0.1`: bounded design-time declaration model that does not execute calls, changes, loops, conditionals, previews or Form visibility actions
 - [x] deterministic tests proving the design model retains initial UI state while skipping application behavior
 - [x] `studio-design-cache/0.1`: bounded source-revision snapshot cache with Workshop and 10-Form/200-control acceptance coverage
+- [x] primary `refreshDesigner()` consumes the shared declaration-only design cache instead of executing the Patch application; hosted/Offline Studio package the same design-model/cache modules
 
 Remaining R0 work:
-
-- [ ] wire the non-executing design model into the primary `refreshDesigner()` path
 - [ ] share parsed/compiled AST/design snapshots across Designer adapters by project revision
 - [ ] true active-Form Designer materialization/virtualization rather than post-render hiding
 - [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization

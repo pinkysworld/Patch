@@ -49,17 +49,16 @@ Status in this branch:
 - accessibility exposes `aria-multiselectable`;
 - the Chrome Workshop test covers two selected services.
 
-### P0 · Designer preview still executes the complete program on edits
+### P0 · Designer preview execution boundary
 
-`refreshDesigner()` uses a new interpreter and executes the complete source to obtain the UI model. The language currently permits bounded but potentially large loops, and future data/runtime features will make arbitrary design-time execution more expensive.
+Status after the R0 follow-up: **primary path resolved**. `refreshDesigner()` now consumes the bounded `studio-design-cache/0.1`, which builds `studio-design-model/0.1` snapshots from declarations and initial state without executing calls, changes, loops, conditionals, preview blocks or Form visibility actions. The same modules are packaged in hosted and Offline Studio.
 
-Required follow-up:
+Remaining follow-up:
 
-1. introduce a design-model path that parses/compiles UI declarations without executing unrelated application behavior;
-2. cache source/AST snapshots by project revision;
-3. move heavy parse/compile/design-model work to a Worker once the worker boundary is versioned;
-4. add an execution/time budget for any remaining design-time evaluation;
-5. record click/edit-to-preview latency in the 10-Form / 200-control stress fixture.
+1. share revision snapshots across remaining Designer adapters instead of repeated local parsing;
+2. move heavy parse/compile/design-model work to a Worker once the worker boundary is versioned;
+3. keep a bounded policy for any design-time expression evaluation that remains necessary;
+4. record edit-to-preview and Form-switch latency in the 10-Form / 200-control stress fixture.
 
 ### P0 · Active-Form Designer rendering is not true virtualization yet
 
@@ -136,8 +135,8 @@ Required follow-up: refresh the issue so GitHub Issues, roadmap and generated ca
 - [x] lazy hidden runtime Form materialization
 - [x] Studio list-backed ListBox parity
 - [ ] true active-Form Designer virtualization
-- [ ] design-model path that does not execute the full application
-- [ ] AST/design snapshot cache
+- [x] design-model path that does not execute the full application
+- [x] bounded source-revision design snapshot cache wired to primary `refreshDesigner()`
 - [ ] Worker compile/design-model boundary
 - [ ] keyed/incremental runtime rendering
 - [ ] Workshop click-to-first-app-paint benchmark
