@@ -45,7 +45,7 @@ Current product contract:
 - token-free offline compiler/linker and sealed native runtime templates;
 - public content-addressed PWA plus real-Chrome startup/Workshop checks;
 - Workshop Desk acceptance application;
-- R0 `studio-design-model/0.1` and `studio-design-cache/0.1` foundations;
+- R0 `studio-design-model/0.1` and `studio-design-cache/0.1`, wired into the primary non-executing Designer refresh path;
 - R1 `native-imagelist-asset-plan/0.1`, explicitly not yet a Ready native ImageList contract;
 - Offline Studio manifest **v1** and rolling Stage 1 release channel **`offline-studio-v0.2`** for Windows x64, macOS Apple Silicon and Linux x64;
 - Offline Studio release bundle validates platform self-smokes, identical embedded-site manifests and SHA-256 checksums before publication.
@@ -99,11 +99,11 @@ Completed:
 - [x] bounded top-level design-model budget;
 - [x] `studio-design-cache/0.1` bounded LRU source-revision snapshot cache;
 - [x] Workshop Desk preserves all three Forms in the declaration-only model;
-- [x] 10-Form / 200-control design-model/cache acceptance coverage.
+- [x] 10-Form / 200-control design-model/cache acceptance coverage;
+- [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache and no longer executes application behavior;
+- [x] public hosted/Offline Studio module closure packages the design model and cache.
 
 Remaining:
-
-- [ ] wire the non-executing design model into primary `refreshDesigner()`;
 - [ ] share the design snapshot cache across Designer adapters;
 - [ ] true active-Form Designer materialization/virtualization, not post-render hiding;
 - [ ] preserve Project Explorer, Object Inspector, selection and structural-editor behavior across materialization;
