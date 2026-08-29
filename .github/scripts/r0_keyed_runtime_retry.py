@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Trigger the retry only after the workflow has been updated to use the current docs-aware transformer.
 # Reuse the already-reviewed code/test transformation from the first guarded script,
 # but stop before its stale documentation anchor and apply current documentation edits below.
 source = Path('.github/scripts/r0_keyed_runtime_once.py').read_text()
