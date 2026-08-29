@@ -9,43 +9,23 @@ const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
+const SITE_HTML_FILES = ['index.html','language.html','docs.html','downloads.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','picture-control.js','picture-source.js','button-image.js','window-icon.js','shape-control.js','shape-source.js','paintbox-control.js','imagelist-control.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
   'source-validation.js','guard-validation.js','call-site-validation.js','independent-range-expression.js','independent-guard-expression.js','compiler.js','diagnostics.js','backend-diagnostic-context.js','artifact-name.js','bundle.js','wasm.js','wasm-direct.js',
   'c99.js','webapp.js','window-webapp.js','window-web-accessibility.js','window-web-paintbox.js','window-build.js','menu-shortcut.js','window-events.js','designer.js','designer-shape.js','designer-paintbox.js','component-registry.js','designer-menu.js','designer-panel.js','designer-data.js','designer-tabs-nested.js','form-layout.js','window-layout-policy.js','studio-project.js','studio-resources.js','studio-outline-model.js','studio-diagnostics.js',
-  'window-compiled.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-gui-ir-v15.js','native-gui-ir-v16.js','native-gui-ir-v17.js','native-current-contract.js','native-picture-format-policy.js','native-picture-resources.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','native-chrome-backend-adapter.js','native-shape-backend-adapter.js','native-paintbox-backend-adapter.js','native-paintbox-image-backend-adapter.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-gui-v14.js','sealed-native-gui-v15.js','sealed-native-gui-v16.js','sealed-native-gui-v17.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
+  'window-compiled.js','native-gui-ir-v12.js','native-gui-ir-v13.js','native-gui-ir-v14.js','native-gui-ir-v15.js','native-gui-ir-v16.js','native-gui-ir-v17.js','native-gui-ir-v18.js','native-current-contract.js','native-picture-format-policy.js','native-picture-resources.js','native-frozen-contract.js','native-gui-frozen-lower.js','native-gui-frozen-seal.js','native-tree-backend-adapter.js','native-slider-backend-adapter.js','native-chrome-backend-adapter.js','native-shape-backend-adapter.js','native-paintbox-backend-adapter.js','native-paintbox-image-backend-adapter.js','native-imagelist-backend-adapter.js','sealed-native-gui-v12.js','sealed-native-gui-v13.js','sealed-native-gui-v14.js','sealed-native-gui-v15.js','sealed-native-gui-v16.js','sealed-native-gui-v17.js','sealed-native-gui-v18.js','sealed-native-package.js','prebuilt-native.js','prebuilt-window.js','local-native-kit.js',
   'concrete-call-witness.js','concrete-call-certificate.js','concrete-call-body.js','concrete-call-body-certificate.js'
 ];
 
 const SITE_WEB_STATIC_FILES = [
-  'style.css','site-navigation.css','site-refresh.css','site-pages.css','studio-accessibility.css','studio-command-palette.css','designer-inspector.css','designer-data-editor.css','designer-structure-ux.css','designer-ux.css','designer-toolbox.css','designer-imagelist.css','designer-menu-designer.css','designer-panel.css','form-designer-workflow.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
+  'style.css','site-navigation.css','site-refresh.css','site-pages.css','studio-accessibility.css','studio-command-palette.css','designer-inspector.css','designer-data-editor.css','designer-structure-ux.css','designer-ux.css','designer-toolbox.css','designer-imagelist.css','designer-menu-designer.css','designer-panel.css','designer-multiselect.css','designer-responsive-layout.css','beta35-studio.css','studio-outline.css','designer-layout-actions.css','designer-table-actions.css','form-designer-workflow.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
 ];
 
 const SITE_WEB_MODULE_FILES = [
-  'studio-bootstrap.js','runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js',
-  'playground.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-paintbox.js','resource-manager.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-event-inspector.js','designer-focus-order.js','designer-menu-designer.js','designer-panel.js','designer-ui-namespace.js','designer-toolbox.js','designer-imagelist.js','designer-statusbar.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','form-window-resize.js',
-  'studio-dom-sync.js','studio-diagnostics.js','studio-quick-open.js','studio-command-palette.js','studio-accessibility.js','sw.js'
+  'studio-bootstrap.js','runtime-integrity.js','native-build.js','project-lifecycle.js','project-config-restore.js','recovery-manager.js','playground.js','beta35-studio.js','studio-outline.js','forms-designer.js','designer-selection.js','designer-core-selection.js','slider-stage1.js','table-stage1.js','tree-designer.js','designer-workspace.js','designer-paintbox.js','resource-manager.js','designer-data-editor.js','designer-structural-keyboard.js','designer-tabs-nested.js','designer-structure-ux.js','designer-ux.js','designer-layout-actions.js','designer-table-model.js','designer-table-actions.js','designer-tree-model.js','designer-tree-duplicate.js','designer-tabs-control-model.js','designer-tabs-control-actions.js','designer-tabs-page-model.js','designer-tabs-page-duplicate.js','designer-control-duplicate-model.js','designer-control-duplicate.js','designer-z-order-model.js','designer-form-duplicate-model.js','designer-form-duplicate.js','designer-form-delete-model.js','designer-form-delete.js','designer-event-inspector.js','designer-focus-order.js','designer-menu-designer.js','designer-panel.js','designer-ui-namespace.js','designer-toolbox.js','designer-imagelist.js','designer-statusbar.js','form-designer-workflow.js','designer-alignment.js','designer-alignment-guides.js','designer-multiselect.js','designer-layout-policy.js','designer-responsive-layout.js','form-window-resize.js','studio-dom-sync.js','workshop-sample-current.js','studio-diagnostics.js','studio-quick-open.js','studio-command-palette.js','studio-accessibility.js','sw.js'
 ];
-
-SITE_HTML_FILES.splice(3, 0, 'downloads.html');
-SITE_WEB_STATIC_FILES.splice(13, 0, 'designer-multiselect.css', 'designer-responsive-layout.css', 'beta35-studio.css', 'studio-outline.css');
-SITE_WEB_MODULE_FILES.splice(7, 0, 'beta35-studio.js', 'studio-outline.js');
-SITE_WEB_MODULE_FILES.splice(25, 0, 'designer-multiselect.js', 'designer-layout-policy.js', 'designer-responsive-layout.js');
-SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-ux.css') + 1, 0, 'designer-layout-actions.css');
-SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-ux.js') + 1, 0, 'designer-layout-actions.js');
-SITE_WEB_STATIC_FILES.splice(SITE_WEB_STATIC_FILES.indexOf('designer-layout-actions.css') + 1, 0, 'designer-table-actions.css');
-SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-layout-actions.js') + 1, 0,
-  'designer-table-model.js', 'designer-table-actions.js',
-  'designer-tree-model.js', 'designer-tree-duplicate.js',
-  'designer-tabs-control-model.js', 'designer-tabs-control-actions.js',
-  'designer-tabs-page-model.js', 'designer-tabs-page-duplicate.js',
-  'designer-control-duplicate-model.js', 'designer-control-duplicate.js',
-  'designer-z-order-model.js',
-  'designer-form-duplicate-model.js', 'designer-form-duplicate.js',
-  'designer-form-delete-model.js', 'designer-form-delete.js'
-);
 
 const siteRevision = computeSiteRevision();
 
@@ -54,7 +34,7 @@ fs.mkdirSync(out, { recursive: true });
 
 for (const name of SITE_HTML_FILES) {
   const source = fs.readFileSync(path.join(sourceWeb, name), 'utf8');
-  const normalized = normalizeCurrentProductSurface(name, source);
+  const normalized = normalizeProductSurface(name, source);
   fs.writeFileSync(path.join(out, name), versionLocalAssetReferences(normalized, siteRevision));
 }
 
@@ -67,7 +47,6 @@ for (const name of SITE_WEB_MODULE_FILES) {
     .replaceAll("'../src/", "'./src/")
     .replaceAll('"../src/', '"./src/');
   if (name === 'sw.js') content = content.replaceAll('__PATCH_SITE_REV__', siteRevision);
-  if (name === 'native-build.js') content = normalizeCurrentNativeBuildCopy(content);
   content = versionRelativeModuleSpecifiers(content, siteRevision);
   fs.writeFileSync(path.join(out, name), content);
 }
@@ -87,65 +66,16 @@ validateGeneratedHtmlAssetClosure();
 validatePaperPrivacyBoundary();
 console.log(`built _site/ for Patch ${pkg.version} revision ${siteRevision} with ${SITE_HTML_FILES.length} pages and ${SITE_SRC_FILES.length} browser source modules`);
 
-function normalizeCurrentProductSurface(name, source) {
+function normalizeProductSurface(name, source) {
   let html = source
     .replaceAll('0.2.0-beta.35', pkg.version)
     .replaceAll('0.2 beta.35+', '0.2 beta.36+')
     .replaceAll('0.2 beta.35', '0.2 beta.36');
 
-  // Research sources stay in paper/, but the working manuscript is deliberately
-  // not part of the public Patch Studio website or its navigation.
+  // The website must expose the product contract exactly as authored. Current
+  // contract numbers are not rewritten here because broad replacement used to
+  // mutate compatibility-history copy and let stale source files escape review.
   html = html.replace(/\s*<a\b[^>]*href="\.\/paper\.html"[^>]*>[\s\S]*?<\/a>/g, '');
-
-  // downloads.html is authored directly for the current contract and intentionally
-  // mentions older IR/payload/runtime lines as compatibility history.
-  if (name !== 'downloads.html') {
-    html = html
-      .replaceAll('Native GUI IR 1.3 / payload v13 / runtime v1.4', 'Native GUI IR 1.4 / payload v14 / runtime v1.5')
-      .replaceAll('Native GUI IR <strong>1.3</strong>', 'Native GUI IR <strong>1.4</strong>')
-      .replaceAll('payload <strong>v13</strong>', 'payload <strong>v14</strong>')
-      .replaceAll('runtime <strong>v1.4</strong>', 'runtime <strong>v1.5</strong>')
-      .replaceAll('Native GUI IR 1.3 as payload v13', 'Native GUI IR 1.4 as payload v14')
-      .replaceAll('current runtime v1.4 templates', 'current runtime v1.5 templates')
-      .replaceAll('Current runtime v1.4 templates', 'Current runtime v1.5 templates')
-      .replaceAll('IR 1.3 / v1.4', 'IR 1.4 / v1.5')
-      .replaceAll('native-win32-runtime-v1.4', 'native-win32-runtime-v1.5')
-      .replaceAll('native-macos-runtime-v1.4', 'native-macos-runtime-v1.5')
-      .replaceAll('native-linux-runtime-v1.4', 'native-linux-runtime-v1.5')
-      .replaceAll('Native GUI IR 1.4 / payload v14 / runtime v1.5', 'Native GUI IR 1.5 / payload v15 / runtime v1.6')
-      .replaceAll('Native GUI IR <strong>1.4</strong>', 'Native GUI IR <strong>1.5</strong>')
-      .replaceAll('payload <strong>v14</strong>', 'payload <strong>v15</strong>')
-      .replaceAll('runtime <strong>v1.5</strong>', 'runtime <strong>v1.6</strong>')
-      .replaceAll('Native GUI IR 1.4 as payload v14', 'Native GUI IR 1.5 as payload v15')
-      .replaceAll('current runtime v1.5 templates', 'current runtime v1.6 templates')
-      .replaceAll('Current runtime v1.5 templates', 'Current runtime v1.6 templates')
-      .replaceAll('IR 1.4 / v1.5', 'IR 1.5 / v1.6')
-      .replaceAll('native-win32-runtime-v1.5', 'native-win32-runtime-v1.6')
-      .replaceAll('native-macos-runtime-v1.5', 'native-macos-runtime-v1.6')
-      .replaceAll('native-linux-runtime-v1.5', 'native-linux-runtime-v1.6')
-      .replaceAll('Native GUI IR 1.5 / payload v15 / runtime v1.6', 'Native GUI IR 1.6 / payload v16 / runtime v1.7')
-      .replaceAll('Native GUI IR <strong>1.5</strong>', 'Native GUI IR <strong>1.6</strong>')
-      .replaceAll('payload <strong>v15</strong>', 'payload <strong>v16</strong>')
-      .replaceAll('runtime <strong>v1.6</strong>', 'runtime <strong>v1.7</strong>')
-      .replaceAll('Native GUI IR 1.5 as payload v15', 'Native GUI IR 1.6 as payload v16')
-      .replaceAll('current runtime v1.6 templates', 'current runtime v1.7 templates')
-      .replaceAll('Current runtime v1.6 templates', 'Current runtime v1.7 templates')
-      .replaceAll('IR 1.5 / v1.6', 'IR 1.6 / v1.7')
-      .replaceAll('native-win32-runtime-v1.6', 'native-win32-runtime-v1.7')
-      .replaceAll('native-macos-runtime-v1.6', 'native-macos-runtime-v1.7')
-      .replaceAll('native-linux-runtime-v1.6', 'native-linux-runtime-v1.7')
-      .replaceAll('Native GUI IR 1.6 / payload v16 / runtime v1.7', 'Native GUI IR 1.7 / payload v17 / runtime v1.8')
-      .replaceAll('Native GUI IR <strong>1.6</strong>', 'Native GUI IR <strong>1.7</strong>')
-      .replaceAll('payload <strong>v16</strong>', 'payload <strong>v17</strong>')
-      .replaceAll('runtime <strong>v1.7</strong>', 'runtime <strong>v1.8</strong>')
-      .replaceAll('Native GUI IR 1.6 as payload v16', 'Native GUI IR 1.7 as payload v17')
-      .replaceAll('current runtime v1.7 templates', 'current runtime v1.8 templates')
-      .replaceAll('Current runtime v1.7 templates', 'Current runtime v1.8 templates')
-      .replaceAll('IR 1.6 / v1.7', 'IR 1.7 / v1.8')
-      .replaceAll('native-win32-runtime-v1.7', 'native-win32-runtime-v1.8')
-      .replaceAll('native-macos-runtime-v1.7', 'native-macos-runtime-v1.8')
-      .replaceAll('native-linux-runtime-v1.7', 'native-linux-runtime-v1.8');
-  }
 
   if (name === 'index.html') {
     html = html.replace(
@@ -154,22 +84,6 @@ function normalizeCurrentProductSurface(name, source) {
     );
   }
   return html;
-}
-
-function normalizeCurrentNativeBuildCopy(source) {
-  return source
-    .replaceAll('Native GUI IR 1.3', 'Native GUI IR 1.4')
-    .replaceAll('payload v13', 'payload v14')
-    .replaceAll('runtime v1.4', 'runtime v1.5')
-    .replaceAll('Native GUI IR 1.4', 'Native GUI IR 1.5')
-    .replaceAll('payload v14', 'payload v15')
-    .replaceAll('runtime v1.5', 'runtime v1.6')
-    .replaceAll('Native GUI IR 1.5', 'Native GUI IR 1.6')
-    .replaceAll('payload v15', 'payload v16')
-    .replaceAll('runtime v1.6', 'runtime v1.7')
-    .replaceAll('Native GUI IR 1.6', 'Native GUI IR 1.7')
-    .replaceAll('payload v16', 'payload v17')
-    .replaceAll('runtime v1.7', 'runtime v1.8');
 }
 
 function computeSiteRevision() {
