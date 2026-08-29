@@ -1,0 +1,56 @@
+name: R0 tab materialization fix
+
+on:
+  push:
+    branches:
+      - gpt/r0-active-form-materialization-282
+    paths:
+      - .github/workflows/r0-tab-materialization-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gpt/r0-active-form-materialization-282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply guarded tab materialization propagation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('web/playground.js')
+          text = p.read_text()
+          old = "          tabSelections,\n          windowIndex,"
+          new = "          tabSelections,\n          materialization,\n          windowIndex,"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one renderer context match, got {text.count(old)}')
+          text = text.replace(old, new, 1)
+          old = "      renderWindows(context.container, context.windows, context.interactive);"
+          new = "      renderWindows(context.container, context.windows, context.interactive, { materialization: context.materialization });"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one tab rerender match, got {text.count(old)}')
+          text = text.replace(old, new, 1)
+          p.write_text(text)
+          Path('.github/workflows/r0-tab-materialization-once.yml').unlink()
+          PY
+      - name: Verify tab materialization contract
+        run: |
+          node --check web/playground.js
+          node --test tests/studio-active-form-materialization-integration.test.js tests/workshop-desk-browser.test.js
+          npm run build:site
+          npm run check:site
+      - name: Commit verified fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/playground.js tests/studio-active-form-materialization-integration.test.js .github/workflows/r0-tab-materialization-once.yml
+          git commit -m "Preserve active Form materialization across tab switches"
+          git push origin HEAD:gpt/r0-active-form-materialization-282
