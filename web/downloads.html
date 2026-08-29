@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Download Patch offline compiler packages and build the Patch Studio offline IDE. Current desktop Window linking uses Native GUI IR 1.8, payload v18 and runtime v1.9.">
+  <meta name="description" content="Download Patch offline compiler and Patch Studio Offline IDE packages. Current desktop Window linking uses Native GUI IR 1.8, payload v18 and runtime v1.9.">
   <title>Downloads · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,7 +24,7 @@
     <div>
       <p class="page-eyebrow">Patch offline tools · 0.2 beta.36+</p>
       <h1>Compile and design Patch offline.</h1>
-      <p>The offline compiler builds without Patch Studio. The offline IDE packages the same source-backed Studio for local use without Electron. Current Windows, macOS and Linux Window builds use Native GUI IR 1.8 / payload v18 / runtime v1.9.</p>
+      <p>The offline compiler builds without Patch Studio. The Offline IDE packages the same source-backed Studio for local use without Electron. Current Windows, macOS and Linux Window builds use Native GUI IR 1.8 / payload v18 / runtime v1.9.</p>
     </div>
     <pre class="page-code">patch check app.patch
 patch run app.patch
@@ -36,28 +36,35 @@ npm run build:offline-ide</pre>
 
   <section class="page-section">
     <h2>Offline compiler</h2>
-    <p><strong><code>offline-compiler-v0.2</code> is the rolling beta channel.</strong> Current Windows, macOS and Linux Window linking uses Native GUI IR <strong>1.8</strong>, sealed payload <strong>v18</strong> and runtime <strong>v1.9</strong>. The release workflow also compiles and smoke-tests the full Workshop Desk example.</p>
+    <p><strong><code>offline-compiler-v0.2</code> is the rolling beta channel.</strong> Current Windows, macOS and Linux Window linking uses Native GUI IR <strong>1.8</strong>, sealed payload <strong>v18</strong> and runtime <strong>v1.9</strong>. The release workflow also compiles and smoke-tests the full Workshop Desk example. Normal local workflows do not need a GitHub token.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Windows x64</strong><span>Standalone compiler + native Win32 runtime v1.9 linker.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>macOS Apple Silicon</strong><span>Standalone compiler + native AppKit runtime v1.9 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>Portable kit with embedded Intel Node runtime + AppKit runtime v1.9.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>Portable tar.gz kit with embedded Intel Node runtime + AppKit runtime v1.9. Includes its own Intel Node runtime.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-linux-x64"><strong>Linux x64</strong><span>Standalone compiler + native GTK3 runtime v1.9 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>FreeBSD x64</strong><span>Portable Console compiler kit + C99 linker. Native FreeBSD GUI is not claimed.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>FreeBSD x64</strong><span>Portable Console compiler kit + C99 linker. Requires local Node 22+ and cc. Native FreeBSD Window/GUI linking is not claimed yet.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/SHA256SUMS"><strong>SHA256 checksums</strong><span>Verify the exact rolling-beta release bytes.</span></a>
     </div>
   </section>
 
   <section class="page-section">
     <h2>Patch Studio Offline IDE</h2>
-    <p>The offline IDE is a packaged copy of the real Patch Studio, not a separate editor. It starts a local loopback server and opens the installed browser, preserving ES modules, service-worker behavior, project v4 resources, recovery, the Designer and the current native build frontend without bundling Chromium.</p>
-    <pre class="page-code">npm run build:offline-ide
+    <p><strong><code>offline-ide-v0.2</code> is the rolling local Studio channel.</strong> The packaged IDE is the real Patch Studio, not a separate editor. It starts a local loopback server and opens the installed browser, preserving ES modules, service-worker behavior, project v4 resources, recovery and the source-backed Designer without bundling Chromium. Platform release packages include their own Node runtime.</p>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-ide-v0.2/patch-studio-offline-windows-x64.zip"><strong>Offline IDE · Windows x64</strong><span>Local Patch Studio bundle with bundled Node runtime and Windows launcher.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-ide-v0.2/patch-studio-offline-macos-arm64.tar.gz"><strong>Offline IDE · macOS Apple Silicon</strong><span>Local Patch Studio bundle with bundled Apple Silicon Node runtime.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-ide-v0.2/patch-studio-offline-linux-x64.tar.gz"><strong>Offline IDE · Linux x64</strong><span>Local Patch Studio bundle with bundled Linux Node runtime.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-ide-v0.2/SHA256SUMS"><strong>Offline IDE checksums</strong><span>SHA-256 verification for the three rolling platform packages.</span></a>
+    </div>
+    <pre class="page-code"># build a developer bundle from source
+npm run build:offline-ide
 
-# Windows
+# Windows release bundle
 Patch Studio.cmd
 
-# macOS / Linux
+# macOS / Linux release bundle
 ./patch-studio</pre>
-    <p>Release packaging can include a platform Node runtime and verified native runtime templates, so a downloaded IDE bundle can run and perform token-free native builds while disconnected. See <code>docs/OFFLINE_IDE.md</code> for the package contract.</p>
+    <p>The initial rolling IDE release guarantees the self-contained local Studio and bundled Node runtime. Verified native runtime templates can also be supplied to the builder with <code>--runtime-dir</code>; until those templates are part of the rolling IDE package, the standalone Offline Compiler remains the guaranteed disconnected native-linking route.</p>
   </section>
 
   <section class="page-section">
@@ -76,7 +83,7 @@ Patch Studio.cmd
 
   <section class="page-section">
     <h2>Workshop Desk acceptance example</h2>
-    <p><code>examples/workshop-desk.patch</code> is the broad current Ready example. It combines three Forms with Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, ImageList/Button image, Panel, Shape, PaintBox, StatusBar and Timer. The offline compiler matrix links that example on Windows, Linux, Apple Silicon macOS and Intel macOS.</p>
+    <p><code>examples/workshop-desk.patch</code> is the broad current Ready example. It combines three Forms with Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, ImageList/Button image, Panel, Shape, PaintBox, StatusBar and Timer. The ImageList uses a bounded static inline PNG so the source remains self-contained. The offline compiler matrix links that example on Windows, Linux, Apple Silicon macOS and Intel macOS.</p>
   </section>
 
   <section class="page-section">
@@ -106,7 +113,7 @@ Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
     </div>
   </section>
 
-  <footer class="page-footer"><span>Patch offline tools · 0.2.0-beta.36+</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.2">Open compiler release on GitHub</a></footer>
+  <footer class="page-footer"><span>Patch offline tools · 0.2.0-beta.36+</span><span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.2">Compiler release</a> · <a href="https://github.com/pinkysworld/Patch/releases/tag/offline-ide-v0.2">Offline IDE release</a></span></footer>
 </main>
 </body>
 </html>
