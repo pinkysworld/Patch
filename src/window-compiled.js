@@ -7,6 +7,21 @@ export const PATCH_COMPILED_WINDOW_IR_VERSION = '0.10';
 
 export class CompiledWindowError extends Error {}
 
+// A compiled Window artifact is target-neutral. Target capability checks happen
+// before native/web packaging. Re-running validateWindowRuntimeSupport here with
+// its fail-closed defaults used to reject otherwise supported TreeView, Slider,
+// PaintBox and ImageList programs such as the Workshop Desk showcase.
+const COMPILED_WINDOW_SOURCE_SURFACE = Object.freeze({
+  allowTables: true,
+  allowLists: true,
+  allowListControls: true,
+  allowMenuDecorations: true,
+  allowTree: true,
+  allowSlider: true,
+  allowPaintBox: true,
+  allowImageList: true
+});
+
 export function buildCompiledWindowArtifact(compiled) {
   if (!compiled || !Array.isArray(compiled.ast)) {
     throw new CompiledWindowError('A compiled Patch program is required for a Window artifact.');
@@ -17,7 +32,7 @@ export function buildCompiledWindowArtifact(compiled) {
   if (compiled.ir?.version !== PATCH_COMPILED_WINDOW_IR_VERSION) {
     throw new CompiledWindowError(`Compiled Window artifacts require Change IR ${PATCH_COMPILED_WINDOW_IR_VERSION}.`);
   }
-  validateWindowRuntimeSupport(compiled);
+  validateWindowRuntimeSupport(compiled, COMPILED_WINDOW_SOURCE_SURFACE);
   const windows = compiled.ast.filter(node => node.kind === 'window');
   if (!windows.length) throw new CompiledWindowError('A Window artifact needs at least one Patch window.');
 
@@ -47,7 +62,7 @@ export function validateCompiledWindowArtifact(artifact) {
   const windowCount = artifact.program.filter(node => node?.kind === 'window').length;
   if (!windowCount) throw new CompiledWindowError('Compiled Window artifact contains no Patch window.');
   if (artifact.formLayout?.format !== 'patch-source-backed-form-layout' || !Array.isArray(artifact.formLayout.windows)) {
-    throw new CompiledWindowError('Compiled Window artifact form layout is invalid.');
+    throw new CompiledWindowError('Compiled Window artifact Form layout is invalid.');
   }
   if (artifact.formLayout.windows.length !== windowCount) {
     throw new CompiledWindowError('Compiled Window artifact Form layout does not match its executable Window program.');
