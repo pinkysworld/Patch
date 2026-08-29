@@ -74,6 +74,9 @@ jobs:
           replace_once('web/designer-statusbar.js',
               "  const shells = [...container.querySelectorAll('.patch-window')];\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');",
               "  const shells = [...container.querySelectorAll('.patch-window')];\n  const materializedValue = isDesigner ? container.dataset.patchDesignerMaterializedForm : undefined;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  shells.forEach((shell, windowIndex) => {\n    const body = shell.querySelector(':scope > .patch-window-body');\n    if (!body) return;\n    if (isDesigner && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {\n      for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter=\"true\"]')) stale.remove();\n      return;\n    }\n    const bars = cachedControls.filter(control => control.windowIndex === windowIndex && control.type === 'statusbar');")
+          replace_once('web/designer-panel.js',
+              "  const live = new Set();\n  for (const panel of panels) {\n    const control = controls.find(item => item.windowIndex === panel.windowIndex && item.type === 'panel' && item.id === panel.id);",
+              "  const live = new Set();\n  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;\n  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);\n  for (const panel of panels) {\n    if (Number.isInteger(materializedWindow) && panel.windowIndex !== materializedWindow) continue;\n    const control = controls.find(item => item.windowIndex === panel.windowIndex && item.type === 'panel' && item.id === panel.id);")
 
           replace_once('scripts/build-site.js',
               "'studio-diagnostics.js','studio-design-model.js','studio-design-cache.js',",
@@ -99,6 +102,7 @@ jobs:
           node --check web/designer-paintbox.js
           node --check web/designer-workspace.js
           node --check web/designer-statusbar.js
+          node --check web/designer-panel.js
           node --test tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
           node --test tests/workshop-desk-browser.test.js
           npm run build:site
@@ -108,6 +112,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/playground.js web/forms-designer.js web/designer-paintbox.js web/designer-workspace.js web/designer-statusbar.js scripts/build-site.js web/sw.js tests/workshop-desk-browser.test.js .github/workflows/r0-form-materialization-once.yml
+          git add web/playground.js web/forms-designer.js web/designer-paintbox.js web/designer-workspace.js web/designer-statusbar.js web/designer-panel.js scripts/build-site.js web/sw.js tests/workshop-desk-browser.test.js .github/workflows/r0-form-materialization-once.yml
           git commit -m "Materialize only the active Designer Form controls"
           git push origin HEAD:gpt/r0-active-form-materialization-282
