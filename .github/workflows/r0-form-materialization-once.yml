@@ -113,6 +113,7 @@ jobs:
           node --check web/playground.js
           node --check web/forms-designer.js
           node --test tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
+          node --test tests/workshop-desk-browser.test.js
           npm run build:site
           npm run check:site
       - name: Commit guarded materialization integration
