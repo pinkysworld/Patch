@@ -197,7 +197,8 @@ function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
   const supported = new Set([12, 17, PATCH_CURRENT_NATIVE_PAYLOAD_VERSION]);
   if (supported.has(version)) return version;
-  const versions = [...supported].sort((a, b) => a - b).map(item => `v${item}`).join(', ');
+  const labels = [...supported].sort((a, b) => a - b).map(item => `v${item}`);
+  const versions = labels.length > 1 ? `${labels.slice(0, -1).join(', ')} or ${labels.at(-1)}` : labels[0];
   throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload ${versions}, not '${value}'.`);
 }
 
