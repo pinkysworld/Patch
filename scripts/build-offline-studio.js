@@ -28,6 +28,8 @@ if (manifestOnly) {
   process.exit(0);
 }
 
+assertSeaBuildSupport();
+
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-studio-'));
 try {
   const configPath = path.join(temp, 'sea-config.json');
@@ -46,7 +48,7 @@ try {
   const built = spawnSync(process.execPath, ['--build-sea', configPath], { stdio: 'inherit' });
   if (built.error) fail(`Could not start Node SEA builder: ${built.error.message}`);
   if (built.status !== 0 || !fs.existsSync(out)) {
-    fail('Patch Offline Studio SEA build failed. Use a Node release with --build-sea support (the release workflow should use Node 26+).');
+    fail('Patch Offline Studio SEA build failed even though this Node release should support --build-sea.');
   }
 
   if (process.platform !== 'win32') fs.chmodSync(out, 0o755);
@@ -69,6 +71,13 @@ function buildSite() {
   const built = spawnSync(process.execPath, ['scripts/build-site.js'], { stdio: 'inherit' });
   if (built.error) fail(`Could not start Patch Studio site build: ${built.error.message}`);
   if (built.status !== 0) fail(`Patch Studio site build failed with status ${built.status}.`);
+}
+
+function assertSeaBuildSupport() {
+  const [major = 0, minor = 0] = process.versions.node.split('.').map(Number);
+  if (major < 25 || (major === 25 && minor < 5)) {
+    fail(`Building the self-contained Offline Studio executable requires Node >=25.5.0 for --build-sea; current Node is ${process.versions.node}. Use --manifest-only on older supported Patch development runtimes.`);
+  }
 }
 
 function option(name) {
