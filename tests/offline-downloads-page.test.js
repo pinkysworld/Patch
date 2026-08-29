@@ -81,8 +81,8 @@ test('downloads page distinguishes current v1.8, Intel macOS kit, FreeBSD and hi
   assert.match(downloads, /Native GUI IR <strong>1\.7<\/strong>/);
   assert.match(downloads, /payload <strong>v17<\/strong>/);
   assert.match(downloads, /runtime <strong>v1\.8<\/strong>/);
-  assert.match(downloads, /native Slider/i);
-  assert.match(downloads, /hierarchical TreeView/);
+  assert.match(downloads, /<strong>Slider:<\/strong>/);
+  assert.match(downloads, /<strong>TreeView:<\/strong>/);
   assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
   assert.match(downloads, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
   assert.match(downloads, /PictureBox note/i);
