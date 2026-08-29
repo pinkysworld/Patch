@@ -14,7 +14,7 @@ This roadmap separates repository-controlled product work from credential/manual
 - current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
 - Studio design-model foundation: **0.1** (non-executing declaration model; browser Designer integration still pending)
 - native ImageList asset pretransport plan: **0.1** (not a Ready native runtime contract)
-- Offline Studio manifest: **v1** (self-contained executable builder Stage 1)
+- Offline Studio manifest: **v1**, rolling Stage 1 release channel **`offline-studio-v0.2`**
 - previous PaintBox Stage 1 line: Native GUI IR **1.6** / payload **v16** / runtime **v1.7**
 - previous Shape line: Native GUI IR **1.5** / payload **v15** / runtime **v1.6**
 - previous Chrome line: Native GUI IR **1.4** / payload **v14** / runtime **v1.5**
@@ -46,11 +46,12 @@ Completed or landed as concrete foundations:
 - [x] real-Chrome Workshop regression for the Run/freeze path
 - [x] `studio-design-model/0.1`: bounded design-time declaration model that does not execute calls, changes, loops, conditionals, previews or Form visibility actions
 - [x] deterministic tests proving the design model retains initial UI state while skipping application behavior
+- [x] `studio-design-cache/0.1`: bounded source-revision snapshot cache with Workshop and 10-Form/200-control acceptance coverage
 
 Remaining R0 work:
 
 - [ ] wire the non-executing design model into the primary `refreshDesigner()` path
-- [ ] cache parsed/compiled AST/design snapshots by project revision
+- [ ] share parsed/compiled AST/design snapshots across Designer adapters by project revision
 - [ ] true active-Form Designer materialization/virtualization rather than post-render hiding
 - [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization
 - [ ] define and implement the Worker boundary for parse/compile/design-model work
@@ -147,16 +148,22 @@ See `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the complete long-term list. Near-te
 
 ## Offline IDE track
 
-Patch Studio is explicitly planned as an installed offline IDE, not only a hosted PWA. See `docs/OFFLINE_STUDIO.md`.
+Patch Studio is available as an installed/offline Stage 1 beta, not only as a hosted PWA. See `docs/OFFLINE_STUDIO.md` and the public Downloads page.
 
-### Stage 1 repository-controlled foundation
+### Stage 1 repository-controlled release channel
 
 - [x] deterministic Offline Studio manifest v1 with per-file SHA-256 and whole-site closure hash
 - [x] self-contained Node SEA builder using the generated Patch Studio site as the single UI implementation
 - [x] loopback-only `127.0.0.1` runtime with random per-launch URL prefix, traversal protection and restrictive CSP
 - [x] no outbound network requirement for authoring, Designer/Run and existing browser-local build targets
 - [x] manifest/closure regression tests independent of SEA availability
-- [ ] publish signed/tested Offline Studio executables as release artifacts for Windows/macOS/Linux
+- [x] Windows x64, macOS Apple Silicon and Linux x64 executables built and self-smoked on their own CI platform
+- [x] exact release bundle assembled and cross-platform manifest equality checked before merge/publication
+- [x] rolling **`offline-studio-v0.2`** GitHub Release assets with stable names, `offline-studio-manifest.json` and `SHA256SUMS`
+- [x] public Downloads page and README/Patch Studio docs reference the same release asset contract
+- [ ] production Authenticode / Developer ID signing and macOS notarization for Offline Studio releases
+
+Stage 1 is a downloadable Offline IDE beta for authoring, Designer/Run and current browser-local build targets. It does not yet claim host-native desktop compilation from inside the IDE.
 
 ### Stage 2 fully local native IDE
 
@@ -184,7 +191,8 @@ Patch Studio is explicitly planned as an installed offline IDE, not only a hoste
 - [x] ordinary offline `patch link` defaults to payload v17/runtime v1.8
 - [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
-- [x] Offline Studio Stage 1 executable/manifest builder foundation
+- [x] downloadable and CI-self-smoked Offline Studio Stage 1 release channel for Windows x64, macOS ARM64 and Linux x64
+- [x] deterministic Offline Studio manifest equality and SHA-256 release-bundle gate
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
 - [x] truthful Pages deployment status with required-runtime checks, HTTP asset verification and live Chrome behavior verification
 
@@ -192,7 +200,7 @@ Patch Studio is explicitly planned as an installed offline IDE, not only a hoste
 
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
-- [ ] signed/tested Offline Studio release artifacts on all three desktop platforms
+- [ ] production-signed/notarized Offline Studio release evidence
 - [ ] installer/package formats with explicit uninstall path after a distribution-format decision
 - [ ] release-integrity verification across any future installer/update channel
 - [ ] fresh remote native build service without a user-supplied GitHub token
@@ -267,4 +275,4 @@ Evidence still requiring new data or external participation:
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through Native GUI IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
-- **current:** R0 architecture hardening (#282), finish the two native resource-consumer R1 gaps, and establish the Offline Studio installed-IDE path before broad R2 expansion
+- **current:** R0 architecture hardening (#282), finish the two native resource-consumer R1 gaps, Stage 2 Offline Studio local-native-build integration, and later production signing/packaging before broad R2 expansion
