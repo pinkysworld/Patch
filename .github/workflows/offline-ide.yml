@@ -1,0 +1,172 @@
+name: Patch Studio Offline IDE
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - web/**
+      - src/**
+      - scripts/build-site.js
+      - scripts/build-offline-ide.js
+      - scripts/offline-ide-server.cjs
+      - docs/OFFLINE_IDE.md
+      - package.json
+      - .github/workflows/offline-ide.yml
+  push:
+    branches: [main]
+    paths:
+      - web/**
+      - src/**
+      - scripts/build-site.js
+      - scripts/build-offline-ide.js
+      - scripts/offline-ide-server.cjs
+      - docs/OFFLINE_IDE.md
+      - package.json
+      - .github/workflows/offline-ide.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            asset: patch-studio-offline-windows-x64.zip
+          - os: ubuntu-latest
+            platform: linux
+            asset: patch-studio-offline-linux-x64.tar.gz
+          - os: macos-15
+            platform: macos
+            asset: patch-studio-offline-macos-arm64.tar.gz
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build current Patch Studio site
+        shell: bash
+        run: |
+          node scripts/build-site.js
+          node scripts/check-site.js
+          node scripts/check-site-v10.js
+          node scripts/check-site-v12.js
+          node scripts/check-site-beta36.js
+      - name: Build local Offline IDE bundle
+        shell: bash
+        run: |
+          node scripts/build-offline-ide.js --skip-site-build --out dist-offline-ide/patch-studio-offline
+      - name: Bundle Node runtime on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-offline-ide/patch-studio-offline/runtime | Out-Null
+          Copy-Item (Get-Command node).Source dist-offline-ide/patch-studio-offline/runtime/node.exe
+          if (-not (Test-Path dist-offline-ide/patch-studio-offline/runtime/node.exe)) { throw 'Bundled Node runtime missing.' }
+      - name: Bundle Node runtime on Unix
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          mkdir -p dist-offline-ide/patch-studio-offline/runtime
+          cp "$(command -v node)" dist-offline-ide/patch-studio-offline/runtime/node
+          chmod +x dist-offline-ide/patch-studio-offline/runtime/node dist-offline-ide/patch-studio-offline/patch-studio
+          test -x dist-offline-ide/patch-studio-offline/runtime/node
+      - name: Smoke local Offline IDE on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $env:PATCH_STUDIO_NO_OPEN='1'
+          $env:PATCH_STUDIO_PORT='41736'
+          $proc = Start-Process -FilePath (Resolve-Path dist-offline-ide/patch-studio-offline/runtime/node.exe) -ArgumentList (Resolve-Path dist-offline-ide/patch-studio-offline/serve-offline.cjs) -PassThru
+          try {
+            $ok = $false
+            for ($i = 0; $i -lt 20; $i++) {
+              Start-Sleep -Milliseconds 250
+              try {
+                $body = (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:41736/ -TimeoutSec 2).Content
+                if ($body -match 'data-patch-version="0.2.0-beta.36"' -and $body -match 'Ready IR 1.8 / v1.9') { $ok = $true; break }
+              } catch {}
+            }
+            if (-not $ok) { throw 'Offline IDE localhost smoke did not reach the current Studio shell.' }
+          } finally {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          }
+      - name: Smoke local Offline IDE on Unix
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          PATCH_STUDIO_NO_OPEN=1 PATCH_STUDIO_PORT=41736 dist-offline-ide/patch-studio-offline/runtime/node dist-offline-ide/patch-studio-offline/serve-offline.cjs > /tmp/patch-offline-ide.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          ok=0
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:41736/ > /tmp/patch-offline-index; then
+              if grep -F 'data-patch-version="0.2.0-beta.36"' /tmp/patch-offline-index >/dev/null && grep -F 'Ready IR 1.8 / v1.9' /tmp/patch-offline-index >/dev/null; then
+                ok=1
+                break
+              fi
+            fi
+            sleep 0.25
+          done
+          if [ "$ok" -ne 1 ]; then
+            cat /tmp/patch-offline-ide.log
+            exit 1
+          fi
+      - name: Package Windows bundle
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist-offline-ide/patch-studio-offline -DestinationPath dist-offline-ide/${{ matrix.asset }} -Force
+          if (-not (Test-Path dist-offline-ide/${{ matrix.asset }})) { throw 'Offline IDE zip missing.' }
+      - name: Package Unix bundle
+        if: matrix.platform != 'windows'
+        shell: bash
+        run: |
+          (cd dist-offline-ide && tar -czf '${{ matrix.asset }}' patch-studio-offline)
+          test -s 'dist-offline-ide/${{ matrix.asset }}'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-ide-${{ matrix.platform }}
+          path: dist-offline-ide/${{ matrix.asset }}
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: offline-ide-*
+          path: release
+          merge-multiple: true
+      - name: Generate checksums
+        shell: bash
+        run: |
+          cd release
+          sha256sum patch-studio-offline-windows-x64.zip patch-studio-offline-linux-x64.tar.gz patch-studio-offline-macos-arm64.tar.gz > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish rolling Offline IDE v0.2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: offline-ide-v0.2
+        shell: bash
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Patch beta.36 local-first Studio bundles for Windows, macOS Apple Silicon and Linux. Each package includes its own Node runtime and serves the current Patch Studio from loopback localhost without Electron or a bundled Chromium engine. Native desktop runtime-template bundling remains separately versioned and fail-closed when unavailable.'
+          gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
