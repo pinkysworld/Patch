@@ -1,0 +1,141 @@
+name: R0 Workshop and branding integration
+
+on:
+  push:
+    branches:
+      - gpt/r0-active-form-materialization-282
+    paths:
+      - .github/workflows/r0-workshop-branding-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gpt/r0-active-form-materialization-282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Synchronize Workshop showcase and compiler branding
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one guarded match, found {count}: {old!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          example = Path('examples/workshop-desk.patch').read_text().rstrip('\n')
+          studio = Path('web/beta35-studio.js')
+          text = studio.read_text()
+          pattern = r"const WORKSHOP_DESK_SAMPLE = `(?:[^`]|`(?!;\n\nconst MULTISELECT_SAMPLE))*`;\n\nconst MULTISELECT_SAMPLE"
+          match = re.search(pattern, text, flags=re.S)
+          if not match:
+              raise SystemExit('web/beta35-studio.js: Workshop Desk sample block not found')
+          replacement = f"const WORKSHOP_DESK_SAMPLE = `{example}`;\n\nconst MULTISELECT_SAMPLE"
+          studio.write_text(text[:match.start()] + replacement + text[match.end():])
+
+          replace_once('web/studio-dom-sync.js',
+              "export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.4';",
+              "export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.5';")
+          replace_once('web/studio-dom-sync.js',
+              "    next.includes('Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&\n    next.includes('It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls.') &&",
+              "    next.includes('Six-Form Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&\n    next.includes('window \\\"Inventory Center\\\" as inventory size 900, 620:') &&\n    next.includes('window \\\"Customer Profile\\\" as customer_profile size 760, 600:') &&\n    next.includes('window \\\"Workshop Diagnostics\\\" as diagnostics size 840, 620:') &&\n    next.includes('It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls.') &&")
+
+          replace_once('web/designer-workspace.js', 'markClassicBrand();', 'markCompilerBrand();')
+          replace_once('web/designer-workspace.js',
+              "function markClassicBrand() {\n  // The SVG itself is normalized at build time. Keep only a stable runtime marker\n  // for diagnostics and production browser smoke tests, never rewrite brand DOM here.\n  const mark = document.querySelector('.brand-mark');\n  if (mark) mark.dataset.patchBrandMark = 'classic-p';\n}",
+              "function markCompilerBrand() {\n  // Keep a stable runtime marker for diagnostics and production browser smoke tests.\n  // The visible mark itself is the shared compiler-oriented icon.svg used by the\n  // browser favicon, PWA/Offline Studio manifest and Studio header.\n  const mark = document.querySelector('.brand-mark');\n  if (mark) mark.dataset.patchBrandMark = 'compiler-p-v1';\n}")
+
+          replace_once('web/index.html',
+              '<meta name="theme-color" content="#15171c">',
+              '<meta name="theme-color" content="#1d4ed8">')
+          replace_once('web/index.html',
+              '<div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Source-backed RAD development with explicit semantic change.</p></div></div>',
+              '<div class="brand"><img class="brand-mark" src="./icon.svg" alt="" aria-hidden="true" data-patch-brand-mark="compiler-p-v1"><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Patch language · compiler · source-backed RAD Studio.</p></div></div>')
+
+          replace_once('web/style.css',
+              ".brand-mark {\n  width: 28px;\n  height: 28px;\n  border-radius: 8px;\n  display: grid;\n  place-items: center;\n  flex: 0 0 auto;\n  overflow: hidden;\n  background: var(--text);\n  color: var(--surface);\n  transform: none;\n  font-style: normal;\n  font-synthesis: none;\n}\n.brand-mark svg {\n  display: block;\n  width: 22px;\n  height: 22px;\n  transform: none;\n}",
+              ".brand-mark {\n  width: 36px;\n  height: 36px;\n  display: block;\n  flex: 0 0 auto;\n  object-fit: contain;\n  filter: drop-shadow(0 5px 12px color-mix(in srgb, #1d4ed8 18%, transparent));\n}\n@media(max-width:760px){.brand-mark{width:32px;height:32px}}")
+
+          replace_once('web/manifest.webmanifest', '"background_color": "#101114"', '"background_color": "#f4f4f5"')
+          replace_once('web/manifest.webmanifest', '"theme_color": "#15171c"', '"theme_color": "#1d4ed8"')
+
+          replace_once('tests/workshop-desk.test.js', "assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.4');", "assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.5');")
+          replace_once('tests/workshop-desk.test.js', 'assert.equal(result.ui.length, 3);', 'assert.equal(result.ui.length, 6);')
+          replace_once('tests/workshop-desk.test.js',
+              "  assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);",
+              "  assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);\n  assert.equal(result.ui.find(window => window.id === 'inventory')?.visible, false);\n  assert.equal(result.ui.find(window => window.id === 'customer_profile')?.visible, false);\n  assert.equal(result.ui.find(window => window.id === 'diagnostics')?.visible, false);")
+          replace_once('tests/workshop-desk.test.js',
+              "    'window \\\"Job details\\\" as details',",
+              "    'window \\\"Job details\\\" as details',\n    'window \\\"Inventory Center\\\" as inventory',\n    'window \\\"Customer Profile\\\" as customer_profile',\n    'window \\\"Workshop Diagnostics\\\" as diagnostics',")
+          replace_once('tests/workshop-desk.test.js',
+              "    assert.match(built, /Job details/);",
+              "    assert.match(built, /Job details/);\n    assert.match(built, /Inventory Center/);\n    assert.match(built, /Customer Profile/);\n    assert.match(built, /Workshop Diagnostics/);")
+
+          browser = Path('tests/workshop-desk-browser.test.js')
+          b = browser.read_text()
+          b = b.replace('state.forms >= 3', 'state.forms >= 6')
+          b = b.replace('state.options >= 3', 'state.options >= 6')
+          b = b.replace("assert.ok(stable.forms >= 3, 'Workshop Desk Designer should retain all three Forms after settling');", "assert.ok(stable.forms >= 6, 'Workshop Desk Designer should retain all six Forms after settling');")
+          b = b.replace("assert.ok(stable.sourceLength > 3000, 'Workshop Desk should remain loaded as the large showcase source');", "assert.ok(stable.sourceLength > 9000, 'Workshop Desk should remain loaded as the expanded six-Form showcase source');")
+          b = b.replace("assert.equal(stable.brand, 'classic-p');", "assert.equal(stable.brand, 'compiler-p-v1');")
+          b = b.replace('state?.windows >= 3 && state.visible >= 1', 'state?.windows >= 6 && state.visible >= 1')
+          b = b.replace('assert.ok(appState.windows >= 3);', 'assert.ok(appState.windows >= 6);')
+          browser.write_text(b)
+
+          Path('tests/studio-branding.test.js').write_text("""import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const icon = fs.readFileSync('web/icon.svg', 'utf8');
+const html = fs.readFileSync('web/index.html', 'utf8');
+const manifest = fs.readFileSync('web/manifest.webmanifest', 'utf8');
+const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
+
+test('Patch Studio uses the compiler-oriented brand mark across browser and installed surfaces', () => {
+  assert.match(icon, /Patch Studio compiler mark/);
+  assert.match(icon, /patch-circuit-cuts/);
+  assert.match(icon, /patch-main/);
+  assert.match(icon, /patch-accent/);
+  assert.match(html, /class=\"brand-mark\" src=\"\.\/icon\.svg\"/);
+  assert.match(html, /data-patch-brand-mark=\"compiler-p-v1\"/);
+  assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);
+  assert.match(manifest, /\"src\": \"\.\/icon\.svg\"/);
+  assert.match(manifest, /\"theme_color\": \"#1d4ed8\"/);
+  assert.match(workspace, /compiler-p-v1/);
+});
+""")
+
+          Path('.github/workflows/r0-workshop-branding-once.yml').unlink()
+          PY
+      - name: Verify Workshop, branding and active Form virtualization
+        shell: bash
+        run: |
+          node --check web/beta35-studio.js
+          node --check web/studio-dom-sync.js
+          node --check web/designer-workspace.js
+          node --test tests/studio-branding.test.js tests/workshop-desk.test.js tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
+          node --test tests/workshop-desk-browser.test.js
+          npm run build:site
+          npm run check:site
+      - name: Commit synchronized Studio work
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk.test.js tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
+          git commit -m "Expand Workshop Desk and integrate compiler branding"
+          git push origin HEAD:gpt/r0-active-form-materialization-282
