@@ -22,10 +22,13 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Apply guarded Studio transformation
-        run: python3 .github/scripts/r0_workshop_branding_once.py
+      - name: Apply guarded Studio transformations
+        run: |
+          python3 .github/scripts/r0_workshop_branding_once.py
+          python3 .github/scripts/r0_async_run_once.py
       - name: Verify Studio, Workshop and branding
         run: |
+          node --check web/playground.js
           node --check web/beta35-studio.js
           node --check web/studio-dom-sync.js
           node --check web/designer-workspace.js
