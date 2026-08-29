@@ -1,11 +1,12 @@
 # Patch
 
-A small **change-oriented** programming language with a browser-first RAD IDE, formal assurance tooling, standalone Web output and versioned native desktop runtimes.
+A small **change-oriented** programming language with a browser-first and downloadable offline RAD IDE, formal assurance tooling, standalone Web output and versioned native desktop runtimes.
 
 **Existing persistent state does not mutate invisibly.** Ordinary post-creation mutation is an explicit semantic `change`.
 
 [![Patch CI](https://github.com/pinkysworld/Patch/actions/workflows/ci.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/ci.yml)
 [![Patch Studio](https://github.com/pinkysworld/Patch/actions/workflows/pages.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/pages.yml)
+[![Offline Studio](https://github.com/pinkysworld/Patch/actions/workflows/offline-studio.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/offline-studio.yml)
 [![Formal Verification](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/formal.yml)
 [![Native Apps](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml/badge.svg)](https://github.com/pinkysworld/Patch/actions/workflows/native-apps.yml)
 
@@ -39,7 +40,8 @@ Current Studio capabilities include:
 - structural editors for Table, TreeView, Tabs and Panel;
 - active-Form rendering for large multi-Form Designer projects plus the 10-Form / 200-control stress benchmark;
 - `Ctrl/Cmd+K` Command Palette with project files, Thing fields such as `player.score`, and recipe parameters such as `reward.bonus`;
-- token-free Ready Windows/macOS/Linux downloads plus offline compiler/linker kits.
+- token-free Ready Windows/macOS/Linux downloads plus offline compiler/linker kits;
+- self-contained **Patch Studio Offline IDE beta** downloads for Windows x64, macOS Apple Silicon and Linux x64 under the rolling `offline-studio-v0.2` channel.
 
 ImageList stores ordered named references to project resources. Buttons bind one item with `image list.item` on Studio and Standalone Web. The current Ready Native GUI IR 1.7 line deliberately fails closed for ImageList and Button images until a versioned desktop consumer contract transports them.
 
@@ -80,6 +82,18 @@ Product JavaScript imports `src/native-current-contract.js` and `src/native-froz
 
 Picture resources use deterministic project-v4 resource metadata. Native Ready Picture decoding follows `native-picture-formats/1.0`: PNG/JPEG are Ready; WebP/SVG are deferred and fail closed instead of inheriting host-specific decoders. Native Picture keeps default contain/centered/opaque display and fail-closes other fit/center/opacity values. PaintBox `clear`/`line`/`rectangle`/`ellipse`/`text` and bounded PNG/JPEG `draw image` are native on the current Ready line; ImageList/Button images and Window icons remain the two explicit native R1 follow-ups.
 
+## Offline Studio
+
+The rolling **Patch Studio Offline IDE beta** release is `offline-studio-v0.2`:
+
+- Windows x64: `PatchStudio-windows-x64.exe`
+- macOS Apple Silicon: `PatchStudio-macos-arm64`
+- Linux x64: `PatchStudio-linux-x64`
+
+The release workflow builds and self-smokes each platform executable and verifies that all three embed the same deterministic Studio manifest before publishing the binaries, `offline-studio-manifest.json` and `SHA256SUMS`. Stage 1 provides offline Studio authoring, Designer/Run and current browser-local build targets. Host-native desktop Build from inside the IDE remains the explicit Stage 2 gap.
+
+Windows/Linux beta binaries are currently unsigned; macOS is ad-hoc signed but not Developer ID notarized. See [`docs/OFFLINE_STUDIO.md`](docs/OFFLINE_STUDIO.md) and the public [Downloads](https://minh.systems/Patch/downloads.html) page.
+
 ## Offline compiler
 
 The rolling offline release is `offline-compiler-v0.2`. Windows x64, Linux x64, macOS Apple Silicon and macOS Intel use the current runtime v1.8 Window path and assert sealed payload v17 in the cross-platform smoke matrix. FreeBSD remains Console-only through portable C99.
@@ -97,6 +111,7 @@ npm test
 npm run check:site
 npm run check:project
 npm run build:site
+npm run check:offline-studio
 ```
 
 ```bash
@@ -118,6 +133,7 @@ patch components --json
 | [`docs/SPEC.md`](docs/SPEC.md) | Current language surface |
 | [`docs/PATCH_STUDIO.md`](docs/PATCH_STUDIO.md) | IDE, project and build contracts |
 | [`docs/STUDIO_PROJECTS.md`](docs/STUDIO_PROJECTS.md) | Project bundle v4 and resources |
+| [`docs/OFFLINE_STUDIO.md`](docs/OFFLINE_STUDIO.md) | Offline IDE downloads, integrity/security boundary and Stage 2 local-build plan |
 | [`AGENTS.md`](AGENTS.md) / [`docs/GPT.md`](docs/GPT.md) | ChatGPT/Grok handoff: current contracts, RAD R1 status and next slice |
 | [`docs/COMPONENT_CAPABILITY_MATRIX.md`](docs/COMPONENT_CAPABILITY_MATRIX.md) | Generated registry target matrix |
 | [`docs/RAD_STUDIO_MASTERPLAN.md`](docs/RAD_STUDIO_MASTERPLAN.md) | RAD architecture plan |

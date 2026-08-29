@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Download and verify the Patch offline compiler for Windows, macOS, Linux and FreeBSD. Current desktop Window linking uses Native GUI IR 1.7, payload v17 and runtime v1.8.">
+  <meta name="description" content="Download Patch Studio Offline IDE and the Patch offline compiler for Windows, macOS and Linux, with FreeBSD compiler support and SHA-256 verification.">
   <title>Downloads · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -22,27 +22,50 @@
 <main class="content-page" data-patch-version="0.2.0-beta.36">
   <section class="page-hero">
     <div>
-      <p class="page-eyebrow">Patch offline compiler · 0.2 beta.36+</p>
-      <h1>Compile Patch without opening the browser.</h1>
-      <p>Download one local Patch compiler for your platform. Windows, macOS and Linux packages include the current compiler and native Window runtime v1.8. Supported <code>patch link</code> applications include responsive Forms, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, hierarchical TreeView, native Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and bounded PNG/JPEG PaintBox <code>draw image</code>. After download, normal local workflows do not need a GitHub token.</p>
+      <p class="page-eyebrow">Patch Studio Offline IDE + compiler · 0.2 beta.36+</p>
+      <h1>Use Patch locally, with or without the browser-hosted Studio.</h1>
+      <p>Download the self-contained Patch Studio Offline IDE for visual authoring and Run, or the standalone Patch compiler for source-first local build and native linking. Normal local workflows do not need a GitHub token. The Offline IDE beta embeds the same deterministic Studio site as the hosted product; host-native desktop Build inside the IDE is the next Stage 2 boundary.</p>
     </div>
-    <pre class="page-code">patch check app.patch
+    <pre class="page-code"># Offline IDE
+PatchStudio-windows-x64.exe
+
+# Standalone compiler
+patch check app.patch
 patch run app.patch
 patch build app.patch --target web --out App.html
 patch link app.patch --out App</pre>
   </section>
 
   <section class="page-section">
-    <h2>Download Patch</h2>
+    <h2>Download Patch Studio Offline IDE</h2>
+    <p><strong><code>offline-studio-v0.2</code> is the current rolling beta channel.</strong> Windows, macOS and Linux executables are built and self-smoked on their own operating system before publication. All three builds must embed the same deterministic Studio manifest. Stage 1 supports offline authoring, Form Designer/Object Inspector, Run and current browser-local build targets. Host-native Windows/macOS/Linux Build from inside the IDE remains Stage 2 and is not claimed yet.</p>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-windows-x64.exe"><strong>Patch Studio · Windows x64</strong><span>Self-contained Offline IDE beta. Development binary is currently unsigned by Authenticode.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-macos-arm64"><strong>Patch Studio · macOS Apple Silicon</strong><span>Self-contained Offline IDE beta. Ad-hoc signed for local execution, not Developer ID notarized.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-linux-x64"><strong>Patch Studio · Linux x64</strong><span>Self-contained Offline IDE beta. Uses the local default browser as the UI shell.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/offline-studio-manifest.json"><strong>Offline Studio manifest</strong><span>Deterministic embedded-site file hashes and closure SHA-256.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/SHA256SUMS"><strong>Offline Studio SHA256 checksums</strong><span>Release-byte verification for the three IDE executables and manifest.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline IDE documentation</strong><span>Stage 1 usage, security boundary, Stage 2 local-native-build plan and signing status.</span></a>
+    </div>
+  </section>
+
+  <section class="page-section">
+    <h2>Download the Patch offline compiler</h2>
     <p><strong><code>offline-compiler-v0.2</code> is the current rolling beta channel.</strong> Its named assets are refreshed only after the cross-platform compiler/linker workflow succeeds. Current Windows, macOS and Linux Window linking uses Native GUI IR <strong>1.7</strong>, sealed payload <strong>v17</strong> and runtime <strong>v1.8</strong>.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Windows x64</strong><span>Standalone compiler + native Win32 linker with the current v1.8 GUI contract.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>macOS Apple Silicon</strong><span>Standalone compiler + native AppKit runtime v1.8 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>macOS Intel</strong><span>Portable no-install kit with embedded Intel Node runtime + x86-64 AppKit runtime v1.8.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-linux-x64"><strong>Linux x64</strong><span>Standalone compiler + native GTK3 runtime v1.8 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>FreeBSD x64</strong><span>Portable offline compiler kit + C99 Console linker. Requires local Node 22+ and cc.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/SHA256SUMS"><strong>SHA256 checksums</strong><span>Verification file for every asset in the rolling beta channel.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Compiler · Windows x64</strong><span>Standalone compiler + native Win32 linker with the current v1.8 GUI contract.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>Compiler · macOS Apple Silicon</strong><span>Standalone compiler + native AppKit runtime v1.8 linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>Compiler · macOS Intel</strong><span>Portable no-install kit with embedded Intel Node runtime + x86-64 AppKit runtime v1.8.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-linux-x64"><strong>Compiler · Linux x64</strong><span>Standalone compiler + native GTK3 runtime v1.8 linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>Compiler · FreeBSD x64</strong><span>Portable offline compiler kit + C99 Console linker. Requires local Node 22+ and cc.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/SHA256SUMS"><strong>Compiler SHA256 checksums</strong><span>Verification file for every compiler asset in the rolling beta channel.</span></a>
     </div>
+  </section>
+
+  <section class="page-section">
+    <h2>Offline IDE boundary</h2>
+    <p>The Offline IDE beta is a packaged local Studio, not a second implementation. It embeds the generated public Studio module closure and serves it only on an ephemeral <code>127.0.0.1</code> endpoint with a random per-launch path, GET/HEAD-only routing, traversal rejection and restrictive CSP. It does not require the public Patch website to author and Run an already embedded project surface.</p>
+    <p><strong>Stage 2 remains explicit:</strong> the downloaded Offline IDE does not yet expose the standalone native compiler/runtime through a privileged local Build bridge. Use the separate offline compiler downloads below when you need current host-native <code>patch link</code> output today.</p>
   </section>
 
   <section class="page-section">
@@ -53,20 +76,23 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Verify a download</h2>
-    <p>Download <code>SHA256SUMS</code> into the same folder as the compiler asset and verify the exact bytes before first use or after replacing a rolling-beta download.</p>
-    <pre class="page-code"># Linux, or macOS with sha256sum installed
-sha256sum -c SHA256SUMS
+    <p>Download the <code>SHA256SUMS</code> file from the same rolling channel as the selected asset and verify the exact bytes before first use or after replacing a rolling-beta download.</p>
+    <pre class="page-code"># Linux Offline Studio
+sha256sum PatchStudio-linux-x64
 
-# macOS built-in tool
-shasum -a 256 patch-macos-arm64
+# macOS Offline Studio
+shasum -a 256 PatchStudio-macos-arm64
 
-# Windows PowerShell
+# Windows Offline Studio
+Get-FileHash .\PatchStudio-windows-x64.exe -Algorithm SHA256
+
+# Windows standalone compiler
 Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
-    <p>SHA-256 verifies release-byte consistency. It is not a replacement for Authenticode, Developer ID/notarization or an independent signing authority. Development artifacts remain explicitly unsigned unless a release states otherwise.</p>
+    <p>SHA-256 verifies release-byte consistency. It is not a replacement for Authenticode, Developer ID/notarization or an independent signing authority. Development artifacts remain explicitly unsigned or ad-hoc signed unless a release states otherwise.</p>
   </section>
 
-  <section class="page-grid" aria-label="Offline compiler capabilities">
-    <article class="page-card"><h2>Run locally</h2><p><code>patch run program.patch</code> executes Patch source locally. <code>patch check</code> validates it without producing an application.</p></article>
+  <section class="page-grid" aria-label="Local Patch capabilities">
+    <article class="page-card"><h2>Design locally</h2><p>Offline Studio Stage 1 provides the same source-backed Form Designer, Object Inspector and Run surface without requiring the hosted site.</p></article>
     <article class="page-card"><h2>Compile locally</h2><p><code>patch build</code> retains portable, WebAssembly, C99 and Standalone Web targets without requiring Patch Studio.</p></article>
     <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds a ready application for the current OS when the project fits the supported native surface. Current desktop Window output uses payload v17/runtime v1.8.</p></article>
   </section>
@@ -133,15 +159,15 @@ when canvas paint:
   <section class="page-section">
     <h2>Platform notes</h2>
     <h3>Windows</h3>
-    <p>The x64 compiler links supported Window projects into a single native Win32 <code>.exe</code> using runtime v1.8.</p>
+    <p>The Offline Studio beta is a self-contained x64 executable. The separate x64 compiler links supported Window projects into a single native Win32 <code>.exe</code> using runtime v1.8.</p>
     <h3>macOS Apple Silicon</h3>
-    <p>The Apple Silicon download is one standalone compiler binary. Supported Window projects become AppKit <code>.app</code> bundles through runtime v1.8. Development compiler builds are ad-hoc signed, not Developer ID notarized.</p>
+    <p>The Offline Studio beta and standalone compiler are Apple Silicon binaries. The compiler produces supported AppKit <code>.app</code> bundles through runtime v1.8. Development builds are ad-hoc signed, not Developer ID notarized.</p>
     <h3>macOS Intel</h3>
-    <p>The Intel download is a portable tar.gz kit because the current Node SEA route is not relied upon for macOS x64. The kit includes its own Intel Node runtime and AppKit runtime v1.8.</p>
+    <p>The compiler download is a portable tar.gz kit because the current Node SEA route is not relied upon for macOS x64. The kit includes its own Intel Node runtime and AppKit runtime v1.8. There is not yet a separate macOS Intel Offline Studio beta asset.</p>
     <h3>Linux</h3>
-    <p>The x64 compiler embeds the GTK3 runtime v1.8 linker. Resulting GUI executables still require compatible normal GTK3/system libraries on the target system.</p>
+    <p>The Offline Studio beta is a self-contained x64 executable. The x64 compiler embeds the GTK3 runtime v1.8 linker. Resulting GUI executables still require compatible normal GTK3/system libraries on the target system.</p>
     <h3>FreeBSD</h3>
-    <p>FreeBSD currently supports Console linking through the portable C99 backend. Native FreeBSD Window/GUI linking is not claimed yet.</p>
+    <p>FreeBSD currently supports Console linking through the portable C99 backend. Native FreeBSD Window/GUI linking is not claimed yet, and no FreeBSD Offline Studio executable is claimed.</p>
   </section>
 
   <section class="page-section">
@@ -154,10 +180,10 @@ patch build app.patch --target c99
 patch build app.patch --target web
 patch doctor</pre>
     <p><code>patch doctor</code> probes the local environment and self-checks the interpreter, direct Wasm and C99 numeric subset, including that Things fail closed on those backends. On Unix hosts with a C compiler it also compiles and runs the numeric C99 program.</p>
-    <p>The browser Studio remains useful for visual Form design. The downloaded compiler is for local source editing, checking, compilation and supported application linking.</p>
+    <p>Use Offline Studio for local visual authoring and Run. Use the downloaded compiler for current local source checking, compilation and supported host-native application linking until Offline Studio Stage 2 connects that compiler through its narrow local build bridge.</p>
   </section>
 
-  <footer class="page-footer"><span>Patch offline compiler · 0.2.0-beta.36+</span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.2">Open compiler release on GitHub</a></footer>
+  <footer class="page-footer"><span>Patch local downloads · 0.2.0-beta.36+</span><span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2">Offline Studio release</a> · <a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.2">Compiler release</a></span></footer>
 </main>
 </body>
 </html>

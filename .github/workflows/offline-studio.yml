@@ -11,6 +11,8 @@ on:
       - 'scripts/offline-studio-runner.cjs'
       - 'scripts/check-offline-studio-executable.js'
       - 'tests/offline-studio-assets.test.js'
+      - 'tests/offline-downloads-page.test.js'
+      - 'docs/OFFLINE_STUDIO.md'
       - 'package.json'
       - '.github/workflows/offline-studio.yml'
   push:
@@ -24,6 +26,8 @@ on:
       - 'scripts/offline-studio-runner.cjs'
       - 'scripts/check-offline-studio-executable.js'
       - 'tests/offline-studio-assets.test.js'
+      - 'tests/offline-downloads-page.test.js'
+      - 'docs/OFFLINE_STUDIO.md'
       - 'package.json'
       - '.github/workflows/offline-studio.yml'
   workflow_dispatch:
@@ -49,16 +53,113 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '26'
+          package-manager-cache: false
       - name: Verify Node SEA support
         run: node --version
       - name: Run Offline Studio unit tests
-        run: node --test tests/offline-studio-assets.test.js
+        run: node --test tests/offline-studio-assets.test.js tests/offline-downloads-page.test.js
       - name: Build and self-smoke executable
         run: node scripts/check-offline-studio-executable.js
       - name: Upload Offline Studio executable
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: patch-offline-studio-${{ runner.os }}-${{ runner.arch }}
           path: dist-offline-studio/**
           if-no-files-found: error
           retention-days: 14
+
+  release-bundle:
+    name: Verify Offline Studio release bundle
+    needs: executable
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows x64 build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-Windows-X64
+          path: release/windows
+      - name: Download macOS Apple Silicon build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-macOS-ARM64
+          path: release/macos
+      - name: Download Linux x64 build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-Linux-X64
+          path: release/linux
+      - name: Assemble deterministic release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release/windows/PatchStudio.exe
+          test -s release/macos/PatchStudio
+          test -s release/linux/PatchStudio
+          test -s release/windows/offline-studio-manifest.json
+          test -s release/macos/offline-studio-manifest.json
+          test -s release/linux/offline-studio-manifest.json
+          cmp release/windows/offline-studio-manifest.json release/macos/offline-studio-manifest.json
+          cmp release/windows/offline-studio-manifest.json release/linux/offline-studio-manifest.json
+          mv release/windows/PatchStudio.exe release/PatchStudio-windows-x64.exe
+          mv release/macos/PatchStudio release/PatchStudio-macos-arm64
+          mv release/linux/PatchStudio release/PatchStudio-linux-x64
+          cp release/windows/offline-studio-manifest.json release/offline-studio-manifest.json
+          rm -rf release/windows release/macos release/linux
+          (
+            cd release
+            sha256sum PatchStudio-windows-x64.exe PatchStudio-macos-arm64 PatchStudio-linux-x64 offline-studio-manifest.json > SHA256SUMS
+            test "$(wc -l < SHA256SUMS)" -eq 4
+          )
+      - name: Upload verified release bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: patch-offline-studio-release-bundle
+          path: |
+            release/PatchStudio-windows-x64.exe
+            release/PatchStudio-macos-arm64
+            release/PatchStudio-linux-x64
+            release/offline-studio-manifest.json
+            release/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: release-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified release bundle
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-release-bundle
+          path: release
+      - name: Verify release bundle shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          for asset in PatchStudio-windows-x64.exe PatchStudio-macos-arm64 PatchStudio-linux-x64 offline-studio-manifest.json SHA256SUMS; do
+            test -s "release/$asset" || { echo "Missing verified Offline Studio release asset: $asset" >&2; exit 1; }
+          done
+          (cd release && sha256sum -c SHA256SUMS)
+      - name: Publish rolling Offline Studio release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: offline-studio-v0.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for the self-contained Patch Studio Offline IDE. Windows x64, macOS Apple Silicon and Linux x64 executables embed the same deterministic Studio site used by the hosted product and self-smoke before publication. Stage 1 supports offline authoring, Designer/Run and browser-local build targets. Host-native desktop builds from inside the IDE remain Stage 2. Windows/Linux development binaries are unsigned; macOS is ad-hoc signed and not Developer ID notarized.'
+          gh release upload "$TAG" \
+            release/PatchStudio-windows-x64.exe \
+            release/PatchStudio-macos-arm64 \
+            release/PatchStudio-linux-x64 \
+            release/offline-studio-manifest.json \
+            release/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          for asset in PatchStudio-windows-x64.exe PatchStudio-macos-arm64 PatchStudio-linux-x64 offline-studio-manifest.json SHA256SUMS; do
+            printf '%s\n' "$assets" | grep -Fx "$asset" >/dev/null || { echo "Missing published Offline Studio asset: $asset" >&2; exit 1; }
+          done

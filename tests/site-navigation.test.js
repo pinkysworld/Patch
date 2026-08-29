@@ -45,7 +45,9 @@ test('Studio stays focused on the IDE instead of duplicating the language landin
 test('language documentation downloads and help content live on dedicated pages', () => {
   assert.match(pages.get('Language'), /Small syntax\. Visible changes\./);
   assert.match(pages.get('Documentation'), /Patch documentation/);
-  assert.match(pages.get('Downloads'), /Compile Patch without opening the browser\./);
+  assert.match(pages.get('Downloads'), /Patch Studio Offline IDE \+ compiler/);
+  assert.match(pages.get('Downloads'), /offline-studio-v0\.2/);
+  assert.match(pages.get('Downloads'), /PatchStudio-windows-x64\.exe/);
   assert.match(pages.get('Downloads'), /patch-windows-x64\.exe/);
   assert.match(pages.get('Downloads'), /patch-freebsd-x64\.tar\.gz/);
   assert.match(pages.get('Help'), /Design a Window app/);
