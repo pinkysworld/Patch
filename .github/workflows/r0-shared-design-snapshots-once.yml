@@ -1,0 +1,44 @@
+name: R0 shared design snapshots integration
+
+on:
+  push:
+    branches:
+      - gpt/r0-shared-design-snapshots-282
+    paths:
+      - .github/workflows/r0-shared-design-snapshots-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gpt/r0-shared-design-snapshots-282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply guarded integration
+        run: python3 .github/scripts/r0_shared_design_snapshots_once.py
+      - name: Verify shared design snapshot integration
+        run: |
+          node --check web/studio-design-snapshots.js
+          node --check web/playground.js
+          node --check web/designer-statusbar.js
+          node --check web/forms-designer.js
+          node --test tests/studio-design-snapshot-service.test.js tests/studio-design-cache.test.js tests/studio-design-model.test.js
+          node scripts/build-site.js
+          node scripts/validate-site.js
+          node scripts/validate-table-site.js
+      - name: Commit verified product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/playground.js web/designer-statusbar.js web/forms-designer.js web/studio-design-snapshots.js web/sw.js scripts/build-site.js tests/studio-design-snapshot-service.test.js
+          git commit -m "Share Studio design snapshots across adapters"
+          git push origin HEAD:gpt/r0-shared-design-snapshots-282
