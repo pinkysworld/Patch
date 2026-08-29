@@ -45,3 +45,12 @@ test('runtime adapters preserve hidden Form deferral', () => {
   assert.match(table, /!designer && shell\.dataset\.patchRenderDetail === 'deferred'/);
   assert.match(statusbar, /!isDesigner && shell\.dataset\.patchRenderDetail === 'deferred'/);
 });
+
+test('Pages live smoke verifies the shared compiler brand asset', () => {
+  const pages = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
+  assert.match(pages, /data-patch-brand-mark=\"compiler-p-v1\"/);
+  assert.match(pages, /\.\/icon\.svg\?v=\$\{revision\}/);
+  assert.match(pages, /Patch Studio compiler mark/);
+  assert.match(pages, /patch-circuit-cuts/);
+  assert.doesNotMatch(pages, /grep -F 'viewBox=\"0 0 32 32\"' \"\$index_file\"/);
+});
