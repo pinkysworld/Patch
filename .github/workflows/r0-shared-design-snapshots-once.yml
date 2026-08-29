@@ -1,4 +1,4 @@
-# retry after validating the declaration-only fixture
+# retry with the repository's canonical site validator
 name: R0 shared design snapshots integration
 
 on:
@@ -34,8 +34,7 @@ jobs:
           node --check web/forms-designer.js
           node --test tests/studio-design-snapshot-service.test.js tests/studio-design-cache.test.js tests/studio-design-model.test.js
           node scripts/build-site.js
-          node scripts/validate-site.js
-          node scripts/validate-table-site.js
+          npm run check:site
       - name: Commit verified product changes
         run: |
           git config user.name "github-actions[bot]"
