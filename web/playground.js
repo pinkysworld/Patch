@@ -690,6 +690,8 @@ function reconcileRuntimeWindows(container, windows) {
     if (key) existing.set(key, shell);
   }
   const desired = [];
+  let reusedForms = 0;
+  let replacedForms = 0;
   windows.forEach((model, windowIndex) => {
     const key = runtimeWindowKey(model, windowIndex);
     const fingerprint = runtimeWindowFingerprint(model);
@@ -698,13 +700,21 @@ function reconcileRuntimeWindows(container, windows) {
     if (!shell || shell.__patchWindowFingerprint !== fingerprint || shell.dataset.patchRenderDetail !== detail) {
       shell?.remove();
       shell = createWindowShell(container, windows, model, windowIndex, true, null, tabSelections);
+      replacedForms += 1;
+    } else {
+      reusedForms += 1;
     }
     existing.delete(key);
     desired.push(shell);
   });
   for (const stale of existing.values()) stale.remove();
-  for (const shell of desired) container.appendChild(shell);
+  desired.forEach((shell, index) => {
+    const current = container.querySelectorAll(':scope > .patch-window')[index] ?? null;
+    if (current !== shell) container.insertBefore(shell, current);
+  });
   container.dataset.patchRuntimeReconcile = 'keyed-window-v1';
+  container.dataset.patchRuntimeReusedForms = String(reusedForms);
+  container.dataset.patchRuntimeReplacedForms = String(replacedForms);
   restoreRuntimeTransientState(container, transient);
 }
 

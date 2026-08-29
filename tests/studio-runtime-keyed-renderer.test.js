@@ -10,6 +10,8 @@ test('runtime events reconcile keyed Forms instead of rebuilding the complete ap
   assert.match(playground, /dataset\.patchControlKey = runtimeControlKey/);
   assert.match(playground, /function reconcileRuntimeWindows\(/);
   assert.match(playground, /patchRuntimeReconcile = 'keyed-window-v1'/);
+  assert.match(playground, /patchRuntimeReusedForms/);
+  assert.match(playground, /container\.insertBefore\(shell, current\)/);
   const trigger = playground.slice(playground.indexOf('function trigger(control, event, payload = {})'), playground.indexOf('function showTab(name)'));
   assert.match(trigger, /reconcileRuntimeWindows\(appView, result\.ui\)/);
   assert.doesNotMatch(trigger, /renderWindows\(appView/);

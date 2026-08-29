@@ -371,11 +371,15 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
       mainReplaced: window.__patchMainBeforeItemEvent !== main,
       settingsStable: window.__patchSettingsBeforeItemEvent === settings,
       reconcile: document.querySelector('#app')?.dataset?.patchRuntimeReconcile ?? '',
+      reusedForms: Number(document.querySelector('#app')?.dataset?.patchRuntimeReusedForms ?? 0),
+      replacedForms: Number(document.querySelector('#app')?.dataset?.patchRuntimeReplacedForms ?? 0),
       key: input.dataset.patchControlKey ?? ''
     } : null;
   })()`, state => state?.value === 'Keyboard Pro' && state.active === true && state.reconcile === 'keyed-window-v1');
   assert.equal(keyedInputState.mainReplaced, true, 'changed main Form should be replaced at the Stage 1 Form boundary');
   assert.equal(keyedInputState.settingsStable, true, 'unchanged hidden Form DOM should retain identity across an event');
+  assert.ok(keyedInputState.reusedForms >= 1, `expected keyed Form reuse, got ${JSON.stringify(keyedInputState)}`);
+  assert.ok(keyedInputState.replacedForms >= 1, `expected a changed Form replacement, got ${JSON.stringify(keyedInputState)}`);
   assert.equal(keyedInputState.selectionStart, 5);
   assert.equal(keyedInputState.selectionEnd, 5);
   assert.match(keyedInputState.key, /^id:item$/);
