@@ -1,6 +1,6 @@
 # Patch Studio
 
-Patch Studio is the browser-first RAD IDE for Patch. Its product goal is QuickBASIC / Visual Basic / Delphi-style immediacy while keeping one readable source-backed application model across browser and desktop targets.
+Patch Studio is the browser-first RAD IDE for Patch, with a downloadable Offline IDE beta. Its product goal is QuickBASIC / Visual Basic / Delphi-style immediacy while keeping one readable source-backed application model across browser and desktop targets.
 
 ## Current status
 
@@ -13,6 +13,7 @@ Patch Studio currently tracks:
 - Native GUI IR **1.7**;
 - sealed payload **v17**;
 - Ready/offline desktop runtime **v1.8** on Windows, macOS and Linux;
+- Offline Studio manifest **v1** and rolling download channel **`offline-studio-v0.2`**;
 - formal runtime-correspondence milestone **beta.32**.
 
 Product/native/RAD work after beta.32 does not widen that formal claim.
@@ -85,6 +86,8 @@ Timer and ImageList are nonvisual and never expose Form geometry, Anchors or Doc
 Studio has a bounded source-backed Undo/Redo history. Trusted editor typing coalesces, while atomic Designer source rewrites remain one transaction. Project/resource replacement boundaries reset source history so stale edits cannot be replayed into a different project. Resource/non-source transactions remain a later extension.
 
 Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The current performance harness includes a deterministic **10-Form / 200-control** stress fixture plus parsed-model reuse and coordinated Designer observer reconciliation.
+
+R0 work in issue **#282** has landed `studio-design-model/0.1` and `studio-design-cache/0.1`; primary Designer integration, true Form materialization and incremental runtime rendering remain open.
 
 ## Structural editors
 
@@ -162,6 +165,20 @@ Studio supports Standalone Web, Windows, macOS, Linux, FreeBSD Console, portable
 The current Ready/offline Window contract is Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
 
 The previous PaintBox Stage 1 line is 1.6/v16/v1.7, previous Shape line is 1.5/v15/v1.6, previous Chrome line is 1.4/v14/v1.5, previous Slider line is 1.3/v13/v1.4, and frozen TreeView line is 1.2/v12/v1.3.
+
+## Offline Studio downloads
+
+The rolling **`offline-studio-v0.2`** channel publishes these Stage 1 assets after platform build and self-smoke:
+
+- `PatchStudio-windows-x64.exe`;
+- `PatchStudio-macos-arm64`;
+- `PatchStudio-linux-x64`;
+- `offline-studio-manifest.json`;
+- `SHA256SUMS`.
+
+All three executables embed the same generated Studio application and must produce the same deterministic manifest before publication. Stage 1 provides offline authoring, Designer/Run and current browser-local build targets. Host-native desktop Build from inside the Offline IDE is still Stage 2; the separate offline compiler remains the current local native-link route.
+
+Windows and Linux beta IDE binaries are currently unsigned. The macOS beta is ad-hoc signed but not Developer ID notarized. See `docs/OFFLINE_STUDIO.md`, the public `https://minh.systems/Patch/downloads.html` page and `https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2`.
 
 ## Offline compiler, PWA and diagnostics
 
