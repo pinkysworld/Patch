@@ -51,6 +51,16 @@ test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample 
   assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);
 });
 
+test('Workshop Desk can execute the compiler AST without reparsing source', () => {
+  const compiled = compile(example, { name: 'workshop-desk', kind: 'window' });
+  const sourceResult = new PatchInterpreter().run(example);
+  const astResult = new PatchInterpreter().runAst(compiled.ast);
+  assert.deepEqual(astResult.state, sourceResult.state);
+  assert.deepEqual(astResult.history, sourceResult.history);
+  assert.deepEqual(astResult.ui, sourceResult.ui);
+  assert.deepEqual(astResult.output, sourceResult.output);
+});
+
 test('Workshop Desk exercises stateful controls, Forms, transient structural selection, Picture and Timer events', () => {
   const runtime = new PatchInterpreter();
   runtime.run(example);
