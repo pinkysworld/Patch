@@ -1,0 +1,20 @@
+.handbook-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 24px;padding:8px;border:1px solid var(--border,#343943);border-radius:12px;background:var(--panel,#1b1e24)}
+.handbook-tabs a{display:inline-flex;align-items:center;min-height:36px;padding:7px 11px;border-radius:8px;text-decoration:none;font-weight:650}
+.handbook-tabs a[aria-current="page"]{background:color-mix(in srgb,currentColor 12%,transparent)}
+.handbook-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:16px 0 24px}
+.handbook-card{border:1px solid var(--border,#343943);border-radius:12px;padding:16px;background:var(--panel,#1b1e24)}
+.handbook-card h2,.handbook-card h3{margin-top:0}
+.handbook-card .meta{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-bottom:7px}
+.handbook-card pre,.handbook-example pre{white-space:pre;overflow:auto;max-width:100%;border-radius:9px}
+.handbook-example{margin:18px 0;padding:18px;border:1px solid var(--border,#343943);border-radius:12px;background:var(--panel,#1b1e24)}
+.handbook-example h2,.handbook-example h3{margin-top:0}
+.handbook-example .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.handbook-step{display:grid;grid-template-columns:34px 1fr;gap:10px;margin:14px 0}
+.handbook-step>span{width:30px;height:30px;display:grid;place-items:center;border:1px solid currentColor;border-radius:50%;font-weight:700}
+.handbook-note{padding:12px 14px;border-left:4px solid currentColor;background:color-mix(in srgb,currentColor 7%,transparent);border-radius:6px;margin:14px 0}
+.handbook-toc{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 22px}
+.handbook-toc a{font-weight:650}
+.example-matrix{width:100%;border-collapse:collapse;margin:12px 0 20px}
+.example-matrix th,.example-matrix td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#343943)}
+.example-matrix code{white-space:nowrap}
+@media(max-width:720px){.example-matrix{display:block;overflow-x:auto}.handbook-tabs{gap:4px}.handbook-tabs a{flex:1 1 auto;justify-content:center}}

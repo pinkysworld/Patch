@@ -9,7 +9,7 @@ const sourceSrc = path.join(root, 'src');
 const out = path.join(root, '_site');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-const SITE_HTML_FILES = ['index.html','language.html','docs.html','help.html'];
+const SITE_HTML_FILES = ['index.html','language.html','docs.html','tutorials.html','examples.html','help.html'];
 const SITE_SRC_FILES = [
   'interpreter.js','parser.js','picture-control.js','picture-source.js','button-image.js','window-icon.js','shape-control.js','shape-source.js','paintbox-control.js','imagelist-control.js','expression.js','change.js','change-analysis.js','range-analysis.js',
   'formal-range.js','formal-guard.js','formal-calls.js','formal-bridge.js','formal-source.js',
@@ -20,7 +20,7 @@ const SITE_SRC_FILES = [
 ];
 
 const SITE_WEB_STATIC_FILES = [
-  'style.css','site-navigation.css','site-refresh.css','site-pages.css','studio-accessibility.css','studio-command-palette.css','designer-inspector.css','designer-data-editor.css','designer-structure-ux.css','designer-ux.css','designer-toolbox.css','designer-imagelist.css','designer-menu-designer.css','designer-panel.css','form-designer-workflow.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
+  'style.css','site-navigation.css','site-refresh.css','site-pages.css','docs-handbook.css','studio-accessibility.css','studio-command-palette.css','designer-inspector.css','designer-data-editor.css','designer-structure-ux.css','designer-ux.css','designer-toolbox.css','designer-imagelist.css','designer-menu-designer.css','designer-panel.css','form-designer-workflow.css','forms-designer.css','form-window-resize.css','project-lifecycle.css','recovery-manager.css','studio-diagnostics.css','manifest.webmanifest','icon.svg'
 ];
 
 const SITE_WEB_MODULE_FILES = [

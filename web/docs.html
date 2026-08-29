@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./site-navigation.css">
   <link rel="stylesheet" href="./site-pages.css">
+  <link rel="stylesheet" href="./docs-handbook.css">
   <style>
     .learning-path{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:18px 0 8px}.learning-step,.tutorial-card,.reference-card{border:1px solid var(--border,#343943);border-radius:12px;padding:16px;background:var(--panel,#1b1e24)}.learning-step span,.tutorial-card .level{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-bottom:6px}.learning-step h3,.tutorial-card h3,.reference-card h3{margin:.2rem 0 .5rem}.tutorial-grid,.reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.tutorial-card pre,.docs-example pre{white-space:pre;overflow:auto;max-width:100%;border-radius:9px}.docs-example{margin:18px 0;padding:16px;border:1px solid var(--border,#343943);border-radius:12px;background:var(--panel,#1b1e24)}.docs-example h3{margin-top:0}.docs-example .example-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.docs-example .example-actions a{font-weight:650}.docs-note{padding:12px 14px;border-left:4px solid currentColor;background:color-mix(in srgb,currentColor 7%,transparent);border-radius:6px;margin:14px 0}.docs-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.docs-steps{counter-reset:step;list-style:none;padding:0}.docs-steps>li{counter-increment:step;position:relative;padding:0 0 18px 44px}.docs-steps>li:before{content:counter(step);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1px solid currentColor;font-weight:700}.quick-ref{width:100%;border-collapse:collapse}.quick-ref th,.quick-ref td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#343943)}.quick-ref code{white-space:nowrap}.docs-jumps{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg,#15171c) 94%,transparent);backdrop-filter:blur(8px)}@media(max-width:720px){.quick-ref{display:block;overflow-x:auto}.docs-jumps{position:static}}
   </style>
@@ -23,6 +24,9 @@
   <a href="./help.html">Help</a>
 </nav>
 <main class="content-page" data-patch-version="0.2.0-beta.36">
+  <nav class="handbook-tabs" aria-label="Patch handbook">
+    <a href="./docs.html" aria-current="page">Overview</a><a href="./tutorials.html">Tutorials</a><a href="./examples.html">Examples</a><a href="./language.html">Language reference</a><a href="./downloads.html">Build &amp; downloads</a>
+  </nav>
   <section class="page-hero">
     <div>
       <p class="page-eyebrow">Documentation · 0.2 beta.36+</p>
@@ -68,7 +72,7 @@ show count</pre>
         <h3>Offline path</h3>
         <p>The rolling <code>offline-studio-v0.2</code> release provides the Stage 1 Offline Studio beta for Windows x64, macOS Apple Silicon and Linux x64. It provides offline authoring, Designer/Object Inspector and Run. Host-native Build directly inside Offline Studio is still the explicit Stage 2 gap.</p>
         <p><a href="./downloads.html"><strong>Download Offline Studio or the standalone compiler</strong></a></p>
-        <p class="docs-note"><strong>License:</strong> Patch already uses the permissive MIT License. You may use, modify, distribute, sublicense and sell copies as long as the copyright and permission notice are retained.</p>
+        <p class="docs-note"><strong>License:</strong> Patch is MIT-licensed. Copyright (c) 2026 Michel Nguyen. You may use, modify, distribute, sublicense and sell copies as long as the copyright and permission notice are retained.</p>
       </div>
     </div>
 
@@ -89,7 +93,7 @@ patch doctor --json</pre>
 
   <section id="tutorials" class="page-section docs-filterable">
     <h2>Tutorials</h2>
-    <p>These tutorials use syntax that is exercised by the repository test suite and current examples.</p>
+    <p>These tutorials use syntax that is exercised by the repository test suite and current examples. For the full step-by-step handbook, open the dedicated <a href="./tutorials.html"><strong>Tutorials page</strong></a>; for a browsable program library, use <a href="./examples.html"><strong>Examples</strong></a>.</p>
     <div class="tutorial-grid">
       <article class="tutorial-card"><span class="level">Beginner</span><h3>1. Counter GUI</h3><p>Window, Text, Button, event handling and explicit persistent mutation.</p><a href="#tutorial-counter">Build it</a></article>
       <article class="tutorial-card"><span class="level">Beginner</span><h3>2. Conditions and loops</h3><p>Branch with <code>if</code>/<code>else</code> and repeat work with the built-in <code>count</code>.</p><a href="#tutorial-control">Build it</a></article>
