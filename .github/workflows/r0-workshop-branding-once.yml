@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Synchronize Workshop showcase and compiler branding
+      - name: Synchronize Workshop showcase, R0 responsiveness and compiler branding
         shell: bash
         run: |
           python3 - <<'PY'
@@ -36,16 +36,12 @@ jobs:
                   raise SystemExit(f"{path}: expected one guarded match, found {count}: {old!r}")
               p.write_text(text.replace(old, new, 1))
 
-          # UI ids are application-global in Patch. Keep the main customer Combo as
-          # the source-backed editor and render its state read-only on Customer Profile.
           replace_once(
               'examples/workshop-desk.patch',
               '  combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 92 size 220, 36',
               '  text "{customer}" at 24, 92 size 220, 36'
           )
 
-          # Preserve the canonical file byte-for-byte, including its final newline,
-          # because the Studio compatibility sample has an exact idempotence gate.
           example = Path('examples/workshop-desk.patch').read_text()
           studio = Path('web/beta35-studio.js')
           text = studio.read_text()
@@ -63,6 +59,27 @@ jobs:
           replace_once('web/studio-dom-sync.js',
               "    next.includes('Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&\n    next.includes('It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls.') &&",
               "    next.includes('Six-Form Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&\n    next.includes('window \\\"Inventory Center\\\" as inventory size 900, 620:') &&\n    next.includes('window \\\"Customer Profile\\\" as customer_profile size 760, 600:') &&\n    next.includes('window \\\"Workshop Diagnostics\\\" as diagnostics size 840, 620:') &&\n    next.includes('It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls.') &&")
+
+          # R0 responsiveness: Form selection should acknowledge immediately and
+          # coalesce the heavier rematerialization into the next browser task.
+          replace_once('web/forms-designer.js',
+              "let pendingReveal = null;",
+              "let pendingReveal = null;\nlet materializationScheduled = false;\nlet requestedMaterializationForm = null;")
+          replace_once('web/forms-designer.js',
+              "function requestActiveFormMaterialization() {\n  if (!canvas) return;\n  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);\n  if (Number.isInteger(materialized) && materialized === activeForm) return;\n  canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {\n    bubbles: false,\n    detail: { windowIndex: activeForm }\n  }));\n}",
+              "function requestActiveFormMaterialization() {\n  if (!canvas) return;\n  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);\n  if (Number.isInteger(materialized) && materialized === activeForm) return;\n  requestedMaterializationForm = activeForm;\n  if (materializationScheduled) return;\n  materializationScheduled = true;\n  setTimeout(() => {\n    materializationScheduled = false;\n    const requested = requestedMaterializationForm;\n    requestedMaterializationForm = null;\n    if (!Number.isInteger(requested)) return;\n    const current = Number(canvas.dataset.patchDesignerMaterializedForm);\n    if (Number.isInteger(current) && current === requested) return;\n    canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {\n      bubbles: false,\n      detail: { windowIndex: requested }\n    }));\n  }, 0);\n}")
+
+          # StatusBar design-time preview must consume the same declaration-only
+          # cache as the primary Designer and must never execute application work.
+          replace_once('web/designer-statusbar.js',
+              "import { PatchInterpreter } from '../src/interpreter.js';",
+              "import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';")
+          replace_once('web/designer-statusbar.js',
+              "let cachedUi = [];",
+              "let cachedUi = [];\nconst statusBarDesignCache = createStudioDesignSnapshotCache();")
+          replace_once('web/designer-statusbar.js',
+              "    cachedControls = listDesignerControls(source);\n    if (!cachedControls.some(control => control.type === 'statusbar')) {\n      cachedUi = [];\n      return;\n    }\n    cachedUi = new PatchInterpreter().run(source).ui ?? [];",
+              "    cachedControls = listDesignerControls(source);\n    if (!cachedControls.some(control => control.type === 'statusbar')) {\n      cachedUi = [];\n      return;\n    }\n    cachedUi = statusBarDesignCache.get(source).ui ?? [];")
 
           replace_once('web/designer-workspace.js', 'markClassicBrand();', 'markCompilerBrand();')
           replace_once('web/designer-workspace.js',
@@ -104,32 +121,39 @@ jobs:
               b = b.replace(old, new)
           browser.write_text(b)
 
-          branding_lines = [
-              "import test from 'node:test';",
-              "import assert from 'node:assert/strict';",
-              "import fs from 'node:fs';",
-              "",
-              "const icon = fs.readFileSync('web/icon.svg', 'utf8');",
-              "const html = fs.readFileSync('web/index.html', 'utf8');",
-              "const manifest = fs.readFileSync('web/manifest.webmanifest', 'utf8');",
-              "const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');",
-              "",
-              "test('Patch Studio uses the compiler-oriented brand mark across browser and installed surfaces', () => {",
-              "  assert.match(icon, /Patch Studio compiler mark/);",
-              "  assert.match(icon, /patch-circuit-cuts/);",
-              "  assert.match(icon, /patch-main/);",
-              "  assert.match(icon, /patch-accent/);",
-              "  assert.match(html, /class=\\\"brand-mark\\\" src=\\\"\\.\\/icon\\.svg\\\"/);",
-              "  assert.match(html, /data-patch-brand-mark=\\\"compiler-p-v1\\\"/);",
-              "  assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);",
-              "  assert.match(html, /value=\\\"counterWindow\\\" selected>Window app/);",
-              "  assert.match(manifest, /\\\"src\\\": \\\"\\.\\/icon\\.svg\\\"/);",
-              "  assert.match(manifest, /\\\"theme_color\\\": \\\"#1d4ed8\\\"/);",
-              "  assert.match(workspace, /compiler-p-v1/);",
-              "});",
-              ""
-          ]
-          Path('tests/studio-branding.test.js').write_text('\n'.join(branding_lines))
+          Path('tests/studio-branding.test.js').write_text("""import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const icon = fs.readFileSync('web/icon.svg', 'utf8');
+const html = fs.readFileSync('web/index.html', 'utf8');
+const manifest = fs.readFileSync('web/manifest.webmanifest', 'utf8');
+const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
+const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
+const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
+
+test('Patch Studio uses the compiler-oriented brand mark across browser and installed surfaces', () => {
+  assert.match(icon, /Patch Studio compiler mark/);
+  assert.match(icon, /patch-circuit-cuts/);
+  assert.match(icon, /patch-main/);
+  assert.match(icon, /patch-accent/);
+  assert.match(html, /class="brand-mark" src="\.\/icon\.svg"/);
+  assert.match(html, /data-patch-brand-mark="compiler-p-v1"/);
+  assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);
+  assert.match(html, /value="counterWindow" selected>Window app/);
+  assert.match(manifest, /"src": "\.\/icon\.svg"/);
+  assert.match(manifest, /"theme_color": "#1d4ed8"/);
+  assert.match(workspace, /compiler-p-v1/);
+});
+
+test('large-Form design-time adapters remain non-executing and Form switching yields between tasks', () => {
+  assert.match(statusbar, /createStudioDesignSnapshotCache/);
+  assert.doesNotMatch(statusbar, /new PatchInterpreter\(\)\.run\(source\)/);
+  assert.match(forms, /materializationScheduled/);
+  assert.match(forms, /setTimeout\(\(\) =>/);
+  assert.match(forms, /patch-designer-active-form-change/);
+});
+""")
           Path('.github/workflows/r0-workshop-branding-once.yml').unlink()
           PY
       - name: Verify Workshop, branding and active Form virtualization
@@ -138,6 +162,8 @@ jobs:
           node --check web/beta35-studio.js
           node --check web/studio-dom-sync.js
           node --check web/designer-workspace.js
+          node --check web/forms-designer.js
+          node --check web/designer-statusbar.js
           node --test tests/studio-branding.test.js tests/workshop-desk.test.js tests/studio-form-materialization.test.js tests/studio-active-form-materialization-integration.test.js tests/studio-active-form-rendering.test.js tests/studio-designer-design-model-integration.test.js
           node --test tests/workshop-desk-browser.test.js
           npm run build:site
@@ -147,6 +173,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add examples/workshop-desk.patch web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
+          git add examples/workshop-desk.patch web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/forms-designer.js web/designer-statusbar.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
           git commit -m "Expand Workshop Desk and integrate compiler branding"
           git push origin HEAD:gpt/r0-active-form-materialization-282
