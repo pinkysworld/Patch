@@ -56,5 +56,5 @@ test('rendered Patch brand keeps geometry in the shared compiler icon while runt
   assert.match(buildSite, /'manifest\.webmanifest','icon\.svg'/);
   assert.match(siteCheck, /'_site\/icon\.svg'/);
   assert.match(siteCheck, /data-patch-brand-mark=\"compiler-p-v1\"/);
-  assert.doesNotMatch(siteCheck, /M8 6H22V18H13V26H8ZM13 10H18V14H13Z[^']*'/);
+  assert.match(siteCheck, /rejectAll\('Studio beta36 current shell',[\s\S]*M8 6H22V18H13V26H8ZM13 10H18V14H13Z/);
 });
