@@ -333,6 +333,7 @@ The certificate establishes consequences of accepted, independently reconstructe
 \caption{Lean-checked statements in the current fragment.}
 \label{tab:lean-theorems}
 \small
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}ll@{}}
 \toprule
 Statement & Lean name / location \\
@@ -344,16 +345,18 @@ Integer \texttt{RangeExpr} soundness & Thm.~\ref{thm:range}; \texttt{rangeAnalys
 Finite call-tree refinement & Thm.~\ref{thm:calltree}; \texttt{checkedConcreteTransitiveCallTreeRefinesCallerSignature} \\
 Observed runtime-frame correspondence & Thm.~\ref{thm:runtime}; \texttt{checkedObservedTransitiveRuntimeRefinesCallerSignature} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
-Supporting Lean names also include \texttt{callSignatureSoundness}, \texttt{concreteCallBinding\_sound}, \texttt{checkedConcreteBoundEffectRefinesCallerSignature}, and \texttt{checkedConcreteCallBodyRefinesCallerSignature}. They remain fragment theorems, not a verified compiler.
+Supporting theorem families cover abstract call signatures, exact call binding, bounded-effect refinement, and structured call-body refinement. Exact Lean identifiers are retained in the artifact documentation and source; these remain fragment theorems, not a verified compiler.
 
 \begin{table}[t]
 \centering
 \caption{Assurance layer versus proof status. ``Accepted evidence'' means Lean checks consequences of independently reconstructed artifacts rather than proving the producer correct.}
 \label{tab:trust-boundary}
 \small
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llp{58mm}@{}}
 \toprule
 Layer & Status & Bound \\
@@ -364,7 +367,8 @@ Source/range, guard, static call-site identity & independent JavaScript validati
 Runtime capture, validator, lowering, Wasm engine & proof-free trust & named, not elided \\
 Things, GUI, native Window runtimes & implementation artifact & outside formal fragment \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \paragraph{Answer to RQ3 and RQ4.}
@@ -377,7 +381,8 @@ The evaluation asks a deliberately narrow question: does operation/magnitude-awa
 \subsection{Micro-case results}
 The mechanized decision matrix is:
 \begin{center}
-\begin{tabular}{lrr}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrl}
 \toprule
 Decision class & Cases & Interpretation \\
 \midrule
@@ -385,7 +390,8 @@ Patch accept / target-only accept & 3 & both admit the case \\
 Patch reject / target-only accept & 4 & semantic authority rejects beyond target-only write authority \\
 Patch reject / target-only reject & 1 & target escape rejected by both \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{center}
 
 \begin{table}[t]
