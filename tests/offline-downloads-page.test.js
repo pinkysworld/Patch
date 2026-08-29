@@ -89,8 +89,9 @@ test('downloads page distinguishes current v1.8, Intel macOS kit, FreeBSD and hi
   assert.match(downloads, /portable image-source rendering/i);
 });
 
-test('generated public site contains downloads and current plus frozen native compiler assets but no paper page', () => {
+test('generated public site contains downloads, passes the public validator and excludes the paper page', () => {
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['scripts/check-site.js'], { stdio: 'pipe' });
   assert.equal(fs.existsSync('_site/paper.html'), false, 'paper.html must remain outside the public site');
   for (const file of [
     '_site/downloads.html',
