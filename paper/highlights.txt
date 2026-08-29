@@ -2,4 +2,4 @@
 • Change Contracts distinguish target, operation, and bounded magnitude.
 • Lean checks scoped contract, range, and finite call-tree properties.
 • Direct-Wasm observations are linked to exact call trees by checked evidence.
-• An authority ablation isolates benefits of operation and magnitude semantics.
+• An authority ablation isolates operation- and magnitude-aware distinctions.
