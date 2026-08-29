@@ -112,6 +112,7 @@ patch doctor --json</pre>
   <section id="native-release" class="page-section docs-filterable">
     <h2>Native applications and release engineering</h2>
     <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.7 / payload v17 / runtime v1.8. Native Ready Picture follows <code>native-picture-formats/1.0</code>: PNG/JPEG decoding is Ready, WebP/SVG remain deferred. Offline Studio Stage 1 publishes tested executable downloads separately from production code-signing evidence. Window icons package on Studio/Web under <code>window-icon/1.0</code>; native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups.</p>
+    <p>Patch intentionally keeps two live native product contracts: the current Native GUI IR 1.7 / payload v17 / runtime v1.8 facade and the <strong>IR 1.2 / payload v12 / runtime v1.3 frozen</strong> TreeView compatibility line. Newer features never silently reinterpret the frozen contract.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2"><strong>Offline Studio release</strong><span>Rolling Windows x64, macOS Apple Silicon and Linux x64 Offline IDE beta downloads.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline Studio contract</strong><span>Download integrity, loopback security boundary and Stage 2 host-native local Build plan.</span></a>
