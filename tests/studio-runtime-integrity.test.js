@@ -34,17 +34,20 @@ test('runtime integrity wrapper loads before the native builder and covers every
   assert.match(runtimeIntegrity, /integrity manifest is missing/);
 });
 
-test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.8 releases', () => {
+test('Pages gates deployment on compatibility runtime plus current native GUI runtime v1.9 releases', () => {
   assert.match(pages, /RUNTIME_TAG: studio-runtime-v0\.6/);
-  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.8/);
-  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.8/);
-  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.8/);
+  assert.match(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.9/);
+  assert.match(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.9/);
+  assert.match(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.9/);
   assert.match(pages, /for tag in "\$RUNTIME_TAG" "\$WIN32_RUNTIME_TAG" "\$LINUX_NATIVE_RUNTIME_TAG" "\$MACOS_NATIVE_RUNTIME_TAG"/);
   assert.match(pages, /Patch Native Sealed TreeView Runtime v1\.3/);
   assert.match(pages, /Patch Native Sealed Slider Runtime v1\.4/);
   assert.match(pages, /Patch Native Sealed Shape Runtime v1\.6/);
   assert.match(pages, /Patch Native Sealed PaintBox Runtime v1\.7/);
   assert.match(pages, /Patch Native Sealed PaintBox Image Runtime v1\.8/);
+  assert.match(pages, /Patch Native Sealed ImageList Runtime v1\.9/);
+  assert.match(pages, /src\/native-gui-ir-v18\.js/);
+  assert.match(pages, /native-win32-runtime-v1\.9/);
 });
 
 test('Pages refuses a false green when required runtime releases are incomplete', () => {
@@ -87,7 +90,7 @@ test('Pages verifies the canonical and public deployed site with one revision-co
   assert.ok(pages.includes("grep -oE '\\./style\\.css\\?v=[0-9a-f]{16}'"));
   assert.ok(pages.includes('studio-bootstrap.js?v=${revision}'));
   assert.ok(pages.includes('studio-accessibility.js?v=${revision}'));
-  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','studio-bootstrap.js','studio-accessibility.js','designer-multiselect.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js']) {
+  for (const asset of ['index.html','site-navigation.css','playground.js','native-build.js','studio-bootstrap.js','studio-accessibility.js','designer-multiselect.js','sw.js','src/compiler.js','src/call-site-validation.js','src/independent-range-expression.js','src/independent-guard-expression.js','src/native-current-contract.js','src/native-gui-ir-v18.js']) {
     assert.ok(pages.includes(asset), `Pages live smoke should cover ${asset}`);
   }
   assert.match(pages, /curl --fail --silent --show-error --location/);
