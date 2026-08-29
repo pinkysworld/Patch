@@ -21,6 +21,7 @@
 
 \title{Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs}
 \author{Mich\'el Nguyen}
+\address{University of the People}
 
 \begin{abstract}
 Mutable programs routinely need information about state updates that an ordinary write does not preserve explicitly: provenance, undo history, semantic operation, quantitative authority, and evidence that an update respects policy. Patch explores a mutation architecture in which ordinary post-creation persistent mutation is represented and committed through a structured semantic \emph{Change}; ordinary reassignment is not a second modeled persistent-update route. From the same mandatory representation, Patch derives \emph{Semantic Change Signatures} and optional \emph{Change Capabilities} that distinguish target, operation, and---for a supported numeric fragment---magnitude.
@@ -37,7 +38,7 @@ programming languages \sep mutable state \sep effect systems \sep capabilities \
 \end{frontmatter}
 
 \section{Introduction}
-Mutable state is compact to program with but semantically expensive to recover after the fact. A write such as \texttt{x = e} identifies a destination and a value, yet many downstream tools need richer questions answered: Was the update an increase, decrease, replacement, or clear operation? By how much could it change the target? Which procedure was responsible? Was that authority intended? Which transition should be undone or explained?
+Mutable state is compact to program with but semantically expensive to recover after the fact. In this paper, \emph{persistent state} means language-level application state that remains available across statements and event handlers during a program execution, in contrast to transient local or GUI-event values; it does not imply durable disk or database storage across process restarts. A write such as \texttt{x = e} identifies a destination and a value, yet many downstream tools need richer questions answered: Was the update an increase, decrease, replacement, or clear operation? By how much could it change the target? Which procedure was responsible? Was that authority intended? Which transition should be undone or explained?
 
 Patch investigates whether these questions become simpler when the state transition itself is the primary abstraction. Instead of first mutating persistent state and later attaching metadata, a Patch program describes a structured semantic change that is the modeled route to the new persistent state:
 
@@ -88,7 +89,7 @@ This paper makes five scoped contributions:
 
 \section{Language Design}
 \subsection{Progressive disclosure}
-A beginner can ignore signatures, policies, certificates, and backend details:
+A surface program can omit signatures, policies, certificates, and backend details:
 
 \begin{lstlisting}
 create number lives = 3
@@ -97,13 +98,35 @@ change lives:
 show lives
 \end{lstlisting}
 
-Advanced machinery derives information from the same source mutation model rather than requiring a second command/event architecture for ordinary persistent state updates.
+Advanced machinery derives information from the same source mutation model rather than requiring a second command/event architecture for ordinary persistent state updates. This is a language-design property; the present paper does not report a usability or human-subject study.
 
 \subsection{No persistent-assignment escape hatch}
 \texttt{create} introduces a fresh persistent binding. Existing persistent bindings are not subsequently updated with ordinary \texttt{x = e}; state-changing source uses \texttt{change}. This syntactic restriction mirrors the single modeled commit route in the formal machine. Transient GUI event values, toolkit selection, and layout state are deliberately not persistent Patch state unless source executes an explicit semantic \texttt{change}.
 
 \subsection{Source and semantic operations}
 The source-facing verbs are \texttt{set}, \texttt{add}, \texttt{remove}, and \texttt{clear}. Static semantic analysis can classify numeric mutations more precisely: \texttt{add 5} is an increase, \texttt{add -5} is a decrease, and \texttt{set 5} remains a set. Policies can distinguish these authorities even when they address the same location.
+
+\paragraph{Meaning of ``same substrate.''}
+The phrase refers to one mandatory language-level mutation route and semantic vocabulary, not to one identical in-memory object shared by every compiler and runtime phase. In the implementation, source \texttt{change} nodes lower to \texttt{CHANGE} instructions; compile-time change analysis derives signatures and capability checks from those change nodes; and the interpreter turns the corresponding source operations into normalized runtime Change records consumed by commit, history, undo/redo, watch, and provenance operations. Formal-bridge and call-evidence construction receive the compiler's change analysis. The representations therefore have a common semantic lineage while remaining distinct artifacts with explicit translation/trust boundaries.
+
+\begin{table}[t]
+\centering
+\caption{Artifact-level substrate-reuse audit. This documents architectural coupling in the implementation; it is not a comparative experiment showing superiority over alternative mutation architectures.}
+\label{tab:substrate-reuse}
+\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Consumer & Artifact path & Reused mutation information \\
+\midrule
+IR / formal bridge & \texttt{compiler.js} & \texttt{change} nodes lower to \texttt{CHANGE}; change analysis feeds formal evidence \\
+Signatures / capabilities & \texttt{change-analysis.js} & target, operation, amount/range, call substitution \\
+Execution / history & \texttt{interpreter.js} & normalized operations, before/after values, versions, cause \\
+Undo / redo / provenance & \texttt{interpreter.js} & committed Change and inverse operations/history \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
 
 \section{State-Change Factorization and Change Contracts}
 Let persistent state be a map $\sigma : Name \rightarrow Value$, let $\nu(x)$ be the current version of target $x$, and let history be $H=[\delta_1,\ldots,\delta_n]$. A normalized semantic change is
@@ -148,7 +171,7 @@ The Lean theorem \texttt{stateChangeFactorization} is intentionally a by-constru
 \draw[arr] (delta) -- (sig);
 \draw[arr] (delta) -- (cap);
 \end{tikzpicture}
-\caption{Mutation architecture. Ordinary modeled persistent mutation is committed through a structured Change. Signatures, capabilities, history, and provenance reuse that same object rather than reconstructing meaning around a later write.}
+\caption{Mutation architecture. Ordinary modeled persistent mutation is committed through a structured Change. Signatures, capabilities, history, and provenance reuse that semantic mutation route rather than reconstructing meaning around a later write.}
 \label{fig:architecture}
 \end{figure}
 
@@ -158,7 +181,7 @@ Sig(f)=\{e_1,\ldots,e_k\}.
 \]
 An effect contains target, optional field, semantic operation kind, and optional amount interval. A Change Capability specifies allowed semantic authority. For example, \texttt{score may increase up to 10} distinguishes bounded increase from set or decrease authority.
 
-The novelty hypothesis is not that an equivalent bound is inexpressible in richer effect or refinement systems. It is that Patch derives this restricted authority vocabulary from the same mandatory semantic delta objects through which modeled persistent mutation is committed.
+The novelty hypothesis is not that an equivalent bound is inexpressible in richer effect or refinement systems. It is that Patch derives this restricted authority vocabulary from the same mandatory semantic delta route through which modeled persistent mutation is committed.
 
 \paragraph{Answer to RQ1.}
 For the modeled persistent-mutation machine, yes: post-creation state-changing steps factor through a well-formed semantic Change and the Change is appended to history. This answer is by construction and is scoped to Patch's modeled persistent state; it does not claim that foreign state, GUI toolkit internals, or arbitrary host-language mutation is automatically captured.
@@ -415,7 +438,7 @@ Case & Isolated property & Patch & Target only \\
 \end{tabular}
 \end{table}
 
-The four differential rejections cover magnitude escalation, operation-direction escalation, transitive helper magnitude escalation, and fail-closed unknown magnitude. The shared rejection is an unauthorized target escape. These cases support a narrow mechanism-isolation statement about the artifact's semantic authority dimensions, not a claim of complete malicious-code containment or superiority over prior systems.
+The four differential rejections cover magnitude escalation, operation-direction escalation, transitive helper magnitude escalation, and fail-closed unknown magnitude. The shared rejection is an unauthorized target escape. These cases support a narrow mechanism-isolation statement about the artifact's semantic authority dimensions, not a claim of complete malicious-code containment, superiority over prior systems, or proof that mandatory factorization is preferable to every conventional mutation architecture.
 
 \subsection{Checkout/loyalty application}
 A larger case study models a checkout extension that composes discount and loyalty helpers over multiple state paths. The safe variant executes through the real direct-WebAssembly path and terminates with
@@ -457,7 +480,7 @@ usage/quota & \texttt{admin\_credit} & rejected & reject & reject \\
 Together, checkout/loyalty and usage/quota form a multi-domain artifact corpus. They are engineering/motivating cases, not a complete plugin sandbox, a real third-party integration study, or empirical evidence about an external extension ecosystem.
 
 \paragraph{Answer to RQ2.}
-Within these controlled cases, the mandatory semantic-change representation exposes authority dimensions that the target-only ablation intentionally discards. The result is not that Patch can express policies unavailable to richer systems; it is that operation and bounded magnitude are available directly from the mutation representation and can be checked without a separate general-purpose specification for these cases.
+Within these controlled cases, the mandatory semantic-change representation exposes authority dimensions that the target-only ablation intentionally discards. The result is not that Patch can express policies unavailable to richer systems, nor that the experiment proves mandatory factorization superior to separate analysis over conventional writes; it shows that operation and bounded magnitude are available directly from Patch's mutation representation and can be checked without a separate general-purpose specification for these cases.
 
 \section{Implementation and Reproducibility Artifact}
 The research artifact is implemented in the Patch language/compiler repository. The paper's formal/runtime correspondence covers a conservative numeric Console subset. The broader product artifact also contains a browser-first Patch Studio, source-backed Window tooling, portable C99, and native packaging paths; these improve inspectability and experimentation but are not primary novelty claims and do not widen the Lean theorem.
@@ -476,6 +499,9 @@ The repository also contains a process-isolated fixed-machine measurement protoc
 \paragraph{Construct validity.}
 The Lean theorems cover explicit fragments rather than the full language. Independent source/range, guard, and call-site validators reduce selected extraction trust, but they are JavaScript rather than verified parsers. Runtime correspondence checks consequences of accepted reconstructed evidence; it does not prove capture completeness, lowering correctness, or WebAssembly-engine correctness. The target-only comparison is an internal ablation, not a model of a named prior system.
 
+\paragraph{Architectural evidence.}
+The substrate-reuse audit establishes that several implemented consumers derive from Patch's mandatory change route, but it does not compare this architecture experimentally with a conventional assignment language plus independent instrumentation or static analyses. Accordingly, the paper treats reuse as implementation evidence for the proposed architecture, not as proof that alternative architectures cannot recover equivalent semantics or achieve lower engineering cost.
+
 \paragraph{Formal significance.}
 State-Change Factorization is enforced by the modeled transition relation and its proof is correspondingly by construction. This is deliberate: the contribution attributed to that theorem is the explicit machine-checked architectural invariant, not proof difficulty. The stronger claims depend on what can be derived and checked from the invariant---notably semantic contracts, finite interprocedural refinement, and the scoped runtime-evidence bridge.
 
@@ -488,17 +514,26 @@ Checkout/loyalty and usage/quota are internally authored engineering cases, not 
 \paragraph{Performance validity.}
 No fixed-machine controlled timing dataset is reported. The paper therefore makes no claim that the assurance pipeline is cheap, linear, or suitable for a particular latency budget. The repository's process-isolated measurement protocol is provided to make such a study reproducible rather than to substitute methodology for results.
 
+\paragraph{Usability validity.}
+The paper describes compact source forms and progressive disclosure of optional analysis/policy constructs but contains no developer study. It therefore makes no claim about learnability, productivity, error rates, or preference relative to conventional mutation syntax.
+
 \paragraph{Novelty boundary.}
 The related-work comparison is architectural rather than an expressiveness ordering. A richer effect, refinement, typestate, dependent, reversible, or event-sourced system may encode or support properties equal to or stronger than Patch's bounded semantic changes. The proposed contribution is the reuse of a mandatory language-level mutation representation across execution, authority, history, provenance, and assurance; whether that architectural restriction is worthwhile beyond the evaluated cases remains an empirical and design question.
 
 \section{Conclusion}
-Patch investigates a language architecture in which ordinary modeled persistent mutation is not merely observed but factored through an explicit semantic Change representation. The same substrate supports operation- and magnitude-aware contracts, history, provenance, and assurance while keeping beginner-facing mutation syntax compact.
+Patch investigates a language architecture in which ordinary modeled persistent mutation is not merely observed but factored through an explicit semantic Change representation. The same semantic mutation route supports operation- and magnitude-aware contracts, history, provenance, and assurance while retaining compact source-level mutation syntax.
 
 For RQ1, the formal machine enforces State-Change Factorization by construction and proves Mutation Transparency. For RQ3, the Lean development establishes signature/policy, range, guarded structured-trace, and finite transitive call-tree properties for explicit fragments. For RQ4, independently reconstructed runtime evidence connects selected production direct-WebAssembly executions to exact call-tree witnesses while keeping capture, validator, parser, lowering, and engine correctness outside the theorem.
 
 For RQ2, the semantic-authority ablation shows four controlled cases in which removing operation and magnitude information admits an extension that Patch rejects because of semantic operation, magnitude, transitive magnitude, or unproved magnitude, while both variants reject an unauthorized target escape. Two larger application domains exercise the same distinctions on the production direct-WebAssembly path. These results support the narrower architectural claim without asserting unique expressibility, complete sandboxing, or general superiority over existing effect/capability systems.
 
-The strongest next empirical tests are genuine external application evidence and controlled assurance-cost measurement. They would probe practical generality and implementation cost, but the current formal and semantic-authority claims do not assume those results exist.
+The strongest next empirical tests are genuine external application evidence, controlled assurance-cost measurement, and a fair implemented or formal comparison with a representative modern effect/capability approach. They would probe practical generality, implementation cost, and comparative architectural value; the current formal and semantic-authority claims do not assume those results exist.
+
+\section*{Funding}
+This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors.
+
+\section*{Declaration of competing interests}
+The author declares no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
 
 \appendix
 \section{Artifact reproduction}
