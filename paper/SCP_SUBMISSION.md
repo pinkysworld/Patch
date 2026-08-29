@@ -14,6 +14,21 @@
 
 > Patch makes a structured semantic Change the mandatory modeled route for post-creation persistent mutation and derives operation- and magnitude-aware authority, provenance and assurance from that same representation.
 
+## Submission-format status
+
+The journal branch now uses the Elsevier `elsarticle` class with SCP front matter, keywords, and `elsarticle-num` bibliography style. Submission-facing LaTeX/BibTeX files are kept together in `paper/`, matching Elsevier's requirement that LaTeX source files uploaded through Editorial Manager remain at one folder level.
+
+Supporting files now include:
+
+- `main.tex` — journal manuscript;
+- `related-work.tex` — related-work/claim-boundary module;
+- `references.bib` and `related-extra.bib` — bibliography;
+- `highlights.txt` — five concise Elsevier highlights;
+- `cover-letter.md` — cover-letter draft;
+- `INTERNAL_REVIEW.md` — three internal peer-review rounds and dispositions.
+
+The dedicated `.github/workflows/paper.yml` job compiles the Elsevier manuscript, rejects unresolved citations/references, and publishes the generated PDF as a workflow artifact.
+
 ## Candidate abstract message
 
 The abstract in `main.tex` is written around four points:
@@ -21,19 +36,19 @@ The abstract in `main.tex` is written around four points:
 1. ordinary mutable programs often reconstruct semantic meaning around writes;
 2. Patch instead factors persistent mutation through structured Changes;
 3. formal and runtime evidence establish scoped properties without claiming a fully verified compiler;
-4. controlled semantic-authority cases demonstrate distinctions over a deliberately coarse target-only write-authority ablation.
+4. semantic-authority cases isolate distinctions that disappear when operation and magnitude are removed.
 
-Do not broaden this into a claim that Patch invents effects, capabilities, quantitative reasoning, first-class state changes or bounded state specifications.
+Do not broaden this into a claim that Patch invents effects, capabilities, quantitative reasoning, first-class state changes, reversibility, event sourcing, or bounded state specifications.
 
 ## Candidate highlights
 
-Keep these concise if the submission system asks for highlights:
+The upload-ready versions are in `highlights.txt`:
 
 - Persistent mutation is factored through explicit semantic Change objects.
-- Change Contracts distinguish target, operation and bounded numeric magnitude.
-- Lean proves scoped signature, policy, range and finite call-tree properties.
-- Runtime evidence connects selected direct-Wasm executions to formal call trees.
-- Authority cases expose distinctions hidden by target-only write permission.
+- Change Contracts distinguish target, operation, and bounded magnitude.
+- Lean checks scoped contract, range, and finite call-tree properties.
+- Direct-Wasm observations are linked to exact call trees by checked evidence.
+- An authority ablation isolates benefits of operation and magnitude semantics.
 
 ## Suggested classification / keywords
 
@@ -50,7 +65,7 @@ Keep these concise if the submission system asks for highlights:
 
 The current manuscript may claim the implemented/mechanized results already present in the repository, including:
 
-- State-Change Factorization and Mutation Transparency in the modeled machine;
+- State-Change Factorization as a by-construction machine invariant and Mutation Transparency in the modeled machine;
 - signature/capability and integer-range theorems for explicit Lean fragments;
 - finite transitive exact call-tree refinement for the encoded fragment;
 - accepted-evidence runtime-frame correspondence for selected direct-Wasm executions;
@@ -63,13 +78,18 @@ The current manuscript may claim the implemented/mechanized results already pres
 
 Do not claim:
 
+- that State-Change Factorization is a difficult theorem rather than a machine-checked design invariant;
 - end-to-end compiler verification;
 - validator or runtime-capture completeness;
 - complete parser/lowering correctness;
 - complete sandboxing;
 - third-party ecosystem validation;
-- performance overhead, scalability or asymptotic behavior without a reviewed `controlled` dataset;
-- novelty merely from effects, capabilities, magnitude bounds, call frames, translation validation or proof-carrying evidence.
+- performance overhead, scalability, or asymptotic behavior without a reviewed `controlled` dataset;
+- novelty merely from effects, capabilities, magnitude bounds, call frames, reversibility, event sourcing, translation validation, or proof-carrying evidence.
+
+## Related-work status
+
+The claim boundary now explicitly covers first-class/reified state change, classical/algebraic/quantitative/dependent/temporal effects, effects-as-capabilities, permissions/typestate, refinement verification, explicit changes/patch theory, reversible programming, event sourcing, translation validation/PCC, and provenance debugging. Recent temporal-effect work is included specifically because it can express context-sensitive event summaries, summation, resource use, cost, and event magnitude; Patch therefore does not use quantitative or trace-sensitive effects as a firstness claim.
 
 ## Reproducibility package
 
@@ -98,10 +118,11 @@ npm run verify:reproducibility
 Before submission, answer these questions from the manuscript alone:
 
 - Is the distinction between expressibility and mutation architecture unmistakable?
+- Is the by-construction nature of the factorization theorem explicit?
 - Is it clear why operation/magnitude authority follows naturally from the Change representation?
 - Does every theorem state its fragment and trust boundary?
 - Are the runtime claims phrased as consequences of accepted evidence rather than full compiler correctness?
-- Does the evaluation support the architectural claim rather than imply a comparison with all prior effect/capability systems?
+- Is the target-only comparison clearly described as an ablation rather than a competitive baseline?
 - Are internally authored application cases clearly distinguished from external validation?
 - Are all version numbers that matter for reproduction captured in the frozen artifact rather than cluttering the research narrative?
 
@@ -110,6 +131,6 @@ Before submission, answer these questions from the manuscript alone:
 Two additions would materially strengthen the paper but are not silently assumed to exist:
 
 - a genuinely external/third-party integration case;
-- controlled fixed-machine assurance-cost measurements with raw samples, dispersion and a reviewed analysis.
+- controlled fixed-machine assurance-cost measurements with raw samples, dispersion, and a reviewed analysis.
 
-If either is added, update the abstract, evaluation, threats to validity and conclusion together so the claim surface remains synchronized.
+If either is added, update the abstract, evaluation, threats to validity, and conclusion together so the claim surface remains synchronized.
