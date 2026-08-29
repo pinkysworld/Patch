@@ -47,8 +47,10 @@ test('beginner examples stay intentionally tiny and source-readable', () => {
   assert.match(helloWindow, /text "Hello, Patch!" at 24, 24 size 240, 32/);
 });
 
-test('public docs explain the repository MIT license without inventing a second license', () => {
+test('public docs explain the repository MIT license and correct copyright holder', () => {
   assert.match(license, /^MIT License/m);
-  assert.match(docs, /Patch already uses the permissive MIT License/);
+  assert.match(license, /Copyright \(c\) 2026 Michel Nguyen/);
+  assert.match(docs, /Patch is MIT-licensed/);
+  assert.match(docs, /Copyright \(c\) 2026 Michel Nguyen/);
   assert.match(docs, /href="https:\/\/github\.com\/pinkysworld\/Patch\/blob\/main\/LICENSE"/);
 });
