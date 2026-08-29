@@ -81,24 +81,25 @@ static bool PatchResolveButtonImagesV19() {
   return true;
 }
 
-static bool PatchInstallButtonImagesV19() {
+// Returns zero on success, or a stable runtime diagnostic code in the 230 range.
+static int PatchInstallButtonImagesV19() {
   for (const auto& item : gPatchButtonImagesV19) {
     auto& c = gControls[(size_t)item.nativeIndex];
-    if (!c.hwnd) return false;
+    if (!c.hwnd) return 231;
     Bitmap* bitmap = PatchButtonBitmapV19(item.source, (int)item.width, (int)item.height);
-    if (!bitmap) return false;
+    if (!bitmap) return 232;
     HBITMAP handle = nullptr;
-    if (bitmap->GetHBITMAP(Color(0, 0, 0, 0), &handle) != Ok || !handle) { delete bitmap; return false; }
+    if (bitmap->GetHBITMAP(Color(0, 0, 0, 0), &handle) != Ok || !handle) { delete bitmap; return 233; }
     delete bitmap;
 
     // BM_SETIMAGE works for ordinary push buttons without requiring ComCtl32 v6.
     // With no BS_BITMAP style Windows renders the bitmap together with the text.
     SendMessageW(c.hwnd, BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)handle);
     HBITMAP installed = reinterpret_cast<HBITMAP>(SendMessageW(c.hwnd, BM_GETIMAGE, IMAGE_BITMAP, 0));
-    if (installed != handle) { DeleteObject(handle); return false; }
+    if (installed != handle) { DeleteObject(handle); return 234; }
     gPatchButtonBitmapsV19.push_back(handle);
   }
-  return true;
+  return 0;
 }
 
 static void PatchDestroyButtonImagesV19() {
@@ -139,8 +140,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance)) {
     GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 21;
   }
-  if (!PatchInstallButtonImagesV19()) {
-    GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 23;
+  const int imageInstall = PatchInstallButtonImagesV19();
+  if (imageInstall != 0) {
+    GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return imageInstall;
   }
   if (!PatchInstallMenusV12()) {
     GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); PatchDestroyButtonImagesV19(); return 21;
