@@ -84,8 +84,8 @@ jobs:
           grep -q 'studio-form-materialization/0.1' docs/ROADMAP.md
           grep -q 'six-Form Workshop Desk' docs/RAD_STUDIO_MASTER_BACKLOG.md
           grep -q 'stable keyed/incremental runtime rendering' docs/GPT.md
-          ! grep -q 'true active-Form Designer materialization/virtualization' docs/ROADMAP.md
-          ! grep -q 'true active-Form Designer materialization/virtualization' docs/RAD_STUDIO_MASTER_BACKLOG.md
+          ! grep -q '^- \[ \] true active-Form Designer materialization/virtualization' docs/ROADMAP.md
+          ! grep -q '^- \[ \] true active-Form Designer materialization/virtualization' docs/RAD_STUDIO_MASTER_BACKLOG.md
       - name: Commit synchronized docs
         run: |
           git config user.name "github-actions[bot]"
