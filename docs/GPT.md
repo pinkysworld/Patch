@@ -2,7 +2,7 @@
 
 Living briefing for coding agents working on [pinkysworld/Patch](https://github.com/pinkysworld/Patch). Update this file in the same change that alters product contracts, RAD status or the next recommended slice.
 
-Last refreshed: **2026-08-29**, after the Offline Studio public release and primary R0 Designer design-model/cache integration.
+Last refreshed: **2026-08-29**, after Offline Studio publication, primary non-executing Designer integration, active-Form materialization, six-Form Workshop expansion and compiler-oriented Studio branding.
 
 ## What Patch is
 
@@ -30,6 +30,8 @@ Do not silently widen or flatten these labels.
 | Studio project | multi-file/resource bundle **v4** |
 | Component registry | **0.8** |
 | Studio design model/cache | `studio-design-model/0.1`, `studio-design-cache/0.1` |
+| Studio Form materialization | `studio-form-materialization/0.1`, one full active Form plus lightweight inactive shells |
+| Studio brand | `compiler-p-v1` through the shared `web/icon.svg` browser/PWA/Offline Studio asset |
 | Native ImageList preparation | `native-imagelist-asset-plan/0.1`, not native Ready |
 | Offline Studio | manifest **v1**, rolling Stage 1 channel **`offline-studio-v0.2`** |
 | Formal claim | **beta.32** invocation-frame-aware direct-Wasm correspondence for the finite safe-integer call-tree fragment. Studio/native/RAD work does **not** widen that claim. |
@@ -73,14 +75,20 @@ Completed foundations:
 - `studio-design-cache/0.1` bounded source-revision snapshots;
 - Workshop and 10-Form / 200-control design-model/cache acceptance coverage;
 - primary `refreshDesigner()` uses the bounded declaration-only design snapshot cache and no longer executes unrelated application behavior;
-- hosted and Offline Studio package the same design-model/cache module closure.
+- hosted and Offline Studio package the same design-model/cache module closure;
+- `studio-form-materialization/0.1` materializes control DOM only for the active Designer Form;
+- specialized PaintBox, Shape, Panel, StatusBar and Table adapters honor the same Form boundary;
+- StatusBar design-time rendering consumes a declaration-only snapshot rather than executing the app;
+- real-Chrome six-Form Workshop switching proves inactive Forms settle with zero Designer controls;
+- Run yields before the large compile/execute/render task;
+- compiler-oriented `compiler-p-v1` branding is shared by Studio header, favicon/PWA and Offline Studio packaging.
 
 Next R0 work:
 
-1. true active-Form Designer materialization/virtualization;
-2. share revision snapshots across remaining Designer adapters and define the Worker boundary;
-3. stable keyed/incremental runtime rendering with focus/caret/selection preservation;
-4. measurable Workshop/large-project performance gates;
+1. share revision snapshots across remaining Designer adapters and define the Worker boundary;
+2. stable keyed/incremental runtime rendering with focus/caret/selection preservation;
+3. measurable six-Form Workshop/large-project performance gates;
+4. preserve Explorer/Inspector/selection contracts across materialized Form switches;
 5. split runtime/render/build responsibilities out of `web/playground.js`;
 6. make Pages deployment release-aware without weakening fail-closed runtime verification.
 
@@ -157,6 +165,7 @@ node src/cli-entry.js doctor --json
 | `src/native-picture-format-policy.js` | PNG/JPEG Ready vs WebP/SVG deferred policy |
 | `src/studio-design-model.js` | Non-executing design model foundation |
 | `src/studio-design-cache.js` | Bounded design snapshot cache |
+| `src/studio-form-materialization.js` | Canonical active-Form Designer materialization policy |
 | `scripts/build-offline-studio.js` | Self-contained Offline Studio builder |
 | `.github/workflows/offline-studio.yml` | Cross-platform Offline Studio build/release contract |
 | `examples/workshop-desk.patch` | Current cross-platform Ready acceptance showcase |
@@ -167,4 +176,4 @@ node src/cli-entry.js doctor --json
 
 ## Next slice
 
-Prioritize **R0 #282 virtualization** first: true active-Form materialization on top of the now non-executing cached Designer model, followed by the Worker and keyed-renderer boundaries. In parallel, close the two explicit native R1 resource-consumer gaps. Offline Studio Stage 2 may progress alongside these only through a narrow local-build bridge that reuses the existing compiler/runtime rather than creating a second build system.
+Prioritize the next **R0 #282 renderer/performance slice**: stable keyed Form/control identities, incremental visible updates with focus/caret/selection preservation, and measurable six-Form Workshop timing gates. In parallel, share revision snapshots across remaining Designer adapters and define the Worker boundary. The two explicit native R1 resource-consumer gaps and Offline Studio Stage 2 may progress alongside these without creating parallel semantic/build systems.

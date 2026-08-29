@@ -1,9 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Patch Studio icon">
-  <rect width="512" height="512" rx="128" fill="#15171c"/>
-  <g fill="none" stroke="#ffffff" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M170 400V121"/>
-    <path d="M170 121h103c88 0 143 43 143 119s-55 119-143 119H170"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Patch Studio compiler mark">
+  <defs>
+    <linearGradient id="patch-main" x1="94" y1="72" x2="438" y2="406" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2436a8"/>
+      <stop offset="0.5" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#1737a6"/>
+    </linearGradient>
+    <linearGradient id="patch-pass" x1="116" y1="292" x2="222" y2="438" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2f7df4"/>
+      <stop offset="1" stop-color="#3164e8"/>
+    </linearGradient>
+    <linearGradient id="patch-accent" x1="120" y1="402" x2="204" y2="496" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f65f2"/>
+      <stop offset="1" stop-color="#6d3df5"/>
+    </linearGradient>
+    <mask id="patch-circuit-cuts">
+      <rect width="512" height="512" fill="#fff"/>
+      <rect x="86" y="164" width="86" height="20" rx="10" fill="#000"/>
+      <circle cx="171" cy="174" r="17" fill="#000"/>
+      <rect x="86" y="224" width="86" height="20" rx="10" fill="#000"/>
+      <circle cx="171" cy="234" r="17" fill="#000"/>
+    </mask>
+  </defs>
+  <g mask="url(#patch-circuit-cuts)">
+    <path fill="url(#patch-main)" d="M112 80h190c100 0 162 59 162 154 0 96-62 155-162 155h-98v-82h98c48 0 78-26 78-73 0-46-30-72-78-72h-98v112l-92 78V80Z"/>
   </g>
-  <circle cx="382" cy="382" r="46" fill="#ffffff"/>
-  <path d="M361 382h42M382 361v42" stroke="#15171c" stroke-width="14" stroke-linecap="round"/>
+  <path fill="url(#patch-pass)" d="M112 370l92-78v100l-92 78v-100Z"/>
+  <path fill="url(#patch-accent)" d="M112 486l92-78v48c0 18-14 32-32 32h-60v-2Z"/>
 </svg>

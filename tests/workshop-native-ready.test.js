@@ -26,8 +26,8 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
     allowPaintBox: true
   });
 
-  assert.equal(support.treeViews, 1);
-  assert.equal(support.sliders, 2);
+  assert.equal(support.treeViews, 2);
+  assert.equal(support.sliders, 4);
   assert.equal(support.paintboxes, 1);
   assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.7/payload-17/runtime-1.8');
   assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.7');
@@ -38,9 +38,9 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
   const controls = flattenCurrentNativeGuiControls(ir);
   const paintbox = controls.find(control => control.type === 'paintbox');
   assert.equal(ir.version, '1.7');
-  assert.equal(controls.filter(control => control.type === 'tree').length, 1);
-  assert.equal(controls.filter(control => control.type === 'slider').length, 2);
-  assert.equal(controls.filter(control => control.type === 'timer').length, 1);
+  assert.equal(controls.filter(control => control.type === 'tree').length, 2);
+  assert.equal(controls.filter(control => control.type === 'slider').length, 4);
+  assert.equal(controls.filter(control => control.type === 'timer').length, 2);
   assert.equal(controls.filter(control => control.type === 'panel').length, 1);
   assert.equal(controls.filter(control => control.type === 'shape').length, 1);
   assert.equal(controls.filter(control => control.type === 'picture').length, 1);

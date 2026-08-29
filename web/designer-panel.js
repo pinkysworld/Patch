@@ -182,7 +182,10 @@ function renderPanels() {
     return;
   }
   const live = new Set();
+  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;
+  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);
   for (const panel of panels) {
+    if (Number.isInteger(materializedWindow) && panel.windowIndex !== materializedWindow) continue;
     const control = controls.find(item => item.windowIndex === panel.windowIndex && item.type === 'panel' && item.id === panel.id);
     if (!control) continue;
     const shell = canvas.querySelectorAll('.patch-window')[panel.windowIndex];

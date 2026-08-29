@@ -42,15 +42,16 @@ const MAX_WIDTH = 480;
 const BULK_WINDOW_SAMPLES = new Set(['workshopDesk', 'listboxMultiWindow']);
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-markClassicBrand();
+markCompilerBrand();
 installBulkSampleLoadGuard();
 queueMicrotask(install);
 
-function markClassicBrand() {
-  // The SVG itself is normalized at build time. Keep only a stable runtime marker
-  // for diagnostics and production browser smoke tests, never rewrite brand DOM here.
+function markCompilerBrand() {
+  // Keep a stable runtime marker for diagnostics and production browser smoke tests.
+  // The visible mark itself is the shared compiler-oriented icon.svg used by the
+  // browser favicon, PWA/Offline Studio manifest and Studio header.
   const mark = document.querySelector('.brand-mark');
-  if (mark) mark.dataset.patchBrandMark = 'classic-p';
+  if (mark) mark.dataset.patchBrandMark = 'compiler-p-v1';
 }
 
 function installBulkSampleLoadGuard() {
@@ -394,7 +395,10 @@ function renderDesignerShapes(canvas, code) {
 
   const shapes = listDesignerShapes(code.value);
   const selection = currentDesignerSelection(canvas);
+  const materializedValue = canvas.dataset.patchDesignerMaterializedForm;
+  const materializedWindow = materializedValue === undefined ? null : Number(materializedValue);
   for (const shape of shapes) {
+    if (Number.isInteger(materializedWindow) && shape.windowIndex !== materializedWindow) continue;
     const body = bodies[shape.windowIndex];
     if (!body) continue;
     const fallback = formControlDefaultLayout('shape', shape.controlIndex);

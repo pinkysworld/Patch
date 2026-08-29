@@ -5,17 +5,7 @@ const projectKind = document.querySelector('#projectKind');
 // Canonical browser copy of examples/workshop-desk.patch. A regression test keeps
 // this byte-for-byte synchronized (apart from the surrounding template literal)
 // so the Studio Example menu cannot silently drift away from the repository demo.
-const WORKSHOP_DESK_SAMPLE = `create thing ticket:
-  customer = "Ada"
-  item = "Keyboard"
-  qty = 1
-  total = 40
-  bench = "Bench A"
-  priority = "Normal"
-  payment = "Card"
-  state = "Open"
-
-create text customer = "Ada"
+const WORKSHOP_DESK_SAMPLE = `create text customer = "Ada"
 create text item = "Keyboard"
 create number qty = 1
 create boolean rush = false
@@ -23,26 +13,36 @@ create text priority = "Normal"
 create text pay = "Card"
 create text notes = ""
 create list services = ["Diagnostics"]
-create list selected_part = []
-create list selected_job = []
 create text status = "Ready for the next workshop ticket."
 create boolean notifications = true
 create text default_bench = "Bench A"
 create list stations = ["Bench A", "Bench B"]
 create text density = "Comfortable"
 create number labor_limit = 50
-
-allow quote:
-  ticket.total may increase up to 500
-
-make quote(ticket, extra number 0..50):
-  change ticket:
-    add extra to total
+create number heartbeat = 0
+create number ticket_total = 40
+create text ticket_bench = "Bench A"
+create text ticket_state = "Open"
+create text inventory_filter = "All stock"
+create text inventory_zone = "Main store"
+create number reorder_qty = 5
+create text inventory_status = "Inventory synchronized"
+create text customer_email = "ada@example.com"
+create text customer_tier = "Gold"
+create boolean customer_marketing = true
+create list customer_channels = ["Email"]
+create text customer_note = "Priority account"
+create text customer_status = "Customer profile ready"
+create text diagnostic_mode = "Runtime"
+create boolean trace_enabled = true
+create number diagnostic_interval = 5
+create number diagnostic_runs = 0
+create text diagnostic_status = "All systems ready"
 
 window "Workshop Desk" as main size 1080, 700:
   text "Workshop Desk" at 24, 16 size 260, 30
   text "{status}" at 300, 16 size 520, 30
-  text "Quote {ticket.total} · {ticket.state}" at 840, 16 size 210, 30
+  text "Quote {ticket_total} · {ticket_state}" at 840, 16 size 210, 30
 
   text "Customer" at 24, 58 size 100, 22
   combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 82 size 220, 36
@@ -51,6 +51,7 @@ window "Workshop Desk" as main size 1080, 700:
   text "Quantity {qty}" at 528, 58 size 130, 22
   slider 1..8 as qty step 1 at 528, 82 size 240, 38
   checkbox "Rush bench" as rush at 788, 82 size 150, 36
+  picture as workshop_logo from "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" description "Workshop mark" at 958, 58 size 70, 70
 
   text "Payment" at 24, 136 size 90, 22
   radio "Card", "Cash", "Account" as pay at 24, 160 size 280, 82
@@ -67,7 +68,7 @@ window "Workshop Desk" as main size 1080, 700:
     row "WD-106", "Linus", "Bench A", "Ready"
     row "WD-107", "Margaret", "Overflow", "Waiting"
 
-  tree as parts at 584, 320 size 270, 220:
+  tree as parts at 584, 320 size 250, 220:
     node "Parts"
       node "Input"
         node "Keyboard"
@@ -80,15 +81,19 @@ window "Workshop Desk" as main size 1080, 700:
       node "Solder"
       node "Meter"
 
-  button "Create quote" as quote_button at 878, 320 size 150, 38
-  button "Job details" as details_button at 878, 368 size 150, 38
-  button "Settings" as settings_button at 878, 416 size 150, 38
-  button "Mark ready" as complete_button at 878, 464 size 150, 38
-  button "Reset ticket" as reset_button at 878, 512 size 150, 38
+  button "Quote" as quote_button at 846, 320 size 90, 38
+  button "Details" as details_button at 942, 320 size 90, 38
+  button "Inventory" as inventory_button at 846, 368 size 90, 38
+  button "Customer" as customer_button at 942, 368 size 90, 38
+  button "Diagnostics" as diagnostics_button at 846, 416 size 90, 38
+  button "Settings" as settings_button at 942, 416 size 90, 38
+  button "Ready" as complete_button at 846, 464 size 90, 38
+  button "Reset" as reset_button at 942, 464 size 90, 38
 
-  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26
+  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26
   # @layout anchor left right bottom
-  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26
+  text "Six-Form Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26
+  timer as workshop_clock interval 5000
   statusbar "{status}" as desk_status at 0, 672 size 1080, 28
 
 window "Workshop settings" as settings size 720, 520:
@@ -107,55 +112,152 @@ window "Workshop settings" as settings size 720, 520:
       radio "Compact", "Comfortable", "Spacious" as density
       text "Density is source-backed application state, not hidden Designer metadata."
     tab "About":
-      text "Workshop Desk is the Patch Studio showcase project."
-      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."
+      text "Workshop Desk is the Patch Studio six-Form showcase project."
+      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."
       button "Close" as close_about
   button "Close settings" as close_settings at 24, 448 size 170, 38
 
-window "Job details" as details size 640, 470:
+window "Job details" as details size 640, 560:
   text "Current workshop ticket" at 24, 24 size 300, 28
-  text "Customer: {ticket.customer}" at 24, 70 size 280, 24
-  text "Item: {ticket.item}" at 24, 104 size 280, 24
-  text "Quantity: {ticket.qty}" at 24, 138 size 280, 24
-  text "Bench: {ticket.bench}" at 24, 172 size 280, 24
-  text "Priority: {ticket.priority}" at 24, 206 size 280, 24
-  text "Payment: {ticket.payment}" at 326, 70 size 280, 24
-  text "State: {ticket.state}" at 326, 104 size 280, 24
-  text "Current quote: {ticket.total}" at 326, 138 size 280, 24
-  text "{status}" at 24, 278 size 560, 28
-  button "Add inspection" as details_quote at 24, 366 size 160, 38
-  button "Mark ready" as details_ready at 202, 366 size 150, 38
-  button "Close details" as close_details at 370, 366 size 160, 38
+  text "Customer: {customer}" at 24, 70 size 280, 24
+  text "Item: {item}" at 24, 104 size 280, 24
+  text "Quantity: {qty}" at 24, 138 size 280, 24
+  text "Bench: {ticket_bench}" at 24, 172 size 280, 24
+  text "Priority: {priority}" at 24, 206 size 280, 24
+  text "Payment: {pay}" at 326, 70 size 280, 24
+  text "State: {ticket_state}" at 326, 104 size 280, 24
+  text "Current quote: {ticket_total}" at 326, 138 size 280, 24
+  panel as runtime_panel at 326, 172 size 280, 170:
+    text "Native runtime pulse {heartbeat}"
+    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1
+  paintbox as ticket_canvas at 24, 244 size 280, 120
+  text "{status}" at 24, 386 size 560, 28
+  button "Add inspection" as details_quote at 24, 470 size 160, 38
+  button "Mark ready" as details_ready at 202, 470 size 150, 38
+  button "Close details" as close_details at 370, 470 size 160, 38
+
+window "Inventory Center" as inventory size 900, 620:
+  text "Inventory Center" at 24, 20 size 280, 30
+  text "{inventory_status}" at 324, 20 size 520, 30
+  text "Filter" at 24, 66 size 90, 22
+  input inventory_filter at 24, 90 size 230, 36
+  text "Zone" at 276, 66 size 90, 22
+  combo "Main store", "Bench A", "Bench B", "Overflow" as inventory_zone at 276, 90 size 220, 36
+  text "Reorder quantity {reorder_qty}" at 520, 66 size 190, 22
+  slider 1..20 as reorder_qty step 1 at 520, 90 size 300, 38
+
+  table "SKU", "Part", "Zone", "Stock", "State" as inventory_grid at 24, 154 size 540, 310:
+    row "KB-001", "Keyboard", "Main store", "12", "Available"
+    row "TP-014", "Trackpad", "Bench A", "4", "Low"
+    row "PN-220", "Display panel", "Bench B", "2", "Reorder"
+    row "CB-119", "Display cable", "Main store", "18", "Available"
+    row "DR-301", "Precision driver", "Bench A", "7", "Available"
+    row "SL-044", "Solder", "Overflow", "3", "Low"
+
+  tree as inventory_tree at 588, 154 size 280, 310:
+    node "Stock"
+      node "Input devices"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Display panel"
+        node "Display cable"
+      node "Tools"
+        node "Precision driver"
+        node "Solder"
+    node "Locations"
+      node "Main store"
+      node "Bench A"
+      node "Bench B"
+      node "Overflow"
+
+  button "Prepare reorder" as reorder_button at 24, 500 size 170, 38
+  button "Open job details" as inventory_details at 210, 500 size 170, 38
+  button "Close inventory" as close_inventory at 396, 500 size 170, 38
+  statusbar "{inventory_status}" as inventory_statusbar at 0, 592 size 900, 28
+
+window "Customer Profile" as customer_profile size 760, 600:
+  text "Customer Profile" at 24, 20 size 280, 30
+  text "{customer_status}" at 318, 20 size 410, 30
+  text "Name" at 24, 68 size 100, 22
+  text "{customer}" at 24, 92 size 220, 36
+  text "Email" at 268, 68 size 100, 22
+  input customer_email at 268, 92 size 300, 36
+  text "Tier" at 590, 68 size 100, 22
+  combo "Standard", "Silver", "Gold", "Platinum" as customer_tier at 590, 92 size 140, 36
+  checkbox "Marketing updates" as customer_marketing at 24, 150 size 190, 36
+  text "Preferred channels" at 238, 150 size 160, 22
+  listbox "Email", "SMS", "Phone", "Portal" as customer_channels at 238, 176 size 220, 110
+  text "Account note" at 482, 150 size 150, 22
+  input customer_note at 482, 176 size 248, 38
+
+  table "Ticket", "Item", "State", "Quote" as customer_jobs at 24, 318 size 706, 150:
+    row "WD-104", "Keyboard", "Open", "40"
+    row "WD-091", "Display panel", "Ready", "210"
+    row "WD-076", "Trackpad", "Closed", "85"
+
+  button "Save profile" as customer_save at 24, 496 size 150, 38
+  button "Open current job" as customer_job at 190, 496 size 170, 38
+  button "Close profile" as close_customer at 376, 496 size 150, 38
+  statusbar "{customer_status}" as customer_statusbar at 0, 572 size 760, 28
+
+window "Workshop Diagnostics" as diagnostics size 840, 620:
+  text "Workshop Diagnostics" at 24, 20 size 300, 30
+  text "{diagnostic_status}" at 338, 20 size 470, 30
+  tabs as diagnostic_tabs at 24, 72 size 792, 270:
+    tab "Runtime":
+      text "Runtime mode"
+      radio "Runtime", "Designer", "Native" as diagnostic_mode
+      checkbox "Trace semantic changes" as trace_enabled
+      text "Sampling interval {diagnostic_interval}s"
+      slider 1..10 as diagnostic_interval step 1
+    tab "Build":
+      text "Offline compiler and sealed runtime readiness"
+      text "Use Downloads for platform compiler and Offline Studio bundles."
+      text "Current desktop Ready runtime contract: v1.8."
+    tab "Quality":
+      text "Designer materializes one active Form while preserving source-backed shells."
+      text "Workshop Desk exercises six Forms and multiple adapter-backed controls."
+      text "Diagnostic runs: {diagnostic_runs}"
+    tab "Environment":
+      text "Browser, Offline Studio and generated Web App share the same source."
+      text "Native capability gates remain fail-closed for unsupported resources."
+
+  table "Check", "Surface", "State" as diagnostic_checks at 24, 370 size 540, 150:
+    row "Designer", "Active Form materialization", "Ready"
+    row "Compiler", "Window Web App", "Ready"
+    row "Runtime", "Desktop v1.8", "Ready"
+    row "Offline", "Studio Stage 1", "Ready"
+
+  button "Run checks" as diagnostic_run at 590, 370 size 190, 38
+  button "Open settings" as diagnostic_settings at 590, 418 size 190, 38
+  button "Close diagnostics" as close_diagnostics at 590, 466 size 190, 38
+  timer as diagnostics_clock interval 3000
+  statusbar "{diagnostic_status}" as diagnostic_statusbar at 0, 592 size 840, 28
 
 when customer changed:
   change customer:
     set = value
-  change ticket:
-    set customer = value
   change status:
     set = "Customer changed"
+  change customer_status:
+    set = "Selected customer changed"
 
 when item changed:
   change item:
     set = value
-  change ticket:
-    set item = value
   change status:
     set = "Item description updated"
 
 when pay changed:
   change pay:
     set = value
-  change ticket:
-    set payment = value
   change status:
     set = "Payment method changed"
 
 when priority changed:
   change priority:
     set = value
-  change ticket:
-    set priority = value
   change status:
     set = "Priority changed"
 
@@ -168,8 +270,6 @@ when rush changed:
 when qty changed:
   change qty:
     set = value
-  change ticket:
-    set qty = value
   change status:
     set = "Quantity changed"
 
@@ -186,40 +286,56 @@ when services changed:
     set = "Services updated"
 
 when board changed:
-  change selected_job:
-    set = value
   change status:
     set = "Workshop board row selected"
 
 when parts changed:
-  change selected_part:
-    set = value
   change status:
     set = "Inventory tree path selected"
 
+when workshop_logo clicked:
+  change status:
+    set = "Workshop mark clicked"
+
+when workshop_clock ticked:
+  change heartbeat:
+    add 1
+
+when ticket_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
+  if rush:
+    draw line 12, 58 to 258, 58 stroke #dc2626 width 3
+  draw text "Live quote" at 12, 78 color #111827 size 16
+  draw text ticket_state at 126, 78 color #334155 size 16
+
 when quote_button clicked:
-  do quote(ticket, 25)
-  change ticket:
-    set state = "Quoted"
+  change ticket_total:
+    add 25
+  change ticket_state:
+    set = "Quoted"
   change status:
     set = "Quote increased by 25"
 
 when details_quote clicked:
-  do quote(ticket, 10)
-  change ticket:
-    set state = "Quoted"
+  change ticket_total:
+    add 10
+  change ticket_state:
+    set = "Quoted"
   change status:
     set = "Inspection added to quote"
 
 when complete_button clicked:
-  change ticket:
-    set state = "Ready"
+  change ticket_state:
+    set = "Ready"
   change status:
     set = "Ticket marked ready"
 
 when details_ready clicked:
-  change ticket:
-    set state = "Ready"
+  change ticket_state:
+    set = "Ready"
   change status:
     set = "Ticket marked ready"
 
@@ -228,6 +344,21 @@ when settings_button clicked:
 
 when details_button clicked:
   open details
+
+when inventory_button clicked:
+  open inventory
+  change inventory_status:
+    set = "Inventory opened from Workshop Desk"
+
+when customer_button clicked:
+  open customer_profile
+  change customer_status:
+    set = "Customer profile opened from Workshop Desk"
+
+when diagnostics_button clicked:
+  open diagnostics
+  change diagnostic_status:
+    set = "Diagnostics opened from Workshop Desk"
 
 when close_settings clicked:
   change status:
@@ -251,8 +382,8 @@ when notifications changed:
 when default_bench changed:
   change default_bench:
     set = value
-  change ticket:
-    set bench = value
+  change ticket_bench:
+    set = value
   change status:
     set = "Default bench changed"
 
@@ -274,6 +405,142 @@ when density changed:
   change status:
     set = "Appearance density changed"
 
+when inventory_filter changed:
+  change inventory_filter:
+    set = value
+  change inventory_status:
+    set = "Inventory filter changed"
+
+when inventory_zone changed:
+  change inventory_zone:
+    set = value
+  change inventory_status:
+    set = "Inventory zone changed"
+
+when reorder_qty changed:
+  change reorder_qty:
+    set = value
+  change inventory_status:
+    set = "Reorder quantity changed"
+
+when inventory_grid changed:
+  change inventory_status:
+    set = "Inventory row selected"
+
+when inventory_tree changed:
+  change inventory_status:
+    set = "Inventory tree selection changed"
+
+when reorder_button clicked:
+  change inventory_status:
+    set = "Reorder prepared"
+  change status:
+    set = "Inventory reorder prepared"
+
+when inventory_details clicked:
+  open details
+  change status:
+    set = "Job details opened from Inventory Center"
+
+when close_inventory clicked:
+  close inventory
+  change status:
+    set = "Inventory Center closed"
+
+when customer_email changed:
+  change customer_email:
+    set = value
+  change customer_status:
+    set = "Customer email changed"
+
+when customer_tier changed:
+  change customer_tier:
+    set = value
+  change customer_status:
+    set = "Customer tier changed"
+
+when customer_marketing changed:
+  change customer_marketing:
+    set = value
+  change customer_status:
+    set = "Marketing preference changed"
+
+when customer_channels changed:
+  change customer_channels:
+    set = value
+  change customer_status:
+    set = "Preferred channels changed"
+
+when customer_note changed:
+  change customer_note:
+    set = value
+  change customer_status:
+    set = "Customer note changed"
+
+when customer_jobs changed:
+  change customer_status:
+    set = "Customer job row selected"
+
+when customer_save clicked:
+  change customer_status:
+    set = "Customer profile saved"
+  change status:
+    set = "Customer profile saved"
+
+when customer_job clicked:
+  open details
+  change status:
+    set = "Current customer job opened"
+
+when close_customer clicked:
+  close customer_profile
+  change status:
+    set = "Customer Profile closed"
+
+when diagnostic_mode changed:
+  change diagnostic_mode:
+    set = value
+  change diagnostic_status:
+    set = "Diagnostic mode changed"
+
+when trace_enabled changed:
+  change trace_enabled:
+    set = value
+  change diagnostic_status:
+    set = "Trace preference changed"
+
+when diagnostic_interval changed:
+  change diagnostic_interval:
+    set = value
+  change diagnostic_status:
+    set = "Diagnostic interval changed"
+
+when diagnostic_checks changed:
+  change diagnostic_status:
+    set = "Diagnostic check row selected"
+
+when diagnostic_run clicked:
+  change diagnostic_runs:
+    add 1
+  change diagnostic_status:
+    set = "Diagnostic checks completed"
+  change status:
+    set = "Diagnostics completed"
+
+when diagnostics_clock ticked:
+  change diagnostic_runs:
+    add 1
+
+when diagnostic_settings clicked:
+  open settings
+  change diagnostic_status:
+    set = "Settings opened from Diagnostics"
+
+when close_diagnostics clicked:
+  close diagnostics
+  change status:
+    set = "Workshop Diagnostics closed"
+
 when reset_button clicked:
   change customer:
     set = "Ada"
@@ -291,19 +558,44 @@ when reset_button clicked:
     set = ""
   change services:
     set = ["Diagnostics"]
-  change selected_part:
-    clear
-  change selected_job:
-    clear
-  change ticket:
-    set customer = "Ada"
-    set item = "Keyboard"
-    set qty = 1
-    set total = 40
-    set bench = default_bench
-    set priority = "Normal"
-    set payment = "Card"
-    set state = "Open"
+  change heartbeat:
+    set = 0
+  change ticket_total:
+    set = 40
+  change ticket_bench:
+    set = "Bench A"
+  change ticket_state:
+    set = "Open"
+  change inventory_filter:
+    set = "All stock"
+  change inventory_zone:
+    set = "Main store"
+  change reorder_qty:
+    set = 5
+  change inventory_status:
+    set = "Inventory synchronized"
+  change customer_email:
+    set = "ada@example.com"
+  change customer_tier:
+    set = "Gold"
+  change customer_marketing:
+    set = true
+  change customer_channels:
+    set = ["Email"]
+  change customer_note:
+    set = "Priority account"
+  change customer_status:
+    set = "Customer profile ready"
+  change diagnostic_mode:
+    set = "Runtime"
+  change trace_enabled:
+    set = true
+  change diagnostic_interval:
+    set = 5
+  change diagnostic_runs:
+    set = 0
+  change diagnostic_status:
+    set = "All systems ready"
   change status:
     set = "Ticket reset"
 `;
@@ -375,12 +667,9 @@ if (sample && code && projectKind) {
   };
   loadButton?.addEventListener('click', loadSelectedSample);
 
-  // On a genuinely fresh Studio session the first visible example and the
-  // editor must agree. Preserve an existing local project, but otherwise load
-  // Workshop Desk immediately so Run and Designer show all showcase Forms.
-  let hasSavedProject = false;
-  try { hasSavedProject = Boolean(localStorage.getItem('patchStudio.project')); } catch { /* storage can be unavailable */ }
-  if (!hasSavedProject && sample.value === 'workshopDesk') queueMicrotask(loadSelectedSample);
+  // Keep fresh Studio startup lightweight. The default Window app already
+  // matches playground.js, while Workshop Desk remains the explicit large showcase
+  // and stress fixture loaded through the same source-backed public DOM signals.
 }
 
 // Multi-Form projects can contain hundreds of controls. Keep every Form in the

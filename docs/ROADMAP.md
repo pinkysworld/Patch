@@ -13,6 +13,7 @@ This roadmap separates repository-controlled product work from credential/manual
 - current sealed native GUI payload: **v17**
 - current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
 - Studio design model/cache: **0.1**, with primary browser Designer refresh using the declaration-only cached snapshot path
+- Studio Form materialization: **0.1**, with exactly one active Designer Form fully materialized and inactive Forms retained as lightweight source-backed shells
 - native ImageList asset pretransport plan: **0.1** (not a Ready native runtime contract)
 - Offline Studio manifest: **v1**, rolling Stage 1 release channel **`offline-studio-v0.2`**
 - previous PaintBox Stage 1 line: Native GUI IR **1.6** / payload **v16** / runtime **v1.7**
@@ -48,10 +49,14 @@ Completed or landed as concrete foundations:
 - [x] deterministic tests proving the design model retains initial UI state while skipping application behavior
 - [x] `studio-design-cache/0.1`: bounded source-revision snapshot cache with Workshop and 10-Form/200-control acceptance coverage
 - [x] primary `refreshDesigner()` consumes the shared declaration-only design cache instead of executing the Patch application; hosted/Offline Studio package the same design-model/cache modules
+- [x] `studio-form-materialization/0.1`: only the active Designer Form materializes control DOM while inactive Forms remain lightweight shells
+- [x] PaintBox, Shape, Panel, StatusBar and Table Designer adapters respect the same active-Form boundary; StatusBar design-time rendering now consumes a declaration-only snapshot rather than executing the application
+- [x] real-Chrome Workshop Form 1 → Form 2 → Form 1 switching proves inactive Forms settle with zero Designer controls
+- [x] Run yields to the browser task queue before the large compile/execute/render pipeline, keeping the command surface responsive
+- [x] Workshop Desk expanded from three to six Forms as the canonical large RAD showcase/stress fixture
 
 Remaining R0 work:
 - [ ] share parsed/compiled AST/design snapshots across Designer adapters by project revision
-- [ ] true active-Form Designer materialization/virtualization rather than post-render hiding
 - [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization
 - [ ] define and implement the Worker boundary for parse/compile/design-model work
 - [ ] bounded evaluation policy for any remaining design-time expressions
@@ -88,7 +93,7 @@ Remaining R0 work:
 - [x] content-addressed public site, PWA/offline closure validation and real Chrome startup/responsiveness gate
 - [x] token-free Ready/offline Native GUI IR 1.7 / payload v17 / runtime v1.8 Windows/macOS/Linux paths
 - [x] Command Palette, project-file/symbol quick-open, editor tabs, Workspace Layout v2 and startup diagnostics v2
-- [x] Workshop Desk acceptance showcase covering every integrated cross-platform Ready visual/control family, including PaintBox `draw image`, while native-fail-closed ImageList/Button-image and Window-icon consumers remain separate demonstrations
+- [x] six-Form Workshop Desk acceptance showcase covering every integrated cross-platform Ready visual/control family, including PaintBox `draw image`, while native-fail-closed ImageList/Button-image and Window-icon consumers remain separate demonstrations
 
 ### RAD R1 remaining work
 

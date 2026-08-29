@@ -16,6 +16,8 @@ const VISUAL_CONTROL_TYPES = new Set(['text','button','input','checkbox','radio'
 let activeForm = 0;
 let scheduled = false;
 let pendingReveal = null;
+let materializationScheduled = false;
+let requestedMaterializationForm = null;
 
 installStylesheet();
 installCheckboxTool();
@@ -67,6 +69,7 @@ function installFormTools() {
   select.addEventListener('change', () => {
     activeForm = Number(select.value) || 0;
     syncFormTools();
+    requestActiveFormMaterialization();
     revealTarget(canvas?.querySelectorAll('.patch-window')[activeForm], 'smooth');
   });
   add.addEventListener('click', () => {
@@ -280,6 +283,7 @@ function scheduleApply() {
     scheduled = false;
     try {
       syncFormTools();
+      requestActiveFormMaterialization();
       applyLayouts(canvas, true);
       applyLayouts(appView, false);
       syncGeometryInspector();
@@ -309,6 +313,27 @@ function syncFormTools() {
   formTools.icon.value = current.iconExpr ?? '';
   formTools.width.value = String(current.width ?? 640);
   formTools.height.value = String(current.height ?? 420);
+}
+
+function requestActiveFormMaterialization() {
+  if (!canvas) return;
+  const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);
+  if (Number.isInteger(materialized) && materialized === activeForm) return;
+  requestedMaterializationForm = activeForm;
+  if (materializationScheduled) return;
+  materializationScheduled = true;
+  setTimeout(() => {
+    materializationScheduled = false;
+    const requested = requestedMaterializationForm;
+    requestedMaterializationForm = null;
+    if (!Number.isInteger(requested)) return;
+    const current = Number(canvas.dataset.patchDesignerMaterializedForm);
+    if (Number.isInteger(current) && current === requested) return;
+    canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {
+      bubbles: false,
+      detail: { windowIndex: requested }
+    }));
+  }, 0);
 }
 
 function applyLayouts(container, designer) {

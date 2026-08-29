@@ -2,7 +2,7 @@ import { listDesignerControls } from '../src/designer.js';
 import { patchComponent } from '../src/component-registry.js';
 
 export const STUDIO_BUILD_READINESS_VERSION = '0.1';
-export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.4';
+export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.5';
 
 const WORKSHOP_PICTURE_SOURCE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==';
 const WORKSHOP_DRAW_IMAGE_LINE = `  draw image "${WORKSHOP_PICTURE_SOURCE}" at 208, 10 size 42, 42`;
@@ -64,7 +64,10 @@ export function upgradeWorkshopDeskSource(source) {
     next.includes('paintbox as ticket_canvas') &&
     next.includes('create number ticket_total = 40') &&
     next.includes(WORKSHOP_DRAW_IMAGE_LINE) &&
-    next.includes('Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&
+    next.includes('Six-Form Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&
+    next.includes('window \"Inventory Center\" as inventory size 900, 620:') &&
+    next.includes('window \"Customer Profile\" as customer_profile size 760, 600:') &&
+    next.includes('window \"Workshop Diagnostics\" as diagnostics size 840, 620:') &&
     next.includes('It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls.') &&
     !next.includes('create thing ticket:')
   ) return next;

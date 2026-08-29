@@ -14,7 +14,7 @@ test('Designer refresh consumes the declaration-only design snapshot cache', () 
   assert.match(playground, /import \{ createStudioDesignSnapshotCache \} from '\.\.\/src\/studio-design-cache\.js';/);
   assert.match(playground, /const designerDesignCache = createStudioDesignSnapshotCache\(\);/);
 
-  const start = playground.indexOf('function refreshDesigner()');
+  const start = playground.indexOf('function refreshDesigner(');
   const end = playground.indexOf('function scheduleDesigner()', start);
   assert.notEqual(start, -1, 'refreshDesigner must exist');
   assert.notEqual(end, -1, 'scheduleDesigner must follow refreshDesigner');
@@ -23,7 +23,7 @@ test('Designer refresh consumes the declaration-only design snapshot cache', () 
   assert.match(refresh, /const preview = designerDesignCache\.get\(code\.value\);/);
   assert.doesNotMatch(refresh, /PatchInterpreter/);
   assert.doesNotMatch(refresh, /\.run\(code\.value\)/);
-  assert.match(refresh, /renderWindows\(designerCanvas, preview\.ui, false\)/);
+  assert.match(refresh, /renderWindows\(designerCanvas, preview\.ui, false(?:, \{ materialization \})?\)/);
 });
 
 test('Designer cache snapshot keeps initial declarations and never executes application behavior', () => {

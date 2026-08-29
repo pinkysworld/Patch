@@ -24,7 +24,7 @@ const sw = read('_site/sw.js');
 
 requireAll('beta36 Studio', index, [
   'data-patch-version="0.2.0-beta.36"','0.2 beta.36+','Native GUI IR 1.7','payload v17','runtime v1.8',
-  'value="workshopDesk">Workshop desk</option>','viewBox="0 0 32 32"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'
+  'value="workshopDesk">Workshop desk</option>','class="brand-mark"','src="./icon.svg?v=','data-patch-brand-mark="compiler-p-v1"'
 ]);
 rejectAll('beta36 Studio', index, [
   'data-patch-version="0.2.0-beta.35"','Ready IR 1.3 / v1.4','viewBox="0 0 22 22"','shape-rendering="crispEdges"'
@@ -32,10 +32,10 @@ rejectAll('beta36 Studio', index, [
 
 requireAll('beta36 Workshop Desk loader', workshop, [
   'const WORKSHOP_DESK_SAMPLE = `','window "Workshop Desk" as main','window "Workshop settings" as settings',
-  'window "Job details" as details',"sample.value === 'workshopDesk'","loadButton.textContent = 'Load example'",
-  'queueMicrotask(loadSelectedSample)'
+  'window "Job details" as details','window "Inventory Center" as inventory','window "Customer Profile" as customer_profile','window "Workshop Diagnostics" as diagnostics',"sample.value === 'workshopDesk'","loadButton.textContent = 'Load example'",
+  "loadButton?.addEventListener('click', loadSelectedSample)"
 ]);
-rejectAll('beta36 Workshop Desk loader', workshop, ['window "Harbor Desk"']);
+rejectAll('beta36 Workshop Desk loader', workshop, ['window "Harbor Desk"','queueMicrotask(loadSelectedSample)']);
 
 requireAll('beta36 RAD arrange surface', multi, [
   'patchAlignRight','patchAlignBottom','patchSameWidth','patchSameHeight','patchDistributeHorizontal','patchDistributeVertical'
