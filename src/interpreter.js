@@ -16,9 +16,13 @@ export class PatchInterpreter {
     this.formVisibility=new Map(); this.namedFormCount=0;
   }
   run(source,{reset=true}={}) {
-    if(reset)this.reset(); else this.output=[];
-    try { const program=parse(source); this.executeBlock(program,{}); return this.result(); }
+    try { return this.runAst(parse(source),{reset}); }
     catch(err){ if(err instanceof PatchSyntaxError||err instanceof PatchRuntimeError||err instanceof ExpressionError)throw err; throw new PatchRuntimeError(err.message); }
+  }
+  runAst(program,{reset=true}={}) {
+    if(reset)this.reset(); else this.output=[];
+    try { this.executeBlock(program,{}); return this.result(); }
+    catch(err){ if(err instanceof PatchRuntimeError||err instanceof ExpressionError)throw err; throw new PatchRuntimeError(err.message); }
   }
   trigger(control,event='clicked') {
     try {
