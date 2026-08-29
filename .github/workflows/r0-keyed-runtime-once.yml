@@ -5,7 +5,7 @@ on:
     branches:
       - gpt/r0-keyed-runtime-renderer-282
     paths:
-      - .github/workflows/r0-keyed-runtime-once.yml
+      - .github/scripts/r0_keyed_runtime_retry.py
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - name: Apply guarded keyed runtime transformation
-        run: python3 .github/scripts/r0_keyed_runtime_once.py
+        run: python3 .github/scripts/r0_keyed_runtime_retry.py
       - name: Verify keyed runtime Stage 1
         run: |
           node --check web/playground.js
