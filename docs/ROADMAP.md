@@ -12,6 +12,9 @@ This roadmap separates repository-controlled product work from credential/manual
 - Native GUI IR: **1.7**
 - current sealed native GUI payload: **v17**
 - current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
+- Studio design-model foundation: **0.1** (non-executing declaration model; browser Designer integration still pending)
+- native ImageList asset pretransport plan: **0.1** (not a Ready native runtime contract)
+- Offline Studio manifest: **v1** (self-contained executable builder Stage 1)
 - previous PaintBox Stage 1 line: Native GUI IR **1.6** / payload **v16** / runtime **v1.7**
 - previous Shape line: Native GUI IR **1.5** / payload **v15** / runtime **v1.6**
 - previous Chrome line: Native GUI IR **1.4** / payload **v14** / runtime **v1.5**
@@ -27,11 +30,39 @@ Product, Studio and native work after beta.32 does not widen the formal assuranc
 
 Older versioned native contracts remain reproducibility/compatibility evidence even when they are no longer product defaults. In particular, the **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the frozen Table compatibility origin. Its platform evidence is preserved separately from the current Native GUI IR 1.7 / payload v17 / runtime v1.8 product line. Retaining this history is intentional and does not make payload v9 or runtime v1.0 current targets.
 
-## Current product milestone: RAD R1
+## Current product milestone: RAD R0 hardening + final RAD R1 parity
 
-The beta.35+ multi-file/Designer foundation and the beta.36 native 1.7/v17/v1.8 integration are complete through PaintBox `draw image`. Current repository-controlled work is the final native resource-consumer parity portion of RAD R1 from `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+Patch Studio has enough component breadth that responsiveness and architecture now gate further RAD expansion. Work therefore proceeds on **R0 architecture hardening (#282)** in parallel with the final two **R1 native resource-consumer** gaps. R2 should not become the primary focus until the R0 Designer/runtime boundaries are stable.
 
-### Completed foundation
+### RAD R0 architecture hardening (#282)
+
+Completed or landed as concrete foundations:
+
+- [x] Studio Run reuses the compiler AST instead of parsing source twice
+- [x] Change IR pretty-printing is lazy and only occurs when the IR view is requested
+- [x] hidden runtime Forms defer control DOM materialization until opened
+- [x] Studio list-backed ListBox multi-selection matches Standalone Web semantics
+- [x] Run re-entry guard and transactional runtime replacement
+- [x] real-Chrome Workshop regression for the Run/freeze path
+- [x] `studio-design-model/0.1`: bounded design-time declaration model that does not execute calls, changes, loops, conditionals, previews or Form visibility actions
+- [x] deterministic tests proving the design model retains initial UI state while skipping application behavior
+
+Remaining R0 work:
+
+- [ ] wire the non-executing design model into the primary `refreshDesigner()` path
+- [ ] cache parsed/compiled AST/design snapshots by project revision
+- [ ] true active-Form Designer materialization/virtualization rather than post-render hiding
+- [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization
+- [ ] define and implement the Worker boundary for parse/compile/design-model work
+- [ ] bounded evaluation policy for any remaining design-time expressions
+- [ ] stable keyed Form/control identities in the browser runtime renderer
+- [ ] incremental event rendering with focus/caret/scroll/transient-selection preservation
+- [ ] avoid complete window-tree rebuild on Tabs page switches
+- [ ] Workshop click-to-first-app-paint, large-form event-to-paint and Form-switch performance gates
+- [ ] split runtime lifecycle, Window rendering, transient UI state and Build controller out of `web/playground.js`
+- [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
+
+### Completed RAD foundation / R1 work
 
 - [x] canonical multi-file Studio project model with deterministic Run/Build composition and `file:line` provenance
 - [x] **project bundle v4** with bounded project resources and explicit migration from v1/v2/v3
@@ -51,6 +82,7 @@ The beta.35+ multi-file/Designer foundation and the beta.36 native 1.7/v17/v1.8 
 - [x] PaintBox `draw image` with quoted `patch-resource:` / `data:` locators, Studio/Web rendering and native PNG/JPEG transport on Win32/AppKit/GTK through IR 1.7 / payload v17 / runtime v1.8
 - [x] ImageList Stage 1 source syntax, compiler transport, registry metadata, nonvisual tray and Resource Manager-backed Object Inspector
 - [x] ImageList Web metadata for Button `image list.item`; current Native GUI IR 1.7 still fails closed for ImageList and Button images
+- [x] deterministic `native-imagelist-asset-plan/0.1` resolving used Button ImageList assets, deduplicating payloads and enforcing the existing PNG/JPEG native picture policy without widening Native GUI IR 1.7
 - [x] application/window icon source declaration and Studio/Web favicon/chrome packaging under `window-icon/1.0`; current Native GUI IR 1.7 remains fail-closed
 - [x] generated component capability matrix from canonical registry metadata
 - [x] content-addressed public site, PWA/offline closure validation and real Chrome startup/responsiveness gate
@@ -65,17 +97,19 @@ These are real remaining gaps and must not be advertised as complete until their
 - [x] Picture display properties: fit/scale mode, proportional/aspect behavior, center, opacity and accessible description across authoring/Web; current native Ready keeps default contain/centered/opaque PictureBox and fail-closes unsupported display combinations
 - [x] decide and version native SVG/WebP policy rather than broadening format support implicitly (`native-picture-formats/1.0`: Ready PNG/JPEG, deferred WebP/SVG, no IR bump)
 - [x] first ImageList consumer: Button `image list.item` on Studio/Web; current Native GUI IR 1.7 fail-closes ImageList and Button images
+- [x] native ImageList pretransport resource planner with validation/deduplication; this is preparation only and does not count as desktop support
 - [x] component capability matrix generated from canonical registry metadata rather than duplicated documentation
 - [x] application/window icon resource packaging (`window-icon/1.0`: source-backed Form icon and Web favicon; current native Ready fail-closes)
 - [x] Shape native lowering/runtime parity for Win32, AppKit and GTK (IR 1.5 / payload v15 / runtime v1.6, preserved by current IR 1.7)
 - [x] PaintBox drawing-command contract and native lowering/runtime parity for Win32, AppKit and GTK (IR 1.6 / payload v16 / runtime v1.7)
 - [x] PaintBox `draw image` resource consumption with native PNG/JPEG parity (IR 1.7 / payload v17 / runtime v1.8)
-- [ ] ImageList native runtime contract only after desktop backends transport Button/ToolBar images; no empty standalone native claim
+- [ ] version and transport ImageList/Button assets through the next Native GUI IR/payload/runtime line, then implement Win32/AppKit/GTK consumers
+- [ ] extend the same ImageList transport to ToolBar/ToolButton only when those controls exist; no empty standalone ImageList native claim
 - [ ] native application/window icon packaging for Win32 `.ico`, AppKit and Linux desktop after a versioned native contract
 
 ## RAD R2: Form Designer parity
 
-After R1 is closed:
+After the R0 architecture gate is stable and R1 is closed:
 
 - [ ] independent source-backed `TabOrder` that does not alter source/z-order
 - [ ] visual Tab Order mode
@@ -111,6 +145,34 @@ See `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the complete long-term list. Near-te
 - [ ] dockable/persisted IDE layouts
 - [ ] package/component ecosystem
 
+## Offline IDE track
+
+Patch Studio is explicitly planned as an installed offline IDE, not only a hosted PWA. See `docs/OFFLINE_STUDIO.md`.
+
+### Stage 1 repository-controlled foundation
+
+- [x] deterministic Offline Studio manifest v1 with per-file SHA-256 and whole-site closure hash
+- [x] self-contained Node SEA builder using the generated Patch Studio site as the single UI implementation
+- [x] loopback-only `127.0.0.1` runtime with random per-launch URL prefix, traversal protection and restrictive CSP
+- [x] no outbound network requirement for authoring, Designer/Run and existing browser-local build targets
+- [x] manifest/closure regression tests independent of SEA availability
+- [ ] publish signed/tested Offline Studio executables as release artifacts for Windows/macOS/Linux
+
+### Stage 2 fully local native IDE
+
+- [ ] embed/install the current offline compiler and host-native sealed GUI runtime beside Offline Studio
+- [ ] authenticated, narrow localhost build bridge rather than a general shell API
+- [ ] host-native local Windows/macOS/Linux app builds without GitHub or network access
+- [ ] artifact pane integration for local outputs, diagnostics and checksums
+- [ ] explicit local-vs-remote build selector, with local as the offline path
+
+### Stage 3 installed-IDE integration
+
+- [ ] direct project-folder/file open/save with workspace permission boundaries
+- [ ] recent projects/file associations and OS integration
+- [ ] packaged installers/uninstall path
+- [ ] optional updates that never block offline use
+
 ## Desktop / distribution status
 
 ### Implemented repository-controlled surface
@@ -122,16 +184,19 @@ See `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the complete long-term list. Near-te
 - [x] ordinary offline `patch link` defaults to payload v17/runtime v1.8
 - [x] browser Ready runtime templates verified against GitHub Release SHA-256 digests before sealing
 - [x] downloadable offline compiler/linker for Windows, macOS and Linux plus FreeBSD portable C99 kit
+- [x] Offline Studio Stage 1 executable/manifest builder foundation
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
 - [x] truthful Pages deployment status with required-runtime checks, HTTP asset verification and live Chrome behavior verification
 
-### Externally gated distribution work
+### Externally gated / not-yet-complete distribution work
 
 - [ ] real credentialed Windows signing evidence
 - [ ] real credentialed macOS signing/notarization evidence
+- [ ] signed/tested Offline Studio release artifacts on all three desktop platforms
 - [ ] installer/package formats with explicit uninstall path after a distribution-format decision
 - [ ] release-integrity verification across any future installer/update channel
 - [ ] fresh remote native build service without a user-supplied GitHub token
+- [ ] fully local Offline Studio native build bridge (Stage 2)
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where deployment evidence justifies them
 - [ ] manual assistive-technology validation with Narrator, VoiceOver, Orca or comparable tools; no WCAG conformance claim is made without that work
@@ -202,4 +267,4 @@ Evidence still requiring new data or external participation:
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through Native GUI IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
-- **current:** close the two remaining native resource-consumer R1 gaps, then move into full Form Designer parity
+- **current:** R0 architecture hardening (#282), finish the two native resource-consumer R1 gaps, and establish the Offline Studio installed-IDE path before broad R2 expansion

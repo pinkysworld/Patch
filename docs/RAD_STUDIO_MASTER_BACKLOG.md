@@ -1,220 +1,229 @@
 # Patch Studio 1.0 RAD Master Backlog
 
+Status synchronized: **2026-08-29**
+
 ## Product goal
 
-Patch Studio 1.0 should be a complete source-backed RAD IDE for Patch: visually build desktop/web applications, edit properties and events, manage project resources, debug and package applications, while every designer action remains representable in ordinary Patch source or an explicit versioned project/resource contract.
+Patch Studio 1.0 should be a complete source-backed RAD IDE for Patch: visually build desktop/web applications, edit properties and events, manage project resources, debug and package applications, while every Designer action remains representable in ordinary Patch source or an explicit versioned project/resource contract.
 
-The goal is not to clone Delphi file-for-file. The goal is to reach the same class of workflow: place components, edit properties/events, manage resources, run/debug quickly, and build deployable native applications without a hidden second application model.
+The goal is not to clone Delphi or Visual Basic file-for-file. The goal is to reach the same class of rapid workflow while keeping Patch's distinguishing advantages: explicit semantic change, source-backed visual authoring, fail-closed target parity, deterministic/reproducible artifacts and inspectable Change IR/event history.
 
 ## Non-negotiable architecture rules
 
-1. **Source-backed by default.** Designer changes must round-trip through Patch source or a documented versioned project/resource manifest.
-2. **No silent parity gaps.** A component is not marked Ready if Studio can place it but Web/native output silently drops it.
-3. **One semantic model.** Studio, Web runtime, Win32, AppKit and GTK consume the same versioned control/property/event contract where applicable.
-4. **Fail closed.** Unsupported properties/events/build targets produce an explicit diagnostic.
-5. **Large-project stability.** Every RAD feature must survive real Chrome stress, multi-form projects and the complete CI matrix.
-6. **Cross-platform release gate.** Windows, Linux and macOS must remain first-class. FreeBSD may stay console-only until a GUI backend exists.
-7. **Accessibility and keyboard parity.** All designer operations must have keyboard-accessible equivalents.
+1. **Source-backed by default.** Designer changes round-trip through Patch source or a documented versioned project/resource manifest.
+2. **No silent parity gaps.** A component is not Ready if Studio can place it but a claimed target silently drops it.
+3. **One semantic model.** Studio, Web, Win32, AppKit and GTK consume the same versioned component/property/event contracts where applicable.
+4. **Fail closed.** Unsupported properties, events, resources and targets produce explicit diagnostics.
+5. **Large-project stability.** Every RAD feature must survive real-Chrome stress, multi-Form projects and CI.
+6. **Cross-platform release gate.** Windows, Linux and macOS remain first-class. FreeBSD may remain console-only until a GUI backend exists.
+7. **Accessibility and keyboard parity.** Major Designer actions need keyboard-accessible equivalents.
+8. **Offline core.** Normal authoring, Run and host-native local Build should ultimately work without GitHub, a token or a network connection.
+9. **No general privileged browser bridge.** Installed-IDE filesystem/process authority must be exposed only through narrow versioned operations.
 
 ## Current baseline
 
-Already available or substantially implemented:
+Current product contract:
 
-- multi-form Window projects;
-- source-backed visual Form Designer;
-- searchable Component Palette;
-- Object Inspector with Properties and Events;
-- Button, Input, Text, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView and Tabs authoring;
-- StatusBar authoring;
-- nonvisual Timer tray with OnTick;
-- Panel Stage 1 authoring with structural child editor;
-- visual Menu Designer with MenuItems, separators, shortcuts, enabled/checked bindings and OnClick;
-- multi-select alignment, sizing and distribution;
-- Anchors and Docking in the Object Inspector;
-- Focus Order Stage 1 based on source order;
-- drag/resize cancellation hardening;
-- large Workshop Desk browser stress test;
-- native Windows/macOS/Linux runtime line v1.6 and payload v15;
-- token-free/offline compiler builds;
-- public Patch Studio/PWA with content-addressed module graph.
+- Patch **0.2.0-beta.36**;
+- Change IR **0.10**;
+- Native GUI IR **1.7**, payload **v17**, runtime **v1.8**;
+- Studio project/resource bundle **v4**;
+- Component Registry **0.8**;
+- source-backed multi-Form Designer, Component Palette and Object Inspector;
+- Button, Input, Text, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel Stage 1 authoring;
+- source-backed Anchors/Dock, alignment/sizing/distribution, grid snap, z-order commands, Focus Order Stage 1 and Undo/Redo transactions;
+- project Resource Manager with deterministic resource metadata and recovery/export/import;
+- Standalone Web and Ready native Windows/macOS/Linux paths for the currently supported native component contract;
+- token-free offline compiler/linker and sealed native runtime templates;
+- public content-addressed PWA plus real-Chrome startup/Workshop checks;
+- Workshop Desk acceptance application;
+- Offline Studio Stage 1 builder foundation;
+- R0 non-executing design model **0.1** and bounded design snapshot cache **0.1**;
+- R1 native ImageList resource pretransport plan **0.1**, explicitly not yet a Ready native ImageList contract.
 
 ## Priority model
 
-- **P0 - correctness/stability:** must be done before broadening the component surface.
-- **P1 - core RAD parity:** expected in a serious visual application builder.
-- **P2 - professional IDE:** makes Patch Studio competitive as a daily development environment.
-- **P3 - ecosystem/advanced tooling:** packages, extensibility and enterprise-scale workflows.
+- **P0 correctness/stability:** required before broad component expansion.
+- **P1 core RAD parity:** expected in a serious visual application builder.
+- **P2 professional IDE:** daily-development productivity.
+- **P3 ecosystem/advanced tooling:** packages, extensibility and enterprise-scale workflows.
 
 ---
 
 # Milestone R0 - RAD foundation hardening
 
-Target: make the current designer safe enough to keep expanding.
+Target: keep the source-backed Studio responsive and coherent as projects and component count grow. Issue **#282** is the active architecture tracker.
 
 ## P0.1 Global UI name namespace
 
-- validate IDs across top-level controls, Panel children, Tabs children, MenuItems and result dialogs;
-- block collisions directly in Object Inspector before compiler/build time;
-- use the same check for duplicate, paste and structural editors;
-- add regression tests and PWA packaging.
+Status: **substantially implemented**.
 
-**Done when:** no designer operation can create two UI/event targets with the same effective Patch name.
+- [x] shared namespace enumeration across core controls, nested Panel/Tabs controls, MenuItems and result-dialog targets;
+- [x] Object Inspector collision guard;
+- [ ] finish using the same namespace guard for every duplicate/paste/structural-editor path;
+- [ ] explicit regression coverage for every nested/new component family.
+
+**Done when:** no Designer operation can create two effective UI/event targets with the same Patch name.
 
 ## P0.2 Undo/Redo transaction model
 
-- source-backed Designer transaction boundary;
-- Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z;
-- coalesce one drag/resize into one history entry;
-- coalesce Object Inspector Apply into one entry;
-- form/component/menu structural operations are atomic;
-- recovery stack must not corrupt project persistence.
+Status: **core transaction model implemented**.
 
-**Done when:** every visual edit can be reversed and replayed predictably.
+- [x] source-backed Designer transaction boundary;
+- [x] Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z;
+- [x] coalesce one drag/resize into one history entry;
+- [x] editor/Designer Undo/Redo for typing and atomic source rewrites;
+- [x] drag/resize and structural operations routed through transaction-aware source updates where implemented;
+- [ ] close any remaining adapter-specific mutations that bypass the canonical transaction path;
+- [ ] add long mixed-operation recovery/Undo regression.
 
-## P0.3 Designer performance and virtualization
+## P0.3 Designer model, performance and virtualization
 
-- source/AST snapshot cache shared across designer adapters;
-- render active Form by default instead of all forms at full cost;
-- virtualize large Table/Tree designer previews where useful;
-- benchmark Workshop Desk plus a 10-form/200-control stress fixture;
-- worker-based parse/compile investigation for very large projects.
+Completed foundations:
 
-## P0.4 Consistent selection and property ownership
+- [x] Studio Run reuses compiled AST instead of parsing twice;
+- [x] lazy Change IR formatting;
+- [x] hidden runtime Form controls materialize only when opened;
+- [x] Run re-entry guard and transactional runtime replacement;
+- [x] real-Chrome Workshop freeze regression;
+- [x] `studio-design-model/0.1` parses source and builds initial design UI without executing calls, changes, loops, conditionals, previews or Form open/close actions;
+- [x] bounded top-level design-model budget;
+- [x] `studio-design-cache/0.1` bounded LRU source-revision snapshot cache;
+- [x] deterministic 10-Form / 200-control stress fixture exists.
 
-- one selection contract for core controls, Table, TreeView, Panel, StatusBar and future PictureBox;
-- one dirty/apply/error state contract for Object Inspector adapters;
-- one delete/duplicate/reveal-source command path;
-- remove remaining adapter-specific behavior that can diverge.
+Remaining:
+
+- [ ] wire the non-executing design model into primary `refreshDesigner()`;
+- [ ] share the design snapshot cache across Designer adapters rather than local per-adapter execution/cache;
+- [ ] true active-Form Designer materialization/virtualization, not post-render hiding;
+- [ ] preserve selection, Object Inspector ownership and structural editors across Form materialization;
+- [ ] virtualize large Table/Tree previews where useful;
+- [ ] define a versioned Web Worker boundary for parse/compile/design-model work;
+- [ ] bound any expression evaluation that still remains necessary at design time;
+- [ ] benchmark Workshop click-to-first-app-paint, large Form event-to-paint and active Form switching;
+- [ ] set generous CI regression thresholds suitable for hosted-runner variance.
+
+## P0.4 Incremental runtime renderer
+
+Current runtime rendering remains deliberately simple but can rebuild too much DOM after events.
+
+- [ ] stable keyed Form/control identities;
+- [ ] update only changed visible Forms/controls where safe;
+- [ ] preserve focus, caret, scroll and transient Table/Tree/List selections;
+- [ ] avoid complete app-tree rebuild on Tabs page changes;
+- [ ] retain deterministic full rerender as a fallback/debug mode;
+- [ ] add event-to-paint regression gates.
+
+## P0.5 Consistent selection and property ownership
+
+- [ ] one selection contract for core controls, Table, TreeView, Panel, StatusBar, Picture, Shape, PaintBox and future controls;
+- [ ] one dirty/apply/error contract for Object Inspector adapters;
+- [ ] one delete/duplicate/reveal-source command path;
+- [ ] remove adapter-specific behavior that can diverge.
+
+## P0.6 Studio module boundaries
+
+`web/playground.js` still owns too much orchestration and runtime behavior.
+
+- [ ] extract Studio Run/runtime lifecycle;
+- [ ] extract Window/control DOM renderer;
+- [ ] extract transient runtime selection/state;
+- [ ] extract Build controller;
+- [ ] keep `playground.js` as orchestration rather than a second framework;
+- [ ] remove obsolete duplicate Workshop/Harbor compatibility source after migration coverage no longer needs it.
+
+## P0.7 CI/deployment reliability
+
+- [ ] make Pages deployment release-aware so a merge that references a just-publishing runtime does not create an expected failure window;
+- [ ] retain fail-closed runtime/digest verification;
+- [ ] continue live HTTP/Chrome verification after deploy;
+- [ ] reduce CI notification noise without weakening gates.
 
 ---
 
 # Milestone R1 - Graphics, images and visual resources
 
-Target: provide the graphical component family expected from RAD Studio.
+Target: close the graphical/resource family expected from a modern RAD environment.
 
-This milestone is intentionally early because graphical resources are a major missing part of the current Window stack.
+## P1.1 Resource Manager
 
-## P1.1 Asset Manager
+Status: **implemented foundation**.
 
-Create a project-level **Resources / Assets** tool window.
+- [x] PNG/JPEG/WebP/SVG project resources;
+- [x] stable logical IDs and project-relative paths;
+- [x] size/media/SHA-256 metadata;
+- [x] preview/add/remove and resource-backed Object Inspector flows;
+- [x] project v4 export/import/recovery persistence;
+- [x] deterministic Web/native resource packaging where target contract supports it;
+- [ ] richer rename/reference refactoring;
+- [ ] drag asset directly onto Form as Picture;
+- [ ] visual application-branding workflow.
 
-Required capabilities:
+## P1.2 Picture / Image
 
-- add PNG, JPEG, WebP, SVG and ICO resources;
-- preview image dimensions, format and file size;
-- stable logical asset names independent of local source paths;
-- rename/remove with reference validation;
-- drag asset onto a Form to create a PictureBox;
-- copy/paste asset references;
-- project export/import includes resources;
-- PWA/offline projects retain resources;
-- release builds embed or package resources deterministically;
-- SHA-256/resource manifest for reproducible builds.
+Status: **authoring/Web and bounded native PNG/JPEG path implemented**.
 
-Suggested explicit project contract:
-
-```text
-assets/
-  logo.png
-  toolbar/save.svg
-patch.project.json
-```
-
-The project manifest may map logical names to files, but controls should reference logical asset IDs, not machine-specific absolute paths.
-
-## P1.2 PictureBox / Image component
-
-Promote the existing PictureBox Stage 1 syntax to a complete authoring/runtime contract.
-
-Properties:
-
-- Name;
-- Source / Asset;
-- X, Y, Width, Height;
-- Visible;
-- Enabled where meaningful;
-- ScaleMode: `contain`, `cover`, `stretch`, `center`, `tile`;
-- PreserveAspectRatio;
-- TransparentBackground where backend permits;
-- AltText / accessibility label;
-- Anchors and Docking.
-
-Events:
-
-- OnClick;
-- optional later OnLoad / OnError if a stable runtime event contract is added.
-
-Runtime requirements:
-
-- Web: native `<img>`/SVG rendering;
-- Win32: real bitmap/icon decode and paint;
-- AppKit: NSImage-backed rendering;
-- GTK: GdkPixbuf/GtkPicture-backed rendering;
-- deterministic asset lookup from packaged resources;
-- explicit diagnostic for unsupported formats.
-
-**Done when:** the same project logo displays in Studio preview, standalone Web App, Windows EXE, macOS app and Linux GUI build.
+- [x] source-backed Picture authoring/resource picker;
+- [x] Studio and Standalone Web rendering;
+- [x] fit/scale, proportional/aspect, center, opacity and accessible description authoring/Web contract;
+- [x] native PNG/JPEG decode on Win32/AppKit/GTK;
+- [x] explicit `native-picture-formats/1.0` policy with deferred WebP/SVG;
+- [ ] broaden native display-property combinations only through a versioned contract;
+- [ ] OnLoad/OnError only if a stable portable event contract is justified.
 
 ## P1.3 ImageList
 
-A nonvisual RAD component similar in spirit to Delphi `TImageList`.
+Status: **Stage 1 authoring/Web implemented; desktop consumer transport open**.
 
-- lives in the nonvisual component tray;
-- ordered logical images;
-- key/name per image;
-- standard logical size, e.g. 16/20/24/32;
-- optional DPI variants;
-- consumed by Toolbar/Menu/Button/Tree components;
-- asset-manager backed, never duplicate raw image blobs in control source.
+- [x] nonvisual component tray and source syntax;
+- [x] logical image names/sizes and Resource Manager integration;
+- [x] compiler/registry metadata;
+- [x] Button `image list.item` consumer on Studio/Web;
+- [x] `native-imagelist-asset-plan/0.1` validates and deduplicates the exact PNG/JPEG resource payload required by native Button consumers;
+- [ ] version the next Native GUI IR/payload/runtime transport for ImageList/Button assets;
+- [ ] Win32 Button image consumer;
+- [ ] AppKit Button image consumer;
+- [ ] GTK Button image consumer;
+- [ ] extend the same transport to ToolBar/ToolButton/Menu/Tree consumers only as those component contracts exist;
+- [ ] optional DPI variants after the base cross-platform transport is stable.
 
-## P1.4 Shape component
+Current Native GUI IR 1.7 must continue to fail closed for ImageList/Button images until the native transport is real.
 
-Lightweight visual design component for common UI decoration.
+## P1.4 Shape
 
-Properties:
+Status: **Stage 1 cross-platform implemented**.
 
-- Rectangle, RoundedRectangle, Ellipse, Line;
-- Fill;
-- Stroke;
-- StrokeWidth;
-- Radius;
-- opacity;
-- Anchors/Dock;
-- optional OnClick.
+- [x] Rectangle/RoundedRectangle/Ellipse/Line source/Designer/Web contract;
+- [x] fill/stroke/stroke width/radius/opacity/layout authoring;
+- [x] native Win32/AppKit/GTK lowering/runtime parity through preserved IR 1.5+ contract;
+- [ ] richer interactions only when required by real applications.
 
-Implement first in Web and the three desktop runtime adapters using native/simple drawing primitives.
+## P1.5 PaintBox / Canvas
 
-## P1.5 PaintBox / Canvas component
+Status: **Stage 1 plus draw-image cross-platform implemented**.
 
-A deliberate drawing surface for custom graphics rather than abusing PictureBox.
-
-Stage 1:
-
-- canvas/paintbox control;
-- width/height/anchors/dock;
-- OnPaint event contract;
-- basic drawing operations: clear, line, rectangle, ellipse, text, image;
-- deterministic coordinate system;
-- clipping.
-
-Stage 2:
-
-- pointer/mouse events;
-- paths;
-- transforms;
-- gradients;
-- high-DPI scaling.
-
-This requires a versioned drawing command contract shared by Web/Win32/AppKit/GTK.
+- [x] source/Designer/Web PaintBox;
+- [x] pure paint-event drawing program;
+- [x] clear/line/rectangle/ellipse/text;
+- [x] `draw image` with bounded PNG/JPEG project resources through Native GUI IR 1.7 / payload v17 / runtime v1.8;
+- [ ] pointer/mouse event contract;
+- [ ] paths/transforms/gradients;
+- [ ] high-DPI drawing model beyond current basics.
 
 ## P1.6 Icons and application branding
 
-- source-backed Form/window `icon` and Standalone Web favicon under `window-icon/1.0` (Studio/Web);
-- Windows `.ico` packaging;
-- macOS app icon/resource packaging;
-- Linux desktop icon;
-- PWA icons;
-- visual project branding editor.
+Status: **source/Web implemented; native packaging open**.
+
+- [x] source-backed Form/window icon declaration;
+- [x] Web favicon/chrome packaging under `window-icon/1.0`;
+- [ ] version native application/window icon transport;
+- [ ] Windows `.ico` packaging;
+- [ ] macOS application icon/resource packaging;
+- [ ] Linux desktop icon packaging;
+- [ ] PWA icon-set generation;
+- [ ] visual branding editor in Project Settings.
+
+**R1 exit criterion:** native ImageList/Button resource consumption and native app/window icons are real on Win32/AppKit/GTK and current capability metadata/tests reflect that. Until then R1 is not complete.
 
 ---
 
@@ -222,51 +231,44 @@ This requires a versioned drawing command contract shared by Web/Win32/AppKit/GT
 
 ## P1.7 Independent TabOrder
 
-Replace Focus Order Stage 1 with a true source-backed independent focus order.
+- [ ] explicit source-backed `TabOrder` independent from source/z-order;
+- [ ] Object Inspector property;
+- [ ] visual Tab Order overlay/mode;
+- [ ] keyboard reorder;
+- [ ] Web/Win32/AppKit/GTK honor one order.
 
-- explicit versioned `taborder`/focus metadata;
-- Object Inspector `TabOrder` property;
-- visual Tab Order mode overlay;
-- keyboard reorder;
-- source order/z-order unaffected;
-- Web/Win32/AppKit/GTK honor the same order.
+## P1.8 Layers and z-order
 
-## P1.8 Z-order editor
+Current front/back/forward/backward actions exist. Remaining:
 
-- Bring to Front;
-- Send to Back;
-- Move Forward;
-- Move Backward;
-- explicit source-backed z-order where source order is insufficient;
-- Layers/Object Tree view.
+- [ ] Layers/Object Tree view;
+- [ ] explicit containment visualization;
+- [ ] source-backed z-order metadata only where source order is insufficient;
+- [ ] keyboard layer operations.
 
-## P1.9 Grid and snapping
+## P1.9 Grid and smart guides
 
-- configurable design grid;
-- snap to grid;
-- smart alignment guides;
-- equal spacing guides;
-- edge/center snapping;
-- temporary Alt/Option bypass;
-- rulers optional.
+Current configurable grid snap/alignment actions exist. Remaining:
 
-## P1.10 Clipboard and cross-form operations
+- [ ] richer edge/center/equal-spacing smart guides;
+- [ ] temporary Alt/Option bypass;
+- [ ] optional rulers;
+- [ ] design-only guide visibility preferences.
 
-- copy/cut/paste controls;
-- preserve/rewrite IDs safely;
-- copy nested Panel/Tabs content;
-- copy event handlers when requested;
-- paste into another Form/project;
-- duplicate with offset;
-- serialized clipboard schema version.
+## P1.10 Clipboard and cross-Form operations
 
-## P1.11 Locking and design-only properties
+- [ ] versioned clipboard schema;
+- [ ] copy/cut/paste controls and nested content;
+- [ ] collision-safe ID rewriting;
+- [ ] optional event-handler copy;
+- [ ] paste into another Form/project;
+- [ ] duplicate with offset.
 
-- Lock Controls;
-- hide/show design guides;
-- prevent accidental drag/resize;
-- component tree selection still works;
-- design-only preferences stay IDE state, not app semantics.
+## P1.11 Lock Controls
+
+- [ ] lock drag/resize without preventing selection/inspection;
+- [ ] per-control/Form lock state as design-only IDE metadata;
+- [ ] keyboard command and clear visual indication.
 
 ---
 
@@ -274,98 +276,85 @@ Replace Focus Order Stage 1 with a true source-backed independent focus order.
 
 ## P1.12 Panel Stage 2 native containment
 
-Upgrade Panel from flow grouping to a true container contract.
-
-- independent child coordinates relative to Panel;
-- child Anchors/Docking relative to container;
-- clipping;
-- nested Panels;
-- move controls into/out of Panel visually;
-- drop target highlighting;
-- runtime native parent/child containment on Win32/AppKit/GTK;
-- Web DOM nesting parity.
+- [ ] child coordinates relative to Panel;
+- [ ] child Anchors/Dock relative to container;
+- [ ] clipping;
+- [ ] nested Panels;
+- [ ] visual move into/out of Panel with drop highlighting;
+- [ ] true Win32/AppKit/GTK parent-child containment;
+- [ ] Web DOM nesting parity.
 
 ## P1.13 GroupBox
 
-- captioned container;
-- child coordinates;
-- anchors/docking;
-- accessibility group semantics.
+- [ ] captioned container;
+- [ ] child coordinates/layout;
+- [ ] accessibility group semantics.
 
 ## P1.14 ScrollBox / ScrollPanel
 
-- scrollable container;
-- AutoScroll;
-- horizontal/vertical scroll policies;
-- nested content;
-- mouse wheel/touch parity.
+- [ ] scrollable container and AutoScroll;
+- [ ] horizontal/vertical policies;
+- [ ] nested content;
+- [ ] wheel/touch parity.
 
 ## P1.15 Splitter / SplitContainer
 
-- resizable panes;
-- orientation;
-- min sizes;
-- source-backed initial split;
-- runtime user resize;
-- optional persisted UI state later.
+- [ ] orientation and resizable panes;
+- [ ] min sizes;
+- [ ] source-backed initial split;
+- [ ] runtime resize;
+- [ ] optional persisted UI state later.
 
 ## P2.16 Flow/Grid layout containers
 
-- FlowPanel;
-- GridPanel;
-- gap, padding and alignment;
-- row/column definitions;
-- responsive authoring.
+- [ ] FlowPanel;
+- [ ] GridPanel;
+- [ ] gap/padding/alignment;
+- [ ] row/column definitions;
+- [ ] responsive authoring.
 
 ---
 
 # Milestone R4 - Standard component library
 
+Existing core controls remain subject to the generated capability matrix. New/expanded controls:
+
 ## P1 controls
 
-- Label/Text;
-- Button;
-- Edit/Input;
-- Memo/TextArea;
-- MaskedEdit;
-- PasswordEdit;
-- Checkbox;
-- RadioButton/RadioGroup;
-- ComboBox;
-- ListBox;
-- CheckedListBox;
-- Slider/TrackBar;
-- ProgressBar;
-- SpinEdit/NumberEdit;
-- DatePicker;
-- TimePicker;
-- Calendar;
-- LinkLabel;
-- Separator;
-- ScrollBar where standalone control is useful.
+- [ ] Memo/TextArea;
+- [ ] MaskedEdit;
+- [ ] PasswordEdit;
+- [ ] CheckedListBox;
+- [ ] ProgressBar;
+- [ ] SpinEdit/NumberEdit;
+- [ ] DatePicker;
+- [ ] TimePicker;
+- [ ] Calendar;
+- [ ] LinkLabel;
+- [ ] Separator;
+- [ ] standalone ScrollBar where useful.
 
 ## P1 data/view controls
 
-- Table/DataGrid advanced columns;
-- TreeView icons and richer node metadata;
-- ListView with icon/detail modes;
-- Header control;
-- property-driven sorting/filtering hooks.
+- [ ] advanced Table/DataGrid columns;
+- [ ] TreeView icons/richer node metadata;
+- [ ] ListView icon/detail modes;
+- [ ] Header control;
+- [ ] property-driven sorting/filtering hooks.
 
 ## P2 shell/chrome controls
 
-- ToolBar;
-- ToolButton;
-- ContextMenu/PopupMenu;
-- richer StatusBar panels;
-- PageControl/Tabs designer parity;
-- CoolBar-style grouping only if it maps cleanly cross-platform.
+- [ ] ToolBar;
+- [ ] ToolButton;
+- [ ] ContextMenu/PopupMenu;
+- [ ] richer StatusBar panels;
+- [ ] complete PageControl/Tabs Designer parity.
 
-Every component needs a parity matrix:
+Every component must report:
 
-`Syntax | Designer | Object Inspector | Events | Web | Win32 | AppKit | GTK | Offline build | Accessibility | Tests`.
+`Syntax | Designer | Object Inspector | Events | Web | Win32 | AppKit | GTK | Offline build | Accessibility | Tests`
 
-A component is Ready only when required columns are green.
+A component is Ready only when the required columns are green.
 
 ---
 
@@ -373,28 +362,20 @@ A component is Ready only when required columns are green.
 
 ## P1.17 ActionList-style command model
 
-Introduce a nonvisual reusable command/action abstraction.
-
-- Name;
-- Caption;
-- Enabled;
-- Checked;
-- Shortcut;
-- Icon/ImageList key;
-- OnExecute;
-- bind MenuItem, ToolButton and Button to one Action.
-
-This prevents duplicate menu/toolbar command wiring and is a major Delphi-style productivity feature.
+- [ ] Name/Caption/Enabled/Checked/Shortcut/Icon;
+- [ ] OnExecute;
+- [ ] bind MenuItem, ToolButton and Button to one Action;
+- [ ] keep command state visible in ordinary Patch semantics rather than a hidden observer graph.
 
 ## P1.18 Dialog components
 
-- OpenFileDialog;
-- SaveFileDialog;
-- SelectFolderDialog;
-- Confirm/Message dialogs;
-- ColorDialog;
-- FontDialog where portable behavior is reasonable;
-- standard Object Inspector representation for nonvisual dialogs.
+- [ ] OpenFileDialog;
+- [ ] SaveFileDialog;
+- [ ] SelectFolderDialog;
+- [ ] Confirm/Message dialogs as first-class nonvisual components where not already available as language actions;
+- [ ] ColorDialog;
+- [ ] FontDialog only where portable behavior is credible;
+- [ ] common Object Inspector representation.
 
 ---
 
@@ -402,37 +383,34 @@ This prevents duplicate menu/toolbar command wiring and is a major Delphi-style 
 
 ## P1.19 Project Explorer 2.0
 
-- Forms;
-- source modules;
-- assets/resources;
-- generated artifacts;
-- build configurations;
-- dependencies/packages;
-- drag/reorder where semantic;
-- rename refactoring.
+- [ ] Forms and source modules;
+- [ ] resources/assets;
+- [ ] generated artifacts;
+- [ ] build configurations;
+- [ ] dependencies/packages;
+- [ ] semantic drag/reorder;
+- [ ] rename refactoring.
 
-## P1.20 Project settings UI
+## P1.20 Project Settings
 
-- application name/version;
-- app identifier;
-- entry Form;
-- output name;
-- icons;
-- target platforms;
-- optimization/debug mode;
-- Window defaults;
-- reproducibility manifest.
+- [ ] application name/version/id;
+- [ ] entry Form/output name;
+- [ ] icons/branding;
+- [ ] target platforms;
+- [ ] optimization/debug mode;
+- [ ] Window defaults;
+- [ ] reproducibility manifest view.
 
 ## P2.21 Templates
 
-- Blank Window App;
-- Multi-form desktop app;
-- Dashboard;
-- CRUD-style app;
-- Tool/utility app;
-- Graphics/PaintBox demo;
-- Workshop Desk Showcase;
-- reusable Form/component templates.
+- [ ] Blank Window App;
+- [ ] Multi-Form desktop app;
+- [ ] Dashboard;
+- [ ] CRUD-style app;
+- [ ] Tool/utility app;
+- [ ] Graphics/PaintBox demo;
+- [ ] Workshop Desk Showcase;
+- [ ] reusable Form/component templates.
 
 ---
 
@@ -440,35 +418,33 @@ This prevents duplicate menu/toolbar command wiring and is a major Delphi-style 
 
 ## P1.22 Professional code editor
 
-- syntax highlighting;
-- bracket/indent support;
-- code folding;
-- semantic diagnostics;
-- autocomplete;
-- event-handler completion;
-- signature help;
-- go to definition;
-- find references;
-- symbol rename;
-- format document/selection;
-- quick fixes.
+- [ ] syntax highlighting;
+- [ ] bracket/indent support;
+- [ ] code folding;
+- [ ] semantic diagnostics;
+- [ ] autocomplete/event-handler completion;
+- [ ] signature help;
+- [ ] go to definition;
+- [ ] find references;
+- [ ] symbol rename;
+- [ ] format document/selection;
+- [ ] quick fixes.
 
 ## P1.23 Designer-Code navigation
 
-- F12 / View Source;
-- View Form;
-- double-click control opens default event;
-- Object Inspector event double-click;
-- breadcrumb Form > Control > Event;
-- synchronize selected control and source symbol.
+- [ ] F12/View Source and View Form;
+- [ ] double-click control opens default event;
+- [ ] Object Inspector event double-click;
+- [ ] Form > Control > Event breadcrumb;
+- [ ] synchronize selected control/source symbol.
 
 ## P2.24 Refactoring
 
-- rename Form/control/thing/recipe safely;
-- extract recipe;
-- move source module;
-- convert literal to thing;
-- safe handler rename.
+- [ ] rename Form/control/thing/recipe safely;
+- [ ] extract recipe;
+- [ ] move source module;
+- [ ] convert literal to thing;
+- [ ] safe handler rename.
 
 ---
 
@@ -476,28 +452,29 @@ This prevents duplicate menu/toolbar command wiring and is a major Delphi-style 
 
 ## P1.25 Debugger Stage 1
 
-- breakpoint gutter;
-- Run/Continue;
-- Pause;
-- Step Into;
-- Step Over;
-- Step Out;
-- current source line;
-- locals/things/watch values;
-- event-handler breakpoint support.
+- [ ] breakpoint gutter;
+- [ ] Run/Continue/Pause;
+- [ ] Step Into/Over/Out;
+- [ ] current source line;
+- [ ] locals/things/watch values;
+- [ ] event-handler breakpoints.
 
-## P2.26 RAD event trace
+## P2.26 Patch semantic event/change trace
 
-- live event stream: click/change/tick/menu/action;
-- inspect pre/post change state;
-- Change IR trace link;
-- replay selected event where deterministic.
+This should be a Patch advantage, not just a conventional debugger clone.
+
+- [ ] live click/change/tick/menu/action stream;
+- [ ] pre/post semantic state;
+- [ ] Change IR/signature link;
+- [ ] causal chain from UI event to committed change;
+- [ ] replay selected deterministic events;
+- [ ] surface denied/out-of-authority changes explicitly.
 
 ## P2.27 Hot Reload
 
-- apply safe UI/source changes without restarting application;
-- explicit boundary for changes requiring rebuild;
-- preserve runtime state when safe.
+- [ ] apply safe UI/source changes without restart;
+- [ ] explicit rebuild boundary;
+- [ ] preserve runtime state only when semantically safe.
 
 ---
 
@@ -505,29 +482,29 @@ This prevents duplicate menu/toolbar command wiring and is a major Delphi-style 
 
 ## P2.28 Property bindings
 
-- bind control text/value/enabled/visible/checked to Patch values;
-- one-way binding first;
-- explicit two-way binding later;
-- validation diagnostics;
-- no hidden observer graph.
+- [ ] bind text/value/enabled/visible/checked to Patch values;
+- [ ] one-way binding first;
+- [ ] explicit two-way binding later;
+- [ ] validation diagnostics;
+- [ ] no hidden observer graph.
 
 ## P2.29 Collection/data source abstraction
 
-- ListSource/TableSource-like nonvisual components;
-- Table/ListBox/Combo/Tree binding;
-- sorting/filtering adapter;
-- keep the data model ordinary Patch values where possible.
+- [ ] ListSource/TableSource-style nonvisual components;
+- [ ] Table/ListBox/Combo/Tree binding;
+- [ ] sorting/filtering adapters;
+- [ ] keep data as ordinary Patch values where possible.
 
 ## P3.30 Database components
 
 Only after the language/runtime security model is explicit:
 
-- SQLite first;
-- parameterized queries only;
-- transaction component/API;
-- visual connection/query inspector;
-- schema browser;
-- never embed secrets in generated source artifacts by default.
+- [ ] SQLite first;
+- [ ] parameterized queries only;
+- [ ] transactions;
+- [ ] visual connection/query inspector;
+- [ ] schema browser;
+- [ ] never embed secrets in generated source artifacts by default.
 
 ---
 
@@ -535,28 +512,77 @@ Only after the language/runtime security model is explicit:
 
 ## P1.31 One-click desktop build UX
 
-- Build/Run target selector;
-- Windows x64;
-- macOS ARM64/Intel or universal packaging;
-- Linux x64;
-- artifact pane with direct outputs;
-- explicit local vs CI/cloud build mode;
-- build diagnostics mapped to source.
+Existing Studio has target selection and Ready downloads for the current native contract. Remaining professional workflow:
+
+- [ ] first-class artifact pane with direct outputs/checksums;
+- [ ] explicit **Local / Remote** build mode;
+- [ ] host-native offline build path using embedded/installable compiler/runtime;
+- [ ] build diagnostics mapped to source;
+- [ ] clear architecture selection where relevant.
 
 ## P2.32 App packaging
 
-- Windows application folder and optional installer packaging;
-- macOS `.app` bundle;
-- Linux AppImage/tar package initially;
-- assets/icons included automatically;
-- release manifest and SHA256SUMS.
+- [ ] Windows app folder and installer option;
+- [ ] macOS `.app` bundle polish;
+- [ ] Linux AppImage/tar or other justified format;
+- [ ] assets/icons automatic;
+- [ ] release manifest/SHA256SUMS;
+- [ ] explicit uninstall path for installers.
 
-## P2.33 Signing/notarization hooks
+## P2.33 Signing/notarization
 
-- configurable signing inputs without storing secrets in the project;
-- Windows code-sign hook;
-- macOS signing/notarization hook;
-- CI integration.
+Machinery exists but real credentialed evidence remains external:
+
+- [x] fail-closed Windows signing hooks;
+- [x] fail-closed macOS signing/notarization hooks;
+- [ ] real Windows signing evidence;
+- [ ] real macOS notarization evidence;
+- [ ] signed Offline Studio releases.
+
+---
+
+# Horizontal Track O1 - Offline Patch Studio IDE
+
+See `docs/OFFLINE_STUDIO.md`.
+
+## O1.1 Stage 1 self-contained IDE
+
+- [x] deterministic `patch-offline-studio-manifest` v1;
+- [x] per-file SHA-256 plus whole-site closure hash;
+- [x] Node SEA builder embedding the same generated Studio application used by the hosted site;
+- [x] loopback-only `127.0.0.1` server;
+- [x] random per-launch URL prefix;
+- [x] restrictive CSP/security headers and no outbound requirement for core Studio use;
+- [x] manifest/closure tests independent of SEA availability;
+- [ ] build/test release executables on Windows, macOS and Linux CI;
+- [ ] publish Offline Studio artifacts on releases.
+
+Stage 1 supports offline authoring, Designer/Run and browser-local build targets. It does **not** yet claim host-native desktop compilation from inside the IDE.
+
+## O1.2 Stage 2 host-native local build
+
+- [ ] embed/install the existing Patch offline compiler beside the IDE;
+- [ ] embed host-platform sealed GUI/console runtimes;
+- [ ] narrow authenticated localhost build API, never a general shell API;
+- [ ] workspace/path authorization;
+- [ ] Windows host builds Windows locally;
+- [ ] macOS host builds macOS locally;
+- [ ] Linux host builds Linux locally;
+- [ ] output/checksum/diagnostic integration in artifact pane;
+- [ ] no GitHub token or network dependency.
+
+Cross-compiling all desktop targets from every host is not required initially.
+
+## O1.3 Stage 3 installed-IDE integration
+
+- [ ] direct Open/Save/Project Folder flow;
+- [ ] recent projects;
+- [ ] file associations;
+- [ ] workspace permission boundaries;
+- [ ] OS packaging/installers;
+- [ ] optional update checks that never block offline use.
+
+A Tauri/Electron-style shell should only be adopted if it materially improves OS integration. Patch Studio should remain one browser-module-compatible application, not two diverging IDEs.
 
 ---
 
@@ -564,32 +590,26 @@ Only after the language/runtime security model is explicit:
 
 ## P1.34 Dockable IDE shell
 
-- Project Explorer;
-- Component Palette;
-- Object Inspector;
-- Code Editor;
-- Form Designer;
-- Output/Build;
-- Diagnostics;
-- Debugger panes;
-- Assets;
-- persistent layouts;
-- reset layout;
-- tabs and split editors.
+Current workspace layout, tabs, quick-open and command palette are useful foundations. Remaining:
+
+- [ ] fully dockable/persisted Project Explorer, Palette, Inspector, Code, Designer, Output, Diagnostics, Debugger and Assets panes;
+- [ ] split editors;
+- [ ] named layouts/reset layout;
+- [ ] keyboard-accessible docking.
 
 ## P1.35 Command system
 
-- all major IDE actions represented as commands;
-- Command Palette;
-- configurable keyboard shortcuts;
-- toolbar/menu reuse the same command IDs.
+- [x] Command Palette foundation;
+- [ ] represent every major IDE action as a command ID;
+- [ ] configurable keyboard shortcuts;
+- [ ] menus/toolbars reuse the same command model.
 
 ## P2.36 Themes and scaling
 
-- light/dark/System;
-- high-DPI Studio rendering;
-- design-time DPI preview;
-- font scaling/accessibility.
+- [ ] light/dark/System;
+- [ ] high-DPI Studio rendering;
+- [ ] design-time DPI preview;
+- [ ] font scaling/accessibility.
 
 ---
 
@@ -597,24 +617,23 @@ Only after the language/runtime security model is explicit:
 
 ## P1.37 Integrated tests
 
-- test explorer;
-- run all/current test;
-- pass/fail output;
-- source navigation;
-- GUI smoke-test fixtures.
+- [ ] Test Explorer;
+- [ ] run all/current test;
+- [ ] pass/fail output and source navigation;
+- [ ] GUI smoke fixtures.
 
 ## P2.38 UI test recorder
 
-- optionally record component events into deterministic Patch test steps;
-- replay against Web runtime first;
-- cross-platform smoke subset later.
+- [ ] record component events into deterministic Patch test steps where safe;
+- [ ] Web replay first;
+- [ ] cross-platform smoke subset later.
 
 ## P2.39 Coverage and diagnostics dashboard
 
-- code coverage where supported;
-- unused handler/control diagnostics;
-- duplicate/unreachable UI action diagnostics;
-- asset-reference diagnostics.
+- [ ] coverage where supported;
+- [ ] unused handler/control diagnostics;
+- [ ] duplicate/unreachable UI action diagnostics;
+- [ ] asset-reference diagnostics.
 
 ---
 
@@ -622,32 +641,29 @@ Only after the language/runtime security model is explicit:
 
 ## P3.40 Package manager
 
-- versioned Patch packages;
-- dependency lock;
-- offline cache;
-- signed/checksummed packages;
-- source package support first.
+- [ ] versioned Patch packages;
+- [ ] dependency lock;
+- [ ] offline cache;
+- [ ] signed/checksummed packages;
+- [ ] source package support first.
 
 ## P3.41 Custom RAD components
 
-Define a supported component-extension contract:
-
-- source grammar/lowering registration or declarative component schema;
-- Designer metadata;
-- Object Inspector properties/events;
-- Web renderer;
-- native backend adapters;
-- icon/category;
-- test contract.
-
-Avoid arbitrary untrusted code execution inside Studio by default.
+- [ ] supported declarative extension/component schema or tightly controlled registration model;
+- [ ] Designer metadata;
+- [ ] Object Inspector properties/events;
+- [ ] Web renderer;
+- [ ] native backend adapters;
+- [ ] icon/category;
+- [ ] mandatory compatibility/tests;
+- [ ] avoid arbitrary untrusted Studio code execution by default.
 
 ## P3.42 Component gallery
 
-- discover/install components;
-- version compatibility;
-- security review metadata;
-- remove/update safely.
+- [ ] discover/install/update/remove components;
+- [ ] version compatibility;
+- [ ] security-review metadata;
+- [ ] offline package import.
 
 ---
 
@@ -655,25 +671,26 @@ Avoid arbitrary untrusted code execution inside Studio by default.
 
 ## P2.43 Localization resources
 
-- translatable strings resource table;
-- locale preview;
-- runtime locale selection;
-- missing-string diagnostics.
+- [ ] translatable string table;
+- [ ] locale preview/runtime selection;
+- [ ] missing-string diagnostics.
 
 ## P2.44 Accessibility inspector
 
-- accessible name/description;
-- keyboard reachability;
-- focus order checks;
-- contrast hints for custom drawing;
-- semantic roles where portable.
+- [ ] accessible name/description;
+- [ ] keyboard reachability;
+- [ ] focus-order checks;
+- [ ] contrast hints for custom drawing;
+- [ ] portable semantic roles;
+- [ ] manual Narrator/VoiceOver/Orca evidence before any conformance claim.
 
-## P2.45 Error and crash UX
+## P2.45 Error/crash UX
 
-- no blank/hung Studio state;
-- actionable parse/build diagnostics;
-- recovery restore preview;
-- safe-mode startup if a Studio module repeatedly crashes.
+- [ ] no blank/hung Studio state;
+- [ ] actionable parse/build diagnostics;
+- [ ] recovery restore preview;
+- [ ] safe-mode startup for repeated module failures;
+- [ ] local privacy-redacted crash/report workflow.
 
 ---
 
@@ -681,69 +698,64 @@ Avoid arbitrary untrusted code execution inside Studio by default.
 
 ## Workshop Desk 2.0
 
-Workshop Desk should evolve into the acceptance application for Patch Studio RAD.
+Workshop Desk is the end-to-end acceptance application. It should progressively cover:
 
-It should eventually contain:
+- [x] multi-Form Window application and real browser Run;
+- [x] current menus/status/Timer/Tabs/Table/TreeView/Anchors/Dock families where implemented;
+- [x] Picture/Shape/PaintBox resource/graphics families including PaintBox `draw image`;
+- [x] current Windows/macOS/Linux Ready native surface;
+- [ ] 5+ meaningful Forms;
+- [ ] toolbar/actions/popup menus;
+- [ ] nested Panel Stage 2/GroupBox;
+- [ ] independent TabOrder;
+- [ ] native ImageList icons;
+- [ ] standard file dialog;
+- [ ] settings/project-state scenario;
+- [ ] property/data binding;
+- [ ] integrated tests;
+- [ ] Offline Studio host-native build acceptance.
 
-- 5+ Forms;
-- menus and popup menus;
-- toolbar/actions;
-- status bar;
-- Timer;
-- nested Panels/GroupBoxes;
-- Tabs;
-- Table and TreeView;
-- responsive Anchors/Docking;
-- independent TabOrder;
-- PictureBox with packaged logo/assets;
-- ImageList icons;
-- Shape/PaintBox graphics;
-- file dialog;
-- settings Form;
-- data binding;
-- tests;
-- native Windows/macOS/Linux builds.
-
-CI should build and smoke Workshop Desk on every supported GUI backend. It becomes the end-to-end proof that a RAD feature is real rather than Studio-only.
+CI should use Workshop Desk to prove a feature is real across claimed targets rather than Studio-only.
 
 ---
 
-# Recommended execution order
+# Current execution order
+
+This replaces the stale historical queue that listed already-completed R0/R1 work as future work.
 
 ## Immediate queue
 
-1. Finish global UI-ID namespace guard.
-2. Undo/Redo transaction model.
-3. **Asset Manager foundation.**
-4. **PictureBox/Image full cross-platform runtime.**
-5. PictureBox RAD authoring and Object Inspector.
-6. ImageList nonvisual component.
-7. Shape component.
-8. Independent TabOrder.
-9. Grid/snap/clipboard designer improvements.
-10. Panel Stage 2 native containment.
+1. Wire `studio-design-model/0.1` and the shared snapshot cache into the primary Designer refresh path.
+2. Implement true active-Form Designer materialization/virtualization.
+3. Introduce keyed/incremental runtime rendering with focus/caret/selection preservation.
+4. Add measurable #282 performance gates and split major responsibilities out of `web/playground.js`.
+5. Make Pages deployment release-aware to remove expected runtime-publication failure noise.
+6. Version and implement native ImageList/Button resource transport on Win32/AppKit/GTK.
+7. Version and implement native application/window icon packaging.
+8. Build/test/publish Offline Studio Stage 1 executables on Windows/macOS/Linux.
+9. Start Offline Studio Stage 2 host-native local build bridge using the existing offline compiler/runtime assets.
 
 ## Next queue
 
-11. Toolbar + ActionList.
-12. ContextMenu/PopupMenu.
-13. Memo, ProgressBar, SpinEdit, Date/Time components.
-14. ScrollBox, GroupBox, SplitContainer.
-15. PaintBox/Canvas Stage 1.
-16. Project Explorer 2.0 and project settings.
-17. professional code editor features.
-18. Debugger Stage 1.
-19. one-click packaged desktop applications.
+10. Independent TabOrder and visual Tab Order mode.
+11. Clipboard/Lock Controls/Layers and richer smart guides.
+12. Panel Stage 2, GroupBox, ScrollBox and SplitContainer.
+13. ToolBar/ToolButton/PopupMenu plus ActionList.
+14. Memo, ProgressBar, SpinEdit and Date/Time controls.
+15. Project Explorer 2.0, Project Settings and templates.
+16. Professional code-editor services and Designer-code navigation.
+17. Debugger Stage 1 plus Patch semantic event/change timeline.
+18. One-click packaged desktop applications and installer workflow.
 
 ## Later queue
 
-20. data binding;
-21. test explorer;
-22. Hot Reload;
-23. SQLite/data components;
-24. package/component ecosystem;
-25. localization/accessibility tooling;
-26. signing/notarization and production deployment workflows.
+19. property/data binding;
+20. Test Explorer/UI recorder;
+21. safe Hot Reload;
+22. SQLite/data components;
+23. package/component ecosystem;
+24. localization/accessibility tooling;
+25. full signing/notarization/update/distribution evidence.
 
 ---
 
@@ -751,18 +763,20 @@ CI should build and smoke Workshop Desk on every supported GUI backend. It becom
 
 Patch Studio can call itself a complete RAD Studio when all of the following are true:
 
-- a new desktop GUI project can be created without editing boilerplate manually;
-- Forms and standard visual/nonvisual components are fully authorable;
-- images, icons and other resources are managed visually and packaged correctly;
-- properties, events, anchors, docking, z-order and TabOrder are editable visually;
-- nested containers work with real relative geometry;
+- a new GUI project can be created without manual boilerplate;
+- Forms and a practical visual/nonvisual component library are fully authorable;
+- images/icons/resources are managed visually and packaged correctly;
+- properties/events/anchors/docking/z-order/TabOrder are editable visually;
+- nested containers have real relative geometry;
 - menus/toolbars/actions/dialogs are authorable;
-- code navigation, completion and refactoring cover normal application development;
+- normal code navigation/completion/refactoring works;
 - breakpoints and step debugging work;
 - Undo/Redo covers visual edits;
-- projects can be built into functioning Windows, macOS and Linux applications through the Studio workflow;
+- projects build into functioning Windows/macOS/Linux/Web applications through Studio;
+- the installed IDE can perform normal authoring, Run and host-native Build offline without GitHub or a token;
 - the same large acceptance project passes Web and native cross-platform CI;
 - unsupported backend behavior is explicit rather than silently missing;
-- there is no hidden second semantic application model that can drift from Patch source.
+- there is no hidden second semantic application model that can drift from Patch source;
+- Patch-specific semantic change authority, Change IR and causal/event inspection remain visible advantages rather than being hidden behind the RAD UI.
 
-That is the release bar for Patch Studio 1.0 rather than simply accumulating more toolbox buttons.
+That is the Patch Studio 1.0 bar. The objective is a Delphi/VB-class rapid workflow with Patch-native semantics, not a visual clone with a different logo.

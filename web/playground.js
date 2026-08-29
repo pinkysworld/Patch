@@ -276,9 +276,12 @@ const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
 const buildTarget = document.querySelector('#buildTarget');
 const saveState = document.querySelector('#saveState');
+const runButton = document.querySelector('#run');
 let runtime = null;
 let designerTimer = null;
 let changeContractTimer = null;
+let pendingRunIr = null;
+let runInProgress = false;
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -299,7 +302,7 @@ for (const input of [code, projectName, projectKind]) {
   input.addEventListener('change', () => { saveProject(); refreshDesigner(); refreshChangeContract(); });
 }
 
-document.querySelector('#run').addEventListener('click', runProject);
+runButton?.addEventListener('click', runProject);
 appView.addEventListener('patch-studio-table-changed', event => {
   const detail = event.detail ?? {};
   if (typeof detail.control !== 'string' || !Array.isArray(detail.value) || !detail.value.every(cell => typeof cell === 'string')) return;
@@ -353,26 +356,44 @@ document.querySelector('#build').addEventListener('click', () => {
 for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
     if (tab.dataset.tab === 'changes') refreshChangeContract();
+    if (tab.dataset.tab === 'ir') refreshRunIrView();
     showTab(tab.dataset.tab);
   });
 }
 
 function runProject() {
+  if (runInProgress) return;
+  runInProgress = true;
+  runButton?.setAttribute('aria-busy', 'true');
+  if (runButton) runButton.disabled = true;
   try {
     const compiled = compile(code.value, projectOptions());
-    runtime = new PatchInterpreter();
-    const result = runtime.run(code.value);
+    const nextRuntime = new PatchInterpreter();
+    const result = nextRuntime.runAst(compiled.ast);
+    runtime = nextRuntime;
+    pendingRunIr = compiled.ir;
     output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no console output)';
-    irView.textContent = JSON.stringify(compiled.ir, null, 2);
     changesView.textContent = formatChangeAnalysis(compiled.ir);
     renderWindows(appView, result.ui, true);
     showTab(result.ui.length ? 'app' : 'output');
   } catch (err) {
+    runtime = null;
+    pendingRunIr = null;
     output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
     appView.innerHTML = '<p class="empty-preview">The app could not start.</p>';
     changesView.textContent = `Change contract unavailable:\n${err.message}`;
     showTab('output');
+  } finally {
+    runInProgress = false;
+    runButton?.removeAttribute('aria-busy');
+    if (runButton) runButton.disabled = false;
   }
+}
+
+function refreshRunIrView() {
+  if (!pendingRunIr) return;
+  irView.textContent = JSON.stringify(pendingRunIr, null, 2);
+  pendingRunIr = null;
 }
 
 function refreshChangeContract() {
@@ -452,7 +473,10 @@ function renderWindows(container, windows, interactive) {
   windows.forEach((model, windowIndex) => {
     const shell = document.createElement('section');
     shell.className = 'patch-window';
-    shell.hidden = Boolean(interactive && model.visible === false);
+    const deferHiddenForm = Boolean(interactive && model.visible === false);
+    shell.hidden = deferHiddenForm;
+    shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
+    shell.dataset.patchRenderDetail = deferHiddenForm ? 'deferred' : 'full';
     const title = document.createElement('div');
     title.className = 'patch-window-title';
     if (model.icon) {
@@ -471,21 +495,23 @@ function renderWindows(container, windows, interactive) {
     title.append(model.title);
     const body = document.createElement('div');
     body.className = 'patch-window-body';
-    model.controls.forEach((control, controlIndex) => {
-      const el = createControlElement(control, {
-        interactive,
-        container,
-        windows,
-        tabSelections,
-        windowIndex,
-        controlIndex,
-        windowId: model.id,
-        topLevel: true
+    if (!deferHiddenForm) {
+      model.controls.forEach((control, controlIndex) => {
+        const el = createControlElement(control, {
+          interactive,
+          container,
+          windows,
+          tabSelections,
+          windowIndex,
+          controlIndex,
+          windowId: model.id,
+          topLevel: true
+        });
+        if (!el) return;
+        if (!interactive && control.type !== 'tree') decorateDesignerControl(el, windowIndex, controlIndex, control);
+        body.appendChild(el);
       });
-      if (!el) return;
-      if (!interactive && control.type !== 'tree') decorateDesignerControl(el, windowIndex, controlIndex, control);
-      body.appendChild(el);
-    });
+    }
     shell.append(title, body);
     container.appendChild(shell);
   });
@@ -559,16 +585,28 @@ function createControlElement(control, context) {
   } else if (control.type === 'combo' || control.type === 'listbox') {
     el = document.createElement('select');
     el.className = control.type === 'listbox' ? 'patch-input patch-listbox' : 'patch-input patch-combo';
-    if (control.type === 'listbox') el.size = Math.min(8, Math.max(2, (control.options ?? []).length));
+    const multi = control.type === 'listbox' && Array.isArray(control.value);
+    if (control.type === 'listbox') {
+      el.size = Math.min(8, Math.max(2, (control.options ?? []).length));
+      if (multi) {
+        el.multiple = true;
+        el.setAttribute('aria-multiselectable', 'true');
+      }
+    }
     for (const option of control.options ?? []) {
       const item = document.createElement('option');
       item.value = option;
       item.textContent = option;
+      if (multi) item.selected = control.value.includes(option);
       el.appendChild(item);
     }
-    el.value = String(control.value ?? '');
-    if (context.interactive) el.addEventListener('change', () => trigger(control.id, 'changed', { value: el.value }));
-    else el.disabled = true;
+    if (!multi) el.value = String(control.value ?? '');
+    if (context.interactive) {
+      el.addEventListener('change', () => {
+        const value = multi ? [...el.selectedOptions].map(item => item.value) : el.value;
+        trigger(control.id, 'changed', { value });
+      });
+    } else el.disabled = true;
   } else if (control.type === 'slider') {
     el = document.createElement('label');
     el.className = 'patch-slider';
