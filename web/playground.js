@@ -526,6 +526,7 @@ function renderWindows(container, windows, interactive, options = {}) {
           container,
           windows,
           tabSelections,
+          materialization,
           windowIndex,
           controlIndex,
           windowId: model.id,
@@ -733,7 +734,7 @@ function createTabsElement(control, context) {
       event.preventDefault();
       event.stopPropagation();
       context.tabSelections.set(key, pageIndex);
-      renderWindows(context.container, context.windows, context.interactive);
+      renderWindows(context.container, context.windows, context.interactive, { materialization: context.materialization });
     });
     list.appendChild(button);
   });
