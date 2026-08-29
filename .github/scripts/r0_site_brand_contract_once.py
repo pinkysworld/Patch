@@ -19,7 +19,7 @@ replace_once(
 replace_once(
     'scripts/check-site.js',
     "  'IR 1.7 / v1.8','id=\"editorTabs\"','id=\"editorParseStatus\"','id=\"openCommandPalette\"',\n  'viewBox=\"0 0 32 32\"','M8 6H22V18H13V26H8ZM13 10H18V14H13Z'",
-    "  'IR 1.7 / v1.8','id=\"editorTabs\"','id=\"editorParseStatus\"','id=\"openCommandPalette\"',\n  'class=\"brand-mark\" src=\"./icon.svg\"','data-patch-brand-mark=\"compiler-p-v1\"'"
+    "  'IR 1.7 / v1.8','id=\"editorTabs\"','id=\"editorParseStatus\"','id=\"openCommandPalette\"',\n  'class=\"brand-mark\"','src=\"./icon.svg\"','data-patch-brand-mark=\"compiler-p-v1\"'"
 )
 
 replace_once(
