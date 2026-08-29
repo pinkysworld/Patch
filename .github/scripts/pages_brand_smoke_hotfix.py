@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Triggered only on the dedicated hotfix branch; removes itself after a verified transformation.
 pages_path = Path('.github/workflows/pages.yml')
 pages = pages_path.read_text()
 
