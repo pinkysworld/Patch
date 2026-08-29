@@ -67,6 +67,8 @@ rejectAll('Studio Ready native builder stale copy/imports', nativeBuild, [
 
 const downloads = read('_site/downloads.html');
 requireAll('Downloads beta36', downloads, [
+  'Patch Studio Offline IDE + compiler','offline-studio-v0.2','PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json',
+  'Host-native Windows/macOS/Linux Build from inside the IDE remains Stage 2','does not yet expose the standalone native compiler/runtime through a privileged local Build bridge',
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS',
   'Native GUI IR <strong>1.7</strong>','payload <strong>v17</strong>','runtime <strong>v1.8</strong>',
   'offline-compiler-v0.2','native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8','runtime-manifest.json',
@@ -74,7 +76,7 @@ requireAll('Downloads beta36', downloads, [
   'Native GUI IR 1.5 / payload v15 / runtime v1.6 remains the previous Shape line',
   'PictureBox note:'
 ]);
-rejectAll('Downloads beta36 current links', downloads, ['offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html']);
+rejectAll('Downloads beta36 current links', downloads, ['offline-studio-v0.1','offline-compiler-v0.1','href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"','href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html']);
 
 const selection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection state', selection, [
@@ -130,4 +132,4 @@ rejectAll('Studio command palette paper privacy', palette, ["command('paper'",'.
 const bootstrap = read('_site/studio-bootstrap.js');
 requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.7 / payload v17 / runtime v1.8 / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
+console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.7 / payload v17 / runtime v1.8 / Offline Studio v0.2 downloads / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
