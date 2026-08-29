@@ -179,7 +179,7 @@ when ticket_canvas paint:
   draw clear #f8fafc
   draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2
   draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2
-  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
+  draw image "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==" at 208, 10 size 42, 42
   if rush:
     draw line 12, 58 to 258, 58 stroke #dc2626 width 3
   draw text "Live quote" at 12, 78 color #111827 size 16
