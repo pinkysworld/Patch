@@ -71,27 +71,20 @@ jobs:
           replace_once('web/manifest.webmanifest', '"background_color": "#101114"', '"background_color": "#f4f4f5"')
           replace_once('web/manifest.webmanifest', '"theme_color": "#15171c"', '"theme_color": "#1d4ed8"')
 
-          replace_once('tests/workshop-desk.test.js', "assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.4');", "assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.5');")
-          replace_once('tests/workshop-desk.test.js', 'assert.equal(result.ui.length, 3);', 'assert.equal(result.ui.length, 6);')
-          replace_once('tests/workshop-desk.test.js',
-              "  assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);",
-              "  assert.equal(result.ui.find(window => window.id === 'details')?.visible, false);\n  assert.equal(result.ui.find(window => window.id === 'inventory')?.visible, false);\n  assert.equal(result.ui.find(window => window.id === 'customer_profile')?.visible, false);\n  assert.equal(result.ui.find(window => window.id === 'diagnostics')?.visible, false);")
-          replace_once('tests/workshop-desk.test.js',
-              "    'window \\\"Job details\\\" as details',",
-              "    'window \\\"Job details\\\" as details',\n    'window \\\"Inventory Center\\\" as inventory',\n    'window \\\"Customer Profile\\\" as customer_profile',\n    'window \\\"Workshop Diagnostics\\\" as diagnostics',")
-          replace_once('tests/workshop-desk.test.js',
-              "    assert.match(built, /Job details/);",
-              "    assert.match(built, /Job details/);\n    assert.match(built, /Inventory Center/);\n    assert.match(built, /Customer Profile/);\n    assert.match(built, /Workshop Diagnostics/);")
-
           browser = Path('tests/workshop-desk-browser.test.js')
           b = browser.read_text()
-          b = b.replace('state.forms >= 3', 'state.forms >= 6')
-          b = b.replace('state.options >= 3', 'state.options >= 6')
-          b = b.replace("assert.ok(stable.forms >= 3, 'Workshop Desk Designer should retain all three Forms after settling');", "assert.ok(stable.forms >= 6, 'Workshop Desk Designer should retain all six Forms after settling');")
-          b = b.replace("assert.ok(stable.sourceLength > 3000, 'Workshop Desk should remain loaded as the large showcase source');", "assert.ok(stable.sourceLength > 9000, 'Workshop Desk should remain loaded as the expanded six-Form showcase source');")
-          b = b.replace("assert.equal(stable.brand, 'classic-p');", "assert.equal(stable.brand, 'compiler-p-v1');")
-          b = b.replace('state?.windows >= 3 && state.visible >= 1', 'state?.windows >= 6 && state.visible >= 1')
-          b = b.replace('assert.ok(appState.windows >= 3);', 'assert.ok(appState.windows >= 6);')
+          for old, new in [
+              ('state.forms >= 3', 'state.forms >= 6'),
+              ('state.options >= 3', 'state.options >= 6'),
+              ("assert.ok(stable.forms >= 3, 'Workshop Desk Designer should retain all three Forms after settling');", "assert.ok(stable.forms >= 6, 'Workshop Desk Designer should retain all six Forms after settling');"),
+              ("assert.ok(stable.sourceLength > 3000, 'Workshop Desk should remain loaded as the large showcase source');", "assert.ok(stable.sourceLength > 9000, 'Workshop Desk should remain loaded as the expanded six-Form showcase source');"),
+              ("assert.equal(stable.brand, 'classic-p');", "assert.equal(stable.brand, 'compiler-p-v1');"),
+              ('state?.windows >= 3 && state.visible >= 1', 'state?.windows >= 6 && state.visible >= 1'),
+              ('assert.ok(appState.windows >= 3);', 'assert.ok(appState.windows >= 6);')
+          ]:
+              if old not in b:
+                  raise SystemExit(f'tests/workshop-desk-browser.test.js missing expected contract: {old}')
+              b = b.replace(old, new)
           browser.write_text(b)
 
           branding_lines = [
@@ -136,6 +129,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk.test.js tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
+          git add web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
           git commit -m "Expand Workshop Desk and integrate compiler branding"
           git push origin HEAD:gpt/r0-active-form-materialization-282
