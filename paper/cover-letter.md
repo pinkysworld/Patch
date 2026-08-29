@@ -16,7 +16,7 @@ The repository contains a commit-bound reproducibility workflow for the formal, 
 
 **Declaration of competing interests:** The author declares no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
 
-This manuscript is original work and is not being presented as previously published conference proceedings. The manuscript is not submitted simultaneously to another journal or venue.
+This manuscript is original work and is not being presented as previously published conference proceedings. Any required declaration concerning concurrent submission should be confirmed from the author's status at the time of submission rather than inferred in advance.
 
 Thank you for considering the manuscript.
 
