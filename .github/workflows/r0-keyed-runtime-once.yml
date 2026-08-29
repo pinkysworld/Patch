@@ -1,0 +1,41 @@
+name: R0 keyed runtime renderer integration
+
+on:
+  push:
+    branches:
+      - gpt/r0-keyed-runtime-renderer-282
+    paths:
+      - .github/workflows/r0-keyed-runtime-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gpt/r0-keyed-runtime-renderer-282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply guarded keyed runtime transformation
+        run: python3 .github/scripts/r0_keyed_runtime_once.py
+      - name: Verify keyed runtime Stage 1
+        run: |
+          node --check web/playground.js
+          node --test tests/studio-runtime-keyed-renderer.test.js
+          node --test tests/workshop-desk-browser.test.js
+          npm run build:site
+          npm run check:site
+      - name: Commit verified runtime work
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf _site
+          git add web/playground.js tests/studio-runtime-keyed-renderer.test.js tests/workshop-desk-browser.test.js docs/ROADMAP.md docs/RAD_STUDIO_MASTER_BACKLOG.md docs/GPT.md
+          git commit -m "Add keyed runtime Form reconciliation"
+          git push origin HEAD:gpt/r0-keyed-runtime-renderer-282
