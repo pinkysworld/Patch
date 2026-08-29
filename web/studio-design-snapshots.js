@@ -1,5 +1,5 @@
 import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
-import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
+import { listDesignerControlsFromAst, listDesignerWindowsFromAst } from '../src/designer.js';
 
 export const PATCH_STUDIO_DESIGN_SNAPSHOTS_VERSION = '0.1';
 export const PATCH_STUDIO_DESIGN_DESCRIPTOR_CACHE_ENTRIES = 8;
@@ -16,9 +16,9 @@ let descriptorEvictions = 0;
  * Exact source text is the revision identity. The primary Designer and
  * specialized adapters can therefore reuse one declaration-only design model
  * and one bounded set of source descriptors without maintaining private caches.
- * Descriptor extraction still delegates to the canonical src/designer.js
- * readers; a later R0 slice can derive those descriptors directly from the
- * already parsed design AST without changing this public service contract.
+ * Descriptor extraction delegates to the canonical AST readers in
+ * src/designer.js and reuses the declaration-only design snapshot AST, so the
+ * first descriptor read does not parse the same source revision again.
  */
 export function getStudioDesignSnapshot(source, options = {}) {
   return designSnapshots.get(String(source ?? ''), options);
@@ -35,9 +35,10 @@ export function getStudioDesignerDescriptors(source) {
   }
 
   descriptorMisses += 1;
+  const design = getStudioDesignSnapshot(key);
   const snapshot = Object.freeze({
-    windows: freezeDescriptors(listDesignerWindows(key)),
-    controls: freezeDescriptors(listDesignerControls(key))
+    windows: freezeDescriptors(listDesignerWindowsFromAst(design.ast)),
+    controls: freezeDescriptors(listDesignerControlsFromAst(design.ast))
   });
   descriptorSnapshots.set(key, snapshot);
   while (descriptorSnapshots.size > PATCH_STUDIO_DESIGN_DESCRIPTOR_CACHE_ENTRIES) {

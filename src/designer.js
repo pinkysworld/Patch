@@ -25,7 +25,11 @@ export function addDesignerWindow(source, options = {}) {
 }
 
 export function listDesignerWindows(source) {
-  const ast = parse(source);
+  return listDesignerWindowsFromAst(parse(source));
+}
+
+export function listDesignerWindowsFromAst(ast) {
+  if (!Array.isArray(ast)) throw new TypeError('Designer AST must be an array.');
   const windows = [];
   let windowIndex = 0;
   for (const node of ast) {
@@ -181,7 +185,11 @@ export function addDesignerControl(source, type, options = {}) {
 }
 
 export function listDesignerControls(source) {
-  const ast = parse(source);
+  return listDesignerControlsFromAst(parse(source));
+}
+
+export function listDesignerControlsFromAst(ast) {
+  if (!Array.isArray(ast)) throw new TypeError('Designer AST must be an array.');
   const controls = [];
   let windowIndex = 0;
   for (const node of ast) {
