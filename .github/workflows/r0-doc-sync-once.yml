@@ -1,0 +1,109 @@
+name: R0 design-model documentation sync
+
+on:
+  push:
+    branches:
+      - gpt/r0-design-model-integration-282
+    paths:
+      - .github/workflows/r0-doc-sync-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: gpt/r0-design-model-integration-282
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Synchronize exact R0 status text
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one match, found {count}: {old!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'docs/ROADMAP.md',
+              '- Studio design-model foundation: **0.1** (non-executing declaration model; browser Designer integration still pending)',
+              '- Studio design model/cache: **0.1**, with primary browser Designer refresh using the declaration-only cached snapshot path',
+          )
+          replace_once(
+              'docs/ROADMAP.md',
+              '- [x] `studio-design-cache/0.1`: bounded source-revision snapshot cache with Workshop and 10-Form/200-control acceptance coverage\n\nRemaining R0 work:\n\n- [ ] wire the non-executing design model into the primary `refreshDesigner()` path',
+              '- [x] `studio-design-cache/0.1`: bounded source-revision snapshot cache with Workshop and 10-Form/200-control acceptance coverage\n- [x] primary `refreshDesigner()` consumes the shared declaration-only design cache instead of executing the Patch application; hosted/Offline Studio package the same design-model/cache modules\n\nRemaining R0 work:',
+          )
+
+          replace_once(
+              'docs/RAD_STUDIO_MASTER_BACKLOG.md',
+              '- R0 `studio-design-model/0.1` and `studio-design-cache/0.1` foundations;',
+              '- R0 `studio-design-model/0.1` and `studio-design-cache/0.1`, wired into the primary non-executing Designer refresh path;',
+          )
+          replace_once(
+              'docs/RAD_STUDIO_MASTER_BACKLOG.md',
+              '- [x] 10-Form / 200-control design-model/cache acceptance coverage.\n\nRemaining:\n\n- [ ] wire the non-executing design model into primary `refreshDesigner()`;',
+              '- [x] 10-Form / 200-control design-model/cache acceptance coverage;\n- [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache and no longer executes application behavior;\n- [x] public hosted/Offline Studio module closure packages the design model and cache.\n\nRemaining:',
+          )
+
+          replace_once(
+              'docs/GPT.md',
+              'Last refreshed: **2026-08-29**, after the R0/R1/Offline Studio foundation merge and the Offline Studio public-download work.',
+              'Last refreshed: **2026-08-29**, after the Offline Studio public release and primary R0 Designer design-model/cache integration.',
+          )
+          replace_once(
+              'docs/GPT.md',
+              '- `main` includes merged PR #283, commit `560e94b34ec76b2fd7832aeba7cb9698709c303b`, with R0 design-model/cache foundations, R1 ImageList pretransport and Offline Studio Stage 1 executable foundations.',
+              '- `main` includes the public Offline Studio release work from PR #285 (`offline-studio-v0.2`); current R0 work wires the existing design-model/cache foundations into the primary Designer refresh without widening runtime/formal contracts.',
+          )
+          replace_once(
+              'docs/GPT.md',
+              '- Workshop and 10-Form / 200-control design-model/cache acceptance coverage.\n\nNext R0 work:\n\n1. wire the design model/cache into primary `refreshDesigner()`;\n2. true active-Form Designer materialization/virtualization;\n3. stable keyed/incremental runtime rendering with focus/caret/selection preservation;\n4. measurable Workshop/large-project performance gates;\n5. split runtime/render/build responsibilities out of `web/playground.js`;\n6. make Pages deployment release-aware without weakening fail-closed runtime verification.',
+              '- Workshop and 10-Form / 200-control design-model/cache acceptance coverage;\n- primary `refreshDesigner()` uses the bounded declaration-only design snapshot cache and no longer executes unrelated application behavior;\n- hosted and Offline Studio package the same design-model/cache module closure.\n\nNext R0 work:\n\n1. true active-Form Designer materialization/virtualization;\n2. share revision snapshots across remaining Designer adapters and define the Worker boundary;\n3. stable keyed/incremental runtime rendering with focus/caret/selection preservation;\n4. measurable Workshop/large-project performance gates;\n5. split runtime/render/build responsibilities out of `web/playground.js`;\n6. make Pages deployment release-aware without weakening fail-closed runtime verification.',
+          )
+          replace_once(
+              'docs/GPT.md',
+              'Prioritize **R0 #282 integration** first: primary Designer use of the non-executing model/cache and true Form virtualization. In parallel, close the two explicit native R1 resource-consumer gaps.',
+              'Prioritize **R0 #282 virtualization** first: true active-Form materialization on top of the now non-executing cached Designer model, followed by the Worker and keyed-renderer boundaries. In parallel, close the two explicit native R1 resource-consumer gaps.',
+          )
+
+          replace_once(
+              'docs/PATCH_STUDIO_CODE_REVIEW_2026-08-29.md',
+              '### P0 · Designer preview still executes the complete program on edits\n\n`refreshDesigner()` uses a new interpreter and executes the complete source to obtain the UI model. The language currently permits bounded but potentially large loops, and future data/runtime features will make arbitrary design-time execution more expensive.\n\nRequired follow-up:\n\n1. introduce a design-model path that parses/compiles UI declarations without executing unrelated application behavior;\n2. cache source/AST snapshots by project revision;\n3. move heavy parse/compile/design-model work to a Worker once the worker boundary is versioned;\n4. add an execution/time budget for any remaining design-time evaluation;\n5. record click/edit-to-preview latency in the 10-Form / 200-control stress fixture.',
+              '### P0 · Designer preview execution boundary\n\nStatus after the R0 follow-up: **primary path resolved**. `refreshDesigner()` now consumes the bounded `studio-design-cache/0.1`, which builds `studio-design-model/0.1` snapshots from declarations and initial state without executing calls, changes, loops, conditionals, preview blocks or Form visibility actions. The same modules are packaged in hosted and Offline Studio.\n\nRemaining follow-up:\n\n1. share revision snapshots across remaining Designer adapters instead of repeated local parsing;\n2. move heavy parse/compile/design-model work to a Worker once the worker boundary is versioned;\n3. keep a bounded policy for any design-time expression evaluation that remains necessary;\n4. record edit-to-preview and Form-switch latency in the 10-Form / 200-control stress fixture.',
+          )
+          replace_once(
+              'docs/PATCH_STUDIO_CODE_REVIEW_2026-08-29.md',
+              '- [ ] design-model path that does not execute the full application\n- [ ] AST/design snapshot cache',
+              '- [x] design-model path that does not execute the full application\n- [x] bounded source-revision design snapshot cache wired to primary `refreshDesigner()`',
+          )
+
+          Path('.github/workflows/r0-doc-sync-once.yml').unlink()
+          PY
+      - name: Validate synchronized contracts
+        shell: bash
+        run: |
+          node --test tests/studio-designer-design-model-integration.test.js
+          npm run check:project
+          npm run build:site
+          npm run check:site
+      - name: Commit synchronized documentation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ROADMAP.md docs/RAD_STUDIO_MASTER_BACKLOG.md docs/GPT.md docs/PATCH_STUDIO_CODE_REVIEW_2026-08-29.md .github/workflows/r0-doc-sync-once.yml
+          git commit -m "Synchronize R0 Designer integration status"
+          git push origin HEAD:gpt/r0-design-model-integration-282
