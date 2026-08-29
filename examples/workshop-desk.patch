@@ -173,7 +173,7 @@ window "Customer Profile" as customer_profile size 760, 600:
   text "Customer Profile" at 24, 20 size 280, 30
   text "{customer_status}" at 318, 20 size 410, 30
   text "Name" at 24, 68 size 100, 22
-  combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 92 size 220, 36
+  text "{customer}" at 24, 92 size 220, 36
   text "Email" at 268, 68 size 100, 22
   input customer_email at 268, 92 size 300, 36
   text "Tier" at 590, 68 size 100, 22

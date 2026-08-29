@@ -1,0 +1,51 @@
+.support-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.support-actions button {
+  white-space: nowrap;
+}
+
+#diagnosticsState {
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diagnostics-copy-fallback {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+@media (max-width: 900px) {
+  .support-actions {
+    order: 4;
+  }
+  #diagnosticsState {
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 720px) {
+  .support-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .support-actions button {
+    flex: 0 0 auto;
+  }
+  #diagnosticsState {
+    max-width: min(100%, 280px);
+  }
+}

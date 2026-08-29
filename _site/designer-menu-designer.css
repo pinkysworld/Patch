@@ -1,0 +1,219 @@
+.designer-menu-button {
+  white-space: nowrap;
+}
+
+.designer-menu-dialog {
+  width: min(1040px, calc(100vw - 32px));
+  max-width: 1040px;
+  max-height: min(760px, calc(100vh - 32px));
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--text) 24%, transparent);
+}
+
+.designer-menu-dialog::backdrop {
+  background: color-mix(in srgb, #000 42%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.designer-menu-dialog-frame {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  padding: 14px;
+}
+
+.designer-menu-dialog-header,
+.designer-menu-pane-title,
+.designer-menu-actions {
+  display: flex;
+  align-items: center;
+}
+
+.designer-menu-dialog-header {
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.designer-menu-dialog-header h3 {
+  margin: 1px 0 0;
+  font-size: 18px;
+}
+
+.designer-menu-kicker {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.designer-menu-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.designer-menu-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, .75fr) minmax(260px, 1.05fr) minmax(260px, 1fr);
+  gap: 10px;
+  min-height: 420px;
+}
+
+.designer-menu-pane {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+}
+
+.designer-menu-pane-title {
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.designer-menu-pane-title strong {
+  font-size: 11px;
+}
+
+.designer-menu-pane-title span {
+  color: var(--muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.designer-menu-pane select[size] {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+#designerMenuList {
+  min-height: 170px;
+}
+
+#designerMenuEntries {
+  min-height: 260px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.designer-menu-actions {
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.designer-menu-actions button {
+  min-height: 28px;
+}
+
+.designer-menu-entry-actions #designerMenuEarlier,
+.designer-menu-entry-actions #designerMenuLater {
+  min-width: 34px;
+  font-weight: 900;
+}
+
+.designer-menu-field {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.designer-menu-field input,
+.designer-menu-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.designer-menu-field input:focus,
+.designer-menu-field select:focus,
+.designer-menu-pane select[size]:focus {
+  outline: 2px solid color-mix(in srgb, currentColor 35%, transparent);
+  outline-offset: 1px;
+}
+
+.designer-menu-status {
+  min-height: 30px;
+  margin: 4px 0 0;
+  padding: 7px 8px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.designer-menu-status:empty {
+  visibility: hidden;
+}
+
+.designer-menu-status.is-error {
+  color: var(--danger, #b42318);
+}
+
+@media (max-width: 860px) {
+  .designer-menu-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .designer-menu-properties {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .designer-menu-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+  .designer-menu-dialog-frame {
+    padding: 10px;
+  }
+  .designer-menu-grid {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .designer-menu-properties {
+    grid-column: auto;
+  }
+  #designerMenuList,
+  #designerMenuEntries {
+    min-height: 140px;
+  }
+}
+
+@media (forced-colors: active) {
+  .designer-menu-dialog,
+  .designer-menu-pane,
+  .designer-menu-field input,
+  .designer-menu-field select,
+  .designer-menu-pane select[size] {
+    border: 1px solid CanvasText;
+  }
+}

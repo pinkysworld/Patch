@@ -373,6 +373,14 @@ function runProject() {
   runInProgress = true;
   runButton?.setAttribute('aria-busy', 'true');
   if (runButton) runButton.disabled = true;
+  // A Run command must acknowledge immediately even for a large RAD project.
+  // Compile, execute and render in the next browser task so command handling,
+  // accessibility state and automation remain responsive while semantics stay
+  // exactly the same as the synchronous compiler/runtime pipeline.
+  setTimeout(executeRunProject, 0);
+}
+
+function executeRunProject() {
   try {
     const compiled = compile(code.value, projectOptions());
     const nextRuntime = new PatchInterpreter();

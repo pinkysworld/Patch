@@ -278,8 +278,8 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   }))()`, state => state?.source?.includes('window "Workshop Desk" as main')
     && state.source.includes('window "Workshop settings" as settings')
     && state.source.includes('window "Job details" as details')
-    && state.forms >= 3
-    && state.options >= 3
+    && state.forms >= 6
+    && state.options >= 6
   );
   assert.notEqual(designerState.startup, 'failed');
   assert.equal(designerState.materialized, '0');
@@ -323,10 +323,10 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     loadButton: document.querySelector('#loadSample')?.textContent ?? '',
     brand: document.querySelector('.brand-mark')?.dataset?.patchBrandMark ?? ''
   }))()`, 3500);
-  assert.ok(stable.forms >= 3, 'Workshop Desk Designer should retain all three Forms after settling');
-  assert.ok(stable.sourceLength > 3000, 'Workshop Desk should remain loaded as the large showcase source');
+  assert.ok(stable.forms >= 6, 'Workshop Desk Designer should retain all six Forms after settling');
+  assert.ok(stable.sourceLength > 9000, 'Workshop Desk should remain loaded as the expanded six-Form showcase source');
   assert.equal(stable.loadButton, 'Load example');
-  assert.equal(stable.brand, 'classic-p');
+  assert.equal(stable.brand, 'compiler-p-v1');
 
   await evaluate(cdp, `document.querySelector('#run')?.click()`);
   const appState = await waitFor(cdp, `(() => ({
@@ -335,13 +335,15 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     deferred: [...document.querySelectorAll('#app .patch-window')].filter(node => node.dataset.patchRenderDetail === 'deferred').length,
     mainDetail: document.querySelector('#app .patch-window[data-patch-window-id="main"]')?.dataset.patchRenderDetail ?? '',
     settingsChildren: document.querySelector('#app .patch-window[data-patch-window-id="settings"] .patch-window-body')?.childElementCount ?? -1,
+    hiddenChildren: [...document.querySelectorAll('#app .patch-window')].filter(node => node.hidden).map(node => node.querySelector('.patch-window-body')?.childElementCount ?? -1),
     output: document.querySelector('#output')?.textContent ?? ''
-  }))()`, state => state?.windows >= 3 && state.visible >= 1, 10000);
-  assert.ok(appState.windows >= 3);
+  }))()`, state => state?.windows >= 6 && state.visible >= 1, 10000);
+  assert.ok(appState.windows >= 6);
   assert.ok(appState.visible >= 1);
   assert.ok(appState.deferred >= 2, 'hidden Workshop Forms should defer their control DOM until opened');
   assert.equal(appState.mainDetail, 'full');
   assert.equal(appState.settingsChildren, 0);
+  assert.ok(appState.hiddenChildren.every(count => count === 0), `deferred Form bodies must stay empty: ${JSON.stringify(appState.hiddenChildren)}`);
 
   const multiBefore = await evaluate(cdp, `(() => {
     const list = [...document.querySelectorAll('#app select.patch-listbox')].find(node => node.multiple);

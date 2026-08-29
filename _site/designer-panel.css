@@ -1,0 +1,160 @@
+.patch-panel {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--soft));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.patch-panel-legend {
+  min-height: 25px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.patch-panel-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: calc(100% - 25px);
+  overflow: auto;
+  padding: 8px;
+}
+
+.patch-panel-child {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  min-height: 27px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.patch-panel-child-type {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.patch-panel-child-label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patch-panel-empty {
+  display: grid;
+  place-items: center;
+  min-height: 70px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+#designerCanvas .patch-panel.designer-selected {
+  outline: 2px solid color-mix(in srgb, currentColor 58%, transparent);
+  outline-offset: 2px;
+}
+
+.designer-panel-editor {
+  display: grid;
+  gap: 7px;
+  margin: 8px 0;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.designer-panel-editor[hidden],
+.designer-panel-child-properties[hidden] {
+  display: none;
+}
+
+.designer-panel-editor-heading,
+.designer-panel-add-row,
+.designer-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.designer-panel-editor-heading {
+  justify-content: space-between;
+}
+
+.designer-panel-editor-heading strong {
+  font-size: 10px;
+}
+
+#designerPanelChildList {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 10px;
+}
+
+.designer-panel-add-row select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 28px;
+}
+
+.designer-panel-actions {
+  flex-wrap: wrap;
+}
+
+.designer-panel-actions button {
+  min-height: 27px;
+}
+
+.designer-panel-child-properties {
+  display: grid;
+  gap: 6px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+
+/* Panel occupies the next conventional container slot in the desktop rail. */
+#designer #addPanel { top: 423px; }
+#designer #addPanel::before { content: "▣"; }
+#designer #addStatusbar { top: 457px; }
+#designer #addTimer { top: 491px; }
+
+@media (max-width: 760px) {
+  .designer-panel-actions button {
+    min-height: 32px;
+  }
+  #designerPanelChildList {
+    min-height: 104px;
+  }
+}
+
+@media (forced-colors: active) {
+  .patch-panel,
+  .patch-panel-child,
+  .designer-panel-editor,
+  #designerPanelChildList {
+    border: 1px solid CanvasText;
+  }
+}

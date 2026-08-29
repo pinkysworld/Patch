@@ -16,6 +16,8 @@ const VISUAL_CONTROL_TYPES = new Set(['text','button','input','checkbox','radio'
 let activeForm = 0;
 let scheduled = false;
 let pendingReveal = null;
+let materializationScheduled = false;
+let requestedMaterializationForm = null;
 
 installStylesheet();
 installCheckboxTool();
@@ -317,10 +319,21 @@ function requestActiveFormMaterialization() {
   if (!canvas) return;
   const materialized = Number(canvas.dataset.patchDesignerMaterializedForm);
   if (Number.isInteger(materialized) && materialized === activeForm) return;
-  canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {
-    bubbles: false,
-    detail: { windowIndex: activeForm }
-  }));
+  requestedMaterializationForm = activeForm;
+  if (materializationScheduled) return;
+  materializationScheduled = true;
+  setTimeout(() => {
+    materializationScheduled = false;
+    const requested = requestedMaterializationForm;
+    requestedMaterializationForm = null;
+    if (!Number.isInteger(requested)) return;
+    const current = Number(canvas.dataset.patchDesignerMaterializedForm);
+    if (Number.isInteger(current) && current === requested) return;
+    canvas.dispatchEvent(new CustomEvent('patch-designer-active-form-change', {
+      bubbles: false,
+      detail: { windowIndex: requested }
+    }));
+  }, 0);
 }
 
 function applyLayouts(container, designer) {

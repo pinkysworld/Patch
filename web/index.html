@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#15171c">
+  <meta name="theme-color" content="#1d4ed8">
   <meta name="description" content="Patch Studio beta.36+: source-backed RAD development with project bundle v4 resources, Picture/Shape/PaintBox/ImageList authoring, window icons and Native GUI IR 1.7 / runtime v1.8 Ready builds.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -32,9 +32,9 @@
 </nav>
 <main class="studio" data-patch-version="0.2.0-beta.36">
   <header class="topbar">
-    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M8 6H22V18H13V26H8ZM13 10H18V14H13Z"/></svg></div><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Source-backed RAD development with explicit semantic change.</p></div></div>
+    <div class="brand"><img class="brand-mark" src="./icon.svg" alt="" aria-hidden="true" data-patch-brand-mark="compiler-p-v1"><div><h1>Patch Studio <span>0.2 beta.36+</span></h1><p>Patch language · compiler · source-backed RAD Studio.</p></div></div>
     <div class="toolbar" aria-label="Run and build controls">
-      <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="workshopDesk">Workshop desk</option><option value="counterWindow">Window app</option><option value="tabsWindow">Tabs app</option><option value="sliderWindow">Slider app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
+      <label class="compact-field"><span>Example</span><select id="sample" aria-label="Example"><option value="workshopDesk">Workshop desk</option><option value="counterWindow" selected>Window app</option><option value="tabsWindow">Tabs app</option><option value="sliderWindow">Slider app</option><option value="capabilities">Change capabilities</option><option value="score">Score</option><option value="fruits">Fruit list</option><option value="player">Player</option><option value="undo">Undo & history</option><option value="story">Tiny story</option></select></label>
       <button id="run" aria-keyshortcuts="Control+Enter Meta+Enter" title="Run project (Ctrl/Cmd+Enter)">▶ Run</button>
       <label class="compact-field"><span>Build</span><select id="buildTarget" aria-label="Build target"><optgroup label="Simple apps"><option value="web">Standalone Web App (.html)</option><option value="native-windows">Windows App (.exe)</option><option value="native-macos">macOS App (.app)</option><option value="native-linux">Linux App</option><option value="native-freebsd">FreeBSD Console</option><option value="portable">Portable .patchapp</option></optgroup><optgroup label="WebAssembly"><option value="wasm-direct">Direct WebAssembly (.wasm)</option><option value="wasm-bootstrap">Bootstrap Wasm (advanced)</option></optgroup></select></label>
       <button id="build" class="secondary" aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter" title="Build selected target (Ctrl/Cmd+Shift+Enter)">Build</button>

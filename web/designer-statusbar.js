@@ -1,5 +1,5 @@
 import './designer-paintbox.js';
-import { PatchInterpreter } from '../src/interpreter.js';
+import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
 import { listDesignerControls, updateDesignerControl } from '../src/designer.js';
 import {
   DESIGNER_SELECTION_EVENT,
@@ -19,6 +19,7 @@ let queued = false;
 let cachedSource = null;
 let cachedControls = [];
 let cachedUi = [];
+const statusBarDesignCache = createStudioDesignSnapshotCache();
 
 if (doc) queueMicrotask(install);
 
@@ -78,7 +79,7 @@ function refreshSnapshot() {
       cachedUi = [];
       return;
     }
-    cachedUi = new PatchInterpreter().run(source).ui ?? [];
+    cachedUi = statusBarDesignCache.get(source).ui ?? [];
   } catch {
     cachedControls = [];
     cachedUi = [];
@@ -93,6 +94,10 @@ function syncContainer(container, isDesigner) {
   shells.forEach((shell, windowIndex) => {
     const body = shell.querySelector(':scope > .patch-window-body');
     if (!body) return;
+    if (!isDesigner && shell.dataset.patchRenderDetail === 'deferred') {
+      for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter="true"]')) stale.remove();
+      return;
+    }
     if (isDesigner && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {
       for (const stale of body.querySelectorAll(':scope > .patch-statusbar[data-patch-statusbar-adapter="true"]')) stale.remove();
       return;

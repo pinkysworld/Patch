@@ -86,6 +86,7 @@ function syncContainer(container, designer) {
     if (!body || !windowNode) return;
 
     for (const old of body.querySelectorAll(':scope > .patch-table-stage1-control')) old.remove();
+    if (!designer && shell.dataset.patchRenderDetail === 'deferred') return;
     if (designer && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) return;
     const baseChildren = [...body.children].filter(child => !child.classList.contains('patch-form-resize-handle'));
     const sourceControls = (windowNode.body ?? []).filter(node => node.kind === 'uiControl' || node.kind === 'tabs');
