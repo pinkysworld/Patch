@@ -7,6 +7,7 @@ import { buildStandaloneWebApp, pictureResourceDataUri } from '../src/webapp.js'
 import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
+import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
 const samples = {
@@ -282,6 +283,7 @@ let designerTimer = null;
 let changeContractTimer = null;
 let pendingRunIr = null;
 let runInProgress = false;
+const designerDesignCache = createStudioDesignSnapshotCache();
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -450,7 +452,7 @@ function formatChangeAnalysis(ir) {
 function refreshDesigner() {
   clearTimeout(designerTimer);
   try {
-    const preview = new PatchInterpreter().run(code.value);
+    const preview = designerDesignCache.get(code.value);
     renderWindows(designerCanvas, preview.ui, false);
     if (!preview.ui.length) designerCanvas.innerHTML = '<p class="empty-preview">This is a console project. Use the Toolbox to add a window control, or select the Window app sample.</p>';
   } catch (err) {
