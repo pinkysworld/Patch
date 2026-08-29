@@ -34,7 +34,7 @@ Reversible languages such as Janus provide backward as well as forward execution
 \caption{Architectural comparison. A ``no'' or ``partial'' cell means the cited mechanism does not make that property its central/default abstraction; it is not a claim that a surrounding language cannot encode it.}
 \label{tab:related-work}
 \scriptsize
-\setlength{\tabcolsep}{3.4pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}lcccc@{}}
 \toprule
 Family & Mandatory mutation route & Semantic operation & Magnitude & Same substrate \\
@@ -53,7 +53,8 @@ Reversible languages \cite{yokoyama2007janus,schordan2020reversible} & reversibl
 Event sourcing \cite{overeem2017eventsourcing,alongi2022eventsourced} & application architecture & event/op. & domain-defined & history-centric \\
 \textbf{Patch} & \textbf{yes, modeled persistent mutation} & \textbf{yes} & \textbf{yes, numeric fragment} & \textbf{yes} \\
 \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \paragraph{Assurance and provenance.}
