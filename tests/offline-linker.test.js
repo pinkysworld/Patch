@@ -8,8 +8,9 @@ import { createOfflineLinkPlan, materializeOfflineLinkPlan } from '../src/offlin
 import { decodeSealedConsolePayload } from '../src/prebuilt-native.js';
 import { decodeNativeGuiPayloadV12, inspectNativeGuiTreesV12 } from '../src/sealed-native-gui-v12.js';
 import { inspectNativeGuiSlidersV13 } from '../src/sealed-native-gui-v13.js';
-import { decodeNativeGuiPayloadV14, inspectNativeGuiChromeV14, inspectNativeGuiSlidersV14 } from '../src/sealed-native-gui-v14.js';
-import { decodeNativeGuiPayloadV17, inspectNativeGuiPaintImagesV17, inspectNativeGuiChromeV17, inspectNativeGuiSlidersV17 } from '../src/sealed-native-gui-v17.js';
+import { inspectNativeGuiChromeV14 } from '../src/sealed-native-gui-v14.js';
+import { decodeNativeGuiPayloadV17 } from '../src/sealed-native-gui-v17.js';
+import { decodeNativeGuiPayloadV18, inspectNativeGuiPaintImagesV18, inspectNativeGuiChromeV18, inspectNativeGuiSlidersV18 } from '../src/sealed-native-gui-v18.js';
 import { inspectNativeGuiPaintBoxesV16 } from '../src/sealed-native-gui-v16.js';
 import { inspectNativeGuiShapesV15 } from '../src/sealed-native-gui-v15.js';
 
@@ -75,7 +76,7 @@ function executableFrom(plan, platform) {
   return platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
 }
 function currentPayloadV16(bytes) {
-  return inspectNativeGuiPaintImagesV17(decodeNativeGuiPayloadV17(bytes)).payloadV16;
+  return inspectNativeGuiPaintImagesV18(decodeNativeGuiPayloadV18(bytes)).payloadV16;
 }
 function currentPayloadV15(bytes) {
   return inspectNativeGuiPaintBoxesV16(currentPayloadV16(bytes)).payloadV15;
@@ -99,7 +100,7 @@ test('offline linker seals Console source into a local Windows executable plan',
   assert.deepEqual([...decoded.runtime], [...runtime]);
 });
 
-test('offline linker lowers current Window source to Native GUI IR 1.7 and seals payload v17', () => {
+test('offline linker lowers current Window source to Native GUI IR 1.8 and seals payload v18', () => {
   const cases = [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0]), 'OfflineWindow.exe'],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]), 'OfflineWindow'],
@@ -110,12 +111,12 @@ test('offline linker lowers current Window source to Native GUI IR 1.7 and seals
     assert.equal(plan.kind, 'window');
     assert.equal(plan.suggestedOutput, suggestedOutput);
     const executable = executableFrom(plan, platform);
-    assert.ok(decodeNativeGuiPayloadV17(executable.bytes).length > 0);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.ok(decodeNativeGuiPayloadV18(executable.bytes).length > 0);
+    assert.equal(footerVersion(executable.bytes), 18);
   }
 });
 
-test('offline Window linker preserves Table in the current payload v14 contract', () => {
+test('offline Window linker preserves Table in the current payload v18 contract', () => {
   for (const [platform, runtime] of [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
@@ -125,14 +126,14 @@ test('offline Window linker preserves Table in the current payload v14 contract'
     const executable = executableFrom(plan, platform);
     const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const payload = new TextDecoder().decode(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.match(payload, /Name/);
     assert.match(payload, /Grace/);
     assert.match(payload, /Scientist/);
   }
 });
 
-test('offline Window linker preserves persistent list state and multi-select ListBox in payload v14', () => {
+test('offline Window linker preserves persistent list state and multi-select ListBox in payload v18', () => {
   for (const [platform, runtime] of [
     ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
     ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
@@ -142,7 +143,7 @@ test('offline Window linker preserves persistent list state and multi-select Lis
     const executable = executableFrom(plan, platform);
     const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const payload = new TextDecoder().decode(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.match(payload, /fruits/);
     assert.match(payload, /Banana/);
     assert.match(payload, /Mango/);
@@ -165,7 +166,7 @@ when pin_item clicked:
     set = true
 `;
 
-test('offline Window linker preserves decorated Menu metadata in payload v14', () => {
+test('offline Window linker preserves decorated Menu metadata in payload v18', () => {
   for (const [platform, runtime] of [
     ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
     ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
@@ -175,13 +176,13 @@ test('offline Window linker preserves decorated Menu metadata in payload v14', (
     const executable=executableFrom(plan,platform);
     const metadata=inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const payload=new TextDecoder().decode(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes),17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.match(payload,/advanced_action/);
     assert.match(payload,/Primary|advanced|pinned/);
   }
 });
 
-test('offline Window linker supports hierarchical TreeView through payload v14 on all Ready desktop hosts', () => {
+test('offline Window linker supports hierarchical TreeView through payload v18 on all Ready desktop hosts', () => {
   for (const [platform, runtime] of [
     ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
     ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
@@ -191,7 +192,7 @@ test('offline Window linker supports hierarchical TreeView through payload v14 o
     const executable = executableFrom(plan, platform);
     const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const { trees } = inspectNativeGuiTreesV12(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.equal(trees.length, 1);
     assert.equal(trees[0].id, 'files');
     assert.equal(trees[0].nodes.length, 5);
@@ -199,7 +200,7 @@ test('offline Window linker supports hierarchical TreeView through payload v14 o
   }
 });
 
-test('offline Window linker supports native Slider numeric events in payload v14', () => {
+test('offline Window linker supports native Slider numeric events in payload v18', () => {
   for (const [platform, runtime] of [
     ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
     ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
@@ -207,8 +208,8 @@ test('offline Window linker supports native Slider numeric events in payload v14
   ]) {
     const plan = createOfflineLinkPlan(sliderWindowSource, { platform, name: 'SliderReady', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
-    const metadata = inspectNativeGuiSlidersV17(decodeNativeGuiPayloadV17(executable.bytes));
-    assert.equal(footerVersion(executable.bytes), 17);
+    const metadata = inspectNativeGuiSlidersV18(decodeNativeGuiPayloadV18(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.equal(metadata.sliders.length, 1);
     assert.equal(metadata.sliders[0].id, 'volume');
     assert.equal(metadata.sliders[0].step, 5);
@@ -216,7 +217,7 @@ test('offline Window linker supports native Slider numeric events in payload v14
   }
 });
 
-test('offline Window linker carries Panel children, Timer ticked and PictureBox clicked through payload v14', () => {
+test('offline Window linker carries Panel children, Timer ticked and PictureBox clicked through payload v18', () => {
   for (const [platform, runtime] of [
     ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
     ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
@@ -224,8 +225,8 @@ test('offline Window linker carries Panel children, Timer ticked and PictureBox 
   ]) {
     const plan = createOfflineLinkPlan(chromeWindowSource, { platform, name: 'ChromeReady', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
-    const inspected = inspectNativeGuiChromeV17(decodeNativeGuiPayloadV17(executable.bytes));
-    assert.equal(footerVersion(executable.bytes), 17);
+    const inspected = inspectNativeGuiChromeV18(decodeNativeGuiPayloadV18(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 18);
     const byId = new Map(inspected.chrome.map(item => [item.id, item]));
     assert.equal(byId.get('group')?.type, 'panel');
     assert.equal(byId.get('group')?.childCount, 3);
@@ -238,8 +239,14 @@ test('offline Window linker carries Panel children, Timer ticked and PictureBox 
   }
 });
 
-test('offline linker keeps explicit payload v12 compatibility and fails closed for retired v13/v11', () => {
+test('offline linker preserves explicit payload v17 and v12 compatibility while current defaults to v18', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 0, 0]);
+  const v17 = createOfflineLinkPlan(windowSource, {
+    platform: 'windows', name: 'LegacyWindow17', guiRuntime: runtime, guiPayloadVersion: 17
+  });
+  assert.equal(footerVersion(v17.files[0].bytes), 17);
+  assert.ok(decodeNativeGuiPayloadV17(v17.files[0].bytes).length > 0);
+
   const v12 = createOfflineLinkPlan(treeWindowSource, {
     platform: 'windows', name: 'LegacyTree12', guiRuntime: runtime, guiPayloadVersion: 12
   });
@@ -252,7 +259,7 @@ test('offline linker keeps explicit payload v12 compatibility and fails closed f
   for (const version of [13, 11]) {
     assert.throws(() => createOfflineLinkPlan(listWindowSource, {
       platform: 'windows', name: `LegacyList${version}`, guiRuntime: runtime, guiPayloadVersion: version
-    }), /payload v12 or v17/i);
+    }), /payload v12, v17 or v18/i);
   }
 });
 
