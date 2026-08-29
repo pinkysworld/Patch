@@ -203,3 +203,38 @@ jobs:
           path: dist-runtime-v19/patch-linux-native-gui-runtime.bin
           if-no-files-found: error
           retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-windows-native-gui-runtime-v19
+          path: runtime/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-macos-native-gui-runtime-v19
+          path: runtime/macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-linux-native-gui-runtime-v19
+          path: runtime/linux
+      - name: Publish native runtime v1.9 templates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          publish_runtime() {
+            local tag="$1" title="$2" asset="$3" notes="$4"
+            if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$title" --notes "$notes"
+            fi
+            gh release upload "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --clobber
+          }
+          publish_runtime native-win32-runtime-v1.9 'Patch Native Win32 Runtime v1.9' runtime/windows/patch-windows-native-gui-runtime.exe 'Current token-free Win32 sealed GUI runtime v1.9 for payload v18 / Native GUI IR 1.8. Adds native ImageList and Button image transport while retaining PaintBox draw image, Shape, Chrome, Slider, TreeView, Table, ListBox and Menu behavior.'
+          publish_runtime native-macos-runtime-v1.9 'Patch Native macOS Runtime v1.9' runtime/macos/patch-macos-native-gui-runtime.bin 'Current unsigned universal AppKit sealed GUI runtime v1.9 for payload v18 / Native GUI IR 1.8. Adds native ImageList and Button image transport while preserving PaintBox image and prior Ready contracts.'
+          publish_runtime native-linux-runtime-v1.9 'Patch Native Linux Runtime v1.9' runtime/linux/patch-linux-native-gui-runtime.bin 'Current GTK3 sealed GUI runtime v1.9 for payload v18 / Native GUI IR 1.8. Adds native ImageList and Button image transport while preserving PaintBox image and prior Ready contracts.'
