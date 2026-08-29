@@ -32,20 +32,21 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page distinguishes current v1.8, Intel macOS kit, FreeBSD and historical compatibility', () => {
-  assert.match(downloads, /normal local workflows do not need a GitHub token/i);
+test('downloads page exposes current v1.9 compiler, compatibility history and offline IDE', () => {
+  assert.match(downloads, /Patch Studio Offline IDE/);
+  assert.match(downloads, /npm run build:offline-ide/);
+  assert.match(downloads, /without Electron/i);
   assert.match(downloads, /macOS Intel/);
-  assert.match(downloads, /portable tar\.gz kit/);
-  assert.match(downloads, /includes its own Intel Node runtime/i);
+  assert.match(downloads, /embedded Intel Node runtime/i);
   assert.match(downloads, /FreeBSD x64/);
-  assert.match(downloads, /requires local Node 22\+ and cc/i);
-  assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
+  assert.match(downloads, /Native FreeBSD GUI is not claimed/i);
   assert.match(downloads, /patch link app\.patch --out App/);
-  assert.match(downloads, /Native GUI IR <strong>1\.7<\/strong>/);
-  assert.match(downloads, /payload <strong>v17<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.8<\/strong>/);
-  assert.match(downloads, /native Slider/i);
-  assert.match(downloads, /hierarchical TreeView/);
+  assert.match(downloads, /Native GUI IR <strong>1\.8<\/strong>/);
+  assert.match(downloads, /payload <strong>v18<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.9<\/strong>/);
+  assert.match(downloads, /TreeView/);
+  assert.match(downloads, /ImageList/);
+  assert.match(downloads, /Button <code>image list\.item<\/code>/);
   assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
   assert.match(downloads, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
   assert.match(downloads, /PictureBox note/i);
@@ -57,6 +58,7 @@ test('generated public site contains downloads and current plus frozen native co
   assert.equal(fs.existsSync('_site/paper.html'), false, 'paper.html must remain outside the public site');
   for (const file of [
     '_site/downloads.html',
+    '_site/workshop-sample-current.js',
     '_site/designer-alignment.js',
     '_site/designer-alignment-guides.js',
     '_site/designer-multiselect.js',
@@ -71,13 +73,16 @@ test('generated public site contains downloads and current plus frozen native co
     '_site/src/native-gui-ir-v15.js',
     '_site/src/native-gui-ir-v16.js',
     '_site/src/native-gui-ir-v17.js',
+    '_site/src/native-gui-ir-v18.js',
     '_site/src/native-chrome-backend-adapter.js',
     '_site/src/native-shape-backend-adapter.js',
     '_site/src/native-paintbox-backend-adapter.js',
+    '_site/src/native-paintbox-image-backend-adapter.js',
+    '_site/src/native-imagelist-backend-adapter.js',
     '_site/src/sealed-native-gui-v14.js',
     '_site/src/sealed-native-gui-v15.js',
     '_site/src/sealed-native-gui-v16.js',
     '_site/src/sealed-native-gui-v17.js',
-    '_site/src/native-paintbox-image-backend-adapter.js'
+    '_site/src/sealed-native-gui-v18.js'
   ]) assert.ok(fs.existsSync(file), file);
 });
