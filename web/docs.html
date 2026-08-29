@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Current Patch documentation for Change IR 0.10, Patch Studio project bundle v4, RAD R1 graphics/resources, Native GUI IR 1.7, payload v17, runtime v1.8 and the beta.32 assurance boundary.">
+  <meta name="description" content="Current Patch documentation for Change IR 0.10, Patch Studio project bundle v4, Offline Studio downloads, RAD R0/R1, Native GUI IR 1.7, payload v17, runtime v1.8 and the beta.32 assurance boundary.">
   <title>Documentation · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -24,13 +24,13 @@
     <div>
       <p class="page-eyebrow">Documentation · 0.2 beta.36+</p>
       <h1>One current map of Patch.</h1>
-      <p>Language, Patch Studio, RAD authoring, native desktop contracts, formal assurance and release engineering are documented against one explicit product boundary.</p>
+      <p>Language, hosted and Offline Patch Studio, RAD authoring, native desktop contracts, formal assurance and release engineering are documented against one explicit product boundary.</p>
       <div class="docs-contract-grid" aria-label="Current Patch contracts">
         <div class="docs-contract-card"><span>Language</span><strong>Change IR 0.10</strong></div>
         <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.7 · payload v17 · runtime v1.8</strong></div>
-        <div class="docs-contract-card"><span>Studio</span><strong>Project bundle v4 · resources · source-backed RAD Designer</strong></div>
-        <div class="docs-contract-card"><span>Registry</span><strong>Component metadata 0.8</strong></div>
-        <div class="docs-contract-card"><span>Delivery</span><strong>Token-free Ready/offline builds · real Chrome deployment gate</strong></div>
+        <div class="docs-contract-card"><span>Studio</span><strong>Project bundle v4 · source-backed RAD Designer</strong></div>
+        <div class="docs-contract-card"><span>Offline IDE</span><strong>manifest v1 · offline-studio-v0.2 downloads</strong></div>
+        <div class="docs-contract-card"><span>Delivery</span><strong>Token-free local workflows · real Chrome and executable gates</strong></div>
         <div class="docs-contract-card"><span>Formal milestone</span><strong>beta.32 assurance boundary</strong></div>
       </div>
     </div>
@@ -41,7 +41,7 @@ patch doctor --json</pre>
   </section>
 
   <div class="docs-commandbar" role="search" aria-label="Filter Patch documentation">
-    <label class="docs-search"><span>Find docs</span><input id="docFilter" type="search" placeholder="Studio, resources, ImageList, window icons, native, formal…" autocomplete="off" aria-describedby="docFilterStatus"></label>
+    <label class="docs-search"><span>Find docs</span><input id="docFilter" type="search" placeholder="Studio, offline IDE, resources, ImageList, native, formal…" autocomplete="off" aria-describedby="docFilterStatus"></label>
     <span id="docFilterStatus" class="docs-search-status" role="status" aria-live="polite">Showing all documentation.</span>
   </div>
   <nav class="docs-jumps" aria-label="Documentation sections">
@@ -50,21 +50,23 @@ patch doctor --json</pre>
 
   <section id="start" class="page-section docs-filterable">
     <h2>Start here</h2>
-    <p>The current product line is Patch beta.36, Studio project bundle v4 and Native GUI IR 1.7 / payload v17 / runtime v1.8. The older Native GUI IR 1.3/v13/v1.4 Slider line and frozen IR 1.2/v12/v1.3 TreeView line remain explicit compatibility evidence. Public Studio deployments are exercised in real Chrome before deployment status is marked healthy.</p>
+    <p>The current product line is Patch beta.36, Studio project bundle v4 and Native GUI IR 1.7 / payload v17 / runtime v1.8. Patch Studio is available hosted and as the Stage 1 Offline IDE beta through the rolling <code>offline-studio-v0.2</code> release. Host-native Build from inside Offline Studio remains the explicit Stage 2 gap. Public Studio deployments are exercised in real Chrome, and Offline Studio release executables are built and self-smoked on their own platforms.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, current product snapshot and development status.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Current browser IDE, project v4 resources, Designer, components, recovery and Ready builds.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Hosted/offline IDE, project v4 resources, Designer, components, recovery and Ready builds.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline Studio</strong><span>Windows/macOS/Linux downloads, integrity checks, Stage 1 boundary and Stage 2 local-native-build plan.</span></a>
+      <a class="doc-link" href="./downloads.html"><strong>Public downloads</strong><span>Offline Studio and standalone compiler release links with SHA-256 verification.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECTS.md"><strong>Studio project v4</strong><span>Multi-file source plus explicit resource bundle, migration and recovery rules.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTERPLAN.md"><strong>RAD Studio masterplan</strong><span>Architecture and phased path toward a complete source-backed RAD environment.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTER_BACKLOG.md"><strong>RAD master backlog</strong><span>Long-term components, debugger, project tools, packaging and ecosystem backlog.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTER_BACKLOG.md"><strong>RAD master backlog</strong><span>Current R0/R1 priorities plus long-term components, debugger, packaging and ecosystem work.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Current source syntax including Shape, PaintBox, ImageList and Window icons.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Current RAD R1 completion state plus external and research gates.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Current R0/R1, Offline IDE, distribution and research gates.</span></a>
     </div>
   </section>
 
   <section id="studio-authoring" class="page-section docs-filterable">
     <h2>Studio and RAD authoring</h2>
-    <p>Current authoring includes the searchable Component Palette, Object Inspector, project Resource Manager, source-backed Anchors/Dock, nonvisual tray and the first Graphics family. Capability metadata remains conservative: authoring support is not treated as runtime parity.</p>
+    <p>Current authoring includes the searchable Component Palette, Object Inspector, project Resource Manager, source-backed Anchors/Dock, nonvisual tray and graphics family. R0 issue #282 tracks the design-model integration, true Form virtualization and incremental renderer work that gates broad component expansion. Capability metadata remains conservative: authoring support is not treated as runtime parity.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_AUTHORING_SURFACE.md"><strong>Studio authoring surface</strong><span>Source-backed Form/control authoring inventory.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECT_OUTLINE.md"><strong>Project Tree / Outline</strong><span>Multi-file Forms, state, events, recipes and exact editor navigation.</span></a>
@@ -75,8 +77,9 @@ patch doctor --json</pre>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SHAPE_STAGE1.md"><strong>Shape Stage 1</strong><span>Deterministic shape model and target boundary.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPONENT_CAPABILITY_MATRIX.md"><strong>Component capability matrix</strong><span>Generated registry/target matrix. Authoring is not runtime parity.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/WINDOW_ICONS.md"><strong>Window and application icons</strong><span>window-icon/1.0: source-backed Form icon and Web favicon; native fail-closed.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/GPT.md"><strong>GPT / Grok handoff</strong><span>Current contracts, RAD R1 status and the next recommended slice.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA36.md"><strong>Beta.36 notes</strong><span>Project v4, current native line and RAD R1 integration status.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/issues/282"><strong>RAD R0 issue #282</strong><span>Responsiveness, design-model integration, virtualization, incremental rendering and performance gates.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/GPT.md"><strong>GPT / Grok handoff</strong><span>Current contracts, RAD status and next recommended slice.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA36.md"><strong>Beta.36 notes</strong><span>Project v4, current native line and RAD integration status.</span></a>
     </div>
   </section>
 
@@ -94,7 +97,7 @@ patch doctor --json</pre>
 
   <section id="assurance" class="page-section docs-filterable">
     <h2>Assurance and research</h2>
-    <p>Native v1.8 and Studio/RAD work do not widen the beta.32 formal runtime-correspondence claim.</p>
+    <p>Native v1.8 and Studio/RAD/Offline IDE work do not widen the beta.32 formal runtime-correspondence claim.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/paper/README.md"><strong>Paper sources</strong><span>Repository-only LaTeX, bibliography and remaining research gates.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md"><strong>Formal model</strong><span>Lean-checked boundaries and exact claim scope.</span></a>
@@ -108,8 +111,10 @@ patch doctor --json</pre>
 
   <section id="native-release" class="page-section docs-filterable">
     <h2>Native applications and release engineering</h2>
-    <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.7 / payload v17 / runtime v1.8. Native Ready Picture follows <code>native-picture-formats/1.0</code>: PNG/JPEG decoding is Ready, WebP/SVG remain deferred. Window icons package on Studio/Web under <code>window-icon/1.0</code>. Shape Stage 1, PaintBox Stage 1 and PaintBox <code>draw image</code> draw natively; native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups. IR 1.2 / payload v12 / runtime v1.3 frozen remains the packaged TreeView compatibility line; current Ready and that frozen line are two live native product contracts, with the previous Slider 1.3/v13/v1.4 line as additional compatibility evidence.</p>
+    <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.7 / payload v17 / runtime v1.8. Native Ready Picture follows <code>native-picture-formats/1.0</code>: PNG/JPEG decoding is Ready, WebP/SVG remain deferred. Offline Studio Stage 1 publishes tested executable downloads separately from production code-signing evidence. Window icons package on Studio/Web under <code>window-icon/1.0</code>; native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups.</p>
     <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2"><strong>Offline Studio release</strong><span>Rolling Windows x64, macOS Apple Silicon and Linux x64 Offline IDE beta downloads.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline Studio contract</strong><span>Download integrity, loopback security boundary and Stage 2 host-native local Build plan.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts through the current v1.8 line.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_PICTURE_FORMATS.md"><strong>Native Picture formats</strong><span>native-picture-formats/1.0: PNG/JPEG Ready, WebP/SVG deferred.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_COMPATIBILITY.md"><strong>Native compatibility</strong><span>Current/frozen compatibility lines and historical contract rules.</span></a>
@@ -124,7 +129,7 @@ patch doctor --json</pre>
   </section>
 
   <p id="docsEmpty" class="docs-empty" hidden>No documentation matches this filter. Press Escape or clear the search field to show everything.</p>
-  <footer class="page-footer"><span>Patch documentation · 0.2.0-beta.36+</span><span><a href="./index.html">Open Patch Studio</a> · <a href="./downloads.html">Download the offline compiler</a></span></footer>
+  <footer class="page-footer"><span>Patch documentation · 0.2.0-beta.36+</span><span><a href="./index.html">Open Patch Studio</a> · <a href="./downloads.html">Download Offline Studio / compiler</a></span></footer>
 </main>
 <script>
 (() => {
