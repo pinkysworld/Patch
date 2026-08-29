@@ -1,3 +1,4 @@
+# retry after validating the declaration-only fixture
 name: R0 shared design snapshots integration
 
 on:
