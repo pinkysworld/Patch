@@ -4,12 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Current Patch documentation for Change IR 0.10, Patch Studio project bundle v4, Offline Studio downloads, RAD R0/R1, Native GUI IR 1.7, payload v17, runtime v1.8 and the beta.32 assurance boundary.">
+  <meta name="description" content="Learn Patch from first program to GUI apps, explicit change, recipes, Patch Studio, native builds, examples and the current technical reference.">
   <title>Documentation · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./site-navigation.css">
   <link rel="stylesheet" href="./site-pages.css">
+  <style>
+    .learning-path{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:18px 0 8px}.learning-step,.tutorial-card,.reference-card{border:1px solid var(--border,#343943);border-radius:12px;padding:16px;background:var(--panel,#1b1e24)}.learning-step span,.tutorial-card .level{display:block;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-bottom:6px}.learning-step h3,.tutorial-card h3,.reference-card h3{margin:.2rem 0 .5rem}.tutorial-grid,.reference-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.tutorial-card pre,.docs-example pre{white-space:pre;overflow:auto;max-width:100%;border-radius:9px}.docs-example{margin:18px 0;padding:16px;border:1px solid var(--border,#343943);border-radius:12px;background:var(--panel,#1b1e24)}.docs-example h3{margin-top:0}.docs-example .example-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.docs-example .example-actions a{font-weight:650}.docs-note{padding:12px 14px;border-left:4px solid currentColor;background:color-mix(in srgb,currentColor 7%,transparent);border-radius:6px;margin:14px 0}.docs-columns{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}.docs-steps{counter-reset:step;list-style:none;padding:0}.docs-steps>li{counter-increment:step;position:relative;padding:0 0 18px 44px}.docs-steps>li:before{content:counter(step);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1px solid currentColor;font-weight:700}.quick-ref{width:100%;border-collapse:collapse}.quick-ref th,.quick-ref td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--border,#343943)}.quick-ref code{white-space:nowrap}.docs-jumps{position:sticky;top:0;z-index:4;background:color-mix(in srgb,var(--bg,#15171c) 94%,transparent);backdrop-filter:blur(8px)}@media(max-width:720px){.quick-ref{display:block;overflow-x:auto}.docs-jumps{position:static}}
+  </style>
 </head>
 <body>
 <nav class="site-tabs" aria-label="Patch website">
@@ -23,137 +26,325 @@
   <section class="page-hero">
     <div>
       <p class="page-eyebrow">Documentation · 0.2 beta.36+</p>
-      <h1>One current map of Patch.</h1>
-      <p>Language, hosted and Offline Patch Studio, RAD authoring, native desktop contracts, formal assurance and release engineering are documented against one explicit product boundary.</p>
-      <div class="docs-contract-grid" aria-label="Current Patch contracts">
-        <div class="docs-contract-card"><span>Language</span><strong>Change IR 0.10</strong></div>
-        <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.7 · payload v17 · runtime v1.8</strong></div>
-        <div class="docs-contract-card"><span>Studio</span><strong>Project bundle v4 · source-backed RAD Designer</strong></div>
-        <div class="docs-contract-card"><span>Offline IDE</span><strong>manifest v1 · offline-studio-v0.2 downloads</strong></div>
-        <div class="docs-contract-card"><span>Delivery</span><strong>Token-free local workflows · real Chrome and executable gates</strong></div>
-        <div class="docs-contract-card"><span>Formal milestone</span><strong>beta.32 assurance boundary</strong></div>
+      <h1>Learn Patch by building software.</h1>
+      <p>Start with a three-line program, build a real window, add state and events, then move into recipes, Change Contracts, multi-form applications and native builds. The reference material remains on the same page when you need the exact current product boundary.</p>
+      <div class="learning-path" aria-label="Patch learning path">
+        <article class="learning-step"><span>1 · 5 minutes</span><h3>First program</h3><p>Create state, show output and run it in Patch Studio.</p></article>
+        <article class="learning-step"><span>2 · 10 minutes</span><h3>First GUI</h3><p>Build a Counter window with a Button, event and explicit change.</p></article>
+        <article class="learning-step"><span>3 · 20 minutes</span><h3>Real app structure</h3><p>Use Things, lists, conditions, recipes, Forms and the RAD Designer.</p></article>
+        <article class="learning-step"><span>4 · ship it</span><h3>Build software</h3><p>Create Web and supported desktop artifacts, or use the Offline Studio beta.</p></article>
       </div>
     </div>
-    <pre class="page-code">patch check app.patch --json
-patch build app.patch --target web
-patch link app.patch --out App
-patch doctor --json</pre>
+    <pre class="page-code">create number count = 0
+
+change count:
+  add 1
+
+show count</pre>
   </section>
 
   <div class="docs-commandbar" role="search" aria-label="Filter Patch documentation">
-    <label class="docs-search"><span>Find docs</span><input id="docFilter" type="search" placeholder="Studio, offline IDE, resources, ImageList, native, formal…" autocomplete="off" aria-describedby="docFilterStatus"></label>
+    <label class="docs-search"><span>Find docs</span><input id="docFilter" type="search" placeholder="counter, change, list, Designer, Table, native…" autocomplete="off" aria-describedby="docFilterStatus"></label>
     <span id="docFilterStatus" class="docs-search-status" role="status" aria-live="polite">Showing all documentation.</span>
   </div>
   <nav class="docs-jumps" aria-label="Documentation sections">
-    <a href="#start">Start here</a><a href="#studio-authoring">Studio &amp; RAD</a><a href="#language-compiler">Language &amp; compiler</a><a href="#assurance">Assurance &amp; research</a><a href="#native-release">Native &amp; release</a>
+    <a href="#start">Start</a><a href="#tutorials">Tutorials</a><a href="#language-guide">Language</a><a href="#gui-guide">GUI &amp; Studio</a><a href="#build-guide">Build</a><a href="#examples">Examples</a><a href="#reference">Reference</a>
   </nav>
 
   <section id="start" class="page-section docs-filterable">
     <h2>Start here</h2>
-    <p>The current product line is Patch beta.36, Studio project bundle v4 and Native GUI IR 1.7 / payload v17 / runtime v1.8. Patch Studio is available hosted and as the Stage 1 Offline IDE beta through the rolling <code>offline-studio-v0.2</code> release. Host-native Build from inside Offline Studio remains the explicit Stage 2 gap. Public Studio deployments are exercised in real Chrome, and Offline Studio release executables are built and self-smoked on their own platforms.</p>
-    <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/README.md"><strong>README</strong><span>Language overview, current product snapshot and development status.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Hosted/offline IDE, project v4 resources, Designer, components, recovery and Ready builds.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline Studio</strong><span>Windows/macOS/Linux downloads, integrity checks, Stage 1 boundary and Stage 2 local-native-build plan.</span></a>
-      <a class="doc-link" href="./downloads.html"><strong>Public downloads</strong><span>Offline Studio and standalone compiler release links with SHA-256 verification.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECTS.md"><strong>Studio project v4</strong><span>Multi-file source plus explicit resource bundle, migration and recovery rules.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTERPLAN.md"><strong>RAD Studio masterplan</strong><span>Architecture and phased path toward a complete source-backed RAD environment.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTER_BACKLOG.md"><strong>RAD master backlog</strong><span>Current R0/R1 priorities plus long-term components, debugger, packaging and ecosystem work.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Current source syntax including Shape, PaintBox, ImageList and Window icons.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap &amp; status</strong><span>Current R0/R1, Offline IDE, distribution and research gates.</span></a>
+    <p>You can learn Patch entirely in the browser. Open Patch Studio, edit the source, press Run, and watch the result. The visual Designer edits the same Patch source instead of maintaining a hidden form file.</p>
+    <div class="docs-columns">
+      <div>
+        <h3>Fastest path: hosted Patch Studio</h3>
+        <ol class="docs-steps">
+          <li><strong>Open <a href="./index.html">Patch Studio</a>.</strong> The editor and Designer are ready without installing a toolchain.</li>
+          <li><strong>Replace the sample source</strong> with the first program below.</li>
+          <li><strong>Press Run.</strong> Output appears in the result workspace.</li>
+          <li><strong>Switch to Designer</strong> when you start building a Window application.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Offline path</h3>
+        <p>The rolling <code>offline-studio-v0.2</code> release provides the Stage 1 Offline Studio beta for Windows x64, macOS Apple Silicon and Linux x64. It provides offline authoring, Designer/Object Inspector and Run. Host-native Build directly inside Offline Studio is still the explicit Stage 2 gap.</p>
+        <p><a href="./downloads.html"><strong>Download Offline Studio or the standalone compiler</strong></a></p>
+        <p class="docs-note"><strong>License:</strong> Patch already uses the permissive MIT License. You may use, modify, distribute, sublicense and sell copies as long as the copyright and permission notice are retained.</p>
+      </div>
     </div>
+
+    <div class="docs-example" data-doc-keywords="hello first program show console beginner">
+      <h3>Your first Patch program</h3>
+      <pre class="page-code">create text message = "Hello, Patch!"
+show message</pre>
+      <p><code>create</code> introduces persistent state. <code>show</code> prints a value. Nothing mutates the state in this example.</p>
+    </div>
+
+    <h3>Command-line quick start</h3>
+    <pre class="page-code">patch check app.patch
+patch run app.patch
+patch build app.patch --target web
+patch doctor --json</pre>
+    <p><code>check</code> validates source, <code>run</code> executes supported programs, <code>build</code> creates a selected artifact, and <code>doctor</code> reports compiler/backend health. Machine-readable JSON contracts are available for supported commands.</p>
   </section>
 
-  <section id="studio-authoring" class="page-section docs-filterable">
-    <h2>Studio and RAD authoring</h2>
-    <p>Current authoring includes the searchable Component Palette, Object Inspector, project Resource Manager, source-backed Anchors/Dock, nonvisual tray and graphics family. R0 issue #282 tracks the design-model integration, true Form virtualization and incremental renderer work that gates broad component expansion. Capability metadata remains conservative: authoring support is not treated as runtime parity.</p>
+  <section id="tutorials" class="page-section docs-filterable">
+    <h2>Tutorials</h2>
+    <p>These tutorials use syntax that is exercised by the repository test suite and current examples.</p>
+    <div class="tutorial-grid">
+      <article class="tutorial-card"><span class="level">Beginner</span><h3>1. Counter GUI</h3><p>Window, Text, Button, event handling and explicit persistent mutation.</p><a href="#tutorial-counter">Build it</a></article>
+      <article class="tutorial-card"><span class="level">Beginner</span><h3>2. Conditions and loops</h3><p>Branch with <code>if</code>/<code>else</code> and repeat work with the built-in <code>count</code>.</p><a href="#tutorial-control">Build it</a></article>
+      <article class="tutorial-card"><span class="level">Intermediate</span><h3>3. Things and Change Contracts</h3><p>Model structured data and constrain recipe authority by direction and magnitude.</p><a href="#tutorial-contracts">Build it</a></article>
+      <article class="tutorial-card"><span class="level">Intermediate</span><h3>4. Data controls</h3><p>ListBox, Table and TreeView keep toolkit selection transient until source explicitly changes state.</p><a href="#tutorial-data">Build it</a></article>
+    </div>
+
+    <article id="tutorial-counter" class="docs-example" data-doc-keywords="tutorial counter gui window button event change">
+      <h3>Tutorial 1: build a Counter application</h3>
+      <ol class="docs-steps">
+        <li>Create a number named <code>count</code>. This is the application state.</li>
+        <li>Create a Window containing a Text control and a Button.</li>
+        <li>Add a <code>clicked</code> handler for the Button.</li>
+        <li>Inside the event, mutate <code>count</code> only through an explicit <code>change</code> block.</li>
+      </ol>
+      <pre class="page-code">create number count = 0
+
+window "Counter" size 420, 240:
+  text "Count: {count}" at 24, 24 size 220, 32
+  button "Add" as add_button at 24, 72 size 120, 38
+
+when add_button clicked:
+  change count:
+    add 1</pre>
+      <p>The text interpolation <code>{count}</code> reflects the new state after the event. In Patch Studio you can move and resize the controls in Designer and the geometry remains ordinary source.</p>
+      <div class="example-actions"><a href="https://github.com/pinkysworld/Patch/blob/main/examples/counter-window.patch">Open repository example</a><a href="./index.html">Try it in Studio</a></div>
+    </article>
+    <article id="tutorial-control" class="docs-example" data-doc-keywords="tutorial condition if else repeat count loop control flow">
+      <h3>Tutorial 2: conditions and repeat</h3>
+      <p>Conditions are readable blocks. A literal <code>repeat</code> exposes the current 1-based iteration through <code>count</code>.</p>
+      <pre class="page-code">create number score = 0
+
+repeat 4:
+  if count == 2 or count == 4:
+    change score:
+      add count
+
+show score</pre>
+      <p>This program adds 2 and 4, then shows 6. The persistent mutation remains visible even when it is nested inside control flow.</p>
+      <div class="example-actions"><a href="https://github.com/pinkysworld/Patch/blob/main/examples/direct-wasm-control.patch">Open repository example</a><a href="https://github.com/pinkysworld/Patch/blob/main/examples/conditions.patch">Simpler if/else example</a></div>
+    </article>
+
+    <article id="tutorial-contracts" class="docs-example" data-doc-keywords="tutorial thing recipe allow capability contract magnitude score">
+      <h3>Tutorial 3: Things, recipes and bounded authority</h3>
+      <p>A Thing groups named fields. A recipe can be paired with an <code>allow</code> declaration that restricts which semantic effects are permitted.</p>
+      <pre class="page-code">create thing player:
+  name = "Mia"
+  score = 0
+
+allow reward:
+  player.score may increase up to 10
+
+make reward(player):
+  change player:
+    add 5 to score
+
+do reward(player)
+show player.score</pre>
+      <p>The recipe requests an increase of 5 and the declared capability permits an increase up to 10. Patch can reason about the semantic direction and, where provable, its magnitude.</p>
+      <div class="example-actions"><a href="https://github.com/pinkysworld/Patch/blob/main/examples/change-capabilities.patch">Open repository example</a></div>
+    </article>
+
+    <article id="tutorial-data" class="docs-example" data-doc-keywords="tutorial listbox table treeview selection transient value data">
+      <h3>Tutorial 4: data controls and transient selection</h3>
+      <p>GUI selection is not automatically persistent state. A changed handler receives transient <code>value</code>, and persistence happens only when the handler performs a Patch <code>change</code>.</p>
+      <pre class="page-code">create list fruits = ["Banana", "Mango"]
+
+window "Fruit Picker":
+  listbox "Apple", "Banana", "Cherry", "Mango" as fruits
+
+when fruits changed:
+  change fruits:
+    set = value</pre>
+      <p>Because <code>fruits</code> is list state, the ListBox uses multi-selection on supported targets and <code>value</code> is a transient text list.</p>
+    </article>
+  </section>
+
+  <section id="language-guide" class="page-section docs-filterable">
+    <h2>Language guide</h2>
+    <div class="reference-grid">
+      <article class="reference-card"><h3>Values and state</h3><p>Current product state includes number, text, boolean, list and Thing values. Things are finite own-field records with prototype-meta names rejected.</p></article>
+      <article class="reference-card"><h3>Explicit change</h3><p>Persistent mutation is expressed inside <code>change</code>. Common semantic operations include set, add, remove and clear according to the target type.</p></article>
+      <article class="reference-card"><h3>Control flow</h3><p><code>if</code>/<code>else</code> and <code>repeat</code> structure execution while keeping nested mutation explicit.</p></article>
+      <article class="reference-card"><h3>Recipes</h3><p><code>make</code> declares reusable behavior and <code>do</code> calls it. Range-bounded parameters and capability checks are supported in the current language subset.</p></article>
+    </div>
+
+    <h3>Quick syntax reference</h3>
+    <table class="quick-ref">
+      <thead><tr><th>Goal</th><th>Patch</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Create number state</td><td><code>create number score = 0</code></td><td>Persistent numeric binding.</td></tr>
+        <tr><td>Create text state</td><td><code>create text name = "Ada"</code></td><td>Persistent text binding.</td></tr>
+        <tr><td>Create list state</td><td><code>create list items = ["A", "B"]</code></td><td>Persistent list binding.</td></tr>
+        <tr><td>Create a record</td><td><code>create thing player:</code></td><td>Finite named-field Thing.</td></tr>
+        <tr><td>Change state</td><td><code>change score:</code></td><td>Opens a semantic mutation block.</td></tr>
+        <tr><td>Increase</td><td><code>add 1</code></td><td>Numeric increase inside a change block.</td></tr>
+        <tr><td>Conditional</td><td><code>if score &gt; 10:</code></td><td>Conditional execution.</td></tr>
+        <tr><td>Loop</td><td><code>repeat 4:</code></td><td>Literal repetition with <code>count</code>.</td></tr>
+        <tr><td>Output</td><td><code>show score</code></td><td>Shows an expression.</td></tr>
+        <tr><td>Window</td><td><code>window "App" as main size 640, 480:</code></td><td>Declares a named Form.</td></tr>
+        <tr><td>Event</td><td><code>when save clicked:</code></td><td>Declares UI event behavior.</td></tr>
+      </tbody>
+    </table>
+    <p class="docs-note">For exact grammar and edge cases, use the <a href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md">language specification</a>. The user guide intentionally teaches the stable current surface instead of reproducing every parser rule.</p>
+  </section>
+
+  <section id="gui-guide" class="page-section docs-filterable">
+    <h2>GUI applications and Patch Studio</h2>
+    <p>Patch Studio is a source-backed RAD environment. The editor, Designer, Object Inspector, Project Tree, Resource Manager and component tools operate on the same project source. There is no separate hidden persistent form model.</p>
+    <div class="docs-columns">
+      <div>
+        <h3>Typical visual workflow</h3>
+        <ol class="docs-steps">
+          <li>Create or select a Form from the Form selector.</li>
+          <li>Add a control from the searchable Component Palette.</li>
+          <li>Move or resize it in Designer, or edit geometry directly in source.</li>
+          <li>Use Object Inspector for source-backed properties and Events.</li>
+          <li>Press Run to compile and execute the current project.</li>
+          <li>Use Build only for a target that the capability matrix reports as supported.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Current component families</h3>
+        <p>Patch includes source-backed Forms and current authoring/runtime paths for Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Table, TreeView, Tabs, Slider, Panel, Menu, dialogs, Picture, Shape, PaintBox, Timer, StatusBar and ImageList metadata. Target parity is explicit and conservative.</p>
+        <p><a href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPONENT_CAPABILITY_MATRIX.md">Open the generated component capability matrix</a></p>
+      </div>
+    </div>
+
+    <h3>Forms and multi-window applications</h3>
+    <p>Named Forms can be opened and closed through Patch application behavior. The Designer materializes only the active Form's controls while preserving source-backed shells for the other Forms. Runtime events now reconcile keyed Forms so unchanged Form DOM can remain stable.</p>
+
+    <h3>Designer performance model</h3>
+    <p>The primary Designer preview uses a declaration-only design snapshot instead of executing application behavior. Large projects use active-Form materialization. Current runtime rendering uses stable keyed Form/control identities, preserves bounded transient browser state around changed-Form replacement, and updates Tabs locally rather than rebuilding every Form.</p>
+
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_AUTHORING_SURFACE.md"><strong>Studio authoring surface</strong><span>Source-backed Form/control authoring inventory.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_AUTHORING_SURFACE.md"><strong>Studio authoring surface</strong><span>Current source-backed Form/control workflows.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECT_OUTLINE.md"><strong>Project Tree / Outline</strong><span>Multi-file Forms, state, events, recipes and exact editor navigation.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_COMMAND_PALETTE.md"><strong>Command Palette</strong><span>Ctrl/Cmd+K navigation for commands, files and source symbols.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_PROJECTS.md"><strong>Project bundle v4</strong><span>Multi-file source, resources, recovery and migrations.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_COMMAND_PALETTE.md"><strong>Command Palette</strong><span>Keyboard-first commands, files and source symbols.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_SELECTION_ARCHITECTURE.md"><strong>Selection architecture</strong><span>Shared selection and Object Inspector ownership boundary.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md"><strong>Keyboard accessibility</strong><span>Focus and structural editing contracts.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_LAYOUT_ACTIONS.md"><strong>Layout actions</strong><span>Center, Default size, Auto place, z-order actions and design grid.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/STUDIO_KEYBOARD_ACCESSIBILITY.md"><strong>Keyboard accessibility</strong><span>Keyboard structural editing and focus behavior.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SHAPE_STAGE1.md"><strong>Shape Stage 1</strong><span>Deterministic shape model and target boundary.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPONENT_CAPABILITY_MATRIX.md"><strong>Component capability matrix</strong><span>Generated registry/target matrix. Authoring is not runtime parity.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/WINDOW_ICONS.md"><strong>Window and application icons</strong><span>window-icon/1.0: source-backed Form icon and Web favicon; native fail-closed.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/issues/282"><strong>RAD R0 issue #282</strong><span>Responsiveness, design-model integration, virtualization, incremental rendering and performance gates.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/GPT.md"><strong>GPT / Grok handoff</strong><span>Current contracts, RAD status and next recommended slice.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA36.md"><strong>Beta.36 notes</strong><span>Project v4, current native line and RAD integration status.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/issues/282"><strong>RAD R0 issue #282</strong><span>Remaining responsiveness, control-level reconciliation, Worker and benchmark work.</span></a>
     </div>
   </section>
 
-  <section id="language-compiler" class="page-section docs-filterable">
-    <h2>Language and compiler</h2>
+  <section id="build-guide" class="page-section docs-filterable">
+    <h2>Run, build and distribute</h2>
+    <p>Patch exposes different output paths rather than pretending every backend has identical capabilities.</p>
+    <table class="quick-ref">
+      <thead><tr><th>Goal</th><th>Recommended path</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Learn and prototype</td><td>Hosted Patch Studio</td><td>Fastest visual edit/run loop.</td></tr>
+        <tr><td>Work without internet</td><td>Offline Studio Stage 1</td><td>Offline authoring, Designer/Object Inspector and Run.</td></tr>
+        <tr><td>Standalone web app</td><td><code>patch build app.patch --target web</code></td><td>Produces supported standalone Web output.</td></tr>
+        <tr><td>Local supported desktop artifact</td><td>Ready/offline compiler path</td><td>Current Windows/macOS/Linux Window contract is Native GUI IR 1.7 / payload v17 / runtime v1.8.</td></tr>
+        <tr><td>Portable numeric backend</td><td>C99 / direct Wasm where supported</td><td>These subsets fail closed on unsupported language features.</td></tr>
+      </tbody>
+    </table>
+    <p class="docs-note"><strong>Signing status matters:</strong> Windows Offline Studio is currently unsigned by Authenticode, Linux is unsigned, and macOS uses ad-hoc signing only. Production Developer ID/notarization and Windows signing remain explicit open release work.</p>
     <div class="doc-links">
+      <a class="doc-link" href="./downloads.html"><strong>Downloads</strong><span>Offline Studio and standalone compiler release assets with SHA-256 guidance.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_COMPILER.md"><strong>Offline compiler</strong><span>Local compiler/linker usage and current runtime contracts.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Native applications</strong><span>Windows, macOS, Linux and FreeBSD paths.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RELEASE_SIGNING.md"><strong>Signing and notarization</strong><span>Production signing evidence boundaries.</span></a>
+    </div>
+  </section>
+
+  <section id="examples" class="page-section docs-filterable">
+    <h2>Example programs</h2>
+    <p>Use these as starting points instead of writing everything from an empty editor. The repository contains a larger compatibility and research corpus; these are the most useful entry points for application developers.</p>
+    <div class="tutorial-grid">
+      <article class="tutorial-card"><span class="level">GUI</span><h3>Counter</h3><p>Minimal stateful Window application with a Button event.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/counter-window.patch"><strong>counter-window.patch</strong><span>Best first GUI example.</span></a></article>
+      <article class="tutorial-card"><span class="level">Control flow</span><h3>Conditions</h3><p>Small if/else program.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/conditions.patch"><strong>conditions.patch</strong><span>Readable branching.</span></a></article>
+      <article class="tutorial-card"><span class="level">Assurance</span><h3>Change capabilities</h3><p>Thing state plus a bounded semantic capability.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/change-capabilities.patch"><strong>change-capabilities.patch</strong><span>Magnitude-aware authority.</span></a></article>
+      <article class="tutorial-card"><span class="level">GUI</span><h3>Checkbox</h3><p>Boolean state and a changed event.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/checkbox-window.patch"><strong>checkbox-window.patch</strong><span>Boolean UI state.</span></a></article>
+      <article class="tutorial-card"><span class="level">GUI</span><h3>ComboBox</h3><p>Text selection through a source-backed choice control.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/combo-window.patch"><strong>combo-window.patch</strong><span>Selection event example.</span></a></article>
+      <article class="tutorial-card"><span class="level">Full showcase</span><h3>Workshop Desk</h3><p>Six Forms and the broad integrated cross-platform component surface.</p><a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch"><strong>workshop-desk.patch</strong><span>Large reference application used by real Chrome and Ready tests.</span></a></article>
+    </div>
+  </section>
+
+  <section id="reference" class="page-section docs-filterable">
+    <h2>Technical reference</h2>
+    <p>One current map of Patch. The current product line is Patch beta.36, Change IR 0.10, Studio project bundle v4 and Native GUI IR 1.7 / payload v17 / runtime v1.8. Current RAD/native product work does not widen the beta.32 formal runtime-correspondence claim.</p>
+    <div class="docs-contract-grid" aria-label="Current Patch contracts">
+      <div class="docs-contract-card"><span>Language</span><strong>Change IR 0.10</strong></div>
+      <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.7 · payload v17 · runtime v1.8</strong></div>
+      <div class="docs-contract-card"><span>Studio</span><strong>Project bundle v4 · source-backed RAD Designer</strong></div>
+      <div class="docs-contract-card"><span>Offline IDE</span><strong>manifest v1 · offline-studio-v0.2 downloads</strong></div>
+      <div class="docs-contract-card"><span>Delivery</span><strong>Token-free local workflows · real Chrome and executable gates</strong></div>
+      <div class="docs-contract-card"><span>Formal milestone</span><strong>beta.32 assurance boundary</strong></div>
+    </div>
+
+    <h3>Language and compiler</h3>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/SPEC.md"><strong>Language specification</strong><span>Authoritative current grammar and source contracts.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/COMPILER.md"><strong>Compiler</strong><span>Compiler pipeline, Change IR 0.10 and backend boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_COMPILER.md"><strong>Offline compiler</strong><span>Standalone downloads and current payload v17/runtime v1.8 local linking.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CLI_CONTRACT.md"><strong>CLI contract</strong><span>Stable exit codes and machine-readable JSON.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LISTBOX.md"><strong>ListBox</strong><span>Single/multi-select semantics across Studio, Web and native paths.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/MENUS_DIALOGS.md"><strong>Menus &amp; dialogs</strong><span>Shortcuts, Boolean projections and result dialogs.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/BETA35.md"><strong>Beta.35 notes</strong><span>Historical browser ListBox multi-select milestone.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CLI_CONTRACT.md"><strong>CLI contract</strong><span>Stable exit taxonomy and JSON envelopes.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LISTBOX.md"><strong>ListBox</strong><span>Single and multi-select semantics.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/MENUS_DIALOGS.md"><strong>Menus and dialogs</strong><span>Shortcuts, state projections and result dialogs.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/WINDOW_ICONS.md"><strong>Window and application icons</strong><span>window-icon/1.0: Web/Studio support with native fail-closed boundary.</span></a>
     </div>
-  </section>
 
-  <section id="assurance" class="page-section docs-filterable">
-    <h2>Assurance and research</h2>
-    <p>Native v1.8 and Studio/RAD/Offline IDE work do not widen the beta.32 formal runtime-correspondence claim.</p>
+    <h3>Assurance and research</h3>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/paper/README.md"><strong>Paper sources</strong><span>Repository-only LaTeX, bibliography and remaining research gates.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/FORMAL_MODEL.md"><strong>Formal model</strong><span>Lean-checked boundaries and exact claim scope.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CALL_SITE_VALIDATION.md"><strong>Call-site validation</strong><span>Independent raw-source static call-site binding.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RUNTIME_CORRESPONDENCE.md"><strong>Runtime correspondence</strong><span>Runtime traces and invocation-frame evidence.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/EVALUATION.md"><strong>Evaluation</strong><span>Assurance evaluation harness and evidence boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md"><strong>Novelty and prior art</strong><span>Contribution boundary without unique-expressibility claims.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NOVELTY.md"><strong>Novelty and prior art</strong><span>Narrow contribution boundary.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/REPRODUCIBILITY_BUNDLE.md"><strong>Reproducibility bundle</strong><span>Commit-bound source/evidence snapshots and checksums.</span></a>
     </div>
-  </section>
 
-  <section id="native-release" class="page-section docs-filterable">
-    <h2>Native applications and release engineering</h2>
-    <p>Current Ready/offline Windows, macOS and Linux use Native GUI IR 1.7 / payload v17 / runtime v1.8. Native Ready Picture follows <code>native-picture-formats/1.0</code>: PNG/JPEG decoding is Ready, WebP/SVG remain deferred. Offline Studio Stage 1 publishes tested executable downloads separately from production code-signing evidence. Window icons package on Studio/Web under <code>window-icon/1.0</code>; native ImageList/Button-image/icon transport remain explicit fail-closed follow-ups.</p>
-    <p>Patch intentionally keeps two live native product contracts: the current Native GUI IR 1.7 / payload v17 / runtime v1.8 facade and the <strong>IR 1.2 / payload v12 / runtime v1.3 frozen</strong> TreeView compatibility line. Newer features never silently reinterpret the frozen contract.</p>
+    <h3>Native and release contracts</h3>
+    <p>Patch intentionally keeps <strong>two live native product contracts</strong>: the current Native GUI IR 1.7 / payload v17 / runtime v1.8 facade and the <strong>IR 1.2 / payload v12 / runtime v1.3 frozen</strong> TreeView compatibility line. Newer features never silently reinterpret the frozen contract.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2"><strong>Offline Studio release</strong><span>Rolling Windows x64, macOS Apple Silicon and Linux x64 Offline IDE beta downloads.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline Studio contract</strong><span>Download integrity, loopback security boundary and Stage 2 host-native local Build plan.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts through the current v1.8 line.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_PICTURE_FORMATS.md"><strong>Native Picture formats</strong><span>native-picture-formats/1.0: PNG/JPEG Ready, WebP/SVG deferred.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_COMPATIBILITY.md"><strong>Native compatibility</strong><span>Current/frozen compatibility lines and historical contract rules.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_APPS.md"><strong>Native apps</strong><span>Windows, macOS, Linux and FreeBSD paths.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Runtime integrity, browser deployment verification, diagnostics, signing and distribution boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RELEASE_SIGNING.md"><strong>Signing &amp; notarization</strong><span>Windows Authenticode and macOS Developer ID/notarization gates.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LINUX_PACKAGING.md"><strong>Linux packaging</strong><span>GTK runtime requirements and package boundaries.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/DIAGNOSTICS.md"><strong>Diagnostics</strong><span>Stable error codes, multi-file file:line locations and privacy-redacted Studio reports.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts through runtime v1.8.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_COMPATIBILITY.md"><strong>Native compatibility</strong><span>Current/frozen compatibility rules.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_PICTURE_FORMATS.md"><strong>Native Picture formats</strong><span>native-picture-formats/1.0: PNG/JPEG Ready; WebP/SVG deferred.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Deployment, diagnostics, integrity and signing boundaries.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/THREAT_MODEL.md"><strong>Threat model</strong><span>Studio, build and generated-app trust boundaries.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/TARGETS.md"><strong>Target matrix</strong><span>Web, Wasm, native AOT, Ready/offline and FreeBSD contracts.</span></a>
+    </div>
+
+    <h3>Project and roadmap</h3>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PATCH_STUDIO.md"><strong>Patch Studio</strong><span>Hosted/offline IDE and RAD behavior.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTERPLAN.md"><strong>RAD Studio masterplan</strong><span>Architecture and phased path to a complete source-backed RAD environment.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/RAD_STUDIO_MASTER_BACKLOG.md"><strong>RAD master backlog</strong><span>Current R0/R1 priorities and longer-term work.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/ROADMAP.md"><strong>Roadmap and status</strong><span>Current implementation and open gates.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/LICENSE"><strong>MIT License</strong><span>Permissive open-source license for Patch software and documentation.</span></a>
     </div>
   </section>
 
   <p id="docsEmpty" class="docs-empty" hidden>No documentation matches this filter. Press Escape or clear the search field to show everything.</p>
-  <footer class="page-footer"><span>Patch documentation · 0.2.0-beta.36+</span><span><a href="./index.html">Open Patch Studio</a> · <a href="./downloads.html">Download Offline Studio / compiler</a></span></footer>
+  <footer class="page-footer"><span>Patch documentation · 0.2.0-beta.36+ · MIT License</span><span><a href="./index.html">Open Patch Studio</a> · <a href="./downloads.html">Download Offline Studio / compiler</a></span></footer>
 </main>
 <script>
 (() => {
   const input = document.querySelector('#docFilter');
   const status = document.querySelector('#docFilterStatus');
   const empty = document.querySelector('#docsEmpty');
-  const links = [...document.querySelectorAll('.doc-link')];
   const sections = [...document.querySelectorAll('.docs-filterable')];
   if (!input || !status || !empty) return;
   const apply = () => {
     const query = input.value.trim().toLocaleLowerCase();
     let visible = 0;
-    for (const link of links) {
-      const match = !query || link.textContent.toLocaleLowerCase().includes(query);
-      link.hidden = !match;
+    for (const section of sections) {
+      const haystack = `${section.textContent} ${section.dataset.docKeywords ?? ''}`.toLocaleLowerCase();
+      const match = !query || haystack.includes(query);
+      section.hidden = !match;
       if (match) visible += 1;
     }
-    for (const section of sections) {
-      const sectionLinks = [...section.querySelectorAll('.doc-link')];
-      section.hidden = Boolean(query) && sectionLinks.length > 0 && sectionLinks.every(link => link.hidden);
-    }
     empty.hidden = visible !== 0;
-    status.textContent = query ? `${visible} documentation link${visible === 1 ? '' : 's'} match “${input.value.trim()}”.` : 'Showing all documentation.';
+    status.textContent = query ? `${visible} documentation section${visible === 1 ? '' : 's'} match “${input.value.trim()}”.` : 'Showing all documentation.';
   };
   input.addEventListener('input', apply);
   input.addEventListener('keydown', event => {
