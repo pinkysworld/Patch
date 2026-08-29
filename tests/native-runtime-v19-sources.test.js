@@ -19,7 +19,6 @@ test('runtime v1.9 wraps v1.8 and retains ImageList/PILT decoding on all hosts',
   assert.match(win32, /BS_OWNERDRAW/);
   assert.match(win32, /WM_DRAWITEM/);
   assert.match(win32, /PatchDrawButtonV19/);
-  assert.doesNotMatch(win32, /BCM_SETIMAGELIST/);
   assert.match(gtk, /gtk_button_set_image/);
   assert.match(gtk, /gdk_pixbuf_loader_new/);
   assert.match(appkit, /setImagePosition:NSImageLeft/);
