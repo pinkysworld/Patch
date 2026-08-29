@@ -37,8 +37,11 @@ test('offline compiler download page and release workflow share one stable v0.2 
 test('Offline Studio download page, documentation and workflow share one stable v0.2 release contract', () => {
   assert.match(downloads, /offline-studio-v0\.2/);
   assert.match(studioWorkflow, /TAG: offline-studio-v0\.2/);
-  assert.match(studioWorkflow, /needs: executable/);
+  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: executable/);
+  assert.match(studioWorkflow, /publish:[\s\S]*needs: release-bundle/);
+  assert.match(studioWorkflow, /patch-offline-studio-release-bundle/);
   assert.match(studioWorkflow, /cmp release\/windows\/offline-studio-manifest\.json release\/macos\/offline-studio-manifest\.json/);
+  assert.match(studioWorkflow, /sha256sum -c SHA256SUMS/);
   assert.match(studioWorkflow, /gh release upload/);
   assert.match(studioWorkflow, /Missing published Offline Studio asset/);
   assert.match(offlineStudioDoc, /offline-studio-v0\.2/);
