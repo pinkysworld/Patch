@@ -345,6 +345,41 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(appState.settingsChildren, 0);
   assert.ok(appState.hiddenChildren.every(count => count === 0), `deferred Form bodies must stay empty: ${JSON.stringify(appState.hiddenChildren)}`);
 
+  const keyedInputStarted = await evaluate(cdp, `(() => {
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const input = [...(main?.querySelectorAll('input.patch-input') ?? [])].find(node => node.placeholder === 'item');
+    if (!main || !settings || !input) return false;
+    window.__patchMainBeforeItemEvent = main;
+    window.__patchSettingsBeforeItemEvent = settings;
+    input.focus();
+    input.value = 'Keyboard Pro';
+    input.setSelectionRange(5, 5);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  })()`);
+  assert.equal(keyedInputStarted, true);
+  const keyedInputState = await waitFor(cdp, `(() => {
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const input = [...(main?.querySelectorAll('input.patch-input') ?? [])].find(node => node.placeholder === 'item');
+    return input ? {
+      value: input.value,
+      active: document.activeElement === input,
+      selectionStart: input.selectionStart,
+      selectionEnd: input.selectionEnd,
+      mainReplaced: window.__patchMainBeforeItemEvent !== main,
+      settingsStable: window.__patchSettingsBeforeItemEvent === settings,
+      reconcile: document.querySelector('#app')?.dataset?.patchRuntimeReconcile ?? '',
+      key: input.dataset.patchControlKey ?? ''
+    } : null;
+  })()`, state => state?.value === 'Keyboard Pro' && state.active === true && state.reconcile === 'keyed-window-v1');
+  assert.equal(keyedInputState.mainReplaced, true, 'changed main Form should be replaced at the Stage 1 Form boundary');
+  assert.equal(keyedInputState.settingsStable, true, 'unchanged hidden Form DOM should retain identity across an event');
+  assert.equal(keyedInputState.selectionStart, 5);
+  assert.equal(keyedInputState.selectionEnd, 5);
+  assert.match(keyedInputState.key, /^id:item$/);
+
   const multiBefore = await evaluate(cdp, `(() => {
     const list = [...document.querySelectorAll('#app select.patch-listbox')].find(node => node.multiple);
     return list ? { multiple: list.multiple, selected: [...list.selectedOptions].map(item => item.value) } : null;
@@ -384,6 +419,35 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(settingsState.hidden, false);
   assert.equal(settingsState.detail, 'full');
   assert.ok(settingsState.children > 0);
+
+  const tabsSwitched = await evaluate(cdp, `(() => {
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const tabs = settings?.querySelector('.patch-tabs[data-tabs-id="prefs"]');
+    const buttons = tabs ? [...tabs.querySelectorAll('.patch-tab-button')] : [];
+    if (!main || !settings || buttons.length < 2) return false;
+    window.__patchMainBeforeTabSwitch = main;
+    window.__patchSettingsBeforeTabSwitch = settings;
+    buttons[1].click();
+    return true;
+  })()`);
+  assert.equal(tabsSwitched, true);
+  const tabState = await waitFor(cdp, `(() => {
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const tabs = settings?.querySelector('.patch-tabs[data-tabs-id="prefs"]');
+    const buttons = tabs ? [...tabs.querySelectorAll('.patch-tab-button')] : [];
+    return tabs ? {
+      mainStable: window.__patchMainBeforeTabSwitch === main,
+      settingsStable: window.__patchSettingsBeforeTabSwitch === settings,
+      selected: buttons.map(button => button.getAttribute('aria-selected')),
+      panel: tabs.querySelector('.patch-tab-panel')?.textContent ?? ''
+    } : null;
+  })()`, state => state?.selected?.[1] === 'true' && state.panel.includes('Labor approval limit'));
+  assert.equal(tabState.mainStable, true, 'Tabs switch must not rebuild unrelated Forms');
+  assert.equal(tabState.settingsStable, true, 'Tabs switch must keep its parent Form DOM identity');
+  assert.equal(tabState.selected[0], 'false');
+  assert.equal(tabState.selected[1], 'true');
 
   await delay(1000);
   assert.equal(await evaluate(cdp, `document.querySelector('#code')?.value?.includes('window "Job details" as details') === true`, 3000), true,

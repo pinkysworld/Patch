@@ -482,70 +482,237 @@ function scheduleDesigner() {
   designerTimer = setTimeout(refreshDesigner, 220);
 }
 
+function runtimeWindowKey(model, windowIndex) {
+  return String(model?.id ?? `window${windowIndex + 1}`);
+}
+
+function runtimeControlKey(control, context) {
+  const id = String(control?.id ?? '').trim();
+  if (id) return `id:${id}`;
+  const windowKey = String(context.windowId ?? `window${Number(context.windowIndex ?? 0) + 1}`);
+  const path = String(context.controlPath ?? context.controlIndex ?? 'control');
+  return `${windowKey}:path:${path}`;
+}
+
+function runtimeWindowFingerprint(model) {
+  return JSON.stringify(model ?? null);
+}
+
+function createWindowShell(container, windows, model, windowIndex, interactive, materialization, tabSelections) {
+  const shell = document.createElement('section');
+  shell.className = 'patch-window';
+  const deferHiddenForm = Boolean(interactive && model.visible === false);
+  const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');
+  const deferForm = deferHiddenForm || deferDesignerForm;
+  const windowKey = runtimeWindowKey(model, windowIndex);
+  shell.hidden = deferForm;
+  shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
+  shell.dataset.patchWindowKey = windowKey;
+  shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';
+  shell.__patchWindowFingerprint = runtimeWindowFingerprint(model);
+  if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';
+  const title = document.createElement('div');
+  title.className = 'patch-window-title';
+  if (model.icon) {
+    const img = document.createElement('img');
+    img.className = 'patch-window-icon';
+    img.alt = '';
+    img.width = 16;
+    img.height = 16;
+    try {
+      img.src = pictureResourceDataUri(model.icon, getStudioProjectResources());
+    } catch {
+      img.src = model.icon;
+    }
+    title.appendChild(img);
+  }
+  title.append(model.title);
+  const body = document.createElement('div');
+  body.className = 'patch-window-body';
+  if (!deferForm) {
+    model.controls.forEach((control, controlIndex) => {
+      const el = createControlElement(control, {
+        interactive,
+        container,
+        windows,
+        tabSelections,
+        materialization,
+        windowIndex,
+        controlIndex,
+        controlPath: String(controlIndex),
+        windowId: model.id,
+        topLevel: true
+      });
+      if (!el) return;
+      if (!interactive && control.type !== 'tree') decorateDesignerControl(el, windowIndex, controlIndex, control);
+      body.appendChild(el);
+    });
+  }
+  shell.append(title, body);
+  return shell;
+}
+
 function renderWindows(container, windows, interactive, options = {}) {
   const tabSelections = container.__patchTabSelections ??= new Map();
   const materialization = interactive ? null : options.materialization ?? null;
   container.innerHTML = '';
+  if (interactive) container.dataset.patchRuntimeReconcile = 'full';
   if (materialization) container.dataset.patchDesignerMaterializedForm = String(materialization.activeIndex);
   if (!windows?.length) {
     container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
     return;
   }
   windows.forEach((model, windowIndex) => {
-    const shell = document.createElement('section');
-    shell.className = 'patch-window';
-    const deferHiddenForm = Boolean(interactive && model.visible === false);
-    const deferDesignerForm = Boolean(!interactive && materialization?.modes?.[windowIndex] === 'shell');
-    const deferForm = deferHiddenForm || deferDesignerForm;
-    shell.hidden = deferForm;
-    shell.dataset.patchWindowId = model.id ?? `window${windowIndex + 1}`;
-    shell.dataset.patchRenderDetail = deferForm ? 'deferred' : 'full';
-    if (!interactive) shell.dataset.patchDesignerMaterialization = deferDesignerForm ? 'shell' : 'full';
-    const title = document.createElement('div');
-    title.className = 'patch-window-title';
-    if (model.icon) {
-      const img = document.createElement('img');
-      img.className = 'patch-window-icon';
-      img.alt = '';
-      img.width = 16;
-      img.height = 16;
-      try {
-        img.src = pictureResourceDataUri(model.icon, getStudioProjectResources());
-      } catch {
-        img.src = model.icon;
-      }
-      title.appendChild(img);
-    }
-    title.append(model.title);
-    const body = document.createElement('div');
-    body.className = 'patch-window-body';
-    if (!deferForm) {
-      model.controls.forEach((control, controlIndex) => {
-        const el = createControlElement(control, {
-          interactive,
-          container,
-          windows,
-          tabSelections,
-          materialization,
-          windowIndex,
-          controlIndex,
-          windowId: model.id,
-          topLevel: true
-        });
-        if (!el) return;
-        if (!interactive && control.type !== 'tree') decorateDesignerControl(el, windowIndex, controlIndex, control);
-        body.appendChild(el);
-      });
-    }
-    shell.append(title, body);
-    container.appendChild(shell);
+    container.appendChild(createWindowShell(container, windows, model, windowIndex, interactive, materialization, tabSelections));
   });
 }
 
+function runtimeFocusableElements(root) {
+  const selector = 'input, select, textarea, button, [tabindex]';
+  const items = [];
+  if (root.matches?.(selector)) items.push(root);
+  for (const item of root.querySelectorAll?.(selector) ?? []) if (!items.includes(item)) items.push(item);
+  return items;
+}
+
+function findRuntimeControlByKey(container, key) {
+  for (const control of container.querySelectorAll('[data-patch-control-key]')) {
+    if (control.dataset.patchControlKey === key) return control;
+  }
+  return null;
+}
+
+function captureRuntimeTransientState(container) {
+  const state = {
+    containerScrollTop: container.scrollTop,
+    containerScrollLeft: container.scrollLeft,
+    windows: new Map(),
+    controls: new Map(),
+    multiSelections: new Map(),
+    focus: null
+  };
+  for (const shell of container.querySelectorAll(':scope > .patch-window')) {
+    const key = shell.dataset.patchWindowKey ?? shell.dataset.patchWindowId ?? '';
+    const body = shell.querySelector(':scope > .patch-window-body');
+    state.windows.set(key, {
+      shellTop: shell.scrollTop,
+      shellLeft: shell.scrollLeft,
+      bodyTop: body?.scrollTop ?? 0,
+      bodyLeft: body?.scrollLeft ?? 0
+    });
+  }
+  for (const control of container.querySelectorAll('[data-patch-control-key]')) {
+    const key = control.dataset.patchControlKey;
+    if (!key) continue;
+    if (control.scrollTop || control.scrollLeft) state.controls.set(key, { top: control.scrollTop, left: control.scrollLeft });
+    const select = control.matches?.('select[multiple]') ? control : control.querySelector?.('select[multiple]');
+    if (select) {
+      state.multiSelections.set(key, {
+        selected: [...select.selectedOptions].map(option => option.value),
+        rendered: select.dataset.patchRenderedSelection ?? ''
+      });
+    }
+  }
+  const active = document.activeElement;
+  if (active && container.contains(active)) {
+    const control = active.closest?.('[data-patch-control-key]');
+    if (control && container.contains(control)) {
+      const focusables = runtimeFocusableElements(control);
+      const focusIndex = focusables.indexOf(active);
+      state.focus = {
+        key: control.dataset.patchControlKey,
+        focusIndex,
+        selectionStart: typeof active.selectionStart === 'number' ? active.selectionStart : null,
+        selectionEnd: typeof active.selectionEnd === 'number' ? active.selectionEnd : null,
+        selectionDirection: typeof active.selectionDirection === 'string' ? active.selectionDirection : null
+      };
+    }
+  }
+  return state;
+}
+
+function restoreRuntimeTransientState(container, state) {
+  if (!state) return;
+  container.scrollTop = state.containerScrollTop;
+  container.scrollLeft = state.containerScrollLeft;
+  for (const shell of container.querySelectorAll(':scope > .patch-window')) {
+    const key = shell.dataset.patchWindowKey ?? shell.dataset.patchWindowId ?? '';
+    const saved = state.windows.get(key);
+    if (!saved) continue;
+    shell.scrollTop = saved.shellTop;
+    shell.scrollLeft = saved.shellLeft;
+    const body = shell.querySelector(':scope > .patch-window-body');
+    if (body) {
+      body.scrollTop = saved.bodyTop;
+      body.scrollLeft = saved.bodyLeft;
+    }
+  }
+  for (const [key, saved] of state.controls) {
+    const control = findRuntimeControlByKey(container, key);
+    if (!control) continue;
+    control.scrollTop = saved.top;
+    control.scrollLeft = saved.left;
+  }
+  for (const [key, saved] of state.multiSelections) {
+    const control = findRuntimeControlByKey(container, key);
+    if (!control) continue;
+    const select = control.matches?.('select[multiple]') ? control : control.querySelector?.('select[multiple]');
+    if (!select || select.dataset.patchRenderedSelection !== saved.rendered) continue;
+    const allowed = new Set([...select.options].map(option => option.value));
+    const selected = new Set(saved.selected.filter(value => allowed.has(value)));
+    for (const option of select.options) option.selected = selected.has(option.value);
+  }
+  if (!state.focus?.key) return;
+  const control = findRuntimeControlByKey(container, state.focus.key);
+  if (!control) return;
+  const focusables = runtimeFocusableElements(control);
+  const target = focusables[state.focus.focusIndex] ?? focusables[0] ?? control;
+  target.focus?.({ preventScroll: true });
+  if (state.focus.selectionStart !== null && typeof target.setSelectionRange === 'function') {
+    const length = String(target.value ?? '').length;
+    const start = Math.min(state.focus.selectionStart, length);
+    const end = Math.min(state.focus.selectionEnd ?? start, length);
+    try { target.setSelectionRange(start, end, state.focus.selectionDirection ?? 'none'); } catch { /* unsupported input type */ }
+  }
+}
+
+function reconcileRuntimeWindows(container, windows) {
+  const tabSelections = container.__patchTabSelections ??= new Map();
+  if (!windows?.length) {
+    container.innerHTML = '<p class="empty-preview">No Patch window is defined.</p>';
+    container.dataset.patchRuntimeReconcile = 'keyed-window-v1';
+    return;
+  }
+  const transient = captureRuntimeTransientState(container);
+  const existing = new Map();
+  for (const shell of container.querySelectorAll(':scope > .patch-window')) {
+    const key = shell.dataset.patchWindowKey ?? shell.dataset.patchWindowId ?? '';
+    if (key) existing.set(key, shell);
+  }
+  const desired = [];
+  windows.forEach((model, windowIndex) => {
+    const key = runtimeWindowKey(model, windowIndex);
+    const fingerprint = runtimeWindowFingerprint(model);
+    const detail = model.visible === false ? 'deferred' : 'full';
+    let shell = existing.get(key) ?? null;
+    if (!shell || shell.__patchWindowFingerprint !== fingerprint || shell.dataset.patchRenderDetail !== detail) {
+      shell?.remove();
+      shell = createWindowShell(container, windows, model, windowIndex, true, null, tabSelections);
+    }
+    existing.delete(key);
+    desired.push(shell);
+  });
+  for (const stale of existing.values()) stale.remove();
+  for (const shell of desired) container.appendChild(shell);
+  container.dataset.patchRuntimeReconcile = 'keyed-window-v1';
+  restoreRuntimeTransientState(container, transient);
+}
+
 function createControlElement(control, context) {
-  if (control.type === 'tabs') return createTabsElement(control, context);
   let el;
-  if (control.type === 'text') {
+  if (control.type === 'tabs') {
+    el = createTabsElement(control, context);
+  } else if (control.type === 'text') {
     el = document.createElement('p');
     el.className = 'patch-text';
     el.textContent = control.text;
@@ -626,6 +793,7 @@ function createControlElement(control, context) {
       el.appendChild(item);
     }
     if (!multi) el.value = String(control.value ?? '');
+    if (multi) el.dataset.patchRenderedSelection = JSON.stringify([...el.selectedOptions].map(item => item.value));
     if (context.interactive) {
       el.addEventListener('change', () => {
         const value = multi ? [...el.selectedOptions].map(item => item.value) : el.value;
@@ -675,6 +843,7 @@ function createControlElement(control, context) {
   } else if (control.type === 'tree') {
     el = createTreeElement(control, context);
   }
+  if (el) el.dataset.patchControlKey = runtimeControlKey(control, context);
   return el ?? null;
 }
 
@@ -710,6 +879,20 @@ function createTreeElement(control, context) {
   return root;
 }
 
+function renderTabsPanel(panel, page, context, pageIndex) {
+  panel.replaceChildren();
+  (page?.controls ?? []).forEach((nested, nestedIndex) => {
+    const basePath = String(context.controlPath ?? context.controlIndex ?? 'tabs');
+    const nestedEl = createControlElement(nested, {
+      ...context,
+      controlIndex: nestedIndex,
+      controlPath: `${basePath}.tab${pageIndex}.${nestedIndex}`,
+      topLevel: false
+    });
+    if (nestedEl) panel.appendChild(nestedEl);
+  });
+}
+
 function createTabsElement(control, context) {
   const root = document.createElement('div');
   root.className = 'patch-tabs';
@@ -723,6 +906,9 @@ function createTabsElement(control, context) {
   const list = document.createElement('div');
   list.className = 'patch-tabs-list';
   list.setAttribute('role', 'tablist');
+  const panel = document.createElement('div');
+  panel.className = 'patch-tab-panel';
+  panel.setAttribute('role', 'tabpanel');
   pages.forEach((page, pageIndex) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -734,19 +920,16 @@ function createTabsElement(control, context) {
       event.preventDefault();
       event.stopPropagation();
       context.tabSelections.set(key, pageIndex);
-      renderWindows(context.container, context.windows, context.interactive, { materialization: context.materialization });
+      for (const [index, tab] of [...list.querySelectorAll('.patch-tab-button')].entries()) {
+        tab.setAttribute('aria-selected', index === pageIndex ? 'true' : 'false');
+      }
+      renderTabsPanel(panel, pages[pageIndex], context, pageIndex);
+      button.focus({ preventScroll: true });
     });
     list.appendChild(button);
   });
 
-  const panel = document.createElement('div');
-  panel.className = 'patch-tab-panel';
-  panel.setAttribute('role', 'tabpanel');
-  const active = pages[selected];
-  for (const nested of active?.controls ?? []) {
-    const nestedEl = createControlElement(nested, { ...context, topLevel: false });
-    if (nestedEl) panel.appendChild(nestedEl);
-  }
+  renderTabsPanel(panel, pages[selected], context, selected);
   root.append(list, panel);
   return root;
 }
@@ -809,7 +992,7 @@ function trigger(control, event, payload = {}) {
   try {
     const result = triggerWindowEvent(runtime, control, event, payload);
     output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
-    renderWindows(appView, result.ui, true);
+    reconcileRuntimeWindows(appView, result.ui);
   } catch (err) {
     output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
     showTab('output');
