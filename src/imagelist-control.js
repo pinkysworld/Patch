@@ -2,10 +2,12 @@ export const PATCH_IMAGELIST_STAGE = 1;
 export const PATCH_IMAGELIST_MAX_ITEMS = 256;
 export const PATCH_IMAGELIST_MIN_LOGICAL_SIZE = 1;
 export const PATCH_IMAGELIST_MAX_LOGICAL_SIZE = 512;
+export const PATCH_IMAGELIST_MAX_INLINE_SOURCE_CHARS = 2_000_000;
 
 const PATCH_NAME = /^[A-Za-z_]\w*$/;
 const RESOURCE_ID = /^[A-Za-z][A-Za-z0-9]*(?:[._-][A-Za-z0-9]+)*$/;
 const RESOURCE_PREFIX = 'patch-resource:';
+const INLINE_IMAGE_PREFIX = /^data:image\/(?:png|jpeg);base64,/i;
 
 export class PatchImageListError extends Error {
   constructor(message, code = 'PATCH_IMAGELIST_INVALID') {
@@ -45,28 +47,47 @@ export function normalizeImageListResourceExpression(value) {
     locator = JSON.parse(expression);
   } catch {
     throw new PatchImageListError(
-      'ImageList resources must use a quoted project locator such as "patch-resource:icons.open".',
+      'ImageList resources must use a quoted project locator or bounded inline PNG/JPEG data URI.',
       'PATCH_IMAGELIST_RESOURCE'
     );
   }
-  if (typeof locator !== 'string' || !locator.startsWith(RESOURCE_PREFIX)) {
+  if (typeof locator !== 'string') {
     throw new PatchImageListError(
-      'ImageList resources must use a patch-resource locator.',
+      'ImageList resources must use a quoted project locator or bounded inline PNG/JPEG data URI.',
       'PATCH_IMAGELIST_RESOURCE'
     );
   }
-  const resourceId = locator.slice(RESOURCE_PREFIX.length);
-  if (!RESOURCE_ID.test(resourceId)) {
-    throw new PatchImageListError(
-      `ImageList resource id '${resourceId || '?'}' is invalid.`,
-      'PATCH_IMAGELIST_RESOURCE'
-    );
+  if (locator.startsWith(RESOURCE_PREFIX)) {
+    const resourceId = locator.slice(RESOURCE_PREFIX.length);
+    if (!RESOURCE_ID.test(resourceId)) {
+      throw new PatchImageListError(
+        `ImageList resource id '${resourceId || '?'}' is invalid.`,
+        'PATCH_IMAGELIST_RESOURCE'
+      );
+    }
+    return Object.freeze({
+      resourceId,
+      locator: `${RESOURCE_PREFIX}${resourceId}`,
+      sourceExpr: JSON.stringify(`${RESOURCE_PREFIX}${resourceId}`)
+    });
   }
-  return Object.freeze({
-    resourceId,
-    locator: `${RESOURCE_PREFIX}${resourceId}`,
-    sourceExpr: JSON.stringify(`${RESOURCE_PREFIX}${resourceId}`)
-  });
+  if (INLINE_IMAGE_PREFIX.test(locator)) {
+    if (locator.length > PATCH_IMAGELIST_MAX_INLINE_SOURCE_CHARS) {
+      throw new PatchImageListError(
+        `ImageList inline image exceeds ${PATCH_IMAGELIST_MAX_INLINE_SOURCE_CHARS} characters. Use a project resource instead.`,
+        'PATCH_IMAGELIST_RESOURCE_TOO_LARGE'
+      );
+    }
+    if (!/;base64,[A-Za-z0-9+/=]+$/i.test(locator)) {
+      throw new PatchImageListError('ImageList inline PNG/JPEG source must contain canonical base64 data.', 'PATCH_IMAGELIST_RESOURCE');
+    }
+    const resourceId = `inline-${stableInlineId(locator)}`;
+    return Object.freeze({ resourceId, locator, sourceExpr: JSON.stringify(locator) });
+  }
+  throw new PatchImageListError(
+    'ImageList resources must use a patch-resource locator or bounded inline PNG/JPEG data URI.',
+    'PATCH_IMAGELIST_RESOURCE'
+  );
 }
 
 export function normalizeImageListItems(value) {
@@ -89,7 +110,7 @@ export function normalizeImageListItems(value) {
     }
     names.add(name);
     const resource = normalizeImageListResourceExpression(item.sourceExpr);
-    return Object.freeze({ name, sourceExpr: resource.sourceExpr, resourceId: resource.resourceId });
+    return Object.freeze({ name, sourceExpr: resource.sourceExpr, resourceId: resource.resourceId, source: resource.locator });
   });
   return Object.freeze(items);
 }
@@ -113,6 +134,15 @@ export function formatPatchImageListSource(value, options = {}) {
     lines.push(`${childIndent}image ${item.name} from ${item.sourceExpr}`);
   }
   return lines.join('\n');
+}
+
+function stableInlineId(value) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, '0');
 }
 
 function logicalDimension(value, label) {
