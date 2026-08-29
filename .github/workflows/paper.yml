@@ -33,6 +33,14 @@ jobs:
           working_directory: paper
           latexmk_use_xelatex: false
 
+      - name: Reject unresolved references
+        shell: bash
+        run: |
+          if grep -E "(Citation .* undefined|Reference .* undefined|There were undefined references|There were undefined citations)" paper/main.log; then
+            echo "Unresolved manuscript citation/reference detected."
+            exit 1
+          fi
+
       - name: Upload manuscript PDF
         uses: actions/upload-artifact@v4
         with:
