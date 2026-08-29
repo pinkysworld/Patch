@@ -189,3 +189,12 @@ static void PatchPaintRunProgramV18(const std::vector<PatchPaintNodeV18>& nodes,
     if (node.kind == PATCH_PAINT_DRAW_V18) draw(node, loopCount);
   }
 }
+
+// Later runtimes may compile v1.8 as a private compatibility layer. These
+// aliases are opt-in only and leave ordinary runtime-v1.8 builds unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V19_RESTORE_MAIN
+#define main PATCH_RUNTIME_V19_RESTORE_MAIN
+#endif
