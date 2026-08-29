@@ -24,8 +24,12 @@ test('Patch Studio uses the compiler-oriented brand mark across browser and inst
 });
 
 test('large-Form design-time adapters remain non-executing and Form switching yields between tasks', () => {
-  assert.match(statusbar, /createStudioDesignSnapshotCache/);
+  assert.match(statusbar, /getStudioDesignSnapshot/);
+  assert.match(statusbar, /getStudioDesignerControls/);
+  assert.doesNotMatch(statusbar, /createStudioDesignSnapshotCache/);
   assert.doesNotMatch(statusbar, /new PatchInterpreter\(\)\.run\(source\)/);
+  assert.match(forms, /getStudioDesignerWindows/);
+  assert.match(forms, /getStudioDesignerControls/);
   assert.match(forms, /materializationScheduled/);
   assert.match(forms, /setTimeout\(\(\) =>/);
   assert.match(forms, /patch-designer-active-form-change/);

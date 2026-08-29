@@ -7,7 +7,7 @@ import { buildStandaloneWebApp, pictureResourceDataUri } from '../src/webapp.js'
 import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
-import { createStudioDesignSnapshotCache } from '../src/studio-design-cache.js';
+import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
 import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
@@ -284,7 +284,6 @@ let designerTimer = null;
 let changeContractTimer = null;
 let pendingRunIr = null;
 let runInProgress = false;
-const designerDesignCache = createStudioDesignSnapshotCache();
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -465,7 +464,7 @@ function formatChangeAnalysis(ir) {
 function refreshDesigner(requestedFormIndex = null) {
   clearTimeout(designerTimer);
   try {
-    const preview = designerDesignCache.get(code.value);
+    const preview = getStudioDesignSnapshot(code.value);
     const selectedFormIndex = requestedFormIndex === null || requestedFormIndex === undefined
       ? document.querySelector('#patchFormSelect')?.value
       : requestedFormIndex;
