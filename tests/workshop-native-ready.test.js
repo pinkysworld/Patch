@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { compile } from '../src/compiler.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
+import { resolveNativePictureResources } from '../src/native-picture-resources.js';
 import {
   PATCH_CURRENT_NATIVE_CONTRACT_ID,
   PATCH_CURRENT_NATIVE_GUI_IR_VERSION,
@@ -55,6 +56,16 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
   assert.ok(paintbox);
   assert.match(JSON.stringify(paintbox.paintProgram), /"operation":"image"/);
   assert.match(JSON.stringify(paintbox.paintProgram), /data:image\/png;base64,/);
+
+  const linked = resolveNativePictureResources(ir, []).ir;
+  const linkedControls = flattenCurrentNativeGuiControls(linked);
+  const quoteButton = linkedControls.find(control => control.id === 'quote_button');
+  const listItem = linked.imageLists?.find(list => list.id === 'workshop_icons')?.items?.find(item => item.name === 'quote');
+  assert.ok(quoteButton);
+  assert.ok(listItem);
+  assert.match(listItem.source, /^data:image\/png;base64,/);
+  assert.equal(quoteButton.imageSource, listItem.source);
+  assert.match(quoteButton.imageResourceId, /^inline-[0-9a-f]{8}$/);
 });
 
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
