@@ -36,7 +36,17 @@ jobs:
                   raise SystemExit(f"{path}: expected one guarded match, found {count}: {old!r}")
               p.write_text(text.replace(old, new, 1))
 
-          example = Path('examples/workshop-desk.patch').read_text().rstrip('\n')
+          # UI ids are application-global in Patch. Keep the main customer Combo as
+          # the source-backed editor and render its state read-only on Customer Profile.
+          replace_once(
+              'examples/workshop-desk.patch',
+              '  combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 92 size 220, 36',
+              '  text "{customer}" at 24, 92 size 220, 36'
+          )
+
+          # Preserve the canonical file byte-for-byte, including its final newline,
+          # because the Studio compatibility sample has an exact idempotence gate.
+          example = Path('examples/workshop-desk.patch').read_text()
           studio = Path('web/beta35-studio.js')
           text = studio.read_text()
           start_marker = 'const WORKSHOP_DESK_SAMPLE = `'
@@ -129,6 +139,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
+          git add examples/workshop-desk.patch web/beta35-studio.js web/studio-dom-sync.js web/designer-workspace.js web/index.html web/style.css web/manifest.webmanifest tests/workshop-desk-browser.test.js tests/studio-branding.test.js .github/workflows/r0-workshop-branding-once.yml
           git commit -m "Expand Workshop Desk and integrate compiler branding"
           git push origin HEAD:gpt/r0-active-form-materialization-282
