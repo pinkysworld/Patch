@@ -87,25 +87,31 @@ function resolveImageListSources(ir, byId, resolved) {
           );
         }
         const resource = byId.get(resourceId);
-        if (!resource) {
-          throw new NativePictureResourceError(
-            `Native ImageList '${listId}.${itemName}' references missing project resource '${resourceId}'.`,
-            'NATIVE_PICTURE_RESOURCE_MISSING'
-          );
+        if (resource) {
+          assertNativePictureResourceMediaType(resource, `${listId}.${itemName}`);
+          linkedSource = nativePictureResourceDataUri(resource);
+          resolved.push(Object.freeze({
+            control: null,
+            resourceId,
+            mediaType: resource.mediaType,
+            size: resource.size,
+            sha256: resource.sha256,
+            policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID,
+            consumer: 'imagelist',
+            imageList: listId,
+            imageItem: itemName
+          }));
+        } else {
+          const inlineSource = inlineImageSourceFromExpression(item.sourceExpr);
+          if (!resourceId.startsWith('inline-') || !inlineSource) {
+            throw new NativePictureResourceError(
+              `Native ImageList '${listId}.${itemName}' references missing project resource '${resourceId}'.`,
+              'NATIVE_PICTURE_RESOURCE_MISSING'
+            );
+          }
+          assertNativePictureSourceFormat(inlineSource, { controlId: `${listId}.${itemName}` });
+          linkedSource = inlineSource;
         }
-        assertNativePictureResourceMediaType(resource, `${listId}.${itemName}`);
-        linkedSource = nativePictureResourceDataUri(resource);
-        resolved.push(Object.freeze({
-          control: null,
-          resourceId,
-          mediaType: resource.mediaType,
-          size: resource.size,
-          sha256: resource.sha256,
-          policy: PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID,
-          consumer: 'imagelist',
-          imageList: listId,
-          imageItem: itemName
-        }));
       } else {
         assertNativePictureSourceFormat(source, { controlId: `${listId}.${itemName}` });
       }
@@ -122,6 +128,17 @@ function resolveImageListSources(ir, byId, resolved) {
     }
   }
   return linked;
+}
+
+function inlineImageSourceFromExpression(value) {
+  const expression = String(value ?? '').trim();
+  if (!expression) return null;
+  try {
+    const parsed = JSON.parse(expression);
+    return typeof parsed === 'string' && /^data:image\/(?:png|jpeg);base64,/i.test(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
 }
 
 function resolveButtonImageSource(control, imageListItems) {
