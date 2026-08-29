@@ -7,7 +7,11 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
-import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
+import {
+  PATCH_CURRENT_NATIVE_PAYLOAD_VERSION,
+  buildCurrentNativeGuiIR,
+  sealCurrentNativeGuiRuntime
+} from './native-current-contract.js';
 import { buildNativeGuiIRV17 } from './native-gui-ir-v17.js';
 import { sealNativeGuiRuntimeV17 } from './sealed-native-gui-v17.js';
 import { resolveNativePictureResources } from './native-picture-resources.js';
@@ -50,19 +54,20 @@ export function createOfflineLinkPlan(source, options = {}) {
     return binaryPlan({ platform, kind, name, sealed });
   }
 
-  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 18);
+  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? PATCH_CURRENT_NATIVE_PAYLOAD_VERSION);
+  const currentContract = guiPayloadVersion === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION;
   validateWindowRuntimeSupport(compiled, {
     allowTables: true,
     allowLists: true,
     allowListControls: true,
     allowMenuDecorations: true,
     allowTree: true,
-    allowSlider: guiPayloadVersion === 17 || guiPayloadVersion === 18,
-    allowPaintBox: guiPayloadVersion === 17 || guiPayloadVersion === 18,
-    allowImageList: guiPayloadVersion === 18
+    allowSlider: currentContract || guiPayloadVersion === 17,
+    allowPaintBox: currentContract || guiPayloadVersion === 17,
+    allowImageList: currentContract && PATCH_CURRENT_NATIVE_PAYLOAD_VERSION >= 18
   });
 
-  const nativeGui = guiPayloadVersion === 18
+  const nativeGui = currentContract
     ? buildCurrentNativeGuiIR(compiled)
     : guiPayloadVersion === 17
       ? buildNativeGuiIRV17(compiled)
@@ -190,8 +195,10 @@ function requiredRuntime(value, label) {
 
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
-  if (version === 12 || version === 17 || version === 18) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12, v17 or v18, not '${value}'.`);
+  const supported = new Set([12, 17, PATCH_CURRENT_NATIVE_PAYLOAD_VERSION]);
+  if (supported.has(version)) return version;
+  const versions = [...supported].sort((a, b) => a - b).map(item => `v${item}`).join(', ');
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload ${versions}, not '${value}'.`);
 }
 
 function normalizePlatform(value) {
