@@ -11,6 +11,7 @@ import {
   listDesignerTabPageControls,
   updateDesignerTabPageTableData
 } from '../src/designer-tabs-nested.js';
+import { currentDesignerSelection } from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -27,6 +28,7 @@ if (panel) {
 code?.addEventListener('input', scheduleSync);
 code?.addEventListener('change', scheduleSync);
 canvas?.addEventListener('click', () => queueMicrotask(scheduleSync));
+canvas?.addEventListener('patch-designer-selection-change', scheduleSync);
 scheduleSync();
 
 function scheduleSync() {
@@ -162,12 +164,12 @@ function currentTableContext() {
 
 function selectedTopLevelControl() {
   if (!canvas || !code) return null;
-  const element = canvas.querySelector('.designer-control.designer-selected[data-window-index][data-control-index]');
-  if (!element) return null;
-  const windowIndex = Number(element.dataset.windowIndex);
-  const controlIndex = Number(element.dataset.controlIndex);
-  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
-  return listDesignerControls(code.value).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex) ?? null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  return listDesignerControls(code.value).find(item =>
+    Number(item.windowIndex) === Number(selection.windowIndex) &&
+    Number(item.controlIndex) === Number(selection.controlIndex)
+  ) ?? null;
 }
 
 function readTableDraft(context) {
