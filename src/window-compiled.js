@@ -17,7 +17,20 @@ export function buildCompiledWindowArtifact(compiled) {
   if (compiled.ir?.version !== PATCH_COMPILED_WINDOW_IR_VERSION) {
     throw new CompiledWindowError(`Compiled Window artifacts require Change IR ${PATCH_COMPILED_WINDOW_IR_VERSION}.`);
   }
-  validateWindowRuntimeSupport(compiled);
+
+  // A compiled Window artifact is target-neutral, but it must still be
+  // structurally valid. Enable every currently modelled target capability here
+  // so this pass keeps duplicate-id/event/Form/image-binding validation without
+  // pretending that a target-neutral artifact selected a legacy runtime.
+  // The selected build target performs the real fail-closed capability check.
+  validateWindowRuntimeSupport(compiled, {
+    allowTree: true,
+    allowSlider: true,
+    allowPaintBox: true,
+    allowImageList: true,
+    allowMenuDecorations: true
+  });
+
   const windows = compiled.ast.filter(node => node.kind === 'window');
   if (!windows.length) throw new CompiledWindowError('A Window artifact needs at least one Patch window.');
 
@@ -50,7 +63,7 @@ export function validateCompiledWindowArtifact(artifact) {
     throw new CompiledWindowError('Compiled Window artifact form layout is invalid.');
   }
   if (artifact.formLayout.windows.length !== windowCount) {
-    throw new CompiledWindowError('Compiled Window artifact Form layout does not match its executable Window program.');
+    throw new CompiledWindowError('Compiled Window artifact form layout does not match its executable Window program.');
   }
   return artifact;
 }
