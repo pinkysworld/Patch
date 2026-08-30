@@ -1,0 +1,16 @@
+create number button_image_clicks = 0
+
+window "Button images" as main size 460, 240:
+  imagelist as app_images size 20, 20:
+    image open from "patch-resource:icons.open"
+  button "Open" as open_button image app_images.open at 24, 24 size 140, 38
+  button "Open again" as open_again image app_images.open at 24, 76 size 160, 38
+  text "Clicks: {button_image_clicks}" at 24, 136 size 220, 28
+
+when open_button clicked:
+  change button_image_clicks:
+    add 1
+
+when open_again clicked:
+  change button_image_clicks:
+    add 1
