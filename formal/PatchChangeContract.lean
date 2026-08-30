@@ -137,13 +137,14 @@ theorem allowedEffectOf_respects_actual_bound
       Within actual permitted := by
   have hAmountEq := effectOf_amount_matches_actual hWellFormed hEffect hQuantitative
   rcases hAllows with ⟨_, _, _, hAmountAllows⟩
-  cases hActual : actualAmountFor d e.kind with
+  cases hEffectAmount : e.amount with
   | none =>
-      rw [hActual] at hAmountEq
-      cases e.amount <;> simp_all
+      simp [hEffectAmount, hRuleAmount] at hAmountAllows
   | some actual =>
+      have hActual : actualAmountFor d e.kind = some actual := by
+        rw [← hAmountEq]
+        exact hEffectAmount
       refine ⟨actual, hActual, ?_⟩
-      have hEffectAmount : e.amount = some actual := hAmountEq.trans hActual
       simpa [hEffectAmount, hRuleAmount] using hAmountAllows
 
 end PatchFormal
