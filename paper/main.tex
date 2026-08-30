@@ -111,13 +111,11 @@ where $x$ is the target, $b$ and $n$ are base and new versions, $v$ and $v'$ are
 applyOps(\Delta,v)=v' \quad\text{and}\quad n=b+1.
 \]
 
-\paragraph{State-Change Factorization.}
 \begin{definition}[State-Change Factorization]
 \label{def:factorization}
 For every state-changing step in the current Lean machine, there exists a well-formed $\delta$ such that the resulting machine is exactly the modeled commit of $\delta$.
 \end{definition}
 
-\paragraph{Mutation Transparency.}
 \begin{definition}[Mutation Transparency]
 \label{def:transparency}
 The witnessing change appears in resulting history.
@@ -143,247 +141,100 @@ The witnessing change appears in resulting history.
 \draw[arr] (delta) -- (sig);
 \draw[arr] (delta) -- (cap);
 \end{tikzpicture}
-\caption{Default mutation architecture. Ordinary modeled persistent mutation is committed through a structured Change. Signatures, capabilities, history and provenance reuse that same object rather than reconstructing meaning around a later write.}
+\caption{Ordinary modeled persistent mutation is committed through a structured Change. Signatures, capabilities, history, and provenance reuse that object rather than reconstructing semantic meaning around a later write.}
 \label{fig:architecture}
 \end{figure}
 
-For a recipe $f$, a Change Signature conservatively describes semantic effects:
+For a recipe $f$, a Change Signature conservatively describes semantic effects,
 \[
 Sig(f)=\{e_1,\ldots,e_k\}.
 \]
-An effect contains target, optional field, semantic operation kind, and optional amount interval. A Change Capability specifies allowed semantic authority. For example, \texttt{score may increase up to 10} distinguishes bounded increase from set or decrease authority.
+An effect contains target, optional field, semantic operation kind, and optional amount interval. A Change Capability specifies admitted semantic authority. Thus \texttt{score may increase up to 10} distinguishes bounded increase from set or decrease authority on the same persistent location.
 
-The novelty hypothesis is not that an equivalent bound is inexpressible in richer effect or refinement systems. It is that Patch derives this restricted authority vocabulary from the same mandatory semantic delta objects through which modeled persistent mutation is committed.
+The novelty hypothesis is not that equivalent bounds are inexpressible in richer effect or refinement systems. It is that Patch derives this restricted authority vocabulary from the same mandatory semantic delta objects through which modeled persistent mutation is committed.
 
 \section{Formal Assurance Stack}
-The artifact contains layered Lean modules for semantic changes, signatures, policy checking, source/range evidence, guard validation, abstract calls, exact call binding, exact structured callee traces, finite transitive call trees, and runtime-call correspondence.
+The assurance argument has four layers: the semantic Change machine, static effect and range reasoning, finite exact recipe-call composition, and a bounded bridge from selected production direct-WebAssembly executions back to exact formal effects. The paper reports the proved statement at each layer and names what remains trusted rather than narrating the implementation history of every intermediate beta.
 
-\subsection{Signature and capability soundness}
-For the structured semantic core, Lean proves a signature property of the form
-\[
-Executes(s,r) \Longrightarrow RuntimeChanges(r) \subseteq Sig(s).
-\]
-If every inferred effect is admitted by policy,
+\subsection{Core semantic and static guarantees}
+For the structured semantic core, Lean proves that executed changes are covered by the inferred Change Signature. If the inferred signature is admitted by policy, those changes are also admitted by the declared capability:
 \[
 RuntimeChanges(s) \subseteq Sig(s) \subseteq Cap(s).
 \]
+
 \begin{theorem}[Change Signature / Capability Soundness]
 \label{thm:signature}
 On the modeled \texttt{CoreStmt} fragment, every executed runtime change is covered by the inferred signature, and a successful policy check implies that those runtime changes are admitted by the declared capability.
 \end{theorem}
-The executable policy checker is proved sound with respect to the relational policy semantics for the modeled fragment.
 
-\subsection{Integer range soundness}
-For the explicit integer \texttt{RangeExpr} grammar, Lean proves schematically:
+Magnitude reasoning uses an explicit integer \texttt{RangeExpr} grammar. For a supported expression $e$,
 \[
 EnvRespects(\Gamma,\rho) \wedge analyzeRange(e,\Gamma)=I \wedge eval(e,\rho)=v
 \Longrightarrow v\in I.
 \]
+
 \begin{theorem}[Integer range soundness]
 \label{thm:range}
 If the environment respects $\Gamma$ and range analysis returns interval $I$ for a supported integer \texttt{RangeExpr}, every concrete evaluation of that expression lies in $I$.
 \end{theorem}
-The mechanized fragment includes integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. Decimal/floating-point semantics, division, and general multiplication are not silently included in this theorem.
 
-\subsection{Source, guard, and static call-site translation validation}
-The production source path and independent raw-source paths reconstruct supported formal source/range and guard artifacts separately. Protected certification requires agreement for those supported fragments. Numeric range expressions and guards use independent validator-side parsers rather than reusing the corresponding production expression parser.
+The mechanized range fragment contains integer literals, ranged variables, addition, subtraction, negation, and multiplication by a non-negative integer constant. Decimal/floating-point semantics, division, and general multiplication are outside this theorem.
 
-Concrete call certification also checks static source identity before trusting the production AST's call-site description. An independent raw-source scanner reconstructs each supported \texttt{do recipe(args)} site's caller recipe, callee, source line, order, and exact trimmed argument texts. That ordered list must match a separately collected production-AST list before concrete-call witnesses are accepted. Call-site evidence is then propagated through the existing structured, transitive, and beta 32 runtime witness layers.
+Independent raw-source validators reconstruct supported range expressions, guards, and static call-site identity separately from the production path. Certification requires agreement before formal witnesses are accepted. This reduces selected extraction dependencies; it is translation validation, not a Lean proof of the JavaScript parsers or scanners.
 
-This is translation/source-identity validation, not a Lean proof of either JavaScript parser or scanner. Lean separately checks supported argument semantics after source identity is accepted.
-
-\section{Finite Exact Recipe Calls}
-\subsection{Abstract and exact call composition}
-\texttt{PatchCalls.lean} models finite recipe environments with parameter intervals, semantic signatures, and well-founded ranks. The executable checker validates direct-effect membership, positional argument-interval fit, lower-rank call resolution, and callee-to-caller signature containment. For modeled rank-decreasing executions, \texttt{callSignatureSoundness} establishes caller-signature coverage.
-
-Concrete evidence serializes exact bindings as name/integer pairs. \texttt{PatchCallSubstitution.lean} re-evaluates call arguments under an exact caller environment and checks positional binding. \texttt{PatchCallRefinement.lean} connects exact values through abstract argument intervals to declared parameter intervals, while \texttt{PatchCallEffect.lean} re-evaluates direct quantitative effects under the exact environment.
-
-\subsection{Structured and guard-selected callee traces}
-The beta 28/29 layers move from one quantitative leaf effect to complete exact effect traces over a conservative body language. Sequence and literal/static repetition are represented structurally, and beta 29 adds exact guard selection when guards depend only on supported recipe-parameter expressions. Unsupported state-dependent or out-of-fragment guards fail closed rather than being approximated as verified.
-
-\subsection{Beta 30 finite transitive exact call trees}
-Beta 30 extends exact traces through nested ranked recipe calls. \texttt{PatchCallTree.lean} represents a finite selected call tree with exact nested bindings, direct effects, supported guard choices, static repeats, and strict rank decrease. Each nested edge imports the callee semantic signature into its caller.
-
-The principal checked composition is exposed through
-\begin{verbatim}
-checkedConcreteTransitiveCallTreeRefinesCallerSignature
-\end{verbatim}
-which establishes that the selected finite exact trace is represented by the caller semantic signature, subject to the encoded fragment and executable checks.
+\subsection{Finite exact recipe calls}
+The call layer combines conservative recipe signatures with exact bindings for selected executions. Finite ranked call trees preserve nested argument bindings, supported guard choices, static repeats, and direct effects. Arithmetic expressions are retained for Lean re-evaluation rather than replaced by trusted JavaScript constants.
 
 \begin{theorem}[Finite transitive call-tree refinement]
 \label{thm:calltree}
 For a selected finite exact call tree in the encoded fragment, \texttt{checkedConcreteTransitiveCallTreeRefinesCallerSignature} establishes that the selected exact trace is covered by the caller semantic signature.
 \end{theorem}
 
-A representative source shape is:
-\begin{lstlisting}
-create number score = 0
+The theorem is intentionally finite and fragment-scoped. Unsupported state-dependent guards, out-of-fragment expressions, or call structures fail closed rather than being silently treated as verified.
 
-make leaf(amount number 1..6):
-  change score:
-    add amount * 2
+\subsection{Production direct-WebAssembly correspondence}
+The production direct backend lowers a conservative numeric Console subset to WebAssembly. Runtime capture exposes target/before/after transitions. An independent Change-IR executor reconstructs expected transitions and semantic effect occurrences rather than trusting backend semantic annotations.
 
-make middle(value number 0..5):
-  do leaf(value + 1)
+Beta~32 additionally reconstructs invocation frames without trusting backend call-entry/exit markers. A frame records caller/callee identity, dynamic invocation ordinal, parent/depth information, exact arguments/bindings, and transition boundaries. For an accepted witness, the reconstructed frame binding must equal the exact formal callee binding. Lean then re-evaluates the frame-selected observed effects against the exact call-tree statement before deriving caller-signature refinement.
 
-make caller(bonus number 0..5):
-  do middle(bonus)
-
-do caller(2)
-\end{lstlisting}
-
-The certificate preserves arithmetic expressions and nested bindings for Lean re-evaluation instead of trusting precomputed JavaScript constants.
-
-\section{Direct-WebAssembly Runtime Correspondence}
-\subsection{Independent transition and effect validation}
-The production direct backend lowers a conservative numeric Console subset to WebAssembly. Runtime capture exposes target/before/after transitions. An independent Change-IR executor reconstructs expected transitions and semantic effect occurrences rather than trusting semantic call/effect annotations emitted by the backend.
-
-The validator checks complete transition order and values, reconstructs lexical change sites and recipe scope, and checks observed semantic effects against production Change Signatures and, where applicable, Change Capabilities. Tampered transitions, signatures, and policies are regression-tested to fail closed.
-
-\subsection{Beta 31 call-aware bridge}
-Beta 31 combines the beta 30 exact finite call-tree witness with real direct-WebAssembly execution. Observed semantic effects are validated independently and compared with the selected formal call-tree trace. This narrows the gap between exact call semantics and compiled execution without turning the JavaScript validator or WebAssembly engine into proved components.
-
-\subsection{Beta 32 invocation frames}
-A globally scoped effect list is insufficient when the same recipe is invoked repeatedly with identical arguments. Beta 32 therefore reconstructs concrete invocation frames independently of backend call-entry/exit markers. Each frame records caller/callee identity, dynamic invocation ordinal, parent/depth information, exact arguments/bindings, and transition boundaries. Validated effects carry the active frame stack.
-
-For every selected beta 30 call-tree witness, the generated beta 32 certificate checks that the reconstructed frame binding equals the exact formal callee binding:
-\begin{verbatim}
-runtimeFrameBindings = beta30ExactBindings
-\end{verbatim}
-Lean then re-evaluates the frame-selected observed effects against the exact call-tree statement through \texttt{evalCallTreeStmtEqBool} before applying
-\begin{verbatim}
-checkedObservedTransitiveRuntimeRefinesCallerSignature
-\end{verbatim}
-to conclude caller-signature refinement for the accepted observed list.
-
-The repeated-call regression source \texttt{examples/formal-transitive-calls-repeated.patch} executes two identical root calls. Independent reconstruction assigns distinct dynamic frames, so their effects can be attributed and checked separately without trusted backend call markers.
-
-A stronger regression, \texttt{examples/formal-transitive-calls-mixed-guards.patch}, executes \texttt{caller(1)}, \texttt{caller(4)}, and \texttt{caller(1)} through a four-frame call chain. The first and third invocations are identical and select the same guard branch, while the middle invocation selects the opposite branch. Independent validation reconstructs twelve invocation frames and six supported transitive correspondences. The three \texttt{caller -> outer} witnesses carry distinct dynamic frame identities and bindings 1, 4, and 1, while their selected effects are respectively \texttt{coins +4}, \texttt{score +5}, and \texttt{coins +4}. Lean re-checks each selected trace against its exact call-tree witness.
-
-\begin{lstlisting}
-create number score = 0
-create number coins = 0
-
-make leaf(amount number 1..5):
-  if amount >= 3:
-    change score:
-      add amount
-  else:
-    change coins:
-      add amount * 2
-
-make middle(seed number 0..4):
-  do leaf(seed + 1)
-
-make outer(seed number 0..4):
-  do middle(seed)
-
-make caller(seed number 0..4):
-  do outer(seed)
-
-do caller(1)
-do caller(4)
-do caller(1)
-\end{lstlisting}
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[
-  font=\footnotesize\ttfamily,
-  node distance=8mm,
-  box/.style={draw, rounded corners=1.6pt, align=center, inner sep=5pt, text width=28mm, minimum height=12mm},
-  arr/.style={-{Latex[length=2.1mm]}, thick}
-]
-\node[box] (a) {caller(1)\\coins +4};
-\node[box, right=of a] (b) {caller(4)\\score +5};
-\node[box, right=of b] (c) {caller(1)\\coins +4};
-\draw[arr] (a) -- (b);
-\draw[arr] (b) -- (c);
-\end{tikzpicture}
-\caption{Independently reconstructed invocation frames distinguish two identical \texttt{caller(1)} roots from the intervening opposite-guard \texttt{caller(4)}. Twelve dynamic frames and six transitive correspondences are reconstructed without backend call markers.}
-\label{fig:frames}
-\end{figure}
+The strongest regression executes \texttt{caller(1)}, \texttt{caller(4)}, and \texttt{caller(1)} through a four-frame call chain. Independent validation reconstructs twelve invocation frames and six transitive correspondences. The repeated first and third roots remain distinct dynamic invocations, while the middle root selects the opposite supported guard path. This directly tests the ambiguity that a globally scoped effect list would leave unresolved.
 
 \begin{theorem}[Observed runtime-frame correspondence]
 \label{thm:runtime}
-Given accepted independently reconstructed invocation-frame evidence whose bindings equal the beta~30 exact callee bindings, Lean re-evaluates the frame-selected observed effects and, if they match the exact call-tree statement, derives caller-signature refinement via \texttt{checkedObservedTransitiveRuntimeRefinesCallerSignature}.
+Given accepted independently reconstructed invocation-frame evidence whose bindings equal the exact formal callee bindings, Lean re-evaluates the frame-selected observed effects and, when they match the exact call-tree statement, derives caller-signature refinement via \texttt{checkedObservedTransitiveRuntimeRefinesCallerSignature}.
 \end{theorem}
-This is a consequence of accepted evidence, not a proof that every faulty trace would be captured.
 
-Generated evidence includes \texttt{GeneratedTransitiveRuntimeCertificate.lean}, \texttt{GeneratedRepeatedTransitiveRuntimeCertificate.lean}, and \texttt{GeneratedMixedGuardTransitiveRuntimeCertificate.lean}.
+This theorem proves a consequence of accepted evidence. It does not prove that every faulty execution would necessarily be captured or reconstructed correctly.
 
 \subsection{Exact trust boundary}
-Beta 32 checks more than beta 31, but it is not an end-to-end compiler refinement theorem. The following remain outside the current Lean proof:
-\begin{itemize}[leftmargin=*]
-\item correctness/completeness of runtime transition capture;
-\item correctness/completeness of the independent JavaScript transition/effect validator and invocation-frame reconstruction;
-\item production parser/extractor correctness outside independently cross-checked supported source/range, guard, and static call-site identity fragments;
-\item correctness of the independent JavaScript source/range, guard, and call-site validators themselves;
-\item JavaScript-to-WebAssembly lowering correctness;
-\item WebAssembly-engine correctness.
-\end{itemize}
-
-The certificate establishes consequences of accepted, independently reconstructed evidence for the formal fragment. The raw-source call-site check reduces one dependency on production-AST source identity, but it does not prove the production parser correct or validate arbitrary expression semantics. The runtime evidence likewise does not prove that every possible faulty trace would necessarily be captured or reconstructed correctly.
+The current assurance stack is not an end-to-end compiler refinement theorem. Runtime transition capture, the independent JavaScript validator and frame reconstruction, parser/extractor behavior outside independently cross-checked fragments, JavaScript-to-WebAssembly lowering, and the WebAssembly engine remain outside the Lean proof.
 
 \begin{table}[t]
 \centering
-\caption{Lean-checked statements in the current fragment. Product and Studio work after beta~32 does not add rows to this table.}
-\label{tab:lean-theorems}
+\caption{Assurance statements and their current boundaries.}
+\label{tab:assurance-summary}
 \small
-\begin{tabular}{@{}ll@{}}
+\begin{tabular}{@{}lp{46mm}p{48mm}@{}}
 \toprule
-Statement & Lean name / location \\
+Layer & Established statement & Boundary \\
 \midrule
-State-Change Factorization & Def.~\ref{def:factorization}; \texttt{PatchFormal} \\
-Mutation Transparency & Def.~\ref{def:transparency}; \texttt{PatchFormal} \\
-Signature / capability soundness & Thm.~\ref{thm:signature}; \texttt{PatchSignature} \\
-Integer \texttt{RangeExpr} soundness & Thm.~\ref{thm:range}; \texttt{rangeAnalysisSound} \\
-Finite call-tree refinement & Thm.~\ref{thm:calltree}; \texttt{checkedConcreteTransitiveCallTreeRefinesCallerSignature} \\
-Observed runtime-frame correspondence & Thm.~\ref{thm:runtime}; \texttt{checkedObservedTransitiveRuntimeRefinesCallerSignature} \\
+Semantic Change machine & Factorization and mutation transparency & modeled machine only \\
+Signature / capability & Thm.~\ref{thm:signature} & \texttt{CoreStmt} fragment \\
+Integer magnitude & Thm.~\ref{thm:range} & supported integer \texttt{RangeExpr} \\
+Finite exact calls & Thm.~\ref{thm:calltree} & finite ranked selected call trees \\
+Production runtime bridge & Thm.~\ref{thm:runtime} on accepted evidence & not capture, validator, lowering, or engine correctness \\
+GUI / native / Things & product artifact only & outside beta~32 formal correspondence \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Supporting Lean names also include \texttt{callSignatureSoundness}, \texttt{concreteCallBinding\_sound}, \texttt{checkedConcreteBoundEffectRefinesCallerSignature} and \texttt{checkedConcreteCallBodyRefinesCallerSignature}. They remain fragment theorems, not a verified compiler.
+\section{Evaluation}
+\subsection{Semantic-authority ablation}
+The artifact contains eight extension-style semantic-authority cases. Each is evaluated by the Patch compiler/Change Capability analysis and by an intentionally coarse internal ablation that records only transitively reachable changed target paths. The baseline deliberately ignores operation, magnitude, and proof obligations; it is not presented as a model of a named prior effect or capability system.
 
 \begin{table}[t]
 \centering
-\caption{Assurance layer versus proof status. ``Accepted evidence'' means Lean checks consequences of independently reconstructed artifacts rather than proving the producer correct.}
-\label{tab:trust-boundary}
-\small
-\begin{tabular}{@{}llp{58mm}@{}}
-\toprule
-Layer & Status & Bound \\
-\midrule
-Factorization, signatures, ranges, call trees & Lean & explicit fragments only \\
-Runtime-frame binding equality & Lean on accepted evidence & not capture completeness \\
-Source/range, guard, static call-site identity & independent JavaScript validation & not verified parsers \\
-Runtime capture, validator, lowering, Wasm engine & proof-free trust & named, not elided \\
-Things, GUI, native Window runtimes & product artifact & outside beta~32 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Semantic-Authority Evaluation}
-\subsection{Controlled micro-case ablation}
-The artifact contains eight extension-style semantic-authority cases. Each case is evaluated by the real Patch compiler/Change Capability analysis and by an intentionally coarse internal ablation that records only transitively reachable changed target paths. The coarse baseline deliberately ignores semantic operation, magnitude, and proof obligations. It is not intended as a model of any named prior effect or capability system.
-
-The expected mechanized decision matrix is:
-\begin{center}
-\begin{tabular}{lrr}
-\toprule
-Decision class & Cases & Interpretation \\
-\midrule
-Patch accept / coarse accept & 3 & both admit the case \\
-Patch reject / coarse accept & 4 & semantic authority rejects beyond target-only write authority \\
-Patch reject / coarse reject & 1 & target escape rejected by both \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\begin{table}[t]
-\centering
-\caption{Eight-case semantic-authority ablation. The coarse baseline records only transitively reachable write targets and ignores operation, magnitude and proof obligation.}
+\caption{Eight-case semantic-authority ablation. The coarse baseline records only transitively reachable write targets.}
 \label{tab:security-ablation}
 \small
 \begin{tabular}{@{}lccc@{}}
@@ -402,29 +253,22 @@ Case & Isolated property & Patch & Coarse write \\
 \end{tabular}
 \end{table}
 
-The four differential rejections cover magnitude escalation, operation-direction escalation, transitive helper magnitude escalation, and fail-closed unknown magnitude. The shared rejection is an unauthorized target escape. These cases support a narrow ablation statement about the artifact's semantic authority dimensions, not a claim of complete malicious-code containment or superiority over prior systems.
+Three cases are accepted by both analyses, four are rejected only by Patch's semantic authority, and the target escape is rejected by both. The four differential rejections isolate magnitude escalation, operation-direction escalation, transitive helper magnitude escalation, and fail-closed unknown magnitude. The result supports a narrow statement about authority precision relative to the target-only ablation, not a complete malicious-code containment claim or superiority claim over prior systems.
 
-\subsection{Checkout/loyalty extension case}
-A larger case study models a checkout extension that composes discount and loyalty helpers over multiple state paths. The safe variant executes through the real direct-WebAssembly path and terminates with
+\subsection{Application cases}
+Two larger internally authored domains test the same distinction through the production direct-WebAssembly path. The checkout/loyalty case composes balance and reward helpers; its safe variant terminates with
 \[
 balance=80,\qquad points=8,\qquad cashback=0.
 \]
-Its protected entry signature must include the transitive balance-decrease and points-increase effects with the expected bounds.
-
-Controlled variants escalate reward magnitude, reverse the balance operation direction, or target unauthorized cashback state. Patch rejects these violations according to Semantic Change Contracts; the first two remain intentionally invisible to the internal target-only ablation, while the target escape is rejected by both.
-
-\subsection{Usage/quota extension case}
-A second application case changes domain rather than adding another checkout mutation. It models bounded usage accounting over \texttt{used}, \texttt{remaining}, \texttt{bonus}, and an unauthorized \texttt{admin\_credit} path. The safe variant executes through the same production direct-WebAssembly path and terminates with
+The usage/quota case models bounded usage accounting and terminates safely with
 \[
 used=35,\qquad remaining=85,\qquad bonus=5,\qquad admin\_credit=0.
 \]
-The protected entry signature must contain transitive usage-increase, quota-decrease, and bonus-increase effects with their declared bounds. Controlled variants exercise magnitude escalation, operation-direction reversal, and target escape under the same internal target-only ablation.
-
-Together, checkout/loyalty and usage/quota form a multi-domain artifact corpus. They are engineering/motivating cases, not a complete plugin sandbox, a real third-party integration study, or empirical evidence about an external extension ecosystem.
+In both domains, controlled variants escalate magnitude, reverse an authorized operation direction, or target unauthorized state.
 
 \begin{table}[t]
 \centering
-\caption{Two-domain application corpus. Safe variants execute on the production direct-WebAssembly path. Escalations reuse the same internal target-only ablation as the micro-cases.}
+\caption{Two-domain application corpus. Safe variants execute on the production direct-WebAssembly path.}
 \label{tab:application-corpus}
 \small
 \begin{tabular}{@{}llccc@{}}
@@ -443,20 +287,33 @@ usage/quota & \texttt{admin\_credit} & rejected & reject & reject \\
 \end{tabular}
 \end{table}
 
+These are engineering cases rather than a complete plugin sandbox, vulnerability corpus, or third-party integration study.
+
 \input{real-code-audit}
 
-\section{Artifact Measurement Protocol}
-The repository contains deterministic harnesses for direct-WebAssembly compilation/execution, independent validation, beta~32 correspondence, and certificate-source construction. A process-isolated controller can record raw samples, artifact sizes, machine identity, source identity, and robust summary statistics. Timing evidence is explicitly labelled \texttt{development}, \texttt{hosted-ci}, or \texttt{controlled}; hosted CI cannot be relabelled as controlled, and a controlled run requires a documented machine, exact clean commit, and retained raw reports. This infrastructure is useful for future performance work, but Paper~1 makes no overhead or scalability claim and therefore does not treat uncollected timing as evidence for RQ1--RQ4.
+\subsection{Answers to the research questions}
+The evidence above supports four deliberately scoped answers.
 
-\section{Reproducibility Artifact}
-The \emph{Patch Reproducibility Bundle} binds the research artifact to an exact Patch version and 40-character source commit. CI regenerates the finite transitive call-tree certificate, direct-WebAssembly runtime certificate, repeated-call and mixed-guard invocation-frame certificates, semantic-authority report, and both checkout and quota application reports. Non-performance evidence uses \texttt{SOURCE\_DATE\_EPOCH} derived from the source commit so timestamps do not drift with workflow wall-clock time.
+\paragraph{RQ1: supported for the modeled fragment.}
+The semantic machine factors each modeled state-changing step through a well-formed Change and records the witnessing Change in history. Change Signatures and optional Change Capabilities are derived from that same route. This establishes the architectural conjunction for the formal fragment, not for arbitrary foreign state or every product feature.
 
-The bundle snapshots tracked source plus explicitly regenerated evidence, records byte size and SHA-256 for every included file, verifies those hashes and the version/commit identity, and creates a sorted deterministic tar/gzip envelope with a separate archive SHA-256. Environment provenance is recorded separately from the reproducible claim boundary.
+\paragraph{RQ2: yes for the evaluated authority dimensions.}
+Operation and magnitude distinguish cases that the target-only ablation cannot distinguish. Four of eight micro-cases are rejected by Patch while the coarse write-target analysis accepts them, and the two application domains reproduce magnitude and direction distinctions through the production path. The result is evidence for semantic authority precision, not a universal comparison with richer prior systems.
 
-The bundle does not include paper performance results and deliberately does not convert heterogeneous hosted-runner timing into a performance claim.
+\paragraph{RQ3: yes for selected certified direct-WebAssembly executions.}
+Independent transition/effect validation and beta~32 frame reconstruction relate selected direct-WebAssembly observations to exact finite formal call-tree effects without trusting backend call markers. Repeated identical invocations and mixed supported guard paths are distinguished. The conclusion remains conditional on accepted evidence and does not imply a verified compiler or runtime.
 
-\section{Product Artifact Boundary}
-Patch 0.2.0-beta.35 includes Patch Studio, source-backed Window tooling, portable/native deployment paths, richer GUI controls, and product data types beyond the beta~32 formal fragment. These capabilities improve inspectability and usability of the research artifact but are not contributions evaluated by RQ1--RQ4. Product work after beta~32 does not widen the Lean runtime-correspondence theorem; Things, GUI/native Window runtimes, distribution-integrity hardening, and unsupported backend features remain outside that theorem. The persistent-mutation rule is preserved at the language boundary: transient toolkit/event state becomes modeled persistent Patch state only through an explicit semantic \texttt{change}.
+\paragraph{RQ4: partial representational fit with explicit boundaries.}
+In the frozen 15-site public-code stress test, twelve sites have a compact single-target set/add/remove shape. However, seven cross foreign host persistence APIs and three bundle multiple related targets. The result therefore supports the plausibility of the single-target Change abstraction while simultaneously identifying commit-route ownership and multi-target atomicity as boundaries of Paper~1.
+
+Taken together, the evaluation answers the architectural, authority, runtime-correspondence, and representational questions separately. This separation is intentional: evidence for one question is not reused to imply stronger claims about another.
+
+\section{Reproducibility and Artifact Boundary}
+The \emph{Patch Reproducibility Bundle} binds the research artifact to an exact Patch version and 40-character source commit. CI regenerates the finite transitive call-tree certificate, direct-WebAssembly runtime certificates, repeated-call and mixed-guard frame certificates, semantic-authority report, and both application reports. Tracked source and regenerated evidence are packaged with SHA-256 identities in a deterministic archive.
+
+The repository also contains process-isolated timing infrastructure, but Paper~1 makes no overhead or scalability claim. Hosted-CI timing is therefore regression data, not performance evidence; controlled timing becomes relevant only if a later manuscript revision introduces a performance claim.
+
+Patch 0.2.0-beta.35 includes Patch Studio, source-backed Window tooling, native/portable deployment paths, richer GUI controls, and data types beyond the beta~32 formal fragment. These product capabilities are useful artifact surfaces but are not contributions evaluated by RQ1--RQ4 and do not widen the runtime-correspondence theorem. Transient toolkit/event state becomes modeled persistent Patch state only through an explicit semantic \texttt{change}.
 
 \input{related-work}
 
@@ -464,29 +321,29 @@ Patch 0.2.0-beta.35 includes Patch Studio, source-backed Window tooling, portabl
 \label{sec:limitations}
 
 \paragraph{Construct validity.}
-The Lean theorems cover explicit fragments rather than the full language. Independent source/range, guard and call-site validators reduce selected extraction trust, but they are JavaScript rather than verified parsers. Runtime correspondence checks consequences of accepted reconstructed evidence; it does not prove capture completeness, lowering correctness or WebAssembly-engine correctness. The coarse security baseline is an internal target-only ablation, not a model of a named prior system.
+The Lean theorems cover explicit fragments rather than the full language. Independent source/range, guard, and call-site validators reduce selected extraction trust, but they are JavaScript rather than verified parsers. Runtime correspondence checks consequences of accepted reconstructed evidence; it does not prove capture completeness, lowering correctness, or WebAssembly-engine correctness. The coarse security baseline is an internal target-only ablation, not a model of a named prior system.
 
 \paragraph{Internal validity.}
-Semantic-authority cases are deterministic artifact cases with expected accept/reject matrices rather than samples from a vulnerability corpus. The public-code mutation-shape stress test uses frozen source anchors and explicit classifications, but classification remains a manual research judgement. No controlled paper-quality timing dataset has been collected; because no performance claim is made, hosted-CI timing is retained only as regression/reproducibility evidence.
+Semantic-authority cases are deterministic artifact cases with expected accept/reject matrices rather than samples from a vulnerability corpus. The public-code mutation-shape stress test uses frozen source anchors and explicit classifications, but classification remains a manual research judgement. No controlled paper-quality timing dataset has been collected; because no performance claim is made, hosted-CI timing is retained only as regression and reproducibility evidence.
 
 \paragraph{External validity.}
-Checkout/loyalty and usage/quota are internally authored engineering cases. The 15-site public-code stress test deliberately uses purposeful diversity sampling rather than random or exhaustive repository mining. Its counts are descriptive of the frozen corpus only. The public projects are not translated to or executed by Patch, so the study does not establish source compatibility, migration feasibility, third-party Patch execution, certified adapters, atomic multi-target semantics, usability, or ecosystem prevalence. Seven sites cross foreign host-backed state APIs and three group multiple related targets; these are explicit architectural boundaries rather than failed or successful integrations. GUI, Things, native Window runtimes and foreign code remain outside the beta~32 Lean fragment. The related-work review is structured but not claimed to be exhaustive.
+Checkout/loyalty and usage/quota are internally authored engineering cases. The 15-site public-code stress test uses purposeful diversity sampling rather than random or exhaustive repository mining. Its counts are descriptive of the frozen corpus only. The public projects are not translated to or executed by Patch, so the study does not establish source compatibility, migration feasibility, third-party Patch execution, certified adapters, atomic multi-target semantics, usability, or ecosystem prevalence. Seven sites cross foreign host-backed state APIs and three group multiple related targets; these are architectural boundaries, not failed or successful integrations. GUI, Things, native Window runtimes, and foreign code remain outside the beta~32 Lean fragment. The related-work review is structured but not claimed to be exhaustive.
 
-The most valuable follow-on evidence is a genuine external end-to-end integration or migration study, a broader systematic mutation corpus if prevalence claims are desired, and controlled performance measurements only if the paper later makes an overhead or scalability claim. Reducing remaining lowering/runtime and out-of-fragment parser trust would further strengthen assurance. Relational multi-target ChangeSets, certified host adapters, least-authority inference, temporal authority, causal debugging, and safe parallelism remain separate research questions rather than missing Paper~1 contributions.
+The most valuable follow-on evidence is a genuine external integration or migration study, a broader systematic mutation corpus if prevalence claims are desired, and controlled performance measurements only if the paper later makes an overhead or scalability claim. Reducing remaining lowering/runtime and out-of-fragment parser trust would further strengthen assurance. Relational multi-target ChangeSets, certified host adapters, least-authority inference, temporal authority, causal debugging, and safe parallelism remain separate research questions rather than missing Paper~1 contributions.
 
 \section{Conclusion}
-Patch investigates a language architecture in which ordinary modeled persistent mutation is not merely observed but factored through an explicit semantic Change representation. The same substrate supports operation- and magnitude-aware contracts, history, provenance, and assurance while keeping beginner-facing mutation syntax compact.
+Patch investigates a language architecture in which ordinary modeled persistent mutation is committed through an explicit semantic Change rather than merely observed after the fact. The same substrate supports operation- and magnitude-aware contracts, history, provenance, and a layered assurance argument while keeping beginner-facing mutation syntax compact.
 
-The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls and preserve different concrete guard-selected traces between repeated identities. Independent source/range and guard validation plus raw-source static call-site binding reduce selected production-extraction trust dependencies, while validator, remaining parser semantics, lowering, capture, and engine correctness remain explicit rather than overstating full verification.
+The formal evidence establishes factorization, semantic-authority soundness properties, integer range soundness, finite exact call-tree refinement, and runtime-frame correspondence for explicit fragments. The production bridge is deliberately bounded: independent validators and frame reconstruction reduce selected trust dependencies, while capture, remaining parser semantics, lowering, validator correctness, and the WebAssembly engine remain named trust assumptions.
 
-The evaluation shows that semantic operation and magnitude reject four cases admitted by the paper's deliberately coarse target-only write ablation, while two larger application domains exercise the same distinction through the production path. The public-code mutation-shape stress test adds representational evidence rather than integration evidence: 12 of 15 frozen sites have a compact single-target set/add/remove interpretation, but seven cross host-backed persistence and three bundle multiple related targets. None of the public projects is executed by Patch. The result supports only the narrower observation that Patch-style semantic-delta shapes occur in mature public code while identifying concrete boundaries where Patch does not own the commit route or does not provide atomic grouping.
+The evaluation then tests different consequences of the architecture rather than treating one result as evidence for everything. Semantic operation and magnitude reject four cases admitted by the target-only ablation; two larger domains reproduce the distinction through the production path; and the public-code stress test finds both compact single-target mutation shapes and concrete boundaries involving foreign persistence and multi-target grouping.
 
-Taken together, Paper~1 argues for the architectural conjunction rather than for any individual mechanism as first: modeled persistent mutation is committed through a structured semantic Change, and operation- and magnitude-aware contracts are derived from that same mandatory route. The formal, runtime, controlled-authority, and public-code stress-test evidence support that claim within explicit boundaries. Later work can address multi-target atomicity, host adapters, least-authority inference, and broader external evaluation without enlarging the contribution claimed here.
+Paper~1 therefore argues for a specific architectural conjunction, not for firstness of any individual mechanism: modeled persistent mutation is committed through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory route. Later work can address multi-target atomicity, host adapters, least-authority inference, and broader external evaluation without enlarging the contribution claimed here.
 
 \appendix
 \section{Artifact reproduction}
 \label{app:repro}
-Core assurance, evaluation and packaging commands used by this working manuscript:
+Core assurance, evaluation, and packaging commands used by this manuscript include:
 
 \begin{verbatim}
 npm test
@@ -497,7 +354,7 @@ npm run evaluate:quota-extension
 npm run bundle:reproducibility
 \end{verbatim}
 
-A future paper-candidate timing run may use the process-isolated controller with measurement class \texttt{controlled} on a documented fixed machine. Hosted-CI timing must not be copied into this file as a performance result.
+A future paper-candidate timing run may use the process-isolated controller with measurement class \texttt{controlled} on a documented fixed machine. Hosted-CI timing must not be copied into this paper as a performance result.
 
 \bibliographystyle{plain}
 \bibliography{references}
