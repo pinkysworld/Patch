@@ -1,4 +1,5 @@
 name: R0 Designer materialization state preflight
+# rerun: structural toolbar wait
 
 on:
   push:
