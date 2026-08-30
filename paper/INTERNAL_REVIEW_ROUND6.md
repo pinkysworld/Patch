@@ -48,11 +48,11 @@ Five direct local fits versus thirteen adapter/restructure cases is important ne
 
 **Disposition: adopted.** The study is presented as an external mutation-shape audit with both positive and negative findings. The paper does not collapse adapter/restructure cases into successes.
 
-### Major comment B3 — Add an explicit research question rather than quietly appending the study
+### Major comment B3 — Do not let the audit silently widen the core claim surface
 
-The current RQ3 is mechanism isolation and explicitly disclaims ecological inference. A new empirical audit should have its own scoped question so the abstract, contribution list, results and conclusion stay synchronized.
+The current RQ3 is mechanism isolation and explicitly disclaims ecological inference. The audit must be visible and synchronized with the abstract/conclusion, but making it a new central RQ could imply a stronger generalization study than a six-project purposive audit can support.
 
-**Disposition: adopted.** Add RQ4 on external mutation-shape transfer: which audited retained-state shapes map directly to the current source/formal fragments and which expose representation, dynamic-target, host-state, or coupling boundaries? It remains an exploratory audit, not a prevalence question.
+**Disposition: adopted with modification.** The manuscript adds a dedicated **Public Real-Code Mutation Audit** section and an explicit exploratory audit finding rather than promoting the study to a fourth core RQ. The three original RQs remain the formal/mechanism questions. This keeps the audit prominent while preserving its deliberately weaker generalization status.
 
 ## Reviewer profile C — journal editor / reproducibility reviewer
 
@@ -60,7 +60,7 @@ The current RQ3 is mechanism isolation and explicitly disclaims ecological infer
 
 If the manuscript says 5 direct / 11 adapter / 2 restructure and 3 Lean-shape matches, those counts should be regenerated from the frozen coding manifest and checked in CI.
 
-**Disposition: adopted.** `scripts/evaluate-real-code-mutations.js` validates the protocol and deterministically regenerates `studies/real-code-mutations/results.json`; Paper CI should run the `--check` mode.
+**Disposition: adopted.** `scripts/evaluate-real-code-mutations.js` validates the protocol and deterministically regenerates `studies/real-code-mutations/results.json`; Paper CI runs the `--check` mode.
 
 ### Major comment C2 — Network availability should not make manuscript CI fragile
 
