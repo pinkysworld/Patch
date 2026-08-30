@@ -75,7 +75,7 @@ test('Pages waits for current PaintBox image v1.8 and frozen runtime lines witho
   assert.doesNotMatch(pages, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.7/);
   assert.doesNotMatch(pages, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.7/);
   assert.doesNotMatch(pages, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.7/);
-  assert.match(pages, /Refusing to report a successful Pages run without a deployment/);
-  assert.match(pages, /exit 1/);
+  assert.match(pages, /Pinned runtime releases are still publishing\. Deferring Pages without reporting an expected failure/);
+  assert.match(pages, /A manual Pages deployment requires every pinned runtime release to exist\. Refusing to deploy\./);
   assert.match(pages, /if: steps\.native_runtime\.outputs\.ready == 'true'/);
 });
