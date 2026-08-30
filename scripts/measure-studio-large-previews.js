@@ -179,7 +179,7 @@ try {
       rows: document.querySelectorAll('#designerCanvas .patch-table-stage1-control tbody > tr').length,
       tableNodes: document.querySelector('#designerCanvas .patch-table-stage1-control')?.querySelectorAll('*').length ?? 0,
       totalNodes: document.querySelector('#designerCanvas')?.querySelectorAll('*').length ?? 0
-    }))()`, state => state?.active === '0' && state.rows === ${TABLE_ROWS});
+    }))()`, state => state?.active === '0' && state.rows === TABLE_ROWS);
     await evaluate(cdp, `new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
     const tableEnded = await evaluate(cdp, `performance.now()`);
 
@@ -190,7 +190,7 @@ try {
       treeNodes: document.querySelectorAll('#designerCanvas .patch-tree-node').length,
       treeDomNodes: document.querySelector('#designerCanvas .patch-tree')?.querySelectorAll('*').length ?? 0,
       totalNodes: document.querySelector('#designerCanvas')?.querySelectorAll('*').length ?? 0
-    }))()`, state => state?.active === '1' && state.treeNodes === ${TREE_NODES});
+    }))()`, state => state?.active === '1' && state.treeNodes === TREE_NODES);
     await evaluate(cdp, `new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`);
     const treeEnded = await evaluate(cdp, `performance.now()`);
 
