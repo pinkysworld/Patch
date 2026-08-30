@@ -6,16 +6,44 @@ import { snapDesignerGrid } from './designer-z-order-model.js';
 const canvas = document.querySelector('#designerCanvas');
 const code = document.querySelector('#code');
 const ALIGNMENT_TOLERANCE = 5;
+const SMART_GUIDES_STORAGE_KEY = 'patch-studio-smart-guides-v1';
+let smartGuidesEnabled = loadSmartGuidePreference();
 let verticalGuide = null;
 let horizontalGuide = null;
 let horizontalSpacingGuide = null;
 let verticalSpacingGuide = null;
 
 if (canvas && code) {
+  installSmartGuideToggle();
   canvas.addEventListener('pointerdown', beginAlignmentAssist, { capture: true });
 }
 
+function installSmartGuideToggle() {
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  if (!toolbar || document.querySelector('#toggleSmartGuides')) return;
+  const toggle = document.createElement('button');
+  toggle.id = 'toggleSmartGuides';
+  toggle.type = 'button';
+  toggle.className = 'secondary small designer-smart-guides-toggle';
+  toggle.title = 'Toggle edge, center and equal-spacing smart guides. Hold Alt/Option during a drag to bypass them temporarily.';
+  toolbar.appendChild(toggle);
+
+  const render = () => {
+    toggle.setAttribute('aria-pressed', smartGuidesEnabled ? 'true' : 'false');
+    toggle.textContent = smartGuidesEnabled ? 'Smart Guides · On' : 'Smart Guides · Off';
+    canvas.dataset.smartGuides = smartGuidesEnabled ? 'on' : 'off';
+  };
+  toggle.addEventListener('click', () => {
+    smartGuidesEnabled = !smartGuidesEnabled;
+    saveSmartGuidePreference(smartGuidesEnabled);
+    if (!smartGuidesEnabled) hideGuides();
+    render();
+  });
+  render();
+}
+
 function beginAlignmentAssist(event) {
+  if (!smartGuidesEnabled) return;
   if (event.target.closest?.('.patch-form-resize-handle')) return;
   const target = event.target.closest?.('.designer-control.designer-selected');
   if (!target || !canvas.contains(target)) return;
@@ -36,7 +64,7 @@ function beginAlignmentAssist(event) {
   if (!peers.length) return;
 
   const move = moveEvent => {
-    if (moveEvent.altKey) {
+    if (!smartGuidesEnabled || moveEvent.altKey) {
       hideGuides();
       return;
     }
@@ -259,6 +287,23 @@ function formatGap(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '?';
   return Number.isInteger(number) ? String(number) : number.toFixed(1);
+}
+
+function loadSmartGuidePreference() {
+  try {
+    return localStorage.getItem(SMART_GUIDES_STORAGE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+function saveSmartGuidePreference(enabled) {
+  try {
+    localStorage.setItem(SMART_GUIDES_STORAGE_KEY, enabled ? 'on' : 'off');
+  } catch {
+    // The preference is intentionally optional; private/offline restrictions
+    // must never block the Designer.
+  }
 }
 
 function hideGuides() {
