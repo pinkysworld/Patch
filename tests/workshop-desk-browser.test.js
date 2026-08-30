@@ -535,6 +535,90 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(tabState.selected[0], 'false');
   assert.equal(tabState.selected[1], 'true');
 
+  const fullFallbackStarted = await evaluate(cdp, `(() => {
+    const app = document.querySelector('#app');
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const input = [...(main?.querySelectorAll('input.patch-input') ?? [])].find(node => node.placeholder === 'item');
+    if (!app || !main || !settings || !input) return false;
+    const url = new URL(window.location.href);
+    url.searchParams.set('patch-runtime-render', 'full');
+    window.history.replaceState(null, '', url);
+    window.__patchMainBeforeExplicitFull = main;
+    window.__patchSettingsBeforeExplicitFull = settings;
+    input.focus();
+    input.value = 'Keyboard Full';
+    input.setSelectionRange(4, 4);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  })()`);
+  assert.equal(fullFallbackStarted, true);
+  const fullFallbackState = await waitFor(cdp, `(() => {
+    const app = document.querySelector('#app');
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const input = [...(main?.querySelectorAll('input.patch-input') ?? [])].find(node => node.placeholder === 'item');
+    return input ? {
+      mode: app?.dataset?.patchRuntimeRenderMode ?? '',
+      reconcile: app?.dataset?.patchRuntimeReconcile ?? '',
+      mainReplaced: window.__patchMainBeforeExplicitFull !== main,
+      settingsReplaced: window.__patchSettingsBeforeExplicitFull !== settings,
+      replacedForms: Number(app?.dataset?.patchRuntimeReplacedForms ?? 0),
+      value: input.value,
+      focused: document.activeElement === input,
+      selectionStart: input.selectionStart,
+      selectionEnd: input.selectionEnd,
+      row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+      tree: document.querySelector('#app [data-patch-control-key="id:parts"] .patch-tree-node[aria-selected="true"]')?.getAttribute('aria-label') ?? ''
+    } : null;
+  })()`, state => state?.mode === 'full'
+    && state.reconcile === 'full-fallback-v1'
+    && state.value === 'Keyboard Full'
+    && state.focused === true
+    && state.row.includes('WD-105')
+    && state.tree === 'Parts / Input / Keyboard');
+  assert.equal(fullFallbackState.mainReplaced, true, 'explicit full mode must rebuild the main Form');
+  assert.equal(fullFallbackState.settingsReplaced, true, 'explicit full mode must rebuild even otherwise unchanged Forms');
+  assert.ok(fullFallbackState.replacedForms >= 6, JSON.stringify(fullFallbackState));
+  assert.equal(fullFallbackState.selectionStart, 4);
+  assert.equal(fullFallbackState.selectionEnd, 4);
+
+  const incrementalResumed = await evaluate(cdp, `(() => {
+    const app = document.querySelector('#app');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const input = [...(main?.querySelectorAll('input.patch-input') ?? [])].find(node => node.placeholder === 'item');
+    if (!app || !settings || !input) return false;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('patch-runtime-render');
+    window.history.replaceState(null, '', url);
+    window.__patchSettingsBeforeIncrementalResume = settings;
+    input.value = 'Keyboard Keyed';
+    input.setSelectionRange(6, 6);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  })()`);
+  assert.equal(incrementalResumed, true);
+  const incrementalResumeState = await waitFor(cdp, `(() => {
+    const app = document.querySelector('#app');
+    const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
+    const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
+    const input = [...(main?.querySelectorAll('input.patch-input') ?? [])].find(node => node.placeholder === 'item');
+    return input ? {
+      mode: app?.dataset?.patchRuntimeRenderMode ?? '',
+      reconcile: app?.dataset?.patchRuntimeReconcile ?? '',
+      settingsStable: window.__patchSettingsBeforeIncrementalResume === settings,
+      value: input.value,
+      row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+      tree: document.querySelector('#app [data-patch-control-key="id:parts"] .patch-tree-node[aria-selected="true"]')?.getAttribute('aria-label') ?? ''
+    } : null;
+  })()`, state => state?.mode === 'incremental'
+    && state.reconcile === 'keyed-control-v2'
+    && state.value === 'Keyboard Keyed'
+    && state.row.includes('WD-105')
+    && state.tree === 'Parts / Input / Keyboard');
+  assert.equal(incrementalResumeState.settingsStable, true, 'removing the explicit fallback must resume keyed reconciliation');
+
   await delay(1000);
   assert.equal(await evaluate(cdp, `document.querySelector('#code')?.value?.includes('window "Job details" as details') === true`, 3000), true,
     'Workshop Desk page stopped responding after Run and Form materialization');

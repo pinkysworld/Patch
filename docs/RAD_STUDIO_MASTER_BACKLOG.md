@@ -1,6 +1,6 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-08-29**
+Status synchronized: **2026-08-30**
 
 This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** is the active R0 architecture tracker. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
@@ -46,7 +46,9 @@ Current product contract:
 - public content-addressed PWA plus real-Chrome startup/Workshop checks;
 - six-Form Workshop Desk acceptance application and real-Chrome large-project stress fixture;
 - R0 `studio-design-model/0.1` and `studio-design-cache/0.1`, wired into the primary non-executing Designer refresh path;
+- R0 `studio-design-snapshots/0.1`, sharing exact-source declaration-only snapshots and AST-derived Designer descriptors;
 - R0 `studio-form-materialization/0.1`, with only the active Form fully materialized and sibling Forms retained as lightweight source-backed shells;
+- R0 `studio-runtime-selection-state/0.1` and `studio-runtime-render-policy/0.1`, preserving keyed transient selections with incremental-by-default rendering and an explicit deterministic full fallback;
 - R1 `native-imagelist-asset-plan/0.1`, explicitly not yet a Ready native ImageList contract;
 - Offline Studio manifest **v1** and rolling Stage 1 release channel **`offline-studio-v0.2`** for Windows x64, macOS Apple Silicon and Linux x64;
 - Offline Studio release bundle validates platform self-smokes, identical embedded-site manifests and SHA-256 checksums before publication.
@@ -107,10 +109,11 @@ Completed:
 - [x] specialized PaintBox, Shape, Panel, StatusBar and Table adapters obey the active-Form boundary;
 - [x] StatusBar design-time rendering uses a declaration-only snapshot instead of `PatchInterpreter.run()`;
 - [x] real-Chrome Form switching proves inactive Forms settle with zero Designer controls;
-- [x] Run yields one browser task before the large compile/execute/render pipeline.
+- [x] Run yields one browser task before the large compile/execute/render pipeline;
+- [x] `studio-design-snapshots/0.1` shares exact-source declaration-only snapshots across Designer readers;
+- [x] canonical first-read Window/control descriptors reuse the already parsed design AST instead of reparsing source.
 
 Remaining:
-- [ ] share the design snapshot cache across Designer adapters;
 - [ ] preserve Project Explorer, Object Inspector, selection and structural-editor behavior across materialization;
 - [ ] virtualize very large Table/Tree previews where justified;
 - [ ] define a versioned Web Worker boundary for parse/compile/design-model work;
@@ -122,9 +125,10 @@ Remaining:
 - [x] Stage 1 event reconciliation reuses unchanged Form DOM and replaces only changed Form shells;
 - [x] bounded focus, caret, Form/control scroll and unchanged-model multi-selection restoration across changed-Form replacement;
 - [x] Tabs page changes update only the local tab panel and preserve parent/unrelated Form DOM identity;
-- [ ] reconcile only changed controls inside a changed Form rather than replacing its complete shell;
-- [ ] preserve richer transient Table/Tree adapter selections through the same canonical keyed-state contract;
-- [ ] deterministic full rerender fallback/debug mode;
+- [x] reconcile changed core-rendered controls inside a stable changed Form while retaining unchanged sibling DOM identity;
+- [x] preserve richer transient Table/Tree adapter selections through the same canonical keyed-state contract;
+- [x] deterministic full rerender fallback/debug mode through explicit `?patch-runtime-render=full`;
+- [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
 - [ ] event-to-paint regression gates.
 
 ## P0.5 Performance gates
@@ -158,7 +162,9 @@ Remaining:
 - [ ] make Pages deployment release-aware so a just-publishing runtime does not create an expected red workflow;
 - [ ] retain fail-closed runtime/digest verification;
 - [x] live HTTP/Chrome verification after deploy;
-- [ ] reduce notification noise without weakening gates.
+- [x] deployed Tutorials/Examples handbook pages and their content-addressed stylesheet are explicitly live-smoked after Pages deployment;
+- [ ] reduce notification noise without weakening gates;
+- [ ] package only the real Offline Compiler CLI dependency graph so unrelated `src` changes do not trigger unnecessary cross-platform compiler rebuilds.
 
 **R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI.
 

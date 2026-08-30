@@ -9,6 +9,7 @@ import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
 import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
 import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
+import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
 import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
@@ -390,6 +391,7 @@ function executeRunProject() {
     output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no console output)';
     changesView.textContent = formatChangeAnalysis(compiled.ir);
     renderWindows(appView, result.ui, true);
+    appView.dataset.patchRuntimeRenderMode = resolveStudioRuntimeRenderMode(globalThis.location?.search ?? '');
     showTab(result.ui.length ? 'app' : 'output');
   } catch (err) {
     runtime = null;
@@ -828,6 +830,29 @@ function reconcileRuntimeWindows(container, windows) {
   restoreRuntimeTransientState(container, transient);
 }
 
+function renderRuntimeWindowsAfterEvent(container, windows) {
+  const mode = resolveStudioRuntimeRenderMode(globalThis.location?.search ?? '');
+  container.dataset.patchRuntimeRenderMode = mode;
+  if (mode !== PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL) {
+    reconcileRuntimeWindows(container, windows);
+    container.dataset.patchRuntimeRenderMode = mode;
+    return;
+  }
+
+  const transient = captureRuntimeTransientState(container);
+  renderWindows(container, windows, true);
+  const models = Array.isArray(windows) ? windows : [];
+  const rebuiltControls = models.reduce((count, model) => count + (model?.controls?.length ?? 0), 0);
+  container.dataset.patchRuntimeRenderMode = mode;
+  container.dataset.patchRuntimeReconcile = 'full-fallback-v1';
+  container.dataset.patchRuntimeReusedForms = '0';
+  container.dataset.patchRuntimeReplacedForms = String(models.length);
+  container.dataset.patchRuntimeReconciledForms = '0';
+  container.dataset.patchRuntimeReusedControls = '0';
+  container.dataset.patchRuntimeReplacedControls = String(rebuiltControls);
+  restoreRuntimeTransientState(container, transient);
+}
+
 function createControlElement(control, context) {
   let el;
   if (control.type === 'tabs') {
@@ -1137,7 +1162,7 @@ function trigger(control, event, payload = {}) {
   try {
     const result = triggerWindowEvent(runtime, control, event, payload);
     output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
-    reconcileRuntimeWindows(appView, result.ui);
+    renderRuntimeWindowsAfterEvent(appView, result.ui);
   } catch (err) {
     output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
     showTab('output');
