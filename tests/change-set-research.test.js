@@ -7,6 +7,10 @@ import {
   stageAtomicChangeSet
 } from '../src/change-set.js';
 import { buildChangePlan } from '../src/change-plan.js';
+import {
+  ExperimentalChangeSetSyntaxError,
+  parseExperimentalChangeSet
+} from '../src/change-set-source.js';
 
 function transferSpec(amount, credited = amount) {
   return {
@@ -28,6 +32,27 @@ test('the beginner change syntax remains unchanged', () => {
   assert.equal(ast[1].kind, 'change');
   assert.equal(ast[1].target, 'score');
   assert.equal(ast[1].ops[0].op, 'add');
+});
+
+test('experimental source keeps atomic and relational ideas in plain language', () => {
+  const ast = parseExperimentalChangeSet(`change together called transfer:\n  change alice:\n    remove 20\n  change bob:\n    add 20\n  keep alice + bob the same\n  make sure alice >= 0`);
+
+  assert.equal(ast.kind, 'changeSet');
+  assert.equal(ast.name, 'transfer');
+  assert.equal(ast.changes.length, 2);
+  assert.equal(ast.changes[0].target, 'alice');
+  assert.equal(ast.changes[0].ops[0].op, 'remove');
+  assert.deepEqual(ast.constraints.map(item => [item.kind, item.expr]), [
+    ['same', 'alice + bob'],
+    ['ensure', 'alice >= 0']
+  ]);
+});
+
+test('experimental source directs one-target programs back to ordinary change', () => {
+  assert.throws(
+    () => parseExperimentalChangeSet(`change together:\n  change score:\n    add 1`),
+    error => error instanceof ExperimentalChangeSetSyntaxError && /Use ordinary change for one target/.test(error.message)
+  );
 });
 
 test('atomic ChangeSet stages a balanced transfer without mutating input state', () => {
