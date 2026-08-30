@@ -92,10 +92,12 @@ test('Patch Studio exposes Table through its render adapter and the shared Prope
   assert.match(serviceWorker, /'\.\/table-stage1\.js'/);
 });
 
-test('Studio App preview Table selection is keyboard-accessible and uses the shared semantic Window event adapter', () => {
+test('Studio App preview Table selection is keyboard-accessible and uses shared keyed transient state plus the semantic Window event adapter', () => {
   const playgroundChecked = spawnSync(process.execPath, ['--check', 'web/playground.js'], { encoding: 'utf8' });
   assert.equal(playgroundChecked.status, 0, playgroundChecked.stderr);
-  assert.match(studioTable, /const appSelections = new Map\(\)/);
+  assert.match(studioTable, /getRuntimeSelection\(options\.container, 'table', options\.key\)/);
+  assert.match(studioTable, /setRuntimeSelection\(options\.container, 'table', options\.key, rowIndex\)/);
+  assert.doesNotMatch(studioTable, /const appSelections = new Map\(\)/);
   assert.match(studioTable, /tr\.setAttribute\('aria-selected'/);
   assert.match(studioTable, /event\.key === 'Enter' \|\| event\.key === ' '/);
   assert.match(studioTable, /new CustomEvent\('patch-studio-table-changed'/);
