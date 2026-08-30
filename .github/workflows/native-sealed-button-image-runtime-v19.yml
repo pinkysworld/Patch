@@ -7,6 +7,7 @@ on:
       - 'src/sealed-native-gui-v18.js'
       - 'src/native-gui-ir-v18.js'
       - 'src/native-button-image-backend-adapter.js'
+      - 'native-runtime/sealed-paintbox-image-v18.hpp'
       - 'native-runtime/sealed-button-image-v19.hpp'
       - 'native-runtime/win32-sealed-gui-v19.cpp'
       - 'native-runtime/appkit-sealed-gui-v19.mm'
@@ -59,7 +60,7 @@ jobs:
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v19.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime-v19\patch-windows-native-gui-runtime.exe',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain /DPATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY=PatchRuntimeV18CompatibilityMain native-runtime\win32-sealed-gui-v19.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime-v19\patch-windows-native-gui-runtime.exe',
             'exit /b %errorlevel%'
           ) | Set-Content dist-runtime-v19\build-button-runtime.cmd -Encoding ascii
           & cmd.exe /d /c dist-runtime-v19\build-button-runtime.cmd
@@ -103,7 +104,7 @@ jobs:
       - name: Build universal AppKit sealed Button image runtime v1.9
         run: |
           mkdir -p dist-runtime-v19
-          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -framework Cocoa native-runtime/appkit-sealed-gui-v19.mm -o dist-runtime-v19/patch-macos-native-gui-runtime.bin
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -DPATCH_RUNTIME_V19_RESTORE_MAIN=PatchRuntimeV18CompatibilityMain -framework Cocoa native-runtime/appkit-sealed-gui-v19.mm -o dist-runtime-v19/patch-macos-native-gui-runtime.bin
           chmod +x dist-runtime-v19/patch-macos-native-gui-runtime.bin
           ARCHS="$(lipo -archs dist-runtime-v19/patch-macos-native-gui-runtime.bin)"
           echo "$ARCHS" | grep -qw arm64
@@ -147,7 +148,7 @@ jobs:
       - name: Build GTK3 sealed Button image runtime v1.9
         run: |
           mkdir -p dist-runtime-v19
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v19.cpp -o dist-runtime-v19/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          g++ -std=c++17 -O2 -DPATCH_RUNTIME_V19_RESTORE_MAIN=PatchRuntimeV18CompatibilityMain native-runtime/gtk-sealed-gui-v19.cpp -o dist-runtime-v19/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x dist-runtime-v19/patch-linux-native-gui-runtime.bin
       - name: Seal payload v18 and smoke GTK runtime
         run: |
