@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { offlineCompilerSourceManifest } from './offline-compiler-source-graph.js';
 
 export const PATCH_OFFLINE_COMPILER_AFFECTED_VERSION = '0.1';
@@ -45,12 +47,19 @@ function parseCli(argv) {
   const options = { files: [], stdin: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
-    if (arg === '--file') options.files.push(argv[++index] ?? '');
+    if (arg === '--file') options.files.push(requireValue(argv, ++index, '--file'));
     else if (arg === '--stdin') options.stdin = true;
-    else if (arg === '--github-output') options.githubOutput = argv[++index] ?? '';
+    else if (arg === '--github-output') options.githubOutput = requireValue(argv, ++index, '--github-output');
     else throw new Error(`Unknown offline compiler affected option: ${arg}`);
   }
   return options;
+}
+
+function requireValue(argv, index, option) {
+  if (index >= argv.length || !argv[index] || argv[index].startsWith('--')) {
+    throw new Error(`${option} requires a value.`);
+  }
+  return argv[index];
 }
 
 async function readStdin() {
@@ -59,7 +68,7 @@ async function readStdin() {
   return Buffer.concat(chunks).toString('utf8').split(/\r?\n/).filter(Boolean);
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
     const options = parseCli(process.argv.slice(2));
     const files = [...options.files, ...(options.stdin ? await readStdin() : [])];
