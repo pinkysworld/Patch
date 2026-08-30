@@ -1,4 +1,5 @@
 import PatchFormal
+import Lean.Elab.Tactic.Omega
 
 namespace PatchFormal
 
@@ -6,26 +7,6 @@ namespace PatchFormal
     exact numeric magnitude. -/
 def exactInterval (n : Int) : Interval :=
   { lo := n, hi := n, ordered := by simp }
-
-private theorem addDeltaEq {before after n : Int}
-    (h : before + n = after) : n = after - before := by
-  rw [← h]
-  simp
-
-private theorem negativeAddDeltaEq {before after n : Int}
-    (h : before + n = after) : -n = before - after := by
-  rw [← h]
-  simp
-
-private theorem removeDeltaEq {before after n : Int}
-    (h : before - n = after) : n = before - after := by
-  rw [← h]
-  simp
-
-private theorem negativeRemoveDeltaEq {before after n : Int}
-    (h : before - n = after) : -n = after - before := by
-  rw [← h]
-  simp
 
 /-- Extract the contract-level semantic effect from the deliberately small
     Change fragment shared by the current mutation machine and quantitative
@@ -120,25 +101,21 @@ theorem effectOf_amount_matches_actual
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;>
-                  exact addDeltaEq hApply
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;>
-                  exact negativeAddDeltaEq hApply
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
           | removeInt n =>
               by_cases hNonneg : 0 ≤ n
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;>
-                  exact removeDeltaEq hApply
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;>
-                  exact negativeRemoveDeltaEq hApply
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
 
 /-- **Semantic Change Contract bridge.** If a well-formed semantic Change is
     translated by `effectOf`, the resulting directional effect is allowed by a
