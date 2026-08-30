@@ -1,3 +1,5 @@
+import './smart-diagnostics.js';
+
 const MANIFEST_URL = './runtimes/runtime-manifest.json';
 const RUNTIME_FILES = new Set([
   'patch-windows-native-gui-runtime.exe',
