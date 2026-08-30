@@ -135,3 +135,19 @@ test('Change Plan exposes before/after deltas and friendly relational checks', (
   assert.equal(plan.checks[1].label, 'make sure alice >= 0');
   assert.match(plan.summary, /2 planned operations/);
 });
+
+test('Change Plan shows intermediate state for multiple operations in one member', () => {
+  const staged = stageAtomicChangeSet({
+    id: 'set:multi-op',
+    changes: [
+      { target: 'score', operations: [{ op: 'addNumber', value: 5 }, { op: 'removeNumber', value: 2 }] },
+      { target: 'other', operations: [{ op: 'addNumber', value: 1 }] }
+    ]
+  }, new Map([['score', 10], ['other', 0]]));
+  const plan = buildChangePlan(staged.record);
+
+  assert.deepEqual(plan.rows.slice(0, 2).map(row => [row.before, row.after, row.delta]), [
+    [10, 15, 5],
+    [15, 13, -2]
+  ]);
+});
