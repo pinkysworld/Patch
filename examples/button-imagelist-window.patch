@@ -1,0 +1,19 @@
+window "Button images" as main size 460, 240:
+  imagelist as app_images size 20, 20:
+    image open from "patch-resource:icons.open"
+  button "Open settings" as open_settings image app_images.open at 24, 24 size 180, 38
+  button "Open again" as open_again image app_images.open at 24, 76 size 170, 38
+  text "Native ImageList assets keep ordinary Button captions and events." at 24, 136 size 390, 28
+
+window "Settings" as settings size 360, 180:
+  text "Button image click dispatch is intact." at 24, 24 size 300, 28
+  button "Close settings" as close_settings at 24, 76 size 150, 38
+
+when open_settings clicked:
+  open settings
+
+when open_again clicked:
+  open settings
+
+when close_settings clicked:
+  close settings
