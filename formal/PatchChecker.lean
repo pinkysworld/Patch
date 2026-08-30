@@ -17,9 +17,12 @@ theorem withinBool_sound
     simpa [withinBool, Bool.and_eq_true] using h
   exact ⟨of_decide_eq_true hBoth.1, of_decide_eq_true hBoth.2⟩
 
-/-- Executable amount-policy check matching the amount clause of `Allows`. -/
+/-- Executable amount-policy check matching the amount clause of `Allows`.
+    Unknown effect magnitude is rejected by a bounded rule and admitted only by
+    a matching unbounded rule. -/
 def amountAllowsBool : Option Interval → Option Interval → Bool
-  | none, _ => true
+  | none, none => true
+  | none, some _ => false
   | some _, none => true
   | some actual, some permitted => withinBool actual permitted
 
@@ -46,7 +49,12 @@ theorem allowsBool_sound
       · refine ⟨hTarget, hField, hKind, ?_⟩
         cases hEffectAmount : effect.amount with
         | none =>
-            simp
+            cases hRuleAmount : rule.amount with
+            | none =>
+                simp
+            | some permitted =>
+                simp [allowsBool, hTarget, hField, hKind, amountAllowsBool,
+                  hEffectAmount, hRuleAmount] at h
         | some actual =>
             cases hRuleAmount : rule.amount with
             | none =>
@@ -122,7 +130,7 @@ def checkProtected (stmt : CoreStmt) (policy : List Rule) : Bool :=
   policyAllowsBool (inferSignature stmt) policy
 
 /-- A successful checker result is enough to invoke the already mechanized
-    end-to-end capability theorem for every execution of the checked core. -/
+    capability theorem for every execution of the checked normalized core. -/
 theorem checkedExecutionCannotEscape
     {stmt : CoreStmt} {runtime : List Effect} {policy : List Rule}
     (hExec : Executes stmt runtime)
