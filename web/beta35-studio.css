@@ -2,39 +2,9 @@
   width: min(1720px, 100%);
 }
 
-/* The legacy SVG stays in the HTML for old cached-site compatibility, but the
-   visible Studio mark is drawn from two fully rounded CSS primitives. This
-   avoids the blocky/pixel P while keeping the badge compact and deterministic. */
+/* Keep the shared compiler-oriented icon compact and optically balanced. */
 .brand-mark {
-  position: relative;
   border-radius: 50%;
-}
-.brand-mark svg {
-  display: none;
-}
-.brand-mark::before,
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  display: block;
-  pointer-events: none;
-}
-.brand-mark::before {
-  left: 7px;
-  top: 5px;
-  width: 5px;
-  height: 18px;
-  border-radius: 999px;
-  background: currentColor;
-}
-.brand-mark::after {
-  left: 10px;
-  top: 5px;
-  width: 11px;
-  height: 8px;
-  border: 4px solid currentColor;
-  border-left: 0;
-  border-radius: 0 999px 999px 0;
 }
 
 .studio-jump {
@@ -95,15 +65,77 @@
 }
 
 .beta35-strip a:hover { text-decoration: underline; }
-#designer { scroll-margin-top: 12px; }
+#designer { scroll-margin-top: 76px; }
 #designer:target { box-shadow: inset 0 0 0 2px var(--border-strong); }
+
+/* Source stays immediately available, but the visual result gets the larger
+   default working surface expected from a RAD IDE. */
+.editor-pane textarea {
+  height: clamp(330px, 36vh, 470px);
+}
+
+.result-pane {
+  min-height: clamp(700px, 82vh, 980px);
+}
+
+.result-pane .designer-view,
+.result-pane .app-preview {
+  min-height: clamp(650px, 76vh, 920px);
+  max-height: none;
+}
+
+.result-pane .designer-canvas {
+  min-height: clamp(600px, 70vh, 860px);
+  max-height: none;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--border) 24%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 24%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: 0 0;
+}
+
+.result-pane #designer .designer-toolbar {
+  position: sticky;
+  top: 42px;
+  z-index: 6;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.result-pane .tabs {
+  box-shadow: 0 6px 18px rgb(0 0 0 / 3%);
+}
+
+.result-pane .tab.active {
+  position: relative;
+}
+
+.result-pane .tab.active::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .72;
+}
+
+.designer-control:focus-visible,
+.patch-window:focus-visible,
+.designer-canvas:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text) 40%, transparent);
+  outline-offset: 2px;
+}
 
 @media (min-width: 1381px) {
   .result-pane #designer .designer-surface.designer-inspector-bottom {
-    grid-template-rows: minmax(360px, 1fr) minmax(160px, 240px);
+    grid-template-rows: minmax(440px, 1fr) minmax(170px, 250px);
   }
   .result-pane #designer .designer-surface.designer-inspector-bottom .designer-inspector {
-    max-height: 240px;
+    max-height: 250px;
   }
 }
 
@@ -111,4 +143,17 @@
   .studio-jump { flex: 1 1 auto; }
   .beta35-strip { align-items: flex-start; flex-wrap: wrap; }
   .beta35-strip a { margin-left: 0; }
+  .editor-pane textarea { height: clamp(360px, 48vh, 560px); }
+  .result-pane,
+  .result-pane .designer-view,
+  .result-pane .app-preview,
+  .result-pane .designer-canvas {
+    min-height: 560px;
+  }
+  .result-pane #designer .designer-toolbar { position: static; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-pane .tab,
+  .studio-jump { transition: none !important; }
 }
