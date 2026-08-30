@@ -108,6 +108,8 @@ jobs:
         run: npm run transitive-runtime-certify:example
       - name: Execute repeated direct Wasm calls and generate invocation-frame evidence
         run: npm run transitive-runtime-certify:repeated
+      - name: Post-generation formal scope report
+        run: node scripts/report-formal-scope.js
       - name: Portable application build
         run: npm run build:example
       - name: Bootstrap WebAssembly application build
