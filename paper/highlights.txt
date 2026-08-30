@@ -1,4 +1,4 @@
-State-Change Factorization makes semantic Change the modeled persistent-mutation route.
-Semantic Change Contracts derive target, operation, and bounded magnitude authority.
-Lean-checked evidence links selected direct-WebAssembly executions to exact call effects.
-A public-code stress test separates mutation-shape fit from actual commit-route ownership.
+State-Change Factorization makes Change the persistent-mutation route.
+Contracts derive target, operation, and bounded magnitude authority.
+Lean links selected direct-Wasm executions to exact call effects.
+Public-code stress test separates mutation fit from commit ownership.
