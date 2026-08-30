@@ -1,39 +1,38 @@
 \section{Public-Code Mutation-Shape Stress Test}
 \label{sec:real-code-audit}
 
-The internally authored authority cases establish controlled Patch behavior, but they do not answer a narrower external-plausibility question: do state updates in mature public software exhibit mutation shapes that the current Patch \texttt{Change} abstraction is designed to represent? We therefore inspect 15 commit-bound mutation sites from Excalidraw, VS Code, and JupyterLab. This is \emph{not} an integration test. None of these projects is translated to, ported to, or executed by Patch.
+The internally authored authority cases establish controlled Patch behavior, but they do not show how the current single-target \texttt{Change} abstraction fares against mutation patterns found in mature public software. We therefore inspect 15 commit-bound mutation sites from Excalidraw, VS Code, and JupyterLab. This is an illustrative stress test, not an integration study, repository-mining study, or estimate of ecosystem prevalence. None of these projects is translated to, ported to, or executed by Patch.
 
-The connection to Patch is deliberately specific. For each public mutation site, we ask two questions: (1) can the observed state transition be described as one current Patch-style semantic Change over one logical persistent target using a set/add/remove interpretation, and (2) would Patch own the actual commit route, or is persistence controlled by a foreign host API? A site can therefore resemble a Patch Change semantically without constituting Patch support.
+For each site we ask two separate questions: (1) can the state transition be described as one Patch-style semantic Change over one logical target using a set/add/remove interpretation, and (2) does the application itself own the commit route, or is persistence controlled by a foreign host API? A site can therefore have a simple semantic shape while still falling outside Patch governance.
 
 \paragraph{Method.}
-The corpus manifest under \path{evaluation/real-code-audit} freezes exact repository commits, source paths, and textual anchors. The projects provide three distinct state contexts: application-owned editor state, collection mutation, and host-backed persistent state. Candidate files were located with state-specific searches and frozen before classification. Each site is classified independently along two dimensions: semantic shape and commit-route ownership. A \emph{single-target} site has a set/add/remove interpretation over one logical state target. A \emph{multi-target bundle} changes several related fields in one source update. \emph{Application-owned} state is ordinary application/editor state; \emph{host-backed} state is committed by an external service such as VS Code Memento or JupyterLab \texttt{IStateDB}.
+The corpus manifest under \path{evaluation/real-code-audit} freezes exact repository commits, source paths, and textual anchors. All three projects are from the JavaScript/TypeScript ecosystem; the intended variation is in state context, not programming-language family. The sample includes application-owned editor state, collection mutation, and host-backed persistence. Candidate files were located with state-specific searches and frozen before classification. Each site is classified along two dimensions: semantic shape and commit-route ownership. A \emph{single-target} site has a set/add/remove interpretation over one logical state target. A \emph{multi-target bundle} changes several related fields in one source update. \emph{Application-owned} state is ordinary application/editor state; \emph{host-backed} state is committed by an external service such as VS Code Memento or JupyterLab \texttt{IStateDB}.
 
-We count host-backed updates conservatively. A one-key Memento update, for example, has a compact set-like state-transition shape, but Patch does not own the Memento commit route and Paper~1 does not claim a certified adapter. Likewise, multi-field source updates are not silently decomposed and counted as supported. If atomic grouping matters, that requires machinery outside this paper.
+The classifications were performed by one coder using the frozen code and the stated rubric. No inter-rater agreement statistic is reported. The corpus and rationale are published so a later replication can add independent coding. Host-backed updates are counted conservatively: a one-key Memento update may have a compact set-like transition, but Patch does not own that commit route. Multi-field updates are likewise not silently decomposed and counted as direct fits when atomic grouping may matter.
 
 \begin{table}[t]
 \centering
-\caption{Qualitative mutation-shape stress test. Counts describe only the frozen 15-site corpus; they are not coverage or population estimates.}
+\caption{Mutation-shape stress test. Counts describe only the frozen 15-site corpus.}
 \label{tab:real-code-audit}
 \small
 \begin{tabular}{@{}lrp{67mm}@{}}
 \toprule
 Classification & Sites & Meaning for Paper~1 \\
 \midrule
-Single-target Change shape & 12 & one logical target has a set/add/remove interpretation compatible with the current semantic Change abstraction \\
-Multi-target bundle & 3 & grouped or atomic multi-target semantics are outside the Paper~1 abstraction \\
-Application-owned state & 8 & the inspected mutation belongs to ordinary application/editor state \\
-Host-backed commit & 7 & persistence crosses a foreign state API, so semantic resemblance is not Patch governance \\
 Application-owned + single-target & 5 & closest direct representational fit to the current Paper~1 abstraction \\
+Host-backed + single-target & 7 & simple semantic shape, but persistence crosses a foreign state API \\
+Multi-target bundle & 3 & grouped or atomic multi-target semantics are outside Paper~1 \\
+\midrule
+All single-target shapes & 12 & set/add/remove shape irrespective of who owns the commit route \\
+Application-owned state & 8 & application/editor state irrespective of mutation shape \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Observations.}
-Twelve of the fifteen inspected sites have a single-target shape: ten are set-like, one adds to a collection, and one removes from a collection. This count is \emph{not} a Patch coverage result. It answers only a representational question for the frozen examples: the basic semantic-delta shapes used by Paper~1 also occur outside the paper's synthetic numeric programs.
+The most conservative direct-fit count is 5/15: five sites are both application-owned and single-target. Seven additional sites also have a single-target shape but commit through a foreign host-state API, so they cannot be counted as Patch-controlled mutations. The remaining three sites are multi-target bundles. The often more flattering 12/15 single-target count is therefore secondary: it describes semantic shape only, not end-to-end applicability.
 
-The stress test simultaneously exposes two limits. First, seven sites use host-backed persistence. Their state-transition meaning may be compact, but Patch is not the commit authority unless a future adapter brings that host state under the semantic Change route. Second, three Excalidraw updates bundle related fields in one source-level state update. Paper~1 can describe the member transitions individually, but it does not claim atomic multi-target grouping or relational invariant preservation.
-
-The useful distinction is therefore \emph{representational fit versus commit-route ownership}. For example, VS Code's \texttt{globalState.update(key, true)} has a set-like transition that resembles a Patch \texttt{change} with \texttt{set true}; nevertheless VS Code Memento, not Patch, commits that persistent update. Conversely, a multi-field Excalidraw \texttt{setState} exposes a mutation shape that the current single-target Change model does not claim to commit atomically. These are stress cases for Patch's architectural boundary, not demonstrations that the projects run on Patch.
+The stress test exposes two concrete boundaries. First, host-backed persistence can resemble a Patch \texttt{set} while remaining outside the Patch commit route. For example, VS Code's \texttt{globalState.update(key, true)} is set-like, yet VS Code Memento performs the persistent update. Second, multi-field Excalidraw \texttt{setState} updates expose grouping that the current single-target model does not claim to commit atomically. These cases are useful precisely because they are not all successes.
 
 \paragraph{Validity boundary.}
-This is purposeful diversity sampling, not random sampling, and 15 sites cannot estimate ecosystem prevalence. Neither source compatibility nor porting feasibility is measured. The stress test does not execute third-party code through Patch, measure migration effort, establish usability, certify foreign state adapters, or extend the beta~32 Lean fragment. Its role is narrower: to test whether the current Patch mutation abstraction has recognizable public-code analogues and to expose cases where that abstraction or its ownership boundary stops. The complete manifest and classification rationale are part of the repository artifact.
+The sample is small, purposefully selected, limited to one broad language ecosystem, and classified by a single coder. It cannot support prevalence, language-family, migration, usability, or compatibility claims. The stress test does not execute third-party code through Patch, certify host adapters, measure porting effort, or extend the Lean fragment. Its role is to provide inspectable external examples that test the current abstraction and make its boundaries concrete.
