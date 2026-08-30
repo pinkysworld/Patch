@@ -128,19 +128,31 @@ function collectButtonImageBindings(ast) {
   return Object.freeze(out);
 }
 
+/**
+ * The IR 1.7 compatibility underlay has neither an ImageList control nor a
+ * Button-image consumer contract. IR 1.8 resolves those nonvisual declarations
+ * before this projection, so the private compatibility AST removes ImageList
+ * nodes and clears Button bindings while preserving every other statement.
+ */
 function stripButtonImageBindings(nodes) {
-  for (const node of nodes ?? []) {
-    if (node.kind === 'uiControl' && node.control === 'button') {
+  if (!Array.isArray(nodes)) return;
+  for (let index = nodes.length - 1; index >= 0; index -= 1) {
+    const node = nodes[index];
+    if (node?.kind === 'uiControl' && node.control === 'imagelist') {
+      nodes.splice(index, 1);
+      continue;
+    }
+    if (node?.kind === 'uiControl' && node.control === 'button') {
       node.imageListId = null;
       node.imageItem = null;
     }
-    if (node.kind === 'tabs') {
+    if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) stripButtonImageBindings(page.body);
       continue;
     }
-    if (node.body) stripButtonImageBindings(node.body);
-    if (node.thenBody) stripButtonImageBindings(node.thenBody);
-    if (node.elseBody) stripButtonImageBindings(node.elseBody);
+    if (node?.body) stripButtonImageBindings(node.body);
+    if (node?.thenBody) stripButtonImageBindings(node.thenBody);
+    if (node?.elseBody) stripButtonImageBindings(node.elseBody);
   }
 }
 
