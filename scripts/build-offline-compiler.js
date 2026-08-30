@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
+import { collectOfflineCompilerSourceFiles } from './offline-compiler-source-graph.js';
 
 const args = process.argv.slice(2);
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -20,9 +21,9 @@ if (platform !== 'freebsd' && (!consoleRuntime || !guiRuntime)) {
   fail(`${platform} offline compiler builds require both --console-runtime and --gui-runtime.`);
 }
 
-const srcFiles = collectFiles('src', file => file.endsWith('.js'));
-const srcKeys = srcFiles.map(file => file.replaceAll('\\', '/'));
-if (!srcKeys.includes('src/cli-entry.js') || !srcKeys.includes('src/offline-linker.js')) {
+const srcFiles = collectOfflineCompilerSourceFiles(process.cwd());
+const srcKeys = srcFiles.map(file => path.relative(process.cwd(), file).split(path.sep).join('/'));
+if (!srcKeys.includes('src/cli-entry.js') || !srcKeys.includes('src/cli.js') || !srcKeys.includes('src/offline-linker.js')) {
   fail('Offline compiler source graph is incomplete.');
 }
 const sourceHash = hashFiles(srcFiles);
@@ -41,7 +42,9 @@ try {
     sourceHash,
     runtimeHash,
     runtimeEncoding: 'gzip',
-    nodeExecutable: platform === 'windows' ? 'runtime/node.exe' : 'runtime/node'
+    nodeExecutable: platform === 'windows' ? 'runtime/node.exe' : 'runtime/node',
+    sourceGraph: 'static-esm-closure-v0.1',
+    embeddedSourceModules: srcKeys
   }, null, 2), 'utf8');
 
   const assets = {
@@ -84,6 +87,7 @@ try {
   console.log(`  source sha256: ${sourceHash}`);
   console.log(`  runtime sha256: ${runtimeHash}`);
   console.log(`  embedded source modules: ${srcFiles.length}`);
+  console.log('  source graph: static local ESM closure from src/cli-entry.js + src/cli.js');
   console.log(`  execution runtime: embedded Node ${process.version}`);
   console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : 'gzip-compressed console + GUI'}`);
 } finally {
@@ -100,19 +104,10 @@ function option(name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : null;
 }
-function collectFiles(dir, predicate) {
-  const result = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const file = path.join(dir, entry.name);
-    if (entry.isDirectory()) result.push(...collectFiles(file, predicate));
-    else if (predicate(file)) result.push(file);
-  }
-  return result.sort();
-}
 function hashFiles(files) {
   const hash = crypto.createHash('sha256');
   for (const file of files) {
-    hash.update(file.replaceAll('\\', '/'));
+    hash.update(path.relative(process.cwd(), file).split(path.sep).join('/'));
     hash.update('\0');
     hash.update(fs.readFileSync(file));
     hash.update('\0');

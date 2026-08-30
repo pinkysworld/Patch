@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  PATCH_STUDIO_DESIGN_EVALUATION_POLICY_VERSION,
   PATCH_STUDIO_DESIGN_MODEL_VERSION,
   PatchStudioDesignModelError,
   buildStudioDesignModel
@@ -26,12 +27,15 @@ window "Counter {count}" as main:
 
   const model = buildStudioDesignModel(source);
   assert.equal(model.version, PATCH_STUDIO_DESIGN_MODEL_VERSION);
+  assert.equal(model.evaluationPolicy.version, PATCH_STUDIO_DESIGN_EVALUATION_POLICY_VERSION);
   assert.equal(model.state.count, 1);
   assert.equal(model.state.status, 'Initial');
   assert.equal(model.ui.length, 1);
   assert.equal(model.ui[0].title, 'Counter 1');
   assert.equal(model.ui[0].controls[0].text, 'Initial 1');
   assert.deepEqual(model.skipped.map(item => item.kind), ['change', 'call']);
+  assert.equal(model.evaluatedExpressionCount, 4);
+  assert.ok(model.evaluatedExpressionChars > 0);
 });
 
 test('Studio design model does not run conditional, repeat, preview or Form visibility actions', () => {
@@ -92,10 +96,59 @@ test('Studio design model enforces an explicit top-level node budget', () => {
   );
 });
 
+test('Studio design model bounds each expression that design time actually evaluates', () => {
+  assert.throws(
+    () => buildStudioDesignModel('window "A deliberately long title" as main:\n  text "OK"', { maxExpressionChars: 8 }),
+    error => error instanceof PatchStudioDesignModelError &&
+      error.code === 'STUDIO_DESIGN_EVALUATION_BUDGET' &&
+      /per-expression limit is 8/.test(error.message)
+  );
+});
+
+test('Studio design model bounds the total design-time expression surface', () => {
+  const source = `create text a = "1234"
+create text b = "5678"
+window "AB" as main:
+  text "CD"
+`;
+  assert.throws(
+    () => buildStudioDesignModel(source, { maxTotalExpressionChars: 10 }),
+    error => error instanceof PatchStudioDesignModelError &&
+      error.code === 'STUDIO_DESIGN_EVALUATION_BUDGET' &&
+      /design-time total limit is 10/.test(error.message)
+  );
+});
+
+test('Studio design evaluation budget excludes skipped recipe and event bodies', () => {
+  const source = `create number count = 0
+window "App" as main:
+  button "Go" as go
+
+make later():
+  change count:
+    set = 123456789012345678901234567890
+
+when go clicked:
+  change count:
+    set = 123456789012345678901234567890
+`;
+  const model = buildStudioDesignModel(source, { maxExpressionChars: 12, maxTotalExpressionChars: 40 });
+  assert.equal(model.state.count, 0);
+  assert.equal(model.ui[0].title, 'App');
+});
+
+test('Studio design evaluation policy rejects invalid custom budgets', () => {
+  assert.throws(
+    () => buildStudioDesignModel('window "App":\n  text "Hello"', { maxExpressionChars: 0 }),
+    error => error instanceof PatchStudioDesignModelError && error.code === 'STUDIO_DESIGN_EVALUATION_POLICY_VALUE'
+  );
+});
+
 test('Studio design model output is immutable', () => {
   const model = buildStudioDesignModel('window "App" as main:\n  text "Hello"');
   assert.equal(Object.isFrozen(model), true);
   assert.equal(Object.isFrozen(model.ui), true);
   assert.equal(Object.isFrozen(model.ui[0]), true);
   assert.equal(Object.isFrozen(model.ui[0].controls), true);
+  assert.equal(Object.isFrozen(model.evaluationPolicy), true);
 });

@@ -1,5 +1,6 @@
 import { parse } from '../src/parser.js';
 import { listDesignerWindows } from '../src/designer.js';
+import { listDesignerUiNamespace } from './designer-ui-namespace.js';
 
 export function duplicateDesignerForm(source, windowIndex) {
   const windows = listDesignerWindows(source);
@@ -15,7 +16,9 @@ export function duplicateDesignerForm(source, windowIndex) {
   const end = blockEnd(lines, start);
   const copied = lines.slice(start, end);
   const usedFormIds = new Set(windows.map(item => item.id).filter(Boolean));
-  const usedControlIds = new Set(collectAllControlIds(ast));
+  // Form duplication must reserve the same effective UI/event namespace used by
+  // the Inspector: core/nested Controls, MenuItems and result-dialog targets.
+  const usedUiIds = new Set(listDesignerUiNamespace(source).map(record => record.id));
   const controlIdMap = new Map();
   const duplicatedHandlers = [];
   let formId = window.id ?? null;
@@ -25,11 +28,11 @@ export function duplicateDesignerForm(source, windowIndex) {
     rewriteAsIdAt(copied, 0, window.id, formId, 'Form');
   }
 
-  for (const record of collectWindowControlIdRecords(windowNode)) {
-    const nextId = uniqueId(controlPrefix(record.type), usedControlIds);
+  for (const record of collectWindowUiIdRecords(windowNode)) {
+    const nextId = uniqueId(controlPrefix(record.type), usedUiIds);
     controlIdMap.set(record.id, nextId);
     const relativeLine = record.line - 1 - start;
-    rewriteControlIdAt(copied, relativeLine, record, nextId);
+    rewriteUiIdAt(copied, relativeLine, record, nextId);
     for (const event of eventBlocksForId(lines, record.id)) {
       duplicatedHandlers.push(rewriteEventTarget(event.lines, record.id, nextId));
     }
@@ -61,12 +64,12 @@ function requireWindowAst(ast, windowIndex) {
   throw new Error('Designer Form selection no longer matches Patch AST.');
 }
 
-function collectWindowControlIdRecords(windowNode, out = []) {
-  for (const node of windowNode.body ?? []) collectControlIdRecords(node, out);
+function collectWindowUiIdRecords(windowNode, out = []) {
+  for (const node of windowNode.body ?? []) collectUiIdRecords(node, out);
   return out;
 }
 
-function collectControlIdRecords(node, out) {
+function collectUiIdRecords(node, out) {
   if (!node || typeof node !== 'object') return out;
   if ((node.kind === 'uiControl' || node.kind === 'tabs') && node.id) {
     out.push({
@@ -74,41 +77,35 @@ function collectControlIdRecords(node, out) {
       line: node.line,
       type: node.kind === 'tabs' ? 'tabs' : node.control
     });
-  }
-  if (node.kind === 'tabs') {
-    for (const page of node.body ?? []) {
-      for (const child of page.body ?? []) collectControlIdRecords(child, out);
+  } else if (node.kind === 'menu') {
+    for (const item of node.body ?? []) {
+      if (item.kind === 'menuItem' && item.id) {
+        out.push({ id: item.id, line: item.line, type: 'menuItem' });
+      }
     }
   }
-  return out;
-}
 
-function collectAllControlIds(ast, out = []) {
-  for (const node of ast ?? []) {
-    if (node.kind !== 'window') continue;
-    for (const child of node.body ?? []) collectNodeIds(child, out);
-  }
-  return out;
-}
-
-function collectNodeIds(node, out) {
-  if (!node || typeof node !== 'object') return;
-  if ((node.kind === 'uiControl' || node.kind === 'tabs') && node.id) out.push(node.id);
   if (node.kind === 'tabs') {
-    for (const page of node.body ?? []) for (const child of page.body ?? []) collectNodeIds(child, out);
+    for (const page of node.body ?? []) {
+      for (const child of page.body ?? []) collectUiIdRecords(child, out);
+    }
   }
+  if (node.kind === 'uiControl' && node.control === 'panel') {
+    for (const child of node.body ?? []) collectUiIdRecords(child, out);
+  }
+  return out;
 }
 
-function rewriteControlIdAt(lines, index, record, newId) {
+function rewriteUiIdAt(lines, index, record, newId) {
   const line = lines[index];
-  if (typeof line !== 'string') throw new Error('Control source line could not be located safely.');
+  if (typeof line !== 'string') throw new Error('UI source line could not be located safely.');
   if (record.type === 'input') {
     const pattern = new RegExp(`^(\\s*input\\s+)${escapeRegExp(record.id)}(\\b)`);
     if (!pattern.test(line)) throw new Error('Input id could not be rewritten safely.');
     lines[index] = line.replace(pattern, `$1${newId}$2`);
     return;
   }
-  rewriteAsIdAt(lines, index, record.id, newId, 'Control');
+  rewriteAsIdAt(lines, index, record.id, newId, record.type === 'menuItem' ? 'MenuItem' : 'Control');
 }
 
 function rewriteAsIdAt(lines, index, oldId, newId, label) {
@@ -141,7 +138,7 @@ function eventBlocksForId(lines, id) {
 function rewriteEventTarget(lines, oldId, newId) {
   const next = [...lines];
   const pattern = new RegExp(`^(\\s*when\\s+)${escapeRegExp(oldId)}(\\s+)`);
-  if (!pattern.test(next[0] ?? '')) throw new Error('Control event handler could not be duplicated safely.');
+  if (!pattern.test(next[0] ?? '')) throw new Error('UI event handler could not be duplicated safely.');
   next[0] = next[0].replace(pattern, `$1${newId}$2`);
   return next;
 }
@@ -155,6 +152,7 @@ function appendEventBlocks(lines, blocks) {
 }
 
 function controlPrefix(type) {
+  if (type === 'menuItem') return 'menu_item';
   return type || 'control';
 }
 

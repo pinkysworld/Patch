@@ -10,6 +10,10 @@ on:
       - scripts/build-offline-compiler.js
       - scripts/offline-compiler-runner.cjs
       - scripts/build-native-sea-template.js
+      - scripts/offline-compiler-source-graph.js
+      - scripts/offline-compiler-affected.js
+      - scripts/copy-offline-compiler-source.js
+      - package.json
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
       - examples/direct-wasm-recipes.patch
@@ -36,6 +40,10 @@ on:
       - scripts/build-offline-compiler.js
       - scripts/offline-compiler-runner.cjs
       - scripts/build-native-sea-template.js
+      - scripts/offline-compiler-source-graph.js
+      - scripts/offline-compiler-affected.js
+      - scripts/copy-offline-compiler-source.js
+      - package.json
       - docs/OFFLINE_COMPILER.md
       - web/downloads.html
       - examples/direct-wasm-recipes.patch
@@ -61,10 +69,58 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
-  build:
+  affected:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    outputs:
+      affected: ${{ steps.affected.outputs.affected }}
+      reason: ${{ steps.affected.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Collect changed paths
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BEFORE: ${{ github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/offline-compiler-changed.txt"
+          if [ "$GITHUB_EVENT_NAME" = 'pull_request' ]; then
+            gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files?per_page=100" --jq '.[].filename' > "$out"
+          else
+            if [[ "${BEFORE:-}" =~ ^0+$ ]] || [ -z "${BEFORE:-}" ]; then
+              gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.files[].filename' > "$out"
+            else
+              gh api "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$GITHUB_SHA" --jq '.files[].filename' > "$out"
+            fi
+          fi
+          sort -u -o "$out" "$out"
+          echo 'Changed paths considered by Offline Compiler preflight:'
+          cat "$out"
+      - name: Check real Offline Compiler dependency closure
+        id: affected
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = 'workflow_dispatch' ]; then
+            echo 'affected=true' >> "$GITHUB_OUTPUT"
+            echo 'reason=manual workflow dispatch' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          node scripts/offline-compiler-affected.js --stdin < "$RUNNER_TEMP/offline-compiler-changed.txt"
+
+  build:
+    needs: affected
+    if: needs.affected.outputs.affected == 'true'
     name: ${{ matrix.asset }}
     strategy:
       fail-fast: false
@@ -214,7 +270,8 @@ jobs:
           retention-days: 14
 
   macos-intel-kit:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: affected
+    if: needs.affected.outputs.affected == 'true'
     runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
@@ -227,8 +284,8 @@ jobs:
         shell: bash
         run: |
           ROOT=dist-intel/patch-macos-x64
-          mkdir -p "$ROOT/src" "$ROOT/runtime" dist-smoke
-          cp -R src/. "$ROOT/src/"
+          mkdir -p "$ROOT/runtime" dist-smoke
+          node scripts/copy-offline-compiler-source.js "$ROOT"
           cp package.json LICENSE "$ROOT/"
           cp "$(command -v node)" "$ROOT/runtime/node"
           chmod +x "$ROOT/runtime/node"
@@ -290,7 +347,8 @@ jobs:
           retention-days: 14
 
   freebsd-kit:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: affected
+    if: needs.affected.outputs.affected == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -302,17 +360,18 @@ jobs:
       - name: Build portable FreeBSD offline kit
         shell: bash
         run: |
-          mkdir -p dist-freebsd/patch-freebsd-x64/src
-          cp -R src/. dist-freebsd/patch-freebsd-x64/src/
-          cp package.json LICENSE dist-freebsd/patch-freebsd-x64/
-          cat > dist-freebsd/patch-freebsd-x64/patch <<'EOF'
+          ROOT=dist-freebsd/patch-freebsd-x64
+          mkdir -p "$ROOT"
+          node scripts/copy-offline-compiler-source.js "$ROOT"
+          cp package.json LICENSE "$ROOT/"
+          cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
           set -eu
           ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
           exec node "$ROOT/src/cli-entry.js" "$@"
           EOF
-          chmod +x dist-freebsd/patch-freebsd-x64/patch
-          cat > dist-freebsd/patch-freebsd-x64/README.txt <<'EOF'
+          chmod +x "$ROOT/patch"
+          cat > "$ROOT/README.txt" <<'EOF'
           Patch FreeBSD offline compiler kit
           Requires Node.js 22+ and a C99-compatible cc on the FreeBSD host.
           After download no network access is required.
@@ -324,7 +383,7 @@ jobs:
           EOF
           (cd dist-freebsd && tar -czf patch-freebsd-x64.tar.gz patch-freebsd-x64)
           test -s dist-freebsd/patch-freebsd-x64.tar.gz
-          node --test tests/offline-linker.test.js
+          node --test tests/offline-linker.test.js tests/offline-compiler-source-graph.test.js tests/copy-offline-compiler-source.test.js
       - name: Smoke portable kit inside FreeBSD 15.1
         uses: vmactions/freebsd-vm@v1.5.4
         with:
@@ -347,8 +406,8 @@ jobs:
           retention-days: 14
 
   publish:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    needs: [build, macos-intel-kit, freebsd-kit]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.affected.outputs.affected == 'true'
+    needs: [affected, build, macos-intel-kit, freebsd-kit]
     runs-on: ubuntu-latest
     permissions:
       contents: write

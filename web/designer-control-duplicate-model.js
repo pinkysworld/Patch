@@ -4,6 +4,7 @@ import {
   listDesignerWindows,
   updateDesignerControl
 } from '../src/designer.js';
+import { listDesignerUiNamespace } from './designer-ui-namespace.js';
 
 export function duplicateDesignerControl(source, selector, options = {}) {
   const controls = listDesignerControls(source);
@@ -22,7 +23,10 @@ export function duplicateDesignerControl(source, selector, options = {}) {
     ? windowControls[localIndex + 1].line - 1
     : blockEnd(lines, window.line - 1);
   const copied = lines.slice(start, end);
-  const usedIds = new Set(collectAllControlIds(ast));
+  // One effective UI/event namespace is shared by Controls, nested controls,
+  // MenuItems and result-dialog targets. Duplication must reserve all of it,
+  // not just ids returned by the flat Designer control list.
+  const usedIds = new Set(listDesignerUiNamespace(source).map(record => record.id));
   const idMap = new Map();
   const duplicatedHandlers = [];
 
@@ -106,24 +110,6 @@ function collectControlIdRecords(node, out = []) {
   }
   if (node.kind === 'uiControl' && node.control === 'panel') {
     for (const child of node.body ?? []) collectControlIdRecords(child, out);
-  }
-  return out;
-}
-
-function collectAllControlIds(ast, out = []) {
-  for (const node of ast ?? []) {
-    if (node.kind === 'window') collectNodeIds(node.body, out);
-  }
-  return out;
-}
-
-function collectNodeIds(nodes = [], out = []) {
-  for (const node of nodes ?? []) {
-    if ((node.kind === 'uiControl' || node.kind === 'tabs') && node.id) out.push(node.id);
-    if (node.kind === 'tabs') {
-      for (const page of node.body ?? []) collectNodeIds(page.body, out);
-    }
-    if (node.kind === 'uiControl' && node.control === 'panel') collectNodeIds(node.body, out);
   }
   return out;
 }
