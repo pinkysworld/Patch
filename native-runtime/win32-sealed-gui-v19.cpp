@@ -6,14 +6,15 @@
 #undef PATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY
 #include "sealed-button-image-v19.hpp"
 
-// BCM_SETIMAGELIST is part of the version-6 Button contract. Bind the runtime
-// itself to Common Controls v6 so sealed executables do not depend on an
-// external build-system manifest to preserve native caption + image behavior.
+// Prefer the version-6 Button image-list contract when an activation context
+// provides it. Runtime v1.9 also has an owner-draw fallback on the same HWND so
+// native caption/click/accessibility semantics survive older common-controls.
 #pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 static std::vector<PatchButtonImageAssetV19> gPatchButtonImageAssetsV19;
 static std::vector<PatchButtonImageConsumerV19> gPatchButtonImagesV19;
 static std::vector<HIMAGELIST> gPatchButtonImageListsV19;
+static std::vector<bool> gPatchButtonOwnerDrawV19;
 static int gPatchButtonImageInstallErrorV19 = 0;
 
 struct PatchButtonSourceImageV19 {
@@ -105,9 +106,21 @@ static HIMAGELIST PatchCreateButtonImageListV19(const PatchButtonImageConsumerV1
   return list;
 }
 
+static bool PatchEnableOwnerDrawButtonImageV19(HWND hwnd, int nativeIndex) {
+  LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+  style = (style & ~((LONG_PTR)BS_TYPEMASK)) | BS_OWNERDRAW;
+  SetLastError(0);
+  LONG_PTR previous = SetWindowLongPtrW(hwnd, GWL_STYLE, style);
+  if (!previous && GetLastError() != 0) return false;
+  if (!SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED)) return false;
+  gPatchButtonOwnerDrawV19[(size_t)nativeIndex] = true;
+  return true;
+}
+
 static bool PatchInstallButtonImagesV19() {
   gPatchButtonImageInstallErrorV19 = 0;
   gPatchButtonImageListsV19.assign(gControls.size(), nullptr);
+  gPatchButtonOwnerDrawV19.assign(gControls.size(), false);
   for (const auto& item : gPatchButtonImagesV19) {
     auto& control = gControls[(size_t)item.nativeIndex];
     if (!control.hwnd || control.kind != CK_BUTTON) { gPatchButtonImageInstallErrorV19 = 431; return false; }
@@ -118,9 +131,11 @@ static bool PatchInstallButtonImagesV19() {
     binding.margin = RECT{4, 2, 4, 2};
     binding.uAlign = BUTTON_IMAGELIST_ALIGN_LEFT;
     if (!SendMessageW(control.hwnd, BCM_SETIMAGELIST, 0, reinterpret_cast<LPARAM>(&binding))) {
-      ImageList_Destroy(list);
-      gPatchButtonImageInstallErrorV19 = 433;
-      return false;
+      if (!PatchEnableOwnerDrawButtonImageV19(control.hwnd, item.nativeIndex)) {
+        ImageList_Destroy(list);
+        gPatchButtonImageInstallErrorV19 = 433;
+        return false;
+      }
     }
     gPatchButtonImageListsV19[(size_t)item.nativeIndex] = list;
   }
@@ -130,6 +145,56 @@ static bool PatchInstallButtonImagesV19() {
 static void PatchDestroyButtonImagesV19() {
   for (HIMAGELIST list : gPatchButtonImageListsV19) if (list) ImageList_Destroy(list);
   gPatchButtonImageListsV19.clear();
+  gPatchButtonOwnerDrawV19.clear();
+}
+
+static bool PatchDrawOwnerButtonImageV19(const DRAWITEMSTRUCT* item) {
+  if (!item || item->CtlType != ODT_BUTTON || !item->hwndItem) return false;
+  int nativeIndex = -1;
+  for (const auto& consumer : gPatchButtonImagesV19) {
+    if (consumer.nativeIndex >= 0 && consumer.nativeIndex < (int)gControls.size() && gControls[(size_t)consumer.nativeIndex].hwnd == item->hwndItem) {
+      nativeIndex = consumer.nativeIndex;
+      break;
+    }
+  }
+  if (nativeIndex < 0 || nativeIndex >= (int)gPatchButtonOwnerDrawV19.size() || !gPatchButtonOwnerDrawV19[(size_t)nativeIndex]) return false;
+  HIMAGELIST list = gPatchButtonImageListsV19[(size_t)nativeIndex];
+  if (!list) return false;
+
+  RECT rect = item->rcItem;
+  UINT frameState = DFCS_BUTTONPUSH;
+  if (item->itemState & ODS_SELECTED) frameState |= DFCS_PUSHED;
+  if (item->itemState & ODS_DISABLED) frameState |= DFCS_INACTIVE;
+  DrawFrameControl(item->hDC, &rect, DFC_BUTTON, frameState);
+
+  int imageWidth = 0, imageHeight = 0;
+  if (!ImageList_GetIconSize(list, &imageWidth, &imageHeight)) return false;
+  const int pressedOffset = (item->itemState & ODS_SELECTED) ? 1 : 0;
+  const int imageX = rect.left + 8 + pressedOffset;
+  const int imageY = rect.top + std::max(0, ((rect.bottom - rect.top) - imageHeight) / 2) + pressedOffset;
+  if (!ImageList_Draw(list, 0, item->hDC, imageX, imageY, ILD_TRANSPARENT)) return false;
+
+  wchar_t caption[1024]{};
+  GetWindowTextW(item->hwndItem, caption, (int)(sizeof(caption) / sizeof(caption[0])));
+  RECT textRect = rect;
+  textRect.left = imageX + imageWidth + 7;
+  textRect.right -= 7;
+  if (pressedOffset) OffsetRect(&textRect, 1, 1);
+  SetBkMode(item->hDC, TRANSPARENT);
+  SetTextColor(item->hDC, GetSysColor((item->itemState & ODS_DISABLED) ? COLOR_GRAYTEXT : COLOR_BTNTEXT));
+  DrawTextW(item->hDC, caption, -1, &textRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+  if (item->itemState & ODS_FOCUS) {
+    RECT focus = rect;
+    InflateRect(&focus, -3, -3);
+    DrawFocusRect(item->hDC, &focus);
+  }
+  return true;
+}
+
+static LRESULT CALLBACK PatchWndProcV19(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+  if (msg == WM_DRAWITEM && PatchDrawOwnerButtonImageV19(reinterpret_cast<DRAWITEMSTRUCT*>(lParam))) return TRUE;
+  return PatchWndProcV18(hwnd, msg, wParam, lParam);
 }
 
 static int RunPatchButtonImageSmokeV19() {
@@ -137,11 +202,18 @@ static int RunPatchButtonImageSmokeV19() {
   for (const auto& item : gPatchButtonImagesV19) {
     auto& control = gControls[(size_t)item.nativeIndex];
     if (!control.hwnd || control.kind != CK_BUTTON) return code++;
-    BUTTON_IMAGELIST binding{};
-    if (!SendMessageW(control.hwnd, BCM_GETIMAGELIST, 0, reinterpret_cast<LPARAM>(&binding)) || !binding.himl) return code++;
+    HIMAGELIST list = gPatchButtonImageListsV19[(size_t)item.nativeIndex];
+    if (!list) return code++;
     int width = 0, height = 0;
-    if (!ImageList_GetIconSize(binding.himl, &width, &height) || width != (int)item.logicalWidth || height != (int)item.logicalHeight) return code++;
+    if (!ImageList_GetIconSize(list, &width, &height) || width != (int)item.logicalWidth || height != (int)item.logicalHeight) return code++;
     if (WindowText(control.hwnd) != RenderText(control.text)) return code++;
+    const bool ownerDraw = item.nativeIndex < (int)gPatchButtonOwnerDrawV19.size() && gPatchButtonOwnerDrawV19[(size_t)item.nativeIndex];
+    if (ownerDraw) {
+      if ((GetWindowLongPtrW(control.hwnd, GWL_STYLE) & BS_TYPEMASK) != BS_OWNERDRAW) return code++;
+    } else {
+      BUTTON_IMAGELIST binding{};
+      if (!SendMessageW(control.hwnd, BCM_GETIMAGELIST, 0, reinterpret_cast<LPARAM>(&binding)) || binding.himl != list) return code++;
+    }
   }
   return 0;
 }
@@ -166,12 +238,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   PatchSyncListShadowsV11();
   INITCOMMONCONTROLSEX common{}; common.dwSize = sizeof(common); common.dwICC = ICC_WIN95_CLASSES | ICC_LISTVIEW_CLASSES | ICC_TAB_CLASSES | ICC_TREEVIEW_CLASSES | ICC_BAR_CLASSES;
   if (!InitCommonControlsEx(&common)) { GdiplusShutdown(gPatchGdiplusTokenV16); return 21; }
-  WNDCLASSW wc{}; wc.lpfnWndProc = PatchWndProcV18; wc.hInstance = instance; wc.hCursor = LoadCursor(nullptr, IDC_ARROW); wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+  WNDCLASSW wc{}; wc.lpfnWndProc = PatchWndProcV19; wc.hInstance = instance; wc.hCursor = LoadCursor(nullptr, IDC_ARROW); wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
   PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV19"; wc.lpszClassName = PATCH_WINDOW_CLASS; if (!RegisterClassW(&wc)) { GdiplusShutdown(gPatchGdiplusTokenV16); return 21; }
   NONCLIENTMETRICSW metrics{}; metrics.cbSize = sizeof(metrics);
   if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0)) gGuiFont = CreateFontIndirectW(&metrics.lfMessageFont);
   if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance) || !PatchInstallButtonImagesV19() || !PatchInstallMenusV12()) return PatchButtonImageInstallFailureV19();
-  for (auto& form : gForms) SetWindowLongPtrW(form.hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(PatchWndProcV18));
+  for (auto& form : gForms) SetWindowLongPtrW(form.hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(PatchWndProcV19));
   ApplyPatchAccessibilityV09(); ApplyPatchTableAccessibilityV10(); RefreshUI(); PatchRefreshListsV11(); PatchRefreshMenusV12(); PatchRefreshTreesV13(); PatchRefreshSlidersV14(); PatchRefreshChromeV15(); PatchRefreshShapesV16(); PatchRefreshPaintBoxesV17(); PatchRefreshPaintImageBoxesV18();
   for (auto& form : gForms) if (form.visible) ShowWindow(form.hwnd, showCommand == 0 ? SW_SHOWNORMAL : showCommand);
   if (gSmokeMode) {
