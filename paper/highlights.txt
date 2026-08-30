@@ -1,4 +1,4 @@
-Patch makes semantic Change the only modeled route for persistent mutation.
-Operation and magnitude contracts are derived from the same mutation substrate.
-Lean certificates connect selected direct-Wasm traces to exact call-tree effects.
-A 15-site public-code audit separates semantic fit from commit-route ownership.
+State-Change Factorization makes semantic Change the modeled persistent-mutation route.
+Semantic Change Contracts derive target, operation, and bounded magnitude authority.
+Lean-checked evidence links selected direct-WebAssembly executions to exact call effects.
+A public-code stress test separates mutation-shape fit from actual commit-route ownership.
