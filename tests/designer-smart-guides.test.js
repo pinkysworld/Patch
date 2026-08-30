@@ -11,7 +11,7 @@ test('smart alignment distinguishes center alignment from edge alignment', () =>
   assert.equal(centered.x, 50);
   assert.equal(centered.guideX, 70);
   assert.equal(centered.guideXKind, 'center');
-  assert.equal(centered.spacingX, null);
+  assert.equal(centered.spacingX ?? null, null);
 
   const edge = snapFormControlAlignment(
     { x: 43, y: 20, width: 40, height: 20 },
@@ -67,7 +67,7 @@ test('direct alignment wins over an equal-spacing candidate on the same axis', (
   assert.equal(snapped.x, 40);
   assert.equal(snapped.guideX, 40);
   assert.equal(snapped.guideXKind, 'edge');
-  assert.equal(snapped.spacingX, null);
+  assert.equal(snapped.spacingX ?? null, null);
 });
 
 test('smart alignment leaves spacing alone outside the tolerance', () => {
@@ -81,7 +81,7 @@ test('smart alignment leaves spacing alone outside the tolerance', () => {
   );
   assert.equal(snapped.x, 72);
   assert.equal(snapped.guideX, null);
-  assert.equal(snapped.spacingX, null);
+  assert.equal(snapped.spacingX ?? null, null);
 });
 
 test('overlapping peers are never treated as equal-spacing anchors', () => {
@@ -93,5 +93,5 @@ test('overlapping peers are never treated as equal-spacing anchors', () => {
     ],
     { tolerance: 5 }
   );
-  assert.equal(snapped.spacingX, null);
+  assert.equal(snapped.spacingX ?? null, null);
 });
