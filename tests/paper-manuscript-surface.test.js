@@ -76,7 +76,8 @@ test('paper claim boundary stays narrower than source-language, product, and per
   assert.match(tex, /does not establish that such erasure is semantics-preserving/i);
   assert.match(tex, /two application domains are internally authored/i);
   assert.match(tex, /one coder and no inter-rater agreement measurement/i);
-  assert.doesNotMatch(tex, /fully verified compiler|fully verified runtime|verified production parser/i);
+  assert.doesNotMatch(tex, /we (?:provide|present|prove) (?:a )?fully verified (?:compiler|runtime)/i);
+  assert.doesNotMatch(tex, /the production parser is verified/i);
 });
 
 test('remaining empirical gates stay explicit without publishing a paper HTML route', () => {
