@@ -1,0 +1,66 @@
+% Science of Computer Programming journal root.
+% This thin root keeps the Round-5 core manuscript stable while inserting the
+% Round-6 external mutation audit and replacing statements that the audit makes stale.
+
+\makeatletter
+
+\newcommand{\PatchRoundSixAbstract}{%
+\par\smallskip
+An exploratory public-source audit adds 18 retained-state mutation observations from six commit-pinned extension, plugin, and automation projects. Five observations are direct local fits to the current Patch surface, eleven require representation/host/dynamic-target adapters, and two require source restructuring; three have the same narrow singleton numeric directional shape as the current Lean bridge. Because sampling is purposive, these counts are descriptive of the audited corpus and are not prevalence estimates.%
+}
+
+\long\def\PatchReplaceExternalValidity#1\paragraph{Performance validity}{%
+The two application cases remain internally authored. The additional public real-code audit examines 18 retained-state mutation observations across six independently authored, commit-pinned extension/plugin/automation projects. It provides external mutation-shape evidence but remains a small purposive, author-coded audit: it has no independent second coder, does not estimate ecosystem prevalence, and does not execute behavior-preserving translations of the six systems. Exact source pins and anchors improve auditability rather than population representativeness.
+
+\PatchOriginalParagraph{Performance validity}%
+}
+
+\long\def\PatchReplaceConclusion#1\section*{Data and code availability}{%
+Patch explores an architecture in which modeled post-creation application-state mutation is factored through explicit semantic Changes rather than ordinary reassignment. The restriction is by construction; the paper's contribution lies in what can be connected to and derived from it.
+
+For RQ1, the Lean bridge directly connects a well-formed supported committed Change with a directional contract Effect and proves that an allowed bounded rule constrains the actual before/after magnitude. Bounded unknown magnitude is fail-closed, and the executable checker is equivalent to the relational rule/signature policy semantics for the modeled fragment.
+
+For RQ2, the artifact additionally checks normalized signature/policy, integer ranges, finite exact/interprocedural calls, guarded/transitive traces, and selected direct WebAssembly runtime evidence while keeping source analysis, validators, capture, lowering, and engine correctness outside the theorem. The interprocedural and runtime layers specifically test whether the semantic effect/signature relationship survives helper propagation and repeated dynamic invocation. For RQ3, the explicitly defined target-only ablation isolates four policy distinctions that disappear when operation/magnitude are erased, while both variants retain target-escape detection.
+
+The exploratory public real-code audit adds a different kind of evidence. Across 18 purposively selected retained-state mutation observations from six pinned public projects, five are direct local current-surface fits, eleven require adapters, and two require restructuring; three local observations match the narrow numeric directional theorem shape. Eleven of the 18 observations also expose non-standalone context constraints such as coupled targets, host persistence, sequential rebuilds, or dynamic targeting. These mixed results support external relevance of the semantic mutation vocabulary while identifying concrete current language boundaries; they do not establish prevalence, migration cost, security benefit, or superiority.
+
+The strongest remaining empirical tests are therefore a larger independently coded or preregistered corpus, behavior-preserving translation studies, controlled fixed-machine assurance-cost measurement, and a fair implemented/formal comparison with a representative modern effect/capability approach. The present paper does not assume their outcomes.
+
+\PatchOriginalSection*{Data and code availability}%
+\PatchReplaceDataAvailability
+}
+
+\long\def\PatchReplaceDataAvailability#1\section*{Funding}{%
+The Patch implementation, Lean formalization, evaluation scripts, examples, public real-code mutation corpus, deterministic study results, and reproducibility tooling are publicly available in the Patch repository at \url{https://github.com/pinkysworld/Patch}. The formal-policy/bridge state is identified by a full Git commit SHA in the implementation/reproducibility material. Each third-party audit source is separately pinned to a full immutable Git commit in \path{studies/real-code-mutations/corpus.json}. No archival DOI is claimed by this revision.
+
+\PatchOriginalSection*{Funding}%
+}
+
+\newcommand{\PatchSectionNoStar}[1]{%
+  \ifstrequal{#1}{Implementation and Reproducibility}{\input{real-code-study.tex}}{}%
+  \ifstrequal{#1}{Conclusion}{%
+    \PatchOriginalSection{#1}\PatchReplaceConclusion
+  }{%
+    \PatchOriginalSection{#1}%
+  }%
+}
+
+\newcommand{\PatchSectionStar}[1]{\PatchOriginalSection*{#1}}
+
+\AtBeginDocument{%
+  \pretocmd{\endabstract}{\PatchRoundSixAbstract}{}{\PackageWarning{patch-paper}{Could not extend abstract for Round 6}}%
+  \let\PatchOriginalParagraph\paragraph
+  \renewcommand{\paragraph}[1]{%
+    \ifstrequal{##1}{External validity}{%
+      \PatchOriginalParagraph{##1}\PatchReplaceExternalValidity
+    }{%
+      \PatchOriginalParagraph{##1}%
+    }%
+  }%
+  \let\PatchOriginalSection\section
+  \renewcommand{\section}{\@ifstar{\PatchSectionStar}{\PatchSectionNoStar}}%
+}
+
+\makeatother
+
+\input{main.tex}
