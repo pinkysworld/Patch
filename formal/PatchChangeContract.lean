@@ -5,7 +5,7 @@ namespace PatchFormal
 /-- A singleton interval used when a concrete semantic Change determines one
     exact numeric magnitude. -/
 def exactInterval (n : Int) : Interval :=
-  { lo := n, hi := n, ordered := le_rfl }
+  { lo := n, hi := n, ordered := by simp }
 
 /-- Extract the contract-level semantic effect from the deliberately small
     Change fragment shared by the current mutation machine and quantitative
@@ -97,20 +97,24 @@ theorem effectOf_amount_matches_actual
               simp at hQuantitative
           | addInt n =>
               by_cases hNonneg : 0 ≤ n
-              · cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [effectOf, actualAmountFor, exactInterval,
-                    applyOps, applyOp, hNonneg]
-              · cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [effectOf, actualAmountFor, exactInterval,
-                    applyOps, applyOp, hNonneg]
+              · simp [effectOf, hOps, hRest, hNonneg] at hEffect
+                subst e
+                cases hBefore : d.before <;> cases hAfter : d.after <;>
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
+              · simp [effectOf, hOps, hRest, hNonneg] at hEffect
+                subst e
+                cases hBefore : d.before <;> cases hAfter : d.after <;>
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
           | removeInt n =>
               by_cases hNonneg : 0 ≤ n
-              · cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [effectOf, actualAmountFor, exactInterval,
-                    applyOps, applyOp, hNonneg]
-              · cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [effectOf, actualAmountFor, exactInterval,
-                    applyOps, applyOp, hNonneg]
+              · simp [effectOf, hOps, hRest, hNonneg] at hEffect
+                subst e
+                cases hBefore : d.before <;> cases hAfter : d.after <;>
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
+              · simp [effectOf, hOps, hRest, hNonneg] at hEffect
+                subst e
+                cases hBefore : d.before <;> cases hAfter : d.after <;>
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
 
 /-- **Semantic Change Contract bridge.** If a well-formed semantic Change is
     translated by `effectOf`, the resulting directional effect is allowed by a
@@ -137,9 +141,9 @@ theorem allowedEffectOf_respects_actual_bound
       rw [hActual] at hAmountEq
       cases e.amount <;> simp_all
   | some actual =>
-      refine ⟨actual, hActual, ?_⟩
+      refine ⟨actual, rfl, ?_⟩
       have hEffectAmount : e.amount = some actual := by
-        simpa [hActual] using hAmountEq
+        simpa using hAmountEq
       simpa [hEffectAmount, hRuleAmount] using hAmountAllows
 
 end PatchFormal
