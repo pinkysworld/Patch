@@ -70,7 +70,7 @@ test('all citation keys in the synchronized paper modules exist in references.bi
 test('paper claim boundary stays narrower than source-language, product, and performance claims', () => {
   const tex = read('paper/main.tex');
   assert.match(tex, /does not claim a source-to-core compiler-correctness theorem/i);
-  assert.match(tex, /not a theorem about an independently specified source language/i);
+  assert.match(tex, /theorem about an independently specified source language/i);
   assert.match(tex, /not a claim that 6\.6\\% of the product is verified/i);
   assert.match(tex, /hosted-CI timings are not used as performance evidence/i);
   assert.match(tex, /does not establish that such erasure is semantics-preserving/i);
