@@ -1,0 +1,41 @@
+name: R0 Designer materialization state preflight
+
+on:
+  push:
+    branches: [gpt/r0-designer-materialization-state-282]
+    paths:
+      - .github/workflows/r0-designer-materialization-state-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply guarded Workshop regression
+        run: python3 scripts/r0-designer-materialization-state-once.py
+      - name: Verify selection and materialization behavior
+        run: |
+          set -euo pipefail
+          node --check web/designer-selection.js
+          node --check web/designer-data-editor.js
+          node --test tests/studio-designer-materialization-selection.test.js tests/studio-active-form-materialization-integration.test.js
+          node --test tests/workshop-desk-browser.test.js
+      - name: Commit verified Workshop regression and remove temporary helpers
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/r0-designer-materialization-state-once.yml scripts/r0-designer-materialization-state-once.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/workshop-desk-browser.test.js
+          git commit -m 'Guard Designer state across Form materialization'
+          git push
