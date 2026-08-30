@@ -1,5 +1,5 @@
 import { buildFormLayoutManifest } from './form-layout.js';
-import { validateWindowBuild } from './window-build.js';
+import { validateWindowRuntimeSupport } from './window-build.js';
 
 export const PATCH_COMPILED_WINDOW_VERSION = '0.2';
 export const PATCH_COMPILED_WINDOW_FORMAT = 'patch-compiled-window-program';
@@ -18,12 +18,18 @@ export function buildCompiledWindowArtifact(compiled) {
     throw new CompiledWindowError(`Compiled Window artifacts require Change IR ${PATCH_COMPILED_WINDOW_IR_VERSION}.`);
   }
 
-  // A compiled Window artifact is target-neutral. Platform/runtime capability
-  // validation belongs to the selected build target and is performed by the
-  // caller before packaging. Re-running validateWindowRuntimeSupport() here
-  // without the caller's versioned capability set used to reject valid modern
-  // TreeView/Slider/PaintBox projects after they had already passed preflight.
-  validateWindowBuild(compiled);
+  // A compiled Window artifact is target-neutral, but it must still be
+  // structurally valid. Enable every currently modelled target capability here
+  // so this pass keeps duplicate-id/event/Form/image-binding validation without
+  // pretending that a target-neutral artifact selected a legacy runtime.
+  // The selected build target performs the real fail-closed capability check.
+  validateWindowRuntimeSupport(compiled, {
+    allowTree: true,
+    allowSlider: true,
+    allowPaintBox: true,
+    allowImageList: true,
+    allowMenuDecorations: true
+  });
 
   const windows = compiled.ast.filter(node => node.kind === 'window');
   if (!windows.length) throw new CompiledWindowError('A Window artifact needs at least one Patch window.');
@@ -54,10 +60,10 @@ export function validateCompiledWindowArtifact(artifact) {
   const windowCount = artifact.program.filter(node => node?.kind === 'window').length;
   if (!windowCount) throw new CompiledWindowError('Compiled Window artifact contains no Patch window.');
   if (artifact.formLayout?.format !== 'patch-source-backed-form-layout' || !Array.isArray(artifact.formLayout.windows)) {
-    throw new CompiledWindowError('Compiled Window artifact Form layout is invalid.');
+    throw new CompiledWindowError('Compiled Window artifact form layout is invalid.');
   }
   if (artifact.formLayout.windows.length !== windowCount) {
-    throw new CompiledWindowError('Compiled Window artifact Form layout does not match its executable Window program.');
+    throw new CompiledWindowError('Compiled Window artifact form layout does not match its executable Window program.');
   }
   return artifact;
 }
