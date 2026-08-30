@@ -1,4 +1,5 @@
 import PatchFormal
+import Std.Tactic.Omega
 
 namespace PatchFormal
 
@@ -100,21 +101,21 @@ theorem effectOf_amount_matches_actual
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
           | removeInt n =>
               by_cases hNonneg : 0 ≤ n
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
               · simp [effectOf, hOps, hRest, hNonneg] at hEffect
                 subst e
                 cases hBefore : d.before <;> cases hAfter : d.after <;>
-                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp]
+                  simp_all [actualAmountFor, exactInterval, applyOps, applyOp] <;> omega
 
 /-- **Semantic Change Contract bridge.** If a well-formed semantic Change is
     translated by `effectOf`, the resulting directional effect is allowed by a
@@ -143,7 +144,8 @@ theorem allowedEffectOf_respects_actual_bound
   | some actual =>
       refine ⟨actual, rfl, ?_⟩
       have hEffectAmount : e.amount = some actual := by
-        simpa using hAmountEq
+        rw [hActual] at hAmountEq
+        exact hAmountEq
       simpa [hEffectAmount, hRuleAmount] using hAmountAllows
 
 end PatchFormal
