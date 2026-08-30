@@ -170,8 +170,9 @@ static bool PatchDrawOwnerButtonImageV19(const DRAWITEMSTRUCT* item) {
   int imageWidth = 0, imageHeight = 0;
   if (!ImageList_GetIconSize(list, &imageWidth, &imageHeight)) return false;
   const int pressedOffset = (item->itemState & ODS_SELECTED) ? 1 : 0;
-  const int imageX = rect.left + 8 + pressedOffset;
-  const int imageY = rect.top + std::max(0, ((rect.bottom - rect.top) - imageHeight) / 2) + pressedOffset;
+  const int imageX = static_cast<int>(rect.left) + 8 + pressedOffset;
+  const int contentHeight = static_cast<int>(rect.bottom - rect.top);
+  const int imageY = static_cast<int>(rect.top) + std::max(0, (contentHeight - imageHeight) / 2) + pressedOffset;
   if (!ImageList_Draw(list, 0, item->hDC, imageX, imageY, ILD_TRANSPARENT)) return false;
 
   wchar_t caption[1024]{};
