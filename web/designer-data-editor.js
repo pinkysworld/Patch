@@ -17,6 +17,7 @@ import {
   updateDesignerTableData,
   updateDesignerTreeNodes
 } from '../src/designer-data.js';
+import { currentDesignerSelection } from './designer-selection.js';
 import { installDesignerStructuralKeyboard } from './designer-structural-keyboard.js';
 
 const code = document.querySelector('#code');
@@ -51,6 +52,7 @@ function observe() {
     new MutationObserver(scheduleSync).observe(canvas, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     canvas.addEventListener('click', () => queueMicrotask(scheduleSync));
     canvas.addEventListener('keydown', () => queueMicrotask(scheduleSync));
+    canvas.addEventListener('patch-designer-selection-change', scheduleSync);
   }
   code?.addEventListener('input', scheduleSync);
   code?.addEventListener('change', scheduleSync);
@@ -79,12 +81,12 @@ function syncPanel() {
 }
 
 function selectedControl() {
-  const element = canvas.querySelector('.designer-control.designer-selected[data-window-index][data-control-index]');
-  if (!element) return null;
-  const windowIndex = Number(element.dataset.windowIndex);
-  const controlIndex = Number(element.dataset.controlIndex);
-  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
-  return listDesignerControls(code.value).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex) ?? null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  return listDesignerControls(code.value).find(item =>
+    Number(item.windowIndex) === Number(selection.windowIndex) &&
+    Number(item.controlIndex) === Number(selection.controlIndex)
+  ) ?? null;
 }
 
 function renderTreeEditor(control) {
@@ -178,99 +180,126 @@ function handleAction(event) {
     return;
   }
 
-  const tabPageButton = event.target.closest?.('[data-tab-page-index]');
-  if (tabPageButton) {
+  const tabPage = event.target.closest?.('[data-tab-page-index]');
+  if (tabPage) {
     const control = selectedControl();
     if (!control || control.type !== 'tabs') return;
-    selectedTabPages.set(controlKey(control), Number(tabPageButton.dataset.tabPageIndex));
+    selectedTabPages.set(controlKey(control), Number(tabPage.dataset.tabPageIndex));
     renderTabsEditor(control);
     return;
   }
 
-  const tabsAction = event.target.closest?.('[data-tabs-action]')?.dataset.tabsAction;
-  if (tabsAction) {
+  const tabAction = event.target.closest?.('[data-tabs-action]')?.dataset.tabsAction;
+  if (tabAction) {
     event.preventDefault();
-    applyTabsAction(tabsAction);
+    applyTabAction(tabAction);
+    return;
+  }
+
+  const tableAction = event.target.closest?.('[data-table-action]')?.dataset.tableAction;
+  if (tableAction) {
+    event.preventDefault();
+    applyTableAction(tableAction);
     return;
   }
 
   const removeRow = event.target.closest?.('[data-table-remove-row]');
   if (removeRow) {
     event.preventDefault();
-    applyTableMutation(data => ({ ...data, rows: data.rows.filter((_, index) => index !== Number(removeRow.dataset.tableRemoveRow)) }));
-    return;
+    removeTableRow(Number(removeRow.dataset.tableRemoveRow));
   }
-
-  const tableAction = event.target.closest?.('[data-table-action]')?.dataset.tableAction;
-  if (!tableAction) return;
-  event.preventDefault();
-  if (tableAction === 'apply') applyTableMutation(data => data);
-  if (tableAction === 'add-row') applyTableMutation(data => ({ ...data, rows: [...data.rows, data.columns.map(() => '""')] }));
-  if (tableAction === 'add-column') applyTableMutation(data => ({ columns: [...data.columns, JSON.stringify(`Column ${data.columns.length + 1}`)], rows: data.rows.map(row => [...row, '""']) }));
-  if (tableAction === 'remove-column') applyTableMutation(data => {
-    if (data.columns.length <= 1) throw new Error('A Table needs at least one column.');
-    return { columns: data.columns.slice(0, -1), rows: data.rows.map(row => row.slice(0, -1)) };
-  });
 }
 
 function applyTreeAction(action) {
   const control = selectedControl();
   if (!control || control.type !== 'tree') return;
-  const key = controlKey(control);
-  const path = selectedTreePaths.get(key) ?? flattenTreeNodes(control.treeNodes ?? [])[0]?.path ?? null;
   try {
-    let result;
-    if (action === 'add-root') result = addTreeRoot(control.treeNodes);
-    else if (action === 'add-child') result = addTreeChild(control.treeNodes, path);
-    else if (action === 'rename') result = renameTreeNode(control.treeNodes, path, panel.querySelector('#designerTreeNodeLabel')?.value ?? '');
-    else if (action === 'up' || action === 'down') result = moveTreeNode(control.treeNodes, path, action);
-    else if (action === 'indent') result = indentTreeNode(control.treeNodes, path);
-    else if (action === 'outdent') result = outdentTreeNode(control.treeNodes, path);
-    else if (action === 'delete') result = removeTreeNode(control.treeNodes, path);
-    else return;
-    selectedTreePaths.set(key, result.path);
-    setSource(updateDesignerTreeNodes(code.value, control, result.nodes));
-  } catch (error) { showError(error); }
-}
-
-function applyTabsAction(action) {
-  const control = selectedControl();
-  if (!control || control.type !== 'tabs') return;
-  const key = controlKey(control);
-  const pages = listDesignerTabPages(code.value, control);
-  const pageIndex = selectedTabPages.get(key) ?? 0;
-  try {
-    let next = code.value;
-    let nextIndex = pageIndex;
-    if (action === 'add') {
-      next = addDesignerTabPage(code.value, control);
-      nextIndex = pages.length;
-    } else if (action === 'rename') {
-      next = renameDesignerTabPage(code.value, control, pageIndex, panel.querySelector('#designerTabPageTitle')?.value ?? '');
-    } else if (action === 'up' || action === 'down') {
-      next = moveDesignerTabPage(code.value, control, pageIndex, action);
-      nextIndex = pageIndex + (action === 'up' ? -1 : 1);
-      nextIndex = Math.max(0, Math.min(pages.length - 1, nextIndex));
-    } else if (action === 'delete') {
-      next = removeDesignerTabPage(code.value, control, pageIndex);
-      nextIndex = Math.max(0, Math.min(pageIndex, pages.length - 2));
-    } else return;
-    selectedTabPages.set(key, nextIndex);
+    const key = controlKey(control);
+    const path = selectedTreePaths.get(key) ?? null;
+    const labelExpr = panel.querySelector('#designerTreeNodeLabel')?.value ?? '"Node"';
+    const result = action === 'add-root'
+      ? addTreeRoot(control.treeNodes, '"Node"')
+      : action === 'add-child'
+        ? addTreeChild(control.treeNodes, path, '"Child"')
+        : action === 'rename'
+          ? renameTreeNode(control.treeNodes, path, labelExpr)
+          : action === 'up' || action === 'down'
+            ? moveTreeNode(control.treeNodes, path, action)
+            : action === 'indent'
+              ? indentTreeNode(control.treeNodes, path)
+              : action === 'outdent'
+                ? outdentTreeNode(control.treeNodes, path)
+                : action === 'delete'
+                  ? removeTreeNode(control.treeNodes, path)
+                  : null;
+    if (!result) return;
+    if (result.path) selectedTreePaths.set(key, result.path);
+    const next = updateDesignerTreeNodes(code.value, control, result.treeNodes);
     setSource(next);
   } catch (error) { showError(error); }
 }
 
-function applyTableMutation(transform) {
+function applyTabAction(action) {
   const control = selectedControl();
-  if (!control || control.type !== 'table') return;
+  if (!control || control.type !== 'tabs') return;
   try {
-    const draft = readTableDraft(control);
-    const next = transform(draft);
-    setSource(updateDesignerTableData(code.value, control, next));
+    const key = controlKey(control);
+    let pageIndex = selectedTabPages.get(key) ?? 0;
+    let next = code.value;
+    if (action === 'add') {
+      const result = addDesignerTabPage(next, control, { titleExpr: '"New page"' });
+      pageIndex = result.page.pageIndex;
+      next = result.source;
+    } else if (action === 'rename') {
+      next = renameDesignerTabPage(next, control, pageIndex, panel.querySelector('#designerTabPageTitle')?.value ?? '"Page"');
+    } else if (action === 'up' || action === 'down') {
+      const result = moveDesignerTabPage(next, control, pageIndex, action);
+      pageIndex = result.pageIndex;
+      next = result.source;
+    } else if (action === 'delete') {
+      const result = removeDesignerTabPage(next, control, pageIndex);
+      pageIndex = result.pageIndex;
+      next = result.source;
+    }
+    selectedTabPages.set(key, pageIndex);
+    setSource(next);
   } catch (error) { showError(error); }
 }
 
-function readTableDraft(control) {
+function applyTableAction(action) {
+  const control = selectedControl();
+  if (!control || control.type !== 'table') return;
+  try {
+    const data = tableDataFromPanel(control);
+    if (action === 'apply') {
+      setSource(updateDesignerTableData(code.value, control, data));
+      return;
+    }
+    if (action === 'add-column') {
+      data.columns.push('"Column"');
+      for (const row of data.rows) row.push('""');
+    } else if (action === 'remove-column') {
+      if (data.columns.length <= 1) return;
+      data.columns.pop();
+      for (const row of data.rows) row.pop();
+    } else if (action === 'add-row') {
+      data.rows.push(data.columns.map(() => '""'));
+    }
+    setSource(updateDesignerTableData(code.value, control, data));
+  } catch (error) { showError(error); }
+}
+
+function removeTableRow(rowIndex) {
+  const control = selectedControl();
+  if (!control || control.type !== 'table') return;
+  try {
+    const data = tableDataFromPanel(control);
+    data.rows.splice(rowIndex, 1);
+    setSource(updateDesignerTableData(code.value, control, data));
+  } catch (error) { showError(error); }
+}
+
+function tableDataFromPanel(control) {
   const columns = [...panel.querySelectorAll('[data-table-column]')].map(input => input.value.trim());
   const rows = (control.rows ?? []).map((_, rowIndex) => columns.map((__, cellIndex) =>
     panel.querySelector(`[data-table-cell="${rowIndex}:${cellIndex}"]`)?.value.trim() ?? '""'
@@ -285,34 +314,27 @@ function setSource(source) {
   scheduleSync();
 }
 
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (target) {
-    target.textContent = error?.message ?? String(error);
-    target.hidden = false;
-  }
-}
-
 function hidePanel() {
   if (!panel) return;
   panel.hidden = true;
-  panel.innerHTML = '';
+  panel.replaceChildren();
 }
 
 function controlKey(control) {
   return `${control.windowIndex}:${control.controlIndex}:${control.id ?? control.type}`;
 }
 
+function samePath(left, right) {
+  return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 function safeTreeNode(nodes, path) {
   try { return treeNodeAt(nodes, path); } catch { return null; }
 }
 
-function parsePath(text) {
-  return String(text ?? '').split('.').filter(Boolean).map(Number);
-}
-
-function samePath(a, b) {
-  return Boolean(a && b && a.length === b.length && a.every((value, index) => value === b[index]));
+function parsePath(value) {
+  if (!String(value ?? '').length) return [];
+  return String(value).split('.').map(Number);
 }
 
 function displayExpr(expr) {
@@ -321,19 +343,40 @@ function displayExpr(expr) {
   return text;
 }
 
-function installStylesheet() {
-  if (document.querySelector('link[data-patch-designer-data-editor]')) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = './designer-data-editor.css';
-  link.dataset.patchDesignerDataEditor = '1';
-  document.head.appendChild(link);
-}
-
 function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
+  return String(text ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 
 function escapeAttr(text) {
   return escapeHtml(text).replace(/`/g, '&#96;');
+}
+
+function showError(error) {
+  const target = document.querySelector('#designerInspectorError');
+  if (!target) return;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+}
+
+function installStylesheet() {
+  if (document.querySelector('style[data-patch-designer-data-editor]')) return;
+  const style = document.createElement('style');
+  style.dataset.patchDesignerDataEditor = '1';
+  style.textContent = `
+.designer-data-editor{border:1px solid var(--border);border-radius:10px;padding:10px;margin:10px 0;background:var(--soft)}
+.designer-data-editor[hidden]{display:none}
+.designer-data-editor-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.designer-data-editor-head span{color:var(--muted);font-size:12px}
+.designer-tree-node-list,.designer-tabs-page-list{display:grid;gap:4px;max-height:190px;overflow:auto;margin:8px 0}
+.designer-tree-node,.designer-tabs-page{display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 8px}
+.designer-tree-node{padding-left:calc(8px + var(--tree-depth, 0) * 16px)}
+.designer-tree-node.active,.designer-tabs-page.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.designer-tabs-page small{color:var(--muted)}
+.designer-data-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.designer-table-editor{display:grid;gap:4px;overflow:auto;margin:8px 0}
+.designer-table-editor-row{display:grid;grid-template-columns:repeat(var(--table-columns, 1),minmax(110px,1fr)) auto;gap:4px;align-items:end}
+.designer-table-editor-columns{grid-template-columns:repeat(var(--table-columns, 1),minmax(110px,1fr))}
+.designer-table-editor input{width:100%;box-sizing:border-box}
+`;
+  document.head.appendChild(style);
 }
