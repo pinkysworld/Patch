@@ -345,6 +345,36 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(appState.settingsChildren, 0);
   assert.ok(appState.hiddenChildren.every(count => count === 0), `deferred Form bodies must stay empty: ${JSON.stringify(appState.hiddenChildren)}`);
 
+  const tableSelectionStarted = await evaluate(cdp, `(() => {
+    const table = document.querySelector('#app [data-patch-control-key="id:board"]');
+    const row = table?.querySelectorAll('tbody > tr')?.[1];
+    if (!row) return false;
+    row.click();
+    return true;
+  })()`);
+  assert.equal(tableSelectionStarted, true);
+  await waitFor(cdp, `(() => ({
+    row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+    store: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('table')?.get('id:board')
+  }))()`, state => state?.row?.includes('WD-105') && state.store === 1);
+
+  const treeSelectionStarted = await evaluate(cdp, `(() => {
+    const button = [...document.querySelectorAll('#app [data-patch-control-key="id:parts"] .patch-tree-node')]
+      .find(node => node.getAttribute('aria-label') === 'Parts / Input / Keyboard');
+    if (!button) return false;
+    button.click();
+    return true;
+  })()`);
+  assert.equal(treeSelectionStarted, true);
+  const adapterSelections = await waitFor(cdp, `(() => ({
+    row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+    tree: document.querySelector('#app [data-patch-control-key="id:parts"] .patch-tree-node[aria-selected="true"]')?.getAttribute('aria-label') ?? '',
+    tableStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('table')?.get('id:board'),
+    treeStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('tree')?.get('id:parts') ?? []
+  }))()`, state => state?.row?.includes('WD-105') && state.tree === 'Parts / Input / Keyboard');
+  assert.equal(adapterSelections.tableStore, 1);
+  assert.deepEqual(adapterSelections.treeStore, ['Parts', 'Input', 'Keyboard']);
+
   const keyedInputStarted = await evaluate(cdp, `(() => {
     const main = document.querySelector('#app .patch-window[data-patch-window-id="main"]');
     const settings = document.querySelector('#app .patch-window[data-patch-window-id="settings"]');
@@ -383,6 +413,15 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(keyedInputState.selectionStart, 5);
   assert.equal(keyedInputState.selectionEnd, 5);
   assert.match(keyedInputState.key, /^id:item$/);
+
+  const selectionsAfterFallback = await waitFor(cdp, `(() => ({
+    row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+    tree: document.querySelector('#app [data-patch-control-key="id:parts"] .patch-tree-node[aria-selected="true"]')?.getAttribute('aria-label') ?? '',
+    tableStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('table')?.get('id:board'),
+    treeStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('tree')?.get('id:parts') ?? []
+  }))()`, state => state?.row?.includes('WD-105') && state.tree === 'Parts / Input / Keyboard');
+  assert.equal(selectionsAfterFallback.tableStore, 1, 'Table selection should survive the safe full-Form fallback');
+  assert.deepEqual(selectionsAfterFallback.treeStore, ['Parts', 'Input', 'Keyboard'], 'Tree selection should survive the safe full-Form fallback');
 
   const multiBefore = await evaluate(cdp, `(() => {
     const list = [...document.querySelectorAll('#app select.patch-listbox')].find(node => node.multiple);

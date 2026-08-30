@@ -1,5 +1,6 @@
 import { parse } from '../src/parser.js';
 import { evaluateLoose } from '../src/expression.js';
+import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import {
   addDesignerControl,
   listDesignerControls
@@ -17,7 +18,6 @@ const designerCanvas = document.querySelector('#designerCanvas');
 const appView = document.querySelector('#app');
 const addTable = document.querySelector('#addTable');
 const observed = new Map();
-const appSelections = new Map();
 const appListboxSelections = new Map();
 let scheduled = false;
 
@@ -94,14 +94,22 @@ function syncContainer(container, designer) {
 
     sourceControls.forEach((node, controlIndex) => {
       if (node.kind === 'uiControl' && node.control === 'table') {
-        const key = `${windowIndex}:${node.id ?? controlIndex}`;
+        const key = runtimeSelectionKey(node, {
+          windowId: windowNode.id,
+          windowIndex,
+          controlIndex,
+          controlPath: String(controlIndex)
+        });
         const element = createTable(node, {
           interactive: !designer,
+          container,
           key,
           hasHandler: Boolean(node.id && changedHandlers.has(node.id))
         });
         element.dataset.windowIndex = String(windowIndex);
         element.dataset.controlIndex = String(controlIndex);
+        element.dataset.patchControlKey = key;
+        element.dataset.patchRuntimeSelectionKind = 'table';
         const anchor = baseChildren[renderedIndex] ?? body.querySelector(':scope > .patch-form-resize-handle') ?? null;
         body.insertBefore(element, anchor);
         if (designer) decorateDesignerTable(element, node, { windowIndex, controlIndex, adapter: 'table', id: node.id ?? '' });
@@ -239,7 +247,7 @@ function createTable(node, options = {}) {
   head.appendChild(headRow);
   const body = document.createElement('tbody');
   const rows = (node.rows ?? []).map(row => row.map(cell => displayExpression(cell)));
-  let selectedIndex = options.interactive ? appSelections.get(options.key) : null;
+  let selectedIndex = options.interactive ? getRuntimeSelection(options.container, 'table', options.key) : null;
   if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= rows.length) selectedIndex = null;
 
   rows.forEach((row, rowIndex) => {
@@ -276,7 +284,7 @@ function createTable(node, options = {}) {
 }
 
 function selectAppRow(wrap, options, node, rowIndex, row) {
-  appSelections.set(options.key, rowIndex);
+  setRuntimeSelection(options.container, 'table', options.key, rowIndex);
   for (const [index, current] of [...wrap.querySelectorAll('tbody > tr')].entries()) {
     const selected = index === rowIndex;
     current.classList.toggle('patch-table-selected', selected);

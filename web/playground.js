@@ -8,6 +8,7 @@ import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
 import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
+import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
@@ -486,11 +487,7 @@ function runtimeWindowKey(model, windowIndex) {
 }
 
 function runtimeControlKey(control, context) {
-  const id = String(control?.id ?? '').trim();
-  if (id) return `id:${id}`;
-  const windowKey = String(context.windowId ?? `window${Number(context.windowIndex ?? 0) + 1}`);
-  const path = String(context.controlPath ?? context.controlIndex ?? 'control');
-  return `${windowKey}:path:${path}`;
+  return runtimeSelectionKey(control, context);
 }
 
 function runtimeWindowFingerprint(model) {
@@ -977,18 +974,40 @@ function createTreeElement(control, context) {
   const root = document.createElement('ul');
   root.className = 'patch-tree';
   root.setAttribute('role', 'tree');
+  root.dataset.patchRuntimeSelectionKind = 'tree';
+  const key = runtimeControlKey(control, context);
+  const rememberedPath = getRuntimeSelection(context.container, 'tree', key);
+  const samePath = path => Array.isArray(rememberedPath)
+    && path.length === rememberedPath.length
+    && path.every((part, index) => part === rememberedPath[index]);
+  const selectPath = selectedPath => {
+    setRuntimeSelection(context.container, 'tree', key, selectedPath);
+    const encoded = JSON.stringify(selectedPath);
+    for (const current of root.querySelectorAll('.patch-tree-node')) {
+      const selected = current.dataset.patchTreePath === encoded;
+      current.setAttribute('aria-selected', selected ? 'true' : 'false');
+      current.closest('[role="treeitem"]')?.setAttribute('aria-selected', selected ? 'true' : 'false');
+    }
+  };
   const renderNodes = (nodes, path = []) => {
     const fragment = document.createDocumentFragment();
     for (const node of nodes ?? []) {
       const item = document.createElement('li');
       item.setAttribute('role', 'treeitem');
       const selectedPath = [...path, node.text];
+      const selected = samePath(selectedPath);
+      item.setAttribute('aria-selected', selected ? 'true' : 'false');
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'patch-tree-node';
       button.textContent = node.text;
+      button.dataset.patchTreePath = JSON.stringify(selectedPath);
       button.setAttribute('aria-label', selectedPath.join(' / '));
-      if (context.interactive) button.addEventListener('click', () => trigger(control.id, 'changed', { value: selectedPath }));
+      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      if (context.interactive) button.addEventListener('click', () => {
+        selectPath(selectedPath);
+        trigger(control.id, 'changed', { value: selectedPath });
+      });
       else button.disabled = true;
       item.appendChild(button);
       if (node.children?.length) {
