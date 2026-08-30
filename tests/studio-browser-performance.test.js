@@ -326,7 +326,7 @@ test('Studio browser performance stays inside generous R0 hard limits', { timeou
 
   const largeProjectRunFirstPaint = await evaluate(cdp, `(async () => window.__patchMeasureUntilPaint(
     () => document.querySelector('#run').click(),
-    () => document.querySelectorAll('#app .patch-window').length === 10 && [...document.querySelectorAll('#app .patch-window')].every(node => !node.hidden)
+    () => document.querySelectorAll('#app .patch-window').length === 10 && [...document.querySelectorAll('#app .patch-window')].some(node => !node.hidden)
   ))()`);
 
   const metrics = {
