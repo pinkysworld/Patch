@@ -1,6 +1,6 @@
 # Patch journal manuscript
 
-The current manuscript in `paper/main.tex` is prepared specifically for the **Science of Computer Programming** (Elsevier) Research Papers track using `elsarticle` formatting. This manuscript is being developed as a **journal submission only; no conference submission is planned**.
+The current Science of Computer Programming manuscript is built from `paper/journal.tex`, which composes the stable `main.tex` core with the Round-6 public real-code mutation audit. It uses Elsevier `elsarticle` formatting and is developed as a **journal submission only; no conference submission is planned**.
 
 ## Current scientific framing
 
@@ -24,16 +24,19 @@ The paper is centered on a deliberately narrow architectural claim:
 - repeated-identical and mixed-guard invocation-frame evidence;
 - an explicitly defined eight-case target-only mechanism-isolation ablation;
 - checkout/loyalty and usage/quota multi-state application cases;
+- an exploratory public real-code mutation audit with 18 retained-state observations from six commit-pinned independently authored projects;
 - artifact-level semantic-lineage reuse across compiler analysis and interpreter history/undo/provenance paths;
 - commit-bound reproducibility tooling.
 
-The manuscript does **not** claim end-to-end compiler verification, complete sandboxing, production source-to-effect verification, third-party ecosystem validation, a controlled performance result, a usability result, atomic multi-target Change, or superiority over modern effect/capability systems.
+The public audit is intentionally mixed evidence: 5 observations are coded as direct local current-surface fits, 11 require adapters, 2 require source restructuring, and 3 have the same narrow singleton numeric directional shape as the present Lean bridge. Only 7 of 18 audited contexts are standalone. These counts describe the purposive corpus only; they are not ecosystem prevalence or migration-effort estimates and the external programs are not Lean-certified.
+
+The manuscript does **not** claim end-to-end compiler verification, complete sandboxing, production source-to-effect verification, representative ecosystem validation, a controlled performance result, a usability result, atomic multi-target Change, or superiority over modern effect/capability systems.
 
 ## Review status
 
-Four earlier internal reviewer-perspective rounds are documented in `INTERNAL_REVIEW.md`. The fifth skeptical SCP-style pass and its disposition are documented separately in `INTERNAL_REVIEW_ROUND5.md` and `INTERNAL_REVIEW_ROUND5_RESPONSE.md`. An author-supplied Claude Opus referee-style AI review and its disposition are documented in `EXTERNAL_REVIEW_RESPONSE.md`; it is not described as journal peer review.
+Four earlier internal reviewer-perspective rounds are documented in `INTERNAL_REVIEW.md`. Round 5 is documented in `INTERNAL_REVIEW_ROUND5.md` and `INTERNAL_REVIEW_ROUND5_RESPONSE.md`. Round 6 is documented in `INTERNAL_REVIEW_ROUND6.md` and focuses on empirical-transfer validity, source provenance, strict direct-fit coding, and claim discipline. An author-supplied Claude Opus referee-style AI review and its disposition are documented in `EXTERNAL_REVIEW_RESPONSE.md`; none of these internal/AI reviews is described as journal peer review.
 
-The strongest formal issues identified across these reviews have been addressed by the direct Change-to-Effect/Rule bridge, consistent fail-closed magnitude semantics, and formal equivalence between the relational and executable policy checks. Round 5 also added direct positioning against prior Software Change Contracts and a self-contained target-only ablation definition. New empirical studies requested by reviewers (real-code corpus and controlled fixed-machine timing) remain limitations/future strengthening work rather than being replaced with synthetic claims.
+The strongest formal issues identified across the reviews have been addressed by the direct Change-to-Effect/Rule bridge, consistent fail-closed magnitude semantics, and formal equivalence between the relational and executable policy checks. The former external-validity gap is now partially addressed by the public mutation-shape audit; a larger independently coded/representative study remains future work.
 
 ## Submission metadata currently known
 
@@ -48,27 +51,27 @@ The exact originality/concurrent-submission declaration and any remaining Editor
 
 ## Supporting submission files
 
-- `main.tex`
-- `related-work.tex`
-- `references.bib`
-- `related-extra.bib`
-- `highlights.txt`
-- `cover-letter.md`
-- `SCP_SUBMISSION.md`
-- `INTERNAL_REVIEW.md`
-- `INTERNAL_REVIEW_ROUND5.md`
-- `INTERNAL_REVIEW_ROUND5_RESPONSE.md`
-- `EXTERNAL_REVIEW_RESPONSE.md`
+- `journal.tex` — current journal root;
+- `main.tex` — stable core manuscript;
+- `real-code-study.tex` — Round-6 external mutation audit;
+- `related-work.tex`;
+- `references.bib` and `related-extra.bib`;
+- `highlights.txt`;
+- `cover-letter.md`;
+- `SCP_SUBMISSION.md`;
+- internal review/disposition files including `INTERNAL_REVIEW_ROUND6.md`.
+
+The audit artifact lives under `studies/real-code-mutations/` with `corpus.json`, `results.json`, and its protocol README. `scripts/evaluate-real-code-mutations.js` deterministically validates/regenerates the counts; `scripts/verify-real-code-sources.js` optionally checks source anchors at the exact public commit pins.
 
 ## CI
 
-`.github/workflows/paper.yml` compiles the Elsevier manuscript, rejects unresolved citations/references, rejects `Overfull \hbox` layout overflow, and uploads the generated PDF artifact. Formal CI separately regenerates and verifies the Lean/certificate assurance stack on the journal branch.
+`.github/workflows/paper.yml` first checks the frozen real-code corpus/result consistency, then compiles `journal.tex`, rejects unresolved citations/references, rejects `Overfull \hbox` layout overflow, and uploads the generated PDF artifact. The network source-anchor check is intentionally optional so temporary GitHub availability cannot break manuscript compilation. Formal CI separately regenerates and verifies the Lean/certificate assurance stack.
 
-The Round-5 formal state is pinned to commit `2518a1522461319454449eb6ad85d1ffeeaab53b`, whose complete formal workflow passed with the checker-equivalence theorems and generated certificates.
+The Round-5/6 formal state is pinned to commit `2518a1522461319454449eb6ad85d1ffeeaab53b`, whose complete formal workflow passed with the checker-equivalence theorems and generated certificates.
 
 ## Remaining high-value strengthening work
 
-1. optionally archive/tag the final source/evidence snapshot under an archival DOI/identifier before submission;
-2. genuine external/public real-code mutation evidence or a third-party integration case;
-3. fixed-machine controlled assurance-cost measurements;
-4. a fair implemented or formal comparison with a representative modern effect/capability approach.
+1. archive/tag the final source/evidence snapshot under an immutable identifier/DOI before submission if appropriate;
+2. expand the real-code audit into a larger independently coded or preregistered corpus and/or execute behavior-preserving translation cases;
+3. collect fixed-machine controlled assurance-cost measurements;
+4. implement or formally compare a representative modern effect/capability approach.
