@@ -101,11 +101,11 @@ function nearestEqualSpacing(current, peers, axis, tolerance) {
   const currentEnd = currentStart + currentSize;
   const before = peers
     .map(peer => ({ start: peer[startKey], end: peer[startKey] + peer[sizeKey] }))
-    .filter(peer => peer.end <= currentEnd + tolerance)
+    .filter(peer => peer.end <= currentStart + tolerance)
     .sort((a, b) => b.end - a.end);
   const after = peers
     .map(peer => ({ start: peer[startKey], end: peer[startKey] + peer[sizeKey] }))
-    .filter(peer => peer.start >= currentStart - tolerance)
+    .filter(peer => peer.start >= currentEnd - tolerance)
     .sort((a, b) => a.start - b.start);
 
   let best = null;
