@@ -63,37 +63,18 @@ Patch explores a language architecture in which ordinary post-creation persisten
 
 The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, or unsupported language fragments. This is a contribution hypothesis to be evaluated by the formal results, semantic-authority case studies, controlled performance measurements, and further expert/venue scrutiny, not a firstness assertion.
 
-\subsection{Research decomposition and follow-on boundary}
-\label{sec:research-decomposition}
-The current manuscript is strongest when its evidence is read as answers to separate research questions rather than as one undifferentiated claim. Table~\ref{tab:research-map} makes that decomposition explicit. In particular, a missing empirical result is not treated as negative evidence for a proved fragment, and a mechanized fragment theorem is not treated as evidence about full-language or ecosystem behavior.
+\subsection{Research questions for this paper}
+\label{sec:research-questions}
+To keep the contribution narrow, this manuscript evaluates four questions about the current architecture only:
 
-\begin{table}[t]
-\centering
-\caption{Research-question to evidence map. ``Open'' means the artifact contains protocol or motivating evidence but the manuscript does not yet claim the corresponding empirical result.}
-\label{tab:research-map}
-\scriptsize
-\setlength{\tabcolsep}{3.2pt}
-\begin{tabular}{@{}p{7mm}p{47mm}p{46mm}p{21mm}@{}}
-\toprule
-RQ & Question & Primary evidence & Status \\
-\midrule
-RQ1 & Can modeled persistent mutation be factored through one semantic Change route while preserving transparent history and derived contracts? & Formal factorization, transparency, signature and capability results & Lean-checked fragment \\
-RQ2 & Does operation- and magnitude-aware authority distinguish cases that target-only write authority cannot distinguish? & Eight semantic-authority micro-cases plus two larger application cases & Artifact evidence \\
-RQ3 & Can selected production direct-Wasm executions be related back to exact semantic call-tree effects without trusting backend call markers? & Independent source/guard/call-site validation, reconstructed invocation frames, generated Lean certificates & Accepted-evidence theorem \\
-RQ4 & What applicability and assurance cost does the architecture have beyond authored cases? & Controlled-measurement protocol and planned public real-code evaluation & Open \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{enumerate}[leftmargin=*]
+\item[\textbf{RQ1}] Can modeled persistent mutation be factored through one semantic Change route while retaining transparent history and derived semantic contracts?
+\item[\textbf{RQ2}] Does operation- and magnitude-aware authority distinguish mutation cases that target-only write authority does not distinguish?
+\item[\textbf{RQ3}] Can selected production direct-WebAssembly executions be related back to exact semantic call-tree effects without trusting backend call markers?
+\item[\textbf{RQ4}] How applicable is the factorization to realistic mutation patterns, and what assurance cost does the current validation stack impose?
+\end{enumerate}
 
-This decomposition also clarifies what should \emph{not} be pulled into the present contribution merely because the shared Change substrate enables it. Two active research descendants are especially close to the current design.
+RQ1 is addressed by the formal core, RQ2 by the semantic-authority and application cases, and RQ3 by the independently reconstructed runtime evidence and Lean-checked certificates. RQ4 remains the principal empirical completion item: the current manuscript has a controlled-measurement protocol but no paper-quality controlled timing result, and realistic applicability should be strengthened with the planned public real-code mutation audit before submission.
 
-\paragraph{Relational atomic ChangeSets are follow-on work.}
-A Stage-0 research prototype stages multiple semantic Changes against cloned state, exposes no partial committed result, checks relational ``same'' and post-state ``ensure'' constraints, and can derive inverse operations for whole-set restoration. This directly targets coupled multi-target mutations such as transfers and quota/index maintenance. However, the candidate source syntax is still experimental, the production parser/interpreter and Change IR do not yet expose a stable \texttt{CHANGE\_SET} contract, and no Lean atomicity or invariant-preservation theorem is claimed here. Relational ChangeSets are therefore evidence that State-Change Factorization has a plausible compositional extension, not an additional result of this paper.
-
-\paragraph{Least-authority inference is follow-on work.}
-A separate Stage-0 helper already computes the smallest capability expressible by the current grammar from an existing Change Signature, retaining target/path, semantic operation, and proven magnitude when available. It fails closed for unknown, dynamic, or recursive targets and can flag obvious unused or oversized declared authority. The current helper deliberately does not define or prove a complete capability ordering, sufficiency theorem, or minimality theorem. Those are the formal obligations required before least-authority inference can become a separate research claim. The present paper therefore uses Change Capabilities as declared policy and analyzes their semantic precision, but does not claim globally minimal inferred authority.
-
-\paragraph{Longer research trajectory.}
-Certified adapters for Set/Map/host-managed mutable state, consumable or temporal authority budgets, semantic causal slicing, and Change commutativity are also natural descendants of the same architecture. They are intentionally excluded from the current contribution. This separation is important methodologically: the current paper should succeed or fail on the evidence for mandatory semantic mutation, semantic contracts, and the stated assurance bridge, rather than on unimplemented future features.
-
-A useful consequence is a sharper completion criterion for this manuscript. Before submission, RQ4 should be strengthened with a public real-code mutation audit and, if performance claims are desired, a reviewed controlled fixed-machine dataset. Relational ChangeSets, least-authority minimality, adapters, temporal budgets, causal debugging, and safe parallelism should remain future work unless their own formal or empirical evidence is completed.
+\paragraph{Future work boundary.}
+Relational multi-target ChangeSets, least-authority capability inference, certified foreign-state adapters, temporal authority, causal debugging, and safe parallelism are separate follow-on research questions. Experimental prototypes may exist in the repository, but this paper does not count them as contributions or evidence for RQ1--RQ4.
