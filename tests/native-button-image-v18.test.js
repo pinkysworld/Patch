@@ -60,7 +60,7 @@ test('IR 1.8 supports Button image metadata inside a supported Panel hierarchy',
   imagelist as app_images size 16, 16:
     image open from "patch-resource:icons.open"
   panel as tools at 20, 20 size 300, 120:
-    button "Open" as open_button image app_images.open at 8, 8 size 120, 36
+    button "Open" as open_button image app_images.open
 `;
   const ir = build(source);
   const button = flattenNativeGuiControlsV18(ir).find(control => control.id === 'open_button');
