@@ -1,0 +1,276 @@
+name: R0 runtime selection state
+
+on:
+  push:
+    branches: [gpt/r0-runtime-selection-state-282]
+    paths:
+      - .github/workflows/r0-runtime-selection-state-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply guarded runtime selection integration
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one guarded match, found {count}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'web/playground.js',
+              "import { getStudioDesignSnapshot } from './studio-design-snapshots.js';\nimport { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';",
+              "import { getStudioDesignSnapshot } from './studio-design-snapshots.js';\nimport { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';\nimport { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';"
+          )
+
+          replace_once(
+              'web/playground.js',
+              """function runtimeControlKey(control, context) {
+            const id = String(control?.id ?? '').trim();
+            if (id) return `id:${id}`;
+            const windowKey = String(context.windowId ?? `window${Number(context.windowIndex ?? 0) + 1}`);
+            const path = String(context.controlPath ?? context.controlIndex ?? 'control');
+            return `${windowKey}:path:${path}`;
+          }""",
+              """function runtimeControlKey(control, context) {
+            return runtimeSelectionKey(control, context);
+          }"""
+          )
+
+          replace_once(
+              'web/playground.js',
+              """function createTreeElement(control, context) {
+            const root = document.createElement('ul');
+            root.className = 'patch-tree';
+            root.setAttribute('role', 'tree');
+            const renderNodes = (nodes, path = []) => {
+              const fragment = document.createDocumentFragment();
+              for (const node of nodes ?? []) {
+                const item = document.createElement('li');
+                item.setAttribute('role', 'treeitem');
+                const selectedPath = [...path, node.text];
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'patch-tree-node';
+                button.textContent = node.text;
+                button.setAttribute('aria-label', selectedPath.join(' / '));
+                if (context.interactive) button.addEventListener('click', () => trigger(control.id, 'changed', { value: selectedPath }));
+                else button.disabled = true;
+                item.appendChild(button);
+                if (node.children?.length) {
+                  const group = document.createElement('ul');
+                  group.setAttribute('role', 'group');
+                  group.appendChild(renderNodes(node.children, selectedPath));
+                  item.appendChild(group);
+                }
+                fragment.appendChild(item);
+              }
+              return fragment;
+            };
+            root.appendChild(renderNodes(control.nodes));
+            return root;
+          }""",
+              """function createTreeElement(control, context) {
+            const root = document.createElement('ul');
+            root.className = 'patch-tree';
+            root.setAttribute('role', 'tree');
+            root.dataset.patchRuntimeSelectionKind = 'tree';
+            const key = runtimeControlKey(control, context);
+            const rememberedPath = getRuntimeSelection(context.container, 'tree', key);
+            const samePath = path => Array.isArray(rememberedPath)
+              && path.length === rememberedPath.length
+              && path.every((part, index) => part === rememberedPath[index]);
+            const selectPath = selectedPath => {
+              setRuntimeSelection(context.container, 'tree', key, selectedPath);
+              const encoded = JSON.stringify(selectedPath);
+              for (const current of root.querySelectorAll('.patch-tree-node')) {
+                const selected = current.dataset.patchTreePath === encoded;
+                current.setAttribute('aria-selected', selected ? 'true' : 'false');
+                current.closest('[role="treeitem"]')?.setAttribute('aria-selected', selected ? 'true' : 'false');
+              }
+            };
+            const renderNodes = (nodes, path = []) => {
+              const fragment = document.createDocumentFragment();
+              for (const node of nodes ?? []) {
+                const item = document.createElement('li');
+                item.setAttribute('role', 'treeitem');
+                const selectedPath = [...path, node.text];
+                const selected = samePath(selectedPath);
+                item.setAttribute('aria-selected', selected ? 'true' : 'false');
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'patch-tree-node';
+                button.textContent = node.text;
+                button.dataset.patchTreePath = JSON.stringify(selectedPath);
+                button.setAttribute('aria-label', selectedPath.join(' / '));
+                button.setAttribute('aria-selected', selected ? 'true' : 'false');
+                if (context.interactive) button.addEventListener('click', () => {
+                  selectPath(selectedPath);
+                  trigger(control.id, 'changed', { value: selectedPath });
+                });
+                else button.disabled = true;
+                item.appendChild(button);
+                if (node.children?.length) {
+                  const group = document.createElement('ul');
+                  group.setAttribute('role', 'group');
+                  group.appendChild(renderNodes(node.children, selectedPath));
+                  item.appendChild(group);
+                }
+                fragment.appendChild(item);
+              }
+              return fragment;
+            };
+            root.appendChild(renderNodes(control.nodes));
+            return root;
+          }"""
+          )
+
+          replace_once(
+              'web/table-stage1.js',
+              "import { evaluateLoose } from '../src/expression.js';\nimport {\n  addDesignerControl,",
+              "import { evaluateLoose } from '../src/expression.js';\nimport { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';\nimport {\n  addDesignerControl,"
+          )
+          replace_once('web/table-stage1.js', 'const appSelections = new Map();\n', '')
+          replace_once(
+              'web/table-stage1.js',
+              """        const key = `${windowIndex}:${node.id ?? controlIndex}`;
+                  const element = createTable(node, {
+                    interactive: !designer,
+                    key,
+                    hasHandler: Boolean(node.id && changedHandlers.has(node.id))
+                  });
+                  element.dataset.windowIndex = String(windowIndex);
+                  element.dataset.controlIndex = String(controlIndex);""",
+              """        const key = runtimeSelectionKey(node, {
+                    windowId: windowNode.id,
+                    windowIndex,
+                    controlIndex,
+                    controlPath: String(controlIndex)
+                  });
+                  const element = createTable(node, {
+                    interactive: !designer,
+                    container,
+                    key,
+                    hasHandler: Boolean(node.id && changedHandlers.has(node.id))
+                  });
+                  element.dataset.windowIndex = String(windowIndex);
+                  element.dataset.controlIndex = String(controlIndex);
+                  element.dataset.patchControlKey = key;
+                  element.dataset.patchRuntimeSelectionKind = 'table';"""
+          )
+          replace_once(
+              'web/table-stage1.js',
+              "let selectedIndex = options.interactive ? appSelections.get(options.key) : null;",
+              "let selectedIndex = options.interactive ? getRuntimeSelection(options.container, 'table', options.key) : null;"
+          )
+          replace_once(
+              'web/table-stage1.js',
+              "  appSelections.set(options.key, rowIndex);",
+              "  setRuntimeSelection(options.container, 'table', options.key, rowIndex);"
+          )
+
+          replace_once(
+              'scripts/build-site.js',
+              "  'playground.js','studio-design-snapshots.js','forms-designer.js'",
+              "  'playground.js','studio-design-snapshots.js','studio-runtime-selection-state.js','forms-designer.js'"
+          )
+          replace_once(
+              'web/sw.js',
+              "  './playground.js', './studio-design-snapshots.js', './beta35-studio.js'",
+              "  './playground.js', './studio-design-snapshots.js', './studio-runtime-selection-state.js', './beta35-studio.js'"
+          )
+
+          marker = """  assert.ok(appState.hiddenChildren.every(count => count === 0), `deferred Form bodies must stay empty: ${JSON.stringify(appState.hiddenChildren)}`);
+
+          """
+          addition = """  assert.ok(appState.hiddenChildren.every(count => count === 0), `deferred Form bodies must stay empty: ${JSON.stringify(appState.hiddenChildren)}`);
+
+            const tableSelectionStarted = await evaluate(cdp, `(() => {
+              const table = document.querySelector('#app [data-patch-control-key="id:board"]');
+              const row = table?.querySelectorAll('tbody > tr')?.[1];
+              if (!row) return false;
+              row.click();
+              return true;
+            })()`);
+            assert.equal(tableSelectionStarted, true);
+            await waitFor(cdp, `(() => ({
+              row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+              store: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('table')?.get('id:board')
+            }))()`, state => state?.row?.includes('WD-105') && state.store === 1);
+
+            const treeSelectionStarted = await evaluate(cdp, `(() => {
+              const button = [...document.querySelectorAll('#app [data-patch-control-key="id:parts"] .patch-tree-node')]
+                .find(node => node.getAttribute('aria-label') === 'Parts / Input / Keyboard');
+              if (!button) return false;
+              button.click();
+              return true;
+            })()`);
+            assert.equal(treeSelectionStarted, true);
+            const adapterSelections = await waitFor(cdp, `(() => ({
+              row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+              tree: document.querySelector('#app [data-patch-control-key="id:parts"] .patch-tree-node[aria-selected="true"]')?.getAttribute('aria-label') ?? '',
+              tableStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('table')?.get('id:board'),
+              treeStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('tree')?.get('id:parts') ?? []
+            }))()`, state => state?.row?.includes('WD-105') && state.tree === 'Parts / Input / Keyboard');
+            assert.equal(adapterSelections.tableStore, 1);
+            assert.deepEqual(adapterSelections.treeStore, ['Parts', 'Input', 'Keyboard']);
+
+          """
+          replace_once('tests/workshop-desk-browser.test.js', marker, addition)
+
+          marker2 = """  assert.match(keyedInputState.key, /^id:item$/);
+
+          """
+          addition2 = """  assert.match(keyedInputState.key, /^id:item$/);
+
+            const selectionsAfterFallback = await waitFor(cdp, `(() => ({
+              row: document.querySelector('#app [data-patch-control-key="id:board"] tbody > tr[aria-selected="true"]')?.textContent ?? '',
+              tree: document.querySelector('#app [data-patch-control-key="id:parts"] .patch-tree-node[aria-selected="true"]')?.getAttribute('aria-label') ?? '',
+              tableStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('table')?.get('id:board'),
+              treeStore: document.querySelector('#app')?.__patchRuntimeSelectionState?.get('tree')?.get('id:parts') ?? []
+            }))()`, state => state?.row?.includes('WD-105') && state.tree === 'Parts / Input / Keyboard');
+            assert.equal(selectionsAfterFallback.tableStore, 1, 'Table selection should survive the safe full-Form fallback');
+            assert.deepEqual(selectionsAfterFallback.treeStore, ['Parts', 'Input', 'Keyboard'], 'Tree selection should survive the safe full-Form fallback');
+
+          """
+          replace_once('tests/workshop-desk-browser.test.js', marker2, addition2)
+          PY
+      - name: Verify keyed runtime selection state
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check web/studio-runtime-selection-state.js
+          node --check web/playground.js
+          node --check web/table-stage1.js
+          node --test tests/studio-runtime-selection-state.test.js tests/studio-runtime-keyed-renderer.test.js
+          node --test tests/workshop-desk-browser.test.js
+          node scripts/build-site.js
+          npm run check:site
+      - name: Commit verified product changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/r0-runtime-selection-state-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add web/playground.js web/table-stage1.js web/studio-runtime-selection-state.js web/sw.js scripts/build-site.js tests/workshop-desk-browser.test.js tests/studio-runtime-selection-state.test.js .github/workflows/r0-runtime-selection-state-once.yml
+          git commit -m 'Preserve keyed Table and Tree runtime selections'
+          git push
