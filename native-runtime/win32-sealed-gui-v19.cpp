@@ -14,6 +14,7 @@
 static std::vector<PatchButtonImageAssetV19> gPatchButtonImageAssetsV19;
 static std::vector<PatchButtonImageConsumerV19> gPatchButtonImagesV19;
 static std::vector<HIMAGELIST> gPatchButtonImageListsV19;
+static int gPatchButtonImageInstallErrorV19 = 0;
 
 struct PatchButtonSourceImageV19 {
   Image* image = nullptr;
@@ -105,18 +106,20 @@ static HIMAGELIST PatchCreateButtonImageListV19(const PatchButtonImageConsumerV1
 }
 
 static bool PatchInstallButtonImagesV19() {
+  gPatchButtonImageInstallErrorV19 = 0;
   gPatchButtonImageListsV19.assign(gControls.size(), nullptr);
   for (const auto& item : gPatchButtonImagesV19) {
     auto& control = gControls[(size_t)item.nativeIndex];
-    if (!control.hwnd || control.kind != CK_BUTTON) return false;
+    if (!control.hwnd || control.kind != CK_BUTTON) { gPatchButtonImageInstallErrorV19 = 431; return false; }
     HIMAGELIST list = PatchCreateButtonImageListV19(item);
-    if (!list) return false;
+    if (!list) { gPatchButtonImageInstallErrorV19 = 432; return false; }
     BUTTON_IMAGELIST binding{};
     binding.himl = list;
     binding.margin = RECT{4, 2, 4, 2};
     binding.uAlign = BUTTON_IMAGELIST_ALIGN_LEFT;
     if (!SendMessageW(control.hwnd, BCM_SETIMAGELIST, 0, reinterpret_cast<LPARAM>(&binding))) {
       ImageList_Destroy(list);
+      gPatchButtonImageInstallErrorV19 = 433;
       return false;
     }
     gPatchButtonImageListsV19[(size_t)item.nativeIndex] = list;
@@ -143,6 +146,14 @@ static int RunPatchButtonImageSmokeV19() {
   return 0;
 }
 
+static int PatchButtonImageInstallFailureV19() {
+  const int diagnostic = gPatchButtonImageInstallErrorV19;
+  PatchDestroyButtonImagesV19(); PatchDestroyChromeImagesV15(); PatchDestroyPaintImagesV18();
+  if (gGuiFont) DeleteObject(gGuiFont);
+  GdiplusShutdown(gPatchGdiplusTokenV16);
+  return gSmokeMode && diagnostic ? diagnostic : 21;
+}
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   GdiplusStartupInput gdiplusStartupInput;
   if (GdiplusStartup(&gPatchGdiplusTokenV16, &gdiplusStartupInput, nullptr) != Ok) return 21;
@@ -159,12 +170,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV19"; wc.lpszClassName = PATCH_WINDOW_CLASS; if (!RegisterClassW(&wc)) { GdiplusShutdown(gPatchGdiplusTokenV16); return 21; }
   NONCLIENTMETRICSW metrics{}; metrics.cbSize = sizeof(metrics);
   if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0)) gGuiFont = CreateFontIndirectW(&metrics.lfMessageFont);
-  if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance) || !PatchInstallButtonImagesV19() || !PatchInstallMenusV12()) {
-    PatchDestroyButtonImagesV19(); PatchDestroyChromeImagesV15(); PatchDestroyPaintImagesV18();
-    if (gGuiFont) DeleteObject(gGuiFont);
-    GdiplusShutdown(gPatchGdiplusTokenV16);
-    return 21;
-  }
+  if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance) || !PatchInstallButtonImagesV19() || !PatchInstallMenusV12()) return PatchButtonImageInstallFailureV19();
   for (auto& form : gForms) SetWindowLongPtrW(form.hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(PatchWndProcV18));
   ApplyPatchAccessibilityV09(); ApplyPatchTableAccessibilityV10(); RefreshUI(); PatchRefreshListsV11(); PatchRefreshMenusV12(); PatchRefreshTreesV13(); PatchRefreshSlidersV14(); PatchRefreshChromeV15(); PatchRefreshShapesV16(); PatchRefreshPaintBoxesV17(); PatchRefreshPaintImageBoxesV18();
   for (auto& form : gForms) if (form.visible) ShowWindow(form.hwnd, showCommand == 0 ? SW_SHOWNORMAL : showCommand);
