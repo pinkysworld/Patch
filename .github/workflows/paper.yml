@@ -40,7 +40,9 @@ jobs:
           node-version: 22
 
       - name: Verify frozen real-code audit
-        run: npm run evaluate:real-code:check
+        run: |
+          node --check scripts/verify-real-code-sources.js
+          npm run evaluate:real-code:check
 
       - name: Compile manuscript
         uses: xu-cheng/latex-action@v4
