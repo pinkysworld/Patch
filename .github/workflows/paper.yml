@@ -6,10 +6,18 @@ on:
       - 'paper/**'
     paths:
       - 'paper/**'
+      - 'studies/real-code-mutations/**'
+      - 'scripts/evaluate-real-code-mutations.js'
+      - 'scripts/verify-real-code-sources.js'
+      - 'package.json'
       - '.github/workflows/paper.yml'
   pull_request:
     paths:
       - 'paper/**'
+      - 'studies/real-code-mutations/**'
+      - 'scripts/evaluate-real-code-mutations.js'
+      - 'scripts/verify-real-code-sources.js'
+      - 'package.json'
       - '.github/workflows/paper.yml'
   workflow_dispatch:
 
@@ -26,17 +34,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify frozen real-code audit
+        run: npm run evaluate:real-code:check
+
       - name: Compile manuscript
         uses: xu-cheng/latex-action@v4
         with:
-          root_file: main.tex
+          root_file: journal.tex
           working_directory: paper
           latexmk_use_xelatex: false
 
       - name: Reject unresolved references
         shell: bash
         run: |
-          if grep -E "(Citation .* undefined|Reference .* undefined|There were undefined references|There were undefined citations)" paper/main.log; then
+          if grep -E "(Citation .* undefined|Reference .* undefined|There were undefined references|There were undefined citations)" paper/journal.log; then
             echo "Unresolved manuscript citation/reference detected."
             exit 1
           fi
@@ -44,7 +60,7 @@ jobs:
       - name: Reject layout overflow
         shell: bash
         run: |
-          if grep -F 'Overfull \hbox' paper/main.log; then
+          if grep -F 'Overfull \hbox' paper/journal.log; then
             echo "Overfull manuscript box detected. Fix the source before journal submission."
             exit 1
           fi
@@ -53,5 +69,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: patch-scp-manuscript
-          path: paper/main.pdf
+          path: paper/journal.pdf
           if-no-files-found: error
