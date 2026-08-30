@@ -41,6 +41,14 @@ jobs:
             exit 1
           fi
 
+      - name: Reject layout overflow
+        shell: bash
+        run: |
+          if grep -F 'Overfull \hbox' paper/main.log; then
+            echo "Overfull manuscript box detected. Fix the source before journal submission."
+            exit 1
+          fi
+
       - name: Upload manuscript PDF
         uses: actions/upload-artifact@v4
         with:
