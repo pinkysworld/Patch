@@ -209,6 +209,7 @@ function createSpacingGuide(axis) {
     segment.className = 'patch-spacing-guide-segment';
     Object.assign(segment.style, {
       position: 'fixed',
+      borderWidth: '0',
       borderColor: 'currentColor',
       borderStyle: 'dotted'
     });
@@ -241,7 +242,6 @@ function positionHorizontalSegment(segment, left, top, width) {
   segment.style.width = `${Math.max(0, width)}px`;
   segment.style.height = '0';
   segment.style.borderTopWidth = '1px';
-  segment.style.borderLeftWidth = '0';
 }
 
 function positionVerticalSegment(segment, left, top, height) {
@@ -250,7 +250,6 @@ function positionVerticalSegment(segment, left, top, height) {
   segment.style.width = '0';
   segment.style.height = `${Math.max(0, height)}px`;
   segment.style.borderLeftWidth = '1px';
-  segment.style.borderTopWidth = '0';
 }
 
 function formatGap(value) {
