@@ -8,7 +8,9 @@ Repository: https://github.com/pinkysworld/Patch
 
 Submission branch: `paper/research-framing-20260830`
 
-Artifact snapshot commit: `TO_BE_REPLACED_WITH_FINAL_SOURCE_COMMIT`
+Artifact snapshot commit: `98a550faee3cf3e9f646865930b9bd7c7e3a5d30`
+
+The snapshot above is the source state used for the submitted manuscript and artifact. The commit that updates this metadata file follows that snapshot but does not change the scientific source, formal models, evaluation corpus, or submission builder.
 
 ## What the artifact supports
 
