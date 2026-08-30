@@ -83,7 +83,7 @@ export function buildDiagnosticAssist(diagnostic, context = {}) {
   if (unknownStatement && location?.line) {
     const found = unknownStatement[1];
     const candidate = uniqueNearest(found, PATCH_KEYWORDS, 2);
-    if (candidate) {
+    if (candidate && candidate.toLowerCase() !== found.toLowerCase()) {
       return {
         ...base,
         title: 'This looks like a small spelling mistake',
@@ -136,7 +136,7 @@ export function applyDiagnosticFix(source, fix) {
 
   const from = String(fix.from ?? '');
   const to = String(fix.to ?? '');
-  if (!from || !to) return text;
+  if (!from || !to || from === to) return text;
   const pattern = new RegExp(`(^|[^A-Za-z0-9_])${escapeRegExp(from)}(?=$|[^A-Za-z0-9_])`);
   if (!pattern.test(lines[index])) return text;
   lines[index] = lines[index].replace(pattern, (_, prefix) => `${prefix}${to}`);
@@ -208,5 +208,5 @@ function platformLabel(platform) {
   return platform === 'macos' ? 'macOS' : platform === 'windows' ? 'Windows' : platform === 'linux' ? 'Linux' : 'FreeBSD';
 }
 
-function article(word) { return /^[aeiou]/i.test(word) ? `an` : `a`; }
+function article(word) { return /^[aeiou]/i.test(word) ? 'an' : 'a'; }
 function escapeRegExp(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
