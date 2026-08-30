@@ -67,7 +67,7 @@ def actualAmountFor (d : Change) (kind : ChangeKind) : Option Interval :=
       some (exactInterval (before - after))
   | _, _, _ => none
 
-/-- The missing formal bridge between the mutation machine and the contract
+/-- The formal bridge between the mutation machine and the contract
     vocabulary. For a well-formed Change in the supported singleton numeric
     fragment, the amount carried by `effectOf` is exactly the amount obtained
     from the Change's committed before/after values.
