@@ -1,4 +1,4 @@
-import { clone, formatValue } from './change.js';
+import { applySemanticOperations, clone, formatValue } from './change.js';
 
 export const PATCH_CHANGE_PLAN_MODEL_VERSION = '0.1-research';
 
@@ -19,10 +19,15 @@ export function buildChangePlan(changeSetRecord) {
       rows.push(baseRow(member, member.target, null, member.before, member.after));
       continue;
     }
+
+    let current = clone(member.before);
     for (const operation of operations) {
+      const beforeRoot = clone(current);
+      current = applySemanticOperations(current, [operation]);
+      const afterRoot = clone(current);
       const path = operation.field ? `${member.target}.${operation.field}` : member.target;
-      const before = operation.field ? ownField(member.before, operation.field) : member.before;
-      const after = operation.field ? ownField(member.after, operation.field) : member.after;
+      const before = operation.field ? ownField(beforeRoot, operation.field) : beforeRoot;
+      const after = operation.field ? ownField(afterRoot, operation.field) : afterRoot;
       rows.push(baseRow(member, path, operation, before, after));
     }
   }
