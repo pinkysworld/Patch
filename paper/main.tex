@@ -65,10 +65,10 @@ The rule authorizes a bounded increase; it does not authorize an arbitrary \text
 
 The architectural hypothesis is not that effects, capabilities, quantitative bounds, first-class changes, reversible execution, event sourcing, or refinement specifications are new. Several related systems are more expressive than Patch. The question is whether making semantic Change the sole modeled post-creation application-state mutation route provides a useful common lineage from state transition to contracts, history/provenance, and scoped assurance.
 
-\paragraph{Design invariant rather than research question.}
+\paragraph{Design invariant rather than research question}
 State-Change Factorization is a by-construction property of the current formal core: a state-changing machine step commits a well-formed Change, and Mutation Transparency records that Change in history. This is an architectural restriction, not an empirical research question and not a difficult semantic theorem. The scientific questions concern what follows from imposing it.
 
-\paragraph{Research questions.}
+\paragraph{Research questions}
 The paper evaluates three questions:
 \begin{enumerate}[leftmargin=*]
 \item \textbf{RQ1---Contract linkage:} for a supported numeric mutation fragment, can a contract-level operation/magnitude effect be derived from a well-formed committed Change and related to the actual before/after state delta?
@@ -81,7 +81,7 @@ RQ3 is intentionally not an ecological-validity question: the constructed ablati
 The paper does not claim a fully verified compiler, complete sandboxing, complete foreign-code confinement, intrinsic program reversibility, user-productivity benefits, or unique expressibility of bounded state relations. It claims a scoped language architecture, a direct formal link between supported committed Changes and bounded contract effects, additional machine-checked assurance fragments, and deterministic artifact evidence about the semantic information retained by that architecture.
 \end{claimboundary}
 
-\paragraph{Contributions.}
+\paragraph{Contributions}
 This paper makes five scoped contributions:
 \begin{enumerate}[leftmargin=*]
 \item a language and machine design in which modeled post-creation application-state updates factor through structured semantic Changes, with the by-construction State-Change Factorization and Mutation Transparency invariants;
@@ -215,7 +215,7 @@ Let $d$ be a well-formed supported Change, let \texttt{effectOf}$(d)=e$, and let
 
 This theorem is the formal connection between the mutation-machine Change and the contract-level Effect/Rule vocabulary. It does not prove the production source analyzer: the premise that a source construct corresponds to the supported Change remains part of the source/evidence boundary described below.
 
-\paragraph{Answer to RQ1.}
+\paragraph{Answer to RQ1}
 Yes for the stated fragment. The formalization now relates a well-formed committed numeric Change to its directional contract effect and proves that a bounded allowed effect constrains the actual committed before/after magnitude. The result is intentionally narrower than the production language.
 
 \section{Formal Assurance Stack}
@@ -273,7 +273,7 @@ The production source path and independent raw-source paths reconstruct supporte
 
 Concrete call certification also checks static source identity before trusting the production AST's call-site description. An independent raw-source scanner reconstructs supported \texttt{do recipe(args)} sites, including caller/callee identity, source line, order, and exact argument texts. The ordered list must match the separately collected production-AST view before concrete-call witnesses are accepted.
 
-These are translation/source-identity checks, not verified JavaScript parsers. Lean checks consequences of the accepted supported evidence.
+These checks validate translation and source identity; they are not verified JavaScript parsers. Lean checks consequences of the accepted supported evidence.
 
 \section{Finite Exact Recipe Calls}
 The call-assurance stack models finite recipe environments with parameter intervals, semantic signatures, and well-founded ranks. The executable checker validates direct-effect membership, positional argument-interval fit, lower-rank call resolution, and callee-to-caller signature containment. Exact evidence serializes bindings as name/integer pairs so Lean can re-evaluate supported call arguments rather than trusting precomputed constants.
@@ -315,7 +315,7 @@ The validator checks transition order and values, reconstructs lexical change si
 \subsection{Invocation-frame bridge}
 Repeated identical calls require more than one globally scoped effect list. The runtime-correspondence layer therefore reconstructs concrete invocation frames independently of backend call-entry/exit markers. Each frame records caller/callee identity, dynamic invocation ordinal, parent/depth information, exact arguments/bindings, and transition boundaries.
 
-The mixed-guard regression executes \texttt{caller(1)}, \texttt{caller(4)}, and \texttt{caller(1)} through a four-frame chain. Independent validation reconstructs twelve frames and six supported transitive correspondences. The repeated first/third roots remain distinct dynamic frames while selecting the same branch; the middle root selects the opposite branch.
+The mixed-guard regression executes three roots in sequence: \texttt{caller(1)}, \texttt{caller(4)}, and \texttt{caller(1)}. Each passes through a four-frame chain. Independent validation reconstructs twelve frames and six supported transitive correspondences. The repeated first/third roots remain distinct dynamic frames while selecting the same branch; the middle root selects the opposite branch.
 
 \begin{theorem}[Observed runtime-frame correspondence]
 \label{thm:runtime}
@@ -359,14 +359,14 @@ Observed runtime-frame correspondence & \path{PatchCallRuntime} \\
 }
 \end{table}
 
-\paragraph{Answer to RQ2.}
+\paragraph{Answer to RQ2}
 The machine-checked scope now includes the factorization/history invariants, the direct Change-to-contract quantitative bridge, fail-closed bounded unknown magnitude, normalized signature/policy checking, integer-range soundness, finite ranked/exact call reasoning, guarded traces, and finite transitive call-tree refinement. Selected direct WebAssembly observations can additionally be connected to exact formal witnesses through accepted independently reconstructed evidence. Source analysis, validators, capture, lowering, and the engine remain explicit proof-free boundaries, so the result is a layered assurance argument rather than a verified compiler.
 
 \section{Semantic-Authority Mechanism Isolation}
 \subsection{Design}
 The evaluation asks a narrow mechanism question: after retaining reachable changed target paths but deliberately erasing semantic operation, magnitude, and proof obligations, which policy distinctions disappear? Eight extension-style micro-cases are run through the real Patch compiler/Change Capability analysis and an intentionally coarse target-only ablation.
 
-The ablation is constructed to isolate information carried by Patch's semantic effect vocabulary. Consequently, its outcome cannot establish prevalence in real extension ecosystems or superiority to a modern effect/capability/refinement system. It is evidence about the mechanism, not an ecological benchmark.
+The ablation is constructed to isolate information carried by Patch's semantic effect vocabulary. Consequently, its outcome cannot establish prevalence in real extension ecosystems or superiority to modern effect, capability, or refinement systems. It is evidence about the mechanism, not an ecological benchmark.
 
 \subsection{Micro-case results}
 \begin{table}[t]
@@ -407,7 +407,7 @@ Controlled variants exercise magnitude escalation, direction reversal, and targe
 
 These applications are internally authored engineering cases. They are not third-party extensions and do not estimate real-world mutation-pattern frequency.
 
-\paragraph{Answer to RQ3.}
+\paragraph{Answer to RQ3}
 In this deterministic corpus, erasing operation and magnitude makes four semantic-authority distinctions disappear while retaining target reachability, whereas target escape remains visible. This supports the limited claim that the retained semantic dimensions matter to the evaluated policy decisions. It does not show that mandatory Change is uniquely capable of recovering those dimensions or that the restriction is broadly practical in existing codebases.
 
 \section{Implementation and Reproducibility}
@@ -437,7 +437,7 @@ Formal contract bridge & \path{formal/PatchChangeContract.lean} & well-formed Ch
 This audit demonstrates implemented reuse; it is not a comparative engineering-cost study against conventional assignment plus separate instrumentation.
 
 \subsection{Artifact and reproducibility}
-The software/formal artifact evaluated for this revision is Patch \texttt{0.2.0-beta.36}, with the formal-policy/bridge state pinned at commit \texttt{fb7998defe54821f4d0997d87b345eaf301c90cd}. The Node package declares no third-party npm dependencies. The repository's formal workflow installs pinned Lean 4.30.0, regenerates static, runtime, finite-call, repeated-call, and mixed-guard certificates, builds the formal modules, checks every generated certificate, and rejects unfinished \texttt{sorry}/\texttt{admit} proofs.
+The evaluated artifact is Patch \texttt{0.2.0-beta.36}. Its formal-policy/bridge state is pinned at commit \nolinkurl{fb7998defe54821f4d0997d87b345eaf301c90cd}. The Node package declares no third-party npm dependencies. The repository's formal workflow installs pinned Lean 4.30.0, regenerates static, runtime, finite-call, repeated-call, and mixed-guard certificates, builds the formal modules, checks every generated certificate, and rejects unfinished \texttt{sorry}/\texttt{admit} proofs.
 
 The reproducibility bundle records source/evidence files with sizes and SHA-256 hashes. The appendix commands regenerate the semantic-authority and application reports and verify the bundle. A final submission should additionally archive the frozen artifact and cite its immutable DOI/identifier; no archival DOI is claimed before that archive exists.
 
@@ -451,28 +451,28 @@ Generative-AI tools were used as supporting research/development tools during pa
 \section{Limitations and Threats to Validity}
 \label{sec:limitations}
 
-\paragraph{Formal scope.}
+\paragraph{Formal scope}
 The new Change-to-contract theorem closes the earlier formal disconnect only for a small singleton numeric fragment. Fields, multi-operation Changes, collections/text, \texttt{clear}, and sign-indeterminate source ranges are outside it. The normalized signature theorem starts from Effect atoms; source-to-effect derivation remains validated rather than proved.
 
-\paragraph{Implementation trust.}
+\paragraph{Implementation trust}
 Independent source/range, guard, call-site, transition/effect, and invocation-frame validation reduces selected trust, but those validators are JavaScript rather than verified parsers. Runtime correspondence proves consequences of accepted evidence, not capture completeness, lowering correctness, or WebAssembly-engine correctness.
 
-\paragraph{GUI and foreign state.}
+\paragraph{GUI and foreign state}
 GUI control state and toolkit internals are not automatically Patch application state. The source must explicitly commit supported data through \texttt{change} to cross that boundary. Native Window runtimes, Things, foreign code, and unsupported operations are outside the present formal runtime correspondence.
 
-\paragraph{Evaluation construct validity.}
+\paragraph{Evaluation construct validity}
 The target-only comparison is an internal ablation constructed by deleting the dimensions under study. It is useful for mechanism isolation but cannot establish comparative superiority or estimate real-world security benefit.
 
-\paragraph{External validity.}
-The two application cases are internally authored. A public real-code corpus study---for example, measuring which persistent mutation patterns in existing extension/plugin/automation code fit Patch's directional bounded fragment and which fall into the residual category---would materially strengthen the practical-generalization claim. Such a study has not been performed for this manuscript.
+\paragraph{External validity}
+The two application cases are internally authored. A public real-code corpus study---for example, measuring which application-state mutation patterns in existing extension/plugin/automation code fit Patch's directional bounded fragment and which fall into the residual category---would materially strengthen the practical-generalization claim. Such a study has not been performed for this manuscript.
 
-\paragraph{Performance validity.}
+\paragraph{Performance validity}
 No controlled fixed-machine timing table is reported. The artifact includes a protocol, but methodology is not substituted for results.
 
-\paragraph{Ergonomics and usability.}
+\paragraph{Ergonomics and usability}
 The mutation restriction can increase verbosity and does not currently provide atomic multi-target Change. No developer study measures learnability, productivity, error rates, or preference. The paper therefore makes no usability claim.
 
-\paragraph{Comparative validity.}
+\paragraph{Comparative validity}
 Richer effect, refinement, dependent, typestate, reversible, or event-sourced systems may encode properties equal to or stronger than Patch's current contract language. The present work does not implement a modern competing system and therefore makes no performance, annotation-burden, or expressiveness ranking against one.
 
 \section{Conclusion}
@@ -496,7 +496,7 @@ The author declares no known competing financial interests or personal relations
 \appendix
 \section{Artifact reproduction}
 \label{app:repro}
-Core assurance, evaluation, and packaging commands used by this manuscript are:
+Core artifact commands are:
 
 \begin{verbatim}
 npm test
