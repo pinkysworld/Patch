@@ -138,7 +138,9 @@ function stripButtonImageBindings(nodes) {
       for (const page of node.body ?? []) stripButtonImageBindings(page.body);
       continue;
     }
-    if (node.kind === 'uiControl' && Array.isArray(node.body)) stripButtonImageBindings(node.body);
+    if (node.body) stripButtonImageBindings(node.body);
+    if (node.thenBody) stripButtonImageBindings(node.thenBody);
+    if (node.elseBody) stripButtonImageBindings(node.elseBody);
   }
 }
 
