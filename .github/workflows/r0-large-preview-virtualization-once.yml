@@ -1,0 +1,237 @@
+name: R0 large Designer preview virtualization
+
+on:
+  push:
+    branches: [gpt/r0-large-preview-measurement-282]
+    paths:
+      - .github/workflows/r0-large-preview-virtualization-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply bounded Designer preview rendering
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}')
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'web/table-stage1.js',
+              "import { evaluateLoose } from '../src/expression.js';",
+              "import { evaluateLoose } from '../src/expression.js';\nimport { createStudioDesignerPreviewPlan } from '../src/studio-preview-policy.js';"
+          )
+          replace_once(
+              'web/table-stage1.js',
+              """  const body = document.createElement('tbody');
+            const rows = (node.rows ?? []).map(row => row.map(cell => displayExpression(cell)));
+            let selectedIndex = options.interactive ? getRuntimeSelection(options.container, 'table', options.key) : null;""",
+              """  const body = document.createElement('tbody');
+            const sourceRows = node.rows ?? [];
+            const previewPlan = options.interactive === false
+              ? createStudioDesignerPreviewPlan('table', sourceRows.length)
+              : null;
+            const previewRows = previewPlan ? sourceRows.slice(0, previewPlan.rendered) : sourceRows;
+            const rows = previewRows.map(row => row.map(cell => displayExpression(cell)));
+            let selectedIndex = options.interactive ? getRuntimeSelection(options.container, 'table', options.key) : null;"""
+          )
+          replace_once(
+              'web/table-stage1.js',
+              """  table.append(head, body);
+            wrap.appendChild(table);
+            return wrap;
+          }""",
+              """  table.append(head, body);
+            wrap.appendChild(table);
+            if (previewPlan?.truncated) {
+              wrap.dataset.patchDesignerPreview = 'bounded';
+              wrap.dataset.patchPreviewTotal = String(previewPlan.total);
+              wrap.dataset.patchPreviewRendered = String(previewPlan.rendered);
+              const note = document.createElement('div');
+              note.className = 'patch-designer-preview-note';
+              note.textContent = `Designer preview: ${previewPlan.rendered} of ${previewPlan.total} rows. Full data remains in source and the structural editor.`;
+              wrap.appendChild(note);
+            }
+            return wrap;
+          }"""
+          )
+          replace_once(
+              'web/table-stage1.js',
+              ".patch-table-stage1-control[data-patch-interactive=\"true\"] tbody tr.patch-table-selected td{background:color-mix(in srgb,currentColor 10%,transparent)}\nselect[data-patch-multi-listbox=\"true\"]{min-height:96px}",
+              ".patch-table-stage1-control[data-patch-interactive=\"true\"] tbody tr.patch-table-selected td{background:color-mix(in srgb,currentColor 10%,transparent)}\n.patch-designer-preview-note{padding:7px 9px;font-size:12px;line-height:1.35;opacity:.78;border-top:1px solid #e4e4e7;background:inherit}\nselect[data-patch-multi-listbox=\"true\"]{min-height:96px}"
+          )
+
+          replace_once(
+              'web/playground.js',
+              "import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';",
+              "import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';\nimport { createStudioDesignerPreviewPlan } from '../src/studio-preview-policy.js';"
+          )
+          replace_once(
+              'web/playground.js',
+              """  const key = runtimeControlKey(control, context);
+            const rememberedPath = getRuntimeSelection(context.container, 'tree', key);""",
+              """  const key = runtimeControlKey(control, context);
+            const countNodes = nodes => {
+              let total = 0;
+              const stack = [...(nodes ?? [])];
+              while (stack.length) {
+                const node = stack.pop();
+                total += 1;
+                if (node?.children?.length) stack.push(...node.children);
+              }
+              return total;
+            };
+            const previewPlan = context.interactive === false
+              ? createStudioDesignerPreviewPlan('tree', countNodes(control.nodes))
+              : null;
+            let remainingPreviewNodes = previewPlan?.rendered ?? Number.POSITIVE_INFINITY;
+            const rememberedPath = getRuntimeSelection(context.container, 'tree', key);"""
+          )
+          replace_once(
+              'web/playground.js',
+              """    const fragment = document.createDocumentFragment();
+              for (const node of nodes ?? []) {
+                const item = document.createElement('li');""",
+              """    const fragment = document.createDocumentFragment();
+              for (const node of nodes ?? []) {
+                if (remainingPreviewNodes <= 0) break;
+                remainingPreviewNodes -= 1;
+                const item = document.createElement('li');"""
+          )
+          replace_once(
+              'web/playground.js',
+              """      if (node.children?.length) {
+                const group = document.createElement('ul');
+                group.setAttribute('role', 'group');
+                group.appendChild(renderNodes(node.children, selectedPath));
+                item.appendChild(group);
+              }""",
+              """      if (node.children?.length && remainingPreviewNodes > 0) {
+                const group = document.createElement('ul');
+                group.setAttribute('role', 'group');
+                group.appendChild(renderNodes(node.children, selectedPath));
+                item.appendChild(group);
+              }"""
+          )
+          replace_once(
+              'web/playground.js',
+              """  root.appendChild(renderNodes(control.nodes));
+            return root;
+          }""",
+              """  root.appendChild(renderNodes(control.nodes));
+            if (previewPlan?.truncated) {
+              root.dataset.patchDesignerPreview = 'bounded';
+              root.dataset.patchPreviewTotal = String(previewPlan.total);
+              root.dataset.patchPreviewRendered = String(previewPlan.rendered);
+              const note = document.createElement('li');
+              note.className = 'patch-tree-preview-note';
+              note.setAttribute('role', 'none');
+              note.textContent = `Designer preview: ${previewPlan.rendered} of ${previewPlan.total} nodes. Full tree remains in source and the structural editor.`;
+              root.appendChild(note);
+            }
+            return root;
+          }"""
+          )
+
+          replace_once(
+              'web/style.css',
+              ".patch-tree-node:hover{background:var(--bg-soft)}",
+              ".patch-tree-node:hover{background:var(--bg-soft)}\n.patch-tree-preview-note{list-style:none;padding:6px 8px;font-size:12px;line-height:1.35;opacity:.78}"
+          )
+
+          replace_once(
+              'scripts/build-site.js',
+              "'studio-design-model.js','studio-design-cache.js','studio-form-materialization.js',",
+              "'studio-design-model.js','studio-design-cache.js','studio-form-materialization.js','studio-preview-policy.js',"
+          )
+          replace_once(
+              'web/sw.js',
+              "'../src/studio-design-model.js', '../src/studio-design-cache.js', '../src/studio-form-materialization.js',",
+              "'../src/studio-design-model.js', '../src/studio-design-cache.js', '../src/studio-form-materialization.js', '../src/studio-preview-policy.js',"
+          )
+
+          replace_once(
+              'scripts/measure-studio-large-previews.js',
+              "import { spawn } from 'node:child_process';",
+              "import { spawn } from 'node:child_process';\nimport { PATCH_STUDIO_DESIGNER_TABLE_ROW_LIMIT, PATCH_STUDIO_DESIGNER_TREE_NODE_LIMIT } from '../src/studio-preview-policy.js';"
+          )
+          replace_once(
+              'scripts/measure-studio-large-previews.js',
+              """      tableNodes: document.querySelector('#designerCanvas .patch-table-stage1-control')?.querySelectorAll('*').length ?? 0,
+                totalNodes: document.querySelector('#designerCanvas')?.querySelectorAll('*').length ?? 0
+              }))()`, state => state?.active === '0' && state.rows === TABLE_ROWS);""",
+              """      tableNodes: document.querySelector('#designerCanvas .patch-table-stage1-control')?.querySelectorAll('*').length ?? 0,
+                totalNodes: document.querySelector('#designerCanvas')?.querySelectorAll('*').length ?? 0,
+                previewTotal: Number(document.querySelector('#designerCanvas .patch-table-stage1-control')?.dataset?.patchPreviewTotal ?? 0),
+                previewRendered: Number(document.querySelector('#designerCanvas .patch-table-stage1-control')?.dataset?.patchPreviewRendered ?? 0)
+              }))()`, state => state?.active === '0' && state.rows === PATCH_STUDIO_DESIGNER_TABLE_ROW_LIMIT
+                && state.previewTotal === TABLE_ROWS && state.previewRendered === PATCH_STUDIO_DESIGNER_TABLE_ROW_LIMIT);"""
+          )
+          replace_once(
+              'scripts/measure-studio-large-previews.js',
+              """      treeDomNodes: document.querySelector('#designerCanvas .patch-tree')?.querySelectorAll('*').length ?? 0,
+                totalNodes: document.querySelector('#designerCanvas')?.querySelectorAll('*').length ?? 0
+              }))()`, state => state?.active === '1' && state.treeNodes === TREE_NODES);""",
+              """      treeDomNodes: document.querySelector('#designerCanvas .patch-tree')?.querySelectorAll('*').length ?? 0,
+                totalNodes: document.querySelector('#designerCanvas')?.querySelectorAll('*').length ?? 0,
+                previewTotal: Number(document.querySelector('#designerCanvas .patch-tree')?.dataset?.patchPreviewTotal ?? 0),
+                previewRendered: Number(document.querySelector('#designerCanvas .patch-tree')?.dataset?.patchPreviewRendered ?? 0)
+              }))()`, state => state?.active === '1' && state.treeNodes === PATCH_STUDIO_DESIGNER_TREE_NODE_LIMIT
+                && state.previewTotal === TREE_NODES && state.previewRendered === PATCH_STUDIO_DESIGNER_TREE_NODE_LIMIT);"""
+          )
+          replace_once(
+              'scripts/measure-studio-large-previews.js',
+              """        tableRenderedRows: tableState.rows,
+                tableDescendantNodes: tableState.tableNodes,""",
+              """        tableSourceRows: TABLE_ROWS,
+                tableRenderedRows: tableState.rows,
+                tableDescendantNodes: tableState.tableNodes,"""
+          )
+          replace_once(
+              'scripts/measure-studio-large-previews.js',
+              """        treeRenderedNodes: treeState.treeNodes,
+                treeDescendantNodes: treeState.treeDomNodes,""",
+              """        treeSourceNodes: TREE_NODES,
+                treeRenderedNodes: treeState.treeNodes,
+                treeDescendantNodes: treeState.treeDomNodes,"""
+          )
+          PY
+      - name: Verify policy and browser module syntax
+        run: |
+          set -euo pipefail
+          node --check src/studio-preview-policy.js
+          node --check web/table-stage1.js
+          node --check web/playground.js
+          node --check scripts/measure-studio-large-previews.js
+          node --test tests/studio-preview-policy.test.js
+          npm run build:site
+          npm run check:site
+      - name: Re-measure bounded large Designer previews
+        run: node scripts/measure-studio-large-previews.js
+      - name: Commit verified virtualization and remove workflow
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/r0-large-preview-virtualization-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/studio-preview-policy.js tests/studio-preview-policy.test.js web/table-stage1.js web/playground.js web/style.css scripts/build-site.js web/sw.js scripts/measure-studio-large-previews.js
+          git commit -m 'Bound large Designer Table and Tree previews'
+          git push
