@@ -1,0 +1,59 @@
+name: R0 materialization continuity documentation sync
+
+on:
+  push:
+    branches: [gpt/r0-materialization-state-continuity-282]
+    paths:
+      - .github/workflows/r0-materialization-continuity-doc-sync-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply exact documentation updates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}')
+              file.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'docs/ROADMAP.md',
+              '''- [x] Tabs page switches update only their local tab panel instead of rebuilding the complete runtime window tree\n\nRemaining R0 work:\n- [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization''',
+              '''- [x] Tabs page switches update only their local tab panel instead of rebuilding the complete runtime window tree\n- [x] source-backed Designer selection, Object Inspector, Table/Tree structural editing and Project Tree state survive active-Form materialization transitions; stable resize-handle reuse prevents selection-driven MutationObserver churn\n\nRemaining R0 work:'''
+          )
+          replace_once(
+              'docs/RAD_STUDIO_MASTER_BACKLOG.md',
+              '''- [x] canonical first-read Window/control descriptors reuse the already parsed design AST instead of reparsing source.\n\nRemaining:\n- [ ] preserve Project Explorer, Object Inspector, selection and structural-editor behavior across materialization;''',
+              '''- [x] canonical first-read Window/control descriptors reuse the already parsed design AST instead of reparsing source.\n- [x] source-backed Designer selection, Object Inspector, Table/Tree structural editing and Project Tree state survive active-Form materialization transitions, with stable resize-handle reuse avoiding observer churn;\n\nRemaining:'''
+          )
+          PY
+      - name: Verify architecture and documentation
+        run: |
+          set -euo pipefail
+          node --test tests/designer-selection-materialization.test.js tests/studio-materialization-continuity-integration.test.js
+          npm run check:project
+      - name: Commit synchronized docs and remove workflow
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/r0-materialization-continuity-doc-sync-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/ROADMAP.md docs/RAD_STUDIO_MASTER_BACKLOG.md
+          git commit -m 'Document Designer materialization continuity'
+          git push
