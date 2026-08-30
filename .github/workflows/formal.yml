@@ -2,7 +2,9 @@ name: Patch Formal Verification
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'paper/**'
     paths:
       - formal/**
       - src/compiler.js
@@ -125,7 +127,7 @@ jobs:
           set -euo pipefail
           elan override set leanprover/lean4:v4.30.0
           lake update
-          lake build PatchFormal PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport PatchCallTree PatchCallRuntime
+          lake build PatchFormal PatchChangeContract PatchSignature PatchChecker PatchEvidence PatchSource PatchRange PatchRuntime PatchRuntimeCapability PatchGuarded PatchCalls PatchCallSubstitution PatchCallRefinement PatchCallEffect PatchCallBody PatchCallBodyImport PatchCallTree PatchCallRuntime
       - name: Verify generated production certificate
         working-directory: formal
         run: lake env lean GeneratedCertificate.lean
