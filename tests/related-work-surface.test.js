@@ -30,10 +30,17 @@ test('related-work review preserves the narrow Patch contribution boundary', () 
   assert.match(novelty, /state-sensitive capability/i);
   assert.match(novelty, /uniquely expressible/i);
   assert.match(novelty, /contribution hypothesis, not a firstness assertion/i);
-  assert.match(paperSection, /not claim unique expressibility/i);
-  assert.match(paperSection, /value-dependent quantitative grades/i);
-  assert.match(paperSection, /flow-sensitive typestate capabilities/i);
-  assert.match(paperSection, /sole modeled persistent-mutation route/i);
+
+  assert.match(paperSection, /does not claim unique expressibility/i);
+  assert.match(paperSection, /value-dependent quantitative (?:effects|grades)/i);
+  assert.match(paperSection, /revocable capabilities/i);
+  assert.match(paperSection, /semantic \\texttt\{Change\} route/i);
+  assert.match(paperSection, /Elm Architecture/i);
+  assert.match(paperSection, /Redux/i);
+  assert.match(paperSection, /Operation-based CRDTs/i);
+  assert.match(paperSection, /Rust/i);
+  assert.match(paperSection, /Database provenance/i);
+  assert.match(paperSection, /prose rather than in a yes\/no feature matrix/i);
 });
 
 test('paper bibliography contains the comparison systems cited by the related-work module', () => {
@@ -62,6 +69,8 @@ test('paper bibliography contains the comparison systems cited by the related-wo
     'cai2014changes',
     'hofmann2012edit',
     'anguilhomotopical2016',
+    'shapiro2011crdt',
+    'cheney2009provenance',
     'necula2000translation',
     'necula1997pcc',
     'ko2008whyline'
