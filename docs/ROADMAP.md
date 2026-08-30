@@ -13,7 +13,10 @@ This roadmap separates repository-controlled product work from credential/manual
 - current sealed native GUI payload: **v17**
 - current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
 - Studio design model/cache: **0.1**, with primary browser Designer refresh using the declaration-only cached snapshot path
+- shared Studio design snapshots: **0.1**, with first-read Window/control descriptors derived from the already parsed design AST
 - Studio Form materialization: **0.1**, with exactly one active Designer Form fully materialized and inactive Forms retained as lightweight source-backed shells
+- runtime selection state: **0.1**, bounded and keyed for transient Table/Tree state
+- runtime render policy: **0.1**, default `keyed-control-v2` with explicit `?patch-runtime-render=full` deterministic fallback
 - native ImageList asset pretransport plan: **0.1** (not a Ready native runtime contract)
 - Offline Studio manifest: **v1**, rolling Stage 1 release channel **`offline-studio-v0.2`**
 - previous PaintBox Stage 1 line: Native GUI IR **1.6** / payload **v16** / runtime **v1.7**
@@ -55,17 +58,22 @@ Completed or landed as concrete foundations:
 - [x] Run yields to the browser task queue before the large compile/execute/render pipeline, keeping the command surface responsive
 - [x] Workshop Desk expanded from three to six Forms as the canonical large RAD showcase/stress fixture
 - [x] Stage 1 keyed runtime Form/control identities reuse unchanged Form DOM across events and restore bounded focus, caret, scroll and unchanged-model multi-selection state when a changed Form is replaced
+- [x] `studio-design-snapshots/0.1` shares exact-source declaration-only snapshots across Designer readers, and first-read descriptors reuse the already parsed design AST
+- [x] `keyed-control-v2` reconciles changed core-rendered controls inside stable visible Forms while preserving unchanged sibling DOM identity
+- [x] bounded keyed runtime selection state preserves transient Table row and Tree path selection across safe Form rebuilds
+- [x] explicit `?patch-runtime-render=full` uses the canonical full renderer as a deterministic diagnostics/recovery fallback and preserves transient runtime state
 - [x] Tabs page switches update only their local tab panel instead of rebuilding the complete runtime window tree
 
 Remaining R0 work:
-- [ ] share parsed/compiled AST/design snapshots across Designer adapters by project revision
 - [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization
+- [ ] virtualize very large Table/Tree previews where measurements justify it
 - [ ] define and implement the Worker boundary for parse/compile/design-model work
 - [ ] bounded evaluation policy for any remaining design-time expressions
-- [ ] fine-grained keyed control reconciliation inside a changed Form rather than replacing that whole Form shell
+- [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
 - [ ] Workshop click-to-first-app-paint, large-form event-to-paint and Form-switch performance gates
 - [ ] split runtime lifecycle, Window rendering, transient UI state and Build controller out of `web/playground.js`
 - [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
+- [ ] reduce CI notification noise by shrinking Offline Compiler packaging/triggers to its real CLI dependency graph
 
 ### Completed RAD foundation / R1 work
 
