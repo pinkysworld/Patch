@@ -96,19 +96,17 @@ Use an evidence hierarchy:
 
 Move or compress product engineering detail in the submission-facing manuscript. Do not make an uncollected timing dataset a prerequisite for answering a research question when the paper does not claim performance.
 
-### Disposition: accepted in principle, implementation ongoing
+### Disposition: accepted and implemented
 
-Actions already taken:
+Actions:
 
+- replaced the overlapping six-claim/five-contribution framing with four research questions and four aligned contributions near the beginning of the paper;
+- moved the public-code audit into the evaluation sequence rather than embedding it in Related Work;
 - RQ4 now concerns realistic public mutation patterns and commit-route ownership rather than uncollected assurance cost;
-- controlled timing is explicitly treated as optional artifact infrastructure unless a performance claim is later added;
-- the public-code audit is part of Paper 1 evidence.
-
-Remaining editorial action:
-
-- compress detailed beta.35 GUI/product version narration in `main.tex` before submission;
-- place the research questions earlier in the paper or merge them with the existing introduction claims to remove duplicate framing;
-- keep the assurance-cost protocol concise unless controlled measurements are actually reported.
+- reduced the former multi-paragraph assurance-cost section and measurement table to a short artifact-only measurement protocol;
+- compressed detailed beta.35 native GUI, packaging, payload, and version narration into one Product Artifact Boundary section;
+- removed product beta numbering from the title-page date;
+- updated Limitations and Conclusion so performance is a future claim only if the paper later chooses to make one.
 
 ## Round 5: Skeptical novelty and prior-art reviewer
 
@@ -130,6 +128,24 @@ Actions:
 - narrowed the claim boundary so history/replay, first-class mutation, and centralized mutation are explicitly not sufficient novelty claims;
 - preserved the distinction between event-sourced/SAM architectures and Patch's language-level semantic mutation plus derived authority coupling.
 
+## Round 6: Science of Computer Programming venue-fit reviewer
+
+### Major concern
+
+A paper that mixes language design, formal verification, product engineering, and a small qualitative audit can look unfocused unless the venue can see a coherent research-paper contribution rather than a software release report.
+
+### Recommendation
+
+Frame the work as an experimental programming-language architecture supported by pragmatic formal techniques. For a venue such as *Science of Computer Programming*, language design/implementation/evaluation and pragmatic formal techniques are directly in scope. The paper should therefore make the language architecture the object of study, use the Lean/runtime stack as validation evidence, and use the public-code audit to delimit applicability. Product distribution details should remain artifact support.
+
+### Disposition: accepted
+
+Actions:
+
+- the submission-facing narrative now follows architecture -> formal/production assurance -> controlled semantic-authority evaluation -> public-code applicability/boundaries -> artifact reproducibility;
+- implementation features not needed to answer RQ1-RQ4 are explicitly outside the contribution hierarchy;
+- no later Paper 2 research topic is introduced merely to make Paper 1 appear broader.
+
 ## Consolidated reviewer verdict
 
 The strongest version of Paper 1 is **smaller in claim surface but stronger in evidence**. The manuscript should not try to win by accumulating every Patch research idea. Its defensible novelty case is the architectural conjunction:
@@ -143,11 +159,12 @@ The public-code audit improves the paper precisely because it produces mixed evi
 ## Pre-submission gates after these rounds
 
 - central novelty statement appears consistently in abstract, introduction, related work, and conclusion;
-- research questions are not duplicated by a separate competing claims taxonomy;
+- four research questions map cleanly to the evidence sections;
 - public audit manifest and manuscript counts stay synchronized;
 - event-sourcing and SAM comparisons remain accurate and non-dismissive;
 - no language implies third-party Patch execution or certified host adapters;
 - no performance/scalability claim appears without a reviewed controlled dataset;
-- product engineering detail is subordinate to the research narrative;
+- product engineering detail remains subordinate to the research narrative;
 - all beta.32 theorem and trust-boundary wording remains unchanged unless formal evidence changes;
-- later research prototypes remain explicitly outside Paper 1.
+- later research prototypes remain explicitly outside Paper 1;
+- CI and LaTeX build must pass after the editorial restructuring.
