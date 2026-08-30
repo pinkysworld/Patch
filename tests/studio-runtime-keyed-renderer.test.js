@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 const playground = fs.readFileSync('web/playground.js', 'utf8');
 
-test('runtime events reconcile keyed Forms instead of rebuilding the complete app tree', () => {
+test('runtime events keep keyed reconciliation as the default render-policy path', () => {
   assert.match(playground, /function runtimeWindowKey\(/);
   assert.match(playground, /dataset\.patchWindowKey/);
   assert.match(playground, /dataset\.patchControlKey = runtimeControlKey/);
@@ -12,9 +12,18 @@ test('runtime events reconcile keyed Forms instead of rebuilding the complete ap
   assert.match(playground, /patchRuntimeReconcile = 'keyed-control-v2'/);
   assert.match(playground, /patchRuntimeReusedForms/);
   assert.match(playground, /container\.insertBefore\(shell, current\)/);
-  const trigger = playground.slice(playground.indexOf('function trigger(control, event, payload = {})'), playground.indexOf('function showTab(name)'));
-  assert.match(trigger, /reconcileRuntimeWindows\(appView, result\.ui\)/);
+  assert.match(playground, /function renderRuntimeWindowsAfterEvent\(/);
+
+  const triggerStart = playground.indexOf('function trigger(control, event, payload = {})');
+  const trigger = playground.slice(triggerStart, playground.indexOf('function showTab(name)', triggerStart));
+  assert.match(trigger, /renderRuntimeWindowsAfterEvent\(appView, result\.ui\)/);
   assert.doesNotMatch(trigger, /renderWindows\(appView/);
+  assert.doesNotMatch(trigger, /reconcileRuntimeWindows\(appView, result\.ui\)/);
+
+  const dispatcherStart = playground.indexOf('function renderRuntimeWindowsAfterEvent(container, windows)');
+  const dispatcher = playground.slice(dispatcherStart, playground.indexOf('function createControlElement', dispatcherStart));
+  assert.match(dispatcher, /reconcileRuntimeWindows\(container, windows\)/);
+  assert.match(dispatcher, /mode !== PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL/);
 });
 
 test('keyed Form replacement preserves bounded transient browser state', () => {
