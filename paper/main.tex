@@ -22,13 +22,13 @@
 \maketitle
 
 \begin{abstract}
-General-purpose languages usually expose persistent mutation through assignment or data-structure-specific updates, while auditing, undo, provenance, replay, and policy mechanisms reconstruct semantic structure around those writes. Patch explores the opposite factorization: ordinary post-creation persistent mutation is represented and committed through a structured semantic \emph{Change}, with no alternative modeled assignment route. We call this \emph{State-Change Factorization}.
+General-purpose languages commonly expose persistent mutation through assignment or data-structure-specific updates, while auditing, undo, provenance, replay, and policy reconstruct semantics around those writes. Patch explores the opposite factorization: ordinary post-creation persistent mutation is committed through a structured semantic \emph{Change}, with no alternative modeled assignment route. We call this \emph{State-Change Factorization}.
 
-Patch derives \emph{Semantic Change Signatures} and optional \emph{Change Capabilities} from the same mutation representation. Contracts distinguish target, operation, and, for a supported numeric fragment, magnitude, allowing a component to receive bounded increase authority without set or decrease authority. A Lean 4 development proves factorization, mutation transparency, signature/policy properties, integer range soundness, and finite exact call-tree refinement for explicit fragments.
+Patch derives \emph{Semantic Change Signatures} and optional \emph{Change Capabilities} from the same representation. Contracts distinguish target, operation, and, for a supported numeric fragment, magnitude, allowing bounded increase authority without set or decrease authority. A Lean 4 development proves factorization, mutation transparency, signature/policy properties, integer range soundness, and finite exact call-tree refinement for explicit fragments.
 
-The implementation links selected production direct-WebAssembly executions to the formal model through independent validation and generated evidence. Beta 32 reconstructs invocation frames without trusting backend call markers and Lean re-evaluates frame-selected effects before deriving caller-signature refinement. Capture, validator correctness, remaining parser semantics, lowering, and the WebAssembly engine remain explicit trust boundaries.
+Selected production direct-WebAssembly executions are linked to the formal model through independent validation and generated evidence. Beta 32 reconstructs invocation frames without trusting backend call markers, and Lean re-evaluates frame-selected effects before deriving caller-signature refinement. Capture, validator correctness, remaining parser semantics, lowering, and the WebAssembly engine remain trust boundaries.
 
-Evaluation combines an eight-case semantic-authority ablation, two application cases, and a commit-bound qualitative mutation-shape stress test over 15 public state updates from Excalidraw, VS Code, and JupyterLab. The public projects are neither translated to nor executed by Patch; the stress test asks whether each observed mutation can be described by the current single-target Change abstraction and whether Patch would own the commit route. Twelve sites have a single-target set/add/remove shape, while seven cross foreign host-state APIs and three bundle multiple targets. No performance, third-party execution, complete-sandboxing, or end-to-end compiler-verification claim is made.
+Evaluation combines an eight-case semantic-authority ablation, two application cases, and a commit-bound mutation-shape stress test over 15 public state updates. The public projects are neither translated to nor executed by Patch; the test asks whether each mutation fits the current single-target Change abstraction and whether Patch would own the commit route. Twelve sites have a single-target set/add/remove shape; seven cross foreign host-state APIs and three bundle multiple targets. No performance, third-party execution, complete-sandboxing, or end-to-end compiler-verification claim is made.
 \end{abstract}
 
 \noindent\textbf{Keywords:} programming languages; mutation; effects; capabilities; verification; WebAssembly
@@ -435,7 +435,7 @@ checkout/loyalty & safe & $balance{=}80$, $points{=}8$, $cashback{=}0$ & accept 
 checkout/loyalty & reward $\times 5$ & rejected & reject & accept \\
 checkout/loyalty & balance increase & rejected & reject & accept \\
 checkout/loyalty & cashback target & rejected & reject & reject \\
-usage/quota & safe & $used{=}35$, $remaining{=}85$, $bonus{=}5$ & accept & accept \\
+usage/quota & safe & $used{=}35$, $remaining{=}85$, $bonus{=}5$, $admin\_credit{=}0$ & accept & accept \\
 usage/quota & usage magnitude & rejected & reject & accept \\
 usage/quota & remaining increase & rejected & reject & accept \\
 usage/quota & \texttt{admin\_credit} & rejected & reject & reject \\
