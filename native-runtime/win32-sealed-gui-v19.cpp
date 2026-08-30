@@ -1,13 +1,48 @@
 // Patch sealed Win32 GUI runtime v1.9.
 // Payload v18 adds Button ImageList assets over payload-v17/runtime-v1.8.
-#define wWinMain PatchRuntimeV18CompatibilityMain
+#define PATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY PatchRuntimeV18CompatibilityMain
 #include "win32-sealed-gui-v18.cpp"
 #undef wWinMain
+#undef PATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY
 #include "sealed-button-image-v19.hpp"
 
 static std::vector<PatchButtonImageAssetV19> gPatchButtonImageAssetsV19;
 static std::vector<PatchButtonImageConsumerV19> gPatchButtonImagesV19;
 static std::vector<HIMAGELIST> gPatchButtonImageListsV19;
+
+struct PatchButtonSourceImageV19 {
+  Image* image = nullptr;
+  IStream* stream = nullptr;
+};
+
+static void PatchDestroyButtonSourceImageV19(PatchButtonSourceImageV19& source) {
+  delete source.image;
+  source.image = nullptr;
+  if (source.stream) source.stream->Release();
+  source.stream = nullptr;
+}
+
+static bool PatchDecodeButtonSourceImageV19(const std::string& dataUri, PatchButtonSourceImageV19& out) {
+  PatchPictureDataV15 picture;
+  if (!PatchDecodePictureDataUriV15(dataUri, picture) || picture.bytes.empty()) return false;
+  HGLOBAL heap = GlobalAlloc(GMEM_MOVEABLE, picture.bytes.size());
+  if (!heap) return false;
+  void* locked = GlobalLock(heap);
+  if (!locked) { GlobalFree(heap); return false; }
+  memcpy(locked, picture.bytes.data(), picture.bytes.size());
+  GlobalUnlock(heap);
+  IStream* stream = nullptr;
+  if (CreateStreamOnHGlobal(heap, TRUE, &stream) != S_OK || !stream) { GlobalFree(heap); return false; }
+  Image* image = Image::FromStream(stream);
+  if (!image || image->GetLastStatus() != Ok || image->GetWidth() == 0 || image->GetHeight() == 0) {
+    delete image;
+    stream->Release();
+    return false;
+  }
+  out.image = image;
+  out.stream = stream;
+  return true;
+}
 
 static bool ReadSelfPayloadV19(std::vector<uint8_t>& payload) {
   wchar_t path[MAX_PATH]; DWORD n = GetModuleFileNameW(nullptr, path, MAX_PATH); if (!n || n >= MAX_PATH) return false;
@@ -37,16 +72,23 @@ static bool PatchResolveButtonImagesV19() {
 static HIMAGELIST PatchCreateButtonImageListV19(const PatchButtonImageConsumerV19& consumer) {
   if (consumer.assetIndex >= gPatchButtonImageAssetsV19.size()) return nullptr;
   const auto& asset = gPatchButtonImageAssetsV19[consumer.assetIndex];
-  Image* source = PatchPaintCachedImageV18(asset.dataUri);
-  if (!source || source->GetLastStatus() != Ok || source->GetWidth() == 0 || source->GetHeight() == 0) return nullptr;
+  PatchButtonSourceImageV19 source;
+  if (!PatchDecodeButtonSourceImageV19(asset.dataUri, source)) return nullptr;
+
   const int width = (int)consumer.logicalWidth, height = (int)consumer.logicalHeight;
   Bitmap scaled(width, height, PixelFormat32bppARGB);
-  Graphics graphics(&scaled);
-  graphics.Clear(Color(0, 0, 0, 0));
-  graphics.SetInterpolationMode(InterpolationModeHighQualityBicubic);
-  graphics.DrawImage(source, 0, 0, width, height);
+  {
+    Graphics graphics(&scaled);
+    graphics.Clear(Color(0, 0, 0, 0));
+    graphics.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+    graphics.DrawImage(source.image, 0, 0, width, height);
+  }
+
   HBITMAP bitmap = nullptr;
-  if (scaled.GetHBITMAP(Color(0, 0, 0, 0), &bitmap) != Ok || !bitmap) return nullptr;
+  const Status bitmapStatus = scaled.GetHBITMAP(Color(0, 0, 0, 0), &bitmap);
+  PatchDestroyButtonSourceImageV19(source);
+  if (bitmapStatus != Ok || !bitmap) return nullptr;
+
   HIMAGELIST list = ImageList_Create(width, height, ILC_COLOR32 | ILC_MASK, 1, 1);
   if (!list || ImageList_Add(list, bitmap, nullptr) < 0) {
     if (list) ImageList_Destroy(list);
@@ -112,7 +154,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV19"; wc.lpszClassName = PATCH_WINDOW_CLASS; if (!RegisterClassW(&wc)) { GdiplusShutdown(gPatchGdiplusTokenV16); return 21; }
   NONCLIENTMETRICSW metrics{}; metrics.cbSize = sizeof(metrics);
   if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0)) gGuiFont = CreateFontIndirectW(&metrics.lfMessageFont);
-  if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance) || !PatchInstallButtonImagesV19() || !PatchInstallMenusV12()) { PatchDestroyButtonImagesV19(); GdiplusShutdown(gPatchGdiplusTokenV16); PatchDestroyPaintImagesV18(); return 21; }
+  if (!CreateFormsV09() || !PatchInstallTablesV10() || !PatchInstallListsV11() || !PatchInstallTreesV13() || !PatchInstallSlidersV14() || !PatchInstallChromeV15() || !PatchInstallShapesV16(instance) || !PatchInstallPaintBoxesV17(instance) || !PatchInstallPaintImageBoxesV18(instance) || !PatchInstallButtonImagesV19() || !PatchInstallMenusV12()) {
+    PatchDestroyButtonImagesV19(); PatchDestroyChromeImagesV15(); PatchDestroyPaintImagesV18();
+    if (gGuiFont) DeleteObject(gGuiFont);
+    GdiplusShutdown(gPatchGdiplusTokenV16);
+    return 21;
+  }
   for (auto& form : gForms) SetWindowLongPtrW(form.hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(PatchWndProcV18));
   ApplyPatchAccessibilityV09(); ApplyPatchTableAccessibilityV10(); RefreshUI(); PatchRefreshListsV11(); PatchRefreshMenusV12(); PatchRefreshTreesV13(); PatchRefreshSlidersV14(); PatchRefreshChromeV15(); PatchRefreshShapesV16(); PatchRefreshPaintBoxesV17(); PatchRefreshPaintImageBoxesV18();
   for (auto& form : gForms) if (form.visible) ShowWindow(form.hwnd, showCommand == 0 ? SW_SHOWNORMAL : showCommand);
