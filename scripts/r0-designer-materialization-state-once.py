@@ -8,21 +8,21 @@ anchor = """  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Fo
 
   const switchedDesignerForm = await evaluate(cdp, `(() => {
 """
-insert = """  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');
+insert = r"""  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');
   assert.ok(designerState.controlsByForm.slice(1).every(count => count === 0), 'inactive Workshop Forms should remain lightweight shells');
 
   const selectedDesignerTable = await evaluate(cdp, `(() => {
-    const table = document.querySelector('#designerCanvas .patch-table-stage1-control[data-window-index=\"0\"]');
+    const table = document.querySelector('#designerCanvas .patch-table-stage1-control[data-window-index="0"]');
     if (!table) return false;
     table.click();
     return true;
   })()`);
   assert.equal(selectedDesignerTable, true);
   const selectedDesignerState = await waitFor(cdp, `(() => ({
-    selected: !!document.querySelector('#designerCanvas .patch-table-stage1-control[data-window-index=\"0\"].designer-selected'),
+    selected: !!document.querySelector('#designerCanvas .patch-table-stage1-control[data-window-index="0"].designer-selected'),
     inspectorType: document.querySelector('#designerInspectorType')?.textContent ?? '',
     editorHidden: document.querySelector('[data-designer-data-editor]')?.hidden ?? true,
-    activeFile: document.querySelector('#projectOutlineTree .outline-file[aria-current=\"true\"]')?.textContent ?? '',
+    activeFile: document.querySelector('#projectOutlineTree .outline-file[aria-current="true"]')?.textContent ?? '',
     rowAction: document.querySelector('[data-table-action-row]')?.value ?? ''
   }))()`, state => state?.selected === true && state.inspectorType === 'Table' && state.editorHidden === false && state.activeFile.includes('main.patch'));
   assert.equal(selectedDesignerState.selected, true);
@@ -30,6 +30,7 @@ insert = """  assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Fo
   assert.equal(selectedDesignerState.editorHidden, false);
   assert.match(selectedDesignerState.activeFile, /main\.patch/);
 
+  await waitFor(cdp, `document.querySelector('[data-table-action-row]')?.options?.length ?? 0`, count => count >= 3);
   const rememberedTableRow = await evaluate(cdp, `(() => {
     const select = document.querySelector('[data-table-action-row]');
     if (!select || select.options.length < 3) return false;
@@ -54,13 +55,13 @@ old_settings = """  const materializedSettings = await waitFor(cdp, `(() => ({
   assert.ok(materializedSettings.controls[1] > 0);
   assert.ok(materializedSettings.controls.slice(2).every(count => count === 0), JSON.stringify(materializedSettings.leaks));
 """
-new_settings = """  const materializedSettings = await waitFor(cdp, `(() => ({
+new_settings = r"""  const materializedSettings = await waitFor(cdp, `(() => ({
     active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',
     controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length),
     leaks: [...document.querySelectorAll('#designerCanvas .patch-window')].map((form, index) => index === 1 ? [] : [...form.querySelectorAll('.designer-control')].map(control => ({ className: control.className?.baseVal ?? control.className ?? '', tag: control.tagName, id: control.id ?? '', type: control.dataset?.componentType ?? control.dataset?.patchControlType ?? '' }))),
     inspectorType: document.querySelector('#designerInspectorType')?.textContent ?? '',
     editorHidden: document.querySelector('[data-designer-data-editor]')?.hidden ?? true,
-    activeFile: document.querySelector('#projectOutlineTree .outline-file[aria-current=\"true\"]')?.textContent ?? '',
+    activeFile: document.querySelector('#projectOutlineTree .outline-file[aria-current="true"]')?.textContent ?? '',
     oldFormSelectedDom: document.querySelectorAll('#designerCanvas .patch-window:nth-child(1) .designer-selected').length
   }))()`, state => state?.active === '1'
     && state.controls?.[1] > 0
@@ -85,13 +86,13 @@ old_back = """  await waitFor(cdp, `(() => ({
     controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length)
   }))()`, state => state?.active === '0' && state.controls?.[0] > 0 && state.controls.slice(1).every(count => count === 0));
 """
-new_back = """  const restoredDesignerSelection = await waitFor(cdp, `(() => ({
+new_back = r"""  const restoredDesignerSelection = await waitFor(cdp, `(() => ({
     active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',
     controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length),
-    selected: !!document.querySelector('#designerCanvas .patch-table-stage1-control[data-window-index=\"0\"].designer-selected'),
+    selected: !!document.querySelector('#designerCanvas .patch-table-stage1-control[data-window-index="0"].designer-selected'),
     inspectorType: document.querySelector('#designerInspectorType')?.textContent ?? '',
     editorHidden: document.querySelector('[data-designer-data-editor]')?.hidden ?? true,
-    activeFile: document.querySelector('#projectOutlineTree .outline-file[aria-current=\"true\"]')?.textContent ?? '',
+    activeFile: document.querySelector('#projectOutlineTree .outline-file[aria-current="true"]')?.textContent ?? '',
     rowAction: document.querySelector('[data-table-action-row]')?.value ?? ''
   }))()`, state => state?.active === '0'
     && state.controls?.[0] > 0
