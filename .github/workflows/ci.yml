@@ -84,6 +84,8 @@ jobs:
         run: npm run doctor
       - name: Example smoke tests
         run: npm run check
+      - name: Formal scope report
+        run: node scripts/report-formal-scope.js
       - name: Formal correspondence, source-validation and range-coverage smoke test
         run: npm run formal:example
       - name: Generate Lean-checkable range/source/evidence certificate
