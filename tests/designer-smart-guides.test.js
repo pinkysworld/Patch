@@ -83,3 +83,15 @@ test('smart alignment leaves spacing alone outside the tolerance', () => {
   assert.equal(snapped.guideX, null);
   assert.equal(snapped.spacingX, null);
 });
+
+test('overlapping peers are never treated as equal-spacing anchors', () => {
+  const snapped = snapFormControlAlignment(
+    { x: 50, y: 40, width: 40, height: 20 },
+    [
+      { x: 30, y: 0, width: 30, height: 20 },
+      { x: 80, y: 0, width: 30, height: 20 }
+    ],
+    { tolerance: 5 }
+  );
+  assert.equal(snapped.spacingX, null);
+});
