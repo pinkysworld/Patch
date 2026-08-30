@@ -47,9 +47,13 @@ test('Pages gates deployment on compatibility runtime plus current native GUI ru
   assert.match(pages, /Patch Native Sealed PaintBox Image Runtime v1\.8/);
 });
 
-test('Pages refuses a false green when required runtime releases are incomplete', () => {
-  assert.match(pages, /Refusing to report a successful Pages run without a deployment/);
+test('Pages defers automatic deployment while runtime releases publish and keeps manual deployment fail-closed', () => {
+  assert.match(pages, /Pinned runtime releases are still publishing\. Deferring Pages without reporting an expected failure/);
+  assert.match(pages, /echo 'ready=false' >> "\$GITHUB_OUTPUT"/);
+  assert.match(pages, /if \[ "\$GITHUB_EVENT_NAME" = 'workflow_dispatch' \]; then/);
+  assert.match(pages, /A manual Pages deployment requires every pinned runtime release to exist\. Refusing to deploy\./);
   assert.match(pages, /exit 1/);
+  assert.match(pages, /if: steps\.native_runtime\.outputs\.ready == 'true'/);
   assert.doesNotMatch(pages, /finish successfully without replacing the current site/);
 });
 
