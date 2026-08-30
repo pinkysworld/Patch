@@ -18,6 +18,7 @@ import {
   updateDesignerTreeNodes
 } from '../src/designer-data.js';
 import { installDesignerStructuralKeyboard } from './designer-structural-keyboard.js';
+import { currentDesignerSelection } from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -79,12 +80,11 @@ function syncPanel() {
 }
 
 function selectedControl() {
-  const element = canvas.querySelector('.designer-control.designer-selected[data-window-index][data-control-index]');
-  if (!element) return null;
-  const windowIndex = Number(element.dataset.windowIndex);
-  const controlIndex = Number(element.dataset.controlIndex);
-  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
-  return listDesignerControls(code.value).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex) ?? null;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return null;
+  return listDesignerControls(code.value).find(item =>
+    item.windowIndex === selection.windowIndex && item.controlIndex === selection.controlIndex
+  ) ?? null;
 }
 
 function renderTreeEditor(control) {

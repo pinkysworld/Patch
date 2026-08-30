@@ -286,6 +286,24 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.ok(designerState.controlsByForm[0] > 0, 'active Workshop Form should materialize its control DOM');
   assert.ok(designerState.controlsByForm.slice(1).every(count => count === 0), 'inactive Workshop Forms should remain lightweight shells');
 
+  const continuitySelectionStarted = await evaluate(cdp, `(() => {
+    const table = document.querySelector('#designerCanvas .patch-table-stage1-control[data-control-id="board"]');
+    if (!table) return false;
+    table.click();
+    return true;
+  })()`);
+  assert.equal(continuitySelectionStarted, true);
+  const continuityBeforeSwitch = await waitFor(cdp, `(() => ({
+    objectValue: document.querySelector('#designerObjectSelect')?.value ?? '',
+    inspectorVisible: document.querySelector('#designerInspectorForm')?.hidden === false,
+    dataEditorVisible: document.querySelector('[data-designer-data-editor]')?.hidden === false,
+    dataEditorHeading: document.querySelector('[data-designer-data-editor] .designer-data-editor-head strong')?.textContent ?? '',
+    projectTree: document.querySelector('#projectOutlineTree')?.textContent ?? '',
+    selectedTables: document.querySelectorAll('#designerCanvas .patch-table-stage1-control.designer-selected').length
+  }))()`, state => state?.objectValue?.startsWith('0:') && state.inspectorVisible === true
+    && state.dataEditorVisible === true && state.dataEditorHeading === 'Table data' && state.selectedTables === 1);
+  assert.match(continuityBeforeSwitch.projectTree, /main\.patch/);
+
   const switchedDesignerForm = await evaluate(cdp, `(() => {
     const select = document.querySelector('#patchFormSelect');
     if (!select) return false;
@@ -302,6 +320,18 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
   assert.equal(materializedSettings.controls[0], 0, JSON.stringify(materializedSettings.leaks));
   assert.ok(materializedSettings.controls[1] > 0);
   assert.ok(materializedSettings.controls.slice(2).every(count => count === 0), JSON.stringify(materializedSettings.leaks));
+  const continuityWhileInactive = await waitFor(cdp, `(() => ({
+    selectValue: document.querySelector('#patchFormSelect')?.value ?? '',
+    objectValue: document.querySelector('#designerObjectSelect')?.value ?? '',
+    inspectorVisible: document.querySelector('#designerInspectorForm')?.hidden === false,
+    dataEditorVisible: document.querySelector('[data-designer-data-editor]')?.hidden === false,
+    dataEditorHeading: document.querySelector('[data-designer-data-editor] .designer-data-editor-head strong')?.textContent ?? '',
+    projectTree: document.querySelector('#projectOutlineTree')?.textContent ?? '',
+    selectedTables: document.querySelectorAll('#designerCanvas .patch-table-stage1-control.designer-selected').length
+  }))()`, state => state?.selectValue === '1' && state.objectValue === continuityBeforeSwitch.objectValue
+    && state.inspectorVisible === true && state.dataEditorVisible === true
+    && state.dataEditorHeading === 'Table data' && state.selectedTables === 0);
+  assert.equal(continuityWhileInactive.projectTree, continuityBeforeSwitch.projectTree, 'Project Tree should remain stable across Form materialization');
 
   await evaluate(cdp, `(() => {
     const select = document.querySelector('#patchFormSelect');
@@ -313,6 +343,14 @@ test('Workshop Desk explicit load remains responsive in real Chrome', { timeout:
     active: document.querySelector('#designerCanvas')?.dataset?.patchDesignerMaterializedForm ?? '',
     controls: [...document.querySelectorAll('#designerCanvas .patch-window')].map(form => form.querySelectorAll('.designer-control').length)
   }))()`, state => state?.active === '0' && state.controls?.[0] > 0 && state.controls.slice(1).every(count => count === 0));
+  const continuityAfterReturn = await waitFor(cdp, `(() => ({
+    objectValue: document.querySelector('#designerObjectSelect')?.value ?? '',
+    dataEditorVisible: document.querySelector('[data-designer-data-editor]')?.hidden === false,
+    dataEditorHeading: document.querySelector('[data-designer-data-editor] .designer-data-editor-head strong')?.textContent ?? '',
+    selectedTables: document.querySelectorAll('#designerCanvas .patch-table-stage1-control[data-control-id="board"].designer-selected').length
+  }))()`, state => state?.objectValue === continuityBeforeSwitch.objectValue
+    && state.dataEditorVisible === true && state.dataEditorHeading === 'Table data' && state.selectedTables === 1);
+  assert.equal(continuityAfterReturn.selectedTables, 1, 'source-backed Table selection should restore when its Form rematerializes');
 
   // The reported failure appears after the initial render. Keep the real page alive
   // for several seconds, then make multiple CDP round-trips and run the application.

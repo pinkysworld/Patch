@@ -70,7 +70,13 @@ function syncTrees() {
     });
   });
 
-  restoreDesignerAdapterSelection(canvas, 'tree', treeElement);
+  restoreDesignerAdapterSelection(canvas, 'tree', treeElement, {
+    isLive: selection => controls.some(item =>
+      item.windowIndex === selection.windowIndex &&
+      item.controlIndex === selection.controlIndex &&
+      item.type === 'tree'
+    )
+  });
 }
 
 function decorateTree(element, model, selection) {

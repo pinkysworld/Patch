@@ -128,7 +128,13 @@ function syncContainer(container, designer) {
     });
   });
 
-  if (designer) restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement);
+  if (designer) restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement, {
+    isLive: selection => listDesignerControls(code.value).some(item =>
+      item.windowIndex === selection.windowIndex &&
+      item.controlIndex === selection.controlIndex &&
+      item.type === 'table'
+    )
+  });
 }
 
 function syncMultiListboxes(node, element, context) {

@@ -95,11 +95,13 @@ export function decorateDesignerAdapterElement(canvas, element, selection) {
   return normalized;
 }
 
-export function restoreDesignerAdapterSelection(canvas, adapter, findElement) {
+export function restoreDesignerAdapterSelection(canvas, adapter, findElement, options = {}) {
   const selection = currentDesignerSelection(canvas, adapter);
   if (!selection) return null;
   const element = typeof findElement === 'function' ? findElement(selection) : null;
   if (!element) {
+    const sourceStillLive = typeof options.isLive === 'function' && options.isLive(selection);
+    if (sourceStillLive) return null;
     clearDesignerSelection(canvas, { adapter, reason: 'missing-control' });
     return null;
   }
