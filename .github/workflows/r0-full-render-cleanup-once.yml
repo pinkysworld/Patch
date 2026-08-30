@@ -1,0 +1,29 @@
+name: R0 full render branch cleanup
+
+on:
+  push:
+    branches: [gpt/r0-full-render-fallback-282]
+    paths:
+      - .github/workflows/r0-full-render-cleanup-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Remove generated site tree and cleanup workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          rm .github/workflows/r0-full-render-cleanup-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Remove generated site artifacts from R0 branch'
+          git push
