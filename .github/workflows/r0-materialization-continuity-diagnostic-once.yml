@@ -1,0 +1,63 @@
+name: R0 materialization continuity diagnostic
+
+on:
+  push:
+    branches: [gpt/r0-materialization-state-continuity-282]
+    paths:
+      - .github/workflows/r0-materialization-continuity-diagnostic-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply working-tree continuity patch
+        run: python3 scripts/r0-materialization-continuity-retry.py
+      - name: Show failing test region
+        run: nl -ba tests/workshop-desk-browser.test.js | sed -n '345,390p'
+      - name: Add diagnostic wait errors in working tree
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/workshop-desk-browser.test.js')
+          text = path.read_text()
+          old = '''async function waitFor(cdp, expression, predicate, timeoutMs = 15000) {
+            const deadline = Date.now() + timeoutMs;
+            let last = null;
+            while (Date.now() < deadline) {
+              try {
+                last = await evaluate(cdp, expression, 1800);
+                if (predicate(last)) return last;
+              } catch { /* one busy paint is allowed */ }
+              await delay(150);
+            }
+            throw new Error(`Timed out waiting for Workshop Desk state; last=${JSON.stringify(last)}`);
+          }'''
+          new = '''async function waitFor(cdp, expression, predicate, timeoutMs = 15000) {
+            const deadline = Date.now() + timeoutMs;
+            let last = null;
+            let lastError = null;
+            while (Date.now() < deadline) {
+              try {
+                last = await evaluate(cdp, expression, 1800);
+                lastError = null;
+                if (predicate(last)) return last;
+              } catch (error) { lastError = error?.stack ?? error?.message ?? String(error); }
+              await delay(150);
+            }
+            throw new Error(`Timed out waiting for Workshop Desk state; last=${JSON.stringify(last)}; browserError=${lastError ?? 'none'}; expression=${expression}`);
+          }'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one waitFor helper, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Run diagnostic Chrome regression
+        run: node --test tests/workshop-desk-browser.test.js
