@@ -112,9 +112,9 @@ Completed:
 - [x] Run yields one browser task before the large compile/execute/render pipeline;
 - [x] `studio-design-snapshots/0.1` shares exact-source declaration-only snapshots across Designer readers;
 - [x] canonical first-read Window/control descriptors reuse the already parsed design AST instead of reparsing source.
+- [x] source-backed Designer selection, Object Inspector, Table/Tree structural editing and Project Tree state survive active-Form materialization transitions, with stable resize-handle reuse avoiding observer churn;
 
 Remaining:
-- [ ] preserve Project Explorer, Object Inspector, selection and structural-editor behavior across materialization;
 - [ ] virtualize very large Table/Tree previews where justified;
 - [ ] define a versioned Web Worker boundary for parse/compile/design-model work;
 - [ ] bound any expression evaluation that remains necessary at design time.

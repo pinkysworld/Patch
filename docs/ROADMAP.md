@@ -64,9 +64,9 @@ Completed or landed as concrete foundations:
 - [x] explicit `?patch-runtime-render=full` uses the canonical full renderer as a deterministic diagnostics/recovery fallback and preserves transient runtime state
 - [x] `patch-studio-browser-performance/0.1` measures real-Chrome Workshop Run/event paint plus 10-Form/200-control Run and Designer Form-switch timing, with generous 3s Run / 2s interaction CI hard limits
 - [x] Tabs page switches update only their local tab panel instead of rebuilding the complete runtime window tree
+- [x] source-backed Designer selection, Object Inspector, Table/Tree structural editing and Project Tree state survive active-Form materialization transitions; stable resize-handle reuse prevents selection-driven MutationObserver churn
 
 Remaining R0 work:
-- [ ] preserve Object Inspector, selection, structural editing and Project Explorer across Form materialization
 - [ ] virtualize very large Table/Tree previews where measurements justify it
 - [ ] define and implement the Worker boundary for parse/compile/design-model work
 - [ ] bounded evaluation policy for any remaining design-time expressions

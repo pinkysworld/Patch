@@ -366,9 +366,7 @@ function applyLayouts(container, designer) {
     const elementsByControlIndex = new Map(elements.map(el => [Number(el.dataset.controlIndex), el])
       .filter(([controlIndex]) => Number.isInteger(controlIndex)));
 
-    if (designer) {
-      for (const handle of body.querySelectorAll(':scope > .patch-form-resize-handle')) handle.remove();
-    }
+    let selectedLayoutControl = false;
 
     const sourceHasLayout = Boolean(
       model.width || model.height ||
@@ -392,13 +390,19 @@ function applyLayouts(container, designer) {
         margin: '0'
       });
       if (designer && el.classList.contains('designer-selected')) {
+        selectedLayoutControl = true;
         selectedForm = windowIndex;
         addResizeHandle(body, el, { windowIndex, controlIndex: control.controlIndex });
       }
     });
+    if (designer && !selectedLayoutControl) {
+      for (const handle of body.querySelectorAll(':scope > .patch-form-resize-handle')) handle.remove();
+    }
   });
 
-  if (designer && selectedForm !== null && selectedForm !== activeForm) {
+  const materializedForm = designer ? Number(container.dataset.patchDesignerMaterializedForm) : null;
+  const waitingForRequestedForm = designer && Number.isInteger(materializedForm) && materializedForm !== activeForm;
+  if (designer && !waitingForRequestedForm && selectedForm !== null && selectedForm !== activeForm) {
     activeForm = selectedForm;
     syncFormTools();
   }
