@@ -16,7 +16,7 @@
 
 \title{Patch: State-Change Factorization and Semantic Change Contracts for Transparent Mutable Programs}
 \author{Mich\'el Nguyen}
-\date{Beta 35 product artifact / Beta 32 assurance manuscript, August 2026}
+\date{August 2026}
 
 \begin{document}
 \maketitle
@@ -26,9 +26,9 @@ General-purpose languages usually expose persistent mutation through assignment 
 
 Patch derives \emph{Semantic Change Signatures} and optional \emph{Change Capabilities} from the same mandatory mutation representation. These contracts distinguish target, semantic operation, and, for a supported numeric fragment, magnitude. A component may therefore be authorized to increase \texttt{score} by at most 10 without receiving set or decrease authority over the same target. A Lean 4 development proves factorization, mutation transparency, signature and policy properties, integer range soundness, finite ranked call composition, exact safe-integer call binding, guarded structured traces, and finite transitive exact call-tree refinement for explicit fragments.
 
-The implementation connects production direct-WebAssembly execution to the formal model through independent validation and generated evidence rather than a claim of full compiler verification. Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls. The evidence now also combines repeated root-call identities with different concrete guard paths between them. Generated certificates check each frame binding against the beta 30 exact call tree and let Lean re-evaluate frame-selected observed semantic effects before deriving caller-signature refinement. Supported source/range and guard fragments are independently reconstructed, and supported static \texttt{do recipe(args)} sites are now independently bound from raw source to production-AST call identity before concrete-call witness generation. Runtime capture, independent-validator/frame-reconstruction correctness, remaining parser/extractor semantics, JavaScript-to-WebAssembly lowering, and the WebAssembly engine remain explicit trust boundaries.
+The implementation connects production direct-WebAssembly execution to the formal model through independent validation and generated evidence rather than a claim of full compiler verification. Beta 32 reconstructs concrete invocation frames independently of backend call markers, including repeated identical calls and mixed concrete guard paths. Generated certificates check frame bindings against exact call-tree evidence and let Lean re-evaluate frame-selected observed semantic effects before deriving caller-signature refinement. Runtime capture, independent-validator/frame-reconstruction correctness, remaining parser/extractor semantics, JavaScript-to-WebAssembly lowering, and the WebAssembly engine remain explicit trust boundaries.
 
-The artifact also includes an eight-case semantic-authority ablation, two larger application cases covering checkout/loyalty and usage/quota management, a process-isolated protocol for future controlled overhead/scaling measurements, and a commit-bound reproducibility bundle. No controlled performance result, external plugin-ecosystem result, complete sandboxing result, or end-to-end compiler-verification result is claimed.
+Evaluation combines an eight-case semantic-authority ablation, two larger application cases, and a commit-bound qualitative audit of 15 public mutation sites from Excalidraw, VS Code, and JupyterLab. Twelve audited sites have a single-target set/add/remove semantic shape, while seven cross a foreign host-state API and three bundle multiple related targets. The audit therefore separates semantic fit from ownership of the actual commit route instead of treating resemblance to a \texttt{set} as end-to-end Patch support. No controlled performance result, third-party Patch execution result, complete sandboxing result, or end-to-end compiler-verification result is claimed.
 \end{abstract}
 
 \section{Introduction}
@@ -56,30 +56,28 @@ make reward(bonus number 0..5):
 
 The policy authorizes a bounded increase. It does not authorize an arbitrary \texttt{set}, even though both operations write the same persistent location.
 
-The research question is not whether first-class state change, effects, quantitative typing, capabilities, abstract interpretation, state-transition specifications, procedure semantics, translation validation, or proof-carrying evidence exist. They do, and several related systems are more expressive than Patch along individual dimensions. The narrower question is whether forcing ordinary modeled persistent mutation through one semantic delta representation yields a useful architecture in which execution, operation/magnitude-aware authority, history, provenance, and assurance reuse the same substrate.
+The research question is not whether first-class state change, effects, quantitative typing, capabilities, event-backed state, state-transition specifications, translation validation, or proof-carrying evidence exist. They do, and several related systems are more expressive than Patch along individual dimensions. The narrower hypothesis is architectural: ordinary modeled persistent mutation is factored through one semantic delta representation, and operation- and magnitude-aware summaries and authority are derived from that same mandatory route, so execution, contracts, history, provenance, and assurance share one mutation substrate.
 
-The current artifact supports six connected claims:
+\paragraph{Research questions.}
+This paper evaluates four questions about that architecture:
 \begin{enumerate}[leftmargin=*]
-\item ordinary post-creation persistent mutation in the modeled language uses structured semantic \texttt{change} operations rather than a separate assignment escape hatch;
-\item operation- and magnitude-sensitive Change Signatures and optional Change Capabilities are derived from those mutations;
-\item a Lean core proves factorization, signature/policy properties, source/range properties, and finite exact call-tree refinement for explicit formal fragments;
-\item production direct-WebAssembly execution is independently validated against Change IR transitions and semantic effects for a conservative supported subset;
-\item beta 32 reconstructs concrete invocation frames without trusted backend call markers, distinguishes repeated identical calls even across differing concrete guard paths, and generates Lean-checkable evidence tying frame bindings and observed effects to the beta 30 call tree; and
-\item semantic-authority case studies, a controlled-measurement protocol, and a commit-bound reproducibility bundle evaluate and package the implementation without extending the formal theorem beyond its stated boundary.
+\item[\textbf{RQ1}] Can modeled persistent mutation be factored through one semantic Change route while retaining transparent history and derived semantic contracts?
+\item[\textbf{RQ2}] Does operation- and magnitude-aware authority distinguish mutation cases that target-only write authority does not distinguish?
+\item[\textbf{RQ3}] Can selected production direct-WebAssembly executions be related back to exact semantic call-tree effects without trusting backend call markers?
+\item[\textbf{RQ4}] How does the current factorization classify realistic public mutation patterns, and where does it fail to own the actual commit route?
 \end{enumerate}
 
 \begin{claimboundary}
-This manuscript does not claim unique expressibility of bounded state relations, a fully verified compiler, a complete plugin sandbox, third-party ecosystem evidence, or any overhead/scalability result. Claims 1--2 are the working architectural hypothesis; claims 3--6 are supporting formal and artifact evidence for that hypothesis.
+This manuscript does not claim unique expressibility of bounded state relations, a fully verified compiler, a complete plugin sandbox, third-party Patch execution, or any overhead/scalability result. RQ1 concerns the modeled mutation architecture, RQ2 its semantic-authority distinction, RQ3 a bounded production-to-formal assurance bridge, and RQ4 qualitative applicability and boundary evidence rather than ecosystem prevalence.
 \end{claimboundary}
 
 \paragraph{Contributions.}
-This working manuscript packages five scoped contributions:
+This manuscript makes four scoped contributions:
 \begin{enumerate}[leftmargin=*]
-\item State-Change Factorization and Mutation Transparency for the modeled persistent-mutation machine (Defs.~\ref{def:factorization} and~\ref{def:transparency});
-\item Semantic Change Signatures and Change Capabilities derived from that same mandatory mutation substrate, with Lean signature/policy and integer \texttt{RangeExpr} soundness for explicit fragments (Thms.~\ref{thm:signature} and~\ref{thm:range});
-\item a layered Lean call-assurance stack through finite transitive exact call trees and beta~32 independently reconstructed invocation-frame correspondence, including mixed-guard repeated identities (Thms.~\ref{thm:calltree} and~\ref{thm:runtime});
-\item independent JavaScript source/range, guard and static call-site identity validation that reduces selected production-extraction trust without claiming a verified parser;
-\item an eight-case semantic-authority ablation, a two-domain internally authored application corpus, a process-isolated controlled-measurement protocol, and a commit-bound reproducibility bundle, with no performance result claimed.
+\item State-Change Factorization and Mutation Transparency for the modeled persistent-mutation machine (Defs.~\ref{def:factorization} and~\ref{def:transparency}), together with Semantic Change Signatures and Change Capabilities derived from the same mandatory mutation substrate;
+\item a Lean assurance stack proving signature/policy and integer \texttt{RangeExpr} soundness plus finite transitive exact call-tree refinement for explicit fragments (Thms.~\ref{thm:signature}, \ref{thm:range}, and~\ref{thm:calltree});
+\item a production-to-formal bridge in which independent JavaScript validation and beta~32 invocation-frame reconstruction produce evidence that Lean checks for selected direct-WebAssembly executions, without claiming a verified parser, backend, or runtime (Thm.~\ref{thm:runtime});
+\item evaluation through an eight-case semantic-authority ablation, two internally authored application domains, a commit-bound 15-site public real-code mutation audit, and deterministic reproducibility packaging.
 \end{enumerate}
 
 \section{Language Design}
@@ -443,31 +441,10 @@ usage/quota & \texttt{admin\_credit} & rejected & reject & reject \\
 \end{tabular}
 \end{table}
 
-\section{Assurance-Cost Evaluation Protocol}
-The repository contains a deterministic corpus that separates nested call depth from concrete invocation count. The phase harness measures direct-WebAssembly compilation, precompiled execution, independent validation, end-to-end beta 32 correspondence, and generated certificate-source construction. It records raw samples and artifact sizes.
+\input{real-code-audit}
 
-A second controller adds process isolation. Every independent repetition runs the phase harness in a fresh Node process, retains each raw JSON/CSV report, verifies stable Patch version, exact scenario/source/artifact identity, and normalized runtime/machine identity, then aggregates process medians with minimum, Q1, median, Q3, p95, maximum, mean, median absolute deviation, and interquartile range. The full measured dataset is covered by \texttt{SHA256SUMS}.
-
-Timing evidence is explicitly classified as \texttt{development}, \texttt{hosted-ci}, or \texttt{controlled}. GitHub Actions is forbidden from labelling timing as \texttt{controlled}. A controlled run additionally requires an explicit machine identifier, run label, exact recorded commit equal to \texttt{git HEAD}, and a clean working tree at measurement start.
-
-\begin{table}[t]
-\centering
-\caption{Measurement classes. Only a reviewed \texttt{controlled} dataset may become a paper performance result, and no such dataset has been collected yet.}
-\label{tab:measurement-classes}
-\small
-\begin{tabular}{@{}llp{52mm}@{}}
-\toprule
-Class & Role & Manuscript status \\
-\midrule
-\texttt{development} & exploratory local timing & not a result \\
-\texttt{hosted-ci} & regression / reproducibility & not a result; cannot be relabelled \\
-\texttt{controlled} & fixed-machine paper candidate & none collected; analysis remains a review step \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\paragraph{Current empirical boundary.}
-The measurement pipeline is implemented and regression-tested, but this manuscript reports \emph{no controlled paper-quality timing dataset yet}. Consequently it makes no empirical overhead, scalability, or asymptotic-complexity claim. Hosted-CI timing is retained only as reproducibility/regression evidence. Controlled results and statistical models must be added only after measurements on fixed documented hardware are collected and reviewed. Analysis tooling can emit candidate tables, OLS sketches and SVG plots from a future controlled summary; it refuses to copy non-\texttt{controlled} numbers into \texttt{paper/main.tex}.
+\section{Artifact Measurement Protocol}
+The repository contains deterministic harnesses for direct-WebAssembly compilation/execution, independent validation, beta~32 correspondence, and certificate-source construction. A process-isolated controller can record raw samples, artifact sizes, machine identity, source identity, and robust summary statistics. Timing evidence is explicitly labelled \texttt{development}, \texttt{hosted-ci}, or \texttt{controlled}; hosted CI cannot be relabelled as controlled, and a controlled run requires a documented machine, exact clean commit, and retained raw reports. This infrastructure is useful for future performance work, but Paper~1 makes no overhead or scalability claim and therefore does not treat uncollected timing as evidence for RQ1--RQ4.
 
 \section{Reproducibility Artifact}
 The \emph{Patch Reproducibility Bundle} binds the research artifact to an exact Patch version and 40-character source commit. CI regenerates the finite transitive call-tree certificate, direct-WebAssembly runtime certificate, repeated-call and mixed-guard invocation-frame certificates, semantic-authority report, and both checkout and quota application reports. Non-performance evidence uses \texttt{SOURCE\_DATE\_EPOCH} derived from the source commit so timestamps do not drift with workflow wall-clock time.
@@ -476,16 +453,8 @@ The bundle snapshots tracked source plus explicitly regenerated evidence, record
 
 The bundle does not include paper performance results and deliberately does not convert heterogeneous hosted-runner timing into a performance claim.
 
-\section{Portable and Product Artifact Surface}
-Patch 0.2.0-beta.35 retains Change IR 0.10 while the product artifact includes a browser-first Patch Studio, a source-backed Window Designer, portable C99, standalone Web builds, direct native GUI backends, and token-free ready/offline runtime paths for supported desktop targets. These capabilities make the artifact easier to inspect and exercise, but they are not primary research novelty claims. Product and Studio work after beta 32 does not widen the Lean runtime-correspondence theorem.
-
-Current token-free desktop Window packaging uses Native GUI IR 1.3, sealed payload v13 and runtime v1.4 on Windows, macOS and Linux. That line preserves Table/Grid, persistent list-backed multi-select ListBox, Menu, hierarchical TreeView and native Slider through \texttt{TRACKBAR}, \texttt{NSSlider} and \texttt{GtkScale}. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView compatibility contract and is intentionally Slider fail-closed. Unversioned Native GUI IR 0.7 / payload v6 files are historical include-chain bases, not the Ready runtime.
-
-Thing records are prototype-free own-field product values in the interpreter and Window Web runtime. Direct WebAssembly and portable C99 stay on the numeric Console subset and fail closed on Things. They remain outside the beta 32 Lean fragment.
-
-Patch Studio's beta 34 hardening also verifies browser-consumed native runtime templates against a deployment-time SHA-256 manifest derived from GitHub Release asset digests. This is distribution integrity, not platform code signing or a formal security theorem.
-
-Editable Window controls preserve the persistent-mutation rule: event-local values and renderer selection/layout state remain transient unless Patch source executes an explicit semantic \texttt{change}.
+\section{Product Artifact Boundary}
+Patch 0.2.0-beta.35 includes Patch Studio, source-backed Window tooling, portable/native deployment paths, richer GUI controls, and product data types beyond the beta~32 formal fragment. These capabilities improve inspectability and usability of the research artifact but are not contributions evaluated by RQ1--RQ4. Product work after beta~32 does not widen the Lean runtime-correspondence theorem; Things, GUI/native Window runtimes, distribution-integrity hardening, and unsupported backend features remain outside that theorem. The persistent-mutation rule is preserved at the language boundary: transient toolkit/event state becomes modeled persistent Patch state only through an explicit semantic \texttt{change}.
 
 \input{related-work}
 
@@ -496,19 +465,21 @@ Editable Window controls preserve the persistent-mutation rule: event-local valu
 The Lean theorems cover explicit fragments rather than the full language. Independent source/range, guard and call-site validators reduce selected extraction trust, but they are JavaScript rather than verified parsers. Runtime correspondence checks consequences of accepted reconstructed evidence; it does not prove capture completeness, lowering correctness or WebAssembly-engine correctness. The coarse security baseline is an internal target-only ablation, not a model of a named prior system.
 
 \paragraph{Internal validity.}
-No controlled paper-quality timing dataset has been collected, so there is no measured overhead result to interpret. Hosted-CI timing is labelled non-publication and cannot be relabelled. Semantic-authority cases are deterministic artifact cases with expected accept/reject matrices; they are not sampled from a vulnerability corpus.
+Semantic-authority cases are deterministic artifact cases with expected accept/reject matrices rather than samples from a vulnerability corpus. The public-code audit uses frozen source anchors and explicit classifications, but classification remains a manual research judgement. No controlled paper-quality timing dataset has been collected; because no performance claim is made, hosted-CI timing is retained only as regression/reproducibility evidence.
 
 \paragraph{External validity.}
-Checkout/loyalty and usage/quota are internally authored engineering cases, not a complete plugin sandbox and not evidence about a third-party plugin ecosystem. GUI, Things, native Window runtimes and foreign code remain outside the beta~32 Lean fragment. The related-work review is structured but not claimed to be exhaustive. The candidate novelty is a conjunction of architectural choices and still requires expert/venue scrutiny.
+Checkout/loyalty and usage/quota are internally authored engineering cases. The 15-site public-code audit deliberately uses purposeful diversity sampling rather than random or exhaustive repository mining, so its 12/15 single-target count is descriptive of the frozen corpus only. Seven audited sites cross foreign host-backed state APIs and three group multiple related targets; the audit does not demonstrate third-party Patch execution, migration effort, certified adapters, atomic multi-target semantics, or ecosystem prevalence. GUI, Things, native Window runtimes and foreign code remain outside the beta~32 Lean fragment. The related-work review is structured but not claimed to be exhaustive.
 
-The highest-value remaining research work is to collect the fixed-machine controlled dataset, analyze scaling with explicit models and dispersion, validate the approach against a genuinely external or third-party extension/integration setting, obtain expert/venue feedback on the architectural conjunction, continue normal pre-submission literature surveillance, and reduce remaining lowering/runtime and out-of-fragment parser trust boundaries where doing so materially strengthens the central claim.
+The most valuable follow-on evidence is a genuine external end-to-end integration or migration study, a broader systematic mutation corpus if prevalence claims are desired, and controlled performance measurements only if the paper later makes an overhead or scalability claim. Reducing remaining lowering/runtime and out-of-fragment parser trust would further strengthen assurance. Relational multi-target ChangeSets, certified host adapters, least-authority inference, temporal authority, causal debugging, and safe parallelism remain separate research questions rather than missing Paper~1 contributions.
 
 \section{Conclusion}
 Patch investigates a language architecture in which ordinary modeled persistent mutation is not merely observed but factored through an explicit semantic Change representation. The same substrate supports operation- and magnitude-aware contracts, history, provenance, and assurance while keeping beginner-facing mutation syntax compact.
 
 The Lean development establishes factorization, signature/policy, range, guarded structured-trace, finite transitive call-tree, and accepted runtime-observation properties for explicit fragments. Beta 32 connects the production direct-WebAssembly path to the finite exact call-tree layer with independently reconstructed invocation frames that distinguish repeated identical calls and preserve different concrete guard-selected traces between repeated identities. Independent source/range and guard validation plus raw-source static call-site binding reduce selected production-extraction trust dependencies, while validator, remaining parser semantics, lowering, capture, and engine correctness remain explicit rather than overstating full verification.
 
-The artifact further supplies semantic-authority ablations, a two-domain checkout/loyalty and usage/quota application corpus, a controlled-measurement protocol, and commit-bound reproducibility packaging. The remaining empirical question is whether the mandatory semantic-mutation factorization provides enough security and engineering value, at acceptable measured cost, to justify the architectural restriction. That question is intentionally left to controlled measurement and genuine external application evidence rather than answered with uncollected results.
+The evaluation shows that semantic operation and magnitude reject four cases admitted by the paper's deliberately coarse target-only write ablation, while two larger application domains exercise the same distinction through the production path. The public-code audit adds a different kind of evidence: 12 of 15 frozen sites have a compact single-target set/add/remove interpretation, but seven cross host-backed persistence and three bundle multiple related targets. The result is therefore not a coverage claim. It supports the narrower observation that semantic-delta shapes occur in mature public code while also identifying concrete boundaries where Patch does not own the commit route or does not provide atomic grouping.
+
+Taken together, Paper~1 argues for the architectural conjunction rather than for any individual mechanism as first: modeled persistent mutation is committed through a structured semantic Change, and operation- and magnitude-aware contracts are derived from that same mandatory route. The formal, runtime, controlled-authority, and public-code evidence support that claim within explicit boundaries. Later work can address multi-target atomicity, host adapters, least-authority inference, and broader external evaluation without enlarging the contribution claimed here.
 
 \appendix
 \section{Artifact reproduction}
@@ -524,7 +495,7 @@ npm run evaluate:quota-extension
 npm run bundle:reproducibility
 \end{verbatim}
 
-A future paper-candidate timing run uses the process-isolated controller with measurement class \texttt{controlled} on a documented fixed machine. Analysis may emit candidate tables and SVG plots; manuscript inclusion remains a review step. Hosted-CI timing must not be copied into this file.
+A future paper-candidate timing run may use the process-isolated controller with measurement class \texttt{controlled} on a documented fixed machine. Hosted-CI timing must not be copied into this file as a performance result.
 
 \bibliographystyle{plain}
 \bibliography{references}
