@@ -1,0 +1,42 @@
+\documentclass[english,submission]{programming}
+
+% Submission wrapper for The Art, Science, and Engineering of Programming.
+% The scientific body remains in main.tex; the submission build generates a
+% venue-specific body with the required plain-language abstract and disclosures.
+\usepackage{docmute}
+\usepackage{amsmath,amsthm,booktabs,enumitem,listings,microtype,xcolor,array,tikz,float}
+\usetikzlibrary{arrows.meta,positioning}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\theoremstyle{remark}
+\newtheorem*{claimboundary}{Claim boundary}
+
+\lstdefinelanguage{Patch}{morekeywords={create,number,text,boolean,list,thing,change,called,set,add,remove,clear,show,why,watch,history,undo,redo,preview,if,else,repeat,make,do,return,allow,may,increase,decrease,up,to,true,false,and,or,not,from,window,form,button,input,checkbox,combobox,listbox,radio,slider,tabs,table,tree,menu,dialog,open,close,when,clicked,changed,closed,confirmed,chosen,cancelled,as},sensitive=true,morecomment=[l]{\#},morestring=[b]"}
+\lstset{language=Patch,basicstyle=\ttfamily\small,columns=fullflexible,frame=single,breaklines=true,showstringspaces=false}
+
+\paperdetails{
+  perspective=art,
+  area={General-purpose programming, Program verification, Interpreters, virtual machines, and compilers, Security programming}
+}
+
+\begin{document}
+\title{Patch: State-Change Factorization and Semantic Change Contracts}
+\titlerunning{Patch: State-Change Factorization and Semantic Change Contracts}
+\author{Mich\'el Nguyen}
+\affiliation{University of the People}
+\keywords{programming languages, state mutation, effects, capabilities, formal verification}
+
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10011007.10011006.10011008</concept_id>
+<concept_desc>Software and its engineering~General programming languages</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+\ccsdesc[500]{Software and its engineering~General programming languages}
+
+\input{main-submission-body.tex}
+\end{document}
