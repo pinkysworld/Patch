@@ -1,0 +1,83 @@
+name: Patch Native v1.9 Windows Debug
+
+on:
+  pull_request:
+    types: [synchronize]
+    paths:
+      - 'native-runtime/**'
+      - 'src/native-gui-ir-v18.js'
+      - 'src/sealed-native-gui-v18.js'
+      - 'examples/button-imagelist-window.patch'
+      - '.github/workflows/native-v19-windows-debug.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build debug Win32 runtime v1.9
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-runtime-v19 | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /Od /Zi /MTd /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain /DPATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY=PatchRuntimeV18CompatibilityMain native-runtime\win32-sealed-gui-v19.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /DEBUG /SUBSYSTEM:WINDOWS /OUT:dist-runtime-v19\patch-windows-native-gui-runtime.exe /PDB:dist-runtime-v19\patch-windows-native-gui-runtime.pdb',
+            'exit /b %errorlevel%'
+          ) | Set-Content dist-runtime-v19\build-debug.cmd -Encoding ascii
+          & cmd.exe /d /c dist-runtime-v19\build-debug.cmd
+          if ($LASTEXITCODE -ne 0) { throw "MSVC debug runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal payload v18
+        shell: pwsh
+        run: |
+          @'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV18 } from './src/native-gui-ir-v18.js';
+          import { sealNativeGuiRuntimeV18 } from './src/sealed-native-gui-v18.js';
+          const resource = { id: 'icons.open', path: 'resources/open.png', mediaType: 'image/png', size: 70, sha256: 'd126901e8b7f82749aee7b7c0ec59838286c9f8d75ffc74147f34ac2b4bad460', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==' };
+          const source = fs.readFileSync('examples/button-imagelist-window.patch', 'utf8');
+          const ir = buildNativeGuiIRV18(compile(source, { name: 'ButtonImageRuntime', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v19/patch-windows-native-gui-runtime.exe');
+          fs.writeFileSync('ButtonImageRuntime.exe', sealNativeGuiRuntimeV18(runtime, ir, { platform: 'windows', resources: [resource] }));
+          '@ | Set-Content seal-debug.mjs -Encoding utf8
+          node seal-debug.mjs
+      - name: Run under cdb on access violation
+        shell: pwsh
+        run: |
+          $candidates = @(
+            'C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe',
+            'C:\Program Files\Windows Kits\10\Debuggers\x64\cdb.exe'
+          )
+          $cdb = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $cdb) {
+            $found = Get-ChildItem 'C:\Program Files*\Windows Kits\*\Debuggers\x64\cdb.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+            $cdb = $found
+          }
+          if (-not $cdb) { throw 'cdb.exe not found on Windows runner.' }
+          & $cdb -logo win-v19-cdb.log -y (Resolve-Path 'dist-runtime-v19').Path -c 'sxe av; g; .ecxr; kp; q' (Resolve-Path './ButtonImageRuntime.exe').Path --patch-smoke
+          Get-Content win-v19-cdb.log
+          exit 1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: patch-win-v19-debug
+          path: |
+            win-v19-cdb.log
+            dist-runtime-v19/patch-windows-native-gui-runtime.pdb
+          if-no-files-found: warn
+          retention-days: 3
