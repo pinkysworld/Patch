@@ -1,12 +1,17 @@
 % Related-work module included by paper/main.tex.
 
+\input{real-code-audit}
+
 \section{Related Work and Claim Boundary}
 \label{sec:related-work}
 
-Patch intersects mature work on first-class state change, effect systems, quantitative typing, capabilities and permissions, Hoare/refinement verification, explicit program changes, provenance, translation validation, and proof-carrying evidence. Our claim is therefore not that bounded state relations, semantic effects, capabilities, or first-class changes are individually inexpressible elsewhere. The narrower hypothesis concerns their architectural coupling to the persistent-mutation route.
+Patch intersects mature work on first-class state change, effect systems, quantitative typing, capabilities and permissions, Hoare/refinement verification, explicit program changes, event sourcing, provenance, translation validation, and proof-carrying evidence. Our claim is therefore not that bounded state relations, semantic effects, capabilities, event logs, or first-class changes are individually inexpressible elsewhere. The narrower hypothesis concerns their architectural coupling to the persistent-mutation route.
 
 \paragraph{First-class and reified state change.}
 Plaid makes state change first class and models objects as changing abstract states \cite{sunshine2011plaid}; Worlds reifies program state to control the scope of side effects \cite{warth2011worlds}. These systems are direct prior art against any broad claim that Patch invents first-class state transition or reified state. Patch instead asks whether ordinary modeled persistent mutation can be forced through a general semantic state-delta representation whose operation and magnitude are also the vocabulary of authority and history.
+
+\paragraph{Event sourcing and event-backed state.}
+Event-sourced systems make state-changing events authoritative enough to reconstruct application state, provide history, and support replay; empirical and observability work documents both these benefits and the engineering consequences of treating the event log as state infrastructure \cite{overeem2021eventsourcing,lima2021observability}. This is close architectural prior art to Patch's history/replay motivation and rules out any claim that representing state through recorded changes is itself new. The distinction studied here is language-level and authority-oriented: Patch makes the semantic Change the modeled commit route for ordinary persistent mutation and derives operation- and magnitude-aware contracts from that same representation. It does not require a distributed event store, and it does not claim the operational advantages of event-sourced architectures.
 
 \paragraph{Effect systems and effect operations.}
 Classical polymorphic effect systems conservatively approximate side effects \cite{lucassen1988effects}. Algebraic accounts identify effect annotations with operation symbols \cite{kammar2012algebraic}, while parametric effect monads \cite{katsumata2014parametric} and effect quantales \cite{gordon2017flow} provide semantic foundations for compositional and order-sensitive effects. Thus neither semantic operation labels, interprocedural effect summaries, nor effect ordering are novelty claims for Patch. Patch differs in using the semantic operation sequence as the representation that actually commits the modeled persistent state transition.
@@ -38,6 +43,7 @@ Family & Mandatory mutation route & Semantic operation & Magnitude & Same substr
 \midrule
 Plaid \cite{sunshine2011plaid} & partial & partial & no & partial \\
 Worlds \cite{warth2011worlds} & no & no & no & no \\
+Event sourcing \cite{overeem2021eventsourcing,lima2021observability} & architecture-level & domain event & not central & state/history \\
 Classical/algebraic effects \cite{lucassen1988effects,kammar2012algebraic} & no & effect-op.\ level & no & no \\
 Effects-as-Capabilities / System C \cite{brachthaeuser2020effects,brachthaeuser2022boxes} & no & effect/resource & no & partial \\
 Graded / dependent effects \cite{orchard2019quantitative,kura2026dependent} & no & grade-dependent & yes & no \\
@@ -58,10 +64,10 @@ Translation validation \cite{necula2000translation} and Proof-Carrying Code \cit
 The comparison leaves the following working hypothesis:
 
 \begin{quote}
-Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides first-class state transitions, rich effects, value-dependent quantitative grades, flow-sensitive typestate capabilities, permissions, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
+Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides event-backed state, first-class state transitions, rich effects, value-dependent quantitative grades, flow-sensitive typestate capabilities, permissions, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
 \end{quote}
 
-The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, or unsupported language fragments. This is a contribution hypothesis to be evaluated by the formal results, semantic-authority case studies, controlled performance measurements, and further expert/venue scrutiny, not a firstness assertion.
+The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, host-backed stores, or unsupported language fragments. The public real-code audit in Sec.~\ref{sec:real-code-audit} intentionally counts such host-backed mutations as a boundary rather than as Patch support. This is a contribution hypothesis tested by the formal results, semantic-authority cases, public-code audit, and artifact evidence, not a firstness assertion.
 
 \subsection{Research questions for this paper}
 \label{sec:research-questions}
@@ -71,10 +77,10 @@ To keep the contribution narrow, this manuscript evaluates four questions about 
 \item[\textbf{RQ1}] Can modeled persistent mutation be factored through one semantic Change route while retaining transparent history and derived semantic contracts?
 \item[\textbf{RQ2}] Does operation- and magnitude-aware authority distinguish mutation cases that target-only write authority does not distinguish?
 \item[\textbf{RQ3}] Can selected production direct-WebAssembly executions be related back to exact semantic call-tree effects without trusting backend call markers?
-\item[\textbf{RQ4}] How applicable is the factorization to realistic mutation patterns, and what assurance cost does the current validation stack impose?
+\item[\textbf{RQ4}] How does the current factorization classify realistic public mutation patterns, and where does it fail to own the actual commit route?
 \end{enumerate}
 
-RQ1 is addressed by the formal core, RQ2 by the semantic-authority and application cases, and RQ3 by the independently reconstructed runtime evidence and Lean-checked certificates. RQ4 remains the principal empirical completion item: the current manuscript has a controlled-measurement protocol but no paper-quality controlled timing result, and realistic applicability should be strengthened with the planned public real-code mutation audit before submission.
+RQ1 is addressed by the formal core, RQ2 by the semantic-authority and application cases, RQ3 by the independently reconstructed runtime evidence and Lean-checked certificates, and RQ4 by the commit-bound public real-code audit. The controlled-measurement machinery remains useful artifact infrastructure, but because this manuscript makes no performance or scalability claim, uncollected timing is not treated as evidence for these four research questions.
 
 \paragraph{Future work boundary.}
-Relational multi-target ChangeSets, least-authority capability inference, certified foreign-state adapters, temporal authority, causal debugging, and safe parallelism are separate follow-on research questions. Experimental prototypes may exist in the repository, but this paper does not count them as contributions or evidence for RQ1--RQ4.
+Relational multi-target ChangeSets, least-authority capability inference, certified foreign-state adapters, temporal authority, causal debugging, and safe parallelism are separate follow-on research questions. The public-code audit motivates some of these boundaries but does not convert them into Paper~1 contributions. Experimental prototypes may exist in the repository, but this paper does not count them as evidence for RQ1--RQ4.
