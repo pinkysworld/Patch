@@ -62,6 +62,7 @@ Completed or landed as concrete foundations:
 - [x] `keyed-control-v2` reconciles changed core-rendered controls inside stable visible Forms while preserving unchanged sibling DOM identity
 - [x] bounded keyed runtime selection state preserves transient Table row and Tree path selection across safe Form rebuilds
 - [x] explicit `?patch-runtime-render=full` uses the canonical full renderer as a deterministic diagnostics/recovery fallback and preserves transient runtime state
+- [x] `patch-studio-browser-performance/0.1` measures real-Chrome Workshop Run/event paint plus 10-Form/200-control Run and Designer Form-switch timing, with generous 3s Run / 2s interaction CI hard limits
 - [x] Tabs page switches update only their local tab panel instead of rebuilding the complete runtime window tree
 
 Remaining R0 work:
@@ -70,7 +71,6 @@ Remaining R0 work:
 - [ ] define and implement the Worker boundary for parse/compile/design-model work
 - [ ] bounded evaluation policy for any remaining design-time expressions
 - [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists
-- [ ] Workshop click-to-first-app-paint, large-form event-to-paint and Form-switch performance gates
 - [ ] split runtime lifecycle, Window rendering, transient UI state and Build controller out of `web/playground.js`
 - [ ] make Pages deployment release-aware so expected runtime-publication races do not generate failure noise
 - [ ] reduce CI notification noise by shrinking Offline Compiler packaging/triggers to its real CLI dependency graph

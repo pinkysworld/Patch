@@ -129,15 +129,15 @@ Remaining:
 - [x] preserve richer transient Table/Tree adapter selections through the same canonical keyed-state contract;
 - [x] deterministic full rerender fallback/debug mode through explicit `?patch-runtime-render=full`;
 - [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
-- [ ] event-to-paint regression gates.
+- [x] real-Chrome event-to-paint regression gate through `patch-studio-browser-performance/0.1`.
 
 ## P0.5 Performance gates
 
-- [ ] Workshop Run click-to-first-app-paint measurement;
-- [ ] 10-Form / 200-control initial Run timing;
-- [ ] large-Form event-to-paint timing;
-- [ ] active-Form switch timing;
-- [ ] generous hosted-runner CI thresholds that detect regressions without creating noise.
+- [x] Workshop Run click-to-first-app-paint measurement;
+- [x] 10-Form / 200-control initial Run timing;
+- [x] large-Form Workshop event-to-paint timing;
+- [x] active-Form switch timing on the 10-Form / 200-control fixture;
+- [x] generous hosted-runner CI thresholds through `patch-studio-browser-performance/0.1`: 3000 ms for Run-to-paint and 2000 ms for event/Form-switch timing.
 
 ## P0.6 Consistent selection and property ownership
 
