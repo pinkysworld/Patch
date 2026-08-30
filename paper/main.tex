@@ -87,7 +87,7 @@ This paper makes five scoped contributions:
 \item a language and machine design in which modeled post-creation application-state updates factor through structured semantic Changes, with the by-construction State-Change Factorization and Mutation Transparency invariants;
 \item a mechanized Change-to-contract bridge: for supported singleton numeric Changes, the derived directional effect matches the actual committed before/after magnitude, and a bounded allowed effect constrains that actual magnitude;
 \item a formal assurance stack covering normalized effect-signature/policy checking, fail-closed bounded unknown magnitude, executable/relational checker equivalence, integer ranges, and finite exact/interprocedural call traces, with source-to-effect extraction explicitly outside the signature theorem;
-\item an implementation bridge showing how selected operation-/magnitude-aware authority survives finite interprocedural propagation and repeated direct-WebAssembly invocation frames through independently reconstructed evidence and generated Lean-checkable witnesses, with an explicit trust boundary;
+\item an implementation bridge showing that selected semantic authority survives finite call propagation and repeated WebAssembly invocation frames, using independently reconstructed evidence and Lean-checkable witnesses, with an explicit trust boundary;
 \item a reproducible artifact evaluation comprising an eight-case mechanism-isolation matrix, two multi-state application cases, and an audit of which compiler/runtime consumers reuse the semantic mutation lineage.
 \end{enumerate}
 
@@ -365,7 +365,7 @@ Observed runtime-frame correspondence & \path{PatchCallRuntime} \\
 \end{table}
 
 \paragraph{Answer to RQ2}
-The machine-checked scope includes the factorization/history invariants, the direct Change-to-contract quantitative bridge, fail-closed bounded unknown magnitude, executable/relational policy equivalence, normalized signature/policy checking, integer-range soundness, finite ranked/exact call reasoning, guarded traces, and finite transitive call-tree refinement. Selected direct WebAssembly observations can additionally be connected to exact formal witnesses through accepted independently reconstructed evidence. Source analysis, validators, capture, lowering, and the engine remain explicit proof-free boundaries, so the result is a layered assurance argument rather than a verified compiler.
+The machine-checked scope includes factorization/history, the direct Change-to-contract bridge, fail-closed bounded unknown magnitude, executable/relational policy equivalence, normalized signature/policy checking, integer-range soundness, and finite call reasoning. Guarded traces and transitive call-tree refinement are also checked. Selected direct WebAssembly observations can additionally be connected to exact formal witnesses through accepted independently reconstructed evidence. Source analysis, validators, capture, lowering, and the engine remain explicit proof-free boundaries, so the result is a layered assurance argument rather than a verified compiler.
 
 \section{Semantic-Authority Mechanism Isolation}
 \subsection{Design}
