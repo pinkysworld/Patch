@@ -452,7 +452,7 @@ Formal contract bridge & \path{formal/PatchChangeContract.lean} & well-formed Ch
 This audit demonstrates implemented reuse; it is not a comparative engineering-cost study against conventional assignment plus separate instrumentation.
 
 \subsection{Artifact and reproducibility}
-The evaluated artifact is Patch \texttt{0.2.0-beta.36}. Its formal-policy/bridge state is pinned at commit \nolinkurl{fb7998defe54821f4d0997d87b345eaf301c90cd}. The Node package declares no third-party npm dependencies. The repository's formal workflow installs pinned Lean 4.30.0, regenerates static, runtime, finite-call, repeated-call, and mixed-guard certificates, builds the formal modules, checks every generated certificate, and rejects unfinished \texttt{sorry}/\texttt{admit} proofs.
+The evaluated artifact is Patch \texttt{0.2.0-beta.36}. Its formal-policy/bridge state is pinned at commit \nolinkurl{2518a1522461319454449eb6ad85d1ffeeaab53b}. The Node package declares no third-party npm dependencies. The repository's formal workflow installs pinned Lean 4.30.0, regenerates static, runtime, finite-call, repeated-call, and mixed-guard certificates, builds the formal modules, checks every generated certificate, and rejects unfinished \texttt{sorry}/\texttt{admit} proofs.
 
 The reproducibility bundle records source/evidence files with sizes and SHA-256 hashes. The appendix commands regenerate the semantic-authority and application reports and verify the bundle. The full Git commit above is the immutable identifier for the evaluated formal-policy/bridge state in this revision; no archival DOI is claimed.
 
