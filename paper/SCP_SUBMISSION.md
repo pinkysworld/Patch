@@ -27,49 +27,60 @@ At actual submission, confirm the originality/concurrent-submission declaration 
 
 ## Submission-format status
 
-The journal branch uses Elsevier `elsarticle` with SCP front matter and `elsarticle-num`. The current root is `paper/journal.tex`; it composes the stable `main.tex` core with `real-code-study.tex` and synchronizes the Round-6 external-validity wording. Submission-facing LaTeX/BibTeX files remain at one directory level in `paper/`.
+The journal branch uses Elsevier `elsarticle` with SCP front matter and `elsarticle-num`. The current root is `paper/journal.tex`, now intentionally reduced to a thin `\input{main.tex}` wrapper. The complete four-RQ manuscript, including the public real-code mutation audit, is canonical in `paper/main.tex`.
 
-Supporting files include `journal.tex`, `main.tex`, `real-code-study.tex`, `related-work.tex`, the two `.bib` files, `highlights.txt`, `cover-letter.md`, and the internal review/disposition notes. The real-code audit artifact is under `studies/real-code-mutations/`.
+Supporting files include `journal.tex`, `main.tex`, `related-work.tex`, the two `.bib` files, `highlights.txt`, `cover-letter.md`, and the internal review/disposition notes. `real-code-study.tex` is retained as Round-6 development history/reference but is no longer separately injected into the journal build. The public audit artifact is under `studies/real-code-mutations/`.
 
 Paper CI validates the frozen study result, compiles `journal.tex`, rejects unresolved citations/references and `Overfull \hbox`, and publishes the PDF artifact.
 
 ## Current manuscript message
 
-The manuscript now combines five evidence layers:
+The manuscript combines five evidence layers:
 
 1. mandatory modeled semantic Change for post-creation application-state mutation;
 2. a direct Lean bridge from supported committed numeric Changes to directional contract effects and actual before/after magnitude;
 3. executable/relational policy-checker equivalence plus scoped range/call/runtime assurance;
 4. an explicitly defined target-only mechanism-isolation ablation and two internally authored multi-state application cases;
-5. an exploratory public real-code mutation audit that reports both direct-fit evidence and current adaptation/restructuring boundaries.
+5. a purposive public real-code mutation audit that reports both direct-fit evidence and current adaptation/restructuring boundaries.
 
 Do not broaden this into a claim that Patch invents effects, capabilities, quantitative reasoning, first-class state changes, reversibility, event sourcing, the phrase `change contract`, or bounded state specifications.
 
 ## Core research questions
 
-The three core RQs remain:
+The integrated manuscript now uses four core RQs:
 
-- **RQ1 — Contract linkage:** can a supported committed numeric Change be connected formally to a contract-level operation/magnitude effect and the actual state delta?
-- **RQ2 — Assurance and implementation correspondence:** which contract, range, finite-call, and runtime-correspondence properties are machine checked, and where does the proof-free implementation boundary remain?
-- **RQ3 — Mechanism isolation:** which authority distinctions disappear when operation and magnitude are erased while reachable write targets are retained?
+- **RQ1, Contract linkage:** can a supported committed numeric Change be connected formally to a contract-level operation/magnitude effect and the actual state delta?
+- **RQ2, Assurance and implementation correspondence:** which contract, range, finite-call, and runtime-correspondence properties are machine checked, and where does the proof-free implementation boundary remain?
+- **RQ3, Mechanism isolation:** which authority distinctions disappear when operation and magnitude are erased while reachable write targets are retained?
+- **RQ4, External mutation stress test:** in a small commit-pinned purposive audit of existing JavaScript/TypeScript systems, which retained-state mutation observations fit the current Patch source surface directly, which require adapters or restructuring, and which have the shape of the narrow Lean Change-to-contract bridge?
 
-The public real-code mutation audit is deliberately presented as an **exploratory external-validity audit**, not promoted to a fourth core RQ or a prevalence study.
+RQ4 remains deliberately descriptive rather than representative. It is not a prevalence, migration-effort, productivity, or comparative-superiority study.
 
 ## Public real-code mutation audit
 
-The Round-6 audit fixes six public JavaScript/TypeScript projects at full immutable Git SHAs and codes exactly three production retained-state mutation observations per project: GitLens, Prettier for VS Code, VS Code ESLint, Obsidian Dataview, Obsidian Tasks, and Node-RED.
+The audit fixes six public JavaScript/TypeScript projects at full immutable Git SHAs and codes exactly three production retained-state mutation observations per project: GitLens, Prettier for VS Code, VS Code ESLint, Obsidian Dataview, Obsidian Tasks, and Node-RED.
 
 Frozen descriptive result for the 18 purposively selected observations:
 
 - 5 direct local current-surface fits;
 - 11 adapter cases involving Set/Map/trie, host persistence, or dynamic-target/data-model boundaries;
 - 2 source-restructuring cases involving filter replacement and spread/bulk insertion;
-- 3 local observations with the same narrow singleton numeric directional constant-magnitude shape as the current Lean Change-to-contract bridge;
-- 7 standalone contexts and 11 non-standalone contexts (coupled, host-persisted, sequential, or dynamic/batch targeted).
+- 3 local observations with the same narrow singleton numeric directional shape as the current Lean Change-to-contract bridge;
+- context coding: 7 standalone, 4 coupled multi-target, 2 external persisted state, 2 sequential same target, 2 dynamic target, and 1 batched dynamic-target observation.
 
-Every observation can be assigned a coarse Patch operation-family label, but that is **not** a portability result. The direct/adapter/restructure distinction must accompany the result. The three Lean-shape observations are not Lean proofs of the external TypeScript programs.
+The closest Patch operation-family coding is 7 set-like, 4 remove-like, 2 add-like, 2 clear-like, 2 increase, and 1 decrease. Operation-family mapping is not a portability result. The direct/adapter/restructure distinction must accompany the result, and the three Lean-shape observations are not Lean proofs of the external programs.
 
-Because the corpus is purposive, the 18 observations do not estimate ecosystem prevalence, migration effort, security benefit, or developer productivity. The coding is author-led; there is no independent second coder or inter-rater reliability statistic. Exact commit pins, paths, contexts and source anchors make the judgments auditable but not representative.
+Because the corpus is purposive, the 18 observations do not estimate ecosystem prevalence, migration effort, security benefit, or developer productivity. The coding is author-led; there is no independent second coder or inter-rater reliability statistic. Exact commit pins, paths, contexts, and source anchors make the judgments auditable but not representative.
+
+## Research frontier from the backlog
+
+The audit gives the current research backlog a concrete empirical motivation without widening the present claims:
+
+- the 4 coupled multi-target observations motivate **Relational Atomic ChangeSets**;
+- the 11 adapter-required observations motivate **Certified Change Adapters**;
+- capability declarations motivate **least-authority inference** from inferred signatures.
+
+Relational ChangeSets and least-authority inference currently exist only as isolated Stage-0 prototypes on `research/relational-changesets`. They are not wired into the stable parser/interpreter/Change IR and do not yet have Lean atomicity, invariant-preservation, capability-ordering, sufficiency, or minimality theorems. They must therefore remain follow-on research, not current-paper contributions.
 
 ## Terminology discipline
 
@@ -125,7 +136,8 @@ Do not claim:
 - that a Lean-shape match verifies external code;
 - performance/scalability results without controlled data;
 - usability/productivity benefits without a human study;
-- atomic multi-target Change support;
+- atomic multi-target Change support in the evaluated stable language;
+- Stage-0 Relational ChangeSets, Certified Change Adapters, or least-authority inference as completed results of this paper;
 - superiority over conventional mutation plus separate analyses or modern effect/capability systems;
 - novelty merely from effects, capabilities, magnitude bounds, call frames, reversibility, event sourcing, Software Change Contracts, translation validation, or proof-carrying evidence.
 
@@ -155,11 +167,11 @@ npm run bundle:reproducibility
 npm run verify:reproducibility
 ```
 
-The reproducibility bundle already packages tracked source files, so the study manifest/results/scripts are included when built from the final tracked revision. An archival DOI is not fabricated; a final tagged/archived snapshot may be created before upload.
+The reproducibility bundle packages tracked source files, so the study manifest/results/scripts are included when built from the final tracked revision. An archival DOI is not fabricated; a final tagged/archived snapshot may be created before upload.
 
 ## Final journal checks
 
-Before submission, verify that the PDF and source keep these boundaries synchronized: by-construction factorization; narrow Change-to-contract theorem; fail-closed unknown magnitude; checker equivalence only for the proved fragment; explicit trust boundaries; target-only comparison as an ablation; internally authored application cases distinguished from the public-source audit; public audit described as purposive rather than representative; direct fit distinguished from operation-family labeling; Lean-shape match distinguished from external verification; Software Change Contracts cited/distinguished; no unsupported performance or usability claims; no clipped/overflowing content or unresolved references.
+Before submission, verify that the PDF and source keep these boundaries synchronized: by-construction factorization; narrow Change-to-contract theorem; fail-closed unknown magnitude; checker equivalence only for the proved fragment; explicit trust boundaries; target-only comparison as an ablation; internally authored application cases distinguished from the public-source audit; public audit described as purposive rather than representative; direct fit distinguished from operation-family labeling; Lean-shape match distinguished from external verification; Stage-0 follow-on research separated from current results; Software Change Contracts cited/distinguished; no unsupported performance or usability claims; no clipped/overflowing content or unresolved references.
 
 ## Remaining strengthening work
 
@@ -167,4 +179,5 @@ Highest-value later additions are:
 
 - a larger independently coded or preregistered real-code corpus and/or behavior-preserving translation cases;
 - controlled fixed-machine assurance-cost measurements with raw samples and dispersion;
-- a fair implemented or formal comparison with a representative modern effect/capability approach.
+- a fair implemented or formal comparison with a representative modern effect/capability approach;
+- separate formal development of Relational ChangeSets, Certified Change Adapters, and least-authority inference.
