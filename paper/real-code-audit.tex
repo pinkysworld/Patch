@@ -1,0 +1,35 @@
+\section{Public Real-Code Mutation Audit}
+\label{sec:real-code-audit}
+
+The internally authored authority cases establish controlled behavior, but they do not show whether the underlying mutation factorization resembles state updates found in public software. We therefore add a small, commit-bound qualitative audit of 15 mutation sites from Excalidraw, VS Code, and JupyterLab. The purpose is deliberately narrower than a repository-mining or migration study: the audit asks whether each observed update has a single-target semantic transition shape compatible with Paper~1's Change architecture, or instead exposes a boundary that the current paper should state explicitly.
+
+\paragraph{Method.}
+The corpus freezes exact repository commits, paths, and textual anchors in \texttt{evaluation/real-code-audit/corpus.csv}. The projects were selected to provide three distinct state contexts: application-owned editor state, collection mutation, and host-backed persistent state. Candidate files were located with state-specific searches and then frozen before classification. Each site is classified independently along two dimensions: semantic shape and commit-route ownership. A \emph{single-target} site has a set/add/remove interpretation over one logical state target. A \emph{multi-target bundle} changes several related fields in one source update. \emph{Application-owned} state is ordinary application/editor state; \emph{host-backed} state is committed by an external service such as VS Code Memento or JupyterLab \texttt{IStateDB}.
+
+We count host-backed updates conservatively. Even when a call such as a one-key Memento update has a simple set-like semantic shape, Patch does not currently own that commit route and Paper~1 does not claim a certified adapter. Likewise, multi-field source updates are not silently decomposed and counted as supported: if atomic grouping matters, that requires machinery outside the current paper.
+
+\begin{table}[t]
+\centering
+\caption{Commit-bound public-code audit. Counts describe the frozen 15-site corpus only and are not population estimates.}
+\label{tab:real-code-audit}
+\small
+\begin{tabular}{@{}lrrp{57mm}@{}}
+\toprule
+Classification & Sites & Share & Interpretation \\
+\midrule
+Single-target semantic update & 12 & 80\% & set/add/remove shape fits the Paper~1 semantic-delta architecture \\
+Multi-target bundle & 3 & 20\% & grouped/atomic semantics are not claimed in Paper~1 \\
+Application-owned state & 8 & 53\% & commit route belongs to the application state being inspected \\
+Host-backed state & 7 & 47\% & semantic shape may fit, but the actual commit crosses a foreign state API \\
+Application-owned + single-target & 5 & 33\% & direct architectural fit in the present classification \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Observations.}
+Twelve of the fifteen audited sites are single-target updates: ten are set-like, one adds to a collection, and one removes from a collection. This supports only a modest architectural observation: explicit semantic deltas are not restricted to the paper's synthetic numeric examples. The audit also exposes two important limits. First, seven sites use host-backed persistence. Their state-transition meaning is compact, but Patch is not the commit authority unless a future adapter brings that host state under the semantic Change route. Second, three Excalidraw updates bundle related fields in one source-level state update. Paper~1 can describe the member changes, but it does not claim atomic multi-target grouping or relational invariant preservation.
+
+The useful result is therefore the separation of \emph{semantic fit} from \emph{commit-route ownership}. A foreign update can look like a semantic \texttt{set} without being governed by Patch, and a multi-field update can be decomposable at the final-state level without preserving atomic observation. Treating these as boundaries rather than successes prevents the applicability evaluation from overstating the current artifact.
+
+\paragraph{Validity boundary.}
+This is purposeful diversity sampling, not random sampling, and 15 sites cannot estimate ecosystem prevalence. The audit does not execute third-party code through Patch, measure migration effort, establish usability, or extend the beta~32 Lean fragment. It provides public, inspectable examples for the central architectural distinction and for two concrete follow-on boundaries. The complete manifest and classification rationale are part of the repository artifact.
