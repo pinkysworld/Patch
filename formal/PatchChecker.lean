@@ -85,25 +85,25 @@ theorem allowsBool_complete
     (h : Allows rule effect) :
     allowsBool rule effect = true := by
   rcases h with ⟨hTarget, hField, hKind, hAmount⟩
-  subst rule.target
-  subst rule.field
-  subst rule.kind
   cases hEffectAmount : effect.amount with
   | none =>
       cases hRuleAmount : rule.amount with
       | none =>
-          simp [allowsBool, amountAllowsBool, hEffectAmount, hRuleAmount]
+          simp [allowsBool, hTarget, hField, hKind, amountAllowsBool,
+            hEffectAmount, hRuleAmount]
       | some permitted =>
           simp [hEffectAmount, hRuleAmount] at hAmount
   | some actual =>
       cases hRuleAmount : rule.amount with
       | none =>
-          simp [allowsBool, amountAllowsBool, hEffectAmount, hRuleAmount]
+          simp [allowsBool, hTarget, hField, hKind, amountAllowsBool,
+            hEffectAmount, hRuleAmount]
       | some permitted =>
           have hWithin : Within actual permitted := by
             simpa [hEffectAmount, hRuleAmount] using hAmount
           have hBool : withinBool actual permitted = true := withinBool_complete hWithin
-          simp [allowsBool, amountAllowsBool, hEffectAmount, hRuleAmount, hBool]
+          simp [allowsBool, hTarget, hField, hKind, amountAllowsBool,
+            hEffectAmount, hRuleAmount, hBool]
 
 /-- The executable one-rule checker exactly decides `Allows`. -/
 theorem allowsBool_iff
