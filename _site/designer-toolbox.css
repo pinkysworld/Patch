@@ -1,0 +1,228 @@
+.designer-component-palette {
+  flex: 0 1 430px;
+  display: grid;
+  grid-template-columns: minmax(150px, 1.4fr) minmax(116px, 1fr) auto;
+  align-items: end;
+  gap: 5px;
+  min-width: 280px;
+}
+.designer-component-search,
+.designer-add-control-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.designer-component-search > span,
+.designer-add-control-picker > span {
+  letter-spacing: .02em;
+}
+.designer-component-search input,
+.designer-add-control-picker select {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 650;
+}
+.designer-add-control-picker select {
+  padding-right: 22px;
+}
+.designer-component-search:focus-within,
+.designer-add-control-picker:focus-within {
+  border-color: var(--border-strong);
+  background: var(--soft);
+}
+.designer-component-count {
+  align-self: center;
+  min-width: 34px;
+  color: var(--muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Delphi/VB-style nonvisual component tray. These controls remain ordinary
+   Patch source declarations and never consume Form geometry. */
+.designer-nonvisual-tray {
+  position: sticky;
+  z-index: 12;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 48px;
+  margin-top: 12px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 -5px 18px color-mix(in srgb, var(--text) 8%, transparent);
+  backdrop-filter: blur(8px);
+}
+.designer-nonvisual-tray > strong {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.designer-nonvisual-empty {
+  color: var(--muted);
+  font-size: 10px;
+}
+.designer-nonvisual-component {
+  display: grid;
+  grid-template-columns: 22px auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 6px;
+  min-width: 112px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  text-align: left;
+  box-shadow: none;
+}
+.designer-nonvisual-component:hover,
+.designer-nonvisual-component[aria-pressed="true"] {
+  border-color: var(--border-strong);
+  background: var(--soft);
+}
+.designer-nonvisual-component[aria-pressed="true"] {
+  outline: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  outline-offset: -2px;
+}
+.designer-nonvisual-icon {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.designer-nonvisual-component > span:not(.designer-nonvisual-icon) {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.designer-nonvisual-component small {
+  color: var(--muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+#designerInspectorTimerField small,
+#designerInspectorPictureSourceField small,
+#designerInspectorPictureDisplayFields small {
+  display: block;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.designer-picture-display {
+  display: grid;
+  gap: 6px;
+}
+.designer-picture-display label {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.designer-picture-display .designer-picture-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+}
+.designer-picture-display input,
+.designer-picture-display select {
+  min-width: 0;
+}
+
+/* Current containers, graphics, Form chrome and nonvisual components continue the compact desktop rail. */
+#designer #addPanel { top: 423px; }
+#designer #addPanel::before { content: "▣"; }
+#designer #addPicture { top: 457px; }
+#designer #addPicture::before { content: "▧"; }
+#designer #addPaintbox { top: 525px !important; }
+#designer #addPaintbox::before { content: "▦"; }
+#designer #addStatusbar { top: 559px !important; }
+#designer #addStatusbar::before { content: "▰"; }
+#designer #addTimer { top: 593px !important; }
+#designer #addTimer::before { content: "◷"; }
+
+@media (max-width: 1120px) {
+  .designer-component-palette {
+    order: 7;
+    flex: 1 1 360px;
+  }
+}
+
+@media (max-width: 760px) {
+  #designer .designer-toolbar > button[id^="add"] {
+    display: none;
+  }
+  .designer-component-palette {
+    order: 1;
+    flex: 1 1 100%;
+    width: 100%;
+    grid-template-columns: minmax(0, 1.3fr) minmax(110px, .9fr) auto;
+    min-width: 0;
+  }
+  .designer-component-search,
+  .designer-add-control-picker {
+    min-height: 32px;
+    padding: 3px 6px;
+  }
+  .designer-component-search input,
+  .designer-add-control-picker select {
+    min-height: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  .designer-nonvisual-tray {
+    gap: 5px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+}
+
+@media (max-width: 520px) {
+  .designer-component-palette {
+    grid-template-columns: 1fr auto;
+  }
+  .designer-component-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (forced-colors: active) {
+  .designer-component-search,
+  .designer-add-control-picker,
+  .designer-nonvisual-component {
+    border: 1px solid CanvasText;
+  }
+  .designer-nonvisual-component[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+}

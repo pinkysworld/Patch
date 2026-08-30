@@ -1,17 +1,17 @@
-import { PatchInterpreter } from '../src/interpreter.js';
-import { compile } from '../src/compiler.js';
-import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
-import { compileToWasm } from '../src/wasm.js';
-import { compileToDirectWasm } from '../src/wasm-direct.js';
-import { buildStandaloneWebApp, pictureResourceDataUri } from '../src/webapp.js';
-import { triggerWindowEvent } from '../src/window-events.js';
-import { studioProjectFileStem } from '../src/studio-project.js';
-import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
-import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
-import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
-import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
-import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
-import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
+import { PatchInterpreter } from './src/interpreter.js?v=868f0784ca7f3972';
+import { compile } from './src/compiler.js?v=868f0784ca7f3972';
+import { buildPatchApp, serializePatchApp } from './src/bundle.js?v=868f0784ca7f3972';
+import { compileToWasm } from './src/wasm.js?v=868f0784ca7f3972';
+import { compileToDirectWasm } from './src/wasm-direct.js?v=868f0784ca7f3972';
+import { buildStandaloneWebApp, pictureResourceDataUri } from './src/webapp.js?v=868f0784ca7f3972';
+import { triggerWindowEvent } from './src/window-events.js?v=868f0784ca7f3972';
+import { studioProjectFileStem } from './src/studio-project.js?v=868f0784ca7f3972';
+import { diagnosticFromError, formatPatchDiagnostic } from './src/diagnostics.js?v=868f0784ca7f3972';
+import { getStudioDesignSnapshot } from './studio-design-snapshots.js?v=868f0784ca7f3972';
+import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js?v=868f0784ca7f3972';
+import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js?v=868f0784ca7f3972';
+import { createStudioFormMaterializationPlan } from './src/studio-form-materialization.js?v=868f0784ca7f3972';
+import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js?v=868f0784ca7f3972';
 
 const samples = {
   workshopDesk: `create thing ticket:

@@ -1,0 +1,210 @@
+.designer-data-editor {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+.designer-data-editor[hidden] { display: none !important; }
+.designer-data-editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.designer-data-editor-head span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.designer-tree-node-list,
+.designer-tabs-page-list {
+  display: grid;
+  max-height: 210px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.designer-tree-node,
+.designer-tabs-page {
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+}
+.designer-tree-node {
+  padding-left: calc(8px + var(--tree-depth, 0) * 18px);
+}
+.designer-tree-node:hover,
+.designer-tree-node.active,
+.designer-tabs-page:hover,
+.designer-tabs-page.active {
+  background: var(--surface-hover, var(--surface-subtle));
+}
+.designer-tree-node.active,
+.designer-tabs-page.active {
+  box-shadow: inset 3px 0 0 currentColor;
+  font-weight: 700;
+}
+.designer-tree-node:focus-visible,
+.designer-tabs-page:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+.designer-tabs-page {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.designer-tabs-page small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.designer-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.designer-data-actions button {
+  min-height: 28px;
+  padding: 4px 8px;
+}
+.designer-table-editor {
+  display: grid;
+  gap: 6px;
+  max-height: 300px;
+  overflow: auto;
+  padding-bottom: 2px;
+}
+.designer-table-editor-row {
+  display: grid;
+  grid-template-columns: repeat(var(--table-columns), minmax(110px, 1fr)) auto;
+  gap: 6px;
+  align-items: end;
+}
+.designer-table-editor-columns {
+  grid-template-columns: repeat(var(--table-columns), minmax(110px, 1fr));
+}
+.designer-table-editor label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.designer-table-editor input,
+.designer-data-editor .inspector-field input {
+  width: 100%;
+  min-width: 0;
+}
+.designer-table-editor input:focus-visible,
+.designer-data-editor .inspector-field input:focus-visible,
+.designer-tabs-control-add select:focus-visible,
+.designer-tabs-control-row button:focus-visible,
+.designer-data-actions button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.designer-data-editor code {
+  font-size: .92em;
+}
+.designer-keyboard-hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+.designer-tabs-nested-controls {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.designer-tabs-control-list {
+  display: grid;
+  gap: 4px;
+  max-height: 190px;
+  overflow: auto;
+}
+.designer-tabs-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+.designer-tabs-control-row.active {
+  box-shadow: inset 3px 0 0 currentColor;
+  background: var(--surface-hover, var(--surface-subtle));
+}
+.designer-tabs-control-row > span:first-child {
+  display: grid;
+  min-width: 0;
+}
+.designer-tabs-control-row small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.designer-tabs-control-row-actions {
+  display: flex !important;
+  grid-auto-flow: column;
+  gap: 4px;
+  align-items: center;
+}
+.designer-tabs-structure-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.designer-tabs-structure-editor:focus-within {
+  border-color: currentColor;
+}
+.designer-tabs-structure-editor .designer-table-editor,
+.designer-tabs-structure-editor .designer-tree-node-list {
+  max-height: 240px;
+}
+.designer-tabs-control-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: end;
+}
+.designer-tabs-control-add label {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.designer-tabs-control-add select {
+  width: 100%;
+}
+@media (max-width: 1050px) {
+  .designer-table-editor-row {
+    grid-template-columns: repeat(var(--table-columns), minmax(120px, 1fr)) auto;
+  }
+}
+@media (max-width: 760px) {
+  .designer-data-actions button { flex: 1 1 auto; }
+  .designer-table-editor { max-height: 240px; }
+  .designer-tabs-control-add { grid-template-columns: 1fr; }
+  .designer-tabs-control-row { align-items: flex-start; }
+  .designer-tabs-control-row-actions { grid-auto-flow: row; }
+}

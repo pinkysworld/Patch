@@ -1,0 +1,202 @@
+.command-palette {
+  width: min(680px, calc(100% - 28px));
+  max-height: min(78vh, 760px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 28px 90px rgba(24,24,27,.22);
+}
+
+.command-palette::backdrop {
+  background: rgba(24,24,27,.28);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.command-palette-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(78vh, 760px);
+}
+
+.command-palette-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 96%, var(--soft) 4%);
+}
+
+.command-palette-header input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding-inline: 13px;
+  font-size: 14px;
+}
+
+.command-palette-hint {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.command-palette-list {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  background: var(--surface);
+}
+
+.command-palette-item {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  box-shadow: none;
+}
+
+.command-palette-item:hover,
+.command-palette-item[aria-selected="true"] {
+  border-color: var(--border);
+  background: var(--surface-subtle);
+  opacity: 1;
+}
+
+.command-palette-copy {
+  min-width: 0;
+  display: block;
+}
+
+.command-palette-label-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin-bottom: 3px;
+}
+
+.command-palette-copy strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-palette-copy > span:not(.command-palette-label-row) {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-palette-kind {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 17px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.command-palette-item kbd {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 9px;
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.command-palette-empty {
+  margin: 0;
+  padding: 30px 18px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.command-palette-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 13px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface-subtle);
+  font-size: 9.5px;
+}
+
+.status-command {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.status-command:hover {
+  color: var(--text);
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.status-command:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .command-palette { width: calc(100% - 16px); }
+  .command-palette-header { padding: 9px; }
+  .command-palette-hint,
+  .command-palette-item kbd,
+  .command-palette-footer span:last-child { display: none; }
+  .command-palette-copy > span:not(.command-palette-label-row) { white-space: normal; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-palette::backdrop { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+@media (forced-colors: active) {
+  .command-palette { box-shadow: none; }
+  .command-palette-kind { border-color: ButtonText; }
+}

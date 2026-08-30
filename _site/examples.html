@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#15171c">
+  <meta name="description" content="Curated Patch example programs for beginners, GUI development, control flow, recipes, Change Contracts and the Workshop Desk showcase.">
+  <title>Examples · Patch</title>
+  <link rel="icon" href="./icon.svg?v=868f0784ca7f3972" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css?v=868f0784ca7f3972">
+  <link rel="stylesheet" href="./site-navigation.css?v=868f0784ca7f3972">
+  <link rel="stylesheet" href="./site-pages.css?v=868f0784ca7f3972">
+  <link rel="stylesheet" href="./docs-handbook.css?v=868f0784ca7f3972">
+</head>
+<body>
+<nav class="site-tabs" aria-label="Patch website">
+  <a href="./index.html">Studio</a>
+  <a href="./language.html">Language</a>
+  <a href="./docs.html" aria-current="page">Documentation</a>
+  <a href="./downloads.html">Downloads</a>
+  <a href="./help.html">Help</a>
+</nav>
+<main class="content-page" data-patch-version="0.2.0-beta.36">
+  <section class="page-hero">
+    <div><p class="page-eyebrow">Patch handbook · Examples</p><h1>Start from a program that already works.</h1><p>The repository examples are exercised by Patch's test suite. Use the small programs to learn one idea at a time, then study Workshop Desk for a larger multi-Form application.</p></div>
+    <pre class="page-code">window "Hello" size 360, 180:
+  text "Hello, Patch!" at 24, 24 size 220, 32</pre>
+  </section>
+
+  <nav class="handbook-tabs" aria-label="Patch handbook">
+    <a href="./docs.html">Overview</a><a href="./tutorials.html">Tutorials</a><a href="./examples.html" aria-current="page">Examples</a><a href="./language.html">Language reference</a><a href="./downloads.html">Build &amp; downloads</a>
+  </nav>
+  <nav class="handbook-toc" aria-label="Example categories"><a href="#starter">Starter</a><a href="#gui">GUI</a><a href="#language">Language</a><a href="#advanced">Advanced</a><a href="#showcase">Showcase</a></nav>
+
+  <section id="starter" class="page-section">
+    <h2>Starter examples</h2>
+    <div class="handbook-grid">
+      <article class="handbook-card"><span class="meta">Beginner · Console</span><h3>Hello World</h3><p>The smallest useful Patch program: create text and show it.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/hello-world.patch">hello-world.patch</a></article>
+      <article class="handbook-card"><span class="meta">Beginner · Window</span><h3>Hello Window</h3><p>A tiny Window application for learning Form and Text syntax.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/hello-window.patch">hello-window.patch</a></article>
+      <article class="handbook-card"><span class="meta">Beginner · Window</span><h3>Counter</h3><p>Persistent number state, interpolation, a Button event and explicit change.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/counter-window.patch">counter-window.patch</a></article>
+      <article class="handbook-card"><span class="meta">Beginner · Language</span><h3>Conditions</h3><p>A compact <code>if</code>/<code>else</code> example without GUI noise.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/conditions.patch">conditions.patch</a></article>
+    </div>
+  </section>
+
+  <section id="gui" class="page-section">
+    <h2>GUI component examples</h2>
+    <p>Use these when you want a working source pattern for common controls and event semantics.</p>
+    <table class="example-matrix">
+      <thead><tr><th>Example</th><th>What it teaches</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Checkbox Window</strong></td><td>Boolean state, Checkbox <code>changed</code> event and explicit persistence.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/checkbox-window.patch"><code>checkbox-window.patch</code></a></td></tr>
+        <tr><td><strong>Combo Window</strong></td><td>ComboBox options and transient text selection.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/combo-window.patch"><code>combo-window.patch</code></a></td></tr>
+        <tr><td><strong>Counter Window</strong></td><td>Button click, bound Text and source-backed geometry.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/counter-window.patch"><code>counter-window.patch</code></a></td></tr>
+        <tr><td><strong>Chrome Window</strong></td><td>Window chrome controls such as Panel, Timer, StatusBar and Picture on the supported product path.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/chrome-window.patch"><code>chrome-window.patch</code></a></td></tr>
+        <tr><td><strong>Workshop Desk</strong></td><td>Six Forms, structural controls, resources, Designer stress and the broad integrated Ready component surface.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch"><code>workshop-desk.patch</code></a></td></tr>
+      </tbody>
+    </table>
+    <p class="handbook-note">GUI selection remains transient unless your handler performs an explicit Patch change. The exact supported component/target combination is checked fail-closed by current build readiness.</p>
+  </section>
+
+  <section id="language" class="page-section">
+    <h2>Language and compiler examples</h2>
+    <div class="handbook-grid">
+      <article class="handbook-card"><span class="meta">Intermediate</span><h3>Change capabilities</h3><p>Bound semantic authority by target, direction and magnitude.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/change-capabilities.patch">change-capabilities.patch</a></article>
+      <article class="handbook-card"><span class="meta">Intermediate</span><h3>Direct Wasm basics</h3><p>A small program inside the direct WebAssembly numeric subset.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/direct-wasm.patch">direct-wasm.patch</a></article>
+      <article class="handbook-card"><span class="meta">Intermediate</span><h3>Direct Wasm control flow</h3><p>Conditions and bounded literal repeat on the direct backend.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/direct-wasm-control.patch">direct-wasm-control.patch</a></article>
+      <article class="handbook-card"><span class="meta">Intermediate</span><h3>Direct Wasm recipes</h3><p>Ranged recipe parameters and calls in the supported direct subset.</p><a href="https://github.com/pinkysworld/Patch/blob/main/examples/direct-wasm-recipes.patch">direct-wasm-recipes.patch</a></article>
+    </div>
+  </section>
+
+  <section id="advanced" class="page-section">
+    <h2>Formal-assurance examples</h2>
+    <p>These are for users who want to inspect the mechanized assurance pipeline. The formal claim remains deliberately narrower than the full Patch language and current RAD product.</p>
+    <table class="example-matrix">
+      <thead><tr><th>Example</th><th>Focus</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Formal calls</td><td>Acyclic ranked recipe environments and bounded call arguments.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/formal-calls.patch"><code>formal-calls.patch</code></a></td></tr>
+        <tr><td>Arithmetic calls</td><td>Arithmetic argument binding inside the mechanized range fragment.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/formal-calls-arithmetic.patch"><code>formal-calls-arithmetic.patch</code></a></td></tr>
+        <tr><td>Callee trace</td><td>Structured source-visible callee effect trace.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/formal-callee-trace.patch"><code>formal-callee-trace.patch</code></a></td></tr>
+        <tr><td>Guarded callee</td><td>Parameter guard selection and exact branch witness.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/formal-callee-guard.patch"><code>formal-callee-guard.patch</code></a></td></tr>
+        <tr><td>Transitive repeated calls</td><td>Frame identity when identical call sites execute repeatedly.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/formal-transitive-calls-repeated.patch"><code>formal-transitive-calls-repeated.patch</code></a></td></tr>
+        <tr><td>Mixed guards</td><td>Repeated call frames with different guard paths.</td><td><a href="https://github.com/pinkysworld/Patch/blob/main/examples/formal-transitive-calls-mixed-guards.patch"><code>formal-transitive-calls-mixed-guards.patch</code></a></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="showcase" class="page-section">
+    <h2>Showcase: Workshop Desk</h2>
+    <div class="handbook-grid">
+      <article class="handbook-card"><h3>Why it exists</h3><p>Workshop Desk is both a user-facing example and a real browser/native regression fixture. It exercises a large multi-Form project rather than a toy single-control demo.</p></article>
+      <article class="handbook-card"><h3>What to inspect</h3><p>Open it in Studio and switch Forms, use the Object Inspector, structural editors, Tabs, Table/TreeView, Panel, Picture/Shape/PaintBox, Timer/StatusBar and project resources.</p></article>
+      <article class="handbook-card"><h3>What it proves</h3><p>Repository tests compile and run it, stress it in Chrome, validate layout, and check the current integrated native Ready component surface without widening the formal beta.32 claim.</p></article>
+    </div>
+    <div class="actions"><a href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch">Open Workshop Desk source</a><a href="./index.html">Open Patch Studio</a><a href="./tutorials.html#designer">Designer tutorial</a></div>
+  </section>
+
+  <section class="page-section">
+    <h2>Suggested learning order</h2>
+    <ol>
+      <li><a href="https://github.com/pinkysworld/Patch/blob/main/examples/hello-world.patch">Hello World</a></li>
+      <li><a href="https://github.com/pinkysworld/Patch/blob/main/examples/counter-window.patch">Counter Window</a></li>
+      <li><a href="https://github.com/pinkysworld/Patch/blob/main/examples/checkbox-window.patch">Checkbox Window</a> and <a href="https://github.com/pinkysworld/Patch/blob/main/examples/combo-window.patch">Combo Window</a></li>
+      <li><a href="https://github.com/pinkysworld/Patch/blob/main/examples/change-capabilities.patch">Change capabilities</a></li>
+      <li><a href="https://github.com/pinkysworld/Patch/blob/main/examples/workshop-desk.patch">Workshop Desk</a></li>
+      <li>Only then move into the formal examples if you need the assurance pipeline.</li>
+    </ol>
+    <p><a href="./tutorials.html"><strong>Follow the step-by-step tutorials</strong></a></p>
+  </section>
+</main>
+</body>
+</html>

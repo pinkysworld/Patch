@@ -1,0 +1,20 @@
+{
+  "name": "Patch Studio",
+  "short_name": "Patch Studio",
+  "description": "The browser-first IDE for the Patch programming language: edit, run, preview GUI apps and build portable Patch applications.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f5",
+  "theme_color": "#1d4ed8",
+  "orientation": "any",
+  "categories": ["developer", "education", "productivity"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
