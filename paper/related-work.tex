@@ -1,7 +1,5 @@
 % Related-work module included by paper/main.tex.
 
-\input{real-code-audit}
-
 \section{Related Work and Claim Boundary}
 \label{sec:related-work}
 
@@ -67,23 +65,10 @@ Translation validation \cite{necula2000translation} and Proof-Carrying Code \cit
 The comparison leaves the following working hypothesis:
 
 \begin{quote}
-Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides event-backed state, first-class state transitions, rich effects, value-dependent quantitative grades, flow-sensitive typestate capabilities, permissions, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
+Patch explores a language architecture in which ordinary post-creation persistent mutation is factored through a structured semantic Change, and operation- and magnitude-aware summaries and authority are derived from that same mandatory mutation substrate. Prior work separately and sometimes jointly provides event-backed state, first-class state transitions, centralized mutation patterns, rich effects, value-dependent quantitative grades, flow-sensitive typestate capabilities, permissions, and highly expressive state specifications. Patch does not claim those mechanisms are individually new or inexpressible elsewhere; its candidate contribution is their particular coupling to the sole modeled persistent-mutation route.
 \end{quote}
 
 The phrase \emph{sole modeled persistent-mutation route} scopes the claim to Patch's formal and implemented mutation model. It does not cover foreign code, external I/O, GUI toolkit state, host-backed stores, or unsupported language fragments. The public real-code audit in Sec.~\ref{sec:real-code-audit} intentionally counts such host-backed mutations as a boundary rather than as Patch support. This is a contribution hypothesis tested by the formal results, semantic-authority cases, public-code audit, and artifact evidence, not a firstness assertion.
 
-\subsection{Research questions for this paper}
-\label{sec:research-questions}
-To keep the contribution narrow, this manuscript evaluates four questions about the current architecture only:
-
-\begin{enumerate}[leftmargin=*]
-\item[\textbf{RQ1}] Can modeled persistent mutation be factored through one semantic Change route while retaining transparent history and derived semantic contracts?
-\item[\textbf{RQ2}] Does operation- and magnitude-aware authority distinguish mutation cases that target-only write authority does not distinguish?
-\item[\textbf{RQ3}] Can selected production direct-WebAssembly executions be related back to exact semantic call-tree effects without trusting backend call markers?
-\item[\textbf{RQ4}] How does the current factorization classify realistic public mutation patterns, and where does it fail to own the actual commit route?
-\end{enumerate}
-
-RQ1 is addressed by the formal core, RQ2 by the semantic-authority and application cases, RQ3 by the independently reconstructed runtime evidence and Lean-checked certificates, and RQ4 by the commit-bound public real-code audit. The controlled-measurement machinery remains useful artifact infrastructure, but because this manuscript makes no performance or scalability claim, uncollected timing is not treated as evidence for these four research questions.
-
 \paragraph{Future work boundary.}
-Relational multi-target ChangeSets, least-authority capability inference, certified foreign-state adapters, temporal authority, causal debugging, and safe parallelism are separate follow-on research questions. The public-code audit motivates some of these boundaries but does not convert them into Paper~1 contributions. Experimental prototypes may exist in the repository, but this paper does not count them as evidence for RQ1--RQ4.
+Relational multi-target ChangeSets, least-authority capability inference, certified foreign-state adapters, temporal authority, causal debugging, and safe parallelism are separate follow-on research questions. The public-code audit motivates some of these boundaries but does not convert them into Paper~1 contributions. Experimental prototypes may exist in the repository, but this paper does not count them as evidence for its four research questions.
