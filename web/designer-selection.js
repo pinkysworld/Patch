@@ -100,6 +100,8 @@ export function restoreDesignerAdapterSelection(canvas, adapter, findElement) {
   if (!selection) return null;
   const element = typeof findElement === 'function' ? findElement(selection) : null;
   if (!element) {
+    const materializedWindow = Number(canvas?.dataset?.patchDesignerMaterializedForm);
+    if (Number.isInteger(materializedWindow) && materializedWindow !== selection.windowIndex) return null;
     clearDesignerSelection(canvas, { adapter, reason: 'missing-control' });
     return null;
   }
