@@ -114,11 +114,11 @@ Remaining editorial action:
 
 ### Major concern
 
-Event sourcing is unusually close to Patch's history/replay motivation because event-sourced systems can treat state-changing events as the authoritative representation from which state is reconstructed. Omitting it leaves a visible hole in the novelty argument. Strong prior art in effects, capabilities, graded/dependent effects, typestate, permissions, and explicit changes already prevents broad firstness claims.
+Event sourcing is unusually close to Patch's history/replay motivation because event-sourced systems can treat state-changing events as the authoritative representation from which state is reconstructed. The State-Action-Model (SAM) practitioner pattern is also relevant because it explicitly treats state mutation as a first-class concern and centralizes state mutation in a structured application step. Omitting both would leave avoidable holes in the novelty argument. Strong prior art in effects, capabilities, graded/dependent effects, typestate, permissions, and explicit changes already prevents broad firstness claims.
 
 ### Recommendation
 
-Discuss event sourcing directly and state the distinction without caricaturing prior work. The candidate Patch contribution is not “state is represented by changes.” It is the language-level conjunction in which ordinary modeled persistent mutation has one semantic Change commit route and operation/magnitude-aware authority is derived from that same route.
+Discuss event sourcing directly and acknowledge SAM as conceptual prior art without presenting a practitioner pattern as a peer-reviewed language contribution. The candidate Patch contribution is not “state is represented by changes,” “mutation is first class,” or “mutation is centralized.” It is the language-level conjunction in which ordinary modeled persistent mutation has one semantic Change commit route and operation/magnitude-aware authority is derived from that same route, with a formal and production-assurance story tied to the route.
 
 ### Disposition: accepted
 
@@ -126,8 +126,9 @@ Actions:
 
 - added Event Sourcing to Related Work and the architectural comparison;
 - added peer-reviewed Journal of Systems and Software references on event-sourced systems and observability;
-- narrowed the claim boundary so history/replay is explicitly prior art;
-- preserved the distinction between an event-sourced architecture and Patch's language-level semantic mutation and authority coupling.
+- added a separate SAM paragraph with its practitioner status made explicit;
+- narrowed the claim boundary so history/replay, first-class mutation, and centralized mutation are explicitly not sufficient novelty claims;
+- preserved the distinction between event-sourced/SAM architectures and Patch's language-level semantic mutation plus derived authority coupling.
 
 ## Consolidated reviewer verdict
 
@@ -144,7 +145,7 @@ The public-code audit improves the paper precisely because it produces mixed evi
 - central novelty statement appears consistently in abstract, introduction, related work, and conclusion;
 - research questions are not duplicated by a separate competing claims taxonomy;
 - public audit manifest and manuscript counts stay synchronized;
-- event-sourcing comparison remains accurate and non-dismissive;
+- event-sourcing and SAM comparisons remain accurate and non-dismissive;
 - no language implies third-party Patch execution or certified host adapters;
 - no performance/scalability claim appears without a reviewed controlled dataset;
 - product engineering detail is subordinate to the research narrative;
