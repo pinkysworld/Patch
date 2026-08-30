@@ -3,68 +3,55 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const read = path => fs.readFileSync(path, 'utf8');
-const pkg = JSON.parse(read('package.json'));
-const packageBeta = Number(/^0\.2\.0-beta\.(\d+)$/.exec(pkg.version)?.[1]);
-if (!Number.isInteger(packageBeta)) throw new Error(`Unexpected Patch version ${pkg.version}`);
 
-test('main manuscript keeps an explicit product snapshot beside the beta32 assurance boundary', () => {
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+test('main manuscript keeps the revised Paper 1 argument and measured formal scope', () => {
   const tex = `${read('paper/main.tex')}\n${read('paper/related-work.tex')}`;
-  const boundary = /Beta (\d+) product artifact \/ Beta 32 assurance manuscript/i.exec(tex);
-  assert.ok(boundary, 'manuscript must name its product artifact snapshot and Beta 32 assurance boundary');
-  const manuscriptBeta = Number(boundary[1]);
-  assert.ok(manuscriptBeta <= packageBeta, `paper snapshot Beta ${manuscriptBeta} cannot be newer than package Beta ${packageBeta}`);
 
   for (const phrase of [
-    'Beta 30 finite transitive exact call trees',
-    'Beta 31 call-aware bridge',
-    'Beta 32 invocation frames',
-    'GeneratedRepeatedTransitiveRuntimeCertificate.lean',
-    'GeneratedMixedGuardTransitiveRuntimeCertificate.lean',
+    'State-Change Factorization and Semantic Change Contracts',
+    'design invariant',
+    'Why couple commit and semantic metadata?',
+    '18 Lean files',
+    '3,167 code lines',
+    '80 theorem/lemma declarations',
+    '48,140 nonblank JavaScript lines',
+    '6.6\\%',
+    'line-count ratio',
+    'not a verification-coverage metric',
+    'Checked runtime correspondence',
+    'production AST',
+    'does not prove the production parser correct',
+    'not an end-to-end compiler refinement theorem',
     'caller(1)',
     'caller(4)',
-    'twelve invocation frames',
+    'twelve dynamic frames',
     'six supported transitive correspondences',
-    'Patch reject / coarse accept',
     'balance=80',
     'used=35',
     'remaining=85',
     'admin\\_credit=0',
-    'process isolation',
-    'no controlled paper-quality timing dataset yet',
     'Patch Reproducibility Bundle',
+    '\\input{real-code-audit}',
     '\\input{related-work}',
     '\\bibliography{references}',
-    'fig:architecture',
-    'fig:frames',
+    'tab:formal-scope',
     'tab:security-ablation',
     'tab:application-corpus',
-    'tab:related-work',
-    'tab:lean-theorems',
-    'tab:trust-boundary',
-    'tab:measurement-classes',
-    'thm:runtime',
-    'def:factorization',
-    'Construct validity',
-    'app:repro',
-    'callSignatureSoundness'
+    'thm:signature',
+    'thm:range',
+    'thm:calltree',
+    'app:repro'
   ]) {
     assert.match(tex, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }
 
-  assert.match(tex, /Patch 0\.2\.0-beta\.\d+ retains Change IR 0\.10/i);
-  assert.match(tex, /Native GUI IR 1\.3/i);
-  assert.match(tex, /payload v13/i);
-  assert.match(tex, /runtime v1\.4/i);
-  assert.match(tex, /Native GUI IR 1\.2/i);
-  assert.match(tex, /payload v12/i);
-  assert.match(tex, /runtime v1\.3/i);
-  assert.match(tex, /prototype-free own-field product values/i);
-  assert.match(tex, /fail closed on Things/i);
-  assert.match(tex, /does not widen the Lean runtime-correspondence theorem/i);
-  assert.doesNotMatch(tex, /Beta 28 research artifact manuscript/i);
-  assert.doesNotMatch(tex, /The next formal steps are guard-aware exact callee traces/i);
-  assert.doesNotMatch(tex, /Beta 28 establishes complete exact semantic-effect traces[^\n]*remaining research task/i);
-  assert.doesNotMatch(tex, /Native GUI IR 0\.7 does not model persistent list state, so current native Window paths fail closed/i);
+  const rqLabels = [...read('paper/main.tex').matchAll(/\\item\[\\textbf\{RQ(\d+)\}\]/g)].map(match => Number(match[1]));
+  assert.deepEqual(rqLabels, [1, 2, 3], 'Paper 1 should expose exactly three non-circular research questions');
+  assert.doesNotMatch(tex, /thm:runtime|def:factorization|Beta 32 assurance manuscript|Native GUI IR 1\.3/i);
 });
 
 test('all citation keys in the synchronized paper modules exist in references.bib', () => {
@@ -80,24 +67,23 @@ test('all citation keys in the synchronized paper modules exist in references.bi
   }
 });
 
-test('paper claim boundary does not silently turn supporting evidence into performance, external-validity or full-verification claims', () => {
+test('paper claim boundary stays narrower than source-language, product, and performance claims', () => {
   const tex = read('paper/main.tex');
-  assert.match(tex, /not an end-to-end compiler refinement theorem/i);
-  assert.match(tex, /no empirical overhead, scalability, or asymptotic-complexity claim/i);
-  assert.match(tex, /not a claim of complete malicious-code containment/i);
-  assert.match(tex, /not a complete plugin sandbox/i);
-  assert.match(tex, /not evidence[^\n]*third-party plugin ecosystem/i);
-  assert.match(tex, /candidate novelty is a conjunction of architectural choices/i);
+  assert.match(tex, /does not claim a source-to-core compiler-correctness theorem/i);
+  assert.match(tex, /not a theorem about an independently specified source language/i);
+  assert.match(tex, /not a claim that 6\.6\\% of the product is verified/i);
+  assert.match(tex, /hosted-CI timings are not used as performance evidence/i);
+  assert.match(tex, /does not establish that such erasure is semantics-preserving/i);
+  assert.match(tex, /two application domains are internally authored/i);
+  assert.match(tex, /one coder and no inter-rater agreement measurement/i);
+  assert.doesNotMatch(tex, /fully verified compiler|fully verified runtime|verified production parser/i);
 });
 
-test('remaining research gates stay in the repository manuscript without a public paper HTML route', () => {
-  const tex = `${read('paper/main.tex')}\n${read('paper/related-work.tex')}`;
+test('remaining empirical gates stay explicit without publishing a paper HTML route', () => {
+  const tex = read('paper/main.tex');
   assert.equal(fs.existsSync('web/paper.html'), false, 'working manuscript must not be published as a Patch Studio HTML page');
-  assert.match(tex, /no controlled paper-quality timing dataset yet/i);
-  assert.match(tex, /not an end-to-end compiler refinement theorem/i);
-  assert.match(tex, /third-party plugin ecosystem/i);
+  assert.match(tex, /substantial independently authored Patch program/i);
+  assert.match(tex, /quantify signature sizes and annotations/i);
+  assert.match(tex, /replicated multi-language mutation study/i);
+  assert.match(tex, /controlled performance data/i);
 });
-
-function escapeRegExp(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
