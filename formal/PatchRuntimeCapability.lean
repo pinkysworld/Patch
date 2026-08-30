@@ -4,7 +4,9 @@ namespace PatchFormal
 
 /-- Semantic authority is downward closed under `EffectRefines`: if a policy
     rule allows an abstract/formal effect, it also allows a concrete effect that
-    refines that formal effect. -/
+    refines that formal effect. With fail-closed bounded unknown magnitude,
+    refinement must preserve the presence/absence of an amount interval; this is
+    already part of `EffectRefines`. -/
 theorem allowsRefinedEffect
     {actual expected : Effect} {rule : Rule}
     (hRefines : EffectRefines actual expected)
@@ -15,7 +17,14 @@ theorem allowsRefinedEffect
   refine ⟨hRuleTarget.trans hTarget.symm, hRuleField.trans hField.symm, hRuleKind.trans hKind.symm, ?_⟩
   cases hActual : actual.amount with
   | none =>
-      simp [hActual]
+      cases hExpected : expected.amount with
+      | none =>
+          cases hRule : rule.amount with
+          | none => simp [hActual, hRule]
+          | some permitted =>
+              simp [hExpected, hRule] at hRuleAmount
+      | some expectedAmount =>
+          simp [hActual, hExpected] at hAmount
   | some actualAmount =>
       cases hExpected : expected.amount with
       | none =>
