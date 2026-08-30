@@ -14,7 +14,16 @@ a[href="./paper.html"] {
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-gutter: stable;
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 7%);
 }
+
+/* site-refresh.css intentionally owns the shared sticky shell. Keep its visible
+   product badge synchronized with the current development line here. */
+.site-tabs::after {
+  content: "0.2 beta.36+";
+}
+
 .site-tabs a {
   flex: 0 0 auto;
   min-height: 34px;
@@ -40,9 +49,101 @@ a[href="./paper.html"] {
   color: var(--text);
   box-shadow: 0 2px 9px rgba(24,24,27,.055);
 }
+.site-tabs a[href="./downloads.html"]:not([aria-current="page"]) {
+  margin-left: 3px;
+  border-color: color-mix(in srgb, var(--border-strong) 72%, transparent);
+  background: color-mix(in srgb, var(--surface) 94%, var(--soft) 6%);
+  color: var(--text);
+}
 .site-tabs a:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
+}
+
+/* Public pages use the same information hierarchy as the IDE: one strong task
+   at the top, then compact evidence cards instead of a wall of equal-weight text. */
+.content-page .page-hero {
+  position: relative;
+  border-color: color-mix(in srgb, var(--border-strong) 70%, transparent);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 7%);
+}
+
+.content-page .page-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--text);
+  opacity: .72;
+}
+
+.content-page .page-hero h1 {
+  max-width: 820px;
+  text-wrap: balance;
+}
+
+.content-page .page-hero > div > p:not(.page-eyebrow) {
+  max-width: 780px;
+}
+
+.page-grid,
+.doc-links {
+  align-items: stretch;
+}
+
+.page-card,
+.doc-link {
+  border-color: color-mix(in srgb, var(--border-strong) 58%, transparent);
+}
+
+.page-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--text);
+  opacity: .1;
+}
+
+.doc-link,
+.page-card {
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.doc-link:hover,
+.page-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 6%);
+}
+
+.page-section {
+  border-radius: 14px;
+}
+
+.page-section > h2:first-child {
+  text-wrap: balance;
+}
+
+.page-code {
+  border: 1px solid color-mix(in srgb, var(--border-strong) 48%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 14px 30px rgb(0 0 0 / 10%);
+}
+
+@media (max-width: 760px) {
+  .content-page .page-hero {
+    box-shadow: 0 14px 34px rgb(0 0 0 / 6%);
+  }
+  .doc-link:hover,
+  .page-card:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 640px) {
@@ -50,8 +151,28 @@ a[href="./paper.html"] {
     width: calc(100% - 20px);
     margin-top: 6px;
   }
+  .site-tabs::before {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--surface-glass);
+  }
+  .site-tabs::after {
+    display: none;
+  }
   .site-tabs a {
     min-height: 40px;
     padding-inline: 12px;
+  }
+  .site-tabs a[href="./downloads.html"]:not([aria-current="page"]) {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-link,
+  .page-card,
+  .site-tabs a {
+    transition: none !important;
   }
 }
