@@ -9,7 +9,8 @@ export const PATCH_OFFLINE_COMPILER_SOURCE_ROOTS = Object.freeze([
   'src/cli.js'
 ]);
 
-const STATIC_IMPORT = /(?:^|\n)\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s*)?['"]([^'"]+)['"]/g;
+const IMPORT_FROM = /\b(?:import|export)\s+[\s\S]*?\s+from\s*['"]([^'"]+)['"]/g;
+const SIDE_EFFECT_IMPORT = /\bimport\s*['"]([^'"]+)['"]/g;
 const DYNAMIC_IMPORT = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 /**
@@ -56,10 +57,11 @@ export function offlineCompilerSourceManifest(root = process.cwd()) {
 
 export function localModuleSpecifiers(source) {
   const found = new Set();
-  for (const expression of [STATIC_IMPORT, DYNAMIC_IMPORT]) {
+  const text = String(source ?? '');
+  for (const expression of [IMPORT_FROM, SIDE_EFFECT_IMPORT, DYNAMIC_IMPORT]) {
     expression.lastIndex = 0;
     let match;
-    while ((match = expression.exec(String(source ?? '')))) {
+    while ((match = expression.exec(text))) {
       const specifier = match[1];
       if (specifier.startsWith('.')) found.add(specifier);
     }
