@@ -1,10 +1,10 @@
 export const PATCH_STUDIO_BROWSER_PERFORMANCE_CONTRACT = 'patch-studio-browser-performance/0.1';
 
 export const PATCH_STUDIO_BROWSER_PERFORMANCE_LIMITS_MS = Object.freeze({
-  workshopRunFirstPaint: 6000,
-  workshopEventToPaint: 2500,
-  largeProjectRunFirstPaint: 6000,
-  largeProjectDesignerSwitch: 2500
+  workshopRunFirstPaint: 3000,
+  workshopEventToPaint: 2000,
+  largeProjectRunFirstPaint: 3000,
+  largeProjectDesignerSwitch: 2000
 });
 
 export function validateStudioBrowserPerformance(metrics, limits = PATCH_STUDIO_BROWSER_PERFORMANCE_LIMITS_MS) {
