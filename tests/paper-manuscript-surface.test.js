@@ -103,3 +103,34 @@ test('remaining empirical gates stay explicit without publishing a paper HTML ro
   assert.match(tex, /replicated multi-language mutation study/i);
   assert.match(tex, /controlled performance data/i);
 });
+
+test('Programming Journal submission surface is pinned, complete, and disclosure-aware', () => {
+  const wrapper = read('paper/programming-submission.tex');
+  const abstract = read('paper/submission-abstract.tex');
+  const disclosure = read('paper/submission-disclosure.tex');
+  const builder = read('scripts/build-programming-submission-source.js');
+  const workflow = read('.github/workflows/programming-submission.yml');
+
+  assert.match(wrapper, /\\documentclass\[english,submission\]\{programming\}/);
+  assert.match(wrapper, /perspective=art/);
+  assert.match(wrapper, /General-purpose programming/);
+  assert.match(wrapper, /Program verification/);
+  assert.match(wrapper, /University of the People/);
+  assert.match(wrapper, /10011007\.10011006\.10011008/);
+
+  for (const label of ['Context.', 'Inquiry.', 'Approach.', 'Knowledge.', 'Grounding.', 'Importance.']) {
+    assert.match(abstract, new RegExp(escapeRegExp(`\\textbf{${label}}`)));
+  }
+  assert.doesNotMatch(abstract, /\\cite\{|\\ref\{|\$/);
+  assert.match(disclosure, /Generative-AI disclosure/);
+  assert.match(disclosure, /OpenAI ChatGPT/);
+  assert.match(disclosure, /no external funding/i);
+  assert.match(disclosure, /no competing interests/i);
+
+  assert.match(builder, /main\.tex/);
+  assert.match(builder, /submission-abstract\.tex/);
+  assert.match(builder, /main-submission-body\.tex/);
+  assert.match(workflow, /bd831b2b148bed4725038a309c0a63c66f805778/);
+  assert.match(workflow, /6549dc21effb2730855a1281407ecfcececc6c1b/);
+  assert.match(workflow, /Overfull \\\\hbox/);
+});
