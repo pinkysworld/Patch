@@ -6,6 +6,11 @@
 #undef PATCH_WIN32_RUNTIME_V19_RESTORE_ENTRY
 #include "sealed-button-image-v19.hpp"
 
+// BCM_SETIMAGELIST is part of the version-6 Button contract. Bind the runtime
+// itself to Common Controls v6 so sealed executables do not depend on an
+// external build-system manifest to preserve native caption + image behavior.
+#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 static std::vector<PatchButtonImageAssetV19> gPatchButtonImageAssetsV19;
 static std::vector<PatchButtonImageConsumerV19> gPatchButtonImagesV19;
 static std::vector<HIMAGELIST> gPatchButtonImageListsV19;
