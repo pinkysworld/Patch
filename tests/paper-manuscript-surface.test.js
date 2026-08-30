@@ -9,19 +9,27 @@ function escapeRegExp(value) {
 }
 
 test('main manuscript keeps the revised Paper 1 argument and measured formal scope', () => {
-  const tex = `${read('paper/main.tex')}\n${read('paper/related-work.tex')}`;
+  const main = read('paper/main.tex');
+  const related = read('paper/related-work.tex');
+  const tex = `${main}\n${related}`;
 
   for (const phrase of [
     'State-Change Factorization and Semantic Change Contracts',
     'design invariant',
     'Why couple commit and semantic metadata?',
+    'IStateDB.save',
+    'Coverage of the paper grammar',
+    '6/6',
+    '5/6 after lowering',
     '18 Lean files',
     '3,167 code lines',
     '80 theorem/lemma declarations',
+    'CI-generated Lean certificates',
+    '1,295',
+    '155 theorem/lemma declarations',
     '48,140 nonblank JavaScript lines',
     '6.6\\%',
-    'line-count ratio',
-    'not a verification-coverage metric',
+    'verification-coverage metric',
     'Checked runtime correspondence',
     'production AST',
     'does not prove the production parser correct',
@@ -35,9 +43,11 @@ test('main manuscript keeps the revised Paper 1 argument and measured formal sco
     'remaining=85',
     'admin\\_credit=0',
     'Patch Reproducibility Bundle',
+    'Redux action types and payloads are application-defined',
     '\\input{real-code-audit}',
     '\\input{related-work}',
     '\\bibliography{references}',
+    'tab:grammar-coverage',
     'tab:formal-scope',
     'tab:security-ablation',
     'tab:application-corpus',
@@ -49,8 +59,13 @@ test('main manuscript keeps the revised Paper 1 argument and measured formal sco
     assert.match(tex, new RegExp(escapeRegExp(phrase), 'i'), phrase);
   }
 
-  const rqLabels = [...read('paper/main.tex').matchAll(/\\item\[\\textbf\{RQ(\d+)\}\]/g)].map(match => Number(match[1]));
-  assert.deepEqual(rqLabels, [1, 2, 3], 'Paper 1 should expose exactly three non-circular research questions');
+  const rqLabels = [...main.matchAll(/\\item\[\\textbf\{RQ(\d+)\}\]/g)].map(match => Number(match[1]));
+  assert.deepEqual(rqLabels, [1, 2, 3, 4], 'Paper 1 should expose four non-circular research questions aligned with four contributions');
+
+  const abstract = main.match(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/)?.[1] ?? '';
+  assert.doesNotMatch(abstract, /6\.6\\%|48,140|80 theorem\/lemma/i, 'abstract should not lead with detailed scope bookkeeping');
+  assert.equal((main.match(/6\.6\\%/g) ?? []).length, 1, 'the Lean/JavaScript LOC ratio should appear only once as provenance context');
+  assert.match(main, /recipe calls are handled by the separate finite-call layer/i);
   assert.doesNotMatch(tex, /thm:runtime|def:factorization|Beta 32 assurance manuscript|Native GUI IR 1\.3/i);
 });
 
@@ -71,7 +86,7 @@ test('paper claim boundary stays narrower than source-language, product, and per
   const tex = read('paper/main.tex');
   assert.match(tex, /does not claim a source-to-core compiler-correctness theorem/i);
   assert.match(tex, /theorem about an independently specified source language/i);
-  assert.match(tex, /not a claim that 6\.6\\% of the product is verified/i);
+  assert.match(tex, /not used as a verification-coverage metric/i);
   assert.match(tex, /hosted-CI timings are not used as performance evidence/i);
   assert.match(tex, /does not establish that such erasure is semantics-preserving/i);
   assert.match(tex, /two application domains are internally authored/i);
