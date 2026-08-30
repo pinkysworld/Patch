@@ -21,29 +21,29 @@ export function snapFormControlAlignment(layout, peers = [], options = {}) {
   const deltaY = yMatch?.delta ?? spacingY?.delta ?? 0;
   const x = Math.max(0, Math.round(current.x + deltaX));
   const y = Math.max(0, Math.round(current.y + deltaY));
-
-  return {
+  const result = {
     ...layout,
     x,
     y,
     guideX: xMatch?.guide ?? null,
-    guideY: yMatch?.guide ?? null,
-    guideXKind: xMatch?.kind ?? null,
-    guideYKind: yMatch?.kind ?? null,
-    spacingX: spacingX ? materializeSpacing(spacingX, x, current.width) : null,
-    spacingY: spacingY ? materializeSpacing(spacingY, y, current.height) : null
+    guideY: yMatch?.guide ?? null
   };
+
+  // Preserve the original result shape when no richer guide is active. This
+  // keeps existing callers source-compatible while letting newer Studio UI
+  // consume additional metadata only when it has something meaningful to show.
+  if (xMatch) result.guideXKind = xMatch.kind;
+  if (yMatch) result.guideYKind = yMatch.kind;
+  if (spacingX) result.spacingX = materializeSpacing(spacingX, x, current.width);
+  if (spacingY) result.spacingY = materializeSpacing(spacingY, y, current.height);
+  return result;
 }
 
 function emptyAlignment(layout) {
   return {
     ...layout,
     guideX: null,
-    guideY: null,
-    guideXKind: null,
-    guideYKind: null,
-    spacingX: null,
-    spacingY: null
+    guideY: null
   };
 }
 
