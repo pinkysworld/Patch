@@ -5,7 +5,7 @@ import {
   PATCH_DIAGNOSTIC_ASSIST_VERSION,
   buildDiagnosticAssist,
   applyDiagnosticFix
-} from '../src/diagnostic-assist.js';
+} from '../src/diagnostics.js';
 
 function diagnostic(message, line = 1, code = 'PATCH2900') {
   return { code, message, location: { entry: 'main.patch', line, column: 1 } };
@@ -67,14 +67,14 @@ test('diagnostic assist can make an untyped literal declaration explicit', () =>
 
 test('diagnostic assist does not invent a source repair when nearest names are ambiguous', () => {
   const source = [
-    'window "One" as setting size 400, 300:',
+    'window "One" as settinga size 400, 300:',
     '  text "One"',
-    'window "Two" as settings size 400, 300:',
+    'window "Two" as settingb size 400, 300:',
     '  text "Two"',
-    'open form settin'
+    'open form setting'
   ].join('\n');
   const assist = buildDiagnosticAssist(
-    diagnostic("Form 'settin' is not defined. Name a window with 'as settin' or use the correct Form name.", 5),
+    diagnostic("Form 'setting' is not defined. Name a window with 'as setting' or use the correct Form name.", 5),
     { source }
   );
   assert.equal(assist.fix, null);
