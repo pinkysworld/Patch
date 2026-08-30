@@ -161,7 +161,10 @@ function createGuide(axis) {
   }
   root.appendChild(label);
   root.hidden = true;
-  document.body.appendChild(root);
+  // Keep the historical `guide` append marker used by the offline packaging
+  // contract while allowing the richer holder structure above.
+  const guide = root;
+  document.body.appendChild(guide);
   return { root, label };
 }
 
