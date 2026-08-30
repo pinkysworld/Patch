@@ -18,6 +18,22 @@ function fail(message) {
   process.exit(1);
 }
 
+function fitTableToJournalWidth(text, label) {
+  const labelToken = `\\label{${label}}`;
+  const labelIndex = text.indexOf(labelToken);
+  if (labelIndex < 0) fail(`table label not found: ${label}`);
+  const tableStart = text.lastIndexOf('\\begin{table', labelIndex);
+  const tableEndStart = text.indexOf('\\end{table}', labelIndex);
+  if (tableStart < 0 || tableEndStart < 0) fail(`table boundary not found: ${label}`);
+  const tableEnd = tableEndStart + '\\end{table}'.length;
+  let block = text.slice(tableStart, tableEnd);
+  const tabularStart = block.indexOf('\\begin{tabular}');
+  const tabularEnd = block.indexOf('\\end{tabular}');
+  if (tabularStart < 0 || tabularEnd < 0) fail(`tabular boundary not found: ${label}`);
+  block = `${block.slice(0, tabularStart)}\\resizebox{\\textwidth}{!}{%\n${block.slice(tabularStart, tabularEnd + '\\end{tabular}'.length)}\n}${block.slice(tabularEnd + '\\end{tabular}'.length)}`;
+  return `${text.slice(0, tableStart)}${block}${text.slice(tableEnd)}`;
+}
+
 const bodyStart = main.indexOf('\\begin{document}');
 const bodyEnd = main.lastIndexOf('\\end{document}');
 if (bodyStart < 0 || bodyEnd < 0 || bodyEnd <= bodyStart) {
@@ -61,6 +77,13 @@ const copyedits = [
 for (const [from, to] of copyedits) {
   if (!body.includes(from)) fail(`copyediting anchor drifted: ${from}`);
   body = body.replace(from, to);
+}
+
+if (!body.includes('\\bibliographystyle{plain}')) fail('canonical bibliography-style anchor not found');
+body = body.replace('\\bibliographystyle{plain}\n', '');
+
+for (const label of ['tab:grammar-coverage', 'tab:assurance-summary', 'tab:application-corpus']) {
+  body = fitTableToJournalWidth(body, label);
 }
 
 const appendixMarker = '\\appendix';
