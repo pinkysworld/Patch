@@ -1,0 +1,38 @@
+name: R0 Studio browser performance preflight
+
+on:
+  push:
+    branches: [gpt/r0-browser-performance-gates-282]
+    paths:
+      - .github/workflows/r0-browser-performance-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Verify performance contract and real Chrome gate
+        run: |
+          set -euo pipefail
+          node --check scripts/studio-browser-performance-contract.js
+          node --check tests/studio-browser-performance.test.js
+          node --test tests/studio-browser-performance-contract.test.js
+          node --test tests/studio-browser-performance.test.js
+      - name: Remove one-time workflow after successful preflight
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/r0-browser-performance-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Remove Studio browser performance preflight workflow'
+          git push
