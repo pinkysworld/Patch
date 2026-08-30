@@ -253,6 +253,7 @@ jobs:
               site-navigation.css
               site-refresh.css
               studio-command-palette.css
+              docs-handbook.css
               icon.svg
               playground.js
               native-build.js
@@ -272,11 +273,23 @@ jobs:
               fetch_asset "${base}${asset}?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-smoke
             done
 
+            for handbook in tutorials examples; do
+              handbook_file="/tmp/patch-pages-${handbook}-${label}"
+              fetch_asset "${base}${handbook}.html?smoke=${cache_bust}" "$handbook_file"
+              grep -F 'data-patch-version="0.2.0-beta.36"' "$handbook_file" >/dev/null
+              grep -F "./docs-handbook.css?v=${revision}" "$handbook_file" >/dev/null
+              if [ "$handbook" = 'tutorials' ]; then
+                grep -F 'Patch handbook · Tutorials' "$handbook_file" >/dev/null
+              else
+                grep -F 'Patch handbook · Examples' "$handbook_file" >/dev/null
+              fi
+            done
+
             fetch_asset "${base}icon.svg?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-icon
             grep -F 'viewBox="0 0 512 512"' /tmp/patch-pages-icon >/dev/null
             grep -F 'aria-label="Patch Studio compiler mark"' /tmp/patch-pages-icon >/dev/null
             grep -F 'id="patch-circuit-cuts"' /tmp/patch-pages-icon >/dev/null
-            if grep -F 'M8 6H22V18H13V26H8ZM13 10H18V14H13Z' /tmp/patch-pages-icon >/dev/null; then
+            if grep -F 'M8 6H22V18H13V26H8ZM13 10H18H13Z' /tmp/patch-pages-icon >/dev/null; then
               echo "${label} icon still contains the retired inline Patch P geometry." >&2
               exit 1
             fi
