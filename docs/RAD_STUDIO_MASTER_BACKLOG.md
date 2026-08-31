@@ -109,7 +109,7 @@ Completed:
 - [x] `studio-design-cache/0.1` bounded LRU source-revision cache;
 - [x] six-Form Workshop Desk preserved by the declaration-only model;
 - [x] 10-Form / 200-control acceptance fixture;
-- [x] primary `refreshDesigner()` consumes the declaration-only cached model;
+- [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache;
 - [x] hosted and Offline Studio package the same design-model/cache modules;
 - [x] `studio-form-materialization/0.1` fully materializes only the active Designer Form;
 - [x] PaintBox, Shape, Panel, StatusBar and Table adapters obey the active-Form boundary;
