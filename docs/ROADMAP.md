@@ -20,6 +20,10 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 
 `src/native-current-contract.js` remains the authoritative product-facing native boundary. New native contracts do not become Ready merely because their implementation tests are green.
 
+### Preserved native compatibility evidence
+
+Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen direct-Table origin remains **Native GUI IR 0.8 / payload v9 / runtime v1.0**. Retaining this line is intentional and does not make it a current target; it preserves the historical backend/runtime evidence that later native contracts build on.
+
 ## Implemented next native contracts
 
 Two additive desktop lines are implemented beyond Current Ready:
