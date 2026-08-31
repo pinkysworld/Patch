@@ -22,7 +22,7 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 
 ### Preserved native compatibility evidence
 
-Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen direct-Table origin remains **Native GUI IR 0.8 / payload v9 / runtime v1.0**. Retaining this line is intentional and does not make it a current target; it preserves the historical backend/runtime evidence that later native contracts build on.
+Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the direct-Table compatibility origin. Retaining this line is intentional and does not make it a current target; it preserves the historical backend/runtime evidence that later native contracts build on.
 
 ## Implemented next native contracts
 
