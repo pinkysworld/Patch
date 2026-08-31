@@ -1,0 +1,177 @@
+name: Patch Windows PE Icon Runtime v1.10
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/windows-pe-icon-v110.js'
+      - 'src/native-window-icon-packaging.js'
+      - 'src/native-window-icon-package-v110.js'
+      - 'src/sealed-native-gui-v19.js'
+      - 'src/native-gui-ir-v19.js'
+      - 'native-runtime/win32-sealed-gui-v110.cpp'
+      - 'native-runtime/sealed-window-icon-v110.hpp'
+      - 'examples/window-icons-native.patch'
+      - 'tests/windows-pe-icon-v110.test.js'
+      - 'tests/native-window-icon-package-v110.test.js'
+      - '.github/workflows/windows-pe-icon-v110.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test bounded PE icon slot and package-plan contract
+        run: node --test tests/windows-pe-icon-v110.test.js tests/native-window-icon-package-v110.test.js
+
+  windows-real-pe:
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+
+      - name: Generate deterministic runtime icon placeholder resource
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-pe-icon-v110 | Out-Null
+          @'
+          import fs from 'node:fs';
+          import { createWindowsPeIconPlaceholderIcoV110 } from '../src/windows-pe-icon-v110.js';
+          const data = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAACX0lEQVR42u3UMQEAAAjDsOmcfx9gAAfkiIEeTdsBfooIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAQYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGAAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAcFlwKx7E858ZqQAAAABJRU5ErkJggg==';
+          const png = new Uint8Array(Buffer.from(data, 'base64'));
+          fs.writeFileSync('dist-pe-icon-v110/runtime-placeholder.ico', createWindowsPeIconPlaceholderIcoV110(png));
+          fs.writeFileSync('dist-pe-icon-v110/runtime-placeholder.rc', '1 ICON "runtime-placeholder.ico"\r\n');
+          '@ | Set-Content dist-pe-icon-v110/generate-placeholder.mjs -Encoding utf8
+          node dist-pe-icon-v110/generate-placeholder.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Runtime icon placeholder generation failed.' }
+
+      - name: Build Win32 runtime v1.10 with reserved RT_ICON slot
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $repo = $env:GITHUB_WORKSPACE
+          $dist = Join-Path $repo 'dist-pe-icon-v110'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            "cd /d `"$repo`"",
+            "pushd `"$dist`"",
+            'rc.exe /nologo /fo runtime-placeholder.res runtime-placeholder.rc',
+            'if errorlevel 1 exit /b %errorlevel%',
+            'popd',
+            "cd /d `"$repo`"",
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v110.cpp dist-pe-icon-v110\runtime-placeholder.res user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-pe-icon-v110\patch-windows-native-gui-runtime-v110.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content dist-pe-icon-v110/build-runtime.cmd -Encoding ascii
+          & cmd.exe /d /c '.\dist-pe-icon-v110\build-runtime.cmd'
+          if ($LASTEXITCODE -ne 0) { throw "MSVC/RC runtime build failed with exit code $LASTEXITCODE." }
+
+      - name: Build self-contained v1.10 Windows package plan
+        shell: pwsh
+        run: |
+          @'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import { compile } from '../src/compiler.js';
+          import { buildNativeGuiIRV19 } from '../src/native-gui-ir-v19.js';
+          import { decodeNativeGuiPayloadV19 } from '../src/sealed-native-gui-v19.js';
+          import { createNativeWindowIconPackagePlanV110 } from '../src/native-window-icon-package-v110.js';
+          import { inspectWindowsPeApplicationIconV110 } from '../src/windows-pe-icon-v110.js';
+
+          const projectPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAG40lEQVR4Ae3WQQ0AIBAEsROBbCTiBYKO6QMD7GXSWftczx+4geYNjOGbw9vd7v8GBICACDB8AwIQHp8CKEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACOABYkQlNm0HpoMAAAAASUVORK5CYII=';
+          const onePixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const projectPng = new Uint8Array(Buffer.from(projectPngBase64, 'base64'));
+          const makeResource = (id, data) => {
+            const bytes = Buffer.from(data, 'base64');
+            return {
+              id,
+              path: `resources/${id.replaceAll('.', '-')}.png`,
+              mediaType: 'image/png',
+              size: bytes.length,
+              sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+              data
+            };
+          };
+          const resources = [
+            makeResource('app.icon', projectPngBase64),
+            makeResource('about.icon', onePixel),
+            makeResource('icons.open', onePixel)
+          ];
+          const source = fs.readFileSync('examples/window-icons-native.patch', 'utf8');
+          const ir = buildNativeGuiIRV19(compile(source, { name: 'WindowIconRuntime', kind: 'window' }));
+          const runtime = new Uint8Array(fs.readFileSync('dist-pe-icon-v110/patch-windows-native-gui-runtime-v110.exe'));
+          const placeholder = inspectWindowsPeApplicationIconV110(runtime);
+          if (placeholder.currentSize !== placeholder.capacity || placeholder.groupSize !== placeholder.capacity) throw new Error('Linked runtime did not preserve the reserved PE icon capacity.');
+
+          const plan = createNativeWindowIconPackagePlanV110(runtime, ir, {
+            platform: 'windows',
+            name: 'WindowIconRuntime',
+            resources
+          });
+          if (plan.version !== '0.2' || !plan.peIconEmbedded || !plan.windowsPeIcon) throw new Error('Windows package plan did not report embedded PE icon state.');
+          const executable = plan.files.find(file => file.path === 'WindowIconRuntime.exe');
+          if (!executable) throw new Error('Windows package plan did not emit its executable.');
+          if (executable.bytes.length !== plan.sealedBytes.length) throw new Error('PE icon embedding unexpectedly changed executable length.');
+          const icon = inspectWindowsPeApplicationIconV110(executable.bytes);
+          if (icon.currentSize !== projectPng.length || icon.groupSize !== projectPng.length || icon.width !== 256 || icon.height !== 256) throw new Error('Packaged PE resource metadata is inconsistent.');
+          decodeNativeGuiPayloadV19(executable.bytes);
+          fs.writeFileSync('dist-pe-icon-v110/WindowIconRuntime.exe', executable.bytes);
+          '@ | Set-Content dist-pe-icon-v110/package-plan.mjs -Encoding utf8
+          node dist-pe-icon-v110/package-plan.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Windows v1.10 package-plan build failed.' }
+
+      - name: Verify Windows extracts the project-specific EXE icon
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $path = (Resolve-Path 'dist-pe-icon-v110/WindowIconRuntime.exe').Path
+          $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path)
+          if (-not $icon) { throw 'Windows did not extract an associated application icon from the packaged EXE.' }
+          $bitmap = $icon.ToBitmap()
+          try {
+            $pixel = $bitmap.GetPixel([Math]::Floor($bitmap.Width / 2), [Math]::Floor($bitmap.Height / 2))
+            Write-Host "Extracted icon ${($bitmap.Width)}x${($bitmap.Height)} center RGB=$($pixel.R),$($pixel.G),$($pixel.B)"
+            if ($pixel.B -lt 180 -or $pixel.G -lt 100 -or $pixel.R -gt 80) {
+              throw "Extracted EXE icon does not match the blue project icon; center RGB=$($pixel.R),$($pixel.G),$($pixel.B)."
+            }
+          } finally {
+            $bitmap.Dispose()
+            $icon.Dispose()
+          }
+
+      - name: Smoke packaged runtime after PE patch
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath (Resolve-Path 'dist-pe-icon-v110/WindowIconRuntime.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Packaged Window icon runtime smoke failed with exit code $($process.ExitCode)." }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-windows-pe-icon-v110-pr
+          path: |
+            dist-pe-icon-v110/WindowIconRuntime.exe
+            dist-pe-icon-v110/runtime-placeholder.ico
+          if-no-files-found: error
+          retention-days: 7
