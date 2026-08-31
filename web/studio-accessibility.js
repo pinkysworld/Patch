@@ -121,6 +121,7 @@ function installWorkspaceLayoutV2() {
   let ratio = readRatio();
   let totalHeight = 0;
   let dragging = null;
+  let resizeFrame = 0;
 
   installWorkspaceStyles();
 
@@ -159,7 +160,8 @@ function installWorkspaceLayoutV2() {
     dragging = {
       pointerId: event.pointerId,
       startY: event.clientY,
-      startSource: source.getBoundingClientRect().height
+      startSource: source.getBoundingClientRect().height,
+      startRatio: ratio
     };
     handle.setPointerCapture?.(event.pointerId);
     workspace.classList.add('workspace-layout-resizing');
@@ -172,14 +174,20 @@ function installWorkspaceLayoutV2() {
     applySourceHeight(sourceHeight, { persist: false });
   });
 
-  const finishPointerResize = event => {
+  handle.addEventListener('pointerup', event => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
     dragging = null;
     workspace.classList.remove('workspace-layout-resizing');
     persistRatio();
-  };
-  handle.addEventListener('pointerup', finishPointerResize);
-  handle.addEventListener('pointercancel', finishPointerResize);
+  });
+
+  handle.addEventListener('pointercancel', event => {
+    if (!dragging || event.pointerId !== dragging.pointerId) return;
+    const startRatio = dragging.startRatio;
+    dragging = null;
+    workspace.classList.remove('workspace-layout-resizing');
+    applyRatio(startRatio, { persist: false });
+  });
 
   handle.addEventListener('keydown', event => {
     if (narrow.matches) return;
@@ -211,14 +219,17 @@ function installWorkspaceLayoutV2() {
     if (narrow.matches) {
       clearSizedLayout();
     } else {
-      requestAnimationFrame(() => {
-        captureNaturalHeight();
-        applyRatio(ratio, { persist: false });
-      });
+      requestAnimationFrame(() => recaptureGeometry());
     }
   };
   if (typeof narrow.addEventListener === 'function') narrow.addEventListener('change', onBreakpointChange);
   else narrow.addListener?.(onBreakpointChange);
+
+  window.addEventListener('resize', () => {
+    if (narrow.matches || dragging) return;
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(recaptureGeometry);
+  }, { passive: true });
 
   function captureNaturalHeight() {
     if (narrow.matches) return;
@@ -228,6 +239,15 @@ function installWorkspaceLayoutV2() {
     if (!totalHeight || (!workspace.style.getPropertyValue('--workspace-source-height') && measured > 0)) {
       totalHeight = Math.max(minSource + minResult, measured);
     }
+  }
+
+  function recaptureGeometry() {
+    if (narrow.matches || dragging) return;
+    const preservedRatio = ratio;
+    clearSizedLayout({ sync: false });
+    totalHeight = 0;
+    captureNaturalHeight();
+    applyRatio(preservedRatio, { persist: false });
   }
 
   function applySourceHeight(requested, options = {}) {
@@ -254,11 +274,11 @@ function installWorkspaceLayoutV2() {
     applySourceHeight(totalHeight * ratio, options);
   }
 
-  function clearSizedLayout() {
+  function clearSizedLayout(options = {}) {
     workspace.style.removeProperty('--workspace-source-height');
     workspace.style.removeProperty('--workspace-result-height');
     delete workspace.dataset.workspaceSized;
-    syncSeparator();
+    if (options.sync !== false) syncSeparator();
   }
 
   function syncSeparator() {
@@ -319,7 +339,7 @@ function installWorkspaceStyles() {
     .workspace-layout-reset { min-height: 26px; padding: 3px 7px; font-size: 9px; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .source-workspace { height: var(--workspace-source-height); min-height: 320px; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .source-workspace > .pane { height: 100%; min-height: 0; }
-    .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] .editor-pane textarea { height: calc(100% - 42px); min-height: 0; resize: none; }
+    .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] .editor-pane textarea { flex: 1 1 auto; height: auto; min-height: 0; resize: none; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] .project-outline-tree { height: calc(100% - 42px); min-height: 0; max-height: none; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane { height: var(--workspace-result-height); min-height: 480px; }
     .workspace[data-workspace-layout="v2"][data-workspace-sized="true"] > .result-pane > pre,
