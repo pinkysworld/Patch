@@ -32,3 +32,9 @@ test('event-contract repairs are scoped to the named handler line', () => {
   assert.match(diagnostics, /\\s\*when\\s\+/);
   assert.match(diagnostics, /Patch keeps each GUI control’s event contract explicit/);
 });
+
+test('location-free native build stops still reach the structured Smart Diagnostics card', () => {
+  assert.match(surface, /Native build stopped:/);
+  assert.match(surface, /code: 'PATCH2900'/);
+  assert.match(surface, /diagnosticFromError\(\.\.\., \{ phase: 'build' \}\)/);
+});
