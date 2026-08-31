@@ -166,14 +166,30 @@ function renderSmartDiagnostic(text) {
 export function parseFormattedDiagnostic(text) {
   const source = String(text ?? '');
   const match = source.match(/\b(PATCH\d{4})(?:\s+([^\s:]+):(\d+):(\d+))?\s+([^\n]+)/);
-  if (!match) return null;
-  return {
-    code: match[1],
-    message: match[5].trim(),
-    location: match[3]
-      ? { entry: match[2] || 'main.patch', line: Number(match[3]), column: Number(match[4]) }
-      : null
-  };
+  if (match) {
+    return {
+      code: match[1],
+      message: match[5].trim(),
+      location: match[3]
+        ? { entry: match[2] || 'main.patch', line: Number(match[3]), column: Number(match[4]) }
+        : null
+    };
+  }
+
+  // Native build transport/target failures can be intentionally location-free.
+  // Map the builder's canonical visible stop prefix to the same PATCH2900 class
+  // used by diagnosticFromError(..., { phase: 'build' }) instead of guessing a
+  // source location or teaching the UI individual backend error strings.
+  const nativeStop = source.match(/(?:^|\n)Native build stopped:\s*\n([^\n]+)/i);
+  if (nativeStop) {
+    return {
+      code: 'PATCH2900',
+      message: nativeStop[1].trim(),
+      location: null
+    };
+  }
+
+  return null;
 }
 
 function renderSmartCard(diagnostic, assist) {
