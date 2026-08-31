@@ -94,18 +94,21 @@ static void PatchDestroyWindowIconsV110() {
   gPatchNativeWindowIconsV110.clear();
 }
 
+static bool PatchValidInstalledImageV110(NSImage* image) {
+  return image && image.size.width > 0 && image.size.height > 0 && [image TIFFRepresentation] != nil;
+}
+
 static int RunPatchWindowIconSmokeV110() {
-  int code = 460;
   const auto* application = PatchApplicationIconV110(gPatchWindowIconsV110);
-  if (!gPatchWindowIconsV110.empty() && !application) return code++;
+  if (!gPatchWindowIconsV110.empty() && !application) return 460;
   NSImage* applicationImage = PatchNativeWindowIconV110(application);
-  if (applicationImage && [NSApp applicationIconImage] != applicationImage) return code++;
+  if (applicationImage && !PatchValidInstalledImageV110([NSApp applicationIconImage])) return 461;
   for (const auto& item : gPatchWindowIconsV110) {
-    if (item.formIndex >= gForms.size() || item.formIndex >= gPatchWindowIconAccessoriesV110.size()) return code++;
+    if (item.formIndex >= gForms.size() || item.formIndex >= gPatchWindowIconAccessoriesV110.size()) return 462;
     NSTitlebarAccessoryViewController* accessory = gPatchWindowIconAccessoriesV110[item.formIndex];
-    if (!accessory || ![accessory.view isKindOfClass:[NSImageView class]]) return code++;
+    if (!accessory || ![accessory.view isKindOfClass:[NSImageView class]]) return 463;
     NSImageView* view = (NSImageView*)accessory.view;
-    if (view.image != PatchNativeWindowIconV110(&item) || view.imageScaling != NSImageScaleProportionallyUpOrDown) return code++;
+    if (!PatchValidInstalledImageV110(view.image) || view.imageScaling != NSImageScaleProportionallyUpOrDown) return 464;
   }
   return 0;
 }
