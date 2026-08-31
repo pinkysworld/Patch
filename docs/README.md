@@ -45,7 +45,9 @@ Component-specific documents such as `TABLE.md`, `TREEVIEW_STAGE1.md`, `TABS.md`
 - [`FORMAL_MODEL.md`](FORMAL_MODEL.md) - mechanized/formal model boundary.
 - [`CALL_SITE_VALIDATION.md`](CALL_SITE_VALIDATION.md) - independent raw-source call-site validation.
 - [`CONTROLLED_EVALUATION.md`](CONTROLLED_EVALUATION.md) - controlled evaluation methodology and evidence rules.
-- [`SECURITY.md`](SECURITY.md) and related security/extension-case documents - security assumptions, case studies and evaluation notes.
+- [`THREAT_MODEL.md`](THREAT_MODEL.md) - Studio, native, release and supply-chain trust boundaries.
+- [`SECURITY_MAINTENANCE.md`](SECURITY_MAINTENANCE.md) and [`SECURITY_REVIEW_CHECKLIST.md`](SECURITY_REVIEW_CHECKLIST.md) - maintenance and review gates.
+- [`SECURITY_CASE_STUDIES.md`](SECURITY_CASE_STUDIES.md) - security evaluation case studies.
 
 Research and assurance documents may intentionally describe narrower historical proof boundaries than the current product feature set. Product version growth must not be read as automatic proof-coverage growth.
 
