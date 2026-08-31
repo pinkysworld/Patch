@@ -8,8 +8,9 @@ import { createOfflineLinkPlan, materializeOfflineLinkPlan } from '../src/offlin
 import { decodeSealedConsolePayload } from '../src/prebuilt-native.js';
 import { decodeNativeGuiPayloadV12, inspectNativeGuiTreesV12 } from '../src/sealed-native-gui-v12.js';
 import { inspectNativeGuiSlidersV13 } from '../src/sealed-native-gui-v13.js';
-import { decodeNativeGuiPayloadV14, inspectNativeGuiChromeV14, inspectNativeGuiSlidersV14 } from '../src/sealed-native-gui-v14.js';
+import { inspectNativeGuiChromeV14 } from '../src/sealed-native-gui-v14.js';
 import { decodeNativeGuiPayloadV17, inspectNativeGuiPaintImagesV17, inspectNativeGuiChromeV17, inspectNativeGuiSlidersV17 } from '../src/sealed-native-gui-v17.js';
+import { decodeNativeGuiPayloadV18, inspectNativeGuiButtonImagesV18 } from '../src/sealed-native-gui-v18.js';
 import { inspectNativeGuiPaintBoxesV16 } from '../src/sealed-native-gui-v16.js';
 import { inspectNativeGuiShapesV15 } from '../src/sealed-native-gui-v15.js';
 
@@ -67,6 +68,15 @@ when poster clicked:
   change status:
     set = "Picture"
 `;
+const buttonImageWindowSource = fs.readFileSync('examples/button-imagelist-window.patch', 'utf8');
+const buttonImageResource = Object.freeze({
+  id: 'icons.open',
+  path: 'resources/open.png',
+  mediaType: 'image/png',
+  size: 70,
+  sha256: 'd126901e8b7f82749aee7b7c0ec59838286c9f8d75ffc74147f34ac2b4bad460',
+  data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg=='
+});
 
 function footerVersion(bytes) {
   return new DataView(bytes.buffer, bytes.byteOffset + bytes.length - 12, 4).getUint32(0, true);
@@ -74,8 +84,11 @@ function footerVersion(bytes) {
 function executableFrom(plan, platform) {
   return platform === 'macos' ? plan.files.find(file => file.path.startsWith('Contents/MacOS/')) : plan.files[0];
 }
+function currentPayloadV17(bytes) {
+  return inspectNativeGuiButtonImagesV18(decodeNativeGuiPayloadV18(bytes)).payloadV17;
+}
 function currentPayloadV16(bytes) {
-  return inspectNativeGuiPaintImagesV17(decodeNativeGuiPayloadV17(bytes)).payloadV16;
+  return inspectNativeGuiPaintImagesV17(currentPayloadV17(bytes)).payloadV16;
 }
 function currentPayloadV15(bytes) {
   return inspectNativeGuiPaintBoxesV16(currentPayloadV16(bytes)).payloadV15;
@@ -86,6 +99,12 @@ function currentPayloadV14(bytes) {
 function currentPayloadV13(bytes) {
   return inspectNativeGuiChromeV14(currentPayloadV14(bytes)).payloadV13;
 }
+
+const desktopCases = [
+  ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0]), 'OfflineWindow.exe'],
+  ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]), 'OfflineWindow'],
+  ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0]), 'OfflineWindow.app']
+];
 
 test('offline linker seals Console source into a local Windows executable plan', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 1, 2, 3, 4]);
@@ -99,50 +118,55 @@ test('offline linker seals Console source into a local Windows executable plan',
   assert.deepEqual([...decoded.runtime], [...runtime]);
 });
 
-test('offline linker lowers current Window source to Native GUI IR 1.7 and seals payload v17', () => {
-  const cases = [
-    ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0]), 'OfflineWindow.exe'],
-    ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]), 'OfflineWindow'],
-    ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0]), 'OfflineWindow.app']
-  ];
-  for (const [platform, runtime, suggestedOutput] of cases) {
+test('offline linker lowers current Window source to Native GUI IR 1.8 and seals payload v18', () => {
+  for (const [platform, runtime, suggestedOutput] of desktopCases) {
     const plan = createOfflineLinkPlan(windowSource, { platform, name: 'OfflineWindow', guiRuntime: runtime });
     assert.equal(plan.kind, 'window');
     assert.equal(plan.suggestedOutput, suggestedOutput);
     const executable = executableFrom(plan, platform);
-    assert.ok(decodeNativeGuiPayloadV17(executable.bytes).length > 0);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.ok(currentPayloadV17(executable.bytes).length > 0);
+    assert.equal(footerVersion(executable.bytes), 18);
   }
 });
 
-test('offline Window linker preserves Table in the current payload v14 contract', () => {
-  for (const [platform, runtime] of [
-    ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
-    ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
-    ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0])]
-  ]) {
+test('offline Window linker transports one deduplicated Button ImageList asset to two consumers', () => {
+  for (const [platform, runtime] of desktopCases) {
+    const plan = createOfflineLinkPlan(buttonImageWindowSource, {
+      platform,
+      name: 'ButtonImageReady',
+      guiRuntime: runtime,
+      resources: [buttonImageResource]
+    });
+    const executable = executableFrom(plan, platform);
+    const inspected = inspectNativeGuiButtonImagesV18(decodeNativeGuiPayloadV18(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 18);
+    assert.equal(inspected.assets.length, 1);
+    assert.equal(inspected.assets[0].resourceId, 'icons.open');
+    assert.equal(inspected.consumers.length, 2);
+    assert.deepEqual(inspected.consumers.map(item => item.assetIndex), [0, 0]);
+  }
+});
+
+test('offline Window linker preserves Table in the current compatibility chain', () => {
+  for (const [platform, runtime] of desktopCases) {
     const plan = createOfflineLinkPlan(tableWindowSource, { platform, name: 'SealedTable', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
     const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const payload = new TextDecoder().decode(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.match(payload, /Name/);
     assert.match(payload, /Grace/);
     assert.match(payload, /Scientist/);
   }
 });
 
-test('offline Window linker preserves persistent list state and multi-select ListBox in payload v14', () => {
-  for (const [platform, runtime] of [
-    ['windows', Uint8Array.from([0x4d, 0x5a, 0, 0])],
-    ['linux', Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0])],
-    ['macos', Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0])]
-  ]) {
+test('offline Window linker preserves persistent list state and multi-select ListBox in the current compatibility chain', () => {
+  for (const [platform, runtime] of desktopCases) {
     const plan = createOfflineLinkPlan(listWindowSource, { platform, name: 'SealedMulti', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
     const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const payload = new TextDecoder().decode(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.match(payload, /fruits/);
     assert.match(payload, /Banana/);
     assert.match(payload, /Mango/);
@@ -165,33 +189,25 @@ when pin_item clicked:
     set = true
 `;
 
-test('offline Window linker preserves decorated Menu metadata in payload v14', () => {
-  for (const [platform, runtime] of [
-    ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
-    ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
-    ['macos', Uint8Array.from([0xcf,0xfa,0xed,0xfe,0])]
-  ]) {
-    const plan=createOfflineLinkPlan(menuWindowSource,{platform,name:'SealedMenu',guiRuntime:runtime});
-    const executable=executableFrom(plan,platform);
-    const metadata=inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
-    const payload=new TextDecoder().decode(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes),17);
-    assert.match(payload,/advanced_action/);
-    assert.match(payload,/Primary|advanced|pinned/);
+test('offline Window linker preserves decorated Menu metadata in the current compatibility chain', () => {
+  for (const [platform, runtime] of desktopCases) {
+    const plan = createOfflineLinkPlan(menuWindowSource, { platform, name: 'SealedMenu', guiRuntime: runtime });
+    const executable = executableFrom(plan, platform);
+    const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
+    const payload = new TextDecoder().decode(metadata.payloadV12);
+    assert.equal(footerVersion(executable.bytes), 18);
+    assert.match(payload, /advanced_action/);
+    assert.match(payload, /Primary|advanced|pinned/);
   }
 });
 
-test('offline Window linker supports hierarchical TreeView through payload v14 on all Ready desktop hosts', () => {
-  for (const [platform, runtime] of [
-    ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
-    ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
-    ['macos', Uint8Array.from([0xcf,0xfa,0xed,0xfe,0])]
-  ]) {
+test('offline Window linker supports hierarchical TreeView through the current compatibility chain on all Ready desktop hosts', () => {
+  for (const [platform, runtime] of desktopCases) {
     const plan = createOfflineLinkPlan(treeWindowSource, { platform, name: 'TreeReady', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
     const metadata = inspectNativeGuiSlidersV13(currentPayloadV13(executable.bytes));
     const { trees } = inspectNativeGuiTreesV12(metadata.payloadV12);
-    assert.equal(footerVersion(executable.bytes), 17);
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.equal(trees.length, 1);
     assert.equal(trees[0].id, 'files');
     assert.equal(trees[0].nodes.length, 5);
@@ -199,16 +215,12 @@ test('offline Window linker supports hierarchical TreeView through payload v14 o
   }
 });
 
-test('offline Window linker supports native Slider numeric events in payload v14', () => {
-  for (const [platform, runtime] of [
-    ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
-    ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
-    ['macos', Uint8Array.from([0xcf,0xfa,0xed,0xfe,0])]
-  ]) {
+test('offline Window linker supports native Slider numeric events through current payload v18', () => {
+  for (const [platform, runtime] of desktopCases) {
     const plan = createOfflineLinkPlan(sliderWindowSource, { platform, name: 'SliderReady', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
-    const metadata = inspectNativeGuiSlidersV17(decodeNativeGuiPayloadV17(executable.bytes));
-    assert.equal(footerVersion(executable.bytes), 17);
+    const metadata = inspectNativeGuiSlidersV17(currentPayloadV17(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 18);
     assert.equal(metadata.sliders.length, 1);
     assert.equal(metadata.sliders[0].id, 'volume');
     assert.equal(metadata.sliders[0].step, 5);
@@ -216,16 +228,12 @@ test('offline Window linker supports native Slider numeric events in payload v14
   }
 });
 
-test('offline Window linker carries Panel children, Timer ticked and PictureBox clicked through payload v14', () => {
-  for (const [platform, runtime] of [
-    ['windows', Uint8Array.from([0x4d,0x5a,0,0])],
-    ['linux', Uint8Array.from([0x7f,0x45,0x4c,0x46,0])],
-    ['macos', Uint8Array.from([0xcf,0xfa,0xed,0xfe,0])]
-  ]) {
+test('offline Window linker carries Panel children, Timer ticked and PictureBox clicked through current payload v18', () => {
+  for (const [platform, runtime] of desktopCases) {
     const plan = createOfflineLinkPlan(chromeWindowSource, { platform, name: 'ChromeReady', guiRuntime: runtime });
     const executable = executableFrom(plan, platform);
-    const inspected = inspectNativeGuiChromeV17(decodeNativeGuiPayloadV17(executable.bytes));
-    assert.equal(footerVersion(executable.bytes), 17);
+    const inspected = inspectNativeGuiChromeV17(currentPayloadV17(executable.bytes));
+    assert.equal(footerVersion(executable.bytes), 18);
     const byId = new Map(inspected.chrome.map(item => [item.id, item]));
     assert.equal(byId.get('group')?.type, 'panel');
     assert.equal(byId.get('group')?.childCount, 3);
@@ -238,8 +246,14 @@ test('offline Window linker carries Panel children, Timer ticked and PictureBox 
   }
 });
 
-test('offline linker keeps explicit payload v12 compatibility and fails closed for retired v13/v11', () => {
+test('offline linker keeps explicit payload v17 and v12 compatibility and fails closed for retired v13/v11', () => {
   const runtime = Uint8Array.from([0x4d, 0x5a, 0, 0]);
+  const v17 = createOfflineLinkPlan(sliderWindowSource, {
+    platform: 'windows', name: 'LegacySlider17', guiRuntime: runtime, guiPayloadVersion: 17
+  });
+  assert.equal(footerVersion(v17.files[0].bytes), 17);
+  assert.ok(decodeNativeGuiPayloadV17(v17.files[0].bytes).length > 0);
+
   const v12 = createOfflineLinkPlan(treeWindowSource, {
     platform: 'windows', name: 'LegacyTree12', guiRuntime: runtime, guiPayloadVersion: 12
   });
@@ -252,7 +266,7 @@ test('offline linker keeps explicit payload v12 compatibility and fails closed f
   for (const version of [13, 11]) {
     assert.throws(() => createOfflineLinkPlan(listWindowSource, {
       platform: 'windows', name: `LegacyList${version}`, guiRuntime: runtime, guiPayloadVersion: version
-    }), /payload v12 or v17/i);
+    }), /payload v12, v17 or current v18/i);
   }
 });
 
@@ -312,6 +326,40 @@ test('patch CLI exposes link using an injected offline Console runtime', () => {
       assert.ok(fs.existsSync(expected));
       assert.match(stdout, /backend: local Patch compilation \+ embedded native runtime sealing/);
     }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('patch CLI accepts validated local resource JSON for current Button image linking', { skip: process.platform === 'freebsd' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-button-cli-test-'));
+  try {
+    const source = path.join(dir, 'button.patch');
+    const resources = path.join(dir, 'resources.json');
+    const runtime = path.join(dir, 'gui-runtime.bin');
+    const out = path.join(dir, 'ButtonCli');
+    const runtimeBytes = process.platform === 'win32'
+      ? Uint8Array.from([0x4d, 0x5a, 0, 0])
+      : process.platform === 'darwin'
+        ? Uint8Array.from([0xcf, 0xfa, 0xed, 0xfe, 0])
+        : Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 0]);
+    fs.writeFileSync(source, buttonImageWindowSource, 'utf8');
+    fs.writeFileSync(resources, JSON.stringify([buttonImageResource]), 'utf8');
+    fs.writeFileSync(runtime, runtimeBytes);
+    execFileSync(process.execPath, [
+      'src/cli-entry.js', 'link', source, '--out', out, '--name', 'ButtonCli', '--resources', resources
+    ], {
+      cwd: process.cwd(),
+      env: { ...process.env, PATCH_OFFLINE_GUI_RUNTIME: runtime },
+      encoding: 'utf8'
+    });
+    const expected = process.platform === 'win32'
+      ? `${out}.exe`
+      : process.platform === 'darwin'
+        ? path.join(`${out}.app`, 'Contents', 'MacOS', 'ButtonCli')
+        : out;
+    const sealed = fs.readFileSync(expected);
+    assert.equal(sealed.readUInt32LE(sealed.length - 12), 18);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
