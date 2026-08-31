@@ -19,7 +19,16 @@ test('diagnostic assist explains that Window is the GUI project type, not Window
   assert.equal(assist.format, PATCH_DIAGNOSTIC_ASSIST_FORMAT);
   assert.equal(assist.version, PATCH_DIAGNOSTIC_ASSIST_VERSION);
   assert.match(assist.why, /not Microsoft Windows/i);
-  assert.match(assist.recommendation, /current macOS native build path/i);
+  assert.match(assist.recommendation, /already selected/i);
+  assert.match(assist.recommendation, /contract mismatch/i);
+  assert.equal(assist.fix, null);
+});
+
+test('diagnostic assist can select a compatible native target when another target is active', () => {
+  const assist = buildDiagnosticAssist(
+    diagnostic('TreeView is not enabled for this Window target. Select a TreeView-capable target or enable its versioned TreeView runtime contract; validation fails closed otherwise.'),
+    { platform: 'macos', buildTarget: 'web' }
+  );
   assert.deepEqual(assist.fix, {
     kind: 'select-build-target',
     value: 'native-macos',
@@ -43,6 +52,36 @@ test('diagnostic assist proposes one unambiguous near-miss Form repair', () => {
   assert.match(assist.recommendation, /settings/);
   assert.equal(assist.fix.kind, 'replace-token-on-line');
   assert.equal(applyDiagnosticFix(source, assist.fix).split('\n')[5], '  open form settings');
+});
+
+test('diagnostic assist repairs a TreeView event contract mismatch', () => {
+  const source = [
+    'window "Tree" as main size 500, 400:',
+    '  tree as navigation at 20, 20 size 220, 260:',
+    '    item "Root"',
+    'when navigation clicked:',
+    '  show "selected"'
+  ].join('\n');
+  const assist = buildDiagnosticAssist(
+    diagnostic("TreeView 'navigation' exposes only 'changed' for transient node-path selection, not 'clicked'.", 4),
+    { source }
+  );
+  assert.equal(assist.fix?.kind, 'replace-event-on-line');
+  assert.equal(assist.fix?.from, 'clicked');
+  assert.equal(assist.fix?.to, 'changed');
+  assert.equal(applyDiagnosticFix(source, assist.fix).split('\n')[3], 'when navigation changed:');
+});
+
+test('event repair does not alter a different event line', () => {
+  const source = [
+    'window "Tree" as main size 500, 400:',
+    '  tree as navigation at 20, 20 size 220, 260:',
+    '    item "Root"',
+    'when other clicked:',
+    '  show "selected"'
+  ].join('\n');
+  const fix = { kind: 'replace-event-on-line', line: 4, control: 'navigation', from: 'clicked', to: 'changed' };
+  assert.equal(applyDiagnosticFix(source, fix), source);
 });
 
 test('diagnostic assist proposes a unique Patch keyword spelling repair', () => {
