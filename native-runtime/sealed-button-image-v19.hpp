@@ -7,6 +7,16 @@
 #include <string>
 #include <vector>
 
+// Runtime v1.10 compiles the proven v1.9 Button-image runtime as its private
+// compatibility layer. Normal v1.9 builds do not define these hooks and keep
+// their public entry points unchanged.
+#ifdef PATCH_WIN32_RUNTIME_V110_RESTORE_ENTRY
+#define wWinMain PATCH_WIN32_RUNTIME_V110_RESTORE_ENTRY
+#endif
+#ifdef PATCH_RUNTIME_V110_RESTORE_MAIN
+#define main PATCH_RUNTIME_V110_RESTORE_MAIN
+#endif
+
 struct PatchButtonImageAssetV19 {
   std::string resourceId;
   std::string mediaType;
