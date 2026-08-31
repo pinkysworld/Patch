@@ -7,7 +7,14 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
-import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
+import { buildNativeGuiIRV17 } from './native-gui-ir-v17.js';
+import { sealNativeGuiRuntimeV17 } from './sealed-native-gui-v17.js';
+import { resolveNativePictureResources } from './native-picture-resources.js';
+import {
+  PATCH_CURRENT_NATIVE_PAYLOAD_VERSION,
+  buildCurrentNativeGuiIR,
+  sealCurrentNativeGuiRuntime
+} from './native-current-contract.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -47,23 +54,38 @@ export function createOfflineLinkPlan(source, options = {}) {
     return binaryPlan({ platform, kind, name, sealed });
   }
 
-  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 17);
+  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? PATCH_CURRENT_NATIVE_PAYLOAD_VERSION);
+  const currentPayload = guiPayloadVersion === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION;
+  const legacyV17 = guiPayloadVersion === 17;
   validateWindowRuntimeSupport(compiled, {
     allowTables: true,
     allowLists: true,
     allowListControls: true,
     allowMenuDecorations: true,
     allowTree: true,
-    allowSlider: guiPayloadVersion === 17,
-    allowPaintBox: guiPayloadVersion === 17
+    allowSlider: currentPayload || legacyV17,
+    allowPaintBox: currentPayload || legacyV17,
+    allowImageList: currentPayload
   });
-  const nativeGui = guiPayloadVersion === 17
+
+  const nativeGui = currentPayload
     ? buildCurrentNativeGuiIR(compiled)
-    : buildFrozenNativeGuiIR(compiled);
+    : legacyV17
+      ? buildNativeGuiIRV17(compiled)
+      : buildFrozenNativeGuiIR(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
-  const sealed = guiPayloadVersion === 12
-    ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
-    : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
+  let sealed;
+  if (guiPayloadVersion === 12) {
+    sealed = sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform });
+  } else if (legacyV17) {
+    const resolved = resolveNativePictureResources(nativeGui, options.resources ?? []);
+    sealed = sealNativeGuiRuntimeV17(runtime, resolved.ir, { platform });
+  } else {
+    sealed = sealCurrentNativeGuiRuntime(runtime, nativeGui, {
+      platform,
+      resources: options.resources ?? []
+    });
+  }
   return binaryPlan({ platform, kind, name, sealed });
 }
 
@@ -180,8 +202,8 @@ function requiredRuntime(value, label) {
 
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
-  if (version === 12 || version === 17) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v17, not '${value}'.`);
+  if (version === 12 || version === 17 || version === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) return version;
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12, v17 or current v${PATCH_CURRENT_NATIVE_PAYLOAD_VERSION}, not '${value}'.`);
 }
 
 function normalizePlatform(value) {
