@@ -9,9 +9,9 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 - Patch package: **0.2.0-beta.36**
 - public product surface: **0.2 beta.36+**
 - Change IR: **0.10**
-- Current Ready Native GUI IR: **1.7**
-- Current Ready sealed native GUI payload: **v17**
-- Current Ready token-free desktop runtime: **v1.8** on Windows, macOS and Linux
+- Native GUI IR: **1.7**
+- current sealed native GUI payload: **v17**
+- current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
 - Studio project format: **multi-file/resource bundle v4**
 - Component Registry: **0.8**
 - Offline Studio manifest: **v1**, rolling channel **`offline-studio-v0.2`**
@@ -22,7 +22,7 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 
 ### Preserved native compatibility evidence
 
-Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the direct-Table compatibility origin. Retaining this line is intentional and does not make it a current target; it preserves the historical backend/runtime evidence that later native contracts build on.
+Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the direct-Table compatibility origin. The frozen TreeView compatibility line: Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains preserved as well. Retaining these lines is intentional and does not make them current targets; they preserve the historical backend/runtime evidence that later native contracts build on.
 
 ## Implemented next native contracts
 
@@ -87,10 +87,10 @@ Implemented:
 - [x] PNG/JPEG/WebP/SVG Studio/Web project resources
 - [x] Picture source-backed authoring and Standalone Web embedding
 - [x] native PNG/JPEG Picture decoding with explicit deferred WebP/SVG policy
-- [x] Shape native parity through preserved IR 1.5+
+- [x] Shape native lowering/runtime parity through preserved IR 1.5+
 - [x] PaintBox native parity through IR 1.6+
 - [x] PaintBox `draw image` through Current Ready IR 1.7 / payload v17 / runtime v1.8
-- [x] ImageList authoring/Web consumer and `native-imagelist-asset-plan/0.1`
+- [x] ImageList Stage 1 authoring/Web consumer and `native-imagelist-asset-plan/0.1`
 - [x] ImageList/Button native transport through IR 1.8 / payload v18 / runtime v1.9
 - [x] Win32/AppKit/GTK Button ImageList consumers
 - [x] source/Web Window icon contract `window-icon/1.0`
