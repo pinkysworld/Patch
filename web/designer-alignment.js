@@ -2,25 +2,48 @@ export function snapFormControlAlignment(layout, peers = [], options = {}) {
   const tolerance = Math.max(0, Number(options.tolerance ?? 5));
   const current = normalizeLayout(layout);
   const candidates = peers.map(normalizeLayout).filter(Boolean);
-  if (!current || !candidates.length) return { ...layout, guideX: null, guideY: null };
+  if (!current || !candidates.length) return emptyAlignment(layout);
 
   const xMatch = nearestAlignment(
-    [current.x, current.x + current.width / 2, current.x + current.width],
-    candidates.flatMap(peer => [peer.x, peer.x + peer.width / 2, peer.x + peer.width]),
+    axisMarks(current, 'x'),
+    candidates.flatMap(peer => axisMarks(peer, 'x')),
     tolerance
   );
   const yMatch = nearestAlignment(
-    [current.y, current.y + current.height / 2, current.y + current.height],
-    candidates.flatMap(peer => [peer.y, peer.y + peer.height / 2, peer.y + peer.height]),
+    axisMarks(current, 'y'),
+    candidates.flatMap(peer => axisMarks(peer, 'y')),
     tolerance
   );
 
-  return {
+  const spacingX = xMatch ? null : nearestEqualSpacing(current, candidates, 'x', tolerance);
+  const spacingY = yMatch ? null : nearestEqualSpacing(current, candidates, 'y', tolerance);
+  const deltaX = xMatch?.delta ?? spacingX?.delta ?? 0;
+  const deltaY = yMatch?.delta ?? spacingY?.delta ?? 0;
+  const x = Math.max(0, Math.round(current.x + deltaX));
+  const y = Math.max(0, Math.round(current.y + deltaY));
+  const result = {
     ...layout,
-    x: Math.max(0, Math.round(current.x + (xMatch?.delta ?? 0))),
-    y: Math.max(0, Math.round(current.y + (yMatch?.delta ?? 0))),
+    x,
+    y,
     guideX: xMatch?.guide ?? null,
     guideY: yMatch?.guide ?? null
+  };
+
+  // Preserve the original result shape when no richer guide is active. This
+  // keeps existing callers source-compatible while letting newer Studio UI
+  // consume additional metadata only when it has something meaningful to show.
+  if (xMatch) result.guideXKind = xMatch.kind;
+  if (yMatch) result.guideYKind = yMatch.kind;
+  if (spacingX) result.spacingX = materializeSpacing(spacingX, x, current.width);
+  if (spacingY) result.spacingY = materializeSpacing(spacingY, y, current.height);
+  return result;
+}
+
+function emptyAlignment(layout) {
+  return {
+    ...layout,
+    guideX: null,
+    guideY: null
   };
 }
 
@@ -31,21 +54,102 @@ function normalizeLayout(layout) {
   const width = Number(layout.width);
   const height = Number(layout.height);
   if (![x, y, width, height].every(Number.isFinite)) return null;
+  if (width < 0 || height < 0) return null;
   return { x, y, width, height };
+}
+
+function axisMarks(layout, axis) {
+  if (axis === 'x') {
+    return [
+      { value: layout.x, role: 'start' },
+      { value: layout.x + layout.width / 2, role: 'center' },
+      { value: layout.x + layout.width, role: 'end' }
+    ];
+  }
+  return [
+    { value: layout.y, role: 'start' },
+    { value: layout.y + layout.height / 2, role: 'center' },
+    { value: layout.y + layout.height, role: 'end' }
+  ];
 }
 
 function nearestAlignment(movingMarks, peerMarks, tolerance) {
   let best = null;
   for (const moving of movingMarks) {
     for (const peer of peerMarks) {
-      const rawDelta = peer - moving;
+      const rawDelta = peer.value - moving.value;
       if (Math.abs(rawDelta) > tolerance) continue;
       const delta = Math.round(rawDelta);
-      const residual = Math.abs((moving + delta) - peer);
+      const residual = Math.abs((moving.value + delta) - peer.value);
       if (residual > 0.51) continue;
       const distance = Math.abs(rawDelta);
-      if (!best || distance < best.distance) best = { delta, guide: peer, distance };
+      const kind = moving.role === 'center' && peer.role === 'center' ? 'center' : 'edge';
+      const rank = kind === 'center' ? 1 : 0;
+      if (!best || distance < best.distance || (distance === best.distance && rank < best.rank)) {
+        best = { delta, guide: peer.value, distance, kind, rank };
+      }
     }
   }
   return best;
+}
+
+function nearestEqualSpacing(current, peers, axis, tolerance) {
+  const startKey = axis === 'x' ? 'x' : 'y';
+  const sizeKey = axis === 'x' ? 'width' : 'height';
+  const currentStart = current[startKey];
+  const currentSize = current[sizeKey];
+  const currentEnd = currentStart + currentSize;
+  const before = peers
+    .map(peer => ({ start: peer[startKey], end: peer[startKey] + peer[sizeKey] }))
+    .filter(peer => peer.end <= currentStart + tolerance)
+    .sort((a, b) => b.end - a.end);
+  const after = peers
+    .map(peer => ({ start: peer[startKey], end: peer[startKey] + peer[sizeKey] }))
+    .filter(peer => peer.start >= currentEnd - tolerance)
+    .sort((a, b) => a.start - b.start);
+
+  let best = null;
+  for (const left of before) {
+    for (const right of after) {
+      if (left.end >= right.start) continue;
+      const available = right.start - left.end - currentSize;
+      if (available < 0) continue;
+      const desiredGap = available / 2;
+      const desiredStart = left.end + desiredGap;
+      const rawDelta = desiredStart - currentStart;
+      if (Math.abs(rawDelta) > tolerance) continue;
+      const delta = Math.round(rawDelta);
+      const snappedStart = currentStart + delta;
+      const gapBefore = snappedStart - left.end;
+      const gapAfter = right.start - (snappedStart + currentSize);
+      const residual = Math.abs(gapBefore - gapAfter);
+      if (residual > 1.01 || gapBefore < 0 || gapAfter < 0) continue;
+      const distance = Math.abs(rawDelta);
+      if (!best || distance < best.distance || (distance === best.distance && desiredGap < best.gap)) {
+        best = {
+          delta,
+          distance,
+          beforeEdge: left.end,
+          afterEdge: right.start,
+          gap: desiredGap
+        };
+      }
+    }
+  }
+  return best;
+}
+
+function materializeSpacing(match, start, size) {
+  const end = start + size;
+  const beforeGap = start - match.beforeEdge;
+  const afterGap = match.afterEdge - end;
+  return {
+    beforeEdge: match.beforeEdge,
+    afterEdge: match.afterEdge,
+    start,
+    end,
+    gap: Math.round(((beforeGap + afterGap) / 2) * 10) / 10,
+    beforeGap,
+    afterGap
+  };
 }
