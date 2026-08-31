@@ -43,7 +43,7 @@ test('runtime v1.10 sources wrap v1.9 and consume payload 19 / WICO natively', (
     assert.match(source, /RunPatchButtonImageSmokeV19/);
     assert.match(source, /RunPatchWindowIconSmokeV110/);
     assert.match(source, /sealed-window-icon-v110\.hpp/);
-    assert.match(source, /return 460/);
+    assert.match(source, /(?:return|int code =) 460/);
   }
 
   assert.match(win32, /WM_SETICON/);
