@@ -2,7 +2,7 @@
 
 Status synchronized: **2026-08-31**
 
-This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** tracks R0 architecture hardening. Issue **#319** tracks the native Window-icon implementation/promotion sequence. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
+This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the native Window-icon implementation/promotion sequence. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
 ## Product goal
 
@@ -40,7 +40,9 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 - Component Registry **0.8**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
 - Button, Input, Text, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel Stage 1 authoring;
-- source-backed Anchors/Dock, alignment/sizing/distribution, grid snap, z-order commands, Focus Order Stage 1 and Undo/Redo transactions;
+- source-backed Anchors/Dock, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Focus Order Stage 1 and Undo/Redo transactions;
+- local-only Smart Guides visibility preference with Alt/Option temporary bypass;
+- Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
 - project Resource Manager with deterministic resource metadata and recovery/export/import;
 - Standalone Web and Ready native Windows/macOS/Linux paths for the current native component contract;
 - token-free Offline Compiler/linker and sealed native runtime templates;
@@ -74,7 +76,7 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 
 # Milestone R0 - RAD foundation hardening
 
-Target: keep the source-backed Studio responsive and coherent as projects and component count grow. Issue **#282** is the active tracker.
+The R0 responsiveness/correctness milestone is complete and preserved in issue **#282** plus `docs/R0_COMPLETION.md`. Issue **#308** carries the active post-R0 maintainability, Worker-adoption and measurement-driven rendering follow-ups without reopening the completed milestone.
 
 ## P0.1 Global UI name namespace
 
@@ -169,7 +171,7 @@ Remaining:
 - [ ] reduce notification noise without weakening gates;
 - [ ] shrink Offline Compiler triggers/package closure so unrelated source changes do not rebuild every platform.
 
-**R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI.
+**R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI. The milestone itself is complete; unchecked entries above are post-R0 follow-ups tracked by #308 unless another owner is named.
 
 ---
 
@@ -297,10 +299,10 @@ The implementation side of native ImageList/Button and Window/application icons 
 ## P1.9 Grid and smart guides
 
 - [x] configurable design-grid snap and alignment actions;
-- [ ] richer edge/center/equal-spacing smart guides;
-- [ ] temporary Alt/Option bypass;
+- [x] richer edge/center/equal-spacing smart guides;
+- [x] temporary Alt/Option bypass;
 - [ ] optional rulers;
-- [ ] design-only guide visibility preferences.
+- [x] design-only guide visibility preferences.
 
 ## P1.10 Clipboard and cross-Form operations
 
@@ -635,6 +637,7 @@ A Tauri/Electron-style shell should only be adopted if it materially improves OS
 
 ## P1.34 Dockable IDE shell
 
+- [x] adjustable Source/Result Workspace Layout v2 splitter with keyboard/ARIA control and local ratio persistence;
 - [ ] fully dockable/persisted Project Explorer, Palette, Inspector, Code, Designer, Output, Diagnostics, Debugger and Assets panes;
 - [ ] split editors;
 - [ ] named layouts/reset layout;
@@ -767,8 +770,8 @@ This queue is authoritative for sequencing. Completed architecture foundations a
 
 ## Immediate queue
 
-1. Finish R0 module boundaries: extract runtime lifecycle, Window renderer, transient UI state and Build controller from `web/playground.js`.
-2. Define the Web Worker boundary and only then add Table/Tree preview virtualization where measurement justifies it.
+1. Finish R0.1 module boundaries: extract runtime lifecycle, Window renderer, transient UI state and Build controller from `web/playground.js` under #308.
+2. Measure/adopt the Web Worker boundary and only then add Table/Tree preview virtualization where measurement justifies it.
 3. Make Pages deployment release-aware and reduce expected CI notification noise without weakening fail-closed verification.
 4. Publish and verify the **runtime v1.10** Windows/macOS/Linux release assets and SHA-256 digests.
 5. Promote Offline Compiler/native linking through **IR 1.9 / payload v19 / runtime v1.10**, then switch `src/native-current-contract.js` only after the complete gate is green.
@@ -777,7 +780,7 @@ This queue is authoritative for sequencing. Completed architecture foundations a
 ## Next queue
 
 7. Independent TabOrder and visual Tab Order mode.
-8. Clipboard/Lock Controls/Layers and richer smart guides.
+8. Clipboard, Lock Controls and Layers; optional rulers remain the only open P1.9 Smart Guides item.
 9. Panel Stage 2, GroupBox, ScrollBox and SplitContainer.
 10. ToolBar/ToolButton/PopupMenu plus ActionList, reusing the implemented ImageList transport where appropriate.
 11. Memo, ProgressBar, SpinEdit and Date/Time controls.
