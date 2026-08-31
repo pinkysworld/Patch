@@ -1,0 +1,11 @@
+window "Main" as main size 460, 240 icon "patch-resource:app.icon":
+  imagelist as app_images size 20, 20:
+    image open from "patch-resource:icons.open"
+  text "Native Window icons" at 24, 24 size 220, 28
+  button "Open" as open_button image app_images.open at 24, 64 size 120, 38
+
+window "Plain child" as plain size 380, 200:
+  text "Inherits the application icon on desktop platforms" at 24, 24 size 320, 44
+
+window "About" as about size 360, 200 icon "patch-resource:about.icon":
+  text "Uses its own Form icon" at 24, 24 size 220, 28
