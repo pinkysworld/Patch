@@ -71,6 +71,8 @@ The product-facing native contract remains:
 
 **Native GUI IR 1.7 / sealed payload v17 / desktop runtime v1.8**
 
+[`src/native-current-contract.js`](src/native-current-contract.js) is the product-facing owner of that Current Ready boundary. It stays pinned until the corresponding cross-platform runtime, release, digest, and Offline Compiler promotion gates have passed.
+
 It is the current token-free Ready/offline line for Windows, macOS, and Linux. It includes the established native component surface plus Shape, PaintBox Stage 1, and bounded PNG/JPEG `draw image` support.
 
 Development beyond the Ready line is versioned separately:
