@@ -35,7 +35,7 @@ Implemented next line: **IR 1.9 / payload v19 / runtime v1.10**, including the p
 - [`BUILD_RESILIENCE.md`](BUILD_RESILIENCE.md) - build/recovery reliability boundaries.
 - [`DIAGNOSTICS.md`](DIAGNOSTICS.md) - diagnostic contracts and privacy boundaries.
 
-Component-specific documents such as `TABLE.md`, `TREEVIEW_STAGE1.md`, `TABS.md`, `LISTBOX.md`, `COMBOBOX.md` and related files remain implementation references for their individual source/runtime contracts.
+Component-specific documents such as `TREEVIEW_STAGE1.md`, `TABS.md`, `LISTBOX.md`, `COMBOBOX.md` and the Table action/compatibility references remain implementation documentation for their individual source/runtime contracts.
 
 ## Language, compiler and assurance
 
