@@ -79,6 +79,8 @@ The current source-backed Designer includes:
 - Window icon source/Web authoring;
 - active-Form materialization and keyed runtime reconciliation for large projects.
 
+Beta.36 retains **multi-select alignment and center operations**, **same width/height**, and **equal horizontal/vertical distribution** as explicit source-backed Designer capabilities. These phrases remain stable release markers because CI uses them to prevent the public milestone description from drifting behind the implemented Studio surface.
+
 R0 architecture work has already landed the declaration-only design model/cache, shared exact-source snapshots, active-Form materialization, real-Chrome Workshop/10-Form performance gates and primary Designer cache integration. Remaining R0 work is focused on module boundaries, the Worker boundary, adapter-owned incremental reconciliation and measurement-driven Table/Tree preview virtualization.
 
 ## ImageList
