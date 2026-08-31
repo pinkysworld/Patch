@@ -800,3 +800,25 @@ This queue is authoritative for sequencing. Completed architecture foundations a
 22. production signing/notarization/update/distribution evidence.
 
 ---
+
+# Definition of "Patch Studio 1.0 RAD Complete"
+
+Patch Studio can call itself a complete RAD Studio when all of the following are true:
+
+- a new GUI project can be created without manual boilerplate;
+- Forms and a practical visual/nonvisual component library are fully authorable;
+- images/icons/resources are managed visually and packaged correctly;
+- properties/events/anchors/docking/z-order/TabOrder are editable visually;
+- nested containers have real relative geometry;
+- menus/toolbars/actions/dialogs are authorable;
+- normal code navigation/completion/refactoring works;
+- breakpoints and step debugging work;
+- Undo/Redo covers visual edits;
+- projects build into functioning Windows/macOS/Linux/Web applications through Studio;
+- the installed IDE can perform normal authoring, Run and host-native Build offline without GitHub or a token;
+- the same large acceptance project passes Web and native cross-platform CI;
+- unsupported backend behavior is explicit rather than silently missing;
+- there is no hidden second semantic application model that can drift from Patch source;
+- Patch-specific semantic change authority, Change IR and causal/event inspection remain visible advantages rather than being hidden behind the RAD UI.
+
+That is the Patch Studio 1.0 bar. The objective is a Delphi/VB-class rapid workflow with Patch-native semantics, not a visual clone with a different logo.
