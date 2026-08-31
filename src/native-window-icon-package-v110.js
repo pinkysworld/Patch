@@ -1,9 +1,14 @@
 import { sealNativeGuiRuntimeV19 } from './sealed-native-gui-v19.js';
 import { validateNativeGuiIRV19 } from './native-gui-ir-v19.js';
 import { planNativeWindowIconPackaging } from './native-window-icon-packaging.js';
+import { resourceById, resourceBytes } from './studio-resources.js';
+import {
+  embedWindowsPeApplicationIconV110,
+  inspectWindowsPeApplicationIconV110
+} from './windows-pe-icon-v110.js';
 
-export const PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_VERSION = '0.1';
-export const PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID = 'native-window-icon-package-v110/0.1';
+export const PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_VERSION = '0.2';
+export const PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID = 'native-window-icon-package-v110/0.2';
 
 export class NativeWindowIconPackageV110Error extends Error {
   constructor(message, code = 'NATIVE_WINDOW_ICON_PACKAGE_V110') {
@@ -17,11 +22,11 @@ export class NativeWindowIconPackageV110Error extends Error {
  * Build a materialization-neutral package plan for the experimental
  * IR 1.9 / payload v19 / runtime v1.10 Window-icon line.
  *
- * The plan intentionally does not replace the product-facing Current Ready
- * package path. It proves which files must be emitted for each desktop host,
- * keeps the sealed v19 executable bytes explicit, and keeps Windows PE icon
- * embedding as a separate gate instead of claiming a sidecar .ico changes the
- * executable resource table.
+ * v0.2 closes the Windows single-EXE gap: when an application icon exists,
+ * the runtime template must carry the reserved windows-pe-icon-v110/0.1
+ * resource slot and the project 256x256 PNG is embedded into the sealed EXE
+ * in place. macOS and Linux continue to compose their package metadata around
+ * the same sealed payload. This does not promote the Current Ready contract.
  */
 export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options = {}) {
   const platform = normalizePlatform(options.platform);
@@ -34,7 +39,27 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
   const files = [];
 
   if (platform === 'windows') {
-    files.push(file(`${stem}.exe`, sealed, 0o100755));
+    let executableBytes = sealed;
+    let peIconEmbedded = false;
+    let windowsPeIcon = null;
+
+    if (icons.hasApplicationIcon) {
+      const resourceId = icons.applicationIcon?.resourceId;
+      const resource = resourceById(resources, resourceId);
+      if (!resource) {
+        throw new NativeWindowIconPackageV110Error(
+          `Windows application icon resource '${resourceId ?? ''}' is missing from the project resource inventory.`,
+          'NATIVE_WINDOW_ICON_PACKAGE_V110_RESOURCE_MISSING'
+        );
+      }
+      executableBytes = embedWindowsPeApplicationIconV110(sealed, resourceBytes(resource));
+      windowsPeIcon = inspectWindowsPeApplicationIconV110(executableBytes);
+      peIconEmbedded = true;
+    }
+
+    files.push(file(`${stem}.exe`, executableBytes, 0o100755));
+    // Keep the deterministic ICO as packaging/provenance material. The EXE is
+    // self-contained and does not depend on this sidecar after v0.2 embedding.
     if (icons.windows) files.push(file(icons.windows.filename, icons.windows.bytes, 0o100644));
     return freezePlan({
       platform,
@@ -42,11 +67,12 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
       stem,
       sealed,
       icons,
-      outputKind: 'experimental Windows runtime-v1.10 package plan',
+      outputKind: 'experimental Windows runtime-v1.10 self-contained package plan',
       executable: `${stem}.exe`,
       bundle: null,
       files,
-      peIconEmbedded: false
+      peIconEmbedded,
+      windowsPeIcon
     });
   }
 
@@ -69,7 +95,8 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
       executable,
       bundle,
       files,
-      peIconEmbedded: null
+      peIconEmbedded: null,
+      windowsPeIcon: null
     });
   }
 
@@ -89,14 +116,15 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
       executable: stem,
       bundle: null,
       files,
-      peIconEmbedded: null
+      peIconEmbedded: null,
+      windowsPeIcon: null
     });
   }
 
   throw new NativeWindowIconPackageV110Error(`Unsupported runtime-v1.10 package platform '${platform}'.`);
 }
 
-function freezePlan({ platform, name, stem, sealed, icons, outputKind, executable, bundle, files, peIconEmbedded }) {
+function freezePlan({ platform, name, stem, sealed, icons, outputKind, executable, bundle, files, peIconEmbedded, windowsPeIcon }) {
   return Object.freeze({
     id: PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID,
     version: PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_VERSION,
@@ -112,6 +140,7 @@ function freezePlan({ platform, name, stem, sealed, icons, outputKind, executabl
     executable,
     bundle,
     peIconEmbedded,
+    windowsPeIcon,
     sealedBytes: sealed,
     iconPackaging: icons,
     files: Object.freeze(files)
