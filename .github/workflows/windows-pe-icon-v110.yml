@@ -13,6 +13,7 @@ on:
       - 'native-runtime/sealed-window-icon-v110.hpp'
       - 'examples/window-icons-native.patch'
       - 'tests/windows-pe-icon-v110.test.js'
+      - 'tests/native-window-icon-package-v110.test.js'
       - '.github/workflows/windows-pe-icon-v110.yml'
   workflow_dispatch:
 
@@ -33,8 +34,8 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Test bounded PE icon slot and in-place patch contract
-        run: node --test tests/windows-pe-icon-v110.test.js
+      - name: Test bounded PE icon slot and package-plan contract
+        run: node --test tests/windows-pe-icon-v110.test.js tests/native-window-icon-package-v110.test.js
 
   windows-real-pe:
     needs: contract
@@ -54,7 +55,7 @@ jobs:
           @'
           import fs from 'node:fs';
           import { createWindowsPeIconPlaceholderIcoV110 } from '../src/windows-pe-icon-v110.js';
-          const data = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAACX0lEQVR42u3UMQEAAAjDsOmcfx9gAAfkiIEeTdsBfooIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAQYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGAAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAcFlwKx7E858ZqQAAAABJRU5ErkJggg==';
+          const data = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAACX0lEQVR42u3UMQEAAAjDsOmcfx9gAAfkiIEeTdsBfooIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAQYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGAAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAcFlwKx7E858ZqQAAAABJRU5ErkJggg==';
           const png = new Uint8Array(Buffer.from(data, 'base64'));
           fs.writeFileSync('dist-pe-icon-v110/runtime-placeholder.ico', createWindowsPeIconPlaceholderIcoV110(png));
           fs.writeFileSync('dist-pe-icon-v110/runtime-placeholder.rc', '1 ICON "runtime-placeholder.ico"\r\n');
@@ -87,7 +88,7 @@ jobs:
           & cmd.exe /d /c '.\dist-pe-icon-v110\build-runtime.cmd'
           if ($LASTEXITCODE -ne 0) { throw "MSVC/RC runtime build failed with exit code $LASTEXITCODE." }
 
-      - name: Seal v19 then embed the project PE icon without changing executable length
+      - name: Build self-contained v1.10 Windows package plan
         shell: pwsh
         run: |
           @'
@@ -95,10 +96,11 @@ jobs:
           import crypto from 'node:crypto';
           import { compile } from '../src/compiler.js';
           import { buildNativeGuiIRV19 } from '../src/native-gui-ir-v19.js';
-          import { sealNativeGuiRuntimeV19, decodeNativeGuiPayloadV19 } from '../src/sealed-native-gui-v19.js';
-          import { embedWindowsPeApplicationIconV110, inspectWindowsPeApplicationIconV110 } from '../src/windows-pe-icon-v110.js';
+          import { decodeNativeGuiPayloadV19 } from '../src/sealed-native-gui-v19.js';
+          import { createNativeWindowIconPackagePlanV110 } from '../src/native-window-icon-package-v110.js';
+          import { inspectWindowsPeApplicationIconV110 } from '../src/windows-pe-icon-v110.js';
 
-          const projectPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAG40lEQVR4Ae3WQQ0AIBAEsROBbCTiBYKO6QMD7GXSWftczx+4geYNjOGbw9vd7v8GBICACDB8AwIQHp8CKEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACOABYkQlNm0HpoMAAAAASUVORK5CYII=';
+          const projectPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAG40lEQVR4Ae3WQQ0AIBAEsROBbCTiBYKO6QMD7GXSWftczx+4geYNjOGbw9vd7v8GBICACDB8AwIQHp8CKEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACEAABIAAwjcgAOHxCYAABEAACCB8AwIQHp8ACOABYkQlNm0HpoMAAAAASUVORK5CYII=';
           const onePixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
           const projectPng = new Uint8Array(Buffer.from(projectPngBase64, 'base64'));
           const makeResource = (id, data) => {
@@ -122,16 +124,23 @@ jobs:
           const runtime = new Uint8Array(fs.readFileSync('dist-pe-icon-v110/patch-windows-native-gui-runtime-v110.exe'));
           const placeholder = inspectWindowsPeApplicationIconV110(runtime);
           if (placeholder.currentSize !== placeholder.capacity || placeholder.groupSize !== placeholder.capacity) throw new Error('Linked runtime did not preserve the reserved PE icon capacity.');
-          const sealed = sealNativeGuiRuntimeV19(runtime, ir, { platform: 'windows', resources });
-          const patched = embedWindowsPeApplicationIconV110(sealed, projectPng);
-          if (patched.length !== sealed.length) throw new Error('PE icon patch unexpectedly changed executable length.');
-          const icon = inspectWindowsPeApplicationIconV110(patched);
-          if (icon.currentSize !== projectPng.length || icon.groupSize !== projectPng.length || icon.width !== 256 || icon.height !== 256) throw new Error('Patched PE resource metadata is inconsistent.');
-          decodeNativeGuiPayloadV19(patched);
-          fs.writeFileSync('dist-pe-icon-v110/WindowIconRuntime.exe', patched);
-          '@ | Set-Content dist-pe-icon-v110/seal-and-patch.mjs -Encoding utf8
-          node dist-pe-icon-v110/seal-and-patch.mjs
-          if ($LASTEXITCODE -ne 0) { throw 'Sealing/PE application-icon patch failed.' }
+
+          const plan = createNativeWindowIconPackagePlanV110(runtime, ir, {
+            platform: 'windows',
+            name: 'WindowIconRuntime',
+            resources
+          });
+          if (plan.version !== '0.2' || !plan.peIconEmbedded || !plan.windowsPeIcon) throw new Error('Windows package plan did not report embedded PE icon state.');
+          const executable = plan.files.find(file => file.path === 'WindowIconRuntime.exe');
+          if (!executable) throw new Error('Windows package plan did not emit its executable.');
+          if (executable.bytes.length !== plan.sealedBytes.length) throw new Error('PE icon embedding unexpectedly changed executable length.');
+          const icon = inspectWindowsPeApplicationIconV110(executable.bytes);
+          if (icon.currentSize !== projectPng.length || icon.groupSize !== projectPng.length || icon.width !== 256 || icon.height !== 256) throw new Error('Packaged PE resource metadata is inconsistent.');
+          decodeNativeGuiPayloadV19(executable.bytes);
+          fs.writeFileSync('dist-pe-icon-v110/WindowIconRuntime.exe', executable.bytes);
+          '@ | Set-Content dist-pe-icon-v110/package-plan.mjs -Encoding utf8
+          node dist-pe-icon-v110/package-plan.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Windows v1.10 package-plan build failed.' }
 
       - name: Verify Windows extracts the project-specific EXE icon
         shell: pwsh
@@ -139,7 +148,7 @@ jobs:
           Add-Type -AssemblyName System.Drawing
           $path = (Resolve-Path 'dist-pe-icon-v110/WindowIconRuntime.exe').Path
           $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($path)
-          if (-not $icon) { throw 'Windows did not extract an associated application icon from the patched EXE.' }
+          if (-not $icon) { throw 'Windows did not extract an associated application icon from the packaged EXE.' }
           $bitmap = $icon.ToBitmap()
           try {
             $pixel = $bitmap.GetPixel([Math]::Floor($bitmap.Width / 2), [Math]::Floor($bitmap.Height / 2))
@@ -152,11 +161,11 @@ jobs:
             $icon.Dispose()
           }
 
-      - name: Smoke sealed runtime after PE patch
+      - name: Smoke packaged runtime after PE patch
         shell: pwsh
         run: |
           $process = Start-Process -FilePath (Resolve-Path 'dist-pe-icon-v110/WindowIconRuntime.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw "Patched Window icon runtime smoke failed with exit code $($process.ExitCode)." }
+          if ($process.ExitCode -ne 0) { throw "Packaged Window icon runtime smoke failed with exit code $($process.ExitCode)." }
 
       - uses: actions/upload-artifact@v7
         with:
