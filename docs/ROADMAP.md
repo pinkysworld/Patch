@@ -60,6 +60,7 @@ Completed foundations include:
 - [x] Run reuses the compiler AST and Change IR formatting is lazy
 - [x] declaration-only `studio-design-model/0.1`
 - [x] bounded `studio-design-cache/0.1`
+- [x] primary `refreshDesigner()` consumes the shared declaration-only design cache
 - [x] shared `studio-design-snapshots/0.1`
 - [x] `studio-form-materialization/0.1` with one active fully materialized Designer Form
 - [x] keyed runtime Form/control identities and `keyed-control-v2`
