@@ -10,8 +10,8 @@ static std::vector<PatchWindowIconAssetV110> gPatchWindowIconAssetsV110;
 static std::vector<PatchWindowIconConsumerV110> gPatchWindowIconsV110;
 
 struct PatchWinWindowIconAssetV110 {
-  HICON big = nullptr;
-  HICON small = nullptr;
+  HICON bigIcon = nullptr;
+  HICON smallIcon = nullptr;
 };
 static std::vector<PatchWinWindowIconAssetV110> gPatchNativeWindowIconsV110;
 
@@ -47,8 +47,8 @@ static HICON PatchCreateWindowHIconV110(Image* source, int width, int height) {
     graphics.SetInterpolationMode(InterpolationModeHighQualityBicubic);
     graphics.DrawImage(source, 0, 0, width, height);
   }
-  HICON icon = nullptr;
-  return scaled.GetHICON(&icon) == Ok ? icon : nullptr;
+  HICON iconHandle = nullptr;
+  return scaled.GetHICON(&iconHandle) == Ok ? iconHandle : nullptr;
 }
 
 static bool PatchPrepareWindowIconsV110() {
@@ -60,15 +60,15 @@ static bool PatchPrepareWindowIconsV110() {
   for (size_t index = 0; index < gPatchWindowIconAssetsV110.size(); ++index) {
     PatchButtonSourceImageV19 source;
     if (!PatchDecodeButtonSourceImageV19(gPatchWindowIconAssetsV110[index].dataUri, source)) return false;
-    HICON big = PatchCreateWindowHIconV110(source.image, bigWidth, bigHeight);
-    HICON small = PatchCreateWindowHIconV110(source.image, smallWidth, smallHeight);
+    HICON bigIcon = PatchCreateWindowHIconV110(source.image, bigWidth, bigHeight);
+    HICON smallIcon = PatchCreateWindowHIconV110(source.image, smallWidth, smallHeight);
     PatchDestroyButtonSourceImageV19(source);
-    if (!big || !small) {
-      if (big) DestroyIcon(big);
-      if (small) DestroyIcon(small);
+    if (!bigIcon || !smallIcon) {
+      if (bigIcon) DestroyIcon(bigIcon);
+      if (smallIcon) DestroyIcon(smallIcon);
       return false;
     }
-    gPatchNativeWindowIconsV110[index] = {big, small};
+    gPatchNativeWindowIconsV110[index] = {bigIcon, smallIcon};
   }
   return true;
 }
@@ -87,16 +87,16 @@ static bool PatchInstallWindowIconsV110() {
     const auto* chosen = explicitIcon ? explicitIcon : application;
     const auto* native = PatchNativeWindowIconV110(chosen);
     if (!native) continue;
-    SendMessageW(form.hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(native->big));
-    SendMessageW(form.hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(native->small));
+    SendMessageW(form.hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(native->bigIcon));
+    SendMessageW(form.hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(native->smallIcon));
   }
   return true;
 }
 
 static void PatchDestroyWindowIconsV110() {
   for (auto& item : gPatchNativeWindowIconsV110) {
-    if (item.big) DestroyIcon(item.big);
-    if (item.small) DestroyIcon(item.small);
+    if (item.bigIcon) DestroyIcon(item.bigIcon);
+    if (item.smallIcon) DestroyIcon(item.smallIcon);
   }
   gPatchNativeWindowIconsV110.clear();
 }
@@ -110,10 +110,10 @@ static int RunPatchWindowIconSmokeV110() {
     const auto* chosen = explicitIcon ? explicitIcon : application;
     if (!chosen) continue;
     const auto* native = PatchNativeWindowIconV110(chosen);
-    if (!native || !native->big || !native->small || !gForms[formIndex].hwnd) return code++;
-    HICON big = reinterpret_cast<HICON>(SendMessageW(gForms[formIndex].hwnd, WM_GETICON, ICON_BIG, 0));
-    HICON small = reinterpret_cast<HICON>(SendMessageW(gForms[formIndex].hwnd, WM_GETICON, ICON_SMALL, 0));
-    if (big != native->big || small != native->small) return code++;
+    if (!native || !native->bigIcon || !native->smallIcon || !gForms[formIndex].hwnd) return code++;
+    HICON bigIcon = reinterpret_cast<HICON>(SendMessageW(gForms[formIndex].hwnd, WM_GETICON, ICON_BIG, 0));
+    HICON smallIcon = reinterpret_cast<HICON>(SendMessageW(gForms[formIndex].hwnd, WM_GETICON, ICON_SMALL, 0));
+    if (bigIcon != native->bigIcon || smallIcon != native->smallIcon) return code++;
   }
   return 0;
 }
@@ -143,7 +143,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int showCommand) {
   WNDCLASSW wc{}; wc.lpfnWndProc = PatchWndProcV19; wc.hInstance = instance; wc.hCursor = LoadCursor(nullptr, IDC_ARROW); wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
   const auto* application = PatchApplicationIconV110(gPatchWindowIconsV110);
   const auto* applicationNative = PatchNativeWindowIconV110(application);
-  if (applicationNative) wc.hIcon = applicationNative->big;
+  if (applicationNative) wc.hIcon = applicationNative->bigIcon;
   PATCH_WINDOW_CLASS = L"PatchSealedNativeWindowV110"; wc.lpszClassName = PATCH_WINDOW_CLASS; if (!RegisterClassW(&wc)) return PatchWindowIconInstallFailureV110();
   NONCLIENTMETRICSW metrics{}; metrics.cbSize = sizeof(metrics);
   if (SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0)) gGuiFont = CreateFontIndirectW(&metrics.lfMessageFont);
