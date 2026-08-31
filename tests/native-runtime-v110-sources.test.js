@@ -41,7 +41,7 @@ test('runtime v1.10 sources wrap v1.9 and consume payload 19 / WICO natively', (
     assert.match(source, /RunPatchButtonImageSmokeV19/);
     assert.match(source, /RunPatchWindowIconSmokeV110/);
     assert.match(source, /sealed-window-icon-v110\.hpp/);
-    assert.match(source, /int code = 460/);
+    assert.match(source, /return 460/);
   }
 
   assert.match(win32, /WM_SETICON/);
@@ -54,6 +54,8 @@ test('runtime v1.10 sources wrap v1.9 and consume payload 19 / WICO natively', (
   assert.match(appkit, /NSTitlebarAccessoryViewController/);
   assert.match(appkit, /addTitlebarAccessoryViewController/);
   assert.match(appkit, /NSImageScaleProportionallyUpOrDown/);
+  assert.match(appkit, /PatchValidInstalledImageV110/);
+  assert.match(appkit, /return 464/);
 
   assert.match(gtk, /gtk_window_set_default_icon/);
   assert.match(gtk, /gtk_window_set_icon/);
