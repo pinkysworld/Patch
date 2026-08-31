@@ -10,13 +10,18 @@ Patch Studio currently tracks:
 - Change IR **0.10**;
 - Studio project bundle **v4**;
 - Component Registry **0.8**;
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
+- Current Ready Native GUI IR **1.7**;
+- Current Ready sealed payload **v17**;
 - Ready/offline desktop runtime **v1.8** on Windows, macOS and Linux;
 - Offline Studio manifest **v1** and rolling download channel **`offline-studio-v0.2`**;
 - formal runtime-correspondence milestone **beta.32**.
 
-Product/native/RAD work after beta.32 does not widen that formal claim.
+Two newer native layers are implemented but deliberately not promoted yet:
+
+- **IR 1.8 / payload v18 / runtime v1.9**: Button/ImageList native asset transport and Win32/AppKit/GTK consumers;
+- **IR 1.9 / payload v19 / runtime v1.10**: application/Form Window icons, preserving the complete Button/ImageList layer, plus deterministic Windows/macOS/Linux application-icon packaging.
+
+Product/native/RAD work after beta.32 does not widen that formal claim. `src/native-current-contract.js` remains 1.7/17/1.8 until the v1.10 release, digest, Offline Compiler and public-metadata promotion gate is complete.
 
 ## Product model
 
@@ -55,11 +60,15 @@ The searchable Component Palette is driven from the canonical registry, not an i
 
 `Ctrl/Cmd+Shift+A` focuses component search. Component descriptors carry property, event, design-renderer and target-support metadata.
 
-## Object Inspector and events
+## Object Inspector, events and structural editors
 
 Properties and Events share the source-backed Object Inspector. Current behavior includes object selection, component-specific property editing, Create handler, Open handler and default event navigation. Handlers are ordinary visible `when ...:` blocks.
 
 Current event families include Button/Picture `OnClick`, Input/Checkbox/Radio/ComboBox/ListBox/Slider/Table/TreeView `OnChange`, Timer `OnTick` and PaintBox `OnPaint`. ImageList exposes no event in Stage 1.
+
+Table, TreeView and Tabs structural editors rewrite the selected source block directly and validate the result before accepting it. Current workflows cover common add/edit/reorder/duplicate/remove operations. Nested Table and TreeView editors use the same source-backed semantics.
+
+**Table: text-list for the selected row.** The selected Table row is a transient event value in Studio App Preview, Standalone Web and supported native paths. TreeView likewise exposes its selected root-to-node path as a transient text-list. Neither becomes persistent application state unless a handler explicitly commits the event value through `change`.
 
 ## Layout and Form Designer operations
 
@@ -75,7 +84,7 @@ Current source-backed operations include:
 - collision-aware Auto place;
 - Bring to front / Send to back;
 - Move forward / Move backward one z-order step;
-- 8 px design grid with optional snap;
+- design grid and alignment assistance;
 - source-backed Anchors and Dock;
 - Focus Order Stage 1.
 
@@ -83,21 +92,13 @@ Timer and ImageList are nonvisual and never expose Form geometry, Anchors or Doc
 
 ## Undo/Redo and large-project behavior
 
-Studio has a bounded source-backed Undo/Redo history. Trusted editor typing coalesces, while atomic Designer source rewrites remain one transaction. Project/resource replacement boundaries reset source history so stale edits cannot be replayed into a different project. Resource/non-source transactions remain a later extension.
+Studio has a bounded source-backed Undo/Redo history. Trusted editor typing coalesces, while atomic Designer source rewrites remain one transaction. Project/resource replacement boundaries reset source history so stale edits cannot be replayed into a different project.
 
-Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The current performance harness includes a deterministic **10-Form / 200-control** stress fixture plus parsed-model reuse and coordinated Designer observer reconciliation.
+The R0 architecture foundation now includes `studio-design-model/0.1`, the bounded declaration-only design snapshot cache, shared exact-source snapshots, active-Form materialization and keyed incremental runtime reconciliation. Primary `refreshDesigner()` consumes the shared declaration-only design cache rather than executing application behavior for design time.
 
-R0 work in issue **#282** has landed `studio-design-model/0.1` and `studio-design-cache/0.1`; primary Designer integration, true Form materialization and incremental runtime rendering remain open.
+Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The performance harness includes a deterministic **10-Form / 200-control** stress fixture and real-Chrome Workshop measurements. Remaining R0 work is focused on module boundaries, the versioned Worker boundary, adapter-owned incremental reconciliation and measurement-driven Table/Tree preview virtualization.
 
-## Structural editors
-
-Table, TreeView and Tabs structural editors rewrite the selected source block directly and validate the result before accepting it. Current workflows cover common add/edit/reorder/duplicate/remove operations.
-
-**Table: text-list for the selected row.** The selected Table row is a transient event value in Studio App Preview, Standalone Web and supported native paths. TreeView likewise exposes its selected root-to-node path as a transient text-list. Neither becomes persistent application state unless a handler explicitly commits the event value through `change`.
-
-Panel Stage 1 is a source-backed visual group with structural child editing. It does not yet claim Delphi-style independent nested coordinates, clipping or native child-container semantics; those belong to Panel Stage 2.
-
-## Nonvisual tray
+## Nonvisual tray and ImageList
 
 Timer and ImageList appear in the nonvisual component tray beneath the Form canvas.
 
@@ -107,36 +108,19 @@ when refresh_clock ticked:
   show "tick"
 ```
 
-ImageList is an ordered collection of named project-resource references. The Object Inspector can edit logical size and add/replace/rename/reorder/remove entries through the Resource Manager. Buttons may bind one item with `image list.item` on Studio and Standalone Web. Current Native GUI IR 1.7 deliberately fails closed for ImageList/Button-image bindings.
+ImageList is an ordered collection of named project-resource references. The Object Inspector can edit logical size and add/replace/rename/reorder/remove entries through the Resource Manager. Buttons may bind one item with `image list.item` on Studio and Standalone Web.
 
-## Picture
+Current Ready Native GUI IR 1.7 deliberately fails closed for ImageList/Button-image bindings. The native consumer is nevertheless implemented on IR **1.8** / payload **v18** / runtime **v1.9**, and is preserved by the experimental v1.10 Window-icon line. Promotion, not implementation, is the remaining gap.
+
+## Picture, Shape and PaintBox
 
 Picture supports source-backed id/source/layout plus fit, center, opacity and accessible description. Browser preview and Standalone Web resolve project resources and apply the full current Web display model.
 
 Native Ready Picture follows `native-picture-formats/1.0`: PNG/JPEG are supported through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. WebP/SVG remain deferred. The inherited native Picture display contract keeps default contain/centered/opaque behavior and fails closed for unsupported non-default display combinations.
 
-## Shape
+Shape supports rectangle, rounded rectangle, ellipse and line with fill, stroke, stroke width, radius and opacity. Studio, Standalone Web and Current Ready Windows/macOS/Linux support Shape. Native GUI IR 1.5 introduced the Shape transport; Current Ready IR 1.7 / payload v17 / runtime v1.8 preserves it.
 
-Shape supports rectangle, rounded rectangle, ellipse and line with fill, stroke, stroke width, radius and opacity. Studio, Standalone Web and current Ready Windows/macOS/Linux support Shape. Native GUI IR 1.5 introduced the Shape transport; current IR 1.7 / payload v17 / runtime v1.8 preserves it.
-
-## PaintBox
-
-PaintBox is the source-backed custom-drawing surface:
-
-```patch
-paintbox as canvas at 24, 24 size 320, 200
-
-when canvas paint:
-  draw clear #ffffff
-  draw rectangle 10, 12 size 100, 50 fill #ff0000 stroke #000000 width 2
-  draw line 0, 0 to 100, 100 stroke #000000 width 1
-  draw image "patch-resource:app.logo" at 140, 12 size 48, 48
-  draw text "Ready" at 20, 100 color #111827 size 16
-```
-
-The `paint` handler is pure UI drawing. Persistent `change` operations are rejected inside it. Studio, Standalone Web and current Ready Windows/macOS/Linux implement `clear`, `line`, `rectangle`, `ellipse`, `text` and `draw image`. The image operation was added by Native GUI IR **1.7**, payload **v17** and runtime **v1.8** while the previous five-operation PaintBox Stage 1 contract remains frozen at 1.6/v16/v1.7.
-
-Native PaintBox expressions intentionally use a bounded subset: literals, `count` inside `repeat`, and simple number/text/boolean state names. Invalid or unsupported state references fail closed. Native `draw image` accepts quoted `patch-resource:` or `data:` locators; PNG/JPEG are Ready under `native-picture-formats/1.0`, while native WebP/SVG fail closed.
+PaintBox is the source-backed custom-drawing surface. Its `paint` handler is pure UI drawing and rejects persistent `change`. Studio, Standalone Web and Current Ready Windows/macOS/Linux implement `clear`, `line`, `rectangle`, `ellipse`, `text` and bounded PNG/JPEG `draw image`. The image operation is carried by Native GUI IR **1.7**, payload **v17** and runtime **v1.8**.
 
 ## Window/application icons
 
@@ -146,56 +130,46 @@ Forms may declare a source-backed resource icon:
 window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
 ```
 
-Studio preview shows it in Form chrome and Standalone Web packages the first Form icon as the favicon under `window-icon/1.0`. Current Native GUI IR 1.7 fails closed for Form icons. Native `.ico`, AppKit and Linux desktop icon packaging remains an R1 gap.
+Studio preview shows it in Form chrome and Standalone Web packages the first Form icon as the favicon under `window-icon/1.0`.
+
+Current Ready IR 1.7 still fails closed for Form icons. The experimental **IR 1.9 / payload v19 / runtime v1.10** line now implements application/Form icons on Win32, AppKit and GTK. Packaging is also implemented:
+
+- Windows `.ico` generation and project-icon embedding into the normal v1.10 runtime PE resource slot;
+- macOS `.icns` plus `CFBundleIconFile` in the `.app` bundle;
+- Linux hicolor PNG plus `.desktop` metadata.
+
+Windows CI verifies the packaged EXE with `ExtractAssociatedIcon` and `--patch-smoke`. The remaining work is release/digest/Offline-Compiler/product promotion, not native icon implementation.
 
 ## Workshop Desk acceptance example
 
-`examples/workshop-desk.patch` is the current cross-platform Ready showcase. It deliberately uses every integrated component family that the current native Ready line can transport together: Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Panel, Shape, PaintBox including `draw image`, StatusBar and Timer.
+`examples/workshop-desk.patch` is the Current Ready cross-platform showcase. It uses every integrated component family that Current Ready can transport together: Forms, Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Panel, Shape, PaintBox including `draw image`, StatusBar and Timer.
 
-It intentionally does **not** add ImageList/Button images or a Window icon to the native Ready acceptance source, because those consumers still fail closed on native targets. Their Studio/Web authoring contracts remain covered separately rather than making the showcase target-dependent.
-
-## Command Palette and navigation
-
-`Ctrl/Cmd+K` opens the Command Palette. Search delegates to existing actions and includes Run/Build/navigation commands, project files, Forms/events/state/recipes, Thing fields and recipe parameters. Project Tree/Outline and editor tabs operate on the same canonical v4 project.
+The canonical Ready source intentionally omits ImageList/Button images and a Window icon because Current Ready 1.7 fails closed for those features. Dedicated experimental fixtures prove the implemented v1.9/v1.10 consumers without making the Current Ready showcase target-dependent.
 
 ## Run and Build
 
 Studio supports Standalone Web, Windows, macOS, Linux, FreeBSD Console, portable `.patchapp` and direct/bootstrap WebAssembly where applicable. The default Windows/macOS/Linux workflow is **Ready app download / offline link with no user GitHub token**. Optional cloud/AOT remains a separate advanced route.
 
-The current Ready/offline Window contract is Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
+The Current Ready/offline Window contract is Native GUI IR **1.7**, sealed payload **v17**, runtime **v1.8**. Product paths import stable `native-current-contract.js` / `native-frozen-contract.js` facades and unsupported selected-contract behavior fails closed.
 
-The previous PaintBox Stage 1 line is 1.6/v16/v1.7, previous Shape line is 1.5/v15/v1.6, previous Chrome line is 1.4/v14/v1.5, previous Slider line is 1.3/v13/v1.4, and frozen TreeView line is 1.2/v12/v1.3.
+The frozen TreeView line is 1.2/v12/v1.3. The previous Slider line is 1.3/v13/v1.4, Chrome line 1.4/v14/v1.5, Shape line 1.5/v15/v1.6 and PaintBox Stage 1 line 1.6/v16/v1.7.
 
-## Offline Studio downloads
+## Offline Studio and Offline Compiler
 
-The rolling **`offline-studio-v0.2`** channel publishes these Stage 1 assets after platform build and self-smoke:
-
-- `PatchStudio-windows-x64.exe`;
-- `PatchStudio-macos-arm64`;
-- `PatchStudio-linux-x64`;
-- `offline-studio-manifest.json`;
-- `SHA256SUMS`.
-
-All three executables embed the same generated Studio application and must produce the same deterministic manifest before publication. Stage 1 provides offline authoring, Designer/Run and current browser-local build targets. Host-native desktop Build from inside the Offline IDE is still Stage 2; the separate offline compiler remains the current local native-link route.
-
-Windows and Linux beta IDE binaries are currently unsigned. The macOS beta is ad-hoc signed but not Developer ID notarized. See `docs/OFFLINE_STUDIO.md`, the public `https://minh.systems/Patch/downloads.html` page and `https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2`.
-
-## Offline compiler, PWA and diagnostics
+The rolling **`offline-studio-v0.2`** channel publishes Stage 1 self-contained IDE builds for Windows x64, macOS Apple Silicon and Linux x64 plus the deterministic manifest and SHA256SUMS. Stage 1 provides offline authoring, Designer/Run and browser-local build targets. Host-native desktop Build from inside the installed IDE is still Stage 2.
 
 The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking uses payload v17/runtime v1.8. FreeBSD remains Console-only via portable C99.
 
-Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. Missing JavaScript/CSS/runtime requests never receive `index.html` as a substitute. Real Chrome startup/responsiveness tests exercise Studio in CI and deployment gates.
-
-Recovery snapshots protect the complete v4 project including resources. Diagnostics stay privacy-redacted/local unless explicitly exported, and multi-file locations map back to owning `file:line`.
+Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. Pages verifies the published v1.8 runtime release digests, produces the runtime manifest, and the browser re-hashes the selected runtime before sealing.
 
 ## Current capability boundary
 
-| Component | Studio | Standalone Web | Windows/macOS/Linux native |
-|---|---|---|---|
-| Picture | supported | supported | bounded PNG/JPEG + default display contract |
-| Shape | supported | supported | supported |
-| PaintBox | supported | supported | clear/line/rectangle/ellipse/text + PNG/JPEG `draw image` supported |
-| ImageList | authoring | Button image consumer supported | unsupported/fail-closed |
-| Window icon | authoring | chrome + favicon supported | unsupported/fail-closed |
+| Component | Studio | Standalone Web | Current Ready native 1.7/v17/v1.8 | Implemented next native line |
+|---|---|---|---|---|
+| Picture | supported | supported | bounded PNG/JPEG + default display contract | preserved |
+| Shape | supported | supported | supported | preserved |
+| PaintBox | supported | supported | clear/line/rectangle/ellipse/text + PNG/JPEG `draw image` | preserved |
+| ImageList | authoring | Button image consumer supported | fail-closed | IR 1.8/v18/runtime v1.9 consumer implemented |
+| Window icon | authoring | chrome + favicon supported | fail-closed | IR 1.9/v19/runtime v1.10 + packaging implemented |
 
-Authoring is not runtime parity. The remaining RAD R1 gates are native ImageList/Button-image transport and native application/window icon packaging. See `docs/ROADMAP.md`, `docs/RAD_STUDIO_MASTERPLAN.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.
+Authoring is not runtime parity, and implementation is not promotion. The remaining native R1 gate is publishing/verifying v1.10 assets, switching browser and Offline Compiler linking, synchronizing public capability metadata, and only then moving the Current Ready facade. See `docs/ROADMAP.md`, `docs/WINDOW_ICONS.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md`.

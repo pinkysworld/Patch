@@ -4,9 +4,9 @@ Status: **experimental but executable native backend, working on Windows, macOS 
 
 Patch lowers the same source-backed Window syntax into operating-system-native GUI code. Patch source does not import Win32, AppKit or GTK.
 
-## Current versioned stack
+## Product contract
 
-The native stack intentionally separates semantic IR, direct AOT generation and token-free sealed distribution. Older contracts remain frozen instead of being redefined in place.
+The native stack separates semantic IR, direct AOT generation and token-free sealed distribution. Older contracts remain frozen instead of being redefined in place.
 
 | Layer | Current / compatibility role |
 |---|---|
@@ -15,23 +15,27 @@ The native stack intentionally separates semantic IR, direct AOT generation and 
 | Native GUI IR 0.8 | frozen Table/Grid extension |
 | Native GUI IR 1.1 | persistent text-list state and multi-select ListBox ABI |
 | Native GUI IR 1.2 | frozen TreeView-capable compatibility line |
-| Native GUI IR **1.3** | previous Slider line, adds Slider range/step/numeric event metadata |
-| Native GUI IR **1.4** | previous Chrome Stage 1 line (Panel, Timer, PictureBox, StatusBar) |
-| Native GUI IR **1.5** | previous Shape line, adds rectangle/rounded/ellipse/line |
-| Native GUI IR **1.6** | previous PaintBox Stage 1 clear/line/rectangle/ellipse/text |
-| Native GUI IR **1.7** | **current**, adds PaintBox `draw image` |
+| Native GUI IR 1.3 | previous Slider line |
+| Native GUI IR 1.4 | previous Chrome Stage 1 line |
+| Native GUI IR 1.5 | previous Shape line |
+| Native GUI IR 1.6 | previous PaintBox Stage 1 line |
+| Native GUI IR **1.7** | **Current Ready**, adds PaintBox `draw image` |
+| Native GUI IR **1.8** | implemented next Button/ImageList transport, not promoted |
+| Native GUI IR **1.9** | implemented next Window/application icon transport, not promoted |
 | sealed payload v8 / runtime v0.9 | frozen responsive base compatibility |
 | sealed payload v9 / runtime v1.0 | frozen Table compatibility |
 | sealed payload v10 / runtime v1.1 | frozen persistent-list compatibility |
 | sealed payload v11 / runtime v1.2 | frozen Menu+list compatibility |
 | sealed payload v12 / runtime v1.3 | frozen TreeView compatibility, Slider fail-closed |
-| sealed payload v13 / runtime v1.4 | previous Slider-capable compatibility line |
-| sealed payload v14 / runtime v1.5 | previous Chrome Ready/offline line |
-| sealed payload v15 / runtime v1.6 | previous Shape Ready/offline line |
-| sealed payload v16 / runtime v1.7 | previous PaintBox Stage 1 Ready/offline line |
-| sealed payload v17 / runtime v1.8 | **current Ready/offline desktop contract**, adds PaintBox `draw image` |
+| sealed payload v13 / runtime v1.4 | previous Slider-capable line |
+| sealed payload v14 / runtime v1.5 | previous Chrome line |
+| sealed payload v15 / runtime v1.6 | previous Shape line |
+| sealed payload v16 / runtime v1.7 | previous PaintBox Stage 1 line |
+| sealed payload **v17 / runtime v1.8** | **Current Ready/offline desktop contract** |
+| sealed payload **v18 / runtime v1.9** | implemented Button/ImageList line, not promoted |
+| sealed payload **v19 / runtime v1.10** | implemented Window/application icon line, not promoted |
 
-A backend or runtime version never silently redefines an older IR or payload format. A source program requiring a newer feature fails closed when explicitly linked against an older contract. Unversioned files such as `src/native-gui-ir.js` and `native-runtime/*-sealed-gui.cpp` are the Native GUI IR 0.7 / payload v6 include-chain base, not aliases of the current Ready runtime.
+A backend or runtime version never silently redefines an older IR or payload format. A source program requiring a newer feature fails closed when explicitly linked against an older contract. Unversioned files such as `src/native-gui-ir.js` remain historical include-chain bases, not aliases of Current Ready.
 
 ## Build paths
 
@@ -49,35 +53,46 @@ macOS   -> AppKit -> .app
 Linux   -> GTK3   -> executable
 ```
 
-Patch Studio also supports token-free browser-side sealing into precompiled native runtime templates. The downloadable offline compiler performs the same supported sealed linking locally. Project-specific remote AOT through GitHub Actions remains a separate optional route.
+Patch Studio also supports token-free browser-side sealing into published native runtime templates. The downloadable Offline Compiler performs the same supported sealed linking locally. Project-specific remote AOT through GitHub Actions remains a separate optional route.
 
-Current token-free Ready/offline Window builds use **Native GUI IR 1.7**, **sealed payload v17** and **runtime v1.8**. Product-facing JavaScript imports this line through `src/native-current-contract.js`. The frozen TreeView line is Native GUI IR **1.2** / payload **v12** / runtime **v1.3**, imported through `src/native-frozen-contract.js`. Version-numbered IR/sealer modules remain behind those facades for historical compatibility and regression evidence.
+Current token-free Ready/offline Window builds use **Native GUI IR 1.7**, **sealed payload v17** and **runtime v1.8** through `src/native-current-contract.js`. The frozen TreeView line is Native GUI IR **1.2** / payload **v12** / runtime **v1.3** through `src/native-frozen-contract.js`.
 
-## Supported Window surface
+## Implemented next native line
 
-The current native line includes:
+Two additive layers are already implemented beyond Current Ready:
+
+1. **IR 1.8 / payload v18 / runtime v1.9** carries deduplicated project image assets for Button `ImageList` bindings and consumes them on Win32, AppKit and GTK.
+2. **IR 1.9 / payload v19 / runtime v1.10** preserves the complete Button/ImageList layer and adds application/Form Window icons on all three native hosts.
+
+The v1.10 packaging path is also implemented:
+
+- Windows: deterministic `.ico` plus `windows-pe-icon-v110/0.1` in-place application-icon embedding into the reserved PE resource slot of the normal v1.10 runtime template;
+- macOS: `.icns` installed into the `.app` bundle and named through `CFBundleIconFile`;
+- Linux: hicolor PNG plus `.desktop` metadata.
+
+Windows CI verifies the same packaged EXE with `ExtractAssociatedIcon` and `--patch-smoke`. Cross-platform runtime/package workflows are green.
+
+Implementation is not promotion. These layers become Current Ready only after v1.10 release assets, SHA-256 digest verification, browser runtime selection, Offline Compiler linking and public capability metadata are updated together.
+
+## Current Ready Window surface
+
+The Current Ready native line includes:
 
 - literal `number`, `text`, `boolean` and persistent `text-list` state;
 - source-backed Form geometry and responsive Anchor/Dock metadata;
-- Text, Button, Input and Checkbox;
-- ComboBox;
-- text-backed single-select ListBox;
-- list-backed native multi-select ListBox;
-- grouped Radio controls;
+- Text, Button, Input, Checkbox, ComboBox, ListBox and Radio;
 - Tabs containers with page-owned child controls;
-- source-backed Table/Grid columns and rows;
-- hierarchical source-backed TreeView nodes;
-- source-backed Slider range, step, optional numeric binding and numeric `changed` event;
-- source-backed Panel Stage 1 visual grouping, Timer, PictureBox and StatusBar;
-- source-backed Shape rectangle, rounded, ellipse and line with fill/stroke/radius/opacity and no events;
-- source-backed PaintBox Stage 1 drawing with clear, line, rectangle, ellipse, text and `draw image`;
-- structural Window menus, separators, portable shortcuts and source-backed `enabled` / `checked` projections;
-- informational dialogs;
-- named result-bearing Confirm/Open/Save dialogs;
-- Button/MenuItem `clicked`, typed control `changed`, Confirm `confirmed`/`cancelled`, and file `chosen`/`cancelled` events;
-- explicit scalar/list `change` operations supported by the versioned event/value contract;
-- named Form `open` / `close` lifecycle;
-- simple state interpolation in supported labels.
+- Table/Grid columns and rows;
+- hierarchical TreeView nodes;
+- Slider range, step, optional numeric binding and numeric `changed` event;
+- Panel Stage 1, Timer, PictureBox and StatusBar;
+- Shape rectangle, rounded rectangle, ellipse and line;
+- PaintBox clear, line, rectangle, ellipse, text and bounded PNG/JPEG `draw image`;
+- structural Window menus, separators, shortcuts and Boolean enabled/checked projections;
+- informational and result-bearing Confirm/Open/Save dialogs;
+- named Form `open` / `close` lifecycle.
+
+Current Ready IR 1.7 deliberately fails closed for Button ImageList bindings and Form icons. That statement describes the published product boundary. The experimental 1.8/18/1.9 and 1.9/19/1.10 lines implement those features and await promotion.
 
 Unsupported native behavior fails closed. There is no implicit Electron fallback.
 
@@ -105,123 +120,83 @@ Current transient values are:
 
 Tabs page selection remains renderer/toolkit-local and has no Patch event. Interaction itself does not create Patch state or Change History.
 
-## Slider
-
-Native GUI IR 1.3 adds Slider as an additive contract over the frozen TreeView line:
-
-```patch
-create number volume = 50
-window "Mixer" as main size 560, 300:
-  slider 0..100 as volume step 5 at 24, 80 size 300, 44
-when volume changed:
-  change volume:
-    set = value
-```
-
-Native mappings are:
-
-| Platform | Native Slider |
-|---|---|
-| Windows | common-controls `TRACKBAR` |
-| macOS | `NSSlider` |
-| Linux | GTK3 `GtkScale` |
-
-The runtime validates and restores a finite numeric event-local value before executing the ordinary Patch handler. Moving the toolkit control never becomes implicit Patch state. Persistence occurs only through the explicit `change volume` block.
-
-Payload v13 appends Slider metadata to the exact payload-v12 compatibility representation. Runtime v1.4 consumes that extension and reuses the existing semantic action engine. Payload v12/runtime v1.3 remains deliberately Slider fail-closed.
-
 ## Table / Grid
 
-Table was introduced as an explicit IR extension rather than an implementation-only control alias. Native mappings remain report-mode `WC_LISTVIEWW` on Windows, multi-column `NSTableView` in `NSScrollView` on macOS and `GtkTreeView` + `GtkListStore` in `GtkScrolledWindow` on Linux.
+Table was introduced at Native GUI IR **0.8**. Native mappings remain report-mode `WC_LISTVIEWW` on Windows, multi-column `NSTableView` inside `NSScrollView` on macOS and `GtkTreeView` + `GtkListStore` inside `GtkScrolledWindow` on Linux.
 
 The selected row is a transient text-list event value. Current v17/v1.8 preserves the frozen v9/v1.0 Table representation.
 
 ## TreeView
 
-Native GUI IR 1.2 introduced hierarchical TreeView while keeping selection semantically transient. Native mappings remain common-controls TreeView on Windows, `NSOutlineView` in `NSScrollView` on macOS and `GtkTreeView` + `GtkTreeStore` in `GtkScrolledWindow` on Linux.
+Native GUI IR 1.2 introduced hierarchical TreeView while keeping selection semantically transient. Native mappings remain common-controls TreeView on Windows, `NSOutlineView` inside `NSScrollView` on macOS and `GtkTreeView` + `GtkTreeStore` inside `GtkScrolledWindow` on Linux.
 
-Selecting a node exposes the root-to-node text-list path. Current Native GUI IR 1.7 / payload v17 / runtime v1.8 preserves that exact TreeView contract while adding Slider, Chrome Stage 1, Shape and PaintBox. Payload v12/runtime v1.3 remains the frozen TreeView-origin line.
+Selecting a node exposes the root-to-node text-list path. Current Native GUI IR 1.7 / payload v17 / runtime v1.8 preserves that contract. Payload v12/runtime v1.3 remains the frozen TreeView-origin line.
 
-## Multi-select ListBox and persistent list state
+Canonical source uses colonless node labels:
 
-A ListBox backed by `create list` uses the text-list event contract. The native toolkit owns transient selection. Patch persistence occurs only through an explicit `change` block.
+```patch
+tree as files:
+  node "src"
+    node "compiler.js"
+    node "parser.js"
+```
 
-Native GUI IR 1.1 introduced this state/event ABI. Current IR 1.7 / payload v17 preserves it unchanged. Frozen payload v10/runtime v1.1 remains dedicated compatibility evidence for the original list-state line.
+## Slider, list state and menus
 
-## Menus and dialogs
+Slider maps to Win32 `TRACKBAR`, AppKit `NSSlider` and GTK3 `GtkScale`. The runtime validates a finite numeric event-local value before executing the ordinary Patch handler.
 
-Menus are Window structure, not positioned controls. Current native Menu support includes separators, portable shortcuts and Boolean `enabled` / `checked` projections from ordinary Patch state. Menu activation itself does not create hidden persistent toolkit state.
+A ListBox backed by `create list` uses the text-list event contract. The native toolkit owns transient selection; Patch persistence occurs only through explicit `change`.
 
-Current mappings include:
+Menus use native `HMENU`, `NSMenu` and GTK menu primitives. Separators, portable shortcuts and source-backed enabled/checked state are preserved by the current line.
 
-| Feature | Windows | macOS | Linux |
-|---|---|---|---|
-| Menu | `HMENU` / `WM_COMMAND` | `NSMenu` / `NSMenuItem` | `GtkMenuBar` / `GtkMenuItem` |
-| Info dialog | `MessageBoxW` | `NSAlert` | `GtkMessageDialog` |
-| Confirm result | `MessageBoxW` Yes/No | `NSAlert` | `GtkMessageDialog` |
-| Open result | `GetOpenFileNameW` | `NSOpenPanel` | `GtkFileChooserDialog` |
-| Save result | `GetSaveFileNameW` | `NSSavePanel` | `GtkFileChooserDialog` |
+## Graphics and resource policy
 
-Under `--patch-smoke`, blocking dialogs return deterministic test results so CI cannot wait for user interaction. Normal applications use real OS dialogs.
+Native Picture and PaintBox image resources use `native-picture-formats/1.0`. Current Ready supports bounded PNG/JPEG project resources and data URIs through WIC, NSImage and GdkPixbuf. Native WebP/SVG remain deferred and fail closed.
 
-## Accessibility
+PaintBox `paint` handlers are rendering-only. Persistent mutation is rejected inside them. Shape and PaintBox runtime drawing reuse the platform-native GDI+/AppKit/GTK drawing stacks.
 
-The native paths use a deterministic naming contract for controls whose visible native text is insufficient. Platform APIs are Microsoft Active Accessibility `IAccPropServices` on Windows, AppKit accessibility labels on macOS and ATK accessible names on GTK3.
+## Current token-free runtime integrity
 
-Automated accessibility smoke evidence is an implementation baseline, not a WCAG conformance claim or a substitute for manual Narrator, VoiceOver or Orca testing.
-
-## Token-free sealed runtime v1.8 / payload v17
-
-All three current token-free Ready Window builds use the `PCHGUI01` envelope with payload **v17** and runtime **v1.8**.
-
-The v1.8 release workflow independently:
-
-1. validates the payload-v17/Native-GUI-IR-1.7 contract;
-2. builds the Win32, universal AppKit and GTK3 runtime templates;
-3. seals the canonical PaintBox image program for each host plus PaintBox Stage 1 and Shape examples through the same runtime;
-4. executes the finished sealed application under `--patch-smoke`;
-5. verifies real native PaintBox drawing including PNG/JPEG `draw image` while retaining Shape, Chrome, Slider, Table/ListBox/Menu/Tree behavior;
-6. uploads the exact runtime template artifacts;
-7. on `main`, publishes separate versioned runtime releases.
-
-The current platform release tags are:
+All three Current Ready Window builds use the `PCHGUI01` envelope with payload **v17** and runtime **v1.8**. Current release tags are:
 
 - `native-win32-runtime-v1.8`;
 - `native-macos-runtime-v1.8`;
 - `native-linux-runtime-v1.8`.
 
-Patch Pages waits for all three v1.8 release assets before deploying the browser compiler that consumes payload v17. It obtains the GitHub release SHA-256 digest for every runtime asset, builds the runtime integrity manifest and only then publishes the site. Patch Studio independently re-hashes the selected runtime with Web Crypto before sealing.
+Pages waits for all three v1.8 release assets plus `studio-runtime-v0.6`, obtains and verifies the GitHub release SHA-256 digest for every browser-consumed runtime asset, publishes the runtime integrity manifest and only then deploys. Patch Studio independently re-hashes the selected runtime with Web Crypto before sealing.
 
-The macOS browser-sealed app remains unsigned because browser-side sealing modifies the executable after the generic runtime was built. Final-artifact Developer ID signing/notarization is separate distribution work.
+The downloadable Offline Compiler also links Current Ready IR 1.7/payload v17/runtime v1.8 locally. It does not yet select the experimental v1.10 line.
 
 ## Frozen compatibility chain
-
-The current line does not replace historical evidence:
 
 ```text
 Native GUI IR 0.8 / payload v9  / runtime v1.0  Table
 Native GUI IR 1.1 / payload v10 / runtime v1.1  persistent list + multi-select ListBox
 payload v11 / runtime v1.2                         Menu + list
 Native GUI IR 1.2 / payload v12 / runtime v1.3  TreeView, Slider fail-closed
-Native GUI IR 1.3 / payload v13 / runtime v1.4  previous Slider-capable line
-Native GUI IR 1.4 / payload v14 / runtime v1.5  previous Chrome Stage 1 line
-Native GUI IR 1.5 / payload v15 / runtime v1.6  previous Shape Stage 1 line
-Native GUI IR 1.6 / payload v16 / runtime v1.7  previous PaintBox Stage 1 line
-Native GUI IR 1.7 / payload v17 / runtime v1.8  current PaintBox draw image line
+Native GUI IR 1.3 / payload v13 / runtime v1.4  Slider
+Native GUI IR 1.4 / payload v14 / runtime v1.5  Chrome Stage 1
+Native GUI IR 1.5 / payload v15 / runtime v1.6  Shape
+Native GUI IR 1.6 / payload v16 / runtime v1.7  PaintBox Stage 1
+Native GUI IR 1.7 / payload v17 / runtime v1.8  Current Ready PaintBox draw image
+Native GUI IR 1.8 / payload v18 / runtime v1.9  implemented Button/ImageList, not promoted
+Native GUI IR 1.9 / payload v19 / runtime v1.10 implemented Window icons, not promoted
 ```
 
-Explicit legacy linking remains fail-closed when a source needs a newer capability.
+Explicit legacy linking remains fail-closed when source needs a newer capability.
 
 ## Executable evidence
 
-Current native behavior is covered by independent paths:
+Native behavior is covered by independent paths:
 
 1. direct AOT Win32/AppKit/GTK compilation and runtime smokes;
-2. frozen compatibility workflow coverage for older payload/runtime contracts;
-3. payload-v17/runtime-v1.8 PaintBox image seal/link/run smokes on Windows, macOS and Linux;
-4. ordinary offline `patch link` tests for the current contract plus explicit legacy-version tests;
-5. downloadable offline compiler matrices;
-6. Pages release-integrity gating for the runtime templates used by token-free browser builds.
+2. frozen compatibility workflow coverage;
+3. payload-v17/runtime-v1.8 seal/link/run smokes on Windows, macOS and Linux;
+4. Offline Compiler matrices for the Current Ready contract;
+5. Pages release-integrity gating for browser-consumed v1.8 templates;
+6. cross-platform runtime-v1.9 Button/ImageList smokes;
+7. cross-platform runtime-v1.10 Window-icon smokes and package-contract tests;
+8. real Windows v1.10 PE icon extraction plus runtime smoke from the packaged EXE.
 
 The native GUI artifacts do not use Electron, Chromium or Node.js as their GUI runtime. The explicit compatibility package remains separate and labeled as Electron-based.
 
@@ -229,4 +204,4 @@ The native GUI artifacts do not use Electron, Chromium or Node.js as their GUI r
 
 Linux native GUI requires compatible GTK3 system libraries. Stable installers, real credentialed Windows signing, real macOS signing/notarization evidence, richer distribution/update channels, FreeBSD native GUI and manual assistive-technology validation remain open distribution/validation work.
 
-None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/NATIVE_COMPATIBILITY.md`, `docs/SLIDER_STAGE1.md`, `docs/NATIVE_LIST_STATE.md`, `docs/MENUS_DIALOGS.md`, `docs/RESULT_DIALOGS.md`, `docs/RADIO.md`, `docs/TABS.md`, `docs/NATIVE_ACCESSIBILITY.md`, `docs/OFFLINE_COMPILER.md` and `docs/NATIVE_APPS.md` for related contracts.
+None of this changes Change IR 0.10 or expands the beta.32 formal research assurance claims. See `docs/NATIVE_COMPATIBILITY.md`, `docs/OFFLINE_COMPILER.md`, `docs/NATIVE_APPS.md`, `docs/WINDOW_ICONS.md` and `docs/ROADMAP.md` for related contracts.
