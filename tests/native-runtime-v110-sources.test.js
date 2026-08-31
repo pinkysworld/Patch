@@ -9,6 +9,8 @@ import {
   inspectNativeGuiWindowIconsV19
 } from '../src/sealed-native-gui-v19.js';
 
+// Structural assertions complement the workflow's real Windows/macOS/Linux
+// build-and-smoke jobs. They intentionally verify stable contract markers only.
 const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
 const PNG_SHA256 = 'd126901e8b7f82749aee7b7c0ec59838286c9f8d75ffc74147f34ac2b4bad460';
 const resource = id => Object.freeze({
