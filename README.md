@@ -21,7 +21,7 @@ Patch is a small **change-oriented programming language** with a source-backed R
 | Studio project format | **v4** |
 | Current native Ready line | **Native GUI IR 1.7 / payload v17 / runtime v1.8** |
 | Experimental Button/ImageList line | **IR 1.8 / payload v18 / runtime v1.9**, implemented but not promoted to Current Ready |
-| Experimental Window icon line | **IR 1.9 / payload v19**, transport implemented; desktop runtime consumption is still in progress |
+| Experimental Window icon line | **IR 1.9 / payload v19 / runtime v1.10**, implemented and cross-platform runtime-smoked; packaging/promotion remains open |
 | Offline Studio | rolling **`offline-studio-v0.2`** channel |
 | Offline compiler | rolling **`offline-compiler-v0.2`** channel |
 
@@ -71,14 +71,14 @@ The product-facing native contract remains:
 
 **Native GUI IR 1.7 / sealed payload v17 / desktop runtime v1.8**
 
-[`src/native-current-contract.js`](src/native-current-contract.js) is the product-facing owner of that Current Ready boundary. It stays pinned until the corresponding cross-platform runtime, release, digest, and Offline Compiler promotion gates have passed.
+[`src/native-current-contract.js`](src/native-current-contract.js) owns the product-facing Current Ready boundary. [`src/native-frozen-contract.js`](src/native-frozen-contract.js) preserves the explicit frozen compatibility line. The current contract stays pinned until the corresponding cross-platform runtime, release, digest, packaging, and Offline Compiler promotion gates have passed.
 
-It is the current token-free Ready/offline line for Windows, macOS, and Linux. It includes the established native component surface plus Shape, PaintBox Stage 1, and bounded PNG/JPEG `draw image` support.
+The Current Ready line is the token-free Ready/offline path for Windows, macOS, and Linux. It includes the established native component surface plus Shape, PaintBox Stage 1, and bounded PNG/JPEG `draw image` support.
 
 Development beyond the Ready line is versioned separately:
 
 - **IR 1.8 / payload v18 / runtime v1.9** adds real Button `ImageList` image transport and Win32/AppKit/GTK consumers. It is implemented as a next contract but is not yet the Current Ready line.
-- **IR 1.9 / payload v19** adds bounded, deduplicated application/Form icon transport over an exact payload-v18 compatibility prefix. Platform-specific Window/application icon consumption and packaging are the next R1 step.
+- **IR 1.9 / payload v19 / runtime v1.10** adds bounded, deduplicated application/Form icon transport and native Win32/AppKit/GTK consumption over the complete v1.9 Button/ImageList layer. Cross-platform runtime smoke is green; platform packaging and product promotion remain separate gates.
 - Native Picture and paint-image decoding currently treat PNG/JPEG as Ready formats. WebP/SVG remain deferred under `native-picture-formats/1.0` and fail closed on native targets.
 
 See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md), [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md), and [`docs/WINDOW_ICONS.md`](docs/WINDOW_ICONS.md) for contract details.
