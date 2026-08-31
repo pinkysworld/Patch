@@ -51,6 +51,7 @@ Patch Studio aims for a Delphi / Visual Basic style RAD workflow while keeping o
 - project bundle **v4**, Project Tree, recovery, resources, and `file:line` diagnostics;
 - Resource Manager with deterministic SHA-256 metadata;
 - Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, and Menu authoring;
+- Table exposes the selected row as a transient text-list; persistent state still changes only through ordinary Patch `change` semantics;
 - nonvisual component tray for Timer and ImageList;
 - Anchors/Dock, grid snap, alignment, sizing, distribution, z-order, and Focus Order Stage 1;
 - source-backed Undo/Redo for editor and Designer changes;
