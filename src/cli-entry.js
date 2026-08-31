@@ -10,6 +10,7 @@ import {
 } from './component-matrix.js';
 import { collectDoctorReport, formatDoctorReport } from './doctor.js';
 import { linkPatchSource } from './offline-linker.js';
+import { validateStudioResources } from './studio-resources.js';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -32,7 +33,7 @@ if (command === 'link') {
   const args = argv.slice(1);
   const file = args.shift();
   if (!file) {
-    console.error('Use: patch link program.patch [--out App] [--name AppName] [--gui-payload-version 12|13]');
+    console.error('Use: patch link program.patch [--out App] [--name AppName] [--resources resources.json] [--gui-payload-version 12|17|18]');
     process.exit(1);
   }
   try {
@@ -42,11 +43,13 @@ if (command === 'link') {
     const guiPayloadVersion = option(args, '--gui-payload-version')
       ?? process.env.PATCH_OFFLINE_GUI_PAYLOAD_VERSION
       ?? process.env.PATCH_SEALED_GUI_VERSION;
+    const resources = readResources(option(args, '--resources'));
     const linked = linkPatchSource(source, {
       name,
       entry: path.basename(file),
       out,
       guiPayloadVersion,
+      resources,
       nodeRuntime: readRuntime(process.env.PATCH_OFFLINE_NODE_RUNTIME),
       consoleRuntime: readRuntime(process.env.PATCH_OFFLINE_CONSOLE_RUNTIME),
       guiRuntime: readRuntime(process.env.PATCH_OFFLINE_GUI_RUNTIME)
@@ -113,4 +116,18 @@ function readRuntime(filePath) {
   if (!filePath) return undefined;
   if (!fs.existsSync(filePath)) throw new Error(`Embedded runtime file is missing: ${filePath}`);
   return new Uint8Array(fs.readFileSync(filePath));
+}
+
+function readResources(filePath) {
+  if (!filePath) return [];
+  if (!fs.existsSync(filePath)) throw new Error(`Patch resource file is missing: ${filePath}`);
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (error) {
+    throw new Error(`Patch resource file is not valid JSON: ${error?.message ?? error}`);
+  }
+  const resources = Array.isArray(parsed) ? parsed : parsed?.resources;
+  if (!Array.isArray(resources)) throw new Error('Patch resource JSON must be an array or an object with a resources array.');
+  return validateStudioResources(resources);
 }
