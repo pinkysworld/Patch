@@ -86,7 +86,8 @@ test('Workspace Layout v2 preserves editor and Designer minimums and falls back 
     '@media (max-width: 760px)',
     '.workspace-layout-bar { display: none; }'
   ]) assert.ok(accessibility.includes(marker), marker);
-  assert.match(accessibility, /\.editor-pane textarea \{ height: calc\(100% - 42px\); min-height: 0; resize: none; \}/);
+  assert.match(accessibility, /\.editor-pane textarea \{ flex: 1 1 auto; height: auto; min-height: 0; resize: none; \}/);
+  assert.doesNotMatch(accessibility, /\.editor-pane textarea \{ height: calc\(100% - 42px\)/);
   assert.match(accessibility, /\.designer-surface[\s\S]*min-height: 0/);
 });
 
