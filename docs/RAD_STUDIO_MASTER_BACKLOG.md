@@ -1,8 +1,8 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-08-30**
+Status synchronized: **2026-08-31**
 
-This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** is the active R0 architecture tracker. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
+This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** tracks R0 architecture hardening. Issue **#319** tracks the native Window-icon implementation/promotion sequence. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
 ## Product goal
 
@@ -27,31 +27,41 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 7. **Accessibility and keyboard parity.** Major Designer actions need keyboard-accessible equivalents.
 8. **Offline core.** Network services are optional accelerators, not requirements for normal installed-IDE use.
 9. **No general privileged browser bridge.** Installed-IDE filesystem/process authority must be exposed only through narrow, authenticated, versioned operations.
+10. **Implementation is not promotion.** Experimental native contracts remain separate from Current Ready until release assets, digests, linker/offline paths and product metadata are all verified.
 
 ## Current baseline
 
-Current product contract:
+### Current product contract
 
 - Patch **0.2.0-beta.36**;
 - Change IR **0.10**;
-- Native GUI IR **1.7**, payload **v17**, runtime **v1.8**;
+- Current Ready Native GUI IR **1.7**, payload **v17**, runtime **v1.8**;
 - Studio project/resource bundle **v4**;
 - Component Registry **0.8**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
 - Button, Input, Text, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel Stage 1 authoring;
 - source-backed Anchors/Dock, alignment/sizing/distribution, grid snap, z-order commands, Focus Order Stage 1 and Undo/Redo transactions;
 - project Resource Manager with deterministic resource metadata and recovery/export/import;
-- Standalone Web and Ready native Windows/macOS/Linux paths for the currently supported native component contract;
-- token-free offline compiler/linker and sealed native runtime templates;
+- Standalone Web and Ready native Windows/macOS/Linux paths for the current native component contract;
+- token-free Offline Compiler/linker and sealed native runtime templates;
 - public content-addressed PWA plus real-Chrome startup/Workshop checks;
-- six-Form Workshop Desk acceptance application and real-Chrome large-project stress fixture;
-- R0 `studio-design-model/0.1` and `studio-design-cache/0.1`, wired into the primary non-executing Designer refresh path;
-- R0 `studio-design-snapshots/0.1`, sharing exact-source declaration-only snapshots and AST-derived Designer descriptors;
-- R0 `studio-form-materialization/0.1`, with only the active Form fully materialized and sibling Forms retained as lightweight source-backed shells;
-- R0 `studio-runtime-selection-state/0.1` and `studio-runtime-render-policy/0.1`, preserving keyed transient selections with incremental-by-default rendering and an explicit deterministic full fallback;
-- R1 `native-imagelist-asset-plan/0.1`, explicitly not yet a Ready native ImageList contract;
-- Offline Studio manifest **v1** and rolling Stage 1 release channel **`offline-studio-v0.2`** for Windows x64, macOS Apple Silicon and Linux x64;
-- Offline Studio release bundle validates platform self-smokes, identical embedded-site manifests and SHA-256 checksums before publication.
+- six-Form Workshop Desk acceptance/stress application;
+- Offline Studio rolling Stage 1 release channel **`offline-studio-v0.2`**;
+- Offline Compiler rolling release channel **`offline-compiler-v0.2`**.
+
+### Implemented next native contracts, not yet Current Ready
+
+- **IR 1.8 / payload v18 / runtime v1.9**: ImageList/Button image transport plus Win32/AppKit/GTK Button consumers;
+- **IR 1.9 / payload v19 / runtime v1.10**: application/Form Window-icon transport plus Win32/AppKit/GTK consumers, preserving the complete v1.9 layer;
+- `native-window-icon-packaging/0.1`: deterministic application-icon packaging artifacts;
+- `native-window-icon-package-v110/0.2`: Windows/macOS/Linux runtime-v1.10 package plans;
+- `windows-pe-icon-v110/0.1`: bounded in-place project-icon embedding into a reserved Windows PE application-icon slot;
+- normal Windows runtime-v1.10 artifact carries and verifies that reserved PE slot;
+- real Windows `ExtractAssociatedIcon` + `--patch-smoke` evidence is green;
+- macOS `.icns` + `CFBundleIconFile` package plan is green;
+- Linux hicolor + `.desktop` package plan is green.
+
+`src/native-current-contract.js` intentionally remains **1.7 / 17 / 1.8** until the release/digest/Offline-Compiler promotion gate is complete.
 
 ## Priority model
 
@@ -64,7 +74,7 @@ Current product contract:
 
 # Milestone R0 - RAD foundation hardening
 
-Target: make the source-backed Studio responsive and coherent as projects and component count grow. Issue **#282** is the active tracker.
+Target: keep the source-backed Studio responsive and coherent as projects and component count grow. Issue **#282** is the active tracker.
 
 ## P0.1 Global UI name namespace
 
@@ -75,8 +85,6 @@ Status: **substantially implemented**.
 - [ ] use the same namespace guard for every duplicate/paste/structural-editor path;
 - [ ] explicit regression coverage for every nested/new component family.
 
-**Done when:** no Designer operation can create two effective UI/event targets with the same Patch name.
-
 ## P0.2 Undo/Redo transaction model
 
 Status: **core transaction model implemented**.
@@ -86,58 +94,53 @@ Status: **core transaction model implemented**.
 - [x] coalesce one drag/resize into one history entry;
 - [x] editor/Designer Undo/Redo for typing and atomic source rewrites;
 - [x] project/resource replacement boundaries reset stale history;
-- [ ] close any remaining adapter-specific mutation that bypasses the canonical transaction path;
+- [ ] close remaining adapter-specific mutations that bypass the canonical transaction path;
 - [ ] add a long mixed-operation recovery/Undo regression.
 
 ## P0.3 Designer model, cache and virtualization
 
 Completed:
 
-- [x] Studio Run reuses compiled AST instead of parsing twice;
-- [x] lazy Change IR formatting;
+- [x] Run reuses the compiler AST and Change IR formatting is lazy;
 - [x] hidden runtime Forms defer control DOM materialization until opened;
 - [x] Run re-entry guard and transactional runtime replacement;
-- [x] real-Chrome Workshop freeze regression;
-- [x] `studio-design-model/0.1` builds initial design UI/state without executing calls, changes, loops, conditionals, previews or Form visibility actions;
+- [x] `studio-design-model/0.1` declaration-only initial design model;
 - [x] bounded top-level design-model budget;
-- [x] `studio-design-cache/0.1` bounded LRU source-revision snapshot cache;
-- [x] six-Form Workshop Desk is preserved in the declaration-only model and serves as the canonical large RAD showcase;
-- [x] 10-Form / 200-control design-model/cache acceptance coverage;
-- [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache and no longer executes application behavior;
-- [x] public hosted/Offline Studio module closure packages the design model and cache;
-- [x] `studio-form-materialization/0.1` fully materializes only the canonical active Designer Form and leaves inactive Forms as lightweight shells;
-- [x] specialized PaintBox, Shape, Panel, StatusBar and Table adapters obey the active-Form boundary;
-- [x] StatusBar design-time rendering uses a declaration-only snapshot instead of `PatchInterpreter.run()`;
-- [x] real-Chrome Form switching proves inactive Forms settle with zero Designer controls;
-- [x] Run yields one browser task before the large compile/execute/render pipeline;
-- [x] `studio-design-snapshots/0.1` shares exact-source declaration-only snapshots across Designer readers;
-- [x] canonical first-read Window/control descriptors reuse the already parsed design AST instead of reparsing source.
-- [x] source-backed Designer selection, Object Inspector, Table/Tree structural editing and Project Tree state survive active-Form materialization transitions, with stable resize-handle reuse avoiding observer churn;
+- [x] `studio-design-cache/0.1` bounded LRU source-revision cache;
+- [x] six-Form Workshop Desk preserved by the declaration-only model;
+- [x] 10-Form / 200-control acceptance fixture;
+- [x] primary `refreshDesigner()` consumes the bounded declaration-only design snapshot cache;
+- [x] hosted and Offline Studio package the same design-model/cache modules;
+- [x] `studio-form-materialization/0.1` fully materializes only the active Designer Form;
+- [x] PaintBox, Shape, Panel, StatusBar and Table adapters obey the active-Form boundary;
+- [x] `studio-design-snapshots/0.1` shares exact-source snapshots and reuses parsed AST descriptors;
+- [x] Designer selection, Object Inspector, Table/Tree structural editing and Project Tree state survive Form materialization transitions.
 
 Remaining:
-- [ ] virtualize very large Table/Tree previews where justified;
+
+- [ ] virtualize very large Table/Tree previews where measurements justify it;
 - [ ] define a versioned Web Worker boundary for parse/compile/design-model work;
 - [ ] bound any expression evaluation that remains necessary at design time.
 
 ## P0.4 Incremental runtime renderer
 
-- [x] stable keyed Form/control identities in the browser runtime surface;
-- [x] Stage 1 event reconciliation reuses unchanged Form DOM and replaces only changed Form shells;
-- [x] bounded focus, caret, Form/control scroll and unchanged-model multi-selection restoration across changed-Form replacement;
-- [x] Tabs page changes update only the local tab panel and preserve parent/unrelated Form DOM identity;
-- [x] reconcile changed core-rendered controls inside a stable changed Form while retaining unchanged sibling DOM identity;
-- [x] preserve richer transient Table/Tree adapter selections through the same canonical keyed-state contract;
-- [x] deterministic full rerender fallback/debug mode through explicit `?patch-runtime-render=full`;
-- [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists;
-- [x] real-Chrome event-to-paint regression gate through `patch-studio-browser-performance/0.1`.
+- [x] stable keyed Form/control identities;
+- [x] event reconciliation reuses unchanged Form DOM;
+- [x] bounded focus, caret, scroll and unchanged-model multi-selection restoration;
+- [x] Tabs page changes reconcile only their local panel;
+- [x] `keyed-control-v2` reconciles changed core controls while retaining unchanged sibling DOM;
+- [x] transient Table/Tree selection survives safe rebuilds;
+- [x] deterministic `?patch-runtime-render=full` recovery/diagnostics fallback;
+- [x] real-Chrome event-to-paint performance gate;
+- [ ] extend incremental reconciliation to adapter-owned top-level controls where a canonical adapter state contract exists.
 
 ## P0.5 Performance gates
 
 - [x] Workshop Run click-to-first-app-paint measurement;
 - [x] 10-Form / 200-control initial Run timing;
 - [x] large-Form Workshop event-to-paint timing;
-- [x] active-Form switch timing on the 10-Form / 200-control fixture;
-- [x] generous hosted-runner CI thresholds through `patch-studio-browser-performance/0.1`: 3000 ms for Run-to-paint and 2000 ms for event/Form-switch timing.
+- [x] active-Form switch timing;
+- [x] hosted-runner CI thresholds through `patch-studio-browser-performance/0.1`.
 
 ## P0.6 Consistent selection and property ownership
 
@@ -159,12 +162,12 @@ Remaining:
 
 ## P0.8 CI/deployment reliability
 
-- [ ] make Pages deployment release-aware so a just-publishing runtime does not create an expected red workflow;
-- [ ] retain fail-closed runtime/digest verification;
+- [ ] make Pages deployment release-aware so just-publishing runtime assets do not create expected red workflows;
+- [x] retain fail-closed runtime/digest verification;
 - [x] live HTTP/Chrome verification after deploy;
-- [x] deployed Tutorials/Examples handbook pages and their content-addressed stylesheet are explicitly live-smoked after Pages deployment;
+- [x] deployed Tutorials/Examples handbook surfaces live-smoked after Pages deployment;
 - [ ] reduce notification noise without weakening gates;
-- [ ] package only the real Offline Compiler CLI dependency graph so unrelated `src` changes do not trigger unnecessary cross-platform compiler rebuilds.
+- [ ] shrink Offline Compiler triggers/package closure so unrelated source changes do not rebuild every platform.
 
 **R0 exit criterion:** Designer editing and Form switching are bounded, do not execute unrelated application behavior, typical events do not rebuild the complete visible app tree, and regressions are measured in CI.
 
@@ -181,7 +184,7 @@ Status: **implemented foundation**.
 - [x] size/media/SHA-256 metadata;
 - [x] preview/add/remove and resource-backed Object Inspector flows;
 - [x] project v4 export/import/recovery persistence;
-- [x] deterministic Web/native resource packaging where the target contract supports it;
+- [x] deterministic Web/native resource packaging where supported;
 - [ ] richer rename/reference refactoring;
 - [ ] drag asset directly onto Form as Picture;
 - [ ] visual application-branding workflow.
@@ -198,21 +201,25 @@ Status: **implemented foundation**.
 
 ## P1.3 ImageList
 
-Status: **Stage 1 authoring/Web implemented; native consumer transport open**.
+Status: **authoring/Web and first native Button consumer implemented; product promotion still pending**.
 
 - [x] nonvisual component tray and source syntax;
 - [x] logical image names/sizes and Resource Manager integration;
 - [x] compiler/registry metadata;
 - [x] Button `image list.item` consumer on Studio/Web;
-- [x] `native-imagelist-asset-plan/0.1` resolves, validates and deduplicates required PNG/JPEG resources;
-- [ ] version the next Native GUI IR/payload/runtime transport for ImageList/Button assets;
-- [ ] Win32 Button image consumer;
-- [ ] AppKit Button image consumer;
-- [ ] GTK Button image consumer;
-- [ ] reuse that transport for ToolBar/ToolButton/Menu/Tree consumers only after those contracts exist;
-- [ ] optional DPI variants after the base cross-platform transport is stable.
+- [x] `native-imagelist-asset-plan/0.1` validation/deduplication;
+- [x] Native GUI IR **1.8** transport for used Button ImageList assets;
+- [x] sealed payload **v18** `BIMG` transport;
+- [x] runtime **v1.9** compatibility layer;
+- [x] Win32 Button image consumer;
+- [x] AppKit Button image consumer;
+- [x] GTK Button image consumer;
+- [x] dedicated cross-platform runtime evidence;
+- [ ] promote through the combined IR 1.9 / payload v19 / runtime v1.10 release line;
+- [ ] reuse transport for ToolBar/ToolButton/Menu/Tree consumers only after those contracts exist;
+- [ ] optional DPI variants after the base cross-platform transport is promoted.
 
-Current Native GUI IR 1.7 continues to fail closed for ImageList/Button images.
+Current Ready IR 1.7 still fails closed for ImageList/Button images by design.
 
 ## P1.4 Shape
 
@@ -226,23 +233,46 @@ Current Native GUI IR 1.7 continues to fail closed for ImageList/Button images.
 - [x] source/Designer/Web PaintBox;
 - [x] pure paint-event drawing program;
 - [x] clear/line/rectangle/ellipse/text;
-- [x] `draw image` with bounded PNG/JPEG project resources through Native GUI IR 1.7 / payload v17 / runtime v1.8;
+- [x] `draw image` with bounded PNG/JPEG project resources through Current Ready IR 1.7 / payload v17 / runtime v1.8;
 - [ ] pointer/mouse event contract;
 - [ ] paths/transforms/gradients;
 - [ ] higher-DPI drawing model beyond current basics.
 
 ## P1.6 Icons and application branding
 
+Status: **native runtime and platform packaging implemented; product promotion open**.
+
 - [x] source-backed Form/window icon declaration;
 - [x] Web favicon/chrome packaging under `window-icon/1.0`;
-- [ ] version native application/window icon transport;
-- [ ] Windows `.ico` packaging;
-- [ ] macOS application icon/resource packaging;
-- [ ] Linux desktop icon packaging;
+- [x] `native-window-icon-asset-plan/0.1`;
+- [x] Native GUI IR **1.9** Form/application icon transport;
+- [x] sealed payload **v19 / WICO** transport over the exact payload-v18 prefix;
+- [x] runtime **v1.10** Win32/AppKit/GTK consumers;
+- [x] `native-window-icon-packaging/0.1`;
+- [x] `native-window-icon-package-v110/0.2`;
+- [x] deterministic Windows `.ico` generation;
+- [x] `windows-pe-icon-v110/0.1` self-contained Windows PE application-icon embedding;
+- [x] standard Windows v1.10 runtime artifact reserves/verifies the PE icon slot;
+- [x] real Windows associated-icon extraction and runtime smoke from the same packaged EXE;
+- [x] macOS `.icns` + `CFBundleIconFile` package plan;
+- [x] Linux hicolor + `.desktop` package plan;
+- [x] Windows/macOS/Linux package-contract workflow;
 - [ ] PWA icon-set generation;
-- [ ] visual branding editor in Project Settings.
+- [ ] visual branding editor in Project Settings;
+- [ ] Current Ready promotion after release/digest/Offline-Compiler gates.
 
-**R1 exit criterion:** native ImageList/Button resource consumption and native app/window icons are real on Win32/AppKit/GTK and current capability metadata/tests reflect that.
+### R1 native promotion gate
+
+The implementation side of native ImageList/Button and Window/application icons is complete. Current Ready promotion still requires:
+
+- [ ] publish versioned runtime-v1.10 release assets for Windows, macOS and Linux;
+- [ ] publish and verify their SHA-256 digests;
+- [ ] wire browser/native Ready runtime lookup to those verified assets;
+- [ ] wire Offline Compiler linking to IR 1.9 / payload v19 / runtime v1.10;
+- [ ] update generated component capability metadata and public release/download surfaces;
+- [ ] only then move `src/native-current-contract.js` from 1.7 / 17 / 1.8 to 1.9 / 19 / 1.10.
+
+**R1 native implementation exit:** complete. **R1 product-promotion exit:** open until every unchecked promotion item above is green.
 
 ---
 
@@ -387,7 +417,7 @@ A component is Ready only when the required columns are green.
 - [ ] OpenFileDialog;
 - [ ] SaveFileDialog;
 - [ ] SelectFolderDialog;
-- [ ] Confirm/Message dialogs as first-class nonvisual components where not already available as language actions;
+- [ ] Confirm/Message dialogs as first-class nonvisual components where useful;
 - [ ] ColorDialog;
 - [ ] FontDialog only where portable behavior is credible;
 - [ ] common Object Inspector representation.
@@ -476,8 +506,6 @@ A component is Ready only when the required columns are green.
 
 ## P2.26 Patch semantic event/change trace
 
-This should be a Patch advantage, not just a conventional debugger clone.
-
 - [ ] live click/change/tick/menu/action stream;
 - [ ] pre/post semantic state;
 - [ ] Change IR/signature link;
@@ -527,7 +555,7 @@ Only after the language/runtime security model is explicit:
 
 ## P1.31 One-click desktop build UX
 
-Existing Studio has target selection and Ready downloads for the current native contract. Remaining professional workflow:
+Current Studio has target selection and Ready downloads for the current native contract. Remaining professional workflow:
 
 - [ ] first-class artifact pane with direct outputs/checksums;
 - [ ] explicit **Local / Remote** build mode;
@@ -537,16 +565,16 @@ Existing Studio has target selection and Ready downloads for the current native 
 
 ## P2.32 App packaging
 
+Application-icon packaging for the experimental v1.10 native line is implemented. Broader install/distribution packaging remains:
+
 - [ ] Windows app folder and installer option;
-- [ ] macOS `.app` bundle polish;
+- [ ] macOS `.app` distribution polish beyond the current deterministic package plan;
 - [ ] Linux AppImage/tar or other justified format;
-- [ ] assets/icons automatic;
-- [ ] release manifest/SHA256SUMS;
+- [x] experimental Windows/macOS/Linux application-icon packaging contracts;
+- [ ] release manifest/SHA256SUMS for the promoted v1.10 line;
 - [ ] explicit uninstall path for installers.
 
 ## P2.33 Signing/notarization
-
-Machinery exists but real credentialed evidence remains external:
 
 - [x] fail-closed Windows signing hooks;
 - [x] fail-closed macOS signing/notarization hooks;
@@ -568,13 +596,9 @@ See `docs/OFFLINE_STUDIO.md` and `web/downloads.html`.
 - [x] loopback-only `127.0.0.1` server;
 - [x] random per-launch URL prefix;
 - [x] restrictive CSP/security headers and no outbound requirement for core Studio use;
-- [x] manifest/closure tests independent of SEA availability;
 - [x] Windows, macOS and Linux platform executables built and self-smoked in CI;
-- [x] pre-publication `release-bundle` gate comparing all three embedded manifests;
+- [x] pre-publication release-bundle gate comparing embedded manifests;
 - [x] stable rolling `offline-studio-v0.2` release assets;
-- [x] `PatchStudio-windows-x64.exe`;
-- [x] `PatchStudio-macos-arm64`;
-- [x] `PatchStudio-linux-x64`;
 - [x] release `offline-studio-manifest.json` and `SHA256SUMS`;
 - [x] public Downloads/README/Patch Studio/Offline Studio docs share the same asset contract.
 
@@ -582,7 +606,7 @@ Stage 1 supports offline authoring, Designer/Run and browser-local build targets
 
 ## O1.2 Stage 2 host-native local build
 
-- [ ] embed/install the existing Patch offline compiler beside the IDE;
+- [ ] embed/install the Patch Offline Compiler beside the IDE;
 - [ ] embed host-platform sealed GUI/console runtimes;
 - [ ] narrow authenticated localhost build API, never a general shell API;
 - [ ] workspace/path authorization;
@@ -717,16 +741,16 @@ A Tauri/Electron-style shell should only be adopted if it materially improves OS
 
 ## Workshop Desk 2.0
 
-- [x] multi-Form Window application and real browser Run;
+- [x] six meaningful Forms and real browser Run;
 - [x] current menus/status/Timer/Tabs/Table/TreeView/Anchors/Dock families where implemented;
 - [x] Picture/Shape/PaintBox resource/graphics families including PaintBox `draw image`;
 - [x] current Windows/macOS/Linux Ready native surface;
 - [x] Offline Studio Stage 1 embeds and runs the same Studio application surface;
-- [ ] 5+ meaningful Forms;
-- [ ] toolbar/actions/popup menus;
+- [ ] add an experimental native ImageList/Button-image acceptance path before promotion;
+- [ ] add an experimental Window-icon/package acceptance path to the canonical showcase rather than only dedicated fixtures;
+- [ ] toolbar/actions/popup menus after those components exist;
 - [ ] nested Panel Stage 2/GroupBox;
 - [ ] independent TabOrder;
-- [ ] native ImageList icons;
 - [ ] standard file dialog;
 - [ ] settings/project-state scenario;
 - [ ] property/data binding;
@@ -739,40 +763,38 @@ CI should use Workshop Desk to prove a feature is real across claimed targets ra
 
 # Current execution order
 
-This queue is authoritative for sequencing. Completed Stage 1 Offline Studio publication is intentionally absent from the open queue.
+This queue is authoritative for sequencing. Completed architecture foundations and native R1 implementation work are intentionally absent from the open queue.
 
 ## Immediate queue
 
-1. Wire `studio-design-model/0.1` and the shared snapshot cache into the primary Designer refresh path.
-2. Implement true active-Form Designer materialization/virtualization.
-3. Introduce keyed/incremental runtime rendering with focus/caret/selection preservation.
-4. Add measurable #282 performance gates and split major responsibilities out of `web/playground.js`.
-5. Make Pages deployment release-aware to remove expected runtime-publication failure noise.
-6. Version and implement native ImageList/Button resource transport on Win32/AppKit/GTK.
-7. Version and implement native application/window icon packaging.
-8. Start Offline Studio Stage 2 host-native local build bridge using the existing offline compiler/runtime assets.
+1. Finish R0 module boundaries: extract runtime lifecycle, Window renderer, transient UI state and Build controller from `web/playground.js`.
+2. Define the Web Worker boundary and only then add Table/Tree preview virtualization where measurement justifies it.
+3. Make Pages deployment release-aware and reduce expected CI notification noise without weakening fail-closed verification.
+4. Publish and verify the **runtime v1.10** Windows/macOS/Linux release assets and SHA-256 digests.
+5. Promote Offline Compiler/native linking through **IR 1.9 / payload v19 / runtime v1.10**, then switch `src/native-current-contract.js` only after the complete gate is green.
+6. Start Offline Studio Stage 2 host-native local build bridge using the promoted compiler/runtime assets.
 
 ## Next queue
 
-9. Independent TabOrder and visual Tab Order mode.
-10. Clipboard/Lock Controls/Layers and richer smart guides.
-11. Panel Stage 2, GroupBox, ScrollBox and SplitContainer.
-12. ToolBar/ToolButton/PopupMenu plus ActionList.
-13. Memo, ProgressBar, SpinEdit and Date/Time controls.
-14. Project Explorer 2.0, Project Settings and templates.
-15. Professional code-editor services and Designer-code navigation.
-16. Debugger Stage 1 plus Patch semantic event/change timeline.
-17. One-click packaged desktop applications and installer workflow.
+7. Independent TabOrder and visual Tab Order mode.
+8. Clipboard/Lock Controls/Layers and richer smart guides.
+9. Panel Stage 2, GroupBox, ScrollBox and SplitContainer.
+10. ToolBar/ToolButton/PopupMenu plus ActionList, reusing the implemented ImageList transport where appropriate.
+11. Memo, ProgressBar, SpinEdit and Date/Time controls.
+12. Project Explorer 2.0, Project Settings, application branding/PWA icon-set generation and templates.
+13. Professional code-editor services and Designer-code navigation.
+14. Debugger Stage 1 plus Patch semantic event/change timeline.
+15. One-click packaged desktop applications and installer workflow.
 
 ## Later queue
 
-18. property/data binding;
-19. Test Explorer/UI recorder;
-20. safe Hot Reload;
-21. SQLite/data components;
-22. package/component ecosystem;
-23. localization/accessibility tooling;
-24. production signing/notarization/update/distribution evidence.
+16. property/data binding;
+17. Test Explorer/UI recorder;
+18. safe Hot Reload;
+19. SQLite/data components;
+20. package/component ecosystem;
+21. localization/accessibility tooling;
+22. production signing/notarization/update/distribution evidence.
 
 ---
 
