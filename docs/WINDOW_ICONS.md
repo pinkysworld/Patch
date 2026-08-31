@@ -25,7 +25,7 @@ That line deliberately fails closed when a Form declares `icon`. It is not silen
 
 ## Experimental native stack
 
-Native Window-icon support is being built as an additive stack above the current and Button/ImageList contracts:
+Native Window-icon support is implemented as an additive stack above the current and Button/ImageList contracts:
 
 | Layer | Contract | Status |
 |---|---|---|
@@ -33,7 +33,7 @@ Native Window-icon support is being built as an additive stack above the current
 | Resource planning | `native-window-icon-asset-plan/0.1` | implemented |
 | Native GUI IR | **1.9** | implemented, exact icon-free projection to IR 1.8 |
 | Sealed payload | **v19 / `WICO`** | implemented, exact payload-v18 compatibility prefix |
-| Desktop runtime | **v1.10** | cross-platform Win32/AppKit/GTK consumer line under validation |
+| Desktop runtime | **v1.10** | implemented and runtime-smoked on Win32/AppKit/GTK |
 | Current product promotion | IR 1.7 / payload v17 / runtime v1.8 remains current | not promoted yet |
 
 The v19 payload keeps the entire payload-v18 Button/ImageList (`BIMG`) transport intact underneath `WICO`.
@@ -53,13 +53,13 @@ Native icon transport is bounded and deduplicated. Shared project resources are 
 
 ## Desktop semantics
 
-The runtime-v1.10 work follows one common `WICO` contract while using native platform APIs:
+Runtime v1.10 uses one common `WICO` contract with native platform APIs:
 
 - **Win32:** application/class icon plus per-Form `WM_SETICON`; Forms without their own icon inherit the application icon at runtime.
 - **AppKit:** application icon through `NSApplication`; explicit Form icons are surfaced in native titlebar chrome.
 - **GTK:** application default icon plus per-Form `gtk_window_set_icon`; Forms without their own icon use the application icon.
 
-These semantics are experimental until the v1.10 cross-platform runtime workflow and later release/promotion gates are green.
+The dedicated v1.10 workflow now builds and smokes the Window-icon layer on Windows, macOS and Linux while preserving the complete runtime-v1.9 Button/ImageList layer underneath it.
 
 ## Packaging versus runtime consumption
 
@@ -70,7 +70,7 @@ Runtime v1.10 proves that a sealed v19 application can decode and display the ve
 1. Windows executable/application `.ico` resource generation and embedding;
 2. macOS application icon/resource packaging for distributed app bundles;
 3. Linux desktop/application icon packaging where a desktop package is produced;
-4. cross-platform runtime/release digest verification;
+4. cross-platform release asset and digest verification;
 5. Offline Compiler linking against the promoted runtime line;
 6. capability-matrix, roadmap, public-site and release documentation updates.
 
