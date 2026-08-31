@@ -29,7 +29,8 @@ test('ambiguous repairs remain explanation-only in the assist contract', () => {
 
 test('event-contract repairs are scoped to the named handler line', () => {
   assert.match(diagnostics, /replace-event-on-line/);
-  assert.match(diagnostics, /\\s\*when\\s\+/);
+  assert.match(diagnostics, /const pattern = new RegExp/);
+  assert.match(diagnostics, /escapeAssistRegExp\(control\)/);
   assert.match(diagnostics, /Patch keeps each GUI control’s event contract explicit/);
 });
 
