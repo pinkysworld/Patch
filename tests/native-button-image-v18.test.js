@@ -86,12 +86,11 @@ test('IR 1.8 validation fails closed for malformed Button image metadata', () =>
   );
 });
 
-test('current product contract remains fail-closed at IR 1.7 until desktop runtime promotion', () => {
+test('current product contract promotes IR 1.8 / payload 18 / runtime 1.9 after cross-platform runtime smoke', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.guiIr, '1.7');
-  assert.throws(
-    () => buildCurrentNativeGuiIR(compile(SOURCE, { name: 'CurrentStillFrozen', kind: 'window', entry: 'main.patch' })),
-    /does not transport image app_images\.open/
-  );
+  assert.equal(contract.id, 'native-gui-1.8/payload-18/runtime-1.9');
+  assert.equal(contract.guiIr, '1.8');
+  const current = buildCurrentNativeGuiIR(compile(SOURCE, { name: 'CurrentButtonImages', kind: 'window', entry: 'main.patch' }));
+  assert.equal(current.version, '1.8');
+  assert.equal(hasNativeButtonImage(current), true);
 });
