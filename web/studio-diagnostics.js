@@ -190,7 +190,7 @@ function renderSmartCard(diagnostic, assist) {
 
   const fixButton = smartCard.querySelector('[data-smart-fix]');
   fixButton.hidden = !assist.fix;
-  fixButton.textContent = assist.fix?.label ? `Fix anwenden · ${assist.fix.label}` : 'Fix anwenden';
+  fixButton.textContent = assist.fix?.label ? `Apply fix · ${assist.fix.label}` : 'Apply fix';
   smartCard.querySelector('[data-smart-locate]').hidden = !diagnostic.location?.line;
 }
 
@@ -216,9 +216,9 @@ function ensureSmartCard() {
   const body = document.createElement('div');
   body.className = 'smart-diagnostic-grid';
   body.append(
-    smartField('Was ist passiert?', 'smartWhat'),
-    smartField('Warum?', 'smartWhy'),
-    smartField('Empfohlene Lösung', 'smartRecommendation')
+    smartField('What happened?', 'smartWhat'),
+    smartField('Why?', 'smartWhy'),
+    smartField('Recommended solution', 'smartRecommendation')
   );
 
   const actions = document.createElement('div');
@@ -227,20 +227,20 @@ function ensureSmartCard() {
   fix.type = 'button';
   fix.className = 'smart-diagnostic-primary';
   fix.dataset.smartFix = '';
-  fix.textContent = 'Fix anwenden';
+  fix.textContent = 'Apply fix';
   fix.addEventListener('click', applyCurrentSmartFix);
 
   const locate = document.createElement('button');
   locate.type = 'button';
   locate.className = 'secondary small';
   locate.dataset.smartLocate = '';
-  locate.textContent = 'Im Code zeigen';
+  locate.textContent = 'Show in code';
   locate.addEventListener('click', locateCurrentSmartDiagnostic);
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';
   dismiss.className = 'secondary small';
-  dismiss.textContent = 'Ausblenden';
+  dismiss.textContent = 'Dismiss';
   dismiss.addEventListener('click', hideSmartDiagnostic);
   actions.append(fix, locate, dismiss);
 
@@ -270,7 +270,7 @@ function applyCurrentSmartFix() {
     if (!buildTarget) return;
     buildTarget.value = fix.value;
     buildTarget.dispatchEvent(new Event('change', { bubbles: true }));
-    markSmartFixApplied(`Build-Ziel auf ${buildTarget.selectedOptions?.[0]?.textContent ?? fix.value} gesetzt.`);
+    markSmartFixApplied(`Build target changed to ${buildTarget.selectedOptions?.[0]?.textContent ?? fix.value}.`);
     return;
   }
 
@@ -282,7 +282,7 @@ function applyCurrentSmartFix() {
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
   locateSmartLine(fix.line);
-  markSmartFixApplied('Fix angewendet. Patch hat nur die vorgeschlagene lokale Änderung vorgenommen.');
+  markSmartFixApplied('Fix applied. Patch changed only the suggested local source fragment.');
 }
 
 function locateCurrentSmartDiagnostic() {
