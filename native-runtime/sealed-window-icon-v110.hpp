@@ -7,17 +7,7 @@
 #include <string>
 #include <vector>
 
-// Runtime v1.10 compiles the proven v1.9 Button-image runtime as its private
-// compatibility layer. Normal v1.9 builds do not define these hooks and keep
-// their public entry points unchanged.
-#ifdef PATCH_WIN32_RUNTIME_V110_RESTORE_ENTRY
-#define wWinMain PATCH_WIN32_RUNTIME_V110_RESTORE_ENTRY
-#endif
-#ifdef PATCH_RUNTIME_V110_RESTORE_MAIN
-#define main PATCH_RUNTIME_V110_RESTORE_MAIN
-#endif
-
-struct PatchButtonImageAssetV19 {
+struct PatchWindowIconAssetV110 {
   std::string resourceId;
   std::string mediaType;
   uint32_t size = 0;
@@ -25,19 +15,16 @@ struct PatchButtonImageAssetV19 {
   std::string dataUri;
 };
 
-struct PatchButtonImageConsumerV19 {
-  int nativeIndex = -1;
-  std::string controlId;
-  std::string imageListId;
-  std::string imageItem;
+struct PatchWindowIconConsumerV110 {
+  uint32_t formIndex = 0;
+  std::string formId;
   uint32_t assetIndex = 0;
-  uint32_t logicalWidth = 0;
-  uint32_t logicalHeight = 0;
+  bool application = false;
 };
 
-class PatchButtonImageReaderV19 {
+class PatchWindowIconReaderV110 {
 public:
-  PatchButtonImageReaderV19(const uint8_t* data, size_t size): data_(data), size_(size) {}
+  PatchWindowIconReaderV110(const uint8_t* data, size_t size): data_(data), size_(size) {}
   uint32_t u32() {
     need(4);
     uint32_t value = (uint32_t)data_[offset_] |
@@ -62,8 +49,8 @@ private:
   size_t offset_ = 0;
 };
 
-static bool PatchButtonNameV19(const std::string& value) {
-  if (value.empty()) return false;
+static bool PatchWindowIconNameV110(const std::string& value) {
+  if (value.empty()) return true;
   unsigned char first = (unsigned char)value.front();
   if (!(std::isalpha(first) || value.front() == '_')) return false;
   for (size_t index = 1; index < value.size(); ++index) {
@@ -73,7 +60,7 @@ static bool PatchButtonNameV19(const std::string& value) {
   return true;
 }
 
-static bool PatchButtonResourceIdV19(const std::string& value) {
+static bool PatchWindowIconResourceIdV110(const std::string& value) {
   if (value.empty() || !std::isalpha((unsigned char)value.front())) return false;
   bool afterSeparator = false;
   for (size_t index = 1; index < value.size(); ++index) {
@@ -88,25 +75,25 @@ static bool PatchButtonResourceIdV19(const std::string& value) {
   return !afterSeparator;
 }
 
-static bool PatchButtonSha256V19(const std::string& value) {
+static bool PatchWindowIconSha256V110(const std::string& value) {
   if (value.size() != 64) return false;
   for (char ch : value) if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f'))) return false;
   return true;
 }
 
-static bool PatchConvertPayloadV18ToV17(
+static bool PatchConvertPayloadV19ToV18(
   const std::vector<uint8_t>& input,
-  std::vector<uint8_t>& payloadV17,
-  std::vector<PatchButtonImageAssetV19>& assets,
-  std::vector<PatchButtonImageConsumerV19>& consumers
+  std::vector<uint8_t>& payloadV18,
+  std::vector<PatchWindowIconAssetV110>& assets,
+  std::vector<PatchWindowIconConsumerV110>& consumers
 ) {
-  payloadV17.clear();
+  payloadV18.clear();
   assets.clear();
   consumers.clear();
   try {
     if (input.size() < 8) return false;
     const size_t trailer = input.size() - 8;
-    if (std::memcmp(input.data() + trailer, "BIMG", 4) != 0) return false;
+    if (std::memcmp(input.data() + trailer, "WICO", 4) != 0) return false;
     const uint8_t* lengthBytes = input.data() + trailer + 4;
     uint32_t extensionLength = (uint32_t)lengthBytes[0] |
       ((uint32_t)lengthBytes[1] << 8) |
@@ -115,60 +102,71 @@ static bool PatchConvertPayloadV18ToV17(
     if ((size_t)extensionLength > trailer || extensionLength > 8u * 1024u * 1024u) return false;
     const size_t extensionStart = trailer - (size_t)extensionLength;
     if (extensionStart == 0) return false;
-    payloadV17.assign(input.begin(), input.begin() + (std::ptrdiff_t)extensionStart);
+    payloadV18.assign(input.begin(), input.begin() + (std::ptrdiff_t)extensionStart);
 
-    PatchButtonImageReaderV19 reader(input.data() + extensionStart, extensionLength);
+    PatchWindowIconReaderV110 reader(input.data() + extensionStart, extensionLength);
     uint32_t assetCount = reader.u32();
-    if (assetCount > 1024) return false;
+    if (assetCount > 256) return false;
     std::set<std::string> resourceIds;
     for (uint32_t index = 0; index < assetCount; ++index) {
-      PatchButtonImageAssetV19 asset;
+      PatchWindowIconAssetV110 asset;
       asset.resourceId = reader.text();
       asset.mediaType = reader.text();
       asset.size = reader.u32();
       asset.sha256 = reader.text();
       asset.dataUri = reader.text();
-      if (!PatchButtonResourceIdV19(asset.resourceId) || !resourceIds.insert(asset.resourceId).second) return false;
+      if (!PatchWindowIconResourceIdV110(asset.resourceId) || !resourceIds.insert(asset.resourceId).second) return false;
       if (asset.mediaType != "image/png" && asset.mediaType != "image/jpeg") return false;
-      if (!PatchButtonSha256V19(asset.sha256)) return false;
+      if (!PatchWindowIconSha256V110(asset.sha256)) return false;
       PatchPictureDataV15 decoded;
       if (!PatchDecodePictureDataUriV15(asset.dataUri, decoded) || decoded.mediaType != asset.mediaType || decoded.bytes.size() != asset.size) return false;
       assets.push_back(std::move(asset));
     }
 
     uint32_t consumerCount = reader.u32();
-    if (consumerCount > 4096) return false;
-    std::set<int> nativeIndices;
-    std::set<std::string> controlIds;
+    if (consumerCount > 1024) return false;
+    std::set<uint32_t> formIndices;
+    uint32_t previousFormIndex = 0;
+    bool hasPrevious = false;
+    uint32_t applicationCount = 0;
     for (uint32_t index = 0; index < consumerCount; ++index) {
-      PatchButtonImageConsumerV19 consumer;
-      consumer.nativeIndex = (int)reader.u32();
-      consumer.controlId = reader.text();
-      consumer.imageListId = reader.text();
-      consumer.imageItem = reader.text();
+      PatchWindowIconConsumerV110 consumer;
+      consumer.formIndex = reader.u32();
+      consumer.formId = reader.text();
       consumer.assetIndex = reader.u32();
-      consumer.logicalWidth = reader.u32();
-      consumer.logicalHeight = reader.u32();
-      if (consumer.nativeIndex < 0 || !PatchButtonNameV19(consumer.controlId) || !PatchButtonNameV19(consumer.imageListId) || !PatchButtonNameV19(consumer.imageItem)) return false;
-      if (!nativeIndices.insert(consumer.nativeIndex).second || !controlIds.insert(consumer.controlId).second) return false;
-      if (consumer.assetIndex >= assets.size()) return false;
-      if (!consumer.logicalWidth || !consumer.logicalHeight || consumer.logicalWidth > 512 || consumer.logicalHeight > 512) return false;
+      uint32_t application = reader.u32();
+      if (!PatchWindowIconNameV110(consumer.formId) || consumer.assetIndex >= assets.size() || application > 1) return false;
+      if (!formIndices.insert(consumer.formIndex).second) return false;
+      if (hasPrevious && consumer.formIndex <= previousFormIndex) return false;
+      consumer.application = application == 1;
+      if ((index == 0) != consumer.application) return false;
+      if (consumer.application) ++applicationCount;
+      previousFormIndex = consumer.formIndex;
+      hasPrevious = true;
       consumers.push_back(std::move(consumer));
     }
+    if (consumerCount && applicationCount != 1) return false;
     if (!reader.done()) return false;
-    return !payloadV17.empty();
+    return !payloadV18.empty();
   } catch (...) {
-    payloadV17.clear();
+    payloadV18.clear();
     assets.clear();
     consumers.clear();
     return false;
   }
 }
 
-static const PatchButtonImageConsumerV19* PatchButtonImageForNativeIndexV19(
-  const std::vector<PatchButtonImageConsumerV19>& consumers,
-  int nativeIndex
+static const PatchWindowIconConsumerV110* PatchWindowIconForFormV110(
+  const std::vector<PatchWindowIconConsumerV110>& consumers,
+  uint32_t formIndex
 ) {
-  for (const auto& consumer : consumers) if (consumer.nativeIndex == nativeIndex) return &consumer;
+  for (const auto& consumer : consumers) if (consumer.formIndex == formIndex) return &consumer;
+  return nullptr;
+}
+
+static const PatchWindowIconConsumerV110* PatchApplicationIconV110(
+  const std::vector<PatchWindowIconConsumerV110>& consumers
+) {
+  for (const auto& consumer : consumers) if (consumer.application) return &consumer;
   return nullptr;
 }

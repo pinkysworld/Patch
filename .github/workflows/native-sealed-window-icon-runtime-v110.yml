@@ -1,0 +1,185 @@
+name: Patch Native Sealed Window Icon Runtime v1.10
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/sealed-native-gui-v19.js'
+      - 'src/native-gui-ir-v19.js'
+      - 'src/native-window-icon-backend-adapter.js'
+      - 'native-runtime/sealed-button-image-v19.hpp'
+      - 'native-runtime/sealed-window-icon-v110.hpp'
+      - 'native-runtime/win32-sealed-gui-v19.cpp'
+      - 'native-runtime/appkit-sealed-gui-v19.mm'
+      - 'native-runtime/gtk-sealed-gui-v19.cpp'
+      - 'native-runtime/win32-sealed-gui-v110.cpp'
+      - 'native-runtime/appkit-sealed-gui-v110.mm'
+      - 'native-runtime/gtk-sealed-gui-v110.cpp'
+      - 'examples/window-icons-native.patch'
+      - 'tests/native-window-icon-v19.test.js'
+      - 'tests/native-window-icon-payload-v19.test.js'
+      - 'tests/native-runtime-v110-sources.test.js'
+      - '.github/workflows/native-sealed-window-icon-runtime-v110.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Test payload v19 and runtime v1.10 contract
+        run: node --test tests/native-window-icon-v19.test.js tests/native-window-icon-payload-v19.test.js tests/native-runtime-v110-sources.test.js
+
+  windows:
+    needs: contract
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build Win32 sealed Window icon runtime v1.10
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist-runtime-v110 | Out-Null
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v110.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-runtime-v110\patch-windows-native-gui-runtime.exe',
+            'exit /b %errorlevel%'
+          ) | Set-Content dist-runtime-v110\build-window-icon-runtime.cmd -Encoding ascii
+          & cmd.exe /d /c dist-runtime-v110\build-window-icon-runtime.cmd
+          if ($LASTEXITCODE -ne 0) { throw "MSVC runtime build failed with exit code $LASTEXITCODE." }
+      - name: Seal payload v19 and smoke Win32 runtime
+        shell: pwsh
+        run: |
+          @'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV19 } from './src/native-gui-ir-v19.js';
+          import { sealNativeGuiRuntimeV19 } from './src/sealed-native-gui-v19.js';
+          const data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const sha256 = 'd126901e8b7f82749aee7b7c0ec59838286c9f8d75ffc74147f34ac2b4bad460';
+          const makeResource = id => ({ id, path: `resources/${id.replaceAll('.', '-')}.png`, mediaType: 'image/png', size: 70, sha256, data });
+          const resources = [makeResource('app.icon'), makeResource('about.icon'), makeResource('icons.open')];
+          const source = fs.readFileSync('examples/window-icons-native.patch', 'utf8');
+          const ir = buildNativeGuiIRV19(compile(source, { name: 'WindowIconRuntime', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v110/patch-windows-native-gui-runtime.exe');
+          const sealed = sealNativeGuiRuntimeV19(runtime, ir, { platform: 'windows', resources });
+          fs.writeFileSync('WindowIconRuntime.exe', sealed);
+          '@ | Set-Content seal-window-icon.mjs -Encoding utf8
+          node seal-window-icon.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Payload v19 sealing failed.' }
+          $process = Start-Process -FilePath (Resolve-Path './WindowIconRuntime.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Sealed Window icon runtime smoke failed with exit code $($process.ExitCode)." }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-windows-native-gui-runtime-v110-pr
+          path: dist-runtime-v110/patch-windows-native-gui-runtime.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    needs: contract
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Build universal AppKit sealed Window icon runtime v1.10
+        run: |
+          mkdir -p dist-runtime-v110
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -DPATCH_RUNTIME_V19_RESTORE_MAIN=PatchRuntimeV18CompatibilityMain -framework Cocoa native-runtime/appkit-sealed-gui-v110.mm -o dist-runtime-v110/patch-macos-native-gui-runtime.bin
+          chmod +x dist-runtime-v110/patch-macos-native-gui-runtime.bin
+          ARCHS="$(lipo -archs dist-runtime-v110/patch-macos-native-gui-runtime.bin)"
+          echo "$ARCHS" | grep -qw arm64
+          echo "$ARCHS" | grep -qw x86_64
+      - name: Seal payload v19 and smoke AppKit runtime
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV19 } from './src/native-gui-ir-v19.js';
+          import { sealNativeGuiRuntimeV19 } from './src/sealed-native-gui-v19.js';
+          const data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const sha256 = 'd126901e8b7f82749aee7b7c0ec59838286c9f8d75ffc74147f34ac2b4bad460';
+          const makeResource = id => ({ id, path: `resources/${id.replaceAll('.', '-')}.png`, mediaType: 'image/png', size: 70, sha256, data });
+          const resources = [makeResource('app.icon'), makeResource('about.icon'), makeResource('icons.open')];
+          const source = fs.readFileSync('examples/window-icons-native.patch', 'utf8');
+          const ir = buildNativeGuiIRV19(compile(source, { name: 'WindowIconRuntime', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v110/patch-macos-native-gui-runtime.bin');
+          const sealed = sealNativeGuiRuntimeV19(runtime, ir, { platform: 'macos', resources });
+          fs.writeFileSync('WindowIconRuntime', sealed); fs.chmodSync('WindowIconRuntime', 0o755);
+          NODE
+          ./WindowIconRuntime --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-macos-native-gui-runtime-v110-pr
+          path: dist-runtime-v110/patch-macos-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 7
+
+  linux:
+    needs: contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install GTK3 build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Build GTK3 sealed Window icon runtime v1.10
+        run: |
+          mkdir -p dist-runtime-v110
+          g++ -std=c++17 -O2 -DPATCH_RUNTIME_V19_RESTORE_MAIN=PatchRuntimeV18CompatibilityMain native-runtime/gtk-sealed-gui-v110.cpp -o dist-runtime-v110/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x dist-runtime-v110/patch-linux-native-gui-runtime.bin
+      - name: Seal payload v19 and smoke GTK runtime
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { compile } from './src/compiler.js';
+          import { buildNativeGuiIRV19 } from './src/native-gui-ir-v19.js';
+          import { sealNativeGuiRuntimeV19 } from './src/sealed-native-gui-v19.js';
+          const data = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNQaPj/HwAFAgKfqfZU2QAAAABJRU5ErkJggg==';
+          const sha256 = 'd126901e8b7f82749aee7b7c0ec59838286c9f8d75ffc74147f34ac2b4bad460';
+          const makeResource = id => ({ id, path: `resources/${id.replaceAll('.', '-')}.png`, mediaType: 'image/png', size: 70, sha256, data });
+          const resources = [makeResource('app.icon'), makeResource('about.icon'), makeResource('icons.open')];
+          const source = fs.readFileSync('examples/window-icons-native.patch', 'utf8');
+          const ir = buildNativeGuiIRV19(compile(source, { name: 'WindowIconRuntime', kind: 'window' }));
+          const runtime = fs.readFileSync('dist-runtime-v110/patch-linux-native-gui-runtime.bin');
+          const sealed = sealNativeGuiRuntimeV19(runtime, ir, { platform: 'linux', resources });
+          fs.writeFileSync('WindowIconRuntime', sealed); fs.chmodSync('WindowIconRuntime', 0o755);
+          NODE
+          xvfb-run -a ./WindowIconRuntime --patch-smoke
+      - uses: actions/upload-artifact@v7
+        with:
+          name: patch-linux-native-gui-runtime-v110-pr
+          path: dist-runtime-v110/patch-linux-native-gui-runtime.bin
+          if-no-files-found: error
+          retention-days: 7
