@@ -7,6 +7,7 @@ on:
       - 'src/sealed-native-gui-v18.js'
       - 'src/native-gui-ir-v18.js'
       - 'src/native-button-image-backend-adapter.js'
+      - 'src/native-current-contract.js'
       - 'native-runtime/sealed-paintbox-image-v18.hpp'
       - 'native-runtime/sealed-button-image-v19.hpp'
       - 'native-runtime/win32-sealed-gui-v19.cpp'
@@ -16,6 +17,25 @@ on:
       - 'tests/native-button-image-v18.test.js'
       - 'tests/native-button-image-payload-v18.test.js'
       - 'tests/native-runtime-v19-sources.test.js'
+      - 'tests/native-current-contract.test.js'
+      - '.github/workflows/native-sealed-button-image-runtime-v19.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/sealed-native-gui-v18.js'
+      - 'src/native-gui-ir-v18.js'
+      - 'src/native-button-image-backend-adapter.js'
+      - 'src/native-current-contract.js'
+      - 'native-runtime/sealed-paintbox-image-v18.hpp'
+      - 'native-runtime/sealed-button-image-v19.hpp'
+      - 'native-runtime/win32-sealed-gui-v19.cpp'
+      - 'native-runtime/appkit-sealed-gui-v19.mm'
+      - 'native-runtime/gtk-sealed-gui-v19.cpp'
+      - 'examples/button-imagelist-window.patch'
+      - 'tests/native-button-image-v18.test.js'
+      - 'tests/native-button-image-payload-v18.test.js'
+      - 'tests/native-runtime-v19-sources.test.js'
+      - 'tests/native-current-contract.test.js'
       - '.github/workflows/native-sealed-button-image-runtime-v19.yml'
   workflow_dispatch:
 
@@ -36,7 +56,7 @@ jobs:
           node-version: 26
           package-manager-cache: false
       - name: Test payload v18 and runtime v1.9 contract
-        run: node --test tests/native-button-image-v18.test.js tests/native-button-image-payload-v18.test.js tests/native-runtime-v19-sources.test.js
+        run: node --test tests/native-button-image-v18.test.js tests/native-button-image-payload-v18.test.js tests/native-runtime-v19-sources.test.js tests/native-current-contract.test.js
 
   windows:
     needs: contract
@@ -86,10 +106,10 @@ jobs:
           if ($process.ExitCode -ne 0) { throw "Sealed Button image runtime smoke failed with exit code $($process.ExitCode)." }
       - uses: actions/upload-artifact@v7
         with:
-          name: patch-windows-native-gui-runtime-v19-pr
+          name: patch-windows-native-gui-runtime-v19
           path: dist-runtime-v19/patch-windows-native-gui-runtime.exe
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
 
   macos:
     needs: contract
@@ -126,10 +146,10 @@ jobs:
           ./ButtonImageRuntime --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
-          name: patch-macos-native-gui-runtime-v19-pr
+          name: patch-macos-native-gui-runtime-v19
           path: dist-runtime-v19/patch-macos-native-gui-runtime.bin
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
 
   linux:
     needs: contract
@@ -167,7 +187,42 @@ jobs:
           xvfb-run -a ./ButtonImageRuntime --patch-smoke
       - uses: actions/upload-artifact@v7
         with:
-          name: patch-linux-native-gui-runtime-v19-pr
+          name: patch-linux-native-gui-runtime-v19
           path: dist-runtime-v19/patch-linux-native-gui-runtime.bin
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-windows-native-gui-runtime-v19
+          path: runtime/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-macos-native-gui-runtime-v19
+          path: runtime/macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-linux-native-gui-runtime-v19
+          path: runtime/linux
+      - name: Publish native runtime v1.9 templates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          publish_runtime() {
+            local tag="$1" title="$2" asset="$3" notes="$4"
+            if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --title "$title" --notes "$notes"
+            fi
+            gh release upload "$tag" "$asset" --repo "$GITHUB_REPOSITORY" --clobber
+          }
+          publish_runtime native-win32-runtime-v1.9 'Patch Native Win32 Runtime v1.9' runtime/windows/patch-windows-native-gui-runtime.exe 'Win32 sealed GUI runtime v1.9 for payload v18 / Native GUI IR 1.8. Adds deduplicated ImageList-backed Button images while retaining text captions, accessibility, clicked events and all payload-v17 compatibility behavior.'
+          publish_runtime native-macos-runtime-v1.9 'Patch Native macOS Runtime v1.9' runtime/macos/patch-macos-native-gui-runtime.bin 'Unsigned universal AppKit sealed GUI runtime v1.9 for payload v18 / Native GUI IR 1.8. Adds ImageList-backed NSButton images while retaining captions, accessibility and payload-v17 compatibility.'
+          publish_runtime native-linux-runtime-v1.9 'Patch Native Linux Runtime v1.9' runtime/linux/patch-linux-native-gui-runtime.bin 'GTK3 sealed GUI runtime v1.9 for payload v18 / Native GUI IR 1.8. Adds ImageList-backed Button images while retaining labels, clicked events and payload-v17 compatibility.'
