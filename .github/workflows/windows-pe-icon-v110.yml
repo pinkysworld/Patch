@@ -84,7 +84,7 @@ jobs:
             'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v110.cpp dist-pe-icon-v110\runtime-placeholder.res user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:dist-pe-icon-v110\patch-windows-native-gui-runtime-v110.exe',
             'exit /b %errorlevel%'
           ) | Set-Content dist-pe-icon-v110/build-runtime.cmd -Encoding ascii
-          & cmd.exe /d /c dist-pe-icon-v110/build-runtime.cmd
+          & cmd.exe /d /c '.\dist-pe-icon-v110\build-runtime.cmd'
           if ($LASTEXITCODE -ne 0) { throw "MSVC/RC runtime build failed with exit code $LASTEXITCODE." }
 
       - name: Seal v19 then embed the project PE icon without changing executable length
