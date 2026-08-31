@@ -110,7 +110,7 @@ jobs:
       - name: Build universal AppKit sealed Window icon runtime v1.10
         run: |
           mkdir -p dist-runtime-v110
-          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -framework Cocoa native-runtime/appkit-sealed-gui-v110.mm -o dist-runtime-v110/patch-macos-native-gui-runtime.bin
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -arch x86_64 -DPATCH_RUNTIME_V19_RESTORE_MAIN=PatchRuntimeV18CompatibilityMain -framework Cocoa native-runtime/appkit-sealed-gui-v110.mm -o dist-runtime-v110/patch-macos-native-gui-runtime.bin
           chmod +x dist-runtime-v110/patch-macos-native-gui-runtime.bin
           ARCHS="$(lipo -archs dist-runtime-v110/patch-macos-native-gui-runtime.bin)"
           echo "$ARCHS" | grep -qw arm64
@@ -157,7 +157,7 @@ jobs:
       - name: Build GTK3 sealed Window icon runtime v1.10
         run: |
           mkdir -p dist-runtime-v110
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v110.cpp -o dist-runtime-v110/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
+          g++ -std=c++17 -O2 -DPATCH_RUNTIME_V19_RESTORE_MAIN=PatchRuntimeV18CompatibilityMain native-runtime/gtk-sealed-gui-v110.cpp -o dist-runtime-v110/patch-linux-native-gui-runtime.bin $(pkg-config --cflags --libs gtk+-3.0)
           chmod +x dist-runtime-v110/patch-linux-native-gui-runtime.bin
       - name: Seal payload v19 and smoke GTK runtime
         run: |
