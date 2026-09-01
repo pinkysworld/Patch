@@ -131,7 +131,7 @@ test('Current Ready native GUI transports Button ImageList bindings on IR 1.9', 
   assert.equal(button.id, 'open_button');
   assert.equal(button.image.resourceId, 'icons.open');
   assert.equal(button.image.imageListId, 'app_images');
-  assert.equal(button.image.item, 'open');
+  assert.equal(button.image.imageItem, 'open');
 
   const plain = compile(`window "Files":
   button "Open" as open_button
