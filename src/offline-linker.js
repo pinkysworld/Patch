@@ -50,15 +50,14 @@ export function createOfflineLinkPlan(source, options = {}) {
   }
 
   const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 17);
-  const isCurrentOrNewer = guiPayloadVersion === 17 || guiPayloadVersion === 19;
   validateWindowRuntimeSupport(compiled, {
     allowTables: true,
     allowLists: true,
     allowListControls: true,
     allowMenuDecorations: true,
     allowTree: true,
-    allowSlider: isCurrentOrNewer,
-    allowPaintBox: isCurrentOrNewer,
+    allowSlider: guiPayloadVersion === 17 || guiPayloadVersion === 19,
+    allowPaintBox: guiPayloadVersion === 17 || guiPayloadVersion === 19,
     allowImageList: guiPayloadVersion === 19
   });
 
