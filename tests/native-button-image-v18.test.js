@@ -86,12 +86,13 @@ test('IR 1.8 validation fails closed for malformed Button image metadata', () =>
   );
 });
 
-test('current product contract remains fail-closed at IR 1.7 until desktop runtime promotion', () => {
+test('Current Ready IR 1.9 carries the IR 1.8 Button ImageList contract', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.guiIr, '1.7');
-  assert.throws(
-    () => buildCurrentNativeGuiIR(compile(SOURCE, { name: 'CurrentStillFrozen', kind: 'window', entry: 'main.patch' })),
-    /does not transport image app_images\.open/
-  );
+  assert.equal(contract.id, 'native-gui-1.9/payload-19/runtime-1.10');
+  assert.equal(contract.guiIr, '1.9');
+  const ir = buildCurrentNativeGuiIR(compile(SOURCE, { name: 'CurrentButtonImages', kind: 'window', entry: 'main.patch' }));
+  const button = ir.forms[0].controls.find(control => control.id === 'open_button');
+  assert.equal(button.image.resourceId, 'icons.open');
+  assert.equal(button.image.imageListId, 'app_images');
+  assert.equal(button.image.imageItem, 'open');
 });

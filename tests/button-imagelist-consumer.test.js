@@ -5,7 +5,6 @@ import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { addDesignerControl, listDesignerControls, updateDesignerControl } from '../src/designer.js';
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
-import { NativeGuiError } from '../src/native-gui-frozen-lower.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 import { patchComponent } from '../src/component-registry.js';
@@ -125,23 +124,27 @@ test('Standalone Web fails closed when a Button image names a missing project re
   );
 });
 
-test('native GUI 1.4 fail-closes Button image bindings instead of dropping them', () => {
-  assert.throws(
-    () => buildCurrentNativeGuiIR(compile(SOURCE, { name: 'Files', kind: 'window', entry: 'main.patch' })),
-    error => error instanceof NativeGuiError && /does not transport image app_images.open/.test(error.message)
-  );
+test('Current Ready native GUI transports Button ImageList bindings on IR 1.9', () => {
+  const ir = buildCurrentNativeGuiIR(compile(SOURCE, { name: 'Files', kind: 'window', entry: 'main.patch' }));
+  assert.equal(ir.version, '1.9');
+  const button = ir.forms[0].controls.find(control => control.type === 'button');
+  assert.equal(button.id, 'open_button');
+  assert.equal(button.image.resourceId, 'icons.open');
+  assert.equal(button.image.imageListId, 'app_images');
+  assert.equal(button.image.imageItem, 'open');
+
   const plain = compile(`window "Files":
   button "Open" as open_button
 `, { name: 'Plain', kind: 'window', entry: 'main.patch' });
-  const ir = buildCurrentNativeGuiIR(plain);
-  assert.equal(ir.version, '1.7');
-  assert.equal(ir.forms[0].controls.find(control => control.type === 'button').id, 'open_button');
+  const plainIr = buildCurrentNativeGuiIR(plain);
+  assert.equal(plainIr.version, '1.9');
+  assert.equal(plainIr.forms[0].controls.find(control => control.type === 'button').id, 'open_button');
 });
 
-test('ImageList Web support is metadata for Button images; native remains fail-closed', () => {
+test('ImageList is Ready on Web and the three desktop native targets', () => {
   const imagelist = patchComponent('imagelist');
   assert.deepEqual(imagelist.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   const button = patchComponent('button');
   assert.deepEqual(button.properties.map(property => property.name), [

@@ -1,8 +1,8 @@
 # Patch Studio 1.0 RAD Master Backlog
 
-Status synchronized: **2026-08-31**
+Status synchronized: **2026-09-01**
 
-This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the native Window-icon implementation/promotion sequence. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
+This is the long-term execution backlog for Patch Studio. `docs/ROADMAP.md` is the shorter current product-status view. Issue **#282** records the completed R0 responsiveness/correctness milestone; issue **#308** tracks active R0.1 maintainability and measurement-driven follow-ups. Issue **#319** tracks the now-completed native Window-icon implementation/promotion sequence and can close with the Current Ready v1.10 promotion. `docs/OFFLINE_STUDIO.md` owns the installed/offline IDE contract.
 
 ## Product goal
 
@@ -27,7 +27,7 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 7. **Accessibility and keyboard parity.** Major Designer actions need keyboard-accessible equivalents.
 8. **Offline core.** Network services are optional accelerators, not requirements for normal installed-IDE use.
 9. **No general privileged browser bridge.** Installed-IDE filesystem/process authority must be exposed only through narrow, authenticated, versioned operations.
-10. **Implementation is not promotion.** Experimental native contracts remain separate from Current Ready until release assets, digests, linker/offline paths and product metadata are all verified.
+10. **Implementation is not promotion.** New native contracts remain separate from Current Ready until release assets, digests, linker/offline paths and product metadata are all verified.
 
 ## Current baseline
 
@@ -35,35 +35,39 @@ Patch Studio 1.0 should provide a Delphi / Visual Basic class RAD workflow witho
 
 - Patch **0.2.0-beta.36**;
 - Change IR **0.10**;
-- Current Ready Native GUI IR **1.7**, payload **v17**, runtime **v1.8**;
+- Current Ready Native GUI IR **1.9**, payload **v19**, runtime **v1.10**;
 - Studio project/resource bundle **v4**;
-- Component Registry **0.8**;
+- Component Registry **0.9**;
 - source-backed multi-Form Designer, Component Palette and Object Inspector;
 - Button, Input, Text, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, Menu and Panel Stage 1 authoring;
 - source-backed Anchors/Dock, alignment/sizing/distribution, configurable grid snap, edge/center/equal-spacing Smart Guides, z-order commands, Focus Order Stage 1 and Undo/Redo transactions;
 - local-only Smart Guides visibility preference with Alt/Option temporary bypass;
 - Workspace Layout v2 Source/Result splitter with keyboard/ARIA support, ratio persistence, desktop geometry recapture and narrow-screen fallback;
 - project Resource Manager with deterministic resource metadata and recovery/export/import;
-- Standalone Web and Ready native Windows/macOS/Linux paths for the current native component contract;
-- token-free Offline Compiler/linker and sealed native runtime templates;
+- Standalone Web and Current Ready native Windows/macOS/Linux paths;
+- token-free Offline Compiler/linker with Current Ready v1.10 plus explicit v17/runtime-v1.8 compatibility;
 - public content-addressed PWA plus real-Chrome startup/Workshop checks;
 - six-Form Workshop Desk acceptance/stress application;
 - Offline Studio rolling Stage 1 release channel **`offline-studio-v0.2`**;
 - Offline Compiler rolling release channel **`offline-compiler-v0.2`**.
 
-### Implemented next native contracts, not yet Current Ready
+### Promoted native resource line
+
+The combined native R1 line is now Current Ready:
 
 - **IR 1.8 / payload v18 / runtime v1.9**: ImageList/Button image transport plus Win32/AppKit/GTK Button consumers;
 - **IR 1.9 / payload v19 / runtime v1.10**: application/Form Window-icon transport plus Win32/AppKit/GTK consumers, preserving the complete v1.9 layer;
 - `native-window-icon-packaging/0.1`: deterministic application-icon packaging artifacts;
-- `native-window-icon-package-v110/0.2`: Windows/macOS/Linux runtime-v1.10 package plans;
+- `native-window-icon-package-v110/0.2`: Current Ready Windows/macOS/Linux runtime-v1.10 package plans;
 - `windows-pe-icon-v110/0.1`: bounded in-place project-icon embedding into a reserved Windows PE application-icon slot;
-- normal Windows runtime-v1.10 artifact carries and verifies that reserved PE slot;
+- normal Windows runtime-v1.10 artifact reserves/verifies that PE slot;
 - real Windows `ExtractAssociatedIcon` + `--patch-smoke` evidence is green;
 - macOS `.icns` + `CFBundleIconFile` package plan is green;
-- Linux hicolor + `.desktop` package plan is green.
+- Linux hicolor + `.desktop` package plan is green;
+- versioned v1.10 releases, SHA-256/GitHub digests and source binding are verified;
+- dual-runtime Offline Compiler evidence is green on Windows, Linux, macOS Apple Silicon and macOS Intel.
 
-`src/native-current-contract.js` intentionally remains **1.7 / 17 / 1.8** until the release/digest/Offline-Compiler promotion gate is complete.
+`src/native-current-contract.js` now owns the promoted **1.9 / 19 / 1.10** boundary. Explicit payload v17/runtime v1.8 remains a compatibility path, not Current Ready.
 
 ## Priority model
 
@@ -203,7 +207,7 @@ Status: **implemented foundation**.
 
 ## P1.3 ImageList
 
-Status: **authoring/Web and first native Button consumer implemented; product promotion still pending**.
+Status: **Current Ready for Button images on Web, Windows, macOS and Linux**.
 
 - [x] nonvisual component tray and source syntax;
 - [x] logical image names/sizes and Resource Manager integration;
@@ -217,11 +221,9 @@ Status: **authoring/Web and first native Button consumer implemented; product pr
 - [x] AppKit Button image consumer;
 - [x] GTK Button image consumer;
 - [x] dedicated cross-platform runtime evidence;
-- [ ] promote through the combined IR 1.9 / payload v19 / runtime v1.10 release line;
+- [x] promoted through the combined IR 1.9 / payload v19 / runtime v1.10 release line;
 - [ ] reuse transport for ToolBar/ToolButton/Menu/Tree consumers only after those contracts exist;
-- [ ] optional DPI variants after the base cross-platform transport is promoted.
-
-Current Ready IR 1.7 still fails closed for ImageList/Button images by design.
+- [ ] optional DPI variants only after a portable resource-selection rule is defined.
 
 ## P1.4 Shape
 
@@ -235,14 +237,14 @@ Current Ready IR 1.7 still fails closed for ImageList/Button images by design.
 - [x] source/Designer/Web PaintBox;
 - [x] pure paint-event drawing program;
 - [x] clear/line/rectangle/ellipse/text;
-- [x] `draw image` with bounded PNG/JPEG project resources through Current Ready IR 1.7 / payload v17 / runtime v1.8;
+- [x] `draw image` with bounded PNG/JPEG project resources, preserved into Current Ready IR 1.9 / payload v19 / runtime v1.10;
 - [ ] pointer/mouse event contract;
 - [ ] paths/transforms/gradients;
 - [ ] higher-DPI drawing model beyond current basics.
 
 ## P1.6 Icons and application branding
 
-Status: **native runtime and platform packaging implemented; product promotion open**.
+Status: **Current Ready native runtime and platform packaging implemented**.
 
 - [x] source-backed Form/window icon declaration;
 - [x] Web favicon/chrome packaging under `window-icon/1.0`;
@@ -259,22 +261,24 @@ Status: **native runtime and platform packaging implemented; product promotion o
 - [x] macOS `.icns` + `CFBundleIconFile` package plan;
 - [x] Linux hicolor + `.desktop` package plan;
 - [x] Windows/macOS/Linux package-contract workflow;
+- [x] versioned v1.10 releases, digest verification and Offline Compiler promotion;
 - [ ] PWA icon-set generation;
-- [ ] visual branding editor in Project Settings;
-- [ ] Current Ready promotion after release/digest/Offline-Compiler gates.
+- [ ] visual branding editor in Project Settings.
 
 ### R1 native promotion gate
 
-The implementation side of native ImageList/Button and Window/application icons is complete. Current Ready promotion still requires:
+Complete:
 
-- [ ] publish versioned runtime-v1.10 release assets for Windows, macOS and Linux;
-- [ ] publish and verify their SHA-256 digests;
-- [ ] wire browser/native Ready runtime lookup to those verified assets;
-- [ ] wire Offline Compiler linking to IR 1.9 / payload v19 / runtime v1.10;
-- [ ] update generated component capability metadata and public release/download surfaces;
-- [ ] only then move `src/native-current-contract.js` from 1.7 / 17 / 1.8 to 1.9 / 19 / 1.10.
+- [x] publish versioned runtime-v1.10 release assets for Windows, macOS and Linux;
+- [x] publish and verify SHA-256 and GitHub release-asset digests;
+- [x] bind the runtime release tags to the expected source commit;
+- [x] wire browser/native Ready runtime lookup to those verified assets;
+- [x] wire Offline Compiler default linking to IR 1.9 / payload v19 / runtime v1.10;
+- [x] retain explicit payload-v17/runtime-v1.8 compatibility without mixing runtime generations;
+- [x] update generated component capability metadata and public release/download surfaces;
+- [x] move `src/native-current-contract.js` from 1.7 / 17 / 1.8 to 1.9 / 19 / 1.10.
 
-**R1 native implementation exit:** complete. **R1 product-promotion exit:** open until every unchecked promotion item above is green.
+**R1 native implementation exit:** complete. **R1 product-promotion exit:** complete. Future native feature expansion requires a new explicit contract rather than widening v19 in place.
 
 ---
 
@@ -518,307 +522,90 @@ A component is Ready only when the required columns are green.
 ## P2.27 Hot Reload
 
 - [ ] apply safe UI/source changes without restart;
-- [ ] explicit rebuild boundary;
-- [ ] preserve runtime state only when semantically safe.
+- [ ] preserve compatible semantic state;
+- [ ] restart when declarations/signatures make hot reload unsafe;
+- [ ] visible change classification.
 
 ---
 
-# Milestone R9 - Data binding and application state
+# Milestone R9 - Binding and richer declarative UI
 
-## P2.28 Property bindings
-
-- [ ] bind text/value/enabled/visible/checked to Patch values;
-- [ ] one-way binding first;
-- [ ] explicit two-way binding later;
-- [ ] validation diagnostics;
-- [ ] no hidden observer graph.
-
-## P2.29 Collection/data source abstraction
-
-- [ ] ListSource/TableSource-style nonvisual components;
-- [ ] Table/ListBox/Combo/Tree binding;
-- [ ] sorting/filtering adapters;
-- [ ] keep data as ordinary Patch values where possible.
-
-## P3.30 Database components
-
-Only after the language/runtime security model is explicit:
-
-- [ ] SQLite first;
-- [ ] parameterized queries only;
-- [ ] transactions;
-- [ ] visual connection/query inspector;
-- [ ] schema browser;
-- [ ] never embed secrets in generated source artifacts by default.
+- [ ] explicit source-visible property binding contract;
+- [ ] one-way and two-way binding only where mutation ownership is unambiguous;
+- [ ] converter/validation hooks without hidden persistent observers;
+- [ ] deterministic target parity and diagnostics.
 
 ---
 
-# Milestone R10 - Build, packaging and deployment
+# Milestone R10 - Testing and UI automation
 
-## P1.31 One-click desktop build UX
-
-Current Studio has target selection and Ready downloads for the current native contract. Remaining professional workflow:
-
-- [ ] first-class artifact pane with direct outputs/checksums;
-- [ ] explicit **Local / Remote** build mode;
-- [ ] host-native offline build path using embedded/installable compiler/runtime;
-- [ ] build diagnostics mapped to source;
-- [ ] clear architecture selection where relevant.
-
-## P2.32 App packaging
-
-Application-icon packaging for the experimental v1.10 native line is implemented. Broader install/distribution packaging remains:
-
-- [ ] Windows app folder and installer option;
-- [ ] macOS `.app` distribution polish beyond the current deterministic package plan;
-- [ ] Linux AppImage/tar or other justified format;
-- [x] experimental Windows/macOS/Linux application-icon packaging contracts;
-- [ ] release manifest/SHA256SUMS for the promoted v1.10 line;
-- [ ] explicit uninstall path for installers.
-
-## P2.33 Signing/notarization
-
-- [x] fail-closed Windows signing hooks;
-- [x] fail-closed macOS signing/notarization hooks;
-- [ ] real Windows signing evidence;
-- [ ] real macOS notarization evidence;
-- [ ] production-signed/notarized Offline Studio releases.
+- [ ] integrated unit-test runner;
+- [ ] source-backed UI test actions;
+- [ ] deterministic control lookup by source ID;
+- [ ] event/change assertions;
+- [ ] headless browser and native smoke integration.
 
 ---
 
-# Horizontal Track O1 - Offline Patch Studio IDE
+# Milestone R11 - Packages and component ecosystem
 
-See `docs/OFFLINE_STUDIO.md` and `web/downloads.html`.
-
-## O1.1 Stage 1 self-contained IDE
-
-- [x] deterministic `patch-offline-studio-manifest` v1;
-- [x] per-file SHA-256 plus whole-site closure hash;
-- [x] Node SEA builder embedding the same generated Studio application used by the hosted site;
-- [x] loopback-only `127.0.0.1` server;
-- [x] random per-launch URL prefix;
-- [x] restrictive CSP/security headers and no outbound requirement for core Studio use;
-- [x] Windows, macOS and Linux platform executables built and self-smoked in CI;
-- [x] pre-publication release-bundle gate comparing embedded manifests;
-- [x] stable rolling `offline-studio-v0.2` release assets;
-- [x] release `offline-studio-manifest.json` and `SHA256SUMS`;
-- [x] public Downloads/README/Patch Studio/Offline Studio docs share the same asset contract.
-
-Stage 1 supports offline authoring, Designer/Run and browser-local build targets. It does **not** yet claim host-native desktop compilation from inside the IDE.
-
-## O1.2 Stage 2 host-native local build
-
-- [ ] embed/install the Patch Offline Compiler beside the IDE;
-- [ ] embed host-platform sealed GUI/console runtimes;
-- [ ] narrow authenticated localhost build API, never a general shell API;
-- [ ] workspace/path authorization;
-- [ ] Windows host builds Windows locally;
-- [ ] macOS host builds macOS locally;
-- [ ] Linux host builds Linux locally;
-- [ ] output/checksum/diagnostic integration in artifact pane;
-- [ ] no GitHub token or network dependency.
-
-Cross-compiling all desktop targets from every host is not required initially.
-
-## O1.3 Stage 3 installed-IDE integration
-
-- [ ] direct Open/Save/Project Folder flow;
-- [ ] recent projects;
-- [ ] file associations;
-- [ ] workspace permission boundaries;
-- [ ] OS packaging/installers;
-- [ ] optional update checks that never block offline use.
-
-A Tauri/Electron-style shell should only be adopted if it materially improves OS integration. Patch Studio should remain one browser-module-compatible application, not two diverging IDEs.
+- [ ] signed/versioned package manifest;
+- [ ] dependency resolution and lockfile;
+- [ ] component registration schema;
+- [ ] target capability declaration;
+- [ ] sandbox/trust policy;
+- [ ] third-party integration study before claiming ecosystem readiness.
 
 ---
 
-# Milestone R11 - Studio workspace and UX
+# Milestone R12 - Localization and accessibility tooling
 
-## P1.34 Dockable IDE shell
-
-- [x] adjustable Source/Result Workspace Layout v2 splitter with keyboard/ARIA control and local ratio persistence;
-- [ ] fully dockable/persisted Project Explorer, Palette, Inspector, Code, Designer, Output, Diagnostics, Debugger and Assets panes;
-- [ ] split editors;
-- [ ] named layouts/reset layout;
-- [ ] keyboard-accessible docking.
-
-## P1.35 Command system
-
-- [x] Command Palette foundation;
-- [ ] represent every major IDE action as a command ID;
-- [ ] configurable keyboard shortcuts;
-- [ ] menus/toolbars reuse the same command model.
-
-## P2.36 Themes and scaling
-
-- [ ] light/dark/System;
-- [ ] high-DPI Studio rendering;
-- [ ] design-time DPI preview;
-- [ ] font scaling/accessibility.
+- [ ] string-resource/localization workflow;
+- [ ] RTL-aware layout where supported;
+- [ ] accessibility inspector for names/roles/focus order;
+- [ ] contrast/keyboard diagnostics;
+- [ ] manual assistive-technology validation gate before conformance claims.
 
 ---
 
-# Milestone R12 - Testing and quality tools
+# Milestone R13 - Dockable professional workspace
 
-## P1.37 Integrated tests
-
-- [ ] Test Explorer;
-- [ ] run all/current test;
-- [ ] pass/fail output and source navigation;
-- [ ] GUI smoke fixtures.
-
-## P2.38 UI test recorder
-
-- [ ] record component events into deterministic Patch test steps where safe;
-- [ ] Web replay first;
-- [ ] cross-platform smoke subset later.
-
-## P2.39 Coverage and diagnostics dashboard
-
-- [ ] coverage where supported;
-- [ ] unused handler/control diagnostics;
-- [ ] duplicate/unreachable UI action diagnostics;
-- [ ] asset-reference diagnostics.
+- [ ] dockable/persisted panels;
+- [ ] workspace presets;
+- [ ] multi-monitor installed-IDE layout persistence;
+- [ ] reset/recovery path for corrupt layout state.
 
 ---
 
-# Milestone R13 - Packages and component ecosystem
+# Milestone R14 - Installed IDE and distribution maturity
 
-## P3.40 Package manager
+## Offline Studio Stage 2
 
-- [ ] versioned Patch packages;
-- [ ] dependency lock;
-- [ ] offline cache;
-- [ ] signed/checksummed packages;
-- [ ] source package support first.
+- [ ] embed/install the offline compiler and host-native runtimes beside Offline Studio;
+- [ ] authenticated narrow localhost build bridge rather than a general shell API;
+- [ ] host-native Windows/macOS/Linux Build without GitHub or network access;
+- [ ] artifact pane with diagnostics/checksums;
+- [ ] local-vs-remote build selector with local as the offline path.
 
-## P3.41 Custom RAD components
+## Distribution maturity
 
-- [ ] supported declarative extension/component schema or tightly controlled registration model;
-- [ ] Designer metadata;
-- [ ] Object Inspector properties/events;
-- [ ] Web renderer;
-- [ ] native backend adapters;
-- [ ] icon/category;
-- [ ] mandatory compatibility/tests;
-- [ ] avoid arbitrary untrusted Studio code execution by default.
-
-## P3.42 Component gallery
-
-- [ ] discover/install/update/remove components;
-- [ ] version compatibility;
-- [ ] security-review metadata;
-- [ ] offline package import.
+- [ ] production Authenticode evidence;
+- [ ] Developer ID signing/notarization evidence;
+- [ ] installers/uninstallers;
+- [ ] optional update channel that never blocks offline use;
+- [ ] richer Linux packaging where deployment evidence justifies it;
+- [ ] FreeBSD native GUI only with an explicit supported toolkit/backend contract.
 
 ---
 
-# Milestone R14 - Localization, accessibility and production polish
+# Execution order from the current baseline
 
-## P2.43 Localization resources
+1. Finish R0.1 selection/property/module-boundary and Worker follow-ups without reopening R0.
+2. Start Offline Studio Stage 2 so installed Studio can invoke the already-promoted local compiler/runtime path safely.
+3. Build R2 Form Designer parity: independent TabOrder, clipboard/cross-Form operations, layers and locking.
+4. Expand R3 container semantics and R4 standard controls.
+5. Add ActionList/dialog/project-setting infrastructure and application branding.
+6. Build professional editor/debugger/refactoring features only on top of the stable source-backed model.
+7. Add packages, localization, accessibility inspection and installed-workspace maturity after core contracts are versioned.
 
-- [ ] translatable string table;
-- [ ] locale preview/runtime selection;
-- [ ] missing-string diagnostics.
-
-## P2.44 Accessibility inspector
-
-- [ ] accessible name/description;
-- [ ] keyboard reachability;
-- [ ] focus-order checks;
-- [ ] contrast hints for custom drawing;
-- [ ] portable semantic roles;
-- [ ] manual Narrator/VoiceOver/Orca evidence before any conformance claim.
-
-## P2.45 Error/crash UX
-
-- [ ] no blank/hung Studio state;
-- [ ] actionable parse/build diagnostics;
-- [ ] recovery restore preview;
-- [ ] safe-mode startup for repeated module failures;
-- [ ] local privacy-redacted crash/report workflow.
-
----
-
-# Showcase and acceptance application
-
-## Workshop Desk 2.0
-
-- [x] six meaningful Forms and real browser Run;
-- [x] current menus/status/Timer/Tabs/Table/TreeView/Anchors/Dock families where implemented;
-- [x] Picture/Shape/PaintBox resource/graphics families including PaintBox `draw image`;
-- [x] current Windows/macOS/Linux Ready native surface;
-- [x] Offline Studio Stage 1 embeds and runs the same Studio application surface;
-- [ ] add an experimental native ImageList/Button-image acceptance path before promotion;
-- [ ] add an experimental Window-icon/package acceptance path to the canonical showcase rather than only dedicated fixtures;
-- [ ] toolbar/actions/popup menus after those components exist;
-- [ ] nested Panel Stage 2/GroupBox;
-- [ ] independent TabOrder;
-- [ ] standard file dialog;
-- [ ] settings/project-state scenario;
-- [ ] property/data binding;
-- [ ] integrated tests;
-- [ ] Offline Studio host-native build acceptance.
-
-CI should use Workshop Desk to prove a feature is real across claimed targets rather than Studio-only.
-
----
-
-# Current execution order
-
-This queue is authoritative for sequencing. Completed architecture foundations and native R1 implementation work are intentionally absent from the open queue.
-
-## Immediate queue
-
-1. Finish R0.1 module boundaries: extract runtime lifecycle, Window renderer, transient UI state and Build controller from `web/playground.js` under #308.
-2. Measure/adopt the Web Worker boundary and only then add Table/Tree preview virtualization where measurement justifies it.
-3. Make Pages deployment release-aware and reduce expected CI notification noise without weakening fail-closed verification.
-4. Publish and verify the **runtime v1.10** Windows/macOS/Linux release assets and SHA-256 digests.
-5. Promote Offline Compiler/native linking through **IR 1.9 / payload v19 / runtime v1.10**, then switch `src/native-current-contract.js` only after the complete gate is green.
-6. Start Offline Studio Stage 2 host-native local build bridge using the promoted compiler/runtime assets.
-
-## Next queue
-
-7. Independent TabOrder and visual Tab Order mode.
-8. Clipboard, Lock Controls and Layers; optional rulers remain the only open P1.9 Smart Guides item.
-9. Panel Stage 2, GroupBox, ScrollBox and SplitContainer.
-10. ToolBar/ToolButton/PopupMenu plus ActionList, reusing the implemented ImageList transport where appropriate.
-11. Memo, ProgressBar, SpinEdit and Date/Time controls.
-12. Project Explorer 2.0, Project Settings, application branding/PWA icon-set generation and templates.
-13. Professional code-editor services and Designer-code navigation.
-14. Debugger Stage 1 plus Patch semantic event/change timeline.
-15. One-click packaged desktop applications and installer workflow.
-
-## Later queue
-
-16. property/data binding;
-17. Test Explorer/UI recorder;
-18. safe Hot Reload;
-19. SQLite/data components;
-20. package/component ecosystem;
-21. localization/accessibility tooling;
-22. production signing/notarization/update/distribution evidence.
-
----
-
-# Definition of "Patch Studio 1.0 RAD Complete"
-
-Patch Studio can call itself a complete RAD Studio when all of the following are true:
-
-- a new GUI project can be created without manual boilerplate;
-- Forms and a practical visual/nonvisual component library are fully authorable;
-- images/icons/resources are managed visually and packaged correctly;
-- properties/events/anchors/docking/z-order/TabOrder are editable visually;
-- nested containers have real relative geometry;
-- menus/toolbars/actions/dialogs are authorable;
-- normal code navigation/completion/refactoring works;
-- breakpoints and step debugging work;
-- Undo/Redo covers visual edits;
-- projects build into functioning Windows/macOS/Linux/Web applications through Studio;
-- the installed IDE can perform normal authoring, Run and host-native Build offline without GitHub or a token;
-- the same large acceptance project passes Web and native cross-platform CI;
-- unsupported backend behavior is explicit rather than silently missing;
-- there is no hidden second semantic application model that can drift from Patch source;
-- Patch-specific semantic change authority, Change IR and causal/event inspection remain visible advantages rather than being hidden behind the RAD UI.
-
-That is the Patch Studio 1.0 bar. The objective is a Delphi/VB-class rapid workflow with Patch-native semantics, not a visual clone with a different logo.
+The native R1 promotion is no longer a blocker. Future native features must introduce a new explicit contract and repeat the same implementation -> release -> digest -> Offline Compiler -> public metadata -> Current Ready promotion sequence.

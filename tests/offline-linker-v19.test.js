@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createOfflineLinkPlan } from '../src/offline-linker.js';
 import { readOfflineLinkInput } from '../src/offline-link-input.js';
 import { buildStudioProjectBundle, serializeStudioProjectBundle } from '../src/studio-project.js';
+import { decodeNativeGuiPayloadV17 } from '../src/sealed-native-gui-v17.js';
 import {
   decodeNativeGuiPayloadV19,
   inspectNativeGuiButtonImagesV19,
@@ -49,20 +50,21 @@ function footerVersion(bytes) {
   return new DataView(bytes.buffer, bytes.byteOffset + bytes.length - 12, 4).getUint32(0, true);
 }
 
-test('offline linker keeps payload v17 as the default while exposing payload v19 explicitly', () => {
+test('offline linker defaults to Current Ready payload v19 and retains explicit payload v17 compatibility', () => {
   const plain = 'window "Main" as main size 320, 180:\n  text "Ready" at 20, 20 size 120, 30\n';
   const current = createOfflineLinkPlan(plain, {
     platform: 'windows', name: 'CurrentReady', guiRuntime: runtime('windows')
   });
-  assert.equal(footerVersion(current.files[0].bytes), 17);
+  assert.equal(footerVersion(current.files[0].bytes), 19);
+  assert.ok(decodeNativeGuiPayloadV19(current.files[0].bytes).length > 0);
+  assert.equal(current.nativePackageId, 'native-window-icon-package-v110/0.2');
+  assert.equal(current.guiRuntimeVersion, '1.10');
 
-  const promotion = createOfflineLinkPlan(SOURCE, {
-    platform: 'linux', name: 'PromotionCandidate', guiRuntime: runtime('linux'),
-    guiPayloadVersion: 19, resources: RESOURCES
+  const legacy = createOfflineLinkPlan(plain, {
+    platform: 'windows', name: 'LegacyReady', guiRuntime: runtime('windows'), guiPayloadVersion: 17
   });
-  assert.equal(footerVersion(promotion.files[0].bytes), 19);
-  assert.equal(promotion.nativePackageId, 'native-window-icon-package-v110/0.2');
-  assert.equal(promotion.guiRuntimeVersion, '1.10');
+  assert.equal(footerVersion(legacy.files[0].bytes), 17);
+  assert.ok(decodeNativeGuiPayloadV17(legacy.files[0].bytes).length > 0);
 });
 
 test('offline payload v19 reuses application-icon packaging on macOS and Linux', () => {
@@ -140,7 +142,7 @@ test('offline link input reuses the canonical project-v4 resource store', () => 
 
     const plan = createOfflineLinkPlan(input.source, {
       platform: 'linux', name: input.name, entry: input.entry,
-      guiRuntime: runtime('linux'), guiPayloadVersion: 19, resources: input.resources
+      guiRuntime: runtime('linux'), resources: input.resources
     });
     assert.equal(footerVersion(plan.files[0].bytes), 19);
     assert.equal(inspectNativeGuiWindowIconsV19(decodeNativeGuiPayloadV19(plan.files[0].bytes)).applicationIcon.resourceId, 'app.icon');

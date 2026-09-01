@@ -54,15 +54,15 @@ Standalone Window Web renders an accessible `<input type="range">` and validates
 
 Slider was introduced on the additive Native GUI IR **1.3** / payload **v13** / runtime **v1.4** line. The current product-facing contract is now:
 
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
-- native runtime **v1.8**;
+- Native GUI IR **1.9**;
+- sealed payload **v19**;
+- native runtime **v1.10**;
 - Windows: native `TRACKBAR`;
 - macOS: native `NSSlider`;
 - Linux: native GTK3 `GtkScale`;
 - product import: `src/native-current-contract.js`.
 
-Native GUI IR 1.7 preserves the exact Slider range/step/binding/event semantics introduced by 1.3 while adding Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image transport. Current direct AOT, token-free Ready Window downloads and Windows/macOS/Linux offline Window linking therefore all preserve Slider behavior.
+Native GUI IR 1.9 preserves the exact Slider range/step/binding/event semantics introduced by 1.3 while composing the later Chrome, Shape, PaintBox, PaintBox draw-image, Button/ImageList and application/Form icon layers. Current direct AOT, token-free Ready Window downloads and Windows/macOS/Linux offline Window linking therefore all preserve Slider behavior.
 
 Native smoke execution verifies that the real native control exists, numeric `changed` values are delivered, explicit `change ... set = value` stores the selected number, and older Table/ListBox/Menu/TreeView behavior remains intact.
 
@@ -74,7 +74,7 @@ The frozen TreeView compatibility line intentionally fails closed for Slider:
 - sealed payload **v12**;
 - native runtime **v1.3**.
 
-The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. Older payloads are not silently upgraded or reinterpreted.
+The previous Slider-capable compatibility line remains Native GUI IR **1.3** / payload **v13** / runtime **v1.4**. The Offline Compiler also retains Native GUI IR **1.7** / payload **v17** / runtime **v1.8** as an explicit desktop compatibility route. Older payloads are not silently upgraded or reinterpreted.
 
 ## Assurance boundary
 

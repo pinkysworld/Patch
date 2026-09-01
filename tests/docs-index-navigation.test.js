@@ -26,10 +26,9 @@ test('docs index local Markdown links resolve to tracked files', () => {
   }
 });
 
-test('docs index distinguishes live product contracts from historical beta snapshots', () => {
-  assert.match(indexText, /Current Ready desktop product contract: \*\*Native GUI IR 1\.7 \/ payload v17 \/ runtime v1\.8\*\*/);
-  assert.match(indexText, /IR 1\.9 \/ payload v19 \/ runtime v1\.10/);
-  assert.match(indexText, /not promoted/i);
+test('docs index distinguishes live product contracts from historical and compatibility snapshots', () => {
+  assert.match(indexText, /Current Ready desktop product contract: \*\*Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10\*\*/);
+  assert.match(indexText, /payload v17 \/ runtime v1\.8 remains an explicit compatibility path/i);
   assert.match(indexText, /BETA33\.md.*BETA34\.md.*BETA35\.md[\s\S]*historical snapshots/i);
   assert.match(indexText, /BETA36\.md.*current beta milestone record/i);
 });

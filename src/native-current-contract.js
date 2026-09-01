@@ -1,9 +1,17 @@
 import {
-  PATCH_NATIVE_GUI_IR_V17_VERSION,
-  buildNativeGuiIRV17,
-  validateNativeGuiIRV17,
-  flattenNativeGuiControlsV17,
-  flattenNativeGuiMenuItemsV17,
+  PATCH_NATIVE_GUI_IR_V19_VERSION,
+  buildNativeGuiIRV19,
+  validateNativeGuiIRV19,
+  flattenNativeGuiControlsV19,
+  flattenNativeGuiMenuItemsV19,
+  toV18CompatibleV19,
+  hasNativeWindowIcon
+} from './native-gui-ir-v19.js';
+import {
+  toV17CompatibleV18,
+  hasNativeButtonImage
+} from './native-gui-ir-v18.js';
+import {
   toV16CompatibleV17,
   hasNativePaintBoxImage
 } from './native-gui-ir-v17.js';
@@ -20,16 +28,19 @@ import {
   hasNativeChromeStage1
 } from './native-gui-ir-v14.js';
 import {
-  PATCH_SEALED_NATIVE_GUI_PAINTBOX_IMAGE_VERSION,
-  encodeNativeGuiPayloadV17,
-  sealNativeGuiRuntimeV17,
-  decodeNativeGuiPayloadV17,
-  inspectNativeGuiChromeV17,
-  inspectNativeGuiShapesV17,
-  inspectNativeGuiPaintBoxesV17,
-  inspectNativeGuiPaintImagesV17,
-  inspectNativeGuiSlidersV17
-} from './sealed-native-gui-v17.js';
+  PATCH_SEALED_NATIVE_GUI_WINDOW_ICON_VERSION,
+  encodeNativeGuiPayloadV19,
+  sealNativeGuiRuntimeV19,
+  decodeNativeGuiPayloadV19,
+  inspectNativeGuiWindowIconsV19,
+  inspectNativeGuiButtonImagesV19,
+  inspectNativeGuiChromeV19,
+  inspectNativeGuiShapesV19,
+  inspectNativeGuiPaintBoxesV19,
+  inspectNativeGuiPaintImagesV19,
+  inspectNativeGuiSlidersV19
+} from './sealed-native-gui-v19.js';
+import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 import { resolveNativePictureResources } from './native-picture-resources.js';
 
 /**
@@ -39,40 +50,60 @@ import { resolveNativePictureResources } from './native-picture-resources.js';
  * evidence. Current product consumers should import this module instead of a
  * concrete native-gui-ir-vNN/sealed-native-gui-vNN implementation.
  */
-export const PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.7/payload-17/runtime-1.8';
-export const PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V17_VERSION;
-export const PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_PAINTBOX_IMAGE_VERSION;
-export const PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.8';
+export const PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1.9/payload-19/runtime-1.10';
+export const PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V19_VERSION;
+export const PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_WINDOW_ICON_VERSION;
+export const PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.10';
 
 export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
-  windows: 'native-win32-runtime-v1.8',
-  macos: 'native-macos-runtime-v1.8',
-  linux: 'native-linux-runtime-v1.8'
+  windows: 'native-win32-runtime-v1.10',
+  macos: 'native-macos-runtime-v1.10',
+  linux: 'native-linux-runtime-v1.10'
 });
 
-export const buildCurrentNativeGuiIR = buildNativeGuiIRV17;
-export const validateCurrentNativeGuiIR = validateNativeGuiIRV17;
-export const flattenCurrentNativeGuiControls = flattenNativeGuiControlsV17;
-export const flattenCurrentNativeGuiMenuItems = flattenNativeGuiMenuItemsV17;
-export const encodeCurrentNativeGuiPayload = encodeNativeGuiPayloadV17;
-export const decodeCurrentNativeGuiPayload = decodeNativeGuiPayloadV17;
-export const inspectCurrentNativeGuiChrome = inspectNativeGuiChromeV17;
-export const inspectCurrentNativeGuiShapes = inspectNativeGuiShapesV17;
-export const inspectCurrentNativeGuiPaintBoxes = inspectNativeGuiPaintBoxesV17;
-export const inspectCurrentNativeGuiPaintImages = inspectNativeGuiPaintImagesV17;
-export const inspectCurrentNativeGuiSliders = inspectNativeGuiSlidersV17;
-export const toLegacyV16NativeGuiIR = toV16CompatibleV17;
-export const toLegacyV15NativeGuiIR = input => toV15CompatibleV16(toV16CompatibleV17(input));
-export const toLegacyV14NativeGuiIR = input => toV14CompatibleV15(toV15CompatibleV16(toV16CompatibleV17(input)));
-export const toLegacyV13NativeGuiIR = input => toV13CompatibleV14(toV14CompatibleV15(toV15CompatibleV16(toV16CompatibleV17(input))));
+export const buildCurrentNativeGuiIR = buildNativeGuiIRV19;
+export const validateCurrentNativeGuiIR = validateNativeGuiIRV19;
+export const flattenCurrentNativeGuiControls = flattenNativeGuiControlsV19;
+export const flattenCurrentNativeGuiMenuItems = flattenNativeGuiMenuItemsV19;
+export const encodeCurrentNativeGuiPayload = encodeNativeGuiPayloadV19;
+export const decodeCurrentNativeGuiPayload = decodeNativeGuiPayloadV19;
+export const inspectCurrentNativeGuiWindowIcons = inspectNativeGuiWindowIconsV19;
+export const inspectCurrentNativeGuiButtonImages = inspectNativeGuiButtonImagesV19;
+export const inspectCurrentNativeGuiChrome = inspectNativeGuiChromeV19;
+export const inspectCurrentNativeGuiShapes = inspectNativeGuiShapesV19;
+export const inspectCurrentNativeGuiPaintBoxes = inspectNativeGuiPaintBoxesV19;
+export const inspectCurrentNativeGuiPaintImages = inspectNativeGuiPaintImagesV19;
+export const inspectCurrentNativeGuiSliders = inspectNativeGuiSlidersV19;
+
+export const toLegacyV18NativeGuiIR = toV18CompatibleV19;
+export const toLegacyV17NativeGuiIR = input => toV17CompatibleV18(toV18CompatibleV19(input));
+export const toLegacyV16NativeGuiIR = input => toV16CompatibleV17(toV17CompatibleV18(toV18CompatibleV19(input)));
+export const toLegacyV15NativeGuiIR = input => toV15CompatibleV16(toV16CompatibleV17(toV17CompatibleV18(toV18CompatibleV19(input))));
+export const toLegacyV14NativeGuiIR = input => toV14CompatibleV15(toV15CompatibleV16(toV16CompatibleV17(toV17CompatibleV18(toV18CompatibleV19(input)))));
+export const toLegacyV13NativeGuiIR = input => toV13CompatibleV14(toV14CompatibleV15(toV15CompatibleV16(toV16CompatibleV17(toV17CompatibleV18(toV18CompatibleV19(input))))));
+
 export const currentNativeHasChromeStage1 = hasNativeChromeStage1;
 export const currentNativeHasShapeStage1 = hasNativeShapeStage1;
 export const currentNativeHasPaintBoxStage1 = hasNativePaintBoxStage1;
 export const currentNativeHasPaintBoxImage = hasNativePaintBoxImage;
+export const currentNativeHasButtonImage = hasNativeButtonImage;
+export const currentNativeHasWindowIcon = hasNativeWindowIcon;
 
 export function sealCurrentNativeGuiRuntime(runtimeBytes, nativeGui, options = {}) {
-  const resolved = resolveNativePictureResources(nativeGui, options.resources ?? []);
-  return sealNativeGuiRuntimeV17(runtimeBytes, resolved.ir, options);
+  const resources = options.resources ?? [];
+  const resolved = resolveNativePictureResources(nativeGui, resources);
+  const platform = String(options.platform ?? '').toLowerCase();
+  if (platform === 'windows' || platform === 'win32') {
+    const plan = createNativeWindowIconPackagePlanV110(runtimeBytes, resolved.ir, {
+      platform: 'windows',
+      name: options.name ?? 'PatchApp',
+      resources
+    });
+    const executable = plan.files.find(file => file.path === plan.executable);
+    if (!executable) throw new Error('Current Ready Windows package plan did not produce its executable.');
+    return executable.bytes;
+  }
+  return sealNativeGuiRuntimeV19(runtimeBytes, resolved.ir, options);
 }
 
 export function currentNativeContract() {

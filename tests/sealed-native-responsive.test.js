@@ -23,7 +23,7 @@ const winSealer = fs.readFileSync('scripts/seal-native-win32.js', 'utf8');
 const macSealer = fs.readFileSync('scripts/seal-native-macos.js', 'utf8');
 const linuxSealer = fs.readFileSync('scripts/seal-native-linux.js', 'utf8');
 
-test('sealed GUI v8 is current while v7 remains explicit compatibility', () => {
+test('sealed GUI v8 historical base remains explicit while v7 stays compatible', () => {
   assert.equal(PATCH_SEALED_NATIVE_GUI_VERSION, 8);
   assert.equal(PATCH_SEALED_NATIVE_GUI_PREVIOUS_VERSION, 7);
   const controls = flattenNativeGuiControls(gui);
@@ -78,9 +78,10 @@ test('responsive runtime workflow retains the frozen v0.9 release line for repro
   assert.match(workflow, /readUInt32LE\(sealed\.length-12\)!==8/);
 });
 
-test('Pages and offline compiler use current runtime v1.8 while frozen responsive v0.9 stays separate', () => {
-  for (const tag of ['native-win32-runtime-v1.8','native-macos-runtime-v1.8','native-linux-runtime-v1.8']) {
+test('Pages uses Current Ready v1.10 while Offline Compiler retains the real v1.8 compatibility underlay', () => {
+  for (const tag of ['native-win32-runtime-v1.10','native-macos-runtime-v1.10','native-linux-runtime-v1.10']) {
     assert.ok(pages.includes(tag), `Pages missing ${tag}`);
+    assert.ok(offline.includes(tag), `Offline Compiler missing ${tag}`);
   }
   assert.doesNotMatch(pages, /Patch Native Sealed Table Runtime/);
   assert.doesNotMatch(pages, /Patch Native Sealed List Runtime/);
@@ -97,23 +98,12 @@ test('Pages and offline compiler use current runtime v1.8 while frozen responsiv
     'native-runtime\\win32-sealed-gui-v18.cpp',
     'native-runtime/appkit-sealed-gui-v18.mm',
     'native-runtime/gtk-sealed-gui-v18.cpp'
-  ]) assert.ok(offline.includes(runtimeSource), `offline compiler missing ${runtimeSource}`);
-  assert.match(offline, /examples\/responsive-window\.patch/);
-  assert.match(offline, /examples\/table-native-v09\.patch/);
-  assert.match(offline, /examples\/listbox-multiselect-native\.patch/);
-  assert.match(offline, /examples\/menu-state-window\.patch/);
-  assert.match(offline, /examples\/treeview-window\.patch/);
-  assert.match(offline, /examples\/slider-window\.patch/);
-  assert.match(offline, /examples\/chrome-window\.patch/);
-  assert.match(offline, /examples\/shape-window\.patch/);
-  assert.match(offline, /examples\/paintbox-window\.patch/);
-  assert.match(offline, /OfflineTable/);
-  assert.match(offline, /OfflineMulti/);
-  assert.match(offline, /OfflineMenu/);
-  assert.match(offline, /OfflineTree/);
-  assert.match(offline, /OfflineSlider/);
-  assert.match(offline, /OfflineChrome/);
-  assert.match(offline, /payload v17\/runtime v1\.8/);
+  ]) assert.ok(offline.includes(runtimeSource), `offline compiler missing legacy runtime source ${runtimeSource}`);
+  assert.match(offline, /--gui-runtime-v19/);
+  assert.match(offline, /--gui-payload-version 17/);
+  assert.match(offline, /payload v19/);
+  assert.match(offline, /runtime v1\.10/);
+  assert.match(offline, /runtime-v1\.8 compatibility output/);
   assert.match(offline, /--patch-smoke/);
   assert.doesNotMatch(offline, /native-win32-runtime-v0\.9/);
   assert.doesNotMatch(offline, /native-macos-runtime-v0\.9/);

@@ -19,13 +19,13 @@ Patch is a small **change-oriented programming language** with a source-backed R
 | Patch | **0.2.0-beta.36** |
 | Change IR | **0.10** |
 | Studio project format | **v4** |
-| Current native Ready line | **Native GUI IR 1.7 / payload v17 / runtime v1.8** |
-| Experimental Button/ImageList line | **IR 1.8 / payload v18 / runtime v1.9**, implemented but not promoted to Current Ready |
-| Experimental Window icon line | **IR 1.9 / payload v19 / runtime v1.10**, runtime and cross-platform packaging implemented/proven; release/promotion remains open |
+| Current native Ready line | **Native GUI IR 1.9 / payload v19 / runtime v1.10** |
+| Button/ImageList layer | **IR 1.8 / payload v18 / runtime v1.9**, preserved inside the Current Ready compatibility stack |
+| Window/application icons | **Current Ready** on Windows, macOS, and Linux through IR 1.9 / payload v19 / runtime v1.10 |
 | Offline Studio | rolling **`offline-studio-v0.2`** channel |
-| Offline compiler | rolling **`offline-compiler-v0.2`** channel |
+| Offline compiler | rolling **`offline-compiler-v0.2`** channel, defaulting Window links to payload v19/runtime v1.10 |
 
-The distinction between **Current Ready** and **experimental next contracts** is intentional. Patch fails closed instead of silently dropping unsupported native behavior.
+Native capabilities are promoted only after cross-platform runtime, packaging, release-integrity, and Offline Compiler evidence passes. Older payload lines remain explicit compatibility contracts rather than being silently reinterpreted.
 
 ## A tiny Patch program
 
@@ -67,18 +67,19 @@ For the full IDE contract and long-term backlog, see [`docs/PATCH_STUDIO.md`](do
 
 ## Native desktop status
 
-The product-facing native contract remains:
+The product-facing native contract is:
 
-**Native GUI IR 1.7 / sealed payload v17 / desktop runtime v1.8**
+**Native GUI IR 1.9 / sealed payload v19 / desktop runtime v1.10**
 
-[`src/native-current-contract.js`](src/native-current-contract.js) owns the product-facing Current Ready boundary. [`src/native-frozen-contract.js`](src/native-frozen-contract.js) preserves the explicit frozen compatibility line. The current contract stays pinned until the corresponding cross-platform runtime, release, digest, packaging, and Offline Compiler promotion gates have passed.
+[`src/native-current-contract.js`](src/native-current-contract.js) owns the product-facing Current Ready boundary. [`src/native-frozen-contract.js`](src/native-frozen-contract.js) preserves the explicit frozen compatibility line. The v1.10 promotion is backed by cross-platform runtime smoke, immutable release/digest checks, application-icon packaging, and dual-runtime Offline Compiler tests on Windows, Linux, macOS Apple Silicon, and macOS Intel.
 
-The Current Ready line is the token-free Ready/offline path for Windows, macOS, and Linux. It includes the established native component surface plus Shape, PaintBox Stage 1, and bounded PNG/JPEG `draw image` support.
+The Current Ready line is the token-free Ready/offline path for Windows, macOS, and Linux. It includes the established native component surface plus Shape, PaintBox Stage 1, bounded PNG/JPEG `draw image`, Button `ImageList` images, and application/Form icons.
 
-Development beyond the Ready line is versioned separately:
+The versioned stack remains intentionally layered:
 
-- **IR 1.8 / payload v18 / runtime v1.9** adds real Button `ImageList` image transport and Win32/AppKit/GTK consumers. It is implemented as a next contract but is not yet the Current Ready line.
-- **IR 1.9 / payload v19 / runtime v1.10** adds bounded, deduplicated application/Form icon transport and native Win32/AppKit/GTK consumption over the complete v1.9 Button/ImageList layer. Cross-platform runtime smoke and packaging are green: Windows produces a self-contained sealed EXE with a project-specific PE application icon, macOS has `.icns` + `CFBundleIconFile` app-bundle packaging, and Linux has hicolor + `.desktop` packaging. Release assets/digests, Offline Compiler promotion and the Current Ready switch remain separate gates.
+- **IR 1.8 / payload v18 / runtime v1.9** introduced Button `ImageList` image transport and Win32/AppKit/GTK consumers. It is now the compatibility underlay inside Current Ready v1.10.
+- **IR 1.9 / payload v19 / runtime v1.10** adds bounded, deduplicated application/Form icon transport over that complete Button/ImageList layer. Windows supports runtime icons plus project-specific PE application-icon embedding, macOS packages `.icns` with `CFBundleIconFile`, and Linux packages hicolor PNG plus `.desktop` metadata.
+- Explicit payload v17/runtime v1.8 remains available for compatibility in the Offline Compiler. It is not the default Current Ready output.
 - Native Picture and paint-image decoding currently treat PNG/JPEG as Ready formats. WebP/SVG remain deferred under `native-picture-formats/1.0` and fail closed on native targets.
 
 See [`docs/NATIVE_COMPATIBILITY.md`](docs/NATIVE_COMPATIBILITY.md), [`docs/NATIVE_GUI.md`](docs/NATIVE_GUI.md), and [`docs/WINDOW_ICONS.md`](docs/WINDOW_ICONS.md) for contract details.
@@ -99,7 +100,7 @@ Stage 1 provides offline authoring, Designer/Run, and existing browser-local bui
 
 ### Offline Compiler
 
-`offline-compiler-v0.2` provides token-free compiler/linker kits for Windows, Linux, macOS Apple Silicon, and macOS Intel. FreeBSD remains Console-only through portable C99.
+`offline-compiler-v0.2` provides token-free compiler/linker kits for Windows, Linux, macOS Apple Silicon, and macOS Intel. Current Ready Window linking defaults to **payload v19/runtime v1.10** and carries a separate runtime-v1.8 underlay for explicit `--gui-payload-version 17` compatibility. FreeBSD remains Console-only through portable C99.
 
 See [`docs/OFFLINE_STUDIO.md`](docs/OFFLINE_STUDIO.md) and [`docs/OFFLINE_COMPILER.md`](docs/OFFLINE_COMPILER.md).
 

@@ -9,47 +9,47 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 - Patch package: **0.2.0-beta.36**
 - public product surface: **0.2 beta.36+**
 - Change IR: **0.10**
-- Native GUI IR: **1.7**
-- current sealed native GUI payload: **v17**
-- current token-free Ready/offline runtime: **v1.8** on Windows, macOS and Linux
+- Native GUI IR: **1.9**
+- current sealed native GUI payload: **v19**
+- current token-free Ready/offline runtime: **v1.10** on Windows, macOS and Linux
 - Studio project format: **multi-file/resource bundle v4**
-- Component Registry: **0.8**
+- Component Registry: **0.9**
 - Offline Studio manifest: **v1**, rolling channel **`offline-studio-v0.2`**
 - Offline Compiler rolling channel: **`offline-compiler-v0.2`**
 - formal runtime-correspondence milestone: **beta.32**
 
-`src/native-current-contract.js` remains the authoritative product-facing native boundary. New native contracts do not become Ready merely because their implementation tests are green.
+`src/native-current-contract.js` is the authoritative product-facing native boundary. Native contracts become Ready only after their cross-platform runtime, release-integrity, packaging and Offline Compiler gates pass.
 
 ### Preserved native compatibility evidence
 
-Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** remains the direct-Table compatibility origin. The frozen TreeView compatibility line: Native GUI IR **1.2** / payload **v12** / runtime **v1.3** remains preserved as well. Retaining these lines is intentional and does not make them current targets; they preserve the historical backend/runtime evidence that later native contracts build on.
+Older versioned contracts remain reproducibility and compatibility evidence even when they are not product defaults. In particular, the frozen **Native GUI IR 0.8 / payload v9 / runtime v1.0 Table line** and **Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line** remain preserved. Payload v17/runtime v1.8 also remains available as an explicit Offline Compiler compatibility path after the v1.10 promotion. Retaining these lines is intentional and does not make them current targets.
 
-## Implemented next native contracts
+## Promoted native stack
 
-Two additive desktop lines are implemented beyond Current Ready:
+The additive desktop stack is now Current Ready:
 
-- **Native GUI IR 1.8 / payload v18 / runtime v1.9**: Button `ImageList` asset transport plus Win32, AppKit and GTK Button-image consumers. The complete prior v1.8 runtime behavior is preserved underneath it.
-- **Native GUI IR 1.9 / payload v19 / runtime v1.10**: application/Form Window-icon transport and Win32, AppKit and GTK consumers over the complete Button/ImageList line.
+- **Native GUI IR 1.8 / payload v18 / runtime v1.9** introduced Button `ImageList` asset transport plus Win32, AppKit and GTK Button-image consumers.
+- **Native GUI IR 1.9 / payload v19 / runtime v1.10** adds application/Form Window-icon transport and Win32, AppKit and GTK consumers over the complete Button/ImageList line.
 
-The Window-icon line also has platform packaging evidence:
+The Current Ready Window-icon line includes platform packaging evidence:
 
 - `native-window-icon-packaging/0.1` produces deterministic cross-platform application-icon artifacts;
-- `native-window-icon-package-v110/0.2` builds the experimental v1.10 package plans;
+- `native-window-icon-package-v110/0.2` builds the Current Ready v1.10 package plans;
 - `windows-pe-icon-v110/0.1` embeds the project application icon into a fixed reserved Windows PE resource slot without moving sections or changing executable length;
 - the normal Windows runtime-v1.10 template carries and verifies that reserved slot;
-- Windows CI verifies the same packaged EXE with `ExtractAssociatedIcon` and `--patch-smoke`;
-- macOS packaging emits `.icns` + `CFBundleIconFile` inside an `.app` plan;
+- Windows CI verifies the packaged EXE with `ExtractAssociatedIcon` and `--patch-smoke`;
+- macOS packaging emits `.icns` + `CFBundleIconFile` inside the `.app` plan;
 - Linux packaging emits hicolor PNG + `.desktop` metadata;
-- Windows/macOS/Linux runtime and package-contract workflows are green.
+- immutable v1.10 runtime release assets, SHA-256/GitHub digests and source-commit binding are verified;
+- the normal Offline Compiler carries Current Ready v1.10 plus a separate v1.8 compatibility underlay;
+- Windows, Linux, macOS Apple Silicon and macOS Intel promotion smokes are green.
 
-These lines remain **experimental next contracts** until the release/digest/Offline-Compiler promotion gate is complete.
+## Current product milestone: RAD R0 hardening + native R1 follow-through
 
-## Current product milestone: RAD R0 hardening + native R1 promotion
-
-The two previously open native R1 resource-consumer implementations are now complete. Near-term work is therefore split between:
+The native R1 promotion gate is complete. Near-term work is now split between:
 
 1. completing the remaining R0 Studio architecture/reliability work;
-2. promoting the already implemented IR 1.9 / payload v19 / runtime v1.10 stack through release assets, digests, Offline Compiler linking and product metadata;
+2. continuing broader R1/R2 resource and Designer parity without weakening the promoted native boundary;
 3. starting Offline Studio Stage 2 local-native-build integration;
 4. moving into broader R2+ RAD parity only after those boundaries are stable.
 
@@ -90,7 +90,7 @@ Implemented:
 - [x] native PNG/JPEG Picture decoding with explicit deferred WebP/SVG policy
 - [x] Shape native lowering/runtime parity through preserved IR 1.5+
 - [x] PaintBox native parity through IR 1.6+
-- [x] PaintBox `draw image` through Current Ready IR 1.7 / payload v17 / runtime v1.8
+- [x] PaintBox `draw image`, introduced in IR 1.7/payload v17/runtime v1.8 and preserved in Current Ready 1.9/19/1.10
 - [x] ImageList Stage 1 authoring/Web consumer and `native-imagelist-asset-plan/0.1`
 - [x] ImageList/Button native transport through IR 1.8 / payload v18 / runtime v1.9
 - [x] Win32/AppKit/GTK Button ImageList consumers
@@ -99,10 +99,10 @@ Implemented:
 - [x] Win32/AppKit/GTK runtime Window-icon consumers
 - [x] Windows PE, macOS app-bundle and Linux desktop application-icon packaging contracts
 - [x] generated component capability matrix infrastructure
+- [x] Current Ready promotion to IR 1.9 / payload v19 / runtime v1.10
 
 Still open inside the broader R1/R2 product surface:
 
-- [ ] promote the implemented next native line into Current Ready only after release/integrity gates
 - [ ] extend ImageList transport to ToolBar/ToolButton/Menu/Tree consumers only when those component contracts exist
 - [ ] PWA icon-set generation and visual application-branding editor
 - [ ] richer Picture native display-property combinations only through a new explicit versioned contract
@@ -110,7 +110,7 @@ Still open inside the broader R1/R2 product surface:
 
 ## Native promotion gate
 
-Before `src/native-current-contract.js` can move from **1.7 / 17 / 1.8** to **1.9 / 19 / 1.10**:
+The promotion from **1.7 / 17 / 1.8** to **1.9 / 19 / 1.10** is complete:
 
 - [x] IR 1.8 / payload v18 / runtime v1.9 Button/ImageList implementation
 - [x] IR 1.9 / payload v19 / runtime v1.10 Window-icon implementation
@@ -118,14 +118,14 @@ Before `src/native-current-contract.js` can move from **1.7 / 17 / 1.8** to **1.
 - [x] deterministic Windows/macOS/Linux application-icon package plans
 - [x] self-contained Windows PE icon embedding and real Windows extraction evidence
 - [x] standard Windows v1.10 runtime artifact carries the reserved PE icon slot
-- [ ] publish versioned v1.10 runtime release assets
-- [ ] publish and verify SHA-256 digests for those assets
-- [ ] switch browser/native build runtime lookup to the verified v1.10 assets
-- [ ] switch Offline Compiler linking to payload v19/runtime v1.10
-- [ ] update generated capability metadata and public release/download surfaces
-- [ ] only then change `src/native-current-contract.js`
+- [x] versioned v1.10 runtime release assets published
+- [x] SHA-256, GitHub asset digests and release source binding verified
+- [x] browser/native build runtime lookup switched to verified v1.10 assets
+- [x] Offline Compiler defaults to payload v19/runtime v1.10 while retaining explicit v17/v1.8 compatibility
+- [x] generated capability metadata and public product surfaces moved to the promoted contract
+- [x] `src/native-current-contract.js` moved to 1.9 / 19 / 1.10
 
-The Current Ready line remains 1.7 / 17 / 1.8 until every unchecked item above is complete.
+Future native feature work must use a new explicit versioned contract rather than widening v19 in place.
 
 ## RAD R2: Form Designer parity
 
@@ -204,12 +204,12 @@ Implemented repository-controlled surface:
 
 - [x] Current Ready Windows/macOS/Linux Console and Window packages
 - [x] direct-native Win32/AppKit/GTK backends
-- [x] token-free Current Ready runtime v1.8 release workflows
-- [x] browser runtime templates verified against release SHA-256 digests before sealing
-- [x] downloadable Offline Compiler kits
+- [x] token-free Current Ready runtime v1.10 release workflows
+- [x] browser runtime templates verified against release SHA-256/GitHub digests before sealing
+- [x] downloadable dual-runtime Offline Compiler kits
 - [x] downloadable Offline Studio Stage 1 channel
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
-- [x] experimental v1.10 cross-platform Window-icon runtime/package implementation
+- [x] Current Ready v1.10 cross-platform Window-icon runtime/package implementation
 
 External or future distribution work:
 
@@ -253,6 +253,6 @@ No empirical performance result is claimed until the corresponding measurements 
 - **beta.34:** canonical Studio state and runtime-integrity hardening
 - **beta.35:** list-backed multi-select ListBox across browser and native lines
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
-- **beta.36:** project bundle v4 resources, Current Ready progression through Native GUI IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
-- **beta.36+ experimental:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging and Windows PE embedding
-- **current:** R0 architecture hardening, native v1.10 release/Offline-Compiler promotion, Offline Studio Stage 2, then broader R2 expansion
+- **beta.36:** project bundle v4 resources, native progression through PaintBox/image IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
+- **beta.36+ promoted:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging, Windows PE embedding, immutable runtime release verification and dual-runtime Offline Compiler promotion
+- **current:** R0 architecture hardening, Offline Studio Stage 2, broader R1/R2 Designer/resource expansion, and future native work only through new explicit contracts

@@ -28,10 +28,7 @@ on:
       - examples/paintbox-window.patch
       - examples/paintbox-image-window.patch
       - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-sealed-chrome-runtime-v15.yml
-      - .github/workflows/native-sealed-shape-runtime-v16.yml
-      - .github/workflows/native-sealed-paintbox-runtime-v17.yml
-      - .github/workflows/native-sealed-paintbox-image-runtime-v18.yml
+      - .github/workflows/native-sealed-window-icon-runtime-v110.yml
   push:
     branches: [main]
     paths:
@@ -58,10 +55,7 @@ on:
       - examples/paintbox-window.patch
       - examples/paintbox-image-window.patch
       - .github/workflows/offline-compiler.yml
-      - .github/workflows/native-sealed-chrome-runtime-v15.yml
-      - .github/workflows/native-sealed-shape-runtime-v16.yml
-      - .github/workflows/native-sealed-paintbox-runtime-v17.yml
-      - .github/workflows/native-sealed-paintbox-image-runtime-v18.yml
+      - .github/workflows/native-sealed-window-icon-runtime-v110.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -129,14 +123,20 @@ jobs:
           - os: windows-latest
             platform: windows
             asset: patch-windows-x64.exe
+            runtime_tag: native-win32-runtime-v1.10
+            runtime_asset: patch-windows-native-gui-runtime.exe
           - os: ubuntu-latest
             platform: linux
             asset: patch-linux-x64
+            runtime_tag: native-linux-runtime-v1.10
+            runtime_asset: patch-linux-native-gui-runtime.bin
           - os: macos-15
             platform: macos
             asset: patch-macos-arm64
+            runtime_tag: native-macos-runtime-v1.10
+            runtime_asset: patch-macos-native-gui-runtime.bin
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -149,12 +149,30 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+      - name: Download and verify Current Ready runtime v1.10
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: ${{ matrix.runtime_tag }}
+          RUNTIME_ASSET: ${{ matrix.runtime_asset }}
+          RUNTIME_SOURCE_SHA: e31a426dc21cb0929241fe96ab96e270ad182b32
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p current-runtime
+          gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$RUNTIME_ASSET" --pattern SHA256SUMS.txt --dir current-runtime
+          grep -Eq "^[0-9a-f]{64}  ${RUNTIME_ASSET}$" current-runtime/SHA256SUMS.txt
+          (cd current-runtime && sha256sum -c SHA256SUMS.txt)
+          expected="sha256:$(awk '{print $1}' current-runtime/SHA256SUMS.txt)"
+          recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RUNTIME_TAG" --jq ".assets[] | select(.name == \"$RUNTIME_ASSET\") | .digest")"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RUNTIME_TAG" --jq '.object.sha')"
+          test "$recorded" = "$expected"
+          test "$tag_sha" = "$RUNTIME_SOURCE_SHA"
       - name: Build host Console runtime
         shell: bash
         run: |
           mkdir -p offline-runtime dist-offline dist-smoke
           node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
-      - name: Build Win32 runtime v1.8
+      - name: Build legacy Win32 runtime v1.8 compatibility underlay
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
@@ -163,35 +181,40 @@ jobs:
           $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
           $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
-          $script = Join-Path $PWD 'offline-runtime\build-gui-runtime.cmd'
+          $script = Join-Path $PWD 'offline-runtime\build-gui-legacy.cmd'
           @(
             '@echo off',
             "call `"$devcmd`" -arch=x64 -host_arch=x64",
             'if errorlevel 1 exit /b %errorlevel%',
-            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v18.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui.bin',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v18.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui-legacy.bin',
             'exit /b %errorlevel%'
           ) | Set-Content -Path $script -Encoding ascii
           & cmd.exe /d /c $script
-          if ($LASTEXITCODE -ne 0) { throw "MSVC GUI runtime build failed with exit code $LASTEXITCODE." }
-      - name: Build GTK runtime v1.8
+          if ($LASTEXITCODE -ne 0) { throw "MSVC legacy GUI runtime build failed with exit code $LASTEXITCODE." }
+      - name: Build legacy GTK runtime v1.8 compatibility underlay
         if: matrix.platform == 'linux'
         shell: bash
         run: |
-          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v18.cpp -o offline-runtime/gui.bin $(pkg-config --cflags --libs gtk+-3.0)
-          chmod +x offline-runtime/gui.bin
-      - name: Build AppKit runtime v1.8
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v18.cpp -o offline-runtime/gui-legacy.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x offline-runtime/gui-legacy.bin
+      - name: Build legacy AppKit runtime v1.8 compatibility underlay
         if: matrix.platform == 'macos'
         shell: bash
         run: |
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
-            native-runtime/appkit-sealed-gui-v18.mm -o offline-runtime/gui.bin
-          chmod +x offline-runtime/gui.bin
-          test "$(lipo -archs offline-runtime/gui.bin)" = "arm64"
-      - name: Build standalone Patch compiler
+            native-runtime/appkit-sealed-gui-v18.mm -o offline-runtime/gui-legacy.bin
+          chmod +x offline-runtime/gui-legacy.bin
+          test "$(lipo -archs offline-runtime/gui-legacy.bin)" = "arm64"
+      - name: Build standalone Patch compiler with Current Ready v1.10
         shell: bash
         run: |
-          node scripts/build-offline-compiler.js --platform '${{ matrix.platform }}' --console-runtime offline-runtime/console.bin --gui-runtime offline-runtime/gui.bin --out "dist-offline/${{ matrix.asset }}"
-      - name: Smoke compiler and current local Window linking
+          node scripts/build-offline-compiler.js \
+            --platform '${{ matrix.platform }}' \
+            --console-runtime offline-runtime/console.bin \
+            --gui-runtime offline-runtime/gui-legacy.bin \
+            --gui-runtime-v19 'current-runtime/${{ matrix.runtime_asset }}' \
+            --out "dist-offline/${{ matrix.asset }}"
+      - name: Smoke compiler and Current Ready Window linking
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
@@ -210,6 +233,7 @@ jobs:
           "dist-offline/${{ matrix.asset }}" link examples/shape-window.patch --name OfflineShape --out dist-smoke/OfflineShape
           "dist-offline/${{ matrix.asset }}" link examples/paintbox-window.patch --name OfflinePaintBox --out dist-smoke/OfflinePaintBox
           "dist-offline/${{ matrix.asset }}" link examples/paintbox-image-window.patch --name OfflinePaintImage --out dist-smoke/OfflinePaintImage
+          "dist-offline/${{ matrix.asset }}" link examples/responsive-window.patch --gui-payload-version 17 --name OfflineLegacy17 --out dist-smoke/OfflineLegacy17
           test -s dist-smoke/OfflineSmoke.html
       - name: Smoke linked Window apps on Windows
         if: matrix.platform == 'windows'
@@ -223,25 +247,32 @@ jobs:
             & "./dist-smoke/$name.exe" --patch-smoke
             if ($LASTEXITCODE -ne 0) { throw "$name smoke failed with exit code $LASTEXITCODE." }
             $sealed = [System.IO.File]::ReadAllBytes((Resolve-Path "dist-smoke/$name.exe"))
-            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 17) { throw "$name is not sealed payload v17." }
+            if ([BitConverter]::ToUInt32($sealed, $sealed.Length - 12) -ne 19) { throw "$name is not sealed Current Ready payload v19." }
           }
+          & ./dist-smoke/OfflineLegacy17.exe --patch-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Legacy payload v17 smoke failed with exit code $LASTEXITCODE." }
+          $legacy = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-smoke/OfflineLegacy17.exe'))
+          if ([BitConverter]::ToUInt32($legacy, $legacy.Length - 12) -ne 17) { throw 'Explicit compatibility output is not payload v17.' }
       - name: Smoke linked Window apps on Linux
         if: matrix.platform == 'linux'
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
         run: |
-          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable dist-smoke/OfflineMulti dist-smoke/OfflineMenu dist-smoke/OfflineTree dist-smoke/OfflineSlider dist-smoke/OfflineChrome dist-smoke/OfflineShape dist-smoke/OfflinePaintBox dist-smoke/OfflinePaintImage
+          chmod +x dist-smoke/OfflineLinked dist-smoke/OfflineResponsive dist-smoke/OfflineTable dist-smoke/OfflineMulti dist-smoke/OfflineMenu dist-smoke/OfflineTree dist-smoke/OfflineSlider dist-smoke/OfflineChrome dist-smoke/OfflineShape dist-smoke/OfflinePaintBox dist-smoke/OfflinePaintImage dist-smoke/OfflineLegacy17
           ./dist-smoke/OfflineLinked
           for name in OfflineResponsive OfflineTable OfflineMulti OfflineMenu OfflineTree OfflineSlider OfflineChrome OfflineShape OfflinePaintBox OfflinePaintImage; do
             xvfb-run -a "./dist-smoke/$name" --patch-smoke
           done
+          xvfb-run -a ./dist-smoke/OfflineLegacy17 --patch-smoke
           node - <<'NODE'
           const fs=require('fs');
           for(const name of ['OfflineResponsive','OfflineTable','OfflineMulti','OfflineMenu','OfflineTree','OfflineSlider','OfflineChrome','OfflineShape','OfflinePaintBox','OfflinePaintImage']){
             const sealed=fs.readFileSync(`dist-smoke/${name}`);
-            if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error(`${name} is not sealed payload v17.`);
+            if(sealed.readUInt32LE(sealed.length-12)!==19) throw new Error(`${name} is not sealed Current Ready payload v19.`);
           }
+          const legacy=fs.readFileSync('dist-smoke/OfflineLegacy17');
+          if(legacy.readUInt32LE(legacy.length-12)!==17) throw new Error('Explicit compatibility output is not payload v17.');
           NODE
       - name: Smoke linked Window apps on macOS
         if: matrix.platform == 'macos'
@@ -259,9 +290,16 @@ jobs:
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error(`${process.argv[2]} is not sealed payload v17.`);
+          if(sealed.readUInt32LE(sealed.length-12)!==19) throw new Error(`${process.argv[2]} is not sealed Current Ready payload v19.`);
           NODE
           done
+          LEGACY=dist-smoke/OfflineLegacy17.app/Contents/MacOS/OfflineLegacy17
+          "$LEGACY" --patch-smoke
+          node - "$LEGACY" <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync(process.argv[2]);
+          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error('Explicit compatibility output is not payload v17.');
+          NODE
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-${{ matrix.platform }}-${{ matrix.asset }}
@@ -273,14 +311,30 @@ jobs:
     needs: affected
     if: needs.affected.outputs.affected == 'true'
     runs-on: macos-15-intel
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Build portable Intel macOS compiler kit with runtime v1.8
+      - name: Download and verify universal Current Ready AppKit runtime v1.10
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME_SOURCE_SHA: e31a426dc21cb0929241fe96ab96e270ad182b32
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p current-runtime
+          gh release download native-macos-runtime-v1.10 --repo "$GITHUB_REPOSITORY" --pattern patch-macos-native-gui-runtime.bin --pattern SHA256SUMS.txt --dir current-runtime
+          (cd current-runtime && sha256sum -c SHA256SUMS.txt)
+          expected="sha256:$(awk '{print $1}' current-runtime/SHA256SUMS.txt)"
+          recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/native-macos-runtime-v1.10" --jq '.assets[] | select(.name == "patch-macos-native-gui-runtime.bin") | .digest')"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/native-macos-runtime-v1.10" --jq '.object.sha')"
+          test "$recorded" = "$expected"
+          test "$tag_sha" = "$RUNTIME_SOURCE_SHA"
+          lipo -archs current-runtime/patch-macos-native-gui-runtime.bin | grep -qw x86_64
+      - name: Build portable Intel macOS compiler kit with Current Ready v1.10
         shell: bash
         run: |
           ROOT=dist-intel/patch-macos-x64
@@ -291,13 +345,15 @@ jobs:
           chmod +x "$ROOT/runtime/node"
           clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch x86_64 -framework Cocoa \
             native-runtime/appkit-sealed-gui-v18.mm -o "$ROOT/runtime/gui.bin"
-          chmod +x "$ROOT/runtime/gui.bin"
+          cp current-runtime/patch-macos-native-gui-runtime.bin "$ROOT/runtime/gui-v19.bin"
+          chmod +x "$ROOT/runtime/gui.bin" "$ROOT/runtime/gui-v19.bin"
           cat > "$ROOT/patch" <<'EOF'
           #!/bin/sh
           set -eu
           ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
           export PATCH_OFFLINE_NODE_RUNTIME="$ROOT/runtime/node"
           export PATCH_OFFLINE_GUI_RUNTIME="$ROOT/runtime/gui.bin"
+          export PATCH_OFFLINE_GUI_RUNTIME_V19="$ROOT/runtime/gui-v19.bin"
           exec "$ROOT/runtime/node" "$ROOT/src/cli-entry.js" "$@"
           EOF
           chmod +x "$ROOT/patch"
@@ -309,11 +365,11 @@ jobs:
                ./patch build app.patch --target web --out App.html
                ./patch link app.patch --out App
           Console link creates a portable .app containing direct Patch Wasm plus the embedded Intel Node runtime.
-          Window link seals Native GUI IR 1.7 into payload v17/runtime v1.8, including responsive Anchor/Dock, Table/Grid, list-backed multi-select ListBox, Menu state/shortcuts, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image controls.
+          Current Ready Window link uses Native GUI IR 1.9 / payload v19 / runtime v1.10 with Button ImageList and application/Form icon support. Use --gui-payload-version 17 only for explicit runtime-v1.8 compatibility output.
           EOF
           (cd dist-intel && tar -czf patch-macos-x64.tar.gz patch-macos-x64)
           test -s dist-intel/patch-macos-x64.tar.gz
-      - name: Smoke Intel kit and current Window link paths
+      - name: Smoke Intel kit and Current Ready Window link paths
         shell: bash
         env:
           PATCH_NATIVE_HEADLESS: '1'
@@ -336,9 +392,17 @@ jobs:
             node - "$APP" <<'NODE'
           const fs=require('fs');
           const sealed=fs.readFileSync(process.argv[2]);
-          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error('Intel offline compiler Window output is not sealed payload v17.');
+          if(sealed.readUInt32LE(sealed.length-12)!==19) throw new Error('Intel offline compiler Window output is not sealed Current Ready payload v19.');
           NODE
           done
+          "$KIT/patch" link examples/responsive-window.patch --gui-payload-version 17 --name IntelLegacy17 --out dist-smoke/IntelLegacy17
+          LEGACY=dist-smoke/IntelLegacy17.app/Contents/MacOS/IntelLegacy17
+          "$LEGACY" --patch-smoke
+          node - "$LEGACY" <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync(process.argv[2]);
+          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error('Intel explicit compatibility output is not payload v17.');
+          NODE
       - uses: actions/upload-artifact@v7
         with:
           name: offline-compiler-macos-intel
@@ -430,5 +494,5 @@ jobs:
         shell: bash
         run: |
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes 'Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Window linking embeds Native GUI IR 1.7 as sealed payload v17/runtime v1.8 with responsive layout, Table/Grid, ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1, PaintBox Stage 1 and PaintBox draw image controls. Supported run/build/link workflows work locally without a GitHub token.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes 'Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Current Ready Window linking uses Native GUI IR 1.9 / sealed payload v19 / runtime v1.10, including Button ImageList and application/Form icon transport and platform packaging. Explicit --gui-payload-version 17 remains available through the embedded runtime-v1.8 compatibility underlay. Supported run/build/link workflows work locally without a GitHub token.'
           gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber

@@ -24,13 +24,13 @@ function build(source = SOURCE) {
   return buildNativeGuiIRV15(compile(source, { name: 'NativeShape', kind: 'window' }));
 }
 
-test('current native contract is IR 1.7 / payload 17 / runtime 1.8', () => {
+test('current native contract is IR 1.9 / payload 19 / runtime 1.10', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.guiIr, '1.7');
-  assert.equal(contract.payload, 17);
-  assert.equal(contract.runtime, '1.8');
-  assert.equal(contract.runtimeTags.windows, 'native-win32-runtime-v1.8');
+  assert.equal(contract.id, 'native-gui-1.9/payload-19/runtime-1.10');
+  assert.equal(contract.guiIr, '1.9');
+  assert.equal(contract.payload, 19);
+  assert.equal(contract.runtime, '1.10');
+  assert.equal(contract.runtimeTags.windows, 'native-win32-runtime-v1.10');
 });
 
 test('Native GUI IR 1.5 carries Shape kinds fill stroke radius and opacity', () => {
@@ -66,11 +66,11 @@ test('Native GUI IR 1.5 compatibility projection is private and preserves origin
   assert.equal(JSON.stringify(ir).includes('"type":"shape"'), true);
 });
 
-test('Native GUI build plan selects additive Shape runtime 1.6 automatically', () => {
+test('Current Ready Native GUI build plan preserves Shape support on IR 1.9', () => {
   const compiled = compile(SOURCE, { name: 'NativeShape', kind: 'window' });
   const plan = buildNativeGuiPlan(compiled);
   assert.equal(plan.tier, 'shape-v16');
-  assert.equal(plan.gui.version, '1.7');
+  assert.equal(plan.gui.version, '1.9');
   assert.equal(plan.features.shape, true);
   assert.equal(flattenCurrentNativeGuiControls(plan.gui).filter(control => control.type === 'shape').length, 4);
 });

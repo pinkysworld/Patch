@@ -19,14 +19,13 @@ export class NativeWindowIconPackageV110Error extends Error {
 }
 
 /**
- * Build a materialization-neutral package plan for the experimental
+ * Build the materialization-neutral package plan for the Current Ready
  * IR 1.9 / payload v19 / runtime v1.10 Window-icon line.
  *
- * v0.2 closes the Windows single-EXE gap: when an application icon exists,
- * the runtime template must carry the reserved windows-pe-icon-v110/0.1
- * resource slot and the project 256x256 PNG is embedded into the sealed EXE
- * in place. macOS and Linux continue to compose their package metadata around
- * the same sealed payload. This does not promote the Current Ready contract.
+ * Windows embeds a project 256x256 PNG into the reserved PE application-icon
+ * resource slot. macOS emits an .icns resource plus CFBundleIconFile metadata,
+ * and Linux emits hicolor application icon + .desktop metadata. All platforms
+ * carry the same sealed v19 payload and fail closed on invalid resources.
  */
 export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options = {}) {
   const platform = normalizePlatform(options.platform);
@@ -58,8 +57,6 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
     }
 
     files.push(file(`${stem}.exe`, executableBytes, 0o100755));
-    // Keep the deterministic ICO as packaging/provenance material. The EXE is
-    // self-contained and does not depend on this sidecar after v0.2 embedding.
     if (icons.windows) files.push(file(icons.windows.filename, icons.windows.bytes, 0o100644));
     return freezePlan({
       platform,
@@ -67,7 +64,7 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
       stem,
       sealed,
       icons,
-      outputKind: 'experimental Windows runtime-v1.10 self-contained package plan',
+      outputKind: 'Windows runtime-v1.10 self-contained package plan',
       executable: `${stem}.exe`,
       bundle: null,
       files,
@@ -91,7 +88,7 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
       stem,
       sealed,
       icons,
-      outputKind: 'experimental macOS runtime-v1.10 app bundle plan',
+      outputKind: 'macOS runtime-v1.10 app bundle plan',
       executable,
       bundle,
       files,
@@ -112,7 +109,7 @@ export function createNativeWindowIconPackagePlanV110(runtimeBytes, ir, options 
       stem,
       sealed,
       icons,
-      outputKind: 'experimental Linux runtime-v1.10 desktop package plan',
+      outputKind: 'Linux runtime-v1.10 desktop package plan',
       executable: stem,
       bundle: null,
       files,
@@ -128,8 +125,8 @@ function freezePlan({ platform, name, stem, sealed, icons, outputKind, executabl
   return Object.freeze({
     id: PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID,
     version: PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_VERSION,
-    experimental: true,
-    currentProductPromoted: false,
+    experimental: false,
+    currentProductPromoted: true,
     nativeGuiIr: '1.9',
     payload: 19,
     runtime: '1.10',
@@ -156,7 +153,7 @@ function macInfoPlist(name, executable, icon) {
   const iconEntry = icon
     ? `\n<key>CFBundleIconFile</key><string>${xml(icon.plistValue)}</string>`
     : '';
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>\n<key>CFBundleName</key><string>${xml(name)}</string>\n<key>CFBundleDisplayName</key><string>${xml(name)}</string>\n<key>CFBundleExecutable</key><string>${xml(executable)}</string>\n<key>CFBundleIdentifier</key><string>org.patchlang.experimental.${xml(bundlePart)}</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>0.2</string>\n<key>CFBundleVersion</key><string>1</string>${iconEntry}\n<key>LSMinimumSystemVersion</key><string>11.0</string>\n<key>NSHighResolutionCapable</key><true/>\n</dict></plist>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>\n<key>CFBundleName</key><string>${xml(name)}</string>\n<key>CFBundleDisplayName</key><string>${xml(name)}</string>\n<key>CFBundleExecutable</key><string>${xml(executable)}</string>\n<key>CFBundleIdentifier</key><string>org.patchlang.app.${xml(bundlePart)}</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>0.2</string>\n<key>CFBundleVersion</key><string>1</string>${iconEntry}\n<key>LSMinimumSystemVersion</key><string>11.0</string>\n<key>NSHighResolutionCapable</key><true/>\n</dict></plist>\n`;
 }
 
 function normalizePlatform(value) {

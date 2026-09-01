@@ -10,7 +10,7 @@ import {
 } from '../src/component-registry.js';
 
 test('component registry exposes the current source-backed Designer families plus RAD R1 components', () => {
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.8');
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.9');
   assert.deepEqual(PATCH_COMPONENTS.map(component => component.type), [
     'text', 'button', 'input', 'checkbox',
     'radio', 'combo', 'listbox', 'slider',
@@ -84,7 +84,7 @@ test('Timer remains nonvisual and carries source-backed property and OnTick cont
   assert.equal(patchComponent('button').visual, true);
 });
 
-test('ImageList is nonvisual metadata consumed by Web Button images and remains native fail-closed', () => {
+test('ImageList is nonvisual metadata consumed by Web and native desktop Button images', () => {
   const imagelist = patchComponent('imagelist');
   assert.equal(imagelist.type, 'imagelist');
   assert.equal(imagelist.label, 'ImageList');
@@ -95,7 +95,7 @@ test('ImageList is nonvisual metadata consumed by Web Button images and remains 
   assert.deepEqual(imagelist.events, []);
   assert.equal(imagelist.designRenderer, 'imagelist');
   assert.deepEqual(imagelist.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   assert.equal(patchComponentForButton('addImagelist')?.type, 'imagelist');
 });

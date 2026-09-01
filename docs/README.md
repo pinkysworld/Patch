@@ -13,11 +13,11 @@ This directory contains product contracts, implementation references, research/a
 
 ## Current native and distribution contracts
 
-Current Ready desktop product contract: **Native GUI IR 1.7 / payload v17 / runtime v1.8**.
+Current Ready desktop product contract: **Native GUI IR 1.9 / payload v19 / runtime v1.10**.
 
-Implemented next line: **IR 1.9 / payload v19 / runtime v1.10**, including the preserved IR 1.8/v18/runtime v1.9 Button/ImageList layer and Window/application icon packaging. It is implemented and CI-proven but **not promoted** until the release/digest/browser/Offline-Compiler/public-metadata gate is complete.
+The promoted line contains the complete **IR 1.8 / payload v18 / runtime v1.9 Button/ImageList** layer plus **IR 1.9 / payload v19 / runtime v1.10 Window/application icons**. Runtime releases, cross-platform package evidence, SHA-256/GitHub asset digests, source binding and the dual-runtime Offline Compiler promotion gate are complete. **Payload v17 / runtime v1.8 remains an explicit compatibility path**, not the default Current Ready output.
 
-- [`NATIVE_GUI.md`](NATIVE_GUI.md) - native GUI architecture, current/frozen/experimental contracts.
+- [`NATIVE_GUI.md`](NATIVE_GUI.md) - native GUI architecture and current/frozen/compatibility contracts.
 - [`NATIVE_APPS.md`](NATIVE_APPS.md) - application build matrix and native package behavior.
 - [`TARGETS.md`](TARGETS.md) - canonical target matrix.
 - [`OFFLINE_COMPILER.md`](OFFLINE_COMPILER.md) - downloadable local compiler/linker contract.

@@ -14,11 +14,12 @@ test('Studio native build resource bridge is browser-valid and reads canonical v
   assert.match(nativeBuild, /const resources = kind === 'window' \? getStudioProjectResources\(\) : \[\]/);
 });
 
-test('token-free Windows Linux and macOS builds pass project resources into current native sealing', () => {
-  assert.match(nativeBuild, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows', resources \}\)/);
+test('token-free Windows Linux and macOS builds pass project resources into current native packaging', () => {
+  assert.match(nativeBuild, /sealCurrentNativeGuiRuntime\(runtimeBytes, nativeGui, \{ platform: 'windows', name, resources \}\)/);
   assert.match(nativeBuild, /buildLinuxNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, resources \}\)/);
   assert.match(nativeBuild, /buildMacosNativeGuiPackage\(runtimeBytes, nativeGui, \{ name, payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, resources \}\)/);
-  assert.match(nativePackage, /sealCurrentNativeGuiRuntime\(runtime, nativeGui, \{ platform, resources \}\)/);
+  assert.match(nativePackage, /createNativeWindowIconPackagePlanV110/);
+  assert.match(nativePackage, /resources: options\.resources \?\? \[\]/);
 });
 
 test('frozen native payload and cloud AOT paths fail closed for project Picture resources', () => {

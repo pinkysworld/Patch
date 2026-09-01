@@ -48,7 +48,7 @@ test('Studio brand uses the shared compiler-oriented Patch icon asset', () => {
 
 test('Studio status bar stays visible and carries save state plus the Ready chip', () => {
   assert.match(html, /id="saveState"/);
-  assert.match(html, /class="status-chip"[^>]*>IR 1\.7 \/ v1\.8/);
+  assert.match(html, /class="status-chip"[^>]*>IR 1\.9 \/ v1\.10/);
   assert.match(html, /<strong>Semantic changes<\/strong>/);
   assert.match(style, /\.status-chip/);
   assert.match(style, /\.statusbar\s*\{[^}]*display:\s*flex/s);

@@ -107,11 +107,11 @@ const PAINTBOX_STAGE1_TARGETS = Object.freeze({
 });
 
 const IMAGELIST_STAGE1_TARGETS = Object.freeze({
-  studio: 'authoring',
+  studio: 'supported',
   web: 'supported',
-  windows: 'unsupported',
-  macos: 'unsupported',
-  linux: 'unsupported',
+  windows: 'supported',
+  macos: 'supported',
+  linux: 'supported',
   freebsd: 'unsupported'
 });
 
@@ -142,7 +142,7 @@ const COMPONENTS = [
   ['imagelist', 'ImageList', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.8';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.9';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);

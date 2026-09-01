@@ -23,21 +23,22 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
     allowMenuDecorations: true,
     allowTree: true,
     allowSlider: true,
-    allowPaintBox: true
+    allowPaintBox: true,
+    allowImageList: true
   });
 
   assert.equal(support.treeViews, 2);
   assert.equal(support.sliders, 4);
   assert.equal(support.paintboxes, 1);
-  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.7');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 17);
-  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.8');
+  assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.9/payload-19/runtime-1.10');
+  assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.9');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 19);
+  assert.equal(PATCH_CURRENT_NATIVE_RUNTIME_VERSION, '1.10');
 
   const ir = buildCurrentNativeGuiIR(compiled);
   const controls = flattenCurrentNativeGuiControls(ir);
   const paintbox = controls.find(control => control.type === 'paintbox');
-  assert.equal(ir.version, '1.7');
+  assert.equal(ir.version, '1.9');
   assert.equal(controls.filter(control => control.type === 'tree').length, 2);
   assert.equal(controls.filter(control => control.type === 'slider').length, 4);
   assert.equal(controls.filter(control => control.type === 'timer').length, 2);
@@ -53,7 +54,7 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   assert.throws(
-    () => validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true, allowSlider: true, allowPaintBox: true }),
+    () => validateWindowRuntimeSupport(compiled, { allowTables: true, allowLists: true, allowListControls: true, allowSlider: true, allowPaintBox: true, allowImageList: true }),
     /TreeView is not enabled for this Window target/
   );
 });

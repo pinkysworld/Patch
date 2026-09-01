@@ -51,7 +51,7 @@ Standalone Window Web renders text-backed ListBox as a single-select multi-row H
 
 ## Direct native support
 
-Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics. Current Native GUI IR **1.5** preserves that ABI while composing later TreeView, Slider, Chrome Stage 1 and Shape Stage 1 capabilities.
+Native GUI IR **1.1** introduced persistent text-list state and native multi-select ListBox semantics. Current Native GUI IR **1.9** preserves that ABI while composing TreeView, Slider, Chrome Stage 1, Shape, PaintBox, Button/ImageList and application/Form icon capabilities.
 
 Native mappings are:
 
@@ -71,11 +71,13 @@ The original list-state compatibility line remains:
 
 Current Windows, macOS and Linux Ready/offline Window builds use:
 
-- Native GUI IR **1.7**;
-- sealed payload **v17**;
-- native runtime **v1.8**.
+- Native GUI IR **1.9**;
+- sealed payload **v19**;
+- native runtime **v1.10**.
 
-Payload v17/runtime v1.8 preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape Stage 1 and PaintBox Stage 1 semantics while adding PaintBox draw image transport. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
+Current Ready preserves Table, persistent list/ListBox, Menu, TreeView, Slider, Chrome Stage 1, Shape, PaintBox and PaintBox draw-image semantics while also carrying Button/ImageList image transport and application/Form icons. The Patch Studio no-token Ready path and ordinary offline `patch link` therefore preserve the same ListBox semantics.
+
+For explicit compatibility, the Offline Compiler still supports Native GUI IR **1.7** / payload **v17** / runtime **v1.8** using the real runtime-v1.8 underlay rather than reinterpreting those bytes as a v1.10 runtime.
 
 Relevant additive progression:
 
@@ -85,27 +87,31 @@ Native GUI IR 1.0   Menu enabled/checked state
 Native GUI IR 1.1   persistent text-list state + multi-select ListBox
 Native GUI IR 1.2   hierarchical TreeView, preserving the 1.1 list ABI
 Native GUI IR 1.3   Slider, preserving the 1.1 list ABI
-Native GUI IR 1.4   previous Chrome Stage 1, preserving ListBox/TreeView/Slider
-Native GUI IR 1.5   previous Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
-Native GUI IR 1.6   previous PaintBox Stage 1, preserving ListBox/TreeView/Slider/Chrome/Shape
-Native GUI IR 1.7   current PaintBox draw image, preserving ListBox/TreeView/Slider/Chrome/Shape/PaintBox
+Native GUI IR 1.4   Chrome Stage 1, preserving ListBox/TreeView/Slider
+Native GUI IR 1.5   Shape Stage 1, preserving ListBox/TreeView/Slider/Chrome
+Native GUI IR 1.6   PaintBox Stage 1, preserving ListBox/TreeView/Slider/Chrome/Shape
+Native GUI IR 1.7   PaintBox draw image
+Native GUI IR 1.8   Button/ImageList image transport
+Native GUI IR 1.9   application/Form icon transport over the complete earlier stack
 
 payload v9  / runtime v1.0   frozen Table line
 payload v10 / runtime v1.1   frozen list-state/multi-select line
 payload v11 / runtime v1.2   frozen Menu+list line
 payload v12 / runtime v1.3   frozen TreeView-capable line
 payload v13 / runtime v1.4   previous Slider-capable line
-payload v14 / runtime v1.5   previous Chrome Ready/offline line
-payload v15 / runtime v1.6   previous Shape Ready/offline line
-payload v16 / runtime v1.7   previous PaintBox Ready/offline line preserving ListBox semantics
-payload v17 / runtime v1.8   current Ready/offline line preserving ListBox semantics
+payload v14 / runtime v1.5   previous Chrome line
+payload v15 / runtime v1.6   previous Shape line
+payload v16 / runtime v1.7   previous PaintBox line preserving ListBox semantics
+payload v17 / runtime v1.8   explicit Offline Compiler compatibility line
+payload v18 / runtime v1.9   Button/ImageList underlay
+payload v19 / runtime v1.10  current Ready/offline line preserving ListBox semantics
 ```
 
 Older payloads are not reinterpreted in place. Explicit legacy linking fails closed when a requested control/state contract is newer than the selected payload.
 
 ## Runtime integrity
 
-Patch Studio verifies current Windows/macOS/Linux runtime-v1.7 templates against the deployment runtime manifest before browser-side sealing. The downloadable offline compiler likewise links the current v16/v1.7 line and retains compatibility tests for earlier payloads.
+Patch Studio verifies current Windows/macOS/Linux runtime-v1.10 templates against the deployment runtime manifest before browser-side sealing. The downloadable Offline Compiler defaults to payload v19/runtime v1.10 and separately carries a runtime-v1.8 underlay for explicit payload-v17 compatibility.
 
 This protects version/byte consistency of the published Ready runtime path. It is not Authenticode, Developer ID signing or notarization.
 
