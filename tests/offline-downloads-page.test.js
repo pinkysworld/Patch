@@ -8,21 +8,8 @@ const compilerWorkflow = fs.readFileSync('.github/workflows/offline-compiler.yml
 const studioWorkflow = fs.readFileSync('.github/workflows/offline-studio.yml', 'utf8');
 const offlineStudioDoc = fs.readFileSync('docs/OFFLINE_STUDIO.md', 'utf8');
 const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/help.html'];
-const compilerAssets = [
-  'patch-windows-x64.exe',
-  'patch-macos-arm64',
-  'patch-macos-x64.tar.gz',
-  'patch-linux-x64',
-  'patch-freebsd-x64.tar.gz',
-  'SHA256SUMS'
-];
-const studioAssets = [
-  'PatchStudio-windows-x64.exe',
-  'PatchStudio-macos-arm64',
-  'PatchStudio-linux-x64',
-  'offline-studio-manifest.json',
-  'SHA256SUMS'
-];
+const compilerAssets = ['patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS'];
+const studioAssets = ['PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS'];
 
 test('offline compiler download page and release workflow share one stable v0.2 asset contract', () => {
   assert.match(downloads, /offline-compiler-v0\.2/);
@@ -69,7 +56,7 @@ test('downloads page states Offline Studio Stage 1 and signing boundaries withou
   assert.match(downloads, /does not yet expose the standalone native compiler\/runtime through a privileged local Build bridge/i);
 });
 
-test('downloads page distinguishes current v1.8, Intel macOS kit, FreeBSD and historical compatibility', () => {
+test('downloads page distinguishes Current Ready v1.10, v1.8 compatibility, Intel macOS, FreeBSD and historical lines', () => {
   assert.match(downloads, /normal local workflows do not need a GitHub token/i);
   assert.match(downloads, /macOS Intel/);
   assert.match(downloads, /portable tar\.gz kit/);
@@ -78,11 +65,15 @@ test('downloads page distinguishes current v1.8, Intel macOS kit, FreeBSD and hi
   assert.match(downloads, /requires local Node 22\+ and cc/i);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
   assert.match(downloads, /patch link app\.patch --out App/);
-  assert.match(downloads, /Native GUI IR <strong>1\.7<\/strong>/);
-  assert.match(downloads, /payload <strong>v17<\/strong>/);
-  assert.match(downloads, /runtime <strong>v1\.8<\/strong>/);
+  assert.match(downloads, /Native GUI IR <strong>1\.9<\/strong>/);
+  assert.match(downloads, /payload <strong>v19<\/strong>/);
+  assert.match(downloads, /runtime <strong>v1\.10<\/strong>/);
+  assert.match(downloads, /Native GUI IR 1\.7 \/ payload v17 \/ runtime v1\.8/);
+  assert.match(downloads, /--gui-payload-version 17/);
   assert.match(downloads, /<strong>Slider:<\/strong>/);
   assert.match(downloads, /<strong>TreeView:<\/strong>/);
+  assert.match(downloads, /<strong>ImageList\/Button images:<\/strong>/);
+  assert.match(downloads, /<strong>Window\/application icons:<\/strong>/);
   assert.match(downloads, /Native GUI IR 1\.3 \/ payload v13 \/ runtime v1\.4/);
   assert.match(downloads, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
   assert.match(downloads, /PictureBox note/i);
@@ -94,28 +85,9 @@ test('generated public site contains downloads, passes the public validator and 
   execFileSync(process.execPath, ['scripts/check-site.js'], { stdio: 'pipe' });
   assert.equal(fs.existsSync('_site/paper.html'), false, 'paper.html must remain outside the public site');
   for (const file of [
-    '_site/downloads.html',
-    '_site/designer-alignment.js',
-    '_site/designer-alignment-guides.js',
-    '_site/designer-multiselect.js',
-    '_site/designer-multiselect.css',
-    '_site/src/native-gui-ir-v12.js',
-    '_site/src/native-tree-backend-adapter.js',
-    '_site/src/sealed-native-gui-v12.js',
-    '_site/src/native-gui-ir-v13.js',
-    '_site/src/native-slider-backend-adapter.js',
-    '_site/src/sealed-native-gui-v13.js',
-    '_site/src/native-gui-ir-v14.js',
-    '_site/src/native-gui-ir-v15.js',
-    '_site/src/native-gui-ir-v16.js',
-    '_site/src/native-gui-ir-v17.js',
-    '_site/src/native-chrome-backend-adapter.js',
-    '_site/src/native-shape-backend-adapter.js',
-    '_site/src/native-paintbox-backend-adapter.js',
-    '_site/src/sealed-native-gui-v14.js',
-    '_site/src/sealed-native-gui-v15.js',
-    '_site/src/sealed-native-gui-v16.js',
-    '_site/src/sealed-native-gui-v17.js',
-    '_site/src/native-paintbox-image-backend-adapter.js'
+    '_site/downloads.html','_site/designer-alignment.js','_site/designer-alignment-guides.js','_site/designer-multiselect.js','_site/designer-multiselect.css',
+    '_site/src/native-gui-ir-v12.js','_site/src/native-tree-backend-adapter.js','_site/src/sealed-native-gui-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-slider-backend-adapter.js','_site/src/sealed-native-gui-v13.js',
+    '_site/src/native-gui-ir-v14.js','_site/src/native-gui-ir-v15.js','_site/src/native-gui-ir-v16.js','_site/src/native-gui-ir-v17.js','_site/src/native-gui-ir-v18.js','_site/src/native-gui-ir-v19.js',
+    '_site/src/native-chrome-backend-adapter.js','_site/src/native-shape-backend-adapter.js','_site/src/native-paintbox-backend-adapter.js','_site/src/sealed-native-gui-v14.js','_site/src/sealed-native-gui-v15.js','_site/src/sealed-native-gui-v16.js','_site/src/sealed-native-gui-v17.js','_site/src/sealed-native-gui-v18.js','_site/src/sealed-native-gui-v19.js','_site/src/native-paintbox-image-backend-adapter.js','_site/src/native-button-image-backend-adapter.js','_site/src/native-window-icon-backend-adapter.js','_site/src/native-window-icon-package-v110.js'
   ]) assert.ok(fs.existsSync(file), file);
 });
