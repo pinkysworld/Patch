@@ -1,0 +1,319 @@
+name: Patch Offline Compiler Native v1.10 Promotion Candidate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/cli-entry.js'
+      - 'src/offline-link-input.js'
+      - 'src/offline-linker.js'
+      - 'src/native-current-contract.js'
+      - 'src/native-gui-ir-v19.js'
+      - 'src/sealed-native-gui-v19.js'
+      - 'src/native-window-icon-backend-adapter.js'
+      - 'src/native-window-icon-packaging.js'
+      - 'src/native-window-icon-package-v110.js'
+      - 'src/windows-pe-icon-v110.js'
+      - 'src/studio-project.js'
+      - 'src/studio-resources.js'
+      - 'scripts/build-offline-compiler.js'
+      - 'scripts/offline-compiler-runner.cjs'
+      - 'scripts/build-native-sea-template.js'
+      - 'scripts/offline-compiler-source-graph.js'
+      - 'scripts/copy-offline-compiler-source.js'
+      - 'examples/window-icons-native.patch'
+      - 'examples/responsive-window.patch'
+      - 'tests/offline-compiler-v110-promotion-workflow.test.js'
+      - '.github/workflows/offline-compiler-native-v110-promotion.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/cli-entry.js'
+      - 'src/offline-link-input.js'
+      - 'src/offline-linker.js'
+      - 'src/native-current-contract.js'
+      - 'src/native-gui-ir-v19.js'
+      - 'src/sealed-native-gui-v19.js'
+      - 'src/native-window-icon-backend-adapter.js'
+      - 'src/native-window-icon-packaging.js'
+      - 'src/native-window-icon-package-v110.js'
+      - 'src/windows-pe-icon-v110.js'
+      - 'src/studio-project.js'
+      - 'src/studio-resources.js'
+      - 'scripts/build-offline-compiler.js'
+      - 'scripts/offline-compiler-runner.cjs'
+      - 'scripts/build-native-sea-template.js'
+      - 'scripts/offline-compiler-source-graph.js'
+      - 'scripts/copy-offline-compiler-source.js'
+      - 'examples/window-icons-native.patch'
+      - 'examples/responsive-window.patch'
+      - 'tests/offline-compiler-v110-promotion-workflow.test.js'
+      - '.github/workflows/offline-compiler-native-v110-promotion.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Verify promotion workflow and Current Ready boundary
+        run: node --test tests/offline-compiler-v110-promotion-workflow.test.js tests/offline-linker-v19.test.js
+
+  candidate:
+    needs: contract
+    name: ${{ matrix.platform }} v1.10 candidate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            compiler_asset: patch-windows-x64.exe
+            runtime_tag: native-win32-runtime-v1.10
+            runtime_asset: patch-windows-native-gui-runtime.exe
+          - os: ubuntu-latest
+            platform: linux
+            compiler_asset: patch-linux-x64
+            runtime_tag: native-linux-runtime-v1.10
+            runtime_asset: patch-linux-native-gui-runtime.bin
+          - os: macos-15
+            platform: macos
+            compiler_asset: patch-macos-arm64
+            runtime_tag: native-macos-runtime-v1.10
+            runtime_asset: patch-macos-native-gui-runtime.bin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    env:
+      PATCH_NATIVE_V110_RELEASE_SOURCE: e31a426dc21cb0929241fe96ab96e270ad182b32
+      RUNTIME_TAG: ${{ matrix.runtime_tag }}
+      RUNTIME_ASSET: ${{ matrix.runtime_asset }}
+      PATCH_NATIVE_HEADLESS: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Install Linux GUI smoke dependencies
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-0 xvfb
+      - name: Download and verify published runtime v1.10
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release-runtime offline-runtime
+          mkdir -p release-runtime offline-runtime dist-offline dist-smoke
+          gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$RUNTIME_ASSET" --pattern 'SHA256SUMS.txt' --dir release-runtime
+          grep -Eq "^[0-9a-f]{64}  ${RUNTIME_ASSET}$" release-runtime/SHA256SUMS.txt
+          (cd release-runtime && sha256sum -c SHA256SUMS.txt)
+
+          expected="sha256:$(awk '{print $1}' release-runtime/SHA256SUMS.txt)"
+          recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RUNTIME_TAG" --jq ".assets[] | select(.name == \"$RUNTIME_ASSET\") | .digest")"
+          checksum_digest="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RUNTIME_TAG" --jq '.assets[] | select(.name == "SHA256SUMS.txt") | .digest')"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RUNTIME_TAG" --jq '.object.sha')"
+
+          test "$recorded" = "$expected"
+          [[ "$checksum_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          test "$tag_sha" = "$PATCH_NATIVE_V110_RELEASE_SOURCE"
+          cp "release-runtime/$RUNTIME_ASSET" offline-runtime/gui.bin
+      - name: Build host Console runtime and standalone candidate compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
+          node scripts/build-offline-compiler.js --platform '${{ matrix.platform }}' --console-runtime offline-runtime/console.bin --gui-runtime offline-runtime/gui.bin --out 'dist-offline/${{ matrix.compiler_asset }}'
+          chmod +x 'dist-offline/${{ matrix.compiler_asset }}' || true
+          'dist-offline/${{ matrix.compiler_asset }}' --version
+      - name: Create deterministic project-v4 icon fixture
+        env:
+          PATCH_PROMOTION_PLATFORM: ${{ matrix.platform }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import zlib from 'node:zlib';
+          import { buildStudioProjectBundle, serializeStudioProjectBundle } from './src/studio-project.js';
+
+          const crcTable = Array.from({ length: 256 }, (_, n) => {
+            let c = n;
+            for (let k = 0; k < 8; k += 1) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+            return c >>> 0;
+          });
+          function crc32(bytes) {
+            let c = 0xffffffff;
+            for (const byte of bytes) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8);
+            return (c ^ 0xffffffff) >>> 0;
+          }
+          function chunk(type, data) {
+            const name = Buffer.from(type, 'ascii');
+            const out = Buffer.alloc(12 + data.length);
+            out.writeUInt32BE(data.length, 0);
+            name.copy(out, 4);
+            data.copy(out, 8);
+            out.writeUInt32BE(crc32(Buffer.concat([name, data])), 8 + data.length);
+            return out;
+          }
+
+          const width = 256;
+          const height = 256;
+          const raw = Buffer.alloc((width * 4 + 1) * height);
+          for (let y = 0; y < height; y += 1) {
+            const row = y * (width * 4 + 1);
+            raw[row] = 0;
+            for (let x = 0; x < width; x += 1) {
+              const p = row + 1 + x * 4;
+              raw[p] = (x * 5 + y) & 0xff;
+              raw[p + 1] = (y * 3 + 48) & 0xff;
+              raw[p + 2] = (x + y * 2 + 96) & 0xff;
+              raw[p + 3] = 0xff;
+            }
+          }
+          const ihdr = Buffer.alloc(13);
+          ihdr.writeUInt32BE(width, 0);
+          ihdr.writeUInt32BE(height, 4);
+          ihdr[8] = 8;
+          ihdr[9] = 6;
+          const png = Buffer.concat([
+            Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]),
+            chunk('IHDR', ihdr),
+            chunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
+            chunk('IEND', Buffer.alloc(0))
+          ]);
+          const sha256 = crypto.createHash('sha256').update(png).digest('hex');
+          const data = png.toString('base64');
+          const makeResource = (id, filename) => ({
+            id,
+            path: `resources/${filename}`,
+            mediaType: 'image/png',
+            size: png.length,
+            sha256,
+            data
+          });
+          const source = fs.readFileSync('examples/window-icons-native.patch', 'utf8');
+          const platform = process.env.PATCH_PROMOTION_PLATFORM;
+          const bundle = buildStudioProjectBundle({
+            name: 'OfflineIcons',
+            kind: 'window',
+            entry: 'main.patch',
+            files: [{ path: 'main.patch', content: source }],
+            resources: [
+              makeResource('app.icon', 'app.png'),
+              makeResource('about.icon', 'about.png'),
+              makeResource('icons.open', 'open.png')
+            ],
+            buildTarget: `native-${platform}`,
+            nativeBuildMode: 'prebuilt'
+          });
+          fs.writeFileSync('dist-smoke/WindowIcons.patchproject', serializeStudioProjectBundle(bundle));
+          fs.writeFileSync('dist-smoke/project-icon.png', png);
+          console.log(`project icon sha256=${sha256} size=${png.length}`);
+          NODE
+      - name: Link default v17 compatibility app and explicit v19 project
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMPILER='dist-offline/${{ matrix.compiler_asset }}'
+          "$COMPILER" link examples/responsive-window.patch --name OfflineCompat --out dist-smoke/OfflineCompat
+          "$COMPILER" link dist-smoke/WindowIcons.patchproject --name OfflineIcons --gui-payload-version 19 --out dist-smoke/OfflineIcons
+      - name: Verify sealed payload versions and package files
+        env:
+          PATCH_PROMOTION_PLATFORM: ${{ matrix.platform }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { inspectWindowsPeApplicationIconV110 } from './src/windows-pe-icon-v110.js';
+
+          const platform = process.env.PATCH_PROMOTION_PLATFORM;
+          const readVersion = file => {
+            const bytes = fs.readFileSync(file);
+            return new DataView(bytes.buffer, bytes.byteOffset + bytes.length - 12, 4).getUint32(0, true);
+          };
+          const compat = platform === 'windows'
+            ? 'dist-smoke/OfflineCompat.exe'
+            : platform === 'macos'
+              ? 'dist-smoke/OfflineCompat.app/Contents/MacOS/OfflineCompat'
+              : 'dist-smoke/OfflineCompat';
+          const promoted = platform === 'windows'
+            ? 'dist-smoke/OfflineIcons.exe'
+            : platform === 'macos'
+              ? 'dist-smoke/OfflineIcons.app/Contents/MacOS/OfflineIcons'
+              : 'dist-smoke/OfflineIcons';
+
+          if (readVersion(compat) !== 17) throw new Error(`Default compatibility output on ${platform} is not payload v17.`);
+          if (readVersion(promoted) !== 19) throw new Error(`Explicit promotion output on ${platform} is not payload v19.`);
+
+          if (platform === 'windows') {
+            if (!fs.existsSync('dist-smoke/OfflineIcons.ico')) throw new Error('Windows v1.10 package is missing the deterministic ICO provenance sidecar.');
+            const pe = inspectWindowsPeApplicationIconV110(new Uint8Array(fs.readFileSync(promoted)));
+            if (pe.width !== 256 || pe.height !== 256 || pe.currentSize <= 0 || pe.currentSize > pe.capacity) {
+              throw new Error('Windows v1.10 Offline Compiler output does not carry the embedded 256x256 application icon.');
+            }
+          } else if (platform === 'macos') {
+            if (!fs.existsSync('dist-smoke/OfflineIcons.app/Contents/Resources/OfflineIcons.icns')) throw new Error('macOS v1.10 package is missing ICNS.');
+            const plist = fs.readFileSync('dist-smoke/OfflineIcons.app/Contents/Info.plist', 'utf8');
+            if (!/<key>CFBundleIconFile<\/key><string>OfflineIcons\.icns<\/string>/.test(plist)) throw new Error('macOS v1.10 package is missing CFBundleIconFile.');
+          } else {
+            if (!fs.existsSync('dist-smoke/share/icons/hicolor/256x256/apps/OfflineIcons.png')) throw new Error('Linux v1.10 package is missing the hicolor application icon.');
+            const desktop = fs.readFileSync('dist-smoke/share/applications/OfflineIcons.desktop', 'utf8');
+            if (!/Exec=OfflineIcons/.test(desktop) || !/Icon=OfflineIcons/.test(desktop)) throw new Error('Linux v1.10 package desktop metadata is incomplete.');
+          }
+          NODE
+      - name: Smoke linked apps on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          & ./dist-smoke/OfflineCompat.exe --patch-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Default v17 compatibility smoke failed with exit code $LASTEXITCODE." }
+          & ./dist-smoke/OfflineIcons.exe --patch-smoke
+          if ($LASTEXITCODE -ne 0) { throw "Explicit v19 icon-project smoke failed with exit code $LASTEXITCODE." }
+          Add-Type -AssemblyName System.Drawing
+          $icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path './dist-smoke/OfflineIcons.exe'))
+          if ($null -eq $icon) { throw 'Windows ExtractAssociatedIcon could not read the packaged application icon.' }
+          $icon.Dispose()
+      - name: Smoke linked apps on Linux
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          chmod +x dist-smoke/OfflineCompat dist-smoke/OfflineIcons
+          xvfb-run -a ./dist-smoke/OfflineCompat --patch-smoke
+          xvfb-run -a ./dist-smoke/OfflineIcons --patch-smoke
+      - name: Smoke linked apps on macOS
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          test -x dist-smoke/OfflineCompat.app/Contents/MacOS/OfflineCompat
+          test -x dist-smoke/OfflineIcons.app/Contents/MacOS/OfflineIcons
+          ./dist-smoke/OfflineCompat.app/Contents/MacOS/OfflineCompat --patch-smoke
+          ./dist-smoke/OfflineIcons.app/Contents/MacOS/OfflineIcons --patch-smoke
+      - name: Record promotion-candidate digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd dist-offline && sha256sum '${{ matrix.compiler_asset }}' > '${{ matrix.compiler_asset }}.SHA256SUMS.txt')
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-native-v110-candidate-${{ matrix.platform }}
+          path: |
+            dist-offline/${{ matrix.compiler_asset }}
+            dist-offline/${{ matrix.compiler_asset }}.SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
