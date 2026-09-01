@@ -21,7 +21,10 @@ test('offline compiler can embed a second GUI runtime without replacing the Curr
   assert.match(builder, /guiRuntimeV19: Boolean\(guiRuntimeV19\)/);
   assert.match(runner, /extractRuntime\('runtime\/gui-v19\.bin\.gz', 'runtime\/gui-v19\.bin'/);
   assert.match(runner, /PATCH_OFFLINE_GUI_RUNTIME_V19 = guiRuntimeV19/);
-  assert.match(cli, /requested === 19 && process\.env\.PATCH_OFFLINE_GUI_RUNTIME_V19/);
+  assert.match(cli, /requested === 19/);
+  assert.match(cli, /PATCH_OFFLINE_GUI_RUNTIME_V19/);
+  assert.match(cli, /PATCH_OFFLINE_COMPILER_PLATFORM/);
+  assert.match(cli, /payload v19 needs the embedded runtime v1\.10 promotion asset/);
   assert.match(cli, /guiRuntime: readRuntime\(selectGuiRuntimePath\(guiPayloadVersion\)\)/);
 });
 
@@ -62,6 +65,8 @@ test('promotion fixture is a project-v4 resource bundle suitable for real payloa
     const bytes = Buffer.from(appIcon.data, 'base64');
     assert.equal(bytes.readUInt32BE(16), 256);
     assert.equal(bytes.readUInt32BE(20), 256);
+    assert.equal(appIcon.size, bytes.length);
+    assert.equal(appIcon.sha256, (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex'));
 
     const plan = createOfflineLinkPlan(input.source, {
       platform: 'linux',
