@@ -1,8 +1,6 @@
 # Window and application icons
 
-`window-icon/1.0` is the source, Studio and Standalone Web contract for Form and application icons.
-
-The native implementation is deliberately versioned separately from the current product-facing Ready line. This keeps existing builds reproducible and prevents experimental native work from becoming a product claim before its release and promotion gates are complete.
+`window-icon/1.0` is the source, Studio, Standalone Web and Current Ready native contract for Form and application icons.
 
 ## Canonical source
 
@@ -13,40 +11,36 @@ window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
 
 `icon` is optional. Project icons use the existing project-v4 `patch-resource:<id>` inventory.
 
-The **first Form that declares an icon** is the application icon. Later Forms may declare their own Form icon. This rule is shared by Web and the experimental native contract.
+The **first Form that declares an icon** is the application icon. Later Forms may declare their own Form icon. This rule is shared by Web and native desktop builds.
 
 ## Current product status
 
-The Current Ready native product contract remains:
+The Current Ready native product contract is:
 
-**Native GUI IR 1.7 / payload v17 / runtime v1.8**
+**Native GUI IR 1.9 / payload v19 / runtime v1.10**
 
-That line deliberately fails closed when a Form declares `icon`. It is not silently reinterpreted as supporting a newer resource contract.
+Window/application icons are therefore Current Ready on Windows, macOS and Linux. The complete Button/ImageList payload-v18 (`BIMG`) layer remains underneath the v19 `WICO` extension, and older v17/runtime-v1.8 output remains an explicit Offline Compiler compatibility path.
 
-## Experimental native stack
-
-Native Window-icon support is implemented as an additive stack above the current and Button/ImageList contracts:
+## Native stack
 
 | Layer | Contract | Status |
 |---|---|---|
-| Source / Studio / Web | `window-icon/1.0` | implemented |
+| Source / Studio / Web | `window-icon/1.0` | Current Ready |
 | Resource planning | `native-window-icon-asset-plan/0.1` | implemented |
-| Native GUI IR | **1.9** | implemented, exact icon-free projection to IR 1.8 |
-| Sealed payload | **v19 / `WICO`** | implemented, exact payload-v18 compatibility prefix |
-| Desktop runtime | **v1.10** | implemented and runtime-smoked on Win32/AppKit/GTK |
+| Native GUI IR | **1.9** | Current Ready, exact icon-free projection to IR 1.8 |
+| Sealed payload | **v19 / `WICO`** | Current Ready, exact payload-v18 compatibility prefix |
+| Desktop runtime | **v1.10** | Current Ready and runtime-smoked on Win32/AppKit/GTK |
 | Cross-platform packaging | `native-window-icon-packaging/0.1` | implemented |
-| Runtime-v1.10 package plan | `native-window-icon-package-v110/0.2` | implemented |
+| Runtime-v1.10 package plan | `native-window-icon-package-v110/0.2` | Current Ready |
 | Windows PE embedding | `windows-pe-icon-v110/0.1` | implemented and verified with real MSVC/`rc.exe` + Windows icon extraction |
-| Current product promotion | IR 1.7 / payload v17 / runtime v1.8 remains current | not promoted yet |
-
-The v19 payload keeps the entire payload-v18 Button/ImageList (`BIMG`) transport intact underneath `WICO`.
+| Product promotion | **IR 1.9 / payload v19 / runtime v1.10** | complete |
 
 ## Resource policy
 
-The native Window-icon **runtime transport** reuses the explicit native picture format policy:
+The native Window-icon runtime transport reuses the explicit native picture format policy:
 
-- PNG: supported by the experimental native icon line;
-- JPEG: supported by the experimental native icon line;
+- PNG: supported;
+- JPEG: supported for runtime Form/icon transport;
 - WebP: deferred on native targets;
 - SVG: deferred on native targets.
 
@@ -54,7 +48,7 @@ WebP and SVG remain valid Studio/Web project resources, but native icon builds f
 
 Native icon transport is bounded and deduplicated. Shared project resources are transported once and referenced by stable asset index from Form consumers.
 
-Application packaging is intentionally stricter in the first cross-platform packaging contract. `native-window-icon-packaging/0.1` requires one square PNG at a supported standard size so the same project resource can be represented deterministically without platform image-conversion dependencies. The Windows PE embedding contract `windows-pe-icon-v110/0.1` currently requires an exact **256x256 PNG** and fails closed otherwise. JPEG remains valid for runtime-v1.10 Form icons but is not silently converted into a packaged application icon.
+Application packaging is intentionally stricter. `native-window-icon-packaging/0.1` requires one square PNG at a supported standard size so the same project resource can be represented deterministically without platform image-conversion dependencies. The Windows PE embedding contract `windows-pe-icon-v110/0.1` currently requires an exact **256x256 PNG** and fails closed otherwise. JPEG remains valid for runtime-v1.10 Form icons but is not silently converted into a packaged application icon.
 
 ## Desktop semantics
 
@@ -68,20 +62,13 @@ The dedicated v1.10 workflow builds and smokes the Window-icon layer on Windows,
 
 ## Packaging
 
-Runtime consumption and application packaging are separate contracts, but both are now implemented for the experimental v1.10 line:
+Runtime consumption and application packaging remain separate implementation contracts, but both are part of Current Ready v1.10:
 
-- **Windows:** `native-window-icon-package-v110/0.2` seals payload v19 and then uses `windows-pe-icon-v110/0.1` to replace a fixed reserved `RT_ICON` slot in place. The executable length and PE section layout do not move. `RT_ICON` and matching `RT_GROUP_ICON` size metadata are updated, and a sentinel keeps the slot deterministically repatchable. The ordinary v1.10 Windows runtime artifact is built with this reserved slot. CI verifies the same packaged EXE with Windows `ExtractAssociatedIcon` and `--patch-smoke`.
+- **Windows:** `native-window-icon-package-v110/0.2` seals payload v19 and then uses `windows-pe-icon-v110/0.1` to replace a fixed reserved `RT_ICON` slot in place. The executable length and PE section layout do not move. `RT_ICON` and matching `RT_GROUP_ICON` size metadata are updated, and a sentinel keeps the slot deterministically repatchable. The ordinary v1.10 Windows runtime artifact is built with this reserved slot. CI verifies the packaged EXE with Windows `ExtractAssociatedIcon` and `--patch-smoke`.
 - **macOS:** the package plan emits an `.app` layout with a PNG-backed `.icns` resource under `Contents/Resources` and `CFBundleIconFile` in `Info.plist`.
 - **Linux:** the package plan emits hicolor application PNG metadata plus a `.desktop` entry alongside the sealed runtime.
 
-The remaining product gates are therefore no longer platform icon-consumer or package-format implementation. Promotion still requires:
-
-1. publish and verify the runtime-v1.10 release assets and SHA-256 digests;
-2. wire the Offline Compiler/linker to the promoted v1.10 runtime assets;
-3. update the product-facing Current Ready contract only after those release/integrity gates pass;
-4. update capability metadata and public release surfaces as part of that promotion.
-
-Until those gates are complete, README and product-facing capability metadata must keep the current Ready line distinct from the experimental IR 1.9 / payload v19 / runtime v1.10 work.
+Promotion evidence also includes immutable v1.10 runtime releases, SHA-256 and GitHub asset-digest verification, source-commit binding, and dual-runtime Offline Compiler smoke tests on Windows, Linux, macOS Apple Silicon and macOS Intel.
 
 ## Authoritative modules
 
@@ -90,8 +77,8 @@ Until those gates are complete, README and product-facing capability metadata mu
 - `src/native-gui-ir-v19.js` owns native Form/application icon metadata.
 - `src/sealed-native-gui-v19.js` owns bounded `WICO` transport.
 - `src/native-window-icon-packaging.js` owns deterministic cross-platform application-icon artifacts.
-- `src/native-window-icon-package-v110.js` owns the experimental runtime-v1.10 package plans.
+- `src/native-window-icon-package-v110.js` owns Current Ready runtime-v1.10 package plans.
 - `src/windows-pe-icon-v110.js` owns bounded in-place Windows PE application-icon embedding.
-- `native-runtime/sealed-window-icon-v110.hpp` and the v1.10 platform runtimes own the experimental desktop consumer contract.
+- `native-runtime/sealed-window-icon-v110.hpp` and the v1.10 platform runtimes own the desktop consumer contract.
 
 See also [`NATIVE_COMPATIBILITY.md`](NATIVE_COMPATIBILITY.md), [`NATIVE_GUI.md`](NATIVE_GUI.md) and [`RAD_STUDIO_MASTER_BACKLOG.md`](RAD_STUDIO_MASTER_BACKLOG.md).
