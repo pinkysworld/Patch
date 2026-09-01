@@ -14,7 +14,7 @@ import {
 } from '../src/native-picture-format-policy.js';
 import { currentNativeContract } from '../src/native-current-contract.js';
 
-test('native Picture format policy 1.0 is independent of Native GUI IR 1.4', () => {
+test('native Picture format policy 1.0 remains independent of the promoted Current Ready native contract', () => {
   assert.equal(PATCH_NATIVE_PICTURE_FORMAT_POLICY_ID, 'native-picture-formats/1.0');
   assert.equal(PATCH_NATIVE_PICTURE_FORMAT_POLICY.id, 'native-picture-formats/1.0');
   assert.equal(PATCH_NATIVE_PICTURE_FORMAT_POLICY.version, '1.0');
@@ -28,10 +28,10 @@ test('native Picture format policy 1.0 is independent of Native GUI IR 1.4', () 
     'image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'
   ]);
   assert.deepEqual(currentNativeContract(), {
-    id: 'native-gui-1.7/payload-17/runtime-1.8',
-    guiIr: '1.7',
-    payload: 17,
-    runtime: '1.8',
+    id: 'native-gui-1.9/payload-19/runtime-1.10',
+    guiIr: '1.9',
+    payload: 19,
+    runtime: '1.10',
     runtimeTags: currentNativeContract().runtimeTags
   });
   assert.equal('pictureFormats' in currentNativeContract(), false);
