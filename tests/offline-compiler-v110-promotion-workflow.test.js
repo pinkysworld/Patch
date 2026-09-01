@@ -12,7 +12,8 @@ import { createOfflineLinkPlan } from '../src/offline-linker.js';
 const builder = fs.readFileSync(new URL('../scripts/build-offline-compiler.js', import.meta.url), 'utf8');
 const runner = fs.readFileSync(new URL('../scripts/offline-compiler-runner.cjs', import.meta.url), 'utf8');
 const cli = fs.readFileSync(new URL('../src/cli-entry.js', import.meta.url), 'utf8');
-const workflow = fs.readFileSync(new URL('../.github/workflows/offline-compiler-native-v110-promotion.yml', import.meta.url), 'utf8');
+const contractWorkflow = fs.readFileSync(new URL('../.github/workflows/offline-compiler-native-v110-promotion.yml', import.meta.url), 'utf8');
+const compilerWorkflow = fs.readFileSync(new URL('../.github/workflows/offline-compiler.yml', import.meta.url), 'utf8');
 const currentContract = fs.readFileSync(new URL('../src/native-current-contract.js', import.meta.url), 'utf8');
 const fixtureScript = fileURLToPath(new URL('../scripts/create-native-v110-promotion-project.js', import.meta.url));
 const cliEntryScript = fileURLToPath(new URL('../src/cli-entry.js', import.meta.url));
@@ -60,23 +61,26 @@ test('an Offline Compiler without the Current Ready runtime fails closed on payl
   }
 });
 
-test('promotion evidence workflow still verifies immutable releases and both compatibility paths', () => {
-  assert.match(workflow, /native-win32-runtime-v1\.10/);
-  assert.match(workflow, /native-macos-runtime-v1\.10/);
-  assert.match(workflow, /native-linux-runtime-v1\.10/);
-  assert.match(workflow, /e31a426dc21cb0929241fe96ab96e270ad182b32/);
-  assert.match(workflow, /sha256sum -c SHA256SUMS\.txt/);
-  assert.match(workflow, /\.assets\[\].*\.digest/);
-  assert.match(workflow, /--gui-runtime offline-runtime\/gui-current\.bin/);
-  assert.match(workflow, /--gui-runtime-v19 'runtime-v110\/\$\{\{ matrix\.runtime_asset \}\}'/);
-  assert.match(workflow, /responsive-window\.patch --name CurrentCompat/);
-  assert.match(workflow, /--gui-payload-version 19 --name PromotionIcons/);
-  assert.match(workflow, /ExtractAssociatedIcon/);
-  assert.match(workflow, /hicolor\/256x256\/apps\/PromotionIcons\.png/);
-  assert.match(workflow, /CFBundleIconFile/);
-  assert.match(workflow, /macos-15-intel/);
-  assert.match(workflow, /Intel default output is not payload v17/);
-  assert.match(workflow, /Intel promotion output is not payload v19/);
+test('normal Offline Compiler workflow owns cross-platform Current Ready v1.10 evidence and v17 compatibility', () => {
+  assert.match(contractWorkflow, /Patch Offline Compiler Native v1\.10 Contract/);
+  assert.match(contractWorkflow, /Verify Current Ready v1\.10 and v1\.8 compatibility contract/);
+  assert.doesNotMatch(contractWorkflow, /windows candidate|linux candidate|macos candidate/);
+
+  assert.match(compilerWorkflow, /native-win32-runtime-v1\.10/);
+  assert.match(compilerWorkflow, /native-macos-runtime-v1\.10/);
+  assert.match(compilerWorkflow, /native-linux-runtime-v1\.10/);
+  assert.match(compilerWorkflow, /e31a426dc21cb0929241fe96ab96e270ad182b32/);
+  assert.match(compilerWorkflow, /sha256sum -c SHA256SUMS\.txt/);
+  assert.match(compilerWorkflow, /\.assets\[\].*\.digest/);
+  assert.match(compilerWorkflow, /--gui-runtime offline-runtime\/gui-legacy\.bin/);
+  assert.match(compilerWorkflow, /--gui-runtime-v19 'current-runtime\/\$\{\{ matrix\.runtime_asset \}\}'/);
+  assert.match(compilerWorkflow, /--gui-payload-version 17 --name OfflineLegacy17/);
+  assert.match(compilerWorkflow, /is not sealed Current Ready payload v19/);
+  assert.match(compilerWorkflow, /Explicit compatibility output is not payload v17/);
+  assert.match(compilerWorkflow, /windows-latest/);
+  assert.match(compilerWorkflow, /ubuntu-latest/);
+  assert.match(compilerWorkflow, /macos-15/);
+  assert.match(compilerWorkflow, /macos-15-intel/);
 });
 
 test('promotion fixture remains a project-v4 resource bundle suitable for Current Ready payload-v19 packaging', () => {
