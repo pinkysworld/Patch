@@ -11,7 +11,7 @@ import {
   toV18CompatibleV19
 } from '../src/native-gui-ir-v19.js';
 import { validateNativeGuiIRV18, hasNativeButtonImage } from '../src/native-gui-ir-v18.js';
-import { buildCurrentNativeGuiIR, currentNativeContract } from '../src/native-current-contract.js';
+import { buildCurrentNativeGuiIR, currentNativeContract, currentNativeHasWindowIcon } from '../src/native-current-contract.js';
 
 const SOURCE = `window "Files" as main size 460, 240 icon "patch-resource:app.icon":
   imagelist as app_images size 20, 18:
@@ -101,12 +101,12 @@ test('IR 1.9 fails closed for non-project icon locators and malformed icon metad
   );
 });
 
-test('current native product contract remains pinned to IR 1.7 and fail-closes Window icons', () => {
+test('current native product contract promotes IR 1.9 and transports Window icons', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.guiIr, '1.7');
-  assert.throws(
-    () => buildCurrentNativeGuiIR(compile(SOURCE, { name: 'CurrentStillFrozen', kind: 'window', entry: 'main.patch' })),
-    /does not transport icon/
-  );
+  assert.equal(contract.id, 'native-gui-1.9/payload-19/runtime-1.10');
+  assert.equal(contract.guiIr, '1.9');
+  const current = buildCurrentNativeGuiIR(compile(SOURCE, { name: 'CurrentWindowIcons', kind: 'window', entry: 'main.patch' }));
+  assert.equal(current.version, '1.9');
+  assert.equal(currentNativeHasWindowIcon(current), true);
+  assert.deepEqual(current.forms[0].icon, { resourceId: 'app.icon', application: true });
 });
