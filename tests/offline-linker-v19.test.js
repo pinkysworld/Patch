@@ -12,6 +12,8 @@ import {
   inspectNativeGuiWindowIconsV19
 } from '../src/sealed-native-gui-v19.js';
 
+const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHUlEQVR4nGNkYGD4z0ABYKJE86gBowaMGjCYDAAATUABH+w/WFYAAAAASUVORK5CYII=';
+const PNG_SHA256 = '789cc3d7c8416b40a4f20155ece071c362f85d610e71b32b328bfc12b4cf2ead';
 const SOURCE = `window "Files" as main size 460, 240 icon "patch-resource:app.icon":
   imagelist as app_images size 20, 20:
     image open from "patch-resource:icons.open"
@@ -22,13 +24,13 @@ window "About" as about size 360, 200 icon "patch-resource:about.icon":
 `;
 
 const RESOURCES = Object.freeze([
-  resource('app.icon', 'resources/app.png', 'image/png', '0'),
-  resource('about.icon', 'resources/about.jpg', 'image/jpeg', '1'),
-  resource('icons.open', 'resources/open.png', 'image/png', '2')
+  resource('app.icon', 'resources/app.png'),
+  resource('about.icon', 'resources/about.png'),
+  resource('icons.open', 'resources/open.png')
 ]);
 
-function resource(id, file, mediaType, hashDigit) {
-  return Object.freeze({ id, path: file, mediaType, size: 1, sha256: hashDigit.repeat(64), data: 'AA==' });
+function resource(id, file) {
+  return Object.freeze({ id, path: file, mediaType: 'image/png', size: 86, sha256: PNG_SHA256, data: PNG_BASE64 });
 }
 
 function runtime(platform) {
@@ -55,14 +57,16 @@ test('offline linker keeps payload v17 as the default while exposing payload v19
   assert.equal(footerVersion(current.files[0].bytes), 17);
 
   const promotion = createOfflineLinkPlan(SOURCE, {
-    platform: 'windows', name: 'PromotionCandidate', guiRuntime: runtime('windows'),
+    platform: 'linux', name: 'PromotionCandidate', guiRuntime: runtime('linux'),
     guiPayloadVersion: 19, resources: RESOURCES
   });
   assert.equal(footerVersion(promotion.files[0].bytes), 19);
+  assert.equal(promotion.nativePackageId, 'native-window-icon-package-v110/0.2');
+  assert.equal(promotion.guiRuntimeVersion, '1.10');
 });
 
-test('offline payload v19 carries Button/ImageList and application/Form icons on all desktop plans', () => {
-  for (const platform of ['windows', 'linux', 'macos']) {
+test('offline payload v19 reuses application-icon packaging on macOS and Linux', () => {
+  for (const platform of ['linux', 'macos']) {
     const plan = createOfflineLinkPlan(SOURCE, {
       platform,
       name: 'OfflineIcons',
@@ -82,13 +86,32 @@ test('offline payload v19 carries Button/ImageList and application/Form icons on
     assert.equal(buttons.assets.length, 1);
     assert.equal(buttons.consumers[0].controlId, 'open_button');
     assert.equal(buttons.assets[0].resourceId, 'icons.open');
+    assert.equal(plan.iconPackaging.hasApplicationIcon, true);
+    if (platform === 'macos') {
+      assert.ok(plan.files.some(file => file.path === 'Contents/Resources/OfflineIcons.icns'));
+      const plist = new TextDecoder().decode(plan.files.find(file => file.path === 'Contents/Info.plist').bytes);
+      assert.match(plist, /CFBundleIconFile/);
+    } else {
+      assert.ok(plan.files.some(file => file.path === 'share/icons/hicolor/16x16/apps/OfflineIcons.png'));
+      assert.ok(plan.files.some(file => file.path === 'share/applications/OfflineIcons.desktop'));
+    }
   }
+});
+
+test('Windows payload v19 application-icon packaging fails closed without the reserved v1.10 PE slot', () => {
+  assert.throws(
+    () => createOfflineLinkPlan(SOURCE, {
+      platform: 'windows', name: 'OfflineIcons', guiRuntime: runtime('windows'),
+      guiPayloadVersion: 19, resources: RESOURCES
+    }),
+    /Windows PE|DOS header|reserved runtime-v1\.10 application icon slot/
+  );
 });
 
 test('offline payload v19 fails closed when project resources are absent', () => {
   assert.throws(
     () => createOfflineLinkPlan(SOURCE, {
-      platform: 'windows', name: 'MissingIcons', guiRuntime: runtime('windows'), guiPayloadVersion: 19
+      platform: 'linux', name: 'MissingIcons', guiRuntime: runtime('linux'), guiPayloadVersion: 19
     }),
     /missing project resource 'icons\.open'|missing project resource 'app\.icon'/i
   );
@@ -101,7 +124,7 @@ test('offline link input reuses the canonical project-v4 resource store', () => 
     entry: 'main.patch',
     files: [{ path: 'main.patch', content: SOURCE }],
     resources: RESOURCES,
-    buildTarget: 'native-windows',
+    buildTarget: 'native-linux',
     nativeBuildMode: 'prebuilt'
   });
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-v19-'));
@@ -116,8 +139,8 @@ test('offline link input reuses the canonical project-v4 resource store', () => 
     assert.match(input.source, /window "Files"/);
 
     const plan = createOfflineLinkPlan(input.source, {
-      platform: 'windows', name: input.name, entry: input.entry,
-      guiRuntime: runtime('windows'), guiPayloadVersion: 19, resources: input.resources
+      platform: 'linux', name: input.name, entry: input.entry,
+      guiRuntime: runtime('linux'), guiPayloadVersion: 19, resources: input.resources
     });
     assert.equal(footerVersion(plan.files[0].bytes), 19);
     assert.equal(inspectNativeGuiWindowIconsV19(decodeNativeGuiPayloadV19(plan.files[0].bytes)).applicationIcon.resourceId, 'app.icon');
