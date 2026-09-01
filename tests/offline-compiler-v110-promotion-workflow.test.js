@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -66,7 +67,7 @@ test('promotion fixture is a project-v4 resource bundle suitable for real payloa
     assert.equal(bytes.readUInt32BE(16), 256);
     assert.equal(bytes.readUInt32BE(20), 256);
     assert.equal(appIcon.size, bytes.length);
-    assert.equal(appIcon.sha256, (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex'));
+    assert.equal(appIcon.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
 
     const plan = createOfflineLinkPlan(input.source, {
       platform: 'linux',
