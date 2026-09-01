@@ -60,7 +60,7 @@ test('payload v12 runtime v1.3 remains an explicit frozen compatibility line', (
   assert.match(packageSource, /native-frozen-contract\.js/);
   assert.match(packageSource, /sealFrozenNativeGuiRuntime/);
   assert.match(packageSource, /native-current-contract\.js/);
-  assert.match(packageSource, /sealCurrentNativeGuiRuntime/);
+  assert.match(packageSource, /createNativeWindowIconPackagePlanV110/);
   assert.doesNotMatch(packageSource, /sealNativeGuiRuntimeV11/);
 });
 
