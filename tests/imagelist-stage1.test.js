@@ -122,10 +122,10 @@ test('ImageList does not consume visible Form geometry or shift following contro
   assert.deepEqual(manifest.windows[0].controls[1], { x: 24, y: 24, width: 120, height: 36 });
 });
 
-test('ImageList Stage 1 is Web metadata for Button images and remains native fail-closed', () => {
+test('ImageList Stage 1 is promoted for desktop targets while raw validation keeps an explicit feature gate', () => {
   const component = patchComponent('imagelist');
   assert.deepEqual(component.targetSupport, {
-    studio: 'authoring', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+    studio: 'supported', web: 'supported', windows: 'supported', macos: 'supported', linux: 'supported', freebsd: 'unsupported'
   });
   const compiled = compile(source, { name: 'ImageListBoundary', kind: 'window' });
   assert.throws(() => validateWindowRuntimeSupport(compiled), /ImageList is not enabled for this Window target/);
@@ -137,6 +137,7 @@ test('ImageList Stage 1 is Web metadata for Button images and remains native fai
 test('ImageList exposes no events in Stage 1', () => {
   const invalid = `window "Images":
   imagelist as app_images size 16, 16:
+    image open from "patch-resource:icons.open"
 when app_images changed:
   show value
 `;
