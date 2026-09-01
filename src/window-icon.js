@@ -16,30 +16,30 @@ export class PatchWindowIconError extends Error {
 }
 
 /**
- * Window / application icon contract 1.0.
+ * Window / application icon source contract 1.0.
  *
  * Canonical source:
  * window "Counter" as counter size 520, 360 icon "patch-resource:app.icon":
  *
  * Studio and Standalone Web package the icon as a Form chrome image and as the
- * application favicon (first Form that declares icon). Native GUI Forms do not
- * transport an application icon yet, so desktop builds fail closed. This
- * module remains independent from the current native IR version.
+ * application favicon (first Form that declares icon). Current Ready Native GUI
+ * IR 1.9 / payload v19 / runtime v1.10 transports project-backed PNG/JPEG Form
+ * and application icons through the versioned desktop package path. This source
+ * policy module remains independent from the native IR implementation version.
  */
 export const PATCH_WINDOW_ICON_POLICY = Object.freeze({
   id: PATCH_WINDOW_ICON_POLICY_ID,
   version: PATCH_WINDOW_ICON_VERSION,
-  // Retained compatibility metadata for consumers that adopted contract 1.0
-  // when it was introduced. Current Ready is tracked separately because icons
-  // remain fail-closed there too.
+  // Retained compatibility metadata from the source-policy introduction. These
+  // fields are not the Current Ready native boundary; currentReady below is.
   nativeGuiIR: '1.4',
   payload: 14,
   runtime: '1.5',
   introducedAgainstNativeGuiIR: '1.4',
-  currentReady: Object.freeze({ nativeGuiIR: '1.5', payload: 15, runtime: '1.6' }),
-  native: 'fail-closed',
+  currentReady: Object.freeze({ nativeGuiIR: '1.9', payload: 19, runtime: '1.10' }),
+  native: 'current-ready',
   studioWeb: Object.freeze(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']),
-  reason: 'The current native GUI Form contract does not transport application/window icon metadata. Win32 .ico, AppKit and Linux desktop icon packaging wait for a versioned native contract that moves those backends together.'
+  reason: 'Application/Form icons are Current Ready on Windows, macOS and Linux through Native GUI IR 1.9 / payload v19 / runtime v1.10. Older pre-v19 native compatibility contracts remain fail-closed rather than silently dropping icon metadata.'
 });
 
 export function parsePatchWindowDeclaration(value) {
@@ -171,11 +171,15 @@ export function selectApplicationWindowIcon(nodes) {
   });
 }
 
+/**
+ * Compatibility diagnostic used by native contracts that predate payload v19.
+ * Current Ready IR 1.9 consumes Window icons and must not call this helper.
+ */
 export function nativeWindowIconUnsupportedMessage(node, line = null) {
   if (!node?.iconExpr) return null;
-  const where = line == null ? 'native GUI Form' : `line ${line}: native GUI Form`;
+  const where = line == null ? 'legacy native GUI Form' : `line ${line}: legacy native GUI Form`;
   const name = node.id ? `'${node.id}'` : 'window';
-  return `${where} ${name} does not transport icon ${node.iconExpr}. Application/window icons remain fail-closed on desktop until a versioned native contract packages Win32, AppKit and GTK icons together.`;
+  return `${where} ${name} does not transport icon ${node.iconExpr}. This compatibility contract remains fail-closed; use Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 for desktop application/Form icon transport.`;
 }
 
 export function hasWindowIcon(node) {
