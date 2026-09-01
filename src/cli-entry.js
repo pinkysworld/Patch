@@ -51,7 +51,7 @@ if (command === 'link') {
       resources: input.resources,
       nodeRuntime: readRuntime(process.env.PATCH_OFFLINE_NODE_RUNTIME),
       consoleRuntime: readRuntime(process.env.PATCH_OFFLINE_CONSOLE_RUNTIME),
-      guiRuntime: readRuntime(process.env.PATCH_OFFLINE_GUI_RUNTIME)
+      guiRuntime: readRuntime(selectGuiRuntimePath(guiPayloadVersion))
     });
     console.log(`Linked ${linked.output}`);
     console.log(`  type: ${linked.kind}`);
@@ -109,6 +109,17 @@ function option(args, name) {
 
 function appName(filePath) {
   return path.basename(filePath, path.extname(filePath)).replace(/[^A-Za-z0-9_-]/g, '_') || 'PatchApp';
+}
+
+function selectGuiRuntimePath(payloadVersion) {
+  const requested = Number(payloadVersion ?? 17);
+  if (requested === 19) {
+    if (process.env.PATCH_OFFLINE_GUI_RUNTIME_V19) return process.env.PATCH_OFFLINE_GUI_RUNTIME_V19;
+    if (process.env.PATCH_OFFLINE_COMPILER_PLATFORM) {
+      throw new Error('Offline Compiler payload v19 needs the embedded runtime v1.10 promotion asset; this compiler carries only the Current Ready GUI runtime.');
+    }
+  }
+  return process.env.PATCH_OFFLINE_GUI_RUNTIME;
 }
 
 function readRuntime(filePath) {

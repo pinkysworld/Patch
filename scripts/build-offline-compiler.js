@@ -13,12 +13,16 @@ const platform = normalizePlatform(option('--platform') ?? process.platform);
 const out = path.resolve(option('--out') ?? defaultOutput(platform));
 const consoleRuntime = option('--console-runtime');
 const guiRuntime = option('--gui-runtime');
+const guiRuntimeV19 = option('--gui-runtime-v19');
 
 if (platform !== normalizePlatform(process.platform)) {
   fail(`Build this offline compiler on its target OS. Host is ${process.platform}, requested ${platform}.`);
 }
 if (platform !== 'freebsd' && (!consoleRuntime || !guiRuntime)) {
   fail(`${platform} offline compiler builds require both --console-runtime and --gui-runtime.`);
+}
+if (platform === 'freebsd' && guiRuntimeV19) {
+  fail('FreeBSD offline compiler builds do not support an embedded GUI runtime.');
 }
 
 const srcFiles = collectOfflineCompilerSourceFiles(process.cwd());
@@ -28,7 +32,7 @@ if (!srcKeys.includes('src/cli-entry.js') || !srcKeys.includes('src/cli.js') || 
 }
 const sourceHash = hashFiles(srcFiles);
 const nodeRuntime = path.resolve(process.execPath);
-const runtimeFiles = [nodeRuntime, consoleRuntime, guiRuntime].filter(Boolean).map(file => path.resolve(file));
+const runtimeFiles = [nodeRuntime, consoleRuntime, guiRuntime, guiRuntimeV19].filter(Boolean).map(file => path.resolve(file));
 const runtimeHash = runtimeFiles.length ? hashFiles(runtimeFiles) : 'portable-c99';
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-compiler-'));
 
@@ -43,6 +47,7 @@ try {
     runtimeHash,
     runtimeEncoding: 'gzip',
     nodeExecutable: platform === 'windows' ? 'runtime/node.exe' : 'runtime/node',
+    guiRuntimeV19: Boolean(guiRuntimeV19),
     sourceGraph: 'static-esm-closure-v0.1',
     embeddedSourceModules: srcKeys
   }, null, 2), 'utf8');
@@ -54,6 +59,7 @@ try {
   srcFiles.forEach((file, index) => { assets[srcKeys[index]] = path.resolve(file); });
   if (consoleRuntime) assets['runtime/console.bin.gz'] = compressRuntime(consoleRuntime, path.join(temp, 'console.bin.gz'));
   if (guiRuntime) assets['runtime/gui.bin.gz'] = compressRuntime(guiRuntime, path.join(temp, 'gui.bin.gz'));
+  if (guiRuntimeV19) assets['runtime/gui-v19.bin.gz'] = compressRuntime(guiRuntimeV19, path.join(temp, 'gui-v19.bin.gz'));
 
   const configPath = path.join(temp, 'sea-config.json');
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -89,7 +95,7 @@ try {
   console.log(`  embedded source modules: ${srcFiles.length}`);
   console.log('  source graph: static local ESM closure from src/cli-entry.js + src/cli.js');
   console.log(`  execution runtime: embedded Node ${process.version}`);
-  console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : 'gzip-compressed console + GUI'}`);
+  console.log(`  native runtimes: ${platform === 'freebsd' ? 'portable C99 linker' : guiRuntimeV19 ? 'gzip-compressed console + Current Ready GUI + payload-v19 GUI candidate' : 'gzip-compressed console + GUI'}`);
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }

@@ -28,6 +28,7 @@ function runExtractedCompiler() {
   const nodeRuntime = extractRuntime('runtime/node.bin.gz', manifest.nodeExecutable || defaultNodeExecutable(), root);
   const consoleRuntime = extractRuntime('runtime/console.bin.gz', 'runtime/console.bin', root);
   const guiRuntime = extractRuntime('runtime/gui.bin.gz', 'runtime/gui.bin', root);
+  const guiRuntimeV19 = extractRuntime('runtime/gui-v19.bin.gz', 'runtime/gui-v19.bin', root);
   if (!nodeRuntime) throw new Error('Embedded Node execution runtime is missing.');
 
   const env = {
@@ -36,6 +37,7 @@ function runExtractedCompiler() {
   };
   if (consoleRuntime) env.PATCH_OFFLINE_CONSOLE_RUNTIME = consoleRuntime;
   if (guiRuntime) env.PATCH_OFFLINE_GUI_RUNTIME = guiRuntime;
+  if (guiRuntimeV19) env.PATCH_OFFLINE_GUI_RUNTIME_V19 = guiRuntimeV19;
 
   const result = spawnSync(nodeRuntime, [cliEntry, ...args], { stdio: 'inherit', env });
   if (result.error) throw new Error(`Could not start embedded Node runtime: ${result.error.message}`);
