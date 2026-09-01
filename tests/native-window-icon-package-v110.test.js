@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compile } from '../src/compiler.js';
 import { buildNativeGuiIRV19 } from '../src/native-gui-ir-v19.js';
-import { decodeNativeGuiPayloadV19, inspectNativeGuiWindowIconsV19 } from '../src/sealed-native-gui-v19.js';
+import { decodeNativeGuiPayloadV19 } from '../src/sealed-native-gui-v19.js';
 import {
   PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID,
   PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_VERSION,
@@ -43,7 +43,7 @@ function utf8(bytes) {
   return new TextDecoder().decode(bytes);
 }
 
-test('Windows icon-bearing package plan fails closed when runtime v1.10 lacks the reserved PE icon slot', () => {
+test('Windows icon-bearing Current Ready package plan fails closed when runtime v1.10 lacks the reserved PE icon slot', () => {
   assert.equal(PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_VERSION, '0.2');
   assert.equal(PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID, 'native-window-icon-package-v110/0.2');
   assert.throws(
@@ -56,13 +56,14 @@ test('Windows icon-bearing package plan fails closed when runtime v1.10 lacks th
   );
 });
 
-test('macOS experimental package plan installs ICNS into the app bundle and names it in Info.plist', () => {
+test('macOS Current Ready package plan installs ICNS into the app bundle and names it in Info.plist', () => {
   const plan = createNativeWindowIconPackagePlanV110(runtimes.macos, ir, {
     platform: 'macos',
     name: 'Icon App',
     resources: [APP_ICON]
   });
   assert.equal(plan.id, PATCH_NATIVE_WINDOW_ICON_PACKAGE_V110_ID);
+  assert.equal(plan.currentProductPromoted, true);
   assert.equal(plan.bundle, 'Icon_App.app');
   assert.equal(plan.executable, 'Icon_App.app/Contents/MacOS/Icon_App');
   const icon = findFile(plan, '/Contents/Resources/Icon_App.icns');
@@ -73,12 +74,13 @@ test('macOS experimental package plan installs ICNS into the app bundle and name
   assert.equal(decodeNativeGuiPayloadV19(plan.sealedBytes).length > 0, true);
 });
 
-test('Linux experimental package plan carries hicolor PNG and desktop metadata next to the sealed runtime', () => {
+test('Linux Current Ready package plan carries hicolor PNG and desktop metadata next to the sealed runtime', () => {
   const plan = createNativeWindowIconPackagePlanV110(runtimes.linux, ir, {
     platform: 'linux',
     name: 'Icon App',
     resources: [APP_ICON]
   });
+  assert.equal(plan.currentProductPromoted, true);
   assert.equal(plan.executable, 'Icon_App');
   assert.deepEqual(plan.files.map(file => file.path), [
     'Icon_App',
@@ -91,7 +93,7 @@ test('Linux experimental package plan carries hicolor PNG and desktop metadata n
   assert.equal(decodeNativeGuiPayloadV19(plan.sealedBytes).length > 0, true);
 });
 
-test('icon-free v1.10 package plans remain valid and omit all packaging metadata', () => {
+test('icon-free Current Ready v1.10 package plans remain valid and omit all icon packaging metadata', () => {
   const plainIr = buildNativeGuiIRV19(compile(`window "Plain" as main:\n  text "Plain"\n`, { name: 'Plain', kind: 'window' }));
   for (const platform of ['windows', 'macos', 'linux']) {
     const plan = createNativeWindowIconPackagePlanV110(runtimes[platform], plainIr, {
@@ -100,7 +102,7 @@ test('icon-free v1.10 package plans remain valid and omit all packaging metadata
       resources: []
     });
     assert.equal(plan.iconPackaging.hasApplicationIcon, false);
-    assert.equal(plan.currentProductPromoted, false);
+    assert.equal(plan.currentProductPromoted, true);
     assert.equal(plan.peIconEmbedded, platform === 'windows' ? false : null);
     assert.ok(plan.files.every(file => !/\.(ico|icns|desktop|png)$/.test(file.path)));
   }
