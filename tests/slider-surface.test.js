@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 
 function read(path) { return fs.readFileSync(path, 'utf8'); }
 
-test('Slider Stage 1 remains reproducible while Studio exposes the current native v1.8 contract', () => {
+test('Slider Stage 1 remains reproducible while Studio exposes the Current Ready v1.10 contract', () => {
   const index = read('web/index.html');
   const language = read('web/language.html');
   const docs = read('web/docs.html');
@@ -17,26 +17,26 @@ test('Slider Stage 1 remains reproducible while Studio exposes the current nativ
   assert.match(index, /id="addSlider"/);
   assert.match(index, /value="sliderWindow">Slider app<\/option>/);
   assert.match(index, /Slider/i);
-  assert.match(index, /Native GUI IR 1\.7 \/ payload v17 \/ runtime v1\.8/i);
+  assert.match(index, /Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10/i);
   assert.match(index, /Older versioned contracts remain compatibility lines/i);
-  assert.match(language, /data-slider-language-support="native-v17"/);
+  assert.match(language, /data-slider-language-support="native-v19"/);
   assert.match(language, /slider 0\.\.100 as volume step 5/);
   assert.match(language, /native Slider support/i);
   assert.match(language, /frozen compatibility/i);
-  assert.match(docs, /Native GUI IR 1\.7 · payload v17 · runtime v1\.8/);
+  assert.match(docs, /Native GUI IR 1\.9 · payload v19 · runtime v1\.10/);
   assert.match(contract, /Slider Stage 1/);
   assert.match(contract, /Window event adapter \*\*0\.9\*\*/);
   assert.match(contract, /Change IR remains \*\*0\.10\*\*/);
-  assert.match(contract, /Native GUI IR \*\*1\.7\*\*/);
-  assert.match(contract, /payload \*\*v17\*\*/);
-  assert.match(contract, /runtime \*\*v1\.8\*\*/);
+  assert.match(contract, /Native GUI IR \*\*1\.9\*\*/);
+  assert.match(contract, /payload \*\*v19\*\*/);
+  assert.match(contract, /runtime \*\*v1\.10\*\*/);
   assert.match(contract, /Native GUI IR \*\*1\.3\*\* \/ payload \*\*v13\*\* \/ runtime \*\*v1\.4\*\*/);
   assert.match(slider, /addDesignerControl\(code\.value, 'slider'/);
   assert.match(buildSite, /'slider-stage1\.js'/);
   assert.match(sw, /'\.\/slider-stage1\.js'/);
 });
 
-test('Standalone Web and current native Ready/offline paths opt into Slider while frozen v1.3 remains fail-closed', () => {
+test('Standalone Web and current native Ready/offline paths opt into Slider while frozen v1.2 remains fail-closed', () => {
   const webRuntime = read('src/window-webapp.js');
   const nativeBuild = read('web/native-build.js');
   const offlineLinker = read('src/offline-linker.js');
@@ -52,13 +52,12 @@ test('Standalone Web and current native Ready/offline paths opt into Slider whil
   assert.match(nativeBuild, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
   assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/native-gui-ir-v13\.js['"]/);
   assert.doesNotMatch(nativeBuild, /from ['"]\.\.\/src\/sealed-native-gui-v13\.js['"]/);
-  assert.match(offlineLinker, /allowSlider: guiPayloadVersion === 17/);
+  assert.match(offlineLinker, /allowSlider: guiPayloadVersion === 17 \|\| guiPayloadVersion === 19/);
   assert.match(offlineLinker, /buildCurrentNativeGuiIR/);
-  assert.match(offlineLinker, /sealCurrentNativeGuiRuntime/);
-  assert.match(offlineLinker, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION|guiPayloadVersion \?\? 17/);
-  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.7\/payload-17\/runtime-1\.8'/);
-  assert.match(currentNative, /buildNativeGuiIRV17/);
-  assert.match(currentNative, /sealNativeGuiRuntimeV17/);
+  assert.match(offlineLinker, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.match(currentNative, /PATCH_CURRENT_NATIVE_CONTRACT_ID = 'native-gui-1\.9\/payload-19\/runtime-1\.10'/);
+  assert.match(currentNative, /buildNativeGuiIRV19/);
+  assert.match(currentNative, /sealNativeGuiRuntimeV19/);
   assert.match(windowBuild, /if \(sliders && !options\.allowSlider\)/);
   assert.match(windowBuild, /Slider is not enabled for this Window target/);
   assert.doesNotMatch(nativeV12, /control\.type === 'slider'|control==='slider'|control === 'slider'/);
