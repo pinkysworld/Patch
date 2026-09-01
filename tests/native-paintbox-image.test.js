@@ -13,6 +13,7 @@ import {
 import { buildNativeGuiIRV16 } from '../src/native-gui-ir-v16.js';
 import { buildNativeGuiPlan } from '../src/native-gui-build-plan.js';
 import {
+  buildCurrentNativeGuiIR,
   flattenCurrentNativeGuiControls,
   currentNativeContract,
   sealCurrentNativeGuiRuntime,
@@ -44,13 +45,13 @@ function build(source = SOURCE) {
   return buildNativeGuiIRV17(compile(source, { name: 'NativePaintImage', kind: 'window' }));
 }
 
-test('current native contract is IR 1.7 / payload 17 / runtime 1.8', () => {
+test('current native contract is IR 1.9 / payload 19 / runtime 1.10', () => {
   const contract = currentNativeContract();
-  assert.equal(contract.id, 'native-gui-1.7/payload-17/runtime-1.8');
-  assert.equal(contract.guiIr, '1.7');
-  assert.equal(contract.payload, 17);
-  assert.equal(contract.runtime, '1.8');
-  assert.equal(contract.runtimeTags.windows, 'native-win32-runtime-v1.8');
+  assert.equal(contract.id, 'native-gui-1.9/payload-19/runtime-1.10');
+  assert.equal(contract.guiIr, '1.9');
+  assert.equal(contract.payload, 19);
+  assert.equal(contract.runtime, '1.10');
+  assert.equal(contract.runtimeTags.windows, 'native-win32-runtime-v1.10');
 });
 
 test('draw image quoted locator round-trips as a source-visible PaintBox command', () => {
@@ -87,11 +88,11 @@ test('Native GUI IR 1.6 remains fail-closed for draw image', () => {
   );
 });
 
-test('Native GUI build plan selects PaintBox image runtime 1.8 automatically', () => {
+test('Current Ready Native GUI build plan preserves PaintBox image support on IR 1.9', () => {
   const compiled = compile(SOURCE, { name: 'NativePaintImage', kind: 'window' });
   const plan = buildNativeGuiPlan(compiled);
   assert.equal(plan.tier, 'paintbox-image-v18');
-  assert.equal(plan.gui.version, '1.7');
+  assert.equal(plan.gui.version, '1.9');
   assert.equal(plan.features.paintboxImage, true);
   assert.equal(flattenCurrentNativeGuiControls(plan.gui).filter(control => control.type === 'paintbox').length, 1);
 });
@@ -121,9 +122,10 @@ when canvas paint:
   draw clear #ffffff
   draw image "patch-resource:app.logo" at 8, 8 size 32, 32
 `;
-  const ir = buildNativeGuiIRV17(compile(source, { name: 'ResourcePaint', kind: 'window' }));
+  const ir = buildCurrentNativeGuiIR(compile(source, { name: 'ResourcePaint', kind: 'window' }));
   const sealed = sealCurrentNativeGuiRuntime(new Uint8Array([0x4d, 0x5a]), ir, {
     platform: 'windows',
+    name: 'ResourcePaint',
     resources: [RESOURCE]
   });
   const payload = decodeCurrentNativeGuiPayload(sealed);
@@ -138,14 +140,14 @@ test('native draw image fails closed for missing resources and deferred WebP', (
 when canvas paint:
   draw image "patch-resource:app.logo" at 8, 8 size 32, 32
 `;
-  const ir = buildNativeGuiIRV17(compile(source, { name: 'MissingPaint', kind: 'window' }));
+  const ir = buildCurrentNativeGuiIR(compile(source, { name: 'MissingPaint', kind: 'window' }));
   assert.throws(
-    () => sealCurrentNativeGuiRuntime(new Uint8Array([0x4d, 0x5a]), ir, { platform: 'windows' }),
+    () => sealCurrentNativeGuiRuntime(new Uint8Array([0x4d, 0x5a]), ir, { platform: 'windows', name: 'MissingPaint' }),
     error => error?.code === 'NATIVE_PICTURE_RESOURCE_MISSING' && /app\.logo/.test(error.message)
   );
   const webp = { ...RESOURCE, path: 'resources/logo.webp', mediaType: 'image/webp' };
   assert.throws(
-    () => sealCurrentNativeGuiRuntime(new Uint8Array([0x4d, 0x5a]), ir, { platform: 'windows', resources: [webp] }),
+    () => sealCurrentNativeGuiRuntime(new Uint8Array([0x4d, 0x5a]), ir, { platform: 'windows', name: 'MissingPaint', resources: [webp] }),
     /deferred|PNG and JPEG only/i
   );
 });
