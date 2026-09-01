@@ -60,10 +60,10 @@ test('responsive accessibility-capable v0.9 remains a frozen published compatibi
   assert.match(responsiveWorkflow, /responsive-window\.patch/);
 });
 
-test('Pages consumes current PaintBox image runtime v1.8 and frozen historical accessibility lines separately', () => {
-  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.8/);
-  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.8/);
-  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.8/);
+test('Pages consumes Current Ready runtime v1.10 and frozen historical accessibility lines separately', () => {
+  assert.match(pagesWorkflow, /WIN32_RUNTIME_TAG: native-win32-runtime-v1\.10/);
+  assert.match(pagesWorkflow, /LINUX_NATIVE_RUNTIME_TAG: native-linux-runtime-v1\.10/);
+  assert.match(pagesWorkflow, /MACOS_NATIVE_RUNTIME_TAG: native-macos-runtime-v1\.10/);
   assert.match(pagesWorkflow, /Patch Native Responsive Runtime/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Win32 Runtime,/);
   assert.doesNotMatch(pagesWorkflow, /Patch Native Linux Runtime,/);
