@@ -40,6 +40,7 @@ import {
   inspectNativeGuiPaintImagesV19,
   inspectNativeGuiSlidersV19
 } from './sealed-native-gui-v19.js';
+import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 
 /**
  * Stable product-facing entry point for the current Patch native GUI contract.
@@ -88,6 +89,17 @@ export const currentNativeHasButtonImage = hasNativeButtonImage;
 export const currentNativeHasWindowIcon = hasNativeWindowIcon;
 
 export function sealCurrentNativeGuiRuntime(runtimeBytes, nativeGui, options = {}) {
+  const platform = String(options.platform ?? '').toLowerCase();
+  if (platform === 'windows' || platform === 'win32') {
+    const plan = createNativeWindowIconPackagePlanV110(runtimeBytes, nativeGui, {
+      platform: 'windows',
+      name: options.name ?? 'PatchApp',
+      resources: options.resources ?? []
+    });
+    const executable = plan.files.find(file => file.path === plan.executable);
+    if (!executable) throw new Error('Current Ready Windows package plan did not produce its executable.');
+    return executable.bytes;
+  }
   return sealNativeGuiRuntimeV19(runtimeBytes, nativeGui, options);
 }
 
