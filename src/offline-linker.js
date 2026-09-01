@@ -8,6 +8,8 @@ import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
 import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
+import { buildNativeGuiIRV19 } from './native-gui-ir-v19.js';
+import { sealNativeGuiRuntimeV19 } from './sealed-native-gui-v19.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -48,22 +50,30 @@ export function createOfflineLinkPlan(source, options = {}) {
   }
 
   const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 17);
+  const isCurrentOrNewer = guiPayloadVersion === 17 || guiPayloadVersion === 19;
   validateWindowRuntimeSupport(compiled, {
     allowTables: true,
     allowLists: true,
     allowListControls: true,
     allowMenuDecorations: true,
     allowTree: true,
-    allowSlider: guiPayloadVersion === 17,
-    allowPaintBox: guiPayloadVersion === 17
+    allowSlider: isCurrentOrNewer,
+    allowPaintBox: isCurrentOrNewer,
+    allowImageList: guiPayloadVersion === 19
   });
-  const nativeGui = guiPayloadVersion === 17
-    ? buildCurrentNativeGuiIR(compiled)
-    : buildFrozenNativeGuiIR(compiled);
+
+  const nativeGui = guiPayloadVersion === 19
+    ? buildNativeGuiIRV19(compiled)
+    : guiPayloadVersion === 17
+      ? buildCurrentNativeGuiIR(compiled)
+      : buildFrozenNativeGuiIR(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
-  const sealed = guiPayloadVersion === 12
-    ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
-    : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform });
+  const resources = options.resources ?? [];
+  const sealed = guiPayloadVersion === 19
+    ? sealNativeGuiRuntimeV19(runtime, nativeGui, { platform, resources })
+    : guiPayloadVersion === 12
+      ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
+      : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform, resources });
   return binaryPlan({ platform, kind, name, sealed });
 }
 
@@ -180,8 +190,8 @@ function requiredRuntime(value, label) {
 
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
-  if (version === 12 || version === 17) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v17, not '${value}'.`);
+  if (version === 12 || version === 17 || version === 19) return version;
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12, v17 or v19, not '${value}'.`);
 }
 
 function normalizePlatform(value) {
