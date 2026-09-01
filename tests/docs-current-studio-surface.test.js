@@ -19,10 +19,11 @@ const selectionArchitecture = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTUR
 const tableActionsDoc = fs.readFileSync('docs/STUDIO_TABLE_ACTIONS.md', 'utf8');
 const tableActionsWeb = fs.readFileSync('web/designer-table-actions.js', 'utf8');
 
-test('current Tabs documentation names native v1.8 and retains explicit compatibility lines', () => {
-  assert.match(tabs, /Native GUI IR \*\*1\.7\*\*/);
-  assert.match(tabs, /payload \*\*v17\*\*/);
-  assert.match(tabs, /native runtime \*\*v1\.8\*\*/);
+test('current Tabs documentation names native v1.10 and retains explicit compatibility lines', () => {
+  assert.match(tabs, /Native GUI IR \*\*1\.9\*\*/);
+  assert.match(tabs, /payload \*\*v19\*\*/);
+  assert.match(tabs, /native runtime \*\*v1\.10\*\*/);
+  assert.match(tabs, /Native GUI IR \*\*1\.7\*\* \/ payload \*\*v17\*\* \/ runtime \*\*v1\.8\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.6\*\* \/ payload \*\*v16\*\* \/ runtime \*\*v1\.7\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.5\*\* \/ payload \*\*v15\*\* \/ runtime \*\*v1\.6\*\*/);
   assert.match(tabs, /Native GUI IR \*\*1\.4\*\* \/ payload \*\*v14\*\* \/ runtime \*\*v1\.5\*\*/);
@@ -32,14 +33,15 @@ test('current Tabs documentation names native v1.8 and retains explicit compatib
   assert.match(tabs, /Slider/);
 });
 
-test('current ListBox documentation reflects native single/multi-select preservation on v1.8', () => {
+test('current ListBox documentation reflects native single/multi-select preservation on v1.10', () => {
   assert.match(listbox, /direct native Win32\/AppKit\/GTK/);
   assert.match(listbox, /create text/);
   assert.match(listbox, /create list/);
   assert.match(listbox, /Native GUI IR \*\*1\.1\*\*/);
-  assert.match(listbox, /Native GUI IR \*\*1\.7\*\*/);
-  assert.match(listbox, /payload \*\*v17\*\*/);
-  assert.match(listbox, /runtime \*\*v1\.8\*\*/);
+  assert.match(listbox, /Native GUI IR \*\*1\.9\*\*/);
+  assert.match(listbox, /payload \*\*v19\*\*/);
+  assert.match(listbox, /runtime \*\*v1\.10\*\*/);
+  assert.match(listbox, /payload v17 \/ runtime v1\.8/);
   assert.match(listbox, /payload v12 \/ runtime v1\.3/);
   assert.match(docs, /docs\/LISTBOX\.md/);
 });
@@ -61,10 +63,10 @@ test('nested Tabs implementation and current Studio docs stay aligned', () => {
   assert.match(nestedWeb, /data-tabs-table-action/);
   assert.match(nestedWeb, /data-tabs-tree-action/);
   assert.match(studio, /Table, TreeView and Tabs structural editors rewrite the selected source block directly/);
-  assert.match(studio, /Native GUI IR \*\*1\.7\*\*/);
-  assert.match(studio, /payload \*\*v17\*\*/);
-  assert.match(studio, /runtime \*\*v1\.8\*\*/);
-  assert.match(studio, /frozen TreeView line(?: is)? 1\.2\/v12\/v1\.3/);
+  assert.match(studio, /Current Ready Native GUI IR \*\*1\.9\*\*/);
+  assert.match(studio, /Current Ready sealed payload \*\*v19\*\*/);
+  assert.match(studio, /Ready\/offline desktop runtime \*\*v1\.10\*\*/);
+  assert.match(studio, /frozen TreeView line is 1\.2\/v12\/v1\.3/);
 });
 
 test('Studio structural Properties usability remains source-backed without a second mutation path', () => {
@@ -116,10 +118,10 @@ test('Studio implementation exposes current Forms, source history and large-proj
 
 test('roadmap records beta36 current Studio/native line and truthful RAD backlog', () => {
   assert.match(roadmap, /Current development beta: \*\*0\.2\.0-beta\.36\*\*/);
-  assert.match(roadmap, /Native GUI IR: \*\*1\.7\*\*/);
-  assert.match(roadmap, /current sealed native GUI payload: \*\*v17\*\*/);
-  assert.match(roadmap, /current token-free Ready\/offline runtime: \*\*v1\.8\*\*/);
-  assert.match(roadmap, /frozen TreeView compatibility line: Native GUI IR \*\*1\.2\*\* \/ payload \*\*v12\*\* \/ runtime \*\*v1\.3\*\*/);
+  assert.match(roadmap, /Native GUI IR: \*\*1\.9\*\*/);
+  assert.match(roadmap, /current sealed native GUI payload: \*\*v19\*\*/);
+  assert.match(roadmap, /current token-free Ready\/offline runtime: \*\*v1\.10\*\*/);
+  assert.match(roadmap, /Native GUI IR 1\.2 \/ payload v12 \/ runtime v1\.3 TreeView line/);
   assert.match(roadmap, /project bundle v4/);
   assert.match(roadmap, /ImageList Stage 1/);
   assert.match(roadmap, /Shape native lowering\/runtime parity/);
