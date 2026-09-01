@@ -18,25 +18,26 @@ const fixtureScript = fileURLToPath(new URL('../scripts/create-native-v110-promo
 const cliEntryScript = fileURLToPath(new URL('../src/cli-entry.js', import.meta.url));
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
-test('offline compiler can embed a second GUI runtime without replacing the Current Ready runtime asset', () => {
+test('offline compiler embeds legacy v1.8 and Current Ready v1.10 GUI runtimes side by side', () => {
   assert.match(builder, /option\('--gui-runtime-v19'\)/);
   assert.match(builder, /'runtime\/gui\.bin\.gz'/);
   assert.match(builder, /'runtime\/gui-v19\.bin\.gz'/);
   assert.match(builder, /guiRuntimeV19: Boolean\(guiRuntimeV19\)/);
   assert.match(runner, /extractRuntime\('runtime\/gui-v19\.bin\.gz', 'runtime\/gui-v19\.bin'/);
   assert.match(runner, /PATCH_OFFLINE_GUI_RUNTIME_V19 = guiRuntimeV19/);
-  assert.match(cli, /requested === 19/);
+  assert.match(cli, /requested === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
+  assert.match(cli, /PATCH_CURRENT_NATIVE_PAYLOAD_VERSION/);
   assert.match(cli, /PATCH_OFFLINE_GUI_RUNTIME_V19/);
   assert.match(cli, /PATCH_OFFLINE_COMPILER_PLATFORM/);
-  assert.match(cli, /payload v19 needs the embedded runtime v1\.10 promotion asset/);
+  assert.match(cli, /Current Ready payload v19 needs its embedded runtime v1\.10 asset/);
   assert.match(cli, /guiRuntime: readRuntime\(selectGuiRuntimePath\(guiPayloadVersion\)\)/);
 });
 
-test('an Offline Compiler without the second runtime fails closed on explicit payload v19', () => {
+test('an Offline Compiler without the Current Ready runtime fails closed on payload v19', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-v110-fail-closed-'));
   try {
     const source = path.join(temp, 'plain.patch');
-    const runtime = path.join(temp, 'gui-current.bin');
+    const runtime = path.join(temp, 'gui-legacy.bin');
     fs.writeFileSync(source, 'window "Plain" as main size 320, 180:\n  text "Plain"\n', 'utf8');
     fs.writeFileSync(runtime, Buffer.from([0x7f, 0x45, 0x4c, 0x46, 0x00]));
     const env = {
@@ -52,14 +53,14 @@ test('an Offline Compiler without the second runtime fails closed on explicit pa
       '--out', path.join(temp, 'ShouldNotExist')
     ], { cwd: repoRoot, env, encoding: 'utf8' });
     assert.equal(result.status, 2, result.stderr || result.stdout);
-    assert.match(result.stderr, /payload v19 needs the embedded runtime v1\.10 promotion asset/);
+    assert.match(result.stderr, /Current Ready payload v19 needs its embedded runtime v1\.10 asset/);
     assert.equal(fs.existsSync(path.join(temp, 'ShouldNotExist')), false);
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }
 });
 
-test('promotion workflow verifies immutable runtime releases and exercises default v17 plus explicit v19', () => {
+test('promotion evidence workflow still verifies immutable releases and both compatibility paths', () => {
   assert.match(workflow, /native-win32-runtime-v1\.10/);
   assert.match(workflow, /native-macos-runtime-v1\.10/);
   assert.match(workflow, /native-linux-runtime-v1\.10/);
@@ -78,7 +79,7 @@ test('promotion workflow verifies immutable runtime releases and exercises defau
   assert.match(workflow, /Intel promotion output is not payload v19/);
 });
 
-test('promotion fixture is a project-v4 resource bundle suitable for real payload-v19 packaging', () => {
+test('promotion fixture remains a project-v4 resource bundle suitable for Current Ready payload-v19 packaging', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-v110-promotion-fixture-'));
   const file = path.join(temp, 'WindowIconsPromotion.patchproject');
   try {
@@ -114,10 +115,10 @@ test('promotion fixture is a project-v4 resource bundle suitable for real payloa
   }
 });
 
-test('promotion candidate does not silently change the Current Ready product contract', () => {
-  assert.match(currentContract, /native-gui-1\.7\/payload-17\/runtime-1\.8/);
-  assert.match(currentContract, /PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1\.8'/);
-  assert.match(currentContract, /native-win32-runtime-v1\.8/);
-  assert.match(currentContract, /native-macos-runtime-v1\.8/);
-  assert.match(currentContract, /native-linux-runtime-v1\.8/);
+test('Current Ready product contract is the proven IR 1.9 / payload 19 / runtime 1.10 line', () => {
+  assert.match(currentContract, /native-gui-1\.9\/payload-19\/runtime-1\.10/);
+  assert.match(currentContract, /PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1\.10'/);
+  assert.match(currentContract, /native-win32-runtime-v1\.10/);
+  assert.match(currentContract, /native-macos-runtime-v1\.10/);
+  assert.match(currentContract, /native-linux-runtime-v1\.10/);
 });
