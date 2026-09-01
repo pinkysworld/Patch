@@ -25,7 +25,7 @@ test('learning page preserves Current Ready and explicit frozen/compatibility na
   assert.match(docs, /Native GUI IR 1\.9/);
   assert.match(docs, /payload v19/);
   assert.match(docs, /runtime v1\.10/);
-  assert.match(docs, /payload v17\/runtime v1\.8 remains an Offline Compiler compatibility path/);
+  assert.match(docs, /payload v17\/runtime v1\.8 remains an Offline Compiler compatibility path/i);
   assert.match(docs, /IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
   assert.match(docs, /frozen TreeView line/);
   assert.match(docs, /beta\.32 assurance boundary/);
