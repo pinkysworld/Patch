@@ -10,9 +10,9 @@ const gui = buildCurrentNativeGuiIR(compile(source, { name: 'LinuxNativeTest', k
 const studio = fs.readFileSync('web/native-build.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/native-linux-runtime.yml', 'utf8');
 
-test('browser package seals current Native GUI IR 1.7 payload v17 into one Linux ELF executable', () => {
-  assert.equal(gui.version, '1.7');
-  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 17);
+test('browser package seals current Native GUI IR 1.9 payload v19 into one Linux ELF executable', () => {
+  assert.equal(gui.version, '1.9');
+  assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 19);
   const fakeElf = Uint8Array.from([0x7f, 0x45, 0x4c, 0x46, 2, 1, 1, 0, 10, 20, 30, 40]);
   const ready = buildLinuxNativeGuiPackage(fakeElf, gui, { name: 'My Linux App', payloadVersion: PATCH_CURRENT_NATIVE_PAYLOAD_VERSION });
   assert.equal(ready.filename, 'My_Linux_App-linux-window.zip');
@@ -25,13 +25,13 @@ test('browser package seals current Native GUI IR 1.7 payload v17 into one Linux
   assert.equal((central.getUint32(38, true) >>> 16) & 0xffff, 0o100755);
 });
 
-test('Studio defaults Linux Window downloads to native GTK runtime v1.8 sealing without token', () => {
+test('Studio defaults Linux Window downloads to native GTK runtime v1.10 sealing without token', () => {
   assert.ok(studio.includes("const LINUX_NATIVE_GUI_RUNTIME = './runtimes/patch-linux-native-gui-runtime.bin'"));
   assert.ok(studio.includes('buildLinuxNativeGuiPackage'));
   assert.ok(studio.includes('Native GTK app (no token, recommended)'));
-  assert.ok(studio.includes('Linux native GTK runtime v1.8 app downloaded · no token · no Electron'));
-  assert.ok(studio.includes('Native GUI IR 1.7'));
-  assert.ok(studio.includes('payload v17'));
+  assert.ok(studio.includes('Linux native GTK runtime v1.10 app downloaded · no token · no Electron'));
+  assert.ok(studio.includes('Native GUI IR 1.9'));
+  assert.ok(studio.includes('payload v19'));
   assert.ok(studio.includes('GtkScale'));
 });
 
