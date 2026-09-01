@@ -20,8 +20,10 @@ test('public Studio and offline PWA package Window icon modules', () => {
   assert.match(buildSite, /'window-icon\.js'/);
   assert.match(worker, /'\.\.\/src\/window-icon\.js'/);
   assert.match(docs, /docs\/WINDOW_ICONS\.md/);
-  assert.match(docs, /window-icon\/1\.0/);
+  assert.match(docs, /Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10/);
+  assert.match(docs, /Window\/application icon metadata and Current Ready Windows\/macOS\/Linux packaging/);
   assert.match(policy, /PATCH_WINDOW_ICON_POLICY_ID = 'window-icon\/1\.0'/);
-  assert.match(policy, /module remains independent from the current native IR version/i);
-  assert.match(policy, /currentReady: Object\.freeze\(\{ nativeGuiIR: '1\.5', payload: 15, runtime: '1\.6' \}\)/);
+  assert.match(policy, /source policy module remains independent from the native IR implementation version/i);
+  assert.match(policy, /currentReady: Object\.freeze\(\{ nativeGuiIR: '1\.9', payload: 19, runtime: '1\.10' \}\)/);
+  assert.match(policy, /native: 'current-ready'/);
 });
