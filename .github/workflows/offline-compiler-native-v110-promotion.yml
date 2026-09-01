@@ -1,0 +1,350 @@
+name: Patch Offline Compiler Native v1.10 Promotion Candidate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - src/cli-entry.js
+      - src/offline-linker.js
+      - src/offline-link-input.js
+      - src/native-gui-ir-v19.js
+      - src/native-window-icon-package-v110.js
+      - src/native-window-icon-packaging.js
+      - src/windows-pe-icon-v110.js
+      - src/studio-project.js
+      - scripts/build-offline-compiler.js
+      - scripts/offline-compiler-runner.cjs
+      - scripts/copy-offline-compiler-source.js
+      - scripts/create-native-v110-promotion-project.js
+      - examples/window-icons-native.patch
+      - native-runtime/**
+      - tests/offline-compiler-v110-promotion-workflow.test.js
+      - .github/workflows/offline-compiler-native-v110-promotion.yml
+  push:
+    branches: [main]
+    paths:
+      - src/cli-entry.js
+      - src/offline-linker.js
+      - scripts/build-offline-compiler.js
+      - scripts/offline-compiler-runner.cjs
+      - scripts/create-native-v110-promotion-project.js
+      - .github/workflows/offline-compiler-native-v110-promotion.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Verify dual-runtime promotion contract
+        run: node --test tests/offline-linker-v19.test.js tests/offline-compiler-v110-promotion-workflow.test.js
+
+  candidate:
+    needs: contract
+    name: ${{ matrix.platform }} candidate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            compiler_asset: patch-windows-x64-v110-candidate.exe
+            runtime_tag: native-win32-runtime-v1.10
+            runtime_asset: patch-windows-native-gui-runtime.exe
+          - os: ubuntu-latest
+            platform: linux
+            compiler_asset: patch-linux-x64-v110-candidate
+            runtime_tag: native-linux-runtime-v1.10
+            runtime_asset: patch-linux-native-gui-runtime.bin
+          - os: macos-15
+            platform: macos
+            compiler_asset: patch-macos-arm64-v110-candidate
+            runtime_tag: native-macos-runtime-v1.10
+            runtime_asset: patch-macos-native-gui-runtime.bin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+
+      - name: Install Linux native smoke dependencies
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
+
+      - name: Download and verify published runtime v1.10 candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: ${{ matrix.runtime_tag }}
+          RUNTIME_ASSET: ${{ matrix.runtime_asset }}
+          RUNTIME_SOURCE_SHA: e31a426dc21cb0929241fe96ab96e270ad182b32
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-v110
+          gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$RUNTIME_ASSET" --pattern 'SHA256SUMS.txt' --dir runtime-v110
+          grep -Eq "^[0-9a-f]{64}  ${RUNTIME_ASSET}$" runtime-v110/SHA256SUMS.txt
+          (cd runtime-v110 && sha256sum -c SHA256SUMS.txt)
+          expected="sha256:$(awk '{print $1}' runtime-v110/SHA256SUMS.txt)"
+          recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RUNTIME_TAG" --jq ".assets[] | select(.name == \"$RUNTIME_ASSET\") | .digest")"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RUNTIME_TAG" --jq '.object.sha')"
+          test "$recorded" = "$expected"
+          test "$tag_sha" = "$RUNTIME_SOURCE_SHA"
+          echo "Verified $RUNTIME_TAG/$RUNTIME_ASSET at $tag_sha ($expected)"
+
+      - name: Build host Console runtime
+        shell: bash
+        run: |
+          mkdir -p offline-runtime dist-offline dist-smoke
+          node scripts/build-native-sea-template.js --name PatchOfflinePromotionConsoleRuntime --out dist-offline/PatchOfflinePromotionConsoleRuntime --raw-out offline-runtime/console.bin
+
+      - name: Build Current Ready Win32 runtime v1.8 compatibility underlay
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $script = Join-Path $PWD 'offline-runtime\build-current-gui.cmd'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v18.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui-current.bin',
+            'exit /b %errorlevel%'
+          ) | Set-Content -Path $script -Encoding ascii
+          & cmd.exe /d /c $script
+          if ($LASTEXITCODE -ne 0) { throw "Current Ready Win32 runtime build failed with exit code $LASTEXITCODE." }
+
+      - name: Build Current Ready GTK runtime v1.8 compatibility underlay
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v18.cpp -o offline-runtime/gui-current.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x offline-runtime/gui-current.bin
+
+      - name: Build Current Ready AppKit runtime v1.8 compatibility underlay
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v18.mm -o offline-runtime/gui-current.bin
+          chmod +x offline-runtime/gui-current.bin
+          test "$(lipo -archs offline-runtime/gui-current.bin)" = "arm64"
+
+      - name: Build dual-runtime Offline Compiler promotion candidate
+        shell: bash
+        run: |
+          node scripts/build-offline-compiler.js \
+            --platform '${{ matrix.platform }}' \
+            --console-runtime offline-runtime/console.bin \
+            --gui-runtime offline-runtime/gui-current.bin \
+            --gui-runtime-v19 'runtime-v110/${{ matrix.runtime_asset }}' \
+            --out 'dist-offline/${{ matrix.compiler_asset }}'
+          'dist-offline/${{ matrix.compiler_asset }}' --version
+          node scripts/create-native-v110-promotion-project.js --out dist-smoke/WindowIconsPromotion.patchproject --target 'native-${{ matrix.platform }}'
+
+      - name: Smoke Current Ready v17 and explicit v19 on Windows
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $env:PATCH_NATIVE_HEADLESS = '1'
+          $compiler = Resolve-Path 'dist-offline/${{ matrix.compiler_asset }}'
+          & $compiler link examples/responsive-window.patch --name CurrentCompat --out dist-smoke/CurrentCompat.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Current Ready v17 link failed.' }
+          $current = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-smoke/CurrentCompat.exe'))
+          if ([BitConverter]::ToUInt32($current, $current.Length - 12) -ne 17) { throw 'Default Offline Compiler output is not payload v17.' }
+          $process = Start-Process -FilePath (Resolve-Path 'dist-smoke/CurrentCompat.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Current Ready v17 smoke failed with exit code $($process.ExitCode)." }
+
+          & $compiler link dist-smoke/WindowIconsPromotion.patchproject --gui-payload-version 19 --name PromotionIcons --out dist-smoke/PromotionIcons.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Explicit payload v19 project link failed.' }
+          $candidate = [System.IO.File]::ReadAllBytes((Resolve-Path 'dist-smoke/PromotionIcons.exe'))
+          if ([BitConverter]::ToUInt32($candidate, $candidate.Length - 12) -ne 19) { throw 'Promotion output is not payload v19.' }
+          Add-Type -AssemblyName System.Drawing
+          $icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path 'dist-smoke/PromotionIcons.exe').Path)
+          if (-not $icon) { throw 'Windows did not extract the project application icon from the v19 Offline Compiler output.' }
+          $bitmap = $icon.ToBitmap()
+          try {
+            $pixel = $bitmap.GetPixel([Math]::Floor($bitmap.Width / 2), [Math]::Floor($bitmap.Height / 2))
+            if ($pixel.B -lt 180 -or $pixel.G -lt 100 -or $pixel.R -gt 80) {
+              throw "Extracted v19 icon does not match the blue project icon; center RGB=$($pixel.R),$($pixel.G),$($pixel.B)."
+            }
+          } finally {
+            $bitmap.Dispose()
+            $icon.Dispose()
+          }
+          $process = Start-Process -FilePath (Resolve-Path 'dist-smoke/PromotionIcons.exe') -ArgumentList '--patch-smoke' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Payload v19 runtime smoke failed with exit code $($process.ExitCode)." }
+
+      - name: Smoke Current Ready v17 and explicit v19 on Linux
+        if: matrix.platform == 'linux'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          set -euo pipefail
+          compiler='dist-offline/${{ matrix.compiler_asset }}'
+          "$compiler" link examples/responsive-window.patch --name CurrentCompat --out dist-smoke/CurrentCompat
+          xvfb-run -a dist-smoke/CurrentCompat --patch-smoke
+          node - <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync('dist-smoke/CurrentCompat');
+          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error('Default Offline Compiler output is not payload v17.');
+          NODE
+
+          "$compiler" link dist-smoke/WindowIconsPromotion.patchproject --gui-payload-version 19 --name PromotionIcons --out dist-smoke/PromotionIcons
+          xvfb-run -a dist-smoke/PromotionIcons --patch-smoke
+          test -s dist-smoke/share/icons/hicolor/256x256/apps/PromotionIcons.png
+          test -s dist-smoke/share/applications/PromotionIcons.desktop
+          grep -q '^Icon=PromotionIcons$' dist-smoke/share/applications/PromotionIcons.desktop
+          node - <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync('dist-smoke/PromotionIcons');
+          if(sealed.readUInt32LE(sealed.length-12)!==19) throw new Error('Promotion output is not payload v19.');
+          NODE
+
+      - name: Smoke Current Ready v17 and explicit v19 on macOS ARM64
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          set -euo pipefail
+          compiler='dist-offline/${{ matrix.compiler_asset }}'
+          "$compiler" link examples/responsive-window.patch --name CurrentCompat --out dist-smoke/CurrentCompat.app
+          current=dist-smoke/CurrentCompat.app/Contents/MacOS/CurrentCompat
+          "$current" --patch-smoke
+          node - "$current" <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync(process.argv[2]);
+          if(sealed.readUInt32LE(sealed.length-12)!==17) throw new Error('Default Offline Compiler output is not payload v17.');
+          NODE
+
+          "$compiler" link dist-smoke/WindowIconsPromotion.patchproject --gui-payload-version 19 --name PromotionIcons --out dist-smoke/PromotionIcons.app
+          candidate=dist-smoke/PromotionIcons.app/Contents/MacOS/PromotionIcons
+          "$candidate" --patch-smoke
+          test -s dist-smoke/PromotionIcons.app/Contents/Resources/PromotionIcons.icns
+          grep -q '<key>CFBundleIconFile</key><string>PromotionIcons.icns</string>' dist-smoke/PromotionIcons.app/Contents/Info.plist
+          node - "$candidate" <<'NODE'
+          const fs=require('fs');
+          const sealed=fs.readFileSync(process.argv[2]);
+          if(sealed.readUInt32LE(sealed.length-12)!==19) throw new Error('Promotion output is not payload v19.');
+          NODE
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-native-v110-${{ matrix.platform }}
+          path: |
+            dist-offline/${{ matrix.compiler_asset }}
+            dist-smoke/WindowIconsPromotion.patchproject
+          if-no-files-found: error
+          retention-days: 14
+
+  macos-intel-candidate:
+    needs: contract
+    runs-on: macos-15-intel
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          package-manager-cache: false
+      - name: Download and verify universal AppKit runtime v1.10 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME_SOURCE_SHA: e31a426dc21cb0929241fe96ab96e270ad182b32
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-v110
+          gh release download native-macos-runtime-v1.10 --repo "$GITHUB_REPOSITORY" --pattern patch-macos-native-gui-runtime.bin --pattern SHA256SUMS.txt --dir runtime-v110
+          (cd runtime-v110 && sha256sum -c SHA256SUMS.txt)
+          expected="sha256:$(awk '{print $1}' runtime-v110/SHA256SUMS.txt)"
+          recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/native-macos-runtime-v1.10" --jq '.assets[] | select(.name == "patch-macos-native-gui-runtime.bin") | .digest')"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/native-macos-runtime-v1.10" --jq '.object.sha')"
+          test "$recorded" = "$expected"
+          test "$tag_sha" = "$RUNTIME_SOURCE_SHA"
+          lipo -archs runtime-v110/patch-macos-native-gui-runtime.bin | grep -qw x86_64
+
+      - name: Build dual-runtime portable Intel compiler kit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=dist-intel/patch-macos-x64-v110-candidate
+          mkdir -p "$ROOT/runtime" dist-smoke
+          node scripts/copy-offline-compiler-source.js "$ROOT"
+          cp package.json LICENSE "$ROOT/"
+          cp "$(command -v node)" "$ROOT/runtime/node"
+          chmod +x "$ROOT/runtime/node"
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch x86_64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v18.mm -o "$ROOT/runtime/gui.bin"
+          cp runtime-v110/patch-macos-native-gui-runtime.bin "$ROOT/runtime/gui-v19.bin"
+          chmod +x "$ROOT/runtime/gui.bin" "$ROOT/runtime/gui-v19.bin"
+          cat > "$ROOT/patch" <<'EOF'
+          #!/bin/sh
+          set -eu
+          ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+          export PATCH_OFFLINE_NODE_RUNTIME="$ROOT/runtime/node"
+          export PATCH_OFFLINE_GUI_RUNTIME="$ROOT/runtime/gui.bin"
+          export PATCH_OFFLINE_GUI_RUNTIME_V19="$ROOT/runtime/gui-v19.bin"
+          exec "$ROOT/runtime/node" "$ROOT/src/cli-entry.js" "$@"
+          EOF
+          chmod +x "$ROOT/patch"
+          cat > "$ROOT/README.txt" <<'EOF'
+          Patch macOS Intel offline compiler native-v1.10 promotion candidate.
+          Default Window linking remains payload v17/runtime v1.8.
+          Explicit --gui-payload-version 19 uses the digest-verified universal runtime v1.10 candidate.
+          This kit is CI evidence only and does not change Current Ready.
+          EOF
+          node scripts/create-native-v110-promotion-project.js --out dist-smoke/WindowIconsPromotion.patchproject --target native-macos
+
+      - name: Smoke Intel default v17 and explicit v19 paths
+        shell: bash
+        env:
+          PATCH_NATIVE_HEADLESS: '1'
+        run: |
+          set -euo pipefail
+          KIT=dist-intel/patch-macos-x64-v110-candidate
+          "$KIT/patch" link examples/responsive-window.patch --name IntelCurrent --out dist-smoke/IntelCurrent.app
+          current=dist-smoke/IntelCurrent.app/Contents/MacOS/IntelCurrent
+          "$current" --patch-smoke
+          "$KIT/patch" link dist-smoke/WindowIconsPromotion.patchproject --gui-payload-version 19 --name IntelPromotion --out dist-smoke/IntelPromotion.app
+          candidate=dist-smoke/IntelPromotion.app/Contents/MacOS/IntelPromotion
+          "$candidate" --patch-smoke
+          test -s dist-smoke/IntelPromotion.app/Contents/Resources/IntelPromotion.icns
+          node - "$current" "$candidate" <<'NODE'
+          const fs=require('fs');
+          const current=fs.readFileSync(process.argv[2]);
+          const candidate=fs.readFileSync(process.argv[3]);
+          if(current.readUInt32LE(current.length-12)!==17) throw new Error('Intel default output is not payload v17.');
+          if(candidate.readUInt32LE(candidate.length-12)!==19) throw new Error('Intel promotion output is not payload v19.');
+          NODE
+          (cd dist-intel && tar -czf patch-macos-x64-v110-candidate.tar.gz patch-macos-x64-v110-candidate)
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: offline-compiler-native-v110-macos-intel
+          path: dist-intel/patch-macos-x64-v110-candidate.tar.gz
+          if-no-files-found: error
+          retention-days: 14
