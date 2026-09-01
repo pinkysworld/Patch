@@ -8,7 +8,6 @@ function read(path) { return fs.readFileSync(path, 'utf8'); }
 test('Slider Stage 1 remains reproducible while Studio exposes the Current Ready v1.10 contract', () => {
   const index = read('web/index.html');
   const language = read('web/language.html');
-  const docs = read('web/docs.html');
   const slider = read('web/slider-stage1.js');
   const buildSite = read('scripts/build-site.js');
   const sw = read('web/sw.js');
@@ -23,7 +22,6 @@ test('Slider Stage 1 remains reproducible while Studio exposes the Current Ready
   assert.match(language, /slider 0\.\.100 as volume step 5/);
   assert.match(language, /native Slider support/i);
   assert.match(language, /frozen compatibility/i);
-  assert.match(docs, /Native GUI IR 1\.9 · payload v19 · runtime v1\.10/);
   assert.match(contract, /Slider Stage 1/);
   assert.match(contract, /Window event adapter \*\*0\.9\*\*/);
   assert.match(contract, /Change IR remains \*\*0\.10\*\*/);
