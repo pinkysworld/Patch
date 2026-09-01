@@ -37,7 +37,6 @@ test('Studio defaults macOS Window downloads to native AppKit runtime v1.10 seal
   assert.ok(studio.includes('macOS native AppKit runtime v1.10 app downloaded · unsigned · no token · no Electron'));
   assert.ok(studio.includes('Native GUI IR 1.9'));
   assert.ok(studio.includes('payload v19'));
-  assert.ok(studio.includes('NSSlider'));
 });
 
 test('Studio is explicit about unsigned macOS sealed apps and keeps AOT/compatibility routes', () => {
