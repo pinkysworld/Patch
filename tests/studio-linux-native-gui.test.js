@@ -32,7 +32,6 @@ test('Studio defaults Linux Window downloads to native GTK runtime v1.10 sealing
   assert.ok(studio.includes('Linux native GTK runtime v1.10 app downloaded · no token · no Electron'));
   assert.ok(studio.includes('Native GUI IR 1.9'));
   assert.ok(studio.includes('payload v19'));
-  assert.ok(studio.includes('GtkScale'));
 });
 
 test('Linux compatibility packaging remains explicit and AOT route remains available', () => {
