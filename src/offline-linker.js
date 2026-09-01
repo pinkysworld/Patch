@@ -191,7 +191,7 @@ function requiredRuntime(value, label) {
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
   if (version === 12 || version === 17 || version === 19) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12, v17 or v19, not '${value}'.`);
+  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v17, plus explicit promotion-candidate v19, not '${value}'.`);
 }
 
 function normalizePlatform(value) {
