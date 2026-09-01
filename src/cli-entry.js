@@ -113,8 +113,11 @@ function appName(filePath) {
 
 function selectGuiRuntimePath(payloadVersion) {
   const requested = Number(payloadVersion ?? 17);
-  if (requested === 19 && process.env.PATCH_OFFLINE_GUI_RUNTIME_V19) {
-    return process.env.PATCH_OFFLINE_GUI_RUNTIME_V19;
+  if (requested === 19) {
+    if (process.env.PATCH_OFFLINE_GUI_RUNTIME_V19) return process.env.PATCH_OFFLINE_GUI_RUNTIME_V19;
+    if (process.env.PATCH_OFFLINE_COMPILER_PLATFORM) {
+      throw new Error('Offline Compiler payload v19 needs the embedded runtime v1.10 promotion asset; this compiler carries only the Current Ready GUI runtime.');
+    }
   }
   return process.env.PATCH_OFFLINE_GUI_RUNTIME;
 }
