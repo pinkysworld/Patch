@@ -5,7 +5,6 @@ import { compile } from '../src/compiler.js';
 import { PatchInterpreter } from '../src/interpreter.js';
 import { addDesignerControl, addDesignerWindow, listDesignerWindows, updateDesignerWindow } from '../src/designer.js';
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
-import { NativeGuiError } from '../src/native-gui-frozen-lower.js';
 import { buildStandaloneWebApp } from '../src/webapp.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 
@@ -95,10 +94,9 @@ test('Standalone Web fails closed when a Window icon names a missing project res
   );
 });
 
-test('current native GUI fail-closes Window icons instead of dropping them', () => {
+test('current native GUI transports Window icons through IR 1.9', () => {
   const compiled = compile(SOURCE, { name: 'Counter', kind: 'window' });
-  assert.throws(
-    () => buildCurrentNativeGuiIR(compiled),
-    error => error instanceof NativeGuiError && /native GUI Form 'main' does not transport icon/.test(error.message)
-  );
+  const ir = buildCurrentNativeGuiIR(compiled);
+  assert.equal(ir.version, '1.9');
+  assert.deepEqual(ir.forms[0].icon, { resourceId: 'app.icon', application: true });
 });
