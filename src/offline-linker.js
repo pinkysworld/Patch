@@ -9,7 +9,7 @@ import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
 import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
 import { buildNativeGuiIRV19 } from './native-gui-ir-v19.js';
-import { sealNativeGuiRuntimeV19 } from './sealed-native-gui-v19.js';
+import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
 export const PATCH_OFFLINE_LINKER_VERSION = '0.1';
@@ -69,11 +69,15 @@ export function createOfflineLinkPlan(source, options = {}) {
       : buildFrozenNativeGuiIR(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
   const resources = options.resources ?? [];
-  const sealed = guiPayloadVersion === 19
-    ? sealNativeGuiRuntimeV19(runtime, nativeGui, { platform, resources })
-    : guiPayloadVersion === 12
-      ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
-      : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform, resources });
+
+  if (guiPayloadVersion === 19) {
+    const packagePlan = createNativeWindowIconPackagePlanV110(runtime, nativeGui, { platform, name, resources });
+    return packageV110OfflinePlan(packagePlan, kind);
+  }
+
+  const sealed = guiPayloadVersion === 12
+    ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
+    : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform, resources });
   return binaryPlan({ platform, kind, name, sealed });
 }
 
@@ -97,15 +101,56 @@ export function materializeOfflineLinkPlan(plan, options = {}) {
   }
 
   const output = normalizeBinaryOutput(options.out ?? plan.suggestedOutput, plan.platform);
-  fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
+  const root = path.dirname(path.resolve(output));
+  fs.mkdirSync(root, { recursive: true });
   fs.writeFileSync(output, plan.files[0].bytes);
-  if (plan.platform !== 'windows') fs.chmodSync(output, 0o755);
+  if (plan.platform !== 'windows') fs.chmodSync(output, plan.files[0].mode || 0o755);
+  for (const file of plan.files.slice(1)) {
+    const target = path.join(root, ...file.path.split('/'));
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, file.bytes);
+    if (file.mode) fs.chmodSync(target, file.mode);
+  }
   return { ...plan, output };
 }
 
 export function linkPatchSource(source, options = {}) {
   const plan = createOfflineLinkPlan(source, options);
   return materializeOfflineLinkPlan(plan, options);
+}
+
+function packageV110OfflinePlan(packagePlan, kind) {
+  const platform = packagePlan.platform;
+  let files = packagePlan.files.map(file => ({
+    path: file.path,
+    bytes: file.bytes,
+    mode: file.mode ? (file.mode & 0o777) : 0o644
+  }));
+  if (platform === 'macos') {
+    const prefix = `${packagePlan.bundle}/`;
+    files = files.map(file => {
+      if (!file.path.startsWith(prefix)) {
+        throw new OfflineLinkError(`Runtime-v1.10 macOS package file '${file.path}' is outside '${packagePlan.bundle}'.`);
+      }
+      return { ...file, path: file.path.slice(prefix.length) };
+    });
+  }
+  return {
+    format: 'patch-offline-link-plan',
+    version: PATCH_OFFLINE_LINKER_VERSION,
+    platform,
+    kind,
+    name: packagePlan.name,
+    outputKind: packagePlan.outputKind,
+    suggestedOutput: packagePlan.bundle ?? packagePlan.executable,
+    files,
+    nativePackageId: packagePlan.id,
+    nativeGuiIr: packagePlan.nativeGuiIr,
+    guiPayloadVersion: packagePlan.payload,
+    guiRuntimeVersion: packagePlan.runtime,
+    peIconEmbedded: packagePlan.peIconEmbedded,
+    iconPackaging: packagePlan.iconPackaging
+  };
 }
 
 function binaryPlan({ platform, kind, name, sealed }) {
