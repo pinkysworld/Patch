@@ -118,16 +118,21 @@ export function buildDiagnosticAssist(diagnostic, context = {}) {
 
   if (/TreeView is not enabled for this Window target/i.test(message)) {
     const platform = normalizeAssistPlatform(context.platform ?? context.buildTarget);
+    const recommendedTarget = platform && ['macos', 'windows', 'linux'].includes(platform) ? `native-${platform}` : '';
+    const currentTarget = String(context.buildTarget ?? '');
+    const alreadySelected = Boolean(recommendedTarget) && currentTarget === recommendedTarget;
     return {
       ...base,
       title: 'TreeView needs a compatible native contract',
       what: platform ? `This ${assistPlatformLabel(platform)} GUI build reached a TreeView capability boundary.` : 'This GUI build reached a TreeView capability boundary.',
       why: '“Window” means Patch’s GUI project type, not Microsoft Windows. TreeView support is versioned per build path, so Patch fails closed instead of silently dropping the control.',
-      recommendation: platform && ['macos', 'windows', 'linux'].includes(platform)
-        ? `Use the current ${assistPlatformLabel(platform)} native build path. If it is already selected, this indicates a Studio/runtime contract mismatch rather than an error in your TreeView source.`
-        : 'Choose a current Windows, macOS or Linux native target that advertises TreeView support.',
-      fix: platform && ['macos', 'windows', 'linux'].includes(platform)
-        ? { kind: 'select-build-target', value: `native-${platform}`, label: `Use current ${assistPlatformLabel(platform)} native target` }
+      recommendation: alreadySelected
+        ? `The current ${assistPlatformLabel(platform)} native target is already selected, so this points to a Studio/runtime contract mismatch rather than an error in your TreeView source.`
+        : recommendedTarget
+          ? `Use the current ${assistPlatformLabel(platform)} native build path.`
+          : 'Choose a current Windows, macOS or Linux native target that advertises TreeView support.',
+      fix: recommendedTarget && !alreadySelected
+        ? { kind: 'select-build-target', value: recommendedTarget, label: `Use current ${assistPlatformLabel(platform)} native target` }
         : null
     };
   }
@@ -157,6 +162,21 @@ export function buildDiagnosticAssist(diagnostic, context = {}) {
       why: 'Event handlers are bound by explicit source-backed control names.',
       recommendation: candidate ? `Did you mean “${candidate}”?` : 'Choose the exact name that follows `as` on the intended control.',
       fix: candidate && location?.line ? { kind: 'replace-token-on-line', line: location.line, from: missing, to: candidate, label: `Change ${missing} to ${candidate}` } : null
+    };
+  }
+
+  const eventMismatch = message.match(/^(Table|TreeView|Slider|Timer|PictureBox|PaintBox) '([^']+)' exposes only '([^']+)'[^,]*, not '([^']+)'\.?$/i);
+  if (eventMismatch) {
+    const [, controlType, control, expected, actual] = eventMismatch;
+    return {
+      ...base,
+      title: `${controlType} uses “${expected}” here`,
+      what: `The event handler for “${control}” uses “${actual}”, but this ${controlType} exposes “${expected}”.`,
+      why: 'Patch keeps each GUI control’s event contract explicit so an unsupported event cannot be silently ignored.',
+      recommendation: `Change the event from “${actual}” to “${expected}”.`,
+      fix: location?.line
+        ? { kind: 'replace-event-on-line', line: location.line, control, from: actual, to: expected, label: `Use ${expected}` }
+        : null
     };
   }
 
@@ -199,12 +219,22 @@ export function buildDiagnosticAssist(diagnostic, context = {}) {
 
 export function applyDiagnosticFix(source, fix) {
   const text = String(source ?? '');
-  if (!fix || !['replace-token-on-line', 'replace-line'].includes(fix.kind)) return text;
+  if (!fix || !['replace-token-on-line', 'replace-line', 'replace-event-on-line'].includes(fix.kind)) return text;
   const lines = text.split(/\r?\n/);
   const index = Number(fix.line) - 1;
   if (!Number.isInteger(index) || index < 0 || index >= lines.length) return text;
   if (fix.kind === 'replace-line') {
     lines[index] = String(fix.value ?? lines[index]);
+    return lines.join('\n');
+  }
+  if (fix.kind === 'replace-event-on-line') {
+    const control = String(fix.control ?? '');
+    const from = String(fix.from ?? '');
+    const to = String(fix.to ?? '');
+    if (!control || !from || !to || from === to) return text;
+    const pattern = new RegExp(`^(\\s*when\\s+${escapeAssistRegExp(control)}\\s+)${escapeAssistRegExp(from)}(\\s*:)`);
+    if (!pattern.test(lines[index])) return text;
+    lines[index] = lines[index].replace(pattern, `$1${to}$2`);
     return lines.join('\n');
   }
   const from = String(fix.from ?? '');
