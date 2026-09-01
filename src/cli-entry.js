@@ -9,6 +9,7 @@ import {
   patchComponentCapabilityMatrix
 } from './component-matrix.js';
 import { collectDoctorReport, formatDoctorReport } from './doctor.js';
+import { readOfflineLinkInput } from './offline-link-input.js';
 import { linkPatchSource } from './offline-linker.js';
 
 const argv = process.argv.slice(2);
@@ -32,21 +33,22 @@ if (command === 'link') {
   const args = argv.slice(1);
   const file = args.shift();
   if (!file) {
-    console.error('Use: patch link program.patch [--out App] [--name AppName] [--gui-payload-version 12|13]');
+    console.error('Use: patch link program.patch|project.patchproject [--out App] [--name AppName] [--gui-payload-version 12|17|19]');
     process.exit(1);
   }
   try {
-    const source = fs.readFileSync(file, 'utf8');
-    const name = option(args, '--name') ?? appName(file);
+    const input = readOfflineLinkInput(file);
+    const name = option(args, '--name') ?? input.name ?? appName(file);
     const out = option(args, '--out');
     const guiPayloadVersion = option(args, '--gui-payload-version')
       ?? process.env.PATCH_OFFLINE_GUI_PAYLOAD_VERSION
       ?? process.env.PATCH_SEALED_GUI_VERSION;
-    const linked = linkPatchSource(source, {
+    const linked = linkPatchSource(input.source, {
       name,
-      entry: path.basename(file),
+      entry: input.entry,
       out,
       guiPayloadVersion,
+      resources: input.resources,
       nodeRuntime: readRuntime(process.env.PATCH_OFFLINE_NODE_RUNTIME),
       consoleRuntime: readRuntime(process.env.PATCH_OFFLINE_CONSOLE_RUNTIME),
       guiRuntime: readRuntime(process.env.PATCH_OFFLINE_GUI_RUNTIME)
