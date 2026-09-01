@@ -88,7 +88,7 @@ test('Standalone Web applies source-backed Picture fit, center, opacity and acce
   assert.match(built.html, /control\.description/);
 });
 
-test('native GUI 1.4 keeps default Picture display and fail-closes non-default fit, center and opacity', () => {
+test('current native GUI keeps default Picture display and fail-closes non-default fit, center and opacity', () => {
   const defaults = compile(`window "Photos":\n  picture as logo from "images/logo.png" description "Logo"\n`, {
     name: 'Photos',
     kind: 'window',
@@ -99,7 +99,7 @@ test('native GUI 1.4 keeps default Picture display and fail-closes non-default f
   assert.equal(picture.source, 'images/logo.png');
   assert.equal(picture.text, 'Logo');
   assert.equal(picture.fit, undefined);
-  assert.equal(ir.version, '1.7');
+  assert.equal(ir.version, '1.9');
 
   assert.throws(
     () => buildCurrentNativeGuiIR(compile(DISPLAY, { name: 'Gallery', kind: 'window', entry: 'main.patch' })),
