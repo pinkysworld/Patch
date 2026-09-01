@@ -20,6 +20,29 @@ on:
       - 'tests/native-window-icon-v19.test.js'
       - 'tests/native-window-icon-payload-v19.test.js'
       - 'tests/native-runtime-v110-sources.test.js'
+      - 'tests/native-runtime-v110-release-workflow.test.js'
+      - 'tests/windows-pe-icon-v110.test.js'
+      - '.github/workflows/native-sealed-window-icon-runtime-v110.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/sealed-native-gui-v19.js'
+      - 'src/native-gui-ir-v19.js'
+      - 'src/native-window-icon-backend-adapter.js'
+      - 'src/windows-pe-icon-v110.js'
+      - 'native-runtime/sealed-button-image-v19.hpp'
+      - 'native-runtime/sealed-window-icon-v110.hpp'
+      - 'native-runtime/win32-sealed-gui-v19.cpp'
+      - 'native-runtime/appkit-sealed-gui-v19.mm'
+      - 'native-runtime/gtk-sealed-gui-v19.cpp'
+      - 'native-runtime/win32-sealed-gui-v110.cpp'
+      - 'native-runtime/appkit-sealed-gui-v110.mm'
+      - 'native-runtime/gtk-sealed-gui-v110.cpp'
+      - 'examples/window-icons-native.patch'
+      - 'tests/native-window-icon-v19.test.js'
+      - 'tests/native-window-icon-payload-v19.test.js'
+      - 'tests/native-runtime-v110-sources.test.js'
+      - 'tests/native-runtime-v110-release-workflow.test.js'
       - 'tests/windows-pe-icon-v110.test.js'
       - '.github/workflows/native-sealed-window-icon-runtime-v110.yml'
   workflow_dispatch:
@@ -40,8 +63,8 @@ jobs:
         with:
           node-version: 26
           package-manager-cache: false
-      - name: Test payload v19, runtime v1.10 and Windows PE icon contracts
-        run: node --test tests/native-window-icon-v19.test.js tests/native-window-icon-payload-v19.test.js tests/native-runtime-v110-sources.test.js tests/windows-pe-icon-v110.test.js
+      - name: Test payload v19, runtime v1.10, release and Windows PE icon contracts
+        run: node --test tests/native-window-icon-v19.test.js tests/native-window-icon-payload-v19.test.js tests/native-runtime-v110-sources.test.js tests/native-runtime-v110-release-workflow.test.js tests/windows-pe-icon-v110.test.js
 
   windows:
     needs: contract
@@ -60,7 +83,7 @@ jobs:
           @'
           import fs from 'node:fs';
           import { createWindowsPeIconPlaceholderIcoV110 } from './src/windows-pe-icon-v110.js';
-          const data = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAACX0lEQVR42u3UMQEAAAjDsOmcfx9gAAfkiIEeTdsBfooIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAQYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGAAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAcFlwKx7E858ZqQAAAABJRU5ErkJggg==';
+          const data = 'iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAACX0lEQVR42u3UMQEAAAjDsOmcfx9gAAfkiIEeTdsBfooIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAIYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGIAQYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGABgAIABAAYAGAAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYAGAAgAEABgAYABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAYACAAQAGABgAcFlwKx7E858ZqQAAAABJRU5ErkJggg==';
           const png = new Uint8Array(Buffer.from(data, 'base64'));
           fs.writeFileSync('dist-runtime-v110/runtime-placeholder.ico', createWindowsPeIconPlaceholderIcoV110(png));
           fs.writeFileSync('dist-runtime-v110/runtime-placeholder.rc', '1 ICON "runtime-placeholder.ico"\r\n');
@@ -219,3 +242,113 @@ jobs:
           path: dist-runtime-v110/patch-linux-native-gui-runtime.bin
           if-no-files-found: error
           retention-days: 7
+
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-windows-native-gui-runtime-v110-pr
+          path: runtime/windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-macos-native-gui-runtime-v110-pr
+          path: runtime/macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: patch-linux-native-gui-runtime-v110-pr
+          path: runtime/linux
+      - name: Generate native runtime v1.10 SHA-256 files
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd runtime/windows && sha256sum patch-windows-native-gui-runtime.exe > SHA256SUMS.txt)
+          (cd runtime/macos && sha256sum patch-macos-native-gui-runtime.bin > SHA256SUMS.txt)
+          (cd runtime/linux && sha256sum patch-linux-native-gui-runtime.bin > SHA256SUMS.txt)
+      - name: Preserve release-candidate bytes and digests for audit
+        uses: actions/upload-artifact@v7
+        with:
+          name: patch-native-runtime-v110-release-candidate
+          path: |
+            runtime/windows/patch-windows-native-gui-runtime.exe
+            runtime/windows/SHA256SUMS.txt
+            runtime/macos/patch-macos-native-gui-runtime.bin
+            runtime/macos/SHA256SUMS.txt
+            runtime/linux/patch-linux-native-gui-runtime.bin
+            runtime/linux/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish immutable native runtime v1.10 promotion-candidate releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish_runtime() {
+            local tag="$1" title="$2" dir="$3" asset="$4" notes="$5"
+            if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              local tag_sha
+              tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+              if [[ "$tag_sha" != "$GITHUB_SHA" ]]; then
+                echo "Refusing to replace immutable runtime release $tag: tag is $tag_sha, current source is $GITHUB_SHA." >&2
+                exit 1
+              fi
+            else
+              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$title" --notes "$notes"
+            fi
+            gh release upload "$tag" "$dir/$asset" "$dir/SHA256SUMS.txt" --repo "$GITHUB_REPOSITORY" --clobber
+          }
+
+          notes='Promotion-candidate runtime v1.10 for Native GUI IR 1.9 / payload v19. Includes Button/ImageList asset transport plus application/window icon transport and platform packaging support. Publishing this runtime does not promote the Patch Current Ready contract; Current Ready remains IR 1.7 / payload v17 / runtime v1.8 until Offline Compiler and product-contract promotion gates pass.'
+          publish_runtime native-win32-runtime-v1.10 'Patch Native Win32 Runtime v1.10' runtime/windows patch-windows-native-gui-runtime.exe "$notes"
+          publish_runtime native-macos-runtime-v1.10 'Patch Native macOS Runtime v1.10' runtime/macos patch-macos-native-gui-runtime.bin "$notes"
+          publish_runtime native-linux-runtime-v1.10 'Patch Native Linux Runtime v1.10' runtime/linux patch-linux-native-gui-runtime.bin "$notes"
+
+  verify-published:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download and verify published runtime bytes, SHA256SUMS and GitHub digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          verify_runtime() {
+            local tag="$1" asset="$2"
+            local dir="verify/$tag"
+            mkdir -p "$dir"
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "$asset" --pattern 'SHA256SUMS.txt' --dir "$dir"
+            grep -Eq "^[0-9a-f]{64}  ${asset}$" "$dir/SHA256SUMS.txt"
+            (cd "$dir" && sha256sum -c SHA256SUMS.txt)
+
+            local expected recorded checksum_digest tag_sha
+            expected="sha256:$(awk '{print $1}' "$dir/SHA256SUMS.txt")"
+            recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq ".assets[] | select(.name == \"$asset\") | .digest")"
+            checksum_digest="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq '.assets[] | select(.name == "SHA256SUMS.txt") | .digest')"
+            tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
+
+            if [[ "$recorded" != "$expected" ]]; then
+              echo "Published GitHub digest mismatch for $tag/$asset: expected $expected, recorded $recorded" >&2
+              exit 1
+            fi
+            if [[ ! "$checksum_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "Published checksum asset for $tag has no valid GitHub SHA-256 digest: $checksum_digest" >&2
+              exit 1
+            fi
+            if [[ "$tag_sha" != "$GITHUB_SHA" ]]; then
+              echo "Published runtime tag $tag is not bound to source commit $GITHUB_SHA: $tag_sha" >&2
+              exit 1
+            fi
+          }
+
+          verify_runtime native-win32-runtime-v1.10 patch-windows-native-gui-runtime.exe
+          verify_runtime native-macos-runtime-v1.10 patch-macos-native-gui-runtime.bin
+          verify_runtime native-linux-runtime-v1.10 patch-linux-native-gui-runtime.bin
