@@ -1,14 +1,63 @@
 import { PATCH_FROZEN_NATIVE_PAYLOAD_VERSION, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
-import { PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
+import { PATCH_CURRENT_NATIVE_PAYLOAD_VERSION } from './native-current-contract.js';
+import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 
-export const PATCH_SEALED_NATIVE_PACKAGE_VERSION = '0.2';
+export const PATCH_SEALED_NATIVE_PACKAGE_VERSION = '0.3';
 
 export class SealedNativePackageError extends Error {}
+
+export function buildWindowsNativeGuiExecutable(runtimeBytes, nativeGui, options = {}) {
+  const name = safeFileName(options.name ?? 'PatchApp');
+  requireCurrentPayload(options.payloadVersion);
+  const plan = createNativeWindowIconPackagePlanV110(toBytes(runtimeBytes), nativeGui, {
+    platform: 'windows',
+    name,
+    resources: options.resources ?? []
+  });
+  const executable = plan.files.find(file => file.path === plan.executable);
+  if (!executable) throw new SealedNativePackageError('Current Ready Windows package plan is missing its executable.');
+  return {
+    format: 'patch-sealed-windows-native-gui-executable',
+    version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
+    platform: 'windows',
+    kind: 'window',
+    name,
+    filename: plan.executable,
+    executable: plan.executable,
+    sealedBytes: plan.sealedBytes,
+    bytes: executable.bytes,
+    peIconEmbedded: plan.peIconEmbedded,
+    iconPackaging: plan.iconPackaging
+  };
+}
 
 export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'linux', payloadVersion: options.payloadVersion, resources: options.resources });
+  if (Number(options.payloadVersion) === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
+    const plan = createNativeWindowIconPackagePlanV110(runtime, nativeGui, {
+      platform: 'linux',
+      name,
+      resources: options.resources ?? []
+    });
+    return {
+      format: 'patch-sealed-linux-native-gui-package',
+      version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
+      platform: 'linux',
+      kind: 'window',
+      name,
+      filename: `${name}-linux-window.zip`,
+      executable: plan.executable,
+      sealedBytes: plan.sealedBytes,
+      iconPackaging: plan.iconPackaging,
+      bytes: storedZip(plan.files.map(file => ({ name: file.path, data: file.bytes, mode: file.mode })))
+    };
+  }
+  const sealed = sealLegacyNativeGuiPackageRuntime(runtime, nativeGui, {
+    platform: 'linux',
+    payloadVersion: options.payloadVersion,
+    resources: options.resources
+  });
   return {
     format: 'patch-sealed-linux-native-gui-package',
     version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
@@ -25,7 +74,32 @@ export function buildLinuxNativeGuiPackage(runtimeBytes, nativeGui, options = {}
 export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}) {
   const name = safeFileName(options.name ?? 'PatchApp');
   const runtime = toBytes(runtimeBytes);
-  const sealed = sealNativeGuiPackageRuntime(runtime, nativeGui, { platform: 'macos', payloadVersion: options.payloadVersion, resources: options.resources });
+  if (Number(options.payloadVersion) === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
+    const plan = createNativeWindowIconPackagePlanV110(runtime, nativeGui, {
+      platform: 'macos',
+      name,
+      resources: options.resources ?? []
+    });
+    return {
+      format: 'patch-sealed-macos-native-gui-package',
+      version: PATCH_SEALED_NATIVE_PACKAGE_VERSION,
+      platform: 'macos',
+      kind: 'window',
+      name,
+      bundle: plan.bundle,
+      filename: `${name}-macos-window.zip`,
+      executable: plan.executable,
+      sealedBytes: plan.sealedBytes,
+      iconPackaging: plan.iconPackaging,
+      bytes: storedZip(plan.files.map(file => ({ name: file.path, data: file.bytes, mode: file.mode })))
+    };
+  }
+
+  const sealed = sealLegacyNativeGuiPackageRuntime(runtime, nativeGui, {
+    platform: 'macos',
+    payloadVersion: options.payloadVersion,
+    resources: options.resources
+  });
   const bundle = `${name}.app`;
   const executablePath = `${bundle}/Contents/MacOS/${name}`;
   const plistPath = `${bundle}/Contents/Info.plist`;
@@ -50,11 +124,16 @@ export function buildMacosNativeGuiPackage(runtimeBytes, nativeGui, options = {}
   };
 }
 
-function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion, resources }) {
-  const version = Number(payloadVersion);
-  if (version === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
-    return sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform, resources });
+function requireCurrentPayload(payloadVersion) {
+  if (Number(payloadVersion) !== PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
+    throw new SealedNativePackageError(
+      `Windows Current Ready package requires payload v${PATCH_CURRENT_NATIVE_PAYLOAD_VERSION}, not '${payloadVersion}'.`
+    );
   }
+}
+
+function sealLegacyNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVersion, resources }) {
+  const version = Number(payloadVersion);
   if (version === PATCH_FROZEN_NATIVE_PAYLOAD_VERSION) {
     if (Array.isArray(resources) && resources.length) {
       throw new SealedNativePackageError('Project Picture resources require the current native payload/runtime contract.');
@@ -62,7 +141,7 @@ function sealNativeGuiPackageRuntime(runtime, nativeGui, { platform, payloadVers
     return sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform });
   }
   throw new SealedNativePackageError(
-    `Ready/offline native packages support payload v${PATCH_FROZEN_NATIVE_PAYLOAD_VERSION} or v${PATCH_CURRENT_NATIVE_PAYLOAD_VERSION}, not '${payloadVersion}'.`
+    `Ready/offline native packages support current payload v${PATCH_CURRENT_NATIVE_PAYLOAD_VERSION} or frozen payload v${PATCH_FROZEN_NATIVE_PAYLOAD_VERSION}, not '${payloadVersion}'.`
   );
 }
 
