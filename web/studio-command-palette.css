@@ -1,6 +1,7 @@
 .command-palette {
   width: min(680px, calc(100% - 28px));
   max-height: min(78vh, 760px);
+  max-height: min(78dvh, 760px);
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--border-strong);
@@ -21,6 +22,7 @@
   flex-direction: column;
   min-height: 0;
   max-height: min(78vh, 760px);
+  max-height: min(78dvh, 760px);
 }
 
 .command-palette-header {
@@ -55,6 +57,7 @@
   min-height: 0;
   padding: 8px;
   overflow: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
 }
 
@@ -184,12 +187,42 @@
 }
 
 @media (max-width: 560px) {
-  .command-palette { width: calc(100% - 16px); }
+  .command-palette {
+    width: 100%;
+    max-width: none;
+    height: min(88dvh, 720px);
+    max-height: 88vh;
+    max-height: 88dvh;
+    margin: auto 0 0;
+    border-radius: 18px 18px 0 0;
+    border-bottom: 0;
+  }
+
+  .command-palette-shell {
+    height: 100%;
+    max-height: none;
+  }
+
   .command-palette-header { padding: 9px; }
   .command-palette-hint,
   .command-palette-item kbd,
   .command-palette-footer span:last-child { display: none; }
   .command-palette-copy > span:not(.command-palette-label-row) { white-space: normal; }
+  .command-palette-footer { padding-bottom: max(9px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-height: 560px) {
+  .command-palette {
+    max-height: 94vh;
+    max-height: 94dvh;
+  }
+
+  .command-palette-shell {
+    max-height: 94vh;
+    max-height: 94dvh;
+  }
+
+  .command-palette-item { min-height: 50px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
