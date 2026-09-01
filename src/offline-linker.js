@@ -7,8 +7,13 @@ import { compileToDirectWasm } from './wasm-direct.js';
 import { compileToC99 } from './c99.js';
 import { validateWindowRuntimeSupport } from './window-build.js';
 import { buildFrozenNativeGuiIR, sealFrozenNativeGuiRuntime } from './native-frozen-contract.js';
-import { buildCurrentNativeGuiIR, sealCurrentNativeGuiRuntime } from './native-current-contract.js';
-import { buildNativeGuiIRV19 } from './native-gui-ir-v19.js';
+import {
+  PATCH_CURRENT_NATIVE_PAYLOAD_VERSION,
+  buildCurrentNativeGuiIR
+} from './native-current-contract.js';
+import { buildNativeGuiIRV17 } from './native-gui-ir-v17.js';
+import { sealNativeGuiRuntimeV17 } from './sealed-native-gui-v17.js';
+import { resolveNativePictureResources } from './native-picture-resources.js';
 import { createNativeWindowIconPackagePlanV110 } from './native-window-icon-package-v110.js';
 import { sealConsoleRuntimeBinary } from './prebuilt-native.js';
 
@@ -49,7 +54,7 @@ export function createOfflineLinkPlan(source, options = {}) {
     return binaryPlan({ platform, kind, name, sealed });
   }
 
-  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? 17);
+  const guiPayloadVersion = normalizeGuiPayloadVersion(options.guiPayloadVersion ?? PATCH_CURRENT_NATIVE_PAYLOAD_VERSION);
   validateWindowRuntimeSupport(compiled, {
     allowTables: true,
     allowLists: true,
@@ -61,22 +66,26 @@ export function createOfflineLinkPlan(source, options = {}) {
     allowImageList: guiPayloadVersion === 19
   });
 
-  const nativeGui = guiPayloadVersion === 19
-    ? buildNativeGuiIRV19(compiled)
+  const nativeGui = guiPayloadVersion === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION
+    ? buildCurrentNativeGuiIR(compiled)
     : guiPayloadVersion === 17
-      ? buildCurrentNativeGuiIR(compiled)
+      ? buildNativeGuiIRV17(compiled)
       : buildFrozenNativeGuiIR(compiled);
   const runtime = requiredRuntime(options.guiRuntime, `${platform} Window`);
   const resources = options.resources ?? [];
 
-  if (guiPayloadVersion === 19) {
+  if (guiPayloadVersion === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
     const packagePlan = createNativeWindowIconPackagePlanV110(runtime, nativeGui, { platform, name, resources });
     return packageV110OfflinePlan(packagePlan, kind);
   }
 
-  const sealed = guiPayloadVersion === 12
-    ? sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform })
-    : sealCurrentNativeGuiRuntime(runtime, nativeGui, { platform, resources });
+  if (guiPayloadVersion === 17) {
+    const resolved = resolveNativePictureResources(nativeGui, resources);
+    const sealed = sealNativeGuiRuntimeV17(runtime, resolved.ir, { platform });
+    return binaryPlan({ platform, kind, name, sealed });
+  }
+
+  const sealed = sealFrozenNativeGuiRuntime(runtime, nativeGui, { platform });
   return binaryPlan({ platform, kind, name, sealed });
 }
 
@@ -235,7 +244,7 @@ function requiredRuntime(value, label) {
 function normalizeGuiPayloadVersion(value) {
   const version = Number(value);
   if (version === 12 || version === 17 || version === 19) return version;
-  throw new OfflineLinkError(`Offline Window linking supports sealed GUI payload v12 or v17, plus explicit promotion-candidate v19, not '${value}'.`);
+  throw new OfflineLinkError(`Offline Window linking supports current payload v19 plus compatibility payloads v17 and v12, not '${value}'.`);
 }
 
 function normalizePlatform(value) {
