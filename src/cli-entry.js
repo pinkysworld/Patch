@@ -11,6 +11,7 @@ import {
 import { collectDoctorReport, formatDoctorReport } from './doctor.js';
 import { readOfflineLinkInput } from './offline-link-input.js';
 import { linkPatchSource } from './offline-linker.js';
+import { PATCH_CURRENT_NATIVE_PAYLOAD_VERSION } from './native-current-contract.js';
 
 const argv = process.argv.slice(2);
 const command = argv[0];
@@ -112,11 +113,11 @@ function appName(filePath) {
 }
 
 function selectGuiRuntimePath(payloadVersion) {
-  const requested = Number(payloadVersion ?? 17);
-  if (requested === 19) {
+  const requested = Number(payloadVersion ?? PATCH_CURRENT_NATIVE_PAYLOAD_VERSION);
+  if (requested === PATCH_CURRENT_NATIVE_PAYLOAD_VERSION) {
     if (process.env.PATCH_OFFLINE_GUI_RUNTIME_V19) return process.env.PATCH_OFFLINE_GUI_RUNTIME_V19;
     if (process.env.PATCH_OFFLINE_COMPILER_PLATFORM) {
-      throw new Error('Offline Compiler payload v19 needs the embedded runtime v1.10 promotion asset; this compiler carries only the Current Ready GUI runtime.');
+      throw new Error('Offline Compiler Current Ready payload v19 needs its embedded runtime v1.10 asset; this compiler carries only the legacy GUI runtime.');
     }
   }
   return process.env.PATCH_OFFLINE_GUI_RUNTIME;
