@@ -1,3 +1,4 @@
+import { showDesignerInspectorError } from './designer-inspector-status.js';
 import { removeDesignerForm } from './designer-form-delete-model.js';
 
 const code = document.querySelector('#code');
@@ -65,7 +66,7 @@ function deleteActiveForm(select) {
     queueMicrotask(activatePendingForm);
     requestAnimationFrame(activatePendingForm);
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error);
   }
 }
 
@@ -88,11 +89,4 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
