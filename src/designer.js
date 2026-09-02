@@ -359,7 +359,7 @@ export function removeDesignerControl(source, selector) {
   const control = findControl(controls, selector);
   const lines = normalizeLines(source);
   const lineIndex = control.line - 1;
-  const directiveIndex = layoutDirectiveBefore(lines, lineIndex);
+  const directiveIndex = designerMetadataStartBefore(lines, lineIndex);
   if (control.type === 'tabs' || control.type === 'panel' || control.type === 'table' || control.type === 'tree' || control.type === 'imagelist') {
     const baseIndent = indentOf(lines[lineIndex]).length;
     let end = lineIndex + 1;
@@ -525,9 +525,10 @@ function removeEventBlocks(lines, id) {
   }
 }
 
-function layoutDirectiveBefore(lines, lineIndex) {
-  if (lineIndex < 1) return -1;
-  return /^\s*#\s*@layout\b/i.test(lines[lineIndex - 1]) ? lineIndex - 1 : -1;
+function designerMetadataStartBefore(lines, lineIndex) {
+  let start = lineIndex;
+  while (start > 0 && /^\s*#\s*@(layout|taborder|locked)\b/i.test(lines[start - 1])) start -= 1;
+  return start < lineIndex ? start : -1;
 }
 
 function makeControl(type, lines, layout) {
