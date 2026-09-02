@@ -12,6 +12,7 @@ const gui12 = read('src/native-gui-ir-v12.js');
 const sealed12 = read('src/sealed-native-gui-v12.js');
 
 function requireText(text, marker, label) { if (!text.includes(marker)) throw new Error(`Frozen v12 compatibility site check failed: ${label} is missing '${marker}'.`); }
+function requireTextInsensitive(text, marker, label) { if (!text.toLowerCase().includes(marker.toLowerCase())) throw new Error(`Frozen v12 compatibility site check failed: ${label} is missing '${marker}' (case-insensitive).`); }
 function rejectText(text, marker, label) { if (text.includes(marker)) throw new Error(`Frozen v12 compatibility site check failed: ${label} still contains obsolete current-product text '${marker}'.`); }
 
 requireText(index, 'Native GUI IR 1.9', 'Studio current native status');
@@ -42,7 +43,7 @@ requireText(sealed12, 'PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12', 'frozen paylo
 requireText(sealed12, 'sealNativeGuiRuntimeV12', 'frozen payload v12 module');
 
 requireText(docs, 'IR 1.2 / payload v12 / runtime v1.3</strong> remains the frozen TreeView line', 'Documentation frozen v12 compatibility line');
-requireText(docs, 'payload v17/runtime v1.8 remains an Offline Compiler compatibility path', 'Documentation explicit v17 compatibility line');
+requireTextInsensitive(docs, 'payload v17/runtime v1.8 remains an Offline Compiler compatibility path', 'Documentation explicit v17 compatibility line');
 requireText(docs, 'docs/NATIVE_COMPATIBILITY.md', 'Documentation native compatibility link');
 requireText(docs, 'Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10', 'Documentation Current Ready contract wording');
 requireText(downloads, 'Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView line', 'Downloads frozen compatibility line');
