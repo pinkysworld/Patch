@@ -9,6 +9,7 @@ import {
 export const STUDIO_EDIT_HISTORY_VERSION = '0.1';
 export const STUDIO_EDIT_HISTORY_LIMIT = 80;
 export const STUDIO_EDIT_HISTORY_COALESCE_MS = 850;
+export const STUDIO_VIEW_NAVIGATION_VERSION = '0.1';
 
 const sourceEditor = document.querySelector('#code');
 const saveState = document.querySelector('#saveState');
@@ -21,6 +22,7 @@ let typingGroup = null;
 let typingTimer = null;
 
 installStudioEditHistory();
+installStudioViewNavigation();
 
 function installStudioEditHistory() {
   if (!sourceEditor) return;
@@ -34,6 +36,16 @@ function installStudioEditHistory() {
   window.addEventListener('patch:studio-project-loaded', resetStudioEditHistory);
 
   queueMicrotask(resetStudioEditHistory);
+}
+
+function installStudioViewNavigation() {
+  window.addEventListener('keydown', event => {
+    if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.key !== 'F12' || document.querySelector('dialog[open]')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    toggleSourceDesignerView();
+  }, { capture: true });
 }
 
 function captureSourceEdit(event) {
@@ -219,6 +231,36 @@ function announceHistoryStatus(message) {
   saveState.title = `${canUndoStudioEdit() ? 'Undo available' : 'Undo empty'} · ${canRedoStudioEdit() ? 'Redo available' : 'Redo empty'}`;
 }
 
+export function viewStudioSource() {
+  const selected = document.querySelector('#designerCanvas .designer-selected');
+  const sourceAction = document.querySelector('#designerInspectorSource');
+  if (selected && sourceAction && !sourceAction.disabled) {
+    sourceAction.click();
+    return true;
+  }
+  if (!sourceEditor) return false;
+  sourceEditor.focus({ preventScroll: true });
+  sourceEditor.scrollIntoView({ block: 'center' });
+  return true;
+}
+
+export function viewStudioDesigner() {
+  document.querySelector('#tabDesigner')?.click();
+  requestAnimationFrame(() => {
+    const selected = document.querySelector('#designerCanvas .designer-selected');
+    const target = selected ?? document.querySelector('#designerCanvas .designer-control');
+    if (target && typeof target.focus === 'function') target.focus({ preventScroll: true });
+    (target ?? document.querySelector('#designer'))?.scrollIntoView?.({ block: 'center' });
+  });
+  return Boolean(document.querySelector('#tabDesigner'));
+}
+
+export function toggleSourceDesignerView() {
+  const active = document.activeElement;
+  if (sourceEditor && (active === sourceEditor || sourceEditor.contains?.(active))) return viewStudioDesigner();
+  return viewStudioSource();
+}
+
 const dialog = document.querySelector('#commandPalette');
 const trigger = document.querySelector('#openCommandPalette');
 const statusTrigger = document.querySelector('#statusCommands');
@@ -232,8 +274,9 @@ if (dialog && trigger && input && list && empty) {
     command('build', 'Build selected target', 'Build using the current target selector', 'Ctrl/Cmd + Shift + Enter', 'build compile package target', () => document.querySelector('#build')?.click()),
     command('undo-edit', 'Undo Studio edit', 'Undo the most recent source or Designer transaction', 'Ctrl/Cmd + Z', 'undo history designer source edit', undoStudioEdit),
     command('redo-edit', 'Redo Studio edit', 'Replay the most recently undone Studio transaction', 'Ctrl/Cmd + Shift + Z', 'redo history designer source edit', redoStudioEdit),
-    command('editor', 'Focus source editor', 'Jump to the active Patch source', '', 'source code editor main patch', () => focus('#code')),
-    command('designer', 'Open Designer', 'Show the source-backed visual Designer', '', 'designer form controls visual', () => click('#tabDesigner')),
+    command('toggle-source-designer', 'Toggle Source / Designer', 'Switch between the active Patch source and visual Form Designer', 'F12', 'source designer form code unit toggle view', toggleSourceDesignerView),
+    command('editor', 'Focus source editor', 'Jump to the active Patch source or selected Designer control declaration', '', 'source code editor main patch view source', viewStudioSource),
+    command('designer', 'Open Designer', 'Show the source-backed visual Designer and restore Designer focus', '', 'designer form controls visual view form', viewStudioDesigner),
     command('app', 'Open App preview', 'Show the last running Window app', '', 'app preview window', () => click('#tabApp')),
     command('output', 'Open Output', 'Show runtime and build output', '', 'output console logs', () => click('#tabOutput')),
     command('changes', 'Open Change Contract', 'Inspect semantic changes and capabilities', '', 'changes contract capabilities policy', () => click('#tabChanges')),
