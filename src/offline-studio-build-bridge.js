@@ -99,11 +99,11 @@ export function resolveOfflineBuildWorkspace(workspaceRoot, request) {
 export function executeOfflineBuildRequest(workspaceRoot, value, options = {}) {
   const request = validateOfflineBuildRequest(value);
   const workspace = resolveOfflineBuildWorkspace(workspaceRoot, request);
-  fs.mkdirSync(workspace.outDir, { recursive: true });
+  const outDir = prepareOfflineBuildOutput(workspace.root, request.requestId);
   const builder = options.builder ?? buildNativeGuiForHost;
   const built = builder(workspace.sourcePath, {
     name: request.appName,
-    outDir: workspace.outDir,
+    outDir,
     capture: true,
     platform: options.platform ?? process.platform
   });
@@ -115,7 +115,7 @@ export function executeOfflineBuildRequest(workspaceRoot, value, options = {}) {
     platform: built.platform,
     backend: built.backend,
     outputKind: built.outputKind,
-    outputDirectory: toWorkspaceRelative(workspace.root, workspace.outDir)
+    outputDirectory: toWorkspaceRelative(workspace.root, outDir)
   });
 }
 
@@ -178,6 +178,29 @@ export async function startOfflineBuildBridge(options = {}) {
     path: OFFLINE_BUILD_BRIDGE_PATH,
     close: () => new Promise(resolve => server.close(resolve))
   });
+}
+
+function prepareOfflineBuildOutput(root, requestId) {
+  let current = root;
+  for (const segment of ['.patch-build', 'native', requestId]) {
+    const candidate = path.join(current, segment);
+    assertInsideWorkspace(root, candidate, 'output');
+    if (fs.existsSync(candidate)) {
+      const stat = fs.lstatSync(candidate);
+      if (stat.isSymbolicLink()) {
+        throw new OfflineBuildBridgeError('output-symlink', 'Build output path may not contain symbolic links.', 409);
+      }
+      if (!stat.isDirectory()) {
+        throw new OfflineBuildBridgeError('output-invalid', 'Build output path collides with a non-directory entry.', 409);
+      }
+    } else {
+      fs.mkdirSync(candidate);
+    }
+    const canonical = fs.realpathSync(candidate);
+    assertInsideWorkspace(root, canonical, 'output');
+    current = canonical;
+  }
+  return current;
 }
 
 function assertInsideWorkspace(root, candidate, label) {
