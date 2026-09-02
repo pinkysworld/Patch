@@ -54,6 +54,10 @@
     "build:offline-compiler": "node scripts/build-offline-compiler.js",
     "build:offline-studio": "node scripts/build-offline-studio.js",
     "check:offline-studio": "node scripts/build-offline-studio.js --manifest-only",
+    "build:offline-studio:portable": "node scripts/build-portable-offline-studio.js",
+    "check:offline-studio:portable": "node scripts/check-portable-offline-studio.js",
+    "build:offline-studio:runtime-kit": "node scripts/build-offline-studio-runtime-kit.js",
+    "check:offline-studio:runtime-kit": "node scripts/check-offline-studio-runtime-kit.js",
     "release:manifest:example": "node scripts/release-manifest.js --out-dir release-meta Score.patchapp Score.wasm DirectRecipes.wasm DirectRecipes.c DirectRecipes.html CounterWindow.html",
     "build:site": "node scripts/build-site.js",
     "check:site": "node scripts/check-site.js && node scripts/check-site-v10.js && node scripts/check-site-v12.js && node scripts/check-site-beta36.js"
