@@ -1,4 +1,7 @@
 import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
+import { listDesignerPanels } from '../src/designer-panel.js';
+import { listDesignerTabPages } from '../src/designer-data.js';
+import { listDesignerTabPageControls } from '../src/designer-tabs-nested.js';
 import { reorderDesignerControl } from './designer-z-order-model.js';
 import {
   DESIGNER_SELECTION_EVENT,
@@ -7,7 +10,7 @@ import {
   selectDesignerElement
 } from './designer-selection.js';
 
-export const STUDIO_LAYERS_VERSION = '0.1';
+export const STUDIO_LAYERS_VERSION = '0.2';
 
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
@@ -65,12 +68,46 @@ export function reorderDesignerFocusOrder(source, selector, direction) {
 export function buildDesignerLayerTree(source) {
   const windows = listDesignerWindows(source);
   const controls = listDesignerControls(source);
+  const panels = listDesignerPanels(source);
   return windows.map(window => ({
     ...window,
     controls: controls
       .filter(control => control.windowIndex === window.windowIndex)
-      .map(control => ({ ...control }))
+      .map(control => enrichLayerControl(source, control, panels))
   }));
+}
+
+function enrichLayerControl(source, control, panels) {
+  if (control.type === 'panel') {
+    const panel = panels.find(item =>
+      item.windowIndex === control.windowIndex && (item.line === control.line || (control.id && item.id === control.id))
+    );
+    return {
+      ...control,
+      children: (panel?.children ?? []).map(child => ({
+        ...child,
+        kind: 'panel-child',
+        parentControlIndex: control.controlIndex
+      }))
+    };
+  }
+  if (control.type === 'tabs') {
+    const pages = listDesignerTabPages(source, control).map(page => ({
+      ...page,
+      kind: 'tab-page',
+      parentControlIndex: control.controlIndex,
+      controls: listDesignerTabPageControls(source, control, page.pageIndex).map(nested => ({
+        ...nested,
+        kind: 'tab-control',
+        windowIndex: control.windowIndex,
+        parentControlIndex: control.controlIndex,
+        pageIndex: page.pageIndex,
+        nestedControlIndex: nested.controlIndex
+      }))
+    }));
+    return { ...control, children: [], pages };
+  }
+  return { ...control, children: [] };
 }
 
 function install() {
@@ -250,7 +287,7 @@ function installLayers() {
         <div><strong id="designerLayersTitle">Layers · Object Tree</strong><span>Derived from visible Patch source</span></div>
         <button type="button" class="secondary small" data-layers-close>Close</button>
       </header>
-      <p class="designer-layers-note">Forms and top-level controls are listed in source order. Selecting an item reuses the canonical Designer selection. Container-child visualization remains a later stage.</p>
+      <p class="designer-layers-note">Forms, top-level controls, Panel children and Tabs pages/controls are derived from visible Patch source. Nested rows reuse the existing container editors; top-level selection remains the canonical Designer selection.</p>
       <div id="designerLayersList" class="designer-layers-list" role="tree" aria-label="Patch Forms and controls"></div>
     </section>`;
   doc.body.appendChild(dialog);
@@ -317,6 +354,46 @@ function renderLayers(dialog, options = {}) {
         active: form.windowIndex === activeForm,
         selected
       }));
+      for (const child of control.children ?? []) {
+        rows.push(layerRowHtml({
+          kind: 'panel-child',
+          windowIndex: control.windowIndex,
+          parentControlIndex: control.controlIndex,
+          childIndex: child.childIndex,
+          label: nestedControlLabel(child),
+          detail: `${displayType(child.type)} · Panel child · source line ${child.line}`,
+          level: 3,
+          active: form.windowIndex === activeForm,
+          selected: false
+        }));
+      }
+      for (const page of control.pages ?? []) {
+        rows.push(layerRowHtml({
+          kind: 'tab-page',
+          windowIndex: control.windowIndex,
+          parentControlIndex: control.controlIndex,
+          pageIndex: page.pageIndex,
+          label: expressionLabel(page.titleExpr) || `Page ${page.pageIndex + 1}`,
+          detail: `Tab page · source line ${page.line}`,
+          level: 3,
+          active: form.windowIndex === activeForm,
+          selected: false
+        }));
+        for (const nested of page.controls ?? []) {
+          rows.push(layerRowHtml({
+            kind: 'tab-control',
+            windowIndex: control.windowIndex,
+            parentControlIndex: control.controlIndex,
+            pageIndex: page.pageIndex,
+            nestedControlIndex: nested.nestedControlIndex,
+            label: nestedControlLabel(nested),
+            detail: `${displayType(nested.type)} · Tabs child · source line ${nested.line}`,
+            level: 4,
+            active: form.windowIndex === activeForm,
+            selected: false
+          }));
+        }
+      }
     }
   }
   list.innerHTML = rows.join('');
@@ -329,11 +406,29 @@ function renderLayers(dialog, options = {}) {
   setRovingLayerRow(list, roving, { focus: Boolean(preferred) });
 }
 
-function layerRowHtml({ kind, windowIndex, controlIndex = null, label, detail, level, active, selected }) {
-  const controlAttr = Number.isInteger(controlIndex) ? ` data-control-index="${controlIndex}"` : '';
+function layerRowHtml({
+  kind,
+  windowIndex,
+  controlIndex = null,
+  parentControlIndex = null,
+  childIndex = null,
+  pageIndex = null,
+  nestedControlIndex = null,
+  label,
+  detail,
+  level,
+  active,
+  selected
+}) {
+  const attrs = [];
+  if (Number.isInteger(controlIndex)) attrs.push(`data-control-index="${controlIndex}"`);
+  if (Number.isInteger(parentControlIndex)) attrs.push(`data-parent-control-index="${parentControlIndex}"`);
+  if (Number.isInteger(childIndex)) attrs.push(`data-child-index="${childIndex}"`);
+  if (Number.isInteger(pageIndex)) attrs.push(`data-page-index="${pageIndex}"`);
+  if (Number.isInteger(nestedControlIndex)) attrs.push(`data-nested-control-index="${nestedControlIndex}"`);
   return `
-    <button type="button" class="designer-layer-row${selected ? ' is-selected' : ''}" role="treeitem" aria-level="${level}" aria-selected="${selected ? 'true' : 'false'}" tabindex="-1" data-layer-row data-layer-kind="${kind}" data-window-index="${windowIndex}"${controlAttr} data-layer-active="${active ? 'true' : 'false'}" data-layer-selected="${selected ? 'true' : 'false'}">
-      <span class="designer-layer-glyph" aria-hidden="true">${kind === 'form' ? '▣' : '◇'}</span>
+    <button type="button" class="designer-layer-row${selected ? ' is-selected' : ''}" role="treeitem" aria-level="${level}" aria-selected="${selected ? 'true' : 'false'}" tabindex="-1" data-layer-row data-layer-kind="${kind}" data-window-index="${windowIndex}" ${attrs.join(' ')} data-layer-active="${active ? 'true' : 'false'}" data-layer-selected="${selected ? 'true' : 'false'}">
+      <span class="designer-layer-glyph" aria-hidden="true">${layerGlyph(kind)}</span>
       <span class="designer-layer-copy"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(detail)}</span></span>
     </button>`;
 }
@@ -386,7 +481,9 @@ function activateLayerRow(row, dialog) {
     return;
   }
 
-  const controlIndex = Number(row.dataset.controlIndex);
+  const directControlIndex = Number(row.dataset.controlIndex);
+  const parentControlIndex = Number(row.dataset.parentControlIndex);
+  const controlIndex = Number.isInteger(directControlIndex) ? directControlIndex : parentControlIndex;
   if (!Number.isInteger(controlIndex)) return;
   let control = null;
   try {
@@ -406,9 +503,50 @@ function activateLayerRow(row, dialog) {
     selectDesignerElement(canvas, element, selection, { reason: 'layers-object-tree' });
     element.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     renderLayers(dialog, { preserveFocus: true });
+    if (row.dataset.layerKind !== 'control') requestAnimationFrame(() => syncNestedLayerTarget(row, 3));
   };
   if (changedForm) requestAnimationFrame(() => select(2));
   else select(0);
+}
+
+function syncNestedLayerTarget(row, attempts) {
+  const kind = row.dataset.layerKind;
+  if (kind === 'panel-child') {
+    const childIndex = Number(row.dataset.childIndex);
+    const list = doc.querySelector('#designerPanelChildList');
+    if (!list || !Number.isInteger(childIndex)) {
+      if (attempts > 0) requestAnimationFrame(() => syncNestedLayerTarget(row, attempts - 1));
+      return;
+    }
+    list.value = String(childIndex);
+    list.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+  if (kind !== 'tab-page' && kind !== 'tab-control') return;
+  const pageIndex = Number(row.dataset.pageIndex);
+  if (!Number.isInteger(pageIndex)) return;
+  const page = doc.querySelector(`[data-designer-data-editor] .designer-tabs-page[data-tab-page-index="${pageIndex}"]`);
+  if (!page) {
+    if (attempts > 0) requestAnimationFrame(() => syncNestedLayerTarget(row, attempts - 1));
+    return;
+  }
+  if (!page.classList.contains('active')) page.click();
+  if (kind !== 'tab-control') {
+    page.focus?.({ preventScroll: true });
+    return;
+  }
+  const nestedControlIndex = Number(row.dataset.nestedControlIndex);
+  if (!Number.isInteger(nestedControlIndex)) return;
+  requestAnimationFrame(() => {
+    const nested = doc.querySelector(`[data-tabs-nested-controls] .designer-tabs-control-row[data-tabs-control-index="${nestedControlIndex}"]`);
+    if (!nested) {
+      if (attempts > 0) requestAnimationFrame(() => syncNestedLayerTarget(row, attempts - 1));
+      return;
+    }
+    nested.tabIndex = -1;
+    nested.focus?.({ preventScroll: true });
+    nested.scrollIntoView?.({ block: 'nearest' });
+  });
 }
 
 function focusPreferredLayerRow(dialog) {
@@ -431,13 +569,44 @@ function setRovingLayerRow(list, row, options = {}) {
 
 function layerRowIdentity(row) {
   if (!row?.dataset?.layerKind) return '';
-  return `${row.dataset.layerKind}:${row.dataset.windowIndex ?? ''}:${row.dataset.controlIndex ?? ''}`;
+  return [
+    row.dataset.layerKind,
+    row.dataset.windowIndex ?? '',
+    row.dataset.controlIndex ?? '',
+    row.dataset.parentControlIndex ?? '',
+    row.dataset.childIndex ?? '',
+    row.dataset.pageIndex ?? '',
+    row.dataset.nestedControlIndex ?? ''
+  ].join(':');
 }
 
 function controlLabel(control) {
   if (control.id) return control.id;
   if (control.textExpr) return `${displayType(control.type)} ${control.textExpr}`;
   return `${displayType(control.type)} ${control.controlIndex + 1}`;
+}
+
+function nestedControlLabel(control) {
+  if (control.id) return control.id;
+  const literal = expressionLabel(control.textExpr);
+  if (literal) return `${displayType(control.type)} · ${literal}`;
+  return displayType(control.type);
+}
+
+function expressionLabel(expression) {
+  const value = String(expression ?? '').trim();
+  if (!value) return '';
+  if (value.startsWith('"') && value.endsWith('"')) {
+    try { return JSON.parse(value); } catch { return value.slice(1, -1); }
+  }
+  return value;
+}
+
+function layerGlyph(kind) {
+  if (kind === 'form') return '▣';
+  if (kind === 'tab-page') return '▤';
+  if (kind === 'panel-child' || kind === 'tab-control') return '·';
+  return '◇';
 }
 
 function activeFormIndex() {
@@ -481,7 +650,7 @@ function installStyles() {
     .designer-layers-dialog{width:min(430px,calc(100vw - 28px));max-height:min(720px,calc(100vh - 28px));margin:76px 20px auto auto;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);padding:0;box-shadow:0 18px 60px rgba(0,0,0,.24)}
     .designer-layers-shell{display:grid;gap:10px;padding:12px}.designer-layers-shell header{display:flex;align-items:center;justify-content:space-between;gap:10px}.designer-layers-shell header>div{display:grid;gap:2px}.designer-layers-shell header span{font-size:10px;color:var(--muted)}
     .designer-layers-note,.designer-layers-empty{margin:0;font-size:10px;line-height:1.45;color:var(--muted)}.designer-layers-list{display:grid;gap:3px;max-height:min(560px,calc(100vh - 190px));overflow:auto}
-    .designer-layer-row{width:100%;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:6px;text-align:left;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text);padding:6px 7px}.designer-layer-row[aria-level="2"]{padding-left:24px}.designer-layer-row:hover{background:var(--surface-subtle)}.designer-layer-row:focus{outline:none;border-color:var(--focus-ring,#5b9cff);box-shadow:0 0 0 1px var(--focus-ring,#5b9cff)}.designer-layer-row.is-selected{background:var(--soft);border-color:var(--border)}
+    .designer-layer-row{width:100%;display:grid;grid-template-columns:20px minmax(0,1fr);align-items:center;gap:6px;text-align:left;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--text);padding:6px 7px}.designer-layer-row[aria-level="2"]{padding-left:24px}.designer-layer-row[aria-level="3"]{padding-left:42px}.designer-layer-row[aria-level="4"]{padding-left:60px}.designer-layer-row:hover{background:var(--surface-subtle)}.designer-layer-row:focus{outline:none;border-color:var(--focus-ring,#5b9cff);box-shadow:0 0 0 1px var(--focus-ring,#5b9cff)}.designer-layer-row.is-selected{background:var(--soft);border-color:var(--border)}
     .designer-layer-glyph{font-size:11px;color:var(--muted)}.designer-layer-copy{min-width:0;display:grid;gap:1px}.designer-layer-copy strong,.designer-layer-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.designer-layer-copy strong{font-size:11px}.designer-layer-copy span{font-size:9px;color:var(--muted)}
   `;
   doc.head.appendChild(style);
