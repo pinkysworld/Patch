@@ -7,12 +7,13 @@ const palette = fs.readFileSync('web/studio-command-palette.js', 'utf8');
 
 test('Designer command surfaces reuse the stable shared command contract', () => {
   execFileSync(process.execPath, ['--check', 'web/studio-command-palette.js'], { stdio: 'pipe' });
-  assert.match(palette, /STUDIO_DESIGNER_COMMAND_SURFACES_VERSION = '0\.1'/);
+  assert.match(palette, /STUDIO_DESIGNER_COMMAND_SURFACES_VERSION = '0\.2'/);
   assert.match(palette, /currentDesignerSelection/);
   assert.match(palette, /DESIGNER_CONTROL_COMMANDS/);
   assert.match(palette, /dispatchDesignerControlCommand/);
+  assert.match(palette, /runDesignerControlCommand/);
   assert.match(palette, /runSelectedDesignerControlCommand/);
-  assert.match(palette, /dispatchDesignerControlCommand\(command, \{ origin \}\)/);
+  assert.match(palette, /dispatchDesignerControlCommand\(command, detail\)/);
   assert.doesNotMatch(palette, /removeDesignerControl|duplicateDesignerControl|updateDesignerControl/);
   assert.doesNotMatch(palette, /code\.value\s*=/);
 });
@@ -28,14 +29,18 @@ test('Command Palette exposes Delete Duplicate and Reveal Source through the sha
   assert.match(palette, /DESIGNER_CONTROL_COMMANDS\.REVEAL_SOURCE/);
 });
 
-test('Designer keyboard shortcuts are scoped to a focused Designer control and avoid editable controls', () => {
+test('Designer keyboard shortcuts stay inside Designer canvas, protect editable controls and let Paste target an empty active Form', () => {
   assert.match(palette, /installDesignerControlCommandShortcuts\(\)/);
-  assert.match(palette, /event\.target\?\.closest\?\.\('\.designer-control'\)/);
-  assert.match(palette, /canvas\.contains\(control\)/);
+  assert.match(palette, /canvas\.contains\(event\.target\)/);
   assert.match(palette, /document\.querySelector\('dialog\[open\]'\)/);
   assert.match(palette, /event\.target\?\.matches\?\.\('input, textarea, select'\)/);
-  assert.match(palette, /event\.key\.toLowerCase\(\) === 'd'/);
+  assert.match(palette, /event\.target\?\.isContentEditable/);
+  assert.match(palette, /key === 'd'/);
+  assert.match(palette, /key === 'c'/);
+  assert.match(palette, /key === 'x'/);
+  assert.match(palette, /key === 'v'/);
   assert.match(palette, /event\.key === 'Delete'/);
-  assert.match(palette, /duplicate \? DESIGNER_CONTROL_COMMANDS\.DUPLICATE : DESIGNER_CONTROL_COMMANDS\.DELETE/);
+  assert.match(palette, /allowWithoutSelection: true/);
+  assert.match(palette, /detail\.windowIndex = Number\(document\.querySelector\('#patchFormSelect'\)\?\.value\) \|\| 0/);
   assert.match(palette, /designer-multi-selected/);
 });
