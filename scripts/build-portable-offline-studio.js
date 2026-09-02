@@ -42,7 +42,7 @@ function buildSite() {
 }
 
 function unixLauncher() {
-  return `#!/bin/sh\nset -eu\nDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec node "$DIR/PatchStudio.cjs" "$@"\n`;
+  return `#!/bin/sh\nset -eu\nDIR=$(CDPATH= cd "$(dirname "$0")" && pwd)\nexec node "$DIR/PatchStudio.cjs" "$@"\n`;
 }
 
 function windowsLauncher() {
