@@ -10,6 +10,7 @@ export const STUDIO_EDIT_HISTORY_VERSION = '0.1';
 export const STUDIO_EDIT_HISTORY_LIMIT = 80;
 export const STUDIO_EDIT_HISTORY_COALESCE_MS = 850;
 export const STUDIO_VIEW_NAVIGATION_VERSION = '0.1';
+export const STUDIO_NAVIGATION_BREADCRUMB_VERSION = '0.1';
 
 const sourceEditor = document.querySelector('#code');
 const saveState = document.querySelector('#saveState');
@@ -24,6 +25,7 @@ let typingTimer = null;
 installStudioEditHistory();
 installStudioViewNavigation();
 installDesignerEventRowNavigation();
+installStudioNavigationBreadcrumb();
 
 function installStudioEditHistory() {
   if (!sourceEditor) return;
@@ -59,6 +61,103 @@ function installDesignerEventRowNavigation() {
     event.stopPropagation();
     action.click();
   }, { capture: true });
+}
+
+function installStudioNavigationBreadcrumb() {
+  const canvas = document.querySelector('#designerCanvas');
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  if (!canvas || !toolbar || document.querySelector('#designerNavigationBreadcrumb')) return;
+
+  const inspector = document.querySelector('#designerInspector');
+  const host = toolbar.querySelector('.designer-context-group') ?? toolbar;
+  const breadcrumb = document.createElement('span');
+  breadcrumb.id = 'designerNavigationBreadcrumb';
+  breadcrumb.className = 'studio-navigation-breadcrumb';
+  breadcrumb.setAttribute('role', 'navigation');
+  breadcrumb.setAttribute('aria-label', 'Designer Form control event navigation');
+  host.appendChild(breadcrumb);
+
+  let queued = false;
+  const schedule = () => {
+    if (queued) return;
+    queued = true;
+    queueMicrotask(() => {
+      queued = false;
+      sync();
+    });
+  };
+
+  const sync = () => {
+    const formSelect = document.querySelector('#patchFormSelect');
+    const formLabel = formSelect?.selectedOptions?.[0]?.textContent?.trim()
+      || `Form ${Math.max(1, Number(formSelect?.value ?? 0) + 1)}`;
+    const selected = canvas.querySelector('.designer-control.designer-selected');
+    const controlLabel = selected?.dataset.controlId
+      || selected?.getAttribute('aria-label')?.trim()
+      || '';
+    const eventsVisible = inspector?.dataset.objectInspectorView === 'events';
+    const eventLabel = eventsVisible
+      ? inspector.querySelector('#designerEventsPanel .designer-event-row strong')?.textContent?.trim() || ''
+      : '';
+
+    const parts = [{ kind: 'form', label: formLabel, title: 'Focus active Form selector' }];
+    if (controlLabel) parts.push({ kind: 'control', label: controlLabel, title: 'Return focus to selected Designer control' });
+    if (controlLabel && eventLabel) parts.push({ kind: 'event', label: eventLabel, title: 'Open existing event handler or focus Create handler' });
+
+    breadcrumb.replaceChildren();
+    parts.forEach((part, index) => {
+      if (index > 0) {
+        const separator = document.createElement('span');
+        separator.className = 'studio-navigation-separator';
+        separator.textContent = '›';
+        separator.setAttribute('aria-hidden', 'true');
+        breadcrumb.appendChild(separator);
+      }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'status-command studio-navigation-segment';
+      button.dataset.navigationSegment = part.kind;
+      button.textContent = part.label;
+      button.title = part.title;
+      breadcrumb.appendChild(button);
+    });
+  };
+
+  breadcrumb.addEventListener('click', event => {
+    const segment = event.target?.closest?.('[data-navigation-segment]');
+    if (!segment || !breadcrumb.contains(segment)) return;
+    const kind = segment.dataset.navigationSegment;
+    if (kind === 'form') {
+      document.querySelector('#patchFormSelect')?.focus({ preventScroll: true });
+      return;
+    }
+    if (kind === 'control') {
+      viewStudioDesigner();
+      return;
+    }
+    if (kind === 'event') {
+      const action = document.querySelector('#designerEventHandlerAction');
+      if (!action) return;
+      if (/^Open handler$/i.test(action.textContent?.trim() ?? '')) action.click();
+      else action.focus({ preventScroll: true });
+    }
+  });
+
+  canvas.addEventListener('patch-designer-selection-change', schedule);
+  sourceEditor?.addEventListener('input', schedule);
+  sourceEditor?.addEventListener('change', schedule);
+  document.addEventListener('change', event => {
+    if (['patchFormSelect', 'designerObjectSelect'].includes(event.target?.id)) schedule();
+  });
+  if (inspector) {
+    new MutationObserver(schedule).observe(inspector, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+      attributeFilter: ['data-object-inspector-view', 'hidden']
+    });
+  }
+  queueMicrotask(sync);
 }
 
 function captureSourceEdit(event) {
