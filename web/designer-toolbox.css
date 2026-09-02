@@ -159,7 +159,7 @@
   min-width: 0;
 }
 
-/* Current containers, graphics, Form chrome and nonvisual components continue the compact desktop rail. */
+/* Legacy one-column coordinates remain as a fallback for old cached markup. */
 #designer #addPanel { top: 423px; }
 #designer #addPanel::before { content: "▣"; }
 #designer #addPicture { top: 457px; }
@@ -170,6 +170,123 @@
 #designer #addStatusbar::before { content: "▰"; }
 #designer #addTimer { top: 593px !important; }
 #designer #addTimer::before { content: "◷"; }
+
+/* Form Designer layout 0.3: use the existing source-backed tool buttons as a
+   compact two-column component rail. This removes the 600+ px vertical tool
+   chain without introducing a second add-control path. */
+@media (min-width: 761px) {
+  #designer.designer-view::before {
+    width: 86px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--surface-subtle) 92%, var(--surface) 8%), var(--surface-subtle));
+  }
+  #designer .designer-surface,
+  #designer .designer-surface.designer-properties-collapsed {
+    grid-template-columns: 86px minmax(0, 1fr) var(--designer-inspector-width);
+  }
+  #designer .designer-surface.designer-properties-collapsed {
+    grid-template-columns: 86px minmax(0, 1fr) 0;
+  }
+  #designer .designer-surface.designer-inspector-bottom,
+  #designer .designer-surface.designer-inspector-bottom.designer-properties-collapsed {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+  #designer .designer-toolbar > button[id^="add"] {
+    width: 32px;
+    min-width: 32px;
+    height: 30px;
+    min-height: 30px;
+  }
+  #designer .designer-toolbar > button[id^="add"]::after {
+    left: 38px;
+  }
+
+  /* Basic */
+  #designer #addText { left: 9px; top: 49px; }
+  #designer #addButton { left: 45px; top: 49px; }
+  #designer #addInput { left: 9px; top: 83px; }
+  #designer #addCheckbox { left: 45px; top: 83px; }
+
+  /* Choices */
+  #designer #addRadio { left: 9px; top: 126px; }
+  #designer #addCombo { left: 45px; top: 126px; }
+  #designer #addListbox { left: 9px; top: 160px; }
+  #designer #addSlider { left: 45px; top: 160px; }
+
+  /* Data */
+  #designer #addTable { left: 9px; top: 203px; }
+  #designer #addTree { left: 45px; top: 203px; }
+
+  /* Containers */
+  #designer #addTabs { left: 9px; top: 246px; }
+  #designer #addPanel { left: 45px; top: 246px !important; }
+
+  /* Graphics */
+  #designer #addPicture { left: 9px; top: 289px !important; }
+  #designer #addShape { left: 45px; top: 289px !important; }
+  #designer #addPaintbox { left: 9px; top: 323px !important; }
+
+  /* Form chrome + nonvisual */
+  #designer #addStatusbar { left: 45px; top: 323px !important; }
+  #designer #addTimer { left: 9px; top: 366px !important; }
+  #designer #addImagelist { left: 45px; top: 366px !important; }
+
+  /* Short separators communicate categories without consuming toolbar space. */
+  #designer.designer-view::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    left: 12px;
+    top: 158px;
+    width: 62px;
+    height: 1px;
+    background: var(--border);
+    box-shadow:
+      0 77px 0 var(--border),
+      0 120px 0 var(--border),
+      0 197px 0 var(--border),
+      0 240px 0 var(--border);
+    pointer-events: none;
+  }
+
+  #designer .designer-canvas {
+    scroll-padding: 28px;
+    overscroll-behavior: contain;
+    background-color: color-mix(in srgb, var(--surface-subtle) 86%, var(--surface) 14%);
+  }
+  #designer .designer-canvas .patch-window {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--border-strong) 66%, transparent),
+      0 14px 32px color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  #designer .designer-canvas .patch-window:focus-within {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--text) 30%, transparent),
+      0 16px 36px color-mix(in srgb, var(--text) 13%, transparent);
+  }
+  #designer .designer-toolbar {
+    min-height: 42px;
+    padding-block: 5px;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--text) 5%, transparent);
+  }
+  #designer .designer-component-palette {
+    flex-basis: 480px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1380px) {
+  #designer .designer-surface,
+  #designer .designer-surface.designer-properties-collapsed,
+  #designer .designer-surface.designer-inspector-bottom,
+  #designer .designer-surface.designer-inspector-bottom.designer-properties-collapsed {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+  .result-pane #designer .designer-surface .designer-canvas {
+    height: clamp(520px, 68vh, 760px);
+    min-height: 520px;
+  }
+}
 
 @media (max-width: 1120px) {
   .designer-component-palette {
@@ -225,4 +342,5 @@
   .designer-nonvisual-component[aria-pressed="true"] {
     outline: 2px solid Highlight;
   }
+  #designer.designer-view::after { background: CanvasText; box-shadow: none; }
 }
