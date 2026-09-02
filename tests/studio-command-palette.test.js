@@ -76,6 +76,26 @@ test('Object Inspector event-row double-click reuses the existing handler action
   assert.doesNotMatch(palette, /ensureDesignerEventHandler|findDesignerEventHandler/);
 });
 
+test('Designer navigation breadcrumb reuses current Form, selection and Event Inspector state', () => {
+  assert.match(palette, /STUDIO_NAVIGATION_BREADCRUMB_VERSION = '0\.1'/);
+  assert.match(palette, /installStudioNavigationBreadcrumb\(\)/);
+  assert.match(palette, /id = 'designerNavigationBreadcrumb'/);
+  assert.match(palette, /setAttribute\('role', 'navigation'\)/);
+  assert.match(palette, /#patchFormSelect/);
+  assert.match(palette, /\.designer-control\.designer-selected/);
+  assert.match(palette, /dataset\.controlId/);
+  assert.match(palette, /#designerEventsPanel \.designer-event-row strong/);
+  for (const segment of ['form', 'control', 'event']) assert.ok(palette.includes(`kind: '${segment}'`), segment);
+  assert.match(palette, /data-navigation-segment/);
+  assert.match(palette, /viewStudioDesigner\(\)/);
+  assert.match(palette, /#designerEventHandlerAction/);
+  assert.match(palette, /\^Open handler\$/i);
+  assert.match(palette, /action\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(palette, /patch-designer-selection-change/);
+  assert.match(palette, /new MutationObserver\(schedule\)/);
+  assert.doesNotMatch(palette, /ensureDesignerEventHandler|findDesignerEventHandler/);
+});
+
 test('command palette delegates to existing Studio actions without hidden persistent state', () => {
   for (const marker of [
     "'Run project'", "document.querySelector('#run')?.click()",
@@ -146,6 +166,11 @@ test('command palette and quick-open model are packaged for offline Studio use',
   assert.match(buildSite, /'studio-quick-open\.js'/);
   assert.match(paletteCss, /\.command-palette::backdrop/);
   assert.match(paletteCss, /\.command-palette-kind/);
+  assert.match(paletteCss, /\.studio-navigation-breadcrumb/);
+  assert.match(paletteCss, /\.studio-navigation-segment/);
+  assert.match(paletteCss, /text-overflow: ellipsis/);
+  assert.match(paletteCss, /@media \(max-width: 920px\)/);
+  assert.match(paletteCss, /overscroll-behavior-inline: contain/);
   assert.match(paletteCss, /@media \(max-width: 560px\)/);
   assert.match(paletteCss, /height: min\(88dvh, 720px\)/);
   assert.match(paletteCss, /margin: auto 0 0/);
