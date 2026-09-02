@@ -1,3 +1,4 @@
+import './designer-tab-order.js';
 import {
   applyWindowResizePolicy,
   formatWindowLayoutPolicy,
