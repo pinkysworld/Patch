@@ -108,16 +108,20 @@ test('Duplicate selected control fails closed for stale or malformed selection',
   assert.throws(() => duplicateDesignerControl(source, { windowIndex: 0, controlIndex: 99 }), /no longer exists/);
 });
 
-test('Properties Duplicate uses shared selection, disables multi-select and focuses the copy', () => {
+test('Properties Duplicate routes shared selection through the common command path and focuses the copy centrally', () => {
   const ui = fs.readFileSync('web/designer-control-duplicate.js', 'utf8');
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   assert.match(ui, /currentDesignerSelection\(canvas\)/);
   assert.match(ui, /designer-multi-selected/);
   assert.match(ui, /multi > 1/);
-  assert.match(ui, /duplicateDesignerControl\(code\.value, selection\)/);
-  assert.match(ui, /rememberDesignerSelection/);
-  assert.match(ui, /selectDesignerElement/);
-  assert.match(ui, /requestAnimationFrame/);
-  assert.match(ui, /focus\?\.\(\{ preventScroll: true \}\)/);
+  assert.match(ui, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.DUPLICATE/);
+  assert.doesNotMatch(ui, /duplicateDesignerControl/);
+  assert.doesNotMatch(ui, /code\.value\s*=/);
+  assert.match(core, /duplicateDesignerControl\(text, selection\)/);
+  assert.match(core, /rememberDesignerSelection/);
+  assert.match(core, /selectDesignerElement/);
+  assert.match(core, /requestAnimationFrame/);
+  assert.match(core, /focus\?\.\(\{ preventScroll: true \}\)/);
   assert.doesNotMatch(ui, /localStorage|sessionStorage|Change History/);
 });
 
