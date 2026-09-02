@@ -1,7 +1,6 @@
 import { parse } from '../src/parser.js';
 import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
-
-const LAYOUT_DIRECTIVE = /^\s*#\s*@layout\b/;
+import { isDesignerMetadataDirective } from '../src/window-tab-order.js';
 
 export function reorderDesignerControl(source, selector, direction) {
   const controls = listDesignerControls(source);
@@ -63,12 +62,12 @@ function requireControl(controls, selector) {
 function controlSourceRange(lines, siblings, control) {
   const localIndex = siblings.findIndex(item => item.controlIndex === control.controlIndex);
   let start = control.line - 1;
-  while (start > 0 && LAYOUT_DIRECTIVE.test(lines[start - 1] ?? '')) start -= 1;
+  while (start > 0 && isDesignerMetadataDirective(lines[start - 1])) start -= 1;
 
   let end;
   if (localIndex + 1 < siblings.length) {
     end = siblings[localIndex + 1].line - 1;
-    while (end > start && LAYOUT_DIRECTIVE.test(lines[end - 1] ?? '')) end -= 1;
+    while (end > start && isDesignerMetadataDirective(lines[end - 1])) end -= 1;
   } else {
     const baseIndent = indentOf(lines[control.line - 1]).length;
     end = control.line;
