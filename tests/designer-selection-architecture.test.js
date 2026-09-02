@@ -153,7 +153,12 @@ test('shared selection is the only normal Properties Apply/Delete/Source boundar
   assert.match(core, /applySharedInspector/);
   assert.match(core, /populateSharedInspector/);
   assert.match(core, /updateDesignerControl\(code\.value, selection, changes\)/);
-  assert.match(core, /removeDesignerControl\(code\.value, selection\)/);
+  assert.match(core, /DESIGNER_CONTROL_COMMAND_EVENT = 'patch-designer-control-command'/);
+  assert.match(core, /DELETE: 'designer\.control\.delete'/);
+  assert.match(core, /REVEAL_SOURCE: 'designer\.control\.reveal-source'/);
+  assert.match(core, /removeDesignerControl\(text, selection\)/);
+  assert.match(core, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.DELETE/);
+  assert.match(core, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.REVEAL_SOURCE/);
   assert.match(core, /designerSelectionForControl\(updated, selection\.adapter\)/, 'renames must preserve the active adapter identity');
   for (const adapter of [table, tree]) {
     assert.doesNotMatch(adapter, /designerInspectorApply/);

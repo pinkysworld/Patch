@@ -87,7 +87,9 @@ test('Patch Studio exposes Table through its render adapter and the shared Prope
   assert.doesNotMatch(studioTable, /updateDesignerControl\(code\.value, selection/);
   assert.doesNotMatch(studioTable, /removeDesignerControl\(code\.value, selection\)/);
   assert.match(studioCoreSelection, /updateDesignerControl\(code\.value, selection, changes\)/);
-  assert.match(studioCoreSelection, /removeDesignerControl\(code\.value, selection\)/);
+  assert.match(studioCoreSelection, /removeDesignerControl\(text, selection\)/);
+  assert.match(studioCoreSelection, /DESIGNER_CONTROL_COMMANDS/);
+  assert.match(studioCoreSelection, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.DELETE/);
   assert.match(siteBuilder, /'table-stage1\.js'/);
   assert.match(serviceWorker, /'\.\/table-stage1\.js'/);
 });
