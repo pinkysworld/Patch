@@ -7,9 +7,9 @@ import {
   installDesignerSelectionBridge,
   rememberDesignerSelection,
   restoreDesignerAdapterSelection,
-  selectDesignerElement
+  selectDesignerElement,
+  showDesignerInspectorError
 } from './designer-selection.js';
-import { showDesignerInspectorError } from './designer-inspector-status.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
