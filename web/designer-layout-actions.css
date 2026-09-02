@@ -37,6 +37,12 @@
 .designer-control-layout-actions.is-disabled .designer-control-layout-buttons {
   opacity: .58;
 }
+.designer-control-layout-actions.is-locked {
+  border-style: dashed;
+}
+.designer-control-layout-actions.is-locked #patchToggleControlLock {
+  font-weight: 700;
+}
 .designer-control-layout-status {
   min-height: 25px;
   margin: 0;
@@ -51,6 +57,14 @@
   outline: 2px solid var(--text);
   outline-offset: 2px;
 }
+.designer-control.designer-control-locked {
+  outline: 1px dashed currentColor;
+  outline-offset: 2px;
+  cursor: default;
+}
+.patch-form-resize-handle.is-designer-locked {
+  display: none !important;
+}
 
 @media (max-width: 640px) {
   .designer-control-layout-buttons {
@@ -63,7 +77,8 @@
 
 @media (forced-colors: active) {
   .designer-control-layout-actions,
-  .designer-control-layout-status {
+  .designer-control-layout-status,
+  .designer-control.designer-control-locked {
     border: 1px solid CanvasText;
   }
 }
