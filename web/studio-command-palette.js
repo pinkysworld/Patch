@@ -23,6 +23,7 @@ let typingTimer = null;
 
 installStudioEditHistory();
 installStudioViewNavigation();
+installDesignerEventRowNavigation();
 
 function installStudioEditHistory() {
   if (!sourceEditor) return;
@@ -45,6 +46,18 @@ function installStudioViewNavigation() {
     event.preventDefault();
     event.stopPropagation();
     toggleSourceDesignerView();
+  }, { capture: true });
+}
+
+function installDesignerEventRowNavigation() {
+  document.addEventListener('dblclick', event => {
+    const row = event.target?.closest?.('#designerEventsPanel .designer-event-row');
+    if (!row || event.target?.closest?.('button')) return;
+    const action = row.querySelector('#designerEventHandlerAction');
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    action.click();
   }, { capture: true });
 }
 
