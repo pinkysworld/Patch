@@ -30,11 +30,13 @@ test('offline compiler download page and release workflow share one stable v0.2 
 test('Offline Studio download page, documentation and workflow share one stable v0.2 release contract', () => {
   assert.match(downloads, /offline-studio-v0\.2/);
   assert.match(studioWorkflow, /TAG: offline-studio-v0\.2/);
-  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: \[executable, macos-intel-runtime-kit, portable\]/);
+  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: \[executable, macos-intel-runtime-kit, portable, freebsd-portable\]/);
   assert.match(studioWorkflow, /publish:[\s\S]*needs: release-bundle/);
   assert.match(studioWorkflow, /patch-offline-studio-release-bundle/);
   assert.match(studioWorkflow, /for dir in windows-x64 windows-arm64 macos-arm64 macos-x64 linux-x64 linux-arm64/);
   assert.match(studioWorkflow, /cmp release\/windows-x64\/offline-studio-manifest\.json "release\/\$dir\/offline-studio-manifest\.json"/);
+  assert.match(studioWorkflow, /Portable Offline Studio \(FreeBSD 15 x64\)/);
+  assert.match(studioWorkflow, /vmactions\/freebsd-vm@v1/);
   assert.match(studioWorkflow, /sha256sum -c SHA256SUMS/);
   assert.match(studioWorkflow, /gh release upload/);
   assert.match(studioWorkflow, /Missing published Offline Studio asset/);
