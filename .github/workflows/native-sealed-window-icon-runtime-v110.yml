@@ -54,6 +54,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA: e31a426dc21cb0929241fe96ab96e270ad182b32
+
 jobs:
   contract:
     runs-on: ubuntu-latest
@@ -250,6 +253,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: patch-windows-native-gui-runtime-v110-pr
@@ -282,28 +286,54 @@ jobs:
             runtime/linux/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 30
-      - name: Publish immutable native runtime v1.10 promotion-candidate releases
+      - name: Verify immutable source boundary and publish only from the release source
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --no-tags origin "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" --depth=1
+          critical_paths=(
+            src/sealed-native-gui-v19.js
+            src/native-gui-ir-v19.js
+            src/native-window-icon-backend-adapter.js
+            src/windows-pe-icon-v110.js
+            native-runtime/sealed-button-image-v19.hpp
+            native-runtime/sealed-window-icon-v110.hpp
+            native-runtime/win32-sealed-gui-v19.cpp
+            native-runtime/appkit-sealed-gui-v19.mm
+            native-runtime/gtk-sealed-gui-v19.cpp
+            native-runtime/win32-sealed-gui-v110.cpp
+            native-runtime/appkit-sealed-gui-v110.mm
+            native-runtime/gtk-sealed-gui-v110.cpp
+          )
+          if ! git diff --quiet "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" "$GITHUB_SHA" -- "${critical_paths[@]}"; then
+            echo "Immutable runtime v1.10 sources changed after the published release source $PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA. Create a new runtime version instead of replacing v1.10." >&2
+            git diff --name-only "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" "$GITHUB_SHA" -- "${critical_paths[@]}" >&2
+            exit 1
+          fi
+
           publish_runtime() {
             local tag="$1" title="$2" dir="$3" asset="$4" notes="$5"
             if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               local tag_sha
               tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha')"
-              if [[ "$tag_sha" != "$GITHUB_SHA" ]]; then
-                echo "Refusing to replace immutable runtime release $tag: tag is $tag_sha, current source is $GITHUB_SHA." >&2
+              if [[ "$tag_sha" != "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" ]]; then
+                echo "Immutable runtime release $tag is bound to unexpected source $tag_sha; expected $PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA." >&2
                 exit 1
               fi
-            else
-              gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$title" --notes "$notes"
+              echo "Leaving immutable runtime release $tag unchanged at $tag_sha."
+              return 0
             fi
-            gh release upload "$tag" "$dir/$asset" "$dir/SHA256SUMS.txt" --repo "$GITHUB_REPOSITORY" --clobber
+            if [[ "$GITHUB_SHA" != "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" ]]; then
+              echo "Runtime release $tag is missing, but this run is $GITHUB_SHA rather than immutable release source $PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA." >&2
+              exit 1
+            fi
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" --title "$title" --notes "$notes"
+            gh release upload "$tag" "$dir/$asset" "$dir/SHA256SUMS.txt" --repo "$GITHUB_REPOSITORY"
           }
 
-          notes='Promotion-candidate runtime v1.10 for Native GUI IR 1.9 / payload v19. Includes Button/ImageList asset transport plus application/window icon transport and platform packaging support. Publishing this runtime does not promote the Patch Current Ready contract; Current Ready remains IR 1.7 / payload v17 / runtime v1.8 until Offline Compiler and product-contract promotion gates pass.'
+          notes='Current Ready runtime v1.10 for Native GUI IR 1.9 / payload v19. Includes Button/ImageList asset transport plus application/Form icon transport and platform packaging support. The release is immutable and remains bound to its verified source commit; explicit payload v17/runtime v1.8 remains the Offline Compiler compatibility line.'
           publish_runtime native-win32-runtime-v1.10 'Patch Native Win32 Runtime v1.10' runtime/windows patch-windows-native-gui-runtime.exe "$notes"
           publish_runtime native-macos-runtime-v1.10 'Patch Native macOS Runtime v1.10' runtime/macos patch-macos-native-gui-runtime.bin "$notes"
           publish_runtime native-linux-runtime-v1.10 'Patch Native Linux Runtime v1.10' runtime/linux patch-linux-native-gui-runtime.bin "$notes"
@@ -343,8 +373,8 @@ jobs:
               echo "Published checksum asset for $tag has no valid GitHub SHA-256 digest: $checksum_digest" >&2
               exit 1
             fi
-            if [[ "$tag_sha" != "$GITHUB_SHA" ]]; then
-              echo "Published runtime tag $tag is not bound to source commit $GITHUB_SHA: $tag_sha" >&2
+            if [[ "$tag_sha" != "$PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA" ]]; then
+              echo "Published runtime tag $tag is not bound to immutable source commit $PATCH_NATIVE_RUNTIME_V110_SOURCE_SHA: $tag_sha" >&2
               exit 1
             fi
           }

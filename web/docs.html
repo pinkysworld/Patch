@@ -249,7 +249,7 @@ when fruits changed:
         <tr><td>Learn and prototype</td><td>Hosted Patch Studio</td><td>Fastest visual edit/run loop.</td></tr>
         <tr><td>Work without internet</td><td>Offline Studio Stage 1</td><td>Offline authoring, Designer/Object Inspector and Run.</td></tr>
         <tr><td>Standalone web app</td><td><code>patch build app.patch --target web</code></td><td>Produces supported standalone Web output.</td></tr>
-        <tr><td>Local supported desktop artifact</td><td>Ready/offline compiler path</td><td>Current Windows/macOS/Linux Window contract is Native GUI IR 1.7 / payload v17 / runtime v1.8.</td></tr>
+        <tr><td>Local supported desktop artifact</td><td>Ready/offline compiler path</td><td>Current Windows/macOS/Linux Window contract is Native GUI IR 1.9 / payload v19 / runtime v1.10. Explicit payload v17/runtime v1.8 remains a compatibility path.</td></tr>
         <tr><td>Portable numeric backend</td><td>C99 / direct Wasm where supported</td><td>These subsets fail closed on unsupported language features.</td></tr>
       </tbody>
     </table>
@@ -277,10 +277,10 @@ when fruits changed:
 
   <section id="reference" class="page-section docs-filterable">
     <h2>Technical reference</h2>
-    <p>One current map of Patch. The current product line is Patch beta.36, Change IR 0.10, Studio project bundle v4 and Native GUI IR 1.7 / payload v17 / runtime v1.8. Current RAD/native product work does not widen the beta.32 formal runtime-correspondence claim.</p>
+    <p>One current map of Patch. The current product line is Patch beta.36, Change IR 0.10, Studio project bundle v4 and Native GUI IR 1.9 / payload v19 / runtime v1.10. Current RAD/native product work does not widen the beta.32 formal runtime-correspondence claim.</p>
     <div class="docs-contract-grid" aria-label="Current Patch contracts">
       <div class="docs-contract-card"><span>Language</span><strong>Change IR 0.10</strong></div>
-      <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.7 · payload v17 · runtime v1.8</strong></div>
+      <div class="docs-contract-card"><span>Desktop GUI</span><strong>Native GUI IR 1.9 · payload v19 · runtime v1.10</strong></div>
       <div class="docs-contract-card"><span>Studio</span><strong>Project bundle v4 · source-backed RAD Designer</strong></div>
       <div class="docs-contract-card"><span>Offline IDE</span><strong>manifest v1 · offline-studio-v0.2 downloads</strong></div>
       <div class="docs-contract-card"><span>Delivery</span><strong>Token-free local workflows · real Chrome and executable gates</strong></div>
@@ -294,7 +294,7 @@ when fruits changed:
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/CLI_CONTRACT.md"><strong>CLI contract</strong><span>Stable exit taxonomy and JSON envelopes.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/LISTBOX.md"><strong>ListBox</strong><span>Single and multi-select semantics.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/MENUS_DIALOGS.md"><strong>Menus and dialogs</strong><span>Shortcuts, state projections and result dialogs.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/WINDOW_ICONS.md"><strong>Window and application icons</strong><span>window-icon/1.0: Web/Studio support with native fail-closed boundary.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/WINDOW_ICONS.md"><strong>Window and application icons</strong><span>Window/application icon metadata and Current Ready Windows/macOS/Linux packaging.</span></a>
     </div>
 
     <h3>Assurance and research</h3>
@@ -308,9 +308,9 @@ when fruits changed:
     </div>
 
     <h3>Native and release contracts</h3>
-    <p>Patch intentionally keeps <strong>two live native product contracts</strong>: the current Native GUI IR 1.7 / payload v17 / runtime v1.8 facade and the <strong>IR 1.2 / payload v12 / runtime v1.3 frozen</strong> TreeView compatibility line. Newer features never silently reinterpret the frozen contract.</p>
+    <p>Patch keeps the <strong>Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10</strong> contract alongside explicit older compatibility contracts. Payload v17/runtime v1.8 remains an Offline Compiler compatibility path, while <strong>IR 1.2 / payload v12 / runtime v1.3</strong> remains the frozen TreeView line. Newer features never silently reinterpret older contracts.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts through runtime v1.8.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_GUI.md"><strong>Native GUI</strong><span>Versioned native contracts through runtime v1.10.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_COMPATIBILITY.md"><strong>Native compatibility</strong><span>Current/frozen compatibility rules.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/NATIVE_PICTURE_FORMATS.md"><strong>Native Picture formats</strong><span>native-picture-formats/1.0: PNG/JPEG Ready; WebP/SVG deferred.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/PRODUCTION_READINESS.md"><strong>Production readiness</strong><span>Deployment, diagnostics, integrity and signing boundaries.</span></a>

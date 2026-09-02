@@ -247,9 +247,13 @@ if (dialog && trigger && input && list && empty) {
   let commands = staticCommands;
   let visible = commands;
   let activeIndex = 0;
+  let returnFocus = null;
   const defer = typeof queueMicrotask === 'function'
     ? queueMicrotask
     : callback => Promise.resolve().then(callback);
+
+  input.setAttribute('aria-controls', list.id);
+  input.setAttribute('aria-autocomplete', 'list');
 
   trigger.addEventListener('click', openPalette);
   statusTrigger?.addEventListener('click', openPalette);
@@ -291,7 +295,14 @@ if (dialog && trigger && input && list && empty) {
   dialog.addEventListener('click', event => {
     if (event.target === dialog) closePalette();
   });
-  dialog.addEventListener('close', resetPalette);
+  dialog.addEventListener('cancel', event => {
+    event.preventDefault();
+    closePalette();
+  });
+  dialog.addEventListener('close', () => {
+    resetPalette();
+    restorePaletteFocus();
+  });
   window.addEventListener('patch:studio-project-files-changed', refreshOpenPalette);
   window.addEventListener('patch:studio-active-file-changed', refreshOpenPalette);
 
@@ -299,15 +310,32 @@ if (dialog && trigger && input && list && empty) {
   render();
 
   function openPalette() {
+    if (!dialog.open) {
+      const active = document.activeElement;
+      returnFocus = active && active !== document.body && typeof active.focus === 'function' ? active : trigger;
+    }
     resetPalette();
     if (typeof dialog.showModal === 'function') dialog.showModal();
     else dialog.setAttribute('open', '');
-    requestAnimationFrame(() => input.focus());
+    requestAnimationFrame(() => input.focus({ preventScroll: true }));
   }
 
   function closePalette() {
+    const wasOpen = dialog.open || dialog.hasAttribute('open');
+    if (!wasOpen) return;
     if (typeof dialog.close === 'function' && dialog.open) dialog.close();
-    else dialog.removeAttribute('open');
+    else {
+      dialog.removeAttribute('open');
+      resetPalette();
+      restorePaletteFocus();
+    }
+  }
+
+  function restorePaletteFocus() {
+    const target = returnFocus;
+    returnFocus = null;
+    if (!target?.isConnected || typeof target.focus !== 'function') return;
+    target.focus({ preventScroll: true });
   }
 
   function resetPalette() {
@@ -374,13 +402,16 @@ if (dialog && trigger && input && list && empty) {
   function render() {
     list.replaceChildren();
     empty.hidden = visible.length !== 0;
+    let activeOptionId = '';
     visible.forEach((item, index) => {
       const button = document.createElement('button');
       button.type = 'button';
+      button.id = `commandPaletteOption-${index}`;
       button.className = 'command-palette-item';
       button.dataset.commandIndex = String(index);
       button.setAttribute('role', 'option');
       button.setAttribute('aria-selected', index === activeIndex ? 'true' : 'false');
+      if (index === activeIndex) activeOptionId = button.id;
 
       const copy = document.createElement('span');
       copy.className = 'command-palette-copy';
@@ -407,6 +438,8 @@ if (dialog && trigger && input && list && empty) {
       }
       list.appendChild(button);
     });
+    if (activeOptionId) input.setAttribute('aria-activedescendant', activeOptionId);
+    else input.removeAttribute('aria-activedescendant');
   }
 }
 

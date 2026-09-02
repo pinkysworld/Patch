@@ -31,6 +31,18 @@ test('Studio command palette is syntax-valid, discoverable and keyboard-first', 
   assert.match(palette, /event\.key === 'Escape'/);
 });
 
+test('command palette restores focus and exposes the active listbox option', () => {
+  assert.match(palette, /let returnFocus = null/);
+  assert.match(palette, /input\.setAttribute\('aria-controls', list\.id\)/);
+  assert.match(palette, /input\.setAttribute\('aria-autocomplete', 'list'\)/);
+  assert.match(palette, /dialog\.addEventListener\('cancel', event =>/);
+  assert.match(palette, /restorePaletteFocus\(\)/);
+  assert.match(palette, /target\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(palette, /button\.id = `commandPaletteOption-\$\{index\}`/);
+  assert.match(palette, /input\.setAttribute\('aria-activedescendant', activeOptionId\)/);
+  assert.match(palette, /input\.removeAttribute\('aria-activedescendant'\)/);
+});
+
 test('command palette delegates to existing Studio actions without hidden persistent state', () => {
   for (const marker of [
     "'Run project'", "document.querySelector('#run')?.click()",
@@ -109,6 +121,10 @@ test('command palette and quick-open model are packaged for offline Studio use',
   assert.match(paletteCss, /\.command-palette::backdrop/);
   assert.match(paletteCss, /\.command-palette-kind/);
   assert.match(paletteCss, /@media \(max-width: 560px\)/);
+  assert.match(paletteCss, /height: min\(88dvh, 720px\)/);
+  assert.match(paletteCss, /margin: auto 0 0/);
+  assert.match(paletteCss, /safe-area-inset-bottom/);
+  assert.match(paletteCss, /overscroll-behavior: contain/);
   assert.match(paletteCss, /@media \(forced-colors: active\)/);
 });
 

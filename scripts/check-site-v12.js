@@ -12,6 +12,7 @@ const gui12 = read('src/native-gui-ir-v12.js');
 const sealed12 = read('src/sealed-native-gui-v12.js');
 
 function requireText(text, marker, label) { if (!text.includes(marker)) throw new Error(`Frozen v12 compatibility site check failed: ${label} is missing '${marker}'.`); }
+function requireTextInsensitive(text, marker, label) { if (!text.toLowerCase().includes(marker.toLowerCase())) throw new Error(`Frozen v12 compatibility site check failed: ${label} is missing '${marker}' (case-insensitive).`); }
 function rejectText(text, marker, label) { if (text.includes(marker)) throw new Error(`Frozen v12 compatibility site check failed: ${label} still contains obsolete current-product text '${marker}'.`); }
 
 requireText(index, 'Native GUI IR 1.9', 'Studio current native status');
@@ -41,9 +42,10 @@ requireText(gui12, 'buildNativeGuiIRV12', 'frozen Native GUI IR 1.2 module');
 requireText(sealed12, 'PATCH_SEALED_NATIVE_GUI_TREE_VERSION = 12', 'frozen payload v12 module');
 requireText(sealed12, 'sealNativeGuiRuntimeV12', 'frozen payload v12 module');
 
-requireText(docs, 'IR 1.2 / payload v12 / runtime v1.3 frozen', 'Documentation compatibility card');
+requireText(docs, 'IR 1.2 / payload v12 / runtime v1.3</strong> remains the frozen TreeView line', 'Documentation frozen v12 compatibility line');
+requireTextInsensitive(docs, 'payload v17/runtime v1.8 remains an Offline Compiler compatibility path', 'Documentation explicit v17 compatibility line');
 requireText(docs, 'docs/NATIVE_COMPATIBILITY.md', 'Documentation native compatibility link');
-requireText(docs, 'two live native product contracts', 'Documentation two-contract wording');
+requireText(docs, 'Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10', 'Documentation Current Ready contract wording');
 requireText(downloads, 'Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView line', 'Downloads frozen compatibility line');
 requireText(downloads, 'Explicit legacy linking fails closed when a program requires a newer feature', 'Downloads frozen compatibility behavior');
 requireText(downloads, 'Native GUI IR <strong>1.9</strong>', 'Downloads current IR');
@@ -54,4 +56,4 @@ requireText(downloads, 'Native GUI IR 1.7 / payload v17 / runtime v1.8', 'Downlo
 rejectText(index, 'Slider Stage 1 is browser-only until a later versioned native contract adds parity', 'Studio index');
 rejectText(downloads, 'Native Slider parity requires a future versioned native GUI contract', 'Downloads page');
 
-console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated separately behind the current IR 1.9 / payload v19 / runtime v1.10 facade.');
+console.log('Patch Studio frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 compatibility surface validated separately behind Current Ready IR 1.9 / payload v19 / runtime v1.10, with explicit v17/runtime-v1.8 Offline Compiler compatibility preserved.');

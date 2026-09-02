@@ -20,13 +20,14 @@ test('public Documentation is a beginner learning path rather than only an inter
   assert.match(docs, /Example programs/);
 });
 
-test('learning page preserves current product and frozen native contracts', () => {
+test('learning page preserves Current Ready and explicit frozen/compatibility native contracts', () => {
   assert.match(docs, /Change IR 0\.10/);
-  assert.match(docs, /Native GUI IR 1\.7/);
-  assert.match(docs, /payload v17/);
-  assert.match(docs, /runtime v1\.8/);
-  assert.match(docs, /two live native product contracts/);
-  assert.match(docs, /IR 1\.2 \/ payload v12 \/ runtime v1\.3 frozen/);
+  assert.match(docs, /Native GUI IR 1\.9/);
+  assert.match(docs, /payload v19/);
+  assert.match(docs, /runtime v1\.10/);
+  assert.match(docs, /payload v17\/runtime v1\.8 remains an Offline Compiler compatibility path/i);
+  assert.match(docs, /IR 1\.2 \/ payload v12 \/ runtime v1\.3/);
+  assert.match(docs, /frozen TreeView line/);
   assert.match(docs, /beta\.32 assurance boundary/);
 });
 

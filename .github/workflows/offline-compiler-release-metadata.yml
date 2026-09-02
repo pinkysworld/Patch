@@ -1,0 +1,31 @@
+name: Patch Offline Compiler Release Metadata
+
+on:
+  workflow_run:
+    workflows: ['Patch Offline Compiler']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Synchronize rolling Offline Compiler release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: offline-compiler-v0.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes='Patch beta.36 offline compiler downloads for Windows, macOS Apple Silicon and Linux, plus portable compiler kits for macOS Intel and FreeBSD. Windows/macOS/Linux Current Ready Window linking uses Native GUI IR 1.9 / sealed payload v19 / runtime v1.10, including Button ImageList and application/Form icon transport and platform packaging. Explicit --gui-payload-version 17 remains available through the embedded runtime-v1.8 compatibility underlay. Supported run/build/link workflows work locally without a GitHub token.'
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Offline Compiler v0.2' --notes "$notes"
+          body="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.body')"
+          grep -Fq 'Native GUI IR 1.9 / sealed payload v19 / runtime v1.10' <<<"$body"
+          grep -Fq -- '--gui-payload-version 17' <<<"$body"

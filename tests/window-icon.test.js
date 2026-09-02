@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  PATCH_WINDOW_ICON_POLICY,
   PATCH_WINDOW_ICON_POLICY_ID,
   formatPatchWindowDeclaration,
   nativeWindowIconUnsupportedMessage,
@@ -55,14 +56,17 @@ test('Window icon resolution prefers the first Form icon as the application icon
   assert.equal(app.line, 6);
 });
 
-test('current native GUI reports Window icons instead of silently dropping them', () => {
+test('Window icon source policy advertises the promoted Current Ready native contract', () => {
+  assert.equal(PATCH_WINDOW_ICON_POLICY_ID, 'window-icon/1.0');
+  assert.deepEqual(PATCH_WINDOW_ICON_POLICY.currentReady, { nativeGuiIR: '1.9', payload: 19, runtime: '1.10' });
+  assert.equal(PATCH_WINDOW_ICON_POLICY.native, 'current-ready');
+  assert.match(PATCH_WINDOW_ICON_POLICY.reason, /Current Ready on Windows, macOS and Linux/);
+});
+
+test('legacy pre-v19 native GUI contracts report Window icons instead of silently dropping them', () => {
   assert.equal(nativeWindowIconUnsupportedMessage({ titleExpr: '"Main"' }), null);
-  assert.match(
-    nativeWindowIconUnsupportedMessage({ id: 'main', iconExpr: '"patch-resource:app.icon"' }, 2),
-    /line 2: native GUI Form 'main' does not transport icon/
-  );
-  assert.match(
-    nativeWindowIconUnsupportedMessage({ id: 'main', iconExpr: '"patch-resource:app.icon"' }, 2),
-    PATCH_WINDOW_ICON_POLICY_ID === 'window-icon/1.0' ? /fail-closed/ : /./
-  );
+  const diagnostic = nativeWindowIconUnsupportedMessage({ id: 'main', iconExpr: '"patch-resource:app.icon"' }, 2);
+  assert.match(diagnostic, /line 2: legacy native GUI Form 'main' does not transport icon/);
+  assert.match(diagnostic, /compatibility contract remains fail-closed/);
+  assert.match(diagnostic, /Current Ready Native GUI IR 1\.9 \/ payload v19 \/ runtime v1\.10/);
 });
