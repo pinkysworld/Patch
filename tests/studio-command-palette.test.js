@@ -66,6 +66,16 @@ test('F12 uses one source-backed Source Designer navigation path', () => {
   assert.doesNotMatch(palette, /localStorage|sessionStorage|indexedDB/);
 });
 
+test('Object Inspector event-row double-click reuses the existing handler action', () => {
+  assert.match(palette, /installDesignerEventRowNavigation\(\)/);
+  assert.match(palette, /document\.addEventListener\('dblclick', event =>/);
+  assert.match(palette, /#designerEventsPanel \.designer-event-row/);
+  assert.match(palette, /event\.target\?\.closest\?\.\('button'\)/);
+  assert.match(palette, /row\.querySelector\('#designerEventHandlerAction'\)/);
+  assert.match(palette, /action\.click\(\)/);
+  assert.doesNotMatch(palette, /ensureDesignerEventHandler|findDesignerEventHandler/);
+});
+
 test('command palette delegates to existing Studio actions without hidden persistent state', () => {
   for (const marker of [
     "'Run project'", "document.querySelector('#run')?.click()",
