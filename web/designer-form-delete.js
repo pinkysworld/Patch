@@ -1,4 +1,4 @@
-import { showDesignerInspectorError } from './designer-inspector-status.js';
+import { showDesignerInspectorError } from './designer-selection.js';
 import { removeDesignerForm } from './designer-form-delete-model.js';
 
 const code = document.querySelector('#code');
