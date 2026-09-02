@@ -36,7 +36,8 @@ function workspace() {
 test('build bridge 0.1 validates one narrow native Window request schema', () => {
   assert.equal(validateOfflineBuildRequest(request()).protocol, OFFLINE_BUILD_BRIDGE_PROTOCOL);
   assert.throws(() => validateOfflineBuildRequest(request({ action: 'run-shell' })), /Only 'build-native-window'/);
-  assert.throws(() => validateOfflineBuildRequest(request({ source: '../outside.patch' })), /workspace|relative Patch file/i);
+  assert.throws(() => validateOfflineBuildRequest(request({ source: '../outside.patch' })), /relative Patch file/i);
+  assert.throws(() => validateOfflineBuildRequest(request({ source: 'C:outside.patch' })), /relative Patch file/i);
   assert.throws(() => validateOfflineBuildRequest(request({ source: 'src/app.txt' })), /\.patch file/);
   assert.throws(() => validateOfflineBuildRequest(request({ appName: '../App' })), /appName/);
   assert.throws(() => validateOfflineBuildRequest({ ...request(), command: 'rm -rf' }), /Unknown build request field/);
@@ -48,11 +49,8 @@ test('workspace resolution keeps source and deterministic output under the opene
     const resolved = resolveOfflineBuildWorkspace(root, validateOfflineBuildRequest(request()));
     assert.equal(resolved.sourcePath, fs.realpathSync(path.join(root, 'src', 'app.patch')));
     assert.ok(resolved.outDir.startsWith(`${fs.realpathSync(root)}${path.sep}`));
-    assert.match(resolved.outDir, new RegExp(`\\.patch-build\\${path.sep}native\\${path.sep}build-001$`));
-    assert.throws(
-      () => resolveOfflineBuildWorkspace(root, validateOfflineBuildRequest(request({ source: '../outside.patch' }))),
-      OfflineBuildBridgeError
-    );
+    assert.ok(resolved.outDir.endsWith(path.join('.patch-build', 'native', 'build-001')));
+    assert.throws(() => validateOfflineBuildRequest(request({ source: '../outside.patch' })), OfflineBuildBridgeError);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
