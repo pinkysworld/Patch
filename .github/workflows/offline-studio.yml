@@ -7,10 +7,14 @@ on:
       - 'src/**'
       - 'scripts/build-site.js'
       - 'scripts/build-offline-studio.js'
+      - 'scripts/build-portable-offline-studio.js'
       - 'scripts/offline-studio-assets.js'
       - 'scripts/offline-studio-runner.cjs'
+      - 'scripts/offline-studio-portable-runner.cjs'
       - 'scripts/check-offline-studio-executable.js'
+      - 'scripts/check-portable-offline-studio.js'
       - 'tests/offline-studio-assets.test.js'
+      - 'tests/offline-studio-portable.test.js'
       - 'tests/offline-downloads-page.test.js'
       - 'docs/OFFLINE_STUDIO.md'
       - 'package.json'
@@ -22,10 +26,14 @@ on:
       - 'src/**'
       - 'scripts/build-site.js'
       - 'scripts/build-offline-studio.js'
+      - 'scripts/build-portable-offline-studio.js'
       - 'scripts/offline-studio-assets.js'
       - 'scripts/offline-studio-runner.cjs'
+      - 'scripts/offline-studio-portable-runner.cjs'
       - 'scripts/check-offline-studio-executable.js'
+      - 'scripts/check-portable-offline-studio.js'
       - 'tests/offline-studio-assets.test.js'
+      - 'tests/offline-studio-portable.test.js'
       - 'tests/offline-downloads-page.test.js'
       - 'docs/OFFLINE_STUDIO.md'
       - 'package.json'
@@ -41,13 +49,31 @@ concurrency:
 
 jobs:
   executable:
-    name: Offline Studio (${{ matrix.os }})
+    name: Offline Studio (${{ matrix.label }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            label: Linux x64
+            artifact: Linux-X64
+          - os: ubuntu-24.04-arm
+            label: Linux ARM64
+            artifact: Linux-ARM64
+          - os: windows-latest
+            label: Windows x64
+            artifact: Windows-X64
+          - os: windows-11-arm
+            label: Windows ARM64
+            artifact: Windows-ARM64
+          - os: macos-latest
+            label: macOS Apple Silicon
+            artifact: macOS-ARM64
+          - os: macos-15-intel
+            label: macOS Intel
+            artifact: macOS-X64
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -57,58 +83,119 @@ jobs:
       - name: Verify Node SEA support
         run: node --version
       - name: Run Offline Studio unit tests
-        run: node --test tests/offline-studio-assets.test.js tests/offline-downloads-page.test.js
+        run: node --test tests/offline-studio-assets.test.js tests/offline-studio-portable.test.js tests/offline-downloads-page.test.js
       - name: Build and self-smoke executable
         run: node scripts/check-offline-studio-executable.js
       - name: Upload Offline Studio executable
         uses: actions/upload-artifact@v7
         with:
-          name: patch-offline-studio-${{ runner.os }}-${{ runner.arch }}
+          name: patch-offline-studio-${{ matrix.artifact }}
           path: dist-offline-studio/**
+          if-no-files-found: error
+          retention-days: 14
+
+  portable:
+    name: Portable Node / generic Unix compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          package-manager-cache: false
+      - name: Build and self-smoke portable bundle
+        run: node scripts/check-portable-offline-studio.js
+      - name: Assemble portable archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf PatchStudio-portable-node18.tar.gz -C dist-offline-studio-portable .
+          test -s PatchStudio-portable-node18.tar.gz
+      - name: Upload portable compatibility bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: patch-offline-studio-portable-node18
+          path: PatchStudio-portable-node18.tar.gz
           if-no-files-found: error
           retention-days: 14
 
   release-bundle:
     name: Verify Offline Studio release bundle
-    needs: executable
+    needs: [executable, portable]
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x64 build
         uses: actions/download-artifact@v7
         with:
           name: patch-offline-studio-Windows-X64
-          path: release/windows
+          path: release/windows-x64
+      - name: Download Windows ARM64 build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-Windows-ARM64
+          path: release/windows-arm64
       - name: Download macOS Apple Silicon build
         uses: actions/download-artifact@v7
         with:
           name: patch-offline-studio-macOS-ARM64
-          path: release/macos
+          path: release/macos-arm64
+      - name: Download macOS Intel build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-macOS-X64
+          path: release/macos-x64
       - name: Download Linux x64 build
         uses: actions/download-artifact@v7
         with:
           name: patch-offline-studio-Linux-X64
-          path: release/linux
+          path: release/linux-x64
+      - name: Download Linux ARM64 build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-Linux-ARM64
+          path: release/linux-arm64
+      - name: Download portable compatibility build
+        uses: actions/download-artifact@v7
+        with:
+          name: patch-offline-studio-portable-node18
+          path: release/portable
       - name: Assemble deterministic release assets
         shell: bash
         run: |
           set -euo pipefail
-          test -s release/windows/PatchStudio.exe
-          test -s release/macos/PatchStudio
-          test -s release/linux/PatchStudio
-          test -s release/windows/offline-studio-manifest.json
-          test -s release/macos/offline-studio-manifest.json
-          test -s release/linux/offline-studio-manifest.json
-          cmp release/windows/offline-studio-manifest.json release/macos/offline-studio-manifest.json
-          cmp release/windows/offline-studio-manifest.json release/linux/offline-studio-manifest.json
-          mv release/windows/PatchStudio.exe release/PatchStudio-windows-x64.exe
-          mv release/macos/PatchStudio release/PatchStudio-macos-arm64
-          mv release/linux/PatchStudio release/PatchStudio-linux-x64
-          cp release/windows/offline-studio-manifest.json release/offline-studio-manifest.json
-          rm -rf release/windows release/macos release/linux
+          test -s release/windows-x64/PatchStudio.exe
+          test -s release/windows-arm64/PatchStudio.exe
+          test -s release/macos-arm64/PatchStudio
+          test -s release/macos-x64/PatchStudio
+          test -s release/linux-x64/PatchStudio
+          test -s release/linux-arm64/PatchStudio
+          test -s release/portable/PatchStudio-portable-node18.tar.gz
+          for dir in windows-x64 windows-arm64 macos-arm64 macos-x64 linux-x64 linux-arm64; do
+            test -s "release/$dir/offline-studio-manifest.json"
+            cmp release/windows-x64/offline-studio-manifest.json "release/$dir/offline-studio-manifest.json"
+          done
+          mv release/windows-x64/PatchStudio.exe release/PatchStudio-windows-x64.exe
+          mv release/windows-arm64/PatchStudio.exe release/PatchStudio-windows-arm64.exe
+          mv release/macos-arm64/PatchStudio release/PatchStudio-macos-arm64
+          mv release/macos-x64/PatchStudio release/PatchStudio-macos-x64
+          mv release/linux-x64/PatchStudio release/PatchStudio-linux-x64
+          mv release/linux-arm64/PatchStudio release/PatchStudio-linux-arm64
+          mv release/portable/PatchStudio-portable-node18.tar.gz release/PatchStudio-portable-node18.tar.gz
+          cp release/windows-x64/offline-studio-manifest.json release/offline-studio-manifest.json
+          rm -rf release/windows-x64 release/windows-arm64 release/macos-arm64 release/macos-x64 release/linux-x64 release/linux-arm64 release/portable
           (
             cd release
-            sha256sum PatchStudio-windows-x64.exe PatchStudio-macos-arm64 PatchStudio-linux-x64 offline-studio-manifest.json > SHA256SUMS
-            test "$(wc -l < SHA256SUMS)" -eq 4
+            sha256sum \
+              PatchStudio-windows-x64.exe \
+              PatchStudio-windows-arm64.exe \
+              PatchStudio-macos-arm64 \
+              PatchStudio-macos-x64 \
+              PatchStudio-linux-x64 \
+              PatchStudio-linux-arm64 \
+              PatchStudio-portable-node18.tar.gz \
+              offline-studio-manifest.json > SHA256SUMS
+            test "$(wc -l < SHA256SUMS)" -eq 8
           )
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7
@@ -116,8 +203,12 @@ jobs:
           name: patch-offline-studio-release-bundle
           path: |
             release/PatchStudio-windows-x64.exe
+            release/PatchStudio-windows-arm64.exe
             release/PatchStudio-macos-arm64
+            release/PatchStudio-macos-x64
             release/PatchStudio-linux-x64
+            release/PatchStudio-linux-arm64
+            release/PatchStudio-portable-node18.tar.gz
             release/offline-studio-manifest.json
             release/SHA256SUMS
           if-no-files-found: error
@@ -139,7 +230,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for asset in PatchStudio-windows-x64.exe PatchStudio-macos-arm64 PatchStudio-linux-x64 offline-studio-manifest.json SHA256SUMS; do
+          for asset in \
+            PatchStudio-windows-x64.exe \
+            PatchStudio-windows-arm64.exe \
+            PatchStudio-macos-arm64 \
+            PatchStudio-macos-x64 \
+            PatchStudio-linux-x64 \
+            PatchStudio-linux-arm64 \
+            PatchStudio-portable-node18.tar.gz \
+            offline-studio-manifest.json \
+            SHA256SUMS; do
             test -s "release/$asset" || { echo "Missing verified Offline Studio release asset: $asset" >&2; exit 1; }
           done
           (cd release && sha256sum -c SHA256SUMS)
@@ -151,15 +251,28 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for the self-contained Patch Studio Offline IDE. Windows x64, macOS Apple Silicon and Linux x64 executables embed the same deterministic Studio site used by the hosted product and self-smoke before publication. Stage 1 supports offline authoring, Designer/Run and browser-local build targets. Host-native desktop builds from inside the IDE remain Stage 2. Windows/Linux development binaries are unsigned; macOS is ad-hoc signed and not Developer ID notarized.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for Patch Studio Offline IDE. Self-contained Node SEA builds are verified on Windows x64/ARM64, macOS Apple Silicon/Intel and Linux x64/ARM64. The portable Node 18+ bundle is the compatibility path for other systems, including generic Unix/POSIX hosts such as FreeBSD when a compatible Node runtime and browser are installed. Stage 1 supports offline authoring, Designer/Run and browser-local build targets. Host-native desktop builds from inside the IDE remain Stage 2. Windows/Linux development binaries are unsigned; macOS builds are ad-hoc signed and not Developer ID notarized.'
           gh release upload "$TAG" \
             release/PatchStudio-windows-x64.exe \
+            release/PatchStudio-windows-arm64.exe \
             release/PatchStudio-macos-arm64 \
+            release/PatchStudio-macos-x64 \
             release/PatchStudio-linux-x64 \
+            release/PatchStudio-linux-arm64 \
+            release/PatchStudio-portable-node18.tar.gz \
             release/offline-studio-manifest.json \
             release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --clobber
           assets="$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
-          for asset in PatchStudio-windows-x64.exe PatchStudio-macos-arm64 PatchStudio-linux-x64 offline-studio-manifest.json SHA256SUMS; do
+          for asset in \
+            PatchStudio-windows-x64.exe \
+            PatchStudio-windows-arm64.exe \
+            PatchStudio-macos-arm64 \
+            PatchStudio-macos-x64 \
+            PatchStudio-linux-x64 \
+            PatchStudio-linux-arm64 \
+            PatchStudio-portable-node18.tar.gz \
+            offline-studio-manifest.json \
+            SHA256SUMS; do
             printf '%s\n' "$assets" | grep -Fx "$asset" >/dev/null || { echo "Missing published Offline Studio asset: $asset" >&2; exit 1; }
           done
