@@ -7,7 +7,9 @@ export const PATCH_WINDOW_TAB_ORDER_MAX = 32767;
 const DIRECTIVE_RE = /^\s*#\s*@layout\s+(anchor\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))*|dock\s+(?:left|right|top|bottom|fill))\s*$/i;
 const TAB_ORDER_RE = /^\s*#\s*@taborder\s+(\d+)\s*$/i;
 const TAB_ORDER_PREFIX_RE = /^\s*#\s*@taborder\b/i;
-const METADATA_RE = /^\s*#\s*@(layout|taborder)\b/i;
+const LOCKED_RE = /^\s*#\s*@locked\s*$/i;
+const LOCKED_PREFIX_RE = /^\s*#\s*@locked\b/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder|locked)\b/i;
 const EDGE_ORDER = ['left', 'right', 'top', 'bottom'];
 
 export function buildWindowLayoutPolicyManifest(source, ast) {
@@ -232,6 +234,38 @@ export function resolveWindowTabOrders(source, controls) {
   }
   result.sort((a, b) => a.tabOrder - b.tabOrder || a.sourceIndex - b.sourceIndex);
   return result;
+}
+
+export function readWindowDesignerLock(source, sourceLine) {
+  const rows = sourceRows(source);
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 1) return false;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (!LOCKED_PREFIX_RE.test(rows[index])) continue;
+    if (!LOCKED_RE.test(rows[index])) throw new Error(`Invalid Designer lock directive on source line ${index + 1}.`);
+    return true;
+  }
+  return false;
+}
+
+export function setWindowDesignerLock(source, sourceLine, locked) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 0) throw new Error('Selected control line is outside the Patch source.');
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (LOCKED_PREFIX_RE.test(rows[index])) existingIndex = index;
+  }
+  if (!locked) {
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preserveTrailingNewline(original, rows.join('\n'));
+  }
+  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+  const directive = `${indent}# @locked`;
+  if (existingIndex >= 0) rows[existingIndex] = directive;
+  else rows.splice(lineIndex, 0, directive);
+  return preserveTrailingNewline(original, rows.join('\n'));
 }
 
 export function isDesignerMetadataDirective(line) {
