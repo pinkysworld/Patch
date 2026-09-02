@@ -2,6 +2,7 @@ export const PATCH_WINDOW_LAYOUT_POLICY_VERSION = '0.1';
 export const PATCH_WINDOW_LAYOUT_POLICY_FORMAT = 'patch-window-layout-policy';
 
 const DIRECTIVE_RE = /^\s*#\s*@layout\s+(anchor\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))*|dock\s+(?:left|right|top|bottom|fill))\s*$/i;
+const METADATA_RE = /^\s*#\s*@(layout|taborder)\b/i;
 const EDGE_ORDER = ['left', 'right', 'top', 'bottom'];
 
 export function buildWindowLayoutPolicyManifest(source, ast) {
@@ -104,8 +105,11 @@ export function applyWindowResizePolicy(layout, policy, resize) {
 function readWindowLayoutPolicyFromRows(rows, sourceLine) {
   const lineIndex = resolveSourceLineIndex(rows, sourceLine);
   if (lineIndex < 1) return fixedPolicy();
-  const match = rows[lineIndex - 1].match(DIRECTIVE_RE);
-  return match ? parseWindowLayoutPolicy(match[1]) : fixedPolicy();
+  for (let index = lineIndex - 1; index >= 0 && METADATA_RE.test(rows[index]); index -= 1) {
+    const match = rows[index].match(DIRECTIVE_RE);
+    if (match) return parseWindowLayoutPolicy(match[1]);
+  }
+  return fixedPolicy();
 }
 
 function resolveSourceLineIndex(rows, sourceLine) {
@@ -119,7 +123,7 @@ function resolveSourceLineIndex(rows, sourceLine) {
 }
 
 function looksLikeControlLine(line) {
-  return /^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|statusbar)\b/i.test(String(line));
+  return /^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(String(line));
 }
 function sourceRows(source) { return String(source ?? '').replace(/\r\n/g, '\n').split('\n'); }
 
