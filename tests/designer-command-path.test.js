@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { listDesignerControls } from '../src/designer.js';
 
-test('shared Designer command executor owns delete duplicate and reveal-source semantics', async () => {
+test('shared Designer command executor owns delete duplicate reveal and clipboard semantics', async () => {
   const previousDocument = globalThis.document;
   globalThis.document = {
     querySelector() { return null; },
@@ -15,13 +15,35 @@ test('shared Designer command executor owns delete duplicate and reveal-source s
       executeDesignerControlCommand
     } = await import(`../web/designer-core-selection.js?command-path-test=${Date.now()}`);
 
-    const source = `window "Demo" as main size 640, 420:\n  button "Save" as save at 24, 24 size 120, 36\n  input name at 24, 76 size 220, 36\n`;
+    const source = `window "Demo" as main size 640, 420:\n  button "Save" as save at 24, 24 size 120, 36\n  input name at 24, 76 size 220, 36\n\nwhen save clicked:\n  show "saved"\n`;
     const selection = { windowIndex: 0, controlIndex: 0, adapter: 'core' };
 
     const reveal = executeDesignerControlCommand(source, selection, DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE);
     assert.equal(reveal.source, source);
     assert.equal(reveal.control.id, 'save');
     assert.equal(reveal.line, 2);
+
+    const copy = executeDesignerControlCommand(source, selection, DESIGNER_CONTROL_COMMANDS.COPY);
+    assert.equal(copy.source, source);
+    assert.match(copy.clipboardText, /patch-designer-control-clipboard/);
+    assert.equal(copy.nextControl.id, 'save');
+
+    const cut = executeDesignerControlCommand(source, selection, DESIGNER_CONTROL_COMMANDS.CUT);
+    assert.deepEqual(listDesignerControls(cut.source).map(control => control.id), ['name']);
+    assert.match(cut.clipboardText, /patch-designer-control-clipboard/);
+    assert.equal(cut.nextControl, null);
+
+    const paste = executeDesignerControlCommand(
+      source,
+      null,
+      DESIGNER_CONTROL_COMMANDS.PASTE,
+      { clipboardText: copy.clipboardText, windowIndex: 0 }
+    );
+    const pastedControls = listDesignerControls(paste.source);
+    assert.equal(pastedControls.length, 3);
+    assert.ok(paste.nextControl);
+    assert.notEqual(paste.nextControl.id, 'save');
+    assert.equal(pastedControls.at(-1).id, paste.nextControl.id);
 
     const duplicate = executeDesignerControlCommand(source, selection, DESIGNER_CONTROL_COMMANDS.DUPLICATE);
     const duplicatedControls = listDesignerControls(duplicate.source);
@@ -44,7 +66,7 @@ test('shared Designer command executor owns delete duplicate and reveal-source s
   }
 });
 
-test('Inspector Delete Duplicate and Reveal Source share stable command IDs and one dispatch event', () => {
+test('Inspector and clipboard surfaces share stable command IDs and one dispatch event', () => {
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   const duplicate = fs.readFileSync('web/designer-control-duplicate.js', 'utf8');
 
@@ -52,10 +74,15 @@ test('Inspector Delete Duplicate and Reveal Source share stable command IDs and 
   assert.match(core, /DELETE: 'designer\.control\.delete'/);
   assert.match(core, /DUPLICATE: 'designer\.control\.duplicate'/);
   assert.match(core, /REVEAL_SOURCE: 'designer\.control\.reveal-source'/);
+  assert.match(core, /COPY: 'designer\.control\.copy'/);
+  assert.match(core, /CUT: 'designer\.control\.cut'/);
+  assert.match(core, /PASTE: 'designer\.control\.paste'/);
   assert.match(core, /canvas\.addEventListener\(DESIGNER_CONTROL_COMMAND_EVENT, handleDesignerControlCommand\)/);
-  assert.match(core, /executeDesignerControlCommand\(code\.value, selection, command\)/);
   assert.match(core, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.DELETE/);
   assert.match(core, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.REVEAL_SOURCE/);
+  assert.match(core, /validateDesignerControlClipboardSemantics/);
+  assert.match(core, /copyDesignerControlClipboard/);
+  assert.match(core, /pasteDesignerControlClipboard/);
   assert.match(duplicate, /dispatchDesignerControlCommand\(DESIGNER_CONTROL_COMMANDS\.DUPLICATE/);
   assert.doesNotMatch(duplicate, /duplicateDesignerControl/);
   assert.doesNotMatch(duplicate, /code\.value\s*=/);
