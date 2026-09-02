@@ -43,12 +43,35 @@ test('command palette restores focus and exposes the active listbox option', () 
   assert.match(palette, /input\.removeAttribute\('aria-activedescendant'\)/);
 });
 
+test('F12 uses one source-backed Source Designer navigation path', () => {
+  assert.match(palette, /STUDIO_VIEW_NAVIGATION_VERSION = '0\.1'/);
+  assert.match(palette, /installStudioViewNavigation\(\)/);
+  assert.match(palette, /event\.key !== 'F12'/);
+  assert.match(palette, /document\.querySelector\('dialog\[open\]'\)/);
+  assert.match(palette, /event\.preventDefault\(\)/);
+  assert.match(palette, /event\.stopPropagation\(\)/);
+  assert.match(palette, /toggleSourceDesignerView\(\)/);
+  assert.match(palette, /export function viewStudioSource\(\)/);
+  assert.match(palette, /#designerCanvas \.designer-selected/);
+  assert.match(palette, /#designerInspectorSource/);
+  assert.match(palette, /sourceAction\.click\(\)/);
+  assert.match(palette, /sourceEditor\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(palette, /export function viewStudioDesigner\(\)/);
+  assert.match(palette, /document\.querySelector\('#tabDesigner'\)\?\.click\(\)/);
+  assert.match(palette, /#designerCanvas \.designer-control/);
+  assert.match(palette, /requestAnimationFrame\(\(\) =>/);
+  assert.match(palette, /export function toggleSourceDesignerView\(\)/);
+  assert.match(palette, /command\('toggle-source-designer', 'Toggle Source \/ Designer'/);
+  assert.match(palette, /'F12'/);
+  assert.doesNotMatch(palette, /localStorage|sessionStorage|indexedDB/);
+});
+
 test('command palette delegates to existing Studio actions without hidden persistent state', () => {
   for (const marker of [
     "'Run project'", "document.querySelector('#run')?.click()",
     "'Build selected target'", "document.querySelector('#build')?.click()",
-    "'Focus source editor'", "focus('#code')",
-    "'Open Designer'", "click('#tabDesigner')",
+    "'Focus source editor'", 'viewStudioSource',
+    "'Open Designer'", 'viewStudioDesigner',
     "'Open Recovery'", "click('#recoverProject')",
     "navigate('./docs.html')", "navigate('./downloads.html')", "navigate('./help.html')"
   ]) assert.ok(palette.includes(marker), marker);
@@ -77,10 +100,7 @@ test('command palette v2 derives file and symbol results from the existing proje
 test('quick-open exposes Thing fields from the Project Tree model and jumps to the field line', () => {
   const items = buildStudioQuickOpenItems([{
     path: 'main.patch',
-    content: `create thing player:
-  name = "Sam"
-  score = 0
-`
+    content: `create thing player:\n  name = "Sam"\n  score = 0\n`
   }]);
   const field = items.find(item => item.label === 'player.score');
   assert.ok(field, 'Thing field player.score should be a quick-open symbol');
@@ -95,11 +115,7 @@ test('quick-open exposes Thing fields from the Project Tree model and jumps to t
 test('quick-open exposes recipe parameters from the Project Tree model and jumps to the recipe line', () => {
   const items = buildStudioQuickOpenItems([{
     path: 'logic/reward.patch',
-    content: `create number score = 0
-make reward(bonus number 0..5):
-  change score:
-    add bonus
-`
+    content: `create number score = 0\nmake reward(bonus number 0..5):\n  change score:\n    add bonus\n`
   }]);
   const param = items.find(item => item.label === 'reward.bonus');
   assert.ok(param, 'Recipe parameter reward.bonus should be a quick-open symbol');
