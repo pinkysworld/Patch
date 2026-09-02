@@ -6,6 +6,8 @@ import { execFileSync } from 'node:child_process';
 const runner = fs.readFileSync('scripts/offline-studio-portable-runner.cjs', 'utf8');
 const builder = fs.readFileSync('scripts/build-portable-offline-studio.js', 'utf8');
 const checker = fs.readFileSync('scripts/check-portable-offline-studio.js', 'utf8');
+const runtimeKitBuilder = fs.readFileSync('scripts/build-offline-studio-runtime-kit.js', 'utf8');
+const runtimeKitChecker = fs.readFileSync('scripts/check-offline-studio-runtime-kit.js', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/offline-studio.yml', 'utf8');
 
 test('portable Offline Studio runner is filesystem-backed, local-only and asset-verified', () => {
@@ -44,7 +46,17 @@ test('portable bundle ships Unix and Windows launchers and verifies the same sit
   assert.match(checker, /portable Unix launcher smoke/);
 });
 
-test('Offline Studio CI verifies x64 and ARM64 executables plus Intel and Apple Silicon macOS', () => {
+test('embedded-runtime kit carries the current host Node beside the same portable Studio', () => {
+  execFileSync(process.execPath, ['--check', 'scripts/build-offline-studio-runtime-kit.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'scripts/check-offline-studio-runtime-kit.js'], { stdio: 'pipe' });
+  assert.match(runtimeKitBuilder, /fs\.copyFileSync\(process\.execPath, runtimeTarget\)/);
+  assert.match(runtimeKitBuilder, /patch-offline-studio-runtime-kit/);
+  assert.match(runtimeKitBuilder, /runtime\/node/);
+  assert.match(runtimeKitChecker, /runtime-kit smoke/);
+  assert.match(runtimeKitChecker, /metadata\.arch !== process\.arch/);
+});
+
+test('Offline Studio CI verifies x64 and ARM64 SEA builds plus an Intel macOS runtime kit', () => {
   for (const marker of [
     'ubuntu-latest', 'ubuntu-24.04-arm',
     'windows-latest', 'windows-11-arm',
@@ -53,7 +65,10 @@ test('Offline Studio CI verifies x64 and ARM64 executables plus Intel and Apple 
     'Windows-X64', 'Windows-ARM64',
     'macOS-ARM64', 'macOS-X64'
   ]) assert.ok(workflow.includes(marker), marker);
+  assert.match(workflow, /Offline Studio \(macOS Intel runtime kit\)/);
+  assert.match(workflow, /check-offline-studio-runtime-kit\.js/);
+  assert.match(workflow, /PatchStudio-macos-x64\.tar\.gz/);
   assert.match(workflow, /Portable Node \/ generic Unix compatibility/);
   assert.match(workflow, /PatchStudio-portable-node18\.tar\.gz/);
-  assert.match(workflow, /needs: \[executable, portable\]/);
+  assert.match(workflow, /needs: \[executable, macos-intel-runtime-kit, portable\]/);
 });
