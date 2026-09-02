@@ -28,15 +28,15 @@ Patch currently uses three Stage 1 distribution classes:
 
 1. **Self-contained SEA executables**, built and executed in CI on Windows x64, Windows ARM64, macOS Apple Silicon, Linux x64 and Linux ARM64.
 2. **macOS Intel embedded-runtime kit**, built and executed on an Intel macOS CI host. It carries its own Intel Node runtime because the current Node 26 direct `--build-sea` path is not reliable on macOS x64. Users do not need a separately installed Node runtime for this kit.
-3. **Portable Node compatibility bundle**, for systems where Patch does not publish a host-specific self-contained distribution. This path is intended for compatible Unix/POSIX environments such as FreeBSD when Node.js 18+ and a modern local browser are available.
+3. **Portable Node compatibility bundle**, for systems where Patch does not publish a host-specific self-contained distribution. This path requires Node.js 18+ and a modern local browser. In addition to its Linux build/self-smoke, the same portable Studio is executed inside a FreeBSD 15 x64 VM in CI.
 
 All three classes carry the same generated Patch Studio site contract. The portable and runtime-kit runners serve only over loopback and verify bundled Studio assets against the deterministic manifest before serving them.
 
-The generic portable bundle is deliberately not described as a native FreeBSD executable. It is a compatibility path for Node/browser hosts.
+The generic portable bundle is deliberately not described as a native FreeBSD executable. The FreeBSD CI gate verifies the Node/browser compatibility path itself, not a FreeBSD SEA or native application package.
 
 ### Release integrity and signing boundary
 
-Every host-specific distribution is launched and self-smoked on its target CI architecture before publication. Windows x64/ARM64, macOS Apple Silicon, the Intel macOS runtime kit, and Linux x64/ARM64 must all carry the same deterministic Studio manifest. The generic portable compatibility bundle is built from the same generated site and self-smoked separately.
+Every host-specific distribution is launched and self-smoked on its target CI architecture before publication. Windows x64/ARM64, macOS Apple Silicon, the Intel macOS runtime kit, and Linux x64/ARM64 must all carry the same deterministic Studio manifest. The generic portable compatibility bundle is built from the same generated site, self-smoked on Linux and executed again in FreeBSD 15 x64.
 
 The publish job generates `SHA256SUMS` for the exact release bytes and verifies every required release asset.
 
@@ -82,8 +82,9 @@ The implemented Stage 1 foundation includes:
 - self-smoke modes that request the IDE over loopback, validate HTTP/CSP and exit;
 - verified self-contained builds for Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64;
 - a verified embedded-runtime Intel macOS kit;
-- a generic Node 18+ portable compatibility bundle for other supported Node/browser hosts;
-- rolling `offline-studio-v0.2` publication only after the complete host-specific and portable matrix succeeds;
+- a generic Node 18+ portable compatibility bundle;
+- a real FreeBSD 15 x64 VM gate that runs the portable bundle's full build/self-smoke path;
+- rolling `offline-studio-v0.2` publication only after the complete host-specific, portable and FreeBSD matrix succeeds;
 - deterministic six-way host-distribution manifest equality before publication;
 - release `SHA256SUMS` plus post-upload asset-name verification;
 - fail-closed build validation if critical Studio assets are missing.
@@ -166,7 +167,7 @@ node PatchStudio.cjs
 
 The Unix launcher uses `/bin/sh` and avoids GNU-specific shell requirements. Browser discovery tries common desktop openers and browsers. If none is available, Patch Studio prints the local loopback URL instead of failing the IDE server.
 
-For FreeBSD and other Unix variants this is a compatibility contract, not a claim that Patch CI currently boots a native FreeBSD runner for the IDE. The portable runner itself remains OS-neutral Node code and its served Studio assets are integrity checked against the deterministic manifest.
+The portable distribution is now exercised in a real **FreeBSD 15 x64 VM** by CI using the same `node scripts/check-portable-offline-studio.js` self-smoke that validates Linux. That is a stronger compatibility claim than shell-only inspection, while still not claiming a native FreeBSD SEA or Window runtime.
 
 ### Verify a release download
 
