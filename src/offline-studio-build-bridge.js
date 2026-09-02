@@ -39,7 +39,16 @@ export function validateOfflineBuildRequest(value) {
     throw new OfflineBuildBridgeError('invalid-request-id', 'requestId must be 1-64 safe identifier characters.');
   }
   const source = String(value.source ?? '');
-  if (!source || source.length > 512 || source.includes('\0') || path.isAbsolute(source) || path.win32.isAbsolute(source)) {
+  const sourceSegments = source.replaceAll('\\', '/').split('/');
+  if (
+    !source ||
+    source.length > 512 ||
+    source.includes('\0') ||
+    source.includes(':') ||
+    sourceSegments.includes('..') ||
+    path.isAbsolute(source) ||
+    path.win32.isAbsolute(source)
+  ) {
     throw new OfflineBuildBridgeError('invalid-source', 'source must be a relative Patch file path inside the opened workspace.');
   }
   if (path.extname(source).toLowerCase() !== '.patch') {
