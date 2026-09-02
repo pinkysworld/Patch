@@ -9,7 +9,13 @@ const studioWorkflow = fs.readFileSync('.github/workflows/offline-studio.yml', '
 const offlineStudioDoc = fs.readFileSync('docs/OFFLINE_STUDIO.md', 'utf8');
 const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/help.html'];
 const compilerAssets = ['patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS'];
-const studioAssets = ['PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS'];
+const studioPublicAssets = ['PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS'];
+const studioReleaseAssets = [
+  'PatchStudio-windows-x64.exe','PatchStudio-windows-arm64.exe',
+  'PatchStudio-macos-arm64','PatchStudio-macos-x64',
+  'PatchStudio-linux-x64','PatchStudio-linux-arm64',
+  'PatchStudio-portable-node18.tar.gz','offline-studio-manifest.json','SHA256SUMS'
+];
 
 test('offline compiler download page and release workflow share one stable v0.2 asset contract', () => {
   assert.match(downloads, /offline-compiler-v0\.2/);
@@ -24,17 +30,21 @@ test('offline compiler download page and release workflow share one stable v0.2 
 test('Offline Studio download page, documentation and workflow share one stable v0.2 release contract', () => {
   assert.match(downloads, /offline-studio-v0\.2/);
   assert.match(studioWorkflow, /TAG: offline-studio-v0\.2/);
-  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: executable/);
+  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: \[executable, portable\]/);
   assert.match(studioWorkflow, /publish:[\s\S]*needs: release-bundle/);
   assert.match(studioWorkflow, /patch-offline-studio-release-bundle/);
-  assert.match(studioWorkflow, /cmp release\/windows\/offline-studio-manifest\.json release\/macos\/offline-studio-manifest\.json/);
+  assert.match(studioWorkflow, /for dir in windows-x64 windows-arm64 macos-arm64 macos-x64 linux-x64 linux-arm64/);
+  assert.match(studioWorkflow, /cmp release\/windows-x64\/offline-studio-manifest\.json "release\/\$dir\/offline-studio-manifest\.json"/);
   assert.match(studioWorkflow, /sha256sum -c SHA256SUMS/);
   assert.match(studioWorkflow, /gh release upload/);
   assert.match(studioWorkflow, /Missing published Offline Studio asset/);
   assert.match(offlineStudioDoc, /offline-studio-v0\.2/);
   assert.match(offlineStudioDoc, /Stage 2 local native-build integration remains open/);
-  for (const asset of studioAssets) {
+
+  for (const asset of studioPublicAssets) {
     assert.ok(downloads.includes(asset), `downloads page: ${asset}`);
+  }
+  for (const asset of studioReleaseAssets) {
     assert.ok(studioWorkflow.includes(asset), `Offline Studio workflow: ${asset}`);
     assert.ok(offlineStudioDoc.includes(asset), `Offline Studio documentation: ${asset}`);
   }
