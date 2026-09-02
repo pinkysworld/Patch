@@ -4,6 +4,7 @@ import {
   normalizeWindowLayoutPolicy,
   readWindowLayoutPolicy
 } from '../src/window-layout-policy.js';
+import { isDesignerMetadataDirective } from '../src/window-tab-order.js';
 
 export const PATCH_DESIGNER_LAYOUT_POLICY_VERSION = '0.1';
 
@@ -14,21 +15,27 @@ export function readDesignerLayoutPolicy(source, sourceLine) {
 }
 
 export function setDesignerLayoutPolicy(source, sourceLine, policy) {
-  const rows = String(source ?? '').replace(/\r\n/g, '\n').split('\n');
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
   const lineIndex = resolveControlLineIndex(rows, sourceLine);
   if (lineIndex < 0) throw new Error('Selected control line is outside the Patch source.');
-  const previousIndex = lineIndex - 1;
-  const hasDirective = previousIndex >= 0 && DIRECTIVE_RE.test(rows[previousIndex]);
+
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && isDesignerMetadataDirective(rows[index]); index -= 1) {
+    if (DIRECTIVE_RE.test(rows[index])) existingIndex = index;
+  }
+
   const normalized = normalizeDesignerLayoutPolicy(policy);
   if (normalized.kind === 'fixed') {
-    if (hasDirective) rows.splice(previousIndex, 1);
-    return rows.join('\n');
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preserveTrailingNewline(original, rows.join('\n'));
   }
+
   const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
   const directive = `${indent}# @layout ${formatDesignerLayoutPolicy(normalized)}`;
-  if (hasDirective) rows[previousIndex] = directive;
+  if (existingIndex >= 0) rows[existingIndex] = directive;
   else rows.splice(lineIndex, 0, directive);
-  return rows.join('\n');
+  return preserveTrailingNewline(original, rows.join('\n'));
 }
 
 export function applyDesignerResizePolicy(layout, policy, resize) {
@@ -63,7 +70,12 @@ function resolveControlLineIndex(rows, sourceLine) {
   if (!Number.isInteger(raw)) return -1;
   for (const candidate of [raw - 1, raw]) {
     if (candidate < 0 || candidate >= rows.length) continue;
-    if (/^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|statusbar)\b/i.test(rows[candidate])) return candidate;
+    if (/^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(rows[candidate])) return candidate;
   }
   return raw >= 1 && raw <= rows.length ? raw - 1 : -1;
+}
+
+function preserveTrailingNewline(original, text) {
+  const hasNewline = /\n$/.test(original);
+  return text.replace(/\s+$/, '') + (hasNewline ? '\n' : '');
 }
