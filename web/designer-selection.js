@@ -2,6 +2,7 @@ const selectionState = new WeakMap();
 const installedBridges = new WeakSet();
 
 export const DESIGNER_SELECTION_EVENT = 'patch-designer-selection-change';
+export const DESIGNER_INSPECTOR_STATUS_VERSION = '0.1';
 
 export function normalizeDesignerSelection(selection) {
   if (!selection || typeof selection !== 'object') return null;
@@ -135,6 +136,35 @@ export function installDesignerSelectionBridge(canvas) {
 
   canvas.addEventListener('click', clearForCanvasSelection, { capture: true });
   canvas.addEventListener('keydown', clearForCanvasSelection, { capture: true });
+}
+
+export function designerInspectorErrorMessage(error) {
+  if (typeof error === 'string') return error;
+  return error?.message ?? String(error ?? 'Designer action failed');
+}
+
+export function showDesignerInspectorError(error, options = {}) {
+  const target = designerInspectorErrorTarget(options);
+  if (!target) return false;
+  target.textContent = designerInspectorErrorMessage(error);
+  target.hidden = false;
+  target.dataset.state = 'invalid';
+  return true;
+}
+
+export function clearDesignerInspectorError(options = {}) {
+  const target = designerInspectorErrorTarget(options);
+  if (!target) return false;
+  target.textContent = '';
+  target.hidden = true;
+  delete target.dataset.state;
+  return true;
+}
+
+export function designerInspectorErrorTarget(options = {}) {
+  const doc = options.document ?? globalThis.document;
+  const selector = options.selector ?? '#designerInspectorError';
+  return doc?.querySelector?.(selector) ?? null;
 }
 
 function emitSelection(canvas, selection, reason) {
