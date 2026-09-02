@@ -9,6 +9,7 @@ import {
   restoreDesignerAdapterSelection,
   selectDesignerElement
 } from './designer-selection.js';
+import { showDesignerInspectorError } from './designer-inspector-status.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -34,7 +35,7 @@ function installTool() {
       if (added) rememberDesignerSelection(canvas, treeSelection(added), { reason: 'add-tree' });
       setSource(next);
     } catch (error) {
-      showError(error);
+      showDesignerInspectorError(error);
     }
   }, { capture: true });
 }
@@ -131,12 +132,4 @@ function setSource(source) {
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
   scheduleSync();
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (target) {
-    target.textContent = error?.message ?? String(error);
-    target.hidden = false;
-  }
 }
