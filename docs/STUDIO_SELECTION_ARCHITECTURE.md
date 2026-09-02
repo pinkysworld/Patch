@@ -38,6 +38,17 @@ Toolbox additions for ordinary controls remain source-backed through `forms-desi
 
 The shared bridge never adopts renderer-only `.designer-selected` markers. Primary state may come only from the shared selection API, an actual selection action, or an explicit source-backed toolbox-add reconciliation path.
 
+## Shared Object Inspector status
+
+`designer-inspector-status/0.1` is colocated in the already canonical `web/designer-selection.js` module so Hosted and Offline Studio do not gain another packaging dependency. It standardizes the common Inspector error surface:
+
+- one error-to-message normalization rule;
+- one `#designerInspectorError` lookup boundary;
+- one visible invalid state through `data-state="invalid"`;
+- one clear operation that resets content, visibility and state.
+
+The first migration wave covers Slider toolbox creation, TreeView toolbox creation, single-control Duplicate and Form Delete. Those actions no longer carry private `showError()` copies. This is intentionally narrower than the remaining dirty/apply convergence work: specialized editors may still calculate their own pending-edit state until their property contracts can be unified without changing behavior.
+
 ## Source-to-Designer navigation synchronization
 
 `studio-source-designer-sync/0.1` extends `web/designer-core-selection.js` with a narrow source-navigation bridge. It does not create a second selection store.
@@ -100,7 +111,7 @@ Persistent application state changes only through ordinary semantic `change` ope
 
 The top-level Designer now has one authoritative primary-selection and common Properties boundary across core controls, Tabs, Table and TreeView. Special adapters may still own rendering details or structural editing, but they do not own competing primary-selection variables or Inspector Apply/Delete/Source handlers.
 
-Any future control adapter should publish selection through `designer-selection.js`, let `designer-core-selection.js` resolve common Properties actions, and keep additional editor-specific state transient and source-backed.
+Any future control adapter should publish selection through `designer-selection.js`, let `designer-core-selection.js` resolve common Properties actions, use the shared Inspector status helpers for common error presentation, and keep additional editor-specific state transient and source-backed.
 
 ## Contract boundary
 
