@@ -58,6 +58,10 @@ jobs:
       - name: Studio Chrome startup smoke
         timeout-minutes: 2
         run: node --test tests/studio-browser-startup.test.js
+      - name: Designer navigation Chrome round trip
+        if: runner.os == 'Linux' && matrix.node == '24'
+        timeout-minutes: 2
+        run: node --test tests/studio-navigation-browser-roundtrip.test.js
       - name: Workshop Desk Chrome stress smoke
         if: runner.os == 'Linux' && matrix.node == '24'
         timeout-minutes: 2
