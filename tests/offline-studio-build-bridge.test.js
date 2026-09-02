@@ -77,6 +77,33 @@ test('workspace resolution fails closed on a symlink that escapes the opened wor
   }
 });
 
+test('native output path rejects a symlinked .patch-build escape before invoking the builder', t => {
+  const root = workspace();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-build-output-outside-'));
+  try {
+    try {
+      fs.symlinkSync(outside, path.join(root, '.patch-build'), 'dir');
+    } catch {
+      t.skip('Host does not permit creating the output symlink.');
+      return;
+    }
+    let called = false;
+    assert.throws(
+      () => executeOfflineBuildRequest(root, request(), {
+        builder() {
+          called = true;
+          return { platform: 'Linux', backend: 'gtk3', outputKind: 'Linux executable' };
+        }
+      }),
+      /may not contain symbolic links/
+    );
+    assert.equal(called, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('bridge executes the existing host-native builder directly with canonical bounded paths', () => {
   const root = workspace();
   const calls = [];
@@ -167,4 +194,5 @@ test('bridge implementation contains no direct child-process or shell execution 
   assert.match(source, /buildNativeGuiForHost/);
   assert.match(source, /host !== '127\.0\.0\.1'/);
   assert.match(source, /crypto\.timingSafeEqual/);
+  assert.match(source, /output-symlink/);
 });
