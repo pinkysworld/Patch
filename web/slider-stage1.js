@@ -1,5 +1,5 @@
 import { addDesignerControl } from '../src/designer.js';
-import { showDesignerInspectorError } from './designer-inspector-status.js';
+import { showDesignerInspectorError } from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const addSlider = document.querySelector('#addSlider');
