@@ -159,9 +159,29 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  freebsd-portable:
+    name: Portable Offline Studio (FreeBSD 15 x64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and self-smoke in FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: '15'
+          usesh: true
+          prepare: |
+            pkg install -y node
+          run: |
+            set -eu
+            freebsd-version
+            uname -a
+            node --version
+            node scripts/check-portable-offline-studio.js
+
   release-bundle:
     name: Verify Offline Studio release bundle
-    needs: [executable, macos-intel-runtime-kit, portable]
+    needs: [executable, macos-intel-runtime-kit, portable, freebsd-portable]
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows x64 build
@@ -290,7 +310,7 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for Patch Studio Offline IDE. Self-contained Node SEA builds are verified on Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64. macOS Intel is a separately verified offline runtime kit with its own embedded Intel Node runtime because current Node 26 direct --build-sea binaries crash on macOS x64. The portable Node 18+ bundle is the compatibility path for other systems, including generic Unix/POSIX hosts such as FreeBSD when a compatible Node runtime and browser are installed. Stage 1 supports offline authoring, Designer/Run and browser-local build targets. Host-native desktop builds from inside the IDE remain Stage 2.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for Patch Studio Offline IDE. Self-contained Node SEA builds are verified on Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64. macOS Intel is a separately verified offline runtime kit with its own embedded Intel Node runtime because current Node 26 direct --build-sea binaries crash on macOS x64. The portable Node 18+ bundle is also self-smoked in a FreeBSD 15 x64 VM and is the compatibility path for other generic Unix/POSIX hosts with a compatible Node runtime and browser. Stage 1 supports offline authoring, Designer/Run and browser-local build targets. Host-native desktop builds from inside the IDE remain Stage 2.'
           gh release upload "$TAG" \
             release/PatchStudio-windows-x64.exe \
             release/PatchStudio-windows-arm64.exe \
