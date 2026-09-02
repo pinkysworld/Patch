@@ -116,9 +116,11 @@ Pages gates the browser Ready path on the published **runtime v1.10** Windows/ma
 
 The rolling `offline-compiler-v0.2` line defaults supported Window linking to Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 on Windows, Linux, Apple Silicon macOS and Intel macOS. It carries a separate runtime-v1.8 underlay for explicit `--gui-payload-version 17` compatibility. FreeBSD remains Console-only through portable C99.
 
-The rolling `offline-studio-v0.2` Stage 1 line verifies self-contained IDE executables on **Windows x64/ARM64, macOS Apple Silicon/Intel and Linux x64/ARM64**. All six executable builds must carry the same deterministic Studio manifest. A separate portable Node 18+ bundle carries that same Studio closure for compatible systems where a self-contained Patch Studio executable is not published, including generic Unix/POSIX hosts such as FreeBSD when a compatible Node runtime and browser are installed. The portable bundle is a compatibility path, not a claim of a native FreeBSD IDE binary.
+The rolling `offline-studio-v0.2` Stage 1 line verifies self-contained SEA IDE executables on **Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64**. macOS Intel is verified separately as an offline runtime kit that embeds the Intel Node runtime and the same Studio site closure. This avoids advertising a direct Node 26 SEA binary on macOS x64 while that upstream path remains unreliable. A separate portable Node 18+ bundle carries the same Studio closure for compatible systems where a host-specific Patch Studio distribution is not published, including generic Unix/POSIX hosts such as FreeBSD when a compatible Node runtime and browser are installed.
 
-Both Stage 1 distribution classes support offline authoring, Designer, Run and current browser-local build targets. Host-native desktop Build directly inside the installed IDE remains the explicit Stage 2 boundary.
+All six host-specific distributions must carry the same deterministic Studio manifest before release assembly proceeds. The generic portable bundle is a compatibility path, not a claim of a native FreeBSD IDE binary.
+
+All Stage 1 distribution classes support offline authoring, Designer, Run and current browser-local build targets. Host-native desktop Build directly inside the installed IDE remains the explicit Stage 2 boundary.
 
 Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional cloud/AOT workflows remain separate from the default download/link experience.
 
