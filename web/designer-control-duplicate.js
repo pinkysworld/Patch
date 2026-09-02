@@ -2,9 +2,9 @@ import {
   currentDesignerSelection,
   designerSelectionForControl,
   rememberDesignerSelection,
-  selectDesignerElement
+  selectDesignerElement,
+  showDesignerInspectorError
 } from './designer-selection.js';
-import { showDesignerInspectorError } from './designer-inspector-status.js';
 import { duplicateDesignerControl } from './designer-control-duplicate-model.js';
 
 const code = document.querySelector('#code');
