@@ -5,12 +5,18 @@ import {
   getActiveStudioProjectFile,
   getStudioProjectFiles
 } from './project-lifecycle.js';
+import { currentDesignerSelection } from './designer-selection.js';
+import {
+  DESIGNER_CONTROL_COMMANDS,
+  dispatchDesignerControlCommand
+} from './designer-core-selection.js';
 
 export const STUDIO_EDIT_HISTORY_VERSION = '0.1';
 export const STUDIO_EDIT_HISTORY_LIMIT = 80;
 export const STUDIO_EDIT_HISTORY_COALESCE_MS = 850;
 export const STUDIO_VIEW_NAVIGATION_VERSION = '0.1';
 export const STUDIO_NAVIGATION_BREADCRUMB_VERSION = '0.1';
+export const STUDIO_DESIGNER_COMMAND_SURFACES_VERSION = '0.1';
 
 const sourceEditor = document.querySelector('#code');
 const saveState = document.querySelector('#saveState');
@@ -24,6 +30,7 @@ let typingTimer = null;
 
 installStudioEditHistory();
 installStudioViewNavigation();
+installDesignerControlCommandShortcuts();
 installDesignerEventRowNavigation();
 installStudioNavigationBreadcrumb();
 
@@ -49,6 +56,41 @@ function installStudioViewNavigation() {
     event.stopPropagation();
     toggleSourceDesignerView();
   }, { capture: true });
+}
+
+function installDesignerControlCommandShortcuts() {
+  window.addEventListener('keydown', event => {
+    if (event.defaultPrevented || event.isComposing || document.querySelector('dialog[open]')) return;
+    const canvas = document.querySelector('#designerCanvas');
+    const control = event.target?.closest?.('.designer-control');
+    if (!canvas || !control || !canvas.contains(control)) return;
+    if (event.target?.matches?.('input, textarea, select') || event.target?.isContentEditable) return;
+
+    const commandKey = event.ctrlKey || event.metaKey;
+    const duplicate = commandKey && event.shiftKey && !event.altKey && event.key.toLowerCase() === 'd';
+    const remove = !commandKey && !event.shiftKey && !event.altKey && event.key === 'Delete';
+    if (!duplicate && !remove) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    runSelectedDesignerControlCommand(
+      duplicate ? DESIGNER_CONTROL_COMMANDS.DUPLICATE : DESIGNER_CONTROL_COMMANDS.DELETE,
+      duplicate ? 'shortcut-duplicate' : 'shortcut-delete'
+    );
+  }, { capture: true });
+}
+
+function runSelectedDesignerControlCommand(command, origin = 'studio-command-surface') {
+  const canvas = document.querySelector('#designerCanvas');
+  if (!canvas || !currentDesignerSelection(canvas)) {
+    announceHistoryStatus('Select a Designer control first');
+    return false;
+  }
+  if (canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
+    announceHistoryStatus('This command currently needs one selected Designer control');
+    return false;
+  }
+  return dispatchDesignerControlCommand(command, { origin });
 }
 
 function installDesignerEventRowNavigation() {
@@ -389,6 +431,9 @@ if (dialog && trigger && input && list && empty) {
     command('toggle-source-designer', 'Toggle Source / Designer', 'Switch between the active Patch source and visual Form Designer', 'F12', 'source designer form code unit toggle view', toggleSourceDesignerView),
     command('editor', 'Focus source editor', 'Jump to the active Patch source or selected Designer control declaration', '', 'source code editor main patch view source', viewStudioSource),
     command('designer', 'Open Designer', 'Show the source-backed visual Designer and restore Designer focus', '', 'designer form controls visual view form', viewStudioDesigner),
+    command('designer-control-duplicate', 'Duplicate selected control', 'Duplicate the current source-backed Designer control through the shared command path', 'Ctrl/Cmd + Shift + D', 'designer control duplicate copy clone', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.DUPLICATE, 'command-palette-duplicate')),
+    command('designer-control-delete', 'Delete selected control', 'Delete the current source-backed Designer control through the shared command path', 'Delete', 'designer control delete remove', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.DELETE, 'command-palette-delete')),
+    command('designer-control-reveal-source', 'Reveal selected control source', 'Focus the source declaration for the current Designer control', '', 'designer control source reveal declaration code', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE, 'command-palette-source')),
     command('app', 'Open App preview', 'Show the last running Window app', '', 'app preview window', () => click('#tabApp')),
     command('output', 'Open Output', 'Show runtime and build output', '', 'output console logs', () => click('#tabOutput')),
     command('changes', 'Open Change Contract', 'Inspect semantic changes and capabilities', '', 'changes contract capabilities policy', () => click('#tabChanges')),
