@@ -18,11 +18,15 @@ export function buildWindowLayoutPolicyManifest(source, ast) {
     const controls = [];
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      controls.push({ line: child.line ?? null, policy: readWindowLayoutPolicyFromRows(rows, child.line) });
+      controls.push({
+        line: child.line ?? null,
+        policy: readWindowLayoutPolicyFromRows(rows, child.line),
+        tabOrder: readWindowTabOrderFromRows(rows, child.line)
+      });
     }
     windows.push({ line: node.line ?? null, width: node.width ?? 640, height: node.height ?? 420, controls });
   }
-  return { format: PATCH_WINDOW_LAYOUT_POLICY_FORMAT, version: PATCH_WINDOW_LAYOUT_POLICY_VERSION, windows };
+  return validateWindowLayoutPolicyManifest({ format: PATCH_WINDOW_LAYOUT_POLICY_FORMAT, version: PATCH_WINDOW_LAYOUT_POLICY_VERSION, windows });
 }
 
 export function attachWindowLayoutPolicies(ast, manifest) {
@@ -35,8 +39,11 @@ export function attachWindowLayoutPolicies(ast, manifest) {
     let controlIndex = 0;
     for (const child of node.body ?? []) {
       if (child.kind !== 'uiControl' && child.kind !== 'tabs') continue;
-      const policy = normalizeWindowLayoutPolicy(policyForm.controls?.[controlIndex++]?.policy);
+      const metadata = policyForm.controls?.[controlIndex++] ?? {};
+      const policy = normalizeWindowLayoutPolicy(metadata.policy);
+      const tabOrder = normalizeWindowTabOrder(metadata.tabOrder);
       Object.defineProperty(child, 'layoutPolicy', { value: policy, enumerable: false, configurable: true, writable: false });
+      Object.defineProperty(child, 'tabOrder', { value: tabOrder, enumerable: false, configurable: true, writable: false });
     }
   }
   if (windowIndex !== manifest.windows.length) throw new Error('Window layout policy manifest has more Forms than the compiled program.');
@@ -50,7 +57,14 @@ export function validateWindowLayoutPolicyManifest(manifest) {
   if (!Array.isArray(manifest.windows)) throw new Error('Window layout policy manifest is incomplete.');
   for (const form of manifest.windows) {
     if (!Number.isFinite(Number(form.width)) || !Number.isFinite(Number(form.height)) || !Array.isArray(form.controls)) throw new Error('Window layout policy Form is incomplete.');
-    for (const control of form.controls) normalizeWindowLayoutPolicy(control.policy);
+    const usedTabOrders = new Set();
+    for (const control of form.controls) {
+      normalizeWindowLayoutPolicy(control.policy);
+      const tabOrder = normalizeWindowTabOrder(control.tabOrder);
+      if (tabOrder === null) continue;
+      if (usedTabOrders.has(tabOrder)) throw new Error(`Window TabOrder ${tabOrder} is duplicated within one Form.`);
+      usedTabOrders.add(tabOrder);
+    }
   }
   return manifest;
 }
