@@ -107,6 +107,35 @@ test('ordinary controls and Tabs are bridged into the same selection store and e
   assert.match(index, /\.\/designer-core-selection\.js/);
 });
 
+test('source-side navigation synchronizes only unambiguous Control and Event targets without stealing editor focus', () => {
+  const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
+  assert.match(core, /STUDIO_SOURCE_DESIGNER_SYNC_VERSION = '0\.1'/);
+  assert.match(core, /SOURCE_NAVIGATION_KEYS/);
+  assert.match(core, /code\.addEventListener\('click', scheduleSourceNavigationSync\)/);
+  assert.match(core, /code\.addEventListener\('select', scheduleSourceNavigationSync\)/);
+  assert.match(core, /code\.addEventListener\('keyup', captureSourceNavigationKey\)/);
+  assert.match(core, /patch:studio-quick-open/);
+  assert.match(core, /document\.activeElement !== code/);
+  assert.match(core, /sourceDesignerNavigationTarget\(code\.value, code\.selectionStart\)/);
+  assert.match(core, /controls\.find\(control => control\.line === line\)/);
+  assert.match(core, /when\\s\+\(\[A-Za-z_/);
+  assert.match(core, /controls\.find\(item => item\.id === eventMatch\[1\]\)/);
+  assert.match(core, /designerSelectionForControl\(control\)/);
+  assert.match(core, /selectDesignerElement\(canvas, element, selection/);
+  assert.match(core, /source-event-navigation/);
+  assert.match(core, /source-control-navigation/);
+  assert.match(core, /#patchFormSelect/);
+  assert.match(core, /formSelect\.dispatchEvent\(new Event\('change', \{ bubbles: true \}\)\)/);
+  assert.match(core, /#designerEventsTab/);
+  assert.match(core, /requestAnimationFrame\(\(\) =>/);
+  const applyStart = core.indexOf('function applySourceNavigationTarget');
+  const applyEnd = core.indexOf('function installSharedInspectorBridge', applyStart);
+  assert.ok(applyStart >= 0 && applyEnd > applyStart);
+  const applySource = core.slice(applyStart, applyEnd);
+  assert.doesNotMatch(applySource, /\.focus\(/, 'source navigation synchronization must not steal focus from the editor');
+  assert.doesNotMatch(applySource, /code\.value\s*=/, 'navigation synchronization must not mutate Patch source');
+});
+
 test('additive pointer and keyboard multi-select do not replace the shared primary before the multiselect layer runs', () => {
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   const guards = core.match(/if \(event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey\) return;/g) ?? [];

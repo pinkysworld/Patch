@@ -15,6 +15,8 @@ import {
   selectDesignerElement
 } from './designer-selection.js';
 
+export const STUDIO_SOURCE_DESIGNER_SYNC_VERSION = '0.1';
+
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
 const sample = document.querySelector('#sample');
@@ -29,8 +31,11 @@ const CORE_TOOL_TYPES = new Map([
   ['addSlider', 'slider'],
   ['addTabs', 'tabs']
 ]);
+const SOURCE_NAVIGATION_KEYS = new Set(['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
 let scheduled = false;
 let pendingToolAdd = null;
+let sourceNavigationScheduled = false;
+let sourceNavigationForce = false;
 
 if (canvas && code) {
   installDesignerSelectionBridge(canvas);
@@ -45,6 +50,10 @@ if (canvas && code) {
   new MutationObserver(scheduleSync).observe(canvas, { childList: true, subtree: true });
   code.addEventListener('input', scheduleSync);
   code.addEventListener('change', scheduleSync);
+  code.addEventListener('click', scheduleSourceNavigationSync);
+  code.addEventListener('select', scheduleSourceNavigationSync);
+  code.addEventListener('keyup', captureSourceNavigationKey);
+  window.addEventListener('patch:studio-quick-open', event => scheduleSourceNavigationSync(event, true));
   sample?.addEventListener('change', () => {
     pendingToolAdd = null;
     clearDesignerSelection(canvas, { reason: 'sample-change' });
@@ -132,6 +141,79 @@ function syncCoreSelection() {
     if (!control) continue;
     decorateDesignerAdapterElement(canvas, element, designerSelectionForControl(control, 'core'));
   }
+}
+
+function captureSourceNavigationKey(event) {
+  if (!SOURCE_NAVIGATION_KEYS.has(event.key)) return;
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  scheduleSourceNavigationSync(event);
+}
+
+function scheduleSourceNavigationSync(_event = null, force = false) {
+  sourceNavigationForce = sourceNavigationForce || force;
+  if (sourceNavigationScheduled) return;
+  sourceNavigationScheduled = true;
+  queueMicrotask(() => {
+    const forced = sourceNavigationForce;
+    sourceNavigationForce = false;
+    sourceNavigationScheduled = false;
+    if (!forced && document.activeElement !== code) return;
+    syncSourceNavigationToDesigner();
+  });
+}
+
+function syncSourceNavigationToDesigner() {
+  let target;
+  try {
+    target = sourceDesignerNavigationTarget(code.value, code.selectionStart);
+  } catch {
+    return;
+  }
+  if (!target) return;
+  applySourceNavigationTarget(target);
+}
+
+export function sourceDesignerNavigationTarget(source, selectionStart = 0) {
+  const text = String(source ?? '');
+  const offset = Math.max(0, Math.min(text.length, Number(selectionStart) || 0));
+  const line = (text.slice(0, offset).match(/\n/g)?.length ?? 0) + 1;
+  const controls = listDesignerControls(text);
+  const declaration = controls.find(control => control.line === line) ?? null;
+  if (declaration) return Object.freeze({ kind: 'control', control: declaration, eventName: null, line });
+
+  const sourceLine = text.split(/\r?\n/)[line - 1] ?? '';
+  const eventMatch = sourceLine.match(/^\s*when\s+([A-Za-z_][A-Za-z0-9_]*)\s+([A-Za-z_][A-Za-z0-9_]*)\s*:\s*$/);
+  if (!eventMatch) return null;
+  const control = controls.find(item => item.id === eventMatch[1]) ?? null;
+  if (!control) return null;
+  return Object.freeze({ kind: 'event', control, eventName: eventMatch[2], line });
+}
+
+function applySourceNavigationTarget(target) {
+  const control = target?.control;
+  if (!control) return false;
+  const formSelect = document.querySelector('#patchFormSelect');
+  const selectVisibleControl = () => {
+    const element = elementFor(control);
+    if (!element) return false;
+    const selection = designerSelectionForControl(control);
+    if (!selection) return false;
+    selectDesignerElement(canvas, element, selection, {
+      reason: target.kind === 'event' ? 'source-event-navigation' : 'source-control-navigation'
+    });
+    if (target.kind === 'event') document.querySelector('#designerEventsTab')?.click();
+    return true;
+  };
+
+  if (formSelect && Number(formSelect.value) !== Number(control.windowIndex)) {
+    formSelect.value = String(control.windowIndex);
+    formSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    requestAnimationFrame(() => {
+      if (!selectVisibleControl()) requestAnimationFrame(selectVisibleControl);
+    });
+    return true;
+  }
+  return selectVisibleControl();
 }
 
 function installSharedInspectorBridge() {

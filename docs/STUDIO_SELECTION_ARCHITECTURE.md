@@ -1,6 +1,6 @@
 # Patch Studio Designer selection architecture
 
-This document records the current top-level Designer selection architecture in Patch Studio 0.2 beta.35+.
+This document records the current top-level Designer selection architecture in Patch Studio 0.2 beta.36.
 
 ## Authoritative shared boundary
 
@@ -37,6 +37,19 @@ The core bridge owns the normal Properties action boundary for every active shar
 Toolbox additions for ordinary controls remain source-backed through `forms-designer.js` and are reconciled into shared selection after the Designer rerenders. Table and TreeView keep their dedicated source-backed add/render adapters, then publish the same shared selection record. A selection that points to a removed control is cleared fail-closed.
 
 The shared bridge never adopts renderer-only `.designer-selected` markers. Primary state may come only from the shared selection API, an actual selection action, or an explicit source-backed toolbox-add reconciliation path.
+
+## Source-to-Designer navigation synchronization
+
+`studio-source-designer-sync/0.1` extends `web/designer-core-selection.js` with a narrow source-navigation bridge. It does not create a second selection store.
+
+When the source editor has focus, a pointer selection or navigation-key movement is considered only when the cursor resolves unambiguously to one of two source-backed targets:
+
+- the declaration line of a top-level Designer control returned by `listDesignerControls()`;
+- a `when <control> <event>:` handler whose control id resolves to one of those source-backed controls.
+
+A matching target updates the existing shared Designer selection through `designerSelectionForControl()` and `selectDesignerElement()`. If the control belongs to another Form, the existing Form selector is changed first and selection is applied after the active Form has materialized. A recognized event handler also activates the existing Object Inspector Events view so the Form / Control / Event navigation context stays coherent.
+
+The synchronization deliberately does **not** clear or guess Designer selection for arbitrary source lines, comments, state declarations, recipes or temporarily invalid source. It never writes Patch source and it never moves focus out of the source editor. Project/symbol quick-open can explicitly request the same synchronization through the existing `patch:studio-quick-open` event.
 
 ## Renderer boundary
 
@@ -79,7 +92,7 @@ This does not create application state. It is only IDE interaction state.
 
 ## Persistence boundary
 
-Designer selection, structural editor selection and Tabs page selection are transient UI state. They are not Patch state and do not enter Change History.
+Designer selection, structural editor selection, Tabs page selection and source-navigation synchronization are transient UI state. They are not Patch state and do not enter Change History.
 
 Persistent application state changes only through ordinary semantic `change` operations in Patch source.
 
@@ -91,4 +104,4 @@ Any future control adapter should publish selection through `designer-selection.
 
 ## Contract boundary
 
-This is Patch Studio editor architecture only. It does not change Patch syntax, Change IR 0.10, Native GUI IR 1.3 / payload v13 / runtime v1.4, the frozen Native GUI IR 1.2 / payload v12 / runtime v1.3 TreeView line or the beta.32 formal runtime-correspondence claim.
+This is Patch Studio editor architecture only. It does not change Patch syntax, Change IR **0.10**, Current Ready Native GUI IR **1.9** / payload **v19** / runtime **v1.10**, or any frozen/explicit compatibility line such as payload v17/runtime v1.8 and the older payload v12/runtime v1.3 TreeView contract.
