@@ -14,8 +14,15 @@ import {
   sameDesignerSelection,
   selectDesignerElement
 } from './designer-selection.js';
+import { duplicateDesignerControl } from './designer-control-duplicate-model.js';
 
 export const STUDIO_SOURCE_DESIGNER_SYNC_VERSION = '0.1';
+export const DESIGNER_CONTROL_COMMAND_EVENT = 'patch-designer-control-command';
+export const DESIGNER_CONTROL_COMMANDS = Object.freeze({
+  DELETE: 'designer.control.delete',
+  DUPLICATE: 'designer.control.duplicate',
+  REVEAL_SOURCE: 'designer.control.reveal-source'
+});
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -43,6 +50,7 @@ if (canvas && code) {
   document.addEventListener('click', captureToolboxIntent, { capture: true });
   canvas.addEventListener('click', captureCoreSelection, { capture: true });
   canvas.addEventListener('keydown', captureCoreSelectionKey, { capture: true });
+  canvas.addEventListener(DESIGNER_CONTROL_COMMAND_EVENT, handleDesignerControlCommand);
   canvas.addEventListener(DESIGNER_SELECTION_EVENT, () => {
     populateSharedInspector();
     scheduleSync();
@@ -60,6 +68,95 @@ if (canvas && code) {
     scheduleSync();
   });
   scheduleSync();
+}
+
+export function executeDesignerControlCommand(source, selection, command) {
+  const text = String(source ?? '');
+  const selected = listDesignerControls(text).find(control => sameLocation(control, selection)) ?? null;
+  if (!selected) throw new Error('Designer command needs a live selected control.');
+
+  if (command === DESIGNER_CONTROL_COMMANDS.DELETE) {
+    return Object.freeze({
+      command,
+      source: removeDesignerControl(text, selection),
+      control: selected,
+      nextControl: null,
+      line: selected.line
+    });
+  }
+  if (command === DESIGNER_CONTROL_COMMANDS.DUPLICATE) {
+    const result = duplicateDesignerControl(text, selection);
+    return Object.freeze({
+      command,
+      source: result.source,
+      control: selected,
+      nextControl: result.control,
+      line: result.control?.line ?? selected.line
+    });
+  }
+  if (command === DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE) {
+    return Object.freeze({
+      command,
+      source: text,
+      control: selected,
+      nextControl: selected,
+      line: selected.line
+    });
+  }
+  throw new Error(`Unknown Designer control command '${command}'.`);
+}
+
+export function dispatchDesignerControlCommand(command, detail = {}) {
+  if (!canvas) return false;
+  canvas.dispatchEvent(new CustomEvent(DESIGNER_CONTROL_COMMAND_EVENT, {
+    bubbles: false,
+    cancelable: true,
+    detail: { ...detail, command }
+  }));
+  return true;
+}
+
+function handleDesignerControlCommand(event) {
+  const command = event?.detail?.command;
+  if (!Object.values(DESIGNER_CONTROL_COMMANDS).includes(command)) return;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection) return;
+  event.preventDefault?.();
+
+  if (command === DESIGNER_CONTROL_COMMANDS.DUPLICATE && canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
+    showInspectorError(new Error('Duplicate currently supports one selected control at a time.'));
+    return;
+  }
+
+  try {
+    const result = executeDesignerControlCommand(code.value, selection, command);
+    if (command === DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE) {
+      revealLine(result.line);
+      return;
+    }
+    if (command === DESIGNER_CONTROL_COMMANDS.DELETE) {
+      clearDesignerSelection(canvas, { reason: 'delete-control' });
+      setSource(result.source);
+      return;
+    }
+    const nextSelection = designerSelectionForControl(result.nextControl, selection.adapter);
+    if (!nextSelection) throw new Error('Duplicated control selection could not be created.');
+    rememberDesignerSelection(canvas, nextSelection, { emit: false, reason: 'duplicate-control' });
+    setSource(result.source);
+    focusCommandControl(nextSelection, 'duplicate-control');
+  } catch (error) {
+    showInspectorError(error);
+  }
+}
+
+function focusCommandControl(selection, reason) {
+  requestAnimationFrame(() => {
+    const element = canvas.querySelector(`.designer-control[data-window-index="${selection.windowIndex}"][data-control-index="${selection.controlIndex}"]`);
+    if (!element) return;
+    selectDesignerElement(canvas, element, selection, { reason });
+    element.focus?.({ preventScroll: true });
+    element.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  });
 }
 
 function captureToolboxIntent(event) {
@@ -248,25 +345,17 @@ function captureInspectorApply(event) {
 }
 
 function captureInspectorDelete(event) {
-  const selection = currentDesignerSelection(canvas);
-  if (!selection) return;
+  if (!currentDesignerSelection(canvas)) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  try {
-    const next = removeDesignerControl(code.value, selection);
-    clearDesignerSelection(canvas, { reason: 'delete-control' });
-    setSource(next);
-  } catch (error) {
-    showInspectorError(error);
-  }
+  dispatchDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.DELETE, { origin: 'inspector-delete' });
 }
 
 function captureInspectorSource(event) {
-  const control = currentSharedControl();
-  if (!control) return;
+  if (!currentDesignerSelection(canvas)) return;
   event.preventDefault();
   event.stopImmediatePropagation();
-  revealLine(control.line);
+  dispatchDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE, { origin: 'inspector-source' });
 }
 
 function applySharedInspector() {
