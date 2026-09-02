@@ -56,7 +56,7 @@ test('embedded-runtime kit carries the current host Node beside the same portabl
   assert.match(runtimeKitChecker, /metadata\.arch !== process\.arch/);
 });
 
-test('Offline Studio CI verifies x64 and ARM64 SEA builds plus an Intel macOS runtime kit', () => {
+test('Offline Studio CI verifies x64 and ARM64 SEA builds, Intel macOS runtime kit and FreeBSD portable execution', () => {
   for (const marker of [
     'ubuntu-latest', 'ubuntu-24.04-arm',
     'windows-latest', 'windows-11-arm',
@@ -70,5 +70,9 @@ test('Offline Studio CI verifies x64 and ARM64 SEA builds plus an Intel macOS ru
   assert.match(workflow, /PatchStudio-macos-x64\.tar\.gz/);
   assert.match(workflow, /Portable Node \/ generic Unix compatibility/);
   assert.match(workflow, /PatchStudio-portable-node18\.tar\.gz/);
-  assert.match(workflow, /needs: \[executable, macos-intel-runtime-kit, portable\]/);
+  assert.match(workflow, /Portable Offline Studio \(FreeBSD 15 x64\)/);
+  assert.match(workflow, /vmactions\/freebsd-vm@v1/);
+  assert.match(workflow, /release: '15'/);
+  assert.match(workflow, /node scripts\/check-portable-offline-studio\.js/);
+  assert.match(workflow, /needs: \[executable, macos-intel-runtime-kit, portable, freebsd-portable\]/);
 });
