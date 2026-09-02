@@ -1,10 +1,8 @@
+import { currentDesignerSelection } from './designer-selection.js';
 import {
-  currentDesignerSelection,
-  designerSelectionForControl,
-  rememberDesignerSelection,
-  selectDesignerElement
-} from './designer-selection.js';
-import { duplicateDesignerControl } from './designer-control-duplicate-model.js';
+  DESIGNER_CONTROL_COMMANDS,
+  dispatchDesignerControlCommand
+} from './designer-core-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -48,39 +46,5 @@ function syncButton() {
 
 function duplicateSelectedControl(event) {
   event?.preventDefault?.();
-  const selection = currentDesignerSelection(canvas);
-  if (!selection) return;
-  if (canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
-    return showError(new Error('Duplicate currently supports one selected control at a time.'));
-  }
-
-  try {
-    const result = duplicateDesignerControl(code.value, selection);
-    const nextSelection = designerSelectionForControl(result.control);
-    if (!nextSelection) throw new Error('Duplicated control selection could not be created.');
-    code.value = result.source;
-    rememberDesignerSelection(canvas, nextSelection, { emit: false, reason: 'duplicate-control' });
-    code.dispatchEvent(new Event('input', { bubbles: true }));
-    code.dispatchEvent(new Event('change', { bubbles: true }));
-    focusDuplicatedControl(nextSelection);
-  } catch (error) {
-    showError(error);
-  }
-}
-
-function focusDuplicatedControl(selection) {
-  requestAnimationFrame(() => {
-    const element = canvas.querySelector(`.designer-control[data-window-index="${selection.windowIndex}"][data-control-index="${selection.controlIndex}"]`);
-    if (!element) return;
-    selectDesignerElement(canvas, element, selection, { reason: 'duplicate-control' });
-    element.focus?.({ preventScroll: true });
-    element.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-  });
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
+  dispatchDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.DUPLICATE, { origin: 'inspector-duplicate' });
 }
