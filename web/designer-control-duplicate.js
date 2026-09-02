@@ -4,6 +4,7 @@ import {
   rememberDesignerSelection,
   selectDesignerElement
 } from './designer-selection.js';
+import { showDesignerInspectorError } from './designer-inspector-status.js';
 import { duplicateDesignerControl } from './designer-control-duplicate-model.js';
 
 const code = document.querySelector('#code');
@@ -51,7 +52,7 @@ function duplicateSelectedControl(event) {
   const selection = currentDesignerSelection(canvas);
   if (!selection) return;
   if (canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
-    return showError(new Error('Duplicate currently supports one selected control at a time.'));
+    return showDesignerInspectorError(new Error('Duplicate currently supports one selected control at a time.'));
   }
 
   try {
@@ -64,7 +65,7 @@ function duplicateSelectedControl(event) {
     code.dispatchEvent(new Event('change', { bubbles: true }));
     focusDuplicatedControl(nextSelection);
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error);
   }
 }
 
@@ -76,11 +77,4 @@ function focusDuplicatedControl(selection) {
     element.focus?.({ preventScroll: true });
     element.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
   });
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
