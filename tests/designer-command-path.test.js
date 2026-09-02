@@ -45,6 +45,19 @@ test('shared Designer command executor owns delete duplicate reveal and clipboar
     assert.notEqual(paste.nextControl.id, 'save');
     assert.equal(pastedControls.at(-1).id, paste.nextControl.id);
 
+    const emptyFormSource = `window "Empty" as empty size 640, 420:\n`;
+    const pasteIntoEmpty = executeDesignerControlCommand(
+      emptyFormSource,
+      null,
+      DESIGNER_CONTROL_COMMANDS.PASTE,
+      { clipboardText: copy.clipboardText, windowIndex: 0 }
+    );
+    const emptyFormControls = listDesignerControls(pasteIntoEmpty.source);
+    assert.equal(emptyFormControls.length, 1);
+    assert.equal(emptyFormControls[0].id, 'save');
+    assert.equal(pasteIntoEmpty.nextControl.id, 'save');
+    assert.match(pasteIntoEmpty.source, /when save clicked:/);
+
     const duplicate = executeDesignerControlCommand(source, selection, DESIGNER_CONTROL_COMMANDS.DUPLICATE);
     const duplicatedControls = listDesignerControls(duplicate.source);
     assert.equal(duplicatedControls.length, 3);
