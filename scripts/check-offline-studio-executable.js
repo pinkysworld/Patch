@@ -14,18 +14,20 @@ const built = spawnSync(process.execPath, ['scripts/build-offline-studio.js', '-
   env: process.env
 });
 if (built.error) fail(`could not start Offline Studio builder: ${built.error.message}`);
+if (built.signal) fail(`Offline Studio builder was terminated by ${built.signal}`);
 if (built.status !== 0) fail(`Offline Studio builder exited with status ${built.status}`);
 if (!fs.existsSync(output)) fail(`expected executable was not created: ${output}`);
 
 const smoke = spawnSync(output, [], {
   stdio: 'inherit',
-  timeout: 15000,
+  timeout: 20000,
   env: {
     ...process.env,
     PATCH_OFFLINE_STUDIO_SMOKE: '1'
   }
 });
 if (smoke.error) fail(`Offline Studio executable smoke could not run: ${smoke.error.message}`);
+if (smoke.signal) fail(`Offline Studio executable smoke was terminated by ${smoke.signal}`);
 if (smoke.status !== 0) fail(`Offline Studio executable smoke exited with status ${smoke.status}`);
 
 console.log(`Offline Studio executable verified: ${output}`);
