@@ -1,6 +1,6 @@
 import { parse } from '../src/parser.js';
 import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
-import { isDesignerMetadataDirective } from '../src/window-tab-order.js';
+import { isDesignerMetadataDirective } from '../src/window-layout-policy.js';
 
 export function reorderDesignerControl(source, selector, direction) {
   const controls = listDesignerControls(source);
