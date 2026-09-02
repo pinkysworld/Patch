@@ -18,7 +18,7 @@ test('portable Offline Studio runner is filesystem-backed, local-only and asset-
   assert.match(runner, /sha256 !== entry\.sha256/);
   assert.match(runner, /size mismatch/);
   assert.match(runner, /relative\.includes\('\\\\'\)/);
-  assert.match(runner, /segment !== '\.\.' /);
+  assert.match(runner, /segment !== '\.\.'/);
   assert.match(runner, /frame-ancestors 'none'/);
   assert.match(runner, /connect-src 'self'/);
 });
