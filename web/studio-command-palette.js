@@ -16,7 +16,7 @@ export const STUDIO_EDIT_HISTORY_LIMIT = 80;
 export const STUDIO_EDIT_HISTORY_COALESCE_MS = 850;
 export const STUDIO_VIEW_NAVIGATION_VERSION = '0.1';
 export const STUDIO_NAVIGATION_BREADCRUMB_VERSION = '0.1';
-export const STUDIO_DESIGNER_COMMAND_SURFACES_VERSION = '0.1';
+export const STUDIO_DESIGNER_COMMAND_SURFACES_VERSION = '0.2';
 
 const sourceEditor = document.querySelector('#code');
 const saveState = document.querySelector('#saveState');
@@ -62,35 +62,63 @@ function installDesignerControlCommandShortcuts() {
   window.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.isComposing || document.querySelector('dialog[open]')) return;
     const canvas = document.querySelector('#designerCanvas');
-    const control = event.target?.closest?.('.designer-control');
-    if (!canvas || !control || !canvas.contains(control)) return;
+    if (!canvas || !canvas.contains(event.target)) return;
     if (event.target?.matches?.('input, textarea, select') || event.target?.isContentEditable) return;
 
     const commandKey = event.ctrlKey || event.metaKey;
-    const duplicate = commandKey && event.shiftKey && !event.altKey && event.key.toLowerCase() === 'd';
+    const key = event.key.toLowerCase();
+    const duplicate = commandKey && event.shiftKey && !event.altKey && key === 'd';
+    const copy = commandKey && !event.shiftKey && !event.altKey && key === 'c';
+    const cut = commandKey && !event.shiftKey && !event.altKey && key === 'x';
+    const paste = commandKey && !event.shiftKey && !event.altKey && key === 'v';
     const remove = !commandKey && !event.shiftKey && !event.altKey && event.key === 'Delete';
-    if (!duplicate && !remove) return;
+    if (!duplicate && !copy && !cut && !paste && !remove) return;
 
     event.preventDefault();
     event.stopPropagation();
-    runSelectedDesignerControlCommand(
-      duplicate ? DESIGNER_CONTROL_COMMANDS.DUPLICATE : DESIGNER_CONTROL_COMMANDS.DELETE,
-      duplicate ? 'shortcut-duplicate' : 'shortcut-delete'
-    );
+    if (paste) {
+      runDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.PASTE, 'shortcut-paste', { allowWithoutSelection: true });
+      return;
+    }
+    const command = duplicate
+      ? DESIGNER_CONTROL_COMMANDS.DUPLICATE
+      : copy
+        ? DESIGNER_CONTROL_COMMANDS.COPY
+        : cut
+          ? DESIGNER_CONTROL_COMMANDS.CUT
+          : DESIGNER_CONTROL_COMMANDS.DELETE;
+    const origin = duplicate
+      ? 'shortcut-duplicate'
+      : copy
+        ? 'shortcut-copy'
+        : cut
+          ? 'shortcut-cut'
+          : 'shortcut-delete';
+    runDesignerControlCommand(command, origin);
   }, { capture: true });
 }
 
-function runSelectedDesignerControlCommand(command, origin = 'studio-command-surface') {
+function runDesignerControlCommand(command, origin = 'studio-command-surface', options = {}) {
   const canvas = document.querySelector('#designerCanvas');
-  if (!canvas || !currentDesignerSelection(canvas)) {
+  if (!canvas) return false;
+  const selection = currentDesignerSelection(canvas);
+  if (!selection && options.allowWithoutSelection !== true) {
     announceHistoryStatus('Select a Designer control first');
     return false;
   }
-  if (canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
+  if (selection && options.allowWithoutSelection !== true && canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
     announceHistoryStatus('This command currently needs one selected Designer control');
     return false;
   }
-  return dispatchDesignerControlCommand(command, { origin });
+  const detail = { origin };
+  if (options.allowWithoutSelection === true) {
+    detail.windowIndex = Number(document.querySelector('#patchFormSelect')?.value) || 0;
+  }
+  return dispatchDesignerControlCommand(command, detail);
+}
+
+function runSelectedDesignerControlCommand(command, origin = 'studio-command-surface') {
+  return runDesignerControlCommand(command, origin);
 }
 
 function installDesignerEventRowNavigation() {
@@ -431,6 +459,9 @@ if (dialog && trigger && input && list && empty) {
     command('toggle-source-designer', 'Toggle Source / Designer', 'Switch between the active Patch source and visual Form Designer', 'F12', 'source designer form code unit toggle view', toggleSourceDesignerView),
     command('editor', 'Focus source editor', 'Jump to the active Patch source or selected Designer control declaration', '', 'source code editor main patch view source', viewStudioSource),
     command('designer', 'Open Designer', 'Show the source-backed visual Designer and restore Designer focus', '', 'designer form controls visual view form', viewStudioDesigner),
+    command('designer-control-copy', 'Copy selected control', 'Copy one source-backed Designer control, metadata, nested structure and handlers', 'Ctrl/Cmd + C', 'designer control copy clipboard', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.COPY, 'command-palette-copy')),
+    command('designer-control-cut', 'Cut selected control', 'Copy then remove one source-backed Designer control through the shared command path', 'Ctrl/Cmd + X', 'designer control cut clipboard remove', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.CUT, 'command-palette-cut')),
+    command('designer-control-paste', 'Paste control into active Form', 'Paste the current Patch Designer clipboard into the active Form with collision-safe ids', 'Ctrl/Cmd + V', 'designer control paste clipboard form', () => runDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.PASTE, 'command-palette-paste', { allowWithoutSelection: true })),
     command('designer-control-duplicate', 'Duplicate selected control', 'Duplicate the current source-backed Designer control through the shared command path', 'Ctrl/Cmd + Shift + D', 'designer control duplicate copy clone', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.DUPLICATE, 'command-palette-duplicate')),
     command('designer-control-delete', 'Delete selected control', 'Delete the current source-backed Designer control through the shared command path', 'Delete', 'designer control delete remove', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.DELETE, 'command-palette-delete')),
     command('designer-control-reveal-source', 'Reveal selected control source', 'Focus the source declaration for the current Designer control', '', 'designer control source reveal declaration code', () => runSelectedDesignerControlCommand(DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE, 'command-palette-source')),
