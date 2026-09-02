@@ -12,7 +12,7 @@ const compilerAssets = ['patch-windows-x64.exe','patch-macos-arm64','patch-macos
 const studioPublicAssets = ['PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS'];
 const studioReleaseAssets = [
   'PatchStudio-windows-x64.exe','PatchStudio-windows-arm64.exe',
-  'PatchStudio-macos-arm64','PatchStudio-macos-x64',
+  'PatchStudio-macos-arm64','PatchStudio-macos-x64.tar.gz',
   'PatchStudio-linux-x64','PatchStudio-linux-arm64',
   'PatchStudio-portable-node18.tar.gz','offline-studio-manifest.json','SHA256SUMS'
 ];
@@ -30,7 +30,7 @@ test('offline compiler download page and release workflow share one stable v0.2 
 test('Offline Studio download page, documentation and workflow share one stable v0.2 release contract', () => {
   assert.match(downloads, /offline-studio-v0\.2/);
   assert.match(studioWorkflow, /TAG: offline-studio-v0\.2/);
-  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: \[executable, portable\]/);
+  assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: \[executable, macos-intel-runtime-kit, portable\]/);
   assert.match(studioWorkflow, /publish:[\s\S]*needs: release-bundle/);
   assert.match(studioWorkflow, /patch-offline-studio-release-bundle/);
   assert.match(studioWorkflow, /for dir in windows-x64 windows-arm64 macos-arm64 macos-x64 linux-x64 linux-arm64/);
