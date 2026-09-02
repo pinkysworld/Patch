@@ -6,6 +6,10 @@ import {
 } from '../src/designer.js';
 import { formControlDefaultSize } from '../src/form-layout.js';
 import {
+  readWindowDesignerLock,
+  setWindowDesignerLock
+} from '../src/window-layout-policy.js';
+import {
   DESIGNER_SELECTION_EVENT,
   currentDesignerSelection,
   designerSelectionForControl,
@@ -16,6 +20,13 @@ import { reorderDesignerControl } from './designer-z-order-model.js';
 const CONTROL_MARGIN = 24;
 const CONTROL_GAP = 12;
 const DEFAULT_FORM = Object.freeze({ width: 640, height: 420 });
+const LOCK_GUARDED_BUTTONS = new Set([
+  'patchApplyGeometry',
+  'patchCenterControlHorizontal', 'patchCenterControlVertical', 'patchDefaultControlSize', 'patchAutoPlaceControl',
+  'patchBringControlFront', 'patchMoveControlForward', 'patchMoveControlBackward', 'patchSendControlBack',
+  'patchAlignLeft', 'patchAlignRight', 'patchAlignTop', 'patchAlignBottom', 'patchAlignHCenter', 'patchAlignVCenter',
+  'patchSameWidth', 'patchSameHeight', 'patchDistributeHorizontal', 'patchDistributeVertical'
+]);
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
 const canvas = doc?.querySelector('#designerCanvas') ?? null;
@@ -23,6 +34,7 @@ let surface = null;
 
 if (doc) {
   installStylesheet();
+  installLockGuards();
   queueMicrotask(install);
 }
 
@@ -79,6 +91,11 @@ export function autoPlaceDesignerControl(control, controls = []) {
   return { x: candidate.x, y: candidate.y };
 }
 
+export function isDesignerControlLocked(source, control) {
+  if (!control || !Number.isInteger(control.line)) return false;
+  return readWindowDesignerLock(source, control.line);
+}
+
 function install() {
   if (!code || !canvas) return;
   const inspector = doc.querySelector('#designerInspector');
@@ -109,6 +126,7 @@ function install() {
       <span>source-backed</span>
     </div>
     <div class="designer-control-layout-buttons">
+      <button id="patchToggleControlLock" class="secondary small" type="button" aria-pressed="false" title="Lock or unlock movement and sizing for the selected control">Lock control</button>
       <button id="patchCenterControlHorizontal" class="secondary small" type="button" title="Center the selected control horizontally in its Form">Center H</button>
       <button id="patchCenterControlVertical" class="secondary small" type="button" title="Center the selected control vertically in its Form">Center V</button>
       <button id="patchDefaultControlSize" class="secondary small" type="button" title="Restore the selected control's standard Designer size">Default size</button>
@@ -124,6 +142,7 @@ function install() {
   if (state) state.insertAdjacentElement('afterend', surface);
   else form.prepend(surface);
 
+  surface.querySelector('#patchToggleControlLock')?.addEventListener('click', toggleSelectedControlLock);
   surface.querySelector('#patchCenterControlHorizontal')?.addEventListener('click', () => applyLayoutAction('center-horizontal'));
   surface.querySelector('#patchCenterControlVertical')?.addEventListener('click', () => applyLayoutAction('center-vertical'));
   surface.querySelector('#patchDefaultControlSize')?.addEventListener('click', () => applyLayoutAction('default-size'));
@@ -141,16 +160,58 @@ function install() {
 
 function syncLayoutActions() {
   if (!surface || !canvas || !code) return;
+  let controls = [];
+  try { controls = listDesignerControls(code.value); } catch { controls = []; }
+  syncLockedDecorations(controls);
+
   const selection = currentDesignerSelection(canvas);
   const selectedCount = canvas.querySelectorAll('.designer-control.designer-multi-selected').length;
   const available = Boolean(selection) && selectedCount <= 1;
-  for (const button of surface.querySelectorAll('button')) button.disabled = !available;
+  const control = selection ? controls.find(item => sameLocation(item, selection)) : null;
+  const locked = control ? isDesignerControlLocked(code.value, control) : false;
+  const lockButton = surface.querySelector('#patchToggleControlLock');
+  if (lockButton) {
+    lockButton.disabled = !available;
+    lockButton.textContent = locked ? 'Unlock control' : 'Lock control';
+    lockButton.setAttribute('aria-pressed', locked ? 'true' : 'false');
+  }
+  for (const button of surface.querySelectorAll('button:not(#patchToggleControlLock)')) button.disabled = !available || locked;
   surface.classList.toggle('is-disabled', !available);
+  surface.classList.toggle('is-locked', locked);
+
   const status = surface.querySelector('#designerControlLayoutStatus');
   if (!status) return;
   if (!selection) status.textContent = 'Select one control to use Form-relative layout actions.';
   else if (selectedCount > 1) status.textContent = 'Use the multi-select alignment tools for grouped controls.';
+  else if (locked && !status.dataset.actionMessage) status.textContent = 'Locked: movement, resizing, geometry, z-order and grouped layout changes are blocked.';
   else if (!status.dataset.actionMessage) status.textContent = 'Center, size, place or change z-order without creating hidden layout state.';
+}
+
+function toggleSelectedControlLock() {
+  const status = surface?.querySelector('#designerControlLayoutStatus');
+  try {
+    const selection = currentDesignerSelection(canvas);
+    if (!selection) return;
+    const control = listDesignerControls(code.value).find(item => sameLocation(item, selection));
+    if (!control) throw new Error('Designer selection no longer matches Patch source.');
+    const wasLocked = isDesignerControlLocked(code.value, control);
+    const next = setWindowDesignerLock(code.value, control.line, !wasLocked);
+    code.value = next;
+    rememberDesignerSelection(canvas, designerSelectionForControl(control), { emit: false, reason: 'control-lock' });
+    code.dispatchEvent(new Event('input', { bubbles: true }));
+    code.dispatchEvent(new Event('change', { bubbles: true }));
+    if (status) {
+      status.dataset.actionMessage = 'true';
+      status.textContent = wasLocked ? 'Control unlocked.' : 'Control locked against Designer movement and sizing.';
+      setTimeout(() => {
+        if (!status) return;
+        delete status.dataset.actionMessage;
+        syncLayoutActions();
+      }, 1400);
+    }
+  } catch (error) {
+    showLayoutError(error);
+  }
 }
 
 function applyLayoutAction(action) {
@@ -162,6 +223,7 @@ function applyLayoutAction(action) {
     const control = controls.find(item => sameLocation(item, selection));
     const windowModel = listDesignerWindows(code.value).find(item => item.windowIndex === selection.windowIndex);
     if (!control || !windowModel) throw new Error('Designer selection no longer matches Patch source.');
+    if (isDesignerControlLocked(code.value, control)) throw new Error('Unlock this control before changing its Designer layout.');
 
     let message;
     if (['front', 'back', 'forward', 'backward'].includes(action)) {
@@ -231,11 +293,107 @@ function applyLayoutAction(action) {
       status.dataset.actionMessage = 'true';
       status.textContent = error?.message ?? String(error);
     }
-    const target = doc.querySelector('#designerInspectorError');
-    if (target) {
-      target.textContent = error?.message ?? String(error);
-      target.hidden = false;
-    }
+    showLayoutError(error);
+  }
+}
+
+function installLockGuards() {
+  if (!doc || doc.documentElement.dataset.patchControlLockGuards === 'true') return;
+  doc.documentElement.dataset.patchControlLockGuards = 'true';
+  window.addEventListener('pointerdown', guardLockedPointerMutation, { capture: true });
+  window.addEventListener('keydown', guardLockedKeyboardMutation, { capture: true });
+  window.addEventListener('click', guardLockedButtonMutation, { capture: true });
+}
+
+function guardLockedPointerMutation(event) {
+  if (!canvas || !code) return;
+  const control = event.target?.closest?.('.designer-control.designer-selected');
+  const handle = event.target?.closest?.('.patch-form-resize-handle[data-window-index][data-control-index]');
+  if (!control && !handle) return;
+  if (!hasLockedMutationSelection(selectorFromElement(control ?? handle))) return;
+  blockDesignerMutation(event, 'Unlock locked controls before moving or resizing them.');
+}
+
+function guardLockedKeyboardMutation(event) {
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  const control = event.target?.closest?.('.designer-control.designer-selected');
+  if (!control || !canvas?.contains(control)) return;
+  if (!hasLockedMutationSelection(selectorFromElement(control))) return;
+  blockDesignerMutation(event, 'Unlock locked controls before moving them with the keyboard.');
+}
+
+function guardLockedButtonMutation(event) {
+  const button = event.target?.closest?.('button[id]');
+  if (!button || button.id === 'patchToggleControlLock' || !LOCK_GUARDED_BUTTONS.has(button.id)) return;
+  if (!hasLockedMutationSelection(currentDesignerSelection(canvas))) return;
+  blockDesignerMutation(event, 'Unlock locked controls before applying layout changes.');
+}
+
+function hasLockedMutationSelection(primary) {
+  if (!code || !canvas) return false;
+  let controls = [];
+  try { controls = listDesignerControls(code.value); } catch { return false; }
+  const selectors = [];
+  if (primary) selectors.push(primary);
+  for (const element of canvas.querySelectorAll('.designer-control.designer-multi-selected')) {
+    const selector = selectorFromElement(element);
+    if (selector && !selectors.some(item => sameLocation(item, selector))) selectors.push(selector);
+  }
+  return selectors.some(selector => {
+    const control = controls.find(item => sameLocation(item, selector));
+    return control ? isDesignerControlLocked(code.value, control) : false;
+  });
+}
+
+function syncLockedDecorations(controls) {
+  if (!canvas || !code) return;
+  for (const element of canvas.querySelectorAll('.designer-control[data-window-index][data-control-index]')) {
+    const selector = selectorFromElement(element);
+    const control = selector ? controls.find(item => sameLocation(item, selector)) : null;
+    const locked = Boolean(control && isDesignerControlLocked(code.value, control));
+    element.classList.toggle('designer-control-locked', locked);
+    element.dataset.designerLocked = locked ? 'true' : 'false';
+    if (locked) element.setAttribute('aria-description', 'Locked in Patch Designer');
+    else element.removeAttribute('aria-description');
+  }
+  for (const handle of canvas.querySelectorAll('.patch-form-resize-handle[data-window-index][data-control-index]')) {
+    const selector = selectorFromElement(handle);
+    const control = selector ? controls.find(item => sameLocation(item, selector)) : null;
+    handle.classList.toggle('is-designer-locked', Boolean(control && isDesignerControlLocked(code.value, control)));
+  }
+}
+
+function selectorFromElement(element) {
+  if (!element) return null;
+  const selector = {
+    windowIndex: Number(element.dataset.windowIndex),
+    controlIndex: Number(element.dataset.controlIndex)
+  };
+  return Number.isInteger(selector.windowIndex) && Number.isInteger(selector.controlIndex) ? selector : null;
+}
+
+function blockDesignerMutation(event, message) {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation?.();
+  const status = surface?.querySelector('#designerControlLayoutStatus');
+  if (status) {
+    status.dataset.actionMessage = 'true';
+    status.textContent = message;
+    setTimeout(() => {
+      if (!status) return;
+      delete status.dataset.actionMessage;
+      syncLayoutActions();
+    }, 1400);
+  }
+}
+
+function showLayoutError(error) {
+  const target = doc.querySelector('#designerInspectorError');
+  if (target) {
+    target.textContent = error?.message ?? String(error);
+    target.hidden = false;
   }
 }
 
