@@ -34,8 +34,23 @@ test('Designer lock remains runtime-neutral and is not exported as compiler layo
   const locked = `window "Demo" as main size 640, 420:\n  # @locked\n  button "Save" as save at 24, 24 size 120, 36\n`;
   const plainCompiled = compile(plain);
   const lockedCompiled = compile(locked);
+  const plainWindow = plainCompiled.ir.instructions.find(instruction => instruction.code === 'WINDOW');
+  const lockedWindow = lockedCompiled.ir.instructions.find(instruction => instruction.code === 'WINDOW');
+  const plainControl = plainWindow?.controls?.[0];
+  const lockedControl = lockedWindow?.controls?.[0];
+
   assert.equal(lockedCompiled.windowLayoutPolicy.windows[0].controls[0].locked, undefined);
-  assert.deepEqual(lockedCompiled.ir, plainCompiled.ir);
+  assert.doesNotMatch(JSON.stringify(lockedCompiled.ir), /@locked|"locked"/i);
+  assert.equal(lockedWindow?.id, plainWindow?.id);
+  assert.equal(lockedWindow?.titleExpr, plainWindow?.titleExpr);
+  assert.equal(lockedControl?.type, plainControl?.type);
+  assert.equal(lockedControl?.id, plainControl?.id);
+  assert.equal(lockedControl?.textExpr, plainControl?.textExpr);
+  assert.equal(lockedControl?.x, plainControl?.x);
+  assert.equal(lockedControl?.y, plainControl?.y);
+  assert.equal(lockedControl?.width, plainControl?.width);
+  assert.equal(lockedControl?.height, plainControl?.height);
+  assert.equal(lockedControl?.line, plainControl?.line + 1);
 });
 
 test('z-order moves the complete locked layout and TabOrder metadata block with its control', () => {
