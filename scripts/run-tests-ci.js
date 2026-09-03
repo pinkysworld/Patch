@@ -8,7 +8,7 @@ import fs from 'node:fs';
 const child = spawn(process.execPath, [
   '--test',
   '--test-skip-pattern',
-  'stays responsive in Chrome|Workshop Desk explicit load remains responsive in real Chrome'
+  'stays responsive in Chrome|Workshop Desk explicit load remains responsive in real Chrome|Studio browser performance stays inside generous R0 hard limits'
 ], {
   cwd: process.cwd(),
   env: process.env,
