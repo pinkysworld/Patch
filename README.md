@@ -47,6 +47,7 @@ Current Studio highlights:
 - Object Inspector with Properties and Events;
 - project bundle **v4**, Project Tree, recovery, resources, and `file:line` diagnostics;
 - Text, Button, Input, Checkbox, Radio, ComboBox, ListBox, Slider, Table, TreeView, Tabs, Panel, Picture, Shape, PaintBox, StatusBar, Timer, ImageList, and Menu authoring;
+- **Table exposes the selected row as a transient text-list**; persistent application state still changes only through ordinary Patch `change` semantics;
 - Anchors/Dock, grid snap, alignment, sizing, distribution, z-order, and Focus Order Stage 1;
 - source-backed Undo/Redo;
 - source-backed **Copy/Cut/Paste across Forms and projects**, with collision-safe id/event remapping, semantic clipboard validation, Designer shortcuts and Command Palette integration;
