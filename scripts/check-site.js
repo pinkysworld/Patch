@@ -100,7 +100,7 @@ requireAll('Core Designer selection and clipboard bridge', coreSelection, ['curr
 const clipboardModel = read('_site/designer-control-clipboard-model.js');
 requireAll('Source-backed Designer clipboard model', clipboardModel, ['patch-designer-control-clipboard','copyDesignerControlClipboard','pasteDesignerControlClipboard']);
 const clipboardGuard = read('_site/designer-control-clipboard-guard.js');
-requireAll('Designer clipboard semantic guard', clipboardGuard, ['validateDesignerControlClipboardSemantics','parseDesignerControlClipboard']);
+requireAll('Designer clipboard semantic guard', clipboardGuard, ['DESIGNER_CONTROL_CLIPBOARD_GUARD_VERSION','validateDesignerControlClipboardSemantics','normalizeDesignerControlClipboard','Designer clipboard id records do not exactly match the copied control source']);
 const structuralKeyboard = read('_site/designer-structural-keyboard.js');
 requireAll('Designer structural keyboard accessibility', structuralKeyboard, ['installDesignerStructuralKeyboard','aria-keyshortcuts','Control+Enter','nextStructuralOptionIndex']);
 const multiselect = read('_site/designer-multiselect.js');
