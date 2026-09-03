@@ -14,7 +14,7 @@ import {
 
 const source = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
 
-test('Workshop Desk builds on current Ready across the integrated cross-platform control surface', () => {
+test('Workshop Desk builds on current Ready across the complete Component Registry 0.9 showcase', () => {
   const compiled = compile(source, { name: 'WorkshopDesk', kind: 'window', entry: 'main.patch' });
   const support = validateWindowRuntimeSupport(compiled, {
     allowTables: true,
@@ -27,9 +27,10 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
     allowImageList: true
   });
 
-  assert.equal(support.treeViews, 2);
-  assert.equal(support.sliders, 4);
-  assert.equal(support.paintboxes, 1);
+  assert.equal(support.treeViews, 3);
+  assert.equal(support.sliders, 5);
+  assert.equal(support.paintboxes, 2);
+  assert.equal(support.imageLists, 1);
   assert.equal(PATCH_CURRENT_NATIVE_CONTRACT_ID, 'native-gui-1.9/payload-19/runtime-1.10');
   assert.equal(PATCH_CURRENT_NATIVE_GUI_IR_VERSION, '1.9');
   assert.equal(PATCH_CURRENT_NATIVE_PAYLOAD_VERSION, 19);
@@ -37,18 +38,20 @@ test('Workshop Desk builds on current Ready across the integrated cross-platform
 
   const ir = buildCurrentNativeGuiIR(compiled);
   const controls = flattenCurrentNativeGuiControls(ir);
-  const paintbox = controls.find(control => control.type === 'paintbox');
+  const paintboxes = controls.filter(control => control.type === 'paintbox');
   assert.equal(ir.version, '1.9');
-  assert.equal(controls.filter(control => control.type === 'tree').length, 2);
-  assert.equal(controls.filter(control => control.type === 'slider').length, 4);
-  assert.equal(controls.filter(control => control.type === 'timer').length, 2);
-  assert.equal(controls.filter(control => control.type === 'panel').length, 1);
-  assert.equal(controls.filter(control => control.type === 'shape').length, 1);
-  assert.equal(controls.filter(control => control.type === 'picture').length, 1);
-  assert.equal(controls.filter(control => control.type === 'paintbox').length, 1);
-  assert.ok(paintbox);
-  assert.match(JSON.stringify(paintbox.paintProgram), /"operation":"image"/);
-  assert.match(JSON.stringify(paintbox.paintProgram), /data:image\/png;base64,/);
+  assert.equal(controls.filter(control => control.type === 'tree').length, 3);
+  assert.equal(controls.filter(control => control.type === 'slider').length, 5);
+  assert.equal(controls.filter(control => control.type === 'timer').length, 3);
+  assert.equal(controls.filter(control => control.type === 'panel').length, 2);
+  assert.equal(controls.filter(control => control.type === 'shape').length, 2);
+  assert.equal(controls.filter(control => control.type === 'picture').length, 2);
+  assert.equal(controls.filter(control => control.type === 'paintbox').length, 2);
+  assert.equal(controls.filter(control => control.type === 'imagelist').length, 1);
+  assert.equal(paintboxes.length, 2);
+  assert.match(JSON.stringify(paintboxes.find(control => control.id === 'ticket_canvas')?.paintProgram), /"operation":"image"/);
+  assert.match(JSON.stringify(paintboxes.find(control => control.id === 'ticket_canvas')?.paintProgram), /data:image\/png;base64,/);
+  assert.match(JSON.stringify(paintboxes.find(control => control.id === 'gallery_canvas')?.paintProgram), /"operation":"rectangle"/);
 });
 
 test('Workshop Desk still fails closed when TreeView is not explicitly enabled at a legacy boundary', () => {
