@@ -1,6 +1,6 @@
 # Patch 0.2.0-beta.36
 
-Patch beta.36 is the current integration and RAD-authoring development line. It aligns Patch Studio with project bundle v4 resources, the promoted Current Ready Native GUI IR 1.9 desktop contract, and the graphics/resource RAD milestone while preserving the rule that ordinary `.patch` source remains authoritative for Form/component authoring.
+Patch beta.36 is the current integration and RAD-authoring development line. It aligns Patch Studio with project bundle v4 resources, the promoted Current Ready Native GUI IR 1.9 desktop contract, the source-backed clipboard/RAD milestone, and the multi-platform Offline Studio while preserving the rule that ordinary `.patch` source remains authoritative for Form/component authoring.
 
 ## Current Ready contracts
 
@@ -16,6 +16,7 @@ Patch beta.36 is the current integration and RAD-authoring development line. It 
 - GTK release: `native-linux-runtime-v1.10`
 - offline compiler line: `offline-compiler-v0.2`
 - Offline Studio line: `offline-studio-v0.2`
+- Offline Studio native-build integration: Stage 2 R0.1 secure localhost bridge implemented in source
 
 Older project/native versions remain explicit migration/compatibility inputs and are never silently reinterpreted. In particular, payload v17/runtime v1.8 remains an explicit Offline Compiler compatibility path.
 
@@ -73,16 +74,21 @@ The current source-backed Designer includes:
 - source-backed Anchors and Dock;
 - Focus Order Stage 1;
 - bounded source-backed Undo/Redo;
+- versioned single-control Copy/Cut/Paste across Forms and projects;
+- collision-safe control/event id remapping and semantic validation of external clipboard JSON;
+- shared Designer command ids with Command Palette and Designer-scoped keyboard shortcuts;
+- paste into an empty active Form without requiring a pre-existing selection;
 - Table, TreeView and Tabs structural editors;
 - nonvisual Timer/ImageList tray;
 - project Resource Manager;
 - Picture, Shape and PaintBox graphics authoring;
 - Window icon source/Web/native authoring;
+- Layers/Object Tree Stage 0.2 hierarchy inspection;
 - active-Form materialization and keyed runtime reconciliation for large projects.
 
 Beta.36 retains **multi-select alignment and center operations**, **same width/height**, and **equal horizontal/vertical distribution** as explicit source-backed Designer capabilities. These phrases remain stable release markers because CI uses them to prevent the public milestone description from drifting behind the implemented Studio surface.
 
-R0 architecture work has already landed the declaration-only design model/cache, shared exact-source snapshots, active-Form materialization, real-Chrome Workshop/10-Form performance gates and primary Designer cache integration. Remaining R0 work is focused on module boundaries, the Worker boundary, adapter-owned incremental reconciliation and measurement-driven Table/Tree preview virtualization.
+R0 architecture work has already landed the declaration-only design model/cache, shared exact-source snapshots, active-Form materialization, real-Chrome Workshop/10-Form performance gates, primary Designer cache integration, and isolation of the real-browser performance gate from the full Node test suite. Remaining R0 work is focused on module boundaries, the Worker boundary, adapter-owned incremental reconciliation and measurement-driven Table/Tree preview virtualization.
 
 ## ImageList
 
@@ -116,16 +122,29 @@ Pages gates the browser Ready path on the published **runtime v1.10** Windows/ma
 
 The rolling `offline-compiler-v0.2` line defaults supported Window linking to Current Ready Native GUI IR 1.9 / payload v19 / runtime v1.10 on Windows, Linux, Apple Silicon macOS and Intel macOS. It carries a separate runtime-v1.8 underlay for explicit `--gui-payload-version 17` compatibility. FreeBSD remains Console-only through portable C99.
 
-The rolling `offline-studio-v0.2` Stage 1 line verifies self-contained SEA IDE executables on **Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64**. macOS Intel is verified separately as an offline runtime kit that embeds the Intel Node runtime and the same Studio site closure. This avoids advertising a direct Node 26 SEA binary on macOS x64 while that upstream path remains unreliable. A separate portable Node 18+ bundle carries the same Studio closure for compatible systems where a host-specific Patch Studio distribution is not published, including generic Unix/POSIX hosts such as FreeBSD when a compatible Node runtime and browser are installed.
+The rolling `offline-studio-v0.2` Stage 1 line publishes and verifies:
 
-All six host-specific distributions must carry the same deterministic Studio manifest before release assembly proceeds. The generic portable bundle is a compatibility path, not a claim of a native FreeBSD IDE binary.
+- self-contained Windows x64 and Windows ARM64 IDEs;
+- self-contained macOS Apple Silicon IDE;
+- macOS Intel embedded-runtime kit containing its own Intel Node runtime;
+- self-contained Linux x64 and Linux ARM64 IDEs;
+- portable Node 18+ compatibility bundle;
+- real FreeBSD 15 x64 VM build/self-smoke for the portable path;
+- deterministic cross-distribution `offline-studio-manifest.json` equality;
+- release-byte `SHA256SUMS` and post-upload required-asset verification.
 
-All Stage 1 distribution classes support offline authoring, Designer, Run and current browser-local build targets. Host-native desktop Build directly inside the installed IDE remains the explicit Stage 2 boundary.
+The generic portable bundle is a compatibility path, not a claim of a native FreeBSD IDE binary. All Stage 1 distribution classes support offline authoring, Designer, Run and current browser-local build targets.
 
-Ready/offline Windows/macOS/Linux builds require no user GitHub token. Optional cloud/AOT workflows remain separate from the default download/link experience.
+### Offline Studio Stage 2 R0.1
+
+The secure native-build request boundary is implemented in source as `patch-offline-build-bridge/0.1`. It binds only to `127.0.0.1`, uses a per-launch Bearer capability, accepts a closed bounded JSON request for `build-native-window`, canonicalizes workspace/source paths, rejects traversal and symlink escapes, fixes output below `.patch-build/native/<requestId>` and directly calls the host-native builder without exposing a general shell, argv or environment API.
+
+The installed distributions do **not** yet expose host-native desktop Build as a completed user-facing workflow. Remaining Stage 2 work is compiler/current-runtime packaging beside Studio, explicit workspace authorization, privileged capability delivery to the browser UI, visible Build wiring, structured artifact diagnostics and installed Windows/macOS/Linux native-build self-smokes.
+
+Ready/offline Windows/macOS/Linux builds through the standalone compiler require no user GitHub token. Optional cloud/AOT workflows remain separate from the default download/link experience.
 
 ## Formal and review boundary
 
 Beta.36 product work does not widen the beta.32 formal runtime-correspondence claim. Patch does not claim full compiler/runtime verification.
 
-Target capability metadata now advertises the promoted IR 1.9/payload v19/runtime v1.10 desktop line, including Button/ImageList and Window/application icons. See `docs/ROADMAP.md`, `docs/NATIVE_GUI.md`, `docs/WINDOW_ICONS.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the exact boundary.
+Target capability metadata advertises the promoted IR 1.9/payload v19/runtime v1.10 desktop line, including Button/ImageList and Window/application icons. See `docs/ROADMAP.md`, `docs/NATIVE_GUI.md`, `docs/WINDOW_ICONS.md`, `docs/OFFLINE_STUDIO.md` and `docs/RAD_STUDIO_MASTER_BACKLOG.md` for the exact boundary.
