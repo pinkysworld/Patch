@@ -9,24 +9,26 @@ import {
   buildStudioLargeProjectFixture
 } from '../scripts/benchmark-studio-large-project.js';
 
-test('Workshop Desk design model is declaration-only and preserves the six Form surface', () => {
+test('Workshop Desk design model is declaration-only and preserves the seven Form surface', () => {
   const source = fs.readFileSync('examples/workshop-desk.patch', 'utf8');
   const model = buildStudioDesignModel(source);
 
-  assert.equal(model.ui.length, 6);
+  assert.equal(model.ui.length, 7);
   assert.deepEqual(model.ui.map(form => form.id), [
     'main',
     'settings',
     'details',
     'inventory',
     'customer_profile',
-    'diagnostics'
+    'diagnostics',
+    'components'
   ]);
   assert.equal(model.ui[0].visible, true);
   assert.ok(model.ui.slice(1).every(form => form.visible === false));
   assert.equal(model.state.heartbeat, 0);
   assert.equal(model.state.ticket_total, 40);
   assert.equal(model.state.ticket_state, 'Open');
+  assert.equal(model.state.gallery_status, 'Component gallery ready');
   assert.ok(model.declarationCount > 20);
   assert.ok(model.skippedCount >= 0);
 });
