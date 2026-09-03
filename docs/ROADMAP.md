@@ -16,6 +16,7 @@ This roadmap is the concise current product-status view. `docs/RAD_STUDIO_MASTER
 - Component Registry: **0.9**
 - Offline Studio manifest: **v1**, rolling channel **`offline-studio-v0.2`**
 - Offline Compiler rolling channel: **`offline-compiler-v0.2`**
+- Offline IDE native-build integration: **Stage 2 R0.1 authenticated localhost bridge implemented in source**
 - formal runtime-correspondence milestone: **beta.32**
 
 `src/native-current-contract.js` is the authoritative product-facing native boundary. Native contracts become Ready only after their cross-platform runtime, release-integrity, packaging and Offline Compiler gates pass.
@@ -44,13 +45,13 @@ The Current Ready Window-icon line includes platform packaging evidence:
 - the normal Offline Compiler carries Current Ready v1.10 plus a separate v1.8 compatibility underlay;
 - Windows, Linux, macOS Apple Silicon and macOS Intel promotion smokes are green.
 
-## Current product milestone: RAD R0 hardening + native R1 follow-through
+## Current product milestone: RAD R0 hardening + Offline Stage 2 integration
 
-The native R1 promotion gate is complete. Near-term work is now split between:
+Near-term work is split between:
 
-1. completing the remaining R0 Studio architecture/reliability work;
-2. continuing broader R1/R2 resource and Designer parity without weakening the promoted native boundary;
-3. starting Offline Studio Stage 2 local-native-build integration;
+1. completing remaining R0 Studio architecture/reliability work;
+2. continuing broader R1/R2 Designer/resource parity without weakening the promoted native boundary;
+3. completing Offline Studio Stage 2 after the R0.1 secure-build-bridge foundation;
 4. moving into broader R2+ RAD parity only after those boundaries are stable.
 
 ### RAD R0 architecture hardening (#282)
@@ -69,6 +70,7 @@ Completed foundations include:
 - [x] real-Chrome Workshop and 10-Form/200-control performance gates
 - [x] local Tabs reconciliation
 - [x] Designer selection/Object Inspector/structural-editor state survives Form materialization transitions
+- [x] real-browser performance gate isolated from the full Node suite with startup-only bounded retry
 
 Remaining R0 work:
 
@@ -129,14 +131,17 @@ Future native feature work must use a new explicit versioned contract rather tha
 
 ## RAD R2: Form Designer parity
 
-After the R0 architecture and native-promotion gates are stable:
+Current state and remaining work:
 
 - [ ] independent source-backed `TabOrder` that does not alter source/z-order
 - [ ] visual Tab Order mode
 - [ ] richer smart-guide configuration beyond the current grid/alignment guides
-- [ ] source-backed clipboard schema for copy/cut/paste across Forms/projects
+- [x] versioned source-backed single-control clipboard schema for Copy/Cut/Paste across Forms/projects
+- [x] collision-safe id/event remapping and semantic external-clipboard validation
+- [x] shared Copy/Cut/Paste command path, Command Palette and Designer-scoped shortcuts
+- [ ] multi-selection clipboard transfer
 - [ ] Lock Controls and design-only guide visibility
-- [ ] Layers/Object Tree for visual z-order and containment
+- [x] Layers/Object Tree Stage 0.2 for visual hierarchy/z-order inspection
 - [ ] complete Panel Stage 2 native child containment with relative coordinates, clipping and nested Panels
 
 ## RAD R3-R6: component and project expansion
@@ -176,19 +181,39 @@ Longer-term work includes:
 - [x] deterministic Offline Studio manifest v1
 - [x] self-contained Node SEA builder using the generated hosted Studio application
 - [x] loopback-only runtime and restrictive local security boundary
-- [x] Windows x64, macOS Apple Silicon and Linux x64 self-smoked executables
-- [x] exact release-bundle manifest equality and SHA-256 gate
+- [x] Windows x64 and Windows ARM64 self-contained distributions
+- [x] macOS Apple Silicon self-contained distribution
+- [x] macOS Intel embedded-runtime kit with bundled Intel Node runtime
+- [x] Linux x64 and Linux ARM64 self-contained distributions
+- [x] portable Node 18+ compatibility bundle
+- [x] real FreeBSD 15 x64 portable build/self-smoke gate
+- [x] six-way host-distribution deterministic manifest equality
+- [x] exact release-bundle SHA-256 and post-upload asset verification
 - [x] rolling `offline-studio-v0.2` release assets
-- [x] public Downloads/README/docs asset contract
+- [x] public Downloads/README/docs complete asset contract
 
 Production Authenticode / Developer ID signing and macOS notarization remain external credential gates.
 
 ### Stage 2: fully local native IDE
 
-- [ ] embed/install the offline compiler and host-native sealed runtimes beside Offline Studio
-- [ ] authenticated narrow localhost build bridge rather than a general shell API
-- [ ] host-native local Windows/macOS/Linux builds without GitHub or network access
-- [ ] artifact pane integration for outputs, diagnostics and checksums
+R0.1 security foundation:
+
+- [x] loopback-only authenticated narrow localhost build bridge rather than a general shell API
+- [x] versioned `patch-offline-build-bridge/0.1` / `POST /v1/build` / `build-native-window` contract
+- [x] per-launch Bearer capability with timing-safe comparison
+- [x] closed JSON schema and bounded body
+- [x] canonical workspace/source containment and traversal/symlink rejection
+- [x] fixed `.patch-build/native/<requestId>` output root
+- [x] direct `buildNativeGuiForHost()` invocation with no general shell/argv/env endpoint
+
+Remaining Stage 2 integration:
+
+- [ ] package/install the offline compiler and current host-native sealed runtime beside Offline Studio
+- [ ] explicit workspace-open authority
+- [ ] privileged host generation and delivery of bridge origin/token capability
+- [ ] visible Studio Build UI integration
+- [ ] structured output/diagnostic/checksum metadata without general filesystem authority
+- [ ] installed Windows/macOS/Linux host-native build self-smokes without GitHub/network access
 - [ ] explicit local-vs-remote build selector, with local as the offline path
 
 ### Stage 3: installed-IDE integration
@@ -207,7 +232,8 @@ Implemented repository-controlled surface:
 - [x] token-free Current Ready runtime v1.10 release workflows
 - [x] browser runtime templates verified against release SHA-256/GitHub digests before sealing
 - [x] downloadable dual-runtime Offline Compiler kits
-- [x] downloadable Offline Studio Stage 1 channel
+- [x] complete downloadable Offline Studio Stage 1 matrix
+- [x] Stage 2 R0.1 secure native-build bridge in source
 - [x] fail-closed Windows signing and macOS signing/notarization machinery
 - [x] Current Ready v1.10 cross-platform Window-icon runtime/package implementation
 
@@ -219,7 +245,7 @@ External or future distribution work:
 - [ ] installer/package formats with explicit uninstall path
 - [ ] release-integrity verification across future installer/update channels
 - [ ] fresh remote native build service without a user-supplied GitHub token
-- [ ] fully local Offline Studio native build bridge
+- [ ] complete installed Offline Studio native Build integration on top of the R0.1 bridge
 - [ ] FreeBSD native GUI backend
 - [ ] more self-contained Linux distribution formats where deployment evidence justifies them
 - [ ] manual assistive-technology validation before any accessibility-conformance claim
@@ -255,4 +281,4 @@ No empirical performance result is claimed until the corresponding measurements 
 - **beta.35+ foundation:** multi-file bundle v3, completed Designer structure workflows, Table/TreeView/Tabs and Slider/native runtime v1.4
 - **beta.36:** project bundle v4 resources, native progression through PaintBox/image IR 1.7 / payload v17 / runtime v1.8, expanded RAD authoring and graphics/resource R1 work
 - **beta.36+ promoted:** Button/ImageList IR 1.8 / payload v18 / runtime v1.9 and Window-icon IR 1.9 / payload v19 / runtime v1.10, including cross-platform application-icon packaging, Windows PE embedding, immutable runtime release verification and dual-runtime Offline Compiler promotion
-- **current:** R0 architecture hardening, Offline Studio Stage 2, broader R1/R2 Designer/resource expansion, and future native work only through new explicit contracts
+- **current:** source-backed Copy/Cut/Paste and Layers foundations, R0 architecture hardening, Offline Studio Stage 2 R0.1 bridge, complete Stage 1 distribution matrix, and future native work only through new explicit contracts
