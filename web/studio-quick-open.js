@@ -65,10 +65,11 @@ export function rankStudioQuickOpenItems(items, query) {
 
   // Multi-token queries are often used as an IDE scope, for example
   // "counter form" or "settings recipe". When at least one result contains
-  // every token directly, suppress weaker subsequence-only matches. This keeps
-  // fuzzy search available for abbreviated/misspelled queries while preventing
-  // unrelated symbols from leaking into an otherwise unambiguous scoped query.
-  const directMatches = ranked.filter(entry => entry.directTokenMatch);
+  // every token directly, suppress weaker subsequence-only matches. Single-token
+  // queries preserve the established fuzzy result set and ordering contract.
+  const directMatches = tokens.length > 1
+    ? ranked.filter(entry => entry.directTokenMatch)
+    : [];
   const visible = directMatches.length ? directMatches : ranked;
 
   return visible
