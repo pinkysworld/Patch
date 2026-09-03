@@ -83,7 +83,18 @@ test('scoped multi-token queries suppress subsequence-only noise when a complete
   assert.equal(ranked[0].label, 'main');
   assert.equal(ranked[0].symbolKind, 'window');
 
-  const fuzzyFallback = rankStudioQuickOpenItems(items, 'rwd');
+  const fuzzyOnlyItem = {
+    id: 'fuzzy-reward',
+    type: 'symbol',
+    label: 'reward',
+    detail: 'recipe',
+    keywords: '',
+    file: 'main.patch',
+    line: 10,
+    symbolKind: 'recipe'
+  };
+  const fuzzyFallback = rankStudioQuickOpenItems([fuzzyOnlyItem], 'rwd');
+  assert.equal(fuzzyFallback.length, 1);
   assert.equal(fuzzyFallback[0].label, 'reward');
 });
 
