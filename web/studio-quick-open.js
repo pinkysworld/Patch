@@ -51,9 +51,28 @@ export function rankStudioQuickOpenItems(items, query) {
   const normalizedQuery = normalize(query);
   if (!normalizedQuery) return [...items];
   const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
-  return items
-    .map((item, index) => ({ item, index, score: scoreTokens(searchText(item), tokens) }))
-    .filter(entry => entry.score >= 0)
+  const ranked = items
+    .map((item, index) => {
+      const text = searchText(item);
+      return {
+        item,
+        index,
+        score: scoreTokens(text, tokens),
+        directTokenMatch: tokens.every(token => normalize(text).includes(token))
+      };
+    })
+    .filter(entry => entry.score >= 0);
+
+  // Multi-token queries are often used as an IDE scope, for example
+  // "counter form" or "settings recipe". When at least one result contains
+  // every token directly, suppress weaker subsequence-only matches. Single-token
+  // queries preserve the established fuzzy result set and ordering contract.
+  const directMatches = tokens.length > 1
+    ? ranked.filter(entry => entry.directTokenMatch)
+    : [];
+  const visible = directMatches.length ? directMatches : ranked;
+
+  return visible
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map(entry => entry.item);
 }

@@ -15,13 +15,23 @@ import {
   selectDesignerElement
 } from './designer-selection.js';
 import { duplicateDesignerControl } from './designer-control-duplicate-model.js';
+import {
+  copyDesignerControlClipboard,
+  parseDesignerControlClipboard,
+  pasteDesignerControlClipboard,
+  serializeDesignerControlClipboard
+} from './designer-control-clipboard-model.js';
+import { validateDesignerControlClipboardSemantics } from './designer-control-clipboard-guard.js';
 
 export const STUDIO_SOURCE_DESIGNER_SYNC_VERSION = '0.1';
 export const DESIGNER_CONTROL_COMMAND_EVENT = 'patch-designer-control-command';
 export const DESIGNER_CONTROL_COMMANDS = Object.freeze({
   DELETE: 'designer.control.delete',
   DUPLICATE: 'designer.control.duplicate',
-  REVEAL_SOURCE: 'designer.control.reveal-source'
+  REVEAL_SOURCE: 'designer.control.reveal-source',
+  COPY: 'designer.control.copy',
+  CUT: 'designer.control.cut',
+  PASTE: 'designer.control.paste'
 });
 
 const code = document.querySelector('#code');
@@ -39,10 +49,16 @@ const CORE_TOOL_TYPES = new Map([
   ['addTabs', 'tabs']
 ]);
 const SOURCE_NAVIGATION_KEYS = new Set(['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
+const SINGLE_SELECTION_COMMANDS = new Set([
+  DESIGNER_CONTROL_COMMANDS.DUPLICATE,
+  DESIGNER_CONTROL_COMMANDS.COPY,
+  DESIGNER_CONTROL_COMMANDS.CUT
+]);
 let scheduled = false;
 let pendingToolAdd = null;
 let sourceNavigationScheduled = false;
 let sourceNavigationForce = false;
+let designerClipboardText = '';
 
 if (canvas && code) {
   installDesignerSelectionBridge(canvas);
@@ -70,8 +86,35 @@ if (canvas && code) {
   scheduleSync();
 }
 
-export function executeDesignerControlCommand(source, selection, command) {
+export function executeDesignerControlCommand(source, selection, command, options = {}) {
   const text = String(source ?? '');
+
+  if (command === DESIGNER_CONTROL_COMMANDS.PASTE) {
+    const rawClipboard = options.clipboard ?? (
+      typeof options.clipboardText === 'string'
+        ? parseDesignerControlClipboard(options.clipboardText)
+        : null
+    );
+    if (!rawClipboard) throw new Error('Designer Paste needs a copied Patch control.');
+    const clipboard = validateDesignerControlClipboardSemantics(rawClipboard);
+    const windowIndex = Number.isInteger(options.windowIndex)
+      ? options.windowIndex
+      : Number.isInteger(selection?.windowIndex)
+        ? selection.windowIndex
+        : 0;
+    const result = pasteDesignerControlClipboard(text, clipboard, { windowIndex });
+    return Object.freeze({
+      command,
+      source: result.source,
+      control: null,
+      nextControl: result.control,
+      line: result.control?.line ?? null,
+      windowIndex: result.windowIndex,
+      clipboard,
+      clipboardText: serializeDesignerControlClipboard(clipboard)
+    });
+  }
+
   const selected = listDesignerControls(text).find(control => sameLocation(control, selection)) ?? null;
   if (!selected) throw new Error('Designer command needs a live selected control.');
 
@@ -103,6 +146,19 @@ export function executeDesignerControlCommand(source, selection, command) {
       line: selected.line
     });
   }
+  if (command === DESIGNER_CONTROL_COMMANDS.COPY || command === DESIGNER_CONTROL_COMMANDS.CUT) {
+    const clipboard = copyDesignerControlClipboard(text, selection);
+    const clipboardText = serializeDesignerControlClipboard(clipboard);
+    return Object.freeze({
+      command,
+      source: command === DESIGNER_CONTROL_COMMANDS.CUT ? removeDesignerControl(text, selection) : text,
+      control: selected,
+      nextControl: command === DESIGNER_CONTROL_COMMANDS.CUT ? null : selected,
+      line: selected.line,
+      clipboard,
+      clipboardText
+    });
+  }
   throw new Error(`Unknown Designer control command '${command}'.`);
 }
 
@@ -116,22 +172,52 @@ export function dispatchDesignerControlCommand(command, detail = {}) {
   return true;
 }
 
-function handleDesignerControlCommand(event) {
+async function handleDesignerControlCommand(event) {
   const command = event?.detail?.command;
   if (!Object.values(DESIGNER_CONTROL_COMMANDS).includes(command)) return;
   const selection = currentDesignerSelection(canvas);
-  if (!selection) return;
+  const selectionRequired = command !== DESIGNER_CONTROL_COMMANDS.PASTE;
+  if (selectionRequired && !selection) return;
   event.preventDefault?.();
 
-  if (command === DESIGNER_CONTROL_COMMANDS.DUPLICATE && canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
-    showInspectorError(new Error('Duplicate currently supports one selected control at a time.'));
+  if (SINGLE_SELECTION_COMMANDS.has(command) && canvas.querySelectorAll('.designer-control.designer-multi-selected').length > 1) {
+    showInspectorError(new Error('This command currently supports one selected control at a time.'));
     return;
   }
 
   try {
+    if (command === DESIGNER_CONTROL_COMMANDS.PASTE) {
+      const clipboardText = typeof event?.detail?.clipboardText === 'string'
+        ? event.detail.clipboardText
+        : await readDesignerClipboardText();
+      if (!clipboardText) throw new Error('Copy a Patch Designer control before using Paste.');
+      const windowIndex = Number.isInteger(event?.detail?.windowIndex)
+        ? event.detail.windowIndex
+        : Number(document.querySelector('#patchFormSelect')?.value) || 0;
+      const result = executeDesignerControlCommand(code.value, selection, command, { clipboardText, windowIndex });
+      const nextSelection = designerSelectionForControl(result.nextControl);
+      if (!nextSelection) throw new Error('Pasted control selection could not be created.');
+      clearDesignerSelection(canvas, { reason: 'paste-control' });
+      rememberDesignerSelection(canvas, nextSelection, { emit: false, reason: 'paste-control' });
+      setSource(result.source);
+      focusCommandControl(nextSelection, 'paste-control');
+      return;
+    }
+
     const result = executeDesignerControlCommand(code.value, selection, command);
     if (command === DESIGNER_CONTROL_COMMANDS.REVEAL_SOURCE) {
       revealLine(result.line);
+      return;
+    }
+    if (command === DESIGNER_CONTROL_COMMANDS.COPY) {
+      await writeDesignerClipboardText(result.clipboardText);
+      clearInspectorError();
+      return;
+    }
+    if (command === DESIGNER_CONTROL_COMMANDS.CUT) {
+      await writeDesignerClipboardText(result.clipboardText);
+      clearDesignerSelection(canvas, { reason: 'cut-control' });
+      setSource(result.source);
       return;
     }
     if (command === DESIGNER_CONTROL_COMMANDS.DELETE) {
@@ -147,6 +233,33 @@ function handleDesignerControlCommand(event) {
   } catch (error) {
     showInspectorError(error);
   }
+}
+
+async function writeDesignerClipboardText(text) {
+  designerClipboardText = String(text ?? '');
+  try {
+    if (navigator?.clipboard?.writeText) await navigator.clipboard.writeText(designerClipboardText);
+  } catch {
+    // Clipboard permission is optional. The in-memory Designer clipboard remains usable.
+  }
+  return designerClipboardText;
+}
+
+async function readDesignerClipboardText() {
+  try {
+    if (navigator?.clipboard?.readText) {
+      const external = await navigator.clipboard.readText();
+      if (looksLikeDesignerClipboard(external)) return external;
+    }
+  } catch {
+    // Fall back to the in-memory copy when browser clipboard permission is unavailable.
+  }
+  return designerClipboardText;
+}
+
+function looksLikeDesignerClipboard(text) {
+  const value = String(text ?? '').trim();
+  return value.startsWith('{') && value.includes('"patch-designer-control-clipboard"');
 }
 
 function focusCommandControl(selection, reason) {

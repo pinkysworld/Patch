@@ -42,6 +42,7 @@ SITE_WEB_MODULE_FILES.splice(SITE_WEB_MODULE_FILES.indexOf('designer-layout-acti
   'designer-tabs-control-model.js', 'designer-tabs-control-actions.js',
   'designer-tabs-page-model.js', 'designer-tabs-page-duplicate.js',
   'designer-control-duplicate-model.js', 'designer-control-duplicate.js',
+  'designer-control-clipboard-model.js', 'designer-control-clipboard-guard.js',
   'designer-z-order-model.js',
   'designer-form-duplicate-model.js', 'designer-form-duplicate.js',
   'designer-form-delete-model.js', 'designer-form-delete.js'
