@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 const TEST_ARGS = Object.freeze([
   '--test',
@@ -51,7 +52,7 @@ async function main() {
   process.exit(second.code);
 }
 
-if (process.argv[1] && new URL(import.meta.url).pathname === new URL(`file://${process.argv[1]}`).pathname) {
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   main().catch(error => {
     console.error(error?.stack ?? String(error));
     process.exit(1);
