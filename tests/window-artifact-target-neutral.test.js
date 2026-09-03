@@ -17,17 +17,19 @@ test('compiled Window artifact does not discard target capabilities after prefli
     allowMenuDecorations: true,
     allowTree: true,
     allowSlider: true,
-    allowPaintBox: true
+    allowPaintBox: true,
+    allowImageList: true
   });
 
-  assert.equal(support.treeViews, 2);
-  assert.equal(support.sliders, 4);
-  assert.equal(support.paintboxes, 1);
+  assert.equal(support.treeViews, 3);
+  assert.equal(support.sliders, 5);
+  assert.equal(support.paintboxes, 2);
+  assert.equal(support.imageLists, 1);
 
   const artifact = buildCompiledWindowArtifact(compiled);
   assert.equal(artifact.format, 'patch-compiled-window-program');
   assert.equal(artifact.project.kind, 'window');
-  assert.equal(artifact.formLayout.windows.length, 6);
+  assert.equal(artifact.formLayout.windows.length, 7);
 });
 
 test('legacy runtime capability validation remains fail-closed when TreeView is not enabled', () => {
@@ -39,7 +41,8 @@ test('legacy runtime capability validation remains fail-closed when TreeView is 
       allowListControls: true,
       allowMenuDecorations: true,
       allowSlider: true,
-      allowPaintBox: true
+      allowPaintBox: true,
+      allowImageList: true
     }),
     /TreeView is not enabled for this Window target/
   );
