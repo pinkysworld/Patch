@@ -47,7 +47,11 @@ test('Workshop Desk builds on current Ready across the complete Component Regist
   assert.equal(controls.filter(control => control.type === 'shape').length, 2);
   assert.equal(controls.filter(control => control.type === 'picture').length, 2);
   assert.equal(controls.filter(control => control.type === 'paintbox').length, 2);
-  assert.equal(controls.filter(control => control.type === 'imagelist').length, 1);
+  assert.equal(
+    controls.filter(control => control.type === 'imagelist').length,
+    0,
+    'ImageList is nonvisual and is consumed during IR 1.8+ Button-image lowering rather than emitted as a visual native control'
+  );
   assert.equal(paintboxes.length, 2);
   assert.match(JSON.stringify(paintboxes.find(control => control.id === 'ticket_canvas')?.paintProgram), /"operation":"image"/);
   assert.match(JSON.stringify(paintboxes.find(control => control.id === 'ticket_canvas')?.paintProgram), /data:image\/png;base64,/);
