@@ -22,7 +22,7 @@ Patch is a small **change-oriented programming language** with a source-backed R
 | Current native Ready line | **Native GUI IR 1.9 / payload v19 / runtime v1.10** |
 | Button/ImageList layer | **IR 1.8 / payload v18 / runtime v1.9**, preserved inside the Current Ready compatibility stack |
 | Window/application icons | **Current Ready** on Windows, macOS, and Linux through IR 1.9 / payload v19 / runtime v1.10 |
-| Offline Studio | rolling **`offline-studio-v0.2`** channel |
+| Offline Studio | rolling **`offline-studio-v0.2`** channel with Windows x64/ARM64, Linux x64/ARM64, macOS Apple Silicon/Intel, and a portable Node 18+ kit |
 | Offline compiler | rolling **`offline-compiler-v0.2`** channel, defaulting Window links to payload v19/runtime v1.10 |
 
 Native capabilities are promoted only after cross-platform runtime, packaging, release-integrity, and Offline Compiler evidence passes. Older payload lines remain explicit compatibility contracts rather than being silently reinterpreted.
@@ -55,6 +55,7 @@ Patch Studio aims for a Delphi / Visual Basic style RAD workflow while keeping o
 - nonvisual component tray for Timer and ImageList;
 - Anchors/Dock, grid snap, alignment, sizing, distribution, z-order, and Focus Order Stage 1;
 - source-backed Undo/Redo for editor and Designer changes;
+- source-backed Copy/Cut/Paste across Forms and projects, with collision-safe id/event remapping and semantic clipboard validation;
 - structural editors for Table, TreeView, Tabs, and Panel;
 - active-Form Designer materialization for larger projects;
 - keyed incremental runtime rendering with bounded transient Table/Tree selection restoration;
@@ -90,13 +91,19 @@ Patch has two rolling offline channels:
 
 ### Patch Studio Offline IDE
 
-`offline-studio-v0.2` currently publishes:
+`offline-studio-v0.2` currently publishes the release assets below from the same verified Studio bundle:
 
 - Windows x64: `PatchStudio-windows-x64.exe`
+- Windows ARM64: `PatchStudio-windows-arm64.exe`
 - macOS Apple Silicon: `PatchStudio-macos-arm64`
+- macOS Intel: `PatchStudio-macos-x64.tar.gz` embedded-runtime kit
 - Linux x64: `PatchStudio-linux-x64`
+- Linux ARM64: `PatchStudio-linux-arm64`
+- Portable Node 18+ / generic Unix path: `PatchStudio-portable-node18.tar.gz`
+- Release manifest: `offline-studio-manifest.json`
+- Release checksums: `SHA256SUMS`
 
-Stage 1 provides offline authoring, Designer/Run, and existing browser-local build targets. Host-native desktop compilation directly from inside the installed IDE is still the Stage 2 goal.
+The portable kit is also self-smoked on FreeBSD in CI. Stage 1 provides offline authoring, Designer/Run, and the existing browser-local build targets. Stage 2 R0.1 now has a narrow authenticated localhost native-build bridge in source, but the installed distributions do **not** yet expose host-native desktop Build as a completed user-facing workflow. Packaging the compiler/runtime beside Studio, explicit workspace-open authority, capability delivery to the local UI, visible Build wiring, and installed-distribution native build self-smokes remain the next Stage 2 steps.
 
 ### Offline Compiler
 
