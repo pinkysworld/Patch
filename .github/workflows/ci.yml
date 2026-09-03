@@ -69,7 +69,7 @@ jobs:
       - name: Studio browser performance gate
         if: runner.os == 'Linux' && matrix.node == '24'
         timeout-minutes: 2
-        run: node --test tests/studio-browser-performance-contract.test.js tests/studio-browser-performance.test.js
+        run: node scripts/run-studio-browser-performance-ci.js
       - name: Upload concise test failures
         if: failure()
         uses: actions/upload-artifact@v7
