@@ -24,6 +24,7 @@ const requiredFiles = [
   '_site/icon.svg','_site/manifest.webmanifest','_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
   '_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-structural-keyboard.js',
+  '_site/designer-control-clipboard-model.js','_site/designer-control-clipboard-guard.js',
   '_site/designer-multiselect.js','_site/designer-layout-actions.js','_site/designer-toolbox.js',
   '_site/designer-event-inspector.js','_site/designer-focus-order.js',
   '_site/src/compiler.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
@@ -74,8 +75,9 @@ const downloads = read('_site/downloads.html');
 requireAll('Downloads beta36 release contract', downloads, [
   'Patch Studio Offline IDE + compiler',
   'offline-studio-v0.2',
-  'PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS',
-  'Stage 2','privileged local Build bridge',
+  'PatchStudio-windows-x64.exe','PatchStudio-windows-arm64.exe','PatchStudio-macos-arm64','PatchStudio-macos-x64.tar.gz',
+  'PatchStudio-linux-x64','PatchStudio-linux-arm64','PatchStudio-portable-node18.tar.gz','offline-studio-manifest.json','SHA256SUMS',
+  'Stage 2 R0.1','patch-offline-build-bridge/0.1','installed distributions do not yet expose host-native desktop Build as a completed user-facing workflow',
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz',
   'Native GUI IR <strong>1.9</strong>','payload <strong>v19</strong>','runtime <strong>v1.10</strong>',
   'offline-compiler-v0.2','native-win32-runtime-v1.10','native-macos-runtime-v1.10','native-linux-runtime-v1.10','runtime-manifest.json',
@@ -85,7 +87,7 @@ requireAll('Downloads beta36 release contract', downloads, [
   'PictureBox note:'
 ]);
 rejectAll('Downloads beta36 current links', downloads, [
-  'offline-studio-v0.1','offline-compiler-v0.1',
+  'offline-studio-v0.1','offline-compiler-v0.1','All three builds','There is not yet a separate macOS Intel Offline Studio beta asset',
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"',
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"',
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html'
@@ -94,7 +96,11 @@ rejectAll('Downloads beta36 current links', downloads, [
 const selection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection state', selection, ['patch-designer-selection-change','currentDesignerSelection','installDesignerSelectionBridge']);
 const coreSelection = read('_site/designer-core-selection.js');
-requireAll('Core Designer selection bridge', coreSelection, ['currentDesignerSelection','installDesignerSelectionBridge','captureCoreSelection','populateSharedInspector']);
+requireAll('Core Designer selection and clipboard bridge', coreSelection, ['currentDesignerSelection','installDesignerSelectionBridge','captureCoreSelection','populateSharedInspector','designer.control.copy','designer.control.cut','designer.control.paste','pasteDesignerControlClipboard']);
+const clipboardModel = read('_site/designer-control-clipboard-model.js');
+requireAll('Source-backed Designer clipboard model', clipboardModel, ['patch-designer-control-clipboard','copyDesignerControlClipboard','pasteDesignerControlClipboard']);
+const clipboardGuard = read('_site/designer-control-clipboard-guard.js');
+requireAll('Designer clipboard semantic guard', clipboardGuard, ['validateDesignerControlClipboardSemantics','parseDesignerControlClipboard']);
 const structuralKeyboard = read('_site/designer-structural-keyboard.js');
 requireAll('Designer structural keyboard accessibility', structuralKeyboard, ['installDesignerStructuralKeyboard','aria-keyshortcuts','Control+Enter','nextStructuralOptionIndex']);
 const multiselect = read('_site/designer-multiselect.js');
@@ -114,4 +120,4 @@ rejectAll('Studio command palette paper privacy', palette, ["command('paper'",'.
 const bootstrap = read('_site/studio-bootstrap.js');
 requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.9 / payload v19 / runtime v1.10 / Offline Studio v0.2 downloads / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
+console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.9 / payload v19 / runtime v1.10 / complete Offline Studio v0.2 release matrix / source-backed Designer Copy-Cut-Paste; research paper remains repository-only.');
