@@ -15,6 +15,7 @@ Patch Studio currently tracks:
 - Ready/offline desktop runtime **v1.10** on Windows, macOS and Linux;
 - Offline Studio manifest **v1** and rolling download channel **`offline-studio-v0.2`**;
 - Offline Compiler rolling channel **`offline-compiler-v0.2`**;
+- Offline IDE native-build integration **Stage 2 R0.1**, with authenticated localhost build bridge implemented in source;
 - formal runtime-correspondence milestone **beta.32**.
 
 Current Ready v1.10 contains the complete **IR1.8 / payload-v18 / runtime-v1.9 Button/ImageList** layer plus **IR1.9 / payload-v19 Window/application icons** and deterministic platform application-icon packaging. Explicit payload-v17/runtime-v1.8 linking remains available as a compatibility option in the Offline Compiler.
@@ -68,12 +69,17 @@ Table, TreeView and Tabs structural editors rewrite the selected source block di
 
 **Table: text-list for the selected row.** The selected Table row is a transient event value in Studio App Preview, Standalone Web and supported native paths. TreeView likewise exposes its selected root-to-node path as a transient text-list. Neither becomes persistent application state unless a handler explicitly commits the event value through `change`.
 
-## Layout and Form Designer operations
+## Layout, editing and Form Designer operations
 
 Current source-backed operations include:
 
 - add/select/duplicate/delete Form;
 - pointer and keyboard move/resize;
+- source-backed Undo/Redo;
+- Copy/Cut/Paste for a selected control through shared Designer command ids and Command Palette/keyboard surfaces;
+- cross-Form and cross-project paste with collision-safe control/event id remapping;
+- semantic validation of external clipboard JSON before source mutation;
+- paste into an empty active Form without requiring an existing selection;
 - default size / Fit controls;
 - Center H / Center V;
 - align left/right/top/bottom and center axes;
@@ -86,6 +92,8 @@ Current source-backed operations include:
 - temporary Alt/Option guide bypass;
 - source-backed Anchors and Dock;
 - Focus Order Stage 1.
+
+The clipboard contract is versioned as `patch-designer-control-clipboard` v1. It preserves the selected control and its contiguous layout/tab/lock metadata, recursively accounts for Panel/Tabs ids and handlers, remaps collisions against the destination project namespace and reparses the resulting source. Copy/Cut currently remain single-selection operations; multi-selection transfer is a later RAD slice.
 
 Timer and ImageList are nonvisual and never expose Form geometry, Anchors or Dock. StatusBar owns its bottom-docked contract. Independent Delphi-style `TabOrder` remains a later source/runtime contract.
 
@@ -141,9 +149,9 @@ Windows CI verifies the packaged EXE with `ExtractAssociatedIcon` and `--patch-s
 
 ## Workshop Desk acceptance example
 
-`examples/workshop-desk.patch` is the main cross-platform RAD showcase and stress fixture. The broader product surface now also has dedicated Button/ImageList and Window-icon fixtures that prove the resource-bearing native path.
+`examples/workshop-desk.patch` is the main cross-platform RAD showcase and stress fixture. The broader product surface also has dedicated Button/ImageList and Window-icon fixtures that prove the resource-bearing native path.
 
-The Workshop example remains useful as a dense Form/component acceptance application, but Current Ready capability is defined by the canonical component matrix and versioned runtime tests rather than by one showcase source file.
+Current Ready capability is defined by the canonical component matrix and versioned runtime tests rather than by one showcase source file.
 
 ## Run and Build
 
@@ -155,7 +163,23 @@ The frozen TreeView line is 1.2/v12/v1.3. The previous Slider line is 1.3/v13/v1
 
 ## Offline Studio and Offline Compiler
 
-The rolling **`offline-studio-v0.2`** channel publishes Stage 1 self-contained IDE builds for Windows x64, macOS Apple Silicon and Linux x64 plus the deterministic manifest and SHA256SUMS. Stage 1 provides offline authoring, Designer/Run and browser-local build targets. Host-native desktop Build from inside the installed IDE is still Stage 2.
+The rolling **`offline-studio-v0.2`** channel publishes the complete verified Stage 1 distribution matrix:
+
+- `PatchStudio-windows-x64.exe`
+- `PatchStudio-windows-arm64.exe`
+- `PatchStudio-macos-arm64`
+- `PatchStudio-macos-x64.tar.gz` embedded-runtime Intel kit
+- `PatchStudio-linux-x64`
+- `PatchStudio-linux-arm64`
+- `PatchStudio-portable-node18.tar.gz`
+- `offline-studio-manifest.json`
+- `SHA256SUMS`
+
+The portable Node 18+ distribution is executed in a real FreeBSD 15 x64 VM in CI. Host-specific distributions share the same deterministic Studio manifest before release publication.
+
+Stage 1 provides offline authoring, Designer/Object Inspector, Run and browser-local build targets. **Stage 2 R0.1** adds the narrow authenticated `patch-offline-build-bridge/0.1` in source: loopback-only, per-launch capability protected, closed-schema, workspace/source contained, symlink guarded, fixed-output and without a general shell/argv/environment API.
+
+The installed distributions do **not** yet expose host-native desktop Build as a completed user-facing workflow. Remaining integration includes packaged compiler/runtime files beside Studio, explicit workspace-open authority, privileged capability delivery, visible Build UI wiring, structured artifact diagnostics and real installed-distribution native-build self-smokes.
 
 The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking defaults to payload v19/runtime v1.10 and includes a separate v1.8 runtime for explicit v17 compatibility. FreeBSD remains Console-only via portable C99.
 

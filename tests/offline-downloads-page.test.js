@@ -9,7 +9,6 @@ const studioWorkflow = fs.readFileSync('.github/workflows/offline-studio.yml', '
 const offlineStudioDoc = fs.readFileSync('docs/OFFLINE_STUDIO.md', 'utf8');
 const pages = ['web/index.html', 'web/language.html', 'web/docs.html', 'web/help.html'];
 const compilerAssets = ['patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz','SHA256SUMS'];
-const studioPublicAssets = ['PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS'];
 const studioReleaseAssets = [
   'PatchStudio-windows-x64.exe','PatchStudio-windows-arm64.exe',
   'PatchStudio-macos-arm64','PatchStudio-macos-x64.tar.gz',
@@ -27,7 +26,7 @@ test('offline compiler download page and release workflow share one stable v0.2 
   }
 });
 
-test('Offline Studio download page, documentation and workflow share one stable v0.2 release contract', () => {
+test('Offline Studio download page, documentation and workflow share the complete v0.2 release contract', () => {
   assert.match(downloads, /offline-studio-v0\.2/);
   assert.match(studioWorkflow, /TAG: offline-studio-v0\.2/);
   assert.match(studioWorkflow, /release-bundle:[\s\S]*needs: \[executable, macos-intel-runtime-kit, portable, freebsd-portable\]/);
@@ -41,12 +40,11 @@ test('Offline Studio download page, documentation and workflow share one stable 
   assert.match(studioWorkflow, /gh release upload/);
   assert.match(studioWorkflow, /Missing published Offline Studio asset/);
   assert.match(offlineStudioDoc, /offline-studio-v0\.2/);
-  assert.match(offlineStudioDoc, /Stage 2 local native-build integration remains open/);
+  assert.match(offlineStudioDoc, /Stage 2 R0\.1/);
+  assert.match(offlineStudioDoc, /patch-offline-build-bridge\/0\.1/);
 
-  for (const asset of studioPublicAssets) {
-    assert.ok(downloads.includes(asset), `downloads page: ${asset}`);
-  }
   for (const asset of studioReleaseAssets) {
+    assert.ok(downloads.includes(asset), `downloads page: ${asset}`);
     assert.ok(studioWorkflow.includes(asset), `Offline Studio workflow: ${asset}`);
     assert.ok(offlineStudioDoc.includes(asset), `Offline Studio documentation: ${asset}`);
   }
@@ -59,21 +57,22 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page states Offline Studio Stage 1 and signing boundaries without overstating native local Build', () => {
+test('downloads page states signing and Stage 2 R0.1 boundaries without overstating installed native Build', () => {
   assert.match(downloads, /Offline IDE beta embeds the same deterministic Studio site/i);
-  assert.match(downloads, /Host-native desktop Build inside the IDE is the next Stage 2 boundary/i);
+  assert.match(downloads, /Stage 2 R0\.1/i);
+  assert.match(downloads, /patch-offline-build-bridge\/0\.1/i);
   assert.match(downloads, /development binary is currently unsigned by Authenticode/i);
   assert.match(downloads, /Ad-hoc signed for local execution, not Developer ID notarized/i);
   assert.match(downloads, /same deterministic Studio manifest/i);
-  assert.match(downloads, /does not yet expose the standalone native compiler\/runtime through a privileged local Build bridge/i);
+  assert.match(downloads, /installed distributions do not yet expose host-native desktop Build as a completed user-facing workflow/i);
 });
 
 test('downloads page distinguishes Current Ready v1.10, v1.8 compatibility, Intel macOS, FreeBSD and historical lines', () => {
   assert.match(downloads, /normal local workflows do not need a GitHub token/i);
   assert.match(downloads, /macOS Intel/);
-  assert.match(downloads, /portable tar\.gz kit/);
+  assert.match(downloads, /embedded-runtime kit/i);
   assert.match(downloads, /includes its own Intel Node runtime/i);
-  assert.match(downloads, /FreeBSD x64/);
+  assert.match(downloads, /FreeBSD 15 x64/);
   assert.match(downloads, /requires local Node 22\+ and cc/i);
   assert.match(downloads, /Native FreeBSD Window\/GUI linking is not claimed yet/);
   assert.match(downloads, /patch link app\.patch --out App/);
@@ -92,12 +91,13 @@ test('downloads page distinguishes Current Ready v1.10, v1.8 compatibility, Inte
   assert.match(downloads, /portable image-source rendering/i);
 });
 
-test('generated public site contains downloads, passes the public validator and excludes the paper page', () => {
+test('generated public site contains current downloads and Designer clipboard closure', () => {
   execFileSync(process.execPath, ['scripts/build-site.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['scripts/check-site.js'], { stdio: 'pipe' });
   assert.equal(fs.existsSync('_site/paper.html'), false, 'paper.html must remain outside the public site');
   for (const file of [
     '_site/downloads.html','_site/designer-alignment.js','_site/designer-alignment-guides.js','_site/designer-multiselect.js','_site/designer-multiselect.css',
+    '_site/designer-control-clipboard-model.js','_site/designer-control-clipboard-guard.js',
     '_site/src/native-gui-ir-v12.js','_site/src/native-tree-backend-adapter.js','_site/src/sealed-native-gui-v12.js','_site/src/native-gui-ir-v13.js','_site/src/native-slider-backend-adapter.js','_site/src/sealed-native-gui-v13.js',
     '_site/src/native-gui-ir-v14.js','_site/src/native-gui-ir-v15.js','_site/src/native-gui-ir-v16.js','_site/src/native-gui-ir-v17.js','_site/src/native-gui-ir-v18.js','_site/src/native-gui-ir-v19.js',
     '_site/src/native-chrome-backend-adapter.js','_site/src/native-shape-backend-adapter.js','_site/src/native-paintbox-backend-adapter.js','_site/src/sealed-native-gui-v14.js','_site/src/sealed-native-gui-v15.js','_site/src/sealed-native-gui-v16.js','_site/src/sealed-native-gui-v17.js','_site/src/sealed-native-gui-v18.js','_site/src/sealed-native-gui-v19.js','_site/src/native-paintbox-image-backend-adapter.js','_site/src/native-button-image-backend-adapter.js','_site/src/native-window-icon-backend-adapter.js','_site/src/native-window-icon-package-v110.js'

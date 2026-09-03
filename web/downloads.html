@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#15171c">
-  <meta name="description" content="Download Patch Studio Offline IDE and the Patch offline compiler for Windows, macOS and Linux, with FreeBSD compiler support and SHA-256 verification.">
+  <meta name="description" content="Download Patch Studio Offline IDE and the Patch offline compiler for Windows, macOS and Linux, with portable Unix/FreeBSD Studio support and SHA-256 verification.">
   <title>Downloads · Patch</title>
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
@@ -23,8 +23,8 @@
   <section class="page-hero">
     <div>
       <p class="page-eyebrow">Patch Studio Offline IDE + compiler · 0.2 beta.36+</p>
-      <h1>Use Patch locally, with or without the browser-hosted Studio.</h1>
-      <p>Download the self-contained Patch Studio Offline IDE for visual authoring and Run, or the standalone Patch compiler for source-first local build and native linking. Normal local workflows do not need a GitHub token. The Offline IDE beta embeds the same deterministic Studio site as the hosted product; Host-native desktop Build inside the IDE is the next Stage 2 boundary.</p>
+      <h1>Use Patch locally, with or without the hosted Studio.</h1>
+      <p>The Offline IDE beta embeds the same deterministic Studio site as the hosted product. Normal local workflows do not need a GitHub token. Stage 2 R0.1 now provides a narrow authenticated native-build bridge in source; the installed distributions do not yet expose host-native desktop Build as a completed user-facing workflow.</p>
     </div>
     <pre class="page-code"># Offline IDE
 PatchStudio-windows-x64.exe
@@ -37,81 +37,78 @@ patch link app.patch --out App</pre>
   </section>
 
   <section class="page-section">
-    <h2>Download Patch Studio Offline IDE</h2>
-    <p><strong><code>offline-studio-v0.2</code> is the current rolling beta channel.</strong> Windows, macOS and Linux executables are built and self-smoked on their own operating system before publication. All three builds must embed the same deterministic Studio manifest. Stage 1 supports offline authoring, Form Designer/Object Inspector, Run and current browser-local build targets. Host-native desktop Build inside the IDE is the next Stage 2 boundary and is not claimed yet.</p>
+    <h2>Patch Studio Offline IDE</h2>
+    <p><strong><code>offline-studio-v0.2</code> is the current rolling beta channel.</strong> The release matrix is built and self-smoked on its target systems before publication. Host-specific distributions share the same deterministic Studio manifest, while the portable bundle is additionally exercised inside a real FreeBSD 15 x64 VM.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-windows-x64.exe"><strong>Patch Studio · Windows x64</strong><span>Self-contained Offline IDE beta. Development binary is currently unsigned by Authenticode.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-windows-arm64.exe"><strong>Patch Studio · Windows ARM64</strong><span>Self-contained ARM64 Offline IDE beta, built and self-smoked on Windows ARM64.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-macos-arm64"><strong>Patch Studio · macOS Apple Silicon</strong><span>Self-contained Offline IDE beta. Ad-hoc signed for local execution, not Developer ID notarized.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-linux-x64"><strong>Patch Studio · Linux x64</strong><span>Self-contained Offline IDE beta. Uses the local default browser as the UI shell.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-macos-x64.tar.gz"><strong>Patch Studio · macOS Intel</strong><span>Embedded-runtime kit. It includes its own Intel Node runtime and does not require a separate Node installation.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-linux-x64"><strong>Patch Studio · Linux x64</strong><span>Self-contained Offline IDE beta using the local default browser as UI shell.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-linux-arm64"><strong>Patch Studio · Linux ARM64</strong><span>Self-contained ARM64 Offline IDE beta built from the same verified Studio closure.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-portable-node18.tar.gz"><strong>Patch Studio · Portable Node 18+</strong><span>Generic Unix/POSIX compatibility bundle. CI executes this path on Linux and FreeBSD 15 x64.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/offline-studio-manifest.json"><strong>Offline Studio manifest</strong><span>Deterministic embedded-site file hashes and closure SHA-256.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/SHA256SUMS"><strong>Offline Studio SHA256 checksums</strong><span>Release-byte verification for the three IDE executables and manifest.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline IDE documentation</strong><span>Stage 1 usage, security boundary, Stage 2 local-native-build plan and signing status.</span></a>
-    </div>
-  </section>
-
-  <section class="page-section">
-    <h2>Download the Patch offline compiler</h2>
-    <p><strong><code>offline-compiler-v0.2</code> is the current rolling beta channel.</strong> Current Windows, macOS and Linux Window linking defaults to Native GUI IR <strong>1.9</strong>, sealed payload <strong>v19</strong> and runtime <strong>v1.10</strong>. Each desktop compiler also carries the runtime-v1.8 underlay needed for explicit <code>--gui-payload-version 17</code> compatibility.</p>
-    <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Compiler · Windows x64</strong><span>Standalone compiler + Current Ready Win32 runtime v1.10 linker with v1.8 compatibility underlay.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>Compiler · macOS Apple Silicon</strong><span>Standalone compiler + Current Ready AppKit runtime v1.10 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>Compiler · macOS Intel</strong><span>Portable tar.gz kit. It includes its own Intel Node runtime, Current Ready AppKit runtime v1.10 and the legacy v1.8 compatibility runtime.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-linux-x64"><strong>Compiler · Linux x64</strong><span>Standalone compiler + Current Ready native GTK3 runtime v1.10 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>Compiler · FreeBSD x64</strong><span>Portable offline compiler kit + C99 Console linker. Requires local Node 22+ and cc.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/SHA256SUMS"><strong>Compiler SHA256 checksums</strong><span>Verification file for every compiler asset in the rolling beta channel.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/SHA256SUMS"><strong>Offline Studio SHA256 checksums</strong><span>Release-byte verification for every published Offline Studio asset.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/blob/main/docs/OFFLINE_STUDIO.md"><strong>Offline IDE documentation</strong><span>Distribution matrix, signing boundary, Stage 2 R0.1 bridge security contract and remaining installed-Build work.</span></a>
     </div>
   </section>
 
   <section class="page-section">
     <h2>Offline IDE boundary</h2>
-    <p>The Offline IDE beta is a packaged local Studio, not a second implementation. It embeds the generated public Studio module closure and serves it only on an ephemeral <code>127.0.0.1</code> endpoint with a random per-launch path, GET/HEAD-only routing, traversal rejection and restrictive CSP.</p>
-    <p><strong>Stage 2 remains explicit:</strong> the downloaded Offline IDE does not yet expose the standalone native compiler/runtime through a privileged local Build bridge. Use the separate offline compiler when you need host-native <code>patch link</code> output today.</p>
+    <p>Stage 1 packages the generated public Studio module closure and serves it only over an ephemeral <code>127.0.0.1</code> endpoint with a random per-launch path, GET/HEAD-only routing, traversal rejection, restrictive CSP and integrity verification.</p>
+    <p><strong>Stage 2 R0.1 is implemented in source.</strong> The versioned <code>patch-offline-build-bridge/0.1</code> accepts only authenticated <code>POST /v1/build</code> requests for <code>build-native-window</code>. It uses a per-launch Bearer capability, closed JSON schema, canonical workspace/source containment, symlink checks and a fixed output root. It exposes no general shell, argv, environment or arbitrary output-path API.</p>
+    <p><strong>The installed distributions do not yet expose host-native desktop Build as a completed user-facing workflow.</strong> Compiler/runtime packaging beside Studio, explicit workspace-open authority, capability delivery to the UI, visible Build wiring and installed-distribution native-build self-smokes remain. Use the separate offline compiler for host-native output today.</p>
+  </section>
+
+  <section class="page-section">
+    <h2>Patch offline compiler</h2>
+    <p><strong><code>offline-compiler-v0.2</code> is the current rolling beta channel.</strong> Windows, macOS and Linux Window linking defaults to Native GUI IR <strong>1.9</strong>, sealed payload <strong>v19</strong> and runtime <strong>v1.10</strong>. Desktop kits retain the runtime-v1.8 underlay for explicit <code>--gui-payload-version 17</code> compatibility.</p>
+    <div class="doc-links">
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Compiler · Windows x64</strong><span>Standalone compiler + Current Ready Win32 runtime v1.10 linker with v1.8 compatibility underlay.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>Compiler · macOS Apple Silicon</strong><span>Standalone compiler + Current Ready AppKit runtime v1.10 linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>Compiler · macOS Intel</strong><span>Portable tar.gz kit. It includes its own Intel Node runtime, AppKit runtime v1.10 and v1.8 compatibility runtime.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-linux-x64"><strong>Compiler · Linux x64</strong><span>Standalone compiler + Current Ready GTK3 runtime v1.10 linker.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>Compiler · FreeBSD x64</strong><span>Portable offline compiler + C99 Console linker. Requires local Node 22+ and cc.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/SHA256SUMS"><strong>Compiler SHA256 checksums</strong><span>Verification file for the rolling compiler channel.</span></a>
+    </div>
+  </section>
+
+  <section class="page-grid" aria-label="Local Patch capabilities">
+    <article class="page-card"><h2>Design locally</h2><p>Offline Studio provides the same source-backed Form Designer, Object Inspector, Copy/Cut/Paste workflow and Run surface without requiring the public site.</p></article>
+    <article class="page-card"><h2>Compile locally</h2><p><code>patch build</code> retains portable, WebAssembly, C99 and Standalone Web targets without requiring Patch Studio.</p></article>
+    <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds Current Ready payload v19/runtime v1.10 output on supported desktop hosts. Use <code>--gui-payload-version 17</code> only for explicit compatibility.</p></article>
   </section>
 
   <section class="page-section">
     <h2>Current native boundary</h2>
-    <p><strong>The current desktop line is Native GUI IR 1.9 / payload v19 / runtime v1.10.</strong> It preserves the earlier native layers and adds Current Ready Button/ImageList images plus application/Form Window icons. Native GUI IR 1.7 / payload v17 / runtime v1.8 remains an explicit compatibility line for the Offline Compiler, not the no-flag default. Native GUI IR 1.6 / payload v16 / runtime v1.7 remains the previous PaintBox Stage 1 line, Native GUI IR 1.5 / payload v15 / runtime v1.6 the previous Shape line, Native GUI IR 1.4 / payload v14 / runtime v1.5 the previous Chrome line, and Native GUI IR 1.3 / payload v13 / runtime v1.4 the Slider-capable historical boundary. Versioned contracts are not silently reinterpreted.</p>
+    <p><strong>The current desktop line is Native GUI IR 1.9 / payload v19 / runtime v1.10.</strong> Native GUI IR 1.8 / payload v18 / runtime v1.9 is the Button/ImageList underlay. Native GUI IR 1.7 / payload v17 / runtime v1.8 remains an explicit Offline Compiler compatibility line. Native GUI IR 1.6 / payload v16 / runtime v1.7 is the earlier PaintBox line, Native GUI IR 1.5 / payload v15 / runtime v1.6 the Shape line, Native GUI IR 1.4 / payload v14 / runtime v1.5 the Chrome line, Native GUI IR 1.3 / payload v13 / runtime v1.4 the Slider-capable historical line, and Native GUI IR 1.2 / payload v12 / runtime v1.3 the frozen TreeView line. Versioned contracts are not silently reinterpreted.</p>
     <p><strong>PictureBox note:</strong> current desktop Picture decoding supports bounded project-resource and data-URI PNG/JPEG images through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf under <code>native-picture-formats/1.0</code>. This is not a claim of complete <strong>portable image-source rendering</strong> across every project image type or display property. Native WebP/SVG remain deferred and fail closed.</p>
-  </section>
-
-  <section class="page-grid" aria-label="Local Patch capabilities">
-    <article class="page-card"><h2>Design locally</h2><p>Offline Studio Stage 1 provides the same source-backed Form Designer, Object Inspector and Run surface without requiring the hosted site.</p></article>
-    <article class="page-card"><h2>Compile locally</h2><p><code>patch build</code> retains portable, WebAssembly, C99 and Standalone Web targets without requiring Patch Studio.</p></article>
-    <article class="page-card"><h2>Link locally</h2><p><code>patch link program.patch</code> builds Current Ready payload v19/runtime v1.10 output on supported desktop hosts. Use <code>--gui-payload-version 17</code> only when explicit v17/runtime-v1.8 compatibility is required.</p></article>
   </section>
 
   <section class="page-section">
     <h2>Current native Window surface</h2>
     <p>Windows, macOS and Linux offline linking uses the same semantic GUI contract as Patch Studio's token-free Ready path. Toolkit interaction remains transient until Patch source performs an explicit <code>change</code>.</p>
     <ul>
-      <li><strong>Slider:</strong> finite numeric <code>changed</code> value inside the declared range; native TRACKBAR/NSSlider/GtkScale.</li>
+      <li><strong>Slider:</strong> finite numeric <code>changed</code> value inside the declared range.</li>
       <li><strong>Table/Grid:</strong> selected row is a transient text-list event value.</li>
-      <li><strong>List-backed ListBox:</strong> selected display strings are a transient text-list event value.</li>
-      <li><strong>Menu:</strong> separators, portable shortcuts and source-backed Boolean <code>enabled</code>/<code>checked</code> projections.</li>
+      <li><strong>Menu:</strong> separators, portable shortcuts and source-backed Boolean enabled/checked projections.</li>
       <li><strong>TreeView:</strong> selected root-to-node display path is a transient text-list event value.</li>
-      <li><strong>Responsive layout:</strong> source-backed Anchor/Dock metadata reflows native controls without creating hidden Patch state.</li>
-      <li><strong>Panel:</strong> Stage 1 native visual grouping. Full Delphi-style child-container semantics are not claimed yet.</li>
+      <li><strong>Panel:</strong> Stage 1 native visual grouping; full child-container semantics remain a later contract.</li>
       <li><strong>Timer:</strong> native scheduling with Patch <code>ticked</code> events.</li>
-      <li><strong>StatusBar:</strong> native/status-style text surface, with platform widget differences kept behind the semantic contract.</li>
-      <li><strong>PictureBox:</strong> PNG/JPEG decoding plus the current click path under <code>native-picture-formats/1.0</code>.</li>
-      <li><strong>Shape:</strong> rectangle, rounded rectangle, ellipse and line through the native renderers.</li>
-      <li><strong>PaintBox:</strong> pure <code>paint</code> rendering with clear, line, rectangle, ellipse, text and bounded PNG/JPEG <code>draw image</code>.</li>
+      <li><strong>PictureBox:</strong> bounded PNG/JPEG decoding plus the current click path.</li>
+      <li><strong>Shape:</strong> rectangle, rounded rectangle, ellipse and line through native renderers.</li>
+      <li><strong>PaintBox:</strong> pure paint rendering including bounded PNG/JPEG <code>draw image</code>.</li>
       <li><strong>ImageList/Button images:</strong> named project resources flow through the IR1.8/BIMG layer and native Win32/AppKit/GTK Button consumers.</li>
-      <li><strong>Window/application icons:</strong> payload v19/WICO drives native Form icons; Windows embeds the application icon in the PE slot, macOS packages `.icns`, and Linux emits hicolor + `.desktop` metadata.</li>
+      <li><strong>Window/application icons:</strong> payload v19/WICO drives native Form icons; Windows embeds the application icon in the PE slot, macOS packages <code>.icns</code>, and Linux emits hicolor + <code>.desktop</code> metadata.</li>
     </ul>
   </section>
 
   <section class="page-section">
-    <h2>Versioned compatibility</h2>
-    <p>The current Ready/offline contract is Native GUI IR 1.9 / payload v19 / runtime v1.10. Native GUI IR 1.8 / payload v18 / runtime v1.9 is the Button/ImageList underlay. Native GUI IR 1.7 / payload v17 / runtime v1.8 remains an explicit Offline Compiler compatibility line. Native GUI IR 1.6 / payload v16 / runtime v1.7 is the earlier PaintBox line. Native GUI IR 1.5 / payload v15 / runtime v1.6 is the Shape line. Native GUI IR 1.4 / payload v14 / runtime v1.5 is the Chrome line. Native GUI IR 1.3 / payload v13 / runtime v1.4 is the Slider-capable historical line. Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView line. Older contracts are not redefined: payload v11/runtime v1.2 remains the frozen Menu+list line, v10/v1.1 the persistent-list line, and v9/v1.0 the Table line. Explicit legacy linking fails closed when a program requires a newer feature.</p>
-  </section>
-
-  <section class="page-section">
     <h2>How Patch Studio verifies Ready runtimes</h2>
-    <p>The browser path has a separate integrity gate from the self-contained offline compiler. Pages requires <code>studio-runtime-v0.6</code> plus the three native runtime-v1.10 releases, reads the SHA-256 digest recorded by GitHub for every runtime template, verifies the downloaded bytes and publishes <code>runtime-manifest.json</code>. Patch Studio then re-hashes the selected runtime with Web Crypto before sealing a Ready app.</p>
+    <p>The browser path has a separate integrity gate from the offline compiler. Pages requires <code>studio-runtime-v0.6</code> plus the three native runtime-v1.10 releases, verifies the recorded release digests and publishes <code>runtime-manifest.json</code>. Patch Studio re-hashes the selected runtime with Web Crypto before sealing a Ready app.</p>
     <div class="doc-links">
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/studio-runtime-v0.6"><strong>Studio compatibility/Console runtimes</strong><span>Runtime templates for no-token Console and explicit compatibility packaging.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.10"><strong>Win32 runtime v1.10</strong><span>Current Ready Native GUI IR 1.9 / payload v19 Window runtime.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/studio-runtime-v0.6"><strong>Studio compatibility/Console runtimes</strong><span>Templates for no-token Console and explicit compatibility packaging.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.10"><strong>Win32 runtime v1.10</strong><span>Current Ready Native GUI IR 1.9 / payload v19 runtime.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.10"><strong>macOS runtime v1.10</strong><span>Universal AppKit Current Ready payload-v19 runtime.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.10"><strong>Linux runtime v1.10</strong><span>GTK3 Current Ready payload-v19 runtime.</span></a>
     </div>
@@ -123,24 +120,24 @@ patch link app.patch --out App</pre>
     <pre class="page-code"># Linux Offline Studio
 sha256sum PatchStudio-linux-x64
 
-# macOS Offline Studio
-shasum -a 256 PatchStudio-macos-arm64
+# macOS Intel Offline Studio
+shasum -a 256 PatchStudio-macos-x64.tar.gz
 
-# Windows Offline Studio
-Get-FileHash .\PatchStudio-windows-x64.exe -Algorithm SHA256
+# Windows ARM64 Offline Studio
+Get-FileHash .\PatchStudio-windows-arm64.exe -Algorithm SHA256
 
 # Windows standalone compiler
 Get-FileHash .\patch-windows-x64.exe -Algorithm SHA256</pre>
-    <p>SHA-256 verifies release-byte consistency. It is not a replacement for Authenticode, Developer ID/notarization or an independent signing authority. Development artifacts remain explicitly unsigned or ad-hoc signed unless a release states otherwise.</p>
+    <p>SHA-256 verifies release-byte consistency. It is not a replacement for Authenticode, Developer ID/notarization or an independent signing authority.</p>
   </section>
 
   <section class="page-section">
     <h2>Platform notes</h2>
-    <h3>Windows</h3><p>The Offline Studio beta is a self-contained x64 executable. The compiler links Current Ready Window projects into a native Win32 <code>.exe</code> through runtime v1.10.</p>
-    <h3>macOS Apple Silicon</h3><p>The standalone compiler produces Current Ready AppKit <code>.app</code> bundles through runtime v1.10. Development builds are ad-hoc signed, not Developer ID notarized.</p>
-    <h3>macOS Intel</h3><p>The compiler download is a portable tar.gz kit. It includes its own Intel Node runtime and both the Current Ready AppKit runtime v1.10 and legacy runtime v1.8 compatibility underlay. There is not yet a separate macOS Intel Offline Studio beta asset.</p>
-    <h3>Linux</h3><p>The x64 compiler embeds the GTK3 runtime v1.10 linker. Resulting GUI executables still require compatible normal GTK3/system libraries on the target system.</p>
-    <h3>FreeBSD</h3><p>FreeBSD currently supports Console linking through the portable C99 backend. Native FreeBSD Window/GUI linking is not claimed yet, and the FreeBSD x64 kit requires local Node 22+ and cc.</p>
+    <h3>Windows</h3><p>Offline Studio publishes self-contained x64 and ARM64 executables. The x64 offline compiler links Current Ready Window projects into native Win32 <code>.exe</code> output through runtime v1.10.</p>
+    <h3>macOS Apple Silicon</h3><p>Offline Studio publishes a self-contained Apple Silicon binary. Development builds are ad-hoc signed, not Developer ID notarized.</p>
+    <h3>macOS Intel</h3><p>Offline Studio publishes an embedded-runtime kit, <code>PatchStudio-macos-x64.tar.gz</code>. It includes its own Intel Node runtime. The compiler is also distributed as a portable tar.gz kit.</p>
+    <h3>Linux</h3><p>Offline Studio publishes x64 and ARM64 self-contained binaries. The x64 compiler embeds the GTK3 runtime v1.10 linker; resulting GUI executables require compatible normal GTK3/system libraries.</p>
+    <h3>FreeBSD</h3><p>The portable Node 18+ Offline Studio path is executed in a real FreeBSD 15 x64 VM. The separate compiler supports Console linking through portable C99 and requires local Node 22+ and cc. Native FreeBSD Window/GUI linking is not claimed yet.</p>
   </section>
 
   <section class="page-section">
@@ -152,7 +149,7 @@ patch build app.patch --target wasm-direct
 patch build app.patch --target c99
 patch build app.patch --target web
 patch doctor</pre>
-    <p>Use Offline Studio for local visual authoring and Run. Use the downloaded compiler for current local source checking, compilation and supported host-native application linking until Offline Studio Stage 2 connects that compiler through its narrow local build bridge.</p>
+    <p>Use Offline Studio for local visual authoring and Run. Use the downloaded compiler for host-native linking until Stage 2 completes installed compiler/runtime packaging and visible Build integration.</p>
   </section>
 
   <footer class="page-footer"><span>Patch local downloads · 0.2.0-beta.36+</span><span><a href="https://github.com/pinkysworld/Patch/releases/tag/offline-studio-v0.2">Offline Studio release</a> · <a href="https://github.com/pinkysworld/Patch/releases/tag/offline-compiler-v0.2">Compiler release</a></span></footer>
