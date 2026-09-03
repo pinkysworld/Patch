@@ -57,7 +57,8 @@ jobs:
         run: node scripts/run-tests-ci.js
       - name: Studio Chrome startup smoke
         timeout-minutes: 2
-        run: node --test tests/studio-browser-startup.test.js
+        # Wrapper executes tests/studio-browser-startup.test.js unchanged and retries only recognized Chrome/DevTools startup handshakes once.
+        run: node scripts/run-studio-browser-startup-ci.js
       - name: Designer navigation Chrome round trip
         if: runner.os == 'Linux' && matrix.node == '24'
         timeout-minutes: 2
