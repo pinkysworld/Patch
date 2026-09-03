@@ -66,6 +66,27 @@ test('fuzzy ranking prefers direct and boundary matches while preserving usable 
   assert.equal(scoped[0].file, 'forms/settings.patch');
 });
 
+test('scoped multi-token queries suppress subsequence-only noise when a complete direct match exists', () => {
+  const items = buildStudioQuickOpenItems(files);
+  const noisy = {
+    id: 'noise',
+    type: 'symbol',
+    label: 'unrelated-control',
+    detail: 'main.patch:99 · Forms',
+    keywords: 'symbol forms window coordinator formatter main.patch',
+    file: 'main.patch',
+    line: 99,
+    symbolKind: 'window'
+  };
+  const ranked = rankStudioQuickOpenItems([...items, noisy], 'counter form');
+  assert.equal(ranked.length, 1);
+  assert.equal(ranked[0].label, 'main');
+  assert.equal(ranked[0].symbolKind, 'window');
+
+  const fuzzyFallback = rankStudioQuickOpenItems(items, 'rwd');
+  assert.equal(fuzzyFallback[0].label, 'reward');
+});
+
 test('quick-open model contains no persistence or secondary project index', () => {
   const source = buildStudioQuickOpenItems.toString() + rankStudioQuickOpenItems.toString();
   assert.doesNotMatch(source, /localStorage|sessionStorage|indexedDB/);
