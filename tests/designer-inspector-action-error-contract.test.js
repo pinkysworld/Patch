@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const migrated = [
+  'web/designer-data-editor.js',
   'web/designer-form-duplicate.js',
   'web/designer-form-delete.js',
   'web/designer-table-actions.js',
@@ -25,10 +26,11 @@ for (const path of migrated) {
   });
 }
 
-test('migrated Form, Table, Tree and Tabs actions remain part of the Designer Workspace and hosted bundle', () => {
+test('converged Inspector action and data-editor modules remain part of the Designer Workspace and hosted bundle', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   for (const module of [
+    'designer-data-editor.js',
     'designer-form-duplicate.js',
     'designer-form-delete.js',
     'designer-table-actions.js',
@@ -43,7 +45,7 @@ test('migrated Form, Table, Tree and Tabs actions remain part of the Designer Wo
   }
 });
 
-test('designer-data-editor remains the explicit final local Inspector error migration', () => {
-  const dataEditor = fs.readFileSync('web/designer-data-editor.js', 'utf8');
-  assert.match(dataEditor, /function showError\(error\)/);
+test('converged Inspector modules do not reintroduce local showError implementations', () => {
+  const offenders = migrated.filter(path => /function showError\(error\)/.test(fs.readFileSync(path, 'utf8')));
+  assert.deepEqual(offenders, []);
 });
