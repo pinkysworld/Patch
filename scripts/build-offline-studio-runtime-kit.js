@@ -6,11 +6,14 @@ import { spawnSync } from 'node:child_process';
 const args = process.argv.slice(2);
 const out = path.resolve(option('--out') ?? 'dist-offline-studio-runtime-kit');
 const portableOut = path.join(out, 'app');
-
-const built = spawnSync(process.execPath, [
+const offlineCompiler = option('--offline-compiler');
+const portableArgs = [
   'scripts/build-portable-offline-studio.js',
   '--out', portableOut
-], { stdio: 'inherit', env: process.env });
+];
+if (offlineCompiler) portableArgs.push('--offline-compiler', path.resolve(offlineCompiler));
+
+const built = spawnSync(process.execPath, portableArgs, { stdio: 'inherit', env: process.env });
 if (built.error) fail(`could not start portable Offline Studio builder: ${built.error.message}`);
 if (built.status !== 0) fail(`portable Offline Studio builder exited with status ${built.status}`);
 
@@ -34,7 +37,8 @@ const metadata = {
   arch: process.arch,
   node: process.versions.node,
   runtime: `runtime/${runtimeName}`,
-  entrypoint: process.platform === 'win32' ? 'PatchStudio.cmd' : 'patch-studio'
+  entrypoint: process.platform === 'win32' ? 'PatchStudio.cmd' : 'patch-studio',
+  localBuildCompiler: offlineCompiler ? true : false
 };
 fs.writeFileSync(path.join(portableOut, 'runtime-kit.json'), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8');
 fs.appendFileSync(path.join(portableOut, 'README.txt'), `\nEmbedded runtime kit\n--------------------\nThis package includes the exact Node ${process.versions.node} ${process.platform}/${process.arch} runtime used by CI. No separately installed Node runtime is required.\n`, 'utf8');
@@ -42,6 +46,7 @@ fs.appendFileSync(path.join(portableOut, 'README.txt'), `\nEmbedded runtime kit\
 console.log(`Built Patch Offline Studio runtime kit: ${portableOut}`);
 console.log(`  host: ${process.platform} ${process.arch}`);
 console.log(`  embedded Node: ${process.versions.node}`);
+console.log(`  local build compiler: ${offlineCompiler ? path.resolve(offlineCompiler) : 'not packaged'}`);
 
 function option(name) {
   const index = args.indexOf(name);
