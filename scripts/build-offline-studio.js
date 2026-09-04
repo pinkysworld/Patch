@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { buildOfflineStudioManifest, offlineStudioAssetMap } from './offline-studio-assets.js';
 import { installOfflineStudioSiteOverlay } from './offline-studio-site-overlay.js';
@@ -21,7 +22,14 @@ if (!skipSiteBuild) buildSite();
 installOfflineStudioSiteOverlay(siteRoot);
 
 const siteManifest = buildOfflineStudioManifest(siteRoot, { patchVersion: pkg.version });
-const localBuild = offlineStudioLocalBuildMetadata(offlineCompiler);
+const localBuildSource = offlineStudioLocalBuildMetadata(offlineCompiler);
+const localBuild = localBuildSource
+  ? Object.freeze({
+      ...localBuildSource,
+      compilerAsset: 'local-build/patch-offline-compiler.gz',
+      compilerEncoding: 'gzip'
+    })
+  : null;
 const runtimeManifest = Object.freeze(localBuild ? { ...siteManifest, localBuild } : { ...siteManifest });
 fs.mkdirSync(path.dirname(manifestOut), { recursive: true });
 fs.writeFileSync(manifestOut, `${JSON.stringify(siteManifest, null, 2)}\n`, 'utf8');
@@ -46,7 +54,12 @@ try {
   const assets = offlineStudioAssetMap(siteRoot, runtimeManifestOut);
   assets['offline-studio-build-bridge-core.cjs'] = path.resolve('src/offline-studio-build-bridge-core.cjs');
   assets['offline-studio-compiler-builder.cjs'] = path.resolve('scripts/offline-studio-compiler-builder.cjs');
-  if (localBuild) assets[localBuild.compilerAsset] = path.resolve(offlineCompiler);
+  if (localBuild) {
+    const compressedCompiler = path.join(temp, 'patch-offline-compiler.gz');
+    const compilerBytes = fs.readFileSync(path.resolve(offlineCompiler));
+    fs.writeFileSync(compressedCompiler, zlib.gzipSync(compilerBytes, { level: zlib.constants.Z_BEST_COMPRESSION }));
+    assets[localBuild.compilerAsset] = compressedCompiler;
+  }
   fs.writeFileSync(configPath, JSON.stringify({
     main: path.resolve('scripts/offline-studio-runner.cjs'),
     mainFormat: 'commonjs',
