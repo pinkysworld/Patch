@@ -5,6 +5,10 @@
       <stop offset="0.52" stop-color="#2563eb"/>
       <stop offset="1" stop-color="#1737a6"/>
     </linearGradient>
+    <linearGradient id="patch-pass" x1="180" y1="128" x2="330" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef4ff"/>
+    </linearGradient>
     <linearGradient id="patch-accent" x1="354" y1="350" x2="432" y2="430" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#7c5cff"/>
       <stop offset="1" stop-color="#5b34d6"/>
@@ -21,7 +25,7 @@
   <circle cx="256" cy="256" r="213" fill="none" stroke="#ffffff" stroke-opacity=".12" stroke-width="2"/>
 
   <path
-    fill="#fff"
+    fill="url(#patch-pass)"
     mask="url(#patch-circuit-cuts)"
     d="M205 112C181 112 162 131 162 155v246c0 24 19 43 43 43s43-19 43-43v-62h58c86 0 144-49 144-114 0-64-58-113-144-113H205Zm43 70h55c42 0 70 18 70 43 0 27-28 44-70 44h-55v-87Z"/>
 
