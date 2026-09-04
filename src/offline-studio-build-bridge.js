@@ -10,8 +10,25 @@ export const OFFLINE_WORKSPACE_SNAPSHOT_MAX_BODY = core.OFFLINE_WORKSPACE_SNAPSH
 export const OFFLINE_BUILD_ARTIFACT_PREFIX = core.OFFLINE_BUILD_ARTIFACT_PREFIX;
 export const OfflineBuildBridgeError = core.OfflineBuildBridgeError;
 
-export const validateOfflineBuildRequest = core.validateOfflineBuildRequest;
-export const validateOfflineWorkspaceSnapshot = core.validateOfflineWorkspaceSnapshot;
+export function validateOfflineBuildRequest(value) {
+  try {
+    return core.validateOfflineBuildRequest(value);
+  } catch (error) {
+    if (error?.code === 'invalid-source') {
+      error.message = 'source must be a relative Patch file input path inside the opened workspace and name a .patch file or .patchproject file.';
+    }
+    throw error;
+  }
+}
+
+export function validateOfflineWorkspaceSnapshot(value) {
+  if (typeof value?.source === 'string' && Buffer.byteLength(value.source, 'utf8') > 1024 * 1024) {
+    throw new OfflineBuildBridgeError('snapshot-too-large', 'Patch source snapshot exceeds the 1 MiB Stage 2 compatibility limit.', 413);
+  }
+  return core.validateOfflineWorkspaceSnapshot(value);
+}
+
+export const validateProjectSnapshot = core.validateProjectSnapshot;
 export const resolveOpenedWorkspace = core.resolveOpenedWorkspace;
 export const resolveOfflineBuildWorkspace = core.resolveOfflineBuildWorkspace;
 export const materializeOfflineWorkspaceSnapshot = core.materializeOfflineWorkspaceSnapshot;
