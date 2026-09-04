@@ -18,7 +18,11 @@ import {
   updateDesignerTreeNodes
 } from '../src/designer-data.js';
 import { installDesignerStructuralKeyboard } from './designer-structural-keyboard.js';
-import { currentDesignerSelection } from './designer-selection.js';
+import {
+  clearDesignerInspectorError,
+  currentDesignerSelection,
+  showDesignerInspectorError
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -230,7 +234,7 @@ function applyTreeAction(action) {
     else return;
     selectedTreePaths.set(key, result.path);
     setSource(updateDesignerTreeNodes(code.value, control, result.nodes));
-  } catch (error) { showError(error); }
+  } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
 function applyTabsAction(action) {
@@ -257,7 +261,7 @@ function applyTabsAction(action) {
     } else return;
     selectedTabPages.set(key, nextIndex);
     setSource(next);
-  } catch (error) { showError(error); }
+  } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
 function applyTableMutation(transform) {
@@ -267,7 +271,7 @@ function applyTableMutation(transform) {
     const draft = readTableDraft(control);
     const next = transform(draft);
     setSource(updateDesignerTableData(code.value, control, next));
-  } catch (error) { showError(error); }
+  } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
 function readTableDraft(control) {
@@ -282,15 +286,8 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
+  clearDesignerInspectorError({ document });
   scheduleSync();
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (target) {
-    target.textContent = error?.message ?? String(error);
-    target.hidden = false;
-  }
 }
 
 function hidePanel() {
