@@ -20,18 +20,18 @@ const skipSiteBuild = args.includes('--skip-site-build');
 if (!skipSiteBuild) buildSite();
 installOfflineStudioSiteOverlay(siteRoot);
 
-const baseManifest = buildOfflineStudioManifest(siteRoot, { patchVersion: pkg.version });
+const siteManifest = buildOfflineStudioManifest(siteRoot, { patchVersion: pkg.version });
 const localBuild = offlineStudioLocalBuildMetadata(offlineCompiler);
-const manifest = Object.freeze(localBuild ? { ...baseManifest, localBuild } : { ...baseManifest });
+const runtimeManifest = Object.freeze(localBuild ? { ...siteManifest, localBuild } : { ...siteManifest });
 fs.mkdirSync(path.dirname(manifestOut), { recursive: true });
-fs.writeFileSync(manifestOut, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+fs.writeFileSync(manifestOut, `${JSON.stringify(siteManifest, null, 2)}\n`, 'utf8');
 
 if (manifestOnly) {
   console.log(`Validated Patch Offline Studio ${pkg.version}`);
-  console.log(`  files: ${manifest.fileCount}`);
-  console.log(`  closure sha256: ${manifest.closureSha256}`);
+  console.log(`  files: ${siteManifest.fileCount}`);
+  console.log(`  closure sha256: ${siteManifest.closureSha256}`);
   console.log(`  local native build: ${localBuild ? `${localBuild.platform}/${localBuild.arch} compiler ${localBuild.compilerSha256.slice(0, 12)}…` : 'compiler not packaged'}`);
-  console.log(`  manifest: ${manifestOut}`);
+  console.log(`  release manifest: ${manifestOut}`);
   process.exit(0);
 }
 
@@ -40,8 +40,10 @@ assertSeaBuildSupport();
 const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-studio-'));
 try {
   const configPath = path.join(temp, 'sea-config.json');
+  const runtimeManifestOut = path.join(temp, 'offline-studio-runtime-manifest.json');
+  fs.writeFileSync(runtimeManifestOut, `${JSON.stringify(runtimeManifest, null, 2)}\n`, 'utf8');
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  const assets = offlineStudioAssetMap(siteRoot, manifestOut);
+  const assets = offlineStudioAssetMap(siteRoot, runtimeManifestOut);
   assets['offline-studio-build-bridge-core.cjs'] = path.resolve('src/offline-studio-build-bridge-core.cjs');
   assets['offline-studio-compiler-builder.cjs'] = path.resolve('scripts/offline-studio-compiler-builder.cjs');
   if (localBuild) assets[localBuild.compilerAsset] = path.resolve(offlineCompiler);
@@ -70,8 +72,9 @@ try {
   }
 
   console.log(`Built Patch Offline Studio ${pkg.version}: ${out}`);
-  console.log(`  embedded files: ${manifest.fileCount}`);
-  console.log(`  site closure sha256: ${manifest.closureSha256}`);
+  console.log(`  embedded files: ${siteManifest.fileCount}`);
+  console.log(`  site closure sha256: ${siteManifest.closureSha256}`);
+  console.log(`  release manifest: platform-neutral site closure (${manifestOut})`);
   console.log('  network requirement: none for Studio Run/Designer/Web/portable browser builds');
   console.log(localBuild
     ? `  installed host build: packaged for ${localBuild.platform}/${localBuild.arch}; activate with --workspace <directory>`
