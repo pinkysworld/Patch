@@ -42,6 +42,7 @@ test('Offline Studio download page, documentation and workflow share one stable 
   assert.match(studioWorkflow, /Missing published Offline Studio asset/);
   assert.match(offlineStudioDoc, /offline-studio-v0\.2/);
   assert.match(offlineStudioDoc, /Stage 2 R0\.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64/);
+  assert.match(offlineStudioDoc, /complete Linux desktop artifacts/i);
   assert.match(studioWorkflow, /local_build: true[\s\S]*platform: linux/);
   assert.match(studioWorkflow, /local_build: true[\s\S]*platform: windows/);
   assert.match(studioWorkflow, /local_build: true[\s\S]*platform: macos/);
@@ -71,6 +72,11 @@ test('downloads page states the bounded Stage 2 installed-build matrix and signi
   assert.match(downloads, /authenticated localhost Build bridge/i);
   assert.match(downloads, /Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle remain Stage 1/i);
   assert.match(downloads, /project-v4 binary resources/i);
+  assert.match(downloads, /Linux desktop package completeness/i);
+  assert.match(downloads, /&lt;stem&gt;-linux\.tar\.gz/i);
+  assert.match(downloads, /hicolor PNG/i);
+  assert.match(downloads, /\.desktop/i);
+  assert.match(downloads, /builds that have no desktop sidecars retain the direct executable artifact/i);
   assert.match(downloads, /development binary is currently unsigned by Authenticode/i);
   assert.match(downloads, /Ad-hoc signed for local execution, not Developer ID notarized/i);
   assert.match(downloads, /same deterministic Studio manifest/i);
