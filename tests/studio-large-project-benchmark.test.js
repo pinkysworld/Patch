@@ -19,7 +19,7 @@ test('Studio large-project fixture is the backlog 10-Form / 200-control workload
   assert.equal(STUDIO_STRESS_CONTROLS_PER_FORM, 20);
   assert.equal(windows.length, 10);
   assert.equal(controls.length, 200);
-  assert.equal(new Set(windows.map(window => window.id).map(Boolean)).size, 10);
+  assert.equal(new Set(windows.map(window => window.id)).size, 10);
   assert.equal(new Set(controls.filter(control => control.id).map(control => control.id)).size, 100);
 });
 
