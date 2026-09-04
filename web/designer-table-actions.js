@@ -11,6 +11,10 @@ import {
   listDesignerTabPageControls,
   updateDesignerTabPageTableData
 } from '../src/designer-tabs-nested.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -138,7 +142,7 @@ function handleClick(event) {
       : updateDesignerTableData(code.value, context.table, nextData);
     setSource(next);
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document });
   }
 }
 
@@ -202,18 +206,12 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
+  clearDesignerInspectorError({ document });
   scheduleSync();
 }
 
 function removeToolbar() {
   panel?.querySelectorAll('[data-table-advanced-actions]').forEach(element => element.remove());
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
 
 function installStylesheet() {
