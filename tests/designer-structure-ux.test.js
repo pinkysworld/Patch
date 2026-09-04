@@ -82,10 +82,14 @@ test('structural Properties polish covers filters empty states accessibility and
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
-test('public Studio and offline PWA package structural Properties polish', () => {
+test('public Studio and offline PWA package structural Properties polish in a safe module order', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const build = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
+  const dataEditorImport = workspace.indexOf("import './designer-data-editor.js'");
+  const structureUxImport = workspace.indexOf("import './designer-structure-ux.js'");
+  assert.ok(dataEditorImport >= 0);
+  assert.ok(structureUxImport > dataEditorImport, 'the source-backed data editor must exist before structural UX enhancement loads');
   assert.match(workspace, /import '\.\/designer-structure-ux\.js'/);
   assert.match(build, /'designer-structure-ux\.js'/);
   assert.match(build, /'designer-structure-ux\.css'/);
