@@ -40,8 +40,19 @@ try {
   fs.rmSync(workspace, { recursive: true, force: true });
 }
 
+if (compiler) {
+  const resourceSmoke = spawnSync(process.execPath, ['scripts/check-offline-studio-resource-build.js'], {
+    stdio: 'inherit',
+    timeout: 60000,
+    env: process.env
+  });
+  if (resourceSmoke.error) fail(`Offline Studio resource build smoke could not run: ${resourceSmoke.error.message}`);
+  if (resourceSmoke.signal) fail(`Offline Studio resource build smoke was terminated by ${resourceSmoke.signal}`);
+  if (resourceSmoke.status !== 0) fail(`Offline Studio resource build smoke exited with status ${resourceSmoke.status}`);
+}
+
 console.log(`Offline Studio executable verified: ${output}`);
-console.log(`  installed host build: ${compiler ? 'real native build smoke passed' : 'not packaged for this host'}`);
+console.log(`  installed host build: ${compiler ? 'plain and resource-backed native build smokes passed' : 'not packaged for this host'}`);
 
 function fail(message) {
   console.error(`Offline Studio CI: ${message}`);

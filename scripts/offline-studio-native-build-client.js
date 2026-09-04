@@ -1,8 +1,8 @@
 import { getStudioProjectBuildInput } from './project-lifecycle.js';
 
 const SESSION_ENDPOINT = './__patch/session';
-const BUILD_PROTOCOL = 'patch-offline-build-bridge/0.1';
-const SNAPSHOT_PROTOCOL = 'patch-offline-workspace-snapshot/0.1';
+const BUILD_PROTOCOL = 'patch-offline-build-bridge/0.2';
+const SNAPSHOT_PROTOCOL = 'patch-offline-workspace-snapshot/0.2';
 const targetPlatforms = new Map([
   ['native-windows', 'windows'],
   ['native-macos', 'macos'],
@@ -87,7 +87,7 @@ function refreshOfflineMode(option, preferInstalled = false) {
 
   if (!nativePanel || !nativeStatus || !platform) return;
   if (available && nativeBuildMode?.value === 'offline-installed') {
-    nativeStatus.textContent = `Offline Studio host build: ${platformLabel(platform)} ${session.localBuild.arch}. The current project snapshot is written only inside the opened workspace, then linked by the bundled Patch offline compiler. No GitHub token or network build queue is used.`;
+    nativeStatus.textContent = `Offline Studio host build: ${platformLabel(platform)} ${session.localBuild.arch}. The canonical project-v4 snapshot, including validated resources, is written only inside the opened workspace and linked by the bundled Patch offline compiler. No GitHub token or network build queue is used.`;
   } else if (!session?.localBuild?.available && session?.localBuild?.reason) {
     nativeStatus.dataset.offlineBuildHint = session.localBuild.reason;
   }
@@ -106,35 +106,37 @@ function canUseInstalledBuild(platform) {
 async function runInstalledBuild(platform) {
   showOutput();
   const buildInput = getStudioProjectBuildInput();
-  if (buildInput.resources?.length) {
-    output.textContent = 'Offline Studio local build stopped:\nStage 2 R0.2 does not materialize project-v4 binary resources into the host workspace yet. Use the existing Ready desktop build for resource-backed Picture/ImageList/icon projects.';
-    nativeStatus.textContent = 'Installed host build stopped · project resources are not yet transported';
-    return;
-  }
-
   const source = String(buildInput.composition?.source ?? '');
   if (!source.trim()) {
     output.textContent = 'Offline Studio local build stopped:\nThe composed Patch project source is empty.';
     return;
   }
 
-  const name = safeName(projectName?.value);
+  const project = buildInput.bundle;
+  if (!project || project.format !== 'patch-studio-project' || project.version !== 4) {
+    output.textContent = 'Offline Studio local build stopped:\nThe current Studio state could not be represented as a canonical project-v4 snapshot.';
+    return;
+  }
+
+  const name = safeName(projectName?.value || project.project?.name);
   const requestId = makeRequestId();
   const originalLabel = buildButton.textContent;
   buildButton.disabled = true;
   buildButton.textContent = 'Building…';
   nativeStatus.textContent = `Building ${name} locally with the installed Patch compiler…`;
-  output.textContent = `Offline Studio installed native build\n\nTarget: ${platformLabel(platform)}\nProject snapshot: ${buildInput.composition?.files?.length ?? 1} source file(s) composed\nBridge: ${BUILD_PROTOCOL}\nWorkspace snapshot: ${SNAPSHOT_PROTOCOL}\n\nMaterializing the current source-backed Studio state…`;
+  output.textContent = `Offline Studio installed native build\n\nTarget: ${platformLabel(platform)}\nProject snapshot: ${project.files?.length ?? 1} source file(s), ${project.resources?.length ?? 0} resource(s)\nBridge: ${BUILD_PROTOCOL}\nWorkspace snapshot: ${SNAPSHOT_PROTOCOL}\n\nValidating and materializing the current project-v4 Studio state…`;
 
   try {
     const snapshot = await bridgeJson(session.localBuild.snapshotPath, {
       protocol: SNAPSHOT_PROTOCOL,
       requestId,
-      source
+      project
     });
-    if (!snapshot?.ok || !snapshot?.source || !snapshot?.sha256) throw new Error('Offline Studio returned an invalid workspace snapshot response.');
+    if (!snapshot?.ok || snapshot?.kind !== 'project' || !snapshot?.source || !snapshot?.sha256) {
+      throw new Error('Offline Studio returned an invalid project workspace snapshot response.');
+    }
 
-    output.textContent = `Offline Studio installed native build\n\nTarget: ${platformLabel(platform)}\nSnapshot SHA-256: ${snapshot.sha256}\nSource: ${snapshot.source}\n\nLinking with the bundled Patch offline compiler…`;
+    output.textContent = `Offline Studio installed native build\n\nTarget: ${platformLabel(platform)}\nSnapshot SHA-256: ${snapshot.sha256}\nProject: ${snapshot.source}\nSource files: ${snapshot.sourceFileCount ?? project.files?.length ?? 1}\nResources: ${snapshot.resourceCount ?? project.resources?.length ?? 0}\n\nLinking the canonical project-v4 snapshot with the bundled Patch offline compiler…`;
 
     const result = await bridgeJson(session.localBuild.buildPath, {
       protocol: BUILD_PROTOCOL,
@@ -154,7 +156,7 @@ async function runInstalledBuild(platform) {
       downloadLine = `Downloaded: ${result.artifact.filename}\nSize: ${formatBytes(result.artifact.size)}\nSHA-256: ${result.artifact.sha256}\nWorkspace artifact: ${result.artifact.path}`;
     }
 
-    output.textContent = `Installed native build complete ✓\n\nTarget: ${result.platform}\nBackend: ${result.backend}\nOutput: ${result.outputKind}\n${downloadLine}\nSnapshot SHA-256: ${snapshot.sha256}\n\n${result.diagnostics ? `Compiler diagnostics:\n${result.diagnostics}\n\n` : ''}The installed Studio exposed only its versioned snapshot/build/artifact operations. No arbitrary command, executable path, environment map or filesystem path was accepted from the browser.`;
+    output.textContent = `Installed native build complete ✓\n\nTarget: ${result.platform}\nBackend: ${result.backend}\nOutput: ${result.outputKind}\n${downloadLine}\nProject snapshot SHA-256: ${snapshot.sha256}\nSource files: ${snapshot.sourceFileCount ?? project.files?.length ?? 1}\nResources: ${snapshot.resourceCount ?? project.resources?.length ?? 0}\n\n${result.diagnostics ? `Compiler diagnostics:\n${result.diagnostics}\n\n` : ''}The installed Studio exposed only its versioned project-snapshot/build/artifact operations. Project resources were validated by digest before the snapshot was accepted. No arbitrary command, executable path, environment map or filesystem path was accepted from the browser.`;
     nativeStatus.textContent = `Installed ${platformLabel(platform)} build complete${result.artifact?.filename ? ` · ${result.artifact.filename}` : ''}`;
   } catch (error) {
     output.textContent = `Offline Studio local build stopped:\n${error?.message ?? String(error)}`;
