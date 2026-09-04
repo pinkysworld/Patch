@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { filterStructureLabels, structuralEditorSummary } from '../web/designer-structure-ux.js';
+import {
+  filterStructureLabels,
+  structuralDraftIsDirty,
+  structuralDraftSignature,
+  structuralEditorSummary
+} from '../web/designer-structure-ux.js';
 
 test('structural Properties filters are case-insensitive UI-only matching', () => {
   assert.deepEqual(filterStructureLabels(['Compiler', 'Parser', 'Docs'], 'par'), [false, true, false]);
@@ -22,6 +27,18 @@ test('structural Properties summaries expose the common Table TreeView and Tabs 
   assert.equal(structuralEditorSummary('button', '1'), null);
 });
 
+test('structural drafts use a deterministic source-backed dirty signature', () => {
+  assert.equal(
+    structuralDraftSignature('table', ['"Name"', '"Ada"']),
+    '["table","\\"Name\\"","\\"Ada\\""]'
+  );
+  assert.equal(structuralDraftSignature('button', ['x']), '');
+  assert.equal(structuralDraftIsDirty('tree', ['"Compiler"'], ['"Compiler"']), false);
+  assert.equal(structuralDraftIsDirty('tree', ['"Parser"'], ['"Compiler"']), true);
+  assert.equal(structuralDraftIsDirty('tabs', ['"Overview"'], ['"Overview"']), false);
+  assert.equal(structuralDraftIsDirty('table', ['"A"', '1'], ['"A"', '2']), true);
+});
+
 test('structural Properties polish delegates mutations to existing source-backed actions', () => {
   const ux = fs.readFileSync('web/designer-structure-ux.js', 'utf8');
   assert.match(ux, /clickExisting\('\[data-table-action="add-row"\]'\)/);
@@ -32,6 +49,20 @@ test('structural Properties polish delegates mutations to existing source-backed
   assert.doesNotMatch(ux, /\bcode\.value\b/);
   assert.doesNotMatch(ux, /\baddDesignerControl\b/);
   assert.doesNotMatch(ux, /\bupdateDesigner(?:TableData|TreeNodes|TabPage)/);
+});
+
+test('Table TreeView and Tabs structural drafts use the shared Inspector state contract', () => {
+  const ux = fs.readFileSync('web/designer-structure-ux.js', 'utf8');
+  assert.match(ux, /import \{ syncDesignerInspectorState \} from '\.\/designer-ux\.js'/);
+  assert.match(ux, /applySelector: '\[data-table-action="apply"\]'/);
+  assert.match(ux, /applySelector: '\[data-tree-action="rename"\]'/);
+  assert.match(ux, /applySelector: '\[data-tabs-action="rename"\]'/);
+  assert.match(ux, /Table data changes ready to apply/);
+  assert.match(ux, /TreeView label change ready to apply/);
+  assert.match(ux, /Tab page title change ready to apply/);
+  assert.match(ux, /syncDesignerInspectorState\(\{/);
+  assert.match(ux, /patchInspectorDraftBaseline/);
+  assert.match(ux, /panel\.addEventListener\('input', handleDraftInput\)/);
 });
 
 test('structural Properties polish covers filters empty states accessibility and observer idempotence', () => {
@@ -51,10 +82,14 @@ test('structural Properties polish covers filters empty states accessibility and
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
-test('public Studio and offline PWA package structural Properties polish', () => {
+test('public Studio and offline PWA package structural Properties polish in a safe module order', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const build = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
+  const dataEditorImport = workspace.indexOf("import './designer-data-editor.js'");
+  const structureUxImport = workspace.indexOf("import './designer-structure-ux.js'");
+  assert.ok(dataEditorImport >= 0);
+  assert.ok(structureUxImport > dataEditorImport, 'the source-backed data editor must exist before structural UX enhancement loads');
   assert.match(workspace, /import '\.\/designer-structure-ux\.js'/);
   assert.match(build, /'designer-structure-ux\.js'/);
   assert.match(build, /'designer-structure-ux\.css'/);
