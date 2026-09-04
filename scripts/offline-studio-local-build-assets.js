@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const PATCH_OFFLINE_STUDIO_LOCAL_BUILD_CONTRACT = 'patch-offline-studio-local-build/0.1';
+export const PATCH_OFFLINE_STUDIO_LOCAL_BUILD_CONTRACT = 'patch-offline-studio-local-build/0.2';
 
 export function offlineStudioLocalBuildMetadata(compilerFile, options = {}) {
   if (!compilerFile) return null;
@@ -15,8 +15,8 @@ export function offlineStudioLocalBuildMetadata(compilerFile, options = {}) {
   const arch = String(options.arch ?? process.arch);
   return Object.freeze({
     contract: PATCH_OFFLINE_STUDIO_LOCAL_BUILD_CONTRACT,
-    bridgeProtocol: 'patch-offline-build-bridge/0.1',
-    snapshotProtocol: 'patch-offline-workspace-snapshot/0.1',
+    bridgeProtocol: 'patch-offline-build-bridge/0.2',
+    snapshotProtocol: 'patch-offline-workspace-snapshot/0.2',
     platform,
     arch,
     compilerAsset: 'local-build/patch-offline-compiler.bin',
