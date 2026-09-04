@@ -5,6 +5,8 @@ import {
   currentDesignerSelection
 } from './designer-selection.js';
 
+export const STUDIO_DESIGNER_INSPECTOR_STATE_VERSION = '0.1';
+
 const STORAGE_KEY = 'patch-studio-designer-ux-v1';
 const GRID_STORAGE_KEY = 'patchStudio.designerGrid.v1';
 const GRID_SIZE = 8;
@@ -41,6 +43,47 @@ export function formatDesignerFormSummary(windowModel) {
   const width = Number(windowModel.width) || 640;
   const height = Number(windowModel.height) || 420;
   return `Form settings · ${width}×${height}`;
+}
+
+export function syncDesignerInspectorState(options = {}) {
+  const targetDocument = options.document ?? doc;
+  const inspector = options.inspector ?? targetDocument?.querySelector?.('#designerInspector') ?? null;
+  const apply = options.apply ?? inspector?.querySelector?.('#designerInspectorApply') ?? targetDocument?.querySelector?.('#designerInspectorApply') ?? null;
+  const state = options.state ?? inspector?.querySelector?.('#designerInspectorState') ?? targetDocument?.querySelector?.('#designerInspectorState') ?? null;
+  const empty = options.empty === true;
+  const dirty = !empty && options.dirty === true;
+  const dirtyText = options.dirtyText ?? 'Property changes ready to apply.';
+  const cleanText = options.cleanText ?? 'Source-backed · up to date.';
+  const dirtyTitle = options.dirtyTitle ?? 'Apply these source-backed property changes';
+  const cleanTitle = options.cleanTitle ?? 'No common property changes to apply';
+
+  if (apply) {
+    apply.disabled = empty || !dirty;
+    apply.title = dirty ? dirtyTitle : cleanTitle;
+  }
+  if (state) {
+    state.textContent = empty ? '' : (dirty ? dirtyText : cleanText);
+    state.classList?.toggle?.('is-dirty', dirty);
+  }
+  return Object.freeze({ dirty, empty, apply: Boolean(apply), state: Boolean(state) });
+}
+
+export function showDesignerInspectorError(error, options = {}) {
+  const targetDocument = options.document ?? doc;
+  const target = options.target ?? targetDocument?.querySelector?.('#designerInspectorError') ?? null;
+  if (!target) return false;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+  return true;
+}
+
+export function clearDesignerInspectorError(options = {}) {
+  const targetDocument = options.document ?? doc;
+  const target = options.target ?? targetDocument?.querySelector?.('#designerInspectorError') ?? null;
+  if (!target) return false;
+  target.textContent = '';
+  target.hidden = true;
+  return true;
 }
 
 function install() {
@@ -279,14 +322,11 @@ function syncInspectorHeading() {
 
 function syncInspectorDirtyState() {
   const inspector = doc.querySelector('#designerInspector');
-  const apply = inspector?.querySelector('#designerInspectorApply');
-  const state = inspector?.querySelector('#designerInspectorState');
-  if (!apply || !state) return;
+  if (!inspector) return;
   const selection = currentDesignerSelection(canvas);
   const control = selection ? safeDesignerControls().find(item => sameLocation(item, selection)) ?? null : null;
   if (!control) {
-    apply.disabled = true;
-    state.textContent = '';
+    syncDesignerInspectorState({ document: doc, inspector, empty: true });
     return;
   }
 
@@ -297,10 +337,7 @@ function syncInspectorDirtyState() {
   if (control.type !== 'text') dirty ||= id !== (control.id ?? '');
   if (['text', 'button', 'checkbox'].includes(control.type)) dirty ||= text !== (control.textExpr ?? '');
   if (['combo', 'listbox', 'radio'].includes(control.type)) dirty ||= options !== ((control.options ?? []).join(', '));
-  apply.disabled = !dirty;
-  apply.title = dirty ? 'Apply these source-backed property changes' : 'No common property changes to apply';
-  state.textContent = dirty ? 'Property changes ready to apply.' : 'Source-backed · up to date.';
-  state.classList.toggle('is-dirty', dirty);
+  syncDesignerInspectorState({ document: doc, inspector, dirty });
 }
 
 function focusDesignerTarget() {
