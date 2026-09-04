@@ -118,3 +118,24 @@ test('StatusBar is the first specialized adapter on the shared Inspector contrac
   assert.doesNotMatch(statusbar, /function showInspectorError/);
   assert.doesNotMatch(statusbar, /state\.classList\.toggle\('is-dirty', dirty\)/);
 });
+
+test('Panel and ImageList reuse the shared Inspector state and error lifecycle', () => {
+  execFileSync(process.execPath, ['--check', 'web/designer-panel.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'web/designer-imagelist.js'], { stdio: 'pipe' });
+  const panel = fs.readFileSync('web/designer-panel.js', 'utf8');
+  const imagelist = fs.readFileSync('web/designer-imagelist.js', 'utf8');
+  const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
+
+  assert.match(panel, /syncDesignerInspectorState/);
+  assert.match(panel, /showDesignerInspectorError/);
+  assert.match(panel, /clearDesignerInspectorError/);
+  assert.match(panel, /Panel child property changes ready to apply/);
+  assert.doesNotMatch(panel, /function showError/);
+
+  assert.match(imagelist, /showDesignerInspectorError/);
+  assert.match(imagelist, /clearDesignerInspectorError/);
+  assert.doesNotMatch(imagelist, /function showError/);
+
+  assert.ok(workspace.indexOf("import './designer-ux.js'") < workspace.indexOf("import './designer-panel.js'"));
+  assert.ok(workspace.indexOf("import './designer-ux.js'") < workspace.indexOf("import './designer-toolbox.js'"));
+});
