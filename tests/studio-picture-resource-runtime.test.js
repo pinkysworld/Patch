@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { PatchInterpreter } from '../src/interpreter.js';
 
 const playground = fs.readFileSync('web/playground.js', 'utf8');
+const buildController = fs.readFileSync('web/studio-build-controller.js', 'utf8');
 const webapp = fs.readFileSync('src/webapp.js', 'utf8');
 
 const SOURCE = `window "Photos" as main size 420, 260:\n  picture as logo from "patch-resource:app.logo" at 24, 24 size 180, 120\n`;
@@ -19,7 +20,9 @@ test('Interpreter carries Picture source into the shared Studio UI model', () =>
 
 test('Studio Run and Designer use the same Picture resource resolver as standalone Web', () => {
   execFileSync(process.execPath, ['--check', 'web/playground.js'], { stdio: 'pipe' });
-  assert.match(playground, /buildStandaloneWebApp, pictureResourceDataUri/);
+  execFileSync(process.execPath, ['--check', 'web/studio-build-controller.js'], { stdio: 'pipe' });
+  assert.match(buildController, /import \{ buildStandaloneWebApp \} from '\.\.\/src\/webapp\.js'/);
+  assert.match(playground, /pictureResourceDataUri/);
   assert.match(playground, /getStudioProjectResources/);
   assert.match(playground, /control\.type === 'picture'/);
   assert.match(playground, /pictureResourceDataUri\(control\.source, getStudioProjectResources\(\)\)/);
@@ -30,7 +33,10 @@ test('Studio Run and Designer use the same Picture resource resolver as standalo
 
 test('Studio Web Build passes canonical v4 resources through projectOptions', () => {
   assert.match(playground, /resources: getStudioProjectResources\(\)/);
-  assert.match(playground, /buildStandaloneWebApp\(code\.value, projectOptions\(\)\)/);
+  assert.match(playground, /installStudioBuildController\(\{/);
+  assert.match(playground, /projectOptions,/);
+  assert.match(buildController, /buildStudioArtifact\(buildTarget\.value, code\.value, projectOptions\(\)\)/);
+  assert.match(buildController, /buildStandaloneWebApp\(source, options\)/);
   assert.match(webapp, /addStandaloneWindowPictures/);
   assert.match(webapp, /validateStudioResources\(resources\)/);
   assert.match(webapp, /PATCH_IMAGE_RESOURCES/);
