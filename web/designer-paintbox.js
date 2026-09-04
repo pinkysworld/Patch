@@ -12,6 +12,11 @@ import {
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError,
+  syncDesignerInspectorState
+} from './designer-ux.js';
 
 export const PATCH_DESIGNER_PAINTBOX_STUDIO_VERSION = '0.1';
 
@@ -24,6 +29,19 @@ const inspector = doc?.querySelector('#designerInspector') ?? null;
 let queued = false;
 
 if (doc) queueMicrotask(install);
+
+export function paintBoxDraftIsDirty(paintbox, draft = {}, fallback = {}) {
+  if (!paintbox) return false;
+  const expected = {
+    id: paintbox.id ?? '',
+    x: paintbox.x ?? fallback.x ?? '',
+    y: paintbox.y ?? fallback.y ?? '',
+    width: paintbox.width ?? fallback.width ?? '',
+    height: paintbox.height ?? fallback.height ?? ''
+  };
+  return ['id', 'x', 'y', 'width', 'height']
+    .some(key => String(draft[key] ?? '') !== String(expected[key] ?? ''));
+}
 
 function install() {
   if (!code || !canvas || !designer || !toolbar || !inspector || designer.dataset.patchPaintboxStudio === 'true') return;
@@ -39,16 +57,21 @@ function install() {
       const windowIndex = Number(doc.querySelector('#patchFormSelect')?.value) || 0;
       const result = addDesignerPaintBox(code.value, { windowIndex });
       setSource(result.source);
+      clearDesignerInspectorError({ document: doc });
       rememberDesignerSelection(canvas, designerSelectionForControl(result.paintbox, 'core'), { reason: 'add-paintbox' });
       scheduleSync();
     } catch (error) {
-      showError(error);
+      showDesignerInspectorError(error, { document: doc });
     }
   }, { capture: true });
 
   fields.querySelector('#designerPaintboxApply')?.addEventListener('click', applyInspector);
   fields.querySelector('#designerPaintboxDelete')?.addEventListener('click', deleteSelected);
   fields.querySelector('#designerPaintboxSource')?.addEventListener('click', revealSource);
+  fields.addEventListener('input', event => {
+    if (!event.target?.matches?.('#designerPaintboxId, #designerPaintboxX, #designerPaintboxY, #designerPaintboxWidth, #designerPaintboxHeight')) return;
+    queueMicrotask(syncPaintBoxInspectorState);
+  });
   for (const input of fields.querySelectorAll('input')) {
     input.addEventListener('keydown', event => {
       if (event.key !== 'Enter') return;
@@ -210,6 +233,30 @@ function syncInspector() {
   setField('designerPaintboxY', paintbox.y ?? fallback.y);
   setField('designerPaintboxWidth', paintbox.width ?? fallback.width);
   setField('designerPaintboxHeight', paintbox.height ?? fallback.height);
+  syncPaintBoxInspectorState(paintbox, fallback);
+}
+
+function syncPaintBoxInspectorState(paintbox = selectedPaintBox(), fallback = null) {
+  const section = inspector.querySelector('#designerPaintboxInspectorFields');
+  const apply = section?.querySelector('#designerPaintboxApply') ?? null;
+  if (!paintbox || !section || !apply) return;
+  const layout = fallback ?? formControlDefaultLayout('paintbox', paintbox.controlIndex);
+  const draft = {
+    id: fieldValue('designerPaintboxId'),
+    x: fieldValue('designerPaintboxX'),
+    y: fieldValue('designerPaintboxY'),
+    width: fieldValue('designerPaintboxWidth'),
+    height: fieldValue('designerPaintboxHeight')
+  };
+  syncDesignerInspectorState({
+    document: doc,
+    apply,
+    dirty: paintBoxDraftIsDirty(paintbox, draft, layout),
+    dirtyText: 'PaintBox property changes ready to apply.',
+    cleanText: 'Source-backed · PaintBox up to date.',
+    dirtyTitle: 'Apply PaintBox properties to Patch source',
+    cleanTitle: 'PaintBox properties are up to date'
+  });
 }
 
 function applyInspector() {
@@ -225,9 +272,10 @@ function applyInspector() {
     });
     setSource(result.source);
     rememberDesignerSelection(canvas, designerSelectionForControl(result.paintbox, 'core'), { emit: false });
+    clearDesignerInspectorError({ document: doc });
     scheduleSync();
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -238,9 +286,10 @@ function deleteSelected() {
     const next = removeDesignerPaintBox(code.value, paintbox);
     clearDesignerSelection(canvas, { reason: 'delete-paintbox' });
     setSource(next);
+    clearDesignerInspectorError({ document: doc });
     scheduleSync();
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -308,9 +357,10 @@ function interceptPaintBoxPointer(event) {
       const result = updateDesignerPaintBox(code.value, paintbox, changes);
       setSource(result.source);
       rememberDesignerSelection(canvas, designerSelectionForControl(result.paintbox, 'core'), { emit: false });
+      clearDesignerInspectorError({ document: doc });
       scheduleSync();
     } catch (error) {
-      showError(error);
+      showDesignerInspectorError(error, { document: doc });
       scheduleSync();
     }
   };
@@ -350,13 +400,6 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
-function showError(error) {
-  const target = doc.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
 
 function paintBoxOnlyMutation(mutation) {
