@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { PatchInterpreter } from '../src/interpreter.js';
 
 const playground = fs.readFileSync('web/playground.js', 'utf8');
+const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
 const buildController = fs.readFileSync('web/studio-build-controller.js', 'utf8');
 const webapp = fs.readFileSync('src/webapp.js', 'utf8');
 
@@ -20,15 +21,17 @@ test('Interpreter carries Picture source into the shared Studio UI model', () =>
 
 test('Studio Run and Designer use the same Picture resource resolver as standalone Web', () => {
   execFileSync(process.execPath, ['--check', 'web/playground.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'web/studio-window-renderer.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'web/studio-build-controller.js'], { stdio: 'pipe' });
   assert.match(buildController, /import \{ buildStandaloneWebApp \} from '\.\.\/src\/webapp\.js'/);
-  assert.match(playground, /pictureResourceDataUri/);
-  assert.match(playground, /getStudioProjectResources/);
-  assert.match(playground, /control\.type === 'picture'/);
-  assert.match(playground, /pictureResourceDataUri\(control\.source, getStudioProjectResources\(\)\)/);
-  assert.match(playground, /el\.className = 'patch-picture'/);
-  assert.match(playground, /el\.addEventListener\('click', activate\)/);
-  assert.match(playground, /event\.key === 'Enter' \|\| event\.key === ' '/);
+  assert.match(playground, /createStudioWindowRenderer/);
+  assert.match(renderer, /pictureResourceDataUri/);
+  assert.match(renderer, /getStudioProjectResources/);
+  assert.match(renderer, /control\.type === 'picture'/);
+  assert.match(renderer, /pictureResourceDataUri\(control\.source, getStudioProjectResources\(\)\)/);
+  assert.match(renderer, /el\.className = 'patch-picture'/);
+  assert.match(renderer, /el\.addEventListener\('click', activate\)/);
+  assert.match(renderer, /event\.key === 'Enter' \|\| event\.key === ' '/);
 });
 
 test('Studio Web Build passes canonical v4 resources through projectOptions', () => {
