@@ -1,4 +1,8 @@
 import { duplicateDesignerForm } from './designer-form-duplicate-model.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const toolbar = document.querySelector('#designer .designer-toolbar');
@@ -58,7 +62,7 @@ function duplicateActiveForm(select) {
     queueMicrotask(activatePendingForm);
     requestAnimationFrame(activatePendingForm);
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document });
   }
 }
 
@@ -81,11 +85,5 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
+  clearDesignerInspectorError({ document });
 }
