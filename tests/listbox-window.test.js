@@ -12,7 +12,8 @@ import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 
 const source = fs.readFileSync('examples/listbox-window.patch', 'utf8');
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
-const studio = fs.readFileSync('web/playground.js', 'utf8');
+const playground = fs.readFileSync('web/playground.js', 'utf8');
+const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
 const tableStage = fs.readFileSync('web/table-stage1.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 const compatibilityBuilder = fs.readFileSync('scripts/build-native-window-template.js', 'utf8');
@@ -120,8 +121,8 @@ test('Designer can add, resize, rename and edit ListBox options in source', () =
 
 test('Patch Studio toolbox and preview expose a real multi-row ListBox', () => {
   assert.match(studioIndex, /id="addListbox"/);
-  assert.doesNotMatch(studio, /addControl\('listbox'\)/);
-  assert.match(studio, /patch-listbox/);
+  assert.doesNotMatch(playground, /addControl\('listbox'\)/);
+  assert.match(renderer, /patch-listbox/);
   assert.match(formsDesigner, /\['#addListbox', 'listbox'\]/);
   assert.match(formsDesigner, /addDesignerControl\(code\.value, type, \{ windowIndex: activeForm \}\)/);
 });

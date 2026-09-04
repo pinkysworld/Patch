@@ -108,24 +108,31 @@ test('Run failure clears runtime and pending IR before later events', () => {
   assert.deepEqual(errors, ['compile failed']);
 });
 
-test('playground delegates Run lifecycle while retaining renderer ownership', () => {
+test('playground delegates Run lifecycle and Window rendering to separate bounded modules', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const controller = fs.readFileSync('web/studio-run-controller.js', 'utf8');
+  const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
 
   assert.match(playground, /installStudioRunController\(\{/);
-  assert.match(playground, /renderInitial\(ui\)/);
-  assert.match(playground, /renderAfterEvent\(ui\)/);
+  assert.match(playground, /createStudioWindowRenderer\(\{ dispatch: trigger \}\)/);
+  assert.match(playground, /studioWindowRenderer\.renderInitial\(appView, ui\)/);
+  assert.match(playground, /studioWindowRenderer\.renderAfterEvent\(appView, ui\)/);
   assert.match(playground, /studioRunController\.trigger\(control, event, payload\)/);
   assert.match(playground, /studioRunController\.refreshIrView\(\)/);
-  assert.match(playground, /function renderWindows\(/);
-  assert.match(playground, /function renderRuntimeWindowsAfterEvent\(/);
+  assert.doesNotMatch(playground, /function renderWindows\(/);
+  assert.doesNotMatch(playground, /function renderRuntimeWindowsAfterEvent\(/);
   assert.doesNotMatch(playground, /new PatchInterpreter\(/);
   assert.doesNotMatch(playground, /triggerWindowEvent\(/);
   assert.doesNotMatch(playground, /function executeRunProject\(/);
   assert.match(controller, /setTimeout\(callback, 0\)/);
   assert.match(controller, /triggerWindowEvent/);
+  assert.match(renderer, /PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0\.1'/);
+  assert.match(renderer, /function renderWindows\(/);
+  assert.match(renderer, /function renderRuntimeWindowsAfterEvent\(/);
   assert.match(buildSite, /'studio-run-controller\.js'/);
+  assert.match(buildSite, /'studio-window-renderer\.js'/);
   assert.match(sw, /'\.\/studio-run-controller\.js'/);
+  assert.match(sw, /'\.\/studio-window-renderer\.js'/);
 });

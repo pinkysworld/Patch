@@ -12,7 +12,8 @@ import { buildNativeGuiIR, flattenNativeGuiControls } from '../src/native-gui-ir
 
 const source = fs.readFileSync('examples/tabs-window.patch', 'utf8');
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
-const studio = fs.readFileSync('web/playground.js', 'utf8');
+const playground = fs.readFileSync('web/playground.js', 'utf8');
+const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 const compatibilityBuilder = fs.readFileSync('scripts/build-native-window-template.js', 'utf8');
 
@@ -106,12 +107,12 @@ test('Designer inserts, selects, moves, renames and removes Tabs without rewriti
 test('Patch Studio exposes Tabs in the toolbox and renders a real tablist/tabpanel', () => {
   assert.match(studioIndex, /id="addTabs"/);
   assert.match(studioIndex, /value="tabsWindow"/);
-  assert.doesNotMatch(studio, /addControl\('tabs'\)/);
-  assert.match(studio, /control\.type === 'tabs'/);
-  assert.match(studio, /patch-tabs-list/);
-  assert.match(studio, /patch-tab-button/);
-  assert.match(studio, /aria-selected/);
-  assert.match(studio, /patch-tab-panel/);
+  assert.doesNotMatch(playground, /addControl\('tabs'\)/);
+  assert.match(renderer, /control\.type === 'tabs'/);
+  assert.match(renderer, /patch-tabs-list/);
+  assert.match(renderer, /patch-tab-button/);
+  assert.match(renderer, /aria-selected/);
+  assert.match(renderer, /patch-tab-panel/);
   assert.match(formsDesigner, /\['#addTabs', 'tabs'\]/);
   assert.match(formsDesigner, /addDesignerControl\(code\.value, type, \{ windowIndex: activeForm \}\)/);
   assert.match(formsDesigner, /formControlDefaultSize/);

@@ -167,8 +167,9 @@ test('shared selection is the only normal Properties Apply/Delete/Source boundar
   }
 });
 
-test('playground renderer no longer owns Designer selection or source mutations', () => {
+test('playground orchestration and Window renderer own no Designer selection or source mutations', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
+  const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
   const core = fs.readFileSync('web/designer-core-selection.js', 'utf8');
   const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
   const doc = fs.readFileSync('docs/STUDIO_SELECTION_ARCHITECTURE.md', 'utf8');
@@ -177,11 +178,14 @@ test('playground renderer no longer owns Designer selection or source mutations'
     'designerSelection', 'designerControls', 'addDesignerControl', 'removeDesignerControl', 'updateDesignerControl',
     'currentDesignerControl', 'selectDesignerControl', 'selectionOf', 'renderDesignerInspector',
     'applyDesignerProperties', 'removeSelectedDesignerControl', 'revealSelectedDesignerSource', 'splitOptionExpressions'
-  ]) assert.doesNotMatch(playground, new RegExp(`\\b${obsolete}\\b`), obsolete);
+  ]) {
+    assert.doesNotMatch(playground, new RegExp(`\\b${obsolete}\\b`), `playground:${obsolete}`);
+    assert.doesNotMatch(renderer, new RegExp(`\\b${obsolete}\\b`), `renderer:${obsolete}`);
+  }
 
-  assert.match(playground, /installDesignerInspector\(\)/, 'renderer still creates the Inspector DOM shell');
-  assert.match(playground, /el\.dataset\.windowIndex = String\(windowIndex\)/);
-  assert.match(playground, /el\.dataset\.controlIndex = String\(controlIndex\)/);
+  assert.match(playground, /installDesignerInspector\(\)/, 'playground still creates the Inspector DOM shell');
+  assert.match(renderer, /el\.dataset\.windowIndex = String\(windowIndex\)/);
+  assert.match(renderer, /el\.dataset\.controlIndex = String\(controlIndex\)/);
   assert.match(core, /const shared = currentDesignerSelection\(canvas\)/);
   assert.doesNotMatch(core, /legacySelected/);
   assert.match(forms, /patch-designer-selection-change/);

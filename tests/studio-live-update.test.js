@@ -62,15 +62,21 @@ test('site builder content-addresses the complete transitive browser module grap
 
   const playground = fs.readFileSync('_site/playground.js', 'utf8');
   const runController = fs.readFileSync('_site/studio-run-controller.js', 'utf8');
+  const renderer = fs.readFileSync('_site/studio-window-renderer.js', 'utf8');
   const nativeBuild = fs.readFileSync('_site/native-build.js', 'utf8');
   const currentFacade = fs.readFileSync('_site/src/native-current-contract.js', 'utf8');
   const frozenFacade = fs.readFileSync('_site/src/native-frozen-contract.js', 'utf8');
   const compiler = fs.readFileSync('_site/src/compiler.js', 'utf8');
   assert.ok(playground.includes(`from './src/compiler.js?v=${revision}'`));
   assert.ok(playground.includes(`from './studio-run-controller.js?v=${revision}'`));
+  assert.ok(playground.includes(`from './studio-window-renderer.js?v=${revision}'`));
   assert.ok(runController.includes(`from './src/interpreter.js?v=${revision}''`) === false);
   assert.ok(runController.includes(`from './src/interpreter.js?v=${revision}'`));
   assert.ok(runController.includes(`from './src/window-events.js?v=${revision}'`));
+  assert.ok(renderer.includes(`from './src/webapp.js?v=${revision}'`));
+  assert.ok(renderer.includes(`from './studio-runtime-selection-state.js?v=${revision}'`));
+  assert.ok(renderer.includes(`from './studio-runtime-render-policy.js?v=${revision}'`));
+  assert.ok(renderer.includes(`from './project-lifecycle.js?v=${revision}'`));
   assert.ok(nativeBuild.includes(`from './src/native-current-contract.js?v=${revision}'`), 'multiline current-native facade import must be revisioned');
   assert.ok(currentFacade.includes(`from './native-gui-ir-v19.js?v=${revision}'`), 'multiline Current Ready IR 1.9 import must be revisioned');
   assert.ok(currentFacade.includes(`from './native-gui-ir-v18.js?v=${revision}'`), 'multiline current facade compatibility IR 1.8 import must be revisioned');
