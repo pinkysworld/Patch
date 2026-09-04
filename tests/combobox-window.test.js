@@ -12,7 +12,8 @@ import { buildNativeGuiIR } from '../src/native-gui-ir.js';
 
 const source = fs.readFileSync('examples/combo-window.patch', 'utf8');
 const studioIndex = fs.readFileSync('web/index.html', 'utf8');
-const studio = fs.readFileSync('web/playground.js', 'utf8');
+const playground = fs.readFileSync('web/playground.js', 'utf8');
+const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
 const formsDesigner = fs.readFileSync('web/forms-designer.js', 'utf8');
 
 test('parser records ComboBox options, id and source-backed geometry', () => {
@@ -71,8 +72,8 @@ test('Designer can add, move, rename and edit ComboBox options in source', () =>
 
 test('Patch Studio toolbox and preview expose source-backed ComboBox editing', () => {
   assert.match(studioIndex, /id="addCombo"/);
-  assert.doesNotMatch(studio, /addControl\('combo'\)/);
-  assert.match(studio, /control\.type === 'combo'/);
+  assert.doesNotMatch(playground, /addControl\('combo'\)/);
+  assert.match(renderer, /control\.type === 'combo'/);
   assert.match(formsDesigner, /\['#addCombo', 'combo'\]/);
   assert.match(formsDesigner, /addDesignerControl\(code\.value, type, \{ windowIndex: activeForm \}\)/);
 });
