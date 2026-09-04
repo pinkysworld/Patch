@@ -1,13 +1,12 @@
-import { PatchInterpreter } from '../src/interpreter.js';
 import { compile } from '../src/compiler.js';
 import { pictureResourceDataUri } from '../src/webapp.js';
-import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
 import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
 import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
 import { installStudioBuildController } from './studio-build-controller.js';
+import { installStudioRunController } from './studio-run-controller.js';
 import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
@@ -278,11 +277,8 @@ const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
 const saveState = document.querySelector('#saveState');
 const runButton = document.querySelector('#run');
-let runtime = null;
 let designerTimer = null;
 let changeContractTimer = null;
-let pendingRunIr = null;
-let runInProgress = false;
 
 const saved = loadProject();
 code.value = saved?.code ?? samples.counterWindow;
@@ -303,7 +299,6 @@ for (const input of [code, projectName, projectKind]) {
   input.addEventListener('change', () => { saveProject(); refreshDesigner(); refreshChangeContract(); });
 }
 
-runButton?.addEventListener('click', runProject);
 designerCanvas?.addEventListener('patch-designer-active-form-change', event => {
   const requested = Number(event.detail?.windowIndex);
   refreshDesigner(Number.isInteger(requested) ? requested : null);
@@ -325,56 +320,34 @@ installStudioBuildController({
   showTab
 });
 
+const studioRunController = installStudioRunController({
+  code,
+  runButton,
+  output,
+  changesView,
+  irView,
+  projectOptions,
+  formatChangeAnalysis,
+  formatStudioStop,
+  showTab,
+  renderInitial(ui) {
+    renderWindows(appView, ui, true);
+    appView.dataset.patchRuntimeRenderMode = resolveStudioRuntimeRenderMode(globalThis.location?.search ?? '');
+  },
+  renderAfterEvent(ui) {
+    renderRuntimeWindowsAfterEvent(appView, ui);
+  },
+  renderFailure() {
+    appView.innerHTML = '<p class="empty-preview">The app could not start.</p>';
+  }
+});
+
 for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
     if (tab.dataset.tab === 'changes') refreshChangeContract();
-    if (tab.dataset.tab === 'ir') refreshRunIrView();
+    if (tab.dataset.tab === 'ir') studioRunController.refreshIrView();
     showTab(tab.dataset.tab);
   });
-}
-
-function runProject() {
-  if (runInProgress) return;
-  runInProgress = true;
-  runButton?.setAttribute('aria-busy', 'true');
-  if (runButton) runButton.disabled = true;
-  // A Run command must acknowledge immediately even for a large RAD project.
-  // Compile, execute and render in the next browser task so command handling,
-  // accessibility state and automation remain responsive while semantics stay
-  // exactly the same as the synchronous compiler/runtime pipeline.
-  setTimeout(executeRunProject, 0);
-}
-
-function executeRunProject() {
-  try {
-    const compiled = compile(code.value, projectOptions());
-    const nextRuntime = new PatchInterpreter();
-    const result = nextRuntime.runAst(compiled.ast);
-    runtime = nextRuntime;
-    pendingRunIr = compiled.ir;
-    output.textContent = result.output.length ? result.output.join('\n') : '(program finished with no console output)';
-    changesView.textContent = formatChangeAnalysis(compiled.ir);
-    renderWindows(appView, result.ui, true);
-    appView.dataset.patchRuntimeRenderMode = resolveStudioRuntimeRenderMode(globalThis.location?.search ?? '');
-    showTab(result.ui.length ? 'app' : 'output');
-  } catch (err) {
-    runtime = null;
-    pendingRunIr = null;
-    output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
-    appView.innerHTML = '<p class="empty-preview">The app could not start.</p>';
-    changesView.textContent = `Change contract unavailable:\n${err.message}`;
-    showTab('output');
-  } finally {
-    runInProgress = false;
-    runButton?.removeAttribute('aria-busy');
-    if (runButton) runButton.disabled = false;
-  }
-}
-
-function refreshRunIrView() {
-  if (!pendingRunIr) return;
-  irView.textContent = JSON.stringify(pendingRunIr, null, 2);
-  pendingRunIr = null;
 }
 
 function refreshChangeContract() {
@@ -1122,15 +1095,7 @@ function installDesignerInspectorStylesheet() {
 }
 
 function trigger(control, event, payload = {}) {
-  if (!runtime) return;
-  try {
-    const result = triggerWindowEvent(runtime, control, event, payload);
-    output.textContent = result.output.length ? result.output.join('\n') : '(event completed)';
-    renderRuntimeWindowsAfterEvent(appView, result.ui);
-  } catch (err) {
-    output.textContent = `Patch stopped:\n${formatStudioStop(err, 'run')}`;
-    showTab('output');
-  }
+  studioRunController.trigger(control, event, payload);
 }
 
 function showTab(name) {
