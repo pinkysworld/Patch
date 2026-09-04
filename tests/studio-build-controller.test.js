@@ -46,7 +46,7 @@ test('Studio build controller preserves standalone Console Web App output', () =
   assert.equal(typeof built.data, 'string');
   assert.match(built.data, /<!doctype html>/i);
   assert.match(built.data, /<title>BuildProbe<\/title>/);
-  assert.match(built.data, /Built with Patch Studio/);
+  assert.match(built.data, /<script\b/);
   assert.match(built.output, /Built BuildProbe\.html/);
   assert.match(built.output, /Standalone single-file Patch Console Web App/);
   assert.ok(built.ir);
@@ -58,7 +58,7 @@ test('Studio build controller preserves standalone Window Web App output', () =>
   assert.equal(built.type, 'text/html');
   assert.match(built.data, /<!doctype html>/i);
   assert.match(built.data, /<title>WindowProbe<\/title>/);
-  assert.match(built.data, /Built with Patch Studio/);
+  assert.match(built.data, /<script\b/);
   assert.match(built.output, /Standalone single-file Patch Window Web App/);
   assert.match(built.output, /generated browser Window runtime/);
   assert.ok(built.ir);
