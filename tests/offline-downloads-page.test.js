@@ -41,7 +41,11 @@ test('Offline Studio download page, documentation and workflow share one stable 
   assert.match(studioWorkflow, /gh release upload/);
   assert.match(studioWorkflow, /Missing published Offline Studio asset/);
   assert.match(offlineStudioDoc, /offline-studio-v0\.2/);
-  assert.match(offlineStudioDoc, /Stage 2 local native-build integration remains open/);
+  assert.match(offlineStudioDoc, /Stage 2 R0\.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64/);
+  assert.match(studioWorkflow, /local_build: true[\s\S]*platform: linux/);
+  assert.match(studioWorkflow, /local_build: true[\s\S]*platform: windows/);
+  assert.match(studioWorkflow, /local_build: true[\s\S]*platform: macos/);
+  assert.match(studioWorkflow, /PATCH_OFFLINE_STUDIO_COMPILER/);
 
   for (const asset of studioPublicAssets) {
     assert.ok(downloads.includes(asset), `downloads page: ${asset}`);
@@ -59,13 +63,17 @@ test('every primary public Patch page links to Downloads', () => {
   }
 });
 
-test('downloads page states Offline Studio Stage 1 and signing boundaries without overstating native local Build', () => {
+test('downloads page states the bounded Stage 2 installed-build matrix and signing boundaries', () => {
   assert.match(downloads, /Offline IDE beta embeds the same deterministic Studio site/i);
-  assert.match(downloads, /Host-native desktop Build inside the IDE is the next Stage 2 boundary/i);
+  assert.match(downloads, /Stage 2 R0\.2/i);
+  assert.match(downloads, /Windows x64, macOS Apple Silicon and Linux x64/i);
+  assert.match(downloads, /--workspace/i);
+  assert.match(downloads, /authenticated localhost Build bridge/i);
+  assert.match(downloads, /Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle remain Stage 1/i);
+  assert.match(downloads, /project-v4 binary resources/i);
   assert.match(downloads, /development binary is currently unsigned by Authenticode/i);
   assert.match(downloads, /Ad-hoc signed for local execution, not Developer ID notarized/i);
   assert.match(downloads, /same deterministic Studio manifest/i);
-  assert.match(downloads, /does not yet expose the standalone native compiler\/runtime through a privileged local Build bridge/i);
 });
 
 test('downloads page distinguishes Current Ready v1.10, v1.8 compatibility, Intel macOS, FreeBSD and historical lines', () => {
