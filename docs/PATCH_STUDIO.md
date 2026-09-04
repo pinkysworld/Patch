@@ -15,6 +15,7 @@ Patch Studio currently tracks:
 - Ready/offline desktop runtime **v1.10** on Windows, macOS and Linux;
 - Offline Studio manifest **v1** and rolling download channel **`offline-studio-v0.2`**;
 - Offline Compiler rolling channel **`offline-compiler-v0.2`**;
+- Offline Studio Stage 2 R0.2 installed host-build bridge for Windows x64, macOS Apple Silicon and Linux x64;
 - formal runtime-correspondence milestone **beta.32**.
 
 Current Ready v1.10 contains the complete **IR1.8 / payload-v18 / runtime-v1.9 Button/ImageList** layer plus **IR1.9 / payload-v19 Window/application icons** and deterministic platform application-icon packaging. Explicit payload-v17/runtime-v1.8 linking remains available as a compatibility option in the Offline Compiler.
@@ -95,7 +96,9 @@ Studio has a bounded source-backed Undo/Redo history. Trusted editor typing coal
 
 The R0 architecture foundation includes `studio-design-model/0.1`, the bounded declaration-only design snapshot cache, shared exact-source snapshots, active-Form materialization and keyed incremental runtime reconciliation. Primary `refreshDesigner()` consumes the shared declaration-only design cache rather than executing application behavior for design time.
 
-Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The performance harness includes a deterministic **10-Form / 200-control** stress fixture and real-Chrome Workshop measurements. Remaining R0 work is focused on module boundaries, the versioned Worker boundary, adapter-owned incremental reconciliation and measurement-driven Table/Tree preview virtualization.
+Multi-Form projects keep all Form shells structurally present but render only the active Form at full browser cost. The performance harness includes a deterministic **10-Form / 200-control** stress fixture and real-Chrome Workshop measurements. Main-thread Worker adoption and large Table/Tree virtualization remain measurement-gated rather than being added without evidence.
+
+The post-R0 maintainability work has also extracted the Build controller, Run/runtime lifecycle and Window/control DOM renderer, converged Object Inspector dirty/apply/error paths, removed the obsolete Harbor sample source, and added control-level incremental reconciliation for Table where a canonical transient-state contract exists.
 
 ## Nonvisual tray and ImageList
 
@@ -155,9 +158,25 @@ The frozen TreeView line is 1.2/v12/v1.3. The previous Slider line is 1.3/v13/v1
 
 ## Offline Studio and Offline Compiler
 
-The rolling **`offline-studio-v0.2`** channel publishes Stage 1 self-contained IDE builds for Windows x64, macOS Apple Silicon and Linux x64 plus the deterministic manifest and SHA256SUMS. Stage 1 provides offline authoring, Designer/Run and browser-local build targets. Host-native desktop Build from inside the installed IDE is still Stage 2.
+The rolling **`offline-studio-v0.2`** channel publishes self-contained IDE builds for Windows x64/ARM64, macOS Apple Silicon, Linux x64/ARM64, an Intel macOS runtime kit and a portable Node compatibility archive.
+
+Stage 1 remains available across that distribution set for offline authoring, Designer/Run and browser-local build targets.
+
+Stage 2 R0.2 adds installed host-native Window Build to:
+
+- Windows x64;
+- macOS Apple Silicon;
+- Linux x64.
+
+Launch a supported distribution with `--workspace <directory>` to authorize the installed build capability. Studio composes the current multi-file source state, materializes a bounded snapshot inside that workspace, links with the bundled SHA-256-pinned Offline Compiler and returns native artifact metadata plus SHA-256 through an authenticated localhost bridge.
+
+The browser never receives a general shell API, executable path, arbitrary argv/environment map or arbitrary output path. Windows ARM64, Linux ARM64, macOS Intel and the generic portable archive currently fail closed for installed host-native Build because matching compiler/runtime distributions are not yet published for those paths.
+
+Project-v4 binary-resource transport is the next Stage 2 slice. Resource-backed Picture/ImageList/application-icon projects therefore currently use the existing Ready desktop build path rather than silently dropping resources in installed-host mode.
 
 The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking defaults to payload v19/runtime v1.10 and includes a separate v1.8 runtime for explicit v17 compatibility. FreeBSD remains Console-only via portable C99.
+
+See `docs/OFFLINE_STUDIO.md` and `docs/OFFLINE_BUILD_BRIDGE.md` for the installed-product and privileged-boundary contracts.
 
 Patch Studio uses deterministic site revisioning and a content-addressed browser module graph. Pages verifies the published v1.10 runtime release digests, produces the runtime manifest, and the browser re-hashes the selected runtime before sealing.
 
