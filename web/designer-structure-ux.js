@@ -1,3 +1,5 @@
+import { syncDesignerInspectorState } from './designer-ux.js';
+
 const doc = typeof document === 'undefined' ? null : document;
 const panel = doc?.querySelector('[data-designer-data-editor]') ?? null;
 const filterState = new Map();
@@ -16,10 +18,23 @@ export function structuralEditorSummary(kind, countText = '') {
   return null;
 }
 
+export function structuralDraftSignature(kind, values = []) {
+  const normalized = String(kind ?? '').trim().toLowerCase();
+  if (!['tree', 'table', 'tabs'].includes(normalized)) return '';
+  const list = Array.isArray(values) ? values : [values];
+  return JSON.stringify([normalized, ...list.map(value => String(value ?? ''))]);
+}
+
+export function structuralDraftIsDirty(kind, currentValues, baselineValues) {
+  return structuralDraftSignature(kind, currentValues) !== structuralDraftSignature(kind, baselineValues);
+}
+
 if (panel && doc) {
   installStylesheet();
   new MutationObserver(scheduleEnhance).observe(panel, { childList: true, subtree: true });
   panel.addEventListener('click', handleDelegatedAction);
+  panel.addEventListener('input', handleDraftInput);
+  panel.addEventListener('change', handleDraftInput);
   scheduleEnhance();
 }
 
@@ -40,6 +55,7 @@ function enhance() {
   enhanceListFilters();
   enhanceTableEmptyStates();
   enhanceActionGroups();
+  enhanceInspectorDraftState(mode);
 }
 
 function currentMode() {
@@ -168,6 +184,81 @@ function enhanceActionGroups() {
       if (/^(Delete|Delete node|Delete page|Remove)/.test(text)) button.classList.add('designer-structure-destructive-action');
     }
   }
+}
+
+function enhanceInspectorDraftState(mode) {
+  const config = draftConfig(mode);
+  const apply = config ? panel.querySelector(config.applySelector) : null;
+  if (!config || !apply) return;
+  if (!apply.dataset.patchInspectorDraftBaseline) {
+    apply.dataset.patchInspectorDraftBaseline = structuralDraftSignature(mode, currentDraftValues(config));
+    apply.dataset.patchInspectorDraftAvailable = apply.disabled ? 'false' : 'true';
+  }
+  syncStructuralInspectorDraftState(mode);
+}
+
+function handleDraftInput(event) {
+  const mode = currentMode();
+  const config = draftConfig(mode);
+  if (!config || !event.target?.matches?.(config.inputSelector)) return;
+  queueMicrotask(() => syncStructuralInspectorDraftState(mode));
+}
+
+function syncStructuralInspectorDraftState(mode) {
+  const config = draftConfig(mode);
+  const apply = config ? panel.querySelector(config.applySelector) : null;
+  if (!config || !apply) return;
+  const baseline = apply.dataset.patchInspectorDraftBaseline ?? structuralDraftSignature(mode, currentDraftValues(config));
+  const current = structuralDraftSignature(mode, currentDraftValues(config));
+  const unavailable = apply.dataset.patchInspectorDraftAvailable === 'false';
+  syncDesignerInspectorState({
+    document: doc,
+    apply,
+    dirty: !unavailable && current !== baseline,
+    empty: unavailable,
+    dirtyText: config.dirtyText,
+    cleanText: config.cleanText,
+    dirtyTitle: config.dirtyTitle,
+    cleanTitle: config.cleanTitle
+  });
+}
+
+function draftConfig(mode) {
+  if (mode === 'table') {
+    return {
+      applySelector: '[data-table-action="apply"]',
+      inputSelector: '[data-table-column], [data-table-cell]',
+      dirtyText: 'Table data changes ready to apply.',
+      cleanText: 'Source-backed · Table data up to date.',
+      dirtyTitle: 'Apply Table data to Patch source',
+      cleanTitle: 'Table data is up to date'
+    };
+  }
+  if (mode === 'tree') {
+    return {
+      applySelector: '[data-tree-action="rename"]',
+      inputSelector: '#designerTreeNodeLabel',
+      dirtyText: 'TreeView label change ready to apply.',
+      cleanText: 'Source-backed · TreeView nodes up to date.',
+      dirtyTitle: 'Rename the selected TreeView node in Patch source',
+      cleanTitle: 'Selected TreeView node label is up to date'
+    };
+  }
+  if (mode === 'tabs') {
+    return {
+      applySelector: '[data-tabs-action="rename"]',
+      inputSelector: '#designerTabPageTitle',
+      dirtyText: 'Tab page title change ready to apply.',
+      cleanText: 'Source-backed · Tab pages up to date.',
+      dirtyTitle: 'Rename the selected Tab page in Patch source',
+      cleanTitle: 'Selected Tab page title is up to date'
+    };
+  }
+  return null;
+}
+
+function currentDraftValues(config) {
+  return [...panel.querySelectorAll(config.inputSelector)].map(input => input.value ?? '');
 }
 
 function handleDelegatedAction(event) {
