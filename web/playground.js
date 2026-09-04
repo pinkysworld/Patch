@@ -1,15 +1,13 @@
 import { PatchInterpreter } from '../src/interpreter.js';
 import { compile } from '../src/compiler.js';
-import { buildPatchApp, serializePatchApp } from '../src/bundle.js';
-import { compileToWasm } from '../src/wasm.js';
-import { compileToDirectWasm } from '../src/wasm-direct.js';
-import { buildStandaloneWebApp, pictureResourceDataUri } from '../src/webapp.js';
+import { pictureResourceDataUri } from '../src/webapp.js';
 import { triggerWindowEvent } from '../src/window-events.js';
 import { studioProjectFileStem } from '../src/studio-project.js';
 import { diagnosticFromError, formatPatchDiagnostic } from '../src/diagnostics.js';
 import { getStudioDesignSnapshot } from './studio-design-snapshots.js';
 import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from './studio-runtime-selection-state.js';
 import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
+import { installStudioBuildController } from './studio-build-controller.js';
 import { createStudioFormMaterializationPlan } from '../src/studio-form-materialization.js';
 import { getActiveStudioProjectFile, getStudioProjectDiagnosticContext, getStudioProjectResources } from './project-lifecycle.js';
 
@@ -278,7 +276,6 @@ installDesignerInspector();
 const sample = document.querySelector('#sample');
 const projectName = document.querySelector('#projectName');
 const projectKind = document.querySelector('#projectKind');
-const buildTarget = document.querySelector('#buildTarget');
 const saveState = document.querySelector('#saveState');
 const runButton = document.querySelector('#run');
 let runtime = null;
@@ -317,48 +314,15 @@ appView.addEventListener('patch-studio-table-changed', event => {
   trigger(detail.control, 'changed', { value: [...detail.value] });
 });
 
-document.querySelector('#build').addEventListener('click', () => {
-  try {
-    const name = studioProjectFileStem(projectName.value);
-    if (buildTarget.value === 'web') {
-      const built = buildStandaloneWebApp(code.value, projectOptions());
-      download(`${name}.html`, built.html, 'text/html');
-      irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
-      changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      if (built.metadata?.projectKind === 'window') {
-        output.textContent = `Built ${name}.html\n\nStandalone single-file Patch Window Web App. Open it directly in a modern browser. The Window UI and event logic execute through Patch's generated browser Window runtime; this target no longer routes Window projects through the Console-only Direct Wasm backend.`;
-      } else {
-        output.textContent = `Built ${name}.html\n\nStandalone single-file Patch Console Web App. Open it directly in a modern browser; the direct Patch Wasm module and its tiny host are embedded in the HTML file.`;
-      }
-    } else if (buildTarget.value === 'wasm-direct') {
-      if (projectKind.value === 'window') {
-        throw new Error('Direct WebAssembly currently supports Console projects only. For a Window project choose Standalone Web App or a Windows/macOS/Linux App target.');
-      }
-      const built = compileToDirectWasm(code.value, projectOptions());
-      download(`${name}.direct.wasm`, built.module, 'application/wasm');
-      irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
-      changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      output.textContent = `Built ${name}.direct.wasm\n\nThis contains directly lowered Patch Console instructions. It imports patch.show_number and patch.change_number, so use the Patch CLI host, a Console Standalone Web App, or a native Patch console host to run it.`;
-    } else if (buildTarget.value === 'wasm-bootstrap') {
-      const built = compileToWasm(code.value, projectOptions());
-      download(`${name}.bootstrap.wasm`, built.module, 'application/wasm');
-      irView.textContent = JSON.stringify(built.compiled.ir, null, 2);
-      changesView.textContent = formatChangeAnalysis(built.compiled.ir);
-      output.textContent = `Built ${name}.bootstrap.wasm\n\nAdvanced compatibility artifact: valid Wasm carrying Patch source + Change IR for a Patch host. For a ready-to-run Window build choose Standalone Web App or a Windows/macOS/Linux App target.`;
-    } else if (buildTarget.value === 'native-info') {
-      output.textContent = `Desktop builds run through Patch's platform builders. Window projects use the dedicated Window application path; Console projects use the direct-Wasm console host.\n\nFrom Patch Studio choose Windows App, macOS App or Linux App and press Build.`;
-    } else {
-      const bundle = buildPatchApp(code.value, { ...projectOptions(), targets: ['portable'] });
-      download(`${name}.patchapp`, serializePatchApp(bundle), 'application/json');
-      irView.textContent = JSON.stringify(bundle.ir, null, 2);
-      changesView.textContent = formatChangeAnalysis(bundle.ir);
-      output.textContent = `Built ${name}.patchapp\n\nPortable Patch bundle containing the manifest, source and Change IR.`;
-    }
-    showTab('output');
-  } catch (err) {
-    output.textContent = `Build stopped:\n${formatStudioStop(err, 'build')}`;
-    showTab('output');
-  }
+installStudioBuildController({
+  code,
+  output,
+  changesView,
+  irView,
+  projectOptions,
+  formatChangeAnalysis,
+  formatStudioStop,
+  showTab
 });
 
 for (const tab of document.querySelectorAll('.tab')) {
@@ -1214,16 +1178,6 @@ function saveProject() {
   }
 }
 function loadProject() { try { return JSON.parse(localStorage.getItem('patchStudio.project')); } catch { return null; } }
-
-function download(filename, data, type) {
-  const blob = new Blob([data], { type });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 function escapeHtml(text) {
   return String(text).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
