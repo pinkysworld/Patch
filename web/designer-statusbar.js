@@ -7,6 +7,11 @@ import {
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError,
+  syncDesignerInspectorState
+} from './designer-ux.js';
 
 export const PATCH_DESIGNER_STATUSBAR_VERSION = '0.1';
 
@@ -167,9 +172,10 @@ function applyStatusBarInspector(control) {
     });
     const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    clearDesignerInspectorError({ document: doc });
     setSource(next);
   } catch (error) {
-    showInspectorError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -237,20 +243,18 @@ function syncStatusBarInspector() {
     layout.title = 'StatusBar is source-backed Form chrome and remains docked to the bottom.';
   }
 
-  const apply = doc.querySelector('#designerInspectorApply');
-  const state = doc.querySelector('#designerInspectorState');
   const dirty = Boolean(
     (id && id.value !== (control.id ?? '')) ||
     (text && text.value !== (control.textExpr ?? '"Ready"'))
   );
-  if (apply) {
-    apply.disabled = !dirty;
-    apply.title = dirty ? 'Apply StatusBar name/text to Patch source' : 'StatusBar properties are up to date';
-  }
-  if (state) {
-    state.textContent = dirty ? 'StatusBar property changes ready to apply.' : 'Source-backed · dock bottom · up to date.';
-    state.classList.toggle('is-dirty', dirty);
-  }
+  syncDesignerInspectorState({
+    document: doc,
+    dirty,
+    dirtyText: 'StatusBar property changes ready to apply.',
+    cleanText: 'Source-backed · dock bottom · up to date.',
+    dirtyTitle: 'Apply StatusBar name/text to Patch source',
+    cleanTitle: 'StatusBar properties are up to date'
+  });
 }
 
 function currentSelectedControl() {
@@ -275,13 +279,6 @@ function setSource(source) {
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
   scheduleSync();
-}
-
-function showInspectorError(error) {
-  const target = doc.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
 
 function installStylesheet() {
