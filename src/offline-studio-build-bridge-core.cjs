@@ -249,6 +249,7 @@ function createOfflineBuildRequestHandler(options = {}) {
           builder: options.builder,
           platform: options.platform
         });
+        let responseResult = result;
         if (result.artifact) {
           const artifactId = crypto.randomBytes(16).toString('hex');
           const root = resolveOpenedWorkspace(workspaceRoot);
@@ -260,12 +261,15 @@ function createOfflineBuildRequestHandler(options = {}) {
             metadata: result.artifact
           });
           trimArtifacts(artifacts);
-          result.artifact = Object.freeze({
-            ...result.artifact,
-            downloadPath: `${OFFLINE_BUILD_ARTIFACT_PREFIX}${artifactId}`
+          responseResult = Object.freeze({
+            ...result,
+            artifact: Object.freeze({
+              ...result.artifact,
+              downloadPath: `${OFFLINE_BUILD_ARTIFACT_PREFIX}${artifactId}`
+            })
           });
         }
-        return writeJson(response, 200, result, request, allowedOrigin);
+        return writeJson(response, 200, responseResult, request, allowedOrigin);
       }
 
       const artifactId = urlPath.startsWith(OFFLINE_BUILD_ARTIFACT_PREFIX)
@@ -412,7 +416,7 @@ function readJsonBody(request, limit) {
       if (size > limit) {
         settled = true;
         reject(new OfflineBuildBridgeError('request-too-large', 'Bridge request body is too large.', 413));
-        request.destroy();
+        request.resume();
         return;
       }
       chunks.push(chunk);
