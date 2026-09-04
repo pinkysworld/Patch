@@ -1,40 +1,40 @@
 # Patch Studio Offline IDE
 
-Status: **Stage 1 multi-platform release channel implemented; Stage 2 R0.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64**
+Status: **Stage 1 multi-platform release channel implemented; Stage 2 R0.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64, including bounded project-v4 image resources**
 
-Patch Studio is intended to be usable as a real offline IDE, not merely as a website that happens to remain in a browser cache. The offline product keeps Patch's local-first model and uses the same source-backed Studio modules as the public site.
+Patch Studio is intended to work as a real offline IDE rather than merely a cached website. The installed product uses the same generated Studio modules as the public site and keeps normal authoring, Designer, Run and supported Build workflows local.
 
 ## Download
 
-The rolling beta release channel is **`offline-studio-v0.2`**. The cross-platform workflow builds and self-smokes every published platform distribution before release assets are refreshed.
+The rolling beta release channel is **`offline-studio-v0.2`**.
 
-Stable download URLs:
+Stable release assets:
 
-- Windows x64: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-windows-x64.exe`
-- Windows ARM64: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-windows-arm64.exe`
-- macOS Apple Silicon: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-macos-arm64`
-- macOS Intel runtime kit: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-macos-x64.tar.gz`
-- Linux x64: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-linux-x64`
-- Linux ARM64: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-linux-arm64`
-- Portable Node 18+ compatibility bundle: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/PatchStudio-portable-node18.tar.gz`
-- Generated-site manifest: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/offline-studio-manifest.json`
-- SHA-256 checksums: `https://github.com/pinkysworld/Patch/releases/download/offline-studio-v0.2/SHA256SUMS`
+- Windows x64: `PatchStudio-windows-x64.exe`
+- Windows ARM64: `PatchStudio-windows-arm64.exe`
+- macOS Apple Silicon: `PatchStudio-macos-arm64`
+- macOS Intel runtime kit: `PatchStudio-macos-x64.tar.gz`
+- Linux x64: `PatchStudio-linux-x64`
+- Linux ARM64: `PatchStudio-linux-arm64`
+- Portable Node 18+ compatibility bundle: `PatchStudio-portable-node18.tar.gz`
+- generated-site manifest: `offline-studio-manifest.json`
+- release checksums: `SHA256SUMS`
 
-The public Patch Downloads page is the human-facing entry point: `https://minh.systems/Patch/downloads.html`.
+The human-facing download page is `https://minh.systems/Patch/downloads.html`.
 
 ## Platform contract
 
 Patch currently publishes three Offline Studio distribution classes:
 
-1. **Self-contained SEA executables**, built and executed in CI on Windows x64, Windows ARM64, macOS Apple Silicon, Linux x64 and Linux ARM64.
-2. **macOS Intel embedded-runtime kit**, built and executed on an Intel macOS CI host. It carries its own Intel Node runtime because the current Node 26 direct `--build-sea` path is not reliable on macOS x64.
-3. **Portable Node compatibility bundle**, for systems where Patch does not publish a host-specific self-contained distribution. This path requires Node.js 18+ and a modern local browser. The same bundle is executed inside a FreeBSD 15 x64 VM in CI.
+1. self-contained SEA executables on Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64;
+2. a macOS Intel embedded-runtime kit with its own Intel Node runtime;
+3. a portable Node 18+ compatibility bundle, including the FreeBSD 15 x64 CI path.
 
-All three classes carry the same generated Patch Studio site contract. Portable and runtime-kit runners verify bundled Studio assets before serving them.
+All classes carry the same generated Patch Studio site closure.
 
 ### Installed host-native Build availability
 
-Stage 2 R0.2 packages a matching SHA-256-pinned Patch Offline Compiler into these self-contained distributions:
+Stage 2 R0.2 packages a matching SHA-256-pinned Patch Offline Compiler into these distributions:
 
 | Offline Studio host | Installed native Build |
 |---|---|
@@ -46,137 +46,100 @@ Stage 2 R0.2 packages a matching SHA-256-pinned Patch Offline Compiler into thes
 | macOS Intel runtime kit | Not yet, fail-closed |
 | Portable Node bundle / FreeBSD path | Not yet, fail-closed |
 
-Unsupported host/compiler combinations retain Stage 1 authoring, Designer/Run and browser-local build targets. Patch does not pretend that a matching native compiler exists where it does not.
+Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle remain Stage 1/browser-local only until matching host-native compiler/runtime distributions exist.
 
 ## Release integrity and signing boundary
 
-Every host-specific distribution is launched and self-smoked on its target CI architecture before publication. The generated-site `offline-studio-manifest.json` remains platform-neutral and byte-identical across the six host-specific distributions.
+Every host-specific distribution is launched and self-smoked on its target CI architecture before publication. The generated-site `offline-studio-manifest.json` remains platform-neutral and byte-identical across the host-specific distributions.
 
-Compiler platform, architecture and compiler SHA-256 are deliberately not written into that public cross-platform site manifest. They live in the executable's embedded runtime manifest instead. This preserves both properties:
+Compiler platform, architecture and compiler SHA-256 live only in the executable's embedded runtime manifest. The publish job generates `SHA256SUMS` for the exact release bytes.
 
-- deterministic equality of the generated Studio site closure across platforms;
-- exact host-specific evidence for the compiler actually embedded into a Stage 2 executable.
+This is still a beta/development channel:
 
-The publish job generates `SHA256SUMS` for the exact release bytes and verifies every required release asset.
-
-This remains a development/beta release channel, not a claim of commercial code signing:
-
-- Windows development binaries are currently unsigned by Authenticode;
-- Linux development binaries are unsigned;
-- the macOS Apple Silicon SEA is ad-hoc signed for local execution but is not Developer ID signed or notarized;
-- the macOS Intel runtime kit is an integrity-checked archive, not a Developer ID notarized application bundle;
-- the portable Node compatibility bundle is integrity-checked but is not an OS-signed application package.
+- Windows binaries are currently unsigned by Authenticode;
+- Linux binaries are unsigned;
+- macOS Apple Silicon is ad-hoc signed for local execution, not Developer ID notarized;
+- the macOS Intel kit and portable Node bundle are integrity-checked archives rather than notarized application packages.
 
 ## Product contract
 
-The offline IDE is being built toward this workflow with no GitHub account, token or network connection:
+The offline workflow is:
 
-1. launch Patch Studio from a local executable, embedded-runtime kit or portable compatibility bundle;
-2. create/import/export Patch projects and resources;
+1. launch Patch Studio locally;
+2. create/import/export Patch projects and project-v4 resources;
 3. edit source and use the Form Designer/Object Inspector;
 4. Run locally;
 5. build Standalone Web, portable Patch bundles and WebAssembly locally;
-6. build a host-native Windows/macOS/Linux Window application locally when that distribution carries a matching compiler/runtime set;
+6. on a supported Stage 2 host, build a native Window application with the bundled compiler;
 7. keep project data and diagnostics local unless the user explicitly exports or chooses an online action.
 
-Stage 1 covers items 1-5 across the release channel. Stage 2 R0.2 now implements item 6 for Windows x64, macOS Apple Silicon and Linux x64.
-
-Online services remain optional accelerators for updates, remote builds and publishing. They are not part of the core installed IDE execution contract.
+Normal local workflows do not need a GitHub account or token.
 
 ## Stage 1 foundation
 
-The implemented Stage 1 foundation includes:
+The Stage 1 release foundation includes:
 
-- current-host SEA builds where Node's direct SEA path is supported;
-- an embedded-runtime kit builder;
-- a Node 18+ portable compatibility bundle;
-- deterministic `patch-offline-studio-manifest` v1 with SHA-256 for every Studio file and a closure hash;
-- the complete generated Patch Studio site in every distribution class;
-- an ephemeral loopback server bound only to `127.0.0.1`;
-- a random per-launch URL prefix;
-- traversal rejection and restrictive security headers;
-- portable/runtime-kit byte-length and SHA-256 verification before a bundled asset is served;
-- automatic browser launch with a printed local URL as fallback;
-- self-smoke modes that request the IDE over loopback and validate HTTP/CSP;
-- verified self-contained builds for Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64;
-- a verified embedded-runtime Intel macOS kit;
-- a generic Node 18+ portable compatibility bundle;
-- a real FreeBSD 15 x64 VM gate for the portable bundle;
-- rolling `offline-studio-v0.2` publication only after the complete matrix succeeds;
-- platform-neutral six-way generated-site manifest equality before publication;
-- release `SHA256SUMS` plus post-upload asset verification;
-- fail-closed validation if critical Studio assets are missing.
-
-The distributions use the same generated site closure as the hosted Studio. The offline IDE is not a forked second IDE implementation.
+- generated Studio site closure embedded in every distribution;
+- deterministic `patch-offline-studio-manifest` v1 with SHA-256 evidence;
+- loopback-only serving on `127.0.0.1` with a random URL prefix;
+- restrictive CSP and traversal rejection;
+- local Designer/Run and browser-local build targets;
+- Windows x64/ARM64, macOS Apple Silicon, Linux x64/ARM64 executable smoke coverage;
+- Intel macOS runtime-kit coverage;
+- portable Node coverage and a real FreeBSD 15 x64 VM gate;
+- deterministic release-bundle verification before publication.
 
 ## Stage 2 R0.2: installed host-native Build
 
-The current Stage 2 slice adds:
+The current Stage 2 slice uses:
 
-- `patch-offline-build-bridge/0.1`;
-- `patch-offline-workspace-snapshot/0.1`;
-- an explicit `--workspace <directory>` authority;
+- `patch-offline-build-bridge/0.2`;
+- `patch-offline-workspace-snapshot/0.2`;
+- explicit `--workspace <directory>` authority;
 - a separate random per-launch bridge bearer token;
-- exact local Studio origin restriction for browser bridge access;
-- source snapshots under `.patch-studio/snapshots/<requestId>`;
+- exact local Studio origin restriction;
+- project snapshots under `.patch-studio/snapshots/<requestId>`;
 - native outputs under `.patch-build/native/<requestId>`;
 - a bundled current Patch Offline Compiler whose bytes are SHA-256 recorded and reverified before execution;
-- fixed host-side `patch link` invocation with no browser-controlled executable path, argv, environment or output directory;
-- artifact metadata containing filename, MIME type, byte size and SHA-256;
-- authenticated opaque artifact download URLs;
-- Studio Build UI integration that appears only when the selected native target matches the installed host capability;
-- end-to-end CI self-smoke for the supported Stage 2 hosts.
+- fixed host-side `patch link` invocation with no browser-controlled executable, argv, environment or output directory;
+- authenticated opaque artifact downloads with artifact SHA-256 evidence.
 
-The CI smoke is intentionally stronger than checking that the bridge starts. It exercises:
+Installed Studio now sends its existing canonical **project-v4 bundle** rather than a separate ad-hoc resource protocol. The host independently validates the project and materializes exactly one `project.patchproject`. The existing Offline Compiler then reads that file through the normal project-v4 input path.
 
-```text
-current Studio source
-  -> workspace snapshot
-  -> bundled offline compiler
-  -> host-native linked artifact
-  -> authenticated artifact download
-  -> SHA-256 equality verification
-```
+That means current project-v4 image resources are supported in the installed native Build path on Windows x64, Linux x64 and macOS Apple Silicon, including:
 
-See `docs/OFFLINE_BUILD_BRIDGE.md` for the privileged boundary.
+- Picture resources already supported by the Current Ready native line;
+- ImageList/Button images;
+- application and Form Window icons.
+
+The bridge validates resource ids, project-relative paths, supported image media types, canonical base64, byte sizes and SHA-256 digests before accepting the snapshot. It does not accept arbitrary browser-selected resource filesystem paths.
+
+### Resource limits
+
+The privileged snapshot boundary is deliberately bounded:
+
+- at most 64 Patch source files;
+- at most 2 MiB per source file;
+- at most 8 MiB aggregate Patch source;
+- at most 128 resources;
+- at most 2 MiB decoded bytes per resource;
+- at most 8 MiB aggregate decoded resource bytes;
+- at most 22 MiB serialized project snapshot;
+- accepted resource media types remain the canonical Studio image types: PNG, JPEG, WebP and SVG.
+
+The downstream native runtimes may support a narrower image decode set for individual controls. Unsupported target/resource combinations still fail closed.
 
 ### Current Stage 2 limitations
 
-The initial installed path intentionally remains narrow:
+The installed privileged path remains narrow:
 
 - only Window host-native builds are exposed;
 - no cross-compilation contract is implied;
-- project-v4 binary resources are not materialized through the host bridge yet;
-- resource-backed Picture, ImageList and application-icon projects fail closed in installed-host mode rather than silently losing resources;
-- Windows ARM64, Linux ARM64, macOS Intel and generic portable distributions do not expose installed host-native Build until matching compiler/runtime artifacts exist.
+- Windows ARM64, Linux ARM64, macOS Intel and generic portable distributions do not expose installed host-native Build yet;
+- Console installed Build is not yet exposed through a separate narrow action;
+- richer structured compiler diagnostics remain future work.
 
-The existing Ready native build path remains available for resource-backed projects while the bounded resource snapshot contract is implemented.
-
-## Running the host-specific distributions
-
-Normal launch remains unchanged.
-
-Windows x64:
-
-```text
-PatchStudio-windows-x64.exe
-```
-
-macOS Apple Silicon:
-
-```text
-chmod +x PatchStudio-macos-arm64
-./PatchStudio-macos-arm64
-```
-
-Linux x64:
-
-```text
-chmod +x PatchStudio-linux-x64
-./PatchStudio-linux-x64
-```
-
-To authorize Stage 2 host-native Build, launch a supported distribution with an explicit workspace.
+## Running supported Stage 2 builds
 
 Windows x64:
 
@@ -187,20 +150,22 @@ PatchStudio-windows-x64.exe --workspace C:\path\to\project
 macOS Apple Silicon:
 
 ```text
+chmod +x PatchStudio-macos-arm64
 ./PatchStudio-macos-arm64 --workspace /path/to/project
 ```
 
 Linux x64:
 
 ```text
+chmod +x PatchStudio-linux-x64
 ./PatchStudio-linux-x64 --workspace /path/to/project
 ```
 
-The browser receives only the per-launch capability for the versioned snapshot/build/artifact endpoints. It does not receive general filesystem or process authority.
+The browser receives only the per-launch capability for the versioned snapshot/build/artifact endpoints. It receives no general filesystem or process API.
 
-Windows ARM64, Linux ARM64 and macOS Intel continue to launch normally but currently do not advertise the `offline-installed` native Build mode.
+## Portable and Intel compatibility paths
 
-### macOS Intel
+macOS Intel:
 
 ```text
 tar -xzf PatchStudio-macos-x64.tar.gz
@@ -208,96 +173,59 @@ chmod +x patch-studio runtime/node
 ./patch-studio
 ```
 
-The Intel archive includes the Intel Node runtime used by CI. A separate Node installation is not required.
-
-Because the macOS beta distributions are not Developer ID notarized, macOS may require an explicit local trust/open action depending on Gatekeeper policy.
-
-## Portable Unix/POSIX compatibility bundle
-
-Extract `PatchStudio-portable-node18.tar.gz` on a system with Node.js 18+ and a modern browser.
-
-Unix, Linux, macOS or BSD-style host:
+Portable Node 18+:
 
 ```text
 chmod +x patch-studio
 ./patch-studio
 ```
 
-Windows with an installed Node runtime:
+or on Windows with Node installed:
 
 ```text
 PatchStudio.cmd
 ```
 
-Direct launch:
+These compatibility distributions remain Stage 1/browser-local only until matching host-native compiler/runtime packaging is promoted.
+
+## CI proof
+
+For Windows x64, Linux x64 and macOS Apple Silicon, CI builds the matching Offline Compiler from the same repository revision and Current Ready v1.10 runtime. It then verifies two paths.
+
+The executable self-smoke verifies the installed Studio capability and a normal source-only host-native Build.
+
+A second real resource-backed smoke verifies:
 
 ```text
-node PatchStudio.cjs
+canonical project-v4 with application icon + ImageList/Button image
+  -> authenticated workspace project snapshot
+  -> independent resource size/SHA-256 validation
+  -> bundled Offline Compiler
+  -> Current Ready native resource packaging
+  -> host-native artifact
+  -> authenticated artifact download
+  -> artifact SHA-256 equality
 ```
 
-The generic portable archive intentionally does not bundle one platform's compiler and then claim that compiler on every Node host. It therefore remains Stage 1/browser-local only. Platform-specific portable/runtime-kit packaging may add Stage 2 later when the matching host compiler contract exists.
-
-The portable distribution is exercised in a real FreeBSD 15 x64 VM. That verifies the Node/browser compatibility path, not a native FreeBSD SEA or Window runtime.
-
-## Verify a release download
-
-Place `SHA256SUMS` beside the downloaded asset.
-
-Linux and many Unix systems:
-
-```text
-sha256sum -c SHA256SUMS --ignore-missing
-```
-
-macOS Apple Silicon:
-
-```text
-shasum -a 256 PatchStudio-macos-arm64
-```
-
-macOS Intel archive:
-
-```text
-shasum -a 256 PatchStudio-macos-x64.tar.gz
-```
-
-Windows PowerShell:
-
-```text
-Get-FileHash .\PatchStudio-windows-x64.exe -Algorithm SHA256
-```
-
-Compare the resulting digest with the corresponding line in `SHA256SUMS`.
-
-## Build requirement for contributors
-
-The self-contained executable builder uses Node's direct `--build-sea` support and requires **Node 25.5.0 or newer**. Normal Patch development may continue on the repository's broader supported Node range.
-
-The portable compatibility bundle requires Node.js 18 or newer and does not use `node:sea`. The embedded-runtime kit packages the exact host Node executable used to build the kit.
-
-For Stage 2-capable SEA builds, pass a matching host-native Offline Compiler to the builder:
-
-```text
-node scripts/build-offline-studio.js --offline-compiler /path/to/patch-offline-compiler
-```
-
-The release workflow builds that compiler from the same repository revision and Current Ready v1.10 runtime for Windows x64, Linux x64 and macOS Apple Silicon before building/self-smoking Offline Studio.
-
-The published generic site manifest remains platform-neutral even in Stage 2 builds. Host-specific compiler metadata is embedded only into the executable runtime manifest.
+This is stronger than checking only that the bridge starts.
 
 ## Security boundary
 
-The installed IDE has more authority than the hosted Studio because native Build requires local process/filesystem access. Therefore:
+The installed IDE has more authority than the hosted Studio, so the privileged boundary remains intentionally small:
 
-- the browser UI never receives a general shell-execution API;
-- local build endpoints accept only versioned Patch operations;
-- a per-launch secret protects the privileged localhost bridge;
-- bridge browser access is restricted to the exact local Studio origin;
-- project paths are canonicalized and restricted to the explicitly opened workspace;
-- snapshot/output path components reject symbolic-link escapes;
-- runtime/compiler binaries are versioned and integrity checked;
-- online URLs are never required to run/build an already installed supported project;
-- unsupported host/compiler combinations fail closed.
+- no general shell endpoint;
+- no browser-selected executable or arbitrary argv;
+- no browser-selected environment map;
+- no absolute browser-selected source/resource/output path;
+- loopback-only authenticated bridge;
+- exact Studio origin restriction;
+- canonical workspace confinement and symlink-escape rejection;
+- bounded project-v4 validation before writing a snapshot;
+- independent resource SHA-256 verification;
+- output confinement under `.patch-build/native/<requestId>`;
+- artifact regular-file and SHA-256 verification.
+
+See `docs/OFFLINE_BUILD_BRIDGE.md` for the exact protocol boundary.
 
 ## Current commands
 
@@ -309,20 +237,18 @@ node scripts/check-portable-offline-studio.js
 node scripts/build-offline-studio-runtime-kit.js
 node scripts/check-offline-studio-runtime-kit.js
 node scripts/build-offline-studio.js --offline-compiler /path/to/matching/compiler
+node scripts/check-offline-studio-resource-build.js
 ```
 
 ## Next Stage 2 work
 
-1. add a bounded project-v4 binary-resource snapshot/materialization contract;
-2. integrate richer structured compiler diagnostics into the Studio artifact pane;
-3. add Windows ARM64, Linux ARM64 and macOS Intel installed builds when matching compiler/runtime distributions are published and verified;
-4. decide whether Console installed Build needs a separate narrow bridge action;
-5. keep remote/fresh CI Build as an optional separate target.
-
-Cross-compiling every desktop platform from every host is not required. Patch should first provide a predictable host-native local build contract everywhere it claims support.
+1. add richer structured compiler diagnostics to the Studio artifact/output pane;
+2. add Windows ARM64, Linux ARM64 and macOS Intel installed Build when matching compiler/runtime distributions are published and verified;
+3. decide whether Console installed Build needs a separate narrow bridge action;
+4. keep remote/fresh CI Build as an optional separate target.
 
 ## Definition of Offline IDE Ready
 
-For a supported Stage 2 host, Patch Studio can now launch after network disconnection and complete authoring, Run and a Window host-native Build using only the installed toolchain for source-only projects.
+For the supported Stage 2 hosts, Patch Studio can launch without network access and complete authoring, Designer, Run and a host-native Window Build using only the installed toolchain, including current project-v4 image resources.
 
-The broader **fully offline IDE** claim across all published architectures and project-v4 resource-backed projects remains open until the remaining Stage 2 gaps above are closed.
+The broader fully-offline claim across every published architecture remains open until the unsupported Stage 2 host/compiler combinations are closed.
