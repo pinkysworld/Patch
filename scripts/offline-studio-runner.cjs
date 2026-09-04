@@ -4,6 +4,7 @@
 const crypto = require('node:crypto');
 const http = require('node:http');
 const path = require('node:path');
+const zlib = require('node:zlib');
 const { spawn } = require('node:child_process');
 const { getAsset } = require('node:sea');
 
@@ -164,7 +165,7 @@ async function startLocalBuildBridge() {
   const bridgeCore = loadEmbeddedCommonJs('offline-studio-build-bridge-core.cjs');
   const builderModule = loadEmbeddedCommonJs('offline-studio-compiler-builder.cjs');
   const workspaceRoot = bridgeCore.resolveOpenedWorkspace(workspaceArg);
-  const compilerBytes = Buffer.from(getAsset(manifest.localBuild.compilerAsset));
+  const compilerBytes = decodeEmbeddedCompiler(manifest.localBuild, Buffer.from(getAsset(manifest.localBuild.compilerAsset)));
   const builder = builderModule.createOfflineStudioCompilerBuilder({
     platform: process.platform,
     arch: process.arch,
@@ -192,6 +193,13 @@ async function startLocalBuildBridge() {
     workspaceName: path.basename(workspaceRoot),
     compilerSha256: manifest.localBuild.compilerSha256
   });
+}
+
+function decodeEmbeddedCompiler(localBuild, assetBytes) {
+  const encoding = localBuild.compilerEncoding ?? 'identity';
+  if (encoding === 'identity') return assetBytes;
+  if (encoding === 'gzip') return zlib.gunzipSync(assetBytes);
+  throw new Error(`Unsupported embedded compiler encoding '${encoding}'.`);
 }
 
 async function runSelfSmoke(url) {
