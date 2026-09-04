@@ -1,6 +1,6 @@
 # Patch Studio Offline Build Bridge
 
-Status: **Stage 2 R0.2 integrated host-native build path with bounded project-v4 resource snapshots and complete Linux desktop artifact packaging**
+Status: **Stage 2 R0.2 integrated host-native build path with bounded project-v4 resource snapshots, complete Linux desktop artifact packaging and structured compiler diagnostics**
 
 Patch Studio Stage 2 needs host-native builds without turning the browser UI into a general process launcher. The installed Offline Studio therefore exposes only a small authenticated localhost capability and delegates the actual link operation to the existing Patch Offline Compiler.
 
@@ -91,14 +91,51 @@ Stage 2 performs this bounded flow:
 3. the local Studio session receives only the bridge origin, token and versioned endpoint names;
 4. Studio obtains its already-canonical project-v4 state, including source files and resources;
 5. `POST /v1/snapshot` revalidates that bundle and materializes one `.patchproject` under `.patch-studio/snapshots/<requestId>`;
-6. `POST /v1/build` invokes the bundled SHA-256-pinned Patch Offline Compiler with a fixed `link <project> --name <name> --out <host-chosen-output>` shape;
+6. `POST /v1/build` invokes the bundled SHA-256-pinned Patch Offline Compiler with a fixed `link <project> --name <name> --out <host-chosen-output> --diagnostics-json` shape;
 7. the Offline Compiler reuses the normal project-v4 parser and Current Ready resource packaging path;
 8. native output stays under `.patch-build/native/<requestId>`;
 9. the host adapter converts platform output into one downloadable artifact when needed;
-10. the bridge returns diagnostics plus artifact filename, type, size and SHA-256;
-11. the browser downloads that exact artifact through an opaque authenticated artifact URL.
+10. successful builds return human diagnostics plus artifact filename, type, size and SHA-256;
+11. compiler failures may return a separately validated `patch-diagnostic` v1 object with code, phase and mapped source location;
+12. the browser downloads a successful artifact through an opaque authenticated artifact URL.
 
 The browser never chooses the compiler executable, command line, environment, absolute source/resource path or absolute output path.
+
+## Structured compiler diagnostic contract
+
+Installed builds reuse Patch's existing `patch-diagnostic` version 1 contract. There is no Offline-Studio-only diagnostic schema.
+
+The packaged compiler is invoked with the opt-in `--diagnostics-json` flag. On a link failure it still emits the existing human-readable stderr and additionally emits one machine-readable record. The host adapter separates that record from the human output. The bridge then validates it independently before it may cross the privileged boundary.
+
+A validated compiler failure is returned as HTTP `422`:
+
+```json
+{
+  "ok": false,
+  "error": "build-diagnostic",
+  "message": "Bundled Patch offline compiler exited with status 2: ...",
+  "diagnostic": {
+    "format": "patch-diagnostic",
+    "version": 1,
+    "code": "PATCH1001",
+    "severity": "error",
+    "phase": "build",
+    "message": "I do not understand 'frobnicate score'.",
+    "location": {
+      "entry": "main.patch",
+      "file": "logic/reward.patch",
+      "line": 2,
+      "column": 3
+    }
+  }
+}
+```
+
+For project-v4 input, the Offline Compiler preserves Studio composition metadata long enough for the generic diagnostic mapper to translate a composed source line back to the owning project file and local line. Single-file inputs use their normal entry location.
+
+The bridge accepts only the exact diagnostic fields, requires `PATCH` plus four digits for the code, requires error severity, bounds the phase and message, and allows only safe relative entry/file paths with positive line/column values. Unknown diagnostic fields, absolute paths, drive paths, traversal segments or malformed objects are discarded rather than trusted.
+
+The structured response does not contain project source text. Studio renders code, file/entry, line, column, phase and message in the Output tab and retains the previous plain-text fallback for non-compiler or malformed failures.
 
 ## Platform artifact contract
 
@@ -146,6 +183,8 @@ The R0.2 bridge enforces all of the following:
 - chooses the native output directory itself;
 - validates produced artifacts as regular files inside the opened workspace;
 - returns SHA-256 evidence for both the materialized snapshot and native artifact;
+- independently validates and bounds any structured compiler diagnostic before returning it;
+- never includes source text merely to provide a structured diagnostic;
 - when Linux desktop sidecars exist, packages only fixed safe relative entries and fails closed on an incomplete set;
 - exposes no `/command`, shell, arbitrary process, arbitrary environment or arbitrary filesystem API.
 
@@ -176,6 +215,8 @@ R0.2 intentionally supports **Window** host-native builds only. Console and cros
 
 Project-v4 Picture, ImageList and application/Form icon resources are now carried through the installed host-native path. The resource snapshot is deliberately limited to the already-supported Studio image-resource model. Future non-image resource families must extend the canonical Studio resource contract first rather than adding bridge-only types.
 
+Structured compiler diagnostics currently carry one primary error record. Rich multi-error lists, warnings and quick-fix actions are outside this R0.2 bridge response and can build on the same versioned diagnostic family later.
+
 ## CI contract
 
 For Windows x64, Linux x64 and macOS Apple Silicon, Offline Studio CI builds a matching Offline Compiler from the same repository revision and the Current Ready v1.10 native runtime, embeds it in the Offline Studio executable and runs the installed source-only self-smoke. The executable checker then performs an additional real resource-backed bridge/link smoke with an application icon and ImageList/Button image:
@@ -193,13 +234,15 @@ canonical Studio project-v4 + image resources
 
 On Linux x64 the application-icon fixture necessarily traverses the complete `.tar.gz` artifact path, because the normal Current Ready linker emits the executable plus hicolor PNG and `.desktop` sidecars. Dedicated unit tests verify deterministic archive bytes, exact entry paths and modes, content preservation, direct-executable compatibility when no sidecars exist, and fail-closed behavior for incomplete or unsafe bundles.
 
+Structured-diagnostic tests additionally exercise a real multi-file project-v4 `patch link --diagnostics-json` failure, verify file/line mapping, machine-record extraction, independent bridge validation, HTTP 422 transport, source omission and installed-client rendering markers.
+
 The normal release manifest remains platform-neutral site-closure evidence. Host-specific compiler platform, architecture and compiler SHA-256 live only in the executable's embedded runtime manifest, so cross-platform release-manifest equality remains meaningful.
 
 ## Next Stage 2 work
 
-- surface richer structured compiler diagnostics in the artifact pane;
 - add installed host-build coverage when matching Windows ARM64, Linux ARM64 and macOS Intel compiler/runtime distributions become available;
 - decide whether Console installed builds need a separate narrow action;
+- consider richer multi-error/warning diagnostic lists and source-navigation actions on top of `patch-diagnostic` v1;
 - keep remote/fresh CI Build as an optional separate target.
 
 Cross-compiling every desktop platform from every host is not required for Stage 2. The first contract remains predictable host-native local Build with no GitHub token and no network dependency.
