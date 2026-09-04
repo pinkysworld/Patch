@@ -15,7 +15,7 @@ Patch Studio currently tracks:
 - Ready/offline desktop runtime **v1.10** on Windows, macOS and Linux;
 - Offline Studio manifest **v1** and rolling download channel **`offline-studio-v0.2`**;
 - Offline Compiler rolling channel **`offline-compiler-v0.2`**;
-- Offline Studio Stage 2 R0.2 installed host-build bridge for Windows x64, macOS Apple Silicon and Linux x64, including project-v4 image resources;
+- Offline Studio Stage 2 R0.2 installed host-build bridge for Windows x64, macOS Apple Silicon and Linux x64, including project-v4 image resources, complete Linux desktop artifacts and project-aware structured compiler diagnostics;
 - formal runtime-correspondence milestone **beta.32**.
 
 Current Ready v1.10 contains the complete **IR1.8 / payload-v18 / runtime-v1.9 Button/ImageList** layer plus **IR1.9 / payload-v19 Window/application icons** and deterministic platform application-icon packaging. Explicit payload-v17/runtime-v1.8 linking remains available as a compatibility option in the Offline Compiler.
@@ -172,7 +172,9 @@ Launch a supported distribution with `--workspace <directory>` to authorize the 
 
 The browser never receives a general shell API, executable path, arbitrary argv/environment map or arbitrary output path. Windows ARM64, Linux ARM64, macOS Intel and the generic portable archive currently fail closed for installed host-native Build because matching compiler/runtime distributions are not yet published for those paths.
 
-Project-v4 Picture, ImageList/Button-image and application/Form-icon resources now travel through the installed host-native path on all three supported Stage 2 hosts. On Linux x64, application-icon builds preserve the normal linker sidecars by returning one deterministic `<stem>-linux.tar.gz` containing the executable, hicolor PNG and `.desktop` entry. Linux builds without those sidecars retain the direct executable download.
+Project-v4 Picture, ImageList/Button-image and application/Form-icon resources travel through the installed host-native path on all three supported Stage 2 hosts. On Linux x64, application-icon builds preserve the normal linker sidecars by returning one deterministic `<stem>-linux.tar.gz` containing the executable, hicolor PNG and `.desktop` entry. Linux builds without those sidecars retain the direct executable download.
+
+Installed compiler failures now also reuse Patch's existing **`patch-diagnostic` v1** format. The Offline Compiler preserves multi-file composition metadata, so an error can identify the owning project file, local line and column instead of only a composed-source line. The privileged bridge independently validates the diagnostic and returns it as a bounded HTTP 422 response without adding source text. The Output tab renders the stable `PATCHxxxx` code, source location, phase and message while keeping a plain-text fallback for non-compiler failures.
 
 The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking defaults to payload v19/runtime v1.10 and includes a separate v1.8 runtime for explicit v17 compatibility. FreeBSD remains Console-only via portable C99.
 
