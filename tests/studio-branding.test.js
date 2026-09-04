@@ -8,12 +8,18 @@ const manifest = fs.readFileSync('web/manifest.webmanifest', 'utf8');
 const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
 const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
 const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
+const beta35 = fs.readFileSync('web/beta35-studio.css', 'utf8');
 
 test('Patch Studio uses the compiler-oriented brand mark across browser and installed surfaces', () => {
   assert.match(icon, /Patch Studio compiler mark/);
   assert.match(icon, /patch-circuit-cuts/);
   assert.match(icon, /patch-main/);
   assert.match(icon, /patch-accent/);
+  assert.match(icon, /<circle cx="256" cy="256" r="224" fill="url\(#patch-main\)"\/?>/);
+  assert.match(icon, /stroke-linecap="round"/);
+  assert.match(beta35, /\.brand-mark\s*\{[\s\S]*?border-radius:\s*50%/);
+  assert.doesNotMatch(beta35, /\.brand-mark::before/);
+  assert.doesNotMatch(beta35, /\.brand-mark::after/);
   assert.match(html, /class="brand-mark" src="\.\/icon\.svg"/);
   assert.match(html, /data-patch-brand-mark="compiler-p-v1"/);
   assert.doesNotMatch(html, /M8 6H22V18H13V26H8/);
