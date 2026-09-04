@@ -72,6 +72,17 @@ function scheduleSync() {
   });
 }
 
+function tableAdapterFingerprint(node, options = {}) {
+  return JSON.stringify({
+    id: node?.id ?? null,
+    columns: node?.columns ?? [],
+    rows: node?.rows ?? [],
+    layout: node?.layout ?? null,
+    interactive: options.interactive === true,
+    hasHandler: options.hasHandler === true
+  });
+}
+
 function syncContainer(container, designer) {
   const ast = parse(code.value);
   const windows = ast.filter(node => node.kind === 'window');
@@ -87,10 +98,24 @@ function syncContainer(container, designer) {
     const windowNode = windows[windowIndex];
     if (!body || !windowNode) return;
 
-    for (const old of body.querySelectorAll(':scope > .patch-table-stage1-control')) old.remove();
-    if (!designer && shell.dataset.patchRenderDetail === 'deferred') return;
-    if (designer && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) return;
-    const baseChildren = [...body.children].filter(child => !child.classList.contains('patch-form-resize-handle'));
+    const existingTables = new Map();
+    for (const element of body.querySelectorAll(':scope > .patch-table-stage1-control')) {
+      const key = element.dataset.patchControlKey;
+      if (key) existingTables.set(key, element);
+      else element.remove();
+    }
+    if (!designer && shell.dataset.patchRenderDetail === 'deferred') {
+      for (const element of existingTables.values()) element.remove();
+      return;
+    }
+    if (designer && Number.isInteger(materializedWindow) && windowIndex !== materializedWindow) {
+      for (const element of existingTables.values()) element.remove();
+      return;
+    }
+    const baseChildren = [...body.children].filter(child =>
+      !child.classList.contains('patch-form-resize-handle') &&
+      !child.classList.contains('patch-table-stage1-control')
+    );
     const sourceControls = (windowNode.body ?? []).filter(node => node.kind === 'uiControl' || node.kind === 'tabs');
     let renderedIndex = 0;
 
@@ -102,19 +127,31 @@ function syncContainer(container, designer) {
           controlIndex,
           controlPath: String(controlIndex)
         });
-        const element = createTable(node, {
+        const tableOptions = {
           interactive: !designer,
           container,
           key,
           hasHandler: Boolean(node.id && changedHandlers.has(node.id))
-        });
-        element.dataset.windowIndex = String(windowIndex);
-        element.dataset.controlIndex = String(controlIndex);
-        element.dataset.patchControlKey = key;
-        element.dataset.patchRuntimeSelectionKind = 'table';
+        };
+        const fingerprint = tableAdapterFingerprint(node, tableOptions);
+        let element = existingTables.get(key) ?? null;
+        if (!element || element.__patchTableStageFingerprint !== fingerprint) {
+          const replacement = createTable(node, tableOptions);
+          replacement.dataset.windowIndex = String(windowIndex);
+          replacement.dataset.controlIndex = String(controlIndex);
+          replacement.dataset.patchControlKey = key;
+          replacement.dataset.patchRuntimeSelectionKind = 'table';
+          replacement.__patchTableStageFingerprint = fingerprint;
+          if (designer) decorateDesignerTable(replacement, node, { windowIndex, controlIndex, adapter: 'table', id: node.id ?? '' });
+          element?.replaceWith(replacement);
+          element = replacement;
+        } else {
+          element.dataset.windowIndex = String(windowIndex);
+          element.dataset.controlIndex = String(controlIndex);
+        }
+        existingTables.delete(key);
         const anchor = baseChildren[renderedIndex] ?? body.querySelector(':scope > .patch-form-resize-handle') ?? null;
         body.insertBefore(element, anchor);
-        if (designer) decorateDesignerTable(element, node, { windowIndex, controlIndex, adapter: 'table', id: node.id ?? '' });
         return;
       }
 
@@ -128,6 +165,8 @@ function syncContainer(container, designer) {
       });
       renderedIndex += 1;
     });
+
+    for (const stale of existingTables.values()) stale.remove();
   });
 
   if (designer) restoreDesignerAdapterSelection(designerCanvas, 'table', tableElement, {
