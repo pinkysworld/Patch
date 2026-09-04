@@ -43,10 +43,14 @@ test('large-Form design-time adapters remain non-executing and Form switching yi
 
 test('Run command yields before the large compile, execute and render pipeline', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
-  assert.match(playground, /setTimeout\(executeRunProject, 0\)/);
-  assert.match(playground, /function executeRunProject\(\)/);
-  assert.match(playground, /runInProgress = true/);
-  assert.match(playground, /runInProgress = false/);
+  const controller = fs.readFileSync('web/studio-run-controller.js', 'utf8');
+  assert.match(playground, /installStudioRunController\(\{/);
+  assert.match(playground, /renderInitial\(ui\)/);
+  assert.match(controller, /schedule\(executeRunProject\)/);
+  assert.match(controller, /setTimeout\(callback, 0\)/);
+  assert.match(controller, /function executeRunProject\(\)/);
+  assert.match(controller, /running = true/);
+  assert.match(controller, /running = false/);
 });
 
 test('runtime adapters preserve hidden Form deferral', () => {

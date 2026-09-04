@@ -23,8 +23,10 @@ test('Standalone Window Web App wires input changed with transient event value',
 
 test('Patch Studio Window preview uses the shared semantic Window event adapter', () => {
   const playground = fs.readFileSync(new URL('../web/playground.js', import.meta.url), 'utf8');
-  assert.match(playground, /window-events\.js/);
-  assert.match(playground, /triggerWindowEvent/);
+  const runController = fs.readFileSync(new URL('../web/studio-run-controller.js', import.meta.url), 'utf8');
+  assert.match(runController, /window-events\.js/);
+  assert.match(runController, /triggerWindowEvent/);
+  assert.match(playground, /studioRunController\.trigger/);
   assert.match(playground, /['"]changed['"]/);
   assert.match(playground, /addEventListener\(['"]input['"]/);
 });

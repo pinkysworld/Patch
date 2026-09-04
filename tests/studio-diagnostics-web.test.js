@@ -60,12 +60,14 @@ test('PWA cache includes all diagnostics assets in the content-addressed cache',
 test('Run Build and Change Contract surface composed file:line Patch diagnostics', () => {
   const playground = fs.readFileSync('web/playground.js', 'utf8');
   const buildController = fs.readFileSync('web/studio-build-controller.js', 'utf8');
+  const runController = fs.readFileSync('web/studio-run-controller.js', 'utf8');
   assert.match(playground, /getStudioProjectDiagnosticContext/);
   assert.match(playground, /formatPatchDiagnostic/);
   assert.match(playground, /installStudioBuildController\(\{/);
+  assert.match(playground, /installStudioRunController\(\{/);
   assert.match(playground, /formatStudioStop,/);
   assert.match(buildController, /formatStudioStop\(error, 'build'\)/);
-  assert.match(playground, /formatStudioStop\(err, 'run'\)/);
+  assert.match(runController, /formatStudioStop\(error, 'run'\)/);
   assert.match(playground, /formatStudioStop\(err, 'compile'\)/);
   assert.match(playground, /compiledWasComposed \? context\.composition : null/);
 });
