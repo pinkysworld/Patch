@@ -20,7 +20,7 @@ import {
 } from '../src/designer-panel.js';
 import { duplicateDesignerControl } from '../web/designer-control-duplicate-model.js';
 import { DESIGNER_TOOL_CATALOG, filterDesignerTools } from '../web/designer-toolbox.js';
-import { panelPreviewLabel } from '../web/designer-panel.js';
+import { panelChildDraftIsDirty, panelPreviewLabel } from '../web/designer-panel.js';
 
 const source = `window "Panel demo" as main size 640, 420:\n  panel as tools at 24, 24 size 300, 180:\n    text "Tools"\n    button "Run" as run_button\n    input query\n    slider 0..10 as level step 1\n\nwhen run_button clicked:\n  show "run"\n\nwhen query changed:\n  show value\n\nwhen level changed:\n  show value\n`;
 
@@ -141,6 +141,17 @@ test('Panel appears in the searchable Containers palette and has compact preview
   assert.equal(panelPreviewLabel({ type: 'slider', id: 'level', min: 0, max: 10 }), 'level 0..10');
 });
 
+test('Panel child draft dirty state follows the visible source-backed child properties', () => {
+  assert.equal(panelChildDraftIsDirty({ type: 'button', id: 'run', textExpr: '"Run"' }, { id: 'run', textExpr: '"Run"' }), false);
+  assert.equal(panelChildDraftIsDirty({ type: 'button', id: 'run', textExpr: '"Run"' }, { id: 'run', textExpr: '"Execute"' }), true);
+  assert.equal(panelChildDraftIsDirty({ type: 'input', id: 'query' }, { id: 'query' }), false);
+  assert.equal(panelChildDraftIsDirty({ type: 'input', id: 'query' }, { id: 'search' }), true);
+  assert.equal(panelChildDraftIsDirty({ type: 'combo', id: 'mode', options: ['"Fast"', '"Safe"'] }, { id: 'mode', options: '"Fast", "Safe"' }), false);
+  assert.equal(panelChildDraftIsDirty({ type: 'combo', id: 'mode', options: ['"Fast"', '"Safe"'] }, { id: 'mode', options: '"Fast", "Debug"' }), true);
+  assert.equal(panelChildDraftIsDirty({ type: 'slider', id: 'level', min: 0, max: 10, step: 1 }, { id: 'level', min: '0', max: '10', step: '1' }), false);
+  assert.equal(panelChildDraftIsDirty({ type: 'slider', id: 'level', min: 0, max: 10, step: 1 }, { id: 'level', min: '0', max: '20', step: '1' }), true);
+});
+
 test('Panel RAD ships in the content-addressed Studio and offline PWA graph', () => {
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const browser = fs.readFileSync('web/designer-panel.js', 'utf8');
@@ -148,8 +159,13 @@ test('Panel RAD ships in the content-addressed Studio and offline PWA graph', ()
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const sw = fs.readFileSync('web/sw.js', 'utf8');
   assert.match(workspace, /import '\.\/designer-panel\.js'/);
+  assert.ok(workspace.indexOf("import './designer-ux.js'") < workspace.indexOf("import './designer-panel.js'"));
   assert.match(browser, /Panel children/);
   assert.match(browser, /Panel Stage 1 uses source-backed flow layout/);
+  assert.match(browser, /syncDesignerInspectorState/);
+  assert.match(browser, /showDesignerInspectorError/);
+  assert.match(browser, /clearDesignerInspectorError/);
+  assert.doesNotMatch(browser, /function showError/);
   assert.match(css, /patch-panel-flow/);
   assert.match(buildSite, /designer-panel\.js/);
   assert.match(buildSite, /designer-panel\.css/);
