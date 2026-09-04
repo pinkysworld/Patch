@@ -31,6 +31,9 @@ const APP_NAME_RE = /^[A-Za-z][A-Za-z0-9._-]{0,63}$/;
 const RESOURCE_ID_RE = /^[A-Za-z][A-Za-z0-9]*(?:[._-][A-Za-z0-9]+)*$/;
 const SHA256_RE = /^[0-9a-f]{64}$/;
 const ARTIFACT_ID_RE = /^[a-f0-9]{32}$/;
+const PATCH_DIAGNOSTIC_CODE_RE = /^PATCH\d{4}$/;
+const PATCH_DIAGNOSTIC_PHASE_RE = /^[a-z][a-z0-9-]{0,31}$/;
+const PATCH_DIAGNOSTIC_MAX_MESSAGE_BYTES = 4 * 1024;
 
 class OfflineBuildBridgeError extends Error {
   constructor(code, message, status = 400) {
@@ -261,6 +264,48 @@ function isRecord(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
+function sanitizeBuildDiagnostic(value) {
+  if (!isRecord(value)) return null;
+  const keys = Object.keys(value);
+  if (keys.some(key => !['format', 'version', 'code', 'severity', 'phase', 'message', 'location'].includes(key))) return null;
+  if (value.format !== 'patch-diagnostic' || value.version !== 1) return null;
+  const code = String(value.code ?? '');
+  const severity = String(value.severity ?? '');
+  const phase = String(value.phase ?? '').trim().toLowerCase();
+  const message = String(value.message ?? '').trim();
+  if (!PATCH_DIAGNOSTIC_CODE_RE.test(code) || severity !== 'error' || !PATCH_DIAGNOSTIC_PHASE_RE.test(phase) || !message) return null;
+
+  let location = null;
+  if (value.location !== null && value.location !== undefined) {
+    if (!isRecord(value.location)) return null;
+    if (Object.keys(value.location).some(key => !['entry', 'file', 'line', 'column'].includes(key))) return null;
+    const entry = sanitizeDiagnosticPath(value.location.entry);
+    const file = value.location.file == null ? null : sanitizeDiagnosticPath(value.location.file);
+    const line = Number(value.location.line);
+    const column = Number(value.location.column);
+    if (!entry || (value.location.file != null && !file) || !Number.isInteger(line) || line < 1 || !Number.isInteger(column) || column < 1) return null;
+    location = Object.freeze({ entry, ...(file ? { file } : {}), line, column });
+  }
+
+  return Object.freeze({
+    format: 'patch-diagnostic',
+    version: 1,
+    code,
+    severity: 'error',
+    phase,
+    message: boundedText(message, PATCH_DIAGNOSTIC_MAX_MESSAGE_BYTES),
+    location
+  });
+}
+
+function sanitizeDiagnosticPath(value) {
+  const raw = String(value ?? '').trim().replaceAll('\\', '/');
+  if (!raw || raw.length > 512 || raw.includes('\0') || raw.includes(':') || raw.startsWith('/')) return null;
+  const parts = raw.split('/');
+  if (parts.some(part => !part || part === '.' || part === '..')) return null;
+  return parts.join('/');
+}
+
 function resolveOpenedWorkspace(workspaceRoot) {
   const rootInput = path.resolve(String(workspaceRoot ?? ''));
   let root;
@@ -331,12 +376,23 @@ function executeOfflineBuildRequest(workspaceRoot, value, options = {}) {
   if (typeof builder !== 'function') {
     throw new OfflineBuildBridgeError('builder-unavailable', 'Offline build bridge has no host-native builder configured.', 503);
   }
-  const built = builder(workspace.sourcePath, {
-    name: request.appName,
-    outDir,
-    capture: true,
-    platform: options.platform ?? process.platform
-  });
+  let built;
+  try {
+    built = builder(workspace.sourcePath, {
+      name: request.appName,
+      outDir,
+      capture: true,
+      platform: options.platform ?? process.platform
+    });
+  } catch (error) {
+    const diagnostic = sanitizeBuildDiagnostic(error?.diagnostic);
+    if (diagnostic) {
+      const failure = new OfflineBuildBridgeError('build-diagnostic', boundedText(error?.message ?? String(error), 8 * 1024), 422);
+      failure.diagnostic = diagnostic;
+      throw failure;
+    }
+    throw error;
+  }
   const result = {
     protocol: OFFLINE_BUILD_BRIDGE_PROTOCOL,
     requestId: request.requestId,
@@ -466,7 +522,10 @@ function createOfflineBuildRequestHandler(options = {}) {
     } catch (error) {
       const status = error instanceof OfflineBuildBridgeError ? error.status : 500;
       const code = error instanceof OfflineBuildBridgeError ? error.code : 'build-failed';
-      return writeJson(response, status, { ok: false, error: code, message: error?.message ?? String(error) }, request, allowedOrigin);
+      const body = { ok: false, error: code, message: error?.message ?? String(error) };
+      const diagnostic = sanitizeBuildDiagnostic(error?.diagnostic);
+      if (diagnostic) body.diagnostic = diagnostic;
+      return writeJson(response, status, body, request, allowedOrigin);
     }
   };
 
@@ -672,6 +731,7 @@ module.exports = {
   validateOfflineBuildRequest,
   validateOfflineWorkspaceSnapshot,
   validateProjectSnapshot,
+  sanitizeBuildDiagnostic,
   resolveOpenedWorkspace,
   resolveOfflineBuildWorkspace,
   materializeOfflineWorkspaceSnapshot,
