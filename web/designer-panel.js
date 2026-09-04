@@ -18,6 +18,11 @@ import {
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError,
+  syncDesignerInspectorState
+} from './designer-ux.js';
 
 export const PATCH_DESIGNER_PANEL_VERSION = '0.1';
 
@@ -41,6 +46,19 @@ export function panelPreviewLabel(child) {
   if (child.type === 'slider') return `${child.id ?? 'Slider'} ${child.min ?? 0}..${child.max ?? 100}`;
   if (child.options?.length) return `${displayType(child.type)} · ${child.options.map(expressionLabel).filter(Boolean).join(' / ')}`;
   return child.id || displayType(child.type);
+}
+
+export function panelChildDraftIsDirty(child, draft = {}) {
+  if (!child) return false;
+  if (child.type !== 'text' && String(draft.id ?? '') !== String(child.id ?? '')) return true;
+  if (['text', 'button', 'checkbox'].includes(child.type) && String(draft.textExpr ?? '') !== String(child.textExpr ?? '')) return true;
+  if (['radio', 'combo', 'listbox'].includes(child.type) && String(draft.options ?? '') !== (child.options ?? []).join(', ')) return true;
+  if (child.type === 'slider') {
+    if (String(draft.min ?? '') !== String(child.min ?? '')) return true;
+    if (String(draft.max ?? '') !== String(child.max ?? '')) return true;
+    if (String(draft.step ?? '') !== String(child.step ?? '')) return true;
+  }
+  return false;
 }
 
 function install() {
@@ -79,10 +97,11 @@ function installPanelButton() {
         .filter(control => control.windowIndex === windowIndex && control.type === 'panel')
         .at(-1);
       setSource(next);
+      clearDesignerInspectorError({ document: doc });
       if (panel) rememberDesignerSelection(canvas, designerSelectionForControl(panel, 'core'), { reason: 'add-panel' });
       scheduleSync();
     } catch (error) {
-      showError(error);
+      showDesignerInspectorError(error, { document: doc });
     }
   }, { capture: true });
 }
@@ -150,6 +169,10 @@ function installPanelInspector() {
   section.querySelector('#designerPanelApplyChild').addEventListener('click', applyChild);
   section.querySelector('#designerPanelChildEvent').addEventListener('click', openChildEvent);
   section.querySelector('#designerPanelChildSource').addEventListener('click', revealChildSource);
+  section.addEventListener('input', event => {
+    if (!event.target?.matches?.('#designerPanelChildId, #designerPanelChildText, #designerPanelChildOptions, #designerPanelChildMin, #designerPanelChildMax, #designerPanelChildStep')) return;
+    queueMicrotask(syncPanelChildInspectorState);
+  });
   section.addEventListener('keydown', event => {
     if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return;
     if (!event.target?.matches?.('input')) return;
@@ -318,7 +341,10 @@ function renderChildProperties(child, panel) {
   if (later) later.disabled = !child || child.childIndex >= panel.children.length - 1;
   if (duplicate) duplicate.disabled = !child;
   if (remove) remove.disabled = !child;
-  if (!child) return;
+  if (!child) {
+    syncPanelChildInspectorState();
+    return;
+  }
 
   const idField = section.querySelector('#designerPanelChildIdField');
   const textField = section.querySelector('#designerPanelChildTextField');
@@ -347,6 +373,40 @@ function renderChildProperties(child, panel) {
     eventButton.textContent = event ? event.label : 'No event';
     eventButton.title = event ? `Create or open ${event.label} handler in Patch source` : 'This Panel child has no Patch event.';
   }
+  syncPanelChildInspectorState();
+}
+
+function syncPanelChildInspectorState() {
+  const section = doc.querySelector('#designerPanelEditor');
+  const apply = section?.querySelector('#designerPanelApplyChild') ?? null;
+  if (!section || !apply) return;
+  const selected = currentPanelChild();
+  if (!selected) {
+    syncDesignerInspectorState({
+      document: doc,
+      apply,
+      empty: true,
+      cleanTitle: 'No Panel child selected'
+    });
+    return;
+  }
+  const draft = {
+    id: section.querySelector('#designerPanelChildId')?.value ?? '',
+    textExpr: section.querySelector('#designerPanelChildText')?.value ?? '',
+    options: section.querySelector('#designerPanelChildOptions')?.value ?? '',
+    min: section.querySelector('#designerPanelChildMin')?.value ?? '',
+    max: section.querySelector('#designerPanelChildMax')?.value ?? '',
+    step: section.querySelector('#designerPanelChildStep')?.value ?? ''
+  };
+  syncDesignerInspectorState({
+    document: doc,
+    apply,
+    dirty: panelChildDraftIsDirty(selected.child, draft),
+    dirtyText: 'Panel child property changes ready to apply.',
+    cleanText: 'Source-backed · Panel child up to date.',
+    dirtyTitle: 'Apply Panel child properties to Patch source',
+    cleanTitle: 'Panel child properties are up to date'
+  });
 }
 
 function addChild() {
@@ -416,9 +476,10 @@ function openChildEvent() {
   try {
     const result = ensureDesignerEventHandler(code.value, selected.child.id, selected.child.type);
     if (result.source !== code.value) setSource(result.source);
+    clearDesignerInspectorError({ document: doc });
     revealLine(result.handler.line);
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -431,9 +492,10 @@ function mutate(operation) {
   try {
     const next = operation();
     setSource(next);
+    clearDesignerInspectorError({ document: doc });
     scheduleSync();
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -521,13 +583,6 @@ function splitExpressions(text) {
   }
   if (current.trim()) out.push(current.trim());
   return out;
-}
-
-function showError(error) {
-  const target = doc.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
 
 function installStylesheet() {
