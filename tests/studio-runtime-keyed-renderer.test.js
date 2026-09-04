@@ -19,10 +19,12 @@ test('runtime events keep keyed reconciliation as the default render-policy path
   assert.match(runController, /renderAfterEvent\(result\.ui\)/);
   const installStart = playground.indexOf('const studioRunController = installStudioRunController({');
   const install = playground.slice(installStart, playground.indexOf("for (const tab of document.querySelectorAll('.tab'))", installStart));
-  assert.match(install, /renderAfterEvent\(ui\) \{/);
-  assert.match(install, /renderRuntimeWindowsAfterEvent\(appView, ui\)/);
-  assert.doesNotMatch(install, /renderWindows\(appView, ui/);
-  assert.doesNotMatch(install, /reconcileRuntimeWindows\(appView, ui\)/);
+  assert.match(install, /renderInitial\(ui\) \{[\s\S]*?renderWindows\(appView, ui, true\)/);
+  const afterEventStart = install.indexOf('renderAfterEvent(ui) {');
+  const afterEvent = install.slice(afterEventStart, install.indexOf('renderFailure()', afterEventStart));
+  assert.match(afterEvent, /renderRuntimeWindowsAfterEvent\(appView, ui\)/);
+  assert.doesNotMatch(afterEvent, /renderWindows\(appView, ui/);
+  assert.doesNotMatch(afterEvent, /reconcileRuntimeWindows\(appView, ui\)/);
 
   const dispatcherStart = playground.indexOf('function renderRuntimeWindowsAfterEvent(container, windows)');
   const dispatcher = playground.slice(dispatcherStart, playground.indexOf('function createControlElement', dispatcherStart));
