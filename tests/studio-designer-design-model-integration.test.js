@@ -26,7 +26,7 @@ test('Designer refresh consumes the shared declaration-only design snapshot serv
   assert.match(refresh, /const preview = getStudioDesignSnapshot\(code\.value\);/);
   assert.doesNotMatch(refresh, /PatchInterpreter/);
   assert.doesNotMatch(refresh, /\.run\(code\.value\)/);
-  assert.match(refresh, /renderWindows\(designerCanvas, preview\.ui, false(?:, \{ materialization \})?\)/);
+  assert.match(refresh, /studioWindowRenderer\.renderDesigner\(designerCanvas, preview\.ui, \{ materialization \}\)/);
 });
 
 test('specialized StatusBar and steady-state Form readers share revision snapshots', () => {
