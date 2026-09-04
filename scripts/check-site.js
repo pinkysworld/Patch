@@ -1,47 +1,62 @@
+#!/usr/bin/env node
 import fs from 'node:fs';
+import path from 'node:path';
 
-function read(file) {
-  if (!fs.existsSync(file)) throw new Error(`Missing ${file}`);
-  return fs.readFileSync(file, 'utf8');
-}
-
-function requireAll(label, text, values) {
-  const missing = values.filter(value => !text.includes(value));
+const root = process.cwd();
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
+const requireFile = rel => {
+  if (!fs.existsSync(path.join(root, rel))) throw new Error(`Missing generated site file: ${rel}`);
+};
+const requireAll = (label, text, markers) => {
+  const missing = markers.filter(marker => !text.includes(marker));
   if (missing.length) throw new Error(`${label} is missing:\n- ${missing.join('\n- ')}`);
-}
+};
+const rejectAll = (label, text, markers) => {
+  const obsolete = markers.filter(marker => text.includes(marker));
+  if (obsolete.length) throw new Error(`${label} contains obsolete text:\n- ${obsolete.join('\n- ')}`);
+};
 
-function rejectAll(label, text, values) {
-  const present = values.filter(value => text.includes(value));
-  if (present.length) throw new Error(`${label} contains stale/forbidden text:\n- ${present.join('\n- ')}`);
-}
+if (pkg.version !== '0.2.0-beta.36') throw new Error(`Unexpected Patch site package version: ${pkg.version}`);
 
-for (const file of [
-  '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html','_site/privacy.html','_site/terms.html',
+const requiredFiles = [
+  '_site/index.html','_site/language.html','_site/docs.html','_site/downloads.html','_site/help.html',
   '_site/icon.svg','_site/manifest.webmanifest','_site/style.css','_site/site-navigation.css','_site/site-refresh.css','_site/site-pages.css',
   '_site/studio-bootstrap.js','_site/native-build.js','_site/runtime-integrity.js','_site/sw.js','_site/playground.js',
-  '_site/designer-alignment.js','_site/designer-alignment-guides.js','_site/designer-multiselect.js','_site/designer-multiselect.css',
-  '_site/src/interpreter.js','_site/src/compiler.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
-  '_site/src/native-gui-ir-v12.js','_site/src/native-tree-backend-adapter.js','_site/src/sealed-native-gui-v12.js',
-  '_site/src/native-gui-ir-v13.js','_site/src/native-slider-backend-adapter.js','_site/src/sealed-native-gui-v13.js',
+  '_site/designer-selection.js','_site/designer-core-selection.js','_site/designer-structural-keyboard.js',
+  '_site/designer-multiselect.js','_site/designer-layout-actions.js','_site/designer-toolbox.js',
+  '_site/designer-event-inspector.js','_site/designer-focus-order.js',
+  '_site/src/compiler.js','_site/src/native-current-contract.js','_site/src/native-frozen-contract.js',
   '_site/src/native-gui-ir-v14.js','_site/src/native-gui-ir-v15.js','_site/src/native-gui-ir-v16.js','_site/src/native-gui-ir-v17.js','_site/src/native-gui-ir-v18.js','_site/src/native-gui-ir-v19.js',
-  '_site/src/native-chrome-backend-adapter.js','_site/src/native-shape-backend-adapter.js','_site/src/native-paintbox-backend-adapter.js',
   '_site/src/sealed-native-gui-v14.js','_site/src/sealed-native-gui-v15.js','_site/src/sealed-native-gui-v16.js','_site/src/sealed-native-gui-v17.js','_site/src/sealed-native-gui-v18.js','_site/src/sealed-native-gui-v19.js',
-  '_site/src/native-paintbox-image-backend-adapter.js','_site/src/native-button-image-backend-adapter.js','_site/src/native-window-icon-backend-adapter.js','_site/src/native-window-icon-package-v110.js'
-]) {
-  if (!fs.existsSync(file)) throw new Error(`Public site is missing ${file}`);
+  '_site/src/native-chrome-backend-adapter.js','_site/src/native-shape-backend-adapter.js','_site/src/native-paintbox-backend-adapter.js','_site/src/native-paintbox-image-backend-adapter.js','_site/src/native-button-image-backend-adapter.js','_site/src/native-window-icon-backend-adapter.js',
+  '_site/src/native-window-icon-packaging.js','_site/src/native-window-icon-package-v110.js','_site/src/windows-pe-icon-v110.js'
+];
+for (const rel of requiredFiles) requireFile(rel);
+if (fs.existsSync(path.join(root, '_site/paper.html'))) throw new Error('Patch Studio public site must not publish _site/paper.html.');
+
+for (const page of ['index.html','language.html','docs.html','downloads.html','help.html']) {
+  const html = read(`_site/${page}`);
+  requireAll(`${page} navigation`, html, ['./index.html','./language.html','./docs.html','./downloads.html','./help.html','class="site-tabs"']);
+  rejectAll(`${page} private paper boundary`, html, ['./paper.html']);
+  requireAll(`${page} version`, html, [`data-patch-version="${pkg.version}"`]);
 }
-if (fs.existsSync('_site/paper.html')) throw new Error('Public site must not contain paper.html.');
 
 const index = read('_site/index.html');
-requireAll('Studio shell', index, [
-  'Patch Studio','href="./downloads.html"','./studio-bootstrap.js?v=','./native-build.js?v=','./playground.js?v=',
-  'Build','Run','Designer','Source'
+requireAll('Studio beta36 shell', index, [
+  'Patch Studio','0.2 beta.36+','id="code"','id="run"','id="build"','id="designer"','id="app"',
+  'multi-file project bundle v4','source-backed Designer','Native GUI IR 1.9','payload v19','runtime v1.10',
+  'IR 1.9 / v1.10','id="editorTabs"','id="editorParseStatus"','id="openCommandPalette"',
+  'class="brand-mark"','src="./icon.svg?v=','data-patch-brand-mark="compiler-p-v1"'
 ]);
-rejectAll('Studio shell retired entrypoints', index, ['./paper.html']);
+rejectAll('Studio beta36 current shell', index, [
+  'multi-file project bundle v3','Ready IR 1.3 / v1.4','current runtime v1.4 templates','shape-rendering="crispEdges"','M3 2H18V12H8V20H3ZM8 6H13V8H8Z','M8 6H22V18H13V26H8ZM13 10H18V14H13Z','./paper.html'
+]);
 
-const docs = read('_site/docs.html');
-requireAll('Docs current contract', docs, [
-  'Patch documentation','href="./downloads.html"','Native GUI IR 1.9','payload v19','runtime v1.10',
+const current = read('_site/src/native-current-contract.js');
+requireAll('Current native product facade', current, [
+  "native-gui-1.9/payload-19/runtime-1.10","PATCH_CURRENT_NATIVE_GUI_IR_VERSION = PATCH_NATIVE_GUI_IR_V19_VERSION",
+  'PATCH_CURRENT_NATIVE_PAYLOAD_VERSION = PATCH_SEALED_NATIVE_GUI_WINDOW_ICON_VERSION',"PATCH_CURRENT_NATIVE_RUNTIME_VERSION = '1.10'",
   'native-win32-runtime-v1.10','native-macos-runtime-v1.10','native-linux-runtime-v1.10','currentNativeHasButtonImage','currentNativeHasWindowIcon'
 ]);
 
@@ -80,8 +95,25 @@ rejectAll('Downloads beta36 current links', downloads, [
 
 const selection = read('_site/designer-selection.js');
 requireAll('Shared Designer selection state', selection, ['patch-designer-selection-change','currentDesignerSelection','installDesignerSelectionBridge']);
+const coreSelection = read('_site/designer-core-selection.js');
+requireAll('Core Designer selection bridge', coreSelection, ['currentDesignerSelection','installDesignerSelectionBridge','captureCoreSelection','populateSharedInspector']);
+const structuralKeyboard = read('_site/designer-structural-keyboard.js');
+requireAll('Designer structural keyboard accessibility', structuralKeyboard, ['installDesignerStructuralKeyboard','aria-keyshortcuts','Control+Enter','nextStructuralOptionIndex']);
+const multiselect = read('_site/designer-multiselect.js');
+requireAll('RAD multi-select arrange tools', multiselect, ['patchAlignLeft','patchAlignRight','patchAlignTop','patchAlignBottom','patchAlignHCenter','patchAlignVCenter','patchSameWidth','patchSameHeight','patchDistributeHorizontal','patchDistributeVertical',"alignSelection('right')","alignSelection('bottom')","sizeSelection('width')","sizeSelection('height')","distributeSelection('horizontal')","distributeSelection('vertical')"]);
+const eventInspector = read('_site/designer-event-inspector.js');
+requireAll('RAD Object Inspector events', eventInspector, ['designerPropertiesTab','designerEventsTab','designerObjectSelect','Create handler','Open handler',"event: 'clicked', label: 'OnClick'","event: 'changed', label: 'OnChange'","event: 'ticked', label: 'OnTick'",'ensureDesignerEventHandler','findDesignerEventHandler']);
+const toolbox = read('_site/designer-toolbox.js');
+requireAll('Searchable RAD Component Palette', toolbox, ['designerComponentSearch','filterDesignerTools','Search Designer controls','event.key.toLowerCase()']);
+const focusOrder = read('_site/designer-focus-order.js');
+requireAll('RAD Focus Order Stage 1', focusOrder, ['Focus Order · Stage 1','listDesignerFocusOrder','Independent Delphi-style TabOrder metadata is a later contract','reorderDesignerControl']);
 
-const runtimeIntegrity = read('_site/runtime-integrity.js');
-requireAll('Studio runtime integrity gate', runtimeIntegrity, ['runtime-manifest.json','SHA-256','crypto.subtle.digest']);
+const sw = read('_site/sw.js');
+requireAll('beta36 service worker', sw, ["const PATCH_RELEASE = '0.2.0-beta.36'",'const freshFirst = navigation || codeAsset || htmlAsset || runtimeAsset','self.skipWaiting()','self.clients.claim()','./designer-event-inspector.js','./designer-focus-order.js','./designer-selection.js','./designer-core-selection.js','./designer-structural-keyboard.js']);
+rejectAll('beta36 service worker paper privacy', sw, ['./paper.html']);
+const palette = read('_site/studio-command-palette.js');
+rejectAll('Studio command palette paper privacy', palette, ["command('paper'",'./paper.html','Open Paper']);
+const bootstrap = read('_site/studio-bootstrap.js');
+requireAll('Studio cache refresh bootstrap', bootstrap, ["navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })",'await registration.update()','controllerchange']);
 
-console.log('Patch public site validation passed.');
+console.log('Patch public site validation passed for beta.36 / project bundle v4 / Native GUI IR 1.9 / payload v19 / runtime v1.10 / Offline Studio v0.2 downloads / RAD Object Inspector, Component Palette and Focus Order Stage 1; research paper remains repository-only.');
