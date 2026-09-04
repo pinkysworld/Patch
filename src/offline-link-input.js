@@ -37,7 +37,8 @@ export function readOfflineLinkInput(filePath) {
       name: null,
       entry: path.basename(file),
       resources: Object.freeze([]),
-      project: null
+      project: null,
+      composition: null
     });
   }
 
@@ -57,7 +58,8 @@ export function readOfflineLinkInput(filePath) {
     name: bundle.project.name,
     entry: bundle.project.entry,
     resources: Object.freeze(bundle.resources.map(resource => Object.freeze({ ...resource }))),
-    project: bundle
+    project: bundle,
+    composition
   });
 }
 
