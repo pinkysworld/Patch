@@ -63,7 +63,7 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Download the Patch offline compiler</h2>
-    <p><strong><code>offline-compiler-v0.2</code> is the current rolling beta channel.</strong> Current Windows, macOS and Linux Window linking defaults to Native GUI IR <strong>1.9</strong>, sealed payload <strong>v19</strong> and runtime <strong>v1.10</strong>. Native GUI IR 1.7 / payload v17 / runtime v1.8 remains the explicit desktop compatibility line.</p>
+    <p><strong><code>offline-compiler-v0.2</code> is the current rolling beta channel.</strong> Current Windows, macOS and Linux Window linking defaults to Native GUI IR <strong>1.9</strong>, sealed payload <strong>v19</strong> and runtime <strong>v1.10</strong>. Native GUI IR 1.7 / payload v17 / runtime v1.8 remains an explicit Offline Compiler compatibility line.</p>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Compiler · Windows x64</strong><span>Standalone compiler + Current Ready Win32 runtime v1.10 linker with v1.8 compatibility underlay.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>Compiler · macOS Apple Silicon</strong><span>Standalone compiler + Current Ready AppKit runtime v1.10 linker.</span></a>
@@ -81,7 +81,7 @@ patch link app.patch --out App</pre>
 
   <section class="page-section">
     <h2>Current native boundary</h2>
-    <p><strong>The current desktop line is Native GUI IR 1.9 / payload v19 / runtime v1.10.</strong> Native GUI IR 1.7 / payload v17 / runtime v1.8 remains an explicit compatibility line for the Offline Compiler. Native GUI IR 1.6 / payload v16 / runtime v1.7 remains the previous PaintBox line, Native GUI IR 1.5 / payload v15 / runtime v1.6 the previous Shape line, Native GUI IR 1.4 / payload v14 / runtime v1.5 the previous Chrome line, Native GUI IR 1.3 / payload v13 / runtime v1.4 the Slider-capable historical line, and Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView line. Explicit legacy linking fails closed when a program requires a newer feature.</p>
+    <p><strong>The current desktop line is Native GUI IR 1.9 / payload v19 / runtime v1.10.</strong> Native GUI IR 1.7 / payload v17 / runtime v1.8 remains an explicit Offline Compiler compatibility line. Native GUI IR 1.6 / payload v16 / runtime v1.7 remains the previous PaintBox line, Native GUI IR 1.5 / payload v15 / runtime v1.6 the previous Shape line, Native GUI IR 1.4 / payload v14 / runtime v1.5 the previous Chrome line, Native GUI IR 1.3 / payload v13 / runtime v1.4 the Slider-capable historical line, and Native GUI IR 1.2 / payload v12 / runtime v1.3 remains the frozen TreeView line. Explicit legacy linking fails closed when a program requires a newer feature.</p>
     <p>Use <code>--gui-payload-version 17</code> only when the explicit runtime-v1.8 compatibility line is required.</p>
     <p><strong>PictureBox note:</strong> current desktop Picture decoding supports bounded project-resource and data-URI PNG/JPEG images through Win32/WIC, AppKit/NSImage and GTK/GdkPixbuf. This is not a claim of complete <strong>portable image-source rendering</strong> across every project image type or display property. Native WebP/SVG rendering remains target-specific and fail-closed where unsupported.</p>
   </section>
