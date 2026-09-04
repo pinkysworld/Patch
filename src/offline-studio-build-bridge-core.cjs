@@ -5,18 +5,31 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 
-const OFFLINE_BUILD_BRIDGE_PROTOCOL = 'patch-offline-build-bridge/0.1';
+const OFFLINE_BUILD_BRIDGE_PROTOCOL = 'patch-offline-build-bridge/0.2';
 const OFFLINE_BUILD_BRIDGE_PATH = '/v1/build';
 const OFFLINE_BUILD_BRIDGE_MAX_BODY = 64 * 1024;
-const OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL = 'patch-offline-workspace-snapshot/0.1';
+const OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL = 'patch-offline-workspace-snapshot/0.2';
 const OFFLINE_WORKSPACE_SNAPSHOT_PATH = '/v1/snapshot';
-const OFFLINE_WORKSPACE_SNAPSHOT_MAX_BODY = 1024 * 1024;
+const OFFLINE_WORKSPACE_SNAPSHOT_MAX_BODY = 24 * 1024 * 1024;
 const OFFLINE_BUILD_ARTIFACT_PREFIX = '/v1/artifacts/';
 const ARTIFACT_TTL_MS = 10 * 60 * 1000;
 const MAX_ARTIFACTS = 8;
 
+const PATCH_PROJECT_FORMAT = 'patch-studio-project';
+const PATCH_PROJECT_VERSION = 4;
+const PATCH_PROJECT_MAX_FILES = 64;
+const PATCH_PROJECT_MAX_FILE_BYTES = 2 * 1024 * 1024;
+const PATCH_PROJECT_MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+const PATCH_PROJECT_MAX_RESOURCE_BYTES = 2 * 1024 * 1024;
+const PATCH_PROJECT_MAX_RESOURCE_TOTAL_BYTES = 8 * 1024 * 1024;
+const PATCH_PROJECT_MAX_RESOURCES = 128;
+const PATCH_PROJECT_MAX_SERIALIZED_BYTES = 22 * 1024 * 1024;
+const PATCH_IMAGE_MEDIA_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']);
+
 const REQUEST_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const APP_NAME_RE = /^[A-Za-z][A-Za-z0-9._-]{0,63}$/;
+const RESOURCE_ID_RE = /^[A-Za-z][A-Za-z0-9]*(?:[._-][A-Za-z0-9]+)*$/;
+const SHA256_RE = /^[0-9a-f]{64}$/;
 const ARTIFACT_ID_RE = /^[a-f0-9]{32}$/;
 
 class OfflineBuildBridgeError extends Error {
@@ -29,36 +42,19 @@ class OfflineBuildBridgeError extends Error {
 }
 
 function validateOfflineBuildRequest(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isRecord(value)) {
     throw new OfflineBuildBridgeError('invalid-request', 'Build request must be a JSON object.');
   }
   const allowed = new Set(['protocol', 'action', 'requestId', 'source', 'appName']);
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) throw new OfflineBuildBridgeError('unknown-field', `Unknown build request field '${key}'.`);
-  }
+  rejectUnknownFields(value, allowed, 'unknown-field', 'build request');
   if (value.protocol !== OFFLINE_BUILD_BRIDGE_PROTOCOL) {
     throw new OfflineBuildBridgeError('protocol-mismatch', `Expected protocol ${OFFLINE_BUILD_BRIDGE_PROTOCOL}.`);
   }
   if (value.action !== 'build-native-window') {
-    throw new OfflineBuildBridgeError('unsupported-action', "Only 'build-native-window' is allowed by bridge 0.1.");
+    throw new OfflineBuildBridgeError('unsupported-action', "Only 'build-native-window' is allowed by bridge 0.2.");
   }
   const requestId = validateRequestId(value.requestId);
-  const source = String(value.source ?? '');
-  const sourceSegments = source.replaceAll('\\', '/').split('/');
-  if (
-    !source ||
-    source.length > 512 ||
-    source.includes('\0') ||
-    source.includes(':') ||
-    sourceSegments.includes('..') ||
-    path.isAbsolute(source) ||
-    path.win32.isAbsolute(source)
-  ) {
-    throw new OfflineBuildBridgeError('invalid-source', 'source must be a relative Patch file path inside the opened workspace.');
-  }
-  if (path.extname(source).toLowerCase() !== '.patch') {
-    throw new OfflineBuildBridgeError('invalid-source', 'source must name a .patch file.');
-  }
+  const source = validateRelativeBuildInput(value.source);
   const appName = String(value.appName ?? '');
   if (!APP_NAME_RE.test(appName)) {
     throw new OfflineBuildBridgeError('invalid-app-name', 'appName must start with a letter and contain only letters, digits, dot, underscore or hyphen.');
@@ -73,23 +69,144 @@ function validateOfflineBuildRequest(value) {
 }
 
 function validateOfflineWorkspaceSnapshot(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isRecord(value)) {
     throw new OfflineBuildBridgeError('invalid-snapshot', 'Workspace snapshot request must be a JSON object.');
   }
-  const allowed = new Set(['protocol', 'requestId', 'source']);
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) throw new OfflineBuildBridgeError('unknown-snapshot-field', `Unknown workspace snapshot field '${key}'.`);
-  }
+  const allowed = new Set(['protocol', 'requestId', 'source', 'project']);
+  rejectUnknownFields(value, allowed, 'unknown-snapshot-field', 'workspace snapshot');
   if (value.protocol !== OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL) {
     throw new OfflineBuildBridgeError('snapshot-protocol-mismatch', `Expected protocol ${OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL}.`);
   }
   const requestId = validateRequestId(value.requestId);
-  const source = typeof value.source === 'string' ? value.source : '';
-  if (!source.trim()) throw new OfflineBuildBridgeError('empty-snapshot', 'Patch source snapshot is empty.');
-  if (Buffer.byteLength(source, 'utf8') > OFFLINE_WORKSPACE_SNAPSHOT_MAX_BODY) {
-    throw new OfflineBuildBridgeError('snapshot-too-large', 'Patch source snapshot exceeds the 1 MiB Stage 2 limit.', 413);
+  const hasSource = typeof value.source === 'string';
+  const hasProject = value.project !== undefined && value.project !== null;
+  if (hasSource === hasProject) {
+    throw new OfflineBuildBridgeError('snapshot-shape', 'Workspace snapshot must contain exactly one of source or project.');
   }
-  return Object.freeze({ protocol: OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL, requestId, source });
+
+  if (hasSource) {
+    const source = value.source;
+    if (!source.trim()) throw new OfflineBuildBridgeError('empty-snapshot', 'Patch source snapshot is empty.');
+    const bytes = Buffer.byteLength(source, 'utf8');
+    if (bytes > PATCH_PROJECT_MAX_SOURCE_BYTES) {
+      throw new OfflineBuildBridgeError('snapshot-too-large', 'Patch source snapshot exceeds the 8 MiB Stage 2 source limit.', 413);
+    }
+    return Object.freeze({ protocol: OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL, requestId, kind: 'source', source, bytes });
+  }
+
+  const project = validateProjectSnapshot(value.project);
+  const serialized = `${JSON.stringify(project, null, 2)}\n`;
+  const bytes = Buffer.byteLength(serialized, 'utf8');
+  if (bytes > PATCH_PROJECT_MAX_SERIALIZED_BYTES) {
+    throw new OfflineBuildBridgeError('snapshot-too-large', 'Patch project snapshot exceeds the 22 MiB Stage 2 serialized-project limit.', 413);
+  }
+  return Object.freeze({
+    protocol: OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL,
+    requestId,
+    kind: 'project',
+    project,
+    serialized,
+    bytes,
+    sourceFileCount: project.files.length,
+    resourceCount: project.resources.length
+  });
+}
+
+function validateProjectSnapshot(value) {
+  if (!isRecord(value)) throw new OfflineBuildBridgeError('invalid-project', 'Project snapshot must be a JSON object.');
+  rejectUnknownFields(value, new Set(['format', 'version', 'project', 'files', 'resources']), 'project-unknown-field', 'project snapshot');
+  if (value.format !== PATCH_PROJECT_FORMAT || value.version !== PATCH_PROJECT_VERSION) {
+    throw new OfflineBuildBridgeError('project-version', `Installed host builds require ${PATCH_PROJECT_FORMAT} version ${PATCH_PROJECT_VERSION}.`);
+  }
+  if (!isRecord(value.project)) throw new OfflineBuildBridgeError('project-metadata', 'Project snapshot metadata is missing.');
+  rejectUnknownFields(value.project, new Set(['name', 'kind', 'entry', 'build']), 'project-metadata-field', 'project metadata');
+  const name = String(value.project.name ?? '').trim();
+  if (!name || name.length > 128) throw new OfflineBuildBridgeError('project-name', 'Project snapshot name must be 1-128 characters.');
+  if (value.project.kind !== 'window') throw new OfflineBuildBridgeError('project-kind', "Installed host build snapshots currently require project kind 'window'.");
+  const entry = validateProjectPath(value.project.entry, 'Project entry', '.patch');
+
+  if (!Array.isArray(value.files) || value.files.length < 1 || value.files.length > PATCH_PROJECT_MAX_FILES) {
+    throw new OfflineBuildBridgeError('project-files', `Project snapshot must contain 1-${PATCH_PROJECT_MAX_FILES} Patch source files.`);
+  }
+  const files = [];
+  const filePaths = new Set();
+  let sourceBytes = 0;
+  for (const item of value.files) {
+    if (!isRecord(item)) throw new OfflineBuildBridgeError('project-file', 'Each project source file must be an object.');
+    rejectUnknownFields(item, new Set(['path', 'content']), 'project-file-field', 'project source file');
+    const filePath = validateProjectPath(item.path, 'Project file', '.patch');
+    if (filePaths.has(filePath)) throw new OfflineBuildBridgeError('project-file-duplicate', `Project file '${filePath}' appears more than once.`);
+    if (typeof item.content !== 'string') throw new OfflineBuildBridgeError('project-file-content', `Project file '${filePath}' must contain text.`);
+    const bytes = Buffer.byteLength(item.content, 'utf8');
+    if (bytes > PATCH_PROJECT_MAX_FILE_BYTES) throw new OfflineBuildBridgeError('project-file-too-large', `Project file '${filePath}' exceeds the 2 MiB limit.`, 413);
+    sourceBytes += bytes;
+    if (sourceBytes > PATCH_PROJECT_MAX_SOURCE_BYTES) throw new OfflineBuildBridgeError('project-source-too-large', 'Project source exceeds the 8 MiB limit.', 413);
+    filePaths.add(filePath);
+    files.push({ path: filePath, content: item.content });
+  }
+  if (!filePaths.has(entry)) throw new OfflineBuildBridgeError('project-entry', `Project entry '${entry}' is not present in the project files.`);
+
+  const resources = validateProjectResources(value.resources);
+  return Object.freeze({
+    format: PATCH_PROJECT_FORMAT,
+    version: PATCH_PROJECT_VERSION,
+    project: Object.freeze({
+      name,
+      kind: 'window',
+      entry,
+      build: isRecord(value.project.build) ? { ...value.project.build } : { target: 'web', nativeMode: 'prebuilt' }
+    }),
+    files: Object.freeze(files.map(file => Object.freeze(file))),
+    resources: Object.freeze(resources)
+  });
+}
+
+function validateProjectResources(value) {
+  if (value === undefined || value === null) return Object.freeze([]);
+  if (!Array.isArray(value) || value.length > PATCH_PROJECT_MAX_RESOURCES) {
+    throw new OfflineBuildBridgeError('project-resources', `Project snapshot may contain at most ${PATCH_PROJECT_MAX_RESOURCES} resources.`);
+  }
+  const resources = [];
+  const ids = new Set();
+  const paths = new Set();
+  let totalBytes = 0;
+  for (const item of value) {
+    if (!isRecord(item)) throw new OfflineBuildBridgeError('project-resource', 'Each project resource must be an object.');
+    rejectUnknownFields(item, new Set(['id', 'path', 'mediaType', 'size', 'sha256', 'data']), 'project-resource-field', 'project resource');
+    const id = String(item.id ?? '').trim();
+    if (id.length > 128 || !RESOURCE_ID_RE.test(id)) throw new OfflineBuildBridgeError('project-resource-id', `Project resource id '${id || '?'}' is invalid.`);
+    const resourcePath = validateProjectPath(item.path, `Resource '${id}' path`);
+    const mediaType = String(item.mediaType ?? '').trim().toLowerCase();
+    if (!PATCH_IMAGE_MEDIA_TYPES.has(mediaType)) throw new OfflineBuildBridgeError('project-resource-media', `Resource '${id}' media type '${mediaType || '?'}' is not supported.`);
+    if (ids.has(id)) throw new OfflineBuildBridgeError('project-resource-duplicate-id', `Resource id '${id}' appears more than once.`);
+    if (paths.has(resourcePath)) throw new OfflineBuildBridgeError('project-resource-duplicate-path', `Resource path '${resourcePath}' appears more than once.`);
+
+    const data = String(item.data ?? '');
+    if (!data || data.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
+      throw new OfflineBuildBridgeError('project-resource-data', `Resource '${id}' data is not canonical base64.`);
+    }
+    const bytes = Buffer.from(data, 'base64');
+    if (!bytes.length || bytes.length > PATCH_PROJECT_MAX_RESOURCE_BYTES || bytes.toString('base64') !== data) {
+      throw new OfflineBuildBridgeError('project-resource-data', `Resource '${id}' data is invalid or exceeds the 2 MiB per-resource limit.`, bytes.length > PATCH_PROJECT_MAX_RESOURCE_BYTES ? 413 : 400);
+    }
+    const declaredSize = Number(item.size);
+    if (!Number.isInteger(declaredSize) || declaredSize !== bytes.length) {
+      throw new OfflineBuildBridgeError('project-resource-size', `Resource '${id}' size metadata does not match its data.`);
+    }
+    totalBytes += bytes.length;
+    if (totalBytes > PATCH_PROJECT_MAX_RESOURCE_TOTAL_BYTES) {
+      throw new OfflineBuildBridgeError('project-resource-total', 'Project resources exceed the 8 MiB total-resource limit.', 413);
+    }
+    const sha256 = String(item.sha256 ?? '').trim().toLowerCase();
+    if (!SHA256_RE.test(sha256)) throw new OfflineBuildBridgeError('project-resource-hash', `Resource '${id}' SHA-256 is invalid.`);
+    const actualSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+    if (actualSha256 !== sha256) throw new OfflineBuildBridgeError('project-resource-hash-mismatch', `Resource '${id}' failed SHA-256 verification.`);
+
+    ids.add(id);
+    paths.add(resourcePath);
+    resources.push(Object.freeze({ id, path: resourcePath, mediaType, size: bytes.length, sha256, data }));
+  }
+  return Object.freeze(resources);
 }
 
 function validateRequestId(value) {
@@ -98,6 +215,50 @@ function validateRequestId(value) {
     throw new OfflineBuildBridgeError('invalid-request-id', 'requestId must be 1-64 safe identifier characters.');
   }
   return requestId;
+}
+
+function validateRelativeBuildInput(value) {
+  const source = String(value ?? '');
+  const sourceSegments = source.replaceAll('\\', '/').split('/');
+  if (
+    !source ||
+    source.length > 512 ||
+    source.includes('\0') ||
+    source.includes(':') ||
+    sourceSegments.includes('..') ||
+    path.isAbsolute(source) ||
+    path.win32.isAbsolute(source)
+  ) {
+    throw new OfflineBuildBridgeError('invalid-source', 'source must be a relative Patch input path inside the opened workspace.');
+  }
+  const extension = path.extname(source).toLowerCase();
+  if (extension !== '.patch' && extension !== '.patchproject') {
+    throw new OfflineBuildBridgeError('invalid-source', 'source must name a .patch or .patchproject file.');
+  }
+  return source;
+}
+
+function validateProjectPath(value, label, requiredExtension = '') {
+  const raw = String(value ?? '').trim();
+  if (!raw || raw.length > 512 || raw.includes('\0') || raw.includes('\\') || raw.includes(':') || raw.startsWith('/') || path.posix.isAbsolute(raw) || path.win32.isAbsolute(raw)) {
+    throw new OfflineBuildBridgeError('project-path', `${label} must be a bounded project-relative path.`);
+  }
+  const parts = raw.split('/');
+  if (parts.some(part => !part || part === '.' || part === '..')) throw new OfflineBuildBridgeError('project-path', `${label} must stay inside the project.`);
+  if (requiredExtension && path.posix.extname(raw).toLowerCase() !== requiredExtension) {
+    throw new OfflineBuildBridgeError('project-path', `${label} must use the ${requiredExtension} extension.`);
+  }
+  return parts.join('/');
+}
+
+function rejectUnknownFields(value, allowed, code, label) {
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) throw new OfflineBuildBridgeError(code, `Unknown ${label} field '${key}'.`);
+  }
+}
+
+function isRecord(value) {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function resolveOpenedWorkspace(workspaceRoot) {
@@ -122,11 +283,11 @@ function resolveOfflineBuildWorkspace(workspaceRoot, request) {
   try {
     sourcePath = fs.realpathSync(sourceCandidate);
   } catch {
-    throw new OfflineBuildBridgeError('source-missing', 'Requested Patch source does not exist.', 404);
+    throw new OfflineBuildBridgeError('source-missing', 'Requested Patch build input does not exist.', 404);
   }
   assertInsideWorkspace(root, sourcePath, 'source');
   const sourceStat = fs.statSync(sourcePath);
-  if (!sourceStat.isFile()) throw new OfflineBuildBridgeError('source-invalid', 'Requested Patch source is not a regular file.');
+  if (!sourceStat.isFile()) throw new OfflineBuildBridgeError('source-invalid', 'Requested Patch build input is not a regular file.');
 
   const outDir = path.resolve(root, '.patch-build', 'native', request.requestId);
   assertInsideWorkspace(root, outDir, 'output');
@@ -137,21 +298,29 @@ function materializeOfflineWorkspaceSnapshot(workspaceRoot, value) {
   const snapshot = validateOfflineWorkspaceSnapshot(value);
   const root = resolveOpenedWorkspace(workspaceRoot);
   const snapshotRoot = prepareSafeDirectory(root, ['.patch-studio', 'snapshots', snapshot.requestId], 'snapshot');
-  const sourcePath = path.join(snapshotRoot, 'main.patch');
+  const filename = snapshot.kind === 'project' ? 'project.patchproject' : 'main.patch';
+  const sourcePath = path.join(snapshotRoot, filename);
   assertInsideWorkspace(root, sourcePath, 'snapshot');
   if (fs.existsSync(sourcePath) && fs.lstatSync(sourcePath).isSymbolicLink()) {
     throw new OfflineBuildBridgeError('snapshot-symlink', 'Workspace snapshot target may not be a symbolic link.', 409);
   }
-  fs.writeFileSync(sourcePath, snapshot.source, { encoding: 'utf8', mode: 0o600 });
+  const text = snapshot.kind === 'project' ? snapshot.serialized : snapshot.source;
+  fs.writeFileSync(sourcePath, text, { encoding: 'utf8', mode: 0o600 });
   const relative = path.relative(root, sourcePath).split(path.sep).join('/');
-  return Object.freeze({
+  const response = {
     protocol: OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL,
     requestId: snapshot.requestId,
     ok: true,
+    kind: snapshot.kind,
     source: relative,
-    bytes: Buffer.byteLength(snapshot.source, 'utf8'),
+    bytes: Buffer.byteLength(text, 'utf8'),
     sha256: sha256File(sourcePath)
-  });
+  };
+  if (snapshot.kind === 'project') {
+    response.sourceFileCount = snapshot.sourceFileCount;
+    response.resourceCount = snapshot.resourceCount;
+  }
+  return Object.freeze(response);
 }
 
 function executeOfflineBuildRequest(workspaceRoot, value, options = {}) {
@@ -236,7 +405,7 @@ function createOfflineBuildRequestHandler(options = {}) {
       if (urlPath === OFFLINE_WORKSPACE_SNAPSHOT_PATH) {
         if (request.method !== 'POST') return methodNotAllowed(response, request, allowedOrigin, 'POST');
         requireJson(request);
-        const body = await readJsonBody(request, options.snapshotMaxBodyBytes ?? OFFLINE_WORKSPACE_SNAPSHOT_MAX_BODY + 4096);
+        const body = await readJsonBody(request, options.snapshotMaxBodyBytes ?? OFFLINE_WORKSPACE_SNAPSHOT_MAX_BODY);
         const result = materializeOfflineWorkspaceSnapshot(workspaceRoot, body);
         return writeJson(response, 200, result, request, allowedOrigin);
       }
@@ -502,6 +671,7 @@ module.exports = {
   OfflineBuildBridgeError,
   validateOfflineBuildRequest,
   validateOfflineWorkspaceSnapshot,
+  validateProjectSnapshot,
   resolveOpenedWorkspace,
   resolveOfflineBuildWorkspace,
   materializeOfflineWorkspaceSnapshot,
