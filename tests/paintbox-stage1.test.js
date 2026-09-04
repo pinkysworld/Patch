@@ -13,6 +13,7 @@ import {
   updateDesignerPaintBox
 } from '../src/designer-paintbox.js';
 import { designerEventSpec, ensureDesignerEventHandler } from '../web/designer-event-inspector.js';
+import { paintBoxDraftIsDirty } from '../web/designer-paintbox.js';
 
 const source = `create number count = 2
 
@@ -147,6 +148,15 @@ test('Designer PaintBox ids and dimensions fail closed', () => {
   assert.throws(() => addDesignerPaintBox(first.source, { id: 'canvas' }), /already used/);
 });
 
+test('PaintBox Inspector dirty state compares visible draft to source-backed geometry', () => {
+  const paintbox = { id: 'canvas', controlIndex: 0, x: 24, y: 32, width: 320, height: 200 };
+  assert.equal(paintBoxDraftIsDirty(paintbox, { id: 'canvas', x: '24', y: '32', width: '320', height: '200' }), false);
+  assert.equal(paintBoxDraftIsDirty(paintbox, { id: 'preview', x: '24', y: '32', width: '320', height: '200' }), true);
+  assert.equal(paintBoxDraftIsDirty(paintbox, { id: 'canvas', x: '40', y: '32', width: '320', height: '200' }), true);
+  const fallbackPaintbox = { id: 'canvas', controlIndex: 0, x: null, y: null, width: null, height: null };
+  assert.equal(paintBoxDraftIsDirty(fallbackPaintbox, { id: 'canvas', x: '24', y: '56', width: '320', height: '200' }, { x: 24, y: 56, width: 320, height: 200 }), false);
+});
+
 test('Object Inspector creates a valid pure OnPaint handler instead of a mutating or console placeholder', () => {
   const initial = `window "Designer" as main size 640, 420:\n  paintbox as canvas at 24, 24 size 320, 200\n`;
   assert.deepEqual(designerEventSpec('paintbox'), { event: 'paint', label: 'OnPaint', value: false });
@@ -163,6 +173,7 @@ test('Object Inspector creates a valid pure OnPaint handler instead of a mutatin
 test('PaintBox Studio and Web modules ship through the content-addressed public and offline module graph', () => {
   const buildSite = fs.readFileSync('scripts/build-site.js', 'utf8');
   const worker = fs.readFileSync('web/sw.js', 'utf8');
+  const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
   const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
   const studio = fs.readFileSync('web/designer-paintbox.js', 'utf8');
   assert.match(buildSite, /'paintbox-control\.js'/);
@@ -173,6 +184,12 @@ test('PaintBox Studio and Web modules ship through the content-addressed public 
   assert.match(worker, /\.\.\/src\/paintbox-control\.js/);
   assert.match(worker, /\.\.\/src\/window-web-paintbox\.js/);
   assert.match(statusbar, /import '\.\/designer-paintbox\.js';/);
+  assert.ok(workspace.indexOf("import './designer-ux.js'") < workspace.indexOf("import './designer-statusbar.js'"));
   assert.match(studio, /addPaintbox/);
   assert.match(studio, /patch-paintbox-designer-control/);
+  assert.match(studio, /syncDesignerInspectorState/);
+  assert.match(studio, /showDesignerInspectorError/);
+  assert.match(studio, /clearDesignerInspectorError/);
+  assert.match(studio, /PaintBox property changes ready to apply/);
+  assert.doesNotMatch(studio, /function showError/);
 });
