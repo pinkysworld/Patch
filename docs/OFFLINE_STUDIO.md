@@ -1,6 +1,6 @@
 # Patch Studio Offline IDE
 
-Status: **Stage 1 multi-platform release channel implemented; Stage 2 R0.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64, including bounded project-v4 image resources**
+Status: **Stage 1 multi-platform release channel implemented; Stage 2 R0.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64, including bounded project-v4 image resources and complete Linux desktop artifacts**
 
 Patch Studio is intended to work as a real offline IDE rather than merely a cached website. The installed product uses the same generated Studio modules as the public site and keeps normal authoring, Designer, Run and supported Build workflows local.
 
@@ -114,6 +114,22 @@ That means current project-v4 image resources are supported in the installed nat
 
 The bridge validates resource ids, project-relative paths, supported image media types, canonical base64, byte sizes and SHA-256 digests before accepting the snapshot. It does not accept arbitrary browser-selected resource filesystem paths.
 
+### Linux desktop artifact packaging
+
+The Current Ready Linux linker can emit three files for an application-icon project: the native executable, a hicolor PNG and a `.desktop` entry. Offline Studio now preserves that complete output contract.
+
+When those Linux desktop sidecars are present, the installed Linux x64 Build returns one deterministic `<stem>-linux.tar.gz` artifact containing:
+
+```text
+<stem>
+share/icons/hicolor/<size>x<size>/apps/<stem>.png
+share/applications/<stem>.desktop
+```
+
+The archive is produced by the privileged Node adapter with fixed, safe relative entry names. It does not invoke a general shell or depend on a system archive command. Gzip timestamp and OS-header fields are normalized so the same input bytes produce the same bundle bytes.
+
+For Linux projects without application-icon sidecars, Offline Studio preserves the existing direct executable download instead of wrapping every build in an archive. Windows remains a direct `.exe` artifact and macOS remains a `.app.zip` artifact.
+
 ### Resource limits
 
 The privileged snapshot boundary is deliberately bounded:
@@ -207,6 +223,8 @@ canonical project-v4 with application icon + ImageList/Button image
   -> artifact SHA-256 equality
 ```
 
+On Linux x64 this path now passes through the complete desktop `.tar.gz` artifact rather than discarding the linker-generated icon and `.desktop` sidecars. Dedicated tests also verify deterministic gzip bytes, tar entry modes/content and fail-closed handling of incomplete or unsafe bundle entries.
+
 This is stronger than checking only that the bridge starts.
 
 ## Security boundary
@@ -223,7 +241,8 @@ The installed IDE has more authority than the hosted Studio, so the privileged b
 - bounded project-v4 validation before writing a snapshot;
 - independent resource SHA-256 verification;
 - output confinement under `.patch-build/native/<requestId>`;
-- artifact regular-file and SHA-256 verification.
+- artifact regular-file and SHA-256 verification;
+- fixed safe Linux desktop archive entries when sidecar packaging is required.
 
 See `docs/OFFLINE_BUILD_BRIDGE.md` for the exact protocol boundary.
 
@@ -249,6 +268,6 @@ node scripts/check-offline-studio-resource-build.js
 
 ## Definition of Offline IDE Ready
 
-For the supported Stage 2 hosts, Patch Studio can launch without network access and complete authoring, Designer, Run and a host-native Window Build using only the installed toolchain, including current project-v4 image resources.
+For the supported Stage 2 hosts, Patch Studio can launch without network access and complete authoring, Designer, Run and a host-native Window Build using only the installed toolchain, including current project-v4 image resources. Linux application-icon builds preserve their executable plus desktop/icon sidecars in one deterministic download artifact.
 
 The broader fully-offline claim across every published architecture remains open until the unsupported Stage 2 host/compiler combinations are closed.

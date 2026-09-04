@@ -15,7 +15,7 @@ Patch Studio currently tracks:
 - Ready/offline desktop runtime **v1.10** on Windows, macOS and Linux;
 - Offline Studio manifest **v1** and rolling download channel **`offline-studio-v0.2`**;
 - Offline Compiler rolling channel **`offline-compiler-v0.2`**;
-- Offline Studio Stage 2 R0.2 installed host-build bridge for Windows x64, macOS Apple Silicon and Linux x64;
+- Offline Studio Stage 2 R0.2 installed host-build bridge for Windows x64, macOS Apple Silicon and Linux x64, including project-v4 image resources;
 - formal runtime-correspondence milestone **beta.32**.
 
 Current Ready v1.10 contains the complete **IR1.8 / payload-v18 / runtime-v1.9 Button/ImageList** layer plus **IR1.9 / payload-v19 Window/application icons** and deterministic platform application-icon packaging. Explicit payload-v17/runtime-v1.8 linking remains available as a compatibility option in the Offline Compiler.
@@ -168,11 +168,11 @@ Stage 2 R0.2 adds installed host-native Window Build to:
 - macOS Apple Silicon;
 - Linux x64.
 
-Launch a supported distribution with `--workspace <directory>` to authorize the installed build capability. Studio composes the current multi-file source state, materializes a bounded snapshot inside that workspace, links with the bundled SHA-256-pinned Offline Compiler and returns native artifact metadata plus SHA-256 through an authenticated localhost bridge.
+Launch a supported distribution with `--workspace <directory>` to authorize the installed build capability. Studio sends the current canonical project-v4 state, including bounded source files and resources, materializes one validated snapshot inside that workspace, links with the bundled SHA-256-pinned Offline Compiler and returns native artifact metadata plus SHA-256 through an authenticated localhost bridge.
 
 The browser never receives a general shell API, executable path, arbitrary argv/environment map or arbitrary output path. Windows ARM64, Linux ARM64, macOS Intel and the generic portable archive currently fail closed for installed host-native Build because matching compiler/runtime distributions are not yet published for those paths.
 
-Project-v4 binary-resource transport is the next Stage 2 slice. Resource-backed Picture/ImageList/application-icon projects therefore currently use the existing Ready desktop build path rather than silently dropping resources in installed-host mode.
+Project-v4 Picture, ImageList/Button-image and application/Form-icon resources now travel through the installed host-native path on all three supported Stage 2 hosts. On Linux x64, application-icon builds preserve the normal linker sidecars by returning one deterministic `<stem>-linux.tar.gz` containing the executable, hicolor PNG and `.desktop` entry. Linux builds without those sidecars retain the direct executable download.
 
 The rolling `offline-compiler-v0.2` covers Windows x64, Linux x64, macOS Apple Silicon and macOS Intel. Current Window linking defaults to payload v19/runtime v1.10 and includes a separate v1.8 runtime for explicit v17 compatibility. FreeBSD remains Console-only via portable C99.
 
