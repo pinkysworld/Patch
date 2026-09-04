@@ -24,6 +24,7 @@ const studioIndex = fs.readFileSync('web/index.html', 'utf8');
 const studioTable = fs.readFileSync('web/table-stage1.js', 'utf8');
 const studioCoreSelection = fs.readFileSync('web/designer-core-selection.js', 'utf8');
 const studioPlayground = fs.readFileSync('web/playground.js', 'utf8');
+const studioRunController = fs.readFileSync('web/studio-run-controller.js', 'utf8');
 const siteBuilder = fs.readFileSync('scripts/build-site.js', 'utf8');
 const serviceWorker = fs.readFileSync('web/sw.js', 'utf8');
 
@@ -97,6 +98,8 @@ test('Patch Studio exposes Table through its render adapter and the shared Prope
 test('Studio App preview Table selection is keyboard-accessible and uses shared keyed transient state plus the semantic Window event adapter', () => {
   const playgroundChecked = spawnSync(process.execPath, ['--check', 'web/playground.js'], { encoding: 'utf8' });
   assert.equal(playgroundChecked.status, 0, playgroundChecked.stderr);
+  const runControllerChecked = spawnSync(process.execPath, ['--check', 'web/studio-run-controller.js'], { encoding: 'utf8' });
+  assert.equal(runControllerChecked.status, 0, runControllerChecked.stderr);
   assert.match(studioTable, /getRuntimeSelection\(options\.container, 'table', options\.key\)/);
   assert.match(studioTable, /setRuntimeSelection\(options\.container, 'table', options\.key, rowIndex\)/);
   assert.doesNotMatch(studioTable, /const appSelections = new Map\(\)/);
@@ -107,7 +110,9 @@ test('Studio App preview Table selection is keyboard-accessible and uses shared 
   assert.match(studioTable, /if \(!options\.hasHandler \|\| !node\.id\) return/);
   assert.match(studioPlayground, /appView\.addEventListener\('patch-studio-table-changed'/);
   assert.match(studioPlayground, /trigger\(detail\.control, 'changed', \{ value: \[\.\.\.detail\.value\] \}\)/);
-  assert.match(studioPlayground, /import \{ triggerWindowEvent \} from '\.\.\/src\/window-events\.js'/);
+  assert.match(studioPlayground, /studioRunController\.trigger\(control, event, payload\)/);
+  assert.match(studioRunController, /import \{ triggerWindowEvent \} from '\.\.\/src\/window-events\.js'/);
+  assert.match(studioRunController, /triggerEvent\(runtime, control, event, payload\)/);
 });
 
 test('Standalone Window Web renders a real Table and preserves later control ordering', () => {
