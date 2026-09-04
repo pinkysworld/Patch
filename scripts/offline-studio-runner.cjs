@@ -11,22 +11,34 @@ if (manifest?.format !== 'patch-offline-studio-manifest' || !Array.isArray(manif
   throw new Error('Patch Offline Studio embedded manifest is invalid.');
 }
 
+const { createOfflineStudioBuildBridge } = loadEmbeddedBridge();
+const embeddedCompiler = readOptionalAsset(manifest.localBuild?.compilerAsset);
+const bridge = createOfflineStudioBuildBridge({
+  platform: manifest.localBuild?.platform ?? process.platform,
+  arch: manifest.localBuild?.arch ?? process.arch,
+  compilerBytes: embeddedCompiler,
+  compilerSha256: manifest.localBuild?.compilerSha256 ?? ''
+});
+
 const files = new Map(manifest.files.map(entry => [entry.path, entry]));
 const session = crypto.randomBytes(18).toString('hex');
 const prefix = `/${session}/`;
 const smokeMode = process.env.PATCH_OFFLINE_STUDIO_SMOKE === '1';
 const noOpen = smokeMode || process.env.PATCH_OFFLINE_STUDIO_NO_OPEN === '1';
+let localOrigin = null;
 
 const server = http.createServer((request, response) => {
+  if (bridge.route(request, response, { prefix, securityHeaders, origin: localOrigin })) return;
+
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    response.writeHead(405, { Allow: 'GET, HEAD' });
+    response.writeHead(405, { ...securityHeaders(), Allow: 'GET, HEAD' });
     response.end();
     return;
   }
 
   const rawPath = String(request.url ?? '/').split('?', 1)[0];
   if (rawPath === `/${session}`) {
-    response.writeHead(302, { Location: prefix });
+    response.writeHead(302, { ...securityHeaders(), Location: prefix });
     response.end();
     return;
   }
@@ -83,18 +95,25 @@ server.on('clientError', (_error, socket) => {
 
 server.listen(0, '127.0.0.1', async () => {
   const address = server.address();
-  const url = `http://127.0.0.1:${address.port}${prefix}`;
+  localOrigin = `http://127.0.0.1:${address.port}`;
+  const url = `${localOrigin}${prefix}`;
+  const capability = bridge.capability();
   console.log(`Patch Offline Studio ${manifest.patchVersion ?? ''}`.trim());
   console.log(`Local IDE: ${url}`);
   console.log('Network access is not required; the IDE is served only on this machine.');
+  console.log(capability.supported
+    ? `Local native build: ${capability.platform}/${capability.arch} via bundled offline compiler (${capability.compilerSha256?.slice(0, 12) ?? 'unhashed'}…).`
+    : `Local native build: unavailable in this package (${capability.reason}).`);
 
   if (smokeMode) {
     try {
       await runSelfSmoke(url);
       console.log('Offline Studio executable smoke: OK');
+      bridge.dispose();
       server.close(() => process.exit(0));
     } catch (error) {
       console.error(`Offline Studio executable smoke failed: ${error?.message ?? error}`);
+      bridge.dispose();
       server.close(() => process.exit(2));
     }
     return;
@@ -107,35 +126,54 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 function shutdown() {
+  bridge.dispose();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 1500).unref();
 }
 
-function runSelfSmoke(url) {
+async function runSelfSmoke(url) {
+  const index = await getLocal(url);
+  if (index.statusCode !== 200) throw new Error(`expected HTTP 200, received ${index.statusCode}`);
+  if (!/Patch Studio/i.test(index.body)) throw new Error('embedded index.html did not contain the Patch Studio marker');
+  if (!String(index.headers['content-security-policy'] ?? '').includes("connect-src 'self'")) {
+    throw new Error('offline CSP did not retain the local-only connect-src policy');
+  }
+  const sessionResponse = await getLocal(new URL('__patch/session', url).toString());
+  if (sessionResponse.statusCode !== 200) throw new Error(`local bridge session endpoint returned ${sessionResponse.statusCode}`);
+  const sessionPayload = JSON.parse(sessionResponse.body);
+  if (sessionPayload?.nativeBuild?.contract !== 'patch-offline-studio-build-bridge/0.1' || !sessionPayload?.token) {
+    throw new Error('local bridge session contract is missing');
+  }
+}
+
+function getLocal(url) {
   return new Promise((resolve, reject) => {
     const request = http.get(url, { timeout: 5000 }, response => {
       const chunks = [];
       response.on('data', chunk => chunks.push(chunk));
-      response.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf8');
-        if (response.statusCode !== 200) {
-          reject(new Error(`expected HTTP 200, received ${response.statusCode}`));
-          return;
-        }
-        if (!/Patch Studio/i.test(body)) {
-          reject(new Error('embedded index.html did not contain the Patch Studio marker'));
-          return;
-        }
-        if (!String(response.headers['content-security-policy'] ?? '').includes("connect-src 'self'")) {
-          reject(new Error('offline CSP did not retain the local-only connect-src policy'));
-          return;
-        }
-        resolve();
-      });
+      response.on('end', () => resolve({
+        statusCode: response.statusCode,
+        headers: response.headers,
+        body: Buffer.concat(chunks).toString('utf8')
+      }));
     });
     request.on('timeout', () => request.destroy(new Error('self-smoke timed out')));
     request.on('error', reject);
   });
+}
+
+function loadEmbeddedBridge() {
+  const source = getAsset('offline-studio-build-bridge.cjs', 'utf8');
+  const module = { exports: {} };
+  const factory = new Function('require', 'module', 'exports', `'use strict';\n${source}\n//# sourceURL=offline-studio-build-bridge.cjs`);
+  factory(require, module, module.exports);
+  return module.exports;
+}
+
+function readOptionalAsset(key) {
+  if (!key) return null;
+  try { return Buffer.from(getAsset(String(key))); }
+  catch { return null; }
 }
 
 function openBrowser(url) {
