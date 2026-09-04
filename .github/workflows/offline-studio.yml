@@ -5,20 +5,32 @@ on:
     paths:
       - 'web/**'
       - 'src/**'
+      - 'native-runtime/**'
       - 'scripts/build-site.js'
       - 'scripts/build-offline-studio.js'
       - 'scripts/build-portable-offline-studio.js'
       - 'scripts/build-offline-studio-runtime-kit.js'
+      - 'scripts/build-offline-compiler.js'
+      - 'scripts/build-native-sea-template.js'
+      - 'scripts/offline-compiler-runner.cjs'
+      - 'scripts/offline-compiler-source-graph.js'
+      - 'scripts/copy-offline-compiler-source.js'
       - 'scripts/offline-studio-assets.js'
+      - 'scripts/offline-studio-local-build-assets.js'
+      - 'scripts/offline-studio-site-overlay.js'
+      - 'scripts/offline-studio-compiler-builder.cjs'
+      - 'scripts/offline-studio-native-build-client.js'
       - 'scripts/offline-studio-runner.cjs'
       - 'scripts/offline-studio-portable-runner.cjs'
       - 'scripts/check-offline-studio-executable.js'
       - 'scripts/check-portable-offline-studio.js'
       - 'scripts/check-offline-studio-runtime-kit.js'
       - 'tests/offline-studio-assets.test.js'
+      - 'tests/offline-studio-build-bridge.test.js'
       - 'tests/offline-studio-portable.test.js'
       - 'tests/offline-downloads-page.test.js'
       - 'docs/OFFLINE_STUDIO.md'
+      - 'docs/OFFLINE_BUILD_BRIDGE.md'
       - 'package.json'
       - '.github/workflows/offline-studio.yml'
   push:
@@ -26,20 +38,32 @@ on:
     paths:
       - 'web/**'
       - 'src/**'
+      - 'native-runtime/**'
       - 'scripts/build-site.js'
       - 'scripts/build-offline-studio.js'
       - 'scripts/build-portable-offline-studio.js'
       - 'scripts/build-offline-studio-runtime-kit.js'
+      - 'scripts/build-offline-compiler.js'
+      - 'scripts/build-native-sea-template.js'
+      - 'scripts/offline-compiler-runner.cjs'
+      - 'scripts/offline-compiler-source-graph.js'
+      - 'scripts/copy-offline-compiler-source.js'
       - 'scripts/offline-studio-assets.js'
+      - 'scripts/offline-studio-local-build-assets.js'
+      - 'scripts/offline-studio-site-overlay.js'
+      - 'scripts/offline-studio-compiler-builder.cjs'
+      - 'scripts/offline-studio-native-build-client.js'
       - 'scripts/offline-studio-runner.cjs'
       - 'scripts/offline-studio-portable-runner.cjs'
       - 'scripts/check-offline-studio-executable.js'
       - 'scripts/check-portable-offline-studio.js'
       - 'scripts/check-offline-studio-runtime-kit.js'
       - 'tests/offline-studio-assets.test.js'
+      - 'tests/offline-studio-build-bridge.test.js'
       - 'tests/offline-studio-portable.test.js'
       - 'tests/offline-downloads-page.test.js'
       - 'docs/OFFLINE_STUDIO.md'
+      - 'docs/OFFLINE_BUILD_BRIDGE.md'
       - 'package.json'
       - '.github/workflows/offline-studio.yml'
   workflow_dispatch:
@@ -61,20 +85,34 @@ jobs:
           - os: ubuntu-latest
             label: Linux x64
             artifact: Linux-X64
+            local_build: true
+            platform: linux
+            runtime_tag: native-linux-runtime-v1.10
+            runtime_asset: patch-linux-native-gui-runtime.bin
           - os: ubuntu-24.04-arm
             label: Linux ARM64
             artifact: Linux-ARM64
+            local_build: false
           - os: windows-latest
             label: Windows x64
             artifact: Windows-X64
+            local_build: true
+            platform: windows
+            runtime_tag: native-win32-runtime-v1.10
+            runtime_asset: patch-windows-native-gui-runtime.exe
           - os: windows-11-arm
             label: Windows ARM64
             artifact: Windows-ARM64
+            local_build: false
           - os: macos-latest
             label: macOS Apple Silicon
             artifact: macOS-ARM64
+            local_build: true
+            platform: macos
+            runtime_tag: native-macos-runtime-v1.10
+            runtime_asset: patch-macos-native-gui-runtime.bin
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -83,9 +121,95 @@ jobs:
           package-manager-cache: false
       - name: Verify Node SEA support
         run: node --version
+      - name: Install Linux native build dependencies
+        if: matrix.local_build && matrix.platform == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgtk-3-dev xvfb
       - name: Run Offline Studio unit tests
-        run: node --test tests/offline-studio-assets.test.js tests/offline-studio-portable.test.js tests/offline-downloads-page.test.js
-      - name: Build and self-smoke executable
+        run: node --test tests/offline-studio-assets.test.js tests/offline-studio-build-bridge.test.js tests/offline-studio-portable.test.js tests/offline-downloads-page.test.js
+      - name: Download and verify Current Ready runtime v1.10
+        if: matrix.local_build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNTIME_TAG: ${{ matrix.runtime_tag }}
+          RUNTIME_ASSET: ${{ matrix.runtime_asset }}
+          RUNTIME_SOURCE_SHA: e31a426dc21cb0929241fe96ab96e270ad182b32
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p current-runtime
+          gh release download "$RUNTIME_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$RUNTIME_ASSET" --pattern SHA256SUMS.txt --dir current-runtime
+          grep -Eq "^[0-9a-f]{64}  ${RUNTIME_ASSET}$" current-runtime/SHA256SUMS.txt
+          (cd current-runtime && sha256sum -c SHA256SUMS.txt)
+          expected="sha256:$(awk -v asset="$RUNTIME_ASSET" '$2 == asset {print $1}' current-runtime/SHA256SUMS.txt)"
+          recorded="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RUNTIME_TAG" --jq ".assets[] | select(.name == \"$RUNTIME_ASSET\") | .digest")"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RUNTIME_TAG" --jq '.object.sha')"
+          test "$recorded" = "$expected"
+          test "$tag_sha" = "$RUNTIME_SOURCE_SHA"
+      - name: Build host Console runtime
+        if: matrix.local_build
+        shell: bash
+        run: |
+          mkdir -p offline-runtime dist-offline-studio-tooling
+          node scripts/build-native-sea-template.js --name PatchOfflineConsoleRuntime --out dist-offline-studio-tooling/PatchOfflineConsoleRuntime --raw-out offline-runtime/console.bin
+      - name: Build legacy Win32 runtime v1.8 compatibility underlay
+        if: matrix.local_build && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $install = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $install) { throw 'Visual Studio C++ Build Tools not found.' }
+          $devcmd = Join-Path $install 'Common7\Tools\VsDevCmd.bat'
+          $script = Join-Path $PWD 'offline-runtime\build-gui-legacy.cmd'
+          @(
+            '@echo off',
+            "call `"$devcmd`" -arch=x64 -host_arch=x64",
+            'if errorlevel 1 exit /b %errorlevel%',
+            'cl.exe /nologo /EHsc /std:c++17 /O2 /MT /utf-8 /DUNICODE /D_UNICODE /DPATCH_WIN32_RUNTIME_V11_RESTORE_ENTRY=PatchRuntimeV11CompatibilityMain native-runtime\win32-sealed-gui-v18.cpp user32.lib gdi32.lib gdiplus.lib comctl32.lib comdlg32.lib oleacc.lib ole32.lib oleaut32.lib /link /SUBSYSTEM:WINDOWS /OUT:offline-runtime\gui-legacy.bin',
+            'exit /b %errorlevel%'
+          ) | Set-Content -Path $script -Encoding ascii
+          & cmd.exe /d /c $script
+          if ($LASTEXITCODE -ne 0) { throw "MSVC legacy GUI runtime build failed with exit code $LASTEXITCODE." }
+      - name: Build legacy GTK runtime v1.8 compatibility underlay
+        if: matrix.local_build && matrix.platform == 'linux'
+        shell: bash
+        run: |
+          g++ -std=c++17 -O2 native-runtime/gtk-sealed-gui-v18.cpp -o offline-runtime/gui-legacy.bin $(pkg-config --cflags --libs gtk+-3.0)
+          chmod +x offline-runtime/gui-legacy.bin
+      - name: Build legacy AppKit runtime v1.8 compatibility underlay
+        if: matrix.local_build && matrix.platform == 'macos'
+        shell: bash
+        run: |
+          clang++ -std=c++17 -O2 -fblocks -mmacosx-version-min=11.0 -arch arm64 -framework Cocoa \
+            native-runtime/appkit-sealed-gui-v18.mm -o offline-runtime/gui-legacy.bin
+          chmod +x offline-runtime/gui-legacy.bin
+          test "$(lipo -archs offline-runtime/gui-legacy.bin)" = "arm64"
+      - name: Build matching standalone Patch offline compiler
+        if: matrix.local_build
+        shell: bash
+        run: |
+          set -euo pipefail
+          compiler='dist-offline-studio-tooling/patch-offline-compiler'
+          if [ '${{ matrix.platform }}' = 'windows' ]; then compiler="${compiler}.exe"; fi
+          node scripts/build-offline-compiler.js \
+            --platform '${{ matrix.platform }}' \
+            --console-runtime offline-runtime/console.bin \
+            --gui-runtime offline-runtime/gui-legacy.bin \
+            --gui-runtime-v19 'current-runtime/${{ matrix.runtime_asset }}' \
+            --out "$compiler"
+          test -s "$compiler"
+          "$compiler" --version
+      - name: Build and self-smoke executable with installed host build
+        if: matrix.local_build
+        env:
+          PATCH_OFFLINE_STUDIO_COMPILER: ${{ matrix.platform == 'windows' && 'dist-offline-studio-tooling/patch-offline-compiler.exe' || 'dist-offline-studio-tooling/patch-offline-compiler' }}
+          PATCH_NATIVE_HEADLESS: '1'
+        run: node scripts/check-offline-studio-executable.js
+      - name: Build and self-smoke executable without unsupported host compiler
+        if: ${{ !matrix.local_build }}
         run: node scripts/check-offline-studio-executable.js
       - name: Upload Offline Studio executable
         uses: actions/upload-artifact@v7
@@ -112,7 +236,7 @@ jobs:
           test "$(uname -m)" = "x86_64"
           test "$(node -p 'process.arch')" = "x64"
       - name: Run Offline Studio unit tests
-        run: node --test tests/offline-studio-assets.test.js tests/offline-studio-portable.test.js tests/offline-downloads-page.test.js
+        run: node --test tests/offline-studio-assets.test.js tests/offline-studio-build-bridge.test.js tests/offline-studio-portable.test.js tests/offline-downloads-page.test.js
       - name: Build and self-smoke embedded-runtime kit
         run: node scripts/check-offline-studio-runtime-kit.js
       - name: Assemble Intel macOS kit
@@ -310,7 +434,8 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
-            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for Patch Studio Offline IDE. Self-contained Node SEA builds are verified on Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64. macOS Intel is a separately verified offline runtime kit with its own embedded Intel Node runtime because current Node 26 direct --build-sea binaries crash on macOS x64. The portable Node 18+ bundle is also self-smoked in a FreeBSD 15 x64 VM and is the compatibility path for other generic Unix/POSIX hosts with a compatible Node runtime and browser. Stage 1 supports offline authoring, Designer/Run and browser-local build targets. Host-native desktop builds from inside the IDE remain Stage 2.'
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for Patch Studio Offline IDE.'
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --title 'Patch Studio Offline IDE v0.2' --notes 'Rolling beta channel for Patch Studio Offline IDE. Self-contained Node SEA builds are verified on Windows x64/ARM64, macOS Apple Silicon and Linux x64/ARM64. The Windows x64, macOS Apple Silicon and Linux x64 executables also carry a SHA-256 pinned matching Patch Offline Compiler and expose the Stage 2 authenticated workspace build bridge when started with --workspace <directory>; CI self-smokes snapshot -> native link -> artifact download and verifies the returned SHA-256. Windows ARM64, Linux ARM64, macOS Intel and the generic portable bundle remain Stage 1/browser-local only until matching host-native compiler/runtime distributions are published. macOS Intel is a separately verified offline runtime kit. The portable Node 18+ bundle is self-smoked in a FreeBSD 15 x64 VM.'
           gh release upload "$TAG" \
             release/PatchStudio-windows-x64.exe \
             release/PatchStudio-windows-arm64.exe \
