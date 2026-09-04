@@ -2,39 +2,14 @@
   width: min(1720px, 100%);
 }
 
-/* The legacy SVG stays in the HTML for old cached-site compatibility, but the
-   visible Studio mark is drawn from two fully rounded CSS primitives. This
-   avoids the blocky/pixel P while keeping the badge compact and deterministic. */
+/* The shared SVG is the visible Studio mark. Keep the image circular here as a
+   layout guard, rather than relying on pseudo-elements on the replaced <img>
+   element, which browsers do not render consistently. */
 .brand-mark {
   position: relative;
   border-radius: 50%;
-}
-.brand-mark svg {
-  display: none;
-}
-.brand-mark::before,
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  display: block;
-  pointer-events: none;
-}
-.brand-mark::before {
-  left: 7px;
-  top: 5px;
-  width: 5px;
-  height: 18px;
-  border-radius: 999px;
-  background: currentColor;
-}
-.brand-mark::after {
-  left: 10px;
-  top: 5px;
-  width: 11px;
-  height: 8px;
-  border: 4px solid currentColor;
-  border-left: 0;
-  border-radius: 0 999px 999px 0;
+  overflow: hidden;
+  background: #1d4ed8;
 }
 
 .studio-jump {

@@ -1,29 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Patch Studio compiler mark">
   <defs>
-    <linearGradient id="patch-main" x1="94" y1="72" x2="438" y2="406" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2436a8"/>
-      <stop offset="0.5" stop-color="#2563eb"/>
+    <linearGradient id="patch-main" x1="112" y1="80" x2="420" y2="432" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3157d8"/>
+      <stop offset="0.52" stop-color="#2563eb"/>
       <stop offset="1" stop-color="#1737a6"/>
     </linearGradient>
-    <linearGradient id="patch-pass" x1="116" y1="292" x2="222" y2="438" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2f7df4"/>
-      <stop offset="1" stop-color="#3164e8"/>
+    <linearGradient id="patch-pass" x1="180" y1="128" x2="330" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef4ff"/>
     </linearGradient>
-    <linearGradient id="patch-accent" x1="120" y1="402" x2="204" y2="496" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#4f65f2"/>
-      <stop offset="1" stop-color="#6d3df5"/>
+    <linearGradient id="patch-accent" x1="354" y1="350" x2="432" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7c5cff"/>
+      <stop offset="1" stop-color="#5b34d6"/>
     </linearGradient>
     <mask id="patch-circuit-cuts">
       <rect width="512" height="512" fill="#fff"/>
-      <rect x="86" y="164" width="86" height="20" rx="10" fill="#000"/>
-      <circle cx="171" cy="174" r="17" fill="#000"/>
-      <rect x="86" y="224" width="86" height="20" rx="10" fill="#000"/>
-      <circle cx="171" cy="234" r="17" fill="#000"/>
+      <rect x="244" y="178" width="126" height="96" rx="48" fill="#000"/>
+      <circle cx="196" cy="354" r="9" fill="#000"/>
+      <rect x="196" y="349" width="31" height="10" rx="5" fill="#000"/>
     </mask>
   </defs>
-  <g mask="url(#patch-circuit-cuts)">
-    <path fill="url(#patch-main)" d="M112 80h190c100 0 162 59 162 154 0 96-62 155-162 155h-98v-82h98c48 0 78-26 78-73 0-46-30-72-78-72h-98v112l-92 78V80Z"/>
-  </g>
-  <path fill="url(#patch-pass)" d="M112 370l92-78v100l-92 78v-100Z"/>
-  <path fill="url(#patch-accent)" d="M112 486l92-78v48c0 18-14 32-32 32h-60v-2Z"/>
+
+  <circle cx="256" cy="256" r="224" fill="url(#patch-main)"/>
+  <circle cx="256" cy="256" r="213" fill="none" stroke="#ffffff" stroke-opacity=".12" stroke-width="2"/>
+
+  <path
+    fill="url(#patch-pass)"
+    mask="url(#patch-circuit-cuts)"
+    d="M205 112C181 112 162 131 162 155v246c0 24 19 43 43 43s43-19 43-43v-62h58c86 0 144-49 144-114 0-64-58-113-144-113H205Zm43 70h55c42 0 70 18 70 43 0 27-28 44-70 44h-55v-87Z"/>
+
+  <circle cx="389" cy="390" r="30" fill="url(#patch-accent)"/>
+  <path d="M377 390h24M389 378v24" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
 </svg>
