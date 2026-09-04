@@ -74,8 +74,8 @@ const downloads = read('_site/downloads.html');
 requireAll('Downloads beta36 release contract', downloads, [
   'Patch Studio Offline IDE + compiler',
   'offline-studio-v0.2',
-  'PatchStudio-windows-x64.exe','PatchStudio-macos-arm64','PatchStudio-linux-x64','offline-studio-manifest.json','SHA256SUMS',
-  'Stage 2','privileged local Build bridge',
+  'PatchStudio-windows-x64.exe','PatchStudio-windows-arm64.exe','PatchStudio-macos-arm64','PatchStudio-macos-x64.tar.gz','PatchStudio-linux-x64','PatchStudio-linux-arm64','PatchStudio-portable-node18.tar.gz','offline-studio-manifest.json','SHA256SUMS',
+  'Stage 2 R0.2','--workspace','authenticated localhost Build bridge','Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle remain Stage 1','project-v4 binary resources',
   'patch-windows-x64.exe','patch-macos-arm64','patch-macos-x64.tar.gz','patch-linux-x64','patch-freebsd-x64.tar.gz',
   'Native GUI IR <strong>1.9</strong>','payload <strong>v19</strong>','runtime <strong>v1.10</strong>',
   'offline-compiler-v0.2','native-win32-runtime-v1.10','native-macos-runtime-v1.10','native-linux-runtime-v1.10','runtime-manifest.json',
@@ -86,6 +86,8 @@ requireAll('Downloads beta36 release contract', downloads, [
 ]);
 rejectAll('Downloads beta36 current links', downloads, [
   'offline-studio-v0.1','offline-compiler-v0.1',
+  'Host-native desktop Build inside the IDE is the next Stage 2 boundary',
+  'does not yet expose the standalone native compiler/runtime through a privileged local Build bridge',
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-win32-runtime-v1.4"',
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-macos-runtime-v1.4"',
   'href="https://github.com/pinkysworld/Patch/releases/tag/native-linux-runtime-v1.4"','./paper.html'

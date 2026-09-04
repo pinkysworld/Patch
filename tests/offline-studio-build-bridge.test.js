@@ -1,19 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import {
+  OFFLINE_BUILD_ARTIFACT_PREFIX,
   OFFLINE_BUILD_BRIDGE_PATH,
   OFFLINE_BUILD_BRIDGE_PROTOCOL,
+  OFFLINE_WORKSPACE_SNAPSHOT_PATH,
+  OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL,
   OfflineBuildBridgeError,
   executeOfflineBuildRequest,
+  materializeOfflineWorkspaceSnapshot,
   resolveOfflineBuildWorkspace,
   startOfflineBuildBridge,
-  validateOfflineBuildRequest
+  validateOfflineBuildRequest,
+  validateOfflineWorkspaceSnapshot
 } from '../src/offline-studio-build-bridge.js';
 
 const SAFE_TOKEN = '0123456789abcdef0123456789abcdef';
+const STUDIO_ORIGIN = 'http://127.0.0.1:41001';
 
 function request(overrides = {}) {
   return {
@@ -26,12 +34,37 @@ function request(overrides = {}) {
   };
 }
 
+function snapshot(overrides = {}) {
+  return {
+    protocol: OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL,
+    requestId: 'snapshot-001',
+    source: 'window "App" size 320, 200:\n  text "Ready"\n',
+    ...overrides
+  };
+}
+
 function workspace() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-build-bridge-'));
   fs.mkdirSync(path.join(root, 'src'), { recursive: true });
   fs.writeFileSync(path.join(root, 'src', 'app.patch'), 'window "App" size 320, 200:\n  text "Ready"\n', 'utf8');
   return root;
 }
+
+test('Offline Studio Stage 2 entrypoints remain syntax-valid', () => {
+  for (const file of [
+    'src/offline-studio-build-bridge-core.cjs',
+    'src/offline-studio-build-bridge.js',
+    'scripts/offline-studio-compiler-builder.cjs',
+    'scripts/offline-studio-native-build-client.js',
+    'scripts/offline-studio-site-overlay.js',
+    'scripts/offline-studio-local-build-assets.js',
+    'scripts/offline-studio-runner.cjs',
+    'scripts/offline-studio-portable-runner.cjs',
+    'scripts/build-offline-studio.js',
+    'scripts/build-portable-offline-studio.js',
+    'scripts/build-offline-studio-runtime-kit.js'
+  ]) execFileSync(process.execPath, ['--check', file], { stdio: 'pipe' });
+});
 
 test('build bridge 0.1 validates one narrow native Window request schema', () => {
   assert.equal(validateOfflineBuildRequest(request()).protocol, OFFLINE_BUILD_BRIDGE_PROTOCOL);
@@ -41,6 +74,47 @@ test('build bridge 0.1 validates one narrow native Window request schema', () =>
   assert.throws(() => validateOfflineBuildRequest(request({ source: 'src/app.txt' })), /\.patch file/);
   assert.throws(() => validateOfflineBuildRequest(request({ appName: '../App' })), /appName/);
   assert.throws(() => validateOfflineBuildRequest({ ...request(), command: 'rm -rf' }), /Unknown build request field/);
+});
+
+test('workspace snapshot schema accepts only source text and a safe request id', () => {
+  const parsed = validateOfflineWorkspaceSnapshot(snapshot());
+  assert.equal(parsed.protocol, OFFLINE_WORKSPACE_SNAPSHOT_PROTOCOL);
+  assert.equal(parsed.requestId, 'snapshot-001');
+  assert.throws(() => validateOfflineWorkspaceSnapshot(snapshot({ requestId: '../escape' })), /requestId/);
+  assert.throws(() => validateOfflineWorkspaceSnapshot({ ...snapshot(), output: '/tmp/App' }), /Unknown workspace snapshot field/);
+  assert.throws(() => validateOfflineWorkspaceSnapshot(snapshot({ source: '' })), /source snapshot is empty/i);
+  assert.throws(() => validateOfflineWorkspaceSnapshot(snapshot({ source: 'x'.repeat(1024 * 1024 + 1) })), /1 MiB/);
+});
+
+test('workspace snapshot materializes to the fixed internal source path with SHA-256 evidence', () => {
+  const root = workspace();
+  try {
+    const result = materializeOfflineWorkspaceSnapshot(root, snapshot());
+    const expected = path.join(root, '.patch-studio', 'snapshots', 'snapshot-001', 'main.patch');
+    assert.equal(result.source, '.patch-studio/snapshots/snapshot-001/main.patch');
+    assert.equal(fs.readFileSync(expected, 'utf8'), snapshot().source);
+    assert.equal(result.bytes, Buffer.byteLength(snapshot().source, 'utf8'));
+    assert.equal(result.sha256, crypto.createHash('sha256').update(snapshot().source).digest('hex'));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('workspace snapshot rejects a symlinked internal directory when symlinks are available', t => {
+  const root = workspace();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-snapshot-outside-'));
+  try {
+    try {
+      fs.symlinkSync(outside, path.join(root, '.patch-studio'), 'dir');
+    } catch {
+      t.skip('Host does not permit creating the snapshot symlink.');
+      return;
+    }
+    assert.throws(() => materializeOfflineWorkspaceSnapshot(root, snapshot()), /may not contain symbolic links/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
 });
 
 test('workspace resolution keeps source and deterministic output under the opened workspace', () => {
@@ -56,7 +130,7 @@ test('workspace resolution keeps source and deterministic output under the opene
   }
 });
 
-test('workspace resolution fails closed on a symlink that escapes the opened workspace when symlinks are available', t => {
+test('workspace resolution fails closed on a source symlink that escapes the workspace when symlinks are available', t => {
   const root = workspace();
   const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-build-bridge-outside-'));
   try {
@@ -135,12 +209,85 @@ test('bridge executes the existing host-native builder directly with canonical b
   }
 });
 
-test('localhost bridge requires bearer auth, POST JSON and never exposes a general command endpoint', async () => {
+test('localhost bridge authenticates snapshot, build and digest-addressed artifact download', async () => {
   const root = workspace();
   let builds = 0;
   const bridge = await startOfflineBuildBridge({
     workspaceRoot: root,
     token: SAFE_TOKEN,
+    allowedOrigin: STUDIO_ORIGIN,
+    platform: 'linux',
+    builder(sourcePath, options) {
+      builds += 1;
+      assert.ok(sourcePath.endsWith(path.join('.patch-studio', 'snapshots', 'http-001', 'main.patch')));
+      const artifactPath = path.join(options.outDir, 'PatchApp');
+      fs.writeFileSync(artifactPath, Buffer.from('native artifact bytes'));
+      return {
+        platform: 'Linux',
+        backend: 'offline-compiler/gtk3',
+        outputKind: 'Linux executable',
+        stdout: 'Linked PatchApp',
+        artifactPath,
+        artifactType: 'application/octet-stream'
+      };
+    }
+  });
+  try {
+    assert.equal(bridge.path, OFFLINE_BUILD_BRIDGE_PATH);
+    assert.equal(bridge.snapshotPath, OFFLINE_WORKSPACE_SNAPSHOT_PATH);
+
+    const snapshotResponse = await fetch(`${bridge.origin}${bridge.snapshotPath}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SAFE_TOKEN}`,
+        'Content-Type': 'application/json',
+        Origin: STUDIO_ORIGIN
+      },
+      body: JSON.stringify(snapshot({ requestId: 'http-001' }))
+    });
+    assert.equal(snapshotResponse.status, 200);
+    assert.equal(snapshotResponse.headers.get('access-control-allow-origin'), STUDIO_ORIGIN);
+    const snapshotBody = await snapshotResponse.json();
+    assert.equal(snapshotBody.source, '.patch-studio/snapshots/http-001/main.patch');
+    assert.match(snapshotBody.sha256, /^[a-f0-9]{64}$/);
+
+    const buildResponse = await fetch(`${bridge.origin}${bridge.path}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SAFE_TOKEN}`,
+        'Content-Type': 'application/json',
+        Origin: STUDIO_ORIGIN
+      },
+      body: JSON.stringify(request({ requestId: 'http-001', source: snapshotBody.source }))
+    });
+    assert.equal(buildResponse.status, 200);
+    const buildBody = await buildResponse.json();
+    assert.equal(buildBody.ok, true);
+    assert.equal(buildBody.outputDirectory, '.patch-build/native/http-001');
+    assert.equal(buildBody.diagnostics, 'Linked PatchApp');
+    assert.match(buildBody.artifact.downloadPath, new RegExp(`^${OFFLINE_BUILD_ARTIFACT_PREFIX}[a-f0-9]{32}$`));
+    assert.equal(buildBody.artifact.sha256, crypto.createHash('sha256').update('native artifact bytes').digest('hex'));
+    assert.equal(builds, 1);
+
+    const artifactResponse = await fetch(`${bridge.origin}${buildBody.artifact.downloadPath}`, {
+      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, Origin: STUDIO_ORIGIN }
+    });
+    assert.equal(artifactResponse.status, 200);
+    assert.equal(artifactResponse.headers.get('x-patch-artifact-sha256'), buildBody.artifact.sha256);
+    assert.equal(Buffer.from(await artifactResponse.arrayBuffer()).toString('utf8'), 'native artifact bytes');
+  } finally {
+    await bridge.close();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('localhost bridge rejects wrong token, origin, method, content type and generic command paths', async () => {
+  const root = workspace();
+  let builds = 0;
+  const bridge = await startOfflineBuildBridge({
+    workspaceRoot: root,
+    token: SAFE_TOKEN,
+    allowedOrigin: STUDIO_ORIGIN,
     platform: 'linux',
     builder() {
       builds += 1;
@@ -148,51 +295,89 @@ test('localhost bridge requires bearer auth, POST JSON and never exposes a gener
     }
   });
   try {
-    assert.equal(bridge.path, OFFLINE_BUILD_BRIDGE_PATH);
-
-    const wrong = await fetch(`${bridge.origin}${bridge.path}`, {
+    const wrongToken = await fetch(`${bridge.origin}${bridge.path}`, {
       method: 'POST',
-      headers: { Authorization: 'Bearer wrong-token', 'Content-Type': 'application/json' },
+      headers: { Authorization: 'Bearer wrong-token', 'Content-Type': 'application/json', Origin: STUDIO_ORIGIN },
       body: JSON.stringify(request())
     });
-    assert.equal(wrong.status, 401);
-    assert.equal(builds, 0);
+    assert.equal(wrongToken.status, 401);
+
+    const wrongOrigin = await fetch(`${bridge.origin}${bridge.path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, 'Content-Type': 'application/json', Origin: 'https://example.test' },
+      body: JSON.stringify(request())
+    });
+    assert.equal(wrongOrigin.status, 403);
 
     const get = await fetch(`${bridge.origin}${bridge.path}`, {
-      headers: { Authorization: `Bearer ${SAFE_TOKEN}` }
+      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, Origin: STUDIO_ORIGIN }
     });
     assert.equal(get.status, 405);
 
+    const wrongType = await fetch(`${bridge.origin}${bridge.path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, 'Content-Type': 'text/plain', Origin: STUDIO_ORIGIN },
+      body: JSON.stringify(request())
+    });
+    assert.equal(wrongType.status, 415);
+
     const command = await fetch(`${bridge.origin}/v1/command`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, 'Content-Type': 'application/json', Origin: STUDIO_ORIGIN },
       body: JSON.stringify({ command: 'anything' })
     });
     assert.equal(command.status, 404);
-
-    const ok = await fetch(`${bridge.origin}${bridge.path}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(request())
-    });
-    assert.equal(ok.status, 200);
-    const body = await ok.json();
-    assert.equal(body.ok, true);
-    assert.equal(body.outputDirectory, '.patch-build/native/build-001');
-    assert.equal(builds, 1);
+    assert.equal(builds, 0);
   } finally {
     await bridge.close();
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('bridge implementation contains no direct child-process or shell execution surface', () => {
-  const source = fs.readFileSync('src/offline-studio-build-bridge.js', 'utf8');
-  assert.doesNotMatch(source, /node:child_process/);
-  assert.doesNotMatch(source, /\bexec(?:File|Sync)?\s*\(/);
-  assert.doesNotMatch(source, /\bspawn(?:Sync)?\s*\(/);
-  assert.match(source, /buildNativeGuiForHost/);
-  assert.match(source, /host !== '127\.0\.0\.1'/);
-  assert.match(source, /crypto\.timingSafeEqual/);
-  assert.match(source, /output-symlink/);
+test('bridge returns 413 for a bounded request without exposing a shell surface', async () => {
+  const root = workspace();
+  const bridge = await startOfflineBuildBridge({
+    workspaceRoot: root,
+    token: SAFE_TOKEN,
+    allowedOrigin: STUDIO_ORIGIN,
+    maxBodyBytes: 128,
+    builder() {
+      throw new Error('must not build');
+    }
+  });
+  try {
+    const response = await fetch(`${bridge.origin}${bridge.path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SAFE_TOKEN}`, 'Content-Type': 'application/json', Origin: STUDIO_ORIGIN },
+      body: JSON.stringify(request({ padding: 'x'.repeat(512) }))
+    });
+    assert.equal(response.status, 413);
+  } finally {
+    await bridge.close();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('bridge security core contains no child-process or generic shell execution surface', () => {
+  const core = fs.readFileSync('src/offline-studio-build-bridge-core.cjs', 'utf8');
+  const wrapper = fs.readFileSync('src/offline-studio-build-bridge.js', 'utf8');
+  const compilerAdapter = fs.readFileSync('scripts/offline-studio-compiler-builder.cjs', 'utf8');
+
+  assert.doesNotMatch(core, /node:child_process/);
+  assert.doesNotMatch(core, /\bexec(?:File|Sync)?\s*\(/);
+  assert.doesNotMatch(core, /\bspawn(?:Sync)?\s*\(/);
+  assert.match(core, /host !== '127\.0\.0\.1'/);
+  assert.match(core, /crypto\.timingSafeEqual/);
+  assert.match(core, /prepareSafeDirectory/);
+  assert.match(core, /OFFLINE_WORKSPACE_SNAPSHOT_PATH/);
+
+  assert.match(wrapper, /buildNativeGuiForHost/);
+  assert.match(wrapper, /offline-studio-build-bridge-core\.cjs/);
+
+  assert.match(compilerAdapter, /spawnSync\(compiler, \[/);
+  assert.match(compilerAdapter, /'link', path\.resolve\(sourcePath\)/);
+  assert.match(compilerAdapter, /'--name', name/);
+  assert.match(compilerAdapter, /'--out', outputBase/);
+  assert.doesNotMatch(compilerAdapter, /shell:\s*true/);
+  assert.doesNotMatch(compilerAdapter, /\bexec(?:File|Sync)?\s*\(/);
 });

@@ -47,6 +47,14 @@ function runExtractedCompiler() {
 function normalizeUserArgs(argv) {
   const rest = argv.slice(1);
   if (rest.length && sameExecutable(rest[0], process.execPath)) return rest.slice(1);
+  if (
+    process.env.PATCH_STUDIO_LOCAL_BUILD === '1' &&
+    rest.length > 1 &&
+    rest[0] !== 'link' &&
+    rest[1] === 'link'
+  ) {
+    return rest.slice(1);
+  }
   return rest;
 }
 
