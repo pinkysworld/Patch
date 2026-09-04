@@ -1,5 +1,9 @@
 import { listDesignerControls } from '../src/designer.js';
 import { duplicateDesignerTabPage } from './designer-tabs-page-model.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -57,7 +61,7 @@ function handleClick(event) {
     pendingPageIndex = result.pageIndex;
     setSource(result.source);
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document });
   }
 }
 
@@ -96,16 +100,10 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
+  clearDesignerInspectorError({ document });
   scheduleSync();
 }
 
 function removeDuplicatePageAction() {
   panel?.querySelectorAll('[data-tabs-duplicate-page]').forEach(element => element.remove());
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
