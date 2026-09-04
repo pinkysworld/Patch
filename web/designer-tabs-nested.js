@@ -18,6 +18,10 @@ import {
   updateDesignerTabPageTableData,
   updateDesignerTabPageTreeNodes
 } from '../src/designer-tabs-nested.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
@@ -172,7 +176,7 @@ function handleClick(event) {
     try {
       const type = panel.querySelector('[data-tabs-control-type]')?.value ?? 'text';
       setSource(addDesignerTabPageControl(code.value, context.control, context.pageIndex, type));
-    } catch (error) { showError(error); }
+    } catch (error) { showDesignerInspectorError(error, { document }); }
     return;
   }
 
@@ -241,7 +245,7 @@ function handleClick(event) {
     const contextKey = nestedContextKey(context.control, context.pageIndex);
     if (selectedStructures.get(contextKey) === Number(remove.dataset.tabsRemoveControl)) selectedStructures.delete(contextKey);
     setSource(removeDesignerTabPageControl(code.value, context.control, context.pageIndex, Number(remove.dataset.tabsRemoveControl)));
-  } catch (error) { showError(error); }
+  } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
 function applyNestedTableMutation(transform) {
@@ -251,7 +255,7 @@ function applyNestedTableMutation(transform) {
     const draft = readNestedTableDraft(structure.control);
     const next = transform(draft);
     setSource(updateDesignerTabPageTableData(code.value, structure.tabs, structure.pageIndex, structure.control.controlIndex, next));
-  } catch (error) { showError(error); }
+  } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
 function readNestedTableDraft(control) {
@@ -279,7 +283,7 @@ function applyNestedTreeAction(action) {
     else return;
     selectedTreePaths.set(key, result.path);
     setSource(updateDesignerTabPageTreeNodes(code.value, structure.tabs, structure.pageIndex, structure.control.controlIndex, result.nodes));
-  } catch (error) { showError(error); }
+  } catch (error) { showDesignerInspectorError(error, { document }); }
 }
 
 function currentStructure(expectedType = null) {
@@ -316,19 +320,12 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
+  clearDesignerInspectorError({ document });
   scheduleEnhance();
 }
 
 function removeEnhancement() {
   panel?.querySelector('[data-tabs-nested-controls]')?.remove();
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (target) {
-    target.textContent = error?.message ?? String(error);
-    target.hidden = false;
-  }
 }
 
 function nestedContextKey(control, pageIndex) {
