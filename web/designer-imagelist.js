@@ -7,6 +7,10 @@ import {
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError
+} from './designer-ux.js';
 
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
@@ -47,9 +51,10 @@ function addImageList() {
       .filter(control => control.windowIndex === windowIndex && control.type === 'imagelist')
       .at(-1) ?? null;
     setSource(next);
+    clearDesignerInspectorError({ document: doc });
     if (list) rememberDesignerSelection(canvas, designerSelectionForControl(list, 'core'), { reason: 'add-imagelist' });
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -206,7 +211,7 @@ async function addResourceItem() {
     items.push({ name, sourceExpr: studioResourceSourceExpression(resource.id) });
     commit(control, { items });
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -221,7 +226,7 @@ async function replaceResourceItem(index) {
     items[index] = { ...items[index], sourceExpr: studioResourceSourceExpression(resource.id) };
     commit(control, { items });
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -234,8 +239,9 @@ async function openResources() {
   try {
     const { openStudioResourceManager } = await import('./resource-manager.js');
     openStudioResourceManager();
+    clearDesignerInspectorError({ document: doc });
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -252,7 +258,7 @@ function renameItem(index, value) {
     items[index] = { ...items[index], name };
     commit(control, { items });
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
     syncInspector();
   }
 }
@@ -284,9 +290,10 @@ function commit(control, changes) {
     setSource(next);
     const updated = listDesignerControls(next).find(item => sameLocation(item, selection)) ?? control;
     rememberDesignerSelection(canvas, designerSelectionForControl(updated, 'core'), { emit: false });
+    clearDesignerInspectorError({ document: doc });
     syncInspector();
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document: doc });
   }
 }
 
@@ -326,13 +333,6 @@ function setSource(source) {
 
 function sameLocation(control, selection) {
   return Boolean(selection && Number(control?.windowIndex) === Number(selection.windowIndex) && Number(control?.controlIndex) === Number(selection.controlIndex));
-}
-
-function showError(error) {
-  const target = doc?.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
 }
 
 function installStylesheet() {
