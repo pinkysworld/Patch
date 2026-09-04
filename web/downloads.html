@@ -58,7 +58,7 @@ patch link app.patch --out App</pre>
     <h2>Stage 2 installed Build boundary</h2>
     <p><strong>Stage 2 R0.2 is deliberately bounded:</strong> on Windows x64, macOS Apple Silicon and Linux x64, <code>--workspace</code> enables a separate authenticated localhost Build bridge. The browser may request only versioned project-snapshot, native-Window-build and opaque-artifact operations. It cannot choose an executable, arbitrary command line, environment map, absolute resource path or output path.</p>
     <p>Windows ARM64, Linux ARM64, macOS Intel and the portable Node bundle remain Stage 1/browser-local only until matching host-native compiler/runtime distributions exist.</p>
-    <p><strong>Project-v4 binary resources are now transported through the installed-host path.</strong> Patch Studio sends its canonical project-v4 bundle, the host independently validates resource paths, decoded sizes and SHA-256 digests, and the existing Offline Compiler performs the normal project-v4 link. Current Picture, ImageList/Button-image and application/Form-icon resources therefore no longer need to fall back merely because the build is local.</p>
+    <p><strong>Current project-v4 binary resources are now transported through the installed-host path.</strong> Patch Studio sends its canonical project-v4 bundle, the host independently validates resource paths, decoded sizes and SHA-256 digests, and the existing Offline Compiler performs the normal project-v4 link. Current Picture, ImageList/Button-image and application/Form-icon resources therefore no longer need to fall back merely because the build is local.</p>
   </section>
 
   <section class="page-section">
@@ -67,11 +67,16 @@ patch link app.patch --out App</pre>
     <div class="doc-links">
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-windows-x64.exe"><strong>Compiler · Windows x64</strong><span>Standalone compiler + Current Ready Win32 runtime v1.10 linker with v1.8 compatibility underlay.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-arm64"><strong>Compiler · macOS Apple Silicon</strong><span>Standalone compiler + Current Ready AppKit runtime v1.10 linker.</span></a>
-      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>Compiler · macOS Intel</strong><span>Portable tar.gz kit. It includes its own Intel Node runtime, Current Ready AppKit runtime v1.10 and the legacy v1.8 compatibility runtime.</span></a>
+      <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-macos-x64.tar.gz"><strong>Compiler · macOS Intel</strong><span>portable tar.gz kit. It includes its own Intel Node runtime, Current Ready AppKit runtime v1.10 and the legacy v1.8 compatibility runtime.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-linux-x64"><strong>Compiler · Linux x64</strong><span>Standalone compiler + Current Ready native GTK3 runtime v1.10 linker.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/patch-freebsd-x64.tar.gz"><strong>Compiler · FreeBSD x64</strong><span>Portable offline compiler kit + C99 Console linker. Requires local Node 22+ and cc. Native FreeBSD Window/GUI linking is not claimed yet.</span></a>
       <a class="doc-link" href="https://github.com/pinkysworld/Patch/releases/download/offline-compiler-v0.2/SHA256SUMS"><strong>Compiler SHA256 checksums</strong><span>Verification file for every compiler asset in the rolling beta channel.</span></a>
     </div>
+  </section>
+
+  <section class="page-section">
+    <h2>Ready runtime verification</h2>
+    <p>Hosted Ready builds use <code>runtime-manifest.json</code> as the browser-side integrity contract. The current desktop runtime releases are <code>native-win32-runtime-v1.10</code>, <code>native-macos-runtime-v1.10</code> and <code>native-linux-runtime-v1.10</code>. Their published bytes and digests are verified before the generated Studio site exposes them as Current Ready targets.</p>
   </section>
 
   <section class="page-section">
