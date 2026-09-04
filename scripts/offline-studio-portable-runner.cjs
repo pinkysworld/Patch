@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { createOfflineStudioBuildBridge } = require('./offline-studio-build-bridge.cjs');
 
 const root = __dirname;
 const siteRoot = path.join(root, 'site');
@@ -15,14 +16,27 @@ if (manifest?.format !== 'patch-offline-studio-manifest' || !Array.isArray(manif
   throw new Error('Patch Offline Studio portable manifest is invalid.');
 }
 
+const compilerPath = manifest.localBuild?.compilerFile
+  ? path.resolve(root, ...String(manifest.localBuild.compilerFile).split('/'))
+  : null;
+const bridge = createOfflineStudioBuildBridge({
+  platform: manifest.localBuild?.platform ?? process.platform,
+  arch: manifest.localBuild?.arch ?? process.arch,
+  compilerPath,
+  compilerSha256: manifest.localBuild?.compilerSha256 ?? ''
+});
+
 const files = new Map(manifest.files.map(entry => [entry.path, entry]));
 const verified = new Map();
 const session = crypto.randomBytes(18).toString('hex');
 const prefix = `/${session}/`;
 const smokeMode = process.env.PATCH_OFFLINE_STUDIO_SMOKE === '1';
 const noOpen = smokeMode || process.env.PATCH_OFFLINE_STUDIO_NO_OPEN === '1';
+let localOrigin = null;
 
 const server = http.createServer((request, response) => {
+  if (bridge.route(request, response, { prefix, securityHeaders, origin: localOrigin })) return;
+
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.writeHead(405, { ...securityHeaders(), Allow: 'GET, HEAD' });
     response.end();
@@ -95,19 +109,26 @@ server.on('clientError', (_error, socket) => socket.end('HTTP/1.1 400 Bad Reques
 
 server.listen(0, '127.0.0.1', async () => {
   const address = server.address();
-  const url = `http://127.0.0.1:${address.port}${prefix}`;
+  localOrigin = `http://127.0.0.1:${address.port}`;
+  const url = `${localOrigin}${prefix}`;
+  const capability = bridge.capability();
   console.log(`Patch Offline Studio Portable ${manifest.patchVersion ?? ''}`.trim());
   console.log(`Platform: ${process.platform} ${process.arch}`);
   console.log(`Local IDE: ${url}`);
   console.log('Network access is not required; the IDE is served only on this machine.');
+  console.log(capability.supported
+    ? `Local native build: ${capability.platform}/${capability.arch} via bundled offline compiler (${capability.compilerSha256?.slice(0, 12) ?? 'unhashed'}…).`
+    : `Local native build: unavailable in this package (${capability.reason}).`);
 
   if (smokeMode) {
     try {
       await runSelfSmoke(url);
       console.log('Offline Studio portable smoke: OK');
+      bridge.dispose();
       server.close(() => process.exit(0));
     } catch (error) {
       console.error(`Offline Studio portable smoke failed: ${error?.message ?? error}`);
+      bridge.dispose();
       server.close(() => process.exit(2));
     }
     return;
@@ -122,6 +143,7 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 function shutdown() {
+  bridge.dispose();
   server.close(() => process.exit(0));
   setTimeout(() => process.exit(0), 1500).unref();
 }
@@ -145,20 +167,31 @@ function isSafeRelativePath(relative) {
   return segments.every(segment => segment && segment !== '.' && segment !== '..');
 }
 
-function runSelfSmoke(url) {
+async function runSelfSmoke(url) {
+  const index = await getLocal(url);
+  if (index.statusCode !== 200) throw new Error(`expected HTTP 200, received ${index.statusCode}`);
+  if (!/Patch Studio/i.test(index.body)) throw new Error('portable index.html did not contain the Patch Studio marker');
+  if (!String(index.headers['content-security-policy'] ?? '').includes("connect-src 'self'")) {
+    throw new Error('portable CSP did not retain the local-only connect-src policy');
+  }
+  const sessionResponse = await getLocal(new URL('__patch/session', url).toString());
+  if (sessionResponse.statusCode !== 200) throw new Error(`local bridge session endpoint returned ${sessionResponse.statusCode}`);
+  const sessionPayload = JSON.parse(sessionResponse.body);
+  if (sessionPayload?.nativeBuild?.contract !== 'patch-offline-studio-build-bridge/0.1' || !sessionPayload?.token) {
+    throw new Error('local bridge session contract is missing');
+  }
+}
+
+function getLocal(url) {
   return new Promise((resolve, reject) => {
     const request = http.get(url, { timeout: 5000 }, response => {
       const chunks = [];
       response.on('data', chunk => chunks.push(chunk));
-      response.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf8');
-        if (response.statusCode !== 200) return reject(new Error(`expected HTTP 200, received ${response.statusCode}`));
-        if (!/Patch Studio/i.test(body)) return reject(new Error('portable index.html did not contain the Patch Studio marker'));
-        if (!String(response.headers['content-security-policy'] ?? '').includes("connect-src 'self'")) {
-          return reject(new Error('portable CSP did not retain the local-only connect-src policy'));
-        }
-        resolve();
-      });
+      response.on('end', () => resolve({
+        statusCode: response.statusCode,
+        headers: response.headers,
+        body: Buffer.concat(chunks).toString('utf8')
+      }));
     });
     request.on('timeout', () => request.destroy(new Error('self-smoke timed out')));
     request.on('error', reject);
