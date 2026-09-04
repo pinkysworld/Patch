@@ -7,7 +7,7 @@ import { PatchInterpreter } from '../src/interpreter.js';
 import { PATCH_WINDOW_EVENTS_VERSION, triggerWindowEvent } from '../src/window-events.js';
 import { validateWindowRuntimeSupport } from '../src/window-build.js';
 
-const playground = fs.readFileSync('web/playground.js', 'utf8');
+const renderer = fs.readFileSync('web/studio-window-renderer.js', 'utf8');
 const SOURCE = `create list selected = []
 
 window "Files" as main:
@@ -66,13 +66,13 @@ test('TreeView changed exposes a transient text-list path and persistence still 
 });
 
 test('Studio App Preview renders an accessible TreeView and emits full path selection', () => {
-  execFileSync(process.execPath, ['--check', 'web/playground.js'], { stdio: 'pipe' });
-  assert.match(playground, /function createTreeElement\(control, context\)/);
-  assert.match(playground, /root\.setAttribute\('role', 'tree'\)/);
-  assert.match(playground, /item\.setAttribute\('role', 'treeitem'\)/);
-  assert.match(playground, /group\.setAttribute\('role', 'group'\)/);
-  assert.match(playground, /trigger\(control\.id, 'changed', \{ value: selectedPath \}\)/);
-  assert.match(playground, /!interactive && control\.type !== 'tree'/);
+  execFileSync(process.execPath, ['--check', 'web/studio-window-renderer.js'], { stdio: 'pipe' });
+  assert.match(renderer, /function createTreeElement\(control, context\)/);
+  assert.match(renderer, /root\.setAttribute\('role', 'tree'\)/);
+  assert.match(renderer, /item\.setAttribute\('role', 'treeitem'\)/);
+  assert.match(renderer, /group\.setAttribute\('role', 'group'\)/);
+  assert.match(renderer, /context\.dispatch\(control\.id, 'changed', \{ value: selectedPath \}\)/);
+  assert.match(renderer, /!interactive && control\.type !== 'tree'/);
 });
 
 test('TreeView Stage 1 is explicitly opt-in at Window runtime validation boundary', () => {
