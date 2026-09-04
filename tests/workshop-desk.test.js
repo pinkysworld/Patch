@@ -19,14 +19,21 @@ function embeddedWorkshopBaseline() {
   return match[1];
 }
 
-test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to the canonical current example', () => {
-  assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.5');
+function normalizeRetainedSampleSpacing(source) {
+  return String(source).replace(
+    '  statusbar "{status}" as desk_status at 0, 692 size 1080, 28\nwindow "Workshop settings"',
+    '  statusbar "{status}" as desk_status at 0, 692 size 1080, 28\n\nwindow "Workshop settings"'
+  );
+}
+
+test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample to canonical v0.6', () => {
+  assert.equal(WORKSHOP_DESK_CURRENT_SAMPLE_VERSION, '0.6');
   assert.match(html, /value="workshopDesk">Workshop desk<\/option>/);
   assert.match(studioModule, /sample\.value === 'workshopDesk'/);
   assert.equal(
-    upgradeWorkshopDeskSource(embeddedWorkshopBaseline()),
+    normalizeRetainedSampleSpacing(upgradeWorkshopDeskSource(embeddedWorkshopBaseline())),
     example,
-    'Studio Workshop Desk upgrade must resolve to examples/workshop-desk.patch exactly'
+    'Studio Workshop Desk upgrade must resolve to examples/workshop-desk.patch apart from retained compatibility spacing'
   );
   assert.equal(upgradeWorkshopDeskSource(example), example, 'Workshop upgrade must be idempotent');
 
@@ -44,9 +51,12 @@ test('Workshop Desk compiles, runs and Studio upgrades its compatibility sample 
   assert.equal(result.state.customer_tier, 'Gold');
   assert.equal(result.state.diagnostic_mode, 'Runtime');
   assert.equal(result.state.diagnostic_runs, 0);
-  assert.equal(result.ui.length, 6);
+  assert.equal(result.state.gallery_text, 'Workshop sample');
+  assert.equal(result.state.gallery_level, 60);
+  assert.equal(result.state.gallery_ticks, 0);
+  assert.equal(result.ui.length, 7);
   assert.equal(result.ui.find(window => window.id === 'main')?.visible, true);
-  for (const id of ['settings', 'details', 'inventory', 'customer_profile', 'diagnostics']) {
+  for (const id of ['settings', 'details', 'inventory', 'customer_profile', 'diagnostics', 'components']) {
     assert.equal(result.ui.find(window => window.id === id)?.visible, false, `${id} should start closed`);
   }
 });
@@ -61,7 +71,7 @@ test('Workshop Desk can execute the compiler AST without reparsing source', () =
   assert.deepEqual(astResult.output, sourceResult.output);
 });
 
-test('Workshop Desk exercises stateful controls, six Forms, transient structural selection, Picture and Timer events', () => {
+test('Workshop Desk exercises the seven-Form workflow and Component Gallery events', () => {
   const runtime = new PatchInterpreter();
   runtime.run(example);
 
@@ -78,10 +88,10 @@ test('Workshop Desk exercises stateful controls, six Forms, transient structural
   assert.deepEqual(result.state.services, ['Diagnostics', 'Pickup']);
 
   result = triggerWindowEvent(runtime, 'board', 'changed', { value: ['WD-105', 'Grace', 'Bench B', 'Quoted'] });
-  assert.equal(result.state.status, 'Workshop board row selected');
+  assert.equal(result.state.status, 'Queue selection changed · open Details to continue');
 
   result = triggerWindowEvent(runtime, 'parts', 'changed', { value: ['Parts', 'Input', 'Keyboard'] });
-  assert.equal(result.state.status, 'Inventory tree path selected');
+  assert.equal(result.state.status, 'Parts selection changed · open Inventory to continue');
 
   result = triggerWindowEvent(runtime, 'workshop_logo', 'clicked');
   assert.equal(result.state.status, 'Workshop mark clicked');
@@ -147,6 +157,34 @@ test('Workshop Desk exercises stateful controls, six Forms, transient structural
   result = triggerWindowEvent(runtime, 'diagnostics_clock', 'ticked');
   assert.equal(result.state.diagnostic_runs, 2);
 
+  result = triggerWindowEvent(runtime, 'components_button', 'clicked');
+  assert.equal(result.ui.find(window => window.id === 'components')?.visible, true);
+  assert.equal(result.state.gallery_status, 'Complete Component Registry 0.9 gallery opened');
+
+  result = triggerWindowEvent(runtime, 'gallery_text', 'changed', { value: 'Edited sample' });
+  assert.equal(result.state.gallery_text, 'Edited sample');
+  result = triggerWindowEvent(runtime, 'gallery_enabled', 'changed', { value: false });
+  assert.equal(result.state.gallery_enabled, false);
+  result = triggerWindowEvent(runtime, 'gallery_mode', 'changed', { value: 'Review' });
+  assert.equal(result.state.gallery_mode, 'Review');
+  result = triggerWindowEvent(runtime, 'gallery_color', 'changed', { value: 'Green' });
+  assert.equal(result.state.gallery_color, 'Green');
+  result = triggerWindowEvent(runtime, 'gallery_features', 'changed', { value: ['Designer', 'Runtime'] });
+  assert.deepEqual(result.state.gallery_features, ['Designer', 'Runtime']);
+  result = triggerWindowEvent(runtime, 'gallery_level', 'changed', { value: 80 });
+  assert.equal(result.state.gallery_level, 80);
+  result = triggerWindowEvent(runtime, 'gallery_table', 'changed', { value: ['Table', 'changed', 'Ready'] });
+  assert.equal(result.state.gallery_status, 'Table selection handled');
+  result = triggerWindowEvent(runtime, 'gallery_tree', 'changed', { value: ['Registry 0.9', 'Data', 'TreeView'] });
+  assert.equal(result.state.gallery_status, 'TreeView selection handled');
+  result = triggerWindowEvent(runtime, 'gallery_picture', 'clicked');
+  assert.equal(result.state.gallery_status, 'Picture click handled');
+  result = triggerWindowEvent(runtime, 'gallery_clock', 'ticked');
+  assert.equal(result.state.gallery_ticks, 1);
+  result = triggerWindowEvent(runtime, 'gallery_refresh', 'clicked');
+  assert.equal(result.state.gallery_ticks, 2);
+  assert.equal(result.state.gallery_status, 'Gallery refreshed');
+
   result = triggerWindowEvent(runtime, 'reset_button', 'clicked');
   assert.equal(result.state.customer, 'Ada');
   assert.equal(result.state.item, 'Keyboard');
@@ -164,10 +202,17 @@ test('Workshop Desk exercises stateful controls, six Forms, transient structural
   assert.deepEqual(result.state.customer_channels, ['Email']);
   assert.equal(result.state.diagnostic_interval, 5);
   assert.equal(result.state.diagnostic_runs, 0);
+  assert.equal(result.state.gallery_text, 'Workshop sample');
+  assert.equal(result.state.gallery_enabled, true);
+  assert.equal(result.state.gallery_mode, 'Ready');
+  assert.equal(result.state.gallery_color, 'Blue');
+  assert.deepEqual(result.state.gallery_features, ['Designer']);
+  assert.equal(result.state.gallery_level, 60);
+  assert.equal(result.state.gallery_ticks, 0);
   assert.equal(result.state.status, 'Ticket reset');
 });
 
-test('Workshop Desk covers every integrated cross-platform Ready component without hidden unsupported app state', () => {
+test('Workshop Desk covers every Component Registry 0.9 control without hidden app state', () => {
   for (const marker of [
     'window "Workshop Desk" as main',
     'window "Workshop settings" as settings',
@@ -175,34 +220,35 @@ test('Workshop Desk covers every integrated cross-platform Ready component witho
     'window "Inventory Center" as inventory',
     'window "Customer Profile" as customer_profile',
     'window "Workshop Diagnostics" as diagnostics',
+    'window "Component Gallery" as components',
     'text "Workshop Desk"', 'input item', 'combo "', 'radio "', 'checkbox "', 'slider ', 'listbox "',
     'table "Ticket", "Customer", "Bench", "State" as board',
-    'table "SKU", "Part", "Zone", "Stock", "State" as inventory_grid',
-    'table "Ticket", "Item", "State", "Quote" as customer_jobs',
-    'table "Check", "Surface", "State" as diagnostic_checks',
-    'tree as parts', 'tree as inventory_tree', 'tabs as prefs', 'tabs as diagnostic_tabs',
-    'statusbar "{status}" as desk_status', 'statusbar "{inventory_status}" as inventory_statusbar',
-    'statusbar "{customer_status}" as customer_statusbar', 'statusbar "{diagnostic_status}" as diagnostic_statusbar',
-    'picture as workshop_logo from "data:image/png;base64,',
-    'panel as runtime_panel', 'shape rounded as runtime_shape', 'paintbox as ticket_canvas',
-    'timer as workshop_clock interval 5000', 'timer as diagnostics_clock interval 3000', 'when ticket_canvas paint:',
-    'draw clear #f8fafc', 'draw rectangle 12, 12', 'draw ellipse 146, 12', 'draw line 12, 58',
-    'draw text "Live quote"', 'draw text ticket_state',
-    'button "Inventory" as inventory_button', 'button "Customer" as customer_button',
-    'button "Diagnostics" as diagnostics_button', 'create number ticket_total = 40',
-    'create text inventory_filter = "All stock"', 'create text customer_email = "ada@example.com"',
-    'create text diagnostic_mode = "Runtime"',
-    'open settings', 'open details', 'open inventory', 'open customer_profile', 'open diagnostics',
-    'close settings', 'close details', 'close inventory', 'close customer_profile', 'close diagnostics',
+    'table "Component", "Event", "State" as gallery_table',
+    'tree as parts', 'tree as inventory_tree', 'tree as gallery_tree', 'tabs as prefs', 'tabs as diagnostic_tabs',
+    'statusbar "{status}" as desk_status', 'statusbar "{gallery_status}" as gallery_statusbar',
+    'picture as workshop_logo from "data:image/png;base64,', 'picture as gallery_picture from "data:image/png;base64,',
+    'panel as runtime_panel', 'panel as gallery_panel', 'shape rounded as runtime_shape', 'shape rounded as gallery_shape',
+    'paintbox as ticket_canvas', 'paintbox as gallery_canvas',
+    'timer as workshop_clock interval 5000', 'timer as diagnostics_clock interval 3000', 'timer as gallery_clock interval 2000',
+    'imagelist as gallery_images size 20, 20:', 'image mark from "patch-resource:workshop.mark"',
+    'when ticket_canvas paint:', 'when gallery_canvas paint:',
+    'draw clear #f8fafc', 'draw rectangle 12, 12', 'draw ellipse 146, 12', 'draw image "data:image/png;base64,',
+    'button "Components" as components_button', 'button "Refresh" as gallery_refresh',
+    'create number ticket_total = 40', 'create text gallery_text = "Workshop sample"',
+    'open settings', 'open details', 'open inventory', 'open customer_profile', 'open diagnostics', 'open components',
+    'close settings', 'close details', 'close inventory', 'close customer_profile', 'close diagnostics', 'close components',
+    'Current desktop Ready runtime contract: v1.10.',
+    'Seven-Form RAD showcase · every Component Registry 0.9 control is represented',
     '# @layout anchor left right bottom'
   ]) assert.ok(example.includes(marker), marker);
   assert.doesNotMatch(example, /\.frm|\.dfm|localStorage/);
   assert.doesNotMatch(example, /change selected_(?:job|part)/);
   assert.doesNotMatch(example, /create thing ticket:|do quote\(|allow quote:|change ticket:/);
-  assert.doesNotMatch(example, /imagelist as|\bicon\s+"patch-resource:/, 'native-fail-closed resource consumers stay out of the Ready acceptance source');
+  assert.doesNotMatch(example, /button\s+.+\s+image\s+gallery_images\./, 'single-file Workshop keeps project-resource Button images in their dedicated project-v4 fixture');
+  assert.doesNotMatch(example, /\bicon\s+"patch-resource:/, 'single-file Workshop does not pretend to package a project-v4 application icon');
 });
 
-test('Workshop Desk builds as a Standalone Window Web App with the six-Form showcase', () => {
+test('Workshop Desk builds as a Standalone Window Web App with the seven-Form showcase', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-workshop-web-'));
   const outputPath = path.join(tempDir, 'WorkshopDesk-test.html');
   try {
@@ -213,8 +259,8 @@ test('Workshop Desk builds as a Standalone Window Web App with the six-Form show
     assert.match(out, /standalone single-file Web App/);
     const built = fs.readFileSync(outputPath, 'utf8');
     for (const marker of [
-      'Workshop Desk', 'Workshop settings', 'Job details', 'Inventory Center', 'Customer Profile', 'Workshop Diagnostics',
-      'runtime_shape', 'workshop_clock', 'diagnostics_clock', 'workshop_logo', 'ticket_canvas'
+      'Workshop Desk', 'Workshop settings', 'Job details', 'Inventory Center', 'Customer Profile', 'Workshop Diagnostics', 'Component Gallery',
+      'runtime_shape', 'gallery_shape', 'workshop_clock', 'diagnostics_clock', 'gallery_clock', 'workshop_logo', 'gallery_picture', 'ticket_canvas', 'gallery_canvas'
     ]) assert.match(built, new RegExp(marker));
     assert.match(built, /data:image\/png;base64/);
   } finally {

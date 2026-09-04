@@ -2,10 +2,209 @@ import { listDesignerControls } from '../src/designer.js';
 import { patchComponent } from '../src/component-registry.js';
 
 export const STUDIO_BUILD_READINESS_VERSION = '0.1';
-export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.5';
+export const WORKSHOP_DESK_CURRENT_SAMPLE_VERSION = '0.6';
 
 const WORKSHOP_PICTURE_SOURCE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAo0lEQVR42mP88evPf4YBBEwMAwxGHcCCT1I38z2cfXm6IFZxfABZDy7AiC0REmsBsQCfQ+gSBfg8xERr3xMyd3AnQnLjFZdvdTPfY+hjorblxKZ+sh1ArOHEqht6JSGxuYRYdUzUztf45LFFCwstCpdBWRnhSpRMA2k5RVFArazIQiuDR1tEow4YdQDZDqBmXT8kQoARX98QV7+Abg4YzQX0AAAIsD5sBwsk2AAAAABJRU5ErkJggg==';
-const WORKSHOP_DRAW_IMAGE_LINE = `  draw image "${WORKSHOP_PICTURE_SOURCE}" at 208, 10 size 42, 42`;
+
+const WORKSHOP_MAIN_V06 = `window "Workshop Desk" as main size 1080, 720:
+  picture as workshop_logo from "${WORKSHOP_PICTURE_SOURCE}" description "Workshop mark" at 24, 16 size 54, 54
+  text "Workshop Desk" at 94, 16 size 260, 30
+  text "{status}" at 94, 48 size 610, 22
+  text "Quote {ticket_total} · {ticket_state}" at 790, 18 size 260, 28
+  text "Current Ready · IR 1.9 · runtime v1.10" at 790, 50 size 260, 20
+
+  text "Ticket" at 24, 92 size 110, 24
+  text "Customer" at 24, 122 size 100, 22
+  combo "Ada", "Grace", "Linus", "Margaret" as customer at 24, 146 size 210, 36
+  text "Item" at 250, 122 size 80, 22
+  input item at 250, 146 size 252, 36
+  text "Quantity {qty}" at 518, 122 size 130, 22
+  slider 1..8 as qty step 1 at 518, 146 size 220, 38
+  checkbox "Rush bench" as rush at 758, 146 size 160, 36
+
+  text "Workflow" at 24, 202 size 120, 24
+  text "Payment" at 24, 232 size 90, 22
+  radio "Card", "Cash", "Account" as pay at 24, 256 size 250, 82
+  text "Priority" at 292, 232 size 90, 22
+  radio "Normal", "High", "Critical" as priority at 292, 256 size 250, 82
+  text "Notes" at 560, 232 size 80, 22
+  input notes at 560, 256 size 490, 36
+  text "Services" at 560, 298 size 90, 22
+  listbox "Diagnostics", "Warranty", "Install", "Pickup" as services at 560, 322 size 490, 58
+
+  text "Queue" at 24, 394 size 100, 22
+  table "Ticket", "Customer", "Bench", "State" as board at 24, 420 size 520, 190:
+    row "WD-104", "Ada", "Bench A", "Open"
+    row "WD-105", "Grace", "Bench B", "Quoted"
+    row "WD-106", "Linus", "Bench A", "Ready"
+    row "WD-107", "Margaret", "Overflow", "Waiting"
+
+  text "Parts & tools" at 560, 394 size 160, 22
+  tree as parts at 560, 420 size 240, 190:
+    node "Parts"
+      node "Input"
+        node "Keyboard"
+        node "Trackpad"
+      node "Displays"
+        node "Panel"
+        node "Cable"
+    node "Tools"
+      node "Driver"
+      node "Solder"
+      node "Meter"
+
+  text "Actions" at 816, 394 size 120, 22
+  button "Quote" as quote_button at 816, 420 size 104, 36
+  button "Details" as details_button at 936, 420 size 104, 36
+  button "Ready" as complete_button at 816, 464 size 104, 36
+  button "Reset" as reset_button at 936, 464 size 104, 36
+  button "Inventory" as inventory_button at 816, 508 size 104, 36
+  button "Customer" as customer_button at 936, 508 size 104, 36
+  button "Diagnostics" as diagnostics_button at 816, 552 size 104, 36
+  button "Settings" as settings_button at 936, 552 size 104, 36
+  button "Components" as components_button at 816, 596 size 224, 36
+
+  # @layout anchor left right bottom
+  text "Seven-Form RAD showcase · every Component Registry 0.9 control is represented; ImageList is demonstrated as a nonvisual component." at 24, 640 size 1016, 24
+  timer as workshop_clock interval 5000
+  statusbar "{status}" as desk_status at 0, 692 size 1080, 28`;
+
+const WORKSHOP_GALLERY_STATE_V06 = `create text gallery_text = "Workshop sample"
+create boolean gallery_enabled = true
+create text gallery_mode = "Ready"
+create text gallery_color = "Blue"
+create list gallery_features = ["Designer"]
+create number gallery_level = 60
+create text gallery_status = "Component gallery ready"
+create number gallery_ticks = 0`;
+
+const WORKSHOP_GALLERY_FORM_V06 = `window "Component Gallery" as components size 900, 640:
+  text "Component Gallery" at 24, 20 size 280, 30
+  text "{gallery_status}" at 320, 20 size 550, 30
+  text "Inputs & choices" at 24, 66 size 200, 24
+  text "Text input" at 24, 96 size 100, 22
+  input gallery_text at 24, 120 size 250, 36
+  checkbox "Enabled" as gallery_enabled at 24, 170 size 180, 36
+  text "Mode" at 24, 218 size 80, 22
+  radio "Ready", "Review", "Blocked" as gallery_mode at 24, 242 size 250, 82
+
+  text "Color" at 294, 96 size 80, 22
+  combo "Blue", "Green", "Amber", "Red" as gallery_color at 294, 120 size 220, 36
+  text "Level {gallery_level}" at 294, 170 size 130, 22
+  slider 0..100 as gallery_level step 10 at 294, 194 size 220, 38
+  text "Features" at 294, 246 size 100, 22
+  listbox "Designer", "Compiler", "Runtime", "Offline" as gallery_features at 294, 270 size 220, 64
+
+  text "Graphics & containers" at 540, 66 size 250, 24
+  picture as gallery_picture from "${WORKSHOP_PICTURE_SOURCE}" description "Gallery picture" at 540, 100 size 64, 64
+  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 14 opacity 1 at 620, 100 size 96, 64
+  paintbox as gallery_canvas at 732, 100 size 144, 100
+  panel as gallery_panel at 540, 220 size 336, 108:
+    text "Panel Stage 1"
+    text "Source-backed visual grouping"
+
+  imagelist as gallery_images size 20, 20:
+    image mark from "patch-resource:workshop.mark"
+  text "ImageList is nonvisual and appears in the Object Tree. Resource-backed button images use project v4 assets." at 540, 340 size 336, 46
+
+  text "Data controls" at 24, 354 size 180, 24
+  table "Component", "Event", "State" as gallery_table at 24, 384 size 480, 150:
+    row "Button", "clicked", "Ready"
+    row "Input", "changed", "Ready"
+    row "Table", "changed", "Ready"
+    row "TreeView", "changed", "Ready"
+    row "PaintBox", "paint", "Ready"
+
+  tree as gallery_tree at 524, 400 size 180, 134:
+    node "Registry 0.9"
+      node "Basic"
+        node "Text"
+        node "Button"
+        node "Input"
+      node "Data"
+        node "Table"
+        node "TreeView"
+      node "Graphics"
+        node "Picture"
+        node "Shape"
+        node "PaintBox"
+      node "Nonvisual"
+        node "Timer"
+        node "ImageList"
+
+  button "Refresh" as gallery_refresh at 724, 448 size 152, 38
+  button "Close gallery" as close_components at 724, 496 size 152, 38
+  timer as gallery_clock interval 2000
+  statusbar "{gallery_status}" as gallery_statusbar at 0, 612 size 900, 28`;
+
+const WORKSHOP_GALLERY_EVENTS_V06 = `when gallery_text changed:
+  change gallery_text:
+    set = value
+  change gallery_status:
+    set = "Input change handled"
+
+when gallery_enabled changed:
+  change gallery_enabled:
+    set = value
+  change gallery_status:
+    set = "Checkbox change handled"
+
+when gallery_mode changed:
+  change gallery_mode:
+    set = value
+  change gallery_status:
+    set = "Radio change handled"
+
+when gallery_color changed:
+  change gallery_color:
+    set = value
+  change gallery_status:
+    set = "ComboBox change handled"
+
+when gallery_features changed:
+  change gallery_features:
+    set = value
+  change gallery_status:
+    set = "ListBox change handled"
+
+when gallery_level changed:
+  change gallery_level:
+    set = value
+  change gallery_status:
+    set = "Slider change handled"
+
+when gallery_table changed:
+  change gallery_status:
+    set = "Table selection handled"
+
+when gallery_tree changed:
+  change gallery_status:
+    set = "TreeView selection handled"
+
+when gallery_picture clicked:
+  change gallery_status:
+    set = "Picture click handled"
+
+when gallery_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 10, 10 size 54, 28 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 76, 10 size 28, 28 fill #dcfce7 stroke #16a34a width 2
+  draw text gallery_mode at 10, 62 color #111827 size 14
+
+when gallery_clock ticked:
+  change gallery_ticks:
+    add 1
+
+when gallery_refresh clicked:
+  change gallery_ticks:
+    add 1
+  change gallery_status:
+    set = "Gallery refreshed"
+
+when close_components clicked:
+  close components
+  change status:
+    set = "Component Gallery closed"`;
 
 const doc = typeof document === 'undefined' ? null : document;
 const win = typeof window === 'undefined' ? null : window;
@@ -47,127 +246,74 @@ function captureProgrammaticMutation() {
 }
 
 /**
- * Upgrade the retained beta35 Workshop Desk literal to the current canonical
- * repository example. The showcase stays inside the current native-ready
- * scalar/list action subset and exercises every integrated cross-platform visual
- * component whose current desktop contract is Ready. Resource-only ImageList
- * authoring remains outside this single-source native acceptance example because
- * the native ImageList/Button-image contract intentionally fails closed.
+ * Upgrade the retained beta35 Workshop Desk compatibility literal to the
+ * canonical polished v0.6 showcase. The compatibility literal remains embedded
+ * in beta35-studio.js so old cached Studio shells still load, while this bridge
+ * owns the current source. User-authored projects are not rewritten by this
+ * helper unless they still match the known Workshop v0.5 signature.
  */
 export function upgradeWorkshopDeskSource(source) {
   let next = String(source ?? '');
-  if (!next.includes('window "Workshop Desk" as main size 1080, 700:')) return next;
   if (
-    next.includes('timer as workshop_clock interval 5000') &&
-    next.includes('panel as runtime_panel') &&
-    next.includes('picture as workshop_logo') &&
-    next.includes('paintbox as ticket_canvas') &&
-    next.includes('create number ticket_total = 40') &&
-    next.includes(WORKSHOP_DRAW_IMAGE_LINE) &&
-    next.includes('Six-Form Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.') &&
-    next.includes('window \"Inventory Center\" as inventory size 900, 620:') &&
-    next.includes('window \"Customer Profile\" as customer_profile size 760, 600:') &&
-    next.includes('window \"Workshop Diagnostics\" as diagnostics size 840, 620:') &&
-    next.includes('It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls.') &&
-    !next.includes('create thing ticket:')
+    next.includes('window "Component Gallery" as components size 900, 640:') &&
+    next.includes('Seven-Form RAD showcase · every Component Registry 0.9 control is represented') &&
+    next.includes('Current desktop Ready runtime contract: v1.10.')
   ) return next;
+
+  const v05 = next.includes('window "Workshop Desk" as main size 1080, 700:')
+    && next.includes('Six-Form Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar.')
+    && next.includes('window "Workshop Diagnostics" as diagnostics size 840, 620:')
+    && next.includes('Current desktop Ready runtime contract: v1.8.')
+    && !next.includes('create thing ticket:');
+  if (!v05) return next;
+
+  if (!next.includes('create text gallery_text = "Workshop sample"')) {
+    next = next.replace(
+      'create text diagnostic_status = "All systems ready"',
+      `create text diagnostic_status = "All systems ready"\n${WORKSHOP_GALLERY_STATE_V06}`
+    );
+  }
+
+  const mainStart = next.indexOf('window "Workshop Desk" as main size 1080, 700:');
+  const settingsStart = next.indexOf('\nwindow "Workshop settings" as settings size 720, 520:');
+  if (mainStart < 0 || settingsStart < 0 || settingsStart <= mainStart) return next;
+  next = `${next.slice(0, mainStart)}${WORKSHOP_MAIN_V06}${next.slice(settingsStart)}`;
 
   next = next
     .replace(
-      'create thing ticket:\n  customer = "Ada"\n  item = "Keyboard"\n  qty = 1\n  total = 40\n  bench = "Bench A"\n  priority = "Normal"\n  payment = "Card"\n  state = "Open"\n\n',
-      ''
+      '      text "Workshop Desk is the Patch Studio six-Form showcase project."\n      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."',
+      '      text "Workshop Desk is the Patch Studio seven-Form RAD showcase project."\n      text "It covers the complete Component Registry 0.9 surface, including nonvisual Timer and ImageList authoring."\n      text "Current Ready desktop contract: Native GUI IR 1.9 / payload v19 / runtime v1.10."'
     )
-    .replace('create list selected_part = []\ncreate list selected_job = []\n', '')
+    .replace('      text "Current desktop Ready runtime contract: v1.8."', '      text "Current desktop Ready runtime contract: v1.10."')
     .replace(
-      'create number labor_limit = 50\n',
-      'create number labor_limit = 50\ncreate number heartbeat = 0\ncreate number ticket_total = 40\ncreate text ticket_bench = "Bench A"\ncreate text ticket_state = "Open"\n'
+      '      text "Workshop Desk exercises six Forms and multiple adapter-backed controls."',
+      '      text "Workshop Desk exercises seven Forms and the complete Component Registry 0.9 surface."'
     )
-    .replace(
-      '\nallow quote:\n  ticket.total may increase up to 500\n\nmake quote(ticket, extra number 0..50):\n  change ticket:\n    add extra to total\n',
-      ''
-    )
-    .replace('  text "Quote {ticket.total} · {ticket.state}" at 840, 16 size 210, 30', '  text "Quote {ticket_total} · {ticket_state}" at 840, 16 size 210, 30')
-    .replace(
-      '  checkbox "Rush bench" as rush at 788, 82 size 150, 36',
-      `  checkbox "Rush bench" as rush at 788, 82 size 150, 36\n  picture as workshop_logo from "${WORKSHOP_PICTURE_SOURCE}" description "Workshop mark" at 958, 58 size 70, 70`
-    )
-    .replace(
-      '  text "Board and inventory selections stay transient until source commits them." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Persistent edits use explicit semantic changes. Try the Forms, nested settings, Table, TreeView and native build." at 24, 614 size 980, 26\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28',
-      '  text "Board and inventory selections are transient; the handlers only update status." at 24, 558 size 980, 26\n  # @layout anchor left right bottom\n  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26\n  timer as workshop_clock interval 5000\n  statusbar "{status}" as desk_status at 0, 672 size 1080, 28'
-    )
-    .replace(
-      '  text "Current Ready demo: Forms, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26',
-      '  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26'
-    )
-    .replace(
-      '  text "Current Ready demo: Forms, Picture, PaintBox, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26',
-      '  text "Current Ready demo: Forms, Picture, PaintBox draw image, Tabs, Table, TreeView, Slider, Panel, Timer, Shape and StatusBar." at 24, 614 size 980, 26'
-    )
-    .replace(
-      '      text "It uses Forms, Tabs, Table, TreeView, Slider, StatusBar and source-backed event handlers."',
-      '      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
-    )
-    .replace(
-      '      text "It uses current native-ready Forms, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."',
-      '      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
-    )
-    .replace(
-      '      text "It uses current native-ready Picture, PaintBox, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."',
-      '      text "It uses current native-ready Picture, PaintBox image drawing, Panel, Shape, Timer, Tabs, Table, TreeView, Slider and StatusBar controls."'
-    )
-    .replace(
-      'window "Job details" as details size 640, 470:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {ticket.customer}" at 24, 70 size 280, 24\n  text "Item: {ticket.item}" at 24, 104 size 280, 24\n  text "Quantity: {ticket.qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket.bench}" at 24, 172 size 280, 24\n  text "Priority: {ticket.priority}" at 24, 206 size 280, 24\n  text "Payment: {ticket.payment}" at 326, 70 size 280, 24\n  text "State: {ticket.state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket.total}" at 326, 138 size 280, 24\n  text "{status}" at 24, 278 size 560, 28\n  button "Add inspection" as details_quote at 24, 366 size 160, 38\n  button "Mark ready" as details_ready at 202, 366 size 150, 38\n  button "Close details" as close_details at 370, 366 size 160, 38',
-      'window "Job details" as details size 640, 560:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {customer}" at 24, 70 size 280, 24\n  text "Item: {item}" at 24, 104 size 280, 24\n  text "Quantity: {qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket_bench}" at 24, 172 size 280, 24\n  text "Priority: {priority}" at 24, 206 size 280, 24\n  text "Payment: {pay}" at 326, 70 size 280, 24\n  text "State: {ticket_state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket_total}" at 326, 138 size 280, 24\n  panel as runtime_panel at 326, 172 size 280, 170:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1\n  paintbox as ticket_canvas at 24, 244 size 280, 120\n  text "{status}" at 24, 386 size 560, 28\n  button "Add inspection" as details_quote at 24, 470 size 160, 38\n  button "Mark ready" as details_ready at 202, 470 size 150, 38\n  button "Close details" as close_details at 370, 470 size 160, 38'
-    )
-    .replace(
-      'window "Job details" as details size 640, 520:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {customer}" at 24, 70 size 280, 24\n  text "Item: {item}" at 24, 104 size 280, 24\n  text "Quantity: {qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket_bench}" at 24, 172 size 280, 24\n  text "Priority: {priority}" at 24, 206 size 280, 24\n  text "Payment: {pay}" at 326, 70 size 280, 24\n  text "State: {ticket_state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket_total}" at 326, 138 size 280, 24\n  panel as runtime_panel at 326, 172 size 280, 170:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1\n  text "{status}" at 24, 360 size 560, 28\n  button "Add inspection" as details_quote at 24, 414 size 160, 38\n  button "Mark ready" as details_ready at 202, 414 size 150, 38\n  button "Close details" as close_details at 370, 414 size 160, 38',
-      'window "Job details" as details size 640, 560:\n  text "Current workshop ticket" at 24, 24 size 300, 28\n  text "Customer: {customer}" at 24, 70 size 280, 24\n  text "Item: {item}" at 24, 104 size 280, 24\n  text "Quantity: {qty}" at 24, 138 size 280, 24\n  text "Bench: {ticket_bench}" at 24, 172 size 280, 24\n  text "Priority: {priority}" at 24, 206 size 280, 24\n  text "Payment: {pay}" at 326, 70 size 280, 24\n  text "State: {ticket_state}" at 326, 104 size 280, 24\n  text "Current quote: {ticket_total}" at 326, 138 size 280, 24\n  panel as runtime_panel at 326, 172 size 280, 170:\n    text "Native runtime pulse {heartbeat}"\n    shape rounded as runtime_shape fill #dcfce7 stroke #16a34a stroke-width 2 radius 14 opacity 1\n  paintbox as ticket_canvas at 24, 244 size 280, 120\n  text "{status}" at 24, 386 size 560, 28\n  button "Add inspection" as details_quote at 24, 470 size 160, 38\n  button "Mark ready" as details_ready at 202, 470 size 150, 38\n  button "Close details" as close_details at 370, 470 size 160, 38'
-    )
-    .replace('  change ticket:\n    set customer = value\n', '')
-    .replace('  change ticket:\n    set item = value\n', '')
-    .replace('  change ticket:\n    set payment = value\n', '')
-    .replace('  change ticket:\n    set priority = value\n', '')
-    .replace('  change ticket:\n    set qty = value\n', '')
-    .replace(
-      'when board changed:\n  change selected_job:\n    set = value\n  change status:\n    set = "Workshop board row selected"\n\nwhen parts changed:\n  change selected_part:\n    set = value\n  change status:\n    set = "Inventory tree path selected"',
-      'when board changed:\n  change status:\n    set = "Workshop board row selected"\n\nwhen parts changed:\n  change status:\n    set = "Inventory tree path selected"\n\nwhen workshop_clock ticked:\n  change heartbeat:\n    add 1'
-    )
-    .replace(
-      'when parts changed:\n  change status:\n    set = "Inventory tree path selected"\n\nwhen workshop_clock ticked:',
-      'when parts changed:\n  change status:\n    set = "Inventory tree path selected"\n\nwhen workshop_logo clicked:\n  change status:\n    set = "Workshop mark clicked"\n\nwhen workshop_clock ticked:'
-    )
-    .replace(
-      'when workshop_clock ticked:\n  change heartbeat:\n    add 1\n\nwhen quote_button clicked:',
-      `when workshop_clock ticked:\n  change heartbeat:\n    add 1\n\nwhen ticket_canvas paint:\n  draw clear #f8fafc\n  draw rectangle 12, 12 size 118, 34 fill #dbeafe stroke #2563eb width 2\n  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n${WORKSHOP_DRAW_IMAGE_LINE}\n  if rush:\n    draw line 12, 58 to 258, 58 stroke #dc2626 width 3\n  draw text "Live quote" at 12, 78 color #111827 size 16\n  draw text ticket_state at 126, 78 color #334155 size 16\n\nwhen quote_button clicked:`
-    )
-    .replace(
-      '  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n  if rush:',
-      `  draw ellipse 146, 12 size 34, 34 fill #dcfce7 stroke #16a34a width 2\n${WORKSHOP_DRAW_IMAGE_LINE}\n  if rush:`
-    )
-    .replace(
-      'when quote_button clicked:\n  do quote(ticket, 25)\n  change ticket:\n    set state = "Quoted"',
-      'when quote_button clicked:\n  change ticket_total:\n    add 25\n  change ticket_state:\n    set = "Quoted"'
-    )
-    .replace(
-      'when details_quote clicked:\n  do quote(ticket, 10)\n  change ticket:\n    set state = "Quoted"',
-      'when details_quote clicked:\n  change ticket_total:\n    add 10\n  change ticket_state:\n    set = "Quoted"'
-    )
-    .replace(
-      'when complete_button clicked:\n  change ticket:\n    set state = "Ready"',
-      'when complete_button clicked:\n  change ticket_state:\n    set = "Ready"'
-    )
-    .replace(
-      'when details_ready clicked:\n  change ticket:\n    set state = "Ready"',
-      'when details_ready clicked:\n  change ticket_state:\n    set = "Ready"'
-    )
-    .replace(
-      'when default_bench changed:\n  change default_bench:\n    set = value\n  change ticket:\n    set bench = value',
-      'when default_bench changed:\n  change default_bench:\n    set = value\n  change ticket_bench:\n    set = value'
-    )
-    .replace(
-      '  change selected_part:\n    clear\n  change selected_job:\n    clear\n  change ticket:\n    set customer = "Ada"\n    set item = "Keyboard"\n    set qty = 1\n    set total = 40\n    set bench = default_bench\n    set priority = "Normal"\n    set payment = "Card"\n    set state = "Open"',
-      '  change heartbeat:\n    set = 0\n  change ticket_total:\n    set = 40\n  change ticket_bench:\n    set = "Bench A"\n  change ticket_state:\n    set = "Open"'
+    .replace('    row "Runtime", "Desktop v1.8", "Ready"', '    row "Runtime", "Desktop v1.10", "Ready"')
+    .replace('    set = "Workshop board row selected"', '    set = "Queue selection changed · open Details to continue"')
+    .replace('    set = "Inventory tree path selected"', '    set = "Parts selection changed · open Inventory to continue"');
+
+  if (!next.includes('window "Component Gallery" as components size 900, 640:')) {
+    next = next.replace('\nwhen customer changed:', `\n${WORKSHOP_GALLERY_FORM_V06}\n\nwhen customer changed:`);
+  }
+
+  if (!next.includes('when components_button clicked:')) {
+    next = next.replace(
+      'when diagnostics_button clicked:\n  open diagnostics\n  change diagnostic_status:\n    set = "Diagnostics opened from Workshop Desk"',
+      'when diagnostics_button clicked:\n  open diagnostics\n  change diagnostic_status:\n    set = "Diagnostics opened from Workshop Desk"\n\nwhen components_button clicked:\n  open components\n  change gallery_status:\n    set = "Complete Component Registry 0.9 gallery opened"'
     );
+  }
+
+  if (!next.includes('when gallery_text changed:')) {
+    next = next.replace('\nwhen reset_button clicked:', `\n${WORKSHOP_GALLERY_EVENTS_V06}\n\nwhen reset_button clicked:`);
+  }
+
+  if (!next.includes('  change gallery_text:\n    set = "Workshop sample"')) {
+    next = next.replace(
+      '  change diagnostic_status:\n    set = "All systems ready"\n  change status:\n    set = "Ticket reset"',
+      '  change diagnostic_status:\n    set = "All systems ready"\n  change gallery_text:\n    set = "Workshop sample"\n  change gallery_enabled:\n    set = true\n  change gallery_mode:\n    set = "Ready"\n  change gallery_color:\n    set = "Blue"\n  change gallery_features:\n    set = ["Designer"]\n  change gallery_level:\n    set = 60\n  change gallery_status:\n    set = "Component gallery ready"\n  change gallery_ticks:\n    set = 0\n  change status:\n    set = "Ticket reset"'
+    );
+  }
 
   return next;
 }
