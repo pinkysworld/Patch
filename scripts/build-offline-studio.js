@@ -1,9 +1,11 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { buildOfflineStudioManifest, offlineStudioAssetMap } from './offline-studio-assets.js';
+import { installOfflineStudioSiteOverlay } from './offline-studio-site-overlay.js';
 
 const args = process.argv.slice(2);
 const root = process.cwd();
@@ -11,12 +13,16 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
 const siteRoot = path.resolve(option('--site') ?? '_site');
 const out = path.resolve(option('--out') ?? defaultOutput());
 const manifestOut = path.resolve(option('--manifest') ?? path.join(path.dirname(out), 'offline-studio-manifest.json'));
+const offlineCompiler = option('--offline-compiler');
 const manifestOnly = args.includes('--manifest-only');
 const skipSiteBuild = args.includes('--skip-site-build');
 
 if (!skipSiteBuild) buildSite();
+installOfflineStudioSiteOverlay(siteRoot);
 
-const manifest = buildOfflineStudioManifest(siteRoot, { patchVersion: pkg.version });
+const baseManifest = buildOfflineStudioManifest(siteRoot, { patchVersion: pkg.version });
+const localBuild = offlineCompiler ? embeddedCompilerMetadata(offlineCompiler) : null;
+const manifest = Object.freeze(localBuild ? { ...baseManifest, localBuild } : { ...baseManifest });
 fs.mkdirSync(path.dirname(manifestOut), { recursive: true });
 fs.writeFileSync(manifestOut, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 
@@ -24,6 +30,7 @@ if (manifestOnly) {
   console.log(`Validated Patch Offline Studio ${pkg.version}`);
   console.log(`  files: ${manifest.fileCount}`);
   console.log(`  closure sha256: ${manifest.closureSha256}`);
+  console.log(`  local native build: ${localBuild ? `${localBuild.platform}/${localBuild.arch} compiler ${localBuild.compilerSha256.slice(0, 12)}…` : 'not packaged'}`);
   console.log(`  manifest: ${manifestOut}`);
   process.exit(0);
 }
@@ -34,6 +41,9 @@ const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'patch-offline-studio-'));
 try {
   const configPath = path.join(temp, 'sea-config.json');
   fs.mkdirSync(path.dirname(out), { recursive: true });
+  const assets = offlineStudioAssetMap(siteRoot, manifestOut);
+  assets['offline-studio-build-bridge.cjs'] = path.resolve('scripts/offline-studio-build-bridge.cjs');
+  if (localBuild) assets[localBuild.compilerAsset] = path.resolve(offlineCompiler);
   fs.writeFileSync(configPath, JSON.stringify({
     main: path.resolve('scripts/offline-studio-runner.cjs'),
     mainFormat: 'commonjs',
@@ -42,7 +52,7 @@ try {
     useSnapshot: false,
     useCodeCache: false,
     execArgvExtension: 'none',
-    assets: offlineStudioAssetMap(siteRoot, manifestOut)
+    assets
   }, null, 2), 'utf8');
 
   const built = spawnSync(process.execPath, ['--build-sea', configPath], { stdio: 'inherit' });
@@ -62,7 +72,9 @@ try {
   console.log(`  embedded files: ${manifest.fileCount}`);
   console.log(`  site closure sha256: ${manifest.closureSha256}`);
   console.log('  network requirement: none for Studio Run/Designer/Web/portable browser builds');
-  console.log('  native local packaging: planned Stage 2 via the embedded offline compiler/runtime contract');
+  console.log(localBuild
+    ? `  native local packaging: enabled for ${localBuild.platform}/${localBuild.arch} through patch-offline-studio-build-bridge/0.1`
+    : '  native local packaging: bridge present but no offline compiler was packaged');
 } finally {
   fs.rmSync(temp, { recursive: true, force: true });
 }
@@ -71,6 +83,28 @@ function buildSite() {
   const built = spawnSync(process.execPath, ['scripts/build-site.js'], { stdio: 'inherit' });
   if (built.error) fail(`Could not start Patch Studio site build: ${built.error.message}`);
   if (built.status !== 0) fail(`Patch Studio site build failed with status ${built.status}.`);
+}
+
+function embeddedCompilerMetadata(file) {
+  const absolute = path.resolve(file);
+  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) fail(`--offline-compiler does not name a file: ${absolute}`);
+  const bytes = fs.readFileSync(absolute);
+  return Object.freeze({
+    contract: 'patch-offline-studio-build-bridge/0.1',
+    platform: normalizePlatform(process.platform),
+    arch: process.arch,
+    compilerAsset: 'compiler/patch-offline-compiler.bin',
+    compilerSize: bytes.length,
+    compilerSha256: crypto.createHash('sha256').update(bytes).digest('hex')
+  });
+}
+
+function normalizePlatform(value) {
+  if (value === 'win32') return 'windows';
+  if (value === 'darwin') return 'macos';
+  if (value === 'linux') return 'linux';
+  if (value === 'freebsd') return 'freebsd';
+  return String(value);
 }
 
 function assertSeaBuildSupport() {
