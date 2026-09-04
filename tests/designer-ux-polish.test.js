@@ -25,13 +25,15 @@ test('Designer Form settings summary keeps source-backed dimensions visible', ()
 
 test('Designer UX keeps common actions source-backed and keyboard accessible', () => {
   const source = fs.readFileSync('web/designer-ux.js', 'utf8');
+  const primitives = fs.readFileSync('web/designer-selection.js', 'utf8');
   assert.match(source, /DESIGNER_SELECTION_EVENT/);
   assert.match(source, /clearDesignerSelection/);
   assert.match(source, /event\.key !== 'Escape'/);
   assert.match(source, /Focus selected/);
   assert.match(source, /Focus form/);
-  assert.match(source, /Property changes ready to apply/);
-  assert.match(source, /Source-backed · up to date/);
+  assert.match(source, /from '\.\/designer-selection\.js'/);
+  assert.match(primitives, /Property changes ready to apply/);
+  assert.match(primitives, /Source-backed · up to date/);
   assert.match(source, /designer-form-settings/);
   assert.match(source, /formSettingsOpen/);
 });

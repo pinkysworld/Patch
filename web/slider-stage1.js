@@ -1,4 +1,8 @@
 import { addDesignerControl } from '../src/designer.js';
+import {
+  clearDesignerInspectorError,
+  showDesignerInspectorError
+} from './designer-selection.js';
 
 const code = document.querySelector('#code');
 const addSlider = document.querySelector('#addSlider');
@@ -13,7 +17,7 @@ addSlider?.addEventListener('click', event => {
     const activeForm = Number(document.querySelector('#patchFormSelect')?.value) || 0;
     setSource(addDesignerControl(code.value, 'slider', { windowIndex: activeForm }));
   } catch (error) {
-    showError(error);
+    showDesignerInspectorError(error, { document });
   }
 }, { capture: true });
 
@@ -21,13 +25,7 @@ function setSource(source) {
   code.value = source;
   code.dispatchEvent(new Event('input', { bubbles: true }));
   code.dispatchEvent(new Event('change', { bubbles: true }));
-}
-
-function showError(error) {
-  const target = document.querySelector('#designerInspectorError');
-  if (!target) return;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
+  clearDesignerInspectorError({ document });
 }
 
 function installStyles() {

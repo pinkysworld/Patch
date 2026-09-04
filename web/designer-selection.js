@@ -2,6 +2,48 @@ const selectionState = new WeakMap();
 const installedBridges = new WeakSet();
 
 export const DESIGNER_SELECTION_EVENT = 'patch-designer-selection-change';
+export const STUDIO_DESIGNER_INSPECTOR_STATE_VERSION = '0.1';
+
+export function syncDesignerInspectorState(options = {}) {
+  const targetDocument = options.document ?? (typeof document === 'undefined' ? null : document);
+  const inspector = options.inspector ?? targetDocument?.querySelector?.('#designerInspector') ?? null;
+  const apply = options.apply ?? inspector?.querySelector?.('#designerInspectorApply') ?? targetDocument?.querySelector?.('#designerInspectorApply') ?? null;
+  const state = options.state ?? inspector?.querySelector?.('#designerInspectorState') ?? targetDocument?.querySelector?.('#designerInspectorState') ?? null;
+  const empty = options.empty === true;
+  const dirty = !empty && options.dirty === true;
+  const dirtyText = options.dirtyText ?? 'Property changes ready to apply.';
+  const cleanText = options.cleanText ?? 'Source-backed · up to date.';
+  const dirtyTitle = options.dirtyTitle ?? 'Apply these source-backed property changes';
+  const cleanTitle = options.cleanTitle ?? 'No common property changes to apply';
+
+  if (apply) {
+    apply.disabled = empty || !dirty;
+    apply.title = dirty ? dirtyTitle : cleanTitle;
+  }
+  if (state) {
+    state.textContent = empty ? '' : (dirty ? dirtyText : cleanText);
+    state.classList?.toggle?.('is-dirty', dirty);
+  }
+  return Object.freeze({ dirty, empty, apply: Boolean(apply), state: Boolean(state) });
+}
+
+export function showDesignerInspectorError(error, options = {}) {
+  const targetDocument = options.document ?? (typeof document === 'undefined' ? null : document);
+  const target = options.target ?? targetDocument?.querySelector?.('#designerInspectorError') ?? null;
+  if (!target) return false;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+  return true;
+}
+
+export function clearDesignerInspectorError(options = {}) {
+  const targetDocument = options.document ?? (typeof document === 'undefined' ? null : document);
+  const target = options.target ?? targetDocument?.querySelector?.('#designerInspectorError') ?? null;
+  if (!target) return false;
+  target.textContent = '';
+  target.hidden = true;
+  return true;
+}
 
 export function normalizeDesignerSelection(selection) {
   if (!selection || typeof selection !== 'object') return null;

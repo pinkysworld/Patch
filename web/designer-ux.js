@@ -1,11 +1,20 @@
 import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
 import {
   DESIGNER_SELECTION_EVENT,
+  STUDIO_DESIGNER_INSPECTOR_STATE_VERSION,
+  clearDesignerInspectorError,
   clearDesignerSelection,
-  currentDesignerSelection
+  currentDesignerSelection,
+  showDesignerInspectorError,
+  syncDesignerInspectorState
 } from './designer-selection.js';
 
-export const STUDIO_DESIGNER_INSPECTOR_STATE_VERSION = '0.1';
+export {
+  STUDIO_DESIGNER_INSPECTOR_STATE_VERSION,
+  clearDesignerInspectorError,
+  showDesignerInspectorError,
+  syncDesignerInspectorState
+};
 
 const STORAGE_KEY = 'patch-studio-designer-ux-v1';
 const GRID_STORAGE_KEY = 'patchStudio.designerGrid.v1';
@@ -43,47 +52,6 @@ export function formatDesignerFormSummary(windowModel) {
   const width = Number(windowModel.width) || 640;
   const height = Number(windowModel.height) || 420;
   return `Form settings · ${width}×${height}`;
-}
-
-export function syncDesignerInspectorState(options = {}) {
-  const targetDocument = options.document ?? doc;
-  const inspector = options.inspector ?? targetDocument?.querySelector?.('#designerInspector') ?? null;
-  const apply = options.apply ?? inspector?.querySelector?.('#designerInspectorApply') ?? targetDocument?.querySelector?.('#designerInspectorApply') ?? null;
-  const state = options.state ?? inspector?.querySelector?.('#designerInspectorState') ?? targetDocument?.querySelector?.('#designerInspectorState') ?? null;
-  const empty = options.empty === true;
-  const dirty = !empty && options.dirty === true;
-  const dirtyText = options.dirtyText ?? 'Property changes ready to apply.';
-  const cleanText = options.cleanText ?? 'Source-backed · up to date.';
-  const dirtyTitle = options.dirtyTitle ?? 'Apply these source-backed property changes';
-  const cleanTitle = options.cleanTitle ?? 'No common property changes to apply';
-
-  if (apply) {
-    apply.disabled = empty || !dirty;
-    apply.title = dirty ? dirtyTitle : cleanTitle;
-  }
-  if (state) {
-    state.textContent = empty ? '' : (dirty ? dirtyText : cleanText);
-    state.classList?.toggle?.('is-dirty', dirty);
-  }
-  return Object.freeze({ dirty, empty, apply: Boolean(apply), state: Boolean(state) });
-}
-
-export function showDesignerInspectorError(error, options = {}) {
-  const targetDocument = options.document ?? doc;
-  const target = options.target ?? targetDocument?.querySelector?.('#designerInspectorError') ?? null;
-  if (!target) return false;
-  target.textContent = error?.message ?? String(error);
-  target.hidden = false;
-  return true;
-}
-
-export function clearDesignerInspectorError(options = {}) {
-  const targetDocument = options.document ?? doc;
-  const target = options.target ?? targetDocument?.querySelector?.('#designerInspectorError') ?? null;
-  if (!target) return false;
-  target.textContent = '';
-  target.hidden = true;
-  return true;
 }
 
 function install() {

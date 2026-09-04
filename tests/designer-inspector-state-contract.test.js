@@ -110,7 +110,8 @@ test('StatusBar is the first specialized adapter on the shared Inspector contrac
   const ux = fs.readFileSync('web/designer-ux.js', 'utf8');
   const statusbar = fs.readFileSync('web/designer-statusbar.js', 'utf8');
 
-  assert.match(ux, /STUDIO_DESIGNER_INSPECTOR_STATE_VERSION = '0\.1'/);
+  assert.match(ux, /STUDIO_DESIGNER_INSPECTOR_STATE_VERSION/);
+  assert.match(ux, /from '\.\/designer-selection\.js'/);
   assert.match(ux, /syncDesignerInspectorState\(\{ document: doc, inspector, dirty \}\)/);
   assert.match(statusbar, /syncDesignerInspectorState/);
   assert.match(statusbar, /showDesignerInspectorError/);
