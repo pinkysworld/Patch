@@ -40,6 +40,17 @@ function collectKinds(nodes, out = new Set()) {
   return out;
 }
 
+function webReadyShowcaseSlice() {
+  const main = bundle.files.find(file => file.path === 'main.patch')?.content ?? '';
+  const forms = bundle.files.find(file => file.path === 'forms.patch')?.content ?? '';
+  const withoutMenus = main.replace(
+    /\n  menu "File":[\s\S]*?\n\n  # @locked/,
+    '\n  # @locked'
+  );
+  assert.doesNotMatch(withoutMenus, /^\s*menu\b/m, 'Web-ready Showcase slice must not silently retain unsupported Menu nodes');
+  return `${withoutMenus}\n${forms}\nwhen gallery_canvas paint:\n  draw clear #f8fafc\n  draw image "patch-resource:showcase.logo" at 16, 16 size 48, 48\n`;
+}
+
 test('Patch Studio Showcase is a canonical current project-v4 multi-file fixture', () => {
   assert.equal(bundle.version, PATCH_STUDIO_PROJECT_VERSION);
   assert.equal(bundle.project.name, 'Patch Studio Showcase');
@@ -93,10 +104,22 @@ test('Patch Studio Showcase covers structural RAD, dialogs, resources and explic
   assert.match(composition.source, /when gallery_canvas paint:/);
 });
 
-test('Patch Studio Showcase builds as one Standalone Web app with every Studio/Web-only R4 surface preserved', () => {
-  const built = buildStandaloneWebApp(composition.source, {
-    name: bundle.project.name,
-    kind: bundle.project.kind,
+test('complete Showcase preserves explicit fail-closed export boundaries instead of hiding unsupported target features', () => {
+  assert.throws(
+    () => buildStandaloneWebApp(composition.source, {
+      name: bundle.project.name,
+      kind: bundle.project.kind,
+      entry: bundle.project.entry,
+      resources: bundle.resources
+    }),
+    /Menu decorations|Standalone Window Web App does not yet support:.*menu/i
+  );
+});
+
+test('Web-compatible Showcase slice packages every current Studio/Web-only R4 surface and resources', () => {
+  const built = buildStandaloneWebApp(webReadyShowcaseSlice(), {
+    name: `${bundle.project.name} Web Surface`,
+    kind: 'window',
     entry: bundle.project.entry,
     resources: bundle.resources
   });
