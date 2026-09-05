@@ -1,0 +1,77 @@
+window "Component Gallery" as components size 980, 680:
+  text "Component Gallery" at 24, 20 size 300, 30
+  text "{gallery_status}" at 340, 20 size 600, 30
+  text "Data and graphics" at 24, 68 size 220, 26
+
+  table "Control", "Contract", "Surface" as gallery_table at 24, 104 size 500, 210:
+    row "Memo", "changed(value)", "Studio/Web"
+    row "PasswordEdit", "Input presentation", "Studio/Web"
+    row "MaskedEdit", "Input mask", "Studio/Web"
+    row "Table", "changed(value)", "Ready"
+    row "TreeView", "changed(value)", "Ready"
+
+  tree as gallery_tree at 546, 104 size 200, 210:
+    node "Registry 0.10"
+      node "Basic"
+        node "Text"
+        node "Button"
+        node "Input"
+        node "Memo"
+      node "Choices"
+        node "Checkbox"
+        node "Radio"
+        node "ComboBox"
+        node "ListBox"
+        node "Slider"
+      node "Data"
+        node "Table"
+        node "TreeView"
+      node "Containers"
+        node "Tabs"
+        node "Panel"
+      node "Graphics"
+        node "Picture"
+        node "Shape"
+        node "PaintBox"
+      node "Chrome"
+        node "StatusBar"
+      node "Nonvisual"
+        node "Timer"
+        node "ImageList"
+
+  # @locked
+  shape rounded as gallery_shape fill #dbeafe stroke #2563eb stroke-width 2 radius 18 opacity 1 at 770, 104 size 176, 96
+  paintbox as gallery_canvas at 770, 218 size 176, 96
+
+  text "Resource-backed controls" at 24, 344 size 250, 26
+  picture as gallery_picture from "patch-resource:showcase.logo" description "Showcase project PNG resource" at 24, 382 size 96, 96
+  imagelist as gallery_images size 24, 24:
+    image mark from "patch-resource:showcase.logo"
+  button "Resource button" as gallery_resource_button image gallery_images.mark at 144, 382 size 190, 42
+  text "The same project-v4 PNG drives Window icon, Picture, ImageList/Button and PaintBox draw image." at 144, 438 size 500, 46
+
+  panel as gallery_panel at 546, 344 size 400, 134:
+    text "Panel Stage 1 + Stage 2 Web authoring" at 16, 14 size 340, 24
+    text "Positioned children stay source-backed." at 16, 48 size 330, 22
+    button "Update gallery" as gallery_update at 16, 82 size 160, 36
+
+  button "Open Dialog Lab" as gallery_dialogs at 24, 530 size 180, 40
+  button "Close Gallery" as close_gallery at 220, 530 size 180, 40
+  statusbar "{gallery_status}" as gallery_statusbar at 0, 652 size 980, 28
+
+window "Dialog Lab" as dialogs size 760, 520:
+  text "Dialog Lab" at 24, 20 size 260, 30
+  text "{dialog_status}" at 300, 20 size 420, 30
+  text "Result-bearing dialogs keep their values transient until an explicit change persists them." at 24, 72 size 700, 44
+
+  button "Confirm" as dialog_confirm at 24, 138 size 160, 40
+  button "Open file" as dialog_open at 200, 138 size 160, 40
+  button "Save file" as dialog_save at 376, 138 size 160, 40
+  button "Information" as dialog_info at 552, 138 size 160, 40
+
+  text "Last selected path" at 24, 212 size 200, 24
+  text "{selected_path}" at 24, 242 size 688, 44
+  text "Menus on the main Form demonstrate portable shortcuts plus source-backed enabled and checked state." at 24, 310 size 688, 44
+  button "Back to Gallery" as dialog_gallery at 24, 390 size 180, 40
+  button "Close Dialog Lab" as close_dialogs at 220, 390 size 180, 40
+  statusbar "{dialog_status}" as dialog_statusbar at 0, 492 size 760, 28
