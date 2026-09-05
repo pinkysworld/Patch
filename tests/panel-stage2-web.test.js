@@ -72,7 +72,7 @@ test('Panel Stage 2 Designer surface exposes source-backed relative geometry con
     'designerPanelChildHeight'
   ]) assert.match(ui, new RegExp(id));
   assert.match(ui, /patch-panel-positioned/);
-  assert.match(ui, /data-panel-child-layout/);
+  assert.match(ui, /dataset\.panelChildLayout/);
   assert.match(css, /\.patch-panel-surface/);
   assert.match(css, /\.patch-panel-positioned/);
 }
