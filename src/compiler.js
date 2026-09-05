@@ -7,8 +7,12 @@ import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
 import { validateCallSites } from './call-site-validation.js';
 import { attachWindowLayoutPolicies, buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
-import { attachWindowInputPresentations, buildWindowInputPresentationManifest } from './window-input-presentation.js';
-import { attachWindowInputMasks, buildWindowInputMaskManifest } from './window-input-mask.js';
+import {
+  attachWindowInputMasks,
+  attachWindowInputPresentations,
+  buildWindowInputMaskManifest,
+  buildWindowInputPresentationManifest
+} from './window-input-presentation.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
