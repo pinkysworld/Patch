@@ -6,6 +6,11 @@ import { buildStandaloneWebApp } from '../src/webapp.js';
 import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
 import { collectMaskedInputDescriptors } from '../src/window-web-paintbox.js';
 import {
+  readWindowDesignerLock,
+  readWindowLayoutPolicy,
+  readWindowTabOrder
+} from '../src/window-layout-policy.js';
+import {
   PATCH_INPUT_MASK_VERSION,
   applyPatchInputMask,
   assertPatchInputMaskTarget,
@@ -102,6 +107,26 @@ test('MaskedEdit setter adds, updates and removes source-backed mask metadata', 
   const changed = setWindowInputMask(masked, 3, '0000-0000');
   assert.equal(readWindowInputMask(changed, 3), '0000-0000');
   assert.equal(setWindowInputMask(changed, 3, null), plain);
+});
+
+test('Input presentation metadata coexists with Anchor, TabOrder and Locked metadata', () => {
+  const source = `window "Metadata" as main size 520, 280:
+  # @layout anchor left right
+  # @taborder 4
+  # @locked
+  input phone at 24, 24 size 220, 36
+`;
+  const masked = setWindowInputMask(source, 5, '000-000');
+  const inputLine = 6;
+  assert.equal(readWindowInputMask(masked, inputLine), '000-000');
+  assert.deepEqual(readWindowLayoutPolicy(masked, inputLine), { kind: 'anchor', edges: ['left', 'right'] });
+  assert.equal(readWindowTabOrder(masked, inputLine), 4);
+  assert.equal(readWindowDesignerLock(masked, inputLine), true);
+  const compiled = compile(masked, { name: 'Metadata', kind: 'window' });
+  const input = compiled.ast[0].body[0];
+  assert.deepEqual(input.layoutPolicy, { kind: 'anchor', edges: ['left', 'right'] });
+  assert.equal(input.tabOrder, 4);
+  assert.equal(input.inputMask, '000-000');
 });
 
 const APP_SOURCE = `create text phone = ""
