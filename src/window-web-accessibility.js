@@ -1,12 +1,13 @@
 import { patchShapeSvgDescriptor } from './shape-control.js';
 
-export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.3';
+export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.4';
 
 export function enhanceStandaloneWindowWebApp(built) {
   if (!built || typeof built.html !== 'string' || built.metadata?.projectKind !== 'window') return built;
   const slider = containsControl(built.compiled?.ast ?? [], 'slider');
   const statusbar = containsControl(built.compiled?.ast ?? [], 'statusbar');
   const panel = containsControl(built.compiled?.ast ?? [], 'panel');
+  const panelStage2 = containsPanelRelativeLayout(built.compiled?.ast ?? []);
   const timer = containsControl(built.compiled?.ast ?? [], 'timer');
   const shape = containsControl(built.compiled?.ast ?? [], 'shape');
   const descriptors = shape ? collectShapeDescriptors(built.compiled?.ast ?? []) : {};
@@ -22,7 +23,10 @@ export function enhanceStandaloneWindowWebApp(built) {
       accessibilityVersion: PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION,
       ...(slider ? { sliderStage: 1, sliderMode: 'transient-number' } : {}),
       ...(statusbar ? { statusBarStage: 1, statusBarMode: 'source-backed-bottom-docked' } : {}),
-      ...(panel ? { panelStage: 1, panelMode: 'source-backed-flow-group' } : {}),
+      ...(panel ? {
+        panelStage: panelStage2 ? 2 : 1,
+        panelMode: panelStage2 ? 'source-backed-flow-plus-relative-layout' : 'source-backed-flow-group'
+      } : {}),
       ...(timer ? { timerStage: 1, timerMode: 'browser-interval-ticked-event' } : {}),
       ...(shape ? { shapeStage: 1, shapeMode: 'source-backed-svg' } : {})
     }
@@ -35,6 +39,18 @@ function containsControl(nodes, type) {
     if (node.kind === 'window' && containsControl(node.body, type)) return true;
     if (node.kind === 'tabs' && (node.body ?? []).some(page => containsControl(page.body, type))) return true;
     if (node.kind === 'uiControl' && node.control === 'panel' && containsControl(node.body, type)) return true;
+  }
+  return false;
+}
+
+function containsPanelRelativeLayout(nodes) {
+  for (const node of nodes ?? []) {
+    if (node.kind === 'uiControl' && node.control === 'panel') {
+      if ((node.body ?? []).some(child => child?.kind === 'uiControl' && child.layout)) return true;
+      if (containsPanelRelativeLayout(node.body)) return true;
+    }
+    if (node.kind === 'window' && containsPanelRelativeLayout(node.body)) return true;
+    if (node.kind === 'tabs' && (node.body ?? []).some(page => containsPanelRelativeLayout(page.body))) return true;
   }
   return false;
 }
@@ -66,7 +82,7 @@ function accessibilityStyle() {
 :where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
 .patch-radio-group{min-width:260px;margin:0;padding:10px 12px;border:1px solid #d4d4d8;border-radius:9px}.patch-radio-legend{padding:0 5px;font-size:12px;font-weight:700}.patch-radio-option{display:flex;align-items:center;gap:8px;min-height:30px;cursor:pointer}.patch-radio-option input{min-width:0!important;width:18px;height:18px;margin:0;padding:0}
 .patch-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;min-width:260px}.patch-slider input[type="range"]{grid-column:1/-1;width:100%;min-width:0;padding:0;border:0;background:transparent}.patch-slider-value{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}.patch-slider-range{font-size:11px;color:#71717a}
-.patch-panel{width:100%;height:100%;min-width:0;overflow:auto;margin:0;padding:0;border:1px solid #d4d4d8;border-radius:10px;background:#fff}.patch-panel-title{padding:7px 10px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.patch-panel-flow{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px}.patch-panel-flow>.text{font-size:14px}.patch-panel-flow>.patch-slider,.patch-panel-flow>input,.patch-panel-flow>select,.patch-panel-flow>.patch-radio-group{width:100%;min-width:0}
+.patch-panel{width:100%;height:100%;min-width:0;overflow:hidden;margin:0;padding:0;border:1px solid #d4d4d8;border-radius:10px;background:#fff}.patch-panel-title{padding:7px 10px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.patch-panel-surface{position:relative;height:calc(100% - 31px);min-height:0;overflow:hidden}.patch-panel-flow{display:flex;flex-direction:column;align-items:flex-start;gap:10px;height:100%;overflow:auto;padding:12px}.patch-panel-positioned{position:absolute;inset:0;overflow:hidden;pointer-events:none}.patch-panel-positioned>*{box-sizing:border-box;pointer-events:auto}.patch-panel-flow>.text{font-size:14px}.patch-panel-flow>.patch-slider,.patch-panel-flow>input,.patch-panel-flow>select,.patch-panel-flow>.patch-radio-group{width:100%;min-width:0}
 .patch-statusbar{display:flex;align-items:center;min-width:0;overflow:hidden;padding:0 10px;border-top:1px solid #d4d4d8;background:#f4f4f5;color:#52525b;font-size:12px;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;position:absolute!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:none!important;margin:0!important}
 .patch-shape{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:visible;pointer-events:none}
 @media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}.patch-panel{border-color:#41444e;background:#1b1d22}.patch-panel-title{border-color:#34363e;background:#24262d;color:#d4d4d8}.patch-statusbar{border-color:#41444e;background:#24262d;color:#d4d4d8}}
@@ -134,6 +150,9 @@ function accessibilityRuntime(shapeDescriptors = {}) {
       if(node?.kind==='uiControl'){
         const model=models?.[modelIndex++]||null;
         if(!model)continue;
+        if(node.layout){
+          model.patchPanelLayout={x:Number(node.layout.x),y:Number(node.layout.y),width:node.layout.width==null?null:Number(node.layout.width),height:node.layout.height==null?null:Number(node.layout.height)};
+        }
         if(node.control==='slider'){
           const min=Number(node.min);const max=Number(node.max);const step=Number(node.step??1);
           model.min=min;model.max=max;model.step=step;
@@ -201,6 +220,17 @@ function accessibilityRuntime(shapeDescriptors = {}) {
     return svg;
   }
 
+  function patchApplyPanelLayout(element,layout){
+    if(!element||!layout)return;
+    element.style.position='absolute';
+    element.style.left=String(layout.x)+'px';
+    element.style.top=String(layout.y)+'px';
+    if(layout.width!=null)element.style.width=String(layout.width)+'px';
+    if(layout.height!=null)element.style.height=String(layout.height)+'px';
+    element.style.margin='0';
+    element.style.maxWidth='none';
+  }
+
   renderControl=function(control,windowId,controlIndex){
     if(control?.type==='timer')return null;
 
@@ -214,10 +244,20 @@ function accessibilityRuntime(shapeDescriptors = {}) {
       const title=document.createElement('div');
       title.className='patch-panel-title';
       title.textContent=patchControlName(control,'Panel');
+      const surface=document.createElement('div');
+      surface.className='patch-panel-surface';
       const flow=document.createElement('div');
       flow.className='patch-panel-flow';
-      (control.controls||[]).forEach((nested,index)=>{const child=renderControl(nested,windowId,index);if(child)flow.appendChild(child);});
-      panel.append(title,flow);
+      const positioned=document.createElement('div');
+      positioned.className='patch-panel-positioned';
+      (control.controls||[]).forEach((nested,index)=>{
+        const child=renderControl(nested,windowId,index);
+        if(!child)return;
+        if(nested.patchPanelLayout){patchApplyPanelLayout(child,nested.patchPanelLayout);positioned.appendChild(child);}
+        else flow.appendChild(child);
+      });
+      surface.append(flow,positioned);
+      panel.append(title,surface);
       return panel;
     }
 
