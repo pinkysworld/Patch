@@ -1,0 +1,234 @@
+when user_name changed:
+  change user_name:
+    set = value
+  change status:
+    set = "Plain Input changed"
+
+when secret changed:
+  change secret:
+    set = value
+  change status:
+    set = "PasswordEdit changed without exposing its presentation"
+
+when phone changed:
+  change phone:
+    set = value
+  change status:
+    set = "MaskedEdit accepted formatted input"
+
+when notes changed:
+  change notes:
+    set = value
+  change status:
+    set = "Memo changed"
+
+when active changed:
+  change active:
+    set = value
+  change status:
+    set = "Checkbox changed"
+
+when access changed:
+  change access:
+    set = value
+  change status:
+    set = "Radio group changed"
+
+when theme changed:
+  change theme:
+    set = value
+  change status:
+    set = "ComboBox changed"
+
+when features changed:
+  change features:
+    set = value
+  change status:
+    set = "ListBox selection changed"
+
+when level changed:
+  change level:
+    set = value
+  change status:
+    set = "Slider changed"
+
+when nested_code changed:
+  change nested_code:
+    set = value
+  change status:
+    set = "Nested Tabs MaskedEdit changed"
+
+when nested_apply clicked:
+  change status:
+    set = "Nested Tabs action executed"
+
+when showcase_logo clicked:
+  change status:
+    set = "Resource Picture clicked"
+
+when showcase_clock ticked:
+  change ticks:
+    add 1
+
+when open_gallery clicked:
+  open components
+  change gallery_status:
+    set = "Opened from main Form"
+
+when open_dialogs clicked:
+  open dialogs
+  change dialog_status:
+    set = "Dialog Lab opened"
+
+when menu_gallery clicked:
+  open components
+  change gallery_status:
+    set = "Opened from menu"
+
+when menu_dialogs clicked:
+  open dialogs
+  change dialog_status:
+    set = "Opened from menu"
+
+when menu_pinned clicked:
+  if pinned:
+    change pinned:
+      set = false
+  else:
+    change pinned:
+      set = true
+  change status:
+    set = "Menu checked state changed explicitly"
+
+when menu_about clicked:
+  dialog "Patch Studio Showcase", "Project v4, Component Registry 0.10 and current Studio/Web RAD features are exercised here."
+
+when about_button clicked:
+  dialog "About", "This project is maintained as the complete current Patch Studio acceptance showcase."
+
+when menu_open clicked:
+  open file "Choose a Patch file" as menu_open_result
+
+when menu_open_result chosen:
+  change selected_path:
+    set = value
+  change status:
+    set = "Menu Open result persisted explicitly"
+
+when menu_open_result cancelled:
+  change status:
+    set = "Menu Open cancelled"
+
+when menu_save clicked:
+  save file "Save Patch project data" as menu_save_result
+
+when menu_save_result chosen:
+  change selected_path:
+    set = value
+  change status:
+    set = "Menu Save result persisted explicitly"
+
+when menu_save_result cancelled:
+  change status:
+    set = "Menu Save cancelled"
+
+when confirm_reset clicked:
+  confirm "Reset showcase?", "Reset the selected path and status?" as reset_confirm
+
+when reset_confirm confirmed:
+  change selected_path:
+    set = "No file selected"
+  change status:
+    set = "Showcase reset confirmed"
+
+when reset_confirm cancelled:
+  change status:
+    set = "Showcase reset cancelled"
+
+when gallery_table changed:
+  change gallery_status:
+    set = "Table selection changed"
+
+when gallery_tree changed:
+  change gallery_status:
+    set = "TreeView selection changed"
+
+when gallery_picture clicked:
+  change gallery_status:
+    set = "Resource Picture clicked"
+
+when gallery_resource_button clicked:
+  change gallery_status:
+    set = "ImageList-backed Button clicked"
+
+when gallery_update clicked:
+  change gallery_status:
+    set = "Panel child action handled"
+
+when gallery_canvas paint:
+  draw clear #f8fafc
+  draw rectangle 10, 10 size 58, 30 fill #dbeafe stroke #2563eb width 2
+  draw ellipse 82, 10 size 30, 30 fill #dcfce7 stroke #16a34a width 2
+  draw image "patch-resource:showcase.logo" at 126, 8 size 40, 40
+  draw line 10, 58 to 166, 58 stroke #64748b width 2
+  draw text "Patch" at 10, 70 color #111827 size 14
+
+when gallery_dialogs clicked:
+  open dialogs
+  change dialog_status:
+    set = "Opened from Component Gallery"
+
+when close_gallery clicked:
+  close components
+  change status:
+    set = "Component Gallery closed"
+
+when dialog_confirm clicked:
+  confirm "Confirm showcase action", "Persist a confirmation status?" as dialog_confirm_result
+
+when dialog_confirm_result confirmed:
+  change dialog_status:
+    set = "Confirmation accepted"
+
+when dialog_confirm_result cancelled:
+  change dialog_status:
+    set = "Confirmation cancelled"
+
+when dialog_open clicked:
+  open file "Open any file" as dialog_open_result
+
+when dialog_open_result chosen:
+  change selected_path:
+    set = value
+  change dialog_status:
+    set = "Open file result persisted explicitly"
+
+when dialog_open_result cancelled:
+  change dialog_status:
+    set = "Open file cancelled"
+
+when dialog_save clicked:
+  save file "Choose save path" as dialog_save_result
+
+when dialog_save_result chosen:
+  change selected_path:
+    set = value
+  change dialog_status:
+    set = "Save file result persisted explicitly"
+
+when dialog_save_result cancelled:
+  change dialog_status:
+    set = "Save file cancelled"
+
+when dialog_info clicked:
+  dialog "Informational dialog", "Informational dialogs carry no hidden persistent result state."
+
+when dialog_gallery clicked:
+  open components
+  change gallery_status:
+    set = "Returned from Dialog Lab"
+
+when close_dialogs clicked:
+  close dialogs
+  change status:
+    set = "Dialog Lab closed"

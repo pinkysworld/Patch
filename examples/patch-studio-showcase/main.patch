@@ -1,0 +1,89 @@
+create text user_name = "Ada"
+create text secret = ""
+create text phone = ""
+create text notes = "Patch Studio Showcase keeps the complete current Studio/Web surface visible in one project."
+create boolean active = true
+create text access = "User"
+create text theme = "Blue"
+create list features = ["Designer", "Web"]
+create number level = 60
+create text status = "Patch Studio Showcase ready"
+create boolean can_save = true
+create boolean pinned = false
+create text selected_path = "No file selected"
+create number ticks = 0
+create text nested_code = ""
+create text gallery_status = "Component Gallery ready"
+create text dialog_status = "Dialogs ready"
+
+window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showcase.logo":
+  menu "File":
+    item "Open file..." as menu_open shortcut "Primary+O"
+    item "Save file..." as menu_save enabled can_save shortcut "Primary+S"
+    separator
+    item "Pinned" as menu_pinned checked pinned shortcut "Primary+P"
+  menu "View":
+    item "Component Gallery" as menu_gallery
+    item "Dialog Lab" as menu_dialogs
+  menu "Help":
+    item "About Showcase" as menu_about shortcut "F1"
+
+  # @locked
+  picture as showcase_logo from "patch-resource:showcase.logo" description "Patch Studio Showcase logo" at 24, 18 size 56, 56
+  text "Patch Studio Showcase" at 96, 18 size 360, 32
+  text "Component Registry 0.10 · project v4 · complete current Studio/Web acceptance project" at 96, 52 size 760, 22
+  text "{status}" at 820, 24 size 250, 44
+
+  imagelist as showcase_images size 20, 20:
+    image mark from "patch-resource:showcase.logo"
+
+  text "Input presentations" at 24, 98 size 220, 26
+  text "Plain Input" at 24, 132 size 120, 22
+  # @taborder 0
+  input user_name at 24, 156 size 220, 36
+  text "PasswordEdit" at 262, 132 size 140, 22
+  # @input-mode password
+  # @taborder 1
+  input secret at 262, 156 size 220, 36
+  text "MaskedEdit · phone" at 500, 132 size 180, 22
+  # @input-mask "(000) 000-0000"
+  # @taborder 2
+  input phone at 500, 156 size 220, 36
+  text "Memo / TextArea" at 738, 132 size 160, 22
+  # @taborder 3
+  memo notes at 738, 156 size 332, 92
+
+  text "Choices and state" at 24, 222 size 220, 26
+  checkbox "Account active" as active at 24, 256 size 180, 36
+  radio "User", "Admin", "Guest" as access at 220, 256 size 240, 84
+  combo "Blue", "Green", "Amber", "System" as theme at 478, 256 size 190, 36
+  listbox "Designer", "Web", "Native", "Offline" as features at 686, 256 size 190, 100
+  text "Level {level}" at 894, 256 size 150, 22
+  slider 0..100 as level step 10 at 894, 284 size 176, 38
+
+  text "Containers and source-backed metadata" at 24, 382 size 340, 26
+  tabs as showcase_tabs at 24, 416 size 620, 200:
+    tab "Nested controls":
+      text "Tabs Stage 1 keeps supported flow controls source-backed."
+      # @input-mask "AA-000"
+      input nested_code
+      button "Apply" as nested_apply
+    tab "Project v4":
+      text "Resources, multiple .patch files, recovery and build settings belong to the explicit project bundle."
+      picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
+    tab "Semantics":
+      text "Persistent application state changes only through explicit change blocks."
+      text "Designer metadata such as layout, TabOrder, Locked, PasswordEdit and MaskedEdit stays source-backed."
+
+  # @layout anchor right bottom
+  panel as actions_panel at 674, 408 size 396, 208:
+    text "Project actions" at 16, 14 size 180, 22
+    button "Component Gallery" as open_gallery image showcase_images.mark at 16, 48 size 174, 40
+    button "Dialog Lab" as open_dialogs at 206, 48 size 158, 40
+    button "Confirm reset" as confirm_reset at 16, 100 size 174, 40
+    button "About" as about_button at 206, 100 size 158, 40
+    text "Selected path: {selected_path}" at 16, 156 size 348, 36
+
+  timer as showcase_clock interval 4000
+  # @layout anchor left right bottom
+  statusbar "{status} · timer {ticks}" as showcase_status at 0, 732 size 1100, 28
