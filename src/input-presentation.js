@@ -1,8 +1,16 @@
 export const PATCH_INPUT_PRESENTATION_VERSION = '0.1';
 export const PATCH_INPUT_PRESENTATION_DIRECTIVE = 'input-mode';
+export const PATCH_INPUT_MASK_VERSION = '0.1';
+export const PATCH_INPUT_MASK_DIRECTIVE = 'input-mask';
+export const PATCH_INPUT_MASK_MAX_LENGTH = 128;
 
 const MODES = Object.freeze(['plain', 'password']);
 const MODE_SET = new Set(MODES);
+const MASK_TOKEN_KINDS = Object.freeze({
+  '0': 'digit',
+  A: 'letter',
+  '*': 'alphanumeric'
+});
 
 const PASSWORD_TARGETS = Object.freeze({
   studio: 'supported',
@@ -19,6 +27,15 @@ const PLAIN_TARGETS = Object.freeze({
   windows: 'supported',
   macos: 'supported',
   linux: 'supported',
+  freebsd: 'unsupported'
+});
+
+const MASK_TARGETS = Object.freeze({
+  studio: 'supported',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
   freebsd: 'unsupported'
 });
 
@@ -68,4 +85,123 @@ export function assertPatchInputPresentationTarget(mode, target) {
     );
   }
   return true;
+}
+
+export function normalizePatchInputMask(mask) {
+  const normalized = String(mask ?? '');
+  if (!normalized.length) throw new Error('MaskedEdit needs a non-empty input mask.');
+  if (normalized.length > PATCH_INPUT_MASK_MAX_LENGTH) {
+    throw new Error(`MaskedEdit input masks can contain at most ${PATCH_INPUT_MASK_MAX_LENGTH} characters.`);
+  }
+  if (/[\r\n\u0000-\u001f\u007f]/.test(normalized)) throw new Error('MaskedEdit input masks cannot contain control characters.');
+  const slots = compilePatchInputMask(normalized);
+  if (!slots.some(slot => slot.kind !== 'literal')) {
+    throw new Error("MaskedEdit input masks need at least one token: '0', 'A' or '*'.");
+  }
+  return normalized;
+}
+
+export function parsePatchInputMaskDirective(line) {
+  const text = String(line ?? '');
+  if (!/^\s*#\s*@input-mask\b/i.test(text)) return null;
+  const match = text.match(/^\s*#\s*@input-mask\s+(.+?)\s*$/i);
+  if (!match) throw new Error(`Invalid # @input-mask directive '${text.trim()}'. Use '# @input-mask "000-000"'.`);
+  let value;
+  try { value = JSON.parse(match[1]); }
+  catch { throw new Error(`Invalid # @input-mask directive '${text.trim()}'. The mask must be a quoted string.`); }
+  if (typeof value !== 'string') throw new Error(`Invalid # @input-mask directive '${text.trim()}'. The mask must be a quoted string.`);
+  return normalizePatchInputMask(value);
+}
+
+export function formatPatchInputMaskDirective(mask) {
+  return `# @input-mask ${JSON.stringify(normalizePatchInputMask(mask))}`;
+}
+
+export function compilePatchInputMask(mask) {
+  const text = String(mask ?? '');
+  const slots = [];
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '\\') {
+      if (index + 1 >= text.length) throw new Error('MaskedEdit input mask cannot end with an escape character.');
+      slots.push(Object.freeze({ kind: 'literal', char: text[++index] }));
+      continue;
+    }
+    const kind = MASK_TOKEN_KINDS[char];
+    slots.push(Object.freeze(kind ? { kind, token: char } : { kind: 'literal', char }));
+  }
+  return Object.freeze(slots);
+}
+
+export function patchInputMaskPlaceholder(mask) {
+  return compilePatchInputMask(normalizePatchInputMask(mask))
+    .map(slot => slot.kind === 'literal' ? slot.char : '_')
+    .join('');
+}
+
+export function patchInputMaskInputMode(mask) {
+  const tokenKinds = new Set(compilePatchInputMask(normalizePatchInputMask(mask))
+    .filter(slot => slot.kind !== 'literal')
+    .map(slot => slot.kind));
+  return tokenKinds.size === 1 && tokenKinds.has('digit') ? 'numeric' : 'text';
+}
+
+export function applyPatchInputMask(mask, value) {
+  const normalized = normalizePatchInputMask(mask);
+  const slots = compilePatchInputMask(normalized);
+  const literalChars = new Set(slots.filter(slot => slot.kind === 'literal').map(slot => slot.char));
+  const raw = [...String(value ?? '')].filter(char => !literalChars.has(char));
+  const out = [];
+  let sourceIndex = 0;
+  let filled = 0;
+  const tokenCount = slots.filter(slot => slot.kind !== 'literal').length;
+
+  const nextMatching = kind => {
+    while (sourceIndex < raw.length) {
+      const char = raw[sourceIndex++];
+      if (maskCharMatches(kind, char)) return char;
+    }
+    return null;
+  };
+
+  for (let index = 0; index < slots.length; index += 1) {
+    const slot = slots[index];
+    if (slot.kind !== 'literal') {
+      const char = nextMatching(slot.kind);
+      if (char === null) break;
+      out.push(char);
+      filled += 1;
+      continue;
+    }
+
+    const hasFutureToken = slots.slice(index + 1).some(candidate => candidate.kind !== 'literal');
+    const shouldShow = filled === 0
+      ? raw.length > sourceIndex
+      : hasFutureToken
+        ? raw.length > sourceIndex
+        : filled === tokenCount;
+    if (shouldShow) out.push(slot.char);
+  }
+  return out.join('');
+}
+
+export function patchInputMaskTargetSupport() {
+  return MASK_TARGETS;
+}
+
+export function assertPatchInputMaskTarget(target) {
+  const normalizedTarget = String(target ?? '').trim().toLowerCase();
+  if (MASK_TARGETS[normalizedTarget] !== 'supported') {
+    throw new Error(
+      `MaskedEdit Stage 1 is not supported on '${normalizedTarget || 'unknown'}'. ` +
+      'MaskedEdit Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
+    );
+  }
+  return true;
+}
+
+function maskCharMatches(kind, char) {
+  if (kind === 'digit') return /^[0-9]$/.test(char);
+  if (kind === 'letter') return /^[A-Za-z]$/.test(char);
+  return /^[A-Za-z0-9]$/.test(char);
 }

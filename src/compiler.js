@@ -7,7 +7,12 @@ import { validateFormalSourceExtraction } from './source-validation.js';
 import { validateFormalGuardExtraction } from './guard-validation.js';
 import { validateCallSites } from './call-site-validation.js';
 import { attachWindowLayoutPolicies, buildWindowLayoutPolicyManifest } from './window-layout-policy.js';
-import { attachWindowInputPresentations, buildWindowInputPresentationManifest } from './window-input-presentation.js';
+import {
+  attachWindowInputMasks,
+  attachWindowInputPresentations,
+  buildWindowInputMaskManifest,
+  buildWindowInputPresentationManifest
+} from './window-input-presentation.js';
 
 export const PATCH_IR_VERSION = '0.10';
 
@@ -28,6 +33,7 @@ export function compile(source, options = {}) {
   formalCalls.callSiteValidation = callSiteValidation;
   const windowLayoutPolicy = buildWindowLayoutPolicyManifest(source, ast);
   const windowInputPresentation = buildWindowInputPresentationManifest(source, ast);
+  const windowInputMask = buildWindowInputMaskManifest(source, ast);
 
   const ir = {
     format: 'patch-ir',
@@ -47,9 +53,11 @@ export function compile(source, options = {}) {
 
   attachWindowLayoutPolicies(ast, windowLayoutPolicy);
   attachWindowInputPresentations(ast, windowInputPresentation);
+  attachWindowInputMasks(ast, windowInputMask);
   return {
     ast, ir, project, changeAnalysis, formalBridge, formalSource, formalCalls,
-    sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy, windowInputPresentation
+    sourceValidation, guardValidation, callSiteValidation, windowLayoutPolicy,
+    windowInputPresentation, windowInputMask
   };
 }
 
