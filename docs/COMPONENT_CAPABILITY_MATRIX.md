@@ -1,6 +1,6 @@
 # Component capability matrix
 
-Generated from `src/component-registry.js` registry **0.9**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
+Generated from `src/component-registry.js` registry **0.10**. Do not edit the table by hand; run `node scripts/generate-component-matrix.js`.
 
 Current product contract: Change IR **0.10**, Native GUI IR **1.9**, sealed payload **v19**, runtime **v1.10** (`native-gui-1.9/payload-19/runtime-1.10`).
 
@@ -17,6 +17,7 @@ Studio authoring is not native or Web runtime parity. A blank runtime claim is a
 | `text` | Text | Basic | visual | supported | supported | supported | supported | supported | unsupported | textExpr, x, y, width, height | — |
 | `button` | Button | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, imageListId, imageItem, x, y, width, height | clicked |
 | `input` | Input | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, x, y, width, height | changed |
+| `memo` | Memo | Basic | visual | supported | supported | unsupported | unsupported | unsupported | unsupported | id, x, y, width, height | changed |
 | `checkbox` | Checkbox | Basic | visual | supported | supported | supported | supported | supported | unsupported | id, textExpr, x, y, width, height | changed |
 | `radio` | Radio group | Choices | visual | supported | supported | supported | supported | supported | unsupported | id, options, x, y, width, height | changed |
 | `combo` | ComboBox | Choices | visual | supported | supported | supported | supported | supported | unsupported | id, options, x, y, width, height | changed |
