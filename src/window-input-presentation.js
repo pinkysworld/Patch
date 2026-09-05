@@ -86,7 +86,12 @@ function readInputPresentationFromRows(rows, sourceLine) {
 function walkControls(nodes, visit) {
   for (const node of nodes ?? []) {
     if (node.kind === 'uiControl') visit(node);
-    if (node.kind === 'window' || node.kind === 'panel' || node.kind === 'tabPage' || node.kind === 'tabs') {
+    if (
+      node.kind === 'window' ||
+      node.kind === 'tabPage' ||
+      node.kind === 'tabs' ||
+      (node.kind === 'uiControl' && node.control === 'panel')
+    ) {
       walkControls(node.body, visit);
     }
   }
