@@ -63,6 +63,7 @@ export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
 });
 
 export function buildCurrentNativeGuiIR(compiled) {
+  assertCurrentNativeInputPresentation(compiled?.ast);
   assertCurrentNativePanelLayout(compiled?.ast);
   return buildNativeGuiIRV19(compiled);
 }
@@ -118,6 +119,21 @@ export function currentNativeContract() {
     runtime: PATCH_CURRENT_NATIVE_RUNTIME_VERSION,
     runtimeTags: PATCH_CURRENT_NATIVE_RUNTIME_TAGS
   });
+}
+
+function assertCurrentNativeInputPresentation(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'input' && node.inputPresentation === 'password') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`PasswordEdit Stage 1 Input${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no password-input presentation contract; validation fails closed rather than lowering it as a visible single-line Input.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
+      assertCurrentNativeInputPresentation(node.body);
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) assertCurrentNativeInputPresentation(page.body);
+    }
+  }
 }
 
 function assertCurrentNativePanelLayout(nodes) {
