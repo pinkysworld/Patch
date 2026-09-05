@@ -3,9 +3,13 @@ export const PATCH_INPUT_PRESENTATION_DIRECTIVE = 'input-mode';
 export const PATCH_INPUT_MASK_VERSION = '0.1';
 export const PATCH_INPUT_MASK_DIRECTIVE = 'input-mask';
 export const PATCH_INPUT_MASK_MAX_LENGTH = 128;
+export const PATCH_LISTBOX_PRESENTATION_VERSION = '0.1';
+export const PATCH_LISTBOX_PRESENTATION_DIRECTIVE = 'listbox-mode';
 
 const MODES = Object.freeze(['plain', 'password']);
 const MODE_SET = new Set(MODES);
+const LISTBOX_MODES = Object.freeze(['plain', 'checked']);
+const LISTBOX_MODE_SET = new Set(LISTBOX_MODES);
 const MASK_TOKEN_KINDS = Object.freeze({
   '0': 'digit',
   A: 'letter',
@@ -31,6 +35,15 @@ const PLAIN_TARGETS = Object.freeze({
 });
 
 const MASK_TARGETS = Object.freeze({
+  studio: 'supported',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
+const CHECKED_LISTBOX_TARGETS = Object.freeze({
   studio: 'supported',
   web: 'supported',
   windows: 'unsupported',
@@ -81,6 +94,50 @@ export function assertPatchInputPresentationTarget(mode, target) {
       `Input presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` +
       (normalizedMode === 'password'
         ? 'PasswordEdit Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
+        : 'Select a supported Patch target.')
+    );
+  }
+  return true;
+}
+
+export function patchListboxPresentationModes() {
+  return [...LISTBOX_MODES];
+}
+
+export function normalizePatchListboxPresentation(mode) {
+  const normalized = String(mode ?? 'plain').trim().toLowerCase() || 'plain';
+  if (!LISTBOX_MODE_SET.has(normalized)) {
+    throw new Error(`Unsupported ListBox presentation '${mode}'. Use plain or checked.`);
+  }
+  return normalized;
+}
+
+export function parsePatchListboxPresentationDirective(line) {
+  const text = String(line ?? '');
+  if (!/^\s*#\s*@listbox-mode\b/i.test(text)) return null;
+  const match = text.match(/^\s*#\s*@listbox-mode\s+(plain|checked)\s*$/i);
+  if (!match) throw new Error(`Invalid # @listbox-mode directive '${text.trim()}'. Use '# @listbox-mode checked'.`);
+  return normalizePatchListboxPresentation(match[1]);
+}
+
+export function formatPatchListboxPresentationDirective(mode) {
+  const normalized = normalizePatchListboxPresentation(mode);
+  return normalized === 'plain' ? null : `# @listbox-mode ${normalized}`;
+}
+
+export function patchListboxPresentationTargetSupport(mode) {
+  return normalizePatchListboxPresentation(mode) === 'checked' ? CHECKED_LISTBOX_TARGETS : PLAIN_TARGETS;
+}
+
+export function assertPatchListboxPresentationTarget(mode, target) {
+  const normalizedMode = normalizePatchListboxPresentation(mode);
+  const normalizedTarget = String(target ?? '').trim().toLowerCase();
+  const support = patchListboxPresentationTargetSupport(normalizedMode)[normalizedTarget];
+  if (support !== 'supported') {
+    throw new Error(
+      `ListBox presentation '${normalizedMode}' is not supported on '${normalizedTarget || 'unknown'}'. ` +
+      (normalizedMode === 'checked'
+        ? 'CheckedListBox Stage 1 is Studio/Web only until a new explicit native GUI/runtime contract is promoted.'
         : 'Select a supported Patch target.')
     );
   }
