@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parse } from '../src/parser.js';
 import { compile } from '../src/compiler.js';
+import { buildStandaloneWebApp } from '../src/webapp.js';
+import { buildCurrentNativeGuiIR } from '../src/native-current-contract.js';
+import { collectMaskedInputDescriptors } from '../src/window-web-paintbox.js';
 import {
   PATCH_INPUT_MASK_VERSION,
   applyPatchInputMask,
@@ -101,8 +104,7 @@ test('MaskedEdit setter adds, updates and removes source-backed mask metadata', 
   assert.equal(setWindowInputMask(changed, 3, null), plain);
 });
 
-test('compile exposes MaskedEdit metadata without changing Input semantics or Change IR 0.10', () => {
-  const source = `create text phone = ""
+const APP_SOURCE = `create text phone = ""
 window "Masked" as main size 420, 240:
   # @input-mask "(000) 000-0000"
   input phone at 24, 24 size 220, 36
@@ -110,7 +112,9 @@ when phone changed:
   change phone:
     set = value
 `;
-  const compiled = compile(source, { name: 'Masked', kind: 'window' });
+
+test('compile exposes MaskedEdit metadata without changing Input semantics or Change IR 0.10', () => {
+  const compiled = compile(APP_SOURCE, { name: 'Masked', kind: 'window' });
   assert.equal(compiled.ir.version, '0.10');
   assert.equal(compiled.windowInputMask.version, '0.1');
   assert.deepEqual(compiled.windowInputMask.controls, [{ line: 4, id: 'phone', mask: '(000) 000-0000' }]);
@@ -118,6 +122,29 @@ when phone changed:
   assert.equal(input.control, 'input');
   assert.equal(input.inputPresentation, 'plain');
   assert.equal(input.inputMask, '(000) 000-0000');
+  assert.deepEqual(collectMaskedInputDescriptors(compiled.ast), {
+    phone: { mask: '(000) 000-0000', placeholder: '(___) ___-____', inputMode: 'numeric' }
+  });
+});
+
+test('Standalone Window Web emits the MaskedEdit capture filter before ordinary changed semantics', () => {
+  const built = buildStandaloneWebApp(APP_SOURCE, { name: 'Masked', kind: 'window' });
+  assert.equal(built.metadata.maskedEditStage, 1);
+  assert.equal(built.metadata.maskedEditVersion, '0.1');
+  assert.equal(built.metadata.maskedEditMode, 'source-backed-token-mask');
+  assert.match(built.html, /data-patch-window-maskededit/);
+  assert.match(built.html, /PATCH_MASKED_INPUTS/);
+  assert.match(built.html, /patchApplyInputMask/);
+  assert.match(built.html, /addEventListener\('input'.*true\)/s);
+  assert.match(built.html, /dataset\.patchInputPresentation='masked'/);
+});
+
+test('Current Ready native fails closed for MaskedEdit rather than dropping the mask', () => {
+  const compiled = compile(APP_SOURCE, { name: 'Masked', kind: 'window' });
+  assert.throws(
+    () => buildCurrentNativeGuiIR(compiled),
+    /MaskedEdit Stage 1.*Studio\/Web only.*no input-mask contract/i
+  );
 });
 
 test('MaskedEdit rejects non-Input targets and PasswordEdit conflicts', () => {
