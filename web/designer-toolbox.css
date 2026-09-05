@@ -160,6 +160,7 @@
 }
 
 /* Legacy one-column coordinates remain as a fallback for old cached markup. */
+#designer #addMemo::before { content: "¶"; }
 #designer #addPanel { top: 423px; }
 #designer #addPanel::before { content: "▣"; }
 #designer #addPicture { top: 457px; }
@@ -205,31 +206,32 @@
   #designer #addText { left: 9px; top: 49px; }
   #designer #addButton { left: 45px; top: 49px; }
   #designer #addInput { left: 9px; top: 83px; }
-  #designer #addCheckbox { left: 45px; top: 83px; }
+  #designer #addMemo { left: 45px; top: 83px; }
+  #designer #addCheckbox { left: 9px; top: 117px; }
 
   /* Choices */
-  #designer #addRadio { left: 9px; top: 126px; }
-  #designer #addCombo { left: 45px; top: 126px; }
-  #designer #addListbox { left: 9px; top: 160px; }
-  #designer #addSlider { left: 45px; top: 160px; }
+  #designer #addRadio { left: 9px; top: 151px; }
+  #designer #addCombo { left: 45px; top: 151px; }
+  #designer #addListbox { left: 9px; top: 185px; }
+  #designer #addSlider { left: 45px; top: 185px; }
 
   /* Data */
-  #designer #addTable { left: 9px; top: 203px; }
-  #designer #addTree { left: 45px; top: 203px; }
+  #designer #addTable { left: 9px; top: 219px; }
+  #designer #addTree { left: 45px; top: 219px; }
 
   /* Containers */
-  #designer #addTabs { left: 9px; top: 246px; }
-  #designer #addPanel { left: 45px; top: 246px !important; }
+  #designer #addTabs { left: 9px; top: 253px; }
+  #designer #addPanel { left: 45px; top: 253px !important; }
 
   /* Graphics */
-  #designer #addPicture { left: 9px; top: 289px !important; }
-  #designer #addShape { left: 45px; top: 289px !important; }
-  #designer #addPaintbox { left: 9px; top: 323px !important; }
+  #designer #addPicture { left: 9px; top: 287px !important; }
+  #designer #addShape { left: 45px; top: 287px !important; }
+  #designer #addPaintbox { left: 9px; top: 321px !important; }
 
   /* Form chrome + nonvisual */
-  #designer #addStatusbar { left: 45px; top: 323px !important; }
-  #designer #addTimer { left: 9px; top: 366px !important; }
-  #designer #addImagelist { left: 45px; top: 366px !important; }
+  #designer #addStatusbar { left: 45px; top: 321px !important; }
+  #designer #addTimer { left: 9px; top: 355px !important; }
+  #designer #addImagelist { left: 45px; top: 355px !important; }
 
   /* Short separators communicate categories without consuming toolbar space. */
   #designer.designer-view::after {
@@ -237,15 +239,15 @@
     position: absolute;
     z-index: 2;
     left: 12px;
-    top: 158px;
+    top: 143px;
     width: 62px;
     height: 1px;
     background: var(--border);
     box-shadow:
-      0 77px 0 var(--border),
-      0 120px 0 var(--border),
-      0 197px 0 var(--border),
-      0 240px 0 var(--border);
+      0 68px 0 var(--border),
+      0 102px 0 var(--border),
+      0 136px 0 var(--border),
+      0 204px 0 var(--border);
     pointer-events: none;
   }
 

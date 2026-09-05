@@ -26,6 +26,7 @@ export function buildCompiledWindowArtifact(compiled) {
   validateWindowRuntimeSupport(compiled, {
     allowTree: true,
     allowSlider: true,
+    allowMemo: true,
     allowPaintBox: true,
     allowImageList: true,
     allowMenuDecorations: true

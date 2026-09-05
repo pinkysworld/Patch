@@ -6,6 +6,7 @@ const EVENT_BY_TYPE = Object.freeze({
   paintbox: Object.freeze([{ name: 'paint', label: 'OnPaint', value: false }]),
   timer: Object.freeze([{ name: 'ticked', label: 'OnTick', value: false }]),
   input: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
+  memo: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   checkbox: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   radio: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
   combo: Object.freeze([{ name: 'changed', label: 'OnChange', value: true }]),
@@ -34,6 +35,7 @@ const PROPERTY_BY_TYPE = Object.freeze({
     ...COMMON_LAYOUT_PROPERTIES
   ]),
   input: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
+  memo: Object.freeze([ID_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   checkbox: Object.freeze([ID_PROPERTY, TEXT_PROPERTY, ...COMMON_LAYOUT_PROPERTIES]),
   radio: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'options', kind: 'expression-list' }), ...COMMON_LAYOUT_PROPERTIES]),
   combo: Object.freeze([ID_PROPERTY, Object.freeze({ name: 'options', kind: 'expression-list' }), ...COMMON_LAYOUT_PROPERTIES]),
@@ -88,6 +90,15 @@ const DESKTOP_TARGETS = Object.freeze({
   freebsd: 'unsupported'
 });
 
+const MEMO_STAGE1_TARGETS = Object.freeze({
+  studio: 'supported',
+  web: 'supported',
+  windows: 'unsupported',
+  macos: 'unsupported',
+  linux: 'unsupported',
+  freebsd: 'unsupported'
+});
+
 const SHAPE_STAGE1_TARGETS = Object.freeze({
   studio: 'supported',
   web: 'supported',
@@ -116,6 +127,7 @@ const IMAGELIST_STAGE1_TARGETS = Object.freeze({
 });
 
 const TARGETS_BY_TYPE = Object.freeze({
+  memo: MEMO_STAGE1_TARGETS,
   shape: SHAPE_STAGE1_TARGETS,
   paintbox: PAINTBOX_STAGE1_TARGETS,
   imagelist: IMAGELIST_STAGE1_TARGETS
@@ -125,6 +137,7 @@ const COMPONENTS = [
   ['text', 'Text', 'Basic', true],
   ['button', 'Button', 'Basic', true],
   ['input', 'Input', 'Basic', true],
+  ['memo', 'Memo', 'Basic', true],
   ['checkbox', 'Checkbox', 'Basic', true],
   ['radio', 'Radio group', 'Choices', true],
   ['combo', 'ComboBox', 'Choices', true],
@@ -142,7 +155,7 @@ const COMPONENTS = [
   ['imagelist', 'ImageList', 'Nonvisual', false]
 ];
 
-export const PATCH_COMPONENT_REGISTRY_VERSION = '0.9';
+export const PATCH_COMPONENT_REGISTRY_VERSION = '0.10';
 export const PATCH_COMPONENTS = Object.freeze(COMPONENTS.map(([type, label, category, visual]) => {
   if (visual === isNonvisualFormControl(type)) {
     throw new Error(`Component visibility mismatch for '${type}'.`);

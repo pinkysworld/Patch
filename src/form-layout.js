@@ -4,6 +4,7 @@ export const PATCH_FORM_CONTROL_DEFAULTS = Object.freeze({
   text: Object.freeze({ width: 200, height: 30 }),
   button: Object.freeze({ width: 120, height: 36 }),
   input: Object.freeze({ width: 220, height: 36 }),
+  memo: Object.freeze({ width: 320, height: 140 }),
   checkbox: Object.freeze({ width: 220, height: 36 }),
   radio: Object.freeze({ width: 220, height: 84 }),
   combo: Object.freeze({ width: 220, height: 36 }),

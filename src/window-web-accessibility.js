@@ -1,10 +1,11 @@
 import { patchShapeSvgDescriptor } from './shape-control.js';
 
-export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.4';
+export const PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION = '0.5';
 
 export function enhanceStandaloneWindowWebApp(built) {
   if (!built || typeof built.html !== 'string' || built.metadata?.projectKind !== 'window') return built;
   const slider = containsControl(built.compiled?.ast ?? [], 'slider');
+  const memo = containsControl(built.compiled?.ast ?? [], 'memo');
   const statusbar = containsControl(built.compiled?.ast ?? [], 'statusbar');
   const panel = containsControl(built.compiled?.ast ?? [], 'panel');
   const panelStage2 = containsPanelRelativeLayout(built.compiled?.ast ?? []);
@@ -22,6 +23,7 @@ export function enhanceStandaloneWindowWebApp(built) {
       ...built.metadata,
       accessibilityVersion: PATCH_WINDOW_WEB_ACCESSIBILITY_VERSION,
       ...(slider ? { sliderStage: 1, sliderMode: 'transient-number' } : {}),
+      ...(memo ? { memoStage: 1, memoMode: 'multiline-text-changed-value' } : {}),
       ...(statusbar ? { statusBarStage: 1, statusBarMode: 'source-backed-bottom-docked' } : {}),
       ...(panel ? {
         panelStage: panelStage2 ? 2 : 1,
@@ -79,15 +81,15 @@ function collectShapeDescriptors(nodes, out = {}) {
 
 function accessibilityStyle() {
   return `<style data-patch-window-accessibility>
-:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+:where(button,input,textarea,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid #2563eb;outline-offset:3px}
 .patch-radio-group{min-width:260px;margin:0;padding:10px 12px;border:1px solid #d4d4d8;border-radius:9px}.patch-radio-legend{padding:0 5px;font-size:12px;font-weight:700}.patch-radio-option{display:flex;align-items:center;gap:8px;min-height:30px;cursor:pointer}.patch-radio-option input{min-width:0!important;width:18px;height:18px;margin:0;padding:0}
 .patch-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;min-width:260px}.patch-slider input[type="range"]{grid-column:1/-1;width:100%;min-width:0;padding:0;border:0;background:transparent}.patch-slider-value{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}.patch-slider-range{font-size:11px;color:#71717a}
-.patch-panel{width:100%;height:100%;min-width:0;overflow:hidden;margin:0;padding:0;border:1px solid #d4d4d8;border-radius:10px;background:#fff}.patch-panel-title{padding:7px 10px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.patch-panel-surface{position:relative;height:calc(100% - 31px);min-height:0;overflow:hidden}.patch-panel-flow{display:flex;flex-direction:column;align-items:flex-start;gap:10px;height:100%;overflow:auto;padding:12px}.patch-panel-positioned{position:absolute;inset:0;overflow:hidden;pointer-events:none}.patch-panel-positioned>*{box-sizing:border-box;pointer-events:auto}.patch-panel-flow>.text{font-size:14px}.patch-panel-flow>.patch-slider,.patch-panel-flow>input,.patch-panel-flow>select,.patch-panel-flow>.patch-radio-group{width:100%;min-width:0}
+.patch-panel{width:100%;height:100%;min-width:0;overflow:hidden;margin:0;padding:0;border:1px solid #d4d4d8;border-radius:10px;background:#fff}.patch-panel-title{padding:7px 10px;border-bottom:1px solid #e4e4e7;background:#f4f4f5;color:#52525b;font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.04em}.patch-panel-surface{position:relative;height:calc(100% - 31px);min-height:0;overflow:hidden}.patch-panel-flow{display:flex;flex-direction:column;align-items:flex-start;gap:10px;height:100%;overflow:auto;padding:12px}.patch-panel-positioned{position:absolute;inset:0;overflow:hidden;pointer-events:none}.patch-panel-positioned>*{box-sizing:border-box;pointer-events:auto}.patch-panel-flow>.text{font-size:14px}.patch-panel-flow>.patch-slider,.patch-panel-flow>input,.patch-panel-flow>textarea,.patch-panel-flow>select,.patch-panel-flow>.patch-radio-group{width:100%;min-width:0}
 .patch-statusbar{display:flex;align-items:center;min-width:0;overflow:hidden;padding:0 10px;border-top:1px solid #d4d4d8;background:#f4f4f5;color:#52525b;font-size:12px;line-height:1.2;white-space:nowrap;text-overflow:ellipsis;position:absolute!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;max-width:none!important;margin:0!important}
 .patch-shape{display:block;width:100%;height:100%;min-width:0;min-height:0;overflow:visible;pointer-events:none}
 @media(prefers-color-scheme:dark){.patch-radio-group{border-color:#41444e}.patch-slider-range{color:#a1a1aa}.patch-panel{border-color:#41444e;background:#1b1d22}.patch-panel-title{border-color:#34363e;background:#24262d;color:#d4d4d8}.patch-statusbar{border-color:#41444e;background:#24262d;color:#d4d4d8}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
-@media(forced-colors:active){:where(button,input,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group,.patch-panel{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-panel-title,.patch-statusbar{border-color:CanvasText;background:Canvas;color:CanvasText}.patch-shape{forced-color-adjust:auto}}
+@media(forced-colors:active){:where(button,input,textarea,select,[role="tab"],[role="tabpanel"]):focus-visible{outline:3px solid Highlight}.patch-radio-group,.patch-panel{border:1px solid CanvasText}.patch-slider-range{color:CanvasText}.patch-panel-title,.patch-statusbar{border-color:CanvasText;background:Canvas;color:CanvasText}.patch-shape{forced-color-adjust:auto}}
 </style>`;
 }
 
@@ -220,6 +222,18 @@ function accessibilityRuntime(shapeDescriptors = {}) {
     return svg;
   }
 
+  function patchMemoElement(control){
+    const memo=document.createElement('textarea');
+    memo.className='patch-memo';
+    memo.value=String(control?.value??'');
+    memo.placeholder=String(control?.id||'');
+    memo.wrap='soft';
+    memo.setAttribute?.('aria-label',patchControlName(control,'Memo'));
+    Object.assign(memo.style,{minWidth:'260px',width:'100%',maxWidth:'100%',height:'140px',minHeight:'96px',padding:'10px 12px',border:'1px solid #d4d4d8',borderRadius:'9px',resize:'vertical',background:'#fff',color:'#18181b',font:'inherit',lineHeight:'1.45',boxSizing:'border-box'});
+    memo.addEventListener('input',()=>safeTrigger(control.id,'changed',{value:memo.value}));
+    return memo;
+  }
+
   function patchApplyPanelLayout(element,layout){
     if(!element||!layout)return;
     element.style.position='absolute';
@@ -235,6 +249,8 @@ function accessibilityRuntime(shapeDescriptors = {}) {
     if(control?.type==='timer')return null;
 
     if(control?.type==='shape')return patchShapeElement(control);
+
+    if(control?.type==='memo')return patchMemoElement(control);
 
     if(control?.type==='panel'){
       const panel=document.createElement('section');

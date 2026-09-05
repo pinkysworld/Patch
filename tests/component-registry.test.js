@@ -9,15 +9,32 @@ import {
   patchComponentForButton
 } from '../src/component-registry.js';
 
-test('component registry exposes the current source-backed Designer families plus RAD R1 components', () => {
-  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.9');
+test('component registry exposes the current source-backed Designer families plus RAD controls', () => {
+  assert.equal(PATCH_COMPONENT_REGISTRY_VERSION, '0.10');
   assert.deepEqual(PATCH_COMPONENTS.map(component => component.type), [
-    'text', 'button', 'input', 'checkbox',
+    'text', 'button', 'input', 'memo', 'checkbox',
     'radio', 'combo', 'listbox', 'slider',
     'table', 'tree', 'tabs', 'panel',
     'picture', 'shape', 'paintbox', 'statusbar', 'timer', 'imagelist'
   ]);
   assert.equal(new Set(PATCH_COMPONENTS.map(component => component.buttonId)).size, PATCH_COMPONENTS.length);
+});
+
+test('Memo Stage 1 is a source-backed multiline Web control with explicit native boundary', () => {
+  const memo = patchComponent('memo');
+  assert.equal(memo.type, 'memo');
+  assert.equal(memo.label, 'Memo');
+  assert.equal(memo.category, 'Basic');
+  assert.equal(memo.buttonId, 'addMemo');
+  assert.equal(memo.visual, true);
+  assert.deepEqual(memo.defaultSize, { width: 320, height: 140 });
+  assert.deepEqual(memo.properties.map(property => property.name), ['id', 'x', 'y', 'width', 'height']);
+  assert.deepEqual(memo.events, [{ name: 'changed', label: 'OnChange', value: true }]);
+  assert.equal(memo.designRenderer, 'memo');
+  assert.deepEqual(memo.targetSupport, {
+    studio: 'supported', web: 'supported', windows: 'unsupported', macos: 'unsupported', linux: 'unsupported', freebsd: 'unsupported'
+  });
+  assert.equal(patchComponentForButton('addMemo')?.type, 'memo');
 });
 
 test('Picture is discoverable with source-backed properties event renderer and target metadata', () => {
@@ -110,6 +127,7 @@ test('component registry descriptors are immutable metadata rather than a second
 
 test('component registry supports category discovery without a second mutable model', () => {
   assert.deepEqual(patchComponentCategories(), ['Basic', 'Choices', 'Data', 'Containers', 'Graphics', 'Chrome', 'Nonvisual']);
+  assert.deepEqual(listPatchComponents({ category: 'Basic' }).map(component => component.type), ['text', 'button', 'input', 'memo', 'checkbox']);
   assert.deepEqual(listPatchComponents({ category: 'Graphics' }).map(component => component.type), ['picture', 'shape', 'paintbox']);
   assert.deepEqual(listPatchComponents({ category: 'Nonvisual' }).map(component => component.type), ['timer', 'imagelist']);
   assert.equal(patchComponent('missing'), null);

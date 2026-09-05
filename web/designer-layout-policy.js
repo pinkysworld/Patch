@@ -14,7 +14,7 @@ export const PATCH_DESIGNER_LAYOUT_POLICY_VERSION = '0.1';
 export const PATCH_DESIGNER_TAB_ORDER_VERSION = '0.1';
 
 const DIRECTIVE_RE = /^\s*#\s*@layout\s+(anchor\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))*|dock\s+(?:left|right|top|bottom|fill))\s*$/i;
-const TAB_ORDER_FOCUSABLE_TYPES = new Set(['button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs', 'picture']);
+const TAB_ORDER_FOCUSABLE_TYPES = new Set(['button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs', 'picture']);
 const TAB_ORDER_NAVIGATION_KEYS = new Set(['ArrowUp', 'ArrowDown', 'Home', 'End']);
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
@@ -310,7 +310,7 @@ function resolveControlLineIndex(rows, sourceLine) {
   if (!Number.isInteger(raw)) return -1;
   for (const candidate of [raw - 1, raw]) {
     if (candidate < 0 || candidate >= rows.length) continue;
-    if (/^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(rows[candidate])) return candidate;
+    if (/^\s*(?:text|button|input|memo|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(rows[candidate])) return candidate;
   }
   return raw >= 1 && raw <= rows.length ? raw - 1 : -1;
 }

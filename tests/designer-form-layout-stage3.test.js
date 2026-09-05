@@ -7,7 +7,7 @@ const css = fs.readFileSync('web/designer-toolbox.css', 'utf8');
 
 test('Form Designer layout 0.3 keeps the registry-backed component set in a compact two-column rail', () => {
   const components = listPatchComponents();
-  assert.equal(components.length, 18);
+  assert.equal(components.length, 19);
   assert.match(css, /Form Designer layout 0\.3/);
   assert.match(css, /grid-template-columns: 86px minmax\(0, 1fr\)/);
   assert.match(css, /#designer\.designer-view::before[\s\S]*width: 86px/);
@@ -18,9 +18,9 @@ test('Form Designer layout 0.3 keeps the registry-backed component set in a comp
 
   const left = [...css.matchAll(/#designer #add\w+ \{ left: 9px; top: (\d+)px/g)].map(match => Number(match[1]));
   const right = [...css.matchAll(/#designer #add\w+ \{ left: 45px; top: (\d+)px/g)].map(match => Number(match[1]));
-  assert.ok(left.length >= 9, 'left toolbox column should hold at least nine component slots');
+  assert.ok(left.length >= 10, 'left toolbox column should hold at least ten component slots');
   assert.ok(right.length >= 9, 'right toolbox column should hold at least nine component slots');
-  assert.ok(Math.max(...left, ...right) <= 366, 'desktop toolbox should no longer require the former 600+ px vertical rail');
+  assert.ok(Math.max(...left, ...right) <= 366, 'desktop toolbox should remain within the compact 366 px rail');
 });
 
 test('Form Designer layout 0.3 improves canvas workspace without replacing source-backed add-control actions', () => {

@@ -321,7 +321,7 @@ function resolveSourceLineIndex(rows, sourceLine) {
 }
 
 function looksLikeControlLine(line) {
-  return /^\s*(?:text|button|input|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(String(line));
+  return /^\s*(?:text|button|input|memo|checkbox|radio|combo|listbox|slider|table|tree|tabs|panel|timer|picture|paintbox|imagelist|statusbar|shape)\b/i.test(String(line));
 }
 function sourceRows(source) { return String(source ?? '').replace(/\r\n/g, '\n').split('\n'); }
 

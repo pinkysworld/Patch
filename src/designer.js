@@ -536,6 +536,7 @@ function makeControl(type, lines, layout) {
   if (type === 'text') return formatControl(type, null, '"Text"', layout);
   if (type === 'button') return formatControl(type, nextId(lines, 'button'), '"Button"', layout);
   if (type === 'input') return formatControl(type, nextId(lines, 'input'), null, layout);
+  if (type === 'memo') return formatControl(type, nextId(lines, 'memo'), null, layout);
   if (type === 'checkbox') return formatControl(type, nextId(lines, 'checkbox'), '"Checkbox"', layout);
   if (type === 'radio') return formatControl(type, nextId(lines, 'radio'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
   if (type === 'combo') return formatControl(type, nextId(lines, 'combo'), null, layout, ['"Option 1"', '"Option 2"', '"Option 3"']);
@@ -553,6 +554,7 @@ function formatControl(type, id, textExpr, layout, options = null, slider = null
   if (type === 'text') core = `text ${textExpr}`;
   else if (type === 'button') core = formatPatchButtonDeclaration({ id, textExpr });
   else if (type === 'input') core = `input ${id}`;
+  else if (type === 'memo') core = `memo ${id}`;
   else if (type === 'checkbox') core = `checkbox ${textExpr} as ${id}`;
   else if (type === 'radio') core = `radio ${(options ?? []).join(', ')} as ${id}`;
   else if (type === 'combo') core = `combo ${(options ?? []).join(', ')} as ${id}`;

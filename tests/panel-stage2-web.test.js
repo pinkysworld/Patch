@@ -39,7 +39,7 @@ test('Standalone Window Web advertises and carries Panel Stage 2 relative layout
   const built = buildStandaloneWebApp(SOURCE, { name: 'PanelStage2Web', kind: 'window' });
   assert.equal(built.metadata.panelStage, 2);
   assert.equal(built.metadata.panelMode, 'source-backed-flow-plus-relative-layout');
-  assert.equal(built.metadata.accessibilityVersion, '0.4');
+  assert.equal(built.metadata.accessibilityVersion, '0.5');
   assert.match(built.html, /patch-panel-positioned/);
   assert.match(built.html, /patchPanelLayout/);
   assert.match(built.html, /function patchApplyPanelLayout/);

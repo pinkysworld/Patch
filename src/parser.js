@@ -140,8 +140,8 @@ export function parse(source) {
     const body = optionalChildBlock(indent);
     for (const child of body) {
       if (child.kind !== 'uiControl') throw new PatchSyntaxError('A panel can only contain window controls.', child.line);
-      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox'].includes(child.control)) {
-        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView or PaintBox.', child.line);
+      if (['panel', 'timer', 'imagelist', 'statusbar', 'table', 'tree', 'paintbox', 'memo'].includes(child.control)) {
+        throw new PatchSyntaxError('Panel Stage 2 cannot yet nest Panel, Timer, ImageList, StatusBar, Table, TreeView, PaintBox or Memo.', child.line);
       }
     }
     return uiControl({ control: 'panel', textExpr: null, id, body, line: row.line }, layout);
@@ -332,6 +332,7 @@ export function parse(source) {
       return uiControl({control:'statusbar',textExpr:'"Ready"',id:m[1],line:row.line},ui.layout);
     }
     if ((m = ui.core.match(/^input\s+([A-Za-z_]\w*)$/))) return uiControl({control:'input',textExpr:null,id:m[1],line:row.line},ui.layout);
+    if ((m = ui.core.match(/^memo\s+([A-Za-z_]\w*)$/))) return uiControl({control:'memo',textExpr:null,id:m[1],line:row.line},ui.layout);
     if ((m = row.text.match(/^when\s+([A-Za-z_]\w*)\s+(clicked|changed|closed|confirmed|chosen|cancelled|ticked|paint)\s*:\s*$/))) return {kind:'event',control:m[1],event:m[2],body:childBlock(indent,row),line:row.line};
     if ((m = row.text.match(/^confirm\s+(.+?)\s+as\s+([A-Za-z_]\w*)\s*$/))) {
       const parts=splitArgs(m[1]);
