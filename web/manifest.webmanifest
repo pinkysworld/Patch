@@ -11,10 +11,10 @@
   "categories": ["developer", "education", "productivity"],
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "./icon.svg?v=compiler-p-v2",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
