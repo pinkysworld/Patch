@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   placeResourcePictureInSource,
   resourcePictureDropLayout
-} from '../web/resource-manager.js';
+} from '../src/studio-resource-picture-placement.js';
 import { listDesignerControls, listDesignerWindows } from '../src/designer.js';
 import { formControlDefaultSize } from '../src/form-layout.js';
 
@@ -62,9 +62,10 @@ test('explicit resource drop does not keep temporary auto-placement Form growth'
   assert.equal(form.height, 420);
 });
 
-test('Resource Manager exposes drag and keyboard/touch placement affordances', async () => {
+test('Resource Manager exposes drag and keyboard/touch placement affordances through the shared placement model', async () => {
   const fs = await import('node:fs');
   const manager = fs.readFileSync(new URL('../web/resource-manager.js', import.meta.url), 'utf8');
+  assert.match(manager, /studio-resource-picture-placement\.js/);
   assert.match(manager, /application\/x-patch-studio-resource/);
   assert.match(manager, /row\.draggable\s*=\s*true/);
   assert.match(manager, /Place on Form/);
