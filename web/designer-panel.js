@@ -24,7 +24,7 @@ import {
   syncDesignerInspectorState
 } from './designer-ux.js';
 
-export const PATCH_DESIGNER_PANEL_VERSION = '0.1';
+export const PATCH_DESIGNER_PANEL_VERSION = '0.2';
 
 const doc = typeof document === 'undefined' ? null : document;
 const code = doc?.querySelector('#code') ?? null;
@@ -58,6 +58,14 @@ export function panelChildDraftIsDirty(child, draft = {}) {
     if (String(draft.max ?? '') !== String(child.max ?? '')) return true;
     if (String(draft.step ?? '') !== String(child.step ?? '')) return true;
   }
+  const positioned = Boolean(draft.positioned);
+  if (positioned !== Boolean(child.positioned)) return true;
+  if (positioned) {
+    if (String(draft.x ?? '') !== String(child.x ?? '')) return true;
+    if (String(draft.y ?? '') !== String(child.y ?? '')) return true;
+    if (String(draft.width ?? '') !== String(child.width ?? '')) return true;
+    if (String(draft.height ?? '') !== String(child.height ?? '')) return true;
+  }
   return false;
 }
 
@@ -85,7 +93,7 @@ function installPanelButton() {
   button.type = 'button';
   button.textContent = '+ Panel';
   button.setAttribute('aria-label', 'Add Panel');
-  button.title = 'Add a source-backed flow-layout Panel to the active Form';
+  button.title = 'Add a source-backed Panel to the active Form';
   toolbar.appendChild(button);
   button.addEventListener('click', event => {
     event.preventDefault();
@@ -118,7 +126,7 @@ function installPanelInspector() {
       <strong>Panel children</strong>
       <span id="designerPanelChildCount" class="inspector-hint"></span>
     </div>
-    <p class="inspector-hint">Panel Stage 1 uses source-backed flow layout. Child geometry is intentionally not stored independently.</p>
+    <p class="inspector-hint">Panel Stage 2 keeps legacy flow children and optionally stores child <code>at/size</code> coordinates relative to the Panel.</p>
     <select id="designerPanelChildList" size="6" aria-label="Controls inside selected Panel"></select>
     <div class="designer-panel-add-row">
       <select id="designerPanelChildType" aria-label="Panel child type"></select>
@@ -139,6 +147,14 @@ function installPanelInspector() {
         <label>Min <input id="designerPanelChildMin" inputmode="decimal"></label>
         <label>Max <input id="designerPanelChildMax" inputmode="decimal"></label>
         <label>Step <input id="designerPanelChildStep" inputmode="decimal"></label>
+      </div>
+      <label class="inspector-field designer-panel-position-toggle"><span>Layout</span><span><input id="designerPanelChildPositioned" type="checkbox"> Position inside Panel</span></label>
+      <div id="designerPanelChildGeometry" class="forms-geometry-grid" hidden>
+        <strong>Panel-relative geometry</strong>
+        <label>X <input id="designerPanelChildX" inputmode="numeric"></label>
+        <label>Y <input id="designerPanelChildY" inputmode="numeric"></label>
+        <label>Width <input id="designerPanelChildWidth" inputmode="numeric" placeholder="auto"></label>
+        <label>Height <input id="designerPanelChildHeight" inputmode="numeric" placeholder="auto"></label>
       </div>
       <div class="designer-panel-actions">
         <button id="designerPanelApplyChild" class="secondary" type="button">Apply child</button>
@@ -169,8 +185,15 @@ function installPanelInspector() {
   section.querySelector('#designerPanelApplyChild').addEventListener('click', applyChild);
   section.querySelector('#designerPanelChildEvent').addEventListener('click', openChildEvent);
   section.querySelector('#designerPanelChildSource').addEventListener('click', revealChildSource);
+  section.querySelector('#designerPanelChildPositioned').addEventListener('change', event => {
+    const enabled = Boolean(event.target.checked);
+    const geometry = section.querySelector('#designerPanelChildGeometry');
+    if (geometry) geometry.hidden = !enabled;
+    if (enabled) ensureGeometryDefaults(section);
+    syncPanelChildInspectorState();
+  });
   section.addEventListener('input', event => {
-    if (!event.target?.matches?.('#designerPanelChildId, #designerPanelChildText, #designerPanelChildOptions, #designerPanelChildMin, #designerPanelChildMax, #designerPanelChildStep')) return;
+    if (!event.target?.matches?.('#designerPanelChildId, #designerPanelChildText, #designerPanelChildOptions, #designerPanelChildMin, #designerPanelChildMax, #designerPanelChildStep, #designerPanelChildX, #designerPanelChildY, #designerPanelChildWidth, #designerPanelChildHeight')) return;
     queueMicrotask(syncPanelChildInspectorState);
   });
   section.addEventListener('keydown', event => {
@@ -228,7 +251,7 @@ function renderPanels() {
     element.dataset.controlIndex = String(control.controlIndex);
     element.dataset.panelId = panel.id ?? '';
     element.setAttribute('aria-label', `Select Panel ${panel.id ?? control.controlIndex + 1}`);
-    const signature = JSON.stringify(panel.children.map(child => [child.type, child.id, child.textExpr, child.options, child.min, child.max, child.step]));
+    const signature = JSON.stringify(panel.children.map(child => [child.type, child.id, child.textExpr, child.options, child.min, child.max, child.step, child.x, child.y, child.width, child.height, child.positioned]));
     if (element.dataset.panelSignature !== signature) {
       element.dataset.panelSignature = signature;
       renderPanelBody(element, panel);
@@ -259,12 +282,17 @@ function renderPanelBody(element, panel) {
   const legend = doc.createElement('div');
   legend.className = 'patch-panel-legend';
   legend.textContent = panel.id || 'Panel';
+  const surface = doc.createElement('div');
+  surface.className = 'patch-panel-surface';
   const flow = doc.createElement('div');
   flow.className = 'patch-panel-flow';
+  const positioned = doc.createElement('div');
+  positioned.className = 'patch-panel-positioned';
   for (const child of panel.children) {
     const item = doc.createElement('div');
     item.className = `patch-panel-child patch-panel-child-${child.type}`;
     item.dataset.panelChildIndex = String(child.childIndex);
+    item.dataset.panelChildLayout = child.positioned ? 'relative' : 'flow';
     const type = doc.createElement('span');
     type.className = 'patch-panel-child-type';
     type.textContent = displayType(child.type);
@@ -272,7 +300,18 @@ function renderPanelBody(element, panel) {
     label.className = 'patch-panel-child-label';
     label.textContent = panelPreviewLabel(child);
     item.append(type, label);
-    flow.appendChild(item);
+    if (child.positioned) {
+      Object.assign(item.style, {
+        position: 'absolute',
+        left: `${child.x}px`,
+        top: `${child.y}px`,
+        ...(child.width !== null ? { width: `${child.width}px` } : {}),
+        ...(child.height !== null ? { height: `${child.height}px` } : {})
+      });
+      positioned.appendChild(item);
+    } else {
+      flow.appendChild(item);
+    }
   }
   if (!panel.children.length) {
     const empty = doc.createElement('div');
@@ -280,7 +319,8 @@ function renderPanelBody(element, panel) {
     empty.textContent = 'Empty Panel';
     flow.appendChild(empty);
   }
-  element.append(legend, flow);
+  surface.append(flow, positioned);
+  element.append(legend, surface);
 }
 
 function renderPanelInspector() {
@@ -305,7 +345,9 @@ function renderPanelInspector() {
 
   const location = doc.querySelector('#designerInspectorLocation');
   if (location && !location.textContent.includes('children')) {
-    location.textContent += ` · ${panel.children.length} children · flow layout`;
+    const positionedCount = panel.children.filter(child => child.positioned).length;
+    const layoutLabel = positionedCount ? `${positionedCount} positioned` : 'flow layout';
+    location.textContent += ` · ${panel.children.length} children · ${layoutLabel}`;
   }
   const list = section.querySelector('#designerPanelChildList');
   list.replaceChildren();
@@ -313,7 +355,8 @@ function renderPanelInspector() {
   for (const child of panel.children) {
     const option = doc.createElement('option');
     option.value = String(child.childIndex);
-    option.textContent = `${child.childIndex + 1}. ${displayType(child.type)}${child.id ? ` · ${child.id}` : ''} · ${panelPreviewLabel(child)}`;
+    const layout = child.positioned ? ` · @ ${child.x},${child.y}` : ' · flow';
+    option.textContent = `${child.childIndex + 1}. ${displayType(child.type)}${child.id ? ` · ${child.id}` : ''} · ${panelPreviewLabel(child)}${layout}`;
     option.selected = child.childIndex === selectedChildIndex;
     list.appendChild(option);
   }
@@ -356,6 +399,12 @@ function renderChildProperties(child, panel) {
   const min = section.querySelector('#designerPanelChildMin');
   const max = section.querySelector('#designerPanelChildMax');
   const step = section.querySelector('#designerPanelChildStep');
+  const positioned = section.querySelector('#designerPanelChildPositioned');
+  const geometry = section.querySelector('#designerPanelChildGeometry');
+  const x = section.querySelector('#designerPanelChildX');
+  const y = section.querySelector('#designerPanelChildY');
+  const width = section.querySelector('#designerPanelChildWidth');
+  const height = section.querySelector('#designerPanelChildHeight');
   if (idField) idField.hidden = child.type === 'text';
   if (textField) textField.hidden = !['text', 'button', 'checkbox'].includes(child.type);
   if (optionsField) optionsField.hidden = !['radio', 'combo', 'listbox'].includes(child.type);
@@ -366,6 +415,12 @@ function renderChildProperties(child, panel) {
   if (min) min.value = child.type === 'slider' ? String(child.min) : '';
   if (max) max.value = child.type === 'slider' ? String(child.max) : '';
   if (step) step.value = child.type === 'slider' ? String(child.step) : '';
+  if (positioned) positioned.checked = Boolean(child.positioned);
+  if (geometry) geometry.hidden = !child.positioned;
+  if (x) x.value = child.positioned ? String(child.x) : '';
+  if (y) y.value = child.positioned ? String(child.y) : '';
+  if (width) width.value = child.positioned && child.width !== null ? String(child.width) : '';
+  if (height) height.value = child.positioned && child.height !== null ? String(child.height) : '';
   const event = designerEventSpec(child.type);
   const eventButton = section.querySelector('#designerPanelChildEvent');
   if (eventButton) {
@@ -396,7 +451,12 @@ function syncPanelChildInspectorState() {
     options: section.querySelector('#designerPanelChildOptions')?.value ?? '',
     min: section.querySelector('#designerPanelChildMin')?.value ?? '',
     max: section.querySelector('#designerPanelChildMax')?.value ?? '',
-    step: section.querySelector('#designerPanelChildStep')?.value ?? ''
+    step: section.querySelector('#designerPanelChildStep')?.value ?? '',
+    positioned: Boolean(section.querySelector('#designerPanelChildPositioned')?.checked),
+    x: section.querySelector('#designerPanelChildX')?.value ?? '',
+    y: section.querySelector('#designerPanelChildY')?.value ?? '',
+    width: section.querySelector('#designerPanelChildWidth')?.value ?? '',
+    height: section.querySelector('#designerPanelChildHeight')?.value ?? ''
   };
   syncDesignerInspectorState({
     document: doc,
@@ -466,6 +526,13 @@ function applyChild() {
     changes.min = section.querySelector('#designerPanelChildMin')?.value ?? selected.child.min;
     changes.max = section.querySelector('#designerPanelChildMax')?.value ?? selected.child.max;
     changes.step = section.querySelector('#designerPanelChildStep')?.value ?? selected.child.step;
+  }
+  changes.positioned = Boolean(section.querySelector('#designerPanelChildPositioned')?.checked);
+  if (changes.positioned) {
+    changes.x = section.querySelector('#designerPanelChildX')?.value ?? selected.child.x;
+    changes.y = section.querySelector('#designerPanelChildY')?.value ?? selected.child.y;
+    changes.width = section.querySelector('#designerPanelChildWidth')?.value ?? selected.child.width;
+    changes.height = section.querySelector('#designerPanelChildHeight')?.value ?? selected.child.height;
   }
   mutate(() => updateDesignerPanelChild(code.value, { ...selected.panel, childIndex: selected.child.childIndex }, changes).source);
 }
@@ -583,6 +650,19 @@ function splitExpressions(text) {
   }
   if (current.trim()) out.push(current.trim());
   return out;
+}
+
+function ensureGeometryDefaults(section) {
+  const values = [
+    ['#designerPanelChildX', '12'],
+    ['#designerPanelChildY', '12'],
+    ['#designerPanelChildWidth', '120'],
+    ['#designerPanelChildHeight', '32']
+  ];
+  for (const [selector, fallback] of values) {
+    const input = section.querySelector(selector);
+    if (input && !String(input.value).trim()) input.value = fallback;
+  }
 }
 
 function installStylesheet() {
