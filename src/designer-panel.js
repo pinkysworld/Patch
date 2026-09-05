@@ -1,7 +1,7 @@
 import { parse } from './parser.js';
 import { formatPatchButtonDeclaration, parseButtonImageBinding } from './button-image.js';
 
-export const PATCH_DESIGNER_PANEL_MODEL_VERSION = '0.1';
+export const PATCH_DESIGNER_PANEL_MODEL_VERSION = '0.2';
 export const PANEL_CHILD_TYPES = Object.freeze([
   'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider'
 ]);
@@ -35,15 +35,15 @@ export function listDesignerPanels(source, windowIndex = null) {
     : panels;
 }
 
-export function addDesignerPanelChild(source, selector, type) {
+export function addDesignerPanelChild(source, selector, type, options = {}) {
   if (!PANEL_CHILD_TYPES.includes(type)) {
-    throw new Error(`Panel Stage 1 cannot add '${type}'. Use Text, Button, Input, Checkbox, Radio, ComboBox, ListBox or Slider.`);
+    throw new Error(`Panel Stage 2 cannot add '${type}'. Use Text, Button, Input, Checkbox, Radio, ComboBox, ListBox or Slider.`);
   }
   const panel = findPanel(listDesignerPanels(source), selector);
   const lines = normalizeLines(source);
   const panelLine = panel.line - 1;
   const indent = `${indentOf(lines[panelLine])}  `;
-  const declaration = makeChildDeclaration(lines, type);
+  const declaration = withPanelChildLayout(makeChildDeclaration(lines, type), normalizePanelChildLayout(null, options));
   lines.splice(blockEnd(lines, panelLine), 0, `${indent}${declaration}`);
   const next = preserveTrailingNewline(source, lines.join('\n'));
   parse(next);
@@ -98,7 +98,8 @@ export function updateDesignerPanelChild(source, selector, changes = {}) {
     }
   }
 
-  lines[lineIndex] = `${indent}${formatChild({ type: child.type, id, textExpr, options, min, max, step, imageListId, imageItem })}`;
+  const layout = normalizePanelChildLayout(child, changes);
+  lines[lineIndex] = `${indent}${formatChild({ type: child.type, id, textExpr, options, min, max, step, imageListId, imageItem, ...layout })}`;
   if (oldId && id !== oldId) renameEventHeaders(lines, oldId, id);
   const next = preserveTrailingNewline(source, lines.join('\n'));
   parse(next);
@@ -168,7 +169,12 @@ function panelChild(node, windowIndex, panelIndex, childIndex) {
     options: Array.isArray(node.options) ? [...node.options] : null,
     min: node.control === 'slider' ? node.min : null,
     max: node.control === 'slider' ? node.max : null,
-    step: node.control === 'slider' ? node.step : null
+    step: node.control === 'slider' ? node.step : null,
+    x: node.layout?.x ?? null,
+    y: node.layout?.y ?? null,
+    width: node.layout?.width ?? null,
+    height: node.layout?.height ?? null,
+    positioned: Boolean(node.layout)
   };
   if (node.control === 'button' && (node.imageListId || node.imageItem)) {
     item.imageListId = node.imageListId ?? null;
@@ -186,26 +192,68 @@ function makeChildDeclaration(lines, type) {
   if (type === 'combo') return `combo "Option 1", "Option 2", "Option 3" as ${uniqueId(lines, 'panel_combo')}`;
   if (type === 'listbox') return `listbox "Option 1", "Option 2", "Option 3" as ${uniqueId(lines, 'panel_listbox')}`;
   if (type === 'slider') return `slider 0..100 as ${uniqueId(lines, 'panel_slider')} step 1`;
-  throw new Error(`Panel Stage 1 cannot add '${type}'.`);
+  throw new Error(`Panel Stage 2 cannot add '${type}'.`);
 }
 
 function formatChild(child) {
-  if (child.type === 'text') return `text ${child.textExpr}`;
-  if (child.type === 'button') {
-    return formatPatchButtonDeclaration({
+  let declaration;
+  if (child.type === 'text') declaration = `text ${child.textExpr}`;
+  else if (child.type === 'button') {
+    declaration = formatPatchButtonDeclaration({
       id: child.id,
       textExpr: child.textExpr,
       imageListId: child.imageListId,
       imageItem: child.imageItem
     });
   }
-  if (child.type === 'input') return `input ${child.id}`;
-  if (child.type === 'checkbox') return `checkbox ${child.textExpr} as ${child.id}`;
-  if (child.type === 'radio') return `radio ${(child.options ?? []).join(', ')} as ${child.id}`;
-  if (child.type === 'combo') return `combo ${(child.options ?? []).join(', ')} as ${child.id}`;
-  if (child.type === 'listbox') return `listbox ${(child.options ?? []).join(', ')} as ${child.id}`;
-  if (child.type === 'slider') return `slider ${formatNumber(child.min)}..${formatNumber(child.max)} as ${child.id} step ${formatNumber(child.step)}`;
-  throw new Error(`Panel Designer cannot edit '${child.type}'.`);
+  else if (child.type === 'input') declaration = `input ${child.id}`;
+  else if (child.type === 'checkbox') declaration = `checkbox ${child.textExpr} as ${child.id}`;
+  else if (child.type === 'radio') declaration = `radio ${(child.options ?? []).join(', ')} as ${child.id}`;
+  else if (child.type === 'combo') declaration = `combo ${(child.options ?? []).join(', ')} as ${child.id}`;
+  else if (child.type === 'listbox') declaration = `listbox ${(child.options ?? []).join(', ')} as ${child.id}`;
+  else if (child.type === 'slider') declaration = `slider ${formatNumber(child.min)}..${formatNumber(child.max)} as ${child.id} step ${formatNumber(child.step)}`;
+  else throw new Error(`Panel Designer cannot edit '${child.type}'.`);
+  return withPanelChildLayout(declaration, child);
+}
+
+function normalizePanelChildLayout(child, changes = {}) {
+  if (changes.layout === null || changes.positioned === false) {
+    return { x: null, y: null, width: null, height: null, positioned: false };
+  }
+  const geometryKeys = ['x', 'y', 'width', 'height'];
+  const geometryChanged = geometryKeys.some(key => Object.hasOwn(changes, key));
+  const positioned = changes.positioned === true || geometryChanged || Boolean(child?.positioned);
+  if (!positioned) return { x: null, y: null, width: null, height: null, positioned: false };
+
+  const raw = key => Object.hasOwn(changes, key) ? changes[key] : child?.[key];
+  const x = panelCoordinate(raw('x'), 'Panel child X');
+  const y = panelCoordinate(raw('y'), 'Panel child Y');
+  const rawWidth = raw('width');
+  const rawHeight = raw('height');
+  const widthEmpty = rawWidth === null || rawWidth === undefined || String(rawWidth).trim() === '';
+  const heightEmpty = rawHeight === null || rawHeight === undefined || String(rawHeight).trim() === '';
+  if (widthEmpty !== heightEmpty) throw new Error('Panel child width and height must either both be set or both be empty.');
+  const width = widthEmpty ? null : panelSize(rawWidth, 'Panel child width');
+  const height = heightEmpty ? null : panelSize(rawHeight, 'Panel child height');
+  return { x, y, width, height, positioned: true };
+}
+
+function withPanelChildLayout(declaration, layout) {
+  if (!layout?.positioned) return declaration;
+  const size = layout.width === null || layout.height === null ? '' : ` size ${layout.width}, ${layout.height}`;
+  return `${declaration} at ${layout.x}, ${layout.y}${size}`;
+}
+
+function panelCoordinate(value, label) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 0) throw new Error(`${label} must be a whole number zero or greater.`);
+  return number;
+}
+
+function panelSize(value, label) {
+  const number = Number(value);
+  if (!Number.isInteger(number) || number < 16) throw new Error(`${label} must be a whole number of at least 16.`);
+  return number;
 }
 
 function findPanel(panels, selector) {
