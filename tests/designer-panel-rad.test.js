@@ -161,7 +161,7 @@ test('Panel RAD ships in the content-addressed Studio and offline PWA graph', ()
   assert.match(workspace, /import '\.\/designer-panel\.js'/);
   assert.ok(workspace.indexOf("import './designer-ux.js'") < workspace.indexOf("import './designer-panel.js'"));
   assert.match(browser, /Panel children/);
-  assert.match(browser, /Panel Stage 1 uses source-backed flow layout/);
+  assert.match(browser, /Panel Stage 2 keeps legacy flow children/);
   assert.match(browser, /syncDesignerInspectorState/);
   assert.match(browser, /showDesignerInspectorError/);
   assert.match(browser, /clearDesignerInspectorError/);
