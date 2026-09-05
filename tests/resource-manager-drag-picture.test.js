@@ -50,16 +50,18 @@ test('placing a project resource creates ordinary visible Picture source at the 
   assert.match(placed.source, /picture\s+as\s+picture_1\s+from\s+"patch-resource:image\.logo"\s+at\s+180,\s*90\s+size\s+200,\s*140/);
 });
 
-test('explicit resource drop does not keep temporary auto-placement Form growth', () => {
+test('explicit resource drops do not keep temporary auto-placement Form growth, including at an edge', () => {
   const source = `window "Assets" as assets size 640, 420:\n  button "Low" as low at 24, 350 size 100, 32\n`;
   const size = formControlDefaultSize('picture');
-  const placed = placeResourcePictureInSource(source, 'image.small', {
-    windowIndex: 0,
-    layout: { x: 40, y: 40, width: size.width, height: size.height }
-  });
-  const form = listDesignerWindows(placed.source)[0];
-  assert.equal(form.width, 640);
-  assert.equal(form.height, 420);
+  for (const layout of [
+    { x: 40, y: 40, width: size.width, height: size.height },
+    { x: 640 - size.width, y: 420 - size.height, width: size.width, height: size.height }
+  ]) {
+    const placed = placeResourcePictureInSource(source, 'image.small', { windowIndex: 0, layout });
+    const form = listDesignerWindows(placed.source)[0];
+    assert.equal(form.width, 640);
+    assert.equal(form.height, 420);
+  }
 });
 
 test('Resource Manager exposes drag and keyboard/touch placement affordances through the shared placement model', async () => {
