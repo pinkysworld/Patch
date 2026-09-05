@@ -1,33 +1,51 @@
 export const PATCH_WINDOW_WEB_PAINTBOX_VERSION = '0.1';
+export const PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION = '0.1';
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 200;
 
 /**
- * Add the Stage 1 PaintBox Canvas2D renderer to a generated standalone Window app.
+ * Add the Stage 1 PaintBox Canvas2D renderer and final browser-only Window
+ * presentation enhancements to a generated standalone Window app.
  *
- * The renderer is deliberately ephemeral. It rebuilds pixels from visible Patch
- * source every time the ordinary Window runtime renders. Persistent application
- * state remains exclusively in Patch state and can only change through `change`.
+ * The PaintBox renderer is deliberately ephemeral. It rebuilds pixels from
+ * visible Patch source every time the ordinary Window runtime renders.
+ * Persistent application state remains exclusively in Patch state and can only
+ * change through `change`.
  */
 export function enhanceStandaloneWindowPaintBoxes(built) {
   if (!built || typeof built.html !== 'string' || built.metadata?.projectKind !== 'window') return built;
-  const descriptors = collectPaintBoxDescriptors(built.compiled?.ast ?? []);
-  if (!Object.keys(descriptors).length) return built;
+  const ast = built.compiled?.ast ?? [];
+  const descriptors = collectPaintBoxDescriptors(ast);
+  const passwordInputIds = collectPasswordInputIds(ast);
+  const hasPaintBoxes = Object.keys(descriptors).length > 0;
+  const hasPasswordEdits = passwordInputIds.length > 0;
+  if (!hasPaintBoxes && !hasPasswordEdits) return built;
 
-  const html = built.html
-    .replace('</head>', `${paintBoxStyle()}\n</head>`)
-    .replace('</body>', `${paintBoxRuntime(descriptors)}\n</body>`);
+  let html = built.html;
+  if (hasPaintBoxes) {
+    html = html
+      .replace('</head>', `${paintBoxStyle()}\n</head>`)
+      .replace('</body>', `${paintBoxRuntime(descriptors)}\n</body>`);
+  }
+  if (hasPasswordEdits) html = html.replace('</body>', `${passwordEditRuntime(passwordInputIds)}\n</body>`);
 
   return {
     ...built,
     html,
     metadata: {
       ...built.metadata,
-      paintBoxStage: 1,
-      paintBoxVersion: PATCH_WINDOW_WEB_PAINTBOX_VERSION,
-      paintBoxMode: 'pure-source-backed-canvas2d',
-      paintBoxCoordinates: 'source-control-logical-size'
+      ...(hasPaintBoxes ? {
+        paintBoxStage: 1,
+        paintBoxVersion: PATCH_WINDOW_WEB_PAINTBOX_VERSION,
+        paintBoxMode: 'pure-source-backed-canvas2d',
+        paintBoxCoordinates: 'source-control-logical-size'
+      } : {}),
+      ...(hasPasswordEdits ? {
+        passwordEditStage: 1,
+        passwordEditVersion: PATCH_WINDOW_WEB_PASSWORD_EDIT_VERSION,
+        passwordEditMode: 'source-backed-masked-input'
+      } : {})
     }
   };
 }
@@ -60,6 +78,19 @@ export function collectPaintBoxDescriptors(ast) {
     });
   }
   return Object.freeze(descriptors);
+}
+
+export function collectPasswordInputIds(ast) {
+  const ids = [];
+  walk(ast, node => {
+    if (
+      node.kind === 'uiControl' &&
+      node.control === 'input' &&
+      node.inputPresentation === 'password' &&
+      node.id
+    ) ids.push(node.id);
+  });
+  return ids;
 }
 
 function clonePaintNodes(nodes) {
@@ -213,6 +244,27 @@ function paintBoxRuntime(descriptors) {
     return patchPaintBoxOriginalRenderControl(control,windowId,controlIndex);
   };
 
+  render();
+})();
+</script>`;
+}
+
+function passwordEditRuntime(ids) {
+  const idJson = JSON.stringify(ids).replace(/</g, '\\u003c');
+  return `<script data-patch-window-passwordedit>
+(function(){
+  if(typeof renderControl!=='function'||typeof render!=='function')return;
+  const PATCH_PASSWORD_INPUT_IDS=new Set(${idJson});
+  const patchPasswordOriginalRenderControl=renderControl;
+  renderControl=function(control,windowId,controlIndex){
+    const element=patchPasswordOriginalRenderControl(control,windowId,controlIndex);
+    if(control?.type==='input'&&PATCH_PASSWORD_INPUT_IDS.has(String(control?.id||''))&&element?.tagName==='INPUT'){
+      element.type='password';
+      element.dataset.patchInputPresentation='password';
+      element.setAttribute('aria-label',String(control?.id||'Password')+' password');
+    }
+    return element;
+  };
   render();
 })();
 </script>`;
