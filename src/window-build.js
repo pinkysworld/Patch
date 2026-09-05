@@ -52,6 +52,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   let menuCheckedBindings = 0;
   let treeViews = 0;
   let sliders = 0;
+  let memos = 0;
   let paintboxes = 0;
   let imageLists = 0;
   let buttonImages = 0;
@@ -79,6 +80,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     if (idTaken(child.id)) throw duplicateId(child);
     controls.set(child.id, { type: child.control, formId, node: child });
     if (child.control === 'tree') treeViews += 1;
+    if (child.control === 'memo') memos += 1;
     if (child.control === 'paintbox') paintboxes += 1;
     if (child.control === 'imagelist') {
       imageLists += 1;
@@ -276,6 +278,11 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
         `line ${event.line ?? '?'}: Slider '${event.control}' exposes only 'changed' for transient numeric values, not '${event.event}'.`
       );
     }
+    if (controlType === 'memo' && event.event !== 'changed') {
+      throw new WindowBuildError(
+        `line ${event.line ?? '?'}: Memo '${event.control}' exposes only 'changed', not '${event.event}'.`
+      );
+    }
     if (controlType === 'timer' && event.event !== 'ticked') {
       throw new WindowBuildError(
         `line ${event.line ?? '?'}: Timer '${event.control}' exposes only 'ticked', not '${event.event}'.`
@@ -295,10 +302,10 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
       ((controlType === 'button' || controlType === 'menuItem' || controlType === 'picture') && event.event === 'clicked') ||
       (controlType === 'timer' && event.event === 'ticked') ||
       (controlType === 'paintbox' && event.event === 'paint') ||
-      ((controlType === 'input' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'slider') && event.event === 'changed');
+      ((controlType === 'input' || controlType === 'memo' || controlType === 'checkbox' || controlType === 'combo' || controlType === 'listbox' || controlType === 'radio' || controlType === 'table' || controlType === 'tree' || controlType === 'slider') && event.event === 'changed');
     if (!supported) {
       throw new WindowBuildError(
-        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'paint' on PaintBox, 'ticked' on Timer, and 'changed' on inputs/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
+        `line ${event.line ?? '?'}: Window builds support 'clicked' on buttons/menu items/PictureBox, 'paint' on PaintBox, 'ticked' on Timer, and 'changed' on inputs/memos/checkboxes/combos/listboxes/radios/tables/trees/sliders. ` +
         `'${event.control}' is a ${controlType} using '${event.event}'.`
       );
     }
@@ -322,6 +329,12 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
   if (sliders && !options.allowSlider) {
     throw new WindowBuildError(
       'Slider is not enabled for this Window target. Select a Slider-capable browser target or enable its versioned Slider runtime contract; validation fails closed otherwise.'
+    );
+  }
+
+  if (memos && !options.allowMemo) {
+    throw new WindowBuildError(
+      'Memo Stage 1 is enabled only for Patch Studio and Standalone Window Web. Current Ready native GUI 1.9/19/1.10 has no Memo contract; validation fails closed rather than lowering Memo as a single-line Input.'
     );
   }
 
@@ -354,6 +367,7 @@ export function validateWindowRuntimeSupport(compiled, options = {}) {
     controls: controls.size,
     treeViews,
     sliders,
+    memos,
     paintboxes,
     imageLists,
     buttonImages,
