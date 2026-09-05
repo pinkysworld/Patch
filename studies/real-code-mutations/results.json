@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "study_id": "patch-real-code-mutation-audit-v1",
+  "sampling_design": "purposive maximum-variation audit",
+  "inference_boundary": "Counts describe this audited purposive corpus only. They are not estimates of ecosystem prevalence or developer effort.",
+  "project_count": 6,
+  "observation_count": 18,
+  "observations_per_project": {
+    "gitlens": 3,
+    "node-red": 3,
+    "obsidian-dataview": 3,
+    "obsidian-tasks": 3,
+    "prettier-vscode": 3,
+    "vscode-eslint": 3
+  },
+  "operation_family_counts": {
+    "add": 2,
+    "clear": 2,
+    "decrease": 1,
+    "increase": 2,
+    "remove": 4,
+    "set": 7
+  },
+  "local_surface_fit_counts": {
+    "adapter": 11,
+    "direct": 5,
+    "restructure": 2
+  },
+  "lean_fragment_shape_matches": 3,
+  "context_constraint_counts": {
+    "batched_dynamic_targets": 1,
+    "coupled_multi_target": 4,
+    "dynamic_target": 2,
+    "external_persisted_state": 2,
+    "sequential_same_target": 2,
+    "standalone": 7
+  },
+  "standalone_context_observations": 7,
+  "non_standalone_context_observations": 11,
+  "project_summaries": [
+    {
+      "project": "gitlens",
+      "repository": "gitkraken/vscode-gitlens",
+      "commit": "25d480b100320bbe386f3e966328d9c1196eccfe",
+      "observations": 3,
+      "local_surface_fit": {
+        "adapter": 1,
+        "direct": 2
+      },
+      "operation_family": {
+        "clear": 1,
+        "decrease": 1,
+        "increase": 1
+      },
+      "lean_fragment_shape_matches": 2
+    },
+    {
+      "project": "prettier-vscode",
+      "repository": "prettier/prettier-vscode",
+      "commit": "b3d5ea136fadf5a4cac835df074dc12fcb398b0c",
+      "observations": 3,
+      "local_surface_fit": {
+        "adapter": 3
+      },
+      "operation_family": {
+        "add": 1,
+        "clear": 1,
+        "remove": 1
+      },
+      "lean_fragment_shape_matches": 0
+    },
+    {
+      "project": "vscode-eslint",
+      "repository": "microsoft/vscode-eslint",
+      "commit": "f5e644a38575bdc652856be6c8e45559b18f52ad",
+      "observations": 3,
+      "local_surface_fit": {
+        "adapter": 2,
+        "direct": 1
+      },
+      "operation_family": {
+        "set": 3
+      },
+      "lean_fragment_shape_matches": 0
+    },
+    {
+      "project": "obsidian-dataview",
+      "repository": "blacksmithgu/obsidian-dataview",
+      "commit": "5ad0994ff384cbb797de382e7edff2388141b73a",
+      "observations": 3,
+      "local_surface_fit": {
+        "adapter": 2,
+        "direct": 1
+      },
+      "operation_family": {
+        "increase": 1,
+        "remove": 2
+      },
+      "lean_fragment_shape_matches": 1
+    },
+    {
+      "project": "obsidian-tasks",
+      "repository": "obsidian-tasks-group/obsidian-tasks",
+      "commit": "f2695dfaf0c4dd2267c028ff9fcbb9b1c37dddc0",
+      "observations": 3,
+      "local_surface_fit": {
+        "direct": 1,
+        "restructure": 2
+      },
+      "operation_family": {
+        "add": 1,
+        "set": 2
+      },
+      "lean_fragment_shape_matches": 0
+    },
+    {
+      "project": "node-red",
+      "repository": "node-red/node-red",
+      "commit": "dcceaddf23ed489d8ad0ae4e472ec3cc13810695",
+      "observations": 3,
+      "local_surface_fit": {
+        "adapter": 3
+      },
+      "operation_family": {
+        "remove": 1,
+        "set": 2
+      },
+      "lean_fragment_shape_matches": 0
+    }
+  ],
+  "interpretation_guardrails": [
+    "Operation-family coding is not a claim of direct source portability.",
+    "Lean-fragment shape matching does not verify or certify the external source program.",
+    "Because selection is purposive, ratios and counts are descriptive of this audit only and must not be reported as ecosystem prevalence.",
+    "Adapter and restructure classifications intentionally preserve Map, Set, host-persistence, dynamic-target, filter, spread, and multi-target limitations rather than normalizing them away."
+  ]
+}

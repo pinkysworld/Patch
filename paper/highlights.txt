@@ -1,0 +1,5 @@
+• Application-state mutation is factored through explicit semantic Changes.
+• Change Contracts distinguish target, operation, and bounded magnitude.
+• Lean links committed Change magnitude to bounded contract authority.
+• Direct-Wasm observations are linked to exact call trees by checked evidence.
+• Ablation and public-code audit expose semantic and adaptation boundaries.
