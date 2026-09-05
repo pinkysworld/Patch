@@ -1,7 +1,7 @@
 import { parse } from './parser.js';
 import { listDesignerControls } from './designer.js';
 
-const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree']);
+const SUPPORTED_TAB_CONTROLS = new Set(['text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree']);
 
 export function listDesignerTabPageControls(source, selector, pageIndex) {
   const { page } = requireTabsPage(source, selector, pageIndex);
@@ -161,7 +161,6 @@ function formatNewNestedControl(type, usedIds) {
   if (type === 'text') return ['text "Text"'];
   if (type === 'button') return [`button "Button" as ${uniqueId('button', usedIds)}`];
   if (type === 'input') return [`input ${uniqueId('input', usedIds)}`];
-  if (type === 'memo') return [`memo ${uniqueId('memo', usedIds)}`];
   if (type === 'checkbox') return [`checkbox "Checkbox" as ${uniqueId('checkbox', usedIds)}`];
   if (type === 'radio') return [`radio "One", "Two" as ${uniqueId('radio', usedIds)}`];
   if (type === 'combo') return [`combo "One", "Two" as ${uniqueId('combo', usedIds)}`];
