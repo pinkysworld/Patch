@@ -18,9 +18,10 @@ import { buildStandaloneWebApp } from '../src/webapp.js';
 
 test('shared Form defaults cover every source-backed Studio control', () => {
   assert.deepEqual(Object.keys(PATCH_FORM_CONTROL_DEFAULTS), [
-    'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs',
+    'text', 'button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'table', 'tree', 'tabs',
     'panel', 'timer', 'imagelist', 'picture', 'shape', 'paintbox', 'statusbar'
   ]);
+  assert.deepEqual(formControlDefaultLayout('memo', 1), { x: 24, y: 72, width: 320, height: 140 });
   assert.deepEqual(formControlDefaultLayout('radio', 2), { x: 24, y: 120, width: 220, height: 84 });
   assert.deepEqual(formControlDefaultLayout('table', 1), { x: 24, y: 72, width: 400, height: 180 });
   assert.deepEqual(formControlDefaultLayout('tree', 1), { x: 24, y: 72, width: 300, height: 220 });
