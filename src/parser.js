@@ -226,8 +226,8 @@ export function parse(source) {
       const body = childBlock(indent,row);
       for (const child of body) {
         if (child.kind !== 'uiControl') throw new PatchSyntaxError('A tab page can only contain window controls in Tabs Stage 1.',child.line);
-        if (['panel', 'timer', 'imagelist', 'statusbar', 'memo'].includes(child.control)) {
-          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList, StatusBar or Memo.',child.line);
+        if (['panel', 'timer', 'imagelist', 'statusbar'].includes(child.control)) {
+          throw new PatchSyntaxError('Tabs Stage 1 pages cannot contain Panel, Timer, ImageList or StatusBar.',child.line);
         }
         if (child.layout) throw new PatchSyntaxError('Controls inside a tab page use flow layout in Tabs Stage 1. Remove at/size from the nested control.',child.line);
       }
@@ -362,7 +362,7 @@ export function parse(source) {
       try {
         return {kind:'drawPaint',command:parsePatchPaintCommand(row.text),line:row.line};
       } catch (error) {
-        throw new PatchSyntaxError(error?.message ?? String(error), row.line);
+        throw new PatchSyntaxError(error?.message ?? String(error),row.line);
       }
     }
     if ((m = row.text.match(/^show\s+(.+)$/))) return {kind:'show',expr:m[1],line:row.line};
