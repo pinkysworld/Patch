@@ -3,7 +3,7 @@ import { getRuntimeSelection, runtimeSelectionKey, setRuntimeSelection } from '.
 import { PATCH_STUDIO_RUNTIME_RENDER_MODE_FULL, resolveStudioRuntimeRenderMode } from './studio-runtime-render-policy.js';
 import { getStudioProjectResources } from './project-lifecycle.js';
 
-export const PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0.1';
+export const PATCH_STUDIO_WINDOW_RENDERER_VERSION = '0.2';
 
 function runtimeWindowKey(model, windowIndex) {
   return String(model?.id ?? `window${windowIndex + 1}`);
@@ -18,7 +18,7 @@ function runtimeWindowFingerprint(model) {
 }
 
 const RUNTIME_CORE_CONTROL_TYPES = new Set([
-  'tabs', 'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'picture', 'tree'
+  'tabs', 'panel', 'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'picture', 'tree'
 ]);
 
 function runtimeControlFingerprint(control) {
@@ -380,6 +380,8 @@ function createControlElement(control, context) {
   let el;
   if (control.type === 'tabs') {
     el = createTabsElement(control, context);
+  } else if (control.type === 'panel') {
+    el = context.interactive ? createPanelElement(control, context) : null;
   } else if (control.type === 'text') {
     el = document.createElement('p');
     el.className = 'patch-text';
@@ -516,6 +518,60 @@ function createControlElement(control, context) {
     el.__patchControlFingerprint = runtimeControlFingerprint(control);
   }
   return el ?? null;
+}
+
+function applyPanelChildLayout(element, layout) {
+  if (!element || !layout) return;
+  Object.assign(element.style, {
+    position: 'absolute',
+    left: `${layout.x}px`,
+    top: `${layout.y}px`,
+    ...(layout.width !== null ? { width: `${layout.width}px` } : {}),
+    ...(layout.height !== null ? { height: `${layout.height}px` } : {}),
+    margin: '0',
+    maxWidth: 'none',
+    boxSizing: 'border-box'
+  });
+  element.dataset.patchPanelChildLayout = 'relative';
+}
+
+function createPanelElement(control, context) {
+  const panel = document.createElement('section');
+  panel.className = 'patch-panel patch-panel-runtime';
+  panel.dataset.patchPanelRuntime = 'true';
+  panel.setAttribute('role', 'group');
+  panel.setAttribute('aria-label', control.id ? `Panel ${control.id}` : 'Panel');
+
+  const title = document.createElement('div');
+  title.className = 'patch-panel-title';
+  title.textContent = control.id || 'Panel';
+  const surface = document.createElement('div');
+  surface.className = 'patch-panel-surface';
+  const flow = document.createElement('div');
+  flow.className = 'patch-panel-flow';
+  const positioned = document.createElement('div');
+  positioned.className = 'patch-panel-positioned';
+
+  const basePath = String(context.controlPath ?? context.controlIndex ?? 'panel');
+  (control.controls ?? []).forEach((nested, nestedIndex) => {
+    const nestedElement = createControlElement(nested, {
+      ...context,
+      controlIndex: nestedIndex,
+      controlPath: `${basePath}.panel${nestedIndex}`,
+      topLevel: false
+    });
+    if (!nestedElement) return;
+    if (nested.panelLayout) {
+      applyPanelChildLayout(nestedElement, nested.panelLayout);
+      positioned.appendChild(nestedElement);
+    } else {
+      nestedElement.dataset.patchPanelChildLayout = 'flow';
+      flow.appendChild(nestedElement);
+    }
+  });
+  surface.append(flow, positioned);
+  panel.append(title, surface);
+  return panel;
 }
 
 function createTreeElement(control, context) {
