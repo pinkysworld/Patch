@@ -60,7 +60,7 @@ test('Designer adds Memo with multiline geometry and preserves changed handlers 
   assert.doesNotMatch(renamed, /when memo_1 changed:/);
 });
 
-test('Memo Stage 1 remains outside nested Tabs Stage 1 authoring', () => {
+test('Memo Stage 1 can be inserted inside Tabs flow pages without widening native Ready support', () => {
   const tabsSource = `window "Tabs" as main size 640, 420:
   tabs as pages at 24, 24 size 480, 260:
     tab "One":
@@ -70,16 +70,17 @@ test('Memo Stage 1 remains outside nested Tabs Stage 1 authoring', () => {
 `;
   const tabs = listDesignerControls(tabsSource).find(control => control.type === 'tabs');
   assert.ok(tabs);
-  assert.equal(supportedDesignerTabControlTypes().includes('memo'), false);
-  assert.throws(
-    () => addDesignerTabPageControl(tabsSource, tabs, 0, 'memo'),
-    /Tabs Designer cannot add 'memo' controls in this stage/
-  );
-  const handWrittenNestedMemo = tabsSource.replace('      text "One"', '      memo notes');
-  assert.throws(
-    () => parse(handWrittenNestedMemo),
-    /Tabs Stage 1 pages cannot contain Panel, Timer, ImageList, StatusBar or Memo/
-  );
+  assert.equal(supportedDesignerTabControlTypes().includes('memo'), true);
+  const added = addDesignerTabPageControl(tabsSource, tabs, 0, 'memo');
+  assert.match(added, /tab "One":\n      text "One"\n      memo memo_1/);
+  assert.doesNotThrow(() => parse(added));
+
+  const built = buildStandaloneWebApp(added, { name: 'Nested Memo Web', kind: 'window' });
+  assert.equal(built.metadata.memoStage, 1);
+  assert.match(built.html, /createElement\('textarea'\)/);
+
+  const compiled = compile(added, { name: 'NestedMemo', kind: 'window' });
+  assert.throws(() => buildCurrentNativeGuiIR(compiled), /Memo Stage 1|Memo contract/i);
 });
 
 test('Memo participates in independent Delphi-style TabOrder without moving source declarations', () => {
