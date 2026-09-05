@@ -64,12 +64,10 @@ window "Patch Studio Showcase" as main size 1100, 760 icon "patch-resource:showc
   text "Containers and source-backed metadata" at 24, 382 size 340, 26
   tabs as showcase_tabs at 24, 416 size 620, 200:
     tab "Nested controls":
-      text "Tabs keep ordinary source-backed controls."
-      panel as nested_panel:
-        text "Panel child layout is relative on Studio/Web."
-        # @input-mask "AA-000"
-        input nested_code at 12, 48 size 180, 36
-        button "Apply" as nested_apply at 210, 48 size 110, 36
+      text "Tabs Stage 1 keeps supported flow controls source-backed."
+      # @input-mask "AA-000"
+      input nested_code
+      button "Apply" as nested_apply
     tab "Project v4":
       text "Resources, multiple .patch files, recovery and build settings belong to the explicit project bundle."
       picture as nested_picture from "patch-resource:showcase.logo" description "Project resource preview"
