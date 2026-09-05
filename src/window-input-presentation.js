@@ -1,4 +1,5 @@
 import {
+  formatPatchInputPresentationDirective,
   normalizePatchInputPresentation,
   parsePatchInputPresentationDirective
 } from './input-presentation.js';
@@ -71,6 +72,37 @@ export function readWindowInputPresentation(source, sourceLine) {
   return readInputPresentationFromRows(rows, sourceLine) ?? 'plain';
 }
 
+export function setWindowInputPresentation(source, sourceLine, mode) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const normalized = normalizePatchInputPresentation(mode);
+  const lineIndex = resolveSourceLineIndex(rows, sourceLine);
+  if (lineIndex < 0) throw new Error('Selected Input line is outside the Patch source.');
+  if (!/^\s*input\s+[A-Za-z_]\w*(?:\s+at\b|\s*$)/i.test(rows[lineIndex])) {
+    throw new Error('Input presentation can only be changed on an Input control.');
+  }
+
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
+    if (!INPUT_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (existingIndex >= 0) throw new Error(`Input presentation is declared more than once before source line ${sourceLine}.`);
+    parsePatchInputPresentationDirective(rows[index]);
+    existingIndex = index;
+  }
+
+  const directive = formatPatchInputPresentationDirective(normalized);
+  if (!directive) {
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preserveTrailingNewline(original, rows.join('\n'));
+  }
+
+  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+  const rendered = `${indent}${directive}`;
+  if (existingIndex >= 0) rows[existingIndex] = rendered;
+  else rows.splice(lineIndex, 0, rendered);
+  return preserveTrailingNewline(original, rows.join('\n'));
+}
+
 function readInputPresentationFromRows(rows, sourceLine) {
   const lineIndex = Number(sourceLine) - 1;
   if (!Number.isInteger(lineIndex) || lineIndex < 1 || lineIndex >= rows.length) return null;
@@ -81,6 +113,16 @@ function readInputPresentationFromRows(rows, sourceLine) {
     found = parsePatchInputPresentationDirective(rows[index]);
   }
   return found;
+}
+
+function resolveSourceLineIndex(rows, sourceLine) {
+  const lineIndex = Number(sourceLine) - 1;
+  return Number.isInteger(lineIndex) && lineIndex >= 0 && lineIndex < rows.length ? lineIndex : -1;
+}
+
+function preserveTrailingNewline(original, text) {
+  const hasNewline = /\n$/.test(String(original));
+  return text.replace(/\s+$/, '') + (hasNewline ? '\n' : '');
 }
 
 function walkControls(nodes, visit) {
