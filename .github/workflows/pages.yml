@@ -40,6 +40,8 @@ on:
       - src/window-build.js
       - src/window-events.js
       - src/window-layout-policy.js
+      - src/input-presentation.js
+      - src/window-input-presentation.js
       - src/designer.js
       - src/form-layout.js
       - src/window-compiled.js
@@ -282,6 +284,8 @@ jobs:
               src/call-site-validation.js
               src/independent-range-expression.js
               src/independent-guard-expression.js
+              src/input-presentation.js
+              src/window-input-presentation.js
               src/native-current-contract.js
               src/native-frozen-contract.js
               src/native-gui-ir-v18.js
@@ -324,6 +328,7 @@ jobs:
             grep -F "./native-gui-ir-v12.js?v=${revision}" /tmp/patch-pages-frozen >/dev/null
             fetch_asset "${base}src/compiler.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-compiler
             grep -F "./parser.js?v=${revision}" /tmp/patch-pages-compiler >/dev/null
+            grep -F "./window-input-presentation.js?v=${revision}" /tmp/patch-pages-compiler >/dev/null
             fetch_asset "${base}studio-bootstrap.js?v=${revision}&smoke=${cache_bust}" /tmp/patch-pages-bootstrap
             grep -F 'sw.js?v=${encodeURIComponent(siteRevision)}' /tmp/patch-pages-bootstrap >/dev/null
             echo "Patch Studio ${label} revision ${revision} smoke passed: $base"
