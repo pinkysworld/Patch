@@ -5,11 +5,15 @@ export const PATCH_INPUT_MASK_DIRECTIVE = 'input-mask';
 export const PATCH_INPUT_MASK_MAX_LENGTH = 128;
 export const PATCH_LISTBOX_PRESENTATION_VERSION = '0.1';
 export const PATCH_LISTBOX_PRESENTATION_DIRECTIVE = 'listbox-mode';
+export const PATCH_WINDOW_LISTBOX_PRESENTATION_VERSION = '0.1';
+export const PATCH_WINDOW_LISTBOX_PRESENTATION_FORMAT = 'patch-window-listbox-presentation';
 
 const MODES = Object.freeze(['plain', 'password']);
 const MODE_SET = new Set(MODES);
 const LISTBOX_MODES = Object.freeze(['plain', 'checked']);
 const LISTBOX_MODE_SET = new Set(LISTBOX_MODES);
+const LISTBOX_MODE_PREFIX_RE = /^\s*#\s*@listbox-mode\b/i;
+const LISTBOX_DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|listbox-mode)\b/i;
 const MASK_TOKEN_KINDS = Object.freeze({
   '0': 'digit',
   A: 'letter',
@@ -114,7 +118,7 @@ export function normalizePatchListboxPresentation(mode) {
 
 export function parsePatchListboxPresentationDirective(line) {
   const text = String(line ?? '');
-  if (!/^\s*#\s*@listbox-mode\b/i.test(text)) return null;
+  if (!LISTBOX_MODE_PREFIX_RE.test(text)) return null;
   const match = text.match(/^\s*#\s*@listbox-mode\s+(plain|checked)\s*$/i);
   if (!match) throw new Error(`Invalid # @listbox-mode directive '${text.trim()}'. Use '# @listbox-mode checked'.`);
   return normalizePatchListboxPresentation(match[1]);
@@ -142,6 +146,115 @@ export function assertPatchListboxPresentationTarget(mode, target) {
     );
   }
   return true;
+}
+
+export function buildWindowListboxPresentationManifest(source, ast) {
+  const rows = patchPresentationSourceRows(source);
+  const stateTypes = collectPatchStateTypes(ast);
+  const controls = [];
+  walkPatchPresentationControls(ast, node => {
+    const mode = readPatchListboxPresentationFromRows(rows, node.line);
+    if (mode !== null && node.control !== 'listbox') {
+      throw new Error(`# @listbox-mode belongs only to ListBox controls, not '${node.control}' on source line ${node.line ?? '?'}.`);
+    }
+    if (node.control !== 'listbox') return;
+    const effective = mode ?? 'plain';
+    if (effective === 'checked') {
+      const stateType = node.id ? stateTypes.get(node.id) : null;
+      if (stateType !== 'list') {
+        throw new Error(`CheckedListBox '${node.id ?? '?'}' needs a matching 'create list ${node.id ?? 'name'} = [...]' state declaration so changed(value) is a text list.`);
+      }
+    }
+    controls.push({ line: node.line ?? null, id: node.id ?? null, mode: effective });
+  });
+  return validateWindowListboxPresentationManifest({
+    format: PATCH_WINDOW_LISTBOX_PRESENTATION_FORMAT,
+    version: PATCH_WINDOW_LISTBOX_PRESENTATION_VERSION,
+    controls
+  });
+}
+
+export function attachWindowListboxPresentations(ast, manifest) {
+  validateWindowListboxPresentationManifest(manifest);
+  const byLine = new Map(manifest.controls.map(control => [control.line, control.mode]));
+  let attached = 0;
+  walkPatchPresentationControls(ast, node => {
+    if (node.control !== 'listbox') return;
+    const mode = normalizePatchListboxPresentation(byLine.get(node.line) ?? 'plain');
+    Object.defineProperty(node, 'listboxPresentation', {
+      value: mode,
+      enumerable: true,
+      configurable: true,
+      writable: false
+    });
+    attached += 1;
+  });
+  if (attached !== manifest.controls.length) {
+    throw new Error('Window ListBox presentation manifest does not match the compiled ListBox controls.');
+  }
+  return ast;
+}
+
+export function validateWindowListboxPresentationManifest(manifest) {
+  if (
+    !manifest ||
+    manifest.format !== PATCH_WINDOW_LISTBOX_PRESENTATION_FORMAT ||
+    manifest.version !== PATCH_WINDOW_LISTBOX_PRESENTATION_VERSION ||
+    !Array.isArray(manifest.controls)
+  ) {
+    throw new Error('Window ListBox presentation manifest format/version is unsupported.');
+  }
+  const lines = new Set();
+  for (const control of manifest.controls) {
+    if (!Number.isInteger(control?.line) || control.line < 1) throw new Error('Window ListBox presentation control line is invalid.');
+    if (lines.has(control.line)) throw new Error(`Window ListBox presentation source line ${control.line} appears more than once.`);
+    lines.add(control.line);
+    control.mode = normalizePatchListboxPresentation(control.mode);
+    if (control.id !== null && control.id !== undefined && !/^[A-Za-z_]\w*$/.test(String(control.id))) {
+      throw new Error(`Window ListBox presentation control id '${control.id}' is invalid.`);
+    }
+  }
+  return manifest;
+}
+
+export function readWindowListboxPresentation(source, sourceLine) {
+  return readPatchListboxPresentationFromRows(patchPresentationSourceRows(source), sourceLine) ?? 'plain';
+}
+
+export function setWindowListboxPresentation(source, sourceLine, mode) {
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  const rows = original.split('\n');
+  const normalized = normalizePatchListboxPresentation(mode);
+  const lineIndex = resolvePatchPresentationLineIndex(rows, sourceLine);
+  if (lineIndex < 0) throw new Error('Selected ListBox line is outside the Patch source.');
+  if (!/^\s*listbox\b/i.test(rows[lineIndex])) throw new Error('ListBox presentation can only be changed on a ListBox control.');
+
+  let existingIndex = -1;
+  for (let index = lineIndex - 1; index >= 0 && LISTBOX_DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
+    if (!LISTBOX_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (existingIndex >= 0) throw new Error(`ListBox presentation is declared more than once before source line ${sourceLine}.`);
+    parsePatchListboxPresentationDirective(rows[index]);
+    existingIndex = index;
+  }
+
+  const directive = formatPatchListboxPresentationDirective(normalized);
+  if (!directive) {
+    if (existingIndex >= 0) rows.splice(existingIndex, 1);
+    return preservePatchPresentationTrailingNewline(original, rows.join('\n'));
+  }
+  const indent = /^\s*/.exec(rows[lineIndex])?.[0] ?? '';
+  const rendered = `${indent}${directive}`;
+  if (existingIndex >= 0) rows[existingIndex] = rendered;
+  else rows.splice(lineIndex, 0, rendered);
+  return preservePatchPresentationTrailingNewline(original, rows.join('\n'));
+}
+
+export function collectWindowCheckedListboxIds(ast) {
+  const ids = [];
+  walkPatchPresentationControls(ast, node => {
+    if (node.control === 'listbox' && node.listboxPresentation === 'checked' && node.id) ids.push(node.id);
+  });
+  return ids;
 }
 
 export function normalizePatchInputMask(mask) {
@@ -255,6 +368,57 @@ export function assertPatchInputMaskTarget(target) {
     );
   }
   return true;
+}
+
+function readPatchListboxPresentationFromRows(rows, sourceLine) {
+  const lineIndex = resolvePatchPresentationLineIndex(rows, sourceLine);
+  if (lineIndex < 1) return null;
+  let found = null;
+  for (let index = lineIndex - 1; index >= 0 && LISTBOX_DESIGNER_METADATA_RE.test(rows[index]); index -= 1) {
+    if (!LISTBOX_MODE_PREFIX_RE.test(rows[index])) continue;
+    if (found !== null) throw new Error(`ListBox presentation is declared more than once before source line ${sourceLine}.`);
+    found = parsePatchListboxPresentationDirective(rows[index]);
+  }
+  return found;
+}
+
+function collectPatchStateTypes(nodes, out = new Map()) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'create' && node.name) out.set(node.name, node.valueType);
+    if (node?.kind === 'if') {
+      collectPatchStateTypes(node.thenBody, out);
+      collectPatchStateTypes(node.elseBody, out);
+    } else if (node?.body && node.kind !== 'window' && node.kind !== 'tabs' && node.kind !== 'tabPage' && !(node.kind === 'uiControl' && node.control === 'panel')) {
+      collectPatchStateTypes(node.body, out);
+    }
+  }
+  return out;
+}
+
+function walkPatchPresentationControls(nodes, visit) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl') visit(node);
+    if (
+      node?.kind === 'window' ||
+      node?.kind === 'tabPage' ||
+      node?.kind === 'tabs' ||
+      (node?.kind === 'uiControl' && node.control === 'panel')
+    ) walkPatchPresentationControls(node.body, visit);
+  }
+}
+
+function patchPresentationSourceRows(source) {
+  return String(source ?? '').replace(/\r\n/g, '\n').split('\n');
+}
+
+function resolvePatchPresentationLineIndex(rows, sourceLine) {
+  const lineIndex = Number(sourceLine) - 1;
+  return Number.isInteger(lineIndex) && lineIndex >= 0 && lineIndex < rows.length ? lineIndex : -1;
+}
+
+function preservePatchPresentationTrailingNewline(original, text) {
+  const hasNewline = /\n$/.test(String(original));
+  return text.replace(/\s+$/, '') + (hasNewline ? '\n' : '');
 }
 
 function maskCharMatches(kind, char) {
