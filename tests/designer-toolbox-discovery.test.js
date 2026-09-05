@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { DESIGNER_TOOL_CATALOG, groupedDesignerTools } from '../web/designer-toolbox.js';
 
 test('Designer control picker exposes every existing top-level toolbox control exactly once', () => {
-  const expected = ['addText','addButton','addInput','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addShape','addPaintbox','addStatusbar','addTimer','addImagelist'];
+  const expected = ['addText','addButton','addInput','addMemo','addCheckbox','addRadio','addCombo','addListbox','addSlider','addTable','addTree','addTabs','addPanel','addPicture','addShape','addPaintbox','addStatusbar','addTimer','addImagelist'];
   assert.deepEqual(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId), expected);
   assert.equal(new Set(DESIGNER_TOOL_CATALOG.map(tool => tool.buttonId)).size, expected.length);
 });
@@ -12,7 +12,7 @@ test('Designer control picker exposes every existing top-level toolbox control e
 test('Designer control picker groups controls by user-facing purpose', () => {
   const groups = groupedDesignerTools();
   assert.deepEqual(groups.map(group => group.group), ['Basic','Choices','Data','Containers','Graphics','Chrome','Nonvisual']);
-  assert.deepEqual(groups.find(group => group.group === 'Basic').tools.map(tool => tool.label), ['Text','Button','Input','Checkbox']);
+  assert.deepEqual(groups.find(group => group.group === 'Basic').tools.map(tool => tool.label), ['Text','Button','Input','Memo','Checkbox']);
   assert.deepEqual(groups.find(group => group.group === 'Choices').tools.map(tool => tool.label), ['Radio group','ComboBox','ListBox','Slider']);
   assert.deepEqual(groups.find(group => group.group === 'Data').tools.map(tool => tool.label), ['Table','TreeView']);
   assert.deepEqual(groups.find(group => group.group === 'Containers').tools.map(tool => tool.label), ['Tabs','Panel']);
@@ -23,9 +23,11 @@ test('Designer control picker groups controls by user-facing purpose', () => {
 
 test('Designer picker still activates controls through source-backed toolbox buttons', () => {
   const source = fs.readFileSync('web/designer-toolbox.js', 'utf8');
+  const forms = fs.readFileSync('web/forms-designer.js', 'utf8');
   const paintbox = fs.readFileSync('web/designer-paintbox.js', 'utf8');
   const imagelist = fs.readFileSync('web/designer-imagelist.js', 'utf8');
   assert.match(source, /button\.click\(\)/);
+  assert.match(forms, /\['#addMemo', 'memo'\]/);
   assert.match(source, /addDesignerControl\(code\.value, 'picture'/);
   assert.match(source, /designerInspectorPictureSource/);
   assert.match(source, /addDesignerControl\(code\.value, 'statusbar'/);
@@ -47,11 +49,13 @@ test('mobile Designer replaces the long icon strip with the categorized picker',
   assert.match(css, /@media \(forced-colors: active\)/);
 });
 
-test('desktop Designer rail gives graphics Chrome and nonvisual components stable source-backed slots', () => {
+test('desktop Designer rail gives classic RAD and R1 components stable source-backed slots', () => {
   const inspectorCss = fs.readFileSync('web/designer-inspector.css', 'utf8');
   const toolboxCss = fs.readFileSync('web/designer-toolbox.css', 'utf8');
   const imageListCss = fs.readFileSync('web/designer-imagelist.css', 'utf8');
   const workspace = fs.readFileSync('web/designer-workspace.js', 'utf8');
+  assert.match(toolboxCss, /#designer #addMemo \{ left: 45px; top: 83px; \}/);
+  assert.match(toolboxCss, /#designer #addMemo::before \{ content: "¶"; \}/);
   assert.match(inspectorCss, /#designer #addSlider \{ top: 287px; \}/);
   assert.match(inspectorCss, /#designer #addTable \{ top: 321px; \}/);
   assert.match(inspectorCss, /#designer #addTree \{ top: 355px; \}/);
