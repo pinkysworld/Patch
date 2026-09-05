@@ -13,7 +13,7 @@ const MODE_SET = new Set(MODES);
 const LISTBOX_MODES = Object.freeze(['plain', 'checked']);
 const LISTBOX_MODE_SET = new Set(LISTBOX_MODES);
 const LISTBOX_MODE_PREFIX_RE = /^\s*#\s*@listbox-mode\b/i;
-const LISTBOX_DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|listbox-mode)\b/i;
+const LISTBOX_DESIGNER_METADATA_RE = /^\s*#\s*@(layout|taborder|locked|input-mode|input-mask|listbox-mode)\b/i;
 const MASK_TOKEN_KINDS = Object.freeze({
   '0': 'digit',
   A: 'letter',
@@ -425,4 +425,407 @@ function maskCharMatches(kind, char) {
   if (kind === 'digit') return /^[0-9]$/.test(char);
   if (kind === 'letter') return /^[A-Za-z]$/.test(char);
   return /^[A-Za-z0-9]$/.test(char);
+}
+
+if (typeof document !== 'undefined') queueMicrotask(installCheckedListboxStudio);
+
+let checkedDesignerApiPromise = null;
+let checkedParserApiPromise = null;
+let checkedStudioObserver = null;
+let checkedSyncQueued = false;
+let checkedGeneration = 0;
+
+function checkedDesignerApi() {
+  checkedDesignerApiPromise ??= import('./designer.js');
+  return checkedDesignerApiPromise;
+}
+
+function checkedParserApi() {
+  checkedParserApiPromise ??= import('./parser.js');
+  return checkedParserApiPromise;
+}
+
+function installCheckedListboxStudio() {
+  ensureCheckedListboxStyles();
+  ensureCheckedListboxButton();
+  ensureCheckedListboxInspector();
+  installCheckedListboxObservers();
+  scheduleCheckedListboxSync();
+
+  if (!checkedStudioObserver && document.body && !checkedListboxStudioReady()) {
+    checkedStudioObserver = new MutationObserver(() => {
+      ensureCheckedListboxButton();
+      ensureCheckedListboxInspector();
+      installCheckedListboxObservers();
+      if (checkedListboxStudioReady()) {
+        checkedStudioObserver.disconnect();
+        checkedStudioObserver = null;
+      }
+    });
+    checkedStudioObserver.observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+function checkedListboxStudioReady() {
+  return Boolean(
+    document.querySelector('#addCheckedListbox') &&
+    document.querySelector('#designerInspectorListboxPresentationField')
+  );
+}
+
+function ensureCheckedListboxStyles() {
+  if (document.querySelector('style[data-patch-checked-listbox-stage1]')) return;
+  const style = document.createElement('style');
+  style.dataset.patchCheckedListboxStage1 = '1';
+  style.textContent = `
+.patch-checked-listbox-studio{display:flex;flex-direction:column;gap:4px;min-width:220px;min-height:72px;margin:0;padding:8px 10px;border:1px solid var(--border-strong,#d4d4d8);border-radius:9px;background:var(--surface,#fff);color:var(--text,#18181b);overflow:auto;box-sizing:border-box}
+.patch-checked-listbox-studio>legend{padding:0 4px;font-size:11px;font-weight:700;color:var(--muted,#52525b)}
+.patch-checked-listbox-option{display:flex;align-items:center;gap:8px;min-height:28px;cursor:pointer}
+.patch-checked-listbox-option input{width:18px;height:18px;min-width:18px;margin:0;padding:0}
+.patch-checked-listbox-source{position:absolute!important;width:1px!important;height:1px!important;min-width:1px!important;min-height:1px!important;margin:-1px!important;padding:0!important;border:0!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;overflow:hidden!important;white-space:nowrap!important;opacity:0!important;pointer-events:none!important}
+.patch-checked-listbox-studio.designer-control{cursor:pointer}
+@media(forced-colors:active){.patch-checked-listbox-studio{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
+`;
+  document.head.appendChild(style);
+}
+
+function ensureCheckedListboxButton() {
+  const toolbar = document.querySelector('#designer .designer-toolbar');
+  const listboxButton = toolbar?.querySelector('#addListbox');
+  if (!toolbar || !listboxButton || toolbar.querySelector('#addCheckedListbox')) return Boolean(toolbar?.querySelector('#addCheckedListbox'));
+  const button = document.createElement('button');
+  button.id = 'addCheckedListbox';
+  button.className = 'secondary small';
+  button.type = 'button';
+  button.textContent = '+ Checked List';
+  button.setAttribute('aria-label', 'Add CheckedListBox');
+  button.title = 'Add a source-backed CheckedListBox preset. It remains a list-backed ListBox and uses # @listbox-mode checked.';
+  listboxButton.insertAdjacentElement('afterend', button);
+  button.addEventListener('click', addCheckedListboxFromStudio);
+  return true;
+}
+
+async function addCheckedListboxFromStudio(event) {
+  event?.preventDefault?.();
+  event?.stopImmediatePropagation?.();
+  const code = document.querySelector('#code');
+  if (!code) return;
+  try {
+    const api = await checkedDesignerApi();
+    const windowIndex = checkedActiveFormIndex();
+    let next = api.addDesignerControl(code.value, 'listbox', { windowIndex });
+    let added = api.listDesignerControls(next)
+      .filter(control => control.windowIndex === windowIndex && control.type === 'listbox')
+      .at(-1);
+    if (!added?.id) throw new Error('Designer created a ListBox but could not locate its source-backed id.');
+    next = await ensureCheckedListState(next, added.id);
+    const line = findListboxLineById(next, added.id);
+    next = setWindowListboxPresentation(next, line, 'checked');
+    setCheckedStudioSource(code, next);
+    added = api.listDesignerControls(next).find(control => control.id === added.id && control.type === 'listbox') ?? added;
+    requestAnimationFrame(() => {
+      const element = document.querySelector(`#designerCanvas .designer-control[data-window-index="${added.windowIndex}"][data-control-index="${added.controlIndex}"]`);
+      element?.click?.();
+      scheduleCheckedListboxSync();
+    });
+  } catch (error) {
+    showCheckedListboxError(error);
+  }
+}
+
+function ensureCheckedListboxInspector() {
+  const form = document.querySelector('#designerInspectorForm');
+  if (!form || form.querySelector('#designerInspectorListboxPresentationField')) return Boolean(form?.querySelector('#designerInspectorListboxPresentationField'));
+  const field = document.createElement('label');
+  field.id = 'designerInspectorListboxPresentationField';
+  field.className = 'inspector-field';
+  field.hidden = true;
+  field.innerHTML = `ListBox mode
+    <select id="designerInspectorListboxPresentation" aria-describedby="designerInspectorListboxPresentationHint">
+      <option value="plain">ListBox</option>
+      <option value="checked">CheckedListBox</option>
+    </select>
+    <small id="designerInspectorListboxPresentationHint" class="inspector-hint">CheckedListBox is a source-backed list-state presentation. Stage 1 is Studio/Web; Current Ready native 1.10 fails closed.</small>`;
+  form.appendChild(field);
+  field.querySelector('#designerInspectorListboxPresentation')?.addEventListener('change', applyCheckedListboxInspector);
+  return true;
+}
+
+async function selectedTopLevelListbox() {
+  const canvas = document.querySelector('#designerCanvas');
+  const code = document.querySelector('#code');
+  const element = canvas?.querySelector('.designer-control.designer-selected[data-window-index][data-control-index]');
+  if (!canvas || !code || !element) return null;
+  const windowIndex = Number(element.dataset.windowIndex);
+  const controlIndex = Number(element.dataset.controlIndex);
+  if (!Number.isInteger(windowIndex) || !Number.isInteger(controlIndex)) return null;
+  try {
+    const api = await checkedDesignerApi();
+    const control = api.listDesignerControls(code.value).find(item => item.windowIndex === windowIndex && item.controlIndex === controlIndex) ?? null;
+    return control?.type === 'listbox' ? control : null;
+  } catch {
+    return null;
+  }
+}
+
+async function syncCheckedListboxInspector() {
+  const field = document.querySelector('#designerInspectorListboxPresentationField');
+  const select = field?.querySelector('#designerInspectorListboxPresentation');
+  if (!field || !select) return;
+  const code = document.querySelector('#code');
+  const control = await selectedTopLevelListbox();
+  field.hidden = !control;
+  if (!control || !code) return;
+  try {
+    const mode = readWindowListboxPresentation(code.value, control.line);
+    if (document.activeElement !== select) select.value = mode;
+  } catch {
+    field.hidden = true;
+  }
+}
+
+async function applyCheckedListboxInspector() {
+  const code = document.querySelector('#code');
+  const select = document.querySelector('#designerInspectorListboxPresentation');
+  if (!code || !select) return;
+  const control = await selectedTopLevelListbox();
+  if (!control?.id) return;
+  try {
+    let next = code.value;
+    if (select.value === 'checked') next = await ensureCheckedListState(next, control.id);
+    const line = findListboxLineById(next, control.id);
+    next = setWindowListboxPresentation(next, line, select.value);
+    setCheckedStudioSource(code, next);
+    scheduleCheckedListboxSync();
+  } catch (error) {
+    showCheckedListboxError(error);
+    scheduleCheckedListboxSync();
+  }
+}
+
+async function ensureCheckedListState(source, id) {
+  const { parse } = await checkedParserApi();
+  const ast = parse(source);
+  const existing = ast.find(node => node.kind === 'create' && node.name === id);
+  if (existing) {
+    if (existing.valueType !== 'list') {
+      throw new Error(`CheckedListBox '${id}' needs list state, but '${id}' is already declared as ${existing.valueType}.`);
+    }
+    return source;
+  }
+  const original = String(source ?? '').replace(/\r\n/g, '\n');
+  return `create list ${id} = []\n\n${original.replace(/^\n+/, '')}`;
+}
+
+function findListboxLineById(source, id) {
+  const escaped = escapeCheckedRegExp(id);
+  const pattern = new RegExp(`^\\s*listbox\\b.*\\bas\\s+${escaped}(?:\\s+at\\b|\\s*$)`, 'i');
+  const rows = patchPresentationSourceRows(source);
+  const index = rows.findIndex(row => pattern.test(row));
+  if (index < 0) throw new Error(`Cannot find ListBox '${id}' in Patch source.`);
+  return index + 1;
+}
+
+function installCheckedListboxObservers() {
+  const code = document.querySelector('#code');
+  const canvas = document.querySelector('#designerCanvas');
+  const app = document.querySelector('#app');
+  if (code?.dataset.patchCheckedListboxObserver !== '1') {
+    code.dataset.patchCheckedListboxObserver = '1';
+    code.addEventListener('input', scheduleCheckedListboxSync);
+    code.addEventListener('change', scheduleCheckedListboxSync);
+  }
+  for (const root of [canvas, app]) {
+    if (!root || root.dataset.patchCheckedListboxObserver === '1') continue;
+    root.dataset.patchCheckedListboxObserver = '1';
+    new MutationObserver(scheduleCheckedListboxSync).observe(root, { childList: true, subtree: true });
+  }
+  if (canvas?.dataset.patchCheckedListboxSelectionObserver !== '1') {
+    canvas.dataset.patchCheckedListboxSelectionObserver = '1';
+    canvas.addEventListener('patch-designer-selection-change', scheduleCheckedListboxSync);
+  }
+  const formSelect = document.querySelector('#patchFormSelect');
+  if (formSelect?.dataset.patchCheckedListboxObserver !== '1') {
+    formSelect.dataset.patchCheckedListboxObserver = '1';
+    formSelect.addEventListener('change', scheduleCheckedListboxSync);
+  }
+}
+
+function scheduleCheckedListboxSync() {
+  if (checkedSyncQueued) return;
+  checkedSyncQueued = true;
+  queueMicrotask(() => {
+    checkedSyncQueued = false;
+    syncCheckedListboxSurfaces();
+    syncCheckedListboxInspector();
+  });
+}
+
+async function syncCheckedListboxSurfaces() {
+  const code = document.querySelector('#code');
+  if (!code) return;
+  const generation = ++checkedGeneration;
+  let checkedIds;
+  try {
+    const { parse } = await checkedParserApi();
+    const ast = parse(code.value);
+    const manifest = buildWindowListboxPresentationManifest(code.value, ast);
+    checkedIds = new Set(manifest.controls.filter(control => control.mode === 'checked').map(control => control.id).filter(Boolean));
+  } catch {
+    return;
+  }
+  if (generation !== checkedGeneration) return;
+
+  for (const root of [document.querySelector('#designerCanvas'), document.querySelector('#app')]) {
+    if (!root) continue;
+    for (const wrapper of [...root.querySelectorAll('.patch-checked-listbox-studio')]) {
+      const select = wrapper.querySelector('select.patch-listbox');
+      const id = wrapper.dataset.patchCheckedListboxId || checkedListboxIdFromSelect(select);
+      if (!select || !id || !checkedIds.has(id)) unwrapCheckedListbox(select, wrapper);
+    }
+    for (const select of [...root.querySelectorAll('select.patch-listbox')]) {
+      const id = checkedListboxIdFromSelect(select);
+      if (!id) continue;
+      if (checkedIds.has(id)) wrapCheckedListbox(select, id);
+      else {
+        const wrapper = select.closest('.patch-checked-listbox-studio');
+        if (wrapper) unwrapCheckedListbox(select, wrapper);
+      }
+    }
+  }
+}
+
+function checkedListboxIdFromSelect(select) {
+  if (!select) return '';
+  if (select.dataset.patchCheckedListboxId) return select.dataset.patchCheckedListboxId;
+  const key = String(select.dataset.patchControlKey ?? select.closest('.patch-checked-listbox-studio')?.dataset.patchControlKey ?? '');
+  return key.startsWith('id:') ? key.slice(3) : '';
+}
+
+function wrapCheckedListbox(select, id) {
+  const existing = select.closest('.patch-checked-listbox-studio');
+  if (existing) {
+    syncCheckedListboxChecks(existing, select);
+    return existing;
+  }
+
+  const wrapper = document.createElement('fieldset');
+  wrapper.className = 'patch-checked-listbox-studio';
+  wrapper.dataset.patchCheckedListboxId = id;
+  if (select.dataset.patchControlKey) {
+    wrapper.dataset.patchControlKey = select.dataset.patchControlKey;
+    delete select.dataset.patchControlKey;
+  }
+  if (select.__patchControlFingerprint !== undefined) wrapper.__patchControlFingerprint = select.__patchControlFingerprint;
+
+  if (select.classList.contains('designer-control')) {
+    wrapper.classList.add('designer-control');
+    wrapper.dataset.windowIndex = select.dataset.windowIndex ?? '';
+    wrapper.dataset.controlIndex = select.dataset.controlIndex ?? '';
+    wrapper.tabIndex = 0;
+    wrapper.setAttribute('aria-label', `Select checked ListBox control ${id}`);
+    select.classList.remove('designer-control');
+    delete select.dataset.windowIndex;
+    delete select.dataset.controlIndex;
+  }
+
+  const legend = document.createElement('legend');
+  legend.textContent = id;
+  const options = document.createElement('div');
+  options.className = 'patch-checked-listbox-options';
+  wrapper.append(legend, options);
+  select.before(wrapper);
+  wrapper.appendChild(select);
+  select.classList.add('patch-checked-listbox-source');
+  select.dataset.patchCheckedListboxId = id;
+  select.setAttribute('aria-hidden', 'true');
+  select.tabIndex = -1;
+  rebuildCheckedListboxOptions(wrapper, select);
+  return wrapper;
+}
+
+function rebuildCheckedListboxOptions(wrapper, select) {
+  const optionsRoot = wrapper.querySelector('.patch-checked-listbox-options');
+  if (!optionsRoot) return;
+  optionsRoot.replaceChildren();
+  for (const option of [...select.options]) {
+    const label = document.createElement('label');
+    label.className = 'patch-checked-listbox-option';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = option.value;
+    input.checked = option.selected;
+    input.disabled = select.disabled;
+    const text = document.createElement('span');
+    text.textContent = option.textContent || option.value;
+    label.append(input, text);
+    if (!select.disabled) {
+      input.addEventListener('change', () => {
+        option.selected = input.checked;
+        select.dataset.patchRenderedSelection = JSON.stringify([...select.selectedOptions].map(item => item.value));
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+    optionsRoot.appendChild(label);
+  }
+}
+
+function syncCheckedListboxChecks(wrapper, select) {
+  const inputs = [...wrapper.querySelectorAll('.patch-checked-listbox-option input[type="checkbox"]')];
+  if (inputs.length !== select.options.length) {
+    rebuildCheckedListboxOptions(wrapper, select);
+    return;
+  }
+  inputs.forEach((input, index) => {
+    const option = select.options[index];
+    if (!option || input.value !== option.value) {
+      rebuildCheckedListboxOptions(wrapper, select);
+      return;
+    }
+    input.checked = option.selected;
+    input.disabled = select.disabled;
+  });
+}
+
+function unwrapCheckedListbox(select, wrapper) {
+  if (!wrapper) return;
+  if (!select) {
+    wrapper.remove();
+    return;
+  }
+  if (wrapper.dataset.patchControlKey) select.dataset.patchControlKey = wrapper.dataset.patchControlKey;
+  if (wrapper.__patchControlFingerprint !== undefined) select.__patchControlFingerprint = wrapper.__patchControlFingerprint;
+  if (wrapper.classList.contains('designer-control')) {
+    select.classList.add('designer-control');
+    select.dataset.windowIndex = wrapper.dataset.windowIndex ?? '';
+    select.dataset.controlIndex = wrapper.dataset.controlIndex ?? '';
+  }
+  select.classList.remove('patch-checked-listbox-source');
+  delete select.dataset.patchCheckedListboxId;
+  select.removeAttribute('aria-hidden');
+  select.removeAttribute('tabindex');
+  wrapper.before(select);
+  wrapper.remove();
+}
+
+function checkedActiveFormIndex() {
+  const value = Number(document.querySelector('#patchFormSelect')?.value);
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function setCheckedStudioSource(code, source) {
+  code.value = source;
+  code.dispatchEvent(new Event('input', { bubbles: true }));
+  code.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function showCheckedListboxError(error) {
+  const target = document.querySelector('#designerInspectorError');
+  if (!target) return;
+  target.textContent = error?.message ?? String(error);
+  target.hidden = false;
+}
+
+function escapeCheckedRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
