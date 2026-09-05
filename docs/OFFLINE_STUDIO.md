@@ -1,6 +1,6 @@
 # Patch Studio Offline IDE
 
-Status: **Stage 1 multi-platform release channel implemented; Stage 2 R0.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64, including bounded project-v4 image resources and complete Linux desktop artifacts**
+Status: **Stage 1 multi-platform release channel implemented; Stage 2 R0.2 host-native Build integrated for Windows x64, macOS Apple Silicon and Linux x64, including bounded project-v4 image resources, complete Linux desktop artifacts and structured compiler diagnostics**
 
 Patch Studio is intended to work as a real offline IDE rather than merely a cached website. The installed product uses the same generated Studio modules as the public site and keeps normal authoring, Designer, Run and supported Build workflows local.
 
@@ -71,7 +71,8 @@ The offline workflow is:
 4. Run locally;
 5. build Standalone Web, portable Patch bundles and WebAssembly locally;
 6. on a supported Stage 2 host, build a native Window application with the bundled compiler;
-7. keep project data and diagnostics local unless the user explicitly exports or chooses an online action.
+7. receive compiler errors as bounded structured diagnostics when the compiler can identify a Patch source location;
+8. keep project data and diagnostics local unless the user explicitly exports or chooses an online action.
 
 Normal local workflows do not need a GitHub account or token.
 
@@ -102,9 +103,10 @@ The current Stage 2 slice uses:
 - native outputs under `.patch-build/native/<requestId>`;
 - a bundled current Patch Offline Compiler whose bytes are SHA-256 recorded and reverified before execution;
 - fixed host-side `patch link` invocation with no browser-controlled executable, argv, environment or output directory;
-- authenticated opaque artifact downloads with artifact SHA-256 evidence.
+- authenticated opaque artifact downloads with artifact SHA-256 evidence;
+- the existing `patch-diagnostic` v1 contract for structured compiler failures.
 
-Installed Studio now sends its existing canonical **project-v4 bundle** rather than a separate ad-hoc resource protocol. The host independently validates the project and materializes exactly one `project.patchproject`. The existing Offline Compiler then reads that file through the normal project-v4 input path.
+Installed Studio sends its existing canonical **project-v4 bundle** rather than a separate ad-hoc resource protocol. The host independently validates the project and materializes exactly one `project.patchproject`. The existing Offline Compiler then reads that file through the normal project-v4 input path.
 
 That means current project-v4 image resources are supported in the installed native Build path on Windows x64, Linux x64 and macOS Apple Silicon, including:
 
@@ -114,9 +116,34 @@ That means current project-v4 image resources are supported in the installed nat
 
 The bridge validates resource ids, project-relative paths, supported image media types, canonical base64, byte sizes and SHA-256 digests before accepting the snapshot. It does not accept arbitrary browser-selected resource filesystem paths.
 
+### Structured compiler diagnostics
+
+Installed builds now reuse Patch's existing versioned `patch-diagnostic` v1 schema rather than returning only an opaque compiler stderr block.
+
+The packaged compiler still produces its normal human-readable error text. When Offline Studio requests `--diagnostics-json`, a link failure may additionally carry:
+
+- a stable `PATCHxxxx` diagnostic code;
+- build phase;
+- project entry;
+- owning project file for multi-file compositions;
+- local line and column;
+- bounded diagnostic message.
+
+For project-v4 builds, the Offline Compiler retains composition metadata so a parser/compiler line in the composed source can be mapped back to the correct project file and local line. The privileged bridge independently validates the machine-readable object before returning it. Invalid diagnostic objects, absolute paths, traversal paths and unknown diagnostic fields are discarded.
+
+A validated compiler failure is returned as HTTP 422 with `error: "build-diagnostic"` and one `diagnostic` object. The bridge does not add project source text to that response. The installed Studio Output tab renders a concise form such as:
+
+```text
+PATCH1001  logic/reward.patch:2:3
+Phase: build
+I do not understand 'frobnicate score'.
+```
+
+The plain-text fallback remains for failures that do not carry a valid Patch diagnostic.
+
 ### Linux desktop artifact packaging
 
-The Current Ready Linux linker can emit three files for an application-icon project: the native executable, a hicolor PNG and a `.desktop` entry. Offline Studio now preserves that complete output contract.
+The Current Ready Linux linker can emit three files for an application-icon project: the native executable, a hicolor PNG and a `.desktop` entry. Offline Studio preserves that complete output contract.
 
 When those Linux desktop sidecars are present, the installed Linux x64 Build returns one deterministic `<stem>-linux.tar.gz` artifact containing:
 
@@ -153,7 +180,7 @@ The installed privileged path remains narrow:
 - no cross-compilation contract is implied;
 - Windows ARM64, Linux ARM64, macOS Intel and generic portable distributions do not expose installed host-native Build yet;
 - Console installed Build is not yet exposed through a separate narrow action;
-- richer structured compiler diagnostics remain future work.
+- structured diagnostics currently carry one primary error record, not a warning/multi-error list or quick-fix navigation action.
 
 ## Running supported Stage 2 builds
 
@@ -206,7 +233,7 @@ These compatibility distributions remain Stage 1/browser-local only until matchi
 
 ## CI proof
 
-For Windows x64, Linux x64 and macOS Apple Silicon, CI builds the matching Offline Compiler from the same repository revision and Current Ready v1.10 runtime. It then verifies two paths.
+For Windows x64, Linux x64 and macOS Apple Silicon, CI builds the matching Offline Compiler from the same repository revision and Current Ready v1.10 runtime. It then verifies two successful build paths plus the structured error contract.
 
 The executable self-smoke verifies the installed Studio capability and a normal source-only host-native Build.
 
@@ -223,9 +250,22 @@ canonical project-v4 with application icon + ImageList/Button image
   -> artifact SHA-256 equality
 ```
 
-On Linux x64 this path now passes through the complete desktop `.tar.gz` artifact rather than discarding the linker-generated icon and `.desktop` sidecars. Dedicated tests also verify deterministic gzip bytes, tar entry modes/content and fail-closed handling of incomplete or unsafe bundle entries.
+On Linux x64 this path passes through the complete desktop `.tar.gz` artifact rather than discarding the linker-generated icon and `.desktop` sidecars. Dedicated tests verify deterministic gzip bytes, tar entry modes/content and fail-closed handling of incomplete or unsafe bundle entries.
 
-This is stronger than checking only that the bridge starts.
+The structured-diagnostic suite also runs a real multi-file project-v4 `patch link --diagnostics-json` failure and verifies:
+
+```text
+composed project source
+  -> Patch parser/compiler error
+  -> patch-diagnostic v1
+  -> owning project file + local line mapping
+  -> adapter extraction from stderr
+  -> independent bridge validation
+  -> HTTP 422 build-diagnostic response
+  -> installed-client rendering contract
+```
+
+It additionally verifies that source text is not copied into the bridge error response.
 
 ## Security boundary
 
@@ -242,6 +282,8 @@ The installed IDE has more authority than the hosted Studio, so the privileged b
 - independent resource SHA-256 verification;
 - output confinement under `.patch-build/native/<requestId>`;
 - artifact regular-file and SHA-256 verification;
+- exact-field validation and path sanitization for structured diagnostic responses;
+- no source-text echo merely to report a compiler diagnostic;
 - fixed safe Linux desktop archive entries when sidecar packaging is required.
 
 See `docs/OFFLINE_BUILD_BRIDGE.md` for the exact protocol boundary.
@@ -257,17 +299,18 @@ node scripts/build-offline-studio-runtime-kit.js
 node scripts/check-offline-studio-runtime-kit.js
 node scripts/build-offline-studio.js --offline-compiler /path/to/matching/compiler
 node scripts/check-offline-studio-resource-build.js
+patch link app.patchproject --out App --diagnostics-json
 ```
 
 ## Next Stage 2 work
 
-1. add richer structured compiler diagnostics to the Studio artifact/output pane;
-2. add Windows ARM64, Linux ARM64 and macOS Intel installed Build when matching compiler/runtime distributions are published and verified;
-3. decide whether Console installed Build needs a separate narrow bridge action;
+1. add Windows ARM64, Linux ARM64 and macOS Intel installed Build when matching compiler/runtime distributions are published and verified;
+2. decide whether Console installed Build needs a separate narrow bridge action;
+3. consider richer warning/multi-error diagnostic lists and source-navigation actions on top of `patch-diagnostic` v1;
 4. keep remote/fresh CI Build as an optional separate target.
 
 ## Definition of Offline IDE Ready
 
-For the supported Stage 2 hosts, Patch Studio can launch without network access and complete authoring, Designer, Run and a host-native Window Build using only the installed toolchain, including current project-v4 image resources. Linux application-icon builds preserve their executable plus desktop/icon sidecars in one deterministic download artifact.
+For the supported Stage 2 hosts, Patch Studio can launch without network access and complete authoring, Designer, Run and a host-native Window Build using only the installed toolchain, including current project-v4 image resources. Linux application-icon builds preserve their executable plus desktop/icon sidecars in one deterministic download artifact, and compiler failures can surface stable project-aware source diagnostics without exposing source through the bridge response.
 
 The broader fully-offline claim across every published architecture remains open until the unsupported Stage 2 host/compiler combinations are closed.

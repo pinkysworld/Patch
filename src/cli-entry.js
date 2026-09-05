@@ -8,6 +8,7 @@ import {
   formatPatchComponentCapabilityMatrixText,
   patchComponentCapabilityMatrix
 } from './component-matrix.js';
+import { diagnosticFromError, serializePatchDiagnostic } from './diagnostics.js';
 import { collectDoctorReport, formatDoctorReport } from './doctor.js';
 import { readOfflineLinkInput } from './offline-link-input.js';
 import { linkPatchSource } from './offline-linker.js';
@@ -34,11 +35,13 @@ if (command === 'link') {
   const args = argv.slice(1);
   const file = args.shift();
   if (!file) {
-    console.error('Use: patch link program.patch|project.patchproject [--out App] [--name AppName] [--gui-payload-version 12|17|19]');
+    console.error('Use: patch link program.patch|project.patchproject [--out App] [--name AppName] [--gui-payload-version 12|17|19] [--diagnostics-json]');
     process.exit(1);
   }
+  const diagnosticsJson = args.includes('--diagnostics-json');
+  let input = null;
   try {
-    const input = readOfflineLinkInput(file);
+    input = readOfflineLinkInput(file);
     const name = option(args, '--name') ?? input.name ?? appName(file);
     const out = option(args, '--out');
     const guiPayloadVersion = option(args, '--gui-payload-version')
@@ -63,6 +66,15 @@ if (command === 'link') {
     else console.log('  backend: local Patch compilation + embedded native runtime sealing');
     process.exit(0);
   } catch (err) {
+    if (diagnosticsJson) {
+      const diagnostic = diagnosticFromError(err, {
+        source: input?.source ?? '',
+        entry: input?.entry ?? path.basename(file),
+        composition: input?.composition ?? null,
+        phase: 'build'
+      });
+      console.error(`PATCH_DIAGNOSTIC_JSON:${serializePatchDiagnostic(diagnostic)}`);
+    }
     console.error(`Patch link stopped: ${err.message}`);
     process.exit(2);
   }

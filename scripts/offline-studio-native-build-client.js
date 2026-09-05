@@ -159,8 +159,14 @@ async function runInstalledBuild(platform) {
     output.textContent = `Installed native build complete ✓\n\nTarget: ${result.platform}\nBackend: ${result.backend}\nOutput: ${result.outputKind}\n${downloadLine}\nProject snapshot SHA-256: ${snapshot.sha256}\nSource files: ${snapshot.sourceFileCount ?? project.files?.length ?? 1}\nResources: ${snapshot.resourceCount ?? project.resources?.length ?? 0}\n\n${result.diagnostics ? `Compiler diagnostics:\n${result.diagnostics}\n\n` : ''}The installed Studio exposed only its versioned project-snapshot/build/artifact operations. Project resources were validated by digest before the snapshot was accepted. No arbitrary command, executable path, environment map or filesystem path was accepted from the browser.`;
     nativeStatus.textContent = `Installed ${platformLabel(platform)} build complete${result.artifact?.filename ? ` · ${result.artifact.filename}` : ''}`;
   } catch (error) {
-    output.textContent = `Offline Studio local build stopped:\n${error?.message ?? String(error)}`;
-    nativeStatus.textContent = 'Installed host build stopped';
+    const diagnostic = validPatchDiagnostic(error?.diagnostic) ? error.diagnostic : null;
+    if (diagnostic) {
+      output.textContent = `Offline Studio local build stopped\n\nCompiler diagnostic:\n${formatPatchDiagnostic(diagnostic)}\n\nThe installed compiler returned a versioned structured diagnostic. No source text was added to the bridge response.`;
+      nativeStatus.textContent = `Installed host build stopped · ${diagnostic.code}${diagnostic.location ? ` · ${diagnostic.location.file || diagnostic.location.entry}:${diagnostic.location.line}` : ''}`;
+    } else {
+      output.textContent = `Offline Studio local build stopped:\n${error?.message ?? String(error)}`;
+      nativeStatus.textContent = 'Installed host build stopped';
+    }
   } finally {
     buildButton.disabled = false;
     buildButton.textContent = originalLabel;
@@ -177,8 +183,35 @@ async function bridgeJson(path, payload) {
   let value;
   try { value = await response.json(); }
   catch { throw new Error(`Offline build bridge returned non-JSON HTTP ${response.status}.`); }
-  if (!response.ok) throw new Error(value?.message || value?.error || `Offline build bridge HTTP ${response.status}.`);
+  if (!response.ok) {
+    const error = new Error(value?.message || value?.error || `Offline build bridge HTTP ${response.status}.`);
+    if (validPatchDiagnostic(value?.diagnostic)) error.diagnostic = value.diagnostic;
+    error.bridgeCode = value?.error ?? null;
+    error.httpStatus = response.status;
+    throw error;
+  }
   return value;
+}
+
+function validPatchDiagnostic(value) {
+  if (!value || value.format !== 'patch-diagnostic' || value.version !== 1) return false;
+  if (!/^PATCH\d{4}$/.test(String(value.code ?? '')) || value.severity !== 'error') return false;
+  if (typeof value.phase !== 'string' || !value.phase || typeof value.message !== 'string' || !value.message) return false;
+  if (value.location === null) return true;
+  const location = value.location;
+  return Boolean(
+    location &&
+    typeof location.entry === 'string' && location.entry &&
+    (location.file == null || (typeof location.file === 'string' && location.file)) &&
+    Number.isInteger(location.line) && location.line > 0 &&
+    Number.isInteger(location.column) && location.column > 0
+  );
+}
+
+function formatPatchDiagnostic(diagnostic) {
+  const location = diagnostic.location;
+  const where = location ? `${location.file || location.entry}:${location.line}:${location.column}` : 'no source location';
+  return `${diagnostic.code}  ${where}\nPhase: ${diagnostic.phase}\n${diagnostic.message}`;
 }
 
 function bridgeFetch(endpoint, options = {}) {

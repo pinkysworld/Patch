@@ -29,6 +29,7 @@ export function validateOfflineWorkspaceSnapshot(value) {
 }
 
 export const validateProjectSnapshot = core.validateProjectSnapshot;
+export const sanitizeBuildDiagnostic = core.sanitizeBuildDiagnostic;
 export const resolveOpenedWorkspace = core.resolveOpenedWorkspace;
 export const resolveOfflineBuildWorkspace = core.resolveOfflineBuildWorkspace;
 export const materializeOfflineWorkspaceSnapshot = core.materializeOfflineWorkspaceSnapshot;

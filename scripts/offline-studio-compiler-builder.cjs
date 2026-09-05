@@ -8,6 +8,7 @@ const zlib = require('node:zlib');
 const { spawnSync } = require('node:child_process');
 
 const LINUX_ICON_SIZES = Object.freeze([16, 32, 64, 128, 256]);
+const DIAGNOSTIC_PREFIX = 'PATCH_DIAGNOSTIC_JSON:';
 
 function createOfflineStudioCompilerBuilder(options = {}) {
   const platform = normalizePlatform(options.platform ?? process.platform);
@@ -28,7 +29,8 @@ function createOfflineStudioCompilerBuilder(options = {}) {
     const run = spawnSync(compiler, [
       'link', path.resolve(sourcePath),
       '--name', name,
-      '--out', outputBase
+      '--out', outputBase,
+      '--diagnostics-json'
     ], {
       cwd: outDir,
       stdio: 'pipe',
@@ -42,8 +44,13 @@ function createOfflineStudioCompilerBuilder(options = {}) {
     });
     if (run.error) throw new Error(`Could not start bundled Patch offline compiler: ${run.error.message}`);
     if (run.status !== 0) {
-      const detail = String(run.stderr || run.stdout || '').trim();
-      throw new Error(`Bundled Patch offline compiler exited with status ${run.status}${detail ? `: ${detail}` : '.'}`);
+      const raw = [run.stderr, run.stdout].filter(Boolean).join('\n').trim();
+      const diagnostic = parseCompilerDiagnostic(raw);
+      const detail = stripCompilerDiagnosticRecord(raw).trim();
+      const error = new Error(`Bundled Patch offline compiler exited with status ${run.status}${detail ? `: ${detail}` : '.'}`);
+      if (diagnostic) error.diagnostic = diagnostic;
+      error.compilerOutput = detail;
+      throw error;
     }
 
     const artifact = locateArtifact(outputBase, name, outDir);
@@ -121,6 +128,35 @@ function createOfflineStudioCompilerBuilder(options = {}) {
     }
     throw new Error(`Offline Studio local native builder does not support ${platform}/${arch}.`);
   }
+}
+
+function parseCompilerDiagnostic(text) {
+  for (const line of String(text ?? '').split(/\r?\n/)) {
+    if (!line.startsWith(DIAGNOSTIC_PREFIX)) continue;
+    try {
+      const diagnostic = JSON.parse(line.slice(DIAGNOSTIC_PREFIX.length));
+      if (!diagnostic || diagnostic.format !== 'patch-diagnostic' || diagnostic.version !== 1) continue;
+      if (!/^PATCH\d{4}$/.test(String(diagnostic.code ?? '')) || diagnostic.severity !== 'error') continue;
+      if (typeof diagnostic.phase !== 'string' || !diagnostic.phase || typeof diagnostic.message !== 'string' || !diagnostic.message) continue;
+      if (diagnostic.location !== null) {
+        const location = diagnostic.location;
+        if (!location || typeof location.entry !== 'string' || !location.entry) continue;
+        if (!Number.isInteger(location.line) || location.line < 1 || !Number.isInteger(location.column) || location.column < 1) continue;
+        if (location.file != null && (typeof location.file !== 'string' || !location.file)) continue;
+      }
+      return diagnostic;
+    } catch {
+      // A malformed machine-readable record is ignored; ordinary stderr still surfaces.
+    }
+  }
+  return null;
+}
+
+function stripCompilerDiagnosticRecord(text) {
+  return String(text ?? '')
+    .split(/\r?\n/)
+    .filter(line => !line.startsWith(DIAGNOSTIC_PREFIX))
+    .join('\n');
 }
 
 function packageLinuxDesktopArtifact(outputBase, name, outDir) {
@@ -289,5 +325,7 @@ module.exports = {
   createOfflineStudioCompilerBuilder,
   normalizePlatform,
   packageLinuxDesktopArtifact,
-  createDeterministicTarGzip
+  createDeterministicTarGzip,
+  parseCompilerDiagnostic,
+  stripCompilerDiagnosticRecord
 };
