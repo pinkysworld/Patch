@@ -13,7 +13,7 @@ const code = document.querySelector('#code');
 const canvas = document.querySelector('#designerCanvas');
 const appView = document.querySelector('#app');
 const toolbar = document.querySelector('.designer-toolbar');
-const VISUAL_CONTROL_TYPES = new Set(['text','button','input','checkbox','radio','combo','listbox','slider','table','tree','tabs','picture']);
+const VISUAL_CONTROL_TYPES = new Set(['text','button','input','memo','checkbox','radio','combo','listbox','slider','table','tree','tabs','picture']);
 let activeForm = 0;
 let scheduled = false;
 let pendingReveal = null;
@@ -112,6 +112,7 @@ function interceptToolbox() {
     ['#addText', 'text'],
     ['#addButton', 'button'],
     ['#addInput', 'input'],
+    ['#addMemo', 'memo'],
     ['#addCheckbox', 'checkbox'],
     ['#addRadio', 'radio'],
     ['#addCombo', 'combo'],
