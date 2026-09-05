@@ -15,6 +15,7 @@ test('Studio project lifecycle and config restore browser modules are valid Java
   execFileSync(process.execPath, ['--check', 'web/project-config-restore.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'src/studio-project.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'src/studio-resources.js'], { stdio: 'pipe' });
+  execFileSync(process.execPath, ['--check', 'src/studio-resource-picture-placement.js'], { stdio: 'pipe' });
   execFileSync(process.execPath, ['--check', 'src/artifact-name.js'], { stdio: 'pipe' });
 });
 
@@ -156,8 +157,8 @@ test('public Site and PWA package the v4 project resource dependency graph', () 
   assert.match(sw, /const REVISION = '__PATCH_SITE_REV__'/);
   assert.match(sw, /const CACHE_PREFIX = 'patch-studio-'/);
   assert.match(sw, /\.map\(versioned\)/);
-  for (const marker of ['./project-lifecycle.js','./project-config-restore.js','./project-lifecycle.css','./recovery-manager.js','./recovery-manager.css','../src/studio-project.js','../src/studio-resources.js','../src/artifact-name.js']) {
+  for (const marker of ['./project-lifecycle.js','./project-config-restore.js','./project-lifecycle.css','./recovery-manager.js','./recovery-manager.css','../src/studio-project.js','../src/studio-resources.js','../src/studio-resource-picture-placement.js','../src/artifact-name.js']) {
     assert.ok(sw.includes(`'${marker}'`), marker);
   }
-  assert.match(buildSite, /'studio-project\.js','studio-resources\.js','studio-outline-model\.js'/);
+  assert.match(buildSite, /'studio-project\.js','studio-resources\.js','studio-resource-picture-placement\.js','studio-outline-model\.js'/);
 });

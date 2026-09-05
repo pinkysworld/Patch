@@ -9,13 +9,22 @@ import {
   buildStudioImageResource,
   studioResourceSourceExpression
 } from '../src/studio-resources.js';
-import { listDesignerControls, updateDesignerControl } from '../src/designer.js';
+import {
+  listDesignerControls,
+  listDesignerWindows,
+  updateDesignerControl
+} from '../src/designer.js';
+import {
+  placeResourcePictureInSource,
+  resourcePictureDropLayout
+} from '../src/studio-resource-picture-placement.js';
 import {
   currentDesignerSelection,
   designerSelectionForControl,
   rememberDesignerSelection
 } from './designer-selection.js';
 
+const RESOURCE_DRAG_TYPE = 'application/x-patch-studio-resource';
 const doc = typeof document === 'undefined' ? null : document;
 let chooserResolve = null;
 let chooserMode = false;
@@ -27,7 +36,9 @@ export function openStudioResourceManager() {
   install();
   chooserMode = false;
   render();
-  managerDialog()?.showModal?.();
+  const dialog = managerDialog();
+  if (dialog?.open) dialog.close();
+  dialog?.show?.();
 }
 
 export function chooseStudioImageResource() {
@@ -36,6 +47,7 @@ export function chooseStudioImageResource() {
   chooserMode = true;
   render();
   const dialog = managerDialog();
+  if (dialog?.open) dialog.close();
   dialog?.showModal?.();
   return new Promise(resolve => { chooserResolve = resolve; });
 }
@@ -47,6 +59,7 @@ function install() {
   installProjectButton();
   installDialog();
   installPictureChooserObserver();
+  installDesignerResourceDropTarget();
   window.addEventListener('patch:studio-project-resources-changed', () => {
     updateButton();
     if (managerDialog()?.open) render();
@@ -77,7 +90,7 @@ function installDialog() {
   dialog.innerHTML = `
     <div class="studio-resource-shell">
       <header>
-        <div><h2 id="studioResourceManagerTitle">Project Resources</h2><p>Images are stored inside the Patch project with SHA-256 integrity metadata.</p></div>
+        <div><h2 id="studioResourceManagerTitle">Project Resources</h2><p id="studioResourceManagerHint">Images are stored inside the Patch project with SHA-256 integrity metadata.</p></div>
         <button id="studioResourceClose" class="secondary small" type="button" aria-label="Close Resources">Close</button>
       </header>
       <div class="studio-resource-actions">
@@ -98,6 +111,7 @@ function installDialog() {
     closeChooser(null);
   });
   dialog.addEventListener('close', () => {
+    clearDropHighlight();
     if (chooserResolve) {
       const resolve = chooserResolve;
       chooserResolve = null;
@@ -111,6 +125,7 @@ function render() {
   const list = doc?.querySelector('#studioResourceList');
   const summary = doc?.querySelector('#studioResourceSummary');
   const title = doc?.querySelector('#studioResourceManagerTitle');
+  const hint = doc?.querySelector('#studioResourceManagerHint');
   if (!list || !summary) return;
   let resources = [];
   try { resources = getStudioProjectResources(); }
@@ -121,6 +136,9 @@ function render() {
   const bytes = resources.reduce((sum, resource) => sum + resource.size, 0);
   summary.textContent = `${resources.length} image${resources.length === 1 ? '' : 's'} · ${formatBytes(bytes)}`;
   if (title) title.textContent = chooserMode ? 'Choose Picture Resource' : 'Project Resources';
+  if (hint) hint.textContent = chooserMode
+    ? 'Choose an image stored inside this Patch project.'
+    : 'Drag an image onto the active Form, or use Place on Form. The Picture remains ordinary visible Patch source.';
   list.replaceChildren();
 
   if (!resources.length) {
@@ -138,6 +156,22 @@ function resourceRow(resource) {
   const row = doc.createElement('article');
   row.className = 'studio-resource-row';
   row.dataset.resourceId = resource.id;
+
+  if (!chooserMode) {
+    row.draggable = true;
+    row.title = `Drag ${resource.id} onto the active Form to create a Picture`;
+    row.addEventListener('dragstart', event => {
+      if (!event.dataTransfer) return;
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData(RESOURCE_DRAG_TYPE, resource.id);
+      event.dataTransfer.setData('text/plain', studioResourceSourceExpression(resource.id));
+      row.classList.add('studio-resource-dragging');
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('studio-resource-dragging');
+      clearDropHighlight();
+    });
+  }
 
   const preview = doc.createElement('img');
   preview.className = 'studio-resource-preview';
@@ -163,6 +197,14 @@ function resourceRow(resource) {
     use.textContent = 'Use';
     use.addEventListener('click', () => closeChooser(resource));
     actions.appendChild(use);
+  } else {
+    const place = doc.createElement('button');
+    place.type = 'button';
+    place.className = 'secondary small';
+    place.textContent = 'Place on Form';
+    place.title = `Create a Picture using ${resource.id} on the active Form`;
+    place.addEventListener('click', () => placeResourceOnActiveForm(resource));
+    actions.appendChild(place);
   }
   const copy = doc.createElement('button');
   copy.type = 'button';
@@ -191,6 +233,93 @@ function resourceRow(resource) {
 
   row.append(preview, info, actions);
   return row;
+}
+
+function installDesignerResourceDropTarget() {
+  const canvas = doc?.querySelector('#designerCanvas');
+  if (!canvas || canvas.dataset.patchResourceDrop === 'true') return;
+  canvas.dataset.patchResourceDrop = 'true';
+  canvas.addEventListener('dragover', event => {
+    if (!hasResourceDrag(event.dataTransfer)) return;
+    const body = activeFormBody(canvas);
+    if (!body) return;
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    clearDropHighlight();
+    body.classList.add('patch-resource-drop-target');
+  });
+  canvas.addEventListener('dragleave', event => {
+    if (!hasResourceDrag(event.dataTransfer)) return;
+    const next = event.relatedTarget;
+    if (!next || !canvas.contains(next)) clearDropHighlight();
+  });
+  canvas.addEventListener('drop', event => {
+    if (!hasResourceDrag(event.dataTransfer)) return;
+    event.preventDefault();
+    const resourceId = String(event.dataTransfer?.getData(RESOURCE_DRAG_TYPE) ?? '').trim();
+    clearDropHighlight();
+    if (!resourceId) return;
+    let resource = null;
+    try { resource = getStudioProjectResources().find(item => item.id === resourceId) ?? null; }
+    catch (error) { setStatus(error?.message ?? String(error), true); return; }
+    if (!resource) { setStatus(`Resource ${resourceId} is no longer available.`, true); return; }
+    const windowIndex = activeFormIndex();
+    const form = currentForm(windowIndex);
+    const body = activeFormBody(canvas);
+    if (!body || !form) { setStatus('Open a Window Form before placing an image.', true); return; }
+    const rect = body.getBoundingClientRect();
+    const layout = resourcePictureDropLayout({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      scrollLeft: body.scrollLeft,
+      scrollTop: body.scrollTop
+    }, rect, form);
+    placeResourceOnActiveForm(resource, layout);
+  });
+}
+
+function hasResourceDrag(dataTransfer) {
+  return Boolean(dataTransfer && [...(dataTransfer.types ?? [])].includes(RESOURCE_DRAG_TYPE));
+}
+
+function activeFormBody(canvas) {
+  const shell = canvas?.querySelectorAll(':scope > .patch-window')?.[activeFormIndex()] ?? null;
+  return shell?.querySelector(':scope > .patch-window-body') ?? null;
+}
+
+function activeFormIndex() {
+  const value = Number(doc?.querySelector('#patchFormSelect')?.value);
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+}
+
+function currentForm(windowIndex) {
+  const code = doc?.querySelector('#code');
+  if (!code) return null;
+  try { return listDesignerWindows(code.value).find(item => item.windowIndex === windowIndex) ?? null; }
+  catch { return null; }
+}
+
+function placeResourceOnActiveForm(resource, layout = null) {
+  const code = doc?.querySelector('#code');
+  const canvas = doc?.querySelector('#designerCanvas');
+  if (!code || !canvas) return;
+  const windowIndex = activeFormIndex();
+  try {
+    const placed = placeResourcePictureInSource(code.value, resource.id, { windowIndex, layout });
+    code.value = placed.source;
+    code.dispatchEvent(new Event('input', { bubbles: true }));
+    code.dispatchEvent(new Event('change', { bubbles: true }));
+    rememberDesignerSelection(canvas, designerSelectionForControl(placed.picture, 'core'), { reason: layout ? 'drop-resource-picture' : 'place-resource-picture' });
+    setStatus(`${resource.id} placed as ${placed.picture.id ?? 'Picture'}${layout ? ` at ${layout.x}, ${layout.y}` : ''}.`);
+  } catch (error) {
+    setStatus(error?.message ?? String(error), true);
+  }
+}
+
+function clearDropHighlight() {
+  for (const body of doc?.querySelectorAll?.('.patch-window-body.patch-resource-drop-target') ?? []) {
+    body.classList.remove('patch-resource-drop-target');
+  }
 }
 
 async function importResourceFile(event) {
@@ -374,16 +503,19 @@ function installStyles() {
   style.dataset.patchResourceManager = '1';
   style.textContent = `
     .studio-resource-manager{width:min(780px,calc(100vw - 28px));max-height:min(720px,calc(100vh - 28px));padding:0;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);box-shadow:0 28px 80px #0006}
+    .studio-resource-manager:not(:modal){position:fixed;inset:72px 18px auto auto;margin:0;z-index:60;width:min(680px,calc(100vw - 36px));max-height:calc(100vh - 92px)}
     .studio-resource-manager::backdrop{background:#0008;backdrop-filter:blur(2px)}
     .studio-resource-shell{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:12px;max-height:inherit;padding:16px}
     .studio-resource-shell>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.studio-resource-shell h2{margin:0;font-size:18px}.studio-resource-shell header p{margin:4px 0 0;color:var(--muted);font-size:12px}
     .studio-resource-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}.studio-resource-actions span{color:var(--muted);font-size:11px}
     .studio-resource-list{display:grid;gap:8px;overflow:auto;min-height:120px}.studio-resource-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle)}
+    .studio-resource-row[draggable="true"]{cursor:grab}.studio-resource-row.studio-resource-dragging{opacity:.58;cursor:grabbing}
     .studio-resource-preview{width:64px;height:52px;object-fit:contain;border-radius:7px;border:1px solid var(--border);background:repeating-conic-gradient(#7772 0 25%,transparent 0 50%) 50%/12px 12px}.studio-resource-info{display:grid;gap:2px;min-width:0}.studio-resource-info strong,.studio-resource-info span,.studio-resource-info small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.studio-resource-info span,.studio-resource-info small{color:var(--muted);font-size:11px}
     .studio-resource-row-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.studio-resource-row-actions .danger{color:var(--danger,#c94c4c)}.studio-resource-empty{display:grid;place-content:center;gap:6px;min-height:160px;text-align:center;color:var(--muted)}.studio-resource-empty strong{color:var(--text)}
     .studio-resource-status{min-height:18px;margin:0;color:var(--muted);font-size:11px}.studio-resource-status.error{color:var(--danger,#d85b5b)}
     .designer-picture-resource-actions{display:flex;gap:5px;margin-top:5px}.designer-picture-resource-actions button{flex:1}
-    @media(max-width:620px){.studio-resource-row{grid-template-columns:52px minmax(0,1fr)}.studio-resource-preview{width:52px;height:46px}.studio-resource-row-actions{grid-column:1/-1;justify-content:flex-start}}
+    .patch-window-body.patch-resource-drop-target{outline:2px dashed var(--accent,#6c8cff);outline-offset:-5px;background-image:linear-gradient(#6c8cff12,#6c8cff12)}
+    @media(max-width:620px){.studio-resource-manager:not(:modal){inset:64px 8px auto 8px;width:auto}.studio-resource-row{grid-template-columns:52px minmax(0,1fr)}.studio-resource-preview{width:52px;height:46px}.studio-resource-row-actions{grid-column:1/-1;justify-content:flex-start}}
   `;
   doc.head.appendChild(style);
 }

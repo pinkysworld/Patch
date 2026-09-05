@@ -45,6 +45,8 @@ imagelist as toolbar_images size 16, 16:
 
 Per-resource, total-size and count limits are validated. Export, import, local save and recovery preserve source plus resources together.
 
+For Delphi/VB-style visual authoring, an image resource can now be dragged directly from the modeless Resource Manager onto the active Form. Studio converts the drop point into the existing Form layout coordinates, clamps the default Picture inside the current Form and writes an ordinary visible `picture ... from "patch-resource:..." at ... size ...` declaration through the normal Designer APIs. `Place on Form` provides the same source-backed operation for keyboard/touch workflows, while the Picture Inspector's `Choose resource…` flow remains modal. The same placement module is packaged and pre-cached by the public/offline PWA, so this authoring path does not require network access after installation.
+
 ## Current Designer component surface
 
 The searchable Component Palette is driven from the canonical registry, not an independent Designer catalog.
