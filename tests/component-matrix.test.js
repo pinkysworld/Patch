@@ -25,6 +25,13 @@ test('capability matrix is generated from the canonical registry rather than a s
   assert.equal(matrix.contract.payload, 19);
   assert.equal(matrix.contract.runtime, '1.10');
   assert.deepEqual(matrix.components.map(component => component.type), PATCH_COMPONENTS.map(component => component.type));
+  const memo = matrix.components.find(component => component.type === 'memo');
+  assert.equal(memo.visual, true);
+  assert.equal(memo.targets.studio, 'supported');
+  assert.equal(memo.targets.web, 'supported');
+  assert.equal(memo.targets.windows, 'unsupported');
+  assert.equal(memo.targets.macos, 'unsupported');
+  assert.equal(memo.targets.linux, 'unsupported');
   const imagelist = matrix.components.find(component => component.type === 'imagelist');
   assert.equal(imagelist.visual, false);
   assert.equal(imagelist.targets.studio, 'supported');
@@ -45,16 +52,18 @@ test('checked-in capability matrix markdown matches registry generation', () => 
   const checkedIn = fs.readFileSync(path.join(root, 'docs', 'COMPONENT_CAPABILITY_MATRIX.md'), 'utf8');
   assert.equal(checkedIn, generated);
   assert.match(generated, /Do not edit the table by hand/);
+  assert.match(generated, /`memo`/);
   assert.match(generated, /`imagelist`/);
   assert.match(generated, /`paintbox`/);
-  assert.match(formatPatchComponentCapabilityMatrixText(), /Patch components {2}registry 0\.9/);
+  assert.match(formatPatchComponentCapabilityMatrixText(), /Patch components {2}registry 0\.10/);
 });
 
 test('patch components CLI prints the registry matrix and JSON envelope', () => {
   const cli = path.join(root, 'src', 'cli-entry.js');
   const text = spawnSync(process.execPath, [cli, 'components'], { encoding: 'utf8' });
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, /Patch components {2}registry 0\.9/);
+  assert.match(text.stdout, /Patch components {2}registry 0\.10/);
+  assert.match(text.stdout, /memo/);
   assert.match(text.stdout, /imagelist/);
   assert.match(text.stdout, /supported/);
 
@@ -62,6 +71,7 @@ test('patch components CLI prints the registry matrix and JSON envelope', () => 
   assert.equal(json.status, 0, json.stderr);
   const report = JSON.parse(json.stdout);
   assert.equal(report.schema, 'patch-components');
-  assert.equal(report.registryVersion, '0.9');
+  assert.equal(report.registryVersion, '0.10');
+  assert.equal(report.components.find(component => component.type === 'memo')?.targets.windows, 'unsupported');
   assert.equal(report.components.at(-1).type, 'imagelist');
 });
