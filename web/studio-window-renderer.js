@@ -18,7 +18,7 @@ function runtimeWindowFingerprint(model) {
 }
 
 const RUNTIME_CORE_CONTROL_TYPES = new Set([
-  'tabs', 'panel', 'text', 'button', 'input', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'picture', 'tree'
+  'tabs', 'panel', 'text', 'button', 'input', 'memo', 'checkbox', 'radio', 'combo', 'listbox', 'slider', 'picture', 'tree'
 ]);
 
 function runtimeControlFingerprint(control) {
@@ -412,6 +412,14 @@ function createControlElement(control, context) {
     el.placeholder = control.id ?? '';
     if (context.interactive) el.addEventListener('input', () => context.dispatch(control.id, 'changed', { value: el.value }));
     else el.readOnly = true;
+  } else if (control.type === 'memo') {
+    el = document.createElement('textarea');
+    el.className = 'patch-input patch-memo';
+    el.value = control.value ?? '';
+    el.placeholder = control.id ?? '';
+    el.wrap = 'soft';
+    if (context.interactive) el.addEventListener('input', () => context.dispatch(control.id, 'changed', { value: el.value }));
+    else el.readOnly = true;
   } else if (control.type === 'checkbox') {
     el = document.createElement('label');
     el.className = 'patch-checkbox';
@@ -687,7 +695,7 @@ function decorateDesignerControl(el, windowIndex, controlIndex, control) {
   el.classList.add('designer-control');
   el.dataset.windowIndex = String(windowIndex);
   el.dataset.controlIndex = String(controlIndex);
-  if (!['BUTTON', 'INPUT', 'SELECT'].includes(el.tagName)) el.tabIndex = 0;
+  if (!['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) el.tabIndex = 0;
   el.setAttribute('aria-label', `Select ${control.type} control ${control.id ?? controlIndex + 1}`);
 }
 
