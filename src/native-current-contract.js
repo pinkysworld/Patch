@@ -64,6 +64,7 @@ export const PATCH_CURRENT_NATIVE_RUNTIME_TAGS = Object.freeze({
 
 export function buildCurrentNativeGuiIR(compiled) {
   assertCurrentNativeInputPresentation(compiled?.ast);
+  assertCurrentNativeListboxPresentation(compiled?.ast);
   assertCurrentNativePanelLayout(compiled?.ast);
   return buildNativeGuiIRV19(compiled);
 }
@@ -137,6 +138,21 @@ function assertCurrentNativeInputPresentation(nodes) {
     }
     if (node?.kind === 'tabs') {
       for (const page of node.body ?? []) assertCurrentNativeInputPresentation(page.body);
+    }
+  }
+}
+
+function assertCurrentNativeListboxPresentation(nodes) {
+  for (const node of nodes ?? []) {
+    if (node?.kind === 'uiControl' && node.control === 'listbox' && node.listboxPresentation === 'checked') {
+      const name = node.id ? ` '${node.id}'` : '';
+      throw new NativeGuiError(`CheckedListBox Stage 1${name} is Studio/Web only. Current Ready native ${PATCH_CURRENT_NATIVE_RUNTIME_VERSION} has no checked-list presentation contract; validation fails closed rather than lowering checked state as an ordinary ListBox selection.`);
+    }
+    if (node?.kind === 'window' || (node?.kind === 'uiControl' && node.control === 'panel')) {
+      assertCurrentNativeListboxPresentation(node.body);
+    }
+    if (node?.kind === 'tabs') {
+      for (const page of node.body ?? []) assertCurrentNativeListboxPresentation(page.body);
     }
   }
 }
